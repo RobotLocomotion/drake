@@ -6,12 +6,14 @@
 #include <unordered_map>
 #include <vector>
 
+#ifndef DRAKE_DOXYGEN_CXX
 namespace csdp {
 extern "C" {
 // TODO(Jeremy.Nimmer): include this header as <csdp/declarations.h>
 #include <declarations.h>
 }  // extern C
 }  // namespace csdp
+#endif  // DOXYGEN_CXX
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>

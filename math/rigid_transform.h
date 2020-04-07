@@ -63,7 +63,7 @@ namespace math {
 /// @authors Paul Mitiguy (2018) Original author.
 /// @authors Drake team (see https://drake.mit.edu/credits).
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class RigidTransform {
  public:
@@ -430,7 +430,7 @@ class RigidTransform {
   // They are only provided to support backwards compatibility with Isometry3
   // as we migrate Drake's codebase to use RigidTransform. New uses of
   // Isometry3 are discouraged. These methods will remain intact (though
-  // possibly marked as deprecated) until at least 2020-04-01. N.B. Keep the
+  // possibly marked as deprecated) until at least 2020-07-01. N.B. Keep the
   // deprecation date here in sync with the deprecation comment inside
   // drake/bindings/pydrake/math_py.cc.
   operator Isometry3<T>() const { return GetAsIsometry3(); }

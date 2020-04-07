@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 #include <Eigen/Core>
 
@@ -25,8 +26,8 @@ class SolverBase : public SolverInterface {
   /// return value instead of an output argument.
   MathematicalProgramResult Solve(
       const MathematicalProgram& prog,
-      const std::optional<Eigen::VectorXd>& initial_guess,
-      const std::optional<SolverOptions>& solver_options) const;
+      const std::optional<Eigen::VectorXd>& initial_guess = std::nullopt,
+      const std::optional<SolverOptions>& solver_options = std::nullopt) const;
 
   // Implement the SolverInterface methods.
   void Solve(const MathematicalProgram&, const std::optional<Eigen::VectorXd>&,

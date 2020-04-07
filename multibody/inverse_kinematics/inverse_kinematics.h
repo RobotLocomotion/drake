@@ -27,13 +27,18 @@ class InverseKinematics {
    * This constructor will create and own a context for @param plant.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
+   * @param with_joint_limits If set to true, then the constructor
+   * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
+   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
+   * does not impose the joint limit constraints in the constructor.
    * @note The inverse kinematics problem constructed in this way doesn't permit
    * collision related constraint (such as calling
    * AddMinimumDistanceConstraint). To enable collision related constraint, call
    * InverseKinematics(const MultibodyPlant<double>& plant,
    * systems::Context<double>* plant_context);
    */
-  explicit InverseKinematics(const MultibodyPlant<double>& plant);
+  explicit InverseKinematics(const MultibodyPlant<double>& plant,
+                             bool with_joint_limits = true);
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant. If the user
@@ -58,9 +63,19 @@ class InverseKinematics {
    * // 5. Get the context for the plant.
    * auto plant_context = &(diagram->GetMutableSubsystemContext(items.plant,
    * diagram_context.get()));
-   */
+   * This context will be modified during calling ik.prog.Solve(...). When
+   * Solve() returns `result`, context will store the optimized posture, namely
+   * plant.GetPositions(*context) will be the same as in
+   * result.GetSolution(ik.q()). The user could then use this context to perform
+   * kinematic computation (like computing the position of the end-effector
+   * etc.).
+   * @param with_joint_limits If set to true, then the constructor
+   * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
+   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
+   * does not impose the joint limit constraints in the constructor.  */
   InverseKinematics(const MultibodyPlant<double>& plant,
-                    systems::Context<double>* plant_context);
+                    systems::Context<double>* plant_context,
+                    bool with_joint_limits = true);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -220,6 +235,24 @@ class InverseKinematics {
   solvers::Binding<solvers::Constraint> AddDistanceConstraint(
       const SortedPair<geometry::GeometryId>& geometry_pair,
       double distance_lower, double distance_upper);
+
+  /**
+   * Add a constraint that the distance between point P1 attached to frame 1 and
+   * point P2 attached to frame 2 is within the range [distance_lower,
+   * distance_upper].
+   * @param frame1 The frame to which P1 is attached.
+   * @param p_B1P1 The position of P1 measured and expressed in frame 1.
+   * @param frame2 The frame to which P2 is attached.
+   * @param p_B2P2 The position of P2 measured and expressed in frame 2.
+   * @param distance_lower The lower bound on the distance.
+   * @param distance_upper The upper bound on the distance.
+   */
+  solvers::Binding<solvers::Constraint> AddPointToPointDistanceConstraint(
+      const Frame<double>& frame1,
+      const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
+      const Frame<double>& frame2,
+      const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
+      double distance_upper);
 
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */

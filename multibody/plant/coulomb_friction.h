@@ -57,15 +57,15 @@ namespace multibody {
 /// combination law model for tires, will have a different set of requirements
 /// from the ones stated above.
 ///
-/// @tparam T Must be one of drake's default scalar types.
+/// @tparam_default_scalar
 template<typename T>
 class CoulombFriction {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
 
   /// Default constructor for a frictionless surface, i.e. with zero static and
   /// dynamic coefficients of friction.
-  CoulombFriction();
+  CoulombFriction() = default;
 
   /// Specifies both the static and dynamic friction coefficients for a given
   /// surface.
@@ -94,12 +94,6 @@ class CoulombFriction {
   T static_friction_{0.0};
   T dynamic_friction_{0.0};
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T> CoulombFriction<T>::CoulombFriction() = default;
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(CoulombFriction)
 
 /// Given the surface properties of two different surfaces, this method computes
 /// the Coulomb's law coefficients of friction characterizing the interaction by

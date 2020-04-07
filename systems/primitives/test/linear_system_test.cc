@@ -9,12 +9,14 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
 using std::make_unique;
 using std::unique_ptr;
-using MatrixXd = drake::MatrixX<double>;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace systems {
@@ -401,6 +403,41 @@ class EmptyStateSystemWithMixedInputs final : public LeafSystem<T> {
       const EmptyStateSystemWithMixedInputs<U>&)
       : EmptyStateSystemWithMixedInputs<T>() {}
 };
+
+// Confirm that IsDifferenceEquationSystem works as expected for the family
+// of test systems we have here.
+GTEST_TEST(TestSystem, IsDifferentEquationSystem) {
+  double returned_time_period = 0.42;
+
+  const Vector1d a(1);
+  const Vector1d b(1);
+  const Vector1d c(1);
+  const Vector1d d(1);
+  const LinearSystem<double> continuous_time_system(a, b, c, d);
+  EXPECT_FALSE(
+      continuous_time_system.IsDifferenceEquationSystem(&returned_time_period));
+  // The argument value should not have changed.
+  EXPECT_EQ(returned_time_period, 0.42);
+
+  const double time_period = 0.1;
+  const LinearSystem<double> discrete_time_system(a, b, c, d, time_period);
+  EXPECT_TRUE(discrete_time_system.IsDifferenceEquationSystem());
+  EXPECT_TRUE(
+      discrete_time_system.IsDifferenceEquationSystem(&returned_time_period));
+  EXPECT_EQ(returned_time_period, time_period);
+
+  returned_time_period = 3.71;
+  const TestNonPeriodicSystem non_periodic_system;
+  EXPECT_FALSE(
+      non_periodic_system.IsDifferenceEquationSystem(&returned_time_period));
+  EXPECT_EQ(returned_time_period, 3.71);
+
+  const EmptyStateSystemWithAbstractInput<double> empty_system1;
+  EXPECT_FALSE(empty_system1.IsDifferenceEquationSystem());
+
+  const EmptyStateSystemWithMixedInputs<double> empty_system2;
+  EXPECT_FALSE(empty_system2.IsDifferenceEquationSystem());
+}
 
 // Test that linearizing a system with abstract input port throws an
 // exception when trying to linearize that port.
@@ -801,6 +838,47 @@ GTEST_TEST(LinearizeTest, TestInputOutputPorts) {
 
   // Discrete-time version.
   TestMimo(true);
+}
+
+GTEST_TEST(LinearSystemIssueTest, Issue12706) {
+  // Ensure we do not segfault when connecting a double-integrator with a
+  // "controller", both implemented using LinearSystem (#12706).
+  DiagramBuilder<double> builder;
+
+  // Create a simple double-integrator plant.
+  MatrixXd Ap(2, 2);
+  Ap << 0, 1, 0, 0;
+  MatrixXd Bp(2, 1);
+  Bp << 0, 1;
+  MatrixXd Cp = MatrixXd::Identity(2, 2);
+  MatrixXd Dp = MatrixXd::Zero(2, 1);
+  auto* plant = builder.AddSystem(
+      std::make_unique<LinearSystem<double>>(Ap, Bp, Cp, Dp));
+
+  // Create a simple PD-controller.
+  MatrixXd Ac(0, 0);
+  MatrixXd Bc(0, 2);
+  MatrixXd Cc(1, 0);
+  MatrixXd Dc(1, 2);
+  Dc << -1, -1;
+  auto* controller = builder.AddSystem(
+      std::make_unique<LinearSystem<double>>(Ac, Bc, Cc, Dc));
+
+  // Connect, build, and allocate a context.
+  builder.Connect(controller->get_output_port(), plant->get_input_port());
+  builder.Connect(plant->get_output_port(), controller->get_input_port());
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  // Compute the output, namely to ensure that we do not segfault.
+  const VectorXd y =
+      plant->get_output_port().Eval(plant->GetMyContextFromRoot(*context));
+  const VectorXd y_expected = VectorXd::Zero(2);
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+
+  // Check feedthrough.
+  EXPECT_FALSE(plant->HasDirectFeedthrough(0));
+  EXPECT_TRUE(controller->HasDirectFeedthrough(0));
 }
 
 }  // namespace

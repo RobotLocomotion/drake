@@ -290,7 +290,7 @@ template <class T>
 class WitnessTriggeredEventData : public EventData {
  public:
   WitnessTriggeredEventData() {}
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
 
   /// Gets the witness function that triggered the event handler.
   const WitnessFunction<T>* triggered_witness() const {
@@ -351,8 +351,6 @@ class WitnessTriggeredEventData : public EventData {
   const ContinuousState<T>* xc0_{nullptr};
   const ContinuousState<T>* xcf_{nullptr};
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(WitnessTriggeredEventData)
 
 /**
  * Predefined types of triggers for events. Used at run time to determine why
@@ -619,7 +617,7 @@ class PublishEvent final : public Event<T> {
   }
 
  private:
-  PublishEvent(const PublishEvent&);
+  PublishEvent(const PublishEvent&) = default;
 
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
@@ -636,12 +634,6 @@ class PublishEvent final : public Event<T> {
   // Optional callback function that handles this publish event.
   PublishCallback callback_{nullptr};
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-PublishEvent<T>::PublishEvent(const PublishEvent<T>&) = default;
 
 /**
  * This class represents a discrete update event. It has an optional callback
@@ -699,7 +691,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   }
 
  private:
-  DiscreteUpdateEvent(const DiscreteUpdateEvent&);
+  DiscreteUpdateEvent(const DiscreteUpdateEvent&) = default;
 
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
@@ -716,13 +708,6 @@ class DiscreteUpdateEvent final : public Event<T> {
   // Optional callback function that handles this discrete update event.
   DiscreteUpdateCallback callback_{nullptr};
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-DiscreteUpdateEvent<T>::DiscreteUpdateEvent(
-    const DiscreteUpdateEvent<T>&) = default;
 
 /**
  * This class represents an unrestricted update event. It has an optional
@@ -778,7 +763,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   }
 
  private:
-  UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&);
+  UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&) = default;
 
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
@@ -795,13 +780,6 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   // Optional callback function that handles this unrestricted update event.
   UnrestrictedUpdateCallback callback_{nullptr};
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-UnrestrictedUpdateEvent<T>::UnrestrictedUpdateEvent(
-    const UnrestrictedUpdateEvent<T>&) = default;
 
 }  // namespace systems
 }  // namespace drake

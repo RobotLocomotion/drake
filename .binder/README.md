@@ -7,12 +7,21 @@ intended for use by most developers or users. Please use the
 from Docker Hub instead.*
 
 To create a Docker image and run a Docker container similar to those used by
-[Binder](https://mybinder.org) for debugging purposes, execute the following
-commands from the top level of the Drake Git repository:
+[Binder](https://mybinder.org) for local debugging purposes, execute the
+following `build` and `run` commands from the top level of the Drake Git
+repository:
 
 ```bash
 docker build -f .binder/Dockerfile -t binder .
 docker run --name mybinder -p 8888:8888 binder
+```
+
+The `meshcat-visualizer` is NOT supported by Binder since port 7000 is not
+exposed, but to allow its use locally, substitute the following `run` command
+for the above:
+
+```bash
+docker run --name mybinder -p 7000:7000 -p 8888:8888 binder
 ```
 
 Copy and paste the URL (including the login token) that is displayed in the

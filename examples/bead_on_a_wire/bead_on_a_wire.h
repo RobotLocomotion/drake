@@ -62,17 +62,6 @@ namespace bead_on_a_wire {
 /// class expects that this inverse function may be ill-defined).
 /// g(x) = 0 will only be satisfied if x corresponds to a point on the wire.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to https://drake.mit.edu/cxx_inl.html.
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-///
-/// They are already available to link against in the library implementation.
-///
 /// Inputs: One input (generalized external force) for the bead on a wire
 ///         simulated in minimal coordinates, three inputs (three dimensional
 ///         external force applied to the center of mass) for the bead on a
@@ -85,6 +74,8 @@ namespace bead_on_a_wire {
 ///         m/s, respectively, for the bead simulated in absolute coordinates.
 ///
 /// Outputs: same as state.
+///
+/// @tparam_double_only
 template <typename T>
 class BeadOnAWire : public systems::LeafSystem<T> {
  public:

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -653,6 +654,10 @@ void IpoptSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "IpoptSolver doesn't support the feature of variable scaling.");
+  }
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);

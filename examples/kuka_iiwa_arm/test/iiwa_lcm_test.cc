@@ -16,8 +16,15 @@ GTEST_TEST(IiwaLcmTest, IiwaContactResultsToExternalTorque) {
   const std::string kIiwaUrdf =
     "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // N.B. If WorldSimTreeBuilder reaches its deprecation date of 2020-05-01
+  // prior to this test being removed, then instead of completely removing the
+  // WorldSimTreeBuilder, we should instead mark it private, remove it from the
+  // installation, but keep using it here.
   auto tree_builder =
       std::make_unique<manipulation::util::WorldSimTreeBuilder<double>>();
+#pragma GCC diagnostic pop
   tree_builder->StoreDrakeModel("iiwa", kIiwaUrdf);
 
   tree_builder->AddFixedModelInstance("iiwa", Vector3<double>::Zero());

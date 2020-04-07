@@ -227,6 +227,11 @@ generate and open the docstring header:
     bazel build //bindings/pydrake:documentation_pybind.h
     $EDITOR bazel-bin/bindings/pydrake/documentation_pybind.h
 
+Docstrings for attic components can be previewed in the following header:
+
+    bazel build //bindings/pydrake/attic:documentation_pybind.h
+    $EDITOR bazel-bin/bindings/pydrake/attic/documentation_pybind.h
+
 Search the comments for the symbol of interest, e.g.,
 `drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
 line corresponding to the symbol that the docstring was pulled from.

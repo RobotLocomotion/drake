@@ -1,0 +1,31 @@
+namespace: drake::examples::rimless_wheel
+elements:
+  -
+    name: mass
+    doc: The rimless wheel has a single point mass at the hub.
+    doc_units: kg
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: length
+    doc: The length of each spoke.
+    doc_units: m
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: gravity
+    doc: An approximate value for gravitational acceleration.
+    doc_units: m/s^2
+    default_value: 9.81
+    min_value: 0.0
+  -
+    name: number_of_spokes
+    doc: Total number of spokes on the wheel
+    doc_units: integer
+    default_value: 8
+    min_value: 4
+  -
+    name: slope
+    doc: The angle of the ramp on which the rimless wheel is walking.
+    doc_units: radians
+    default_value: 0.08 # produces standing and rolling fixed points

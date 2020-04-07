@@ -10,9 +10,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/system_base.h"
 
 namespace drake {
 namespace systems {
@@ -24,22 +24,14 @@ namespace systems {
 entry in the same LeafSystem as the port. This is intended for internal use in
 implementing the DeclareOutputPort() variants in LeafSystem.
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided:
-
-- double
-- AutoDiffXd
-- symbolic::Expression
-
-They are already available to link against in the containing library.
-No other values for T are currently supported. */
+@tparam_default_scalar
+*/
 template <typename T>
 class LeafOutputPort final : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort)
 
-  ~LeafOutputPort() final;
+  ~LeafOutputPort() final = default;
 
   // TODO(sherm1) These callbacks should not be specific to this class. Move
   // elsewhere, e.g. framework_common.h so they can be shared with cache entry.
@@ -65,16 +57,26 @@ class LeafOutputPort final : public OutputPort<T> {
     return *cache_entry_;
   }
 
+  /** (Debugging) Specifies that caching should be disabled for this output
+  port when a Context is first allocated. This is useful if you have observed
+  different behavior with caching on or off and would like to determine if
+  the problem is caused by this port.
+  @see CacheEntry::disable_caching_by_default() */
+  void disable_caching_by_default() {
+    cache_entry_->disable_caching_by_default();
+  }
+
  private:
   friend class internal::FrameworkFactory;
 
   // Constructs a cached output port. The `system` parameter must be the same
-  // object as the `system_base` parameter.
-  LeafOutputPort(const System<T>* system, SystemBase* system_base,
+  // object as the `system_interface` parameter.
+  LeafOutputPort(const System<T>* system,
+                 internal::SystemMessageInterface* system_interface,
                  std::string name, OutputPortIndex index,
                  DependencyTicket ticket, PortDataType data_type, int size,
-                 const CacheEntry* cache_entry)
-      : OutputPort<T>(system, system_base, std::move(name), index, ticket,
+                 CacheEntry* cache_entry)
+      : OutputPort<T>(system, system_interface, std::move(name), index, ticket,
                       data_type, size),
         cache_entry_(cache_entry) {
     DRAKE_DEMAND(cache_entry != nullptr);
@@ -100,14 +102,8 @@ class LeafOutputPort final : public OutputPort<T> {
     return {std::nullopt, cache_entry().ticket()};
   };
 
-  const CacheEntry* const cache_entry_;
+  CacheEntry* const cache_entry_;
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-LeafOutputPort<T>::~LeafOutputPort() = default;
 
 }  // namespace systems
 }  // namespace drake

@@ -513,24 +513,6 @@ GTEST_TEST(ShapeName, Streaming) {
   EXPECT_EQ(ss.str(), name.name());
 }
 
-GTEST_TEST(ShapeSpecification, DeprecatedAccessors) {
-  Capsule capsule(1.0, 2.0);
-  Cylinder cylinder(1.0, 2.0);
-  Ellipsoid ellipsoid(0.5, 1.0, 1.5);
-  Sphere sphere(2.0);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(capsule.get_radius(), capsule.radius());
-  EXPECT_EQ(capsule.get_length(), capsule.length());
-  EXPECT_EQ(cylinder.get_radius(), cylinder.radius());
-  EXPECT_EQ(cylinder.get_length(), cylinder.length());
-  EXPECT_EQ(ellipsoid.get_a(), ellipsoid.a());
-  EXPECT_EQ(ellipsoid.get_b(), ellipsoid.b());
-  EXPECT_EQ(ellipsoid.get_c(), ellipsoid.c());
-  EXPECT_EQ(sphere.get_radius(), sphere.radius());
-#pragma GCC diagnostic pop
-}
-
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

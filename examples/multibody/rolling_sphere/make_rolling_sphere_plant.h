@@ -15,20 +15,35 @@ namespace bouncing_ball {
 /// inelastic collision (zero coefficient of restitution), i.e. energy is lost
 /// due to the collision.
 ///
+/// The hydroelastic compliance type of the ground and ball can be independently
+/// configured. Not every compliance configuration is compatible with every
+/// contact model; contact between strict hydroelastic contact will fail for
+/// two contacting objects with the same compliance type. So, it is important to
+/// use the resulting plant with a contact model consistent with the
+/// configuration of the ball and ground.
+///
 /// @param[in] radius
 ///   The radius of the ball.
 /// @param[in] mass
 ///   The mass of the ball.
 /// @param[in] elastic_modulus
 ///   The modulus of elasticity for the ball. Only used when modeled with the
-///   hydroelastic model.
+///   hydroelastic model. See @ref mbp_hydroelastic_materials_properties
+///   "Hydroelastic contact" documentation for details.
 /// @param[in] dissipation
 ///   The Hunt & Crossley dissipation constant for the ball. Only used with the
-///   hydroelastic model. See MultibodyPlant::set_hunt_crossley_dissipation().
+///   hydroelastic model.  See @ref mbp_hydroelastic_materials_properties
+///   "Hydroelastic contact" documentation for details.
 /// @param[in] surface_friction
 ///   The Coulomb's law coefficients of friction.
 /// @param[in] gravity_W
 ///   The acceleration of gravity vector, expressed in the world frame W.
+/// @param[in] rigid_sphere
+///   If `true`, the sphere will have a _rigid_ hydroelastic representation
+///   (soft otherwise).
+/// @param[in] soft_ground
+///   If 'true', the ground will have a _soft_ hydroelastic representation
+///   (rigid otherwise).
 /// @param scene_graph
 ///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
@@ -41,7 +56,7 @@ MakeBouncingBallPlant(
     double radius, double mass,
     double elastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
-    const Vector3<double>& gravity_W,
+    const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace bouncing_ball

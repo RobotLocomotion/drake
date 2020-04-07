@@ -19,7 +19,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port_base.h"
-#include "drake/systems/framework/system_base.h"
 
 namespace drake {
 namespace systems {
@@ -61,22 +60,14 @@ to be determined at runtime.
 - Calc() unconditionally computes the port's value.
 - Eval() updates a cached value if necessary.
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided:
-
-- double
-- AutoDiffXd
-- symbolic::Expression
-
-They are already available to link against in the containing library.
-No other values for T are currently supported. */
+@tparam_default_scalar
+*/
 template <typename T>
 class OutputPort : public OutputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
 
-  ~OutputPort() override;
+  ~OutputPort() override = default;
 
   /** Returns a reference to the up-to-date value of this output port contained
   in the given Context. This is the preferred way to obtain an output port's
@@ -115,7 +106,7 @@ class OutputPort : public OutputPortBase {
   template <typename ValueType, typename = std::enable_if_t<
       std::is_same<AbstractValue, ValueType>::value>>
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return DoEval(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
@@ -124,7 +115,7 @@ class OutputPort : public OutputPortBase {
         !std::is_base_of<BasicVector<T>, ValueType>::value ||
         std::is_same<BasicVector<T>, ValueType>::value)>>
   const ValueType& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     return PortEvalCast<ValueType>(DoEval(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
@@ -163,7 +154,7 @@ class OutputPort : public OutputPortBase {
   the Allocate() method. */
   void Calc(const Context<T>& context, AbstractValue* value) const {
     DRAKE_DEMAND(value != nullptr);
-    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
+    DRAKE_ASSERT_VOID(get_system_interface().ValidateContext(context));
     DRAKE_ASSERT_VOID(CheckValidOutputType(*value));
 
     DoCalc(context, value);
@@ -190,17 +181,20 @@ class OutputPort : public OutputPortBase {
   construction. See OutputPortBase::OutputPortBase() for the meaning of these
   parameters.
   @pre The `name` must not be empty.
-  @pre The `system` parameter must be the same object as the `system_base`
+  @pre The `system` parameter must be the same object as the `system_interface`
   parameter. */
-  // The System and SystemBase are provided separately since we don't have
+  // The system and system_interface are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  OutputPort(const System<T>* system, SystemBase* system_base, std::string name,
-             OutputPortIndex index, DependencyTicket ticket,
+  OutputPort(const System<T>* system,
+             internal::SystemMessageInterface* system_interface,
+             std::string name, OutputPortIndex index, DependencyTicket ticket,
              PortDataType data_type, int size)
-      : OutputPortBase(system_base, std::move(name), index, ticket, data_type,
-                       size),
+      : OutputPortBase(system_interface, std::move(name), index, ticket,
+                       data_type, size),
         system_{*system} {
-    DRAKE_DEMAND(static_cast<const void*>(system) == system_base);
+    // Check the precondition on identical parameters; note that comparing as
+    // void* is only valid because we have single inheritance.
+    DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
   }
 
   /** A concrete %OutputPort must provide a way to allocate a suitable object
@@ -282,12 +276,6 @@ void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
                     GetFullDescription()));
   }
 }
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-OutputPort<T>::~OutputPort() = default;
 
 }  // namespace systems
 }  // namespace drake

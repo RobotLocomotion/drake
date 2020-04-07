@@ -163,7 +163,8 @@ TEST_F(BVHTest, TestCopy) {
 
   // Confirm that it's a deep copy.
   std::function<void(const BvNode<SurfaceMesh<double>>&,
-                     const BvNode<SurfaceMesh<double>>&)> check_copy;
+                     const BvNode<SurfaceMesh<double>>&)>
+      check_copy;
   check_copy = [&check_copy](const BvNode<SurfaceMesh<double>>& orig,
                              const BvNode<SurfaceMesh<double>>& copy) {
     EXPECT_NE(&orig, &copy);
@@ -267,7 +268,7 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestComputeCentroid) {
   // The first face of our octahedron is a triangle with vertices at 1, 2, and
   // 3 along each respective axis, so its centroid should average out to 1/3,
   // 2/3, and 3/3.
-  EXPECT_TRUE(CompareMatrices(centroid, Vector3d(1./3., 2./3., 1.)));
+  EXPECT_TRUE(CompareMatrices(centroid, Vector3d(1. / 3., 2. / 3., 1.)));
 
   auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1., 2., 3.), 6);
   centroid = BVHTester::ComputeCentroid<VolumeMesh<double>>(
@@ -340,8 +341,8 @@ auto calc_corner_transform = [](const Aabb& a, const Aabb& b, const int axis,
   // Construct the rotation matrix, R_AB, that has meaningful (non-zero)
   // values everywhere for the remaining 2 axes and no symmetry.
   RotationMatrixd R_AB =
-      RotationMatrixd {AngleAxisd(M_PI / 5, Vector3d::Unit(axis1))} *
-      RotationMatrixd {AngleAxisd(-M_PI / 5, Vector3d::Unit(axis2))};
+      RotationMatrixd(AngleAxisd(M_PI / 5, Vector3d::Unit(axis1))) *
+      RotationMatrixd(AngleAxisd(-M_PI / 5, Vector3d::Unit(axis2)));
   // We define p_BoBq in Frame A by taking the minimum corner and applying
   // the constructed rotation.
   Vector3d p_BoBq_A = R_AB * (b.center() - b.half_width());
@@ -396,16 +397,16 @@ auto calc_edge_transform = [](const Aabb& a, const Aabb& b, const int a_axis,
   const double theta = M_PI / 5;
   // For cases Ax × Bx, Ay × By, and Az × Bz.
   if (a_axis == b_axis) {
-    R_AB = RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis1))} *
-           RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis2))};
-  // For cases Ax × By, Ay × Bz, and Az × Bx.
+    R_AB = RotationMatrixd(AngleAxisd(theta, Vector3d::Unit(b_axis1))) *
+           RotationMatrixd(AngleAxisd(theta, Vector3d::Unit(b_axis2)));
+    // For cases Ax × By, Ay × Bz, and Az × Bx.
   } else if (a_axis1 == b_axis) {
-    R_AB = RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis1))} *
-           RotationMatrixd {AngleAxisd(-theta, Vector3d::Unit(b_axis2))};
-  // For cases Ax × Bz, Ay × Bx, and Az × By.
+    R_AB = RotationMatrixd(AngleAxisd(theta, Vector3d::Unit(b_axis1))) *
+           RotationMatrixd(AngleAxisd(-theta, Vector3d::Unit(b_axis2)));
+    // For cases Ax × Bz, Ay × Bx, and Az × By.
   } else {
-    R_AB = RotationMatrixd {AngleAxisd(-theta, Vector3d::Unit(b_axis2))} *
-           RotationMatrixd {AngleAxisd(theta, Vector3d::Unit(b_axis1))};
+    R_AB = RotationMatrixd(AngleAxisd(-theta, Vector3d::Unit(b_axis2))) *
+           RotationMatrixd(AngleAxisd(theta, Vector3d::Unit(b_axis1)));
   }
   // We define p_BoBq in Frame B taking a point on the minimum edge aligned
   // with the given axis, offset it to be without symmetry, then convert it
@@ -522,9 +523,234 @@ GTEST_TEST(AABBTest, TestObbOverlap) {
       // Separate along a's y-axis and b's x-axis.
       EXPECT_FALSE(Aabb::HasOverlap(a, b, X_AB));
       X_AB =
-          calc_edge_transform(a, b, a_axis, b_axis, true  /* expect_overlap */);
+          calc_edge_transform(a, b, a_axis, b_axis, true /* expect_overlap */);
       // Separate along a's y-axis and b's x-axis.
       EXPECT_TRUE(Aabb::HasOverlap(a, b, X_AB));
+    }
+  }
+}
+
+// Tests Aaab-plane intersection. We have four frames:
+//
+//   B: the canonical frame the box is defined in (centered on Bo and aligned
+//      with B's axes).
+//   H: the frame in which the box B is positioned (i.e., R_HB = I, but
+//      Ho != Bo.)
+//   P: the frame the plane is defined in.
+//   Q: the frame the query is performed in.
+//
+// For simplicity, we'll define the plane with a normal in the Pz direction
+// passing through Po. We'll pose the box relative to the plane (so we can
+// easily reason about whether it penetrates or not). But then express the plane
+// in the query frame Q (and the pose of B in Q).
+GTEST_TEST(AabbTest, PlaneOverlap) {
+  // The aabb is *not* defined at the origin of the hierarchy frame.
+  const Vector3d p_HoBo_H = Vector3d{0.5, 0.25, -0.75};
+  const Vector3d half_width{1, 2, 3};
+  Aabb aabb_H{p_HoBo_H, half_width};
+
+  // Use brute force to find the position of the "lowest" corner of the box
+  // measured from Ho and expressed in frame P. "Lowest" means the corner with
+  // the smallest z-component. Note: the "z-component" trick only works because
+  // we expect the plane to be Pz = 0.
+  auto lowest_corner = [&half_width, &p_HoBo_H](const RotationMatrixd& R_PH) {
+    Vector3d p_HoCmin_P =
+        Vector3d::Constant(std::numeric_limits<double>::infinity());
+    for (const double x_sign : {-1.0, 1.0}) {
+      for (const double y_sign : {-1.0, 1.0}) {
+        for (const double z_sign : {-1.0, 1.0}) {
+          const Vector3d signs{x_sign, y_sign, z_sign};
+          const Vector3d p_BoC_H = half_width.cwiseProduct(signs);
+          const Vector3d p_HoC_P = R_PH * (p_HoBo_H + p_BoC_H);
+          if (p_HoC_P(2) < p_HoCmin_P(2)) {
+            p_HoCmin_P = p_HoC_P;
+          }
+        }
+      }
+    }
+    return p_HoCmin_P;
+  };
+
+  // Test epsilon is the product of three factors:
+  //  - machine epsilon
+  //  - Two orders of magnitude attributed to the various transformations.
+  //  - A scale factor that is the maximum of (box size, p_HoBo, p_PoHo)
+  const double kEps = 300 * std::numeric_limits<double>::epsilon();
+  // An arbitrary collection of orientations for the box's hierarchy frame H
+  // in the plane frame P.
+  std::vector<AngleAxisd> R_PHs{
+      AngleAxisd{0, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitZ()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      AngleAxisd{7 * M_PI / 6, Vector3d{-1, 2, -3}.normalized()},
+      AngleAxisd{12 * M_PI / 7, Vector3d{1, -2, 3}.normalized()}
+  };
+  // An arbitrary collection of poses of the plane in the query frame Q.
+  std::vector<RigidTransformd> X_QPs{
+      RigidTransformd{},  // Identity matrix.
+      RigidTransformd{
+          RotationMatrixd{AngleAxisd{M_PI / 4, Vector3d{1, 2, 3}.normalized()}},
+          Vector3d{1, 2, 3}},
+      RigidTransformd{RotationMatrixd{AngleAxisd{
+                          12 * M_PI / 7, Vector3d{-1, -1, 3}.normalized()}},
+                      Vector3d{-3, -1, 2}}
+  };
+  for (const auto& angle_axis_PH : R_PHs) {
+    const RotationMatrixd R_PH{angle_axis_PH};
+    const Vector3d p_HoCmin_P = lowest_corner(R_PH);
+    for (const auto& X_QP : X_QPs) {
+      // Define the plane in the query frame Q.
+      const Vector3d& Pz_Q = X_QP.rotation().col(2);
+      Plane<double> plane_Q{Pz_Q, X_QP.translation()};
+
+      // We position Ho such that Cmin lies on the z = 0 plane in Frame P. Given
+      // we know p_HoCmin_P, we know its current z-value. To put it at zero, we
+      // must displace it in the negative of that z value. The x- and y-values
+      // don't matter, so we pick values we know not to be zero.
+      {
+        // Place the minimum corner just "above" the plane.
+        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmin_P(2) + kEps}};
+        RigidTransformd X_PH{R_PH, p_PoHo_P};
+        EXPECT_FALSE(Aabb::HasOverlap(aabb_H, plane_Q, X_QP * X_PH));
+      }
+      {
+        // Place the minimum corner just "below" the plane.
+        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmin_P(2) - kEps}};
+        RigidTransformd X_PH{R_PH, p_PoHo_P};
+        EXPECT_TRUE(Aabb::HasOverlap(aabb_H, plane_Q, X_QP * X_PH));
+      }
+
+      // We repeat the same task but with Cmax. Cmax is the reflection of Cmin
+      // over Bo (the origin of the box). We'll express all vectors in the P
+      // frame so we can place that corner just above and below the Pz = 0
+      // plane using the same trick as documented above.
+      const Vector3d p_HoBo_P = R_PH * p_HoBo_H;
+      const Vector3d p_HoCmax_P = p_HoCmin_P + 2 * (p_HoBo_P - p_HoCmin_P);
+      {
+        // Put the maximum corner *on* the z = 0 plane in Frame P. The bulk of
+        // the box now extends *below* the plane; so bump it up epsilon to
+        // guarantee intersection.
+        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmax_P(2) + kEps}};
+        RigidTransformd X_PH{R_PH, p_PoHo_P};
+        EXPECT_TRUE(Aabb::HasOverlap(aabb_H, plane_Q, X_QP * X_PH));
+      }
+      {
+        // Put the maximum corner *on* the z = 0 plane in Frame P. The bulk of
+        // the box now extends *below* the plane; so bump it down epsilon to
+        // guarantee _no_ intersection.
+        const Vector3d p_PoHo_P{Vector3d{0.5, -0.25, -p_HoCmax_P(2) - kEps}};
+        RigidTransformd X_PH{R_PH, p_PoHo_P};
+        EXPECT_FALSE(Aabb::HasOverlap(aabb_H, plane_Q, X_QP * X_PH));
+      }
+    }
+  }
+}
+
+
+// Tests the determination of an Aabb intersects a half space.
+GTEST_TEST(AabbTest, HalfSpaceOverlap) {
+  // We'll rely on the pose to reposition the box.
+  const Vector3d p_HoBo_H = Vector3d{0.25, -0.5, 0.75};
+  const Vector3d half_width{1, 2, 3};
+  Aabb aabb_H{p_HoBo_H, half_width};
+
+  // Find the "lowest" corner of the aabb relative to the half space. That means
+  // the corner that has the smallest "z" value when expressed in Frame C.
+  // We return the corner measured in the H frame and expressed in the C frame.
+  // We use a brute force method to distinguish from the "cleverness" in the
+  // Aabb algorithm.
+  auto lowest_corner = [&half_width, &p_HoBo_H](const RotationMatrixd& R_CH) {
+    Vector3d p_HoVmin_C =
+        Vector3d::Constant(std::numeric_limits<double>::infinity());
+    for (const double x_sign : {-1.0, 1.0}) {
+      for (const double y_sign : {-1.0, 1.0}) {
+        for (const double z_sign : {-1.0, 1.0}) {
+          const Vector3d signs{x_sign, y_sign, z_sign};
+          const Vector3d p_BoV_H = half_width.cwiseProduct(signs);
+          const Vector3d p_HoV_H = p_HoBo_H + p_BoV_H;
+          const Vector3d p_HoV_C = R_CH * p_HoV_H;
+          if (p_HoV_C(2) < p_HoVmin_C(2)) {
+            p_HoVmin_C = p_HoV_C;
+          }
+        }
+      }
+    }
+    return p_HoVmin_C;
+  };
+
+  const double kEps = 100 * std::numeric_limits<double>::epsilon();
+  // An arbitrary collection of orientations.
+  std::vector<AngleAxisd> R_CHs{
+      AngleAxisd{0, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 2, Vector3d::UnitZ()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitX()},
+      AngleAxisd{M_PI / 4, Vector3d::UnitY()},
+      AngleAxisd{M_PI / 7, Vector3d{1, 2, 3}.normalized()},
+      AngleAxisd{7 * M_PI / 6, Vector3d{-1, 2, -3}.normalized()},
+      AngleAxisd{12 * M_PI / 7, Vector3d{1, -2, 3}.normalized()}
+  };
+  const HalfSpace hs_C;
+
+  for (const auto& angle_axis_CH : R_CHs) {
+    const RotationMatrixd R_CH{angle_axis_CH};
+    const Vector3d p_HoVmin_C = lowest_corner(R_CH);
+    // We position Ho such that Vmin lies on the z = 0 plane in Frame C. Given
+    // we know p_HoVmin_C, we know its current z-value. To put it at zero, we
+    // must displace it in the negative of that z value. The x- and y-values
+    // don't matter, so we pick values we know not to be zero.
+    {
+      // Place the minimum corner just "outside" the half space.
+      // Note: It's unclear why this particular test requires an epsilon twice
+      // as large (compared to the other tests) to work across all
+      // configurations of R_CH.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmin_C(2) + 2 * kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_FALSE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+    {
+      // Place the minimum corner just "below" the plane.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmin_C(2) - kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+
+    // As soon as the box penetrates the half space, no amount of movement
+    // against the surface normal direction will ever report a non-overlapping
+    // state. We sample from that sub-domain by pushing the maximum corner
+    // (Vmax) near the boundary and then push the whole box deep into the
+    // half space.
+    //
+    // Vmax is the reflection of Vmin over Bo (the origin of the box). We'll
+    // express all vectors in the C frame so we can place that corner just above
+    // and below the z = 0 plane in Frame C using the same trick as documented
+    // above.
+    const Vector3d p_HoBo_C = R_CH * p_HoBo_H;
+    const Vector3d p_HoVmax_C = p_HoVmin_C + 2 * (p_HoBo_C - p_HoVmin_C);
+    {
+      // Put the maximum corner just above the z = 0 plane in Frame C.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) + kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+
+    {
+      // Put the maximum corner just below the z = 0 plane in Frame C.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - kEps}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
+    }
+
+    {
+      // Bury the box deep in the half space.
+      const Vector3d p_CoHo_C{Vector3d{0.5, -0.25, -p_HoVmax_C(2) - 1e8}};
+      RigidTransformd X_CH{R_CH, p_CoHo_C};
+      EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
     }
   }
 }

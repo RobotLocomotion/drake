@@ -24,3 +24,9 @@ class TestSnoptSolver(unittest.TestCase):
             numpy_compare.assert_float_allclose(
                 result.GetSolution(x), [0., 1.], atol=1E-7)
             self.assertEqual(result.get_solver_details().info, 1)
+            np.testing.assert_allclose(
+                result.get_solver_details().xmul, np.array([0., -1]))
+            np.testing.assert_allclose(
+                result.get_solver_details().F, np.array([0, 1.]))
+            np.testing.assert_allclose(
+                result.get_solver_details().Fmul, np.array([0, 1.]))

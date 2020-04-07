@@ -28,7 +28,7 @@ namespace systems {
 /// structure, but which owns the referenced ContinuousState objects, regardless
 /// of whether the original had ownership.
 ///
-/// @tparam T The type of the output data. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class DiagramContinuousState final: public ContinuousState<T> {
  public:
@@ -65,9 +65,10 @@ class DiagramContinuousState final: public ContinuousState<T> {
   /// ContinuousState::Clone() method but with a more-specific return type so
   /// you don't have to downcast.
   std::unique_ptr<DiagramContinuousState> Clone() const {
-    // Note that DoClone() below cannot be overridden so we can count on the
-    // concrete type being DiagramContinuousState.
-    return static_pointer_cast<DiagramContinuousState>(DoClone());
+    // We are sure of the type here because DoClone() is final.  However,
+    // we'll still use the `..._or_throw` spelling as a sanity check.
+    return dynamic_pointer_cast_or_throw<DiagramContinuousState>(
+        ContinuousState<T>::Clone());
   }
 
   int num_substates() const { return static_cast<int>(substates_.size()); }

@@ -34,8 +34,8 @@ PortBase::~PortBase() = default;
 std::string PortBase::GetFullDescription() const {
   return fmt::format(
       "{}Port[{}] ({}) of System {} ({})",
-      kind_string_, index_, name_, get_system_base().GetSystemPathname(),
-      NiceTypeName::RemoveNamespaces(get_system_base().GetSystemType()));
+      kind_string_, index_, name_, get_system_interface().GetSystemPathname(),
+      NiceTypeName::RemoveNamespaces(get_system_interface().GetSystemType()));
 }
 
 void PortBase::ThrowBadCast(

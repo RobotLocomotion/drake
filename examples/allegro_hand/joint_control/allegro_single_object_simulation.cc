@@ -24,6 +24,7 @@
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -45,13 +46,13 @@ DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
               "Desired duration of the simulation in seconds");
 DEFINE_bool(use_right_hand, true,
             "Which hand to model: true for right hand or false for left hand");
-DEFINE_double(max_time_step, 1.5e-4,
-              "Simulation time step used for intergrator.");
 DEFINE_bool(add_gravity, false,
             "Whether adding gravity (9.81 m/s^2) in the simulation");
-DEFINE_double(target_realtime_rate, 1,
-              "Desired rate relative to real time.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
+DEFINE_double(
+    mbp_discrete_update_period, 1.5e-4,
+    "The fixed-time step period (in seconds) of discrete updates for the "
+    "multibody plant modeled as a discrete system. Strictly positive. "
+    "Set to zero for a continuous plant model.");
 
 void DoMain() {
   DRAKE_DEMAND(FLAGS_simulation_time > 0);
@@ -64,7 +65,7 @@ void DoMain() {
   scene_graph.set_name("scene_graph");
 
   MultibodyPlant<double>& plant =
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step);
+      *builder.AddSystem<MultibodyPlant>(FLAGS_mbp_discrete_update_period);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   std::string hand_model_path;
   if (FLAGS_use_right_hand)
@@ -185,19 +186,16 @@ void DoMain() {
       p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095));
   plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
-  // Set up simulator.
-  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-  simulator.set_publish_every_time_step(true);
-  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.Initialize();
-
   // set the initial command for the hand
   hand_command_receiver.set_initial_position(
       &diagram->GetMutableSubsystemContext(hand_command_receiver,
-                                           &simulator.get_mutable_context()),
+                                           diagram_context.get()),
       VectorX<double>::Zero(plant.num_actuators()));
 
-  simulator.AdvanceTo(FLAGS_simulation_time);
+  // Set up simulator.
+  auto simulator =
+      MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
+  simulator->AdvanceTo(FLAGS_simulation_time);
 }
 
 }  // namespace

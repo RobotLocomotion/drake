@@ -2,6 +2,9 @@
 
 #include <set>
 
+#include "drake/common/drake_throw.h"
+#include "drake/common/nice_type_name.h"
+
 using std::make_shared;
 using std::shared_ptr;
 using Eigen::MatrixXd;
@@ -9,6 +12,44 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace solvers {
+
+std::ostream& EvaluatorBase::Display(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  const int num_vars = this->num_vars();
+  DRAKE_THROW_UNLESS(vars.rows() == num_vars || num_vars == Eigen::Dynamic);
+  return this->DoDisplay(os, vars);
+}
+
+std::ostream& EvaluatorBase::Display(std::ostream& os) const {
+  if (this->num_vars() == Eigen::Dynamic) {
+    symbolic::Variable dynamic_var("dynamic_sized_variable");
+    return this->DoDisplay(os, Vector1<symbolic::Variable>(dynamic_var));
+  }
+  return this->DoDisplay(
+      os, symbolic::MakeVectorContinuousVariable(this->num_vars(), "$"));
+}
+
+std::ostream& EvaluatorBase::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  // Display the evaluator's most derived type name.
+  os << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this));
+
+  // Append the description (when provided).
+  const std::string& description = get_description();
+  if (!description.empty()) {
+    os << " described as '" << description << "'";
+  }
+
+  // Append the bound decision variables (when provided).
+  const int vars_rows = vars.rows();
+  os << " with " << vars_rows << " decision variables";
+  for (int i = 0; i < vars_rows; ++i) {
+    os << " " << vars(i).get_name();
+  }
+
+  return os;
+}
+
 namespace {
 // Check if each entry of gradient_sparsity_pattern is within [0, rows) and [0,
 // cols), and if there are any repeated entries in gradient_sparsity_pattern.
@@ -43,6 +84,10 @@ void EvaluatorBase::SetGradientSparsityPattern(
                                  num_vars());
   }
   gradient_sparsity_pattern_.emplace(gradient_sparsity_pattern);
+}
+
+std::ostream& operator<<(std::ostream& os, const EvaluatorBase& e) {
+  return e.Display(os);
 }
 
 void PolynomialEvaluator::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

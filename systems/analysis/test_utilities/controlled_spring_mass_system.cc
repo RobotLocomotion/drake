@@ -1,6 +1,5 @@
 #include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
 
-#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/demultiplexer.h"
@@ -118,8 +117,8 @@ const {
   return *plant_;
 }
 
-template class PidControlledSpringMassSystem<double>;
-template class PidControlledSpringMassSystem<AutoDiffXd>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::PidControlledSpringMassSystem)

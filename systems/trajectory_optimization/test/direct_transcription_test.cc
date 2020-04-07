@@ -312,7 +312,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSystemTest) {
   BasicVector<double> final_state(Eigen::VectorXd::Zero(2));
 
   DRAKE_DEMAND(initial_state.size() == 2);
-  DRAKE_DEMAND(final_state.size() ==2);
+  DRAKE_DEMAND(final_state.size() == 2);
 
   // Set the initial and final state constraints.
   const int kTheta_index = 0, kThetadot_index = 1;

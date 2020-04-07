@@ -106,6 +106,97 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
   check_gradient(Eigen::Vector3d(0, -1, -2));
 }
 
+// Implements f(x, y) = 0.5 * kHessian * (x^2 + y^2).
+const double kHessian = 5.0;
+template <typename T>
+void Paraboloid(const Vector2<T>& x, Vector1<T>* y) {
+  (*y)(0) = 0.5 * kHessian * x.squaredNorm();
+}
+
+// This test verifies the correct implementation of ComputeNumericalGradient()
+// by using it to compute the gradient of the simple Paraboloid() function
+// defined above. We use automatic differentiation to compute a reference
+// solution. In addition, we test we can propagate automatically computed
+// gradients through ComputeNumericalGradient() when using AutoDiffd. The
+// result is an approximation to the Hessian of the Paraboloid() function.
+GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
+  // We define a lambda so that we can perform a number of tests at different
+  // points x in the plane.
+  auto check_gradient = [](const Vector2<double>& x) {
+    // I need to create a std::function, rather than passing ToyFunction<double>
+    // to ComputeNumericalGradient directly, as template deduction doesn't work
+    // in the implicit conversion from function object to std::function.
+    std::function<void(const Vector2<double>&, Vector1<double>*)>
+        ParaboloidDouble = Paraboloid<double>;
+    auto J = ComputeNumericalGradient(
+        ParaboloidDouble, x,
+        NumericalGradientOption{NumericalGradientMethod::kForward});
+
+    typedef AutoDiffd<2> AD2d;
+    typedef Vector2<AD2d> Vector2AD2d;
+    typedef Vector1<AD2d> Vector1AD2d;
+
+    Vector2AD2d x_autodiff = math::initializeAutoDiff<2>(x);
+    Vector1AD2d y_autodiff;
+    Paraboloid(x_autodiff, &y_autodiff);
+    const double tol = 2.0e-7;
+    EXPECT_TRUE(CompareMatrices(J, autoDiffToGradientMatrix(y_autodiff), tol));
+
+    // Compute the Hessian using the autodiff version of
+    // ComputeNumericalGradient().
+    std::function<void(const Vector2AD2d&, Vector1AD2d*)> ParaboloidAD3d =
+        Paraboloid<AD2d>;
+
+    // With forward differencing.
+    auto JAD3d = ComputeNumericalGradient(
+        ParaboloidAD3d, x_autodiff,
+        NumericalGradientOption{NumericalGradientMethod::kForward});
+    Matrix2<double> H = autoDiffToGradientMatrix(JAD3d);
+    Matrix2<double> H_exact = kHessian * Matrix2<double>::Identity();
+    EXPECT_TRUE(CompareMatrices(H, H_exact, tol));
+
+    // With backward differencing.
+    JAD3d = ComputeNumericalGradient(
+        ParaboloidAD3d, x_autodiff,
+        NumericalGradientOption{NumericalGradientMethod::kBackward});
+    H = autoDiffToGradientMatrix(JAD3d);
+    H_exact = kHessian * Matrix2<double>::Identity();
+    EXPECT_TRUE(CompareMatrices(H, H_exact, tol));
+
+    // With central differencing.
+    JAD3d = ComputeNumericalGradient(
+        ParaboloidAD3d, x_autodiff,
+        NumericalGradientOption{NumericalGradientMethod::kCentral});
+    H = autoDiffToGradientMatrix(JAD3d);
+    H_exact = kHessian * Matrix2<double>::Identity();
+    // We can tighten the tolerance significantly when using central
+    // differences.
+    EXPECT_TRUE(CompareMatrices(H, H_exact, tol / 1000));
+
+    // Test for symbolic::Expression, at least for constant expressions.
+    typedef Vector2<symbolic::Expression> Vector2Expr;
+    typedef Vector1<symbolic::Expression> Vector1Expr;
+    std::function<void(const Vector2Expr&, Vector1Expr*)> ParaboloidExpr =
+        Paraboloid<symbolic::Expression>;
+
+    // With forward differencing.
+    const symbolic::Expression x1(x(0));
+    const symbolic::Expression x2(x(1));
+    const Vector2Expr x_symbolic(x1, x2);
+    auto JExpr = ComputeNumericalGradient(
+        ParaboloidExpr, x_symbolic,
+        NumericalGradientOption{NumericalGradientMethod::kForward});
+    const RowVector2<double> JExpr_to_double(ExtractDoubleOrThrow(JExpr(0)),
+                                             ExtractDoubleOrThrow(JExpr(1)));
+    EXPECT_TRUE(CompareMatrices(JExpr_to_double, J, 0));
+  };
+
+  // We perform our tests on a set of arbitrary points.
+  check_gradient(Eigen::Vector2d::Zero());
+  check_gradient(Eigen::Vector2d(0, 1));
+  check_gradient(Eigen::Vector2d(-1, -2));
+}
+
 class ToyEvaluator : public solvers::EvaluatorBase {
  public:
   ToyEvaluator() : solvers::EvaluatorBase(2, 3) {}

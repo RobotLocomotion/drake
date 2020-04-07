@@ -39,21 +39,17 @@ drake_cc_binary(
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
     "//examples/atlas",
-    "//examples/contact_model",
     "//examples/compass_gait",
-    "//examples/double_pendulum",
     "//examples/irb140",
     "//examples/kuka_iiwa_arm",
     "//examples/manipulation_station",
     "//examples/multibody/cart_pole",
-    "//examples/particles",
     "//examples/pendulum",
     "//examples/planar_gripper",
     "//examples/pr2",
     "//examples/quadrotor",
     "//examples/rimless_wheel",
     "//examples/simple_four_bar",
-    "//examples/valkyrie",
     "//examples/zmp",
 ]
 

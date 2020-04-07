@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"

@@ -1,11 +1,11 @@
 #include "drake/geometry/render/render_engine_ospray.h"
 
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
 #include <vtkCamera.h>
-#include <vtkCubeSource.h>
 #include <vtkCylinderSource.h>
 #include <vtkOBJReader.h>
 #include <vtkOSPRayLightNode.h>
@@ -202,11 +202,9 @@ void RenderEngineOspray::ImplementGeometry(const HalfSpace&, void* user_data) {
 }
 
 void RenderEngineOspray::ImplementGeometry(const Box& box, void* user_data) {
-  vtkNew<vtkCubeSource> cube;
-  cube->SetXLength(box.width());
-  cube->SetYLength(box.depth());
-  cube->SetZLength(box.height());
-  ImplementGeometry(cube.GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(CreateVtkBox(box, data->properties).GetPointer(),
+                    user_data);
 }
 
 void RenderEngineOspray::ImplementGeometry(const Capsule& capsule,

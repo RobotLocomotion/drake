@@ -41,7 +41,6 @@ load(
 load(
     "@drake//tools/workspace:execute.bzl",
     "execute_and_return",
-    "execute_or_fail",
 )
 
 def snopt_repository(

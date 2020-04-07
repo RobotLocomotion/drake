@@ -171,7 +171,8 @@ class InternalGeometry {
    engine's understanding as well.  */
   //@{
 
-  /** Assigns a proximity role to this geometry.  */
+  /** Assigns a proximity role to this geometry, replacing any properties that
+   were previously assigned.  */
   void SetRole(ProximityProperties properties) {
     proximity_props_ = std::move(properties);
   }

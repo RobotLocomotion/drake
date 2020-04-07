@@ -16,7 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_vector_gen_library(
     name = "rod2d_state_vector",
-    srcs = ["rod2d_state_vector.named_vector"],
+    srcs = ["rod2d_state_vector_named_vector.yaml"],
 )
 
 drake_cc_binary(
@@ -45,7 +45,6 @@ drake_cc_library(
     srcs = ["rod2d.cc"],
     hdrs = [
         "rod2d.h",
-        "rod2d-inl.h",
     ],
     deps = [
         ":rod2d_state_vector",

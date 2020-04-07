@@ -6,6 +6,7 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -14,6 +15,12 @@ namespace render {
 
 // Creates a z-axis aligned VTK capsule.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule);
+
+// Creates a box with texture coordinates such that the image is stretched
+// over each face. The texture can be optionally scaled/tiled via texture
+// scale properties in the given properties.
+vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
+    const Box& box, const PerceptionProperties& properties);
 
 // Creates a VTK ellipsoid scaled from a sphere.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(

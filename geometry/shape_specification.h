@@ -110,9 +110,6 @@ class Sphere final : public Shape {
    is considered valid. */
   explicit Sphere(double radius);
 
-  DRAKE_DEPRECATED("2020-03-01", "Use radius() instead.")
-  double get_radius() const { return radius_; }
-
   double radius() const { return radius_; }
 
  private:
@@ -129,11 +126,6 @@ class Cylinder final : public Shape {
    @throws std::logic_error if `radius` or `length` are not strictly positive.
    */
   Cylinder(double radius, double length);
-
-  DRAKE_DEPRECATED("2020-03-01", "Use radius() instead.")
-  double get_radius() const { return radius_; }
-  DRAKE_DEPRECATED("2020-03-01", "Use length() instead.")
-  double get_length() const { return length_; }
 
   double radius() const { return radius_; }
   double length() const { return length_; }
@@ -188,11 +180,6 @@ class Capsule final : public Shape {
    */
   Capsule(double radius, double length);
 
-  DRAKE_DEPRECATED("2020-03-01", "Use radius() instead.")
-  double get_radius() const { return radius_; }
-  DRAKE_DEPRECATED("2020-03-01", "Use length() instead.")
-  double get_length() const { return length_; }
-
   double radius() const { return radius_; }
   double length() const { return length_; }
 
@@ -218,13 +205,6 @@ class Ellipsoid final : public Shape {
    @throws std::logic_error if `a`, `b`, or `c` are not strictly positive.
    */
   Ellipsoid(double a, double b, double c);
-
-  DRAKE_DEPRECATED("2020-03-01", "Use a() instead.")
-  double get_a() const { return radii_(0); }
-  DRAKE_DEPRECATED("2020-03-01", "Use b() instead.")
-  double get_b() const { return radii_(1); }
-  DRAKE_DEPRECATED("2020-03-01", "Use c() instead.")
-  double get_c() const { return radii_(2); }
 
   double a() const { return radii_(0); }
   double b() const { return radii_(1); }

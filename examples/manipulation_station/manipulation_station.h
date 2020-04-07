@@ -3,6 +3,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -120,12 +121,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// Note that you *must* call Finalize() before you can use this class as a
 /// System.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-///   - double
-///
+/// @tparam_double_only
 /// @ingroup manipulation_station_systems
 template <typename T>
 class ManipulationStation : public systems::Diagram<T> {

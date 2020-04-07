@@ -25,18 +25,11 @@ namespace internal {
 ///   expressed in the world frame W.
 /// - Generalized accelerations `vdot` for the entire model.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class AccelerationKinematicsCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
 
   /// Constructs an acceleration kinematics cache entry for the given
   /// MultibodyTreeTopology.
@@ -131,8 +124,6 @@ class AccelerationKinematicsCache {
   std::vector<SpatialAcceleration<T>> A_WB_pool_;  // Indexed by BodyNodeIndex.
   VectorX<T> vdot_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(AccelerationKinematicsCache);
 
 }  // namespace internal
 }  // namespace multibody

@@ -388,6 +388,16 @@ Polynomial::Polynomial(const Expression& e, Variables indeterminates)
 
 const Variables& Polynomial::indeterminates() const { return indeterminates_; }
 
+void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
+  if (new_indeterminates.IsSupersetOf(indeterminates_) &&
+      intersect(decision_variables_, new_indeterminates).empty()) {
+    indeterminates_ = new_indeterminates;
+  } else {
+    // TODO(soonho-tri): Optimize this part.
+    *this = Polynomial{ToExpression(), new_indeterminates};
+  }
+}
+
 const Variables& Polynomial::decision_variables() const {
   return decision_variables_;
 }
@@ -546,6 +556,14 @@ Polynomial& Polynomial::operator+=(const double c) {
   return AddProduct(c, Monomial{});
 }
 
+Polynomial& Polynomial::operator+=(const Variable& v) {
+  if (indeterminates().include(v)) {
+    return AddProduct(1.0, Monomial{v});
+  } else {
+    return AddProduct(v, Monomial{});
+  }
+}
+
 Polynomial& Polynomial::operator-=(const Polynomial& p) {
   // No need to call CheckInvariant() since it's called inside of operator+=.
   return *this += -p;
@@ -559,6 +577,14 @@ Polynomial& Polynomial::operator-=(const Monomial& m) {
 Polynomial& Polynomial::operator-=(const double c) {
   // No need to call CheckInvariant() since it's called inside of Add.
   return AddProduct(-c, Monomial{});
+}
+
+Polynomial& Polynomial::operator-=(const Variable& v) {
+  if (indeterminates().include(v)) {
+    return AddProduct(-1.0, Monomial{v});
+  } else {
+    return AddProduct(-v, Monomial{});
+  }
 }
 
 Polynomial& Polynomial::operator*=(const Polynomial& p) {
@@ -602,6 +628,18 @@ Polynomial& Polynomial::operator*=(const double c) {
   return *this;
 }
 
+Polynomial& Polynomial::operator*=(const Variable& v) {
+  if (indeterminates().include(v)) {
+    return *this *= Monomial{v};
+  } else {
+    for (auto& p : monomial_to_coefficient_map_) {
+      Expression& coeff = p.second;
+      coeff *= v;
+    }
+    return *this;
+  }
+}
+
 namespace {
 bool PolynomialEqual(const Polynomial& p1, const Polynomial& p2,
                      bool do_expansion) {
@@ -643,6 +681,12 @@ bool Polynomial::EqualTo(const Polynomial& p) const {
 
 bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
   return PolynomialEqual(*this, p, true);
+}
+
+bool Polynomial::CoefficientsAlmostEqual(const Polynomial& p,
+                                         double tol) const {
+  return PolynomialEqual((*this - p).RemoveTermsWithSmallCoefficients(tol),
+                         Polynomial(0), true);
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {
@@ -704,7 +748,7 @@ void Polynomial::CheckInvariant() const {
   }
 }
 
-Polynomial operator-(Polynomial p) { return -1 * p; }
+Polynomial operator-(const Polynomial& p) { return -1 * p; }
 Polynomial operator+(Polynomial p1, const Polynomial& p2) { return p1 += p2; }
 Polynomial operator+(Polynomial p, const Monomial& m) { return p += m; }
 Polynomial operator+(const Monomial& m, Polynomial p) { return p += m; }
@@ -719,6 +763,8 @@ Polynomial operator+(const Monomial& m, const double c) {
 Polynomial operator+(const double c, const Monomial& m) {
   return c + Polynomial(m);
 }
+Polynomial operator+(Polynomial p, const Variable& v) { return p += v; }
+Polynomial operator+(const Variable& v, Polynomial p) { return p += v; }
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
 Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
@@ -736,6 +782,10 @@ Polynomial operator-(const Monomial& m, const double c) {
 Polynomial operator-(const double c, const Monomial& m) {
   return c - Polynomial(m);
 }
+Polynomial operator-(Polynomial p, const Variable& v) { return p -= v; }
+Polynomial operator-(const Variable& v, const Polynomial& p) {
+  return Polynomial(v, p.indeterminates()) - p;
+}
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
@@ -744,10 +794,33 @@ Polynomial operator*(const double c, Polynomial p) { return p *= c; }
 Polynomial operator*(Polynomial p, const double c) { return p *= c; }
 Polynomial operator*(const Monomial& m, double c) { return Polynomial(m) * c; }
 Polynomial operator*(double c, const Monomial& m) { return c * Polynomial(m); }
+Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
+Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
+
+Polynomial operator/(Polynomial p, const double v) {
+  for (auto& item : p.monomial_to_coefficient_map_) {
+    item.second /= v;
+  }
+  return p;
+}
 
 Polynomial pow(const Polynomial& p, int n) {
   // TODO(soonho-tri): Optimize this by not relying on ToExpression() method.
   return Polynomial{pow(p.ToExpression(), n), p.indeterminates()};
+}
+
+MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
+                             const Eigen::Ref<const VectorX<Variable>>& vars) {
+  DRAKE_DEMAND(vars.size() != 0);
+  const auto n{f.size()};
+  const auto m{vars.size()};
+  MatrixX<Polynomial> J(n, m);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < m; ++j) {
+      J(i, j) = f[i].Differentiate(vars[j]);
+    }
+  }
+  return J;
 }
 
 ostream& operator<<(ostream& os, const Polynomial& p) {

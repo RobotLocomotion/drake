@@ -1,12 +1,14 @@
 #include "drake/solvers/linear_system_solver.h"
 
 #include <cstring>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -24,6 +26,11 @@ void LinearSystemSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "LinearSystemSolver doesn't support the feature of variable scaling.");
+  }
+
   // The initial guess doesn't help us, and we don't offer any tuning options.
   unused(initial_guess, merged_options);
   size_t num_constraints = 0;

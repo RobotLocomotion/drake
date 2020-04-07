@@ -65,6 +65,9 @@ drake_jupyter_py_binary(
 # Ensure the notebook fails as expected.
 drake_py_unittest(
     name = "failing_notebook_test",
+    # TODO(eric.cousineau): Reset default flaky value to False once #12536
+    # is resolved.
+    flaky = 1,
     deps = [
         ":failing_notebook",
         ":failing_notebook_deprecation",

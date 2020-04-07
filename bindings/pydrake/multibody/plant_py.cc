@@ -249,28 +249,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc);
-    // Bind deprecated overload.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("CalcFrameGeometricJacobianExpressedInWorld",
-        WrapDeprecated(
-            cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc_deprecated,
-            [](const Class* self, const Context<T>& context,
-                const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
-              MatrixX<T> Jv_WF(6, self->num_velocities());
-              self->CalcFrameGeometricJacobianExpressedInWorld(
-                  context, frame_B, p_BoFo_B, &Jv_WF);
-              return Jv_WF;
-            }),
-        py::arg("context"), py::arg("frame_B"),
-        py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
-        cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc_deprecated);
-#pragma GCC diagnostic pop
-    cls  // BR
-         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
-         // overload that (a) services MBP directly and (b) uses body
-         // association that is less awkward than implicit BodyNodeIndex.
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
+        // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
+        // overload that (a) services MBP directly and (b) uses body
+        // association that is less awkward than implicit BodyNodeIndex.
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -432,10 +414,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcForceElementsContribution",
             &Class::CalcForceElementsContribution, py::arg("context"),
             py::arg("forces"), cls_doc.CalcForceElementsContribution.doc)
-        .def("CalcPotentialEnergy", &Class::CalcPotentialEnergy,
-            py::arg("context"), cls_doc.CalcPotentialEnergy.doc)
-        .def("CalcConservativePower", &Class::CalcConservativePower,
-            py::arg("context"), cls_doc.CalcConservativePower.doc)
         .def("GetPositionLowerLimits", &Class::GetPositionLowerLimits,
             cls_doc.GetPositionLowerLimits.doc)
         .def("GetPositionUpperLimits", &Class::GetPositionUpperLimits,
@@ -676,6 +654,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<const systems::OutputPort<T>&,
                 multibody::ModelInstanceIndex>(&Class::get_state_output_port),
             py_reference_internal, cls_doc.get_state_output_port.doc_1args)
+        .def("get_generalized_acceleration_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_generalized_acceleration_output_port),
+            py_reference_internal,
+            cls_doc.get_generalized_acceleration_output_port.doc_0args)
+        .def("get_generalized_acceleration_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_generalized_acceleration_output_port),
+            py::arg("model_instance"), py_reference_internal,
+            cls_doc.get_generalized_acceleration_output_port.doc_1args)
+        .def("get_reaction_forces_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_reaction_forces_output_port),
+            py_reference_internal, cls_doc.get_reaction_forces_output_port.doc)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),

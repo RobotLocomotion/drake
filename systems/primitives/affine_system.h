@@ -15,8 +15,6 @@ namespace systems {
  * Base class for a discrete- or continuous-time, time-varying affine
  * system, with potentially time-varying coefficients.
  *
- * @ingroup primitive_systems
- *
  * @system{TimeVaryingAffineSystem,
  *    @input_port{u(t)},
  *    @output_port{y(t)}
@@ -33,8 +31,9 @@ namespace systems {
  *   @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f]
  * where `y` denotes the output vector.
  *
- * @tparam T The scalar element type, which must be a valid Eigen scalar.
- *
+ * @tparam_default_scalar
+ * @ingroup primitive_systems
+ * *
  * @see AffineSystem
  */
 template <typename T>
@@ -62,6 +61,26 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   virtual VectorX<T> y0(const T& t) const = 0;
   /// @}
 
+  /// Configures the value that will be assigned to the state vector in
+  /// `SetDefaultContext`. `x0` must be a vector of length `num_states`.
+  void configure_default_state(const Eigen::Ref<const VectorX<T>>& x0);
+
+  /// Configures the Gaussian distribution over state vectors used in the
+  /// `SetRandomContext` methods.  The mean of the distribution will be the
+  /// default state (@see configure_default_state()). `covariance` must have
+  /// size `num_states` by `num_states` and must be symmetric and positive
+  /// semi-definite.
+  void configure_random_state(
+      const Eigen::Ref<const Eigen::MatrixXd>& covariance);
+
+  /// Returns the configured default state.  @see configure_default_state().
+  const VectorX<T>& get_default_state() const { return x0_; }
+
+  /// Returns the configured random state covariance.
+  const Eigen::MatrixXd get_random_state_covariance() const {
+    return Sqrt_Sigma_x0_ * Sqrt_Sigma_x0_;
+  }
+
   double time_period() const { return time_period_; }
   int num_states() const { return num_states_; }
   int num_inputs() const { return num_inputs_; }
@@ -81,6 +100,21 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   TimeVaryingAffineSystem(SystemScalarConverter converter,
                           int num_states, int num_inputs, int num_outputs,
                           double time_period);
+
+  /// Helper method.  Derived classes should call this from the
+  // scalar-converting copy constructor.
+  template <typename U>
+  void ConfigureDefaultAndRandomStateFrom(
+      const TimeVaryingAffineSystem<U>& other) {
+    // Convert default state from U -> double -> T.
+    VectorX<T> x0(other.num_states());
+    const VectorX<U>& other_x0 = other.get_default_state();
+    for (int i = 0; i < other.num_states(); i++) {
+      x0[i] = ExtractDoubleOrThrow(other_x0[i]);
+    }
+    this->configure_default_state(x0);
+    this->configure_random_state(other.get_random_state_covariance());
+  }
 
   /// Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
   /// `C(t)`, `D(t)`, and `y0(t)` with runtime size checks.  Derived classes
@@ -102,11 +136,22 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
       drake::systems::DiscreteValues<T>* updates) const override;
 
+  /// Sets the initial conditions.
+  void SetDefaultState(const Context<T>& context,
+                       State<T>* state) const override;
+
+  /// Sets the random initial conditions.
+  void SetRandomState(const Context<T>& context, State<T>* state,
+      RandomGenerator* generator) const override;
+
  private:
   const int num_states_{0};
   const int num_inputs_{0};
   const int num_outputs_{0};
   const double time_period_{0.0};
+
+  VectorX<T> x0_;     // Default state.
+  Eigen::MatrixXd Sqrt_Sigma_x0_;  // Square root of state covariance matrix.
 };
 
 /// A discrete OR continuous affine system (with constant coefficients).
@@ -130,16 +175,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 /// In both cases, the system will have the output:
 ///   @f[y = C x + D u + y_0, @f]
 ///
-/// @tparam T The scalar element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 ///
 /// @ingroup primitive_systems
 ///
@@ -243,6 +279,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   const Eigen::MatrixXd C_;
   const Eigen::MatrixXd D_;
   const Eigen::VectorXd y0_;
+  const bool has_meaningful_D_{};
 };
 
 }  // namespace systems

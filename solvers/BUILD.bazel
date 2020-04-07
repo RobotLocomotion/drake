@@ -128,6 +128,7 @@ drake_cc_library(
         ":function",
         "//common:autodiff",
         "//common:essential",
+        "//common:nice_type_name",
         "//common:polynomial",
         "//common:symbolic",
         "//math:autodiff",
@@ -254,8 +255,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "solver_options",
-    srcs = ["solver_options.cc"],
-    hdrs = ["solver_options.h"],
+    srcs = [
+        "common_solver_option.cc",
+        "solver_options.cc",
+    ],
+    hdrs = [
+        "common_solver_option.h",
+        "solver_options.h",
+    ],
     deps = [
         ":solver_id",
     ],
@@ -360,6 +367,7 @@ drake_cc_library(
     srcs = ["branch_and_bound.cc"],
     hdrs = ["branch_and_bound.h"],
     deps = [
+        ":choose_best_solver",
         ":gurobi_solver",
         ":mathematical_program",
         ":scs_solver",
@@ -1043,6 +1051,7 @@ drake_cc_googletest(
         ":constraint",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
         "//math:gradient",
     ],

@@ -129,9 +129,22 @@ GTEST_TEST(SolverBaseTest, SolveAndReturn) {
   const MathematicalProgramResult result = dut.Solve(prog, {}, {});
   EXPECT_EQ(result.get_solver_id(), StubSolverBase::id());
   EXPECT_TRUE(result.is_success());
+  // Confirm that default arguments work, too.
+  const MathematicalProgramResult result2 = dut.Solve(prog);
+  EXPECT_TRUE(result2.is_success());
+
   // We don't bother checking additional result details here, because we know
   // that the solve-and-return method is implemented as a thin shim atop the
   // solve-as-output-argument method.
+}
+
+GTEST_TEST(SolverBaseTest, InitialGuessSizeError) {
+  MathematicalProgram prog;
+  prog.NewContinuousVariables<2>();
+  StubSolverBase dut;
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Solve(prog, Eigen::VectorXd(3), {}),
+                              std::invalid_argument,
+                              "Solve expects initial guess of size 2, got 3.");
 }
 
 }  // namespace

@@ -496,6 +496,43 @@ class MathematicalProgram {
       const symbolic::Variables& indeterminates, int degree);
 
   /**
+   * Creates a symbolic polynomial from the given expression `e`. It uses this
+   * MathematicalProgram's `indeterminates()` in constructing the polynomial.
+   *
+   * This method helps a user create a polynomial with the right set of
+   * indeterminates which are declared in this MathematicalProgram. We recommend
+   * users to use this method over an explicit call to Polynomial constructors
+   * to avoid a possible mismatch between this MathematicalProgram's
+   * indeterminates and the user-specified indeterminates (or unspecified, which
+   * then includes all symbolic variables in the expression `e`). Consider the
+   * following example.
+   *
+   *   e = ax + bx + c
+   *
+   *   MP.indeterminates()     = {x}
+   *   MP.decision_variables() = {a, b}
+   *
+   * - `MP.MakePolynomial(e)` create a polynomial, `(a + b)x + c`.  Here only
+   *   `x` is an indeterminate of this polynomial.
+   *
+   * - In contrast, `symbolic::Polynomial(e)` returns `ax + bx + c` where all
+   *   variables `{a, b, x}` are indeterminates. Note that this is problematic
+   *   as its indeterminates, `{a, b, x}` and the MathematicalProgram's decision
+   *   variables, `{a, b}` overlap.
+   *
+   * @note This function does not require that the decision variables in `e` is
+   * a subset of the decision variables in MathematicalProgram.
+   */
+  [[nodiscard]] symbolic::Polynomial MakePolynomial(
+      const symbolic::Expression& e) const;
+
+  /**
+   * Reparses the polynomial `p` using this MathematicalProgram's
+   * indeterminates.
+   */
+  void Reparse(symbolic::Polynomial* p) const;
+
+  /**
    * Adds indeterminates, appending them to an internal vector of any
    * existing indeterminates.
    * @tparam rows  The number of rows in the new indeterminates.
@@ -1115,6 +1152,31 @@ class MathematicalProgram {
       Binding<Constraint>>::type
   AddConstraint(const Eigen::ArrayBase<Derived>& formulas) {
     return AddConstraint(internal::ParseConstraint(formulas));
+  }
+
+  /**
+   * Add a constraint represented by an Eigen::Matrix<symbolic::Formula>
+   * to the program.
+   *
+   * A formula in @p formulas can be of the following forms:
+   *
+   * 1. e1 <= e2
+   * 2. e1 >= e2
+   * 3. e1 == e2
+   *
+   * It throws an exception if AddConstraint(const symbolic::Formula& f)
+   * throws an exception for any f ∈ formulas.
+   *
+   * @tparam Derived An Eigen Matrix type of Formula.
+   *
+   * @pydrake_mkdoc_identifier{matrix_formula}
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      is_eigen_scalar_same<Derived, symbolic::Formula>::value,
+      Binding<Constraint>>::type
+  AddConstraint(const Eigen::MatrixBase<Derived>& formulas) {
+    return AddConstraint(formulas.array());
   }
 
   /**
@@ -2161,6 +2223,9 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns the coefficients matrix Q, which is positive
    * semidefinite.
+   *
+   * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
+   * indeterminates if necessary.
    */
   MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Polynomial& p,
@@ -2171,6 +2236,9 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is a monomial
    * basis selected from the sparsity of @p p. It returns a pair of constraint
    * bindings expressing:
+   *
+   * @note It calls `Reparse` to enforce `p` to have this MathematicalProgram's
+   * indeterminates if necessary.
    *
    *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The monomial basis m.
@@ -2217,6 +2285,9 @@ class MathematicalProgram {
    * indeterminates in this MathematicalProgram object, and p2's coefficients
    * are affine functions of decision variables in this MathematicalProgram
    * object.
+   *
+   * @note It calls `Reparse` to enforce `p1` and `p2` to have this
+   * MathematicalProgram's indeterminates.
    */
   void AddEqualityConstraintBetweenPolynomials(const symbolic::Polynomial& p1,
                                                const symbolic::Polynomial& p2);
@@ -2743,6 +2814,42 @@ class MathematicalProgram {
     return indeterminates_index_;
   }
 
+  /**
+   * @anchor variable_scaling
+   * @name Variable scaling
+   * Some solvers (e.g. SNOPT) work better if the decision variables values
+   * are on the same scale. Hence, internally we scale the variable as
+   * snopt_var_value = var_value / scaling_factor.
+   * This scaling factor is only used inside the solve, so
+   * users don't need to manually scale the variables every time they appears in
+   * cost and constraints. When the users set the initial guess, or getting the
+   * result from MathematicalProgramResult::GetSolution(), the values are
+   * unscaled. Namely, MathematicalProgramResult::GetSolution(var) returns the
+   * value of var, not var_value / scaling_factor.
+   *
+   * The feature of variable scaling is currently only implemented for SNOPT.
+   */
+  //@{
+  /**
+   * Returns the mapping from a decision variable index to its scaling factor.
+   *
+   * See @ref variable_scaling "Variable scaling" for more information.
+   */
+  const std::unordered_map<int, double>& GetVariableScaling() const {
+    return var_scaling_map_;
+  }
+
+  /**
+   * Setter for the scaling of decision variables starting from index @p
+   * idx_start to @p idx_end (including @p idx_end).
+   * @param var the decision variable to be scaled.
+   * @param s scaling factor (must be positive).
+   *
+   * See @ref variable_scaling "Variable scaling" for more information.
+   */
+  void SetVariableScaling(const symbolic::Variable& var, double s);
+  //@}
+
  private:
   static void AppendNanToEnd(int new_var_size, Eigen::VectorXd* vector);
 
@@ -2992,6 +3099,8 @@ class MathematicalProgram {
     NewVariables_impl(type, names, true, decision_variable_matrix);
     return decision_variable_matrix;
   }
+
+  std::unordered_map<int, double> var_scaling_map_{};
 };
 
 }  // namespace solvers

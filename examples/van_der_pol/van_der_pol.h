@@ -20,13 +20,7 @@ namespace van_der_pol {
 /// the stationary distribution of the oscillator under process
 /// noise are coming soon).
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
+/// @tparam_default_scalar
 template <typename T>
 class VanDerPolOscillator final : public systems::LeafSystem<T> {
  public:

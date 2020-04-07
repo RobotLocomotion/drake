@@ -39,6 +39,8 @@ class TestTrajectories(unittest.TestCase):
         pp_d = pp.derivative(derivative_order=1)
         np.testing.assert_equal(np.array([[1.], [2.]]), pp.value(.5))
         np.testing.assert_equal(pp_d.value(.5), np.array([[0.], [0.]]))
+        np.testing.assert_equal(pp.EvalDerivative(t=.5, derivative_order=1),
+                                np.array([[0.], [0.]]))
         p = pp.getPolynomial(segment_index=0, row=1, col=0)
         np.testing.assert_equal(p.GetCoefficients(), np.array([2]))
         self.assertEqual(pp.getSegmentPolynomialDegree(segment_index=1), 0)
@@ -57,19 +59,26 @@ class TestTrajectories(unittest.TestCase):
         pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[2.], [3.]]), pp.value(.5))
 
-    def test_pchip(self):
+    def test_hermite(self):
         t = [0., 1., 2.]
         x = np.array([[0, 1, 1]])
-        pp = PiecewisePolynomial.Pchip(t, x, zero_end_point_derivatives=False)
+        pp = PiecewisePolynomial.CubicShapePreserving(
+            breaks=t, samples=x, zero_end_point_derivatives=False)
+        pp.AppendCubicHermiteSegment(time=3., sample=[2], sample_dot=[2])
+        pp.RemoveFinalSegment()
 
     def test_cubic(self):
         t = [0., 1., 2.]
         x = np.diag((4., 5., 6.))
         periodic_end = False
         # Just test the spelling for these.
-        pp1 = PiecewisePolynomial.Cubic(t, x, periodic_end)
-        pp2 = PiecewisePolynomial.Cubic(t, x, np.identity(3))
-        pp3 = PiecewisePolynomial.Cubic(t, x, [0., 0., 0.], [0., 0., 0.])
+        pp1 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=x, periodic_end=periodic_end)
+        pp2 = PiecewisePolynomial.CubicHermite(
+            breaks=t, samples=x, samples_dot=np.identity(3))
+        pp3 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
+            breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
+            sample_dot_at_end=[0., 0., 0.])
 
     def test_slice_and_shift(self):
         x = np.array([[10.], [20.], [30.]]).transpose()
@@ -91,3 +100,8 @@ class TestTrajectories(unittest.TestCase):
         self.assertTrue(pp1.isApprox(other=pp1, tol=1e-14))
         pp1.ConcatenateInTime(other=pp2)
         self.assertEqual(pp1.end_time(), 4.)
+
+    def test_vector_values(self):
+        pp = PiecewisePolynomial([1, 2, 3])
+        v = pp.vector_values([0, 4])
+        self.assertEqual(v.shape, (3, 2))

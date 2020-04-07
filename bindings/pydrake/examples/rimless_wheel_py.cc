@@ -6,6 +6,7 @@
 #include "drake/examples/rimless_wheel/gen/rimless_wheel_continuous_state.h"
 #include "drake/examples/rimless_wheel/gen/rimless_wheel_params.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_geometry.h"
 
 namespace drake {
 namespace pydrake {
@@ -28,7 +29,15 @@ PYBIND11_MODULE(rimless_wheel, m) {
 
   py::class_<RimlessWheel<T>, LeafSystem<T>>(
       m, "RimlessWheel", doc.RimlessWheel.doc)
-      .def(py::init<>(), doc.RimlessWheel.ctor.doc);
+      .def(py::init<>(), doc.RimlessWheel.ctor.doc)
+      .def("get_minimal_state_output_port",
+          &RimlessWheel<T>::get_minimal_state_output_port,
+          py_reference_internal,
+          doc.RimlessWheel.get_minimal_state_output_port.doc)
+      .def("get_floating_base_state_output_port",
+          &RimlessWheel<T>::get_floating_base_state_output_port,
+          py_reference_internal,
+          doc.RimlessWheel.get_floating_base_state_output_port.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(
@@ -66,6 +75,31 @@ PYBIND11_MODULE(rimless_wheel, m) {
           doc.RimlessWheelContinuousState.set_theta.doc)
       .def("set_thetadot", &RimlessWheelContinuousState<T>::set_thetadot,
           doc.RimlessWheelContinuousState.set_thetadot.doc);
+
+  py::class_<RimlessWheelGeometry, LeafSystem<double>>(
+      m, "RimlessWheelGeometry", doc.RimlessWheelGeometry.doc)
+      .def_static("AddToBuilder",
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const systems::OutputPort<double>&,
+              const RimlessWheelParams<double>&, geometry::SceneGraph<double>*>(
+              &RimlessWheelGeometry::AddToBuilder),
+          py::arg("builder"), py::arg("floating_base_state_port"),
+          py::arg("rimless_wheel_params"), py::arg("scene_graph"),
+          // Keep alive, ownership: `return` keeps `builder` alive.
+          py::keep_alive<0, 1>(),
+          // See #11531 for why `py_reference` is needed.
+          py_reference, doc.RimlessWheelGeometry.AddToBuilder.doc_4args)
+      .def_static("AddToBuilder",
+          py::overload_cast<systems::DiagramBuilder<double>*,
+              const systems::OutputPort<double>&,
+              geometry::SceneGraph<double>*>(
+              &RimlessWheelGeometry::AddToBuilder),
+          py::arg("builder"), py::arg("floating_base_state_port"),
+          py::arg("scene_graph"),
+          // Keep alive, ownership: `return` keeps `builder` alive.
+          py::keep_alive<0, 1>(),
+          // See #11531 for why `py_reference` is needed.
+          py_reference, doc.RimlessWheelGeometry.AddToBuilder.doc_3args);
 }
 
 }  // namespace pydrake

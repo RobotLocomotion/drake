@@ -27,6 +27,24 @@ using std::numeric_limits;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
+// Makes a spatial inertia with arbitrary numerical values.
+SpatialInertia<double> MakeArbitrarySpatialInertia() {
+  // Parameters for a cylindrical body of a given mass, length and radius.
+  const double mass = 1.2;
+  const double radius = 0.05, length = 1.5;
+
+  // Axis for a cylinder arbitrarily oriented, expressed in world W.
+  const Vector3<double> axis_W = Vector3<double>(1, 2, 3).normalized();
+  // Create rotational inertia for the cylinder:
+  const RotationalInertia<double> I_Bcm_W =
+      mass * UnitInertia<double>::SolidCylinder(radius, length, axis_W);
+
+  // Create the spatial inertia of body B about an arbitrary point P.
+  const Vector3<double> p_BcmP_W(1, -2, 5);
+  return SpatialInertia<double>::MakeFromCentralInertia(mass, -p_BcmP_W,
+                                                        I_Bcm_W);
+}
+
 // Test default constructor which leaves entries initialized to NaN for a
 // quick detection of uninitialized values.
 GTEST_TEST(SpatialInertia, DefaultConstructor) {
@@ -130,12 +148,13 @@ GTEST_TEST(SpatialInertia, ShiftOperator) {
   std::stringstream stream;
   stream << std::fixed << std::setprecision(4) << M;
   std::string expected_string =
+      "\n"
       " mass = 2.5000\n"
       " com = [ 0.1000 -0.2000  0.3000]ᵀ\n"
-      " I = \n"
-      "[ 5.0000,  0.2500, -0.2500]\n"
-      "[ 0.2500,  5.7500,  0.5000]\n"
-      "[-0.2500,  0.5000,  6.0000]\n";
+      " I =\n"
+      " 5.0000  0.2500 -0.2500\n"
+      " 0.2500  5.7500  0.5000\n"
+      "-0.2500  0.5000  6.0000\n";
   EXPECT_EQ(expected_string, stream.str());
 }
 
@@ -298,8 +317,14 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithNegativeMass) {
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
-        "The resulting spatial inertia is not physically valid. "
-        "See SpatialInertia::IsPhysicallyValid()";
+        "The resulting spatial inertia:\n"
+        " mass = -1\n"
+        " com = [0 0 0]ᵀ\n"
+        " I =\n"
+        "-0.4   -0   -0\n"
+        "  -0 -0.4   -0\n"
+        "  -0   -0 -0.4\n"
+        " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -314,8 +339,14 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string expected_msg =
-        "The resulting spatial inertia is not physically valid. "
-        "See SpatialInertia::IsPhysicallyValid()";
+        "The resulting spatial inertia:\n"
+        " mass = 1\n"
+        " com = [2 0 0]ᵀ\n"
+        " I =\n"
+        "0.4   0   0\n"
+        "  0 0.4   0\n"
+        "  0   0 0.4\n"
+        " is not physically valid. See SpatialInertia::IsPhysicallyValid()";
     EXPECT_EQ(e.what(), expected_msg);
   }
 }
@@ -396,6 +427,28 @@ GTEST_TEST(SpatialInertia, KineticEnergy) {
   EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
 }
 
+GTEST_TEST(SpatialInertia, MultiplyByEigenMatrix) {
+  // Make an arbitrary spatial inertia.
+  const SpatialInertia<double> M = MakeArbitrarySpatialInertia();
+
+  // Make an arbitrary set of spatial accelerations.
+  Eigen::Matrix<double, 6, 4> Amatrix;
+  // "view" as a column vector of size 24 so that we can use setLinSpaced.
+  Eigen::Map<Vector<double, 24>>(Amatrix.data()).setLinSpaced(1, 24);
+
+  // Compute the result in matrix form:
+  Eigen::Matrix<double, 6, 4> Fmatrix = M * Amatrix;
+
+  // Verify against the computation performed with spatial accelerations.
+  Eigen::Matrix<double, 6, 4> Fmatrix_expected;
+  for (int i = 0; i < Amatrix.cols(); ++i) {
+    const SpatialAcceleration<double> A(Amatrix.col(i));
+    const SpatialForce<double> F = M * A;
+    Fmatrix_expected.col(i) = F.get_coeffs();
+  }
+  EXPECT_TRUE(Fmatrix.isApprox(Fmatrix_expected, kEpsilon));
+}
+
 GTEST_TEST(SpatialInertia, SymbolicNan) {
   using T = symbolic::Expression;
   using symbolic::Variable;
@@ -428,6 +481,50 @@ GTEST_TEST(SpatialInertia, SymbolicConstant) {
 
   // The expression can still be evaluated since all terms are constants.
   ASSERT_TRUE(M.IsPhysicallyValid());
+}
+
+// The composition of spatial inertias for two massless bodies is not well
+// defined. However we do support this operation in Drake in the limit to zero
+// mass when the two bodies have equal mass. In this case, the center of mass
+// position vector and the unit inertia of the resulting composite body equals
+// the arithmetic average of the center of mass and unit inertia respectively of
+// the original two massless bodies.
+GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
+  // To create physically valid unit inertias about an arbitrary point P, we
+  // shift from the center of mass a valid unit inertia about the center of
+  // mass.
+
+  // Massless body 1.
+  const Vector3<double> p_PB1cm_E(1.0, 2.0, 3.0);
+  const UnitInertia<double> G_B1Bcm_E =
+      UnitInertia<double>::TriaxiallySymmetric(1.0);
+  const UnitInertia<double> G_B1P_E =
+      G_B1Bcm_E.ShiftFromCenterOfMass(-p_PB1cm_E);
+  const SpatialInertia<double> M_B1P_E(0.0, p_PB1cm_E, G_B1P_E);
+
+  // Massless body 2.
+  const Vector3<double> p_PB2cm_E(3.0, 2.0, 1.0);
+  const UnitInertia<double> G_B2Bcm_E =
+      UnitInertia<double>::TriaxiallySymmetric(3.0);
+  const UnitInertia<double> G_B2P_E =
+      G_B2Bcm_E.ShiftFromCenterOfMass(-p_PB2cm_E);
+  const SpatialInertia<double> M_B2P_E(0.0, p_PB2cm_E, G_B2P_E);
+
+  // Compose the spatial inertias of the two massless bodies.
+  const SpatialInertia<double> M_BcP_E = SpatialInertia<double>(M_B1P_E) +=
+      M_B2P_E;
+
+  // The result should still be the spatial inertia for a massless body.
+  EXPECT_EQ(M_BcP_E.get_mass(), 0.0);
+
+  // Verify we get the arithmetic mean.
+  const Vector3<double> p_PCcm_E =
+      0.5 * (M_B1P_E.get_com() + M_B2P_E.get_com());
+  const Matrix3<double> G_CP_E =
+      0.5 * (M_B1P_E.get_unit_inertia().CopyToFullMatrix3() +
+             M_B2P_E.get_unit_inertia().CopyToFullMatrix3());
+  EXPECT_EQ(M_BcP_E.get_com(), p_PCcm_E);
+  EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_CP_E);
 }
 
 }  // namespace

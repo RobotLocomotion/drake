@@ -1,9 +1,12 @@
 import math
 import warnings
 
+import errno
+import glob
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 with warnings.catch_warnings():  # noqa
     # N.B. We must suppress this to appease `all_test`.
     # TODO(eric.cousineau): Remove this once all supported platform ships
@@ -72,7 +75,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                  ylim=[-1, 1],
                  facecolor=[1, 1, 1],
                  use_random_colors=False,
-                 ax=None):
+                 substitute_collocated_mesh_files=True,
+                 ax=None,
+                 show=None):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -87,17 +92,25 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             use_random_colors: If set to True, will render each body with a
                 different color. (Multiple visual elements on the same body
                 will be the same color.)
+            substitute_collocated_mesh_files: If True, then a mesh file
+                specified with an unsupported filename extension may be
+                replaced by a file of the same base name in the same directory,
+                but with a supported filename extension.  Currently only .obj
+                files are supported.
             ax: If supplied, the visualizer will draw onto those axes instead
                 of creating a new set of axes. The visualizer will still change
                 the view range and figure size of those axes.
+            show: Opens a window during initialization / publish iff True.
+                Default is None, which implies show=True unless
+                matplotlib.get_backend() is 'template'.
         """
         default_size = matplotlib.rcParams['figure.figsize']
         scalefactor = (ylim[1]-ylim[0]) / (xlim[1]-xlim[0])
         figsize = (default_size[0], default_size[0]*scalefactor)
 
         PyPlotVisualizer.__init__(self, facecolor=facecolor, figsize=figsize,
-                                  ax=ax, draw_period=draw_period)
-        self.set_name('planar_multibody_visualizer')
+                                  ax=ax, draw_period=draw_period, show=show)
+        self.set_name('planar_scenegraph_visualizer')
 
         self._scene_graph = scene_graph
         self._T_VW = T_VW
@@ -118,15 +131,16 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self.fig.set_size_inches(figsize[0], figsize[1])
 
         # Populate body patches.
-        self._build_body_patches(use_random_colors)
+        self._build_body_patches(use_random_colors,
+                                 substitute_collocated_mesh_files)
 
         # Populate the body fill list -- which requires doing most of a draw
-        # pass, but with an ax.fill() command rather than an in-place
-        # replacement of vertex positions to initialize the draw patches. The
-        # body fill list stores the ax patch objects in the order they were
-        # spawned (i.e. by body, and then by order of view_patches). Drawing
-        # the tree should update them by iterating over bodies and patches in
-        # the same order.
+        # pass, but with an ax.fill() command to initialize the draw patches.
+        # After initialization, we can then use in-place replacement of vertex
+        # positions. The body fill list stores the ax patch objects in the
+        # order they were spawned (i.e. by body, and then by order of view_
+        # patches). Drawing the tree should update them by iterating over
+        # bodies and patches in the same order.
         self._body_fill_dict = {}
         X_WB_initial = RigidTransform.Identity()
         for full_name in self._patch_Blist.keys():
@@ -137,12 +151,16 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 # Project the full patch the first time, to initialize a vertex
                 # list with enough space for any possible convex hull of this
                 # vertex set.
-                patch_V = self._T_VW @ patch_W
-                self._body_fill_dict[full_name] += self.ax.fill(
+                patch_V = self._project_patch(patch_W)
+                body_fill = self.ax.fill(
                     patch_V[0, :], patch_V[1, :], zorder=0,
-                    edgecolor='k', facecolor=color, closed=True)
+                    edgecolor='k', facecolor=color, closed=True)[0]
+                self._body_fill_dict[full_name].append(body_fill)
+                # Then update the vertices for a more accurate initial draw.
+                self._update_body_fill_verts(body_fill, patch_V)
 
-    def _build_body_patches(self, use_random_colors):
+    def _build_body_patches(self, use_random_colors,
+                            substitute_collocated_mesh_files):
         """
         Generates body patches. self._patch_Blist stores a list of patches for
         each body (starting at body id 1). A body patch is a list of all 3D
@@ -232,7 +250,24 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                          for pt in sample_pts])
 
                 elif geom.type == geom.MESH:
-                    mesh = ReadObjToSurfaceMesh(geom.string_data)
+                    filename = geom.string_data
+                    base, ext = os.path.splitext(filename)
+                    if (ext.lower() is not ".obj") and \
+                       substitute_collocated_mesh_files:
+                        # Check for a co-located .obj file (case insensitive).
+                        for f in glob.glob(base + '.*'):
+                            if f[-4:].lower() == '.obj':
+                                filename = f
+                                break
+                        if filename[-4:].lower() != '.obj':
+                            raise RuntimeError(
+                                "The given file " + filename + " is not "
+                                "supported and no alternate " + base +
+                                ".obj could be found.")
+                    if not os.path.exists(filename):
+                        raise FileNotFoundError(errno.ENOENT, os.strerror(
+                            errno.ENOENT), filename)
+                    mesh = ReadObjToSurfaceMesh(filename)
                     patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
 
                 else:
@@ -271,6 +306,41 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         colors = self._patch_Blist_colors[full_name]
         return (patch_Wlist, colors)
 
+    def _project_patch(self, patch_W):
+        """
+        Project the object vertices from 3d in world frame W to 2d in view
+        frame V.
+        """
+        patch_V = self._T_VW @ patch_W
+        # Applies normalization in the perspective transformation
+        # to make each projected point have z = 1. If the bottom row
+        # of T_VW is [0, 0, 0, 1], this will result in an
+        # orthographic projection.
+        patch_V[0, :] /= patch_V[2, :]
+        patch_V[1, :] /= patch_V[2, :]
+        # Cut patch_V down to 2xN.
+        patch_V = patch_V[:2, :]
+        return patch_V
+
+    def _update_body_fill_verts(self, body_fill, patch_V):
+        """
+        Takes a convex hull if necessary and uses in-place replacement of
+        vertices to update the fill.
+        """
+
+        # Take a convex hull to get an accurate shape for drawing, with verts
+        # coming out in ccw order.
+        if patch_V.shape[1] > 3:
+            hull = spatial.ConvexHull(patch_V.T)
+            patch_V = np.vstack([patch_V[:, v] for v in hull.vertices]).T
+
+        # Update the verts, padding out to the appropriate full # of verts by
+        # replicating the final vertex.
+        n_verts = body_fill.get_path().vertices.shape[0]
+        patch_V = np.pad(
+            patch_V, ((0, 0), (0, n_verts - patch_V.shape[1])), mode="edge")
+        body_fill.get_path().vertices[:, :] = patch_V.T
+
     def draw(self, context):
         """Overrides base with the implementation."""
 
@@ -287,28 +357,43 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             for i, patch_W in enumerate(patch_Wlist):
                 # Project the object vertices from 3d in world frame W to 2d in
                 # view frame V (keeps homogeneous portion, removing it later).
-                patch_V = self._T_VW @ patch_W
-                # Applies normalization in the perspective transformation
-                # to make each projected point have z = 1. If the bottom row
-                # of T_VW is [0, 0, 0, 1], this will result in an
-                # orthographic projection.
-                patch_V[0, :] /= patch_V[2, :]
-                patch_V[1, :] /= patch_V[2, :]
-                # Cut patch_V down to 2xN.
-                patch_V = patch_V[:2, :]
-                # Take a convex hull to get an accurate shape for drawing,
-                # with verts coming out in ccw order.
-                if patch_V.shape[1] > 3:
-                    hull = spatial.ConvexHull(patch_V.T)
-                    patch_V = np.vstack(
-                        [patch_V[:, v] for v in hull.vertices]).T
+                patch_V = self._project_patch(patch_W)
                 body_fill = self._body_fill_dict[full_name][i]
-                n_verts = body_fill.get_path().vertices.shape[0]
-                # Update the verts, padding out to the appropriate full # of
-                # verts by replicating the final vertex.
-                patch_V = np.pad(
-                    patch_V, ((0, 0), (0, n_verts - patch_V.shape[1])),
-                    mode="edge")
-                body_fill.get_path().vertices[:, :] = patch_V.T
+                # Use the latest vertices to update the body_fill.
+                self._update_body_fill_verts(body_fill, patch_V)
                 body_fill.zorder = X_WB.translation() @ view_dir
         self.ax.set_title('t = {:.1f}'.format(context.get_time()))
+
+
+def ConnectPlanarSceneGraphVisualizer(builder,
+                                      scene_graph,
+                                      output_port=None,
+                                      **kwargs):
+    """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
+    diagram, and wires the scene_graph pose bundle output port to the input
+    port of the visualizer.  Provides a comparable interface to
+    ConnectDrakeVisualizer.
+
+    Args:
+        builder: The diagram builder used to construct the Diagram.
+        scene_graph: The SceneGraph in builder containing the geometry to be
+            visualized.
+        output_port: (optional) If not None, then output_port will be connected
+            to the visualizer input port instead of the scene_graph.
+            get_pose_bundle_output_port().  This is required, for instance,
+            when the SceneGraph is inside a Diagram, and we must connect the
+            exposed port to the visualizer instead of the original SceneGraph
+            port.
+
+        Additional kwargs are passed through to the PlanarSceneGraphVisualizer
+        constructor.
+
+    Returns:
+        The newly created PlanarSceneGraphVisualizer object.
+    """
+    if output_port is None:
+        output_port = scene_graph.get_pose_bundle_output_port()
+    visualizer = builder.AddSystem(
+        PlanarSceneGraphVisualizer(scene_graph, **kwargs))
+    builder.Connect(output_port, visualizer.get_input_port(0))
+    return visualizer

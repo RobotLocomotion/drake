@@ -22,11 +22,7 @@ namespace math {
 ///    Remi Munos and Andrew Moore, "Barycentric Interpolators for Continuous
 ///    Space and Time Reinforcement Learning", NIPS 1998
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
+/// @tparam_double_only
 template <typename T>
 class BarycentricMesh {
   // TODO(russt): This is also an instance of a "linear function approximator"
@@ -180,3 +176,5 @@ class BarycentricMesh {
 
 }  // namespace math
 }  // namespace drake
+
+extern template class ::drake::math::BarycentricMesh<double>;

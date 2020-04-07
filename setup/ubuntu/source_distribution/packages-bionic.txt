@@ -19,6 +19,7 @@ libbz2-dev
 libclang-6.0-dev
 libexpat1-dev
 libfreetype6-dev
+libgflags-dev
 libglib2.0-dev
 libglu1-mesa-dev
 libhdf5-dev
@@ -38,6 +39,7 @@ libtheora-dev
 libtiff5-dev
 libtinyxml-dev
 libtool
+libx11-dev
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
@@ -56,7 +58,6 @@ python3-lxml-dbg
 python3-matplotlib-dbg
 python3-numpy-dbg
 python3-pandas
-python3-protobuf
 python3-pydot
 python3-scipy-dbg
 python3-sphinx

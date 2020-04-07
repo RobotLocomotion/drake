@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
@@ -15,14 +16,83 @@ namespace kuka_iiwa_arm {
 
 using drake::systems::BasicVector;
 
+namespace {
+Eigen::VectorXd CalcGravityCompensationTorque(
+    const multibody::MultibodyPlant<double>& plant,
+    const Eigen::VectorXd& q,
+    Eigen::MatrixXd* H = nullptr) {
+
+  // Compute gravity compensation torque.
+  std::unique_ptr<systems::Context<double>> plant_context =
+      plant.CreateDefaultContext();
+  Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);
+  plant.SetPositions(plant_context.get(), q);
+  plant.SetVelocities(plant_context.get(), zero_velocity);
+
+  if (H) {
+    plant.CalcMassMatrixViaInverseDynamics(*plant_context, H);
+  }
+
+  multibody::MultibodyForces<double> external_forces(plant);
+  plant.CalcForceElementsContribution(*plant_context, &external_forces);
+  return plant.CalcInverseDynamics(*plant_context, zero_velocity,
+                                   external_forces);
+}
+
+// Remove this function when the deprecated RBT version is removed.
+Eigen::VectorXd CalculateRbtTorque(const Eigen::VectorXd& q,
+                                   const Eigen::VectorXd& v,
+                                   const Eigen::VectorXd& q_des,
+                                   const Eigen::VectorXd& v_des,
+                                   const Eigen::VectorXd& torque_des,
+                                   const Eigen::VectorXd& stiffness,
+                                   const Eigen::VectorXd& damping) {
+  const std::string kIiwaUrdf =
+      "manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf";
+  auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      kIiwaUrdf, multibody::joints::kFixed, tree_ptr.get());
+
+  // Compute controller output.
+  KukaTorqueController<double> controller(std::move(tree_ptr), stiffness,
+                                          damping);
+
+  std::unique_ptr<systems::Context<double>> context =
+      controller.CreateDefaultContext();
+  std::unique_ptr<systems::SystemOutput<double>> output =
+      controller.AllocateOutput();
+
+  VectorX<double> estimated_state_input(2 * kIiwaArmNumJoints);
+  estimated_state_input << q, v;
+
+  VectorX<double> desired_state_input(2 * kIiwaArmNumJoints);
+  desired_state_input << q_des, v_des;
+
+  VectorX<double> desired_torque_input(kIiwaArmNumJoints);
+  desired_torque_input << torque_des;
+
+  controller.get_input_port_estimated_state().FixValue(context.get(),
+                                                       estimated_state_input);
+  controller.get_input_port_desired_state().FixValue(context.get(),
+                                                     desired_state_input);
+  controller.get_input_port_commanded_torque().FixValue(context.get(),
+                                                        desired_torque_input);
+  controller.CalcOutput(*context, output.get());
+  const BasicVector<double>* output_vector = output->get_vector_data(0);
+  return output_vector->get_value();
+}
+
+}  // namespace
+
 GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
   const std::string kIiwaUrdf =
     "manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
-  auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      kIiwaUrdf, multibody::joints::kFixed, tree_ptr.get());
-  const RigidBodyTree<double>& tree = *tree_ptr;
+  multibody::MultibodyPlant<double> plant(0.0);
+  multibody::Parser(&plant).AddModelFromFile(kIiwaUrdf);
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
+  plant.Finalize();
 
   // Set stiffness and damping to zero.
   VectorX<double> stiffness(kIiwaArmNumJoints);
@@ -43,8 +113,7 @@ GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
   torque_des.setZero();
 
   // Compute controller output.
-  KukaTorqueController<double> controller(std::move(tree_ptr), stiffness,
-                                          damping);
+  KukaTorqueController<double> controller(plant, stiffness, damping);
 
   std::unique_ptr<systems::Context<double>> context =
       controller.CreateDefaultContext();
@@ -67,17 +136,19 @@ GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
   controller.get_input_port_commanded_torque().FixValue(context.get(),
                                                         desired_torque_input);
 
-  // Compute gravity compensation torque.
-  Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);
-  auto cache = tree.doKinematics(q, zero_velocity);
-  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
-  auto expected_torque =
-      tree.dynamicsBiasTerm(cache, no_external_wrenches, false);
+  Eigen::VectorXd expected_torque =
+      CalcGravityCompensationTorque(plant, q);
 
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
   EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
+                              1e-10, MatrixCompareType::absolute));
+
+  // Check output of the RBT version.
+  Eigen::VectorXd rbt_output = CalculateRbtTorque(
+      q, v, q_des, v_des, torque_des, stiffness, damping);
+  EXPECT_TRUE(CompareMatrices(expected_torque, rbt_output,
                               1e-10, MatrixCompareType::absolute));
 }
 
@@ -85,10 +156,10 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
   const std::string kIiwaUrdf =
     "manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
-  auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      kIiwaUrdf, multibody::joints::kFixed, tree_ptr.get());
-  const RigidBodyTree<double>& tree = *tree_ptr;
+  multibody::MultibodyPlant<double> plant(0.0);
+  multibody::Parser(&plant).AddModelFromFile(kIiwaUrdf);
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
+  plant.Finalize();
 
   // Set nonzero stiffness and zero damping.
   VectorX<double> stiffness(kIiwaArmNumJoints);
@@ -109,8 +180,7 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
   torque_des.setZero();
 
   // Compute controller output.
-  KukaTorqueController<double> controller(std::move(tree_ptr), stiffness,
-                                          damping);
+  KukaTorqueController<double> controller(plant, stiffness, damping);
 
   std::unique_ptr<systems::Context<double>> context =
       controller.CreateDefaultContext();
@@ -134,11 +204,8 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
                                                         desired_torque_input);
 
   // Compute gravity compensation torque.
-  Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);
-  auto cache = tree.doKinematics(q, zero_velocity);
-  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
-  auto expected_torque =
-      tree.dynamicsBiasTerm(cache, no_external_wrenches, false);
+  Eigen::VectorXd expected_torque =
+      CalcGravityCompensationTorque(plant, q);
 
   // Compute spring torque.
   expected_torque += -((q - q_des).array() * stiffness.array()).matrix();
@@ -148,16 +215,22 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
   const BasicVector<double>* output_vector = output->get_vector_data(0);
   EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
                               1e-10, MatrixCompareType::absolute));
+
+  // Check output of the RBT version.
+  Eigen::VectorXd rbt_output = CalculateRbtTorque(
+      q, v, q_des, v_des, torque_des, stiffness, damping);
+  EXPECT_TRUE(CompareMatrices(expected_torque, rbt_output,
+                              1e-10, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   const std::string kIiwaUrdf =
     "manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
-  auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      kIiwaUrdf, multibody::joints::kFixed, tree_ptr.get());
-  const RigidBodyTree<double>& tree = *tree_ptr;
+  multibody::MultibodyPlant<double> plant(0.0);
+  multibody::Parser(&plant).AddModelFromFile(kIiwaUrdf);
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
+  plant.Finalize();
 
   // Set arbitrary stiffness and damping.
   VectorX<double> stiffness(kIiwaArmNumJoints);
@@ -178,8 +251,7 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   torque_des.setZero();
 
   // Compute controller output.
-  KukaTorqueController<double> controller(std::move(tree_ptr), stiffness,
-                                          damping);
+  KukaTorqueController<double> controller(plant, stiffness, damping);
 
   std::unique_ptr<systems::Context<double>> context =
       controller.CreateDefaultContext();
@@ -202,22 +274,19 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   controller.get_input_port_commanded_torque().FixValue(context.get(),
                                                         desired_torque_input);
 
-  // Compute gravity compensation torque.
-  Eigen::VectorXd zero_velocity = Eigen::VectorXd::Zero(kIiwaArmNumJoints);
-  auto cache = tree.doKinematics(q, zero_velocity);
-  const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
-  auto expected_torque =
-      tree.dynamicsBiasTerm(cache, no_external_wrenches, false);
+  // Compute gravity compensation torque and mass matrix.
+  Eigen::MatrixXd H(kIiwaArmNumJoints, kIiwaArmNumJoints);
+  Eigen::VectorXd expected_torque =
+      CalcGravityCompensationTorque(plant, q, &H);
 
   // Compute spring torque.
   expected_torque += -((q - q_des).array() * stiffness.array()).matrix();
 
   // Compute damping torque.
   Eigen::VectorXd damping_torque(7);
-  auto M = tree.massMatrix(cache);
   for (int i = 0; i < kIiwaArmNumJoints; i++) {
     damping_torque(i) =
-        -v(i) * damping(i) * 2 * std::sqrt(M(i, i) * stiffness(i));
+        -v(i) * damping(i) * 2 * std::sqrt(H(i, i) * stiffness(i));
   }
   expected_torque += damping_torque;
 
@@ -225,6 +294,12 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
   EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
+                              1e-10, MatrixCompareType::absolute));
+
+  // Check output of the RBT version.
+  Eigen::VectorXd rbt_output = CalculateRbtTorque(
+      q, v, q_des, v_des, torque_des, stiffness, damping);
+  EXPECT_TRUE(CompareMatrices(expected_torque, rbt_output,
                               1e-10, MatrixCompareType::absolute));
 }
 

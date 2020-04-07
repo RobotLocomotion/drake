@@ -7,8 +7,9 @@ jupyter-notebook
 libamd2
 libblas3
 libboost-all-dev
+libeigen3-dev
 libexpat1
-libgflags-dev
+libgflags2.2
 libgfortran4
 libgl1-mesa-glx
 libglib2.0-0
@@ -21,7 +22,6 @@ libnetcdf13
 libnlopt0
 libogg0
 libpng16-16
-libprotobuf-dev
 libqt5multimedia5
 libqt5x11extras5
 libtbb2
@@ -29,6 +29,7 @@ libtheora0
 libtiff5
 libtinyxml2-dev
 libtinyxml2.6.2v5
+libx11-6
 libxml2
 libxt6
 libyaml-cpp0.5v5

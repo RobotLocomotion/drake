@@ -1,0 +1,12 @@
+namespace: drake::examples::rimless_wheel
+elements:
+  -
+    name: theta
+    doc: The orientation of the stance leg, measured clockwise from the vertical axis.
+    doc_units: radians
+    default_value: 0.0
+  -
+    name: thetadot
+    doc: The angular velocity of the stance leg.
+    doc_units: rad/sec
+    default_value: 0.0

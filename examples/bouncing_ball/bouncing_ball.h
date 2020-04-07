@@ -8,26 +8,19 @@
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
+namespace examples {
 namespace bouncing_ball {
 
 /// Dynamical representation of the idealized hybrid dynamics
 /// of a ball dropping from a height and bouncing on a surface.
-///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - drake::AutoDiffXd
-/// - symbolic::Expression
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// They are already available to link against in the containing library.
 ///
 /// Inputs: no inputs.
 /// States: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
 /// Outputs: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
+///
+/// @tparam_default_scalar
 template <typename T>
 class BouncingBall final : public systems::LeafSystem<T> {
  public:
@@ -151,4 +144,5 @@ class BouncingBall final : public systems::LeafSystem<T> {
 };
 
 }  // namespace bouncing_ball
+}  // namespace examples
 }  // namespace drake

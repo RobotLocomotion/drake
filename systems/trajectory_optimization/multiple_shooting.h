@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -145,7 +146,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
     DoAddRunningCost(g(0, 0));
   }
 
-  /// Adds a constraint to all knot points, where any instances of time(),
+  /// Adds a constraint to all breakpoints, where any instances of time(),
   /// state(), and/or input() placeholder variables, as well as placeholder
   /// variables returned by calls to NewSequentialVariable(), are substituted
   /// with the relevant variables for each time index.
@@ -293,11 +294,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
       const trajectories::PiecewisePolynomial<double>& traj_init_u,
       const trajectories::PiecewisePolynomial<double>& traj_init_x);
 
-  /// Returns a vector containing the elapsed time at each knot point.
+  /// Returns a vector containing the elapsed time at each breakpoint.
   Eigen::VectorXd GetSampleTimes(
       const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const;
 
-  /// Returns a vector containing the elapsed time at each knot point at the
+  /// Returns a vector containing the elapsed time at each breakpoint at the
   /// solution.
   Eigen::VectorXd GetSampleTimes(
       const solvers::MathematicalProgramResult& result) const {
@@ -305,17 +306,17 @@ class MultipleShooting : public solvers::MathematicalProgram {
   }
 
   /// Returns a matrix containing the input values (arranged in columns) at
-  /// each knot point at the solution.
+  /// each breakpoint at the solution.
   Eigen::MatrixXd GetInputSamples(
       const solvers::MathematicalProgramResult& result) const;
 
   /// Returns a matrix containing the state values (arranged in columns) at
-  /// each knot point at the solution.
+  /// each breakpoint at the solution.
   Eigen::MatrixXd GetStateSamples(
       const solvers::MathematicalProgramResult& result) const;
 
   /// Returns a matrix containing the sequential variable values (arranged in
-  /// columns) at each knot point at the solution.
+  /// columns) at each breakpoint at the solution.
   ///
   /// @param name The name of sequential variable to get the results for.  Must
   /// correspond to an already added sequential variable.

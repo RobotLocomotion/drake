@@ -17,8 +17,7 @@ GTEST_TEST(AcrobotGeometryTest, AcceptanceTest) {
   auto plant = builder.AddSystem<AcrobotPlant>();
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   auto geom = AcrobotGeometry::AddToBuilder(
-      &builder, plant->get_output_port(0), AcrobotParams<double>(),
-          scene_graph);
+      &builder, plant->get_output_port(0), scene_graph);
   auto diagram = builder.Build();
   ASSERT_NE(geom, nullptr);
 }

@@ -106,7 +106,8 @@ geometry::GeometryInstance ParseVisual(
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     MaterialMap* materials);
 
-/** Parses a <collision> element in @p node.
+/** @anchor urdf_contact_material
+ Parses a <collision> element in @p node.
 
  Reads the definition of a collision geometry (shape, pose, properties, etc.)
 

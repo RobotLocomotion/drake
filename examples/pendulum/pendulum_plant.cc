@@ -46,16 +46,7 @@ void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
 
 template <typename T>
 T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
-  using std::pow;
-  const PendulumState<T>& state = get_state(context);
-  const PendulumParams<T>& params = get_parameters(context);
-  // Kinetic energy = 1/2 m l² θ̇ ².
-  const T kinetic_energy =
-      0.5 * params.mass() * pow(params.length() * state.thetadot(), 2);
-  // Potential energy = -mgl cos θ.
-  const T potential_energy =
-      -params.mass() * params.gravity() * params.length() * cos(state.theta());
-  return kinetic_energy + potential_energy;
+  return DoCalcPotentialEnergy(context) + DoCalcKineticEnergy(context);
 }
 
 // Compute the actual physics.
@@ -73,6 +64,27 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
        params.mass() * params.gravity() * params.length() * sin(state.theta()) -
        params.damping() * state.thetadot()) /
       (params.mass() * params.length() * params.length()));
+}
+
+template <typename T>
+T PendulumPlant<T>::DoCalcPotentialEnergy(const systems::Context<T>& context)
+const {
+  using std::cos;
+  const PendulumState<T>& state = get_state(context);
+  const PendulumParams<T>& params = get_parameters(context);
+  // Potential energy = -mgl cos θ.
+  return -params.mass() * params.gravity() * params.length() *
+         cos(state.theta());
+}
+
+template <typename T>
+T PendulumPlant<T>::DoCalcKineticEnergy(const systems::Context<T>& context)
+const {
+  using std::pow;
+  const PendulumState<T>& state = get_state(context);
+  const PendulumParams<T>& params = get_parameters(context);
+  // Kinetic energy = 1/2 m l² θ̇ ².
+  return 0.5 * params.mass() * pow(params.length() * state.thetadot(), 2);
 }
 
 }  // namespace pendulum

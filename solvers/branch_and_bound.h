@@ -426,7 +426,8 @@ class MixedIntegerBranchAndBound {
    * }
    *
    * MixedIntegerBranchAndBound bnb(...);
-   * bnb.SetNodeSelectionMethod(MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
+   * bnb.SetNodeSelectionMethod(
+   *     MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
    * // Use a lambda function as the NodeSelectionFun
    * bnb->SetUserDefinedNodeSelectionFunction([](
    *     const MixedIntegerBranchAndBound& branch_and_bound) {
@@ -475,7 +476,8 @@ class MixedIntegerBranchAndBound {
    * the branching variable as
    * \code{.cc}
    * MixedIntegerBranchAndBound bnb(...);
-   * bnb.SetVariableSelectionMethod(MixedIntegerBranchAndBound:VariableSelectionMethod::kUserDefined);
+   * bnb.SetVariableSelectionMethod(
+   *     MixedIntegerBranchAndBound:VariableSelectionMethod::kUserDefined);
    * // Set VariableSelectFun by using a function pointer.
    * bnb.SetUserDefinedVariableSelectionFunction(FirstVariable);
    * \endcode

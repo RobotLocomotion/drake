@@ -7,7 +7,6 @@
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
-#include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

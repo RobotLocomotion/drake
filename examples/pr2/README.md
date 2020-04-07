@@ -1,7 +1,4 @@
-This directory contains a drake-compatible description of the PR2 and an example
-uncontrolled simulation that simply loads the description, with contact
-parameters and integrator parameters that are reasonably stable for gripping
-objects.
+This directory contains a drake-compatible description of the PR2.
 
 The description differs from a standard PR2 description because it uses two
 prismatic joints and one revolute joint to move along the ground plane (named x,
@@ -9,18 +6,7 @@ y, and theta, respectively), instead of wheels. The description also contains
 fully actuated finger joints, instead of a single prismatic joint that closes
 and opens finger joints that mimic each other.
 
+[1] To view or use the C++ passive simulation of a PR2 based on RigidBodyTree
+(removed as of 2020), you may use this commit:
 
-To see the simulation:
-
-1. Open a terminal and navigate to the root of the Drake distribution. Then,
-build and launch the drake_visualizer, with the following commands: 
-$ bazel build //tools:drake_visualizer 
-$ ./bazel-bin/tools/drake_visualizer
-
-2. Open another terminal and navigate to the root of the Drake distribution.
-Then, build and launch the pr2_passive_simulation, with the following commands:
-$ bazel build //examples/pr2:pr2_passive_simulation 
-$ ./bazel-bin/examples/pr2/pr2_passive_simulation 
-The seconds (relative to the simulation) that the simulation will run for can 
-be specified with the argument --simulation_sec=<seconds to simulate>. If this
-argument is not specified, then the simulation will run forever.
+https://github.com/RobotLocomotion/drake/tree/v0.14.0/examples/pr2

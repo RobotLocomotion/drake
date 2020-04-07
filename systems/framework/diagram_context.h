@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -114,8 +115,7 @@ class DiagramState : public State<T> {
 /// In general, users should not need to interact with a DiagramContext
 /// directly. Use the accessors on Diagram instead.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+/// @tparam_default_scalar
 template <typename T>
 class DiagramContext final : public Context<T> {
  public:
@@ -304,6 +304,7 @@ class DiagramContext final : public Context<T> {
       state->set_substate(i, &Context<T>::access_mutable_state(&subcontext));
     }
     state->Finalize();
+    state->get_mutable_continuous_state().set_system_id(this->get_system_id());
     state_ = std::move(state);
   }
 

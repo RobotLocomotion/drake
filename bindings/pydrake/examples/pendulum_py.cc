@@ -41,15 +41,33 @@ PYBIND11_MODULE(pendulum, m) {
       .def("get_input_port", &PendulumPlant<T>::get_input_port,
           py_reference_internal, doc.PendulumPlant.get_input_port.doc)
       .def("get_state_output_port", &PendulumPlant<T>::get_state_output_port,
-          py_reference_internal, doc.PendulumPlant.get_state_output_port.doc);
+          py_reference_internal, doc.PendulumPlant.get_state_output_port.doc)
+      .def_static("get_state",
+          py::overload_cast<const Context<T>&>(&PendulumPlant<T>::get_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.PendulumPlant.get_state.doc)
+      .def_static("get_mutable_state",
+          py::overload_cast<Context<T>*>(&PendulumPlant<T>::get_mutable_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.PendulumPlant.get_mutable_state.doc)
+      .def("get_parameters", &PendulumPlant<T>::get_parameters,
+          py_reference_internal, py::arg("context"),
+          doc.PendulumPlant.get_parameters.doc)
+      .def("get_mutable_parameters", &PendulumPlant<T>::get_mutable_parameters,
+          py_reference_internal, py::arg("context"),
+          doc.PendulumPlant.get_mutable_parameters.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<PendulumInput<T>, BasicVector<T>>(
       m, "PendulumInput", doc.PendulumInput.doc)
       .def(py::init<>(), doc.PendulumInput.ctor.doc)
       .def("tau", &PendulumInput<T>::tau, doc.PendulumInput.tau.doc)
-      .def(
-          "set_tau", &PendulumInput<T>::set_tau, doc.PendulumInput.set_tau.doc);
+      .def("set_tau", &PendulumInput<T>::set_tau, py::arg("tau"),
+          doc.PendulumInput.set_tau.doc)
+      .def("with_tau", &PendulumInput<T>::with_tau, py::arg("tau"),
+          doc.PendulumInput.with_tau.doc);
 
   py::class_<PendulumParams<T>, BasicVector<T>>(
       m, "PendulumParams", doc.PendulumParams.doc)
@@ -60,14 +78,22 @@ PYBIND11_MODULE(pendulum, m) {
           doc.PendulumParams.damping.doc)
       .def("gravity", &PendulumParams<T>::gravity,
           doc.PendulumParams.gravity.doc)
-      .def("set_mass", &PendulumParams<T>::set_mass,
+      .def("set_mass", &PendulumParams<T>::set_mass, py::arg("mass"),
           doc.PendulumParams.set_mass.doc)
-      .def("set_length", &PendulumParams<T>::set_length,
+      .def("set_length", &PendulumParams<T>::set_length, py::arg("length"),
           doc.PendulumParams.set_length.doc)
-      .def("set_damping", &PendulumParams<T>::set_damping,
+      .def("set_damping", &PendulumParams<T>::set_damping, py::arg("damping"),
           doc.PendulumParams.set_damping.doc)
-      .def("set_gravity", &PendulumParams<T>::set_gravity,
-          doc.PendulumParams.set_gravity.doc);
+      .def("set_gravity", &PendulumParams<T>::set_gravity, py::arg("gravity"),
+          doc.PendulumParams.set_gravity.doc)
+      .def("with_mass", &PendulumParams<T>::with_mass, py::arg("mass"),
+          doc.PendulumParams.with_mass.doc)
+      .def("with_length", &PendulumParams<T>::with_length, py::arg("length"),
+          doc.PendulumParams.with_length.doc)
+      .def("with_damping", &PendulumParams<T>::with_damping, py::arg("damping"),
+          doc.PendulumParams.with_damping.doc)
+      .def("with_gravity", &PendulumParams<T>::with_gravity, py::arg("gravity"),
+          doc.PendulumParams.with_gravity.doc);
 
   py::class_<PendulumState<T>, BasicVector<T>>(
       m, "PendulumState", doc.PendulumState.doc)
@@ -75,10 +101,14 @@ PYBIND11_MODULE(pendulum, m) {
       .def("theta", &PendulumState<T>::theta, doc.PendulumState.theta.doc)
       .def("thetadot", &PendulumState<T>::thetadot,
           doc.PendulumState.thetadot.doc)
-      .def("set_theta", &PendulumState<T>::set_theta,
+      .def("set_theta", &PendulumState<T>::set_theta, py::arg("theta"),
           doc.PendulumState.set_theta.doc)
-      .def("set_thetadot", &PendulumState<T>::set_thetadot,
-          doc.PendulumState.set_thetadot.doc);
+      .def("set_thetadot", &PendulumState<T>::set_thetadot, py::arg("thetadot"),
+          doc.PendulumState.set_thetadot.doc)
+      .def("with_theta", &PendulumState<T>::with_theta, py::arg("theta"),
+          doc.PendulumState.with_theta.doc)
+      .def("with_thetadot", &PendulumState<T>::with_thetadot,
+          py::arg("thetadot"), doc.PendulumState.with_thetadot.doc);
 
   py::class_<PendulumGeometry, LeafSystem<double>>(
       m, "PendulumGeometry", doc.PendulumGeometry.doc)

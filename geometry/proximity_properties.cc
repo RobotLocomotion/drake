@@ -12,6 +12,7 @@ const char* const kHcDissipation = "hunt_crossley_dissipation";
 const char* const kHydroGroup = "hydroelastic";
 const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
+const char* const  kSlabThickness = "slab_thickness";
 
 std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
   switch (type) {
@@ -31,6 +32,34 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
 }
 
 }  // namespace internal
+
+void AddContactMaterial(
+    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& dissipation,
+    const std::optional<multibody::CoulombFriction<double>>& friction,
+    ProximityProperties* properties) {
+  if (elastic_modulus.has_value()) {
+    if (*elastic_modulus <= 0) {
+      throw std::logic_error(fmt::format(
+          "The elastic modulus must be positive; given {}", *elastic_modulus));
+    }
+    properties->AddProperty(internal::kMaterialGroup, internal::kElastic,
+                            *elastic_modulus);
+  }
+  if (dissipation.has_value()) {
+    if (*dissipation < 0) {
+      throw std::logic_error(fmt::format(
+          "The dissipation can't be negative; given {}", *dissipation));
+    }
+    properties->AddProperty(internal::kMaterialGroup, internal::kHcDissipation,
+                            *dissipation);
+  }
+
+  if (friction.has_value()) {
+    properties->AddProperty(internal::kMaterialGroup, internal::kFriction,
+                            *friction);
+  }
+}
 
 // NOTE: Although these functions currently do the same thing, we're leaving
 // the two functions in place to facilitate future differences.
@@ -67,6 +96,14 @@ void AddSoftHydroelasticProperties(ProximityProperties* properties) {
   // sufficient.
   properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
                           internal::HydroelasticType::kSoft);
+}
+
+void AddSoftHydroelasticPropertiesForHalfSpace(
+    double slab_thickness, ProximityProperties* properties) {
+  DRAKE_DEMAND(properties);
+  properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
+                          slab_thickness);
+  AddSoftHydroelasticProperties(properties);
 }
 
 }  // namespace geometry

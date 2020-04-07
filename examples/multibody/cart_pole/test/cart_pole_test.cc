@@ -107,7 +107,7 @@ class CartPoleTest : public ::testing::Test {
   const PrismaticJoint<double>* cart_slider_{nullptr};
   const RevoluteJoint<double>* pole_pin_{nullptr};
   std::unique_ptr<Context<double>> context_;
-  // Default parameters generated from cart_pole_params.named_vector.
+  // Default parameters generated from cart_pole_params_named_vector.yaml.
   const CartPoleParams<double> default_parameters_;
 };
 

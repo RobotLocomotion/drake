@@ -20,24 +20,22 @@ namespace systems {
 /// or one vector input ports, zero or one vector of continuous or discrete
 /// state (depending on the specified time_period), zero or one vector of
 /// numeric parameters, and only zero or one vector output ports.
-
 ///
 /// See SymbolicVectorSystemBuilder to make the construction a little nicer.
 ///
 /// For example, to define the system: ẋ = -x + x³, y = x, we could write
 /// @code
 ///   symbolic::Variable x("x");
-///   auto system = SymbolicVectorBuilder().state(x).dynamics(-x + pow(x,3))
-///                                        .output(x).Build();
+///   auto system = SymbolicVectorSystemBuilder().state(x)
+///                                              .dynamics(-x + pow(x,3))
+///                                              .output(x)
+///                                              .Build();
 /// @endcode
 ///
 /// Note: This will not be as performant as writing your own LeafSystem.
 /// It is meant primarily for rapid prototyping.
 ///
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
-/// - symbolic::Expression
+/// @tparam_default_scalar
 template <typename T>
 class SymbolicVectorSystem final : public LeafSystem<T> {
  public:
@@ -232,10 +230,10 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 /// For example, to define the system: ẋ = -x + x³, y = x, we could write
 /// @code
 ///   symbolic::Variable x("x");
-///   auto system = SymbolicVectorBuilder().state(x)
-///                                        .dynamics(-x + pow(x,3))
-///                                        .output(x)
-///                                        .Build();
+///   auto system = SymbolicVectorSystemBuilder().state(x)
+///                                              .dynamics(-x + pow(x,3))
+///                                              .output(x)
+///                                              .Build();
 /// @endcode
 ///
 /// @see SymbolicVectorSystem

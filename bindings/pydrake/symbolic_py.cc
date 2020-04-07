@@ -51,7 +51,7 @@ PYBIND11_MODULE(symbolic, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
-  const auto& var_doc = doc.Variable;
+  constexpr auto& var_doc = doc.Variable;
   py::enum_<Variable::Type>(var_cls, "Type")
       .value(
           "CONTINUOUS", Variable::Type::CONTINUOUS, var_doc.Type.CONTINUOUS.doc)
@@ -248,6 +248,8 @@ PYBIND11_MODULE(symbolic, m) {
           },
           doc.Expression.Substitute.doc_1args)
       .def("EqualTo", &Expression::EqualTo, doc.Expression.EqualTo.doc)
+      .def("is_polynomial", &Expression::is_polynomial,
+          doc.Expression.is_polynomial.doc)
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -361,7 +363,18 @@ PYBIND11_MODULE(symbolic, m) {
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);
       },
-      doc.Expression.Jacobian.doc);
+      doc.Jacobian.doc);
+
+  m.def("IsAffine",
+      [](const Eigen::Ref<const MatrixX<Expression>>& M,
+          const Variables& vars) { return IsAffine(M, vars); },
+      doc.IsAffine.doc_2args);
+
+  m.def("IsAffine",
+      [](const Eigen::Ref<const MatrixX<Expression>>& M) {
+        return IsAffine(M);
+      },
+      doc.IsAffine.doc_1args);
 
   m.def("Evaluate",
       [](const MatrixX<Expression>& M, const Environment::map& env,
@@ -369,7 +382,7 @@ PYBIND11_MODULE(symbolic, m) {
         return Evaluate(M, Environment{env}, random_generator);
       },
       py::arg("m"), py::arg("env") = Environment::map{},
-      py::arg("generator") = nullptr, doc.Evaluate.doc_3args);
+      py::arg("generator") = nullptr, doc.Evaluate.doc_expression);
 
   m.def("Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {
@@ -508,6 +521,8 @@ PYBIND11_MODULE(symbolic, m) {
           },
           doc.MonomialBasis.doc_2args);
 
+  using symbolic::Polynomial;
+
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Polynomial>(m, "Polynomial", doc.Polynomial.doc)
       .def(py::init<>(), doc.Polynomial.ctor.doc_0args)
@@ -522,9 +537,11 @@ PYBIND11_MODULE(symbolic, m) {
       }),
           doc.Polynomial.ctor.doc_2args_e_indeterminates)
       .def("indeterminates", &Polynomial::indeterminates,
-          doc.Polynomial.indeterminates.doc, doc.Polynomial.indeterminates.doc)
+          doc.Polynomial.indeterminates.doc)
       .def("decision_variables", &Polynomial::decision_variables,
           doc.Polynomial.decision_variables.doc)
+      .def("SetIndeterminates", &Polynomial::SetIndeterminates,
+          doc.Polynomial.SetIndeterminates.doc)
       .def("Degree", &Polynomial::Degree, doc.Polynomial.Degree.doc)
       .def("TotalDegree", &Polynomial::TotalDegree,
           doc.Polynomial.TotalDegree.doc)
@@ -540,22 +557,32 @@ PYBIND11_MODULE(symbolic, m) {
           &Polynomial::RemoveTermsWithSmallCoefficients,
           py::arg("coefficient_tol"),
           doc.Polynomial.RemoveTermsWithSmallCoefficients.doc)
+      .def("CoefficientsAlmostEqual", &Polynomial::CoefficientsAlmostEqual,
+          py::arg("p"), py::arg("tolerance"),
+          doc.Polynomial.CoefficientsAlmostEqual.doc)
       .def(py::self + py::self)
       .def(py::self + Monomial())
       .def(Monomial() + py::self)
       .def(py::self + double())
       .def(double() + py::self)
+      .def(py::self + Variable())
+      .def(Variable() + py::self)
       .def(py::self - py::self)
       .def(py::self - Monomial())
       .def(Monomial() - py::self)
       .def(py::self - double())
       .def(double() - py::self)
+      .def(py::self - Variable())
+      .def(Variable() - py::self)
       .def(py::self * py::self)
       .def(py::self * Monomial())
       .def(Monomial() * py::self)
       .def(py::self * double())
       .def(double() * py::self)
+      .def(py::self * Variable())
+      .def(Variable() * py::self)
       .def(-py::self)
+      .def(py::self / double())
       .def("EqualTo", &Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)
@@ -592,6 +619,19 @@ PYBIND11_MODULE(symbolic, m) {
             return p.Jacobian(vars);
           },
           doc.Polynomial.Jacobian.doc);
+
+  m.def("Evaluate",
+      [](const MatrixX<Polynomial>& M, const Environment::map& env) {
+        return Evaluate(M, Environment{env});
+      },
+      py::arg("m"), py::arg("env"), doc.Evaluate.doc_polynomial);
+
+  m.def("Jacobian",
+      [](const Eigen::Ref<const VectorX<Polynomial>>& f,
+          const Eigen::Ref<const VectorX<Variable>>& vars) {
+        return Jacobian(f, vars);
+      },
+      doc.Jacobian.doc_polynomial);
 
   // We have this line because pybind11 does not permit transitive
   // conversions. See

@@ -1,7 +1,6 @@
 #include "drake/geometry/proximity/hydroelastic_internal.h"
 
-#include <limits>
-#include <vector>
+#include <string>
 
 #include <fmt/format.h>
 
@@ -21,28 +20,31 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-using Eigen::Vector3d;
 using std::make_unique;
 using std::move;
-using std::vector;
 
 SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
   if (this == &g) return *this;
 
-  auto mesh = make_unique<VolumeMesh<double>>(g.mesh());
-  // We can't simply copy the mesh field; the copy must contain a pointer to the
-  // new mesh. So, we use CloneAndSetMesh() instead.
-  auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
-  geometry_ = SoftMesh(move(mesh), move(pressure));
-
+  if (g.is_half_space()) {
+    geometry_ = SoftHalfSpace{g.pressure_scale()};
+  } else {
+    auto mesh = make_unique<VolumeMesh<double>>(g.mesh());
+    // We can't simply copy the mesh field; the copy must contain a pointer to
+    // the new mesh. So, we use CloneAndSetMesh() instead.
+    auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
+    geometry_ = SoftMesh{move(mesh), move(pressure)};
+  }
   return *this;
 }
 
 RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
   if (this == &g) return *this;
 
-  auto mesh = make_unique<SurfaceMesh<double>>(g.mesh());
-  geometry_ = RigidMesh(move(mesh));
+  geometry_ = std::nullopt;
+  if (!g.is_half_space()) {
+    geometry_ = RigidMesh(make_unique<SurfaceMesh<double>>(g.mesh()));
+  }
 
   return *this;
 }
@@ -196,13 +198,18 @@ class PositiveDouble : public Validator<double> {
 };
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
+    const HalfSpace& hs, const ProximityProperties&) {
+  return RigidGeometry(hs);
+}
+
+std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
   PositiveDouble validator("Sphere", "rigid");
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, edge_length));
 
-  return RigidGeometry(move(mesh));
+  return RigidGeometry(RigidMesh(move(mesh)));
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -212,7 +219,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeBoxSurfaceMesh<double>(box, edge_length));
 
-  return RigidGeometry(move(mesh));
+  return RigidGeometry(RigidMesh(move(mesh)));
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -222,7 +229,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeCylinderSurfaceMesh<double>(cylinder, edge_length));
 
-  return RigidGeometry(move(mesh));
+  return RigidGeometry(RigidMesh(move(mesh)));
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -232,7 +239,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length));
 
-  return RigidGeometry(move(mesh));
+  return RigidGeometry(RigidMesh(move(mesh)));
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -241,7 +248,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   auto mesh = make_unique<SurfaceMesh<double>>(
       ReadObjToSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
 
-  return RigidGeometry(move(mesh));
+  return RigidGeometry(RigidMesh(move(mesh)));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
@@ -258,7 +265,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
 
-  return SoftGeometry(move(mesh), move(pressure));
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
@@ -275,7 +282,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeBoxPressureField(box, mesh.get(), elastic_modulus));
 
-  return SoftGeometry(move(mesh), move(pressure));
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
@@ -292,7 +299,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(cylinder, mesh.get(), elastic_modulus));
 
-  return SoftGeometry(move(mesh), move(pressure));
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
@@ -309,7 +316,20 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeEllipsoidPressureField(ellipsoid, mesh.get(), elastic_modulus));
 
-  return SoftGeometry(move(mesh), move(pressure));
+  return SoftGeometry(SoftMesh(move(mesh), move(pressure)));
+}
+
+std::optional<SoftGeometry> MakeSoftRepresentation(
+    const HalfSpace&, const ProximityProperties& props) {
+  PositiveDouble validator("HalfSpace", "soft");
+
+  const double thickness =
+      validator.Extract(props, kHydroGroup, kSlabThickness);
+
+  const double elastic_modulus =
+      validator.Extract(props, kMaterialGroup, kElastic);
+
+  return SoftGeometry(SoftHalfSpace{elastic_modulus / thickness});
 }
 
 }  // namespace hydroelastic

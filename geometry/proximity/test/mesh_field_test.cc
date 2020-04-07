@@ -64,6 +64,7 @@ GTEST_TEST(MeshFieldTest, TestClone) {
                          const MeshType::Cartesian&) const final {
       return FieldValue(0);
     }
+
    private:
     [[nodiscard]] std::unique_ptr<MeshFieldBase> DoCloneWithNullMesh() const
     final {

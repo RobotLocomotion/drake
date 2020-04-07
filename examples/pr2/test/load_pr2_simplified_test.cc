@@ -1,25 +1,29 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace examples {
 namespace pr2 {
 
-// Tests if the model from pr2_simplified.urdf loads into a RigidBodyTree with
-// no errors.
+// Tests if the model from pr2_simplified.urdf loads with no errors.
 GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
-  auto tree_ = std::make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      FindResourceOrThrow("drake/examples/pr2/models/pr2_description/urdf/"
-                          "pr2_simplified.urdf"),
-      multibody::joints::
-          kFixed /* our PR2 model moves with actuators, not a floating base */,
-      nullptr /* weld to frame */, tree_.get());
-  EXPECT_EQ(tree_->get_num_actuators(), 28);
-  EXPECT_EQ(tree_->get_num_positions(), 28);
-  EXPECT_EQ(tree_->get_bodies().size(), 86);
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>& plant =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
+  const std::string& pathname = FindResourceOrThrow(
+      "drake/examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf");
+  multibody::Parser parser(&plant);
+  parser.package_map().PopulateUpstreamToDrake(pathname);
+  parser.AddModelFromFile(pathname);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_actuators(), 28);
+  EXPECT_EQ(plant.num_positions(), 28);
+  EXPECT_EQ(plant.num_bodies(), 84);
 }
 
 }  // namespace pr2

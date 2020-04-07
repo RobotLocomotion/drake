@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/dense_output.h"
 
@@ -20,7 +21,7 @@ namespace systems {
 /// suited representation for evaluation. As such, evaluation is bound to
 /// succeed only after consolidation.
 ///
-/// @tparam T A valid Eigen scalar type.
+/// @tparam_default_scalar
 template <typename T>
 class StepwiseDenseOutput : public DenseOutput<T> {
  public:
@@ -56,3 +57,6 @@ class StepwiseDenseOutput : public DenseOutput<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::StepwiseDenseOutput)

@@ -28,7 +28,6 @@ load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_re
 load("@drake//tools/workspace/github3_py:repository.bzl", "github3_py_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
-load("@drake//tools/workspace/godotengine:repository.bzl", "godotengine_repository")  # noqa
 load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
@@ -46,7 +45,6 @@ load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
-load("@drake//tools/workspace/libprotobuf:repository.bzl", "libprotobuf_repository")  # noqa
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("@drake//tools/workspace/meshcat_python:repository.bzl", "meshcat_python_repository")  # noqa
@@ -57,6 +55,7 @@ load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
 load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
+load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
@@ -75,8 +74,6 @@ load("@drake//tools/workspace/semantic_version:repository.bzl", "semantic_versio
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
 load("@drake//tools/workspace/sphinx:repository.bzl", "sphinx_repository")
-load("@drake//tools/workspace/spruce:repository.bzl", "spruce_repository")
-load("@drake//tools/workspace/stx:repository.bzl", "stx_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinydir:repository.bzl", "tinydir_repository")
@@ -85,6 +82,7 @@ load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
 load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
+load("@drake//tools/workspace/x11:repository.bzl", "x11_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
@@ -131,7 +129,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "dreal" not in excludes:
         dreal_repository(name = "dreal", mirrors = mirrors)
     if "eigen" not in excludes:
-        eigen_repository(name = "eigen", mirrors = mirrors)
+        eigen_repository(name = "eigen")
     if "expat" not in excludes:
         expat_repository(name = "expat")
     if "fcl" not in excludes:
@@ -152,8 +150,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         glew_repository(name = "glew")
     if "glib" not in excludes:
         glib_repository(name = "glib")
-    if "godotengine" not in excludes:
-        godotengine_repository(name = "godotengine", mirrors = mirrors)
     if "googlebenchmark" not in excludes:
         googlebenchmark_repository(name = "googlebenchmark", mirrors = mirrors)
     if "gtest" not in excludes:
@@ -188,8 +184,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         liblz4_repository(name = "liblz4")
     if "libpng" not in excludes:
         libpng_repository(name = "libpng")
-    if "libprotobuf" not in excludes:
-        libprotobuf_repository(name = "libprotobuf")
     if "libtiff" not in excludes:
         libtiff_repository(name = "libtiff")
     if "meshcat" not in excludes:
@@ -210,6 +204,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         octomap_repository(name = "octomap", mirrors = mirrors)
     if "openblas" not in excludes:
         openblas_repository(name = "openblas")
+    if "opengl" not in excludes:
+        opengl_repository(name = "opengl")
     if "optitrack_driver" not in excludes:
         optitrack_driver_repository(name = "optitrack_driver", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
@@ -246,10 +242,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         spdlog_repository(name = "spdlog", mirrors = mirrors)
     if "sphinx" not in excludes:
         sphinx_repository(name = "sphinx")
-    if "spruce" not in excludes:
-        spruce_repository(name = "spruce")
-    if "stx" not in excludes:
-        stx_repository(name = "stx", mirrors = mirrors)
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "suitesparse" not in excludes:
@@ -266,6 +258,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
     if "vtk" not in excludes:
         vtk_repository(name = "vtk", mirrors = mirrors)
+    if "x11" not in excludes:
+        x11_repository(name = "x11")
     if "yaml_cpp" not in excludes:
         yaml_cpp_repository(name = "yaml_cpp")
     if "zlib" not in excludes:

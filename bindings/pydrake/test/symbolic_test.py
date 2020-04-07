@@ -109,6 +109,10 @@ class TestSymbolicVariable(unittest.TestCase):
         self.assertTrue(x.EqualTo(x))
         self.assertFalse(x.EqualTo(y))
 
+    def test_is_polynomial(self):
+        self.assertTrue((x*y).is_polynomial())
+        self.assertFalse((x/y).is_polynomial())
+
     def test_logical(self):
         numpy_compare.assert_equal(
             sym.logical_not(x == 0), "!((x == 0))")
@@ -561,6 +565,11 @@ class TestSymbolicExpression(unittest.TestCase):
         numpy_compare.assert_equal(J[0], sym.cos(y))
         numpy_compare.assert_equal(J[1], -x * sym.sin(y))
 
+    def test_is_affine(self):
+        M = np.array([[a * a * x, 3 * x], [2 * x, 3 * a]])
+        self.assertTrue(sym.IsAffine(M, sym.Variables([x])))
+        self.assertFalse(sym.IsAffine(M))
+
     def test_differentiate(self):
         e = x * x
         numpy_compare.assert_equal(e.Differentiate(x), 2 * x)
@@ -853,6 +862,16 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertEqual(p.indeterminates(), indeterminates)
         self.assertEqual(p.decision_variables(), decision_vars)
 
+    def test_set_indeterminates(self):
+        e = a * x * x + b * y + c * z
+        indeterminates1 = sym.Variables([x, y, z])
+        p = sym.Polynomial(e, indeterminates1)
+        self.assertEqual(p.TotalDegree(), 2)
+
+        indeterminates2 = sym.Variables([a, b, c])
+        p.SetIndeterminates(indeterminates2)
+        self.assertEqual(p.TotalDegree(), 1)
+
     def test_degree_total_degree(self):
         e = a * (x ** 2) + b * (y ** 3) + c * z
         p = sym.Polynomial(e, [x, y, z])
@@ -895,37 +914,56 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertIsInstance(p != q, sym.Formula)
         self.assertEqual(p != q, sym.Formula.True_())
         self.assertFalse(p.EqualTo(q))
+        self.assertTrue(
+            p.CoefficientsAlmostEqual(p + sym.Polynomial(1e-7), 1e-6))
+        self.assertTrue(
+            p.CoefficientsAlmostEqual(p + sym.Polynomial(1e-7 * x), 1e-6))
+        self.assertFalse(
+            p.CoefficientsAlmostEqual(p + sym.Polynomial(2e-6 * x), 1e-6))
 
     def test_repr(self):
         p = sym.Polynomial()
         self.assertEqual(repr(p), '<Polynomial "0">')
 
     def test_addition(self):
-        p = sym.Polynomial()
+        p = sym.Polynomial(0.0, [x])
         numpy_compare.assert_equal(p + p, p)
         m = sym.Monomial(x)
         numpy_compare.assert_equal(m + p, sym.Polynomial(1 * x))
         numpy_compare.assert_equal(p + m, sym.Polynomial(1 * x))
         numpy_compare.assert_equal(p + 0, p)
         numpy_compare.assert_equal(0 + p, p)
+        numpy_compare.assert_equal(x + p, sym.Polynomial(x) + p)
+        numpy_compare.assert_equal(p + x, p + sym.Polynomial(x))
 
     def test_subtraction(self):
-        p = sym.Polynomial()
+        p = sym.Polynomial(0.0, [x])
         numpy_compare.assert_equal(p - p, p)
         m = sym.Monomial(x)
         numpy_compare.assert_equal(m - p, sym.Polynomial(1 * x))
         numpy_compare.assert_equal(p - m, sym.Polynomial(-1 * x))
         numpy_compare.assert_equal(p - 0, p)
         numpy_compare.assert_equal(0 - p, -p)
+        numpy_compare.assert_equal(x - p, sym.Polynomial(x))
+        numpy_compare.assert_equal(p - x, sym.Polynomial(-x))
 
     def test_multiplication(self):
-        p = sym.Polynomial()
+        p = sym.Polynomial(0.0, [x])
         numpy_compare.assert_equal(p * p, p)
         m = sym.Monomial(x)
         numpy_compare.assert_equal(m * p, p)
         numpy_compare.assert_equal(p * m, p)
         numpy_compare.assert_equal(p * 0, p)
         numpy_compare.assert_equal(0 * p, p)
+        numpy_compare.assert_equal(sym.Polynomial(x) * x,
+                                   sym.Polynomial(x * x))
+        numpy_compare.assert_equal(x * sym.Polynomial(x),
+                                   sym.Polynomial(x * x))
+
+    def test_division(self):
+        p = sym.Polynomial(x * x + x)
+        numpy_compare.assert_equal(p / 2,
+                                   sym.Polynomial(1 / 2 * x * x + 1 / 2 * x))
 
     def test_addition_assignment(self):
         p = sym.Polynomial()
@@ -960,7 +998,7 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p = pow(p, 2)  # p = a²x⁴
         numpy_compare.assert_equal(p.ToExpression(), (a ** 2) * (x ** 4))
 
-    def test_jacobian(self):
+    def test_jacobian_vector(self):
         e = 5 * x ** 2 + 4 * y ** 2 + 8 * x * y
         p = sym.Polynomial(e, [x, y])                  # p = 5x² + 4y² + 8xy
         p_dx = sym.Polynomial(10 * x + 8 * y, [x, y])  # ∂p/∂x = 10x + 8y
@@ -969,6 +1007,28 @@ class TestSymbolicPolynomial(unittest.TestCase):
         J = p.Jacobian([x, y])
         numpy_compare.assert_equal(J[0], p_dx)
         numpy_compare.assert_equal(J[1], p_dy)
+
+    def test_jacobian_matrix(self):
+        p1 = sym.Polynomial(x * x + y, [x, y])      # p1 = x² + y
+        p2 = sym.Polynomial(2 * x + y * y, [x, y])  # p2 = 2x + y²
+        p1_dx = sym.Polynomial(2 * x, [x, y])       # ∂p1/∂x = 2x
+        p1_dy = sym.Polynomial(1.0, [x, y])         # ∂p1/∂y =  1
+        p2_dx = sym.Polynomial(2, [x, y])           # ∂p1/∂x = 2
+        p2_dy = sym.Polynomial(2 * y, [x, y])       # ∂p1/∂y =  2y
+
+        J = sym.Jacobian([p1, p2], [x, y])
+        numpy_compare.assert_equal(J[0, 0], p1_dx)
+        numpy_compare.assert_equal(J[0, 1], p1_dy)
+        numpy_compare.assert_equal(J[1, 0], p2_dx)
+        numpy_compare.assert_equal(J[1, 1], p2_dy)
+
+    def test_evaluate_polynomial_matrix(self):
+        p1 = sym.Polynomial(x * x + y, [x, y])      # p1 = x² + y
+        p2 = sym.Polynomial(2 * x + y * y, [x, y])  # p2 = 2x + y²
+        env = {x: 1.0, y: 2.0}
+
+        result = sym.Evaluate([p1, p2], env)
+        numpy_compare.assert_equal(result, [[3.0], [6.0]])
 
     def test_matrix_substitute_with_substitution(self):
         m = np.array([[x + y, x * y]])

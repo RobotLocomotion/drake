@@ -21,14 +21,14 @@ namespace multibody {
  is expensive when `num_hydroelastic_contacts() > 0` because a deep copy is
  performed.
 
- @tparam T Must be one of drake's default scalar types.
+ @tparam_default_scalar
  */
 template <typename T>
 class ContactResults {
  public:
   ContactResults();
   ContactResults(const ContactResults&);
-  ContactResults(ContactResults&&);
+  ContactResults(ContactResults&&) = default;
   ContactResults& operator=(const ContactResults&);
   ContactResults& operator=(ContactResults&&) = default;
 
@@ -124,12 +124,6 @@ class ContactResults {
                std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
       hydroelastic_contact_info_;
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-ContactResults<T>::ContactResults(ContactResults&&) = default;
 
 }  // namespace multibody
 }  // namespace drake

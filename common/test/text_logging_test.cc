@@ -90,59 +90,6 @@ GTEST_TEST(TextLoggingTest, CaptureOutputTest) {
   #endif
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Verify that DRAKE_SPDLOG macros succeed in avoiding evaluation of their
-// arguments.
-GTEST_TEST(TextLoggingTest, DeprecatedDrakeMacrosDontEvaluateArguments) {
-  int tracearg = 0, debugarg = 0;
-
-  // Shouldn't increment argument whether the macro expanded or not, since
-  // logging is off.
-  #if TEXT_LOGGING_TEST_SPDLOG
-    drake::log()->set_level(spdlog::level::off);
-  #endif
-  DRAKE_SPDLOG_TRACE(drake::log(), "tracearg={}", ++tracearg);
-  DRAKE_SPDLOG_DEBUG(drake::log(), "debugarg={}", ++debugarg);
-  EXPECT_EQ(tracearg, 0);
-  EXPECT_EQ(debugarg, 0);
-  tracearg = 0;
-  debugarg = 0;
-
-  // Should increment arg only if the macro expanded.
-  #if TEXT_LOGGING_TEST_SPDLOG
-    drake::log()->set_level(spdlog::level::trace);
-  #endif
-  DRAKE_SPDLOG_TRACE(drake::log(), "tracearg={}", ++tracearg);
-  DRAKE_SPDLOG_DEBUG(drake::log(), "debugarg={}", ++debugarg);
-  #ifndef NDEBUG
-    EXPECT_EQ(tracearg, kHaveSpdlog ? 1 : 0);
-    EXPECT_EQ(debugarg, kHaveSpdlog ? 1 : 0);
-  #else
-    EXPECT_EQ(tracearg, 0);
-    EXPECT_EQ(debugarg, 0);
-  #endif
-  tracearg = 0;
-  debugarg = 0;
-
-  // Only DEBUG should increment arg since trace is not enabled.
-  #if TEXT_LOGGING_TEST_SPDLOG
-    drake::log()->set_level(spdlog::level::debug);
-  #endif
-  DRAKE_SPDLOG_TRACE(drake::log(), "tracearg={}", ++tracearg);
-  DRAKE_SPDLOG_DEBUG(drake::log(), "debugarg={}", ++debugarg);
-  #ifndef NDEBUG
-    EXPECT_EQ(tracearg, 0);
-    EXPECT_EQ(debugarg, kHaveSpdlog ? 1 : 0);
-  #else
-    EXPECT_EQ(tracearg, 0);
-    EXPECT_EQ(debugarg, 0);
-  #endif
-  tracearg = 0;
-  debugarg = 0;
-}
-#pragma GCC diagnostic pop
-
 // Verify that DRAKE_LOGGER macros succeed in avoiding evaluation of their
 // arguments.
 GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {

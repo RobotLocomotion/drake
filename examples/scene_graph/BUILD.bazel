@@ -15,7 +15,7 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 drake_cc_vector_gen_library(
     name = "bouncing_ball_vector",
-    srcs = ["bouncing_ball_vector.named_vector"],
+    srcs = ["bouncing_ball_vector_named_vector.yaml"],
 )
 
 drake_cc_library(

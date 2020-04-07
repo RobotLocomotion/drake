@@ -6,6 +6,10 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -23,17 +27,17 @@ drake_cc_binary(
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
         "//geometry:geometry_visualization",
-        "//lcm",
         "//lcmtypes:allegro",
-        "//math",
+        "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/plant:contact_results_to_lcm",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
         "//systems/controllers:pid_controller",
+        "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
-        "//systems/primitives",
-        "//systems/rendering:pose_bundle_to_draw_message",
+        "//systems/primitives:matrix_gain",
         "@gflags",
     ],
 )
@@ -44,9 +48,22 @@ drake_cc_binary(
     deps = [
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
-        "//lcm",
         "//lcmtypes:allegro",
         "@gflags",
+        "@lcm",
+    ],
+)
+
+drake_py_unittest(
+    name = "run_twisting_mug_test",
+    timeout = "moderate",
+    args = select({
+        "//tools/cc_toolchain:debug": ["--compilation_mode=dbg"],
+        "//conditions:default": ["--compilation_mode=opt"],
+    }),
+    data = [
+        ":allegro_single_object_simulation",
+        ":run_twisting_mug",
     ],
 )
 

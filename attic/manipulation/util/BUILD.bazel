@@ -14,10 +14,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "util",
     deps = [
-        ":frame_pose_tracker",
         ":robot_state_msg_translator",
         ":sim_diagram_builder",
-        ":simple_tree_visualizer",
         ":world_sim_tree_builder",
     ],
 )
@@ -26,6 +24,7 @@ drake_cc_library(
     name = "world_sim_tree_builder",
     srcs = ["world_sim_tree_builder.cc"],
     hdrs = ["world_sim_tree_builder.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/multibody:rigid_body_tree_construction",
@@ -40,6 +39,7 @@ drake_cc_library(
     name = "robot_state_msg_translator",
     srcs = ["robot_state_msg_translator.cc"],
     hdrs = ["robot_state_msg_translator.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody:rigid_body_tree",
         "//attic/util",
@@ -52,61 +52,12 @@ drake_cc_library(
     name = "sim_diagram_builder",
     srcs = ["sim_diagram_builder.cc"],
     hdrs = ["sim_diagram_builder.h"],
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         "//attic/multibody/rigid_body_plant",
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//systems/controllers:state_feedback_controller_interface",
         "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "simple_tree_visualizer",
-    srcs = ["simple_tree_visualizer.cc"],
-    hdrs = ["simple_tree_visualizer.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//attic/multibody/rigid_body_plant:create_load_robot_message",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//attic/systems/rendering:drake_visualizer_client",
-        "//common:essential",
-        "//lcm",
-        "//lcmtypes:viewer",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_binary(
-    name = "simple_tree_visualizer_demo",
-    srcs = ["simple_tree_visualizer_demo.cc"],
-    add_test_rule = 1,
-    copts = ["-Wno-deprecated-declarations"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--num_configurations=1"],
-    deps = [
-        ":simple_tree_visualizer",
-        "//attic/multibody/parsers",
-        "//common:essential",
-        "//common:find_resource",
-        "//lcm",
-        "//systems/framework",
-        "@gflags",
-    ],
-)
-
-drake_cc_library(
-    name = "frame_pose_tracker",
-    srcs = ["frame_pose_tracker.cc"],
-    hdrs = ["frame_pose_tracker.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/rigid_body_plant",
-        "//geometry:frame_kinematics",
-        "//multibody/math:spatial_velocity",
-        "//systems/framework:leaf_system",
     ],
 )
 
@@ -116,8 +67,8 @@ drake_cc_googletest(
     name = "robot_state_msg_translator_test",
     # TODO(siyuan): we should eventually move the models for test outside of
     # /examples.
+    copts = ["-Wno-deprecated-declarations"],
     data = [
-        "//examples/valkyrie:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
@@ -133,6 +84,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sim_diagram_builder_test",
+    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
@@ -149,21 +101,6 @@ drake_cc_googletest(
         "//systems/controllers:pid_controller",
         "//systems/framework",
         "//systems/primitives:constant_vector_source",
-    ],
-)
-
-drake_cc_googletest(
-    name = "frame_pose_tracker_test",
-    copts = ["-Wno-deprecated-declarations"],
-    data = ["//manipulation/models/iiwa_description:models"],
-    deps = [
-        ":frame_pose_tracker",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_geometry_compare",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//systems/framework",
     ],
 )
 

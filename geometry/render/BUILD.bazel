@@ -129,6 +129,8 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        "//common:scope_exit",
+        "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//third_party/com_github_finetjul_bender:vtkCapsuleSource",
         "@vtk//:vtkCommonCore",
@@ -160,6 +162,12 @@ drake_cc_library(
 
 # === test/ ===
 
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = ["test/diag_gradient.png"],
+)
+
 drake_cc_googletest(
     name = "render_engine_test",
     deps = [
@@ -173,6 +181,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "render_engine_ospray_test",
     data = [
+        ":test_models",
         "//systems/sensors:test_models",
     ],
     # This generally flakes on CI for unknown reasons.
@@ -193,6 +202,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "render_engine_vtk_test",
     data = [
+        ":test_models",
         "//systems/sensors:test_models",
     ],
     tags = vtk_test_tags(),

@@ -13,6 +13,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
@@ -340,6 +341,10 @@ void NloptSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "NloptSolver doesn't support the feature of variable scaling.");
+  }
 
   const int nx = prog.num_vars();
 

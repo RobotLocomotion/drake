@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common import RandomDistribution
+from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.symbolic import Expression, Variable
@@ -25,6 +25,7 @@ from pydrake.systems.primitives import (
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
     Demultiplexer, Demultiplexer_,
+    DiscreteDerivative, DiscreteDerivative_,
     DiscreteTimeDelay, DiscreteTimeDelay_,
     FirstOrderLowPassFilter,
     FirstOrderTaylorApproximation,
@@ -43,6 +44,8 @@ from pydrake.systems.primitives import (
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     Sine, Sine_,
+    StateInterpolatorWithDiscreteDerivative,
+    StateInterpolatorWithDiscreteDerivative_,
     SymbolicVectorSystem, SymbolicVectorSystem_,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
@@ -76,6 +79,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(ConstantValueSource_)
         self._check_instantiations(ConstantVectorSource_)
         self._check_instantiations(Demultiplexer_)
+        self._check_instantiations(DiscreteDerivative_)
         self._check_instantiations(DiscreteTimeDelay_)
         self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
@@ -85,6 +89,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Saturation_)
         self._check_instantiations(SignalLogger_)
         self._check_instantiations(Sine_)
+        self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
         self._check_instantiations(SymbolicVectorSystem_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
@@ -172,6 +177,20 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(system.y0(), y0)
         self.assertEqual(system.time_period(), 0.)
 
+        x0 = np.array([1, 2])
+        system.configure_default_state(x0=x0)
+        system.SetDefaultContext(context)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), x0)
+        generator = RandomGenerator()
+        system.SetRandomContext(context, generator)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), x0)
+        system.configure_random_state(covariance=np.eye(2))
+        system.SetRandomContext(context, generator)
+        self.assertNotEqual(
+            context.get_continuous_state_vector().CopyToVector()[1], x0[1])
+
         Co = ControllabilityMatrix(system)
         self.assertEqual(Co.shape, (2, 2))
         self.assertFalse(IsControllable(system))
@@ -203,6 +222,17 @@ class TestGeneral(unittest.TestCase):
 
         system = MatrixGain(D=A)
         self.assertTrue((system.D() == A).all())
+
+    def test_linear_system_zero_size(self):
+        # Explicitly test #12633.
+        num_x = 0
+        num_y = 2
+        num_u = 2
+        A = np.zeros((num_x, num_x))
+        B = np.zeros((num_x, num_u))
+        C = np.zeros((num_y, num_x))
+        D = np.zeros((num_y, num_u))
+        self.assertIsNotNone(LinearSystem(A, B, C, D))
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
@@ -490,3 +520,31 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(sine_source.get_output_port(0).size(), 2)
         self.assertEqual(sine_source.get_output_port(1).size(), 2)
         self.assertEqual(sine_source.get_output_port(2).size(), 2)
+
+    def test_discrete_derivative(self):
+        discrete_derivative = DiscreteDerivative(num_inputs=5, time_step=0.5)
+        self.assertEqual(discrete_derivative.get_input_port(0).size(), 5)
+        self.assertEqual(discrete_derivative.get_output_port(0).size(), 5)
+        self.assertEqual(discrete_derivative.time_step(), 0.5)
+
+    def test_state_interpolator_with_discrete_derivative(self):
+        state_interpolator = StateInterpolatorWithDiscreteDerivative(
+            num_positions=5, time_step=0.4)
+        self.assertEqual(state_interpolator.get_input_port(0).size(), 5)
+        self.assertEqual(state_interpolator.get_output_port(0).size(), 10)
+
+        # test set_initial_position using context
+        context = state_interpolator.CreateDefaultContext()
+        state_interpolator.set_initial_position(
+            context=context, position=5*[1.1])
+        np.testing.assert_array_equal(
+            context.get_discrete_state_vector().CopyToVector(),
+            np.array(10*[1.1]))
+
+        # test set_initial_position using state
+        context = state_interpolator.CreateDefaultContext()
+        state_interpolator.set_initial_position(
+            state=context.get_state(), position=5*[1.3])
+        np.testing.assert_array_equal(
+            context.get_discrete_state_vector().CopyToVector(),
+            np.array(10*[1.3]))

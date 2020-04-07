@@ -4,6 +4,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -37,6 +38,15 @@ Environment BuildEnvironment(const VectorX<Variable>& vars,
     env.insert(vars[i], values[i]);
   }
   return env;
+}
+
+GTEST_TEST(TestConstraint, BoundSizeCheck) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LinearConstraint(Eigen::Matrix3d::Identity(), Eigen::Vector2d(1., 2),
+                       Eigen::Vector3d(2., 3, 4.)),
+      std::invalid_argument,
+      "Constraint  expects lower and upper bounds of size 3, got lower "
+      "bound of size 2 and upper bound of size 3.");
 }
 
 GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
@@ -89,6 +99,12 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   QuadraticConstraint constraint1(Q, b, 0, 1);
   EXPECT_TRUE(CompareMatrices(constraint1.Q(), Q));
   EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+  std::ostringstream os;
+  constraint1.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
+  EXPECT_EQ(fmt::format("{}", os.str()),
+            "QuadraticConstraint\n"
+            "0 <= (x(0) + 2 * x(1) + 0.5 * pow(x(0), 2) + 0.5 * pow(x(1), 2)) "
+            "<= 1\n");
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};

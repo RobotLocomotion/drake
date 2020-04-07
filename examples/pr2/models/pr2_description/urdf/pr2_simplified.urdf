@@ -5,6 +5,7 @@
 <!-- =================================================================================== -->
 <!-- =================================================================================== -->
 <!-- |    Note that this file has been edited by hand for Drake compatibility:         | -->
+<!-- |    - Missing material textures have been replaced with rgba colors.             | -->
 <!-- |    - .stl mesh extensions were replaced with .obj extensions.                   | -->
 <!-- |    - The wheel joints intended for base movement have been changed from         | -->
 <!-- |      continuous to fixed types. Joints for planar base movement have been added | -->
@@ -71,30 +72,49 @@
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
   <material name="Caster">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_caster_texture.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <material name="Wheel_l">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_wheel_left.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <material name="Wheel_r">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_wheel_right.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <material name="RollLinks">
+    <!-- Drake is missing the png file, so we'll use a color instead for now.
     <texture filename="pr2_ogre/Media/materials/textures/pr2_wheel_left.png"/>
+    -->
+    <color rgba="0.5 0.5 0.5 1.0"/>
   </material>
   <!-- Now we can start using the macros included above to define the actual PR2 -->
   <!-- The first use of a macro.  This one was defined in base.urdf.xacro above.
        A macro like this will expand to a set of link and joint definitions, and to additional
-       Gazebo-related extensions (sensor plugins, etc).  The macro takes an argument, name, 
-       that equals "base", and uses it to generate names for its component links and joints 
-       (e.g., base_link).  The included origin block is also an argument to the macro.  By convention, 
-       the origin block defines where the component is w.r.t its parent (in this case the parent 
+       Gazebo-related extensions (sensor plugins, etc).  The macro takes an argument, name,
+       that equals "base", and uses it to generate names for its component links and joints
+       (e.g., base_link).  The included origin block is also an argument to the macro.  By convention,
+       the origin block defines where the component is w.r.t its parent (in this case the parent
        is the world frame). For more, see http://www.ros.org/wiki/xacro -->
-  <link name="world_link"/>
   <link name="base_link_0"/>
   <link name="base_link_1"/>
+  <!-- RigidBodyTree only supports fixed or unactuated joints to the
+       world.  Prismatic joints with a transmission don't work
+       correctly. -->
+  <link name="base_link_for_rbt_compat"/>
+  <joint name="world_joint_for_rbt_compat" type="fixed">
+    <parent link="world"/>
+    <child link="base_link_for_rbt_compat"/>
+  </joint>
   <joint name="x" type="prismatic">
-    <parent link="world_link"/>
+    <parent link="base_link_for_rbt_compat"/>
     <child link="base_link_0"/>
     <axis xyz="1 0 0"/>
   </joint>
@@ -962,7 +982,7 @@
       <!-- Needs verification with CAD -->
       <mass value="0.05"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <!-- Should probably get real visuals here at some point -->
     <visual>
@@ -1071,7 +1091,7 @@
       <!-- Needs verification with CAD -->
       <mass value="0.1"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.01"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
     <!-- Should probably get real visuals here at some point -->
     <visual>
@@ -1957,7 +1977,7 @@
   </gazebo>
   <!-- WristTransmission replaced for Drake compatibility -->
   <!--
-  <transmission name="r_wrist_trans" type="WristTransmission"> 
+  <transmission name="r_wrist_trans" type="WristTransmission">
     <rightActuator mechanicalReduction="60.1714285714" name="r_wrist_r_motor"/>
     <leftActuator mechanicalReduction="60.1714285714" name="r_wrist_l_motor"/>
     <flexJoint mechanicalReduction="-1.0" name="r_wrist_flex_joint"/>
@@ -2376,8 +2396,9 @@
     <dynamics damping="100.0"/>
     <limit effort="1000.0" lower="0.0" upper="0.09" velocity="0.2"/>
     <safety_controller k_position="20.0" k_velocity="5000.0" soft_lower_limit="-0.01" soft_upper_limit="0.088"/>
-  </joint>-->
+  </joint>
   <link name="r_gripper_l_finger_tip_frame"/>
+  -->
   <gazebo reference="r_gripper_palm_link">
     <turnGravityOff>true</turnGravityOff>
     <sensor:contact name="r_gripper_palm_contact_sensor">
@@ -2407,7 +2428,7 @@
   </gazebo>
   <!-- PR2GripperTransmission commented for Drake compatibility -->
   <!--
-  <transmission name="r_gripper_trans" type="PR2GripperTransmission"> 
+  <transmission name="r_gripper_trans" type="PR2GripperTransmission">
     <actuator name="r_gripper_motor"/>
     <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="r_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
     < if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have
@@ -3309,8 +3330,9 @@
     <dynamics damping="100.0"/>
     <limit effort="1000.0" lower="0.0" upper="0.09" velocity="0.2"/>
     <safety_controller k_position="20.0" k_velocity="5000.0" soft_lower_limit="-0.01" soft_upper_limit="0.088"/>
-  </joint>-->
+  </joint>
   <link name="l_gripper_l_finger_tip_frame"/>
+  -->
   <gazebo reference="l_gripper_palm_link">
     <turnGravityOff>true</turnGravityOff>
     <sensor:contact name="l_gripper_palm_contact_sensor">
@@ -3340,7 +3362,7 @@
   </gazebo>
   <!-- PR2GripperTransmission commented for Drake compatibility -->
   <!--
-  <transmission name="l_gripper_trans" type="PR2GripperTransmission"> 
+  <transmission name="l_gripper_trans" type="PR2GripperTransmission">
     <actuator name="l_gripper_motor"/>
     <gap_joint L0="0.0375528" a="0.0683698" b="0.0433849" gear_ratio="40.095" h="0.0" mechanical_reduction="1.0" name="l_gripper_joint" phi0="0.518518122146" r="0.0915" screw_reduction="0.004" t0="-0.0001914" theta0="0.0628824676201"/>
     < if a gazebo joint exists as [l|r]_gripper_joint, use this tag to have

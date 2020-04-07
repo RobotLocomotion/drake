@@ -192,11 +192,3 @@ Development stage is one of four values:
 Z (build) is optional. This is probably not needed but could just refer to the
 revision of the repository at the time of snapshot. Numbered versions should be
 referenced via tags.
-
-Supplementary documents
-=======================
-
-.. toctree::
-  :maxdepth: 1
-
-  cxx_inl

@@ -4,6 +4,7 @@
 
 #include <osqp.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -230,6 +231,11 @@ void OsqpSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "OsqpSolver doesn't support the feature of variable scaling.");
+  }
+
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
 
@@ -317,6 +323,8 @@ void OsqpSolver::DoSolve(
             work->solution->x, prog.num_vars());
         result->set_x_val(osqp_sol.cast<double>());
         result->set_optimal_cost(work->info->obj_val + constant_cost_term);
+        solver_details.y =
+            Eigen::Map<Eigen::VectorXd>(work->solution->y, work->data->m);
         solution_result = SolutionResult::kSolutionFound;
         break;
       }

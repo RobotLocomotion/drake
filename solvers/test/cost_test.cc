@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"
@@ -134,6 +135,11 @@ GTEST_TEST(testCost, testLinearCost) {
   auto new_cost = make_shared<LinearCost>(a, b);
   new_cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + b, tol);
+
+  new_cost->set_description("simple linear cost");
+  EXPECT_EQ(
+      fmt::format("{}", *new_cost),
+      "LinearCost (100 + $(0) + 2 * $(1)) described as 'simple linear cost'");
 }
 
 GTEST_TEST(testCost, testQuadraticCost) {

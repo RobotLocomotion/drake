@@ -56,7 +56,7 @@ class TestParsers(unittest.TestCase):
             weld_frame,
             robot)
 
-        expected_num_bodies = 86
+        expected_num_bodies = 84
         self.assertEqual(robot.get_num_bodies(), expected_num_bodies,
                          msg='Incorrect number of bodies: {0} vs. {1}'.format(
                              robot.get_num_bodies(), expected_num_bodies))
@@ -81,7 +81,7 @@ class TestParsers(unittest.TestCase):
             sdf_string = f.read()
         package_map = PackageMap()
         weld_frame = None
-        floating_base_type = FloatingBaseType.kRollPitchYaw
+        floating_base_type = FloatingBaseType.kExperimentalMultibodyPlantStyle
 
         robot_1 = RigidBodyTree()
         AddModelInstancesFromSdfStringSearchingInRosPackages(
@@ -111,7 +111,7 @@ class TestParsers(unittest.TestCase):
         robot = RigidBodyTree()
         id_table = AddModelInstancesFromSdfFile(
             FindResourceOrThrow("drake/examples/acrobot/Acrobot.sdf"),
-            FloatingBaseType.kRollPitchYaw, None, robot)
+            FloatingBaseType.kExperimentalMultibodyPlantStyle, None, robot)
         # Check IDs.
         (name, id), = id_table.items()
         self.assertEqual(name, "Acrobot")
@@ -128,7 +128,8 @@ class TestParsers(unittest.TestCase):
             if filename.endswith(".sdf"):
                 AddModelInstancesFromSdfFile(
                     FindResourceOrThrow(filename),
-                    FloatingBaseType.kRollPitchYaw, None, robot, **kwargs)
+                    FloatingBaseType.kExperimentalMultibodyPlantStyle, None,
+                    robot, **kwargs)
             else:
                 assert filename.endswith(".urdf")
                 AddModelInstanceFromUrdfFile(

@@ -12,6 +12,7 @@
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/discrete_time_delay.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
@@ -93,6 +94,13 @@ PYBIND11_MODULE(primitives, m) {
             doc.TimeVaryingAffineSystem.get_output_port.doc)
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc)
+        .def("configure_default_state",
+            &TimeVaryingAffineSystem<T>::configure_default_state, py::arg("x0"),
+            doc.TimeVaryingAffineSystem.configure_default_state.doc)
+        .def("configure_random_state",
+            &TimeVaryingAffineSystem<T>::configure_random_state,
+            py::arg("covariance"),
+            doc.TimeVaryingAffineSystem.configure_random_state.doc)
         // Need to specifically redeclare the System to have both overloads
         // available.
         .def("get_input_port", &System<T>::get_input_port,
@@ -140,6 +148,13 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("abstract_model_value"),
             doc.DiscreteTimeDelay.ctor
                 .doc_3args_update_sec_delay_timesteps_abstract_model_value);
+
+    DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
+        m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
+        .def(py::init<int, double>(), py::arg("num_inputs"),
+            py::arg("time_step"), doc.DiscreteDerivative.ctor.doc)
+        .def("time_step", &DiscreteDerivative<T>::time_step,
+            doc.DiscreteDerivative.time_step.doc);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //
@@ -231,6 +246,30 @@ PYBIND11_MODULE(primitives, m) {
         .def("data", &SignalLogger<T>::data, py_reference_internal,
             doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
+
+    DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
+        Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
+        GetPyParam<T>(), doc.StateInterpolatorWithDiscreteDerivative.doc)
+        .def(py::init<int, double>(), py::arg("num_positions"),
+            py::arg("time_step"),
+            doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
+        .def("set_initial_position",
+            [](const StateInterpolatorWithDiscreteDerivative<T>* self,
+                Context<T>* context,
+                const Eigen::Ref<const VectorX<T>>& position) {
+              self->set_initial_position(context, position);
+            },
+            py::arg("context"), py::arg("position"),
+            doc.StateInterpolatorWithDiscreteDerivative.set_initial_position
+                .doc)
+        .def("set_initial_position",
+            [](const StateInterpolatorWithDiscreteDerivative<T>* self,
+                State<T>* state, const Eigen::Ref<const VectorX<T>>& position) {
+              self->set_initial_position(state, position);
+            },
+            py::arg("state"), py::arg("position"),
+            doc.StateInterpolatorWithDiscreteDerivative.set_initial_position
+                .doc);
 
     DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
         "SymbolicVectorSystem", GetPyParam<T>(), doc.SymbolicVectorSystem.doc)

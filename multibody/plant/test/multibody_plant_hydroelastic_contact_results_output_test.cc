@@ -45,10 +45,12 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     geometry::SceneGraph<double>& scene_graph =
         *builder.AddSystem<geometry::SceneGraph<double>>();
     scene_graph.set_name("scene_graph");
+    // TODO(SeanCurtis-TRI): This should _not_ be using code from the examples/
+    //  directory. Examples code shouldn't feed back into other code.
     plant_ = builder.AddSystem(
         examples::multibody::bouncing_ball::MakeBouncingBallPlant(
             radius, mass, elastic_modulus, dissipation, friction, gravity_W,
-            &scene_graph));
+            false /* rigid_sphere */, false /* soft_ground */, &scene_graph));
     plant_->set_contact_model(ContactModel::kHydroelasticsOnly);
     plant_->Finalize();
 

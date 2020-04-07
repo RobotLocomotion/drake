@@ -1,14 +1,21 @@
 import unittest
 
 from pydrake.examples.rimless_wheel import (
-    RimlessWheelParams, RimlessWheel, RimlessWheelContinuousState
+    RimlessWheel, RimlessWheelContinuousState,
+    RimlessWheelGeometry, RimlessWheelParams
     )
-from pydrake.systems.analysis import (
-    Simulator
-    )
+from pydrake.geometry import SceneGraph
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestRimlessWheel(unittest.TestCase):
+    def test_rimless_wheel(self):
+        plant = RimlessWheel()
+        # Confirm the spelling on the output ports.
+        plant.get_minimal_state_output_port()
+        plant.get_floating_base_state_output_port()
+
     def test_params(self):
         params = RimlessWheelParams()
         params.set_mass(1.)
@@ -28,6 +35,30 @@ class TestRimlessWheel(unittest.TestCase):
         state.set_thetadot(2.)
         self.assertEqual(state.theta(), 1.)
         self.assertEqual(state.thetadot(), 2.)
+
+    def test_geometry(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(RimlessWheel())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = RimlessWheelGeometry.AddToBuilder(
+            builder=builder,
+            floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
+            scene_graph=scene_graph)
+        # Confirming that the resulting diagram builds.
+        builder.Build()
+        self.assertIsInstance(geom, RimlessWheelGeometry)
+
+    def test_geometry_with_params(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(RimlessWheel())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = RimlessWheelGeometry.AddToBuilder(
+            builder=builder,
+            floating_base_state_port=plant.get_floating_base_state_output_port(),  # noqa
+            rimless_wheel_params=RimlessWheelParams(), scene_graph=scene_graph)
+        # Confirming that the resulting diagram builds.
+        builder.Build()
+        self.assertIsInstance(geom, RimlessWheelGeometry)
 
     def test_simulation(self):
         # Basic rimless_wheel simulation.

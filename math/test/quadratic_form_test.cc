@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -210,6 +211,51 @@ GTEST_TEST(TestDecomposePositiveQuadraticForm, Test6) {
   EXPECT_THROW(DecomposePositiveQuadraticForm(Q, b, c, -1E-15),
                std::runtime_error);
 }
+
+void CheckBalancing(const Eigen::Matrix3d& S, const Eigen::Matrix3d& P,
+                   const Eigen::MatrixXd& T) {
+  const Eigen::MatrixXd D = T.transpose() * S * T;
+  const Eigen::MatrixXd Dinv = (T.transpose() * P * T).cwiseAbs();
+
+  // Check that D and Dinv are diagonal.
+  EXPECT_TRUE(CompareMatrices(D, Eigen::MatrixXd(D.diagonal().asDiagonal()),
+                              1e-11));
+  EXPECT_TRUE(
+      CompareMatrices(Dinv, Eigen::MatrixXd(Dinv.diagonal().asDiagonal()),
+                      1e-11));
+
+  // Check that Dinv is, in fact, the inverse of D.
+  EXPECT_TRUE(CompareMatrices(D.inverse(), Dinv, 1e-10));
+}
+
+GTEST_TEST(MatrixUtilTest, BalanceQuadraticFormsTest) {
+  Eigen::Matrix3d A, B;
+  // clang-format off
+  A << 1, 2, 4,
+      2, 3, 5,
+      4, 5, 6;
+  B << 7,  8,  9,
+      8, 10, 11,
+      9, 11, 12;
+  // clang-format on
+
+  const Eigen::Matrix3d S = A * A.transpose();
+  const Eigen::Matrix3d P = B * B.transpose();
+  const Eigen::MatrixXd T = BalanceQuadraticForms(S, P);
+  CheckBalancing(S, P, T);
+
+  const Eigen::MatrixXd T2 = BalanceQuadraticForms(P, S);
+  CheckBalancing(P, S, T2);
+
+  // Now confirm that P need not have been PSD.
+  EXPECT_FALSE(math::IsPositiveDefinite(A));
+  const Eigen::MatrixXd T3 = BalanceQuadraticForms(P, A);
+  CheckBalancing(P, A, T3);
+  EXPECT_FALSE(math::IsPositiveDefinite(B));
+  const Eigen::MatrixXd T4 = BalanceQuadraticForms(S, B);
+  CheckBalancing(S, B, T4);
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

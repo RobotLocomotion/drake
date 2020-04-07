@@ -1,0 +1,18 @@
+namespace: drake::manipulation::schunk_wsg
+elements:
+  -
+    name: last_target_position
+    doc: last_target_position
+    default_value: 0.0
+  -
+    name: trajectory_start_time
+    doc: trajectory_start_time
+    default_value: 0.0
+  -
+    name: last_position
+    doc: last_position
+    default_value: 0.0
+  -
+    name: max_force
+    doc: max_force
+    default_value: 0.0

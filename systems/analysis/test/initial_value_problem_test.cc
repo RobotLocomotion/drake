@@ -6,7 +6,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/systems/analysis/initial_value_problem-inl.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -30,7 +29,7 @@ GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
   // The default parameters 𝐤₀, for IVP definition.
   const VectorX<double> kDefaultParameters = VectorX<double>::Constant(2, 1.0);
   // All specified values by default, for IVP definition.
-  const InitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const InitialValueProblem<double>::OdeContext kDefaultValues(
       kDefaultInitialTime, kDefaultInitialState, kDefaultParameters);
 
   // Instantiates a generic IVP for test purposes only,
@@ -63,7 +62,7 @@ GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
 
   // Specifies a different parameter vector, but leaves both
   // initial time and state as defaults.
-  InitialValueProblem<double>::SpecifiedValues values;
+  InitialValueProblem<double>::OdeContext values;
   values.k = VectorX<double>::Constant(2, 5.0).eval();
   const VectorX<double>& k2 = values.k.value();
   const double t2 = kDefaultInitialTime + 0.3;
@@ -78,7 +77,7 @@ GTEST_TEST(InitialValueProblemTest, SolutionUsingMultipleIntegrators) {
 GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
   // Defines a generic ODE d𝐱/dt = -𝐱 + 𝐤, that does not
   // model (nor attempts to model) any physical process.
-  const InitialValueProblem<double>::ODEFunction dummy_ode_function =
+  const InitialValueProblem<double>::OdeFunction dummy_ode_function =
       [](const double& t, const VectorX<double>& x,
          const VectorX<double>& k) -> VectorX<double> {
     unused(k);
@@ -87,14 +86,14 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       const InitialValueProblem<double>::
-          SpecifiedValues no_values;
+          OdeContext no_values;
       const InitialValueProblem<double> ivp(
           dummy_ode_function, no_values);
     }, std::logic_error, "No default.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       InitialValueProblem<double>::
-          SpecifiedValues values_without_t0;
+          OdeContext values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = VectorX<double>::Zero(2).eval();
       const InitialValueProblem<double> ivp(
@@ -103,7 +102,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       InitialValueProblem<double>::
-          SpecifiedValues values_without_x0;
+          OdeContext values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const InitialValueProblem<double> ivp(
@@ -112,7 +111,7 @@ GTEST_TEST(InitialValueProblemTest, ConstructionPreconditionsValidation) {
 
   DRAKE_EXPECT_THROWS_MESSAGE({
       InitialValueProblem<double>::
-          SpecifiedValues values_without_k;
+          OdeContext values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = VectorX<double>();
       const InitialValueProblem<double> ivp(
@@ -129,7 +128,7 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   // The default parameters 𝐤₀, for IVP definition.
   const VectorX<double> kDefaultParameters = VectorX<double>::Constant(2, 1.0);
   // All specified values by default, for IVP definition.
-  const InitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const InitialValueProblem<double>::OdeContext kDefaultValues(
       kDefaultInitialTime, kDefaultInitialState, kDefaultParameters);
 
   // Instantiates a generic IVP for test purposes only,
@@ -175,7 +174,7 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime), std::logic_error,
                               kInvalidTimeErrorMessage);
   {
-    InitialValueProblem<double>::SpecifiedValues values;
+    InitialValueProblem<double>::OdeContext values;
     values.k = kInvalidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(
         ivp.Solve(kValidTime, values), std::logic_error,
@@ -186,7 +185,7 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   }
 
   {
-    InitialValueProblem<double>::SpecifiedValues values;
+    InitialValueProblem<double>::OdeContext values;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
                                 std::logic_error,
@@ -197,7 +196,7 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   }
 
   {
-    InitialValueProblem<double>::SpecifiedValues values;
+    InitialValueProblem<double>::OdeContext values;
     values.x0 = kInvalidState;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
@@ -208,7 +207,7 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   }
 
   {
-    InitialValueProblem<double>::SpecifiedValues values;
+    InitialValueProblem<double>::OdeContext values;
     values.x0 = kValidState;
     values.k = kInvalidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
@@ -219,7 +218,7 @@ GTEST_TEST(InitialValueProblemTest, ComputationPreconditionsValidation) {
   }
 
   {
-    InitialValueProblem<double>::SpecifiedValues values;
+    InitialValueProblem<double>::OdeContext values;
     values.x0 = kValidState;
     values.k = kValidParameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
@@ -259,7 +258,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
       (VectorX<double>(2) << kDefaultParticleMass,
                              kDefaultGasViscosity).finished();
   // All specified values by default, for IVP definition.
-  const InitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const InitialValueProblem<double>::OdeContext kDefaultValues(
       kInitialTime, kInitialParticleMomentum, kDefaultParameters);
 
   // Instantiates the particle momentum IVP.
@@ -293,7 +292,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
          m += kParticleMassStep) {
-      InitialValueProblem<double>::SpecifiedValues values;
+      InitialValueProblem<double>::OdeContext values;
       values.k = (VectorX<double>(2) << mu, m).finished();
 
       const std::unique_ptr<DenseOutput<double>> particle_momentum_approx =
@@ -343,7 +342,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
       (VectorX<double>(2) << kDefaultParticleMass,
                              kDefaultGasViscosity).finished();
   // All specified values by default, for IVP definition.
-  const InitialValueProblem<double>::SpecifiedValues kDefaultValues(
+  const InitialValueProblem<double>::OdeContext kDefaultValues(
       kInitialTime, kInitialParticleVelocity, kDefaultParameters);
 
   // Instantiates the particle velocity IVP.
@@ -381,7 +380,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
        mu += kGasViscosityStep) {
     for (double m = kLowestParticleMass; m <= kHighestParticleMass;
          m += kParticleMassStep) {
-      InitialValueProblem<double>::SpecifiedValues values;
+      InitialValueProblem<double>::OdeContext values;
       values.k = (VectorX<double>(2) << mu, m).finished();
 
       const std::unique_ptr<DenseOutput<double>> particle_velocity_approx =

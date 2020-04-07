@@ -5,10 +5,10 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/attic/documentation_pybind.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
@@ -160,28 +160,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyTree.get_num_model_instances.doc)
       .def("getBodyOrFrameName", &RigidBodyTree<double>::getBodyOrFrameName,
           py::arg("body_or_frame_id"), doc.RigidBodyTree.getBodyOrFrameName.doc)
-      .def("number_of_positions",
-          WrapDeprecated(
-              std::string(
-                  "DRAKE DEPRECATED: Please use get_num_positions(). "
-                  "The deprecated code will be removed from Drake on or after "
-                  /* DRAKE_DEPRECATED */ "2020-03-01"),
-              &RigidBodyTree<double>::get_num_positions),
-          "DRAKE DEPRECATED: Please use get_num_positions(). "
-          "The deprecated code will be removed from Drake on or after "
-          /* DRAKE_DEPRECATED */ "2020-03-01")
       .def("get_num_positions", &RigidBodyTree<double>::get_num_positions,
           doc.RigidBodyTree.get_num_positions.doc)
-      .def("number_of_velocities",
-          WrapDeprecated(
-              std::string(
-                  "DRAKE DEPRECATED: Please use get_num_velocities(). "
-                  "The deprecated code will be removed from Drake on or after "
-                  /* DRAKE_DEPRECATED */ "2020-03-01"),
-              &RigidBodyTree<double>::get_num_velocities),
-          "DRAKE DEPRECATED: Please use get_num_velocities(). "
-          "The deprecated code will be removed from Drake on or after "
-          /* DRAKE_DEPRECATED */ "2020-03-01")
       .def("get_num_velocities", &RigidBodyTree<double>::get_num_velocities,
           doc.RigidBodyTree.get_num_velocities.doc)
       .def("get_body", &RigidBodyTree<double>::get_body,

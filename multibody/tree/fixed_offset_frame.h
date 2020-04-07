@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "drake/common/default_scalars.h"
@@ -28,7 +29,7 @@ template <class T> class RigidBody;
 /// @ref multibody_spatial_pose. <!-- https://drake.mit.edu/doxygen_cxx/
 ///                                   group__multibody__spatial__pose.html -->
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class FixedOffsetFrame final : public Frame<T> {
  public:
@@ -83,9 +84,23 @@ class FixedOffsetFrame final : public Frame<T> {
     return parent_frame_.CalcOffsetPoseInBody(context, X_PF_.cast<T>());
   }
 
+  math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
+      const systems::Context<T>& context) const override {
+    // R_BF = R_BP * R_PF
+    const math::RotationMatrix<double>& R_PF = X_PF_.rotation();
+    return parent_frame_.CalcOffsetRotationMatrixInBody(context,
+                                                        R_PF.cast<T>());
+  }
+
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     // X_BF = X_BP * X_PF
     return parent_frame_.GetFixedOffsetPoseInBody(X_PF_.cast<T>());
+  }
+
+  math::RotationMatrix<T> GetFixedRotationMatrixInBodyFrame() const override {
+    // R_BF = R_BP * R_PF
+    const math::RotationMatrix<double>& R_PF = X_PF_.rotation();
+    return parent_frame_.GetFixedRotationMatrixInBody(R_PF.cast<T>());
   }
 
  protected:

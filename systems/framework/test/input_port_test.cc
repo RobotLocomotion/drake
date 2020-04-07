@@ -29,7 +29,7 @@ GTEST_TEST(InputPortTest, VectorTest) {
   const auto context_ptr = dummy_system.CreateDefaultContext();
   const auto& context = *context_ptr;
   const System<T>* const system = &dummy_system;
-  internal::SystemMessageInterface* const system_base = &dummy_system;
+  internal::SystemMessageInterface* const system_interface = &dummy_system;
   const std::string name{"port_name"};
   const InputPortIndex index{2};
   const DependencyTicket ticket;
@@ -38,8 +38,8 @@ GTEST_TEST(InputPortTest, VectorTest) {
   const std::optional<RandomDistribution> random_type = std::nullopt;
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
-      system, system_base, name, index, ticket, data_type, size, random_type,
-      &DoEval);
+      system, system_interface, name, index, ticket, data_type, size,
+      random_type, &DoEval);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -47,7 +47,7 @@ GTEST_TEST(InputPortTest, VectorTest) {
   EXPECT_EQ(dut->size(), size);
   EXPECT_EQ(dut->GetFullDescription(),
             "InputPort[2] (port_name) of System ::dummy (DummySystem)");
-  EXPECT_EQ(&dut->get_system_base(), system_base);
+  EXPECT_EQ(&dut->get_system_interface(), system_interface);
   EXPECT_EQ(&dut->get_system(), system);
 
   // Check HasValue.
@@ -89,7 +89,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   const auto context_ptr = dummy_system.CreateDefaultContext();
   const auto& context = *context_ptr;
   const System<T>* const system = &dummy_system;
-  internal::SystemMessageInterface* const system_base = &dummy_system;
+  internal::SystemMessageInterface* const system_interface = &dummy_system;
   const std::string name{"port_name"};
   const InputPortIndex index{2};
   const DependencyTicket ticket;
@@ -98,8 +98,8 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   const std::optional<RandomDistribution> random_type = std::nullopt;
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
-      system, system_base, name, index, ticket, data_type, size, random_type,
-      &DoEval);
+      system, system_interface, name, index, ticket, data_type, size,
+      random_type, &DoEval);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -107,7 +107,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   EXPECT_EQ(dut->size(), size);
   EXPECT_EQ(dut->GetFullDescription(),
             "InputPort[2] (port_name) of System ::dummy (DummySystem)");
-  EXPECT_EQ(&dut->get_system_base(), system_base);
+  EXPECT_EQ(&dut->get_system_interface(), system_interface);
   EXPECT_EQ(&dut->get_system(), system);
 
   // Check HasValue.
@@ -160,11 +160,11 @@ struct SystemWithInputPorts final : public LeafSystem<double> {
             DeclareAbstractInputPort("double_port", Value<double>(1.25))},
         string_port{DeclareAbstractInputPort("string_port",
                                              Value<std::string>("hello"))} {}
-  const InputPort<double>& basic_vec_port;
-  const InputPort<double>& derived_vec_port;
-  const InputPort<double>& int_port;
-  const InputPort<double>& double_port;
-  const InputPort<double>& string_port;
+  InputPort<double>& basic_vec_port;
+  InputPort<double>& derived_vec_port;
+  InputPort<double>& int_port;
+  InputPort<double>& double_port;
+  InputPort<double>& string_port;
 };
 
 // Test the FixValue() method. Note that the conversion of its value argument

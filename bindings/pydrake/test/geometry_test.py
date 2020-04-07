@@ -1,18 +1,22 @@
 import pydrake.geometry as mut
 
+import sys
 import unittest
 import warnings
 from math import pi
 
 import numpy as np
 
+from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.lcm import DrakeMockLcm
+from pydrake.lcm import DrakeMockLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
+from pydrake.systems.analysis import (
+    Simulator_,
+)
 from pydrake.systems.framework import (
     AbstractValue,
     DiagramBuilder_,
@@ -116,24 +120,49 @@ class TestGeometry(unittest.TestCase):
         T = float
         SceneGraph = mut.SceneGraph_[T]
         DiagramBuilder = DiagramBuilder_[T]
+        Simulator = Simulator_[T]
         lcm = DrakeMockLcm()
+        role = mut.Role.kIllustration
+        test_prefix = "TEST_PREFIX_"
 
-        for role in [mut.Role.kProximity, mut.Role.kIllustration]:
-            for i in range(2):
-                builder = DiagramBuilder()
-                scene_graph = builder.AddSystem(SceneGraph())
-                if i == 1:
-                    mut.ConnectDrakeVisualizer(
-                        builder=builder, scene_graph=scene_graph,
-                        lcm=lcm, role=role)
-                else:
-                    mut.ConnectDrakeVisualizer(
-                        builder=builder, scene_graph=scene_graph,
-                        pose_bundle_output_port=(
-                            scene_graph.get_pose_bundle_output_port()),
-                        lcm=lcm, role=role)
-                mut.DispatchLoadMessage(
-                    scene_graph=scene_graph, lcm=lcm, role=role)
+        def normal(builder, scene_graph):
+            mut.ConnectDrakeVisualizer(
+                builder=builder, scene_graph=scene_graph,
+                lcm=lcm, role=role)
+            mut.DispatchLoadMessage(
+                scene_graph=scene_graph, lcm=lcm, role=role)
+
+        def port(builder, scene_graph):
+            mut.ConnectDrakeVisualizer(
+                builder=builder, scene_graph=scene_graph,
+                pose_bundle_output_port=(
+                    scene_graph.get_pose_bundle_output_port()),
+                lcm=lcm, role=role)
+            mut.DispatchLoadMessage(
+                scene_graph=scene_graph, lcm=lcm, role=role)
+
+        for func in [normal, port]:
+            # Create subscribers.
+            load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
+            draw_channel = "DRAKE_VIEWER_DRAW"
+            load_subscriber = Subscriber(
+                lcm, load_channel, lcmt_viewer_load_robot)
+            draw_subscriber = Subscriber(
+                lcm, draw_channel, lcmt_viewer_draw)
+            # Test sequence.
+            builder = DiagramBuilder()
+            scene_graph = builder.AddSystem(SceneGraph())
+            # Only load will be published by `DispatchLoadMessage`.
+            func(builder, scene_graph)
+            lcm.HandleSubscriptions(0)
+            self.assertEqual(load_subscriber.count, 1)
+            self.assertEqual(draw_subscriber.count, 0)
+            diagram = builder.Build()
+            # Load and draw will be published.
+            Simulator(diagram).Initialize()
+            lcm.HandleSubscriptions(0)
+            self.assertEqual(load_subscriber.count, 2)
+            self.assertEqual(draw_subscriber.count, 1)
 
     @numpy_compare.check_nonsymbolic_types
     def test_frame_pose_vector_api(self, T):
@@ -228,12 +257,6 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
-
-        # Test for existence of deprecated accessors.
-        with catch_drake_warnings(expected_count=3):
-            cylinder.get_radius()
-            cylinder.get_length()
-            sphere.get_radius()
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")

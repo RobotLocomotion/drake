@@ -13,7 +13,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-namespace pose_aggregator_internal { struct InputRecord; }
+namespace internal { struct PoseAggregatorInputRecord; }
 
 /// A container with references to the input port for the pose input, and a
 /// reference to the input port for the velocity input.
@@ -72,15 +72,7 @@ struct PoseVelocityInputPorts {
 /// Systems that need to ingest every pose in the universe, such as renderers
 /// or sensor models, can simply depend on the output.
 ///
-/// This class is explicitly instantiated for the following scalar types. No
-/// other scalar types are supported.
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///           Only double and AutoDiffXd are supported.
+/// @tparam_default_scalar
 template <typename T>
 class PoseAggregator : public LeafSystem<T> {
  public:
@@ -126,7 +118,7 @@ class PoseAggregator : public LeafSystem<T> {
   // This is the method used by the allocator for the output port.
   PoseBundle<T> MakePoseBundle() const;
 
-  using InputRecord = pose_aggregator_internal::InputRecord;
+  using InputRecord = internal::PoseAggregatorInputRecord;
 
   // Returns an InputRecord for a generic single pose input.
   static InputRecord MakeSinglePoseInputRecord(const std::string& name,
@@ -151,12 +143,12 @@ class PoseAggregator : public LeafSystem<T> {
 };
 
 /** @cond */
-namespace pose_aggregator_internal {
+namespace internal {
 
 // A private data structure of PoseAggregator.  It is not nested within
 // PoseAggregator because it does not (and should not) depend on the type
 // parameter @p T.
-struct InputRecord {
+struct PoseAggregatorInputRecord {
   enum PoseInputType {
     kSinglePose = 1,
     kSingleVelocity = 2,
@@ -171,7 +163,7 @@ struct InputRecord {
   int model_instance_id{-1};
 };
 
-}  // namespace pose_aggregator_internal
+}  // namespace internal
 /** @endcond */
 
 }  // namespace rendering

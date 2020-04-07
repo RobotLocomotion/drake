@@ -12,6 +12,7 @@ load(
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "add_pybind_coverage_data",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -59,6 +60,20 @@ drake_pybind_library(
     py_deps = [
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "branch_and_bound_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+    ],
+    cc_srcs = ["branch_and_bound_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
     ],
 )
 
@@ -172,6 +187,7 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":branch_and_bound_py",
     ":gurobi_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
@@ -283,5 +299,17 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities",
     ],
 )
+
+drake_py_unittest(
+    name = "branch_and_bound_test",
+    deps = [
+        ":branch_and_bound_py",
+        ":osqp_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+add_pybind_coverage_data()
 
 add_lint_tests_pydrake()

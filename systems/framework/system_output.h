@@ -26,13 +26,14 @@ it has captured.
 A `SystemOutput<T>` object can only be obtained using
 `System<T>::AllocateOutput()` or by copying an existing %SystemOutput object.
 
-@tparam T The type of the output data. Must be a valid Eigen scalar. */
+@tparam_default_scalar
+*/
 template <typename T>
 class SystemOutput {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SystemOutput);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemOutput);
 
-  ~SystemOutput();
+  ~SystemOutput() = default;
 
   /** Returns the number of output ports specified for this %SystemOutput
   during allocation. */
@@ -81,7 +82,7 @@ class SystemOutput {
   friend class System<T>;
   friend class SystemOutputTest;
 
-  SystemOutput();
+  SystemOutput() = default;
 
   // Add a suitable object to hold values for the next output port.
   void add_port(std::unique_ptr<AbstractValue> model_value) {
@@ -90,13 +91,6 @@ class SystemOutput {
 
   std::vector<copyable_unique_ptr<AbstractValue>> port_values_;
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T> SystemOutput<T>::SystemOutput() = default;
-template <typename T> SystemOutput<T>::~SystemOutput() = default;
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(SystemOutput);
 
 }  // namespace systems
 }  // namespace drake

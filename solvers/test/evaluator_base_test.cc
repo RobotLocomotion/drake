@@ -204,6 +204,8 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
   const VectorXd lb = VectorXd::Constant(2, -1);
   const VectorXd ub = VectorXd::Constant(2, 1);
   SimpleEvaluator evaluator;
+  EXPECT_EQ(fmt::format("{}", evaluator),
+            "SimpleEvaluator with 3 decision variables $(0) $(1) $(2)");
   // The gradient sparsity pattern should be unset at evaluator construction.
   EXPECT_FALSE(evaluator.gradient_sparsity_pattern().has_value());
   // Now set the gradient sparsity pattern.
@@ -234,6 +236,45 @@ GTEST_TEST(EvaluatorBaseTest, SetGradientSparsityPattern) {
   }
 }
 
+/**
+ * An evaluator with dynamic sized input.
+ */
+class DynamicSizedEvaluator : public EvaluatorBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DynamicSizedEvaluator)
+
+  DynamicSizedEvaluator() : EvaluatorBase(1, Eigen::Dynamic) {}
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+ private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const {
+    (*y)(0) = x.template cast<ScalarY>().sum();
+  }
+};
+
+GTEST_TEST(EvaluatorBaseTest, DynamicSizedEvaluatorTest) {
+  DynamicSizedEvaluator evaluator{};
+  EXPECT_EQ(
+      fmt::format("{}", evaluator),
+      "DynamicSizedEvaluator with 1 decision variables dynamic_sized_variable");
+}
 }  // anonymous namespace
 }  // namespace solvers
 }  // namespace drake

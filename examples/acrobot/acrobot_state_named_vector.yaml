@@ -1,0 +1,22 @@
+namespace: drake::examples::acrobot
+elements:
+  -
+    name: theta1
+    doc: The shoulder joint angle
+    doc_units: rad
+    default_value: 0.0
+  -
+    name: theta2
+    doc: The elbow joint angle
+    doc_units: rad
+    default_value: 0.0
+  -
+    name: theta1dot
+    doc: The shoulder joint velocity
+    doc_units: rad/s
+    default_value: 0.0
+  -
+    name: theta2dot
+    doc: The elbow joint velocity
+    doc_units: rad/s
+    default_value: 0.0

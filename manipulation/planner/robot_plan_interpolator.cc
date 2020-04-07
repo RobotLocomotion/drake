@@ -24,16 +24,6 @@ using multibody::BodyIndex;
 using multibody::JointIndex;
 using trajectories::PiecewisePolynomial;
 
-namespace {
-
-// This corresponds to the actual plan.
-constexpr int kAbsStateIdxPlan = 0;
-// This corresponds to a flag that indicates whether the plan has been
-// initialized properly by RobotPlanInterpolator::Initialize().
-constexpr int kAbsStateIdxInitFlag = 1;
-
-}  // namespace
-
 // TODO(sammy-tri) If we had version of Trajectory which supported
 // outputting the derivatives in value(), we could avoid keeping track
 // of multiple polynomials below.
@@ -102,38 +92,31 @@ RobotPlanInterpolator::RobotPlanInterpolator(
               &RobotPlanInterpolator::OutputAccel)
           .get_index();
 
+  // This corresponds to the actual plan.
+  plan_index_ = this->DeclareAbstractState(
+      std::make_unique<Value<PlanData>>());
+  // Flag indicating whether RobotPlanInterpolator::Initialize has been called.
+  init_flag_index_ = this->DeclareAbstractState(
+      std::make_unique<Value<bool>>(false));
+
   this->DeclarePeriodicUnrestrictedUpdate(update_interval, 0);
 }
 
 RobotPlanInterpolator::~RobotPlanInterpolator() {}
 
-std::unique_ptr<systems::AbstractValues>
-RobotPlanInterpolator::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<AbstractValue>> abstract_vals(2);
-  const PlanData default_plan;
-  // Actual plan.
-  abstract_vals[kAbsStateIdxPlan] =
-      AbstractValue::Make<PlanData>(default_plan);
-  // Flag indicating whether RobotPlanInterpolator::Initialize() has
-  // been called.
-  abstract_vals[kAbsStateIdxInitFlag] =
-      AbstractValue::Make<bool>(false);
-  return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
-}
-
 void RobotPlanInterpolator::SetDefaultState(
     const systems::Context<double>&,
     systems::State<double>* state) const {
   PlanData& plan =
-      state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
+      state->get_mutable_abstract_state<PlanData>(plan_index_);
   plan = PlanData();
-  state->get_mutable_abstract_state<bool>(kAbsStateIdxInitFlag) = false;
+  state->get_mutable_abstract_state<bool>(init_flag_index_) = false;
 }
 
 void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
                                   systems::BasicVector<double>* output) const {
-  const PlanData& plan = context.get_abstract_state<PlanData>(kAbsStateIdxPlan);
-  const bool inited = context.get_abstract_state<bool>(kAbsStateIdxInitFlag);
+  const PlanData& plan = context.get_abstract_state<PlanData>(plan_index_);
+  const bool inited = context.get_abstract_state<bool>(init_flag_index_);
   DRAKE_DEMAND(inited);
 
   Eigen::VectorBlock<VectorX<double>> output_vec =
@@ -149,8 +132,8 @@ void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
 void RobotPlanInterpolator::OutputAccel(
     const systems::Context<double>& context,
     systems::BasicVector<double>* output) const {
-  const PlanData& plan = context.get_abstract_state<PlanData>(kAbsStateIdxPlan);
-  const bool inited = context.get_abstract_state<bool>(kAbsStateIdxInitFlag);
+  const PlanData& plan = context.get_abstract_state<PlanData>(plan_index_);
+  const bool inited = context.get_abstract_state<bool>(init_flag_index_);
   DRAKE_DEMAND(inited);
 
   Eigen::VectorBlock<VectorX<double>> output_acceleration_vec =
@@ -171,7 +154,7 @@ void RobotPlanInterpolator::MakeFixedPlan(
   DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(q0.size() == plant_.num_positions());
   PlanData& plan =
-      state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
+      state->get_mutable_abstract_state<PlanData>(plan_index_);
 
   std::vector<Eigen::MatrixXd> knots(2, q0);
   std::vector<double> times{0., 1.};
@@ -187,7 +170,7 @@ void RobotPlanInterpolator::Initialize(double plan_start_time,
                                        systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
   MakeFixedPlan(plan_start_time, q0, state);
-  state->get_mutable_abstract_state<bool>(kAbsStateIdxInitFlag) = true;
+  state->get_mutable_abstract_state<bool>(init_flag_index_) = true;
 }
 
 void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
@@ -195,7 +178,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   PlanData& plan =
-      state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
+      state->get_mutable_abstract_state<PlanData>(plan_index_);
   const robot_plan_t& plan_input =
       get_plan_input_port().Eval<robot_plan_t>(context);
 
@@ -248,12 +231,13 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
               input_time, knots);
           break;
         case InterpolatorType::Pchip :
-          plan.pp = PiecewisePolynomial<double>::Pchip(
+          plan.pp = PiecewisePolynomial<double>::CubicShapePreserving(
               input_time, knots, true);
           break;
         case InterpolatorType::Cubic :
-          plan.pp = PiecewisePolynomial<double>::Cubic(
-              input_time, knots, knot_dot, knot_dot);
+          plan.pp =
+              PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+                  input_time, knots, knot_dot, knot_dot);
           break;
       }
       plan.pp_deriv = plan.pp.derivative();

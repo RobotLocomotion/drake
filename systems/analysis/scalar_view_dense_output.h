@@ -5,6 +5,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/scalar_dense_output.h"
@@ -16,7 +17,7 @@ namespace systems {
 /// DenseOutput class instance and behaves as a view to one of
 /// its elements.
 ///
-/// @tparam T A valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
  public:
@@ -75,3 +76,6 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::ScalarViewDenseOutput)

@@ -17,13 +17,7 @@ namespace pendulum {
 ///    @output_port{state}
 /// }
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
+/// @tparam_default_scalar
 template <typename T>
 class PendulumPlant final : public systems::LeafSystem<T> {
  public:
@@ -89,6 +83,10 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const final;
+
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
+
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
 };
 
 }  // namespace pendulum

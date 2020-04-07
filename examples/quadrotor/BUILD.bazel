@@ -55,14 +55,13 @@ drake_cc_binary(
     ],
     deps = [
         ":quadrotor_plant",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
-        "//lcm",
+        "//geometry:geometry_visualization",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
         "@gflags",
@@ -91,18 +90,24 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
+    name = "quadrotor_plant_test",
+    deps = [
+        ":quadrotor_plant",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "quadrotor_dynamics_test",
     data = [":models"],
     deps = [
         ":quadrotor_plant",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/framework/test_utilities",
         "//systems/primitives:constant_vector_source",
     ],
 )

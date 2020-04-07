@@ -20,11 +20,8 @@ namespace systems {
 
 SystemBase::~SystemBase() {}
 
-uint64_t SystemBase::get_next_id() {
-  // Note that id 0 is used to indicate that the id has not been initialized.
-  // So we have an invariant "get_next_id() > 0".
-  static never_destroyed<std::atomic<uint64_t>> next_id(1);
-  return next_id.access()++;
+internal::SystemId SystemBase::get_next_id() {
+  return internal::SystemId::get_new_id();
 }
 
 std::string SystemBase::GetSystemPathname() const {
@@ -35,7 +32,7 @@ std::string SystemBase::GetSystemPathname() const {
          GetSystemName();
 }
 
-const CacheEntry& SystemBase::DeclareCacheEntry(
+CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, CacheEntry::AllocCallback alloc_function,
     CacheEntry::CalcCallback calc_function,
     std::set<DependencyTicket> prerequisites_of_calc) {
@@ -45,7 +42,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
       std::move(prerequisites_of_calc));
 }
 
-const CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
+CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
     DependencyTicket known_ticket, std::string description,
     CacheEntry::AllocCallback alloc_function,
     CacheEntry::CalcCallback calc_function,
@@ -57,7 +54,7 @@ const CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
       this, index, known_ticket, std::move(description),
       std::move(alloc_function), std::move(calc_function),
       std::move(prerequisites_of_calc)));
-  const CacheEntry& new_entry = *cache_entries_.back();
+  CacheEntry& new_entry = *cache_entries_.back();
   return new_entry;
 }
 
@@ -96,6 +93,9 @@ void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
     // TODO(sherm1) Supply initial value on creation instead and get rid of
     // this separate call.
     cache_value.SetInitialValue(entry.Allocate());
+
+    if (entry.is_disabled_by_default())
+      cache_value.disable_caching();
   }
 
   // Create the output port trackers yᵢ here. Nothing in this System may

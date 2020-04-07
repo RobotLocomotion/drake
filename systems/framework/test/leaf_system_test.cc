@@ -517,6 +517,7 @@ TEST_F(LeafSystemTest, MultipleUniquePeriods) {
   auto mapping = system_.GetPeriodicEvents();
   ASSERT_EQ(mapping.size(), 1);
   EXPECT_EQ(mapping.begin()->second.size(), 2);
+  EXPECT_TRUE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
 }
 
 // Tests that periodic updates with different periodic attributes are
@@ -529,6 +530,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   auto mapping = system_.GetPeriodicEvents();
   ASSERT_EQ(mapping.size(), 2);
   EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
+  EXPECT_FALSE(system_.IsDifferenceEquationSystem());
 }
 
 // Tests that if the current time is smaller than the offset, the next
@@ -835,6 +837,30 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
+TEST_F(LeafSystemTest, ContinuousStateBelongsWithSystem) {
+  // Successfully calc using a storage that was created by the system.
+  std::unique_ptr<ContinuousState<double>> derivatives =
+      system_.AllocateTimeDerivatives();
+  DRAKE_EXPECT_NO_THROW(
+      system_.CalcTimeDerivatives(context_, derivatives.get()));
+
+  // Successfully calc using storage that was indirectly created by the system.
+  auto temp_context = system_.AllocateContext();
+  ContinuousState<double>& temp_xc =
+      temp_context->get_mutable_continuous_state();
+  DRAKE_EXPECT_NO_THROW(
+      system_.CalcTimeDerivatives(context_, &temp_xc));
+
+  // Cannot ask other_system to calc into storage that was created by the
+  // original system.
+  TestSystem<double> other_system;
+  auto other_context = other_system.AllocateContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      other_system.CalcTimeDerivatives(*other_context, derivatives.get()),
+      std::logic_error,
+      ".*::ContinuousState<double> was not created for.*::TestSystem.*");
+}
+
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 
@@ -869,28 +895,41 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
 
   DeclaredModelPortsSystem() {
-    this->DeclareInputPort("input", kVectorValued, 1);
-    this->DeclareVectorInputPort("vector_input", MyVector2d());
-    this->DeclareAbstractInputPort("abstract_input", Value<int>(22));
-    this->DeclareVectorInputPort("uniform", MyVector2d(),
-                                 RandomDistribution::kUniform);
-    this->DeclareVectorInputPort("gaussian", MyVector2d(),
-                                 RandomDistribution::kGaussian);
+    // Use these to validate the expected return type from each method.
+    InputPort<double>* in_port{nullptr};
+    LeafOutputPort<double>* out_port{nullptr};
+
+    in_port = &DeclareInputPort("input", kVectorValued, 1);
+    unused(in_port);
+    in_port = &DeclareVectorInputPort("vector_input", MyVector2d());
+    unused(in_port);
+    in_port = &DeclareAbstractInputPort("abstract_input", Value<int>(22));
+    unused(in_port);
+    in_port = &DeclareVectorInputPort("uniform", MyVector2d(),
+                                      RandomDistribution::kUniform);
+    unused(in_port);
+    in_port = &DeclareVectorInputPort("gaussian", MyVector2d(),
+                                      RandomDistribution::kGaussian);
+    unused(in_port);
 
     // Output port 0 uses a BasicVector base class model.
-    this->DeclareVectorOutputPort("basic_vector", BasicVector<double>(3),
-                                  &DeclaredModelPortsSystem::CalcBasicVector3);
+    out_port =
+        &DeclareVectorOutputPort("basic_vector", BasicVector<double>(3),
+                                 &DeclaredModelPortsSystem::CalcBasicVector3);
+    unused(out_port);
     // Output port 1 uses a class derived from BasicVector.
-    this->DeclareVectorOutputPort("my_vector", MyVector4d(),
-                                  &DeclaredModelPortsSystem::CalcMyVector4d);
+    out_port = &DeclareVectorOutputPort(
+        "my_vector", MyVector4d(), &DeclaredModelPortsSystem::CalcMyVector4d);
+    unused(out_port);
 
     // Output port 2 uses a concrete string model.
-    this->DeclareAbstractOutputPort("string", std::string("45"),
-                                    &DeclaredModelPortsSystem::CalcString);
+    out_port = &DeclareAbstractOutputPort(
+        "string", std::string("45"), &DeclaredModelPortsSystem::CalcString);
+    unused(out_port);
 
     // Output port 3 uses the "Advanced" methods that take a model
     // and a general calc function rather than a calc method.
-    this->DeclareVectorOutputPort(
+    out_port = &DeclareVectorOutputPort(
         "advanced", BasicVector<double>(2),
         [](const Context<double>&, BasicVector<double>* out) {
           ASSERT_NE(out, nullptr);
@@ -898,8 +937,9 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
           out->SetAtIndex(0, 10.);
           out->SetAtIndex(1, 20.);
         });
+    unused(out_port);
 
-    this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
+    DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }
 
   const BasicVector<double>& expected_basic() const { return expected_basic_; }
@@ -1369,15 +1409,22 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredNonModelOutputSystem);
 
   DeclaredNonModelOutputSystem() {
+    // Use this to validate the expected return type from each method.
+    LeafOutputPort<double>* port{nullptr};
+
     // Output port 0 default-constructs a class derived from BasicVector as
     // its allocator.
-    this->DeclareVectorOutputPort(&DeclaredNonModelOutputSystem::CalcDummyVec2);
+    port =
+        &DeclareVectorOutputPort(&DeclaredNonModelOutputSystem::CalcDummyVec2);
+    unused(port);
     // Output port 1 default-constructs a string as its allocator.
-    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
+    port =
+        &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcString);
+    unused(port);
 
     // Output port 2 uses the "Advanced" method for abstract ports, providing
     // explicit non-member functors for allocator and calculator.
-    this->DeclareAbstractOutputPort(
+    port = &DeclareAbstractOutputPort(
         []() { return AbstractValue::Make<int>(-2); },
         [](const Context<double>&, AbstractValue* out) {
           ASSERT_NE(out, nullptr);
@@ -1385,15 +1432,19 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
           DRAKE_EXPECT_NO_THROW(int_out = &out->get_mutable_value<int>());
           *int_out = 321;
         });
+    unused(port);
 
     // Output port 3 is declared with a commonly-used signature taking
     // methods for both allocator and calculator for an abstract port.
-    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::MakeString,
-                                    &DeclaredNonModelOutputSystem::CalcString);
+    port =
+        &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::MakeString,
+                                   &DeclaredNonModelOutputSystem::CalcString);
+    unused(port);
 
     // Output port 4 uses a default-constructed bare struct which should be
     // value-initialized.
-    this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
+    port = &DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
+    unused(port);
   }
 
   int calc_dummy_vec2_calls() const { return count_calc_dummy_vec2_; }
@@ -1543,13 +1594,13 @@ GTEST_TEST(ZeroSizeSystemTest, AcceptanceTest) {
   TestSystem<double> dut;
 
   // Input.
-  const auto& in0 = dut.DeclareVectorInputPort(
+  auto& in0 = dut.DeclareVectorInputPort(
       kUseDefaultName, BasicVector<double>(0));
   EXPECT_EQ(in0.get_data_type(), kVectorValued);
   EXPECT_EQ(in0.size(), 0);
 
   // Output.
-  const auto& out0 = dut.DeclareVectorOutputPort(
+  auto& out0 = dut.DeclareVectorOutputPort(
       kUseDefaultName, BasicVector<double>(0),
       [](const Context<double>&, BasicVector<double>*) {});
   EXPECT_EQ(out0.get_data_type(), kVectorValued);

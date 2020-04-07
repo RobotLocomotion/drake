@@ -53,7 +53,7 @@ using systems::State;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::internal::AccelerationKinematicsCache;
-using drake::multibody::internal::ArticulatedBodyForceBiasCache;
+using drake::multibody::internal::ArticulatedBodyForceCache;
 using drake::multibody::internal::ArticulatedBodyInertiaCache;
 using drake::multibody::internal::PositionKinematicsCache;
 using drake::multibody::internal::VelocityKinematicsCache;
@@ -349,6 +349,9 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   body_index_to_frame_id_[world_index()] = world_frame_id;
   frame_id_to_body_index_[world_frame_id] = world_index();
   DeclareSceneGraphPorts();
+  // In case any bodies were added before registering scene graph, make sure the
+  // bodies get their corresponding geometry frame ids.
+  RegisterGeometryFramesForAllBodies();
   return source_id_.value();
 }
 
@@ -515,18 +518,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const std::string& name) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
-  // If not already done, register a frame for this body.
-  if (!body_has_registered_frame(body)) {
-    FrameId frame_id = member_scene_graph().RegisterFrame(
-        source_id_.value(),
-        GeometryFrame(
-            GetScopedName(*this, body.model_instance(), body.name()),
-            /* TODO(@SeanCurtis-TRI): Add test coverage for this
-             * model-instance support as requested in #9390. */
-            body.model_instance()));
-    body_index_to_frame_id_[body.index()] = frame_id;
-    frame_id_to_body_index_[frame_id] = body.index();
-  }
+  DRAKE_ASSERT(body_has_registered_frame(body));
 
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
@@ -545,11 +537,22 @@ void MultibodyPlant<T>::RegisterGeometryFramesForAllBodies() {
   // If not, create and attach one.
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
     const auto& body = get_body(body_index);
+    RegisterRigidBodyWithSceneGraph(body);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::RegisterRigidBodyWithSceneGraph(
+    const Body<T>& body) {
+  if (geometry_source_is_registered()) {
+    // If not already done, register a frame for this body.
     if (!body_has_registered_frame(body)) {
       FrameId frame_id = member_scene_graph().RegisterFrame(
           source_id_.value(),
           GeometryFrame(
               GetScopedName(*this, body.model_instance(), body.name()),
+              /* TODO(@SeanCurtis-TRI): Add test coverage for this
+               * model-instance support as requested in #9390. */
               body.model_instance()));
       body_index_to_frame_id_[body.index()] = frame_id;
       frame_id_to_body_index_[frame_id] = body.index();
@@ -627,7 +630,6 @@ void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
   if (geometry_source_is_registered()) {
-    RegisterGeometryFramesForAllBodies();
     FilterAdjacentBodies();
     ExcludeCollisionsWithVisualGeometry();
   }
@@ -1153,6 +1155,21 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     case ContactModel::kHydroelasticsOnly:
       CalcContactResultsContinuousHydroelastic(context, contact_results);
       break;
+
+    case ContactModel::kHydroelasticWithFallback:
+      // Simply compute the contributions of both contact representations.
+
+      // TODO(SeanCurtis-TRI): In the current semantics,
+      // CalcContactResultsContinuousPointPair() *clears* the input parameter.
+      // CalcContactResultsContinuousHydroelastic() does *not*. That suggests
+      // the *name* of CalcContactResultsContinuousHydroelastic() is
+      // inconsistent with its behavior. Reconcile the two and if it's not a
+      // name change (but rather a behavior change) modify this accumulation
+      // accordingly. But, for now, executing these methods in this order should
+      // properly accumulate all contact results.
+      CalcContactResultsContinuousPointPair(context, contact_results);
+      CalcContactResultsContinuousHydroelastic(context, contact_results);
+      break;
   }
 }
 
@@ -1169,7 +1186,7 @@ template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
-  const HydroelasticContactInfoAndBodySpatialForces&
+  const internal::HydroelasticContactInfoAndBodySpatialForces<T>&
       contact_info_and_spatial_body_forces =
           EvalHydroelasticContactForces(context);
   for (const HydroelasticContactInfo<T>& contact_info :
@@ -1398,7 +1415,8 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const Context<symbolic::Expression>&,
-    HydroelasticContactInfoAndBodySpatialForces*) const {
+    internal::HydroelasticContactInfoAndBodySpatialForces<
+        symbolic::Expression>*) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
@@ -1406,8 +1424,8 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
 template <typename T>
 void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const Context<T>& context,
-    HydroelasticContactInfoAndBodySpatialForces* contact_info_and_body_forces)
-    const {
+    internal::HydroelasticContactInfoAndBodySpatialForces<T>*
+        contact_info_and_body_forces) const {
   DRAKE_DEMAND(contact_info_and_body_forces != nullptr);
 
   std::vector<SpatialForce<T>>& F_BBo_W_array =
@@ -1717,6 +1735,41 @@ void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
       "This method doesn't support T = symbolic::Expression.");
 }
 
+template <>
+void MultibodyPlant<double>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<double>& context,
+    internal::HydroelasticFallbackCacheData<double>* data) const {
+  DRAKE_DEMAND(data != nullptr);
+
+  if (num_collision_geometries() > 0) {
+    if (!geometry_query_port_.is_valid()) {
+      throw std::logic_error(
+          "This MultibodyPlant registered geometry for contact handling. "
+          "However its query input port (get_geometry_query_input_port()) "
+          "is not connected.");
+    }
+
+    const auto &query_object =
+        this->get_geometry_query_input_port()
+            .template Eval<geometry::QueryObject<double>>(context);
+    data->contact_surfaces.clear();
+    data->point_pairs.clear();
+
+    query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
+                                                    &data->point_pairs);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcHydroelasticWithFallback(
+    const drake::systems::Context<T>&,
+    internal::HydroelasticFallbackCacheData<T>*) const {
+  // TODO(SeanCurtis-TRI): Special case the AutoDiff scalar such that it works
+  //  as long as there are no collisions -- akin to CalcPointPairPenetrations().
+  throw std::domain_error(fmt::format("This method doesn't support T = {}.",
+                                      NiceTypeName::Get<T>()));
+}
+
 template <typename T>
 void MultibodyPlant<T>::CalcAppliedForces(
     const drake::systems::Context<T>& context,
@@ -1770,7 +1823,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
 
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
-  internal_tree().CalcMassMatrixViaInverseDynamics(context0, &M0);
+  internal_tree().CalcMassMatrix(context0, &M0);
   auto M0_ldlt = M0.ldlt();
 
   // Forces at the previous time step.
@@ -1892,10 +1945,10 @@ void MultibodyPlant<T>::CalcTamsiResults(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache(
+void MultibodyPlant<T>::CalcArticulatedBodyForceCache(
     const systems::Context<T>& context,
-    ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
-  DRAKE_DEMAND(aba_force_bias_cache != nullptr);
+    ArticulatedBodyForceCache<T>* aba_force_cache) const {
+  DRAKE_DEMAND(aba_force_cache != nullptr);
 
   // Applied forces including force elements (function of state x) and external
   // inputs u.
@@ -1910,8 +1963,8 @@ void MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache(
     Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
 
   // Perform the tip-to-base pass to compute the force bias terms needed by ABA.
-  internal_tree().CalcArticulatedBodyForceBiasCache(context, forces,
-                                                    aba_force_bias_cache);
+  internal_tree().CalcArticulatedBodyForceCache(context, forces,
+                                                    aba_force_cache);
 }
 
 template <typename T>
@@ -1921,13 +1974,13 @@ void MultibodyPlant<T>::CalcForwardDynamics(
   DRAKE_DEMAND(ac != nullptr);
 
   // Evaluate the ABA cache, function of state x and inputs u.
-  const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache =
-      EvalArticulatedBodyForceBiasCache(context);
+  const ArticulatedBodyForceCache<T>& aba_force_cache =
+      EvalArticulatedBodyForceCache(context);
 
   // Perform the last base-to-tip pass to compute accelerations using the O(n)
   // ABA.
   internal_tree().CalcArticulatedBodyAccelerations(context,
-                                                   aba_force_bias_cache, ac);
+                                                   aba_force_cache, ac);
 }
 
 template <typename T>
@@ -2011,6 +2064,19 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
 
     case ContactModel::kHydroelasticsOnly:
       *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
+      break;
+
+    case ContactModel::kHydroelasticWithFallback:
+      // Combine the point-penalty forces with the contact surface forces.
+      CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
+      const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
+          EvalHydroelasticContactForces(context).F_BBo_W_array;
+      DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
+      for (int i = 0; i < static_cast<int>(Fhydro_BBo_W_all.size()); ++i) {
+        // Both sets of forces are applied to the body's origins and expressed
+        // in frame W. They should simply sum.
+        (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
+      }
       break;
   }
 }
@@ -2197,7 +2263,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
                                     BasicVector<T>(num_multibody_states()),
-                                    &MultibodyPlant::CopyContinuousStateOut,
+                                    &MultibodyPlant::CopyMultibodyStateOut,
                                     {this->all_state_ticket()})
           .get_index();
 
@@ -2236,7 +2302,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 [this, model_instance_index](
                     const systems::Context<T>& context,
                     systems::BasicVector<T>* result) {
-                  this->CopyContinuousStateOut(model_instance_index, context,
+                  this->CopyMultibodyStateOut(model_instance_index, context,
                                                result);
                 },
                 {this->all_state_ticket()})
@@ -2328,6 +2394,16 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());
+
+  // TODO(SeanCurtis-TRI): When SG caches the results of these queries itself,
+  //  (https://github.com/RobotLocomotion/drake/issues/12767), remove these
+  //  cache entries.
+  auto& hydro_point_cache_entry = this->DeclareCacheEntry(
+      std::string("Hydroelastic contact with point-pair fallback"),
+      internal::HydroelasticFallbackCacheData<T>(),
+      &MultibodyPlant::CalcHydroelasticWithFallback,
+      {this->configuration_ticket()});
+  cache_indexes_.hydro_fallback = hydro_point_cache_entry.cache_index();
 
   // Cache entry for point contact queries.
   auto& point_pairs_cache_entry = this->DeclareCacheEntry(
@@ -2426,13 +2502,16 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
-  if (contact_model_ == ContactModel::kHydroelasticsOnly) {
+  const bool use_hydroelastic =
+      contact_model_ == ContactModel::kHydroelasticsOnly ||
+      contact_model_ == ContactModel::kHydroelasticWithFallback;
+  if (use_hydroelastic) {
     auto& contact_info_and_body_spatial_forces_cache_entry =
         this->DeclareCacheEntry(
             std::string("Hydroelastic contact info and body spatial forces."),
             [this]() {
               return AbstractValue::Make(
-                  HydroelasticContactInfoAndBodySpatialForces(
+                  internal::HydroelasticContactInfoAndBodySpatialForces<T>(
                       this->num_bodies()));
             },
             [this](const systems::ContextBase& context_base,
@@ -2440,7 +2519,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
               auto& context = dynamic_cast<const Context<T>&>(context_base);
               auto& contact_info_and_body_spatial_forces_cache =
                   cache_value->get_mutable_value<
-                      HydroelasticContactInfoAndBodySpatialForces>();
+                      internal::HydroelasticContactInfoAndBodySpatialForces<
+                          T>>();
               this->CalcHydroelasticContactForces(
                   context, &contact_info_and_body_spatial_forces_cache);
             },
@@ -2455,20 +2535,21 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // In discrete mode contact forces computation requires to advance the system
   // from step n to n+1. Therefore they are a function of state and input.
   // In continuous mode contact forces are simply a function of state.
-  std::set<systems::DependencyTicket> dependency_ticket = [this]() {
+  std::set<systems::DependencyTicket> dependency_ticket = [this,
+                                                           use_hydroelastic]() {
     std::set<systems::DependencyTicket> tickets;
-     if (is_discrete()) {
-       tickets.insert(
-           this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
-     } else {
-       tickets.insert(this->kinematics_ticket());
-       if (contact_model_ == ContactModel::kHydroelasticsOnly) {
-         tickets.insert(this->cache_entry_ticket(
-             cache_indexes_.contact_info_and_body_spatial_forces));
-       }
-     }
+    if (is_discrete()) {
+      tickets.insert(
+          this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
+    } else {
+      tickets.insert(this->kinematics_ticket());
+      if (use_hydroelastic) {
+        tickets.insert(this->cache_entry_ticket(
+            cache_indexes_.contact_info_and_body_spatial_forces));
+      }
+    }
 
-     return tickets;
+    return tickets;
   }();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
       std::string("Contact results."),
@@ -2488,17 +2569,17 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
   // Articulated Body Algorithm (ABA) force bias cache.
-  auto& aba_force_bias_cache_entry = this->DeclareCacheEntry(
+  auto& aba_force_cache_entry = this->DeclareCacheEntry(
       std::string("ABA force bias cache."),
-      ArticulatedBodyForceBiasCache<T>(internal_tree().get_topology()),
-      &MultibodyPlant<T>::CalcArticulatedBodyForceBiasCache,
+      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
+      &MultibodyPlant<T>::CalcArticulatedBodyForceCache,
       // ABA computes quantities such as Zplus which are needed for the
       // computation of acceleration and thus depend on both state and inputs.
       // All sources include: time, accuracy, state, input ports, and
       // parameters.
       {this->all_sources_ticket()});
-  cache_indexes_.aba_force_bias_cache =
-      aba_force_bias_cache_entry.cache_index();
+  cache_indexes_.aba_force_cache =
+      aba_force_cache_entry.cache_index();
 
   // Last pass of the ABA for forward dynamics.
   auto& aba_accelerations_cache_entry = this->DeclareCacheEntry(
@@ -2547,35 +2628,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
               cache_indexes_.spatial_contact_forces_continuous)});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
-      }
-
-      template <typename T>
-      const systems::BasicVector<T> &
-      MultibodyPlant<T>::GetStateVector(const Context<T>& context) const {
-    if (is_discrete()) {
-      return context.get_discrete_state(0);
-    } else {
-      return dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state_vector());
-    }
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyContinuousStateOut(
+void MultibodyPlant<T>::CopyMultibodyStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  state_vector->SetFrom(GetStateVector(context));
+  state_vector->SetFromVector(GetPositionsAndVelocities(context));
 }
 
 template <typename T>
-void MultibodyPlant<T>::CopyContinuousStateOut(
+void MultibodyPlant<T>::CopyMultibodyStateOut(
     ModelInstanceIndex model_instance,
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-
-  VectorX<T> instance_state_vector =
-      GetPositionsAndVelocities(context, model_instance);
-  state_vector->SetFromVector(instance_state_vector);
+  state_vector->SetFromVector(
+      GetPositionsAndVelocities(context, model_instance));
 }
 
 template <typename T>
@@ -2814,8 +2882,8 @@ void MultibodyPlant<T>::CalcReactionForces(
 
       // Now we need to shift the application point from Jp to Jc.
       // First we need to find the position vector p_JpJc_W.
-      const RigidTransform<T> X_WJp = frame_Jp.CalcPoseInWorld(context);
-      const RotationMatrix<T>& R_WJp = X_WJp.rotation();
+      const RotationMatrix<T> R_WJp =
+          frame_Jp.CalcRotationMatrixInWorld(context);
       const RigidTransform<T> X_JpJc = frame_Jc.CalcPose(context, frame_Jp);
       const Vector3<T> p_JpJc_Jp = X_JpJc.translation();
       const Vector3<T> p_JpJc_W = R_WJp * p_JpJc_Jp;
@@ -2825,8 +2893,8 @@ void MultibodyPlant<T>::CalcReactionForces(
     }
 
     // Re-express in the joint's child frame Jc.
-    const RigidTransform<T> X_WJc = frame_Jc.CalcPoseInWorld(context);
-    const RotationMatrix<T> R_JcW = X_WJc.rotation().transpose();
+    const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
+    const RotationMatrix<T> R_JcW = R_WJc.inverse();
     F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
   }
 }

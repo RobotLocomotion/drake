@@ -293,7 +293,7 @@ struct Impl {
         .def("GetOutputPort", &System<T>::GetOutputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("DeclareInputPort",
-            overload_cast_explicit<const InputPort<T>&,
+            overload_cast_explicit<InputPort<T>&,
                 std::variant<std::string, UseDefaultName>, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("name"), py::arg("type"),
@@ -301,7 +301,7 @@ struct Impl {
             doc.System.DeclareInputPort.doc_4args)
         .def("DeclareInputPort",
             overload_cast_explicit<  // BR
-                const InputPort<T>&, PortDataType, int,
+                InputPort<T>&, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
             py_reference_internal, py::arg("type"), py::arg("size"),
             py::arg("random_type") = std::nullopt)
@@ -330,6 +330,9 @@ struct Impl {
             doc.System.CreateDefaultContext.doc)
         .def("SetDefaultContext", &System<T>::SetDefaultContext,
             doc.System.SetDefaultContext.doc)
+        .def("SetRandomContext", &System<T>::SetRandomContext,
+            py::arg("context"), py::arg("generator"),
+            doc.System.SetRandomContext.doc)
         .def("AllocateOutput",
             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                 &System<T>::AllocateOutput),
@@ -359,6 +362,14 @@ struct Impl {
         // Computation.
         .def("CalcOutput", &System<T>::CalcOutput, py::arg("context"),
             py::arg("outputs"), doc.System.CalcOutput.doc)
+        .def("CalcPotentialEnergy", &System<T>::CalcPotentialEnergy,
+            py::arg("context"), doc.System.CalcPotentialEnergy.doc)
+        .def("CalcKineticEnergy", &System<T>::CalcKineticEnergy,
+            py::arg("context"), doc.System.CalcKineticEnergy.doc)
+        .def("CalcConservativePower", &System<T>::CalcConservativePower,
+            py::arg("context"), doc.System.CalcConservativePower.doc)
+        .def("CalcNonConservativePower", &System<T>::CalcNonConservativePower,
+            py::arg("context"), doc.System.CalcNonConservativePower.doc)
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),
             doc.System.CalcTimeDerivatives.doc)
@@ -399,8 +410,8 @@ struct Impl {
               // calling the Python function (`str_py`) does.
               return str_py(self->GetGraphvizString(max_depth));
             },
-            doc.System.GetGraphvizString.doc,
-            py::arg("max_depth") = std::numeric_limits<int>::max())
+            py::arg("max_depth") = std::numeric_limits<int>::max(),
+            doc.System.GetGraphvizString.doc)
         // Events.
         .def("Publish",
             overload_cast_explicit<void, const Context<T>&>(
@@ -409,9 +420,23 @@ struct Impl {
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
+        .def("IsDifferenceEquationSystem",
+            [](const System<T>& self) {
+              double period = 0.0;
+              bool retval = self.IsDifferenceEquationSystem(&period);
+              return std::pair<bool, double>(retval, period);
+            },
+            (string(doc.System.IsDifferenceEquationSystem.doc) + R""(
+Note: The above is for the C++ documentation. For Python, use
+`is_diff_eq, period = IsDifferenceEquationSystem()`)"")
+                .c_str())
         // Cached evaluations.
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
             py_reference_internal, doc.System.EvalTimeDerivatives.doc)
+        .def("EvalPotentialEnergy", &System<T>::EvalPotentialEnergy,
+            py::arg("context"), doc.System.EvalPotentialEnergy.doc)
+        .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
+            py::arg("context"), doc.System.EvalKineticEnergy.doc)
         // Scalar types.
         .def("ToAutoDiffXd",
             [](const System<T>& self) { return self.ToAutoDiffXd(); },
@@ -463,8 +488,7 @@ Note: The above is for the C++ documentation. For Python, use
             py_reference_internal, py::arg("name"), py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractInputPort.doc_2args)
         .def("DeclareAbstractInputPort",
-            [](PyLeafSystem* self,
-                const std::string& name) -> const InputPort<T>& {
+            [](PyLeafSystem* self, const std::string& name) -> InputPort<T>& {
               WarnDeprecated(
                   "`DeclareAbstractInputPort(self, name)` is deprecated. "
                   "Please use `(self, name, model_value)` instead.");
@@ -503,7 +527,7 @@ Note: The above is for the C++ documentation. For Python, use
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
                 std::optional<RandomDistribution> random_type)
-                -> const InputPort<T>& {
+                -> InputPort<T>& {
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },

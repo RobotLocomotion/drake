@@ -18,8 +18,8 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_vector_gen_library(
     name = "compass_gait_vector_types",
     srcs = [
-        "compass_gait_continuous_state.named_vector",
-        "compass_gait_params.named_vector",
+        "compass_gait_continuous_state_named_vector.yaml",
+        "compass_gait_params_named_vector.yaml",
     ],
     visibility = ["//visibility:public"],
 )
@@ -39,20 +39,30 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "compass_gait_geometry",
+    srcs = ["compass_gait_geometry.cc"],
+    hdrs = ["compass_gait_geometry.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":compass_gait",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_binary(
     name = "simulate",
     srcs = ["simulate.cc"],
     add_test_rule = 1,
-    data = ["CompassGait.urdf"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":compass_gait",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//common:find_resource",
-        "//lcm",
-        "//math:geometric_transform",
+        ":compass_gait_geometry",
+        "//geometry:geometry_visualization",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "@gflags",
@@ -61,12 +71,19 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "compass_gait_test",
-    data = ["CompassGait.urdf"],
     deps = [
         ":compass_gait",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compass_gait_geometry_test",
+    deps = [
+        ":compass_gait",
+        ":compass_gait_geometry",
     ],
 )
 

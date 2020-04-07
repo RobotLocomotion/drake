@@ -61,7 +61,6 @@ drake_cc_googletest(
     deps = [
         ":allegro_common",
         ":allegro_lcm",
-        "//attic/manipulation/util:world_sim_tree_builder",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
     ],

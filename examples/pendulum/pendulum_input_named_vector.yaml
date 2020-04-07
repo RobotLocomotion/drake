@@ -1,0 +1,7 @@
+namespace: drake::examples::pendulum
+elements:
+  -
+    name: tau
+    doc: Torque at the joint.
+    doc_units: Newton-meters
+    default_value: 0.0

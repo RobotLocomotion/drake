@@ -161,5 +161,6 @@ cc_repository = repository_rule(
         "BAZEL_USE_CPP_ONLY_TOOLCHAIN",
         "CC",
     ],
+    configure = True,
     implementation = _impl,
 )

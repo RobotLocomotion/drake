@@ -12,6 +12,20 @@
 
 namespace drake {
 namespace geometry {
+
+// TODO(DamrongGuoy): Remove this helper class if we change
+//  CalcGradBarycentric() from private to public.
+template <typename T>
+class SurfaceMeshTester {
+ public:
+  explicit SurfaceMeshTester(const SurfaceMesh<T>& mesh) : mesh_(mesh) {}
+  Vector3<T> CalcGradBarycentric(SurfaceFaceIndex f, int i) const {
+    return mesh_.CalcGradBarycentric(f, i);
+  }
+ private:
+  const SurfaceMesh<T>& mesh_;
+};
+
 namespace {
 
 using Eigen::AngleAxisd;
@@ -264,6 +278,146 @@ GTEST_TEST(SurfaceMeshTest, TestCalcBarycentricAutoDiffXd) {
   TestCalcBarycentric<AutoDiffXd>();
 }
 
+template <typename T>
+void TestCalcGradBarycentric() {
+  // The mesh M consists of one triangle whose vertices are at the origin and
+  // on the X's axis and Y's axis of M's frame. The chosen vertex coordinates
+  // avoid symmetry but are easy to calculate ∇bᵢ manually.
+  //
+  //                                 Z
+  //                                 |
+  //     v0_M = (0,0,0)              |
+  //     v1_M = (1,0,0)              |   M's frame
+  //     v2_M = (0,2,0)              |
+  //                               v0+----+----v2----Y
+  //                                /
+  //                              v1
+  //                              /
+  //                             /
+  //                            X
+  //
+  const int triangle[3] = {0, 1, 2};
+  const Vector3<T> v0_M(0., 0., 0.);
+  const Vector3<T> v1_M(1., 0., 0.);
+  const Vector3<T> v2_M(0., 2., 0.);
+
+  // We use an arbitrary pose of the surface mesh M in World frame W to make the
+  // test more realistic.
+  const math::RigidTransform<T> X_WM(
+      math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 5.0 * M_PI / 4.0),
+      Vector3<T>(1.0, 2.0, 3.0));
+
+  // Create the mesh with vertex coordinates expressed in World frame to make
+  // the test more realistic.
+  const SurfaceMesh<T> mesh_W(
+      {SurfaceFace(triangle)},
+      {SurfaceVertex<T>(X_WM * v0_M), SurfaceVertex<T>(X_WM * v1_M),
+       SurfaceVertex<T>(X_WM * v2_M)});
+
+  const SurfaceMeshTester<T> tester(mesh_W);
+  const auto gradb0_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 0);
+  const auto gradb1_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 1);
+  const auto gradb2_W = tester.CalcGradBarycentric(SurfaceFaceIndex(0), 2);
+
+  // In this example, we have these equations, expressed in M's frame:
+  //      b₀(x,y,z) = -x - y/2 + 1,
+  //      b₁(x,y,z) = x,
+  //      b₂(x,y,z) = y/2.
+  // We can manually verify the equations by checking that bᵢ(vi) = 1 for all i,
+  // bⱼ(vj) = 0 for all i ≠ j, and ∑bⱼ = 1.
+  //     We can read off ∇bᵢ from the coefficients of x,y,z in the above
+  // equations.
+  const Vector3<T> expect_gradb0_M(-1., -1. / 2., 0.);
+  const Vector3<T> expect_gradb1_M = Vector3<T>::UnitX();
+  const Vector3<T> expect_gradb2_M = Vector3<T>::UnitY() / 2.;
+
+  const auto& R_WM = X_WM.rotation();
+  EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb0_M, gradb0_W, 1e-14));
+  EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb1_M, gradb1_W, 1e-14));
+  EXPECT_TRUE(CompareMatrices(R_WM * expect_gradb2_M, gradb2_W, 1e-14));
+
+  // Since ∑bᵢ = 1, the gradients have zero sum: ∑(∇bᵢ) = 0.
+  EXPECT_TRUE(CompareMatrices(gradb0_W + gradb1_W + gradb2_W,
+                              Vector3<T>::Zero(), 1e-14));
+}
+
+GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricDouble) {
+  TestCalcGradBarycentric<double>();
+}
+
+GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
+  TestCalcGradBarycentric<AutoDiffXd>();
+}
+
+GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
+  std::unique_ptr<SurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
+  const SurfaceMeshTester<double> tester(*mesh);
+  EXPECT_THROW(tester.CalcGradBarycentric(SurfaceFaceIndex(0), 0),
+               std::runtime_error);
+}
+
+template <typename T>
+void TestCalcGradientVectorOfLinearField() {
+  // CalcGradientVectorOfLinearField() is a weighted sum of
+  // CalcGradBarycentric() which is already tested with non-symmetric vertex
+  // coordinates and an arbitrary pose. Therefore, it suffices to test
+  // CalcGradientVectorOfLinearField() in the mesh's frame M with symmetric
+  // vertex coordinates but non-symmetric field values.
+  //
+  // The three vertices v0,v1,v2 of the triangle have coordinates expressed
+  // in M's frame as:
+  //
+  //                                +Z
+  //                                 |
+  //     v0_M = (1,0,0), f₀ = 2      v2
+  //     v1_M = (0,1,0), f₁ = 3      |   M's frame
+  //     v2_M = (0,0,1), f₂ = 4      |
+  //                                 +------v1---+Y
+  //                                /
+  //                               /
+  //                             v0
+  //                             /
+  //                           +X
+  //
+  const int triangle[3] = {0, 1, 2};
+  const Vector3<T> v0_M(1., 0., 0.);
+  const Vector3<T> v1_M(0., 1., 0.);
+  const Vector3<T> v2_M(0., 0., 1.);
+  const SurfaceMesh<T> mesh_M(
+      {SurfaceFace(triangle)},
+      {SurfaceVertex<T>(v0_M), SurfaceVertex<T>(v1_M), SurfaceVertex<T>(v2_M)});
+  const std::array<T, 3> f{2., 3., 4.};
+
+  const Vector3<T> gradf_M =
+      mesh_M.CalcGradientVectorOfLinearField(f, SurfaceFaceIndex(0));
+
+  // This function
+  //       f(x,y,z) = -x + z + 3
+  // satisfies f(vi_M) = fᵢ, i.e.,
+  //       f(1,0,0) = 2
+  //       f(0,1,0) = 3
+  //       f(0,0,1) = 4
+  // and its gradient ∇f is orthogonal to the triangle normal (1,1,1)/√3, i.e.,
+  // ∇f is along the triangle (belong to the tangent plane of the triangle).
+  // There are many linear functions that satisfy f(vi_M) = fᵢ since there
+  // are only three constraints for i=0,1,2, but a linear function has four
+  // parameters A*x + B*y + C*z + D.  We want the one with its gradient along
+  // the triangle.
+  //     Therefore, we can read off ∇f from the coefficients of x,y,z in the
+  // equation.
+  const Vector3<T> expect_gradf_M{-1., 0., 1};
+
+  EXPECT_TRUE(CompareMatrices(expect_gradf_M, gradf_M, 1e-14));
+}
+
+GTEST_TEST(SurfaceMeshTest, TestCalcGradientVectorOfLinearFieldDouble) {
+  TestCalcGradientVectorOfLinearField<double>();
+}
+
+GTEST_TEST(SurfaceMeshTest, TestCalcGradientVectorOfLinearFieldAutoDiffXd) {
+  TestCalcGradientVectorOfLinearField<AutoDiffXd>();
+}
+
 GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   auto ref_mesh = TestSurfaceMesh<double>();
   auto test_mesh = std::make_unique<SurfaceMesh<double>>(*ref_mesh);
@@ -356,6 +510,7 @@ GTEST_TEST(SurfaceMeshTest, TestEqual) {
   const auto zero_area_mesh = GenerateZeroAreaMesh();
   const auto triangle_mesh = GenerateTwoTriangleMesh<double>();
   SurfaceMesh<double> triangle_mesh_copy = *triangle_mesh;
+  EXPECT_TRUE(triangle_mesh->Equal(*triangle_mesh));
   EXPECT_TRUE(triangle_mesh->Equal(triangle_mesh_copy));
   EXPECT_FALSE(zero_area_mesh->Equal(*triangle_mesh));
 }
@@ -367,7 +522,7 @@ GTEST_TEST(SurfaceMeshTest, TestEmptyMeshElements) {
 
 GTEST_TEST(SurfaceMeshTest, CalcBoundingBox) {
   auto mesh = TestSurfaceMesh<double>();
-  const auto[center, size] = mesh->CalcBoundingBox();
+  const auto [center, size] = mesh->CalcBoundingBox();
   EXPECT_EQ(center, Vector3d(7.5, 7.5, 0));
   EXPECT_EQ(size, Vector3d(15, 15, 0));
 }

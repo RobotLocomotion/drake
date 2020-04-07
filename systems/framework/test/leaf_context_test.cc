@@ -44,6 +44,8 @@ class LeafContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_.SetTime(kTime);
+    internal::SystemBaseContextBaseAttorney::set_system_id(
+        &context_, internal::SystemId::get_new_id());
 
     // Set up slots for input and output ports.
     AddInputPorts(kNumInputPorts, &context_);
@@ -494,6 +496,13 @@ TEST_F(LeafContextTest, Clone) {
   // Verify that the time was copied.
   EXPECT_EQ(kTime, clone->get_time());
 
+  // Verify that the system id was copied.
+  EXPECT_TRUE(context_.get_system_id().is_valid());
+  EXPECT_EQ(context_.get_system_id(), clone->get_system_id());
+  ContinuousState<double>& xc = clone->get_mutable_continuous_state();
+  EXPECT_TRUE(xc.get_system_id().is_valid());
+  EXPECT_EQ(xc.get_system_id(), context_.get_system_id());
+
   // Verify that the cloned input ports contain the same data,
   // but are different pointers.
   EXPECT_EQ(kNumInputPorts, clone->num_input_ports());
@@ -511,7 +520,6 @@ TEST_F(LeafContextTest, Clone) {
 
   // Verify that changes to the cloned state do not affect the original state.
   // -- Continuous
-  ContinuousState<double>& xc = clone->get_mutable_continuous_state();
   xc.get_mutable_generalized_velocity()[1] = 42.0;
   EXPECT_EQ(42.0, xc[3]);
   EXPECT_EQ(5.0, context_.get_continuous_state_vector()[3]);
@@ -572,6 +580,11 @@ TEST_F(LeafContextTest, BadClone) {
 TEST_F(LeafContextTest, CloneState) {
   std::unique_ptr<State<double>> clone = context_.CloneState();
   VerifyClonedState(*clone);
+
+  // Verify that the system id was copied.
+  const ContinuousState<double>& xc = clone->get_continuous_state();
+  EXPECT_TRUE(xc.get_system_id().is_valid());
+  EXPECT_EQ(xc.get_system_id(), context_.get_system_id());
 }
 
 // Tests that the State can be copied from another State.

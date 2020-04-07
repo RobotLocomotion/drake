@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_scene_graph.h"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -272,7 +273,7 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 
   if (material_element != nullptr) {
     if (material_element->HasElement("drake:diffuse_map")) {
-      auto[texture_name, has_value] =
+      auto [texture_name, has_value] =
           material_element->Get<std::string>("drake:diffuse_map", {});
       if (has_value) {
         const std::string resolved_path =
@@ -392,6 +393,8 @@ ProximityProperties MakeProximityPropertiesForCollision(
     properties = ParseProximityProperties(read_double, is_rigid, is_soft);
   }
 
+  // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
+  //  issue #12598.
   if (!properties.HasProperty(geometry::internal::kMaterialGroup,
                               geometry::internal::kFriction)) {
     properties.AddProperty(

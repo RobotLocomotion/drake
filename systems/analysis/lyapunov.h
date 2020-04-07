@@ -2,7 +2,8 @@
 
 #include <functional>
 
-#include "drake/common/symbolic.h"
+#include "drake/common/autodiff.h"
+#include "drake/common/eigen_types.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 

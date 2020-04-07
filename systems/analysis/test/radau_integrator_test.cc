@@ -9,8 +9,6 @@
 #include "drake/systems/analysis/test_utilities/implicit_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/linear_scalar_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
-#include "drake/systems/analysis/test_utilities/robertson_system.h"
-#include "drake/systems/analysis/test_utilities/stationary_system.h"
 
 namespace drake {
 namespace systems {
@@ -91,7 +89,7 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   // Ensure that Radau, and not BS3, was used by counting the number of
   // function evaluations.  Note that this number is somewhat brittle and might
   // need to be revised in the future.
-  EXPECT_EQ(radau.get_num_derivative_evaluations(), 9);
+  EXPECT_EQ(radau.get_num_derivative_evaluations(), 8);
 
   // Per the description in IntegratorBase::get_error_estimate_order(), this
   // should return "3", in accordance with the order of the polynomial in the
@@ -171,7 +169,7 @@ GTEST_TEST(RadauIntegratorTest, LinearRadauTest) {
   // Ensure that Radau, and not Euler+RK2, was used by counting the number of
   // function evaluations. Note that this number is somewhat brittle and might
   // need to be revised in the future.
-  EXPECT_EQ(radau.get_num_derivative_evaluations(), 7);
+  EXPECT_EQ(radau.get_num_derivative_evaluations(), 6);
 
   // Per the description in IntegratorBase::get_error_estimate_order(), this
   // should return "2", in accordance with the order of the polynomial in the

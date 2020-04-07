@@ -1,34 +1,32 @@
 #pragma once
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/stepwise_dense_output.h"
-#include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 namespace internal {
 
-/// Converts a matrix with scalar type `S` elements to a matrix with double
-/// type elements, failing at runtime if the type cannot be converted.
+/// Returns @p input_matrix as an Eigen::Matrix<double, ...> with the same size
+/// allocation as @p input_matrix.  Calls ExtractDoubleOrThrow on each element
+/// of the matrix, and therefore throws if any one of the extractions fail.
 /// @see ExtractDoubleOrThrow(const T&)
-/// @tparam S A valid Eigen scalar type.
-template <typename S>
-MatrixX<double> ExtractDoublesOrThrow(const MatrixX<S>& input_matrix) {
-  return input_matrix.unaryExpr([] (const S& value) {
+template <typename Derived>
+MatrixX<double> ExtractDoublesOrThrow(
+    const Eigen::MatrixBase<Derived>& input_matrix) {
+  return input_matrix.unaryExpr([] (const typename Derived::Scalar& value) {
       return ExtractDoubleOrThrow(value);
   });
 }
@@ -93,11 +91,11 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
-/// @tparam T A valid Eigen scalar type.
+/// @tparam_default_scalar
 template <typename T>
 class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HermitianDenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HermitianDenseOutput)
 
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
@@ -242,6 +240,33 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   HermitianDenseOutput() = default;
 
+  /// Initialize the DenseOutput with an existing trajectory.
+  explicit HermitianDenseOutput(
+      const trajectories::PiecewisePolynomial<T>& trajectory)
+      : start_time_(trajectory.start_time()),
+        end_time_(trajectory.end_time()) {
+    if constexpr (std::is_same<T, double>::value) {
+      continuous_trajectory_ = trajectory;
+      return;
+    }
+
+    // Create continuous_trajectory_ by converting all the segments to double.
+    using trajectories::PiecewisePolynomial;
+    const std::vector<T>& breaks = trajectory.get_segment_times();
+    for (int i = 0; i < trajectory.get_number_of_segments(); i++) {
+      const typename PiecewisePolynomial<T>::PolynomialMatrix& poly =
+          trajectory.getPolynomialMatrix(i);
+      MatrixX<Polynomiald> polyd = poly.unaryExpr([](const Polynomial<T>& p) {
+        return Polynomiald(
+            internal::ExtractDoublesOrThrow(p.GetCoefficients()));
+      });
+      continuous_trajectory_.ConcatenateInTime(
+          PiecewisePolynomial<double>({polyd},
+                                      {ExtractDoubleOrThrow(breaks[i]),
+                                       ExtractDoubleOrThrow(breaks[i + 1])}));
+    }
+  }
+
   /// Update output with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
@@ -273,7 +298,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     }
     for (const IntegrationStep& step : raw_steps_) {
       continuous_trajectory_.ConcatenateInTime(
-          trajectories::PiecewisePolynomial<double>::Cubic(
+          trajectories::PiecewisePolynomial<double>::CubicHermite(
               internal::ExtractDoublesOrThrow(step.get_times()),
               internal::ExtractDoublesOrThrow(step.get_states()),
               internal::ExtractDoublesOrThrow(step.get_state_derivatives())));
@@ -355,20 +380,24 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       throw std::runtime_error("Provided step start time and"
                                " previous step end time differ.");
     }
-    const MatrixX<T>& prev_end_state = prev_step.get_states().back();
-    const MatrixX<T>& next_start_state = next_step.get_states().front();
-    if (!prev_end_state.isApprox(next_start_state)) {
-      throw std::runtime_error("Provided step start state and previous step end"
-                               " state differ. Cannot ensure C0 continuity.");
-    }
-    const MatrixX<T>& prev_end_state_derivative =
-        prev_step.get_state_derivatives().back();
-    const MatrixX<T>& next_start_state_derivative =
-        next_step.get_state_derivatives().front();
-    if (!prev_end_state_derivative.isApprox(next_start_state_derivative)) {
-      throw std::runtime_error("Provided step start state derivative and"
-                               " previous step end state derivative differ."
-                               " Cannot ensure C1 continuity.");
+    // We can't sanity check the state values when using symbolic expressions.
+    if constexpr (scalar_predicate<T>::is_bool) {
+      const MatrixX<T>& prev_end_state = prev_step.get_states().back();
+      const MatrixX<T>& next_start_state = next_step.get_states().front();
+      if (!prev_end_state.isApprox(next_start_state)) {
+        throw std::runtime_error(
+            "Provided step start state and previous step end state differ. "
+            "Cannot ensure C0 continuity.");
+      }
+      const MatrixX<T>& prev_end_state_derivative =
+          prev_step.get_state_derivatives().back();
+      const MatrixX<T>& next_start_state_derivative =
+          next_step.get_state_derivatives().front();
+      if (!prev_end_state_derivative.isApprox(next_start_state_derivative)) {
+        throw std::runtime_error(
+            "Provided step start state derivative and previous step end state "
+            "derivative differ. Cannot ensure C1 continuity.");
+      }
     }
   }
 
@@ -393,7 +422,8 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   // TODO(hidmic): When PiecewisePolynomial supports scalar types other than
   // doubles, pass in the template parameter T to it too and remove all scalar
-  // type conversions.
+  // type conversions.  UPDATE(russt): New plan is to deprecate this class, as
+  // PiecewisePolynomial can serve the intended role by itself.
 
   // The underlying PiecewisePolynomial continuous trajectory.
   trajectories::PiecewisePolynomial<double> continuous_trajectory_{};
@@ -401,3 +431,6 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::HermitianDenseOutput)

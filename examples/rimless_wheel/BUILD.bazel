@@ -18,8 +18,8 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_vector_gen_library(
     name = "rimless_wheel_vector_types",
     srcs = [
-        "rimless_wheel_continuous_state.named_vector",
-        "rimless_wheel_params.named_vector",
+        "rimless_wheel_continuous_state_named_vector.yaml",
+        "rimless_wheel_params_named_vector.yaml",
     ],
     visibility = ["//visibility:public"],
 )
@@ -39,20 +39,30 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rimless_wheel_geometry",
+    srcs = ["rimless_wheel_geometry.cc"],
+    hdrs = ["rimless_wheel_geometry.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":rimless_wheel",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
 drake_cc_binary(
     name = "simulate",
     srcs = ["simulate.cc"],
     add_test_rule = 1,
-    data = ["RimlessWheel.urdf"],
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         ":rimless_wheel",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//common:find_resource",
-        "//lcm",
-        "//math:geometric_transform",
+        ":rimless_wheel_geometry",
+        "//geometry:geometry_visualization",
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "@gflags",
@@ -65,6 +75,14 @@ drake_cc_googletest(
         ":rimless_wheel",
         "//systems/analysis:simulator",
         "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rimless_wheel_geometry_test",
+    deps = [
+        ":rimless_wheel",
+        ":rimless_wheel_geometry",
     ],
 )
 

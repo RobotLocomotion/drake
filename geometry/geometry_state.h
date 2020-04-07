@@ -60,15 +60,8 @@ using FrameIdSet = std::unordered_set<FrameId>;
 
  @note This is intended as an internal class only.
 
- @tparam T The scalar type. Must be a valid Eigen scalar.
-
- Instantiated templates for the following kinds of T's are provided:
-
- - double
- - AutoDiffXd
-
- They are already available to link against in the containing library.
- No other values for T are currently supported.  */
+ @tparam_nonsymbolic_scalar
+*/
 template <typename T>
 class GeometryState {
  public:
@@ -125,13 +118,13 @@ class GeometryState {
   }
 
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
-  int GetNumGeometriesWithRole(Role role) const;
+  int NumGeometriesWithRole(Role role) const;
 
-  /** Implementation of SceneGraphInspector::GetNumDynamicGeometries().  */
-  int GetNumDynamicGeometries() const;
+  /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
+  int NumDynamicGeometries() const;
 
-  /** Implementation of SceneGraphInspector::GetNumAnchoredGeometries().  */
-  int GetNumAnchoredGeometries() const;
+  /** Implementation of SceneGraphInspector::NumAnchoredGeometries().  */
+  int NumAnchoredGeometries() const;
 
   /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
   std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
@@ -142,16 +135,16 @@ class GeometryState {
   //@{
 
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
-  bool source_is_registered(SourceId source_id) const;
+  bool SourceIsRegistered(SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::GetSourceName().  */
-  const std::string& get_source_name(SourceId id) const;
+  const std::string& GetName(SourceId id) const;
 
   /** Implementation of SceneGraphInspector::NumFramesForSource().  */
   int NumFramesForSource(SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::FramesForSource().  */
-  const FrameIdSet& GetFramesForSource(SourceId source_id) const;
+  const FrameIdSet& FramesForSource(SourceId source_id) const;
 
   //@}
 
@@ -167,19 +160,19 @@ class GeometryState {
   const std::string& GetOwningSourceName(FrameId id) const;
 
   /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
-  const std::string& get_frame_name(FrameId frame_id) const;
+  const std::string& GetName(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::GetFrameGroup().  */
-  int get_frame_group(FrameId frame_id) const;
+  int GetFrameGroup(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::NumGeometriesForFrame().  */
-  int GetNumFrameGeometries(FrameId frame_id) const;
+  int NumGeometriesForFrame(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::NumGeometriesForFrameWithRole().
    */
-  int GetNumFrameGeometriesWithRole(FrameId frame_id, Role role) const;
+  int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const;
 
-  // TODO(SeanCurtis-TRI): Redundant w.r.t. GetNumFrameGeometriesWithRole().
+  // TODO(SeanCurtis-TRI): Redundant w.r.t. NumGeometriesForFrameWithRole().
   /** Reports the number of child geometries for this frame that have the
    indicated role assigned. This only includes the immediate child geometries of
    *this* frame, and not those of child frames.
@@ -187,7 +180,7 @@ class GeometryState {
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIdByName().  */
-  GeometryId GetGeometryFromName(FrameId frame_id, Role role,
+  GeometryId GetGeometryIdByName(FrameId frame_id, Role role,
                                  const std::string& name) const;
 
   //@}
@@ -392,6 +385,16 @@ class GeometryState {
     return geometry_engine_->ComputeContactSurfaces(X_WGs_);
   }
 
+  /** Implementation of QueryObject::ComputeContactSurfacesWithFallback().  */
+  void ComputeContactSurfacesWithFallback(
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+    return geometry_engine_->ComputeContactSurfacesWithFallback(
+        X_WGs_, surfaces, point_pairs);
+  }
+
   /** Implementation of QueryObject::FindCollisionCandidates().  */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const {
     return geometry_engine_->FindCollisionCandidates();
@@ -522,7 +525,7 @@ class GeometryState {
   // (either in the initialization list or in the body). Failure to do so will
   // lead to errors in the converted GeometryState instance.
   template <typename U>
-  GeometryState(const GeometryState<U>& source)
+  explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
         source_frame_id_map_(source.source_frame_id_map_),
         source_root_frame_map_(source.source_root_frame_map_),

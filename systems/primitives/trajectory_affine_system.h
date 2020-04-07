@@ -1,12 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <utility>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/systems/primitives/affine_system.h"
@@ -17,18 +14,8 @@ namespace systems {
 /// A continuous- or discrete-time Affine Time-Varying system with system
 /// matrices described by trajectories.
 ///
-/// @tparam T The scalar element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
-///
+/// @tparam_nonsymbolic_scalar
 /// @ingroup primitive_systems
-///
 template <typename T>
 class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
  public:
@@ -44,22 +31,11 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
                          const trajectories::Trajectory<double>& C,
                          const trajectories::Trajectory<double>& D,
                          const trajectories::Trajectory<double>& y0,
-                         double time_period = 0.)
-      : TimeVaryingAffineSystem<T>(
-            SystemTypeTag<TrajectoryAffineSystem>{}, A.rows(),
-            B.cols(), C.rows(), time_period),
-        A_(A.Clone()),
-        B_(B.Clone()),
-        f0_(f0.Clone()),
-        C_(C.Clone()),
-        D_(D.Clone()),
-        y0_(y0.Clone()) {}
+                         double time_period = 0.);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit TrajectoryAffineSystem(const TrajectoryAffineSystem<U>& other)
-      : TrajectoryAffineSystem<T>(*other.A_, *other.B_, *other.f0_, *other.C_,
-                                  *other.D_, *other.y0_, other.time_period()) {}
+  explicit TrajectoryAffineSystem(const TrajectoryAffineSystem<U>& other);
 
   /// @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
   /// methods.

@@ -84,5 +84,6 @@ zlib_repository = repository_rule(
         "modname": attr.string(default = "zlib"),
     },
     local = True,
+    configure = True,
     implementation = _impl,
 )

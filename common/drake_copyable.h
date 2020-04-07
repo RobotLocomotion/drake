@@ -87,10 +87,26 @@ class Foo {
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(Foo)
 </pre>
 */
-#define DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
+#define DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Classname)               \
+  [[deprecated("\nDRAKE DEPRECATED: "                                   \
+  "The DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN macro is deprecated, "    \
+  "as is the DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T macro.\n"  \
+  "The macros will be removed from Drake on or after 2020-06-01.")]]    \
   Classname(const Classname&);                                          \
+  [[deprecated("\nDRAKE DEPRECATED: "                                   \
+  "The DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN macro is deprecated, "    \
+  "as is the DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T macro.\n"  \
+  "The macros will be removed from Drake on or after 2020-06-01.")]]    \
   Classname& operator=(const Classname&);                               \
+  [[deprecated("\nDRAKE DEPRECATED: "                                   \
+  "The DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN macro is deprecated, "    \
+  "as is the DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T macro.\n"  \
+  "The macros will be removed from Drake on or after 2020-06-01.")]]    \
   Classname(Classname&&);                                               \
+  [[deprecated("\nDRAKE DEPRECATED: "                                   \
+  "The DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN macro is deprecated, "    \
+  "as is the DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T macro.\n"  \
+  "The macros will be removed from Drake on or after 2020-06-01.")]]    \
   Classname& operator=(Classname&&);                                    \
   /* Fails at compile-time if default-copy doesn't work. */             \
   static void DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE() {                \

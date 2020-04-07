@@ -20,7 +20,7 @@ drake_cc_binary(
     # Smoke test.
     test_rule_args = [
         "--simulation_time=0.01",
-        "--target_realtime_rate=0.0",
+        "--simulator_target_realtime_rate=0.0",
     ],
     deps = [
         "//common:add_text_logging_gflags",
@@ -29,6 +29,7 @@ drake_cc_binary(
         "//multibody/parsing",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
         "//systems/framework:diagram",
         "@gflags",
     ],

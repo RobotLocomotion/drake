@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
 
@@ -14,9 +15,9 @@ namespace trajectories {
 /**
  * A class representing a trajectory for quaternions that are interpolated
  * using piecewise slerp (spherical linear interpolation).
- * All the orientation knots are expected to be with respect to the same
+ * All the orientation samples are expected to be with respect to the same
  * parent reference frame, i.e. q_i represents the rotation R_PBi for the
- * orientation of frame B at the ith knot in a fixed parent frame P.
+ * orientation of frame B at the ith sample in a fixed parent frame P.
  * The world frame is a common choice for the parent frame.
  * The angular velocity and acceleration are also relative to the parent frame
  * and expressed in the parent frame.
@@ -26,8 +27,7 @@ namespace trajectories {
  * Another intuitive way to think about this is that consecutive quaternions
  * have the shortest geodesic distance on the unit sphere.
  *
- * @tparam T, double.
- *
+ * @tparam_double_only
  */
 template<typename T>
 class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
@@ -81,7 +81,9 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   Quaternion<T> orientation(double t) const;
 
-  MatrixX<T> value(double t) const override { return orientation(t).matrix(); }
+  MatrixX<T> value(const T& t) const override {
+    return orientation(t).matrix();
+  }
 
   /**
    * Interpolates angular velocity.
@@ -107,14 +109,21 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   Vector3<T> angular_acceleration(double t) const;
 
   /**
-   * Getter for the internal quaternion knots.
+   * Getter for the internal quaternion samples.
    *
    * @note The returned quaternions might be different from the ones used for
    * construction because the internal representations are set to always be
    * the "closest" w.r.t to the previous one.
    *
-   * @return the internal knot points.
+   * @return the internal sample points.
    */
+  const std::vector<Quaternion<T>>& get_quaternion_samples() const {
+    return quaternions_;
+  }
+
+  DRAKE_DEPRECATED(
+      "2020-07-01",
+      "get_quaternion_knots() is renamed get_quaternion_samples().")
   const std::vector<Quaternion<T>>& get_quaternion_knots() const {
     return quaternions_;
   }
@@ -122,7 +131,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   /**
    * Returns true if all the corresponding segment times are within
    * @p tol seconds, and the angle difference between the corresponding
-   * quaternion knot points are within @p tol.
+   * quaternion sample points are within @p tol.
    */
   bool is_approx(const PiecewiseQuaternionSlerp<T>& other,
                  const T& tol) const;

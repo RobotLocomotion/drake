@@ -1,0 +1,117 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "defs.bzl",
+    "drake_cc_googletest_gl_ubuntu_only",
+    "drake_cc_library_gl_ubuntu_only",
+    "drake_cc_package_library_gl_per_os",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_package_library_gl_per_os(
+    name = "gl_renderer",
+    macos_deps = [
+        ":render_engine_gl",
+    ],
+    ubuntu_deps = [
+        ":opengl_context",
+        ":render_engine_gl",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "opengl_context",
+    srcs = ["opengl_context.cc"],
+    hdrs = [
+        "opengl_context.h",
+        "opengl_includes.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "//common:scope_exit",
+        "@opengl",
+        "@x11",
+    ],
+)
+
+# The pure OpenGL-based render engine implementation.
+drake_cc_library(
+    name = "render_engine_gl",
+    srcs = select({
+        "//tools/cc_toolchain:apple": ["no_render_engine_gl_factory.cc"],
+        "//conditions:default": [
+            "render_engine_gl.cc",
+            "render_engine_gl_factory.cc",
+        ],
+    }),
+    hdrs = select({
+        "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
+        "//conditions:default": [
+            "render_engine_gl.h",
+            "render_engine_gl_factory.h",
+        ],
+    }),
+    deps = select({
+        "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
+        "//conditions:default": [
+            ":opengl_context",
+            "//geometry/render:render_engine",
+        ],
+    }),
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "opengl_context_test",
+    tags = [
+        # GLX functions show up with bad reads, bad writes, possibly lost, and
+        # definitely lost.  We will investiate soon but for now we'll omit the
+        # memcheck tests in order to make progress on related code.
+        # TODO(#12962) Investigate, fix or suppress, then re-enable this test.
+        "no_memcheck",
+    ],
+    deps = [
+        ":opengl_context",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_engine_gl_test",
+    args = select({
+        "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":render_engine_gl",
+    ],
+)
+
+drake_cc_googletest(
+    name = "no_render_engine_gl_test",
+    args = select({
+        "//tools/cc_toolchain:linux": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":render_engine_gl",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests(
+    cpplint_extra_srcs = [
+        "no_render_engine_gl_factory.cc",
+        "render_engine_gl.cc",
+        "render_engine_gl.h",
+        "render_engine_gl_factory.cc",
+        "render_engine_gl_factory.h",
+    ],
+)

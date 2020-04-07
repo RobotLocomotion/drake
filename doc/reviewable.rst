@@ -64,7 +64,8 @@ Often a PR may end up with more than one commit, including "work-in-progress"
 checkpoints or "fix review comments" pushes.  In that case, when the PR is
 ready to merge, the author of a PR has three choices for how to proceed:
 
-* Ask the assigned Platform Reviewer to "Squash and merge" the PR.
+* Wait for the assigned Platform Reviewer to "Squash and merge" the PR.
+  If time is of the essence, post a reminder to the PR.
 * Locally (rebase and) squash the PR down to a single commit, and force-push
   that commit into the PR.
 * Apply the label ``status: squashing now`` and then immediately use the "squash

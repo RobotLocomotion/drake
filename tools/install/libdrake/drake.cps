@@ -12,17 +12,12 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "Eigen3": {
-      "Version": "3.3.3",
-      "Hints": ["@prefix@/lib/cmake/eigen3"],
+      "Version": "3.3.4",
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "fmt": {
       "Version": "6.0",
       "Hints": ["@prefix@/lib/cmake/fmt"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "gflags": {
-      "Version": "2.2",
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "ignition-math6": {
@@ -38,10 +33,6 @@
     "optitrack": {
       "Hints": ["@prefix@/lib/cmake/optitrack"],
       "X-CMake-Find-Args": ["CONFIG"]
-    },
-    "Protobuf": {
-      "Version": "3.0",
-      "X-CMake-Find-Args": ["MODULE"]
     },
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
@@ -73,20 +64,10 @@
         "ignition-math6:ignition-math6",
         "lcm:lcm",
         "optitrack:optitrack-lcmtypes-cpp",
-        "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
         "tinyxml2:tinyxml2",
         "yaml-cpp"
-      ]
-    },
-    "drake-common-text-logging-gflags": {
-      "Type": "interface",
-      "Includes": ["@prefix@/include"],
-      "Compile-Features": ["c++17"],
-      "Requires": [
-          ":drake",
-          "gflags"
       ]
     },
     "drake-lcmtypes-cpp": {
@@ -105,7 +86,6 @@
     }
   },
   "X-CMake-Variables-Init": {
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}",
-    "GFLAGS_USE_TARGET_NAMESPACE": 0
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
   }
 }

@@ -23,20 +23,10 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# N.B. This library is DRAKE_DEPRECATED 2020-02-01 -- we've committed the
-# generated sources into git so that we can remove our protoc dependency.
-drake_py_library(
-    name = "named_vector",
-    srcs = ["named_vector_pb2.py"],
-    tags = ["nolint"],
-    visibility = ["//visibility:private"],
-)
-
 drake_py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
     deps = [
-        ":named_vector",
         "//tools/lint:clang_format",
         "//tools/lint:find_data",
     ],

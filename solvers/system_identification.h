@@ -37,15 +37,15 @@ namespace solvers {
  * minimum number of "lumped" parameters and then estimating the values of
  * those parameters based on empirical data.
  */
-template <typename CoefficientType>
+template <typename T>
 class SystemIdentification {
  public:
-  typedef ::Polynomial<CoefficientType> PolyType;
+  typedef Polynomial<T> PolyType;
   typedef typename PolyType::Monomial MonomialType;
   typedef typename PolyType::Term TermType;
   typedef typename PolyType::VarType VarType;
   typedef std::map<PolyType, VarType> LumpingMapType;
-  typedef std::map<VarType, CoefficientType> PartialEvalType;
+  typedef std::map<VarType, T> PartialEvalType;
 
   /// Extract lumped parameters from a given polynomial.
   /**
@@ -106,7 +106,7 @@ class SystemIdentification {
    *     estimated values, suitable as input for Polynomial::evaluatePartial.
    *   * error is the root-mean-square error of the estimates.
    */
-  static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
+  static std::pair<PartialEvalType, T> EstimateParameters(
       const VectorXPoly& polys,
       const std::vector<PartialEvalType>& active_var_values);
 
@@ -127,7 +127,7 @@ class SystemIdentification {
     VectorXTrigPoly partially_evaluated_polys;
 
     /// The root-mean-square error of the estimation step.
-    CoefficientType rms_error;
+    T rms_error;
   };
 
   /** Performs full lumped-parameter identification of a system of TrigPolys.
@@ -196,7 +196,7 @@ class SystemIdentification {
    * this will return
    *   {2, x + 1.5 * y}
    */
-  static std::pair<CoefficientType, PolyType>
+  static std::pair<T, PolyType>
   CanonicalizePolynomial(const PolyType& poly);
 
   /// Obtain a new variable ID not already in vars_in_use.  The string part of

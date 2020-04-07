@@ -236,6 +236,15 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
       indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
 }
 
+symbolic::Polynomial MathematicalProgram::MakePolynomial(
+    const symbolic::Expression& e) const {
+  return symbolic::Polynomial{e, symbolic::Variables{indeterminates()}};
+}
+
+void MathematicalProgram::Reparse(symbolic::Polynomial* const p) const {
+  p->SetIndeterminates(symbolic::Variables{indeterminates()});
+}
+
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     int rows, int cols, const vector<string>& names) {
   MatrixXIndeterminate indeterminates_matrix(rows, cols);
@@ -1093,24 +1102,62 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   return it->second;
 }
 
+namespace {
+// Body of MathematicalProgram::AddSosConstraint(const symbolic::Polynomial&,
+// const Eigen::Ref<const VectorX<symbolic::Monomial>>&).
+MatrixXDecisionVariable DoAddSosConstraint(
+    MathematicalProgram* const prog, const symbolic::Polynomial& p,
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  const auto pair = prog->NewSosPolynomial(monomial_basis);
+  const symbolic::Polynomial& sos_poly{pair.first};
+  const MatrixXDecisionVariable& Q{pair.second};
+
+  const symbolic::Polynomial poly_diff = sos_poly - p;
+
+  for (const auto& term : poly_diff.monomial_to_coefficient_map()) {
+    prog->AddLinearEqualityConstraint(term.second, 0);
+  }
+  return Q;
+}
+// Body of MathematicalProgram::AddSosConstraint(const symbolic::Polynomial&).
+pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> DoAddSosConstraint(
+    MathematicalProgram* const prog, const symbolic::Polynomial& p) {
+  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
+  const MatrixXDecisionVariable Q = prog->AddSosConstraint(p, m);
+  return std::make_pair(Q, m);
+}
+
+}  // namespace
+
 MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
-  const auto pair = NewSosPolynomial(monomial_basis);
-  const symbolic::Polynomial& sos_poly{pair.first};
-  const MatrixXDecisionVariable& Q{pair.second};
-  const symbolic::Polynomial poly_diff = sos_poly - p;
-  for (const auto& term : poly_diff.monomial_to_coefficient_map()) {
-    AddLinearEqualityConstraint(term.second, 0);
+  const Variables indeterminates_vars{indeterminates()};
+  if (Variables(p.indeterminates()).IsSubsetOf(indeterminates_vars) &&
+      intersect(indeterminates_vars, Variables(p.decision_variables()))
+          .empty()) {
+    return DoAddSosConstraint(this, p, monomial_basis);
+  } else {
+    // Need to reparse p, we first make a copy of p and reparse that.
+    symbolic::Polynomial p_reparsed{p};
+    Reparse(&p_reparsed);
+    return DoAddSosConstraint(this, p_reparsed, monomial_basis);
   }
-  return Q;
 }
 
 pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
-  const MatrixXDecisionVariable Q = AddSosConstraint(p, m);
-  return std::make_pair(Q, m);
+  const Variables indeterminates_vars{indeterminates()};
+  if (Variables(p.indeterminates()).IsSubsetOf(indeterminates_vars) &&
+      intersect(indeterminates_vars, Variables(p.decision_variables()))
+          .empty()) {
+    return DoAddSosConstraint(this, p);
+  } else {
+    // Need to reparse p, we first make a copy of p and reparse that.
+    symbolic::Polynomial p_reparsed{p};
+    Reparse(&p_reparsed);
+    return DoAddSosConstraint(this, p_reparsed);
+  }
 }
 
 MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
@@ -1129,7 +1176,8 @@ MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
 
 void MathematicalProgram::AddEqualityConstraintBetweenPolynomials(
     const symbolic::Polynomial& p1, const symbolic::Polynomial& p2) {
-  const symbolic::Polynomial poly_diff = p1 - p2;
+  symbolic::Polynomial poly_diff = p1 - p2;
+  Reparse(&poly_diff);
   for (const auto& item : poly_diff.monomial_to_coefficient_map()) {
     AddLinearEqualityConstraint(item.second, 0);
   }
@@ -1177,6 +1225,19 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
 void MathematicalProgram::AppendNanToEnd(int new_var_size, Eigen::VectorXd* v) {
   v->conservativeResize(v->rows() + new_var_size);
   v->tail(new_var_size).fill(std::numeric_limits<double>::quiet_NaN());
+}
+
+void MathematicalProgram::SetVariableScaling(const symbolic::Variable& var,
+                                             double s) {
+  DRAKE_DEMAND(0 < s);
+  int idx = FindDecisionVariableIndex(var);
+  if (var_scaling_map_.find(idx) != var_scaling_map_.end()) {
+    // Update the scaling factor
+    var_scaling_map_[idx] = s;
+  } else {
+    // Add a new scaling factor
+    var_scaling_map_.insert(std::pair<int, double>(idx, s));
+  }
 }
 
 }  // namespace solvers

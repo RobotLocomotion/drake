@@ -30,6 +30,14 @@ class TestIpoptSolver(unittest.TestCase):
         self.assertEqual(result.get_solver_details().status, 0)
         self.assertEqual(result.get_solver_details().ConvertStatusToString(),
                          "Success")
+        np.testing.assert_allclose(
+            result.get_solver_details().z_L, np.array([1., 1.]))
+        np.testing.assert_allclose(
+            result.get_solver_details().z_U, np.array([0., 0.]))
+        np.testing.assert_allclose(
+            result.get_solver_details().g, np.array([]))
+        np.testing.assert_allclose(
+            result.get_solver_details().lambda_val, np.array([]))
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when IPOPT is disabled."""

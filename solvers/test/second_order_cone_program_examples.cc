@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"

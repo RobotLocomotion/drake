@@ -51,6 +51,16 @@ class TestAcrobot(unittest.TestCase):
         scene_graph = builder.AddSystem(SceneGraph())
         geom = AcrobotGeometry.AddToBuilder(
             builder=builder, acrobot_state_port=plant.get_output_port(0),
+            scene_graph=scene_graph)
+        builder.Build()
+        self.assertIsInstance(geom, AcrobotGeometry)
+
+    def test_geometry_with_params(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(AcrobotPlant())
+        scene_graph = builder.AddSystem(SceneGraph())
+        geom = AcrobotGeometry.AddToBuilder(
+            builder=builder, acrobot_state_port=plant.get_output_port(0),
             acrobot_params=AcrobotParams(), scene_graph=scene_graph)
         builder.Build()
         self.assertIsInstance(geom, AcrobotGeometry)
@@ -77,15 +87,15 @@ class TestAcrobot(unittest.TestCase):
 
         self.assertTrue(acrobot.DynamicsBiasTerm(context).shape == (2,))
         self.assertTrue(acrobot.MassMatrix(context).shape == (2, 2))
-        initial_total_energy = acrobot.CalcPotentialEnergy(context) + \
-            acrobot.CalcKineticEnergy(context)
+        initial_total_energy = acrobot.EvalPotentialEnergy(context) + \
+            acrobot.EvalKineticEnergy(context)
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
         simulator.AdvanceTo(1.0)
 
-        self.assertLessEqual(acrobot.CalcPotentialEnergy(context) +
-                             acrobot.CalcKineticEnergy(context),
+        self.assertLessEqual(acrobot.EvalPotentialEnergy(context) +
+                             acrobot.EvalKineticEnergy(context),
                              initial_total_energy)
 
 

@@ -22,15 +22,8 @@ determining the port's value are supplied by the LeafOutputPort that ultimately
 underlies the source port, although that may be any number of levels down.
 This is intended for internal use in implementing Diagram.
 
-@tparam T The vector element type, which must be a valid Eigen scalar.
-
-Instantiated templates for the following kinds of T's are provided:
-
-- double
-- AutoDiffXd
-- symbolic::Expression
-
-They are already available to link against in the containing library. */
+@tparam_default_scalar
+*/
 template <typename T>
 class DiagramOutputPort final : public OutputPort<T> {
  public:
@@ -52,7 +45,7 @@ class DiagramOutputPort final : public OutputPort<T> {
   // diagram's child subsystems.
   //
   // @param diagram The Diagram that will own this port.
-  // @param system_base The same Diagram cast to its base class.
+  // @param system_interface The same Diagram cast to its base class.
   // @param name A name for the port.  Output ports names must be unique
   //     within the `diagram` System.
   // @param index The output port index to be assigned to the new port.
@@ -64,7 +57,7 @@ class DiagramOutputPort final : public OutputPort<T> {
   //
   // @pre The `diagram` System must actually be a Diagram.
   // @pre `diagram` lifetime must exceed the port's; we retain the pointer here.
-  // @pre `diagram` and `system_base` must be the same object.
+  // @pre `diagram` and `system_interface` must be the same object.
   // @pre `source_output_port` must be owned by a child of `diagram`.
   // @pre `source_subsystem_index` must be the index of that child in `diagram`.
   //
@@ -77,13 +70,13 @@ class DiagramOutputPort final : public OutputPort<T> {
   // to static_cast up to System<T> as is required by OutputPort. We expect
   // the caller to do that cast for us so take a System<T> here.
   DiagramOutputPort(const System<T>* diagram,
-                    SystemBase* system_base,
+                    internal::SystemMessageInterface* system_interface,
                     std::string name,
                     OutputPortIndex index,
                     DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
                     SubsystemIndex source_subsystem_index)
-      : OutputPort<T>(diagram, system_base, std::move(name), index, ticket,
+      : OutputPort<T>(diagram, system_interface, std::move(name), index, ticket,
                       source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),

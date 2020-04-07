@@ -8,9 +8,9 @@ namespace math {
 /// Computes the unique stabilizing solution S to the continuous-time algebraic
 /// Riccati equation:
 ///
-/// @verbatim
-///  S A + A' S - S B inv(R) B' S + Q = 0
-/// @endverbatim
+/// @f[
+/// S A + A' S - S B R^{-1} B' S + Q = 0
+/// @f]
 ///
 /// @throws std::runtime_error if R is not positive definite.
 ///

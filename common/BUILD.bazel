@@ -32,10 +32,10 @@ drake_cc_package_library(
         ":dummy_value",
         ":essential",
         ":extract_double",
-        ":filesystem",
         ":find_resource",
         ":find_runfiles",
         ":hash",
+        ":identifier",
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
@@ -74,9 +74,7 @@ drake_cc_library(
         "drake_copyable.h",
         "drake_deprecated.h",
         "drake_nodiscard.h",
-        "drake_optional.h",
         "drake_throw.h",
-        "drake_variant.h",
         "eigen_stl_types.h",
         "eigen_types.h",
         "never_destroyed.h",
@@ -129,7 +127,6 @@ drake_cc_library(
         "autodiff.h",
         "autodiff_overloads.h",
         "autodiffxd.h",
-        "eigen_autodiff_limits.h",
         "eigen_autodiff_types.h",
     ],
     deps = [
@@ -175,7 +172,9 @@ drake_cc_library(
     ],
     deps = [
         ":autodiff",
+        ":default_scalars",
         ":essential",
+        ":symbolic",
     ],
 )
 
@@ -226,7 +225,6 @@ drake_cc_library(
         ":essential",
         ":extract_double",
         ":hash",
-        ":polynomial",
         ":random",
         "@fmt",
     ],
@@ -256,6 +254,15 @@ drake_cc_library(
 )
 
 # Miscellaneous utilities.
+
+drake_cc_library(
+    name = "identifier",
+    hdrs = ["identifier.h"],
+    deps = [
+        ":essential",
+        ":hash",
+    ],
+)
 
 DRAKE_RESOURCE_SENTINEL = "//:.drake-find_resource-sentinel"
 
@@ -303,15 +310,21 @@ drake_cc_library(
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
+# The drake::filesystem support is intended ONLY for use within Drake's *.cc
+# files -- it is not a public dependency of Drake.  As such, we compile it with
+# hidden visibility, exclude its header file from the install, and exclude it
+# from the //common:common package_library shortcut.
 drake_cc_library(
     name = "filesystem",
     srcs = ["filesystem.cc"],
     hdrs = ["filesystem.h"],
-    copts = [
-        # The drake::filesystem support is intended ONLY for use within Drake's
-        # *.cc files -- it is not a public dependency of Drake.
-        "-fvisibility=hidden",
+    copts = ["-fvisibility=hidden"],
+    install_hdrs_exclude = ["filesystem.h"],
+    tags = [
+        "exclude_from_libdrake",
+        "exclude_from_package",
     ],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@ghc_filesystem",
     ],
@@ -466,53 +479,6 @@ drake_cc_library(
         "@gflags",
     ],
     alwayslink = 1,
-)
-
-# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
-# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
-# etc).
-drake_cc_library(
-    name = "text_logging_gflags",
-    hdrs = ["text_logging_gflags.h"],
-    deprecation = "DRAKE DEPRECATED: The drake/common/text_logging_gflags.h convenience header is being removed from Drake on or after 2020-02-01.  Downstream projects should maintain their own implementation of this feature.  See drake/common/add_text_logging_gflags.cc for an example.",  # noqa
-    tags = [
-        # Don't add this library into the ":common" package library.
-        # Only programs with a main() function should ever use this header.
-        "exclude_from_package",
-        # Don't install this header via this cc_library, because that would
-        # introduce a dependency from libdrake onto gflags.  Similarly, we
-        # can't use `install_hdrs_exclude` for this because the @gflags
-        # dependency should not be part of the install.  Instead, we exclude
-        # this cc_library entirely, and use a separate rule below for the
-        # installation.
-        "exclude_from_libdrake",
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        ":essential",
-        "@gflags",
-    ],
-)
-
-# TODO(jwnimmer-tri) When this header file is removed, be sure to also remove
-# the CMake install helpers related to gflags (in drake.cps, FindGFlags.cmake,
-# etc).
-#
-# Compared to the above rule, this removes the deps attribute; we don't want to
-# link against gflags for libdrake.so, we just want to publish this header for
-# callers who have their own gflags to link against.
-drake_cc_library(
-    name = "text_logging_gflags_h",
-    hdrs = ["text_logging_gflags.h"],
-    tags = [
-        # Don't add this library into the ":common" package library.
-        # This rule should only be used for install purposes.
-        "exclude_from_package",
-    ],
-    # This rule should only be used for install purposes, not within the
-    # in-source bazel build.  We limit its visibility to enforce that.
-    visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
 drake_cc_library(
@@ -816,32 +782,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "drake_optional_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":essential",
-    ],
-)
-
-drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
         ":essential",
         "//common/test_utilities:expect_no_throw",
-    ],
-)
-
-drake_cc_googletest(
-    name = "drake_variant_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":essential",
     ],
 )
 
@@ -872,6 +816,17 @@ drake_cc_googletest(
     name = "hash_test",
     deps = [
         ":hash",
+    ],
+)
+
+drake_cc_googletest(
+    name = "identifier_test",
+    deps = [
+        ":identifier",
+        ":sorted_pair",
+        ":unused",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1090,6 +1045,7 @@ drake_cc_googletest(
     name = "symbolic_expression_test",
     deps = [
         ":essential",
+        ":polynomial",
         ":symbolic",
         "//common/test_utilities:is_memcpy_movable",
         "//common/test_utilities:symbolic_test_util",

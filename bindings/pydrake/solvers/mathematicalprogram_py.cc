@@ -81,7 +81,8 @@ auto RegisterBinding(py::handle* scope, const string& name) {
   py::class_<B> binding_cls(*scope, pyname.c_str());
   binding_cls  // BR
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
-      .def("variables", &B::variables, cls_doc.variables.doc);
+      .def("variables", &B::variables, cls_doc.variables.doc)
+      .def("__str__", &B::to_string, cls_doc.to_string.doc);
   if (!std::is_same<C, EvaluatorBase>::value) {
     // This is required for implicit argument conversion. See below for
     // `EvaluatorBase`'s generic constructor for attempting downcasting.
@@ -253,8 +254,8 @@ top-level documentation for :py:mod:`pydrake.math`.
             self.Solve(prog, initial_guess, solver_options, &result);
             return result;
           },
-          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
-          doc.SolverBase.Solve.doc)
+          py::arg("prog"), py::arg("initial_guess") = std::nullopt,
+          py::arg("solver_options") = std::nullopt, doc.SolverBase.Solve.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
           [](const SolverInterface& self) {
@@ -471,6 +472,10 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("AddDecisionVariables", &MathematicalProgram::AddDecisionVariables,
           py::arg("decision_variables"),
           doc.MathematicalProgram.AddDecisionVariables.doc)
+      .def("MakePolynomial", &MathematicalProgram::MakePolynomial, py::arg("e"),
+          doc.MathematicalProgram.MakePolynomial.doc)
+      .def("Reparse", &MathematicalProgram::Reparse, py::arg("p"),
+          doc.MathematicalProgram.Reparse.doc)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&,
@@ -519,6 +524,13 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddConstraint),
           py::arg("constraint"), py::arg("vars"),
           doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
+      .def("AddConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<Formula>>& formulas) {
+            return self->AddConstraint(formulas);
+          },
+          py::arg("formulas"),
+          doc.MathematicalProgram.AddConstraint.doc_matrix_formula)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -721,6 +733,8 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
+      .def("generic_constraints", &MathematicalProgram::generic_constraints,
+          doc.MathematicalProgram.generic_constraints.doc)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
       .def("linear_equality_constraints",
@@ -729,6 +743,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("bounding_box_constraints",
           &MathematicalProgram::bounding_box_constraints,
           doc.MathematicalProgram.bounding_box_constraints.doc)
+      .def("generic_costs", &MathematicalProgram::generic_costs,
+          doc.MathematicalProgram.generic_costs.doc)
       .def("linear_costs", &MathematicalProgram::linear_costs,
           doc.MathematicalProgram.linear_costs.doc)
       .def("quadratic_costs", &MathematicalProgram::quadratic_costs,
@@ -1078,6 +1094,10 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
       m, "LinearCost", doc.LinearCost.doc)
+      .def(py::init([](const Eigen::VectorXd& a, double b) {
+        return std::unique_ptr<LinearCost>(new LinearCost(a, b));
+      }),
+          py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
       .def("b", &LinearCost::b, doc.LinearCost.b.doc)
       .def("UpdateCoefficients",
@@ -1089,6 +1109,11 @@ top-level documentation for :py:mod:`pydrake.math`.
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost", doc.QuadraticCost.doc)
+      .def(py::init([](const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
+                        double c) {
+        return std::unique_ptr<QuadraticCost>(new QuadraticCost(Q, b, c));
+      }),
+          py::arg("Q"), py::arg("b"), py::arg("c"), doc.QuadraticCost.ctor.doc)
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
       .def("b", &QuadraticCost::b, doc.QuadraticCost.b.doc)
       .def("c", &QuadraticCost::c, doc.QuadraticCost.c.doc)

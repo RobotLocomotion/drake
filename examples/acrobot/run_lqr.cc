@@ -34,8 +34,7 @@ int do_main() {
   acrobot->set_name("acrobot");
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
-      &builder, acrobot->get_output_port(0),
-      AcrobotParams<double>(), scene_graph);
+      &builder, acrobot->get_output_port(0), scene_graph);
   ConnectDrakeVisualizer(&builder, *scene_graph);
 
   auto controller = builder.AddSystem(BalancingLQRController(*acrobot));

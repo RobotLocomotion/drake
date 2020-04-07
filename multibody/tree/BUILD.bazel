@@ -19,7 +19,6 @@ drake_cc_package_library(
         ":multibody_element",
         ":multibody_tree_caches",
         ":multibody_tree_core",
-        ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
         ":rotational_inertia",
@@ -54,14 +53,14 @@ drake_cc_library(
     name = "multibody_tree_caches",
     srcs = [
         "acceleration_kinematics_cache.cc",
-        "articulated_body_force_bias_cache.cc",
+        "articulated_body_force_cache.cc",
         "articulated_body_inertia_cache.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
-        "articulated_body_force_bias_cache.h",
+        "articulated_body_force_cache.h",
         "articulated_body_inertia_cache.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
@@ -88,39 +87,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree_element",
-    srcs = [],
-    hdrs = [
-        "multibody_tree_element.h",
-    ],
-    deprecation = "DRAKE DEPRECATED: The header drake/multibody/tree/multibody_tree_element.h is being removed on or after 2020-03-01. Please use drake/multibody/tree/multibody_element.h instead.",  # noqa
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        ":multibody_element",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_tree_element_test",
-    # Ignore #warning for deprecation via command-line, since "GCC diagnostic"
-    # does not suppress it.
-    copts = ["-Wno-cpp"],
-    deps = [
-        ":multibody_tree_core",
-        ":multibody_tree_element",
-    ],
-)
-
-drake_cc_library(
     name = "multibody_tree_core",
     srcs = [
         "body.cc",
         "body_node_impl.cc",
+        "door_hinge.cc",
         "fixed_offset_frame.cc",
         "joint_actuator.cc",
+        "linear_bushing_roll_pitch_yaw.cc",
         "linear_spring_damper.cc",
         "mobilizer_impl.cc",
         "model_instance.cc",
@@ -144,12 +118,14 @@ drake_cc_library(
         "body_node.h",
         "body_node_impl.h",
         "body_node_welded.h",
+        "door_hinge.h",
         "fixed_offset_frame.h",
         "force_element.h",
         "frame.h",
         "frame_base.h",
         "joint.h",
         "joint_actuator.h",
+        "linear_bushing_roll_pitch_yaw.h",
         "linear_spring_damper.h",
         "mobilizer.h",
         "mobilizer_impl.h",
@@ -452,12 +428,34 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "linear_spring_damper_test",
+    name = "linear_bushing_roll_pitch_yaw_test",
     deps = [
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_spring_damper_test",
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/plant",
         "//systems/framework:context",
+    ],
+)
+
+drake_cc_googletest(
+    name = "door_hinge_test",
+    timeout = "moderate",
+    shard_count = 2,
+    deps = [
+        "//multibody/plant",
+        "//systems/analysis:initial_value_problem",
+        "//systems/analysis:simulator",
     ],
 )
 

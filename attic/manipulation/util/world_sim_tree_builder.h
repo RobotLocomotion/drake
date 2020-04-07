@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -13,7 +14,9 @@ namespace manipulation {
 namespace util {
 
 template <typename T>
-struct ModelInstanceInfo {
+struct DRAKE_DEPRECATED("2020-05-01",
+    "The attic/manipulation/util package is being removed.")
+ModelInstanceInfo {
   std::string absolute_model_path;
   int instance_id;
   std::shared_ptr<RigidBodyFrame<T>> world_offset;
@@ -30,7 +33,9 @@ struct ModelInstanceInfo {
 /// - double
 ///
 template <typename T>
-class WorldSimTreeBuilder {
+class DRAKE_DEPRECATED("2020-05-01",
+    "The attic/manipulation/util package is being removed.")
+WorldSimTreeBuilder {
  public:
   /// Constructs a WorldSimTreeBuilder object and specifies whether a call to
   /// any of the add model instance functions should compile the tree.
@@ -122,9 +127,11 @@ class WorldSimTreeBuilder {
   /// Adds a flat terrain to the simulation.
   void AddGround();
 
-  // We are neither copyable nor moveable.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   WorldSimTreeBuilder(const WorldSimTreeBuilder<T>& other) = delete;
   WorldSimTreeBuilder& operator=(const WorldSimTreeBuilder<T>& other) = delete;
+#pragma GCC diagnostic pop
 
   /// Adds a model to the internal model database. Models are
   /// described by @p model_name coupled with URDF/SDF paths in @p
@@ -179,9 +186,12 @@ class WorldSimTreeBuilder {
     return rigid_body_tree_.get();
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   ModelInstanceInfo<T> get_model_info_for_instance(int id) {
     return instance_id_to_model_info_.at(id);
   }
+#pragma GCC diagnostic pop
 
   /// The compliant contact model parameters to use with the default material
   /// parameters; these values should be passed to the plant.
@@ -204,7 +214,10 @@ class WorldSimTreeBuilder {
   // loaded into the simulation.
   std::map<std::string, std::string> model_map_;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::map<int, ModelInstanceInfo<T>> instance_id_to_model_info_;
+#pragma GCC diagnostic pop
 
   // The default parameters for evaluating contact: the parameters for the
   // model as well as the contact materials of the collision elements.

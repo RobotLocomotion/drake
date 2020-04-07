@@ -100,11 +100,9 @@ RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms       
  parameters of the form:
 
  ```
- BenchmarkName/TestName/camera_count/sphere_count/image_width/image_height
+ RenderEngineBenchmark/TestName/camera_count/sphere_count/image_width/image_height
  ```
 
-   - __Benchmarkname__: `RenderEngineBenchmark` for all results in this
-      executable.
    - __TestName__: One of
      - __VtkColor__: Renders the color image from RenderEngineVtk.
      - __VtkDepth__: Renders the depth image from RenderEngineVtk.
@@ -242,7 +240,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
                                      const std::string& format) {
     DRAKE_DEMAND(!FLAGS_save_image_path.empty());
     filesystem::path save_path = FLAGS_save_image_path;
-    auto[sphere_count, camera_count, width, height] = ReadState(state);
+    auto [sphere_count, camera_count, width, height] = ReadState(state);
     return save_path.append(fmt::format("{}_{}_{}_{}_{}.{}", test_name,
                                         sphere_count, camera_count, width,
                                         height, format));
@@ -330,7 +328,7 @@ std::set<std::string> RenderEngineBenchmark::saved_image_paths;
 BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkColor)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  auto[sphere_count, camera_count, width, height] = ReadState(state);
+  auto [sphere_count, camera_count, width, height] = ReadState(state);
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
@@ -357,7 +355,7 @@ BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkColor)
 BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkDepth)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  auto[sphere_count, camera_count, width, height] = ReadState(state);
+  auto [sphere_count, camera_count, width, height] = ReadState(state);
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
@@ -378,7 +376,7 @@ BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkDepth)
 BENCHMARK_DEFINE_F(RenderEngineBenchmark, VtkLabel)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  auto[sphere_count, camera_count, width, height] = ReadState(state);
+  auto [sphere_count, camera_count, width, height] = ReadState(state);
   SetupVtkRender(sphere_count, camera_count, width, height);
   for (auto _ : state) {
     for (int i = 0; i < camera_count; ++i) {
@@ -400,7 +398,7 @@ BENCHMARK_REGISTER_F(RenderEngineBenchmark, VtkLabel)
 BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayRayColor)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  auto[sphere_count, camera_count, width, height] = ReadState(state);
+  auto [sphere_count, camera_count, width, height] = ReadState(state);
   SetupOsprayRender(sphere_count, camera_count, width, height,
                     OsprayMode::kRayTracer, true);
   for (auto _ : state) {
@@ -429,7 +427,7 @@ BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayRayColor)
 BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayRayColorShadowsOff)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  auto[sphere_count, camera_count, width, height] = ReadState(state);
+  auto [sphere_count, camera_count, width, height] = ReadState(state);
   SetupOsprayRender(sphere_count, camera_count, width, height,
                     OsprayMode::kRayTracer, false);
   for (auto _ : state) {
@@ -455,7 +453,7 @@ BENCHMARK_REGISTER_F(RenderEngineBenchmark, OsprayRayColorShadowsOff)
 BENCHMARK_DEFINE_F(RenderEngineBenchmark, OsprayPathColor)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
-  auto[sphere_count, camera_count, width, height] = ReadState(state);
+  auto [sphere_count, camera_count, width, height] = ReadState(state);
   SetupOsprayRender(sphere_count, camera_count, width, height,
                     OsprayMode::kPathTracer, true);
   for (auto _ : state) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -103,6 +104,10 @@ class VolumeElement {
   std::array<VolumeVertexIndex, 4> vertex_;
 };
 
+// Forward declaration of VolumeMeshTester<T>. VolumeMesh<T> will grant
+// friend access to VolumeMeshTester<T>.
+template <typename T> class VolumeMeshTester;
+
 /** %VolumeMesh represents a tetrahedral volume mesh.
  @tparam T  The underlying scalar type for coordinates, e.g., double or
             AutoDiffXd. Must be a valid Eigen scalar.
@@ -110,7 +115,7 @@ class VolumeElement {
 template <class T>
 class VolumeMesh {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
 
   /**
    @name Mesh type traits
@@ -122,7 +127,18 @@ class VolumeMesh {
    */
   //@{
 
+  using ScalarType = T;
+
+  // TODO(DamrongGuoy): Remove kDim and replace its usage like (kDim + 1) by
+  //  kVertexPerElement in mesh_to_vtk, mesh_field_linear, and
+  //  bounding_volume_hierarchy. Issue #12756.
+
   static constexpr int kDim = 3;
+
+  /**
+   Number of vertices per element. A tetrahedron has 4 vertices.
+   */
+  static constexpr int kVertexPerElement = 4;
 
   /** Index for identifying a vertex.
    */
@@ -243,13 +259,152 @@ class VolumeMesh {
     return b_Q;
   }
 
+  /** Checks to see whether the given VolumeMesh object is equal via deep
+   exact comparison. NaNs are treated as not equal as per the IEEE standard.
+   @param mesh The mesh for comparison.
+   @returns `true` if the given mesh is equal.
+   */
+  bool Equal(const VolumeMesh<T>& mesh) const {
+    if (this == &mesh) return true;
+
+    if (this->num_elements() != mesh.num_elements()) return false;
+    if (this->num_vertices() != mesh.num_vertices()) return false;
+
+    // Check tetrahedral elements.
+    for (VolumeElementIndex i(0); i < this->num_elements(); ++i) {
+      const VolumeElement& element1 = this->element(i);
+      const VolumeElement& element2 = mesh.element(i);
+      for (int j = 0; j < 4; ++j)
+        if (element1.vertex(j) != element2.vertex(j)) return false;
+    }
+    // Check vertices.
+    for (VolumeVertexIndex i(0); i < this->num_vertices(); ++i) {
+      if (this->vertex(i).r_MV() != mesh.vertex(i).r_MV()) return false;
+    }
+
+    // All checks passed.
+    return true;
+  }
+
+  /** Calculates the gradient ∇u of a linear field u on the tetrahedron `e`.
+   Field u is defined by the four field values `field_value[i]` at the i-th
+   vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
+   frame of this mesh M.
+   */
+  template <typename FieldValue>
+  Vector3<FieldValue> CalcGradientVectorOfLinearField(
+      const std::array<FieldValue, 4>& field_value,
+      VolumeElementIndex e) const {
+    Vector3<FieldValue> gradu_M = field_value[0] * CalcGradBarycentric(e, 0);
+    for (int i = 1; i < 4; ++i) {
+      gradu_M += field_value[i] * CalcGradBarycentric(e, i);
+    }
+    return gradu_M;
+  }
+
  private:
+  // Calculates the gradient vector ∇bᵢ of the barycentric coordinate
+  // function bᵢ of the i-th vertex of the tetrahedron `e`. The gradient
+  // vector ∇bᵢ is expressed in the coordinates frame of this mesh M.
+  // @pre  0 ≤ i < 4.
+  Vector3<T> CalcGradBarycentric(VolumeElementIndex e, int i) const;
+
   // The tetrahedral elements that comprise the volume.
   std::vector<VolumeElement> elements_;
   // The vertices that are shared between the tetrahedral elements.
   std::vector<VolumeVertex<T>> vertices_;
+
+  friend class VolumeMeshTester<T>;
 };
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(VolumeMesh)
+
+template <typename T>
+Vector3<T> VolumeMesh<T>::CalcGradBarycentric(VolumeElementIndex e,
+                                              int i) const {
+  DRAKE_DEMAND(0 <= i && i < 4);
+  // Vertex V corresponds to bᵢ in the barycentric coordinate in the
+  // tetrahedron indexed by `e`.  A, B, and C are the remaining vertices of
+  // the tetrahedron. Their positions are expressed in frame M of the mesh.
+  const Vector3<T>& p_MV = vertices_[elements_[e].vertex(i)].r_MV();
+  const Vector3<T>& p_MA = vertices_[elements_[e].vertex((i + 1) % 4)].r_MV();
+  const Vector3<T>& p_MB = vertices_[elements_[e].vertex((i + 2) % 4)].r_MV();
+  const Vector3<T>& p_MC = vertices_[elements_[e].vertex((i + 3) % 4)].r_MV();
+
+  const Vector3<T> p_AV_M = p_MV - p_MA;
+  const Vector3<T> p_AB_M = p_MB - p_MA;
+  const Vector3<T> p_AC_M = p_MC - p_MA;
+
+  // Let bᵥ be the barycentric coordinate function corresponding to vertex V.
+  // bᵥ is a linear function of the points in the tetrahedron.
+  // bᵥ = 0 on the plane through triangle ABC.
+  // bᵥ = 1 on the plane through V parallel to ABC.
+  // Therefore, bᵥ changes fastest in the direction of the face normal vector
+  // of ABC towards V. The rate of change is 1/h, where h is the
+  // height of vertex V from the base ABC.
+  //
+  //    ──────────────V────────────── plane bᵥ = 1
+  //                 ╱ ╲       ┊
+  //                ╱   ╲      ┊         Triangle ABC is perpendicular to
+  //               ╱     ╲     ┊ h       this view, so ABC looks like a line
+  //              ╱       ╲    ┊         segment instead of a triangle.
+  //             ╱    ↑∇bᵥ ╲   ┊
+  //    ────────A━━━B━━━━━━━C──────── plane bᵥ = 0
+  //
+  // We conclude that ∇bᵥ is the vector of length 1/h that is perpendicular to
+  // ABC and points into the tetrahedron.
+  //
+  // To calculate ∇bᵥ, consider the scalar triple product (AB x AC)⋅AV, which
+  // is the signed volume of the parallelepiped spanned by AB, AC, and AV, and
+  // consider the cross product AB x AC, which is the area vector of the
+  // parallelogram spanned by AB and AC. We have:
+  //
+  //       ∇bᵥ = normal vector inversely proportional to height
+  //           = area vector / signed volume
+  //           = (AB x AC) / ((AB x AC)⋅AV)
+  //
+  // Consider a non-degenerate tetrahedron (tetrahedron with volume well above
+  // zero) with vertices V₀,V₁,V₂,V₃ (note that vertex Vᵢ is the local
+  // iᵗʰ vertex of the tetrahedron, *not* the global iᵗʰ vertex of the whole
+  // mesh). Assume V₀,V₁,V₂,V₃ is in positive orientation, i.e.,
+  // (V₁ - V₀)x(V₂ - V₀) points towards V₃. Given the vertex V = Vᵢ,
+  // i ∈ {0,1,2,3}, the vertices A = Vᵢ₊₁, B = Vᵢ₊₂, C = Vᵢ₊₃ form the vector
+  // AB x AC that points from ABC towards V when i is 1 or 3, and
+  // AB x AC points away from V when i is 0 or 2. When AB x AC points towards
+  // V, the signed volume (AB x AC)⋅AV is positive, and when AB x AC points
+  // away from V, the signed volume is negative. As a result, the vector
+  // ∇bᵥ = (AB x AC) / ((AB x AC)⋅AV) always points from ABC towards V as
+  // expected.
+  //
+  // If the tetrahedron is degenerate (tetrahedron with almost zero volume),
+  // the calculation (AB x AC) / ((AB x AC)⋅AV) is not numerically reliable any
+  // more due to rounding errors. Near-zero-area triangle ABC may have the
+  // area-vector calculation AB x AC pointing in the wrong direction. If ABC is
+  // well formed but V is almost co-planar with ABC (V is near a vertex of ABC,
+  // near the spanning line of an edge of ABC, or anywhere on the spanning plane
+  // of ABC), the signed volume calculation ((AB x AC)⋅AV) may become a
+  // near-zero number with the wrong sign. In these degenerate cases, we
+  // throw std::runtime_error.
+  //
+  const Vector3<T> area_vector_M = p_AB_M.cross(p_AC_M);  // AB x AC
+  const T signed_volume = area_vector_M.dot(p_AV_M);      // (AB x AC)⋅AV
+
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  // TODO(DamrongGuoy): Find a better way to handle degeneracy. Right now we
+  //  check the volume of the parallelepiped against the threshold equal the
+  //  machine epsilon. We might want to scale the threshold with the
+  //  dimensions (length, area) of the parts of the tetrahedron (6 edges, 4
+  //  triangles). Furthermore, we might also want case analysis for various
+  //  kinds of degenerate tetrahedra; for example, a tetrahedron with
+  //  one or more near-zero-length edges, a tetrahedron with one or more
+  //  near-zero-area obtuse triangles without near-zero-length edges,
+  //  or a tetrahedron with near-zero volume without near-zero-area triangles.
+
+  using std::abs;
+  if (abs(signed_volume) <= kEps) {
+    throw std::runtime_error("Bad tetrahedron. Cannot compute gradient.");
+  }
+  return area_vector_M / signed_volume;
+}
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class VolumeMesh)

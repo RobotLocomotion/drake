@@ -10,6 +10,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Andy Barry
 * Alejandro Castro
 * John Carter
+* Rick Cory
 * Sean Curtis
 * Sam Creasey
 * Hongkai Dai
@@ -24,6 +25,7 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Lucy Gibson
 * Grant Gould
 * Zhaoyuan Gu
+* Damrong Guoy
 * Kunimatsu Hashimoto
 * Bill Hoffman
 * Greg Izatt
@@ -43,9 +45,11 @@ since contributed their talents to help make Drake successful.  Here's an alphab
 * Mark Petersen
 * Michael Posa
 * Rick Poyner
+* Ante Qu
 * Michael Sherman
 * Jamie Snape
 * `Russ Tedrake <http://people.csail.mit.edu/russt/>`_
+* Belinda Teh
 * Andres Valenzuela
 * Matthew Woehlke
 * Huihua Zhao

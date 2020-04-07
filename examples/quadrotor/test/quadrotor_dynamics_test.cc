@@ -1,238 +1,188 @@
 #include <stdexcept>
 
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 
-// The following sequence of tests compares the behaviour of two kinds of
-// plants : (i) A GenericQuadrotor created from the QuadrotorPlant, and
-// (ii) RigidBodyPlant created from parsing a corresponding model URDF file.
 namespace drake {
 namespace examples {
 namespace quadrotor {
 namespace {
 
-GTEST_TEST(QuadrotorPlantTest, DirectFeedthrough) {
-  QuadrotorPlant<double> quadrotor;
-  EXPECT_FALSE(quadrotor.HasAnyDirectFeedthrough());
-}
+using Eigen::Quaterniond;
+using Eigen::VectorXd;
+using Eigen::Vector3d;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using multibody::Body;
+using multibody::MultibodyPlant;
+using multibody::Parser;
+using multibody::SpatialVelocity;
+using systems::ConstantVectorSource;
+using systems::Context;
+using systems::ContinuousState;
+using systems::Diagram;
+using systems::DiagramBuilder;
+using systems::Simulator;
+
+// This test program compares the behaviour of two plants:
+//
+// (#1) a GenericQuadrotor created from a QuadrotorPlant, and
+//
+// (#2) a MultibodyQuadrotor created from parsing a corresponding model URDF
+// file into a MultibodyPlant.
+//
+// Both types of plant provide a method SetState whose argument is organized as
+// [x, y, z, r, p, y, xdot, ydot, zdot, rdot, pdot, ydot], but the underlying
+// State representation in the Context is NOT necessarily organized that way.
+//
+// Both types also provide GetPose.
 
 // The models are integrated and compared for the duration specified by the
 // following constant.
 const double kSimulationDuration = 0.1;
 
-// A Generic Quadrotor Plant Diagram with the plant created from
-// QuadrotorPlant.
-template<typename T>
-class GenericQuadrotor: public systems::Diagram<T> {
+// Case (#1): The Diagram that wraps a QuadrotorPlant.
+class GenericQuadrotor: public Diagram<double> {
  public:
   GenericQuadrotor() {
-    this->set_name("QuadrotorTest");
-
-    systems::DiagramBuilder<T> builder;
-
-    plant_ = builder.template AddSystem<QuadrotorPlant<T>>();
-    plant_->set_name("plant");
-
-    VectorX<T> hover_input(plant_->num_total_inputs());
-    hover_input.setZero();
-    systems::ConstantVectorSource<T>* source =
-        builder.template AddSystem<systems::ConstantVectorSource<T>>(
-            hover_input);
-    source->set_name("hover_input");
-
-    builder.Connect(source->get_output_port(), plant_->get_input_port(0));
-
+    DiagramBuilder<double> builder;
+    plant_ = builder.template AddSystem<QuadrotorPlant<double>>();
+    auto* source = builder.template AddSystem<ConstantVectorSource<double>>(
+        VectorXd::Zero(plant_->num_total_inputs()));
+    builder.Cascade(*source, *plant_);
     builder.BuildInto(this);
   }
 
-  void SetState(systems::Context<T>* context, VectorX<T> x) const {
-    systems::Context<T>& plant_context =
+  // The `x` is a 12-element state vector per the file overview.
+  void SetState(Context<double>* context, const VectorXd& x) const {
+    DRAKE_DEMAND(x.size() == 12);
+    Context<double>& plant_context =
         this->GetMutableSubsystemContext(*plant_, context);
     plant_context.SetContinuousState(x);
   }
 
+  RigidTransformd GetPose(const Context<double>& context) const {
+    const VectorXd state =
+        context.get_continuous_state().get_vector().CopyToVector();
+    const Vector3d xyz = state.segment(0, 3);
+    const Vector3d rpy = state.segment(6, 3);
+    return RigidTransformd(RollPitchYawd(rpy), xyz);
+  }
+
  private:
-  QuadrotorPlant<T>* plant_{};
+  QuadrotorPlant<double>* plant_{};
 };
 
-//  A Quadrotor as a RigidBodyPlant that is created from a model
-// specified in a URDF file.
-template<typename T>
-class RigidBodyQuadrotor: public systems::Diagram<T> {
+// Case (#2): The Diagram that wraps a MultibodyPlant.
+class MultibodyQuadrotor: public Diagram<double> {
  public:
-  RigidBodyQuadrotor() {
-    this->set_name("Quadrotor");
-
-    auto tree = std::make_unique<RigidBodyTree<T>>();
-
-    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
-        multibody::joints::kRollPitchYaw, nullptr, tree.get());
-
-    systems::DiagramBuilder<T> builder;
-
-    plant_ =
-        builder.template AddSystem<systems::RigidBodyPlant<T>>(std::move(tree));
-    plant_->set_name("plant");
-
+  MultibodyQuadrotor() {
+    auto owned_plant = std::make_unique<MultibodyPlant<double>>(0.0);
+    plant_ = owned_plant.get();
+    Parser(plant_).AddModelFromFile(FindResourceOrThrow(
+        "drake/examples/quadrotor/quadrotor.urdf"));
+    plant_->Finalize();
+    body_ = &plant_->GetBodyByName("base_link");
+    DiagramBuilder<double> builder;
+    builder.AddSystem(std::move(owned_plant));
     builder.BuildInto(this);
   }
 
-  void SetState(systems::Context<T>* context, VectorX<T> x) const {
-    systems::Context<T>& plant_context =
+  // The `x` is a 12-element state vector per the file overview.
+  void SetState(Context<double>* context, const VectorXd& x) const {
+    // Unpack x into its elements as given by the file overview.
+    const Vector3d xyz = x.segment(0, 3);
+    const Vector3d rpy = x.segment(3, 3);
+    const Vector3d xyz_dot = x.segment(6, 3);
+    const Vector3d rpy_dot = x.segment(9, 3);
+
+    // Convert the state values into our conventional multibody types.
+    const Vector3d p_WB(xyz);
+    const RollPitchYawd R_WB(rpy);
+    const Vector3d v_WB(xyz_dot);
+    const Vector3d w_WB = R_WB.CalcAngularVelocityInParentFromRpyDt(rpy_dot);
+    const RigidTransformd X_WB(R_WB, p_WB);
+    const SpatialVelocity<double> V_WB(w_WB, v_WB);
+
+    // Set the state of the base_link.
+    Context<double>& plant_context =
         this->GetMutableSubsystemContext(*plant_, context);
-    plant_->set_state_vector(&plant_context, x);
+    plant_->SetFreeBodyPoseInWorldFrame(&plant_context, *body_, X_WB);
+    plant_->SetFreeBodySpatialVelocity(&plant_context, *body_, V_WB);
+  }
+
+  RigidTransformd GetPose(const Context<double>& context) const {
+    const Context<double>& plant_context =
+        this->GetSubsystemContext(*plant_, context);
+    return plant_->EvalBodyPoseInWorld(plant_context, *body_);
   }
 
  private:
-  systems::RigidBodyPlant<T>* plant_{};
+  MultibodyPlant<double>* plant_{};
+  const Body<double>* body_{};
 };
 
-//  Combines test setup for both kinds of plants:
-//  ge_model_:  GenericQuadrotor
-//  rb_model_:  RigidBodyPlant
-class QuadrotorTest: public ::testing::Test {
- public:
-  QuadrotorTest() {
-    ge_model_ = std::make_unique<GenericQuadrotor<double>>();
-    rb_model_ = std::make_unique<RigidBodyQuadrotor<double>>();
+void TestPassiveBehavior(const VectorXd& x0) {
+  const GenericQuadrotor ge_model;
+  const MultibodyQuadrotor mb_model;
+  Simulator<double> ge_simulator(ge_model);
+  Simulator<double> mb_simulator(mb_model);
+  auto& ge_context = ge_simulator.get_mutable_context();
+  auto& mb_context = mb_simulator.get_mutable_context();
 
-    ge_simulator_ = std::make_unique<systems::Simulator<double>>(*ge_model_);
-    rb_simulator_ = std::make_unique<systems::Simulator<double>>(*rb_model_);
+  ge_model.SetState(&ge_context, x0);
+  mb_model.SetState(&mb_context, x0);
+  ge_simulator.AdvanceTo(kSimulationDuration);
+  mb_simulator.AdvanceTo(kSimulationDuration);
 
-    ge_derivatives_ = ge_model_->AllocateTimeDerivatives();
-    rb_derivatives_ = rb_model_->AllocateTimeDerivatives();
-  }
-
-  void SetUp() override {
-    ge_context_ = ge_model_->CreateDefaultContext();
-    rb_context_ = rb_model_->CreateDefaultContext();
-
-    ge_model_->SetState(ge_context_.get(), x0_);
-    rb_model_->SetState(rb_context_.get(), x0_);
-
-    ge_simulator_->Initialize();
-    rb_simulator_->Initialize();
-  }
-
-  void SetState(const VectorX<double> x0) {
-    ge_context_ = ge_model_->CreateDefaultContext();
-    rb_context_ = rb_model_->CreateDefaultContext();
-
-    ge_model_->SetState(ge_context_.get(), x0);
-    rb_model_->SetState(rb_context_.get(), x0);
-  }
-
-  void Simulate(const double t) {
-    ge_simulator_->Initialize();
-    rb_simulator_->Initialize();
-
-    ge_simulator_->AdvanceTo(t);
-    rb_simulator_->AdvanceTo(t);
-  }
-
-  VectorX<double> GetState(systems::Simulator<double> *simulator) {
-    return simulator->get_context()
-        .get_continuous_state_vector()
-        .CopyToVector();
-  }
-
-  void PassiveBehaviorTest(VectorX<double> x0) {
-    SetState(x0);
-    Simulate(kSimulationDuration);
-    VectorX<double> my_state = ge_simulator_->get_context()
-        .get_continuous_state_vector()
-        .CopyToVector();
-    VectorX<double> rb_state = rb_simulator_->get_context()
-        .get_continuous_state_vector()
-        .CopyToVector();
-    double tol = 1e-10;
-    EXPECT_TRUE(
-        CompareMatrices(my_state, rb_state, tol, MatrixCompareType::absolute));
-  }
-
- protected:
-  VectorX<double> x0_ = VectorX<double>::Zero(12);
-
-  std::unique_ptr<GenericQuadrotor<double>> ge_model_;
-  std::unique_ptr<RigidBodyQuadrotor<double>> rb_model_;
-
-  std::unique_ptr<systems::Simulator<double>> ge_simulator_, rb_simulator_;
-
-  std::unique_ptr<systems::Context<double>> ge_context_, rb_context_;
-  std::unique_ptr<systems::ContinuousState<double>> ge_derivatives_,
-      rb_derivatives_;
-};
-
-//  Test comparing the computation of derivatives for a fixed state.
-TEST_F(QuadrotorTest, derivatives) {
-  VectorX<double> x0 = VectorX<double>::Ones(12);  // Set state to ones.
-  SetState(x0);
-
-  ge_model_->CalcTimeDerivatives(*ge_context_, ge_derivatives_.get());
-  rb_model_->CalcTimeDerivatives(*rb_context_, rb_derivatives_.get());
-
-  VectorX<double> my_derivative_vector = ge_derivatives_->CopyToVector();
-  VectorX<double> rb_derivative_vector = rb_derivatives_->CopyToVector();
-
-  EXPECT_TRUE(CompareMatrices(my_derivative_vector, rb_derivative_vector,
-                              1e-10 /* tolerance */,
-                              MatrixCompareType::absolute));
+  const RigidTransformd ge_pose = ge_model.GetPose(ge_context);
+  const RigidTransformd mb_pose = mb_model.GetPose(mb_context);
+  EXPECT_TRUE(CompareMatrices(
+        ge_pose.translation(), mb_pose.translation(),
+        1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(ge_pose.rotation().IsNearlyEqualTo(ge_pose.rotation(), 1e-10));
 }
 
-// Test comparing the state for of each kind of plant under passive behaviour
-// after a 1.0 second motion. Each plant is dropped from rest at the origin.
-TEST_F(QuadrotorTest, drop_from_rest) {
-  VectorX<double> x0 = VectorX<double>::Zero(12);
-  PassiveBehaviorTest(x0);
+// Test comparing the state for of each kind of plant under passive behaviour.
+// Each plant is dropped from rest at the origin.
+GTEST_TEST(QuadrotorDynamicsTest, DropFromRest) {
+  VectorXd x0 = VectorXd::Zero(12);
+  TestPassiveBehavior(x0);
 }
 
-// Test comparing the state for of each kind of plant under passive behaviour
-// after a 1.0 second motion. Each plant is dropped from the origin with an
-// initial translational velocity.
-TEST_F(QuadrotorTest, drop_from_initial_velocity) {
-  VectorX<double> x0 = VectorX<double>::Zero(12);
+// Test comparing the state for of each kind of plant under passive behaviour.
+// Each plant is dropped from the origin with an initial translational velocity.
+GTEST_TEST(QuadrotorDynamicsTest, DropFromInitialVelocity) {
+  VectorXd x0 = VectorXd::Zero(12);
   x0.segment(6, 3) << 1, 1, 1;  // Some translational velocity.
-  PassiveBehaviorTest(x0);
+  TestPassiveBehavior(x0);
 }
 
-// Test comparing the state for of each kind of plant under passive behaviour
-// after a 1.0 second motion. Each plant is dropped from the origin with an
-// initial rotational velocity.
-TEST_F(QuadrotorTest, drop_from_initial_rotation) {
-  VectorX<double> x0 = VectorX<double>::Zero(12);
+// Test comparing the state for of each kind of plant under passive behaviour.
+// Each plant is dropped from the origin with an initial rotational velocity.
+GTEST_TEST(QuadrotorDynamicsTest, DropFromInitialRotation) {
+  VectorXd x0 = VectorXd::Zero(12);
   x0.segment(9, 3) << 1, 1, 1;  // Some rotary velocity.
-  PassiveBehaviorTest(x0);
+  TestPassiveBehavior(x0);
 }
 
-// Test comparing the state for of each kind of plant under passive behaviour
-// after a 1.0 second motion. Each plant is dropped from and arbitrary initial
-// state.
-TEST_F(QuadrotorTest, drop_from_arbitrary_state) {
-  VectorX<double> x0 = VectorX<double>::Zero(12);
+// Test comparing the state for of each kind of plant under passive behaviour.
+// Each plant is dropped from and arbitrary initial state.
+GTEST_TEST(QuadrotorDynamicsTest, DropFromArbitraryState) {
+  VectorXd x0 = VectorXd::Zero(12);
   x0 << 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6;  // Some initial state.
-  PassiveBehaviorTest(x0);
-}
-
-TEST_F(QuadrotorTest, ToAutoDiff) {
-  const QuadrotorPlant<double> plant;
-  EXPECT_TRUE(is_autodiffxd_convertible(plant));
-}
-
-TEST_F(QuadrotorTest, ToSymbolic) {
-  const QuadrotorPlant<double> plant;
-  EXPECT_FALSE(is_symbolic_convertible(plant));
+  TestPassiveBehavior(x0);
 }
 
 }  // namespace

@@ -45,10 +45,11 @@ class DummySystem : public LeafSystem<double> {
 // introduce errors.
 class MyOutputPort : public OutputPort<double> {
  public:
-  MyOutputPort(const System<double>* diagram, SystemBase* system_base,
+  MyOutputPort(const System<double>* diagram,
+               internal::SystemMessageInterface* system_interface,
                OutputPortIndex index, DependencyTicket ticket)
-      : OutputPort<double>(diagram, system_base, "my_output", index, ticket,
-                           kVectorValued, 2) {}
+      : OutputPort<double>(diagram, system_interface, "my_output", index,
+                            ticket, kVectorValued, 2) {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(
@@ -232,6 +233,25 @@ void AbstractPortCheck(const Context<double>& context,
   DRAKE_EXPECT_THROWS_MESSAGE(
       port.Eval<int>(context), std::logic_error,
       "OutputPort::Eval().*wrong value type int.*actual type.*std::string.*");
+}
+
+TEST_F(LeafOutputPortTest, DisableByDefaultWorks) {
+  absport_general_.disable_caching_by_default();
+  const CacheEntry& abs_entry = absport_general_.cache_entry();
+  const CacheEntry& vec_entry = vecport_general_.cache_entry();
+  EXPECT_TRUE(abs_entry.is_disabled_by_default());
+  EXPECT_FALSE(vec_entry.is_disabled_by_default());
+
+  // Find the cache entry values in a created context and verify that
+  // the right one is disabled.
+  auto my_context = dummy_.CreateDefaultContext();
+  const CacheEntryValue& abs_value =
+      my_context->get_cache().get_cache_entry_value(abs_entry.cache_index());
+  const CacheEntryValue& vec_value =
+      my_context->get_cache().get_cache_entry_value(vec_entry.cache_index());
+
+  EXPECT_TRUE(abs_value.is_cache_entry_disabled());
+  EXPECT_FALSE(vec_value.is_cache_entry_disabled());
 }
 
 // Check for proper construction and functioning of abstract LeafOutputPorts.

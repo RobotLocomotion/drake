@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
@@ -15,15 +16,7 @@ namespace systems {
 /// given target position using a PID controller.
 /// @see SpringMassSystem, PidController.
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_nonsymbolic_scalar
 /// @ingroup rigid_body_systems
 template <typename T>
 class PidControlledSpringMassSystem : public Diagram<T> {
@@ -69,3 +62,6 @@ class PidControlledSpringMassSystem : public Diagram<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::PidControlledSpringMassSystem)

@@ -33,7 +33,7 @@ namespace multibody {
 /// - CalcNonConservativePower(): computes the power dissipated by
 ///   non-conservative forces.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class ForceElement : public
                      MultibodyElement<ForceElement, T, ForceElementIndex> {
@@ -198,7 +198,7 @@ class ForceElement : public
   /// an elastic spring between two bodies:
   /// @code
   ///   template <typename T>
-  ///   class SpringElement {
+  ///   class SpringElement : public ForceElement<T> {
   ///    public:
   ///     // Class's constructor.
   ///     SpringElement(

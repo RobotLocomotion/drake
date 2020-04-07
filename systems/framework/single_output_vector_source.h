@@ -20,7 +20,7 @@ namespace systems {
 /// void DoCalcOutput(const Context<T>&, Eigen::VectorBlock<VectorX<T>>*) const;
 /// @endcode
 ///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class SingleOutputVectorSource : public LeafSystem<T> {
  public:
@@ -31,7 +31,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   /// vector to the single-argument constructor of `const BasicVector<T>&`.
   SingleOutputVectorSource() = delete;
 
-  ~SingleOutputVectorSource() override;
+  ~SingleOutputVectorSource() override = default;
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
@@ -106,12 +106,6 @@ class SingleOutputVectorSource : public LeafSystem<T> {
     DoCalcVectorOutput(context, &block);
   }
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-SingleOutputVectorSource<T>::~SingleOutputVectorSource() = default;
 
 }  // namespace systems
 }  // namespace drake

@@ -613,6 +613,11 @@ void ScsSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "ScsSolver doesn't support the feature of variable scaling.");
+  }
+
   // TODO(hongkai.dai): allow warm starting SCS with initial guess on
   // primal/dual variables and primal residues.
   unused(initial_guess);

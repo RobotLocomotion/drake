@@ -92,7 +92,8 @@ geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
 math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision, const math::RigidTransformd& X_LG);
 
-/** Parses the drake-relevant collision properties from a <collision> element.
+/** @anchor sdf_contact_material
+ Parses the drake-relevant collision properties from a <collision> element.
 
  Specifically, looks for <drake:proximity_properties> tag to find drake-specific
  geometry collision (or "proximity") properties. The set of tags are enumerated

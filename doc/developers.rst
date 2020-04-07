@@ -79,8 +79,8 @@ Drake requires a compiler running in C++17 mode.
 | Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python |
 +==================================+=======+=======+=====================+===================+========+
 +----------------------------------+-------+-------+---------------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | 2.0   | 3.10  | | Clang 6.0         | OpenJDK 11        | 3.6    |
-|                                  |       |       | | GCC 7.4 (default) |                   |        |
+| Ubuntu 18.04 LTS (Bionic Beaver) | 2.1   | 3.10  | | Clang 6.0         | OpenJDK 11        | 3.6    |
+|                                  |       |       | | GCC 7.5 (default) |                   |        |
 +----------------------------------+       +-------+---------------------+-------------------+--------+
 | macOS Mojave (10.14)             |       | 3.16  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 13 | 3.7    |
 |                                  |       |       | | (Xcode 11.3)      | | (HotSpot JVM)   |        |
@@ -119,7 +119,7 @@ to :ref:`ask for help <getting_help>`.
 Binary Packages
 ---------------
 
-The binary releases of Drake are built with GCC 7.4 on Ubuntu Bionic, and Apple
+The binary releases of Drake are built with GCC 7.5 on Ubuntu Bionic, and Apple
 LLVM 11.0.0 on macOS Mojave.
 
 The links for these packages are listed in :ref:`binary-installation`.
@@ -217,11 +217,17 @@ make the review faster.
 - @soonho-tri (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
 
-**Merge.** If you have write access to RobotLocomotion/drake, a green
-"Merge Pull Request" button will appear when your change is fully reviewed and
-passes CI. You may click it to merge your PR. If you do not have write access,
-or if you believe that status checks are failing for inconsequential reasons,
-ask your platform reviewer to perform the merge for you.
+**Merge.** Once the PR is fully reviewed and passes CI, the assigned platform
+reviewer will merge it to master.  If time is of the essence, you may post a
+reminder to the PR to get the reviewer's attention.  If the PR should not be
+merged yet, or if you prefer to merge it yourself, apply the label "status:
+do not merge" to disable the merge.
+
+If you are a frequent contributor who has been granted write access to
+RobotLocomotion/drake, a green "Merge Pull Request" button will appear when
+your change is fully reviewed and passes CI. You may click it to merge your PR.
+Choose the "Squash and merge option" unless otherwise instructed (see
+:ref:`curate_commits_before_merging`).
 
 **After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
 will contact you to work out a resolution.

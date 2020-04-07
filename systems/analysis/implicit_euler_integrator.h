@@ -1,13 +1,9 @@
 #pragma once
 
-#include <limits>
 #include <memory>
-#include <utility>
 
-#include <Eigen/LU>
-
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/math/autodiff_gradient.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
@@ -16,15 +12,6 @@ namespace systems {
 
 /**
  * A first-order, fully implicit integrator with second order error estimation.
- * @tparam T The vector element type, which must be a valid Eigen scalar.
- *
- * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
- * this class, please refer to https://drake.mit.edu/cxx_inl.html.
- *
- * Instantiated templates for the following kinds of T's are provided:
- *
- * - double
- * - AutoDiffXd
  *
  * This integrator uses the following update rule:<pre>
  * x(t+h) = x(t) + h f(t+h,x(t+h))
@@ -71,6 +58,9 @@ namespace systems {
  *       process. See IntegratorBase::set_target_accuracy() for more info.
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
+ *
+ * @tparam_nonsymbolic_scalar
+ * @ingroup integrators
  */
 template <class T>
 class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
@@ -175,5 +165,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_jacobian_function_evaluations_{0};
   int64_t num_err_est_nr_iterations_{0};
 };
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::ImplicitEulerIntegrator)

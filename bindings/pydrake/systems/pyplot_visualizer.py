@@ -1,8 +1,8 @@
 import matplotlib
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 import numpy as np
+from warnings import warn
 
 from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
 from pydrake.systems.primitives import SignalLogger
@@ -26,7 +26,7 @@ class PyPlotVisualizer(LeafSystem):
     """
 
     def __init__(self, draw_period=1./30, facecolor=[1, 1, 1],
-                 figsize=None, ax=None):
+                 figsize=None, ax=None, show=None):
         LeafSystem.__init__(self)
 
         self.set_name('pyplot_visualization')
@@ -41,10 +41,21 @@ class PyPlotVisualizer(LeafSystem):
             self.ax = ax
             self.fig = ax.get_figure()
 
+        if show is None:
+            show = (matplotlib.get_backend().lower() != 'template')
+        self._show = show
+
         self.ax.axis('equal')
         self.ax.axis('off')
 
-        self._show = (matplotlib.get_backend().lower() != 'template')
+        if not show:
+            # This is the preferred way to support the jupyter notebook
+            # animation workflow and the `inline` backend grabbing an
+            # extraneous render of the figure.
+            plt.close(self.fig)
+
+        self._is_recording = False
+        self._recorded_contexts = []
 
         def on_initialize(context, event):
             if self._show:
@@ -61,6 +72,11 @@ class PyPlotVisualizer(LeafSystem):
             self.draw(context)
             self.fig.canvas.draw()
             plt.pause(1e-10)
+        if self._is_recording:
+            snapshot = self.AllocateContext()
+            snapshot.SetTimeStateAndParametersFrom(context)
+            self.FixInputPortsFrom(self, context, snapshot)
+            self._recorded_contexts.append(snapshot)
 
     def draw(self, context):
         """Draws a single frame.
@@ -69,16 +85,37 @@ class PyPlotVisualizer(LeafSystem):
         """
         raise NotImplementedError
 
-    def animate(self, log, resample=True, repeat=False):
+    def start_recording(self):
+        self._is_recording = True
+
+    def stop_recording(self):
+        self._is_recording = False
+
+    def reset_recording(self):
+        self._recorded_contexts = []  # Reset recorded data.
+
+    def _draw_recorded_frame(self, i):
+        return self.draw(self._recorded_contexts[i])
+
+    def get_recording_as_animation(self, **kwargs):
+        ani = animation.FuncAnimation(fig=self.fig,
+                                      func=self._draw_recorded_frame,
+                                      frames=len(self._recorded_contexts),
+                                      interval=1000*self.timestep,
+                                      **kwargs)
+        return ani
+
+    def animate(self, log, resample=True, **kwargs):
         """
         Args:
-            log: A reference to a pydrake.systems.primitives.SignalLogger that
-                contains the plant state after running a simulation.
+            log: A reference to a pydrake.systems.primitives.SignalLogger
+                or a pydrake.trajectories.Trajectory that contains the plant
+                state after running a simulation.
             resample: Whether we should do a resampling operation to make the
                 samples more consistent in time. This can be disabled if you
                 know the draw_period passed into the constructor exactly
                 matches the sample timestep of the log.
-            repeat: Whether the resulting animation should repeat.
+            Additional kwargs are passed through to FuncAnimation.
         """
         if isinstance(log, SignalLogger):
             t = log.sample_times()
@@ -98,10 +135,10 @@ class PyPlotVisualizer(LeafSystem):
         def animate_update(i):
             self.draw(x[:, i])
 
-        ani = animation.FuncAnimation(self.fig,
-                                      animate_update,
-                                      t.shape[0],
+        ani = animation.FuncAnimation(fig=self.fig,
+                                      func=animate_update,
+                                      frames=t.shape[0],
                                       # Convert from s to ms.
                                       interval=1000*self.timestep,
-                                      repeat=repeat)
+                                      **kwargs)
         return ani

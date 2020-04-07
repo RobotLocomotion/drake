@@ -11,12 +11,15 @@
 /// get stuck by collisions.
 
 #include <Eigen/Dense>
+#include <gflags/gflags.h>
 #include "lcm/lcm-cpp.hpp"
 
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
+
+DEFINE_int32(max_cycles, 1000'000'000, "Stop after this many twists.");
 
 namespace drake {
 namespace examples {
@@ -68,7 +71,7 @@ class PositionCommander {
     Eigen::VectorXd close_hand_joint_position = Eigen::Map<Eigen::VectorXd>(
         &(allegro_status_.joint_position_measured[0]), kAllegroNumJoints);
     // twisting the cup repeatedly
-    while (true) {
+    for (int cycle = 0; cycle < FLAGS_max_cycles; ++cycle) {
       target_joint_position = close_hand_joint_position;
       // The middle finger works as a pivot finger for the rotation, and exert
       // a little force to maintain the stabilization of the mug, which is
@@ -103,14 +106,14 @@ class PositionCommander {
   }
 
  private:
-  inline void PublishPositionCommand(
+  void PublishPositionCommand(
       const Eigen::VectorXd& target_joint_position) {
     Eigen::VectorXd::Map(&allegro_command_.joint_position[0],
                          kAllegroNumJoints) = target_joint_position;
     lcm_.publish(kLcmCommandChannel, &allegro_command_);
   }
 
-  inline void MovetoPositionUntilStuck(
+  void MovetoPositionUntilStuck(
       const Eigen::VectorXd& target_joint_position) {
     PublishPositionCommand(target_joint_position);
     // A time delay at the initial moving stage so that the noisy data from the
@@ -152,4 +155,7 @@ int do_main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::allegro_hand::do_main(); }
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::allegro_hand::do_main();
+}

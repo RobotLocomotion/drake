@@ -1,0 +1,29 @@
+namespace: drake::examples::acrobot
+elements:
+# Note: default parameter values are taken from:
+#   Spong, Mark W. "Swing up control of the acrobot." Robotics and Automation,
+#   1994. Proceedings., 1994 IEEE International Conference on. IEEE, 1994.
+  -
+    name: k_e
+    doc: Energy shaping gain.
+    doc_units: s
+    default_value: 5.0
+    min_value: 0.0
+  -
+    name: k_p
+    doc: Partial feedback linearization proportional gain.
+    doc_units: s^-2
+    default_value: 50.0
+    min_value: 0.0
+  -
+    name: k_d
+    doc: Partial feedback linearization derivative gain.
+    doc_units: s^-1
+    default_value: 5.0
+    min_value: 0.0
+  -
+    name: balancing_threshold
+    doc: Cost value at which to switch from swing up to balancing.
+    doc_units:
+    default_value: 1e3
+    min_value: 0.0

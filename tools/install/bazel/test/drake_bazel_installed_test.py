@@ -13,9 +13,33 @@ def main():
 
     # In scratch, mock up a drake_bazel_installed workspace.
     scratch_dir = install_test_helper.create_temporary_dir("scratch")
+
+    # TODO(jamiesnape): Automatically keep this synchronized with the version
+    # used by @drake (or the nearest stable version).
+    rules_python_commit = "38f86fb55b698c51e8510c807489c9f4e047480e"
+    rules_python_url = f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz"  # noqa
+    rules_python_sha256 = "c911dc70f62f507f3a361cbc21d6e0d502b91254382255309bc60b7a0f48de28"  # noqa
+
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
 workspace(name = "scratch")
+
+load(
+    "@bazel_tools//tools/build_defs/repo:http.bzl",
+    "http_archive",
+)
+http_archive(
+    name = "rules_python",
+    sha256 = "{rules_python_sha256}",
+    strip_prefix = "rules_python-{rules_python_commit}",
+    url = "{rules_python_url}",
+)
+load(
+    "@rules_python//python:repositories.bzl",
+    "py_repositories",
+)
+py_repositories()
+
 new_local_repository(
     name = "drake_binary",
     path = "{install_dir}",
@@ -30,6 +54,8 @@ drake_repository(name = "drake")
 
     with open(join(scratch_dir, "BUILD.bazel"), "w") as f:
         f.write(f"""
+load("@rules_python//python:defs.bzl", "py_test")
+
 py_test(
     name = "find_resource_test",
     srcs = ["find_resource_test.py"],

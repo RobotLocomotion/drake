@@ -1,0 +1,39 @@
+namespace: drake::examples::compass_gait
+elements:
+  -
+    name: mass_hip
+    doc: Point mass at the hip.
+    doc_units: kg
+    default_value: 10.0
+    min_value: 0.0
+  -
+    name: mass_leg
+    doc: Mass of each leg (modeled as a point mass at the center of mass).
+    doc_units: kg
+    default_value: 5.0
+    min_value: 0.0
+  -
+    name: length_leg
+    doc: The length of each leg.
+    doc_units: m
+    default_value: 1.0
+    min_value: 0.0
+  -
+    name: center_of_mass_leg
+    doc: Distance from the hip to the center of mass of each leg.
+    doc_units: m
+    default_value: .5
+    min_value: 0.0
+  -
+    name: gravity
+    doc: An approximate value for gravitational acceleration.
+    doc_units: m/s^2
+    default_value: 9.81
+    min_value: 0.0
+  -
+    name: slope
+    doc: The angle of the ramp on which the compass gait is walking.  Must have 0 <= slope < PI/2 so that forward == downhill (an assumption used in the foot collision witness function).
+    doc_units: radians
+    default_value: 0.0525
+    min_value: 0.0
+    max_value: 1.5707

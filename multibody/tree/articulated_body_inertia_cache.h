@@ -28,19 +28,11 @@ namespace internal {
 /// - LDLT factorization `ldlt_D_B` of the articulated body hinge inertia.
 /// - The Kalman gain `g_PB_W = P_B_W * H_PB_W * D_B⁻¹`.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template<typename T>
 class ArticulatedBodyInertiaCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
 
   /// Constructs an articulated body cache entry for the given
   /// MultibodyTreeTopology.
@@ -138,8 +130,6 @@ class ArticulatedBodyInertiaCache {
   std::vector<Eigen::LDLT<MatrixUpTo6<T>>> ldlt_D_B_;
   std::vector<Matrix6xUpTo6<T>> g_PB_W_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertiaCache);
 
 }  // namespace internal
 }  // namespace multibody

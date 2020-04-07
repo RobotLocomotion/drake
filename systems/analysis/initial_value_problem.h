@@ -3,15 +3,14 @@
 #include <memory>
 #include <optional>
 #include <utility>
-#include <vector>
 
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/parameters.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -55,12 +54,7 @@ namespace systems {
 ///   be described by d𝐯/dt = (𝐅(t) - μ * 𝐯) / m. In this context, 𝐱 ≜ 𝐯,
 ///   𝐤 ≜ [m, μ], 𝐱₀ ≜ 𝐯₀, d𝐱/dt = f(t, 𝐱; 𝐤) = (𝐅(t) - k₂ * 𝐱) / k₁.
 ///
-/// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
-///
-/// @note
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class InitialValueProblem {
  public:
@@ -79,38 +73,43 @@ class InitialValueProblem {
   /// @param x The dependent vector variable 𝐱 ∈ ℝⁿ.
   /// @param k The vector of parameters 𝐤 ∈ ℝᵐ.
   /// @return The derivative vector d𝐱/dt ∈ ℝⁿ.
-  using ODEFunction = std::function<VectorX<T> (
-      const T& t, const VectorX<T>& x, const VectorX<T>& k)>;
+  using OdeFunction = std::function<VectorX<T>(const T& t, const VectorX<T>& x,
+                                               const VectorX<T>& k)>;
+
+  DRAKE_DEPRECATED("2020-07-01", "ODEFunction has been renamed OdeFunction.")
+  typedef OdeFunction ODEFunction;
 
   /// A collection of values i.e. initial time t₀, initial state vector 𝐱₀
   /// and parameters vector 𝐤.to further specify the ODE system (in order
-  /// to become an initial value problem).
-  struct SpecifiedValues {
+  /// to become an initial value problem).  This places the same role as
+  /// systems::Context, but is intentionally much simpler.
+  struct OdeContext {
     /// Default constructor, leaving all values unspecified.
-    SpecifiedValues() = default;
+    OdeContext() = default;
 
     /// Constructor specifying all values.
     ///
     /// @param t0_in Specified initial time t₀.
     /// @param x0_in Specified initial state vector 𝐱₀.
     /// @param k_in Specified parameter vector 𝐤.
-    SpecifiedValues(const std::optional<T>& t0_in,
-                    const std::optional<VectorX<T>>& x0_in,
-                    const std::optional<VectorX<T>>& k_in)
+    OdeContext(const std::optional<T>& t0_in,
+               const std::optional<VectorX<T>>& x0_in,
+               const std::optional<VectorX<T>>& k_in)
         : t0(t0_in), x0(x0_in), k(k_in) {}
 
-    bool operator==(const SpecifiedValues& rhs) const {
+    bool operator==(const OdeContext& rhs) const {
       return (t0 == rhs.t0 && x0 == rhs.x0 && k == rhs.k);
     }
 
-    bool operator!=(const SpecifiedValues& rhs) const {
-      return !operator==(rhs);
-    }
+    bool operator!=(const OdeContext& rhs) const { return !operator==(rhs); }
 
-    std::optional<T> t0;  ///< The initial time t₀ for the IVP.
+    std::optional<T> t0;           ///< The initial time t₀ for the IVP.
     std::optional<VectorX<T>> x0;  ///< The initial state vector 𝐱₀ for the IVP.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
+
+  DRAKE_DEPRECATED("2020-07-01", "SpecifiedValues has been renamed OdeContext.")
+  typedef OdeContext SpecifiedValues;
 
   /// Constructs an IVP described by the given @p ode_function, using
   /// given @p default_values.t0 and @p default_values.x0 as initial
@@ -125,8 +124,8 @@ class InitialValueProblem {
   /// @pre An initial state vector @p default_values.x0 is given.
   /// @pre A parameter vector @p default_values.k is given.
   /// @throws std::logic_error if preconditions are not met.
-  InitialValueProblem(const ODEFunction& ode_function,
-                      const SpecifiedValues& default_values);
+  InitialValueProblem(const OdeFunction& ode_function,
+                      const OdeContext& default_values);
 
   /// Solves the IVP for time @p tf, using the initial time t₀, initial state
   /// vector 𝐱₀ and parameter vector 𝐤 present in @p values, falling back to
@@ -144,7 +143,7 @@ class InitialValueProblem {
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
   /// @throws std::logic_error if preconditions are not met.
-  VectorX<T> Solve(const T& tf, const SpecifiedValues& values = {}) const;
+  VectorX<T> Solve(const T& tf, const OdeContext& values = {}) const;
 
   /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for
   /// the closed time interval between the initial time t₀ and the given final
@@ -174,7 +173,7 @@ class InitialValueProblem {
   ///      values given on construction.
   /// @throws std::logic_error if any of the preconditions is not met.
   std::unique_ptr<DenseOutput<T>> DenseSolve(
-      const T& tf, const SpecifiedValues& values = {}) const;
+      const T& tf, const OdeContext& values = {}) const;
 
   /// Resets the internal integrator instance by in-place
   /// construction of the given integrator type.
@@ -194,8 +193,8 @@ class InitialValueProblem {
   ///          InitialValueProblem::get_mutable_integrator().
   template <typename Integrator, typename... Args>
   Integrator* reset_integrator(Args&&... args) {
-    integrator_ = std::make_unique<Integrator>(
-        *system_, std::forward<Args>(args)...);
+    integrator_ =
+        std::make_unique<Integrator>(*system_, std::forward<Args>(args)...);
     integrator_->reset_context(context_.get());
     return static_cast<Integrator*>(integrator_.get());
   }
@@ -225,11 +224,10 @@ class InitialValueProblem {
   //                          InitialValueProblem::Solve() and
   //                          InitialValueProblem::DenseSolve()
   //                          do not hold.
-  SpecifiedValues SanitizeValuesOrThrow(
-      const T& tf, const SpecifiedValues& values) const;
+  OdeContext SanitizeValuesOrThrow(const T& tf, const OdeContext& values) const;
 
   // IVP values specified by default.
-  const SpecifiedValues default_values_;
+  const OdeContext default_values_;
 
   // @name Caching support
   //
@@ -242,17 +240,16 @@ class InitialValueProblem {
 
   // Invalidates and initializes cached IVP specified values and
   // integration context based on the newly provided @p values.
-  void ResetCachedState(const SpecifiedValues& values) const;
+  void ResetCachedState(const OdeContext& values) const;
 
   // Conditionally invalidates and initializes cached IVP specified
   // values and integration context based on time @p tf to solve for
   // and the provided @p values. If cached state can be reused, it's a
   // no-op.
-  void ResetCachedStateIfNecessary(
-      const T& tf, const SpecifiedValues& values) const;
+  void ResetCachedStateIfNecessary(const T& tf, const OdeContext& values) const;
 
   // IVP current specified values (for caching).
-  mutable SpecifiedValues current_values_;
+  mutable OdeContext current_values_;
 
   // IVP ODE solver integration context.
   std::unique_ptr<Context<T>> context_;
@@ -264,3 +261,6 @@ class InitialValueProblem {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::InitialValueProblem)

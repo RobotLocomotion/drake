@@ -2,13 +2,9 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/examples/rimless_wheel/rimless_wheel.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/examples/rimless_wheel/rimless_wheel_geometry.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -35,40 +31,11 @@ int DoMain() {
   auto rimless_wheel = builder.AddSystem<RimlessWheel>();
   rimless_wheel->set_name("rimless_wheel");
 
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/rimless_wheel/RimlessWheel.urdf"),
-      multibody::joints::kRollPitchYaw, tree.get());
-
-  double ramp_pitch = RimlessWheelParams<double>().slope();
-  {  // Add ramp
-    // TODO(russt): Consider moving/reusing this block (useful for all passive
-    // walkers).
-    DrakeShapes::Box geom(Eigen::Vector3d(100, 1, 10));
-
-    // In the following use W for world frame and B for box frame.
-    Eigen::Isometry3d X_WB = Eigen::Isometry3d::Identity();
-    X_WB.translation() << 0, 0, -10. / 2;  // Top of the box is at z = 0.
-    X_WB.rotate(
-        math::RotationMatrix<double>::MakeYRotation(ramp_pitch).matrix());
-
-    // Defines a color called "desert sand" according to htmlcsscolor.com.
-    Eigen::Vector4d color;
-    color << 0.9297, 0.7930, 0.6758, 1;
-
-    RigidBody<double>& world = tree->world();
-    world.AddVisualElement(DrakeShapes::VisualElement(geom, X_WB, color));
-    tree->addCollisionElement(
-        drake::multibody::collision::Element(geom, X_WB, &world), world,
-        "terrain");
-    tree->compile();
-  }
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
-
-  builder.Connect(rimless_wheel->get_floating_base_state_output_port(),
-                  publisher->get_input_port(0));
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  RimlessWheelGeometry::AddToBuilder(
+      &builder, rimless_wheel->get_floating_base_state_output_port(),
+      scene_graph);
+  ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

@@ -147,12 +147,12 @@ LinearSpringDamper<T>::TemplatedDoCloneToScalar(
   const Body<ToScalar>& bodyB_clone =
       tree_clone.get_body(bodyB().index());
 
-  // Make the Joint<T> clone.
+  // Make the LinearSpringDamper<T> clone.
   auto spring_damper_clone = std::make_unique<LinearSpringDamper<ToScalar>>(
       bodyA_clone, p_AP(), bodyB_clone, p_BQ(),
       free_length(), stiffness(), damping());
 
-  return std::move(spring_damper_clone);
+  return spring_damper_clone;
 }
 
 template <typename T>

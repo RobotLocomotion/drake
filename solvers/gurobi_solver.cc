@@ -686,6 +686,11 @@ void GurobiSolver::DoSolve(
     const Eigen::VectorXd& initial_guess,
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
+  if (!prog.GetVariableScaling().empty()) {
+    static const logging::Warn log_once(
+      "GurobiSolver doesn't support the feature of variable scaling.");
+  }
+
   if (!license_) {
     license_ = AcquireLicense();
   }
@@ -829,11 +834,6 @@ void GurobiSolver::DoSolve(
     }
   }
 
-  if (initial_guess.rows() != prog.num_vars()) {
-    throw std::invalid_argument(fmt::format(
-        "The initial guess has {} rows, but {} rows were expected.",
-        initial_guess.rows(), prog.num_vars()));
-  }
   for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
     if (!error && !std::isnan(initial_guess(i))) {
       error = GRBsetdblattrelement(model, "Start", i, initial_guess(i));

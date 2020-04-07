@@ -1,7 +1,7 @@
 r"""
 Simple tool that parses an SDF or URDF file from the command line and runs a
 simple system which takes joint positions from a JointSlider gui and publishes
-the resulting geometry poses to all available visualizers.
+the resulting geometry poses to available visualizers.
 
 If you wish to simply load a model and show it in multiple visualizers, see
 `show_model`.
@@ -17,6 +17,10 @@ Example usage (drake visualizer):
     ./bazel-bin/manipulation/util/geometry_inspector \
         ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
+Note:
+    ``geometry_inspector`` will always send the lcm draw messages to
+drake_visualizer (they have no effect unless you open the visualizer).
+
 Example usage (meshcat):
     cd drake
     bazel build \
@@ -28,11 +32,19 @@ Example usage (meshcat):
     ./bazel-bin/manipulation/util/geometry_inspector --meshcat default \
         ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
+Example usage (pyplot):
+    cd drake
+    bazel build //manipulation/util:geometry_inspector
+
+    ./bazel-bin/manipulation/util/geometry_inspector --pyplot \
+        ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+
 Optional argument examples:
     bazel-bin/manipulation/util/geometry_inspector \
     ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
 
-NOTE: If `--meshcat` is not specified, no meshcat visualization will take
+Note:
+    If ``--meshcat`` is not specified, no meshcat visualization will take
 place.
 """
 
@@ -43,12 +55,16 @@ import sys
 import numpy as np
 
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
+from pydrake.geometry import MakePhongIllustrationProperties
 from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.parsing import PackageMap, Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.planar_scenegraph_visualizer import (
+    PlanarSceneGraphVisualizer
+)
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
 
 
@@ -64,6 +80,12 @@ def main():
         type=str,
         default=None,
         help="Full path to the root package for reading in SDF resources.")
+    args_parser.add_argument(
+        "--pyplot", action="store_true",
+        help="Opens a pyplot figure for rendering using "
+             "PlanarSceneGraphVisualizer.")
+    # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
+    #  options as additional arguments.
     position_group = args_parser.add_mutually_exclusive_group()
     position_group.add_argument(
         "--position", type=float, nargs="+", default=[],
@@ -81,6 +103,11 @@ def main():
     args_parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
+    args_parser.add_argument(
+        "--visualize_collisions", action="store_true",
+        help="Visualize the collision geometry in the visualizer. The "
+        "collision geometries will be shown in red to differentiate "
+        "them from the visual geometries.")
     # TODO(russt): Add option to weld the base to the world pending the
     # availability of GetUniqueBaseBody requested in #9747.
     MeshcatVisualizer.add_argparse_argument(args_parser)
@@ -112,6 +139,20 @@ def main():
 
     # Add the model from the file and finalize the plant.
     parser.AddModelFromFile(filename)
+
+    # Find all the geometries that have not already been marked as
+    # 'illustration' (visual) and assume they are collision geometries.
+    # Then add illustration properties to them that will draw them in red
+    # and fifty percent translucent.
+    if args.visualize_collisions:
+        source_id = plant.get_source_id()
+        red_illustration = MakePhongIllustrationProperties([1, 0, 0, 0.5])
+        for geometry_id in scene_graph.model_inspector().GetAllGeometryIds():
+            if(scene_graph.model_inspector().GetIllustrationProperties(
+                    geometry_id) is None):
+                scene_graph.AssignRole(
+                    source_id, geometry_id, red_illustration)
+
     plant.Finalize()
 
     # Add sliders to set positions of the joints.
@@ -132,6 +173,11 @@ def main():
         builder.Connect(
             scene_graph.get_pose_bundle_output_port(),
             meshcat_viz.get_input_port(0))
+
+    if args.pyplot:
+        pyplot = builder.AddSystem(PlanarSceneGraphVisualizer(scene_graph))
+        builder.Connect(scene_graph.get_pose_bundle_output_port(),
+                        pyplot.get_input_port(0))
 
     if len(args.position):
         sliders.set_position(args.position)

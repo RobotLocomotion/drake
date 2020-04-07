@@ -17,25 +17,25 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_vector_gen_library(
     name = "acrobot_input",
-    srcs = ["acrobot_input.named_vector"],
+    srcs = ["acrobot_input_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(
     name = "acrobot_params",
-    srcs = ["acrobot_params.named_vector"],
+    srcs = ["acrobot_params_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(
     name = "acrobot_state",
-    srcs = ["acrobot_state.named_vector"],
+    srcs = ["acrobot_state_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
 drake_cc_vector_gen_library(
     name = "spong_controller_params",
-    srcs = ["spong_controller_params.named_vector"],
+    srcs = ["spong_controller_params_named_vector.yaml"],
     visibility = ["//visibility:public"],
 )
 
@@ -190,7 +190,7 @@ drake_cc_binary(
         ":spong_controller",
         ":spong_controller_params",
         "//geometry:geometry_visualization",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
         "@gflags",
     ],
 )
@@ -207,7 +207,7 @@ drake_cc_binary(
         ":acrobot_plant",
         "//geometry:geometry_visualization",
         "//solvers:solve",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/primitives:trajectory_source",
         "//systems/trajectory_optimization:direct_collocation",
@@ -229,10 +229,8 @@ drake_cc_binary(
         ":acrobot_plant",
         ":spong_controller",
         ":spong_controller_params",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//lcm",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
+        "//systems/lcm",
         "@gflags",
     ],
 )
@@ -251,7 +249,7 @@ drake_cc_binary(
         ":acrobot_lcm",
         ":acrobot_plant",
         "//geometry:geometry_visualization",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "@gflags",
     ],
@@ -266,7 +264,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "urdf_dynamics_test",
+    name = "multibody_dynamics_test",
     data = [":models"],
     deps = [
         ":acrobot_plant",

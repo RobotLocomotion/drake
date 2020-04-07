@@ -168,16 +168,13 @@ class RobotStateLcmMessageTranslatorTest : public ::testing::Test {
 };
 
 // Tests encoding and decoding message for
-// {iiwa, valkyrie} x {RPY, quaterion, fixed based}
+// {iiwa} x {RPY, quaterion, fixed based}
 // x {zero base offset, non zero base offset}.
 TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
-  std::vector<std::string> models = {
+  const std::string model =
       FindResourceOrThrow(
           "drake/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf"),
-      FindResourceOrThrow(
-          "drake/examples/valkyrie/urdf/urdf/"
-          "valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf")};
+          "iiwa14_polytope_collision.urdf");
 
   std::vector<FloatingBaseType> floating_types = {
     FloatingBaseType::kFixed,
@@ -188,14 +185,12 @@ TEST_F(RobotStateLcmMessageTranslatorTest, TestEncodeDecode) {
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
       Vector3<double>(1, 2, 3), Vector3<double>(0.1, -0.3, 0.6));
 
-  for (const auto& model : models) {
-    for (const auto& type : floating_types) {
-      Initialize(model, true, nullptr, type);
-      RunEncodeDecode();
+  for (const auto& type : floating_types) {
+    Initialize(model, true, nullptr, type);
+    RunEncodeDecode();
 
-      Initialize(model, true, weld_to_frame, type);
-      RunEncodeDecode();
-    }
+    Initialize(model, true, weld_to_frame, type);
+    RunEncodeDecode();
   }
 }
 

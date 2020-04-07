@@ -41,7 +41,7 @@ drake_cc_package_library(
 
 drake_cc_vector_gen_library(
     name = "beam_model_params",
-    srcs = ["beam_model_params.named_vector"],
+    srcs = ["beam_model_params_named_vector.yaml"],
 )
 
 drake_cc_library(

@@ -12,4 +12,4 @@ alignment:bits/stl_pair.h
 # Bug in Eigen, has been fixed somewhere after tag 3.3.4.  Present in
 # branches/3.3
 # Report: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1466
-null:external/eigen/Eigen/src/Core/util/BlasUtil.h
+null:external/*/Eigen/src/Core/util/BlasUtil.h

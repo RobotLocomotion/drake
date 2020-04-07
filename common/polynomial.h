@@ -12,14 +12,17 @@
 #include <unsupported/Eigen/Polynomials>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/symbolic.h"
 
+namespace drake {
 /** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
  *
  * Polynomial represents a list of additive Monomials, each one of which is a
- * product of a constant coefficient (of _CoefficientType, which by default is
- * double) and any number of distinct Terms (variables raised to positive
- * integer powers).
+ * product of a constant coefficient (of T, which by default is double) and any
+ * number of distinct Terms (variables raised to positive integer powers).
  *
  * Variables are identified by integer indices rather than symbolic names, but
  * an automatic facility is provided to covert variable names up to four
@@ -28,25 +31,22 @@
  * example, valid names include "dx4" and "m_x".
  *
  * Monomials which have the same variables and powers may be constructed but
- * will be automatically combined:
- *   (3 * a * b * a) + (1.5 * b * a**2)
- * will be reduced to
- *   (4.5 * b * a**2)
- * internally after construction.
+ * will be automatically combined: (3 * a * b * a) + (1.5 * b * a**2) will be
+ * reduced to (4.5 * b * a**2) internally after construction.
  *
  * Polynomials can be added, subtracted, and multiplied.  They may only be
- * divided by scalars (of _CoefficientType) because Polynomials are not closed
- * under division.
+ * divided by scalars (of T) because Polynomials are not closed under division.
+ * 
+ * @tparam_default_scalar
  */
-template <typename _CoefficientType = double>
+template <typename T = double>
 class Polynomial {
  public:
-  typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
   /// This should be 'unsigned int' but MSVC considers a call to std::pow(...,
   /// unsigned int) ambiguous because it won't cast unsigned int to int.
   typedef int PowerType;
-  typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
+  typedef typename Eigen::NumTraits<T>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
 
@@ -77,7 +77,7 @@ class Polynomial {
   /// Terms and a coefficient.
   class Monomial {
    public:
-    CoefficientType coefficient;
+    T coefficient;
     std::vector<Term> terms;  // a list of N variable ids
 
     bool operator==(const Monomial& other) const {
@@ -114,10 +114,10 @@ class Polynomial {
   // This is required for some Eigen operations when used in a
   // polynomial matrix.
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  Polynomial(const CoefficientType& scalar);
+  Polynomial(const T& scalar);
 
   /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
-  Polynomial(const CoefficientType coeff, const std::vector<Term>& terms);
+  Polynomial(const T coeff, const std::vector<Term>& terms);
 
   /// Construct a Polynomial from a sequence of Monomials.
   Polynomial(typename std::vector<Monomial>::const_iterator start,
@@ -128,7 +128,7 @@ class Polynomial {
   explicit Polynomial(const std::string varname, const unsigned int num = 1);
 
   /// Construct a single Monomial of the given coefficient and variable.
-  Polynomial(const CoefficientType& coeff, const VarType& v);
+  Polynomial(const T& coeff, const VarType& v);
 
   /// A legacy constructor for univariate polynomials:  Takes a vector
   /// of coefficients for the constant, x, x**2, x**3... Monomials.
@@ -168,7 +168,7 @@ class Polynomial {
 
   const std::vector<Monomial>& GetMonomials() const;
 
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> GetCoefficients() const;
+  Eigen::Matrix<T, Eigen::Dynamic, 1> GetCoefficients() const;
 
   /// Returns a set of all of the variables present in this Polynomial.
   std::set<VarType> GetVariables() const;
@@ -178,28 +178,47 @@ class Polynomial {
    * Evaluates a univariate Polynomial at the given x.
    * @throws std::runtime_error if this Polynomial is not univariate.
    *
-   * x may be of any type supporting the ** and + operations (which can
-   * be different from both CoefficientsType and RealScalar)
+   * @p x may be of any type supporting the ** and + operations (which can be
+   * different from both CoefficientsType and RealScalar).
+   *
+   * This method may also be used for efficient evaluation of the derivatives of
+   * the univariate polynomial, evaluated at @p x.  @p derivative_order = 0 (the
+   * default) returns the polynomial value without differentiation.  @p
+   * derivative_order = 1 returns the first derivative, etc.
+   *
+   * @pre derivative_order must be non-negative.
    */
-  template <typename T>
-  typename Product<CoefficientType, T>::type EvaluateUnivariate(
-      const T& x) const {
-    typedef typename Product<CoefficientType, T>::type ProductType;
+  template <typename U>
+  typename Product<T, U>::type EvaluateUnivariate(
+      const U& x, int derivative_order = 0) const {
+    // Note: have to remove_const because Product<AutoDiff, AutoDiff>::type and
+    // even Product<double, AutoDiff>::type returns const AutoDiff.
+    typedef typename std::remove_const<typename Product<T, U>::type>::type
+        ProductType;
 
     if (!is_univariate_)
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
+
+    DRAKE_DEMAND(derivative_order >= 0);
     ProductType value = 0;
     using std::pow;
     for (typename std::vector<Monomial>::const_iterator iter =
              monomials_.begin();
          iter != monomials_.end(); iter++) {
-      if (iter->terms.empty())
-        value += iter->coefficient;
-      else
-        value += iter->coefficient *
-                  pow(static_cast<ProductType>(x),
-                      static_cast<PowerType>(iter->terms[0].power));
+      PowerType degree = iter->terms.empty() ? 0 : iter->terms[0].power;
+      if (degree < derivative_order) continue;
+      T coefficient = iter->coefficient;
+      for (int i = 0; i < derivative_order; i++) {
+        coefficient *= degree--;
+      }
+      if (degree == 0) {
+        value += coefficient;
+      } else if (degree == 1) {
+        value += coefficient * x;
+      } else {  // degree > 1.
+        value += coefficient * pow(static_cast<ProductType>(x), degree);
+      }
     }
     return value;
   }
@@ -214,42 +233,18 @@ class Polynomial {
    * (supporting the std::pow, *, and + operations) and need not be
    * CoefficientsType or RealScalar)
    */
-  template <typename T>
-  typename Product<CoefficientType, T>::type EvaluateMultivariate(
-      const std::map<VarType, T>& var_values) const {
+  template <typename U>
+  typename Product<T, U>::type EvaluateMultivariate(
+      const std::map<VarType, U>& var_values) const {
+    using std::pow;
     typedef typename std::remove_const<
-      typename Product<CoefficientType, T>::type>::type ProductType;
+      typename Product<T, U>::type>::type ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value *= std::pow(
-            static_cast<ProductType>(var_values.at(term.var)),
-            term.power);
-      }
-      value += monomial_value;
-    }
-    return value;
-  }
-
-  /** Specialization of EvaluateMultivariate on AutoDiffXd.
-   *
-   * Specialize EvaluateMultivariate on AutoDiffXd because Eigen autodiffs
-   * implement a confusing subset of operators and conversions that makes a
-   * strictly generic approach too confusing and unreadable.
-   *
-   * Note that it is up to the caller to ensure that all of the AutoDiffXds
-   * in var_values correctly correspond to one another, because Polynomial has
-   * no knowledge of what partial derivative terms the indices of a given
-   * AutoDiffXd correspond to.
-   */
-  drake::AutoDiffXd EvaluateMultivariate(
-      const std::map<VarType, drake::AutoDiffXd>& var_values) const {
-    drake::AutoDiffXd value(0);
-    for (const Monomial& monomial : monomials_) {
-      drake::AutoDiffXd monomial_value(monomial.coefficient);
-      for (const Term& term : monomial.terms) {
-        monomial_value *= pow(var_values.at(term.var), term.power);
+        monomial_value *=
+            pow(static_cast<ProductType>(var_values.at(term.var)), term.power);
       }
       value += monomial_value;
     }
@@ -260,14 +255,14 @@ class Polynomial {
    * Polynomial.
    *
    * Analogous to EvaluateMultivariate, but:
-   *  (1) Restricted to CoefficientType, and
+   *  (1) Restricted to T, and
    *  (2) Need not map every variable in var_values.
    *
    * Returns a Polynomial in which each variable in var_values has been
    * replaced with its value and constants appropriately combined.
    */
   Polynomial EvaluatePartial(
-      const std::map<VarType, CoefficientType>& var_values) const;
+      const std::map<VarType, T>& var_values) const;
 
   /// Replaces all instances of variable orig with replacement.
   void Subs(const VarType& orig, const VarType& replacement);
@@ -293,7 +288,7 @@ class Polynomial {
    * If integration_constant is given, adds that constant as the constant
    * term (zeroth-order coefficient) of the resulting Polynomial.
    */
-  Polynomial Integral(const CoefficientType& integration_constant = 0.0) const;
+  Polynomial Integral(const T& integration_constant = 0.0) const;
 
   bool operator==(const Polynomial& other) const;
 
@@ -303,13 +298,13 @@ class Polynomial {
 
   Polynomial& operator*=(const Polynomial& other);
 
-  Polynomial& operator+=(const CoefficientType& scalar);
+  Polynomial& operator+=(const T& scalar);
 
-  Polynomial& operator-=(const CoefficientType& scalar);
+  Polynomial& operator-=(const T& scalar);
 
-  Polynomial& operator*=(const CoefficientType& scalar);
+  Polynomial& operator*=(const T& scalar);
 
-  Polynomial& operator/=(const CoefficientType& scalar);
+  Polynomial& operator/=(const T& scalar);
 
   const Polynomial operator+(const Polynomial& other) const;
 
@@ -320,13 +315,13 @@ class Polynomial {
   const Polynomial operator*(const Polynomial& other) const;
 
   friend const Polynomial operator+(const Polynomial& p,
-                                    const CoefficientType& scalar) {
+                                    const T& scalar) {
     Polynomial ret = p;
     ret += scalar;
     return ret;
   }
 
-  friend const Polynomial operator+(const CoefficientType& scalar,
+  friend const Polynomial operator+(const T& scalar,
                                     const Polynomial& p) {
     Polynomial ret = p;
     ret += scalar;
@@ -334,13 +329,13 @@ class Polynomial {
   }
 
   friend const Polynomial operator-(const Polynomial& p,
-                                    const CoefficientType& scalar) {
+                                    const T& scalar) {
     Polynomial ret = p;
     ret -= scalar;
     return ret;
   }
 
-  friend const Polynomial operator-(const CoefficientType& scalar,
+  friend const Polynomial operator-(const T& scalar,
                                     const Polynomial& p) {
     Polynomial ret = -p;
     ret += scalar;
@@ -348,19 +343,19 @@ class Polynomial {
   }
 
   friend const Polynomial operator*(const Polynomial& p,
-                                    const CoefficientType& scalar) {
+                                    const T& scalar) {
     Polynomial ret = p;
     ret *= scalar;
     return ret;
   }
-  friend const Polynomial operator*(const CoefficientType& scalar,
+  friend const Polynomial operator*(const T& scalar,
                                     const Polynomial& p) {
     Polynomial ret = p;
     ret *= scalar;
     return ret;
   }
 
-  const Polynomial operator/(const CoefficientType& scalar) const;
+  const Polynomial operator/(const T& scalar) const;
 
   /// A comparison to allow std::lexicographical_compare on this class; does
   /// not reflect any sort of mathematical total order.
@@ -383,7 +378,15 @@ class Polynomial {
    * corresponding coefficient of this Polynomial.
    * @throws std::exception if either Polynomial is not univariate.
    */
-  bool IsApprox(const Polynomial& other, const RealScalar& tol) const;
+  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const;
+
+  /** Constructs a Polynomial representing the symbolic expression `e`.
+   * Note that the ID of a variable is preserved in this translation.
+   *
+   * @throw std::runtime_error if `e` is not polynomial-convertible.
+   * @pre e.is_polynomial() is true.
+   */
+  static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
 
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
     //    if (m.coefficient == 0) return os;
@@ -436,10 +439,9 @@ class Polynomial {
   static std::string IdToVariableName(const VarType id);
   //@}
 
-  template <typename CoefficientType>
-  friend Polynomial<CoefficientType> pow(
-      const Polynomial<CoefficientType>& p,
-      typename Polynomial<CoefficientType>::PowerType n);
+  template <typename U>
+  friend Polynomial<U> pow(const Polynomial<U>& p,
+                           typename Polynomial<U>::PowerType n);
 
  private:
   /// Sorts through Monomial list and merges any that have the same powers.
@@ -447,15 +449,15 @@ class Polynomial {
 };
 
 /** Provides power function for Polynomial. */
-template <typename CoefficientType>
-Polynomial<CoefficientType> pow(
-    const Polynomial<CoefficientType>& base,
-    typename Polynomial<CoefficientType>::PowerType exponent) {
+template <typename T>
+Polynomial<T> pow(
+    const Polynomial<T>& base,
+    typename Polynomial<T>::PowerType exponent) {
   DRAKE_DEMAND(exponent >= 0);
   if (exponent == 0) {
-    return Polynomial<CoefficientType>{1.0};
+    return Polynomial<T>{1.0};
   }
-  const Polynomial<CoefficientType> pow_half{pow(base, exponent / 2)};
+  const Polynomial<T> pow_half{pow(base, exponent / 2)};
   if (exponent % 2 == 1) {
     return base * pow_half * pow_half;  // Odd exponent case.
   } else {
@@ -463,10 +465,10 @@ Polynomial<CoefficientType> pow(
   }
 }
 
-template <typename CoefficientType, int Rows, int Cols>
+template <typename T, int Rows, int Cols>
 std::ostream& operator<<(
     std::ostream& os,
-    const Eigen::Matrix<Polynomial<CoefficientType>, Rows, Cols>& poly_mat) {
+    const Eigen::Matrix<Polynomial<T>, Rows, Cols>& poly_mat) {
   for (int i = 0; i < poly_mat.rows(); i++) {
     os << "[ ";
     for (int j = 0; j < poly_mat.cols(); j++) {
@@ -478,7 +480,48 @@ std::ostream& operator<<(
   return os;
 }
 
+template <>
+boolean<symbolic::Expression> Polynomial<symbolic::Expression>::IsApprox(
+    const Polynomial<symbolic::Expression>& other,
+    const Polynomial<symbolic::Expression>::RealScalar& tol) const;
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace symbolic {
+namespace internal {
+// Helper to implement (deprecated) Expression::ToPolynomial.
+// TODO(soonho-tri): Remove this on or after 2020-07-01 when we remove
+// Expression::ToPolynomial.
+inline drake::Polynomial<double> ToPolynomial(
+    const drake::symbolic::Expression& e, const ToPolynomialHelperTag&) {
+  return drake::Polynomial<double>::FromExpression(e);
+}
+}  // namespace internal
+}  // namespace symbolic
+#endif
+
 typedef Polynomial<double> Polynomiald;
 
 /// A column vector of polynomials; used in several optimization classes.
 typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;
+}  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::Polynomial)
+
+/** Provides power function for Polynomial. */
+template <typename T>
+DRAKE_DEPRECATED("2020-07-01", "Use drake::pow instead.")
+drake::Polynomial<T> pow(const drake::Polynomial<T>& base,
+                         typename drake::Polynomial<T>::PowerType exponent) {
+  return drake::pow(base, exponent);
+}
+
+template <typename T = double>
+using Polynomial DRAKE_DEPRECATED(
+    "2020-07-01", "Use drake::Polynomial instead.") = drake::Polynomial<T>;
+
+using Polynomiald DRAKE_DEPRECATED("2020-07-01", "Use drake::Polynomiald.") =
+    drake::Polynomial<double>;
+
+using VectorXPoly DRAKE_DEPRECATED("2020-07-01", "Use drake::VectorXPoly.") =
+    Eigen::Matrix<drake::Polynomiald, Eigen::Dynamic, 1>;

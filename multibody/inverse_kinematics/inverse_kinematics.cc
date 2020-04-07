@@ -7,32 +7,39 @@
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
+#include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
 namespace drake {
 namespace multibody {
-InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
+InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
+                                     bool with_joint_limits)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
       owned_context_(plant_.CreateDefaultContext()),
       context_(owned_context_.get()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
-  prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
-                                  plant.GetPositionUpperLimits(), q_);
+  if (with_joint_limits) {
+    prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
+                                    plant.GetPositionUpperLimits(), q_);
+  }
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.
 }
 
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
-                                     systems::Context<double>* plant_context)
+                                     systems::Context<double>* plant_context,
+                                     bool with_joint_limits)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
       owned_context_(nullptr),
       context_(plant_context),
       q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
   DRAKE_DEMAND(plant_context);
-  prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
-                                  plant.GetPositionUpperLimits(), q_);
+  if (with_joint_limits) {
+    prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
+                                    plant.GetPositionUpperLimits(), q_);
+  }
   // TODO(hongkai.dai) Add other position constraints, such as unit length
   // quaternion constraint here.
 }
@@ -97,6 +104,19 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddDistanceConstraint(
   auto constraint = std::make_shared<DistanceConstraint>(
       &plant_, geometry_pair, get_mutable_context(), distance_lower,
       distance_upper);
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint>
+InverseKinematics::AddPointToPointDistanceConstraint(
+    const Frame<double>& frame1,
+    const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
+    const Frame<double>& frame2,
+    const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
+    double distance_upper) {
+  auto constraint = std::make_shared<PointToPointDistanceConstraint>(
+      &plant_, frame1, p_B1P1, frame2, p_B2P2, distance_lower, distance_upper,
+      get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody

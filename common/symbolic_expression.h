@@ -25,18 +25,32 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
-#include "drake/common/polynomial.h"
 #include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
 
 namespace symbolic {
+
+#ifndef DRAKE_DOXYGEN_CXX
+class Expression;
+namespace internal {
+// Helper to implement (deprecated) Expression::ToPolynomial.
+// TODO(soonho-tri): Remove this on or after 2020-07-01 when we remove
+// Expression::ToPolynomial.
+struct ToPolynomialHelperTag {};
+template <typename Dummy>
+auto ToPolynomialHelper(const Expression& e, const Dummy&) {
+  return ToPolynomial(e, Dummy{});
+}
+}  // namespace internal
+#endif
 
 /** Kinds of symbolic expressions. */
 enum class ExpressionKind {
@@ -234,7 +248,12 @@ class Expression {
    *  Note that the ID of a variable is preserved in this translation.
    *  \pre{is_polynomial() is true.}
    */
-  Polynomiald ToPolynomial() const;
+  template <typename Dummy = internal::ToPolynomialHelperTag>
+  DRAKE_DEPRECATED("2020-07-01",
+                   "Use drake::ToPolynomial(const Expression&) instead.")
+  auto ToPolynomial() const {
+    return internal::ToPolynomialHelper<Dummy>(*this, Dummy{});
+  }
 
   /** Evaluates using a given environment (by default, an empty environment) and
    * a random number generator. If there is a random variable in this expression
@@ -797,7 +816,7 @@ struct equal_to<drake::symbolic::Expression> {
 /* Provides std::numeric_limits<drake::symbolic::Expression>. */
 template <>
 struct numeric_limits<drake::symbolic::Expression>
-    : public numeric_limits<double> {};
+    : public std::numeric_limits<double> {};
 
 /// Provides std::uniform_real_distribution, U(a, b), for symbolic expressions.
 ///
@@ -1307,14 +1326,16 @@ auto operator*(
 /// @throws std::runtime_error if NaN is detected during evaluation.
 /// @throws std::runtime_error if @p m includes unassigned random variables but
 ///                               @p random_generator is `nullptr`.
+/// @pydrake_mkdoc_identifier{expression}
 template <typename Derived>
-Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
-              Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>
+std::enable_if_t<
+    std::is_same<typename Derived::Scalar, Expression>::value,
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
+                  Derived::MaxColsAtCompileTime>>
 Evaluate(const Eigen::MatrixBase<Derived>& m,
          const Environment& env = Environment{},
          RandomGenerator* random_generator = nullptr) {
-  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
-                "Evaluate only accepts a symbolic matrix.");
   // Note that the return type is written out explicitly to help gcc 5 (on
   // ubuntu).  Previously the implementation used `auto`, and placed  an `
   // .eval()` at the end to prevent lazy evaluation.
@@ -1400,8 +1421,18 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
 ///
 /// @pre {@p vars is non-empty}.
+/// @pydrake_mkdoc_identifier{expression}
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Checks if every element in `m` is affine in `vars`.
+/// @note If `m` is an empty matrix, it returns true.
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
+              const Variables& vars);
+
+/// Checks if every element in `m` is affine.
+/// @note If `m` is an empty matrix, it returns true.
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m);
 
 /// Returns the distinct variables in the matrix of expressions.
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);

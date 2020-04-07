@@ -1,11 +1,10 @@
 #pragma once
 
-#include <algorithm>
 #include <memory>
 #include <optional>
 #include <utility>
-#include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/initial_value_problem.h"
@@ -47,12 +46,7 @@ namespace systems {
 ///   and assuming an initial stored charge Q₀ at time t₀, x ≜ Q, 𝐤 ≜ [Rs, Cs],
 ///   x₀ ≜ Q₀, dx/dt = f(t, x; 𝐤) = (E(t) - x / 𝐤₂) / 𝐤₁.
 ///
-/// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
-///
-/// @note
-/// Instantiated templates for the following scalar types @p T are provided:
-///
-/// - double
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class ScalarInitialValueProblem {
  public:
@@ -64,30 +58,39 @@ class ScalarInitialValueProblem {
   /// @param x The dependent variable x ∈ ℝ .
   /// @param k The parameter vector 𝐤 ∈ ℝᵐ.
   /// @return The derivative dx/dt ∈ ℝ.
-  using ScalarODEFunction = std::function<T(const T& t, const T& x,
-                                            const VectorX<T>& k)>;
+  using ScalarOdeFunction =
+      std::function<T(const T& t, const T& x, const VectorX<T>& k)>;
+
+  DRAKE_DEPRECATED("2020-07-01",
+                   "ScalarODEFunction has been renamed "
+                   "ScalarOdeFunction.")
+  typedef ScalarOdeFunction ScalarODEFunction;
 
   /// A collection of values i.e. initial time t₀, initial state x₀
   /// and parameter vector 𝐤 to further specify the ODE system (in
   /// order to become a scalar initial value problem).
-  struct SpecifiedValues {
+  struct ScalarOdeContext {
     /// Default constructor, leaving all values unspecified.
-    SpecifiedValues() = default;
+    ScalarOdeContext() = default;
 
     /// Constructor specifying all values.
     ///
     /// @param t0_in Specified initial time t₀.
     /// @param x0_in Specified initial state x₀.
     /// @param k_in Specified parameter vector 𝐤.
-    SpecifiedValues(const std::optional<T>& t0_in,
-                    const std::optional<T>& x0_in,
-                    const std::optional<VectorX<T>>& k_in)
+    ScalarOdeContext(const std::optional<T>& t0_in,
+                     const std::optional<T>& x0_in,
+                     const std::optional<VectorX<T>>& k_in)
         : t0(t0_in), x0(x0_in), k(k_in) {}
 
-    std::optional<T> t0;  ///< The initial time t₀ for the IVP.
-    std::optional<T> x0;  ///< The initial state x₀ for the IVP.
+    std::optional<T> t0;          ///< The initial time t₀ for the IVP.
+    std::optional<T> x0;          ///< The initial state x₀ for the IVP.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
+
+  DRAKE_DEPRECATED("2020-07-01",
+                   "SpecifiedValues has been renamed ScalarOdeContext.")
+  typedef ScalarOdeContext SpecifiedValues;
 
   /// Constructs an scalar IVP described by the given @p scalar_ode_function,
   /// using given @p default_values.t0 and @p default_values.x0 as initial
@@ -102,17 +105,17 @@ class ScalarInitialValueProblem {
   /// @pre An initial state @p default_values.x0 is provided.
   /// @pre An parameter vector @p default_values.k is provided.
   /// @throws std::logic_error if preconditions are not met.
-  ScalarInitialValueProblem(const ScalarODEFunction& scalar_ode_function,
-                            const SpecifiedValues& default_values) {
+  ScalarInitialValueProblem(const ScalarOdeFunction& scalar_ode_function,
+                            const ScalarOdeContext& default_values) {
     // Wraps the given scalar ODE function as a vector ODE function.
-    typename InitialValueProblem<T>::ODEFunction ode_function =
+    typename InitialValueProblem<T>::OdeFunction ode_function =
         [scalar_ode_function](const T& t, const VectorX<T>& x,
                               const VectorX<T>& k) -> VectorX<T> {
       return VectorX<T>::Constant(1, scalar_ode_function(t, x[0], k));
     };
     // Instantiates the vector initial value problem.
     vector_ivp_ = std::make_unique<InitialValueProblem<T>>(
-        ode_function, ToVectorIVPSpecifiedValues(default_values));
+        ode_function, ToVectorIVPOdeContext(default_values));
   }
 
   /// Solves the IVP for time @p tf, using the initial time t₀, initial state
@@ -128,8 +131,8 @@ class ScalarInitialValueProblem {
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
   /// @throws std::logic_error if any of the preconditions is not met.
-  T Solve(const T& tf, const SpecifiedValues& values = {}) const {
-    return this->vector_ivp_->Solve(tf, ToVectorIVPSpecifiedValues(values))[0];
+  T Solve(const T& tf, const ScalarOdeContext& values = {}) const {
+    return this->vector_ivp_->Solve(tf, ToVectorIVPOdeContext(values))[0];
   }
 
   /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
@@ -161,13 +164,13 @@ class ScalarInitialValueProblem {
   ///      values given on construction.
   /// @throws std::logic_error if any of the preconditions is not met.
   std::unique_ptr<ScalarDenseOutput<T>> DenseSolve(
-      const T& tf, const SpecifiedValues& values = {}) const {
+      const T& tf, const ScalarOdeContext& values = {}) const {
     // Delegates request to the vector form of this IVP by putting
     // specified values in vector form and the resulting dense output
     // back into scalar form.
     const int kDimension = 0;
     std::unique_ptr<DenseOutput<T>> vector_dense_output =
-        this->vector_ivp_->DenseSolve(tf, ToVectorIVPSpecifiedValues(values));
+        this->vector_ivp_->DenseSolve(tf, ToVectorIVPOdeContext(values));
     return std::make_unique<ScalarViewDenseOutput<T>>(
         std::move(vector_dense_output), kDimension);
   }
@@ -207,16 +210,15 @@ class ScalarInitialValueProblem {
  private:
   // Transforms given scalar IVP specified @p values into vector
   // IVP specified values.
-  static typename InitialValueProblem<T>::SpecifiedValues
-  ToVectorIVPSpecifiedValues(const SpecifiedValues& values) {
-    typename InitialValueProblem<T>::SpecifiedValues vector_ivp_values;
+  static typename InitialValueProblem<T>::OdeContext ToVectorIVPOdeContext(
+      const ScalarOdeContext& values) {
+    typename InitialValueProblem<T>::OdeContext vector_ivp_values;
     vector_ivp_values.k = values.k;
     vector_ivp_values.t0 = values.t0;
     if (values.x0.has_value()) {
       // Scalar initial state x₀ as a vector initial state 𝐱₀
       // of a single dimension.
-      vector_ivp_values.x0 = VectorX<T>::Constant(
-          1, values.x0.value()).eval();
+      vector_ivp_values.x0 = VectorX<T>::Constant(1, values.x0.value()).eval();
     }
     return vector_ivp_values;
   }
@@ -227,3 +229,6 @@ class ScalarInitialValueProblem {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::ScalarInitialValueProblem)

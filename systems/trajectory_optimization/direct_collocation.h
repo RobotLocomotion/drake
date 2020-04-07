@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <variant>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/constraint.h"
@@ -19,7 +20,7 @@ namespace trajectory_optimization {
 ///    July-August 1987.
 /// It assumes a first-order hold on the input trajectory and a cubic spline
 /// representation of the state trajectory, and adds dynamic constraints (and
-/// running costs) to the midpoints as well as the knot points in order to
+/// running costs) to the midpoints as well as the breakpoints in order to
 /// achieve a 3rd order integration accuracy.
 ///
 /// Note: This algorithm only works with the continuous states of a system.
@@ -36,7 +37,7 @@ class DirectCollocation : public MultipleShooting {
   /// values of the state in this context do not have any effect.  This context
   /// will also be "cloned" by the optimization; changes to the context after
   /// calling this method will NOT impact the trajectory optimization.
-  /// @param num_time_samples The number of knot points in the trajectory.
+  /// @param num_time_samples The number of breakpoints in the trajectory.
   /// @param minimum_timestep Minimum spacing between sample times.
   /// @param maximum_timestep Maximum spacing between sample times.
   /// @param input_port_index A valid input port index for @p system or

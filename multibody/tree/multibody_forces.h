@@ -14,20 +14,11 @@ namespace multibody {
 /// A class to hold a set of forces applied to a MultibodyTree system.
 /// Forces can include generalized forces as well as body spatial forces.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam_default_scalar
 template <typename T>
 class MultibodyForces {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
 
   // TODO(amcastro-tri): replace with MultibodyPlant once dependency becomes
   // logical.
@@ -100,8 +91,6 @@ class MultibodyForces {
   // MultibodyTree.
   VectorX<T> tau_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(MultibodyForces)
 
 }  // namespace multibody
 }  // namespace drake

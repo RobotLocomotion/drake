@@ -15,24 +15,25 @@ class PiecewiseCubicTrajectoryTest : public ::testing::Test {
  protected:
   void SetUp() override {
     times_ = {0, 2, 3, 4};
-    knots_.resize(times_.size(), MatrixX<double>::Zero(2, 1));
-    knots_[0] << 0, 1;
-    knots_[1] << 2, -3;
-    knots_[2] << 1.2, 5;
-    knots_[3] << -1, 6;
+    samples_.resize(times_.size(), MatrixX<double>::Zero(2, 1));
+    samples_[0] << 0, 1;
+    samples_[1] << 2, -3;
+    samples_[2] << 1.2, 5;
+    samples_[3] << -1, 6;
 
     test_times_ = {times_.front() - 0.2, times_.front(),
                    (times_.front() + times_.back()) / 2., times_.back(),
                    times_.back() + 0.3};
 
-    pos_ = PiecewisePolynomial<double>::Cubic(times_, knots_);
+    pos_ = PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+        times_, samples_);
     dut_ = PiecewiseCubicTrajectory<double>(pos_);
     vel_ = pos_.derivative();
     acc_ = vel_.derivative();
   }
 
   std::vector<double> times_;
-  std::vector<MatrixX<double>> knots_;
+  std::vector<MatrixX<double>> samples_;
 
   PiecewiseCubicTrajectory<double> dut_;
   std::vector<double> test_times_;
@@ -94,8 +95,9 @@ TEST_F(PiecewiseCubicTrajectoryTest, IsApprox) {
   PiecewiseCubicTrajectory<double> equal = dut_;
   EXPECT_TRUE(dut_.is_approx(equal, 1e-12));
 
-  PiecewiseCubicTrajectory<double> not_equal(PiecewisePolynomial<double>::Cubic(
-      times_, knots_, Vector2<double>::Zero(), Vector2<double>::Zero()));
+  PiecewiseCubicTrajectory<double> not_equal(
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          times_, samples_, Vector2<double>::Zero(), Vector2<double>::Zero()));
 
   EXPECT_TRUE(!dut_.is_approx(not_equal, 1e-12));
 }
@@ -104,18 +106,19 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::vector<double> times = {1, 2};
-    std::vector<AngleAxis<double>> rot_knots(times.size());
-    std::vector<MatrixX<double>> pos_knots(times.size(), MatrixX<double>(3, 1));
+    std::vector<AngleAxis<double>> rot_samples(times.size());
+    std::vector<MatrixX<double>> pos_samples(times.size(),
+                                             MatrixX<double>(3, 1));
 
-    rot_knots[0] = AngleAxis<double>(0.3, Vector3<double>::UnitX());
-    rot_knots[1] = AngleAxis<double>(-1, Vector3<double>::UnitY());
+    rot_samples[0] = AngleAxis<double>(0.3, Vector3<double>::UnitX());
+    rot_samples[1] = AngleAxis<double>(-1, Vector3<double>::UnitY());
 
-    pos_knots[0] << 0.3, 0, -0.5;
-    pos_knots[1] << 1, -1, 3;
+    pos_samples[0] << 0.3, 0, -0.5;
+    pos_samples[1] << 1, -1, 3;
 
-    std::vector<Isometry3<double>> knots(times.size());
+    std::vector<Isometry3<double>> samples(times.size());
     for (size_t i = 0; i < times.size(); ++i) {
-      knots[i].fromPositionOrientationScale(pos_knots[i], rot_knots[i],
+      samples[i].fromPositionOrientationScale(pos_samples[i], rot_samples[i],
                                             Vector3<double>::Ones());
     }
 
@@ -123,15 +126,17 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
     Vector3<double> vel1(Vector3<double>::Zero());
 
     dut_ = PiecewiseCartesianTrajectory<
-        double>::MakeCubicLinearWithEndLinearVelocity(times, knots, vel0, vel1);
+        double>::MakeCubicLinearWithEndLinearVelocity(times, samples, vel0,
+                                                      vel1);
 
     test_times_ = {times.front() - 0.2, times.front(),
                    (times.front() + times.back()) / 2., times.back(),
                    times.back() + 0.3};
 
     position_ = PiecewiseCubicTrajectory<double>(
-        PiecewisePolynomial<double>::Cubic(times, pos_knots, vel0, vel1));
-    orientation_ = PiecewiseQuaternionSlerp<double>(times, rot_knots);
+        PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+            times, pos_samples, vel0, vel1));
+    orientation_ = PiecewiseQuaternionSlerp<double>(times, rot_samples);
   }
 
   PiecewiseCartesianTrajectory<double> dut_;
@@ -221,19 +226,20 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestConstructor) {
 // Tests is_approx().
 TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   std::vector<double> times = {1, 2, 3};
-  std::vector<AngleAxis<double>> rot_knots(times.size());
-  std::vector<MatrixX<double>> pos_knots(times.size(), MatrixX<double>(3, 1));
-  pos_knots[0] << -3, 1, 0;
-  pos_knots[1] << -2, -1, 5;
-  pos_knots[2] << -2, -1, 5;
+  std::vector<AngleAxis<double>> rot_samples(times.size());
+  std::vector<MatrixX<double>> pos_samples(times.size(), MatrixX<double>(3, 1));
+  pos_samples[0] << -3, 1, 0;
+  pos_samples[1] << -2, -1, 5;
+  pos_samples[2] << -2, -1, 5;
 
-  rot_knots[0] = AngleAxis<double>(0.3, Vector3<double>::UnitX());
-  rot_knots[1] = AngleAxis<double>(-1, Vector3<double>::UnitY());
-  rot_knots[2] = AngleAxis<double>(-0.44, Vector3<double>::UnitZ());
+  rot_samples[0] = AngleAxis<double>(0.3, Vector3<double>::UnitX());
+  rot_samples[1] = AngleAxis<double>(-1, Vector3<double>::UnitY());
+  rot_samples[2] = AngleAxis<double>(-0.44, Vector3<double>::UnitZ());
 
   PiecewiseCubicTrajectory<double> new_pos_traj(
-      PiecewisePolynomial<double>::Cubic(times, pos_knots));
-  PiecewiseQuaternionSlerp<double> new_rot_traj(times, rot_knots);
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          times, pos_samples));
+  PiecewiseQuaternionSlerp<double> new_rot_traj(times, rot_samples);
 
   {
     PiecewiseCartesianTrajectory<double> diff_position(new_pos_traj,

@@ -1,6 +1,7 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("@rules_python//python:defs.bzl", "py_library")
 load("//:.manifest.bzl", "MANIFEST")
 
 package(default_visibility = ["//:__subpackages__"])

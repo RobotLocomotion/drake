@@ -10,6 +10,7 @@
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/math/spatial_algebra.h"
@@ -86,19 +87,11 @@ namespace multibody {
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class SpatialInertia {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
 
   /// Creates a spatial inertia for a physical body or composite body S about a
   /// point P from a given mass, center of mass, and central rotational inertia.
@@ -262,9 +255,14 @@ class SpatialInertia {
   /// @returns A reference to `this` spatial inertia, which has been updated
   ///          to include the given spatial inertia `M_BP_E`.
   ///
-  /// @note This operation aborts if the mass of the resulting spatial inertia
-  ///       is zero since in that case the position vector from the about point
-  ///       to the center of mass is not well defined.
+  /// @note Given that the composition of spatial inertias is not well defined
+  /// for massless bodies, this composition of the spatial inertias performs the
+  /// arithmetic average of the center of mass position vector (get_com()) and
+  /// unit inertia (get_unit_inertia()) when the two spatial inertias have zero
+  /// mass (get_mass()). This is only valid in the limit to zero mass for two
+  /// bodies with the same mass. This special case allows the composition of
+  /// spatial inertias in the common case of a kinematic chain of massless
+  /// bodies.
   ///
   /// @warning This operation is only valid if both spatial inertias are
   /// computed about the same point P and expressed in the same frame E.
@@ -274,10 +272,18 @@ class SpatialInertia {
   /// point P; B's inertia is then included in S.
   SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
     const T total_mass = get_mass() + M_BP_E.get_mass();
-    DRAKE_ASSERT(total_mass != 0);
-    p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
-    G_SP_E_.SetFromRotationalInertia(
-        CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
+    if (total_mass != 0) {
+      p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
+      G_SP_E_.SetFromRotationalInertia(
+          CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
+    } else {
+      // Compose the spatial inertias of two massless bodies in the limit when
+      // the two bodies have the same mass. In this limit, p_PScm_E_ and G_SP_E_
+      // are the arithmetic mean of the constituent COMs and unit inertias.
+      p_PScm_E_ = 0.5 * (get_com() + M_BP_E.get_com());
+      G_SP_E_.SetFromRotationalInertia(
+          get_unit_inertia() + M_BP_E.get_unit_inertia(), 2.0);
+    }
     mass_ = total_mass;
     return *this;
   }
@@ -425,6 +431,39 @@ class SpatialInertia {
         w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
   }
 
+  /// Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
+  /// as columns of input matrix `Mmatrix`. The top three rows of Mmatrix are
+  /// expected to store the rotational components while the bottom three rows
+  /// are expected to store the translational components.
+  /// The output matrix is of the same size as `Mmatrix` and each j-th column
+  /// stores the spatial vector in F⁶ result of multiplying `this` spatial
+  /// inertia with the j-th column of `Mmatrix`.
+  template <typename Derived>
+  Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> operator*(
+      const Eigen::MatrixBase<Derived>& Mmatrix) const {
+    static_assert(is_eigen_scalar_same<Derived, T>::value,
+                  "Derived must be templated on the same scalar type as this "
+                  "spatial inertia.");
+    if (Mmatrix.rows() != 6) {
+      throw std::logic_error("Mmatrix must hold spatial vectors in M⁶.");
+    }
+    const auto& Vrotational = Mmatrix.template topRows<3>();
+    const auto& Vtranslational = Mmatrix.template bottomRows<3>();
+    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
+    const Matrix3<T> I_SP_E = CalcRotationalInertia().CopyToFullMatrix3();
+
+    Eigen::Matrix<T, 6, Derived::ColsAtCompileTime> F_Bo_E(6, Mmatrix.cols());
+
+    // Rotational component.
+    F_Bo_E.template topRows<3>() =
+        I_SP_E * Vrotational - Vtranslational.colwise().cross(mp_BoBcm_E);
+
+    // Translational component.
+    F_Bo_E.template bottomRows<3>() =
+        Vrotational.colwise().cross(mp_BoBcm_E) + get_mass() * Vtranslational;
+    return F_Bo_E;
+  }
+
  private:
   // Helper method for NaN initialization.
   static constexpr T nan() {
@@ -442,9 +481,9 @@ class SpatialInertia {
   typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
       const {
     if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting spatial inertia is not physically valid. "
-              "See SpatialInertia::IsPhysicallyValid()");
+      throw std::runtime_error(fmt::format(
+          "The resulting spatial inertia:{} is not physically valid. "
+          "See SpatialInertia::IsPhysicallyValid()", *this));
     }
   }
 
@@ -470,14 +509,15 @@ class SpatialInertia {
 template <typename T> inline
 std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {
-  return o
+  return o << std::endl
       << " mass = " << M.get_mass() << std::endl
       << " com = [" << M.get_com().transpose() << "]ᵀ" << std::endl
-      << " I = " << std::endl
-      << M.CalcRotationalInertia();
+      << " I =" << std::endl
+      // Like M.CalcRotationalInertia(), but without the IsPhysicallyValid
+      // checks, so that we can use operator<< in error messages.
+      << (M.get_mass() * M.get_unit_inertia().CopyToFullMatrix3())
+      << std::endl;
 }
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(SpatialInertia)
 
 }  // namespace multibody
 }  // namespace drake

@@ -18,9 +18,9 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_vector_gen_library(
     name = "pendulum_vector_types",
     srcs = [
-        "pendulum_input.named_vector",
-        "pendulum_params.named_vector",
-        "pendulum_state.named_vector",
+        "pendulum_input_named_vector.yaml",
+        "pendulum_params_named_vector.yaml",
+        "pendulum_state_named_vector.yaml",
     ],
     visibility = ["//visibility:public"],
 )
@@ -158,11 +158,10 @@ drake_cc_googletest(
     data = ["Pendulum.urdf"],
     deps = [
         ":pendulum_plant",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

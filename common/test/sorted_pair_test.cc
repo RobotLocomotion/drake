@@ -1,5 +1,6 @@
 #include "drake/common/sorted_pair.h"
 
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 
@@ -117,6 +118,14 @@ GTEST_TEST(SortedPair, VectorExp) {
 // Tests the MakeSortedPair operator.
 GTEST_TEST(SortedPair, MakeSortedPair) {
   EXPECT_EQ(SortedPair<int>(1, 2), MakeSortedPair(1, 2));
+}
+
+// Tests the streaming support.
+GTEST_TEST(SortedPair, WriteToStream) {
+  SortedPair<int> pair{8, 7};
+  std::stringstream ss;
+  ss << pair;
+  EXPECT_EQ(ss.str(), "(7, 8)");
 }
 
 }  // namespace

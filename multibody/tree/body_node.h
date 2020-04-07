@@ -10,7 +10,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/tree/articulated_body_force_bias_cache.h"
+#include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/mobilizer.h"
@@ -93,7 +93,7 @@ namespace internal {
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// @tparam_default_scalar
 template <typename T>
 class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
  public:
@@ -153,6 +153,12 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
+  /// Returns a const pointer to the parent (inboard) body node or nullptr if
+  /// `this` is the world node, which has no inboard parent node.
+  const BodyNode<T>* parent_body_node() const {
+    return parent_node_;
+  }
+
   /// Returns a constant reference to the mobilizer associated with this node.
   /// Aborts if called on the root node corresponding to the _world_ body, for
   /// which there is no mobilizer.
@@ -175,6 +181,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   int get_num_mobilizer_velocities() const {
     return topology_.num_mobilizer_velocities;
   }
+
+  /// Returns the index to the first generalized velocity for this node
+  /// within the vector v of generalized velocities for the full multibody
+  /// system.
+  int velocity_start() const {
+    return topology_.mobilizer_velocities_start_in_v;
+  }
+
   //@}
 
 
@@ -337,12 +351,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
     // Shift vector between the parent body P and this node's body B,
     // expressed in the world frame W.
-    // TODO(amcastro-tri): consider computing p_PB_W in
-    // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
-    // position kinematics cache.
-    /* p_PB_W = R_WP * p_PB */
-    const math::RotationMatrix<T>& R_WP = get_X_WP(pc).rotation();
-    const Vector3<T> p_PB_W =  R_WP * get_X_PB(pc).translation();
+    const Vector3<T>& p_PB_W = get_p_PoBo_W(pc);
 
     // Since we are in a base-to-tip recursion the parent body P's spatial
     // velocity is already available in the cache.
@@ -477,18 +486,19 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
     // TODO(amcastro-tri): consider caching these. Especially true if bodies are
     // flexible. Also used in velocity kinematics.
-    const math::RigidTransform<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const math::RotationMatrix<T> R_PF =
+        frame_F.CalcRotationMatrixInBodyFrame(context);
     const math::RigidTransform<T> X_MB =
         frame_M.CalcPoseInBodyFrame(context).inverse();
 
-    // Pose of the parent body P in world frame W.
+    // Form the rotation matrix relating the world frame W and parent body P.
     // Available since we are called within a base-to-tip recursion.
-    const math::RigidTransform<T>& X_WP = get_X_WP(pc);
+    const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
     // TODO(amcastro-tri): consider caching X_WF since it is also used to
     // compute H_PB_W.
-    const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     // TODO(amcastro-tri): consider caching this since it is also used to
@@ -513,12 +523,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
     // Shift vector between the parent body P and this node's body B,
     // expressed in the world frame W.
-    // TODO(amcastro-tri): consider computing p_PB_W in
-    // CalcPositionKinematicsCache_BaseToTip() and saving the result in the
-    // position kinematics cache.
-    const math::RotationMatrix<T>& R_WP = get_X_WP(pc).rotation();
-    const Vector3<T>& p_PB_P = get_X_PB(pc).translation();
-    const Vector3<T> p_PB_W = R_WP * p_PB_P;
+    const Vector3<T>& p_PB_W = get_p_PoBo_W(pc);
 
     if (vc != nullptr) {
       // Since we are in a base-to-tip recursion the parent body P's spatial
@@ -717,10 +722,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     for (const BodyNode<T>* child_node : children_) {
       BodyNodeIndex child_node_index = child_node->index();
 
-      // Pose of child body C in this node's body frame B.
-      const math::RigidTransform<T>& X_BC = child_node->get_X_PB(pc);
-      const Vector3<T>& p_BoCo_B = X_BC.translation();
-      const Vector3<T> p_BoCo_W = R_WB * p_BoCo_B;
+      // Shift vector from Bo to Co, expressed in the world frame W.
+      const Vector3<T>& p_BoCo_W = child_node->get_p_PoBo_W(pc);
 
       // p_CoMc_W:
       const Frame<T>& frame_Mc = child_node->outboard_frame();
@@ -757,13 +760,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
     // Re-express F_BMo_W in the inboard frame F before projecting it onto the
     // sub-space generated by H_FM(q).
-    const math::RigidTransform<T> X_PF =
-        inboard_frame().CalcPoseInBodyFrame(context);
-    const math::RigidTransform<T>& X_WP = get_X_WP(pc);
-    // TODO(amcastro-tri): consider caching X_WF since also used in position and
+    const math::RotationMatrix<T> R_PF =
+        inboard_frame().CalcRotationMatrixInBodyFrame(context);
+    const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
+    // TODO(amcastro-tri): consider caching R_WF since also used in position and
     // velocity kinematics.
-    const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
-    const SpatialForce<T> F_BMo_F = R_WF.transpose() * F_BMo_W;
+    const math::RotationMatrix<T> R_WF = R_WP * R_PF;
+    const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;
 
     // Generalized velocities and forces use the same indexing.
     auto tau = get_mutable_generalized_forces_from_array(tau_array);
@@ -813,15 +816,16 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     // Outboard frame M of this node's mobilizer.
     const Frame<T>& frame_M = outboard_frame();
 
-    const math::RigidTransform<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
+    const math::RotationMatrix<T> R_PF =
+        frame_F.CalcRotationMatrixInBodyFrame(context);
     const math::RigidTransform<T> X_MB =
         frame_M.CalcPoseInBodyFrame(context).inverse();
 
-    // Pose of the parent body P in world frame W.
-    const math::RigidTransform<T>& X_WP = get_X_WP(pc);
+    // Form the rotation matrix relating the world frame W and parent body P.
+    const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
 
     // Orientation (rotation) of frame F with respect to the world frame W.
-    const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
+    const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
     // Vector from Mo to Bo expressed in frame F as needed below:
     const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
@@ -992,22 +996,15 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     //              = P_B_W - g_PB_W H_PB_Wᵀ P_B_W
     //              = P_B_W - g_PB_W * U_B_W                                 (7)
 
-    // Get pose of B in W and its rotation matrix R_WB.
-    const math::RigidTransform<T>& X_WB = get_X_WB(pc);
-    const math::RotationMatrix<T>& R_WB = X_WB.rotation();
-
     // Compute articulated body inertia for body using (1).
     ArticulatedBodyInertia<T>& P_B_W = get_mutable_P_B_W(abic);
     P_B_W = ArticulatedBodyInertia<T>(M_B_W);
 
     // Add articulated body inertia contributions from all children.
     for (const BodyNode<T>* child : children_) {
-      // Get X_BC (which is X_PB for child).
-      const math::RigidTransform<T>& X_BC = child->get_X_PB(pc);
-
-      // Compute shift vector p_CoBo_W.
-      const Vector3<T> p_CoBo_B = -X_BC.translation();
-      const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
+      // Shift vector p_CoBo_W.
+      const Vector3<T>& p_BoCo_W = child->get_p_PoBo_W(pc);
+      const Vector3<T> p_CoBo_W = -p_BoCo_W;
 
       // Pull Pplus_BC_W from cache (which is Pplus_PB_W for child).
       const ArticulatedBodyInertia<T>& Pplus_BC_W
@@ -1094,6 +1091,8 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /// @param[in] abic
   ///   An already updated articulated body inertia cache in sync with
   ///   `context`.
+  /// @param[in] Zb_Bo_W
+  ///   Articulated body bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`.
   /// @param[in] Fapplied_Bo_W
   ///   Externally applied spatial force on this node's body B at the body's
   ///   frame origin `Bo`, expressed in the world frame.
@@ -1106,122 +1105,46 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   ///   of this node's body B in its parent node body P, expressed in the world
   ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
   ///   by `V_PB_W = H_PB_W⋅v_B`.
-  /// @param[out] aba_force_bias_cache
+  /// @param[out] aba_force_cache
   ///   A pointer to a valid, non nullptr, force bias cache.
   ///
   /// @pre pc, vc, and abic previously computed to be in sync with `context.
-  /// @pre CalcArticulatedBodyForceBiasCache_TipToBase() must have already been
+  /// @pre CalcArticulatedBodyForceCache_TipToBase() must have already been
   /// called for all the child nodes of `this` node (and, by recursive
   /// precondition, all successor nodes in the tree.)
   ///
-  /// @throws when called on the _root_ node or `aba_force_bias_cache` is
+  /// @throws when called on the _root_ node or `aba_force_cache` is
   /// nullptr.
-  void CalcArticulatedBodyForceBiasCache_TipToBase(
-      const systems::Context<T>& context,
+  void CalcArticulatedBodyForceCache_TipToBase(
+      const systems::Context<T>&,
       const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>* vc,
+      const VelocityKinematicsCache<T>*,
       const SpatialForce<T>& Fb_Bo_W,
       const ArticulatedBodyInertiaCache<T>& abic,
+      const SpatialForce<T>& Zb_Bo_W,
       const SpatialForce<T>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
+      ArticulatedBodyForceCache<T>* aba_force_cache) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
-    DRAKE_THROW_UNLESS(aba_force_bias_cache != nullptr);
+    DRAKE_THROW_UNLESS(aba_force_cache != nullptr);
 
     // As a guideline for developers, please refer to @ref
     // internal_forward_dynamics for a detailed description of the algorithm and
     // notation inuse.
-
-    // Get pose of B in W.
-    const math::RigidTransform<T>& X_WB = get_X_WB(pc);
-
-    // Get R_WB.
-    const math::RotationMatrix<T>& R_WB = X_WB.rotation();
-
-    SpatialAcceleration<T>& Ab_WB = get_mutable_Ab_WB(aba_force_bias_cache);
-    Ab_WB.SetZero();
-    if (vc != nullptr) {
-      // Inboard frame F and outboard frame M of this node's mobilizer.
-      const Frame<T>& frame_F = inboard_frame();
-      const Frame<T>& frame_M = outboard_frame();
-
-      // Compute X_PF and X_MB.
-      const math::RigidTransform<T> X_PF = frame_F.CalcPoseInBodyFrame(context);
-      const math::RigidTransform<T> X_MB =
-          frame_M.CalcPoseInBodyFrame(context).inverse();
-
-      // Parent position in the world is available from the position kinematics.
-      const math::RigidTransform<T>& X_WP = get_X_WP(pc);
-
-      // TODO(amcastro-tri): consider caching R_WF.
-      const math::RotationMatrix<T> R_WF = X_WP.rotation() * X_PF.rotation();
-
-      // Compute shift vector p_MoBo_F.
-      const Vector3<T> p_MoBo_F = get_X_FM(pc).rotation() * X_MB.translation();
-
-      // Compute H_FM_bias = Hdot * vm.
-      // That is, A_FM = H_FM(qm) * vm + H_FM_bias(qm, vm)
-      const VectorUpTo6<T> vmdot_zero =
-          VectorUpTo6<T>::Zero(get_num_mobilizer_velocities());
-      const SpatialAcceleration<T> H_FM_bias =
-          get_mobilizer().CalcAcrossMobilizerSpatialAcceleration(context,
-                                                                 vmdot_zero);
-
-      // Across mobilizer velocity is available from the velocity kinematics.
-      const Vector3<T> w_FM = get_V_FM(*vc).rotational();
-
-      // Ab_PB_W is the bias term for the acceleration A_PB_W. That is, it is
-      // the acceleration A_PB_W when vmdot = 0. Get Ab_PB_W by shifting and
-      // re-expressing H_FM_bias. We want to compute A_PB = DtP(V_PB). Due to
-      // the fact that frames P and F are on the same rigid body, we have that
-      // V_PF = 0. Therefore, DtP(V_PB) = DtF(V_PB). We then recognize that V_PB
-      // = V_PFb + V_FMb + V_MB = V_FMb. Since M and B are also on the same
-      // rigid body, V_MB = 0. Together, we get that A_PB = DtF(V_FMb) =
-      // A_FM.Shift(p_MoBo, w_FM).
-      const SpatialAcceleration<T> Ab_PB_W =
-          R_WF * H_FM_bias.Shift(p_MoBo_F, w_FM);
-
-      // Spatial velocity of parent is available from the velocity kinematics.
-      const SpatialVelocity<T>& V_WP = get_V_WP(*vc);
-      const Vector3<T>& w_WP = V_WP.rotational();
-      const Vector3<T>& v_WP = V_WP.translational();
-
-      // Velocity of body in parent is available from the velocity kinematics.
-      const SpatialVelocity<T>& V_PB_W = get_V_PB_W(*vc);
-      const Vector3<T>& w_PB_W = V_PB_W.rotational();
-      const Vector3<T>& v_PB_W = V_PB_W.translational();
-
-      // Body spatial velocity in W.
-      const SpatialVelocity<T>& V_WB = get_V_WB(*vc);
-      const Vector3<T>& w_WB = V_WB.rotational();
-      const Vector3<T>& v_WB = V_WB.translational();
-
-      // Compute Ab_WB according to:
-      // Ab_WB =  | w_WB x w_PB_W                 | + Ab_PB_W
-      //          | w_WP x (v_WB - v_WP + v_PB_W) |
-      // See @note in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
-      // for a complete derivation.
-      Ab_WB = SpatialAcceleration<T>(
-          w_WB.cross(w_PB_W) + Ab_PB_W.rotational(),
-          w_WP.cross(v_WB - v_WP + v_PB_W) + Ab_PB_W.translational());
-    }
 
     // Compute the residual spatial force, Z_Bo_W, according to (1).
     SpatialForce<T> Z_Bo_W = Fb_Bo_W - Fapplied_Bo_W;
 
     // Add residual spatial force contributions from all children.
     for (const BodyNode<T>* child : children_) {
-      // Get X_BC (which is X_PB for child).
-      const math::RigidTransform<T>& X_BC = child->get_X_PB(pc);
-
-      // Compute shift vector p_CoBo_W.
-      const Vector3<T> p_CoBo_B = -X_BC.translation();
-      const Vector3<T> p_CoBo_W = R_WB * p_CoBo_B;
+      // Shift vector from Co to Bo.
+      const Vector3<T>& p_BoCo_W = child->get_p_PoBo_W(pc);
+      const Vector3<T> p_CoBo_W = -p_BoCo_W;
 
       // Pull Zplus_BC_W from cache (which is Zplus_PB_W for child).
       const SpatialForce<T>& Zplus_BC_W =
-          child->get_Zplus_PB_W(*aba_force_bias_cache);
+          child->get_Zplus_PB_W(*aba_force_cache);
 
       // Shift Zplus_BC_W to Zplus_BCb_W.
       const SpatialForce<T> Zplus_BCb_W = Zplus_BC_W.Shift(p_CoBo_W);
@@ -1230,9 +1153,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       Z_Bo_W += Zplus_BCb_W;
     }
 
-    const ArticulatedBodyInertia<T>& Pplus_PB_W = get_Pplus_PB_W(abic);
-
-    get_mutable_Zplus_PB_W(aba_force_bias_cache) = Z_Bo_W + Pplus_PB_W * Ab_WB;
+    get_mutable_Zplus_PB_W(aba_force_cache) = Z_Bo_W + Zb_Bo_W;
 
     const int nv = get_num_mobilizer_velocities();
 
@@ -1241,14 +1162,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute the articulated body inertia innovations generalized force,
       // e_B,
       // according to (4).
-      VectorUpTo6<T>& e_B = get_mutable_e_B(aba_force_bias_cache);
+      VectorUpTo6<T>& e_B = get_mutable_e_B(aba_force_cache);
       e_B = tau_applied - H_PB_W.transpose() * Z_Bo_W.get_coeffs();
 
       // Get the Kalman gain from cache.
       const Matrix6xUpTo6<T>& g_PB_W = get_g_PB_W(abic);
 
       // Compute the projected articulated body force bias Zplus_PB_W.
-      get_mutable_Zplus_PB_W(aba_force_bias_cache) +=
+      get_mutable_Zplus_PB_W(aba_force_cache) +=
           SpatialForce<T>(g_PB_W * e_B);
     }
   }
@@ -1266,7 +1187,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /// @param[in] abic
   ///   An already updated articulated body inertia cache in sync with
   ///   `context`.
-  /// @param[in] aba_force_bias_cache
+  /// @param[in] aba_force_cache
   ///   An already updated articulated body algorithm cache in sync with
   ///   `context`.
   /// @param[in] H_PB_W
@@ -1274,6 +1195,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   ///   of this node's body B in its parent node body P, expressed in the world
   ///   frame W, with this node's generalized velocities (or mobilities) `v_B`
   ///   by `V_PB_W = H_PB_W⋅v_B`.
+  /// @param[in] Ab_WB
+  ///   The spatial acceleration bias term `Ab_WB` as it appears in the
+  ///   acceleration level motion constraint imposed by body B's mobilizer
+  ///   `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`.
+  ///   See @ref abi_computing_accelerations for further details.
   /// @param[out] ac
   ///   A pointer to a valid, non nullptr, acceleration kinematics cache.
   ///
@@ -1286,8 +1212,9 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       const systems::Context<T>& /* context */,
       const PositionKinematicsCache<T>& pc,
       const ArticulatedBodyInertiaCache<T>& abic,
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache,
+      const ArticulatedBodyForceCache<T>& aba_force_cache,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
+      const SpatialAcceleration<T>& Ab_WB,
       AccelerationKinematicsCache<T>* ac) const {
     DRAKE_THROW_UNLESS(ac != nullptr);
 
@@ -1296,13 +1223,10 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     // and the notation in use.
 
     // Get the spatial acceleration of the parent.
-    const SpatialAcceleration<T> A_WP = parent_node_->get_A_WB(*ac);
+    const SpatialAcceleration<T>& A_WP = parent_node_->get_A_WB(*ac);
 
-    // Compute shift vector p_PoBo_W from the parent origin to the body origin.
-    // TODO(amcastro-tri): Consider getting this value from cache.
-    const Vector3<T>& p_PoBo_P = get_X_PB(pc).translation();
-    const math::RotationMatrix<T>& R_WP = get_X_WP(pc).rotation();
-    const Vector3<T> p_PoBo_W = R_WP * p_PoBo_P;
+    // Shift vector p_PoBo_W from the parent origin to the body origin.
+    const Vector3<T>& p_PoBo_W = get_p_PoBo_W(pc);
 
     const int nv = get_num_mobilizer_velocities();
 
@@ -1310,8 +1234,6 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     const SpatialAcceleration<T> Aplus_WB = SpatialAcceleration<T>(
         A_WP.rotational(),
         A_WP.translational() + A_WP.rotational().cross(p_PoBo_W));
-
-    const SpatialAcceleration<T>& Ab_WB = get_Ab_WB(aba_force_bias_cache);
 
     SpatialAcceleration<T>& A_WB = get_mutable_A_WB(ac);
     A_WB = Aplus_WB + Ab_WB;
@@ -1322,7 +1244,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Compute nu_B, the articulated body inertia innovations generalized
       // acceleration.
       const VectorUpTo6<T> nu_B =
-          get_ldlt_D_B(abic).solve(get_e_B(aba_force_bias_cache));
+          get_ldlt_D_B(abic).solve(get_e_B(aba_force_cache));
 
       // Mutable reference to the generalized acceleration.
       auto vmdot = get_mutable_accelerations(ac);
@@ -1332,6 +1254,148 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
       // Update with vmdot term the spatial acceleration of the current body.
       A_WB += SpatialAcceleration<T>(H_PB_W * vmdot);
     }
+  }
+
+  /// This method is used by MultibodyTree within a tip-to-base loop to compute
+  /// the composite body inertia of each body in the system.
+  ///
+  /// @param[in] M_B_W Spatial inertia for the body B associated with this node.
+  /// About B's origin Bo and expressed in the world frame W.
+  /// @param[in] pc Position kinematics cache.
+  /// @param[in] R_B_W_all Vector storing the composite body inertia for all
+  /// bodies in the multibody system. It must contain already up-to-date
+  /// composite body inertias for all the children of `this` node.
+  /// @param[out] R_B_W The composite body inertia for `this` node. It must be
+  /// non-nullptr.
+  /// @pre CalcCompositeBodyInertia_TipToBase() must have already been called
+  /// for the children nodes (and, by recursive precondition, all outboard nodes
+  /// in the tree.)
+  void CalcCompositeBodyInertia_TipToBase(
+      const SpatialInertia<T>& M_B_W,
+      const PositionKinematicsCache<T>& pc,
+      const std::vector<SpatialInertia<T>>& R_B_W_all,
+      SpatialInertia<T>* R_B_W) const {
+    DRAKE_THROW_UNLESS(topology_.body != world_index());
+    DRAKE_THROW_UNLESS(R_B_W != nullptr);
+
+    // Composite body inertia R_B_W for this node B, about its frame's origin
+    // Bo, and expressed in the world frame W. Here we adopt the notation used
+    // in Jain's book.
+    *R_B_W = M_B_W;
+    // Add composite body inertia contributions from all children.
+    for (const BodyNode<T>* child : children_) {
+      // Shift vector p_CoBo_W.
+      const Vector3<T>& p_BoCo_W = child->get_p_PoBo_W(pc);
+      const Vector3<T> p_CoBo_W = -p_BoCo_W;
+
+      // Composite body inertia for outboard child body C, about Co, expressed
+      // in W.
+      const SpatialInertia<T>& R_CCo_W = R_B_W_all[child->index()];
+
+      // Shift to Bo and add it to the composite body inertia of B.
+      *R_B_W += R_CCo_W.Shift(p_CoBo_W);
+    }
+  }
+
+  /// Computes the spatial acceleration bias `Ab_WB(q, v)` for `this` node, a
+  /// function of both configuration q and velocities v. This term appears in
+  /// the acceleration level motion constraint imposed by body B's mobilizer
+  /// `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`. Refer to
+  /// @ref abi_computing_accelerations for a detailed description and
+  /// derivation.
+  /// @param[in] context The context with the state of the MultibodyTree model.
+  /// @param[in] pc An already updated position kinematics cache in sync with
+  ///   `context`.
+  /// @param[in] vc An already updated velocity kinematics cache in sync with
+  ///   `context`.
+  /// @param[out] Ab_WB The spatial acceleration bias for this node, measured
+  ///   and expressed in the world frame W. Must be non nullptr.
+  ///
+  /// @pre pc and vc previously computed to be in sync with `context.
+  ///
+  /// @throws when `Ab_WB` is nullptr.
+  void CalcSpatialAccelerationBias(const systems::Context<T>& context,
+                                   const PositionKinematicsCache<T>& pc,
+                                   const VelocityKinematicsCache<T>& vc,
+                                   SpatialAcceleration<T>* Ab_WB) const {
+    DRAKE_THROW_UNLESS(Ab_WB != nullptr);
+    // As a guideline for developers, please refer to @ref
+    // abi_computing_accelerations for a detailed description and derivation of
+    // Ab_WB.
+
+    Ab_WB->SetZero();
+    // Inboard frame F and outboard frame M of this node's mobilizer.
+    const Frame<T>& frame_F = inboard_frame();
+    const Frame<T>& frame_M = outboard_frame();
+
+    // Compute R_PF and X_MB.
+    const math::RotationMatrix<T> R_PF =
+        frame_F.CalcRotationMatrixInBodyFrame(context);
+    const math::RigidTransform<T> X_MB =
+        frame_M.CalcPoseInBodyFrame(context).inverse();
+
+    // Parent position in the world is available from the position kinematics.
+    const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
+
+    // TODO(amcastro-tri): consider caching R_WF.
+    const math::RotationMatrix<T> R_WF = R_WP * R_PF;
+
+    // Compute shift vector p_MoBo_F.
+    const Vector3<T> p_MoBo_F = get_X_FM(pc).rotation() * X_MB.translation();
+
+    // The goal is to compute Ab_WB = Ac_WB + Ab_PB_W, see @ref
+    // abi_computing_accelerations.
+    // We first compute Ab_PB_W and add Ac_WB at the end.
+
+    // We are ultimately trying to compute Ab_WB = Ac_WB + Ab_PB_W, of which
+    // Ab_PB (that we're computing here) is a component. See @ref
+    // abi_computing_accelerations. Now, Ab_PB_W is the bias term for the
+    // acceleration A_PB_W. That is, it is the acceleration A_PB_W when vmdot is
+    // zero. We get Ab_PB_W by shifting and re-expressing Ab_FM, the across
+    // mobilizer spatial acceleration bias term.
+
+    // We first compute the acceleration bias Ab_FM = Hdot * vm.
+    // Note, A_FM = H_FM(qm) * vmdot + Ab_FM(qm, vm).
+    const VectorUpTo6<T> vmdot_zero =
+        VectorUpTo6<T>::Zero(get_num_mobilizer_velocities());
+    const SpatialAcceleration<T> Ab_FM =
+        get_mobilizer().CalcAcrossMobilizerSpatialAcceleration(context,
+                                                               vmdot_zero);
+
+    // Due to the fact that frames P and F are on the same rigid body, we have
+    // that V_PF = 0. Therefore, DtP(V_PB) = DtF(V_PB). Since M and B are also
+    // on the same rigid body, V_MB = 0. We then recognize that V_PB = V_PFb +
+    // V_FMb + V_MB = V_FMb. Together, we get that A_PB = DtF(V_FMb) =
+    // A_FM.Shift(p_MoBo, w_FM).
+    const Vector3<T> w_FM = get_V_FM(vc).rotational();
+    const SpatialAcceleration<T> Ab_PB_W = R_WF * Ab_FM.Shift(p_MoBo_F, w_FM);
+
+    // Spatial velocity of parent is available from the velocity kinematics.
+    const SpatialVelocity<T>& V_WP = get_V_WP(vc);
+    const Vector3<T>& w_WP = V_WP.rotational();
+    const Vector3<T>& v_WP = V_WP.translational();
+
+    // Velocity of body in parent is available from the velocity kinematics.
+    const SpatialVelocity<T>& V_PB_W = get_V_PB_W(vc);
+    const Vector3<T>& w_PB_W = V_PB_W.rotational();
+    const Vector3<T>& v_PB_W = V_PB_W.translational();
+
+    // Body spatial velocity in W.
+    const SpatialVelocity<T>& V_WB = get_V_WB(vc);
+    const Vector3<T>& w_WB = V_WB.rotational();
+    const Vector3<T>& v_WB = V_WB.translational();
+
+    // Compute Ab_WB according to:
+    // Ab_WB =  | w_WB x w_PB_W                 | + Ab_PB_W
+    //          | w_WP x (v_WB - v_WP + v_PB_W) |
+    // N.B: It is NOT true that v_PB_W = v_WB - v_WP, since you would otherwise
+    // be forgetting to shift v_WP to B. We prefer the expression used here
+    // since it is cheaper to compute, requiring only a single cross product,
+    // see @note in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
+    // for a complete derivation.
+    *Ab_WB = SpatialAcceleration<T>(
+        w_WB.cross(w_PB_W) + Ab_PB_W.rotational(),
+        w_WP.cross(v_WB - v_WP + v_PB_W) + Ab_PB_W.translational());
   }
 
  protected:
@@ -1400,6 +1464,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return pc.get_X_WB(topology_.parent_body_node);
   }
 
+  // Returns a const reference to the rotation matrix `R_WP` that relates the
+  // orientation of the world frame W to the parent frame P.
+  const math::RotationMatrix<T>& get_R_WP(
+      const PositionKinematicsCache<T>& pc) const {
+    return pc.get_R_WB(topology_.parent_body_node);
+  }
+
   // Returns a constant reference to the across-mobilizer pose of the outboard
   // frame M as measured and expressed in the inboard frame F.
   const math::RigidTransform<T>& get_X_FM(
@@ -1426,6 +1497,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   math::RigidTransform<T>& get_mutable_X_PB(
       PositionKinematicsCache<T>* pc) const {
     return pc->get_mutable_X_PB(topology_.index);
+  }
+
+  const Vector3<T>& get_p_PoBo_W(const PositionKinematicsCache<T>& pc) const {
+    return pc.get_p_PoBo_W(topology_.index);
+  }
+
+  Vector3<T>& get_mutable_p_PoBo_W(PositionKinematicsCache<T>* pc) const {
+    return pc->get_mutable_p_PoBo_W(topology_.index);
   }
 
   // =========================================================================
@@ -1572,46 +1651,46 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
   // =========================================================================
-  // ArticulatedBodyForceBiasCache Accessors and Mutators.
+  // ArticulatedBodyForceCache Accessors and Mutators.
 
   // Returns a const reference to the articulated body inertia residual force
   // `Zplus_PB_W` for this body projected across its inboard mobilizer to
   // frame P.
   const SpatialForce<T>& get_Zplus_PB_W(
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache) const {
-    return aba_force_bias_cache.get_Zplus_PB_W(topology_.index);
+      const ArticulatedBodyForceCache<T>& aba_force_cache) const {
+    return aba_force_cache.get_Zplus_PB_W(topology_.index);
   }
 
   // Mutable version of get_Zplus_PB_W().
   SpatialForce<T>& get_mutable_Zplus_PB_W(
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
-    return aba_force_bias_cache->get_mutable_Zplus_PB_W(topology_.index);
+      ArticulatedBodyForceCache<T>* aba_force_cache) const {
+    return aba_force_cache->get_mutable_Zplus_PB_W(topology_.index);
   }
 
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
   const SpatialAcceleration<T>& get_Ab_WB(
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache) const {
-    return aba_force_bias_cache.get_Ab_WB(topology_.index);
+      const ArticulatedBodyForceCache<T>& aba_force_cache) const {
+    return aba_force_cache.get_Ab_WB(topology_.index);
   }
 
   // Mutable version of get_Ab_WB().
   SpatialAcceleration<T>& get_mutable_Ab_WB(
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
-    return aba_force_bias_cache->get_mutable_Ab_WB(topology_.index);
+      ArticulatedBodyForceCache<T>* aba_force_cache) const {
+    return aba_force_cache->get_mutable_Ab_WB(topology_.index);
   }
 
   // Returns a const reference to the Coriolis spatial acceleration `Ab_WB`
   // for this body due to the relative velocities of body B and body P.
   const VectorUpTo6<T>& get_e_B(
-      const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache) const {
-    return aba_force_bias_cache.get_e_B(topology_.index);
+      const ArticulatedBodyForceCache<T>& aba_force_cache) const {
+    return aba_force_cache.get_e_B(topology_.index);
   }
 
   // Mutable version of get_e_B().
   VectorUpTo6<T>& get_mutable_e_B(
-      ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
-    return aba_force_bias_cache->get_mutable_e_B(topology_.index);
+      ArticulatedBodyForceCache<T>* aba_force_cache) const {
+    return aba_force_cache->get_mutable_e_B(topology_.index);
   }
 
   // =========================================================================
@@ -1745,6 +1824,11 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     X_PB = frame_F.CalcOffsetPoseInBody(context, X_FB);
 
     X_WB = X_WP * X_PB;
+
+    // Compute shift vector p_PoBo_W from the parent origin to the body origin.
+    const Vector3<T>& p_PoBo_P = X_PB.translation();
+    const math::RotationMatrix<T>& R_WP = X_WP.rotation();
+    get_mutable_p_PoBo_W(pc) = R_WP * p_PoBo_P;
   }
 
   // Computes position dependent kinematics associated with `this` mobilizer

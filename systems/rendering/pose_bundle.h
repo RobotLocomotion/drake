@@ -28,15 +28,7 @@ namespace rendering {
 /// name and a model instance ID.  If two poses in the bundle have the same
 /// model instance ID, they must not have the same name.
 ///
-/// This class is explicitly instantiated for the following scalar types. No
-/// other scalar types are supported.
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// @tparam T The vector element type, which must be a valid Eigen scalar.
-///           Only double and AutoDiffXd are supported.
+/// @tparam_default_scalar
 template <typename T>
 class PoseBundle {
  public:

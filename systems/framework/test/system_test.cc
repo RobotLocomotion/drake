@@ -54,6 +54,11 @@ class TestSystem : public System<double> {
     return std::make_unique<ContinuousState<double>>();
   }
 
+  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteVariables()
+      const override {
+    return std::make_unique<DiscreteValues<double>>();
+  }
+
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
@@ -69,9 +74,9 @@ class TestSystem : public System<double> {
     return this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
   }
 
-  const LeafOutputPort<double>& AddAbstractOutputPort() {
+  LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with dummy alloc and calc.
-    const CacheEntry& cache_entry = this->DeclareCacheEntry(
+    CacheEntry& cache_entry = this->DeclareCacheEntry(
         "null output port",
         [] { return Value<int>::Make(0); },
         [](const ContextBase&, AbstractValue*) {});
@@ -128,11 +133,6 @@ class TestSystem : public System<double> {
   }
 
  protected:
-  int do_get_num_continuous_states() const final {
-    ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
-  }
-
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<double>&) const final {
     return {};
@@ -333,8 +333,7 @@ TEST_F(SystemTest, DiscretePublish) {
 }
 
 // Tests that the default DoEvalDiscreteVariableUpdates is invoked when no other
-// handler is
-// registered in DoCalcNextUpdateTime.
+// handler is registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
   context_->SetTime(15.0);
 
@@ -502,6 +501,15 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
       system_.get_system_scalar_converter().IsConvertible<double, double>()));
 }
 
+// Tests IsDifferenceEquationSystem works for this one System.  Additional
+// test coverage is provided in linear_system_test.cc and diagram_test.cc.
+TEST_F(SystemTest, IsDifferenceEquationSystem) {
+  double period = 1.23;
+  EXPECT_FALSE(system_.IsDifferenceEquationSystem(&period));
+  // Confirm that the return parameter was not changed.
+  EXPECT_EQ(period, 1.23);
+}
+
 template <typename T>
 using TestTypedVector = MyVector<T, 1>;
 
@@ -561,11 +569,6 @@ class ValueIOTestSystem : public System<T> {
 
   ~ValueIOTestSystem() override {}
 
-  int do_get_num_continuous_states() const final {
-    ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
-  }
-
   T DoCalcWitnessValue(const Context<T>&,
                        const WitnessFunction<T>&) const override {
     ADD_FAILURE() << "This system uses no witness functions.";
@@ -589,6 +592,11 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return std::make_unique<ContinuousState<T>>();
+  }
+
+  std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const
+      override {
+    return std::make_unique<DiscreteValues<T>>();
   }
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
@@ -904,8 +912,10 @@ class ComputationTestSystem final : public System<double> {
   // One q, one v, one z.
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
       const final {
-    return std::make_unique<ContinuousState<double>>(
+    auto result = std::make_unique<ContinuousState<double>>(
         std::make_unique<BasicVector<double>>(3), 1, 1, 1);  // q, v, z
+    result->set_system_id(this->get_system_id());
+    return result;
   }
 
   // Verify that the number of calls is as expected.
@@ -918,11 +928,6 @@ class ComputationTestSystem final : public System<double> {
   }
 
  private:
-  int do_get_num_continuous_states() const final {
-    ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
-  }
-
   // Two discrete variable groups of lengths 2 and 4.
   std::unique_ptr<DiscreteValues<double>> AllocateDiscreteVariables()
       const final {

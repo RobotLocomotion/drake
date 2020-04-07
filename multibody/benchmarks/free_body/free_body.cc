@@ -7,6 +7,7 @@
 #include "drake/math/quaternion.h"
 
 namespace drake {
+namespace multibody {
 namespace benchmarks {
 namespace free_body {
 
@@ -131,4 +132,5 @@ FreeBody::CalculateExactTranslationalSolution(const double t) const {
 
 }  // namespace free_body
 }  // namespace benchmarks
+}  // namespace multibody
 }  // namespace drake

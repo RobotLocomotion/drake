@@ -10,7 +10,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/contact_surface_utility.h"
 #include "drake/geometry/proximity/mesh_field_linear.h"
+#include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
@@ -43,65 +45,6 @@ namespace internal {
 //  outside another tetrahedron. Right now it will be considered inside both
 //  tetrahedrons.
 
-/** Definition of a half space. It is defined by the implicit equation
- `H(x⃗) = n̂⋅x⃗ - d <= 0`. A particular instance is defined by a boundary plane in
- a particular frame F with its normal pointing out of the half space such that
- `H(p_QF) > 0` if the point Q (measured and expressed in F) is outside the
- half space.
- */
-template <typename T>
-class Plane {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Plane)
-
-  /** Constructs a Plane in frame F.
-   @param nhat_F
-       A unit-length vector perpendicular to the half space's planar boundary
-       expressed in frame F (the `n̂` in the implicit equation).
-   @param displacement
-       The signed distance from F's origin to the half space boundary (the `d`
-       term in the implicit equation).
-   @pre
-       ‖nhat_F‖₂ = 1.
-   */
-  Plane(const Vector3<T>& nhat_F, const T& displacement)
-      : nhat_F_(nhat_F), displacement_(displacement) {
-    using std::abs;
-    // Note: This may *seem* like a very tight threshold for determining if a
-    // vector is unit length. However, empirical evidence suggests that in
-    // double precision, normalizing a vector generally makes a vector whose
-    // evaluated magnitude is within epsilon of one. There may be some
-    // unconsidered value that disproves this -- at that point, adapt the
-    // tolerance here and add it to the unit test.
-    DRAKE_THROW_UNLESS(abs(nhat_F_.norm() - 1.0) <=
-                       std::numeric_limits<double>::epsilon());
-  }
-
-  /** Computes the signed distance to the point Q (measured and expressed in
-   frame F). The point is strictly inside, on the boundary, or outside based on
-   the return value being negative, zero, or positive, respectively.
-   */
-  T CalcSignedDistance(const Vector3<T>& p_FQ) const {
-    return nhat_F_.dot(p_FQ) - displacement_;
-  }
-
-  /** Reports true if the point Q (measured and expressed in frame F),
-   strictly lies outside this half space.
-   */
-  bool PointIsOutside(const Vector3<T>& p_FQ) const {
-    return CalcSignedDistance(p_FQ) > 0;
-  }
-
-  /** Gets the normal expressed in frame F. */
-  const Vector3<T> nhat_F() const { return nhat_F_; }
-
-  /** Gets the displacement constant. */
-  const T& displacement() const { return displacement_; }
-
- private:
-  Vector3<T> nhat_F_;
-  T displacement_{};
-};
 
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
 /** Calculates the intersection point between an infinite straight line spanning
@@ -111,9 +54,8 @@ class Plane {
  @param p_FB
      Point B measured and expressed in the common frame F.
  @param H_F
-     The half space H, as represented by its boundary plane with the plane's
-     normal pointing out of the half space, expressed in frame F (i.e., points
-     also expressed in frame F can be tested against it).
+     The half space H measured and expressed in frame F (i.e., points also
+     measured and expressed in frame F can be tested against it).
  @pre
      1. Points A and B are not coincident.
      2. One of A and B is outside the half space (and the other is contained in
@@ -124,7 +66,7 @@ class Plane {
  */
 template <typename T>
 Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const Plane<T>& H_F) {
+                            const PosedHalfSpace<T>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
@@ -139,8 +81,9 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
   // Empirically we found that numeric_limits<double>::epsilon() 2.2e-16 is
   // too small.
   const T kEps(1e-14);
-  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into* Plane
-  //  if it turns out we need to perform this test at other sites.
+  // TODO(SeanCurtis-TRI): Consider refactoring this fuzzy test *into*
+  //  PosedHalfSpace if it turns out we need to perform this test at other
+  //  sites.
   // Verify that the intersection point is on the plane of the half space.
   using std::abs;
   DRAKE_DEMAND(abs(H_F.CalcSignedDistance(intersection)) < kEps);
@@ -169,14 +112,13 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 //  check whether we can have other as yet undocumented degenerate cases.
 /** Intersects a polygon with the half space H. It keeps the part of
  the polygon contained in the half space (signed distance is <= 0).
- The plane `H_F` and vertex positions of `polygon_vertices_F` are both defined
- in a common frame F.
+ The half space `H_F` and vertex positions of `polygon_vertices_F` are both
+ defined in a common frame F.
  @param[in] polygon_vertices_F
      Input polygon is represented as a sequence of positions of its vertices.
      The input polygon is allowed to have zero area.
  @param[in] H_F
-     The clipping half space H in frame F, represented by its boundary plane
-     with the plane's normal pointing out of the half space.
+     The clipping half space H in frame F.
  @return
      Output polygon is represented as a sequence of positions of its vertices.
      It could be an empty sequence if the input polygon is entirely outside
@@ -205,7 +147,8 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 */
 template <typename T>
 std::vector<Vector3<T>> ClipPolygonByHalfSpace(
-    const std::vector<Vector3<T>>& polygon_vertices_F, const Plane<T>& H_F) {
+    const std::vector<Vector3<T>>& polygon_vertices_F,
+    const PosedHalfSpace<T>& H_F) {
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
   // clipping a polygon.
   std::vector<Vector3<T>> output_vertices_F;
@@ -221,8 +164,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
   for (int i = 0; i < size; ++i) {
     const Vector3<T>& current = polygon_vertices_F[i];
     const Vector3<T>& previous = polygon_vertices_F[(i - 1 + size) % size];
-    const bool current_contained = !H_F.PointIsOutside(current);
-    const bool previous_contained = !H_F.PointIsOutside(previous);
+    const bool current_contained = H_F.CalcSignedDistance(current) <= 0;
+    const bool previous_contained = H_F.CalcSignedDistance(previous) <= 0;
     if (current_contained) {
       if (!previous_contained) {
         // Current is inside and previous is outside. Compute the point where
@@ -380,9 +323,9 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     const Vector3<T>& p_MA = p_MVs[face_vertex[0]];
     const Vector3<T>& p_MB = p_MVs[face_vertex[1]];
     const Vector3<T>& p_MC = p_MVs[face_vertex[2]];
-    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA).normalized();
-    T height = normal_M.dot(p_MA);
-    Plane<T> half_space_M(normal_M, height);
+    // We'll allow the PosedHalfSpace to normalize our vector.
+    const Vector3<T> normal_M = (p_MB - p_MA).cross(p_MC - p_MA);
+    PosedHalfSpace<T> half_space_M(normal_M, p_MA);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
     polygon_M = ClipPolygonByHalfSpace(polygon_M, half_space_M);
@@ -408,62 +351,97 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
   return polygon_M;
 }
 
-// TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
-//  remove the note below about duplicate vertices.
-/** Adds a convex `polygon` to the given set of `faces` and `vertices` as a set
- of _triangles_. If the polygon is not _already_ a triangle, this will decompose
- the polygon into a set of triangles by introducing a new vertex at the centroid
- of the polygon and creating a fan of triangles from that vertex to all others.
- @param[in] polygon_vertices_F
-     The input polygon is represented by positions of its vertices measured and
-     expressed in frame F.
- @param[in, out] faces
-     New triangles are added into `faces`. Each new triangle has the same
-     orientation as the input polygon.
- @param[in ,out] vertices_F
-     The set of vertex positions to be extended, each vertex is measured and
-     expressed in frame F.
- @note
-     This can add vertex positions that already exist in `vertices_F`.
- @pre `faces` and `vertices_F` are not `nullptr`.
+/** Determines whether a triangle of a rigid surface N and a tetrahedron of a
+ soft volume M are suitable for building contact surface based on the face
+ normal vector f_N of the triangle and the pressure gradient vector ∇p_M
+ of the tetrahedron. This is an attempt to address Issue #12441 "Hydroelastic
+ contact surface broken for thin rigid object -- needs to use normals".
+     For example, when a thin rigid plate N penetrates deeply into a soft
+ ball M, both sides of surface N intersect the volume of M as shown in this
+ picture:
+
+     thin rigid plate N
+           ┌┄┐
+           ┊ ┊    soft ball M
+           ┊ ┊     ● ● ● ●
+           ┊ ║●               ●
+          ⇦┃↘║⇨                 ●
+         ●⇦┃↘║↘                   ●
+        ● ⇦┃ ║⇨ ↘                  ●
+        ● ⇦┃ ║⇨   ↘                ●
+        ● ⇦┃→║⇨ → → →              ●
+        ● ⇦┃ ║⇨   ↗                ●    ↗ pressure gradient ∇p_M in M
+        ● ⇦┃ ║⇨ ↗                  ●    ⇨ surface normal f_N on N
+         ●⇦┃↗║↗                   ●     ║ suitable intersecting surface
+          ⇦┃↗║⇨                 ●       ┃ unsuitable intersecting surface
+           ┊ ║●               ●         ┊ non-intersecting surface
+           ┊ ┊     ● ● ● ●
+           ┊ ┊
+           └┄┘
+
+ In the picture above, each suitable triangle in N has its face normal making
+ an acute angle with the pressure gradient in M, and each unsuitable triangle
+ has its face normal vector making an obtuse angle with the pressure gradient.
+ In this case, we can use π/2 as the angle threshold to distinguish the two
+ kinds of triangles in N.
+     However, there is no single angle threshold that works for all cases.
+ For example, a rigid box N penetrates into a soft ball M (see the
+ following picture) and has triangles on its left side and right side with
+ face normals that make obtuse angles with the pressure gradient. Using
+ π/2 as the threshold, we would prohibit these triangles from the contact
+ surface.
+
+                 soft ball M
+                   ● ● ● ●
+              ●               ●
+           ●                     ●
+         ●                         ●
+        ●                           ●
+        ●                           ●
+        ●                           ●
+        ●           ↗ ↑ ↖           ●    ↗ pressure gradient ∇p_M in M
+        ●         ↗ ⇧ ↑ ⇧ ↖         ●    ⇧ face normal f_N of N
+         ●        ╔═══════╗        ●     ║ suitable intersecting surface
+           ●     ⇦┃↗     ↖┃⇨     ●       ┃ incorrectly prohibited intersecting
+              ●  ⇦┃↗     ↖┃⇨  ●            surface with π/2 threshold
+                  ┃● ● ● ●┃              ┊ non-intersecting surface
+                  ┊       ┊
+                  ┊       ┊
+                  ┊       ┊
+                  └┄┄┄┄┄┄┄┘
+                 rigid box N
+
+ @param[in] volume_field_M
+     The pressure field defined on the volume mesh M. Its gradient vectors are
+     expressed in frame M.
+ @param[in] surface_N
+     Surface mesh N of the rigid geometry. Its face normal vectors are
+     expressed in frame N.
+ @param[in] X_MN
+     Pose of frame N in frame M.
+ @param[in] tet_index
+     Index of the tetrahedron in the volume mesh M.
+ @param[in] tri_index
+     Index of the triangle in the surface mesh N.
+ @return true if the two vectors make an angle less than an internal threshold.
+ @note    This function is a work in progress. There is no single threshold
+          that works for all cases. We pick 5π/8 empirically.
+          See @ref module_contact_surface.
  */
 template <typename T>
-void AddPolygonToMeshData(
-    const std::vector<Vector3<T>>& polygon_vertices_F,
-    std::vector<SurfaceFace>* faces,
-    std::vector<SurfaceVertex<T>>* vertices_F) {
-  DRAKE_DEMAND(faces != nullptr);
-  DRAKE_DEMAND(vertices_F != nullptr);
-
-  const int polygon_size = static_cast<int>(polygon_vertices_F.size());
-  if (polygon_size < 3) return;
-
-  const int num_original_vertices = static_cast<int>(vertices_F->size());
-
-  // Triangulate the polygon by creating a fan around the polygon's centroid.
-  // This is important because it gives us a smoothly changing tessellation as
-  // the polygon itself smoothly changes. Even if the polygon is already a
-  // triangle, we still add its centroid because the triangular polygon can
-  // smoothly change to a quadrilateral polygon. Therefore, an intersection
-  // triangle will contribute 3 triangles to the ContactSurface and smoothly
-  // change to 4 triangles from an intersection quadrilateral.
-  Vector3<T> centroid = Vector3<T>::Zero();
-  for (int i = 0; i < polygon_size; ++i) {
-    vertices_F->emplace_back(polygon_vertices_F[i]);
-    centroid += polygon_vertices_F[i];
-  }
-  centroid /= polygon_size;
-  SurfaceVertexIndex centroid_index(vertices_F->size());
-  vertices_F->emplace_back(centroid);
-
-  for (int i = 0; i < polygon_size; ++i) {
-    SurfaceVertexIndex current(i + num_original_vertices);
-    // TODO(SeanCurtis-TRI):  The `% polygon_size` is only needed in the last
-    //  iteration. To squeeze performance, reformulate this to avoid modulo
-    //  entirely.
-    SurfaceVertexIndex next((i + 1) % polygon_size + num_original_vertices);
-    faces->emplace_back(current, next, centroid_index);
-  }
+bool IsFaceNormalAlongPressureGradient(
+    const VolumeMeshField<T, T>& volume_field_M,
+    const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
+    const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
+  // TODO(DamrongGuoy): Change the type of volume_field_M from
+  //  VolumeMeshField to VolumeMeshFieldLinear and remove this cast.
+  // Evaluate the gradient vector on the tetrahedron.
+  const auto field_M =
+      dynamic_cast<const VolumeMeshFieldLinear<T, T>*>(&volume_field_M);
+  DRAKE_DEMAND(field_M);
+  const Vector3<T> grad_p_M = field_M->EvaluateGradient(tet_index);
+  return IsFaceNormalInNormalDirection(grad_p_M.normalized(), surface_N,
+                                       tri_index, X_MN.rotation());
 }
 
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
@@ -519,6 +497,11 @@ void SampleVolumeFieldOnSurface(
        ++tet_index) {
     for (SurfaceFaceIndex tri_index(0); tri_index < surface_N.num_faces();
          ++tri_index) {
+      if (!IsFaceNormalAlongPressureGradient(volume_field_M, surface_N, X_MN,
+                                             tet_index, tri_index)) {
+        continue;
+      }
+
       // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
       //  positions. Specifically, each vertex will be transformed M times (once
       //  per tetrahedron. Even with broadphase culling, this vertex will get
@@ -531,9 +514,25 @@ void SampleVolumeFieldOnSurface(
       //  best balance for best average performance.
       std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
           tet_index, mesh_M, tri_index, surface_N, X_MN);
+
+      const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
+      if (poly_vertex_count < 3) continue;
+
       const int num_previous_vertices = surface_vertices_M.size();
-      AddPolygonToMeshData(polygon_vertices_M, &surface_faces,
+
+      // Add the new polygon vertices to the mesh vertices and construct a
+      // polygon from the vertex indices.
+      std::vector<SurfaceVertexIndex> polygon;
+      polygon.reserve(polygon_vertices_M.size());
+      for (int i = 0; i < poly_vertex_count; ++i) {
+        polygon.emplace_back(surface_vertices_M.size());
+        surface_vertices_M.emplace_back(polygon_vertices_M[i]);
+      }
+      const Vector3<T>& nhat_M =
+          X_MN.rotation() * surface_N.face_normal(tri_index);
+      AddPolygonToMeshData(polygon, nhat_M, &surface_faces,
                            &surface_vertices_M);
+
       const int num_current_vertices = surface_vertices_M.size();
       // Calculate values of the pressure field and the normal field at the
       // new vertices.
@@ -550,8 +549,9 @@ void SampleVolumeFieldOnSurface(
 
   *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
+  const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get());
+      "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
 /** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
@@ -574,9 +574,14 @@ void SampleVolumeFieldOnSurface(
                    &surface_vertices_M, &surface_e, &mesh_M,
                    &X_MN](VolumeElementIndex tet_index,
                           SurfaceFaceIndex tri_index) -> BvttCallbackResult {
+    if (!IsFaceNormalAlongPressureGradient(volume_field_M, surface_N, X_MN,
+                                           tet_index, tri_index)) {
+      return BvttCallbackResult::Continue;
+    }
+
     // TODO(SeanCurtis-TRI): This redundantly transforms surface mesh vertex
     //  positions. Specifically, each vertex will be transformed M times (once
-    //  per tetrahedron. Even with broadphase culling, this vertex will get
+    //  per tetrahedron). Even with broadphase culling, this vertex will get
     //  transformed once for each tet-tri pair where the tri is incidental
     //  to the vertex and the tet-tri pair can't be conservatively culled.
     //  This is O(mn), where m is the number of faces incident to the vertex
@@ -586,9 +591,24 @@ void SampleVolumeFieldOnSurface(
     //  best balance for best average performance.
     std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
         tet_index, mesh_M, tri_index, surface_N, X_MN);
+
+    const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
+    if (poly_vertex_count < 3) return BvttCallbackResult::Continue;
+
     const int num_previous_vertices = surface_vertices_M.size();
-    AddPolygonToMeshData(polygon_vertices_M, &surface_faces,
+    // Add the new polygon vertices to the mesh vertices and construct a
+    // polygon from the vertex indices.
+    std::vector<SurfaceVertexIndex> polygon;
+    polygon.reserve(polygon_vertices_M.size());
+    for (int i = 0; i < poly_vertex_count; ++i) {
+      polygon.emplace_back(surface_vertices_M.size());
+      surface_vertices_M.emplace_back(polygon_vertices_M[i]);
+    }
+    const Vector3<T>& nhat_M =
+        X_MN.rotation() * surface_N.face_normal(tri_index);
+    AddPolygonToMeshData(polygon, nhat_M, &surface_faces,
                          &surface_vertices_M);
+
     const int num_current_vertices = surface_vertices_M.size();
     // Calculate values of the pressure field and the normal field at the
     // new vertices.
@@ -606,9 +626,12 @@ void SampleVolumeFieldOnSurface(
 
   *surface_MN_M = std::make_unique<SurfaceMesh<T>>(
       std::move(surface_faces), std::move(surface_vertices_M));
+  const bool calculate_gradient = false;
   *e_MN = std::make_unique<SurfaceMeshFieldLinear<T, T>>(
-      "e", std::move(surface_e), surface_MN_M->get());
+      "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
+
+#endif  // #ifndef DRAKE_DOXYGEN_CXX
 
 /** Computes the contact surface between a soft geometry S and a rigid
  geometry R. This does not use any broadphase culling.
@@ -680,8 +703,13 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 
   if (surface_SR == nullptr) return nullptr;
 
+  // TODO(DamrongGuoy): Compute the mesh and field with the quantities
+  //  expressed in World frame by construction so that we can delete these two
+  //  transforming methods.
+
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
+  e_SR->TransformGradients(X_WS);
 
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
                                              std::move(e_SR));
@@ -722,8 +750,13 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 
   if (surface_SR == nullptr) return nullptr;
 
+  // TODO(DamrongGuoy): Compute the mesh and field with the quantities
+  //  expressed in World frame by construction so that we can delete these two
+  //  transforming methods.
+
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
+  e_SR->TransformGradients(X_WS);
 
   // The contact surface is documented as having the normals pointing *out* of
   // the second surface and into the first. This mesh intersection creates a
@@ -752,8 +785,6 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const SurfaceMesh<double>&,
     const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
     const math::RigidTransform<AutoDiffXd>&);
-
-#endif  // #ifndef DRAKE_DOXYGEN_CXX
 
 }  // namespace internal
 }  // namespace geometry

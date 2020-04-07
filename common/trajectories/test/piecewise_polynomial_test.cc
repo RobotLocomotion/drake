@@ -23,21 +23,20 @@ namespace drake {
 namespace trajectories {
 namespace {
 
-template<typename CoefficientType>
+template<typename T>
 void testIntegralAndDerivative() {
   int num_coefficients = 5;
   int num_segments = 3;
   int rows = 3;
   int cols = 5;
 
-  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
-  typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
+  typedef PiecewisePolynomial<T> PiecewisePolynomialType;
 
   default_random_engine generator;
   vector<double> segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
   PiecewisePolynomialType piecewise =
-      test::MakeRandomPiecewisePolynomial<CoefficientType>(
+      test::MakeRandomPiecewisePolynomial<T>(
           rows, cols, num_coefficients, segment_times);
 
   // derivative(0) should be same as original piecewise.
@@ -51,15 +50,14 @@ void testIntegralAndDerivative() {
   if (!piecewise.isApprox(piecewise_back, 1e-10)) throw runtime_error("wrong");
 
   // check value at start time
-  CoefficientMatrix desired_value_at_t0 =
-      PiecewisePolynomialType::CoefficientMatrix::Random(piecewise.rows(),
-                                                         piecewise.cols());
+  MatrixX<T> desired_value_at_t0 =
+      MatrixX<T>::Random(piecewise.rows(), piecewise.cols());
   PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
   auto value_at_t0 = integral.value(piecewise.start_time());
   EXPECT_TRUE(CompareMatrices(desired_value_at_t0, value_at_t0, 1e-10,
                               MatrixCompareType::absolute));
 
-  // check continuity at knot points
+  // check continuity at sample points
   for (int i = 0; i < piecewise.get_number_of_segments() - 1; ++i) {
     EXPECT_EQ(integral.getPolynomial(i)
                   .EvaluateUnivariate(integral.duration(i)),
@@ -67,15 +65,14 @@ void testIntegralAndDerivative() {
   }
 }
 
-template<typename CoefficientType>
+template<typename T>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
   int num_tests = 100;
   default_random_engine generator;
   uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
-  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
-  typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
+  typedef PiecewisePolynomial<T> PiecewisePolynomialType;
 
   for (int i = 0; i < num_tests; ++i) {
     int num_coefficients = int_distribution(generator);
@@ -87,22 +84,22 @@ void testBasicFunctionality() {
         PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments,
                                                         generator);
     PiecewisePolynomialType piecewise1 =
-        test::MakeRandomPiecewisePolynomial<CoefficientType>(
+        test::MakeRandomPiecewisePolynomial<T>(
             rows, cols, num_coefficients, segment_times);
     PiecewisePolynomialType piecewise2 =
-        test::MakeRandomPiecewisePolynomial<CoefficientType>(
+        test::MakeRandomPiecewisePolynomial<T>(
             rows, cols, num_coefficients, segment_times);
     PiecewisePolynomialType piecewise3_not_matching_rows =
-        test::MakeRandomPiecewisePolynomial<CoefficientType>(
+        test::MakeRandomPiecewisePolynomial<T>(
             rows + 1, cols, num_coefficients, segment_times);
     PiecewisePolynomialType piecewise4_not_matching_cols =
-        test::MakeRandomPiecewisePolynomial<CoefficientType>(
+        test::MakeRandomPiecewisePolynomial<T>(
             rows, cols + 1, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
     double shift = normal(generator);
-    CoefficientMatrix offset =
-        CoefficientMatrix::Random(piecewise1.rows(), piecewise1.cols());
+    MatrixX<T> offset =
+        MatrixX<T>::Random(piecewise1.rows(), piecewise1.cols());
 
     PiecewisePolynomialType sum = piecewise1 + piecewise2;
     PiecewisePolynomialType difference = piecewise2 - piecewise1;
@@ -184,15 +181,15 @@ void testBasicFunctionality() {
   }
 }
 
-template<typename CoefficientType>
+template<typename T>
 void testValueOutsideOfRange() {
-  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
+  typedef PiecewisePolynomial<T> PiecewisePolynomialType;
 
   default_random_engine generator;
   vector<double> segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(6, generator);
   PiecewisePolynomialType piecewise =
-      test::MakeRandomPiecewisePolynomial<CoefficientType>(
+      test::MakeRandomPiecewisePolynomial<T>(
           3, 4, 5, segment_times);
 
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.start_time()),
@@ -212,8 +209,8 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
-  Eigen::MatrixXd knots(3, 5);
-  knots << 1, 1, 1,
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
         2, 2, 2,
         0, 3, 3,
         -2, 2, 2,
@@ -221,7 +218,8 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   const bool periodic_endpoint = true;
 
   PiecewisePolynomial<double> periodic_spline =
-      PiecewisePolynomial<double>::Cubic(breaks, knots, periodic_endpoint);
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples, periodic_endpoint);
 
   std::unique_ptr<Trajectory<double>> spline_dt =
       periodic_spline.MakeDerivative(1);
@@ -234,11 +232,15 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   Eigen::VectorXd begin_ddt = spline_ddt->value(breaks(0));
   Eigen::VectorXd end_ddt = spline_ddt->value(breaks(breaks.size() - 1));
 
-  Eigen::VectorXd dt_diff = end_dt - begin_dt;
-  Eigen::VectorXd ddt_diff = end_ddt - begin_ddt;
+  EXPECT_TRUE(CompareMatrices(end_dt, begin_dt, 1e-14));
+  EXPECT_TRUE(CompareMatrices(end_ddt, begin_ddt, 1e-14));
 
-  EXPECT_TRUE(dt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
-  EXPECT_TRUE(ddt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
+  // Test that evaluating the derivative directly gives the same results.
+  const double t = 1.234;
+  EXPECT_TRUE(CompareMatrices(periodic_spline.EvalDerivative(t, 1),
+                              spline_dt->value(t), 1e-14));
+  EXPECT_TRUE(CompareMatrices(periodic_spline.EvalDerivative(t, 2),
+                              spline_ddt->value(t), 1e-14));
 }
 
 // Test various exception cases.  We want to check that these throw rather
@@ -249,38 +251,177 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
-  Eigen::MatrixXd knots(3, 5);
-  knots << 1, 1, 1,
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
         2, 2, 2,
         0, 3, 3,
         -2, 2, 2,
         1, 1, 1;
 
   // No throw with monotonic breaks.
-  PiecewisePolynomial<double>::Cubic(breaks, knots, true);
+  PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+      breaks, samples, true);
 
   // Throw when breaks are too close.
   breaks[1] = less_than_epsilon;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::Cubic(breaks, knots, true),
-      std::runtime_error,
-      "Times must be at least .* apart.");
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples, true),
+      std::runtime_error, "Times must be at least .* apart.");
 
   // Throw when breaks are not strictly monotonic.
   breaks[1] = 0;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::Cubic(breaks, knots, true),
-      std::runtime_error,
-      "Times must be in increasing order.");
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples, true),
+      std::runtime_error, "Times must be in increasing order.");
 }
 
-GTEST_TEST(testPiecewisePolynomial, AllTests
-) {
-testIntegralAndDerivative<double>();
+GTEST_TEST(testPiecewisePolynomial, AllTests) {
+  testIntegralAndDerivative<double>();
 
-testBasicFunctionality<double>();
+  testBasicFunctionality<double>();
 
-testValueOutsideOfRange<double>();
+  testValueOutsideOfRange<double>();
+}
+
+GTEST_TEST(testPiecewisePolynomial, VectorValueTest) {
+  const std::vector<double> times = {0, .5, 1, 1.5};
+  const Eigen::Vector3d value(1, 2, 3);
+
+  const PiecewisePolynomial<double> col(value);
+  Eigen::MatrixXd out = col.vector_values(times);
+  EXPECT_EQ(out.rows(), 3);
+  EXPECT_EQ(out.cols(), 4);
+  for (int i = 0; i < 4; i++) {
+    EXPECT_TRUE(CompareMatrices(out.col(i), value, 0));
+  }
+
+  PiecewisePolynomial<double> row(value.transpose());
+  out = row.vector_values(times);
+  EXPECT_EQ(out.rows(), 4);
+  EXPECT_EQ(out.cols(), 3);
+  for (int i = 0; i < 4; i++) {
+    EXPECT_TRUE(CompareMatrices(out.row(i), value.transpose(), 0));
+  }
+
+  PiecewisePolynomial<double> mat(Eigen::Matrix3d::Identity());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      mat.vector_values(times), std::runtime_error,
+      "This method only supports vector-valued trajectories.");
+}
+
+GTEST_TEST(testPiecewisePolynomial, RemoveFinalSegmentTest) {
+  Eigen::VectorXd breaks(3);
+  breaks << 0, .5, 1.;
+  Eigen::MatrixXd samples(2, 3);
+  samples << 1, 1, 2,
+             2, 0, 3;
+
+  PiecewisePolynomial<double> pp =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+
+  EXPECT_EQ(pp.end_time(), 1.);
+  EXPECT_EQ(pp.get_number_of_segments(), 2);
+
+  pp.RemoveFinalSegment();
+  EXPECT_EQ(pp.end_time(), .5);
+  EXPECT_EQ(pp.get_number_of_segments(), 1);
+
+  pp.RemoveFinalSegment();
+  EXPECT_TRUE(pp.empty());
+}
+
+std::unique_ptr<Trajectory<double>> TestReverseTime(
+    const PiecewisePolynomial<double>& pp_orig) {
+  std::unique_ptr<Trajectory<double>> pp_ptr = pp_orig.Clone();
+  PiecewisePolynomial<double>* pp =
+      dynamic_cast<PiecewisePolynomial<double>*>(pp_ptr.get());
+
+  pp->ReverseTime();
+  // Start time and end time have been switched.
+  EXPECT_NEAR(pp->start_time(), -pp_orig.end_time(), 1e-14);
+  EXPECT_NEAR(pp->end_time(), -pp_orig.start_time(), 1e-14);
+
+  for (const double t : {0.1, .2, .52, .77}) {
+    EXPECT_TRUE(CompareMatrices(pp->value(t), pp_orig.value(-t), 1e-14));
+  }
+  return pp_ptr;
+}
+
+void TestScaling(const PiecewisePolynomial<double>& pp_orig,
+                 const double scale) {
+  std::unique_ptr<Trajectory<double>> pp_ptr = pp_orig.Clone();
+  PiecewisePolynomial<double>* pp =
+      dynamic_cast<PiecewisePolynomial<double>*>(pp_ptr.get());
+
+  pp->ScaleTime(scale);
+  EXPECT_NEAR(pp->start_time(), scale * pp_orig.start_time(), 1e-14);
+  EXPECT_NEAR(pp->end_time(), scale * pp_orig.end_time(), 1e-14);
+  for (const double trel : {0.1, .2, .52, .77}) {
+    const double t = pp_orig.start_time() +
+                     trel * (pp_orig.end_time() - pp_orig.start_time());
+    EXPECT_TRUE(CompareMatrices(pp->value(scale * t), pp_orig.value(t), 1e-14));
+  }
+}
+
+
+GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
+  Eigen::VectorXd breaks(3);
+  breaks << 0, .5, 1.;
+  Eigen::MatrixXd samples(2, 3);
+  samples << 1, 1, 2,
+             2, 0, 3;
+
+  const PiecewisePolynomial<double> zoh =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  auto reversed_zoh = TestReverseTime(zoh);
+  // Confirm that the documentation is correct about the subtle behavior at the
+  // break-points due to the switch in the half-open interval (since zoh is
+  // discontinuous at the breaks).
+  EXPECT_FALSE(
+      CompareMatrices(reversed_zoh->value(-breaks(1)), zoh.value(breaks(1))));
+  EXPECT_TRUE(CompareMatrices(reversed_zoh->value(-breaks(1)),
+                              zoh.value(breaks(1) - 1e-14)));
+  TestScaling(zoh, 2.3);
+
+  const PiecewisePolynomial<double> foh =
+      PiecewisePolynomial<double>::FirstOrderHold(breaks, samples);
+  TestReverseTime(foh);
+  TestScaling(foh, 1.2);
+  TestScaling(foh, 3.6);
+
+  const PiecewisePolynomial<double> spline =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+  TestReverseTime(spline);
+  TestScaling(spline, 2.0);
+  TestScaling(spline, 4.3);
+}
+
+template <typename T>
+void TestScalarType() {
+  VectorX<T> breaks(3);
+  breaks << 0, .5, 1.;
+  MatrixX<T> samples(2, 3);
+  samples << 1, 1, 2, 2, 0, 3;
+
+  const PiecewisePolynomial<T> spline =
+      PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+
+  const MatrixX<T> value = spline.value(0.5);
+  EXPECT_NEAR(ExtractDoubleOrThrow(value(0)),
+              ExtractDoubleOrThrow(samples(0, 1)), 1e-14);
+  EXPECT_NEAR(ExtractDoubleOrThrow(value(1)),
+              ExtractDoubleOrThrow(samples(1, 1)), 1e-14);
+}
+
+GTEST_TEST(PiecewiseTrajectoryTest, ScalarTypes) {
+  TestScalarType<double>();
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
 }
 
 }  // namespace

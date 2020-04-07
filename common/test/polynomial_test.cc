@@ -1,57 +1,73 @@
 #include "drake/common/polynomial.h"
 
+#include <cmath>
 #include <cstddef>
 #include <map>
 #include <sstream>
+#include <stdexcept>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/random_polynomial_matrix.h"
 
 using Eigen::VectorXd;
 using std::default_random_engine;
+using std::map;
+using std::runtime_error;
 using std::uniform_int_distribution;
 using std::uniform_real_distribution;
+using std::vector;
 
 namespace drake {
 namespace {
 
-template <typename CoefficientType>
+using std::pow;
+
+template <typename T>
 void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
-  Polynomial<CoefficientType> poly(coefficients);
+  Polynomial<T> poly(coefficients);
 
   EXPECT_TRUE(CompareMatrices(poly.GetCoefficients(),
                               poly.Derivative(0).GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> third_derivative = poly.Derivative(3);
+  const T x{1.32};
+  Polynomial<T> first_derivative = poly.Derivative(1);
+  EXPECT_NEAR(poly.EvaluateUnivariate(x, 1),
+              first_derivative.EvaluateUnivariate(x), 1e-14);
 
-  Polynomial<CoefficientType> third_derivative_check =
+  Polynomial<T> third_derivative = poly.Derivative(3);
+  EXPECT_NEAR(poly.EvaluateUnivariate(x, 3),
+              third_derivative.EvaluateUnivariate(x), 1e-14);
+
+  Polynomial<T> third_derivative_check =
       poly.Derivative().Derivative().Derivative();
 
   EXPECT_TRUE(CompareMatrices(third_derivative.GetCoefficients(),
                               third_derivative_check.GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> tenth_derivative = poly.Derivative(10);
+  Polynomial<T> tenth_derivative = poly.Derivative(10);
 
   EXPECT_TRUE(CompareMatrices(tenth_derivative.GetCoefficients(),
                               VectorXd::Zero(1), 1e-14,
                               MatrixCompareType::absolute));
 
-  Polynomial<CoefficientType> integral = poly.Integral(0.0);
-  Polynomial<CoefficientType> poly_back = integral.Derivative();
+  Polynomial<T> integral = poly.Integral(0.0);
+  Polynomial<T> poly_back = integral.Derivative();
 
   EXPECT_TRUE(CompareMatrices(poly_back.GetCoefficients(),
                               poly.GetCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 }
 
-template <typename CoefficientType>
+template <typename T>
 void testOperators() {
   int max_num_coefficients = 6;
   int num_tests = 10;
@@ -61,24 +77,24 @@ void testOperators() {
 
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeff1 = VectorXd::Random(int_distribution(generator));
-    Polynomial<CoefficientType> poly1(coeff1);
+    Polynomial<T> poly1(coeff1);
 
     VectorXd coeff2 = VectorXd::Random(int_distribution(generator));
-    Polynomial<CoefficientType> poly2(coeff2);
+    Polynomial<T> poly2(coeff2);
 
     double scalar = uniform(generator);
 
-    Polynomial<CoefficientType> sum = poly1 + poly2;
-    Polynomial<CoefficientType> difference = poly2 - poly1;
-    Polynomial<CoefficientType> product = poly1 * poly2;
-    Polynomial<CoefficientType> poly1_plus_scalar = poly1 + scalar;
-    Polynomial<CoefficientType> poly1_minus_scalar = poly1 - scalar;
-    Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
-    Polynomial<CoefficientType> poly1_div = poly1 / scalar;
-    Polynomial<CoefficientType> poly1_times_poly1 = poly1;
-    const Polynomial<CoefficientType> pow_poly1_3{pow(poly1, 3)};
-    const Polynomial<CoefficientType> pow_poly1_4{pow(poly1, 4)};
-    const Polynomial<CoefficientType> pow_poly1_10{pow(poly1, 10)};
+    Polynomial<T> sum = poly1 + poly2;
+    Polynomial<T> difference = poly2 - poly1;
+    Polynomial<T> product = poly1 * poly2;
+    Polynomial<T> poly1_plus_scalar = poly1 + scalar;
+    Polynomial<T> poly1_minus_scalar = poly1 - scalar;
+    Polynomial<T> poly1_scaled = poly1 * scalar;
+    Polynomial<T> poly1_div = poly1 / scalar;
+    Polynomial<T> poly1_times_poly1 = poly1;
+    const Polynomial<T> pow_poly1_3{pow(poly1, 3)};
+    const Polynomial<T> pow_poly1_4{pow(poly1, 4)};
+    const Polynomial<T> pow_poly1_10{pow(poly1, 10)};
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
@@ -119,7 +135,7 @@ void testOperators() {
   }
 }
 
-template <typename CoefficientType>
+template <typename T>
 void testRoots() {
   int max_num_coefficients = 6;
   default_random_engine generator;
@@ -128,7 +144,7 @@ void testRoots() {
   int num_tests = 50;
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
-    Polynomial<CoefficientType> poly(coeffs);
+    Polynomial<T> poly(coeffs);
     auto roots = poly.Roots();
     EXPECT_EQ(roots.rows(), poly.GetDegree());
     for (int k = 0; k < roots.size(); k++) {
@@ -153,7 +169,7 @@ void testEvalType() {
   EXPECT_EQ(typeid(decltype(valueComplexInput)), typeid(std::complex<double>));
 }
 
-template <typename CoefficientType>
+template <typename T>
 void testPolynomialMatrix() {
   int max_matrix_rows_cols = 7;
   int num_coefficients = 6;
@@ -165,11 +181,11 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+  auto A = test::RandomPolynomialMatrix<T>(num_coefficients,
                                                          rows_A, cols_A);
-  auto B = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+  auto B = test::RandomPolynomialMatrix<T>(num_coefficients,
                                                          rows_B, cols_B);
-  auto C = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+  auto C = test::RandomPolynomialMatrix<T>(num_coefficients,
                                                          rows_A, cols_A);
   auto product = A * B;
   auto sum = A + C;
@@ -406,6 +422,136 @@ GTEST_TEST(PolynomialTest, EvaluatePartial) {
   EXPECT_EQ(dut.EvaluatePartial(
       std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
             (5 * x * x * x) + 1);
+}
+
+GTEST_TEST(PolynomialTest, FromExpression) {
+  using symbolic::Environment;
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  Environment env{{x, 1.0}, {y, 2.0}, {z, 3.0}};
+  const map<Polynomiald::VarType, double> eval_point{
+      {x.get_id(), env[x]}, {y.get_id(), env[y]}, {z.get_id(), env[z]}};
+
+  const Expression e0{42.0};
+  const Expression e1{pow(x, 2)};
+  const Expression e2{3 + x + y + z};
+  const Expression e3{1 + pow(x, 2) + pow(y, 2)};
+  const Expression e4{pow(x, 2) * pow(y, 2)};
+  const Expression e5{pow(x + y + z, 3)};
+  const Expression e6{pow(x + y + z, 3) / 10};
+  const Expression e7{-pow(y, 3)};
+  const Expression e8{pow(pow(x, 3), 1.0 / 3)};
+
+  EXPECT_NEAR(
+      e0.Evaluate(env),
+      Polynomial<double>::FromExpression(e0).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e1.Evaluate(env),
+      Polynomial<double>::FromExpression(e1).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e2.Evaluate(env),
+      Polynomial<double>::FromExpression(e2).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e3.Evaluate(env),
+      Polynomial<double>::FromExpression(e3).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e4.Evaluate(env),
+      Polynomial<double>::FromExpression(e4).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e5.Evaluate(env),
+      Polynomial<double>::FromExpression(e5).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e6.Evaluate(env),
+      Polynomial<double>::FromExpression(e6).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e7.Evaluate(env),
+      Polynomial<double>::FromExpression(e7).EvaluateMultivariate(eval_point),
+      1e-8);
+  EXPECT_NEAR(
+      e8.Evaluate(env),
+      Polynomial<double>::FromExpression(e8).EvaluateMultivariate(eval_point),
+      1e-8);
+
+  const vector<Expression> test_vec{
+      log(x),
+      abs(x),
+      exp(x),
+      sqrt(x),
+      sin(x),
+      cos(x),
+      tan(x),
+      asin(x),
+      acos(x),
+      atan(x),
+      atan2(x, y),
+      sinh(x),
+      cosh(x),
+      tanh(x),
+      min(x, y),
+      max(x, y),
+      ceil(x),
+      floor(x),
+      if_then_else(x > y, x, y),
+      Expression::NaN(),
+      symbolic::uninterpreted_function("uf", {x, y})};
+  for (const Expression& e : test_vec) {
+    EXPECT_FALSE(e.is_polynomial());
+    EXPECT_THROW(Polynomial<double>::FromExpression(e), runtime_error);
+  }
+}
+
+// Checks deprecated aliases.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+// TODO(soonho-tri): Remove the following checks when we remove ::Polynomial.
+static_assert(
+    std::is_same<::Polynomial<double>, drake::Polynomial<double>>::value,
+    "::Polynomial should be an alias of drake::Polynomial.");
+static_assert(std::is_same<::Polynomiald, drake::Polynomiald>::value,
+              "::Polynomiald should be an alias of drake::Polynomiald.");
+static_assert(std::is_same<::VectorXPoly, drake::VectorXPoly>::value,
+              "::VectorXPoly should be an alias of drake::VectorXPoly.");
+GTEST_TEST(PolynomialTest, DeprecatedPow) {
+  const Polynomiald x = Polynomiald("x");
+  EXPECT_EQ(::pow(x, 2), x * x);
+}
+#pragma GCC diagnostic pop
+
+template <typename T>
+void TestScalarType() {
+  Eigen::Vector3d coeffs(1., 2., 3.);
+  const Polynomial<T> p(coeffs);
+  EXPECT_NEAR(ExtractDoubleOrThrow(p.EvaluateUnivariate(0.0)), coeffs(0),
+              1e-14);
+
+  EXPECT_THROW(p.Roots(), std::runtime_error);
+  EXPECT_TRUE(static_cast<bool>(p.IsApprox(p, 1e-14)));
+
+  Polynomial<T> x("x");
+  Polynomial<T> y("y");
+  const std::map<Polynomiald::VarType, double> eval_point = {
+    {x.GetSimpleVariable(), 1},
+    {y.GetSimpleVariable(), 2}};
+  EXPECT_NEAR(
+      ExtractDoubleOrThrow((x * x + y).EvaluateMultivariate(eval_point)), 3,
+      1e-14);
+}
+
+GTEST_TEST(PolynomialTest, ScalarTypes) {
+  TestScalarType<AutoDiffXd>();
+  TestScalarType<symbolic::Expression>();
 }
 
 }  // anonymous namespace

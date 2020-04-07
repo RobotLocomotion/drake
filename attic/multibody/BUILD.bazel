@@ -553,7 +553,6 @@ drake_cc_googletest(
         ":test_models",
         "//examples/atlas:models",
         "//examples/pendulum:models",
-        "//examples/valkyrie:models",
     ],
     deps = [
         ":rigid_body_tree_compare_to_clone",

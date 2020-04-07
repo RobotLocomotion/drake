@@ -22,6 +22,7 @@
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_engine_vtk_factory.h"
 #include "drake/geometry/render/render_label.h"
@@ -36,7 +37,7 @@ using systems::LeafSystem;
 
 template <typename Class>
 void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
-  auto& cls_doc = pydrake_doc.drake.geometry.Identifier;
+  constexpr auto& cls_doc = pydrake_doc.drake.Identifier;
 
   py::class_<Class> cls(m, name.c_str(), id_doc);
   py::handle cls_handle = cls;
@@ -108,6 +109,8 @@ void def_geometry_render(py::module m) {
           doc.RenderEngineVtkParams.default_label.doc)
       .def_readwrite("default_diffuse", &RenderEngineVtkParams::default_diffuse,
           doc.RenderEngineVtkParams.default_diffuse.doc);
+
+  m.def("MakeRenderEngineGl", &MakeRenderEngineGl, doc.MakeRenderEngineGl.doc);
 
   m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
       doc.MakeRenderEngineVtk.doc);
@@ -546,31 +549,10 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::class_<Shape>(m, "Shape", doc.Shape.doc);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
-        .def("get_radius",
-            [](Sphere* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around 2020-03-01. Use "
-                  "radius() instead.");
-              return self->radius();
-            })
         .def("radius", &Sphere::radius, doc.Sphere.radius.doc);
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc)
-        .def("get_radius",
-            [](Cylinder* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around 2020-03-01. Use "
-                  "radius() instead.");
-              return self->radius();
-            })
-        .def("get_length",
-            [](Cylinder* self) {
-              WarnDeprecated(
-                  "Deprecated and will be removed on or around 2020-03-01. Use "
-                  "length() instead.");
-              return self->length();
-            })
         .def("radius", &Cylinder::radius, doc.Cylinder.radius.doc)
         .def("length", &Cylinder::length, doc.Cylinder.length.doc);
     py::class_<Box, Shape>(m, "Box", doc.Box.doc)

@@ -12,10 +12,37 @@ load(
     "drake_py_unittest",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "generate_pybind_documentation_header",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
 ])
+
+generate_pybind_documentation_header(
+    name = "generate_pybind_documentation_header",
+    out = "documentation_pybind.h",
+    root_name = "pydrake_doc",
+    target_deps = [
+        "//tools/install/libdrake:drake_headers_no_attic",
+    ],
+    targets = [
+        "//tools/install/libdrake:drake_headers_attic_only",
+    ],
+)
+
+drake_cc_library(
+    name = "documentation_pybind",
+    hdrs = ["documentation_pybind.h"],
+    declare_installed_headers = 0,
+    tags = ["nolint"],
+)
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.

@@ -39,8 +39,8 @@ struct StepInfo {
 /// A %Context is designed to be used only with the System that created it.
 /// State and Parameter data can be copied between contexts for compatible
 /// systems as necessary.
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+///
+/// @tparam_default_scalar
 template <typename T>
 class Context : public ContextBase {
  public:
@@ -773,7 +773,9 @@ class Context : public ContextBase {
 
   /// Returns a deep copy of this Context's State.
   std::unique_ptr<State<T>> CloneState() const {
-    return DoCloneState();
+    auto result = DoCloneState();
+    result->get_mutable_continuous_state().set_system_id(this->get_system_id());
+    return result;
   }
 
   /// Returns a partial textual description of the Context, intended to be
@@ -784,14 +786,14 @@ class Context : public ContextBase {
   //@}
 
  protected:
-  Context();
+  Context() = default;
 
   /// Copy constructor takes care of base class and `Context<T>` data members.
   /// Derived classes must implement copy constructors that delegate to this
   /// one for use in their DoCloneWithoutPointers() implementations.
   // Default implementation invokes the base class copy constructor and then
   // the local member copy constructors.
-  Context(const Context<T>&);
+  Context(const Context<T>&) = default;
 
   // Structuring these methods as statics permits a DiagramContext to invoke
   // the protected functionality on its children.
@@ -852,7 +854,8 @@ class Context : public ContextBase {
   virtual State<T>& do_access_mutable_state() = 0;
 
   /// Returns the appropriate concrete State object to be returned by
-  /// CloneState().
+  /// CloneState().  The implementation should not set_system_id on the result,
+  /// the caller will set an id on the state after this method returns.
   virtual std::unique_ptr<State<T>> DoCloneState() const = 0;
 
   /// Returns a partial textual description of the Context, intended to be
@@ -945,15 +948,6 @@ class Context : public ContextBase {
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-Context<T>::Context() = default;
-
-template <typename T>
-Context<T>::Context(const Context<T>&) = default;
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const Context<T>& context) {

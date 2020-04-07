@@ -10,12 +10,10 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
+using drake::geometry::AddContactMaterial;
 using drake::geometry::AddRigidHydroelasticProperties;
 using drake::geometry::AddSoftHydroelasticProperties;
-using drake::geometry::internal::kElastic;
-using drake::geometry::internal::kFriction;
-using drake::geometry::internal::kHcDissipation;
-using drake::geometry::internal::kMaterialGroup;
+using drake::geometry::AddSoftHydroelasticPropertiesForHalfSpace;
 using drake::geometry::ProximityProperties;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
@@ -29,7 +27,8 @@ using drake::math::RigidTransformd;
 std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     double radius, double mass, double elastic_modulus, double dissipation,
     const CoulombFriction<double>& surface_friction,
-    const Vector3<double>& gravity_W, SceneGraph<double>* scene_graph) {
+    const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
+    SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
@@ -40,34 +39,34 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
   if (scene_graph != nullptr) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
 
-    // TODO(SeanCurtis-TRI): Once SceneGraph supports hydroelastic contact
-    //  between rigid half space and soft sphere, replace this box with the
-    //  equivalent half space.
-    const double size = 5;
-    RigidTransformd X_WG{Vector3<double>(0, 0, -size / 2)};
-    ProximityProperties box_props;
-    AddRigidHydroelasticProperties(size, &box_props);
-    box_props.AddProperty(kMaterialGroup, kFriction, surface_friction);
+    const RigidTransformd X_WG;  // identity.
+    ProximityProperties ground_props;
+    if (soft_ground) {
+      AddSoftHydroelasticPropertiesForHalfSpace(1.0, &ground_props);
+    } else {
+      AddRigidHydroelasticProperties(&ground_props);
+    }
+    AddContactMaterial(elastic_modulus, dissipation, surface_friction,
+                       &ground_props);
     plant->RegisterCollisionGeometry(plant->world_body(), X_WG,
-                                     geometry::Box(size, size, size),
-                                     "collision", std::move(box_props));
-
+                                     geometry::HalfSpace{}, "collision",
+                                     std::move(ground_props));
     // Add visual for the ground.
     plant->RegisterVisualGeometry(plant->world_body(), X_WG,
-                                  geometry::Box(size, size, size), "visual");
+                                  geometry::HalfSpace{}, "visual");
 
     // Add sphere geometry for the ball.
     // Pose of sphere geometry S in body frame B.
     const RigidTransformd X_BS = RigidTransformd::Identity();
     // Set material properties for hydroelastics.
     ProximityProperties ball_props;
-    // TODO(SeanCurtis-TRI): Simplify this with addition of
-    //  geometry::AddContactMaterial().
-    ball_props.AddProperty(kMaterialGroup, kElastic, elastic_modulus);
-    ball_props.AddProperty(kMaterialGroup,
-                           kHcDissipation, dissipation);
-    ball_props.AddProperty(kMaterialGroup, kFriction, surface_friction);
-    AddSoftHydroelasticProperties(radius, &ball_props);
+    AddContactMaterial(elastic_modulus, dissipation, surface_friction,
+                       &ball_props);
+    if (rigid_sphere) {
+      AddRigidHydroelasticProperties(radius, &ball_props);
+    } else {
+      AddSoftHydroelasticProperties(radius, &ball_props);
+    }
     plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
                                      std::move(ball_props));
 

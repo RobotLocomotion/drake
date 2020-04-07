@@ -170,11 +170,6 @@ Expression& Expression::set_expanded() {
   return *this;
 }
 
-Polynomiald Expression::ToPolynomial() const {
-  DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->ToPolynomial();
-}
-
 double Expression::Evaluate(const Environment& env,
                             RandomGenerator* const random_generator) const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -917,6 +912,69 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars) {
   return Jacobian(f, vector<Variable>(vars.data(), vars.data() + vars.size()));
+}
+
+namespace {
+
+// Helper class for IsAffine functions below where an instance of this class
+// is passed to Eigen::MatrixBase::visit() function.
+class IsAffineVisitor {
+ public:
+  IsAffineVisitor() = default;
+  explicit IsAffineVisitor(const Variables& variables)
+      : variables_{&variables} {}
+
+  // Called for the first coefficient. Needed for Eigen::MatrixBase::visit()
+  // function.
+  void init(const Expression& e, const Eigen::Index i, const Eigen::Index j) {
+    (*this)(e, i, j);
+  }
+
+  // Called for all other coefficients. Needed for Eigen::MatrixBase::visit()
+  // function.
+  void operator()(const Expression& e, const Eigen::Index, const Eigen::Index) {
+    // Note that `IsNotAffine` is only called when we have not found a
+    // non-affine element yet.
+    found_non_affine_element_ = found_non_affine_element_ || IsNotAffine(e);
+  }
+
+  bool result() const { return !found_non_affine_element_; }
+
+ private:
+  // Returns true if `e` is *not* affine in variables_ (if exists) or all
+  // variables in `e`.
+  bool IsNotAffine(const Expression& e) const {
+    if (!e.is_polynomial()) {
+      return true;
+    }
+    const Polynomial p{(variables_ != nullptr) ? Polynomial{e, *variables_}
+                                               : Polynomial{e}};
+    return p.TotalDegree() > 1;
+  }
+
+  bool found_non_affine_element_{false};
+  const Variables* const variables_{nullptr};
+};
+
+}  // namespace
+
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m,
+              const Variables& vars) {
+  if (m.size() == 0) {
+    return true;
+  }
+  IsAffineVisitor visitor{vars};
+  m.visit(visitor);
+  return visitor.result();
+}
+
+bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m) {
+  if (m.size() == 0) {
+    return true;
+  }
+  IsAffineVisitor visitor;
+  m.visit(visitor);
+  return visitor.result();
 }
 
 namespace {

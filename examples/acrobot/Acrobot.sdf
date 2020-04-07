@@ -1,19 +1,6 @@
 <sdf version='1.5'>
   <model name='Acrobot'>
     <link name='base_link'>
-      <pose frame=''>0 0 0 0 0 0</pose>
-      <inertial>
-        <pose frame=''>0 0 0 0 0 0</pose>
-        <mass>0</mass>
-        <inertia>
-          <ixx>0</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0</iyy>
-          <iyz>0</iyz>
-          <izz>0</izz>
-        </inertia>
-      </inertial>
       <collision name='base_link_collision'>
         <pose frame=''>0 0 0 0 0 0</pose>
         <geometry>
@@ -31,6 +18,10 @@
         </geometry>
       </visual>
     </link>
+    <joint name='base_weld' type='fixed'>
+      <child>base_link</child>
+      <parent>world</parent>
+    </joint>
     <link name='upper_link'>
       <pose frame=''>0 0.15 0 0 0 0</pose>
       <inertial>

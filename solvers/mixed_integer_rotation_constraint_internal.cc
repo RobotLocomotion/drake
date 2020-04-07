@@ -1,6 +1,7 @@
 #include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 
 #include <algorithm>
+#include <array>
 #include <limits>
 
 #include "drake/common/drake_assert.h"

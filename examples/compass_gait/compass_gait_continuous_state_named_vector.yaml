@@ -1,0 +1,22 @@
+namespace: drake::examples::compass_gait
+elements:
+  -
+    name: stance
+    doc: The orientation of the stance leg, measured clockwise from the vertical axis.
+    doc_units: radians
+    default_value: 0.0
+  -
+    name: swing
+    doc: The orientation of the swing leg, measured clockwise from the vertical axis.
+    doc_units: radians
+    default_value: 0.0
+  -
+    name: stancedot
+    doc: The angular velocity of the stance leg.
+    doc_units: rad/sec
+    default_value: 0.0
+  -
+    name: swingdot
+    doc: The angular velocity of the swing leg.
+    doc_units: rad/sec
+    default_value: 0.0

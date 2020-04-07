@@ -27,6 +27,24 @@ import pydrake.symbolic as sym
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
 
+class TestCost(unittest.TestCase):
+    def test_linear_cost(self):
+        a = np.array([1., 2.])
+        b = 0.5
+        cost = mp.LinearCost(a, b)
+        np.testing.assert_allclose(cost.a(), a)
+        self.assertEqual(cost.b(), b)
+
+    def test_quadratic_cost(self):
+        Q = np.array([[1., 2.], [2., 3.]])
+        b = np.array([3., 4.])
+        c = 0.4
+        cost = mp.QuadraticCost(Q, b, c)
+        np.testing.assert_allclose(cost.Q(), Q)
+        np.testing.assert_allclose(cost.b(), b)
+        self.assertEqual(cost.c(), c)
+
+
 class TestQP:
     def __init__(self):
         # Create a simple QP that uses all deduced linear constraint types,
@@ -168,6 +186,9 @@ class TestMathematicalProgram(unittest.TestCase):
 
     def test_bindings(self):
         qp = TestQP()
+        self.assertEqual(
+            str(qp.constraints[0]),
+            "BoundingBoxConstraint\n1 <= x(0) <= inf\n")
         prog = qp.prog
         x = qp.x
 
@@ -406,6 +427,38 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
+    def test_make_polynomial(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")[0]
+        a = prog.NewContinuousVariables(1, "a")[0]
+        # e = (a + 1)x² + 2ax + 3a.
+        e = (a + 1) * (x * x) + (2 * a) * x + 3 * a
+
+        # We create a polynomial of `e` via MakePolynomial.
+        p = prog.MakePolynomial(e)
+        # Check its indeterminates and decision variables are correctly set,
+        self.assertEqual(p.indeterminates().size(), 1)
+        self.assertTrue(p.indeterminates().include(x))
+        self.assertEqual(p.decision_variables().size(), 1)
+        self.assertTrue(p.decision_variables().include(a))
+        # Check if it holds the same expression when converted back to
+        # symbolic expression.
+        self.assertTrue(p.ToExpression().EqualTo(e))
+
+    def test_reparse(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewIndeterminates(1, "x")[0]
+        a = prog.NewContinuousVariables(1, "a")[0]
+        e = (a + 1) * (x * x) + (2 * a) * x + 3 * a
+
+        # p = (x^2 + 2x + 3)a + x^2 with indeterminates {a}.
+        p = sym.Polynomial(e, [a])
+        self.assertEqual(p.TotalDegree(), 1)
+
+        # p = (a + 1)x² + 2ax + 3a with indeterminates {x}.
+        prog.Reparse(p)
+        self.assertEqual(p.TotalDegree(), 2)
+
     def test_equality_between_polynomials(self):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
@@ -531,6 +584,13 @@ class TestMathematicalProgram(unittest.TestCase):
         # Verify that they can be evaluated.
         self.assertAlmostEqual(cost_binding.evaluator().Eval(xstar), 0.)
         self.assertAlmostEqual(constraint_binding.evaluator().Eval(xstar), 1.)
+        self.assertEqual(len(prog.generic_constraints()), 1)
+        self.assertEqual(
+            prog.generic_constraints()[0].evaluator(),
+            constraint_binding.evaluator())
+        self.assertEqual(len(prog.generic_costs()), 1)
+        self.assertEqual(
+            prog.generic_costs()[0].evaluator(), cost_binding.evaluator())
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()
@@ -540,6 +600,14 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddConstraint(x[0] <= 2)
         result = mp.Solve(prog)
         self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
+
+    def test_addconstraint_matrix(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        prog.AddConstraint(np.array([[x[0] <= 2], [x[0] >= -2]]))
+        result = mp.Solve(prog)
+        self.assertTrue(result.GetSolution(x)[0] <= 2)
+        self.assertTrue(result.GetSolution(x)[0] >= -2)
 
     def test_initial_guess(self):
         prog = mp.MathematicalProgram()
@@ -647,7 +715,7 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
                                                  tol=1e-4)
-        self.assertEquals(len(infeasible), 0)
+        self.assertEqual(len(infeasible), 0)
 
     def test_add_indeterminates_and_decision_variables(self):
         prog = mp.MathematicalProgram()
@@ -693,3 +761,6 @@ class TestSolverInterface(unittest.TestCase):
         self.assertTrue("Dummy solver cannot solve" in str(context.exception))
         self.assertIsInstance(result, mp.MathematicalProgramResult)
         self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
+        with self.assertRaises(Exception) as context:
+            result2 = solver.Solve(prog)
+            self.assertIsInstance(result2, mp.MathematicalProgramResult)

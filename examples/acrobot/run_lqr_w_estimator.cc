@@ -44,8 +44,7 @@ int do_main() {
   // Attach a DrakeVisualizer so we can animate the robot.
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   AcrobotGeometry::AddToBuilder(
-      &builder, acrobot_w_encoder->get_output_port(1),
-      AcrobotParams<double>(), scene_graph);
+      &builder, acrobot_w_encoder->get_output_port(1), scene_graph);
   ConnectDrakeVisualizer(&builder, *scene_graph);
 
   // Make a Kalman filter observer.

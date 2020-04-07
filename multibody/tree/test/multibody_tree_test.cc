@@ -37,6 +37,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RollPitchYaw;
+using math::RotationMatrix;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
@@ -850,9 +851,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
                               kTolerance, MatrixCompareType::relative));
 
   // Express the expected bias acceleration result in frame_H_.
-  const math::RigidTransform<double> X_WH =
-      frame_H_->CalcPoseInWorld(*context_);
-  const math::RotationMatrix<double>& R_HW = X_WH.rotation().inverse();
+  const RotationMatrix<double> R_WH =
+      frame_H_->CalcRotationMatrixInWorld(*context_);
+  const RotationMatrix<double> R_HW = R_WH.inverse();
   Vector6<double> abias_WHp_H_expected;
   abias_WHp_H_expected.head(3) = R_HW * abias_WHp_W_expected.head(3);
   abias_WHp_H_expected.tail(3) = R_HW * abias_WHp_W_expected.tail(3);
@@ -997,7 +998,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
       tree().EvalBodySpatialVelocityInWorld(*context_, *end_effector_link_);
 
   // Pose of the end effector in the world frame.
-  const math::RigidTransform<double>& X_WE(
+  const RigidTransform<double>& X_WE(
       tree().EvalBodyPoseInWorld(*context_, *end_effector_link_));
 
   // Independent benchmark solution.
@@ -1006,7 +1007,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
           q, v, VectorX<double>::Zero(7) /* vdot */);
   const SpatialVelocity<double>& V_WE_benchmark =
       MG_kinematics.spatial_velocity();
-  const math::RigidTransform<double> X_WE_benchmark(MG_kinematics.transform());
+  const RigidTransform<double> X_WE_benchmark(MG_kinematics.transform());
 
   // Compare against benchmark.
   EXPECT_TRUE(V_WE.IsApprox(V_WE_benchmark, kTolerance));
@@ -1276,23 +1277,23 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
   const Vector3d p_L7Q = Vector3d(0.2, -0.1, 0.5);
 
   // Link 3 kinematics.
-  const math::RigidTransform<double>& X_WL3 =
+  const RigidTransform<double>& X_WL3 =
       tree().EvalBodyPoseInWorld(*context_, link3);
-  const math::RotationMatrix<double>& R_WL3 = X_WL3.rotation();
+  const RotationMatrix<double>& R_WL3 = X_WL3.rotation();
 
   // link 5 kinematics.
-  const math::RigidTransform<double>& X_WL5 =
+  const RigidTransform<double>& X_WL5 =
       tree().EvalBodyPoseInWorld(*context_, link5);
-  const math::RotationMatrix<double>& R_WL5 = X_WL5.rotation();
+  const RotationMatrix<double>& R_WL5 = X_WL5.rotation();
 
   // link 7 kinematics.
-  const math::RigidTransform<double>& X_WL7 =
+  const RigidTransform<double>& X_WL7 =
       tree().EvalBodyPoseInWorld(*context_, link7);
-  const math::RotationMatrix<double>& R_WL7 = X_WL7.rotation();
+  const RotationMatrix<double>& R_WL7 = X_WL7.rotation();
 
   // Position of Q in L3, expressed in world.
   // Spatial velocity of frame L3 shifted to Q.
-  const math::RigidTransform<double> X_L3L7 = tree().CalcRelativeTransform(
+  const RigidTransform<double> X_L3L7 = tree().CalcRelativeTransform(
       *context_, link3.body_frame(), link7.body_frame());
   const Vector3<double> p_L3Q_W = R_WL3 * (X_L3L7 * p_L7Q);
 

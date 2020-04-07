@@ -582,6 +582,53 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcSpatialAccelerationBiasCache(
+    const systems::Context<T>& context,
+    std::vector<SpatialAcceleration<T>>* Ab_WB_cache)
+    const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // This skips the world, body_node_index = 0.
+  // For the world body we opted for leaving Ab_WB initialized to NaN so that
+  // an accidental usage (most likely indicating unnecessary math) in code would
+  // immediately trigger a trail of NaNs that we can track to the source.
+  (*Ab_WB_cache)[world_index()].SetNaN();
+  for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
+       ++body_node_index) {
+    const BodyNode<T>& node = *body_nodes_[body_node_index];
+    SpatialAcceleration<T>& Ab_WB = (*Ab_WB_cache)[body_node_index];
+    node.CalcSpatialAccelerationBias(context, pc, vc, &Ab_WB);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
+  const systems::Context<T>& context,
+    std::vector<SpatialForce<T>>* Zb_Bo_W_cache) const {
+  DRAKE_THROW_UNLESS(Zb_Bo_W_cache != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(Zb_Bo_W_cache->size()) == num_bodies());
+  const ArticulatedBodyInertiaCache<T>& abic =
+      EvalArticulatedBodyInertiaCache(context);
+  const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
+      EvalSpatialAccelerationBiasCache(context);
+
+  // This skips the world, body_node_index = 0.
+  // For the world body we opted for leaving Zb_Bo_W initialized to NaN so that
+  // an accidental usage (most likely indicating unnecessary math) in code would
+  // immediately trigger a trail of NaNs that we can track to the source.
+  (*Zb_Bo_W_cache)[world_index()].SetNaN();
+  for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
+       ++body_node_index) {
+    const ArticulatedBodyInertia<T>& Pplus_PB_W =
+        abic.get_Pplus_PB_W(body_node_index);
+    const SpatialAcceleration<T>& Ab_WB = Ab_WB_cache[body_node_index];
+    SpatialForce<T>& Zb_Bo_W = (*Zb_Bo_W_cache)[body_node_index];
+    Zb_Bo_W = Pplus_PB_W * Ab_WB;
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcDynamicBiasCache(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const {
@@ -870,10 +917,10 @@ void MultibodyTree<T>::MapVelocityToQDot(
 
 template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
-    const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
-  DRAKE_DEMAND(H != nullptr);
-  DRAKE_DEMAND(H->rows() == num_velocities());
-  DRAKE_DEMAND(H->cols() == num_velocities());
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
 
   // Compute one column of the mass matrix via inverse dynamics at a time.
   const int nv = num_velocities();
@@ -893,7 +940,144 @@ void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     tau.setZero();
     CalcInverseDynamics(context, vdot, {}, VectorX<T>(), ignore_velocities,
                         &A_WB_array, &F_BMo_W_array, &tau);
-    H->col(j) = tau;
+    M->col(j) = tau;
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
+                                      EigenPtr<MatrixX<T>> M) const {
+  DRAKE_DEMAND(M != nullptr);
+  DRAKE_DEMAND(M->rows() == num_velocities());
+  DRAKE_DEMAND(M->cols() == num_velocities());
+
+  // This method implements algorithm 9.3 in [Jain 2010]. We use slightly
+  // different notation conventions:
+  // - Rigid shift operators A and Φ are implemented in SpatialInertia::Shift()
+  //   and SpatialForce::Shift(), respectively.
+  // - We use the symbol F instead of X, to highlight the physical
+  //   interpretation of the algorithm in terms of composite bodies.
+  // - Even though we use H for the "hinge matrix" as in Jain's book, our hinge
+  //   matrix is the transpose of that used by Jain. Therefore our hinge matrix
+  //   is the across-mobilizer Jacobian such that we can write
+  //   V_PB_W = H_PB_W * v_B, with v_B the generalized velocities of body B's
+  //   mobilizer.
+  // - In code we use the monogram notation R_C_W to denote the spatial inertia
+  //   of composite body C, about it's frame origin Co, and expressed in the
+  //   world frame W.
+  //
+  // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+  //               algorithms. Springer Science & Business Media, pp. 123-130.
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const std::vector<Vector6<T>>& H_PB_W_cache =
+      EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
+  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
+      EvalSpatialInertiaInWorldCache(context);
+
+  // Temporary storage.
+  std::vector<SpatialInertia<T>> R_B_W_all(num_bodies());
+  Matrix6xUpTo6<T> Fm_CCo_W;
+
+  // The algorithm below does not recurse zero entries and therefore these must
+  // be set a priori.
+  M->setZero();
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (int depth = tree_height() - 1; depth > 0; --depth) {
+    for (BodyNodeIndex composite_node_index : body_node_levels_[depth]) {
+      // Node corresponding to the composite body C.
+      const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
+
+      // This node's spatial inertia.
+      const SpatialInertia<T>& M_C_W =
+          spatial_inertia_in_world_cache[composite_node_index];
+
+      // Compute the spatial inertia R_C_W of the composite body C corresponding
+      // to the node with index composite_node_index. Computed about C's origin
+      // Co and expressed in the world frame W.
+      SpatialInertia<T>& R_C_W = R_B_W_all[composite_node_index];
+      composite_node.CalcCompositeBodyInertia_TipToBase(M_C_W, pc, R_B_W_all,
+                                                        &R_C_W);
+
+      // Across-mobilizer hinge matrix, from C's parent Cp to C.
+      Eigen::Map<const MatrixUpTo6<T>> H_CpC_W =
+          composite_node.GetJacobianFromArray(H_PB_W_cache);
+
+      // The composite body algorithm considers the system at rest, when
+      // generalized velocities are zero.
+      // Now if we consider this node's generalized accelerations as the matrix
+      // vm_dot = Iₘ, the identity matrix in ℝᵐˣᵐ, the spatial acceleration A_WC
+      // is in ℝ⁶ˣᵐ. That is, we are considering each case in which all
+      // generalized accelerations are zero but the m-th generalized
+      // acceleration for this node equals one.
+      // This node's spatial acceleration can be written as:
+      //   A_WC = Φᵀ(p_CpC) * A_WCp + Ac_WC + Ab_CpC_W + H_CpC_W * vm_dot
+      // where A_WCp is the spatial acceleration of the parent node's body Cp,
+      // Ac_WC include the centrifugal and Coriolis terms, and Ab_CpC_W is the
+      // spatial acceleration bias of the hinge Jacobian matrix H_CpC_W.
+      // Now, since all generalized accelerations but vm_dot are zero, then
+      // A_WCp is zero.  Since the system is at rest, Ac_WC and Ab_CpC_W are
+      // zero.
+      // Therefore, for vm_dot = Iₘ, we have that A_WC = H_CpC_W.
+      const auto& A_WC = H_CpC_W;
+
+      // If we consider the closed system composed of the composite body held by
+      // its mobilizer, the Newton-Euler equations state:
+      //   Fm_CCo_W = R_C_W * A_WC + Fb_C_W
+      // where Fm_CCo_W is the spatial force at this node's mobilizer.
+      // Since the system is at rest, we have Fb_C_W = 0 and thus:
+      Fm_CCo_W = R_C_W * A_WC;
+
+      const int composite_start = composite_node.velocity_start();
+      const int composite_nv = composite_node.get_num_mobilizer_velocities();
+
+      // Diagonal block corresponding to current node (composite_node_index).
+      M->block(composite_start, composite_start, composite_nv, composite_nv) =
+          H_CpC_W.transpose() * Fm_CCo_W;
+
+      // We recurse the tree inwards from C all the way to the root. We define
+      // the frames:
+      //  - B:  the frame for the current node, body_node.
+      //  - Bc: B's child node frame, child_node.
+      //  - P:  B's parent node frame.
+      const BodyNode<T>* child_node =
+          &composite_node;  // Child starts at frame C.
+      const BodyNode<T>* body_node = child_node->parent_body_node();
+      Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;
+      while (body_node) {
+        const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
+        // In place rigid shift of the spatial force in each column of Fm_CBo_W,
+        // from Bc to Bo.
+        // Before this computation, Fm_CBo_W actually stores Fm_CBc_W from the
+        // previous recursion.
+        // At the end of this computation, Fm_CBo_W stores the spatial force on
+        // composite body C, shifted to Bo, and expressed in the world W.
+        // That is, we are doing Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
+        SpatialForce<T>::Shift(Fm_CBo_W, p_BcBo_W, &Fm_CBo_W);
+
+        // Across mobilizer Jacobian between body_node B and its parent P.
+        Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+            body_node->GetJacobianFromArray(H_PB_W_cache);
+
+        // Compute the corresponding block.
+        const int body_start = body_node->velocity_start();
+        const int body_nv = body_node->get_num_mobilizer_velocities();
+        M->block(body_start, composite_start, body_nv, composite_nv) =
+            H_PB_W.transpose() * Fm_CBo_W;
+
+        // And copy to its symmetric block.
+        // Eigen incorrectly detects aliasing during transposition. We fix this
+        // by creating a temporaty copy with .eval() below.
+        M->block(composite_start, body_start, composite_nv, body_nv) =
+            M->block(body_start, composite_start, body_nv, composite_nv)
+                .transpose()
+                .eval();
+
+        child_node = body_node;                      // Update child node Bc.
+        body_node = child_node->parent_body_node();  // Update node B.
+      }
+    }
   }
 }
 
@@ -946,12 +1130,12 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Body<T>& A = frame_F.body();
   const Body<T>& B = frame_G.body();
-  const RotationMatrix<T>& R_WA = pc.get_X_WB(A.node_index()).rotation();
-  const RotationMatrix<T>& R_WB = pc.get_X_WB(B.node_index()).rotation();
-  const RotationMatrix<T> R_WF =
-      R_WA * frame_F.CalcPoseInBodyFrame(context).rotation();
-  const RotationMatrix<T> R_WG =
-      R_WB * frame_G.CalcPoseInBodyFrame(context).rotation();
+  const RotationMatrix<T>& R_WA = pc.get_R_WB(A.node_index());
+  const RotationMatrix<T>& R_WB = pc.get_R_WB(B.node_index());
+  const RotationMatrix<T> R_AF = frame_F.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T> R_BG = frame_G.CalcRotationMatrixInBodyFrame(context);
+  const RotationMatrix<T> R_WF = R_WA * R_AF;
+  const RotationMatrix<T> R_WG = R_WB * R_BG;
   return R_WF.inverse() * R_WG;  // R_FG = R_FW * R_WG;
 }
 
@@ -1107,7 +1291,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
 
   // Get body B's rotation matrix in world W and angular velocity in world W.
   const Body<T>& body_B = frame_F.body();
-  const RotationMatrix<T>& R_WB = pc.get_X_WB(body_B.node_index()).rotation();
+  const RotationMatrix<T>& R_WB = pc.get_R_WB(body_B.node_index());
   const Vector3<T>& w_WB_W = vc.get_V_WB(body_B.node_index()).rotational();
 
   // We need to compute p_BoFp_W, the position from Bo to Fp, expressed in W.
@@ -1120,8 +1304,8 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationBiasShift(
 
   // Express the resulting vectors in frame_E (rather than the world frame).
   if (&frame_E != &world_frame()) {
-    const RigidTransform<T> X_WE = frame_E.CalcPoseInWorld(context);
-    const RotationMatrix<T> R_EW = X_WE.rotation().inverse();
+    const RotationMatrix<T> R_WE = frame_E.CalcRotationMatrixInWorld(context);
+    const RotationMatrix<T> R_EW = R_WE.inverse();
 
     // Abias_WFp_E = R_EW * Abias_WFp_W.
     Abias_WFp = R_EW * Abias_WFp;
@@ -1585,17 +1769,74 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 }
 
 template <typename T>
-T MultibodyTree<T>::CalcPotentialEnergy(
-    const systems::Context<T>& context) const {
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  return DoCalcPotentialEnergy(context, pc);
+void MultibodyTree<T>::CalcJacobianCenterOfMassTranslationalVelocity(
+    const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A, const Frame<T>& frame_E,
+    EigenPtr<Matrix3X<T>> Js_v_ACcm_E) const {
+
+  const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
+                          num_positions() : num_velocities();
+  DRAKE_THROW_UNLESS(Js_v_ACcm_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_ACcm_E->cols() == num_columns);
+  if (num_bodies() <= 1) {
+    throw std::runtime_error(
+        "CalcJacobianCenterOfMassTranslationalVelocity(): this "
+        "MultibodyPlant contains only world_body() so its center of mass "
+        "is undefined.");
+  }
+
+  Js_v_ACcm_E->setZero();
+  T composite_mass = 0;
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    MatrixX<T> Jsi_v_ABcm_E(3, num_columns);
+    CalcJacobianTranslationalVelocity(
+        context, with_respect_to, body.body_frame(),
+        body.body_frame(), pi_BoBcm, frame_A, frame_E, &Jsi_v_ABcm_E);
+    const T& body_mass = body.get_mass(context);
+    *Js_v_ACcm_E += body_mass * Jsi_v_ABcm_E;
+    composite_mass += body_mass;
+  }
+  *Js_v_ACcm_E /= composite_mass;
 }
 
 template <typename T>
-T MultibodyTree<T>::DoCalcPotentialEnergy(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc) const {
+Vector3<T>
+MultibodyTree<T>::CalcBiasCenterOfMassTranslationalAcceleration(
+    const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
+    const Frame<T>& frame_A, const Frame<T>& frame_E) const {
+  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
 
+  if (num_bodies() <= 1) {
+    throw std::runtime_error(
+        "CalcBiasCenterOfMassTranslationalAcceleration(): this "
+        "MultibodyPlant contains only world_body() so its center of mass "
+        "is undefined.");
+  }
+
+  T composite_mass = 0;
+  Vector3<T> abias_ACcm_E = Vector3<T>::Zero();
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const Vector3<T> pi_BoBcm = body.CalcCenterOfMassInBodyFrame(context);
+    VectorX<T> abiasi_ACcm_E =
+        CalcBiasForJacobianSpatialVelocity(
+            context, with_respect_to,
+            body.body_frame(), pi_BoBcm, frame_A, frame_E)
+            .tail(3);
+    const T& body_mass = body.get_mass(context);
+    abias_ACcm_E += body_mass * abiasi_ACcm_E;
+    composite_mass += body_mass;
+  }
+  abias_ACcm_E /= composite_mass;
+  return abias_ACcm_E;
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcPotentialEnergy(
+    const systems::Context<T>& context) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   T potential_energy = 0.0;
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
@@ -1605,19 +1846,29 @@ T MultibodyTree<T>::DoCalcPotentialEnergy(
 }
 
 template <typename T>
+T MultibodyTree<T>::CalcKineticEnergy(
+    const systems::Context<T>& context) const {
+  const std::vector<SpatialInertia<T>>& M_Bi_W =
+      EvalSpatialInertiaInWorldCache(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  T twice_kinetic_energy_W = 0.0;
+  // Add contributions from each body (except World).
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    const SpatialInertia<T>& M_B_W = M_Bi_W[node_index];
+    const SpatialVelocity<T>& V_WB = vc.get_V_WB(node_index);
+    const SpatialMomentum<T> L_WB = M_B_W * V_WB;
+
+    twice_kinetic_energy_W += L_WB.dot(V_WB);
+  }
+  return twice_kinetic_energy_W / 2.;
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcConservativePower(
     const systems::Context<T>& context) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  return DoCalcConservativePower(context, pc, vc);
-}
-
-template <typename T>
-T MultibodyTree<T>::DoCalcConservativePower(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc) const {
-
   T conservative_power = 0.0;
   // Add contributions from force elements.
   for (const auto& force_element : owned_force_elements_) {
@@ -1625,6 +1876,25 @@ T MultibodyTree<T>::DoCalcConservativePower(
         force_element->CalcConservativePower(context, pc, vc);
   }
   return conservative_power;
+}
+
+template <typename T>
+T MultibodyTree<T>::CalcNonConservativePower(
+    const systems::Context<T>& context) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  T non_conservative_power = 0.0;
+
+  // Add contributions from force elements.
+  for (const auto& force_element : owned_force_elements_) {
+    non_conservative_power +=
+        force_element->CalcNonConservativePower(context, pc, vc);
+  }
+
+  // TODO(sherm1) Add contributions from joint dampers, joint actuators, force
+  //              input ports, contact forces, etc. as enumerated in #12942.
+
+  return non_conservative_power;
 }
 
 template <typename T>
@@ -1677,10 +1947,10 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
+void MultibodyTree<T>::CalcArticulatedBodyForceCache(
     const systems::Context<T>& context, const MultibodyForces<T>& forces,
-    ArticulatedBodyForceBiasCache<T>* aba_force_bias_cache) const {
-  DRAKE_DEMAND(aba_force_bias_cache != nullptr);
+    ArticulatedBodyForceCache<T>* aba_force_cache) const {
+  DRAKE_DEMAND(aba_force_cache != nullptr);
   DRAKE_DEMAND(forces.CheckHasRightSizeForModel(*this));
 
   // Get position and velocity kinematics from cache.
@@ -1703,13 +1973,22 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
   const std::vector<SpatialForce<T>>& dynamic_bias_cache =
       EvalDynamicBiasCache(context);
 
+  // We evaluate the kinematics dependent articulated body force bias Zb_Bo_W =
+  // Pplus_PB_W * Ab_WB. When cached, this corresponds to a significant
+  // computational gain when performing ABA with the same context (storing the
+  // same q and v) but different applied `forces`.
+  const std::vector<SpatialForce<T>>& Zb_Bo_W_cache =
+      EvalArticulatedBodyVelocityBiasCache(context);
+
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       // Get generalized force and body force for this node.
-      const VectorX<T>& tau_applied =
+      // N.B. Using the VectorBlock here avoids heap allocation. We have
+      // observed this to penalize performance for large models (nv > 36).
+      Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>> tau_applied =
           node.get_mobilizer().get_generalized_forces_from_array(
               generalized_forces);
       const SpatialForce<T>& Fapplied_Bo_W = body_forces[body_node_index];
@@ -1718,10 +1997,11 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
       Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
           node.GetJacobianFromArray(H_PB_W_cache);
       const SpatialForce<T>& Fb_B_W = dynamic_bias_cache[body_node_index];
+      const SpatialForce<T>& Zb_Bo_W = Zb_Bo_W_cache[body_node_index];
 
-      node.CalcArticulatedBodyForceBiasCache_TipToBase(
-          context, pc, &vc, Fb_B_W, abic, Fapplied_Bo_W, tau_applied, H_PB_W,
-          aba_force_bias_cache);
+      node.CalcArticulatedBodyForceCache_TipToBase(
+          context, pc, &vc, Fb_B_W, abic, Zb_Bo_W, Fapplied_Bo_W, tau_applied,
+          H_PB_W, aba_force_cache);
     }
   }
 }
@@ -1729,7 +2009,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
 template <typename T>
 void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
     const systems::Context<T>& context,
-    const ArticulatedBodyForceBiasCache<T>& aba_force_bias_cache,
+    const ArticulatedBodyForceCache<T>& aba_force_cache,
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -1737,18 +2017,22 @@ void MultibodyTree<T>::CalcArticulatedBodyAccelerations(
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
   const ArticulatedBodyInertiaCache<T>& abic =
       EvalArticulatedBodyInertiaCache(context);
+  const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
+      EvalSpatialAccelerationBiasCache(context);
 
   // Perform base-to-tip recursion, skipping the world.
   for (int depth = 1; depth < tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
+      const SpatialAcceleration<T>& Ab_WB = Ab_WB_cache[body_node_index];
+
       // Get reference to the hinge mapping matrix.
       Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
           node.GetJacobianFromArray(H_PB_W_cache);
 
       node.CalcArticulatedBodyAccelerations_BaseToTip(
-          context, pc, abic, aba_force_bias_cache, H_PB_W, ac);
+          context, pc, abic, aba_force_cache, H_PB_W, Ab_WB, ac);
     }
   }
 }

@@ -31,18 +31,42 @@ namespace multibody {
  `contact_surface().id_M()` and `contact_surface().id_N()`) are attached to
  bodies A and B, respectively.
 
- @tparam T Must be one of drake's default scalar types.
+ @tparam_default_scalar
  */
 template <typename T>
 class HydroelasticContactInfo {
  public:
+  /** @name                 Construction
+   The constructors below adhere to a number of invariants. The
+   geometry::ContactSurface defines contact between two geometries M and N (via
+   contact_surface().id_M() and contact_surface().id_N(), respectively).
+   %HydroelasticContactInfo further associates geometries M and N with the
+   bodies to which they are rigidly fixed, A and B, respectively. It is the
+   responsibility of the caller of these constructors to ensure that the
+   parameters satisfy the documented invariants, see below. Similarly, the
+   spatial force `F_Ac_W` must be provided as indicated by the monogram notation
+   in use, that is, it is the spatial force on body A, at the contact surface's
+   centroid C, and expressed in the world frame. Quadrature points data must be
+   provided in accordance to the conventions and monogram notation documented in
+   HydroelasticQuadraturePointData. */
+  // @{
+
   /**
+   @anchor hydro_contact_info_non_owning_ctor
    Constructs this structure using the given contact surface, traction field,
    and slip field. This constructor does not own the ContactSurface; it points
-   to a ContactSurface that another owns.
-   @see contact_surface()
-   @see traction_A_W()
-   @see vslip_AB_W()
+   to a ContactSurface that another owns, see contact_surface().
+
+   @param[in] contact_surface Contact surface between two geometries M and N,
+     see geometry::ContactSurface::id_M() and geometry::ContactSurface::id_N().
+   @param[in] F_Ac_W Spatial force applied on body A, at contact surface
+     centroid C, and expressed in the world frame W. The position `p_WC` of C in
+     the world frame W can be obtained with
+     `ContactSurface::mesh_W().centroid()`.
+   @param[in] quadrature_point_data Hydroelastic field data at each quadrature
+     point. Data must be provided in accordance to the convention that geometry
+     M and N are attached to bodies A and B, respectively. Refer to
+     HydroelasticQuadraturePointData for further details.
    */
   HydroelasticContactInfo(
       const geometry::ContactSurface<T>* contact_surface,
@@ -54,11 +78,11 @@ class HydroelasticContactInfo {
     DRAKE_DEMAND(contact_surface);
   }
 
-  /**
-   Constructs this structure using the given contact surface, traction field,
-   and slip field.  This constructor takes ownership of the ContactSurface.
-   @see contact_surface()
-   */
+  /** This constructor takes ownership of `contact_surface` via a
+   std::unique_ptr, instead of aliasing a pre-existing contact surface. In all
+   other respects, it is identical to the @ref
+   hydro_contact_info_non_owning_ctor "other overload" that takes
+   `contact_surface` by raw pointer.  */
   HydroelasticContactInfo(
       std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
       const SpatialForce<T>& F_Ac_W,
@@ -70,6 +94,7 @@ class HydroelasticContactInfo {
                      contact_surface_)
                      .get());
   }
+  // @}
 
   /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   /// MoveAssignable.
@@ -95,7 +120,7 @@ class HydroelasticContactInfo {
     return *this;
   }
 
-  HydroelasticContactInfo(HydroelasticContactInfo&&);
+  HydroelasticContactInfo(HydroelasticContactInfo&&) = default;
   HydroelasticContactInfo& operator=(HydroelasticContactInfo&&) = default;
 
   //@}
@@ -119,8 +144,10 @@ class HydroelasticContactInfo {
     return quadrature_point_data_;
   }
 
-  /// Gets the spatial force applied at the centroid (Point C) of the surface
-  /// mesh (C can be obtained through `contact_surface().mesh_W().`).
+  /// Gets the spatial force applied on body A, at the centroid point C of the
+  /// surface mesh M, and expressed in the world frame W. The position `p_WC` of
+  /// the centroid point C in the world frame W can be obtained with
+  /// `contact_surface().mesh_W().centroid()`.
   const SpatialForce<T>& F_Ac_W() const { return F_Ac_W_; }
 
  private:
@@ -135,13 +162,6 @@ class HydroelasticContactInfo {
   std::vector<HydroelasticQuadraturePointData<T>>
       quadrature_point_data_;
 };
-
-// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
-// should be moved back into the class definition once we no longer need to
-// support GCC versions prior to 6.3.
-template <typename T>
-HydroelasticContactInfo<T>::HydroelasticContactInfo(
-    HydroelasticContactInfo&&) = default;
 
 }  // namespace multibody
 }  // namespace drake

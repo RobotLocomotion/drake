@@ -23,28 +23,6 @@ def _relative_dirname_basename(label):
         label = label.split(":")[-1]
     return dirname(label), basename(label)
 
-_DEPRECATION_MESSAGE = """
-WARNING: Support for vector_gen {src} using the protobuf syntax is deprecated
-and will be removed on or after 2020-02-01.  Use the new yaml syntax instead.
-Rename your input file from foo.named_vector to foo_named_vector.yaml and
-change the element sytax to an elements list.  See drake/tools/vector_gen/test
-for an example input file.
-""".replace("\n", " ").strip()
-
-_QUIETLY_DEPRECATED_PACKAGES = [
-    "tools/vector_gen/attic",
-    # TODO(jwnimmer-tri) Port the below packages to the new syntax.
-    "examples/acrobot",
-    "examples/compass_gait",
-    "examples/multibody/cart_pole",
-    "examples/pendulum",
-    "examples/rimless_wheel",
-    "examples/rod2d",
-    "examples/scene_graph",
-    "manipulation/schunk_wsg",
-    "systems/sensors",
-]
-
 def _vector_gen_outs(srcs, kind):
     """Return the list of output filenames.  The `kind` is either "vector"
     (foo.h, foo.cc) or "lcm" (lcmt_foo_t.lcm).  For compatibility with past
@@ -60,18 +38,9 @@ def _vector_gen_outs(srcs, kind):
         item_dirname, item_basename = _relative_dirname_basename(item)
         if item_dirname != subdir:
             fail("%s subdirectory doesn't match %s" % (item, srcs[0]))
-        if item.endswith("_named_vector.yaml"):
-            name = item_basename[:-len("_named_vector.yaml")]
-        elif item.endswith(".named_vector"):
-            # TODO(jwnimmer-tri) Remove support on or after 2020-02-01.
-            package_name = native.package_name()
-            if package_name not in _QUIETLY_DEPRECATED_PACKAGES:
-                print(package_name + ":", _DEPRECATION_MESSAGE.format(
-                    src = item,
-                ))
-            name = item_basename[:-len(".named_vector")]
-        else:
-            fail(item + " doesn't match *.named_vector or *_named_vector.yaml")
+        if not item.endswith("_named_vector.yaml"):
+            fail(item + " doesn't match *_named_vector.yaml")
+        name = item_basename[:-len("_named_vector.yaml")]
         names.append(name)
 
     # Compute outs based on kind.
@@ -189,10 +158,6 @@ def drake_cc_vector_gen_library(
     """Given *_named_vector.yaml files in `srcs`, declare a drake_cc_library
     with the given `name`, containing the generated BasicVector subclasses for
     those `srcs`.  The `deps` are passed through to the declared library.
-
-    (For compatibility purposes, source files named *.named_vector are also
-    supported during a transitional period.  Support will be removed on or
-    after 2020-02-01.)
     """
     generated = drake_cc_vector_gen(
         name = name + "_codegen",
@@ -216,10 +181,6 @@ def drake_vector_gen_lcm_sources(
     """Given *_named_vector.yaml files in `srcs`, generate matching LCM message
     definition source files.  For a src named foo/bar.named_vector, the output
     file will be named foo/lcmt_bar_t.lcm.
-
-    (For compatibility purposes, source files named *.named_vector are also
-    supported during a transitional period.  Support will be removed on or
-    after 2020-02-01.)
     """
     outs = _vector_gen_outs(srcs = srcs, kind = "lcm")
     _vector_gen(

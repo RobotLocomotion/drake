@@ -1,0 +1,12 @@
+namespace: drake::examples::pendulum
+elements:
+  -
+    name: theta
+    doc: The angle of the pendulum.
+    doc_units: radians
+    default_value: 0.0
+  -
+    name: thetadot
+    doc: The angular velocity of the pendulum.
+    doc_units: radians/sec
+    default_value: 0.0

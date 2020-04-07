@@ -353,6 +353,7 @@ drake_cc_googletest(
         ":affine_system",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:autodiff",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],
@@ -440,14 +441,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "gain_test",
-    srcs = [
-        "test/gain_scalartype_test.cc",
-        "test/gain_test.cc",
-    ],
     deps = [
         ":gain",
-        "//common:symbolic",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",
@@ -503,13 +498,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "pass_through_test",
-    srcs = [
-        "test/pass_through_scalartype_test.cc",
-        "test/pass_through_test.cc",
-    ],
     deps = [
         ":pass_through",
-        "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

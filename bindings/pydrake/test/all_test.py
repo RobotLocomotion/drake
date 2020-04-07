@@ -144,6 +144,8 @@ class TestAll(unittest.TestCase):
             "IKResults",
             # - ipopt
             "IpoptSolver",
+            # - branch_and_bound
+            "MixedIntegerBranchAndBound",
             # - mathematicalprogram
             "MathematicalProgram",
             # - mosek

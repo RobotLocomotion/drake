@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits>
+#include <vector>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -26,20 +29,11 @@ namespace internal {
 ///   mobilizer's generalized velocities v to cross-joint spatial velocities
 ///   V_FM = H_FM * v.
 ///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class PositionKinematicsCache {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache)
 
   template <typename U>
   using RigidTransform = drake::math::RigidTransform<U>;
@@ -51,9 +45,8 @@ class PositionKinematicsCache {
     Allocate();
   }
 
-  /// Returns a constant reference to the pose `X_WB` of the body B
-  /// (associated with node @p body_node_index) as measured and expressed in the
-  /// world frame W.
+  /// Returns a const reference to pose `X_WB` of the body B (associated with
+  /// node @p body_node_index) as measured and expressed in the world frame W.
   /// @param[in] body_node_index The unique index for the computational
   ///                            BodyNode object associated with body B.
   /// @returns `X_WB` the pose of the the body frame B measured and
@@ -67,6 +60,15 @@ class PositionKinematicsCache {
   RigidTransform<T>& get_mutable_X_WB(BodyNodeIndex body_node_index) {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
     return X_WB_pool_[body_node_index];
+  }
+
+  /// Returns a const reference to the rotation matrix `R_WB` that relates the
+  /// orientation of the world frame W with the body frame B.
+  /// @param[in] body_node_index The unique index for the computational
+  ///                            BodyNode object associated with body B.
+  const math::RotationMatrix<T>& get_R_WB(BodyNodeIndex body_node_index) const {
+    const RigidTransform<T>& X_WB = get_X_WB(body_node_index);
+    return X_WB.rotation();
   }
 
   /// Returns a const reference to the pose `X_PB` of the body frame B
@@ -107,6 +109,19 @@ class PositionKinematicsCache {
     return X_FM_pool_[body_node_index];
   }
 
+  /// Position of node B, with index `body_node_index`, measured in the inboard
+  /// body frame P, expressed in the world frame W.
+  const Vector3<T>& get_p_PoBo_W(BodyNodeIndex body_node_index) const {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return p_PoBo_W_pool_[body_node_index];
+  }
+
+  /// Mutable version of get_p_PoBo_W().
+  Vector3<T>& get_mutable_p_PoBo_W(BodyNodeIndex body_node_index) {
+    DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
+    return p_PoBo_W_pool_[body_node_index];
+  }
+
  private:
   // Pool types:
   // Pools store entries in the same order multibody tree nodes are
@@ -115,7 +130,10 @@ class PositionKinematicsCache {
   // `get_X_WB()` for instance.
 
   // The type of pools for storing poses.
-  typedef eigen_aligned_std_vector<RigidTransform<T>> X_PoolType;
+  typedef std::vector<RigidTransform<T>> X_PoolType;
+
+  // The type of pools for storing 3D vectors.
+  typedef std::vector<Vector3<T>> Vector3PoolType;
 
   // Allocates resources for this position kinematics cache.
   void Allocate() {
@@ -132,6 +150,12 @@ class PositionKinematicsCache {
 
     X_MB_pool_.resize(num_nodes_);
     X_MB_pool_[world_index()] = NaNPose();  // It should never be used.
+
+    p_PoBo_W_pool_.resize(num_nodes_);
+    // p_PoBo_W for the world body should never be used.
+    p_PoBo_W_pool_[world_index()].setConstant(
+        std::numeric_limits<
+            typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
   // Helper method to initialize poses to garbage values including NaNs.
@@ -146,13 +170,13 @@ class PositionKinematicsCache {
 
   // Number of body nodes in the corresponding MultibodyTree.
   int num_nodes_{0};
-  X_PoolType X_WB_pool_;  // Indexed by BodyNodeIndex.
-  X_PoolType X_PB_pool_;  // Indexed by BodyNodeIndex.
-  X_PoolType X_FM_pool_;  // Indexed by BodyNodeIndex.
-  X_PoolType X_MB_pool_;  // Indexed by BodyNodeIndex.
+  // Pools indexed by BodyNodeIndex.
+  X_PoolType X_WB_pool_;
+  X_PoolType X_PB_pool_;
+  X_PoolType X_FM_pool_;
+  X_PoolType X_MB_pool_;
+  Vector3PoolType p_PoBo_W_pool_;
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(PositionKinematicsCache)
 
 }  // namespace internal
 }  // namespace multibody

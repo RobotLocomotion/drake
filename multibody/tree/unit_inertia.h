@@ -34,19 +34,11 @@ namespace multibody {
 /// Also notice that once a unit inertia is created, it _is_ the unit inertia
 /// of _some_ body, perhaps with scaled geometry from the user's intention.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
   /// Default %UnitInertia constructor sets all entries to NaN for quick
   /// detection of uninitialized values.
@@ -449,8 +441,6 @@ class UnitInertia : public RotationalInertia<T> {
   // End of Doxygen group
   //@}
 };
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(UnitInertia)
 
 }  // namespace multibody
 }  // namespace drake

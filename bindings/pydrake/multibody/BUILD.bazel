@@ -3,6 +3,7 @@
 load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "add_pybind_coverage_data",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -17,6 +18,7 @@ load(
     "drake_py_library_aliases",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -132,6 +134,15 @@ drake_pybind_library(
     ],
 )
 
+drake_jupyter_py_binary(
+    name = "examples/door_hinge_inspector",
+    add_test_rule = 1,
+    deps = [
+        ":plant_py",
+        ":tree_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":benchmarks_py",
     ":inverse_kinematics_py",
@@ -189,7 +200,6 @@ drake_py_unittest(
     name = "plant_test",
     data = [
         ":models",
-        "//examples/double_pendulum:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
@@ -227,5 +237,7 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities",
     ],
 )
+
+add_pybind_coverage_data()
 
 add_lint_tests_pydrake()

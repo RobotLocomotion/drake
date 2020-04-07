@@ -178,6 +178,30 @@ class MeshIdentifier final : public ShapeReifier {
  private:
   bool is_mesh_{false};
 };
+
+// Helper functions to facilitate exercising FCL's broadphase code. FCL has
+// inconsistent usage of `const`. As such, even though the broadphase structures
+// do not change during collision and distance queries, they are nevertheless
+// declared non-const, requiring Drake to do some const casting in what would
+// otherwise be a const context.
+template <typename T, typename DataType>
+void FclCollide(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
+                const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
+                DataType* data, fcl::CollisionCallBack<T> callback) {
+  tree1.collide(
+      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
+      callback);
+}
+
+template <typename T, typename DataType>
+void FclDistance(const fcl::DynamicAABBTreeCollisionManager<double>& tree1,
+                 const fcl::DynamicAABBTreeCollisionManager<double>& tree2,
+                 DataType* data, fcl::DistanceCallBack<T> callback) {
+  tree1.distance(
+      const_cast<fcl::DynamicAABBTreeCollisionManager<T>*>(&tree2), data,
+      callback);
+}
+
 }  // namespace
 
 // The implementation class for the fcl engine. Each of these functions
@@ -313,6 +337,33 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
 
     collision_filter_.AddGeometry(encoding.encoding());
+  }
+
+  void UpdateRepresentationForNewProperties(
+      const InternalGeometry& geometry,
+      const ProximityProperties& new_properties) {
+    const GeometryId id = geometry.id();
+    // Note: Currently, the only aspect of a geometry's representation that can
+    // be affected by its proximity properties is its hydroelastic
+    // representation.
+    if (dynamic_objects_.count(id) == 0 && anchored_objects_.count(id) == 0) {
+      throw std::logic_error(
+          fmt::format("The proximity engine does not contain a geometry with "
+                      "the id {}; its properties cannot be updated",
+                      id));
+    }
+
+    // TODO(SeanCurtis-TRI): Precondition this with a test -- currently,
+    //  I'm mindlessly replacing the old hydroelastic representation with a
+    //  new -- even it doesn't actually change. Such an optimization probably
+    //  has limited value as this type of operation would really only be done
+    //  at initialization.
+
+    // We'll simply mindlessly destroy and recreate the hydroelastic
+    // representation.
+    hydroelastic_geometries_.RemoveGeometry(id);
+    hydroelastic_geometries_.MaybeAddGeometry(geometry.shape(), id,
+                                              new_properties);
   }
 
   void RemoveGeometry(GeometryId id, bool is_dynamic) {
@@ -456,7 +507,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         "model. It is _not_ available in other proximity queries.");
     SurfaceMesh<double> surface =
         ReadObjToSurfaceMesh(mesh.filename(), mesh.scale());
-    auto[center, size] = surface.CalcBoundingBox();
+    auto [center, size] = surface.CalcBoundingBox();
     auto fcl_box = make_shared<fcl::Boxd>(size);
 
     TakeShapeOwnership(fcl_box, user_data);
@@ -623,12 +674,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.distance(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, shape_distance::Callback<T>);
+    FclDistance(dynamic_tree_, anchored_tree_, &data,
+                shape_distance::Callback<T>);
     return witness_pairs;
   }
 
@@ -708,12 +755,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, penetration_as_point_pair::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               penetration_as_point_pair::Callback);
+
     return contacts;
   }
 
@@ -727,12 +771,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, find_collision_candidates::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               find_collision_candidates::Callback);
     return pairs;
   }
 
@@ -745,12 +785,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, has_collisions::Callback);
+    FclCollide(dynamic_tree_, anchored_tree_, &data, has_collisions::Callback);
     return data.collisions_exist;
   }
 
@@ -766,33 +801,65 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Perform a query of the dynamic objects against the anchored. We don't do
     // anchored against anchored because those pairs are implicitly filtered.
-    // The FCL API requires the const cast even though it *appears* that no
-    // mutation takes place.
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, hydroelastic::Callback<T>);
-
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_mesh_tree_),
-        &data, hydroelastic::Callback<T>);
-    dynamic_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &dynamic_mesh_tree_),
-        &data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, anchored_tree_, &data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, anchored_mesh_tree_, &data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, dynamic_mesh_tree_, &data,
+               hydroelastic::Callback<T>);
 
     dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
-    dynamic_mesh_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_tree_),
-        &data, hydroelastic::Callback<T>);
-    dynamic_mesh_tree_.collide(
-        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
-            &anchored_mesh_tree_),
-        &data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_tree_, &data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data,
+               hydroelastic::Callback<T>);
 
     return surfaces;
+  }
+
+  void ComputeContactSurfacesWithFallback(
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    DRAKE_DEMAND(surfaces);
+    DRAKE_DEMAND(point_pairs);
+    // All these quantities are aliased in the callback data.
+    hydroelastic::CallbackWithFallbackData<T> data{
+        hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
+                                      &hydroelastic_geometries_, surfaces},
+        point_pairs};
+
+    // Dynamic vs dynamic and dynamic vs anchored represent all the geometries
+    // that we can support with the point-pair fallback. Do those first.
+    dynamic_tree_.collide(&data, hydroelastic::CallbackWithFallback<T>);
+
+    FclCollide(dynamic_tree_, anchored_tree_, &data,
+               hydroelastic::CallbackWithFallback<T>);
+
+    // TODO(SeanCurtis-TRI): There is a special case where the error message is
+    //  incomprehensible. If someone _attempts_ to register a soft mesh, the
+    //  registration will broadcast a single warning, but no hydroleastic
+    //  representation will be created. If that mesh is ever in contact, the
+    //  error message will be that a _Box_ is missing a hydroelastic
+    //  representation. It really should say *mesh*. Somehow, we have to know
+    //  that the box is really the broadphase place-holder of a mesh. Update
+    //  proximity_engine_test.cc, ComputeContactSurfaceWithFallback when this
+    //  issue is resolved.
+
+    // dynamic_mesh_tree_ and anchored_mesh_tree_ contain meshes that *can't*
+    // fall back to point-pair (we don't support meshes in point-pair contact).
+    // So, we default to the strict hydroleastic. Each pair generated in the
+    // following broadphase calculations *must* include a mesh. If we can't
+    // compute a contact surface, we must fail.
+    FclCollide(dynamic_tree_, anchored_mesh_tree_, &data.data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_tree_, dynamic_mesh_tree_, &data.data,
+               hydroelastic::Callback<T>);
+
+    dynamic_mesh_tree_.collide(&data, hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_tree_, &data.data,
+               hydroelastic::Callback<T>);
+    FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data.data,
+               hydroelastic::Callback<T>);
   }
 
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
@@ -1124,6 +1191,13 @@ void ProximityEngine<T>::AddAnchoredGeometry(
 }
 
 template <typename T>
+void ProximityEngine<T>::UpdateRepresentationForNewProperties(
+    const InternalGeometry& geometry,
+    const ProximityProperties& new_properties) {
+  impl_->UpdateRepresentationForNewProperties(geometry, new_properties);
+}
+
+template <typename T>
 void ProximityEngine<T>::RemoveGeometry(GeometryId id, bool is_dynamic) {
   impl_->RemoveGeometry(id, is_dynamic);
 }
@@ -1207,6 +1281,15 @@ template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
   return impl_->ComputeContactSurfaces(X_WGs);
+}
+
+template <typename T>
+void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+    const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+    std::vector<ContactSurface<T>>* surfaces,
+    std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+  return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
+                                                   point_pairs);
 }
 
 template <typename T>

@@ -5,6 +5,8 @@
 #include <set>
 #include <unordered_map>
 
+#include <fmt/format.h>
+
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -33,7 +35,42 @@ symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
     return e <= ub;
   }
 }
+
+std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
+                                const std::string& name,
+                                const VectorX<symbolic::Variable>& vars,
+                                bool equality) {
+  os << name;
+  VectorX<symbolic::Expression> e(constraint.num_constraints());
+  constraint.Eval(vars, &e);
+  // Append the description (when provided).
+  const std::string& description = constraint.get_description();
+  if (!description.empty()) {
+    os << " described as '" << description << "'";
+  }
+  os << "\n";
+  for (int i = 0; i < constraint.num_constraints(); ++i) {
+    if (equality) {
+      os << e(i) << " == " << constraint.upper_bound()(i) << "\n";
+    } else {
+      os << constraint.lower_bound()(i) << " <= " << e(i)
+         << " <= " << constraint.upper_bound()(i) << "\n";
+    }
+  }
+  return os;
+}
 }  // namespace
+
+void Constraint::check(int num_constraints) const {
+  if (lower_bound_.size() != num_constraints ||
+      upper_bound_.size() != num_constraints) {
+    throw std::invalid_argument(
+        fmt::format("Constraint {} expects lower and upper bounds of size {}, "
+                    "got lower bound of size {} and upper bound of size {}.",
+                    this->get_description(), num_constraints,
+                    lower_bound_.size(), upper_bound_.size()));
+  }
+}
 
 symbolic::Formula Constraint::DoCheckSatisfied(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x) const {
@@ -71,9 +108,16 @@ void QuadraticConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
+std::ostream& QuadraticConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "QuadraticConstraint", vars, false);
+}
+
 template <typename DerivedX, typename ScalarY>
 void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
+  using std::pow;
+
   const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
@@ -145,6 +189,16 @@ void LinearConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
+std::ostream& LinearConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
+}
+
+std::ostream& LinearEqualityConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
+}
+
 template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
@@ -165,6 +219,11 @@ void BoundingBoxConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
+}
+
+std::ostream& BoundingBoxConstraint::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayConstraint(*this, os, "BoundingBoxConstraint", vars, false);
 }
 
 template <typename DerivedX, typename ScalarY>

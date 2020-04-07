@@ -157,20 +157,13 @@ namespace multibody {
 /// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
 /// checks are not performed when T is symbolic::Expression.
 ///
-/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 /// Various methods in this class require numerical (not symbolic) data types.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
+/// @tparam_default_scalar
 template <typename T>
 class RotationalInertia {
  public:
-  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
   /// Constructs a rotational inertia that has all its moments/products of
   /// inertia equal to NaN (helps quickly detect uninitialized values).
@@ -555,9 +548,14 @@ class RotationalInertia {
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
+    using std::max;
     const double precision = 10 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
-    const T epsilon = precision * max_possible_inertia_moment;
+
+    // In order to avoid false negatives for inertias close to zero we use, in
+    // addition to a relative tolerance of "precision", an absolute tolerance
+    // equal to "precision" as well.
+    const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
@@ -1065,8 +1063,6 @@ std::ostream& operator<<(std::ostream& o,
   }
   return o;
 }
-
-DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(RotationalInertia)
 
 }  // namespace multibody
 }  // namespace drake
