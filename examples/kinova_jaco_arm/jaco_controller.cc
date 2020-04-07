@@ -42,8 +42,9 @@ namespace kinova_jaco_arm {
 namespace {
 using manipulation::planner::RobotPlanInterpolator;
 
-const char* const kIiwaUrdf =
-    "drake/manipulation/models/jaco_description/urdf/j2s7s300.urdf";
+const char* const kJacoUrdf =
+    "drake/manipulation/models/jaco_description/urdf/"
+    "j2s7s300_sphere_collision.urdf";
 const char* const kLcmStatusChannel = "KINOVA_JACO_STATUS";
 const char* const kLcmCommandChannel = "KINOVA_JACO_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
@@ -57,7 +58,7 @@ int DoMain() {
           kLcmPlanChannel, &lcm));
 
   const std::string urdf =
-      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
+      (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kJacoUrdf));
   auto plan_source = builder.AddSystem<RobotPlanInterpolator>(urdf);
 
   builder.Connect(plan_sub->get_output_port(),
