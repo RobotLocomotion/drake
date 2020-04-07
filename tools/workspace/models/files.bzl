@@ -63,3 +63,8 @@ def skydio_2_mesh_files():
         "skydio_2/skydio_2.png",
         "skydio_2/LICENSE",
     ]
+
+def dishes_files():
+    return [
+        "dishes/bowls/evo_bowl_no_mtl.obj",
+    ]

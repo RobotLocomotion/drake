@@ -5,6 +5,7 @@ exports_files(
         "ycb/meshes/**",
         "franka_description/**",
         "skydio_2/**",
+        "dishes/**",
     ]) or fail("No match"),
     visibility = ["//visibility:public"],
 )
