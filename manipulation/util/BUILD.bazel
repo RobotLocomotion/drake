@@ -38,6 +38,7 @@ drake_cc_library(
 drake_py_binary(
     name = "geometry_inspector",
     srcs = ["geometry_inspector.py"],
+    data = ["//manipulation/models:install_data"],
     deps = [
         "//bindings/pydrake",
     ],
