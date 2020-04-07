@@ -126,7 +126,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
       if (get_dense_output()) {
         // Take dense output one step back to undo
         // the last integration step.
-        get_mutable_dense_output()->Rollback();
+        dense_output_->RemoveFinalSegment();
       }
     }
   } while (!step_succeeded);
@@ -436,11 +436,6 @@ typename IntegratorBase<T>::StepResult
     }
   } else {
     full_step = StepOnceErrorControlledAtMost(h);
-  }
-  if (get_dense_output()) {
-    // Consolidates current dense output, merging the step
-    // taken into its internal representation.
-    get_mutable_dense_output()->Consolidate();
   }
 
   // Update generic statistics.

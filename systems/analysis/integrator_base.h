@@ -5,15 +5,14 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
-#include "drake/systems/analysis/dense_output.h"
-#include "drake/systems/analysis/hermitian_dense_output.h"
-#include "drake/systems/analysis/stepwise_dense_output.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -97,8 +96,7 @@ namespace systems {
  error-controlled step integration (for a given accuracy), dense output
  support is available (through IntegratorBase::StartDenseIntegration() and
  IntegratorBase::StopDenseIntegration() methods). The accuracy and performance
- of these outputs may vary with each integration scheme implementation. Unless
- specified otherwise, an HermitianDenseOutput is provided by default.
+ of these outputs may vary with each integration scheme implementation.
 
  @section references References
   - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
@@ -167,8 +165,7 @@ class IntegratorBase {
    */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
-      : system_(system), context_(context),
-        derivatives_(system.AllocateTimeDerivatives()) {
+      : system_(system), context_(context) {
     initialization_done_ = false;
   }
 
@@ -1250,16 +1247,16 @@ class IntegratorBase {
     if (get_dense_output()) {
       throw std::logic_error("Dense integration has been started already.");
     }
-    dense_output_ = DoStartDenseIntegration();
+    dense_output_ = std::make_unique<trajectories::PiecewisePolynomial<T>>();
   }
 
   /**
-   Returns a const pointer to the integrator's current DenseOutput instance,
-   holding a representation of the continuous state trajectory since the last
-   StartDenseIntegration() call. This is suitable to query the integrator's
-   current dense output, if any (may be nullptr).
+   Returns a const pointer to the integrator's current PiecewisePolynomial
+   instance, holding a representation of the continuous state trajectory since
+   the last StartDenseIntegration() call. This is suitable to query the
+   integrator's current dense output, if any (may be nullptr).
    */
-  const DenseOutput<T>* get_dense_output() const {
+  const trajectories::PiecewisePolynomial<T>* get_dense_output() const {
     return dense_output_.get();
   }
 
@@ -1268,7 +1265,7 @@ class IntegratorBase {
    to the caller.
 
    @remarks This process is irreversible.
-   @returns A DenseOutput instance, i.e. a representation of the
+   @returns A PiecewisePolynomial instance, i.e. a representation of the
             continuous state trajectory of the system being integrated
             that can be evaluated at any time within its extension. This
             representation is defined starting at the context time of the
@@ -1280,7 +1277,7 @@ class IntegratorBase {
          the integrator anymore.
    @throws std::logic_error if any of the preconditions is not met.
    */
-  std::unique_ptr<DenseOutput<T>> StopDenseIntegration() {
+  std::unique_ptr<trajectories::PiecewisePolynomial<T>> StopDenseIntegration() {
     if (!dense_output_) {
       throw std::logic_error("No dense integration has been started.");
     }
@@ -1474,26 +1471,14 @@ class IntegratorBase {
    */
   virtual void DoReset() {}
 
-  // TODO(hidmic): Make pure virtual and override on each subclass, as
-  // the 'optimal' dense output scheme is only known by the specific
-  // integration scheme being implemented.
   /**
-   Derived classes can override this method to provide a continuous
-   extension of their own when StartDenseIntegration() is called.
-   */
-  virtual
-  std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
-    return std::make_unique<HermitianDenseOutput<T>>();
-  }
-
-  /**
-   Returns a mutable pointer to the internally-maintained StepwiseDenseOutput
+   Returns a mutable pointer to the internally-maintained PiecewisePolynomial
    instance, holding a representation of the continuous state trajectory since
    the last time StartDenseIntegration() was called. This is useful for
    derived classes to update the integrator's current dense output, if any
    (may be nullptr).
    */
-  StepwiseDenseOutput<T>* get_mutable_dense_output() {
+  trajectories::PiecewisePolynomial<T>* get_mutable_dense_output() {
     return dense_output_.get();
   }
 
@@ -1538,31 +1523,26 @@ class IntegratorBase {
    */
   virtual bool DoDenseStep(const T& h) {
     const ContinuousState<T>& state = context_->get_continuous_state();
-    // Makes a null (i.e. zero size) dense output step with initial
-    // time and state, before the actual integration step. This will later
-    // be extended with the final values after the step.
-    system_.CalcTimeDerivatives(*context_, derivatives_.get());
-    typename HermitianDenseOutput<T>::IntegrationStep step(
-        context_->get_time(), state.CopyToVector(),
-        derivatives_->CopyToVector());
+
+    // Note: It is tempting to avoid this initial call to EvalTimeDerivatives,
+    // and just use AppendCubicHermiteSegment below.  But this version is robust
+    // to e.g. UnrestrictedUpdates or any other changes that could occur between
+    // calls to DoDenseStep().  And we hope that the caching in
+    // EvalTimeDerivatives() avoids any cost for the easy case.
+    const T start_time = context_->get_time();
+    VectorX<T> start_state, start_derivatives;
+    start_state = state.CopyToVector();
+    start_derivatives = EvalTimeDerivatives(*context_).CopyToVector();
 
     // Performs the integration step.
     if (!DoStep(h)) return false;
 
-    // Extends dense output step to the end of the integration step, using
-    // the post-step values.
-    system_.CalcTimeDerivatives(*context_, derivatives_.get());
-    step.Extend(context_->get_time(), state.CopyToVector(),
-                derivatives_->CopyToVector());
-
-    // Retrieves dense output. This cast is safe if the base implementations
-    // of this method and DoStartDenseIntegration() are in use. Otherwise, a
-    // different dense output type may have been allocated and the following
-    // cast will throw.
-    HermitianDenseOutput<T>& dense_output =
-        dynamic_cast<HermitianDenseOutput<T>&>(*get_mutable_dense_output());
-    // Updates dense output with the integration step taken.
-    dense_output.Update(std::move(step));
+    const ContinuousState<T>& derivatives = EvalTimeDerivatives(*context_);
+    dense_output_->ConcatenateInTime(
+        trajectories::PiecewisePolynomial<T>::CubicHermite(
+            std::vector<T>({start_time, context_->get_time()}),
+            {start_state, state.CopyToVector()},
+            {start_derivatives, derivatives.CopyToVector()}));
     return true;
   }
 
@@ -1653,7 +1633,7 @@ class IntegratorBase {
   Context<T>* context_{nullptr};  // The trajectory Context.
 
   // Current dense output.
-  std::unique_ptr<StepwiseDenseOutput<T>> dense_output_{nullptr};
+  std::unique_ptr<trajectories::PiecewisePolynomial<T>> dense_output_{nullptr};
 
   // Runtime variables.
   // For variable step integrators, this is set at the end of each step to guide
@@ -1700,11 +1680,6 @@ class IntegratorBase {
 
   // State copy for reversion during error-controlled integration.
   VectorX<T> xc0_save_;
-
-  // A continuous state derivatives scratchpad for the default continuous
-  // extension implementation.
-  // TODO(hidmic): Remove when DoDenseStep() is made pure virtual.
-  std::unique_ptr<ContinuousState<T>> derivatives_;
 
   // The error estimate computed during integration with error control.
   std::unique_ptr<ContinuousState<T>> err_est_;

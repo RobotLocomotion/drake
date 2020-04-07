@@ -135,7 +135,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_NEAR(x_final_true, x_final, xtol);
 
   // Reclaim dense output and prevent further updates to it.
-  std::unique_ptr<DenseOutput<double>> dense_output =
+  std::unique_ptr<trajectories::PiecewisePolynomial<double>> dense_output =
       integrator.StopDenseIntegration();
 
   // Verify that the built dense output is valid.
@@ -143,7 +143,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
     double x_true, unused_v_true;
     spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
                                       t, &x_true, &unused_v_true);
-    const VectorX<double> x = dense_output->Evaluate(t);
+    const VectorX<double> x = dense_output->value(t);
     EXPECT_NEAR(x_true, x(0), xtol);
   }
 
