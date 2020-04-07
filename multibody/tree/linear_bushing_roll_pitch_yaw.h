@@ -297,8 +297,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // calculating the `θ λ` AngleAxis from R_AC and then forming R_AB_expected
   // from the AngleAxis `θ/2 λ`.  The function below throws an exception if
   // R_AB does not match R_AB_expected to near machine precision.
-  static void ThrowIfInvalidHalfAngleAxis(const math::RotationMatrix<T> R_AC,
-                                          const math::RotationMatrix<T> R_AB);
+  static void ThrowIfInvalidHalfAngleAxis(const math::RotationMatrix<T>& R_AC,
+                                          const math::RotationMatrix<T>& R_AB);
 
   // Uses the rotation matrix R_AC that relates frames A and C to calculate the
   // RollPitchYaw angles `[roll pitch yaw] = [q₀ q₁ q₂]`, with the range

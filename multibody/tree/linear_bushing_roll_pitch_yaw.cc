@@ -197,7 +197,7 @@ math::RotationMatrix<T> LinearBushingRollPitchYaw<T>::CalcR_AB(
 
 template <typename T>
 void LinearBushingRollPitchYaw<T>::ThrowIfInvalidHalfAngleAxis(
-    const math::RotationMatrix<T> R_AC, const math::RotationMatrix<T> R_AB) {
+    const math::RotationMatrix<T>& R_AC, const math::RotationMatrix<T>& R_AB) {
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   const Eigen::AngleAxis<T> angleAxis_AC = R_AC.ToAngleAxis();
   const T half_theta = 0.5 * angleAxis_AC.angle();
