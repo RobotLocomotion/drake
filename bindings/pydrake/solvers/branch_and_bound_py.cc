@@ -17,49 +17,42 @@ PYBIND11_MODULE(branch_and_bound, m) {
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<MixedIntegerBranchAndBound>(
-      m, "MixedIntegerBranchAndBound", doc.MixedIntegerBranchAndBound.doc)
-      .def(py::init(
-               [](const MathematicalProgram& prog, const SolverId& solver_id) {
-                 return std::unique_ptr<MixedIntegerBranchAndBound>(
-                     new MixedIntegerBranchAndBound(prog, solver_id));
-               }),
-          py::arg("prog"), py::arg("solver_id"),
-          doc.MixedIntegerBranchAndBound.ctor.doc)
-      .def("Solve", &MixedIntegerBranchAndBound::Solve,
-          doc.MixedIntegerBranchAndBound.Solve.doc)
-      .def("GetOptimalCost", &MixedIntegerBranchAndBound::GetOptimalCost,
-          doc.MixedIntegerBranchAndBound.GetOptimalCost.doc)
-      .def("GetSubOptimalCost",
-          [](const MixedIntegerBranchAndBound& self, int nth_suboptimal_cost) {
-            return self.GetSubOptimalCost(nth_suboptimal_cost);
-          },
-          py::arg("nth_suboptimal_cost"),
-          doc.MixedIntegerBranchAndBound.GetSubOptimalCost.doc)
-      .def("GetSolution",
-          [](const MixedIntegerBranchAndBound& self,
-              const symbolic::Variable& mip_var, int nth_best_solution) {
-            return self.GetSolution(mip_var, nth_best_solution);
-          },
-          py::arg("mip_var"), py::arg("nth_best_solution") = 0,
-          doc.MixedIntegerBranchAndBound.GetSolution
-              .doc_2args_mip_var_nth_best_solution)
-      .def("GetSolution",
-          [](const MixedIntegerBranchAndBound& self,
-              const VectorXDecisionVariable& mip_vars, int nth_best_solution) {
-            return self.GetSolution(mip_vars, nth_best_solution);
-          },
-          py::arg("mip_var"), py::arg("nth_best_solution") = 0,
-          doc.MixedIntegerBranchAndBound.GetSolution
-              .doc_2args_constEigenMatrixBase_int)
-      .def("GetSolution",
-          [](const MixedIntegerBranchAndBound& self,
-              const MatrixXDecisionVariable& mip_vars, int nth_best_solution) {
-            return self.GetSolution(mip_vars, nth_best_solution);
-          },
-          py::arg("mip_var"), py::arg("nth_best_solution") = 0,
-          doc.MixedIntegerBranchAndBound.GetSolution
-              .doc_2args_constEigenMatrixBase_int);
+  {
+    using Class = MixedIntegerBranchAndBound;
+    constexpr auto& cls_doc = doc.MixedIntegerBranchAndBound;
+    py::class_<Class>(m, "MixedIntegerBranchAndBound", cls_doc.doc)
+        .def(py::init<const MathematicalProgram&, const SolverId&>(),
+            py::arg("prog"), py::arg("solver_id"), cls_doc.ctor.doc)
+        .def("Solve", &Class::Solve, cls_doc.Solve.doc)
+        .def("GetOptimalCost", &Class::GetOptimalCost,
+            cls_doc.GetOptimalCost.doc)
+        .def("GetSubOptimalCost",
+            [](const Class& self, int nth_suboptimal_cost) {
+              return self.GetSubOptimalCost(nth_suboptimal_cost);
+            },
+            py::arg("nth_suboptimal_cost"), cls_doc.GetSubOptimalCost.doc)
+        .def("GetSolution",
+            [](const Class& self, const symbolic::Variable& mip_var,
+                int nth_best_solution) {
+              return self.GetSolution(mip_var, nth_best_solution);
+            },
+            py::arg("mip_var"), py::arg("nth_best_solution") = 0,
+            cls_doc.GetSolution.doc_2args_mip_var_nth_best_solution)
+        .def("GetSolution",
+            [](const Class& self, const VectorXDecisionVariable& mip_vars,
+                int nth_best_solution) {
+              return self.GetSolution(mip_vars, nth_best_solution);
+            },
+            py::arg("mip_vars"), py::arg("nth_best_solution") = 0,
+            cls_doc.GetSolution.doc_2args_constEigenMatrixBase_int)
+        .def("GetSolution",
+            [](const Class& self, const MatrixXDecisionVariable& mip_vars,
+                int nth_best_solution) {
+              return self.GetSolution(mip_vars, nth_best_solution);
+            },
+            py::arg("mip_vars"), py::arg("nth_best_solution") = 0,
+            cls_doc.GetSolution.doc_2args_constEigenMatrixBase_int);
+  }
 }
 
 }  // namespace pydrake
