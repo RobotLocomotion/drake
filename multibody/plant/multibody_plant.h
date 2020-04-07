@@ -3742,10 +3742,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
-  // 1. Register a frame for this body if not already done so. The body gets
-  //    associated with a FrameId.
-  // 2. Register geometry for the corresponding FrameId. This associates a
-  //    GeometryId with the body FrameId.
+  // 1. Register geometry for the corresponding FrameId associated with `body`.
+  // 2. Update the geometry_id_to_body_index_ map associating the new GeometryId
+  //    to the BodyIndex of `body`.
   // This assumes:
   // 1. Finalize() was not called on `this` plant.
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
