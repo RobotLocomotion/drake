@@ -367,6 +367,7 @@ drake_cc_library(
     srcs = ["branch_and_bound.cc"],
     hdrs = ["branch_and_bound.h"],
     deps = [
+        ":choose_best_solver",
         ":gurobi_solver",
         ":mathematical_program",
         ":scs_solver",
