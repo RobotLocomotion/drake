@@ -88,24 +88,28 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
   status.joint_position.resize(status.num_joints);
   status.joint_velocity.resize(status.num_joints);
   status.joint_torque.resize(status.num_joints);
+  status.joint_torque_external.resize(status.num_joints);
   status.joint_current.resize(status.num_joints);
   for (int i = 0; i < status.num_joints; i++) {
     status.joint_position[i] = i;
     status.joint_velocity[i] = i * 10;
     status.joint_torque[i] = i * 100;
-    status.joint_current[i] = i * 1000;
+    status.joint_torque_external[i] = i * 1000;
+    status.joint_current[i] = i * 10000;
   }
 
   status.num_fingers = kJacoDefaultArmNumFingers;
   status.finger_position.resize(status.num_fingers);
   status.finger_velocity.resize(status.num_fingers);
   status.finger_torque.resize(status.num_fingers);
+  status.finger_torque_external.resize(status.num_fingers);
   status.finger_current.resize(status.num_fingers);
   for (int i = 0; i < status.num_fingers; i++) {
     status.finger_position[i] = -i;
     status.finger_velocity[i] = -i * 10;
     status.finger_torque[i] = -i * 100;
-    status.finger_current[i] = -i * 1000;
+    status.finger_torque_external[i] = -i * 1000;
+    status.finger_current[i] = -i * 10000;
   }
 
   diagram->get_input_port(0).FixValue(context.get(), status);
@@ -120,8 +124,8 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
   lcmt_jaco_status status_out =
       output->get_data(0)->get_value<lcmt_jaco_status>();
 
-  // Force and current won't actually pass through since they're not
-  // part of the state in drake.
+  // TODO(sammy-tri) Force and current won't actually pass through.  Add
+  // appropriate input/output ports for those values.
   ASSERT_EQ(status.num_joints, status_out.num_joints);
   for (int i = 0; i < status.num_joints; i++) {
     EXPECT_DOUBLE_EQ(status.joint_position[i], status_out.joint_position[i]);

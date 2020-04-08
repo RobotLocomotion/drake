@@ -101,6 +101,9 @@ int DoMain() {
       builder.AddSystem(
           systems::lcm::LcmPublisherSystem::Make<drake::lcmt_jaco_status>(
           "KINOVA_JACO_STATUS", lcm, kJacoLcmStatusPeriod));
+  // TODO(sammy-tri) populate joint torque (and external torques).  External
+  // torques might want to wait until after #12631 is fixed or it could slow
+  // down the simulation significantly.
   auto status_sender = builder.AddSystem<JacoStatusSender>();
   builder.Connect(jaco_plant->get_state_output_port(jaco_id),
                   status_sender->get_input_port(0));
