@@ -563,8 +563,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @warning If t does not lie in the range that the polynomial is defined
    *          over, the polynomial will silently be evaluated at the closest
-   *          point to t. For example, `value(-1)` will return `value(0)` for
-   *          a polynomial defined over [0, 1].
+   *          point to t. For example, `value(-1)` will return `value(0)` for a
+   *          polynomial defined over [0, 1].
+   * @warning This method only evaluates the polynomial in the segment defined
+   *          by @p t.  If T=symbolic::Expression, then this method will return
+   *          only the symbolic::Expression for the current segment if @p t can
+   *          be cast to double or throw std::runtime_error if @p t cannot be
+   *          cast to double.
    * @warning See warning in @ref polynomial_construction_warning.
    */
   MatrixX<T> value(const T& t) const override {
@@ -576,8 +581,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * Evaluates the %PiecwisePolynomial derivative at the given time @p t.
    * Returns the nth derivative, where `n` is the value of @p derivative_order.
    *
-   * @warning See value() for details on what happens if t < start_time() or t >
-   * end_time().
+   * @warning This method comes with the same caveats as value(). See value().
    * @pre derivative_order must be non-negative.
    */
   MatrixX<T> EvalDerivative(const T& t, int derivative_order = 1) const;
