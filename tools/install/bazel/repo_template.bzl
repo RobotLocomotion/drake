@@ -54,7 +54,6 @@ def _drake_impl(repo_ctx):
     required_files = [
         "include/drake/common/drake_assert.h",
         "lib/libdrake.so",
-        "share/drake/setup/install_prereqs",
     ]
     for required_file in required_files:
         if not repo_ctx.path(str(prefix) + "/" + required_file).exists:
