@@ -174,16 +174,17 @@ pydrake bindings
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* tools: Use dReal 4.20.03.4 (`#12905`_)
-* tools: install: Fix drake_bazel_installed use in docker (`#13016`_)  # There's no particular need to insist that install_prereqs exists, and as it happens our Docker images do not contain it.
-* tools: jupyter_py: Add workaround / notes for common ZMQError flake on CI (`#12958`_)
-* tools: tools: Disable container_overflow checks under asan (`#12945`_)  # Because we use C++ binary libraries from the host OS (instead of compiling all C++ code from source) there can be false positives.
-* tools: workspace: Annotate repository rules with configure=True (`#12988`_)  # Rules that interrogate the host system (e.g., compiler or pkg-config paths) should be marked with "configure = True" so that "bazel sync --configure" knows where to look for possible changes. This is helpful to recover from homebrew include paths changing out from under us. Running "bazel sync" finds several typos in our repository.bzl files, now fixed.
-* tools: workspace: Upgrade buildifier to latest release 2.2.1 (`#12977`_)
-* tools: workspace: Upgrade ghc_filesystem to latest release 1.3.2 (`#12979`_)
-* tools: workspace: Upgrade meshcat family to latest (`#12993`_)  # Upgrade meshcat and meshcat_python to latest commit.
-* WORKSPACE,tools: workspace: Upgrade imported bazel rules to latest (`#12978`_)  # Upgrade bazel_skylib to latest release 0.9.0. Upgrade rules_pkg to latest release 0.2.5. Upgrade rules_python to latest commit. Respell a load() because lib.bzl is deprecated now.
-* geometry,setup,tools: Add opengl context and X11 dependency for use in render engine gl (`#12862`_)
+* Add new dependency on libx11-dev on Ubuntu; no change on macOS (`#12862`_)
+* Upgrade bazel_skylib to latest release 0.9.0 (`#12978`_)
+* Upgrade buildifier to latest release 2.2.1 (`#12977`_)
+* Upgrade dreal to latest release 4.20.03.4 (`#12905`_)
+* Upgrade ghc_filesystem to latest release 1.3.2 (`#12979`_)
+* Upgrade meshcat to latest commit (`#12993`_)
+* Upgrade meshcat_python to latest commit (`#12993`_)
+* Upgrade rules_pkg to latest release 0.2.5 (`#12978`_)
+* Upgrade rules_python to latest commit (`#12978`_)
+* Annotate repository rules with configure=True (`#12988`_)
+* Fix drake_bazel_installed use in docker (`#13016`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
