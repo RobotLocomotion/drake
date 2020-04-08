@@ -12,7 +12,7 @@ Breaking changes since v0.16.1
 
 These are breaking changes that did not undergo a deprecation period:
 
-* TBD
+* Add external torque fields for the jaco status message (`#13017`_)
 
 Changes since v0.16.1:
 ----------------------
@@ -145,10 +145,10 @@ Fixes
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* common: yaml: Add read support for merge keys (`#12924`_)  # See https://yaml.org/type/merge.html for details.
-* manipulation: Adds pyplot to geometry_inspector (`#12918`_)
-* examples,manipulation: Add external torque fields for the jaco status message (`#13017`_)  # This is a breaking change as the LCM message does not have a deprecation period.  Due to the lack of external users I think this is OK.
-* examples,manipulation: Add hand/arm only jaco 7dof models, along with sphere collision versions (`#13007`_)
+* Add hand/arm only jaco 7dof URDFs, along with sphere collision versions (`#13007`_)
+* Add external torque fields for the jaco status message (`#13017`_)
+* Add pyplot to geometry_inspector (`#12918`_)
+* Add yaml support for merge keys (`#12924`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -169,7 +169,6 @@ pydrake bindings
 * bindings: pybind11 docs: Monkey patch sphinx to get custom sorted docs (`#652aa392bf2841c5413d9eadde6d9883ec1213d7`_)
 * bindings: pydrake multibody: Add bindings for MultibodyPlant output ports (`#12883`_)  # * Add bindings for MultibodyPlant output ports
 * bindings: visualizer: add ConnectPlanarSceneGraphVisualizer (`#12961`_)  # a small amount of "sugar", but provides a nice parallelism with ConnectDrakeVisualizer also fixes the default visualizer system name
-* bindings: visualizer: hotfix for #12969 (`#12970`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
