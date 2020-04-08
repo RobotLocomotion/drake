@@ -153,22 +153,42 @@ Miscellaneous features and fixes
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
-* bindings: Add python binding for generic_costs and generic_constraints (`#13005`_)
-* bindings: Add slider-based controller for input ports (`#12925`_)  # Novel system in python for generating a set of Tkinter sliders for controlling the value of a vector-valued input port.
-* bindings: Bind missing functions for pendulum example (`#12940`_)
-* bindings: Bind simulator realtime rate accessors (`#12920`_)
-* bindings: Find obj files in PlanarSceneGraphVisualizer (`#12917`_)  # Throws file not found error if no obj exists (used to report "obj has no faces") If the mesh is requested with a non-obj extension, check for an .obj with the same name in the same directory.
-* bindings: Improve args and doc for pyplot_visualizer (`#12915`_)
-* bindings: Plot sub-level sets of symbolic::Expression (`#12854`_)  # generalizes beyond the polynomial of degree two case.
-* bindings: Refactor Python binding test for render engine gl (`#12861`_)  # This has been split up from render-gl-port to keep PR size down
-* bindings: Revert "pybind11 docs: Monkey patch sphinx to get custom sorted docs (#12787)" (`#12910`_)  # This reverts commit 2753ecdaefb2d775b90d6a0b6da66fc2537e80e2.
-* bindings: analysis: Add bindings for symbolic integrators (`#12922`_)
-* bindings: bind CopyToVector for ContinuousState (`#12865`_)  # to enable: ``` deriv = f.EvalTimeDerivatives(context).CopyToVector() ```
-* bindings: pybind11 docs: Fix sphinx patch for versions > 1.6.7 (`#12921`_)
-* bindings: pybind11 docs: Monkey patch sphinx to get custom sorted docs (`#12787`_)
-* bindings: pybind11 docs: Monkey patch sphinx to get custom sorted docs (`#652aa392bf2841c5413d9eadde6d9883ec1213d7`_)
-* bindings: pydrake multibody: Add bindings for MultibodyPlant output ports (`#12883`_)  # * Add bindings for MultibodyPlant output ports
-* bindings: visualizer: add ConnectPlanarSceneGraphVisualizer (`#12961`_)  # a small amount of "sugar", but provides a nice parallelism with ConnectDrakeVisualizer also fixes the default visualizer system name
+Newly bound
+
+* pydrake.examples.pendulum.PendulumInput.with_tau (`#12940`_)
+* pydrake.examples.pendulum.PendulumParams.with_damping (`#12940`_)
+* pydrake.examples.pendulum.PendulumParams.with_gravity (`#12940`_)
+* pydrake.examples.pendulum.PendulumParams.with_length (`#12940`_)
+* pydrake.examples.pendulum.PendulumParams.with_mass (`#12940`_)
+* pydrake.examples.pendulum.PendulumPlant.get_mutable_parameters (`#12940`_)
+* pydrake.examples.pendulum.PendulumPlant.get_mutable_state (`#12940`_)
+* pydrake.examples.pendulum.PendulumPlant.get_parameters (`#12940`_)
+* pydrake.examples.pendulum.PendulumPlant.get_state (`#12940`_)
+* pydrake.examples.pendulum.PendulumState.with_theta (`#12940`_)
+* pydrake.examples.pendulum.PendulumState.with_thetadot (`#12940`_)
+* pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
+* pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
+* pydrake.multibody.plant.MultibodyPlant.get_reaction_forces_output_port (`#12883`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_constraints (`#13005`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_costs (`#13005`_)
+* pydrake.symbolic.Expression.is_polynomial (`#12854`_)
+* pydrake.systems.analysis.IntegratorBase for more scalar types (`#12922`_)
+* pydrake.systems.analysis.RungeKutta2Integrator for more scalar types (`#12922`_)
+* pydrake.systems.analysis.RungeKutta3Integrator for more scalar types (`#12922`_)
+* pydrake.systems.analysis.Simulator for more scalar types (`#12922`_)
+* pydrake.systems.analysis.Simulator.get_actual_realtime_rate (`#12920`_)
+* pydrake.systems.analysis.Simulator.get_target_realtime_rate (`#12920`_)
+* pydrake.systems.framework.ContinuousState.CopyToVector (`#12865`_)
+
+New features
+* Add SystemSliders Tkinter-based controller for vector input ports (`#12925`_)
+* Add ConnectPlanarSceneGraphVisualizer sugar (`#12961`_)
+
+Fixes
+* API docs now show constructors first (`#12787`_, `#12910`_, `#12921`_)
+* Find fallback obj files in PlanarSceneGraphVisualizer (`#12917`_)
+* Improve args and doc for pyplot_visualizer (`#12915`_)
+* Plot sub-level sets in pydrake.visualization.plotting (`#12854`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
