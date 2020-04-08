@@ -85,6 +85,142 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
 Philip E. Gill and Elizabeth Wong for their kind support.
 
+To be filed
+-----------
+
+* .gitignore: add /.vscode/ to .gitignore (`#12943`_)  # CLion's lack of full symbol support and constant freezing is driving me to try another.
+* .gitignore: ignore .history -- for vscode + gitkraken workflow (gitkraken doesn't support global .gitignore) (`#12985`_)
+* .gitignore: ignore /.vscode instead of /.vscode/ (`#12956`_)  # because it turns out that having .vscode symlinked to a remote directory simplifies my multi-machine workflow.
+* WORKSPACE,tools: workspace: Upgrade imported bazel rules to latest (`#12978`_)  # Upgrade bazel_skylib to latest release 0.9.0. Upgrade rules_pkg to latest release 0.2.5. Upgrade rules_python to latest commit. Respell a load() because lib.bzl is deprecated now.
+* attic,common,manipulation,systems: trajectories: rename knots to samples (`#12939`_)  # We've had a long-running incorrect use of notation in our trajectory code. Correct: - breaks and knots both mean the time indices. - sample points (or sometimes "control points") indicate the values at those times. We've been writing e.g. Cubic(breaks, knots). I've changed all instances (apart from the IK code) to replace knots with either breaks (when time was intended) or samples (when the values were intended). Deprecating pybind argument names... woohoo!
+* bindings: Add python binding for generic_costs and generic_constraints (`#13005`_)
+* bindings: Add slider-based controller for input ports (`#12925`_)  # Novel system in python for generating a set of Tkinter sliders for controlling the value of a vector-valued input port.
+* bindings: Bind missing functions for pendulum example (`#12940`_)
+* bindings: Bind simulator realtime rate accessors (`#12920`_)
+* bindings: Find obj files in PlanarSceneGraphVisualizer (`#12917`_)  # Throws file not found error if no obj exists (used to report "obj has no faces") If the mesh is requested with a non-obj extension, check for an .obj with the same name in the same directory.
+* bindings: Improve args and doc for pyplot_visualizer (`#12915`_)
+* bindings: Plot sub-level sets of symbolic::Expression (`#12854`_)  # generalizes beyond the polynomial of degree two case.
+* bindings: Refactor Python binding test for render engine gl (`#12861`_)  # This has been split up from render-gl-port to keep PR size down
+* bindings: Revert "pybind11 docs: Monkey patch sphinx to get custom sorted docs (#12787)" (`#12910`_)  # This reverts commit 2753ecdaefb2d775b90d6a0b6da66fc2537e80e2.
+* bindings: analysis: Add bindings for symbolic integrators (`#12922`_)
+* bindings: bind CopyToVector for ContinuousState (`#12865`_)  # to enable: ``` deriv = f.EvalTimeDerivatives(context).CopyToVector() ```
+* bindings: pybind11 docs: Fix sphinx patch for versions > 1.6.7 (`#12921`_)
+* bindings: pybind11 docs: Monkey patch sphinx to get custom sorted docs (`#12787`_)
+* bindings: pybind11 docs: Monkey patch sphinx to get custom sorted docs (`#652aa392bf2841c5413d9eadde6d9883ec1213d7`_)
+* bindings: pydrake multibody: Add bindings for MultibodyPlant output ports (`#12883`_)  # * Add bindings for MultibodyPlant output ports
+* bindings: visualizer: add ConnectPlanarSceneGraphVisualizer (`#12961`_)  # a small amount of "sugar", but provides a nice parallelism with ConnectDrakeVisualizer also fixes the default visualizer system name
+* bindings: visualizer: hotfix for #12969 (`#12970`_)
+* common,examples,manipulation,systems: trajectories: more informative names for cubic spline generators (`#12939`_)  # Cubic(breaks, samples, bool periodic) => CubicWithContinuousSecondDerivatives Cubic(breaks, samples, sample_dot_start, sample_dot_end) => CubicWithContinuousSecondDerivatives Cubic(breaks, samples, samples_dot) => CubicHermite Pchip => CubicShapePreserving Resolves #12941
+* common,examples: trajectories: support default scalars in PiecewisePolynomial (`#12991`_)  # No virtual methods nor type-specific shenanigans this time.  Just straight up double => T (or const T&, ...). I've deprecated a typedef that was used only sometimes and imho obscured readability rather than helped it.
+* common,geometry,multibody,solvers: Move Polynomial and TrigPoly into drake namespace (`#12946`_)
+* common,math: Add BsplineBasis and BsplineTrajectory classes (`#11990`_)
+* common,math: Remove deprecated code 2020-04-01 (`#12974`_)
+* common,solvers,systems: Make drake::symbolic::Expression::ToPolynomial => ::ToPolynomial (`#12950`_)  # * Add drake::Polynomial::FromExpression - Deprecate drake::symbolic::Expression::ToPolynomial.
+* common,solvers: cleanup: use typename T in polynomial classes (`#12948`_)  # instead of CoefficientType and a multitude of typedefs; now closer to comforming to drake standard notation.
+* common: Add Polynomial::CoefficientsAlmostEqual function (`#12853`_)  # A syntax sugar to compare if two polynomials are almost equal.
+* common: Add symbolic::IsAffine (`#12933`_)
+* common: Add symbolic::Polynomial::SetIndeterminates (`#12902`_)
+* common: Adds Trajectory::vector_values (`#12855`_)  # This is a little sugar to make it easier to evaluate a trajectory at many times in a single call. (it's particularly helpful in python).
+* common: common: support default scalars in drake::Polynomial (`#12973`_)
+* common: test_utilities: Promote deprecations to errors in pydrake unit tests (`#12874`_)  # This used to be the case for python2, but was lost in the transition to python3 due to changes to unittest.main semantics.
+* common: trajectories:  Add tests and documentation on the behavior of PiecewisePolynomial<Expression> (`#13011`_)
+* common: trajectories: Add ScaleTime to PiecewisePolynomial (`#12966`_)  # Got a little hairy, but I needed to handle the case with scale = -1.0 because I need this for the tvlqr implementation.  (I need to integrate the riccati equation backwards in time, but our simulators don't support it, so I have to reverse the solution).
+* common: trajectories: add derivative methods to Polynomial, PiecewisePolynomial (`#12951`_)  # Methods to evaluate the derivatives at a point (with out have to make a new object that is the derivative of the original).
+* common: trajectories: adds incremental construction of CubicHermite (`#12952`_)  # This will be used in the integrators to build the "dense output".
+* common: trajectories: support default scalars in PiecewiseTrajectory (`#12986`_)  # note: the signature of one virtual method changed in a way that I did not know how to deprecate properly: ``` MatrixX<T> value(double) const ``` is now ``` MatrixX<T> value(const T& t) const ``` and derived classes will need to update this to compile.  (unfortunately, the compiler gives a relatively verbose and unhelpful stream of errors because the derived classes become abstract classes)
+* common: yaml: Add read support for merge keys (`#12924`_)  # See https://yaml.org/type/merge.html for details.
+* doc: Release notes v0.16.1 (`#12856`_)  # Also fixes punctuation in prior release notes' snopt boilerplate.
+* examples,geometry,multibody: [geometry] Adding soft half space into contact query (`#12975`_)  # - Introduce the soft half space hydroelastic representation. - Add dispatch logic for soft half space-rigid mesh. - updates the rolling sphere demo so it can exercise the soft half space.
+* examples,geometry: Enable use of rigid half space in hydroelastic contact (`#12901`_)  # Previous commits introduced the mathematical basis for intersecting a half space boundary plane with a tetrahedron. This builds on that atomic operation: - Allow instantiation of hydroelastic representation of rigid half space. - Define internal representation of rigid half space. - Evaluation of ContactSurface from intersection of VolumeMesh with rigid half space. - restore the rolling sphere demo to use a rigid half space as ground instead of the box previously used.
+* examples,lcmtypes: Add external torque fields for the jaco status message (`#13017`_)  # This is a breaking change as the LCM message does not have a deprecation period.  Due to the lack of external users I think this is OK.
+* examples,manipulation: Add hand/arm only jaco 7dof models, along with sphere collision versions (`#13007`_)
+* geometry,manipulation,math,solvers,systems: Format C-style comments correctly (`#12990`_)  # An upcoming cpplint revision will flag these violations automatically: - line length - ending in whitespace - inconsistent alignment
+* geometry,multibody,systems: framework: Update internal for ValidateContext rename (`#12891`_)  # In 54717e9aa3dce593a2fd3277de3c7575351834e8 we added a fast new method to SystemBase for validating contexts, and deprecated the old ones.  However, one old method was also exposed via internal::SystemMessageInterface but the commit did not update that API.  We do that here now. This turns up a bug in unit test code where a MultibodyPlant was losing its system_id during transmogrification, because we were accidentally transmogrifying it implicitly(!) while passing it into a function, because MultibodyPlant's scalar-converting copy constructor was not marked explicit. This is very bad, so we also add explicit to MultibodyPlant now. This is a breaking change but well worth it. We also grep the code for any other missing explicit on such constructors, fixing just the one on GeometryState.
+* geometry,setup,tools: Add opengl context and X11 dependency for use in render engine gl (`#12862`_)
+* geometry,tools: [render] Modify vtk cube texture coordinate generation (`#12972`_)  # * Modify vtk cube texture coordinate generation The default vtk cube source produces texture coordinates based on the size *and* position of the cube in the geometry frame. More or less, the vertex position becomes a uv coordinate (projected onto one of six planes). This has several undesirable properties: 1. Small boxes will only be mapped with small portions of the texture. 2. Large boxes will have the texture tiled multiple times. This introduces a new cube geometry that is equivalent to the vtk cube source, except it defaults to the texture being stretched over each face, with the possibility of tiling it via a (currently hidden) uv_scale property. It also removes all mention of the vtkCubeSource.
+* geometry: Add compute contact surface computation to mesh half space code (`#12954`_)  # This adds one more API where an actual ContactSurface is computed (not just the mesh of the contact surface).
+* geometry: Add documentation for alternate bvh heuristics (`#12860`_)  # to capture the work done on using the volume heuristic as an alternate splitting algorithm
+* geometry: Build and lint fixes for the OpenGL render engine (`#12850`_)
+* geometry: Refactor make box mesh code (`#12998`_)  # If the make_box_mesh.h file is included into multiple compilation units all of the in-header functions get compiled into each unit. Many of the functions are declared `static` so they don't collide. However, one is not and that actually causes linker-errors. Rather than just declaring the single offending function static/inline, this moves the implementation into a .cc file to improve overall compilation time. There are three functions that only exist to serve the implementation of the mesh generation. Their declarations have been kept in the header file because they are directly tested in make_box_mesh_test. Also, the function comments were changed from /** */ to /* */ reflecting their non-doxygen, internal:: status. Otherwise, this introduces no new code and doesn't change the text of any comments.
+* geometry: [geometry] Soft half space - rigid mesh contact must cull backfaces (`#12976`_)  # * Soft half space - rigid mesh contact must cull backfaces For the same reason we cull faces in the contact surface mesh between soft and rigid meshes, the potential contact surface between rigid mesh and soft half space requires the same functionality. This commit: - Refactors the core culling logic for reuse. - Adds the culling to mesh - half space intersection - Adds a test showing culling is happening.
+* geometry: [geometry] Utility for adding polygon to contact surface handles degeneracies (`#12909`_)  # This was born of a need to handle degenerate polygons (polygons with edges of length zero). It invited a revisiting of what the invariants on the parameters should be. So, we handle degeneracies and provide a debug-build analysis to help protect the function from bad values. All of this is now under test. 1. Add DRAKE_ASSERT_VOID to validate inputs 1. Confirm that the normal vector has meanginful length. 2. Confirm that it is sufficiently perpendicular to the plane. 3. Confirm polygon is planar. 2. Document these prerequisites and indication that they will (somewhat be tested in debug builds). 3. Better handle degenerate polygons -- i.e., if it has zero area, don't return a centroid that is all NaNs. 4. Moving the functionality into a new .cc file.
+* geometry: [geometry] rename internal::Plane to internal::PosedHalfSpace (`#12820`_)  # Plane was originally internal::HalfSpace. It had previously pulled out to be used more widely. To avoid collision with the geometry::HalfSpace name it was renamed Plane. However, this led to confusion due to the fact that it was reporting a *signed distance*. The resolution: keep the definition of internal::Plane but give it "height" semantics (indicating distance "above" or "below" the plane). Also include a "posed half frame" (defined by its boundary plane). This will allow us to pose a half space or plane in an arbitrary frame, but far more clearly communicate the semantics of the intersections (planes have no volume but half spaces have infinite volume). This performs the renaming, updates usages and documentation.
+* geometry: [geometry] update mesh-half space intersection for full hydroleastic compatibility (`#12935`_)  # This includes the following significant changes: - Move implementaiton into .cc file. - Move functions into internal:: namespce - The resultant contact surface *mesh* is defined in the world frame. - Every intersected polygon uses the common centroid-generating algorithm for adding itself into the data. - Modify the interface to be compatible with broadphase culling. - Modification that input meshes are *strictly* double-valued. - Found and corrected indexing error; face-local indices [0, 3) were being passed to access mesh-local vertex positions (indexed in the range [0, N)). This was discovered only indirectly in debug build because the polygon constructed had the wrong normal compared to the face it came from.
+* geometry: gl_renderer: Disable opengl_context_test under memcheck (`#12963`_)
+* geometry: gl_renderer: Refactor for better stack traces (`#12964`_)  # * gl_renderer: Provide real function for glXGetProcAddressARB When calling functions via indirect lookup, it is helpful for both readability and debug-ability to give them a manifest name so that programming tools can report them in the call stack. Also add (or strengthen) some assertions for improved debugging.
+* manipulation: Adds pyplot to geometry_inspector (`#12918`_)
+* math,multibody: Create bushing force element with 3D rotational (roll-pitch-yaw) and translational stiffness and damping (`#11946`_)
+* math,systems: Adds utility to "balance" two quadratic forms (`#12875`_)  # and uses it in RegionOfAttraction. Rederived (much more carefully/thoroughly) from https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/matlab/util/balanceQuadForm.m with more documentation and testing. Adds a test that failed on Mosek without balancing, but passes with balancing. * generalize from P>0 to P full-rank
+* math,systems: Support region of attraction when Vdot is indefinite at the origin (`#12864`_)
+* math: improve documentation for BalanceQuadraticForms (`#12882`_)  # to distinguish between absolute and relative scaling.
+* multibody,systems: Rename `InitialValueProblem::SpecifiedValues` to `ODEContext` (`#12931`_)  # and similar for ScalarInitialValueProblem and AntiderivativeFunction because SpecifiedValues is very generic, and drake already has a better name for this concept. also renames ODEFunction to OdeFunction, etc, to comply with styleguide. adds all deprecations * run clang-format on impacted files
+* multibody: Add DoorHinge to pydrake and update jupyter notebook (`#12930`_)
+* multibody: Add PointToPointDistanceConstraint (`#12896`_)  # Add PointToPointDistanceConstraint.
+* multibody: Add a door hinge force element (`#12812`_)  # Co-authored-by: Grant <grant.gould@tri.global>
+* multibody: Add missing energy and power overrides to MBP (`#12895`_)  # * Add missing energy and power overrides to MBTreeSystem (and hence MBPlant).
+* multibody: Adding CoM methods from RBT to MBT/MBP (`#12839`_)  # * Adding CoM features from RBT to MBT/MBP * Allowing the user to specify the reference and expressed-in frame * Adding unit tests for new MBP CoM Jacobian methods * Adding TODO for future feature
+* multibody: Documents conventions in HydroelasticContactInfo (`#12806`_)
+* multibody: Fix ABI::IsPhysicallyValid() to avoid false negatives (`#12879`_)  # * Fix ABI::IsPhysicallyValid() to use tolerance based on the magnitude of its eigenvalues.
+* multibody: InverseKinematics allows ignoring joint limits in the constructor (`#12872`_)
+* multibody: Move HydroelasticFallbackCacheData out of MultibodyPlant (`#12932`_)  # The struct was previously a nested class. However, it interfered with the logic for hashing drake::Value instances of the type. This removes it from being nested to the internal namespace.
+* multibody: Move MBP::HydroelasticContactInfoAndBodySpatialForces into internal (`#12953`_)  # MBP has a nested class that is stored in a cache entry. The hash logic associated with the drake::Value type doesn't work well with nested classes of templated classes (it introduces a "namespace" with a template parameter). This clutters up the console with warnings that don't help the end user at all. SO, for now, we'll pull the nested class out and put it in an internal namespace.
+* multibody: Move bushing code from .h file to .cc file (`#13001`_)
+* multibody: Parse joint effort limits from URDF (`#12863`_)  # Fixes #12859
+* multibody: Use System energy & power methods to remove some TODOs (`#12955`_)  # Remove last mention of MultibodyTree.
+* multibody: [parsing] Add unit test to cover Parser's automatic search for packages (`#12871`_)  # The Parser class will attempt to locate packages for every sdf/urdf passed to one of its Add*FromFile() methods. However, it will only work if the model file is located in the Drake tree. This adds a test that confirm this behavior. Incidentally, it does some minor clean up on the package_map documentation. This can be omitted from the change log in future releases.
+* multibody: py multibody: Move door_hinge notebook to avoid import errors (`#12960`_)
+* solvers,systems: Use symbolic::IsAffine (`#12933`_)
+* solvers: Add MathematicalProgram::AddConstraint(Eigen::Matrix<Formula>) (`#12858`_)
+* solvers: Add MathematicalProgram::MakePolynomial (`#12847`_)
+* solvers: Add MathematicalProgram::Reparse (`#12902`_)
+* solvers: Add default std::nullopt arguments to SolverBase::Solve() (`#12866`_)  # Users shouldn't have to pass in {} and/or None everywhere.
+* solvers: Add dual solution to OsqpSolverDetails (`#12916`_)
+* solvers: Add python binding for branch_and_bound (`#13002`_)
+* solvers: Check x_init size for all solvers (`#12995`_)  # Check x_init size for all solvers. Throw an error message when the size doesn't match
+* solvers: Use Reparse when symbolic::Polynomials are taken as arguments (`#12902`_)
+* solvers: add DrakeSolverOption (`#12884`_)
+* solvers: snopt: Tidy up storage declaration (`#12914`_)  # As of C++17, we can use "inline" to avoid repeating ourselves.
+* solvers: throw error when the constraint lower and upper bounds size don't match (`#13004`_)  # throw an error when the constraint lower and upper bounds size don't match.
+* systems: Add Error Control to Velocity-Implicit Euler Integrator, third PR of #12528 (`#12760`_)  # Add Error Control to Velocity-Implicit Euler Integrator - third PR of #12528 This commit: 1. Implements error control by taking two half-sized steps and estimating the error as the difference between the solution from the large step and the solution from two half-sized steps. 2. Changes IntegratorBase to report statistics on the small steps for any steps "taken", while the error control and step-size limit logic still operates on the large step size. 3. Updates documentation to explain the statistics and derive the error estimation order. 4. (Passive) Enables the error-control tests for VelocityImplicitEulerTest, by turning on the supports_error_estimation() flag. 5. Removes TODO(antequ)s asking to remove non-error-controlled test parameters in the implicit_integrator_test.h file, because we decided to keep these tests in case we implement non-error-controlled integrators in the future.
+* systems: Add doxygen group for our suite of integrators (`#12900`_)
+* systems: Adds the "star" region of attraction test (`#12881`_)  # It is known to fail with Mosek (#12876), but it passes with CSDP.
+* systems: Change leaf_system.h comment style to the more-compact form (`#12984`_)  # * Convert triple-slash comments in leaf_system.h to more compact syntax.
+* systems: Change system.h comment style to the more-compact form (`#12968`_)
+* systems: Hotfix for #12898 (`#12899`_)  # Related to #12876. Apparently, running with ``` CC=clang CXX=clang++ bazel  test --compilation_mode=dbg --config=memcheck_everything  region_of_attraction_test ``` caused mosek to simply fail to solve the problem.  I've disabled this test entirely for mosek now. Disconcerting for sure.  Would be good to root cause this.  #12876 has all of the discussion/details.
+* systems: Remove a TODO in region_of_attraction.cc (`#12902`_)
+* systems: Use IntegratorBase in DirectTranscription (`#12889`_)  # First step towards generalizing DirectTranscription to use a user-specified integrator.  This one just replaces the hard-coded Euler integrator with the IntegratorBase version.
+* systems: Use symbolic integrator in direct transcription (`#12929`_)  # No functional changes to DirectTranscription, only backend, so it's covered by the existing tests. Next step will be to take the integrator as an argument.
+* systems: analysis: Add default_scalars annotations where still absent (`#12908`_)  # The current design intent of the simulator and its integrators is to support the default nonsymbolic scalars only.  Previous commits had added annotations to that effect in some places, but missed others. This commit ensures that the simulator, all of its integrators, and its supporting classes are all uniformly annotated to support only the default nonsymbolic scalars. This commit only change documentation and adds new extern template declarations; it does not yet remove the ability to use non-standard scalars, though we plan to do so in the future.  In the future, we may also extend support to add symbolic scalars. Relatedly, whitespace style choices related to the default scalar boilerplate are also unified here to be consistent across all files.
+* systems: analysis: Add symbolic expression support to ExplicitEulerIntegrator (`#12922`_)
+* systems: analysis: Add symbolic expression to RungeKutta2Integrator (`#12922`_)
+* systems: analysis: Enable symbolic expressions in dense_output family (`#12919`_)
+* systems: diagram: De-indent by 2 spaces (`#12852`_)
+* systems: diagram: Move h files to cc files to preserve history (`#12852`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
+* systems: diagram: Re-enable lint and fix nits (`#12852`_)
+* systems: diagram: Rename old cc files out of the way (`#12852`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
+* systems: diagram: Restore h files to unmodified status (`#12852`_)
+* systems: diagram: Split h and cc content in twain (`#12852`_)
+* systems: framework: Break WitnessFunction dependency cycle (`#12894`_)  # System should depend on its constituent elements (ports, constraints, cache entries, witness functions, etc.), never the other way around. This changes the WitnessFunction constructor without a deprecation period, but users should not be using this constructor in the first place -- WitnessFunctions should always be constructed via the LeafSystem::MakeWitnessFunction methods. Also clean up a few oddities (dead code, etc.) in WitnessFunction along the way.
+* systems: framework: OutputPort should not depend on SystemBase (`#12906`_)  # This brings it in line with how InputPort is phrased. Also fix a related misleading pervasive use of system_base to refer to a SystemMessageInterface instead of a SystemBase.
+* systems: integrators: replace DenseOutput with PiecewiseTrajectory (`#13008`_)  # * integrators: replace DenseOutput with PiecewisePolynomial This breaks an API (without deprecation) by changing the return type of `IntegratorBase::StopDenseIntegration` and `IntegratorBase::get_mutable_dense_output` to be a `PiecewisePolynomial`.  After dicussion with @sammy-tri, we decided that this API was officially deep and obscure to warrant this change.  `InitialValueProblem` was the only known consumer of this method (in general, we do not have workflows that would work with the `Integrator` directly, and these APIs were not exposed through `Simulator`.
+* systems: system: De-indent method definitions two spaces (`#12913`_)
+* systems: system: Fix whitespace and re-enable linter (`#12913`_)
+* systems: system: Move h files to cc files to preserve history (`#12913`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
+* systems: system: Rename old cc files out of the way (`#12913`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
+* systems: system: Restore h files to unmodified status (`#12913`_)
+* systems: system: Split code between h and cc (`#12913`_)  # This passes all tests, but does not pass lint (still disabled).
+* systems: trajectories: construct HermitianDenseOutput from PiecewisePolynomial (`#12957`_)
+* systems: trajectories: construct HermitianDenseOutput from PiecewisePolynomial (`#13006`_)  # now with support for default scalars. (I should have done this version in #12957, but didn't realize it until I was able to push forward the default scalar support for PiecewisePolynomail).  This technically changes the API that I introduced last week; i think it's safe to assume that nobody was using it yet.
+* tools: Use dReal 4.20.03.4 (`#12905`_)
+* tools: install: Fix drake_bazel_installed use in docker (`#13016`_)  # There's no particular need to insist that install_prereqs exists, and as it happens our Docker images do not contain it.
+* tools: jupyter_py: Add workaround / notes for common ZMQError flake on CI (`#12958`_)
+* tools: tools: Disable container_overflow checks under asan (`#12945`_)  # Because we use C++ binary libraries from the host OS (instead of compiling all C++ code from source) there can be false positives.
+* tools: workspace: Annotate repository rules with configure=True (`#12988`_)  # Rules that interrogate the host system (e.g., compiler or pkg-config paths) should be marked with "configure = True" so that "bazel sync --configure" knows where to look for possible changes. This is helpful to recover from homebrew include paths changing out from under us. Running "bazel sync" finds several typos in our repository.bzl files, now fixed.
+* tools: workspace: Upgrade buildifier to latest release 2.2.1 (`#12977`_)
+* tools: workspace: Upgrade ghc_filesystem to latest release 1.3.2 (`#12979`_)
+* tools: workspace: Upgrade meshcat family to latest (`#12993`_)  # Upgrade meshcat and meshcat_python to latest commit.
+* tutorials: Add MakeSolver to mathematical program tutorial (`#12885`_)
+
 ..
-  Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 TODO (inclusive).
-  Current newest_commit 8f449959b0bd4acf8495d1a0a1dd4013da0d7be1 TODO (inclusive).
+  Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
+  Current newest_commit 8f449959b0bd4acf8495d1a0a1dd4013da0d7be1 (inclusive).
