@@ -64,18 +64,20 @@ Fixes
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
-* solvers: Add MathematicalProgram::AddConstraint(Eigen::Matrix<Formula>) (`#12858`_)
-* solvers: Add MathematicalProgram::MakePolynomial (`#12847`_)
-* solvers: Add MathematicalProgram::Reparse (`#12902`_)
-* solvers: Add default std::nullopt arguments to SolverBase::Solve() (`#12866`_)  # Users shouldn't have to pass in {} and/or None everywhere.
-* solvers: Add dual solution to OsqpSolverDetails (`#12916`_)
-* solvers: Add python binding for branch_and_bound (`#13002`_)
-* solvers: Check x_init size for all solvers (`#12995`_)  # Check x_init size for all solvers. Throw an error message when the size doesn't match
-* solvers: Use Reparse when symbolic::Polynomials are taken as arguments (`#12902`_)
-* solvers: add DrakeSolverOption (`#12884`_)
-* solvers: snopt: Tidy up storage declaration (`#12914`_)  # As of C++17, we can use "inline" to avoid repeating ourselves.
-* solvers: throw error when the constraint lower and upper bounds size don't match (`#13004`_)  # throw an error when the constraint lower and upper bounds size don't match.
-* tutorials: Add MakeSolver to mathematical program tutorial (`#12885`_)
+New features
+
+* Add MathematicalProgram::AddConstraint(Eigen::Matrix<Formula>) (`#12858`_)
+* Add MathematicalProgram::MakePolynomial (`#12847`_)
+* Add MathematicalProgram::Reparse for polynomials taken as arguments (`#12902`_)
+* Add dual solution to OsqpSolverDetails (`#12916`_)
+* Add DrakeSolverOption (`#12884`_)
+
+Fixes
+
+* Add MakeSolver to mathematical program tutorial (`#12885`_)
+* Add default std::nullopt arguments to SolverBase::Solve (`#12866`_)
+* Check x_init size for all solvers (`#12995`_)
+* Check constraint bounds size (`#13004`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -147,6 +149,7 @@ Newly bound
 * pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
 * pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
 * pydrake.multibody.plant.MultibodyPlant.get_reaction_forces_output_port (`#12883`_)
+* pydrake.solvers.branch_and_bound.MixedIntegerBranchAndBound (`#13002`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_constraints (`#13005`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_costs (`#13005`_)
 * pydrake.symbolic.Expression.is_polynomial (`#12854`_)
