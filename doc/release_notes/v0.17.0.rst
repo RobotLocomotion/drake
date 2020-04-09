@@ -12,7 +12,7 @@ Breaking changes since v0.16.1
 
 These are breaking changes that did not undergo a deprecation period:
 
-* Change PiecewiseTrajectory::value virtual method to use pass-by-reference; classes that override it need rework;  callers are unchanged (`#12986`_)
+* Change PiecewiseTrajectory::value virtual method to use pass-by-reference; classes that override it need rework; callers are unchanged (`#12986`_)
 * Change integrators' dense output representation to PiecewiseTrajectory (`#13008`_)
 * Add external torque fields for the jaco status message (`#13017`_)
 * Edit WitnessFunction constructor; users should not be using this constructor anyway (`#12894`_)
@@ -23,33 +23,36 @@ Changes since v0.16.1:
 Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
-* Adds utility to "balance" two quadratic forms and uses it in RegionOfAttraction (`#12875`_, `#12882`_)
-* Support region of attraction when Vdot is indefinite at the origin (`#12864`_)
-* Adds the "star" region of attraction test (`#12881`_)
-* Add doxygen group for our suite of integrators (`#12900`_)
-* Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
-* Add symbolic expression support to ExplicitEulerIntegrator, RungeKutta2Integrator (`#12922`_, `#12919`_)
-* Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
-* Use symbolic integrator in direct transcription (`#12889`_, `#12929`_)  [not user visible change?]
-* Add symbolic::IsAffine (`#12933`_)
-* Add Polynomial::SetIndeterminates (`#12902`_)
-* Add Polynomial::CoefficientsAlmostEqual (`#12853`_)
-* Add Trajectory::vector_values (`#12855`_)
-* Add ScaleTime to PiecewisePolynomial (`#12966`_)
-* Add derivative-at-a-point methods to Polynomial, PiecewisePolynomial (`#12951`_)
-* Add incremental construction of CubicHermite (`#12952`_)
-* Construct HermitianDenseOutput from PiecewisePolynomial (`#12957`_, `#13006`_)
-* Support default scalars in Polynomial, PiecewiseTrajectory, PiecewisePolynomial (`#12973`_, `#12986`_, `#12991`_)
-* Add BsplineBasis and BsplineTrajectory classes (`#11990`_)
-
 New features
 
-* TBD
+* Integrators
+
+  * Add doxygen group for our suite of integrators (`#12900`_)
+  * Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
+  * Add symbolic expression support to ExplicitEulerIntegrator, RungeKutta2Integrator (`#12922`_, `#12919`_)
+  * Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
+
+* Trajectories
+
+  * Add symbolic::IsAffine (`#12933`_)
+  * Add Polynomial::SetIndeterminates (`#12902`_)
+  * Add Polynomial::CoefficientsAlmostEqual (`#12853`_)
+  * Add PiecewisePolynomial::ScaleTime and PiecewisePolynomial::ReverseTime (`#12966`_)
+  * Add derivative-at-a-point methods to Polynomial, PiecewisePolynomial (`#12951`_)
+  * Support default scalars in Polynomial, PiecewiseTrajectory, PiecewisePolynomial (`#12973`_, `#12986`_, `#12991`_)
+  * Add Trajectory::vector_values (`#12855`_)
+  * Construct HermitianDenseOutput from PiecewisePolynomial (`#12952`_, `#12957`_, `#13006`_)
+  * Add BsplineBasis and BsplineTrajectory (`#11990`_)
+
+* Region of attraction
+
+  * Add utility to "balance" two quadratic forms and uses it in RegionOfAttraction (`#12875`_, `#12882`_)
+  * Support region of attraction when Vdot is indefinite at the origin (`#12864`_)
+  * Add the "star" region of attraction test (`#12881`_)
 
 Fixes
 
 * TBD
-
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
