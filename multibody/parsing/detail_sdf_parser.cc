@@ -619,17 +619,26 @@ bool AreWelded(
   return false;
 }
 
-using VoidFunction = std::function<void ()>;
+using VoidFunction = std::function<void()>;
 
 VoidFunction AddNestedModelsFromSpecification(
-    auto model, model_name, auto plant, X_WM, package_map, root_dir)
-    {
+    auto model, model_name, auto plant, X_WM, package_map, root_dir) {
+  std::vector<VoidFunction> post_inits;
   Parser parser(plant);
   for (sdf::Model nested_model : model.GetParsedNestedModels()) {
     // libsdformat parsed the model fully. Add the new elements directly.
     // All other models have already been added.
-    AddModelFromSpecification(nested_model.AsSdfModel(), ...);
+    auto model_instance = AddModelFromSpecification(
+        nested_model.AsSdfModel(), ...);
+    post_inits.append([model_instance, plant]() {
+      // Weld frames or posture stuff???
+    });
   }
+  return [std::move(post_inits)]() {
+    for (auto f : post_inits) {
+      f();
+    }
+  };
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
