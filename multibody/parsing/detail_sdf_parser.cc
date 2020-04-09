@@ -363,15 +363,107 @@ void AddJointFromSpecification(
   joint_types->insert(joint_spec.Type());
 }
 
+std::set<ModelInstanceIndex> GetModelInstanceSet(
+    const MultibodyPlant<double>& plant) {
+  std::set<ModelInstanceIndex> out;
+  for (int i = 0; i < plant.num_model_instances(): ++i) {
+    out.add(ModelInstanceIndex(i));
+  }
+  return out;
+}
+
+std::range GetModelLinks(
+    const MultibodyPlant<double>& plant, ModelInstanceIndex model) {
+  ...
+}
+
+std::range GetModelFrames(
+    const MultibodyPlant<double>& plant, ModelInstanceIndex model) {
+  ...
+}
+
+constexpr char kExtUrdf[] = ".urdf";
+// To test re-parsing an SDFormat document, but in complete isolation. Tests
+// out separate model formats.
+constexpr char kExtForcedNesting[] = ".sdf.forced_nesting";
+
+sdf::InterfaceModelPtr ParseNestedInterfaceModel(
+    MultibodyPlant<double>* plant,
+    sdf::NestedInclude include) {
+  // Do not attempt to parse anything other than URDF or forced nesting files.
+  const bool is_urdf = EndsWith(include.file_path, kExtUrdf);
+  const bool is_forced_nesting = EndsWith(include.file_path, kExtUrdf);
+  if (!is_urdf && !is_forced_nesting) {
+    return std::nullptr;
+  }
+
+  // HACK: Most of these hacks (remembering model instances, getting silly name
+  // hierarchy) come about since MultibodyPlant does not have any mechanism for
+  // easy composition by itself (e.g. merging subtrees, or getting a subtree,
+  // etc.).
+  // If this every happens, this will *greatly* simplify this function!
+
+  // Record all model instances beforehand.
+  // N.B. This could be done by iterating by indices, but that seems
+  // rather leaky.
+  auto old_model_instances = GetModelInstanceSet(*plant);
+  // TODO(eric.cousineau): How to set initial pose of the model???
+  ModelInstanceIndex main_model_instance;
+  if (is_urdf) {
+    main_model_instance = LoadUrdfFromFile(
+        plant, include.file_path, include.absolute_model_name);
+  } else if (is_forced_nesting) {
+    main_model_instance = LoadSdfFromFile(
+        plant, include.file_path, include.absolute_model_name);
+  } else {
+    DRAKE_DEMAND(false);
+  }
+  auto new_model_instances = GetModelInstanceSet(*plant) - old_model_instances;
+  DRAKE_DEMAND(new_model_instances.count(main_model_instance) > 0);
+
+  // To remember local hierarcjy.
+  std::map<std::string, sdf::InterfaceModelPtr> hierarchy;
+
+  auto add_model = [&](ModelInstanceIndex model_instance) {
+    const std::string absolute_name = plant->GetModelInstanceName(model);
+    const auto [parent_name, local_name] = HackNameParse(name);
+    auto out = std::make_shared<sdf::InterfaceModel>(local_name);
+    // Record all frames and associated links.
+    for (auto* link : GetModelLinks(plant, model)) {
+      out->AddLink(sdf::InterfaceLink(link->name()));
+    }
+    for (auto* frame : GetModelFrames(plant, model)) {
+      out->AddLink(sdf::InterfaceLink(link->name()));
+    }
+    if (model != main_model_instance) {
+      // Register with its parent model.
+      hierarchy[parent_name].AddNestedModel(out);
+    }
+    return out;
+  };
+
+  // Make sure it parses in order?
+  for (auto model : new_model_instances) {
+    sdf::InterfaceModel interface_model = add_model(model);
+  }
+
+  return hierarchy[include.local_model_name];
+}
+
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    const std::string& file_name) {
+    const std::string& file_name,
+    MultibodyPlant<double>* plant) {
 
   const std::string full_path = GetFullPath(file_name);
-
   // Load the SDF file.
+  // WARNING: This means that failed parsing could invalidate the plant. Meh.
+  root->RegisterNestedModelParser(
+    [plant](sdf::NestedInclude include) {
+      return ParseNestedInterfaceModel(plant, include);
+    });
   ThrowAnyErrors(root->Load(full_path));
 
   // Uses the directory holding the SDF to be the root directory
@@ -533,15 +625,10 @@ VoidFunction AddNestedModelsFromSpecification(
     auto model, model_name, auto plant, X_WM, package_map, root_dir)
     {
   Parser parser(plant);
-  for (NestedModel nested_model : model.GetNestedModels()) {
-    if (nested_model.IsParsed()) {
-      // libsdformat parswed the model.
-      AddModelFromSpecification(nested_model.SdfModel(), ...);
-    } else {
-      auto include = nested_model.IncludeInfo();
-      auto interface = include.InterfaceModel();
-      parser.AddModelFromFile();
-    }
+  for (sdf::Model nested_model : model.GetParsedNestedModels()) {
+    // libsdformat parsed the model fully. Add the new elements directly.
+    // All other models have already been added.
+    AddModelFromSpecification(nested_model.AsSdfModel(), ...);
   }
 }
 
@@ -654,7 +741,11 @@ ModelInstanceIndex AddModelFromSdfFile(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, file_name);
+  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
+
+  std::string root_dir = LoadSdf(&root, file_name, plant);
 
   if (root.ModelCount() != 1) {
     throw std::runtime_error("File must have a single <model> element.");
@@ -662,10 +753,6 @@ ModelInstanceIndex AddModelFromSdfFile(
 
   // Get the only model in the file.
   const sdf::Model& model = *root.ModelByIndex(0);
-
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
-    plant->RegisterAsSourceForSceneGraph(scene_graph);
-  }
 
   const std::string model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
@@ -684,7 +771,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, file_name);
+  std::string root_dir = LoadSdf(&root, file_name, plant);
 
   // Throw an error if there are no models or worlds.
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {
