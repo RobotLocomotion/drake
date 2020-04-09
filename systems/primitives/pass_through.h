@@ -16,7 +16,7 @@ namespace systems {
 /// This system is used, for instance, in PidController which is a Diagram
 /// composed of simple framework primitives. In this case a PassThrough is used
 /// to connect the exported input of the Diagram to the inputs of the Gain
-/// systems for the proportioanal and integral constants of the controller. This
+/// systems for the proportional and integral constants of the controller. This
 /// is necessary to provide an output port to which the internal Gain subsystems
 /// connect. In this case the PassThrough is effectively creating an output port
 /// that feeds through the input to the Diagram and that can now be connected to
