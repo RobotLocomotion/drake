@@ -208,12 +208,75 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* ::Polynomial<T> (`#12946`_)
+
+  * Use drake::Polynomial.
+
+* ::Polynomiald (`#12946`_)
+
+  * Use drake::Polynomiald.
+
+* ::TrigPoly<T> (`#12946`_)
+
+  * Use drake::TrigPoly.
+
+* ::TrigPolyd (`#12946`_)
+
+  * Use drake::TrigPolyd.
+
+* :: VectorXPoly (`#12946`_)
+
+  * Use drake::VectorXPoly.
+
+* ::VectorXTrigPoly (`#12946`_)
+
+  * Use drake::VectorXTrigPoly.
+
+* drake::systems::AntiderivativeFunction::SpecifiedValues (`#12931`_)
+
+  * Use drake::systems::AntiderivativeFunction::IntegrableFunctionContext.
+
+* drake::symbolic::Expression::ToPolynomial (`#12950`_)
+
+  * Use drake::ToPolynomial(const Expression&).
+
+* drake::systems::InitialValueProblem::SpecifiedValues (`#12931`_)
+
+  * Use drake::systems::InitialValueProblem::OdeContext.
+
+* drake::systems::InitialValueProblem::ODEFunction (`#12931`_)
+
+  * Use drake::systems::InitialValueProblem::OdeFunction.
+
+* drake::systems::ScalarInitialValueProblem::SpecifiedValues (`#12931`_)
+
+  * Use drake::systems::InitialValueProblem::ScalarOdeContext.
+
+* drake::systems::ScalarInitialValueProblem::ScalarODEFunction (`#12931`_)
+
+  * Use drake::systems::ScalarInitialValueProblem::ScalarOdeFunction.
+
+* drake::trajectories::PiecewisePolynomial::Cubic (`#12939`_)
+
+  * Use drake::trajectories::PiecewisePolynomial::CubicWithContinuousSecondDerivatives or drake::trajectories::PiecewisePolynomial::CubicHermite.
+
+* drake::trajectories::PiecewisePolynomial::Pchip (`#12939`_)
+
+  * Use drake::trajectories::PiecewisePolynomial::CubicShapePreserving.
+
+* drake::trajectories::PiecewisePolynomial<T>::PolynomialType (`#12991`_)
+
+  * Use drake::trajectories::Polynomial<T>.
+
+* drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_knots () (`#12939`_)
+
+  * Use drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_samples().
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* common,math: Remove deprecated code 2020-04-01 (`#12974`_)
+* drake::common::NewPythonVariable (`#12442`_, `#12974`_)
+* pydrake.systems.pyplot_visualizer.PyPlotVisualizer.start_recording(show) (`#12974`_)
 
 Notes
 -----
