@@ -433,6 +433,8 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     plant->SetDefaultFreeBodyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
+      // TODO(eric.cousineau): Make this the primary thing to pass around. Do
+      // not pass around (package_map, root_dir).
       ResolveFilename resolve_filename =
         [&package_map, &root_dir](std::string uri) {
           const std::string resolved_name =
@@ -525,6 +527,24 @@ bool AreWelded(
   return false;
 }
 
+using VoidFunction = std::function<void ()>;
+
+VoidFunction AddNestedModelsFromSpecification(
+    auto model, model_name, auto plant, X_WM, package_map, root_dir)
+    {
+  Parser parser(plant);
+  for (NestedModel nested_model : model.GetNestedModels()) {
+    if (nested_model.IsParsed()) {
+      // libsdformat parswed the model.
+      AddModelFromSpecification(nested_model.SdfModel(), ...);
+    } else {
+      auto include = nested_model.IncludeInfo();
+      auto interface = include.InterfaceModel();
+      parser.AddModelFromFile();
+    }
+  }
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 ModelInstanceIndex AddModelFromSpecification(
@@ -541,6 +561,12 @@ ModelInstanceIndex AddModelFromSpecification(
   // world.
   ThrowIfPoseFrameSpecified(model.Element());
   const RigidTransformd X_WM = ToRigidTransform(model.RawPose());
+
+  // First, add nested models, since they are encapsulated, so that the MBP
+  // frames can be referenced explicitly.
+  std::function<()> nested_models_post_init =
+      AddNestedModelsFromSpecification(
+          model, model_name, plant, X_WM, package_map, root_dir);
 
   drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
@@ -586,6 +612,9 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
   }
+
+  // Finalize connections for nested model posturing, etc.
+  nested_models_post_init();
 
   if (model.Static()) {
     // Only weld / fixed joints are permissible.
