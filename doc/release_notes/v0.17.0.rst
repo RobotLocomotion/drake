@@ -5,17 +5,24 @@ Drake v0.17.0
 Announcements
 -------------
 
-* TBD
+* RigidBodyPlant and all of the drake "attic" is scheduled for removal on
+  2020-09-01.
+
+  * Please see `#12158`_ for details of the timeline, and let us know if this
+    will cause a problem.
 
 Breaking changes since v0.16.1
 ------------------------------
 
 These are breaking changes that did not undergo a deprecation period:
 
-* Change PiecewiseTrajectory::value virtual method to use pass-by-reference; classes that override it need rework; callers are unchanged (`#12986`_)
-* Change integrators' dense output representation to PiecewiseTrajectory (`#13008`_)
+* Change PiecewiseTrajectory::value virtual method to pass-by-const-reference;
+  classes that override it will need rework; callers are unchanged (`#12986`_)
+* Change integrators' dense output representation to use PiecewiseTrajectory
+  (`#13008`_)
 * Add external torque fields for the jaco status message (`#13017`_)
-* Edit WitnessFunction constructor; users should not be using this constructor anyway (`#12894`_)
+* Edit WitnessFunction constructor; users should not be using this constructor
+  anyway (`#12894`_)
 
 Changes since v0.16.1:
 ----------------------
@@ -29,7 +36,7 @@ New features
 
   * Add doxygen group for our suite of integrators (`#12900`_)
   * Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
-  * Add symbolic expression support to ExplicitEulerIntegrator, RungeKutta2Integrator (`#12922`_, `#12919`_)
+  * Add symbolic expression support to ExplicitEulerIntegrator and RungeKutta2Integrator (`#12922`_, `#12919`_)
   * Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
 
 * Trajectories
@@ -152,10 +159,12 @@ Newly bound
 * pydrake.systems.framework.ContinuousState.CopyToVector (`#12865`_)
 
 New features
+
 * Add SystemSliders Tkinter-based controller for vector input ports (`#12925`_)
 * Add ConnectPlanarSceneGraphVisualizer sugar (`#12961`_)
 
 Fixes
+
 * API docs now show constructors first (`#12787`_, `#12910`_, `#12921`_)
 * Find fallback obj files in PlanarSceneGraphVisualizer (`#12917`_)
 * Improve args and doc for pyplot_visualizer (`#12915`_)
@@ -239,9 +248,9 @@ Newly-deprecated APIs
 
   * Use drake::trajectories::Polynomial<T>.
 
-* drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_knots () (`#12939`_)
+* drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_knots (`#12939`_)
 
-  * Use drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_samples().
+  * Use drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_samples.
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
