@@ -26,6 +26,7 @@ drake_cc_library(
     hdrs = [
         "iiwa_common.h",
     ],
+    copts = ["-Wno-deprecated-declarations"],
     visibility = ["//visibility:public"],
     deps = [
         "//attic/multibody:rigid_body_tree",
@@ -33,6 +34,7 @@ drake_cc_library(
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//manipulation/kuka_iiwa:iiwa_constants",
+        "//manipulation/util:robot_plan_utils",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -209,6 +211,7 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//lcmtypes:iiwa",
         "//manipulation/planner:constraint_relaxing_ik",
+        "//manipulation/util:robot_plan_utils",
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
