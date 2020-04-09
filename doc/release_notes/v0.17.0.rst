@@ -12,7 +12,10 @@ Breaking changes since v0.16.1
 
 These are breaking changes that did not undergo a deprecation period:
 
+* Change PiecewiseTrajectory::value virtual method to use pass-by-reference; classes that override it need rework;  callers are unchanged (`#12986`_)
+* Change integrators' dense output representation to PiecewiseTrajectory (`#13008`_)
 * Add external torque fields for the jaco status message (`#13017`_)
+* Edit WitnessFunction constructor; users should not be using this constructor anyway (`#12894`_)
 
 Changes since v0.16.1:
 ----------------------
@@ -20,59 +23,24 @@ Changes since v0.16.1:
 Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
-* systems: Adds utility to "balance" two quadratic forms (`#12875`_)  # and uses it in RegionOfAttraction. Rederived (much more carefully/thoroughly) from https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/matlab/util/balanceQuadForm.m with more documentation and testing. Adds a test that failed on Mosek without balancing, but passes with balancing. * generalize from P>0 to P full-rank
-* improve documentation for BalanceQuadraticForms (`#12882`_)  # to distinguish between absolute and relative scaling.
-* systems: Support region of attraction when Vdot is indefinite at the origin (`#12864`_)
-* systems: Rename `InitialValueProblem::SpecifiedValues` to `ODEContext` (`#12931`_)  # and similar for ScalarInitialValueProblem and AntiderivativeFunction because SpecifiedValues is very generic, and drake already has a better name for this concept. also renames ODEFunction to OdeFunction, etc, to comply with styleguide. adds all deprecations * run clang-format on impacted files
-* systems: Add Error Control to Velocity-Implicit Euler Integrator, third PR of #12528 (`#12760`_)  # Add Error Control to Velocity-Implicit Euler Integrator - third PR of #12528 This commit: 1. Implements error control by taking two half-sized steps and estimating the error as the difference between the solution from the large step and the solution from two half-sized steps. 2. Changes IntegratorBase to report statistics on the small steps for any steps "taken", while the error control and step-size limit logic still operates on the large step size. 3. Updates documentation to explain the statistics and derive the error estimation order. 4. (Passive) Enables the error-control tests for VelocityImplicitEulerTest, by turning on the supports_error_estimation() flag. 5. Removes TODO(antequ)s asking to remove non-error-controlled test parameters in the implicit_integrator_test.h file, because we decided to keep these tests in case we implement non-error-controlled integrators in the future.
-* systems: Add doxygen group for our suite of integrators (`#12900`_)
-* systems: Adds the "star" region of attraction test (`#12881`_)  # It is known to fail with Mosek (#12876), but it passes with CSDP.
-* systems: Change leaf_system.h comment style to the more-compact form (`#12984`_)  # * Convert triple-slash comments in leaf_system.h to more compact syntax.
-* systems: Change system.h comment style to the more-compact form (`#12968`_)
-* systems: Hotfix for #12898 (`#12899`_)  # Related to #12876. Apparently, running with ``` CC=clang CXX=clang++ bazel  test --compilation_mode=dbg --config=memcheck_everything  region_of_attraction_test ``` caused mosek to simply fail to solve the problem.  I've disabled this test entirely for mosek now. Disconcerting for sure.  Would be good to root cause this.  #12876 has all of the discussion/details.
-* systems: Remove a TODO in region_of_attraction.cc (`#12902`_)
-* systems: Use IntegratorBase in DirectTranscription (`#12889`_)  # First step towards generalizing DirectTranscription to use a user-specified integrator.  This one just replaces the hard-coded Euler integrator with the IntegratorBase version.
-* systems: Use symbolic integrator in direct transcription (`#12929`_)  # No functional changes to DirectTranscription, only backend, so it's covered by the existing tests. Next step will be to take the integrator as an argument.
-* systems: analysis: Add default_scalars annotations where still absent (`#12908`_)  # The current design intent of the simulator and its integrators is to support the default nonsymbolic scalars only.  Previous commits had added annotations to that effect in some places, but missed others. This commit ensures that the simulator, all of its integrators, and its supporting classes are all uniformly annotated to support only the default nonsymbolic scalars. This commit only change documentation and adds new extern template declarations; it does not yet remove the ability to use non-standard scalars, though we plan to do so in the future.  In the future, we may also extend support to add symbolic scalars. Relatedly, whitespace style choices related to the default scalar boilerplate are also unified here to be consistent across all files.
-* systems: analysis: Add symbolic expression support to ExplicitEulerIntegrator (`#12922`_)
-* systems: analysis: Add symbolic expression to RungeKutta2Integrator (`#12922`_)
-* systems: analysis: Enable symbolic expressions in dense_output family (`#12919`_)
-* systems: diagram: De-indent by 2 spaces (`#12852`_)
-* systems: diagram: Move h files to cc files to preserve history (`#12852`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
-* systems: diagram: Re-enable lint and fix nits (`#12852`_)
-* systems: diagram: Rename old cc files out of the way (`#12852`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
-* systems: diagram: Restore h files to unmodified status (`#12852`_)
-* systems: diagram: Split h and cc content in twain (`#12852`_)
-* systems: framework: Break WitnessFunction dependency cycle (`#12894`_)  # System should depend on its constituent elements (ports, constraints, cache entries, witness functions, etc.), never the other way around. This changes the WitnessFunction constructor without a deprecation period, but users should not be using this constructor in the first place -- WitnessFunctions should always be constructed via the LeafSystem::MakeWitnessFunction methods. Also clean up a few oddities (dead code, etc.) in WitnessFunction along the way.
-* systems: framework: OutputPort should not depend on SystemBase (`#12906`_)  # This brings it in line with how InputPort is phrased. Also fix a related misleading pervasive use of system_base to refer to a SystemMessageInterface instead of a SystemBase.
-* systems: integrators: replace DenseOutput with PiecewiseTrajectory (`#13008`_)  # * integrators: replace DenseOutput with PiecewisePolynomial This breaks an API (without deprecation) by changing the return type of `IntegratorBase::StopDenseIntegration` and `IntegratorBase::get_mutable_dense_output` to be a `PiecewisePolynomial`.  After dicussion with @sammy-tri, we decided that this API was officially deep and obscure to warrant this change.  `InitialValueProblem` was the only known consumer of this method (in general, we do not have workflows that would work with the `Integrator` directly, and these APIs were not exposed through `Simulator`.
-* systems: system: De-indent method definitions two spaces (`#12913`_)
-* systems: system: Fix whitespace and re-enable linter (`#12913`_)
-* systems: system: Move h files to cc files to preserve history (`#12913`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
-* systems: system: Rename old cc files out of the way (`#12913`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
-* systems: system: Restore h files to unmodified status (`#12913`_)
-* systems: system: Split code between h and cc (`#12913`_)  # This passes all tests, but does not pass lint (still disabled).
-* systems: trajectories: construct HermitianDenseOutput from PiecewisePolynomial (`#12957`_)
-* systems: trajectories: construct HermitianDenseOutput from PiecewisePolynomial (`#13006`_)  # now with support for default scalars. (I should have done this version in #12957, but didn't realize it until I was able to push forward the default scalar support for PiecewisePolynomail).  This technically changes the API that I introduced last week; i think it's safe to assume that nobody was using it yet.
-* solvers,systems: Use symbolic::IsAffine (`#12933`_)
-* common: Add symbolic::IsAffine (`#12933`_)
-
-* common: Add symbolic::Polynomial::SetIndeterminates (`#12902`_)
-* common: Add Polynomial::CoefficientsAlmostEqual function (`#12853`_)  # A syntax sugar to compare if two polynomials are almost equal.
-* common: common: support default scalars in drake::Polynomial (`#12973`_)
-* common,solvers: cleanup: use typename T in polynomial classes (`#12948`_)  # instead of CoefficientType and a multitude of typedefs; now closer to comforming to drake standard notation.
-* common: trajectories: rename knots to samples (`#12939`_)  # We've had a long-running incorrect use of notation in our trajectory code. Correct: - breaks and knots both mean the time indices. - sample points (or sometimes "control points") indicate the values at those times. We've been writing e.g. Cubic(breaks, knots). I've changed all instances (apart from the IK code) to replace knots with either breaks (when time was intended) or samples (when the values were intended). Deprecating pybind argument names... woohoo!
-* common: trajectories: more informative names for cubic spline generators (`#12939`_)  # Cubic(breaks, samples, bool periodic) => CubicWithContinuousSecondDerivatives Cubic(breaks, samples, sample_dot_start, sample_dot_end) => CubicWithContinuousSecondDerivatives Cubic(breaks, samples, samples_dot) => CubicHermite Pchip => CubicShapePreserving
-* common: trajectories: support default scalars in PiecewisePolynomial (`#12991`_)  # No virtual methods nor type-specific shenanigans this time.  Just straight up double => T (or const T&, ...). I've deprecated a typedef that was used only sometimes and imho obscured readability rather than helped it.
-* common: Move Polynomial and TrigPoly into drake namespace (`#12946`_)
-* common,math: Add BsplineBasis and BsplineTrajectory classes (`#11990`_)
-* common: Adds Trajectory::vector_values (`#12855`_)  # This is a little sugar to make it easier to evaluate a trajectory at many times in a single call. (it's particularly helpful in python).
-* common: trajectories:  Add tests and documentation on the behavior of PiecewisePolynomial<Expression> (`#13011`_)
-* common: trajectories: Add ScaleTime to PiecewisePolynomial (`#12966`_)  # Got a little hairy, but I needed to handle the case with scale = -1.0 because I need this for the tvlqr implementation.  (I need to integrate the riccati equation backwards in time, but our simulators don't support it, so I have to reverse the solution).
-* common: trajectories: add derivative methods to Polynomial, PiecewisePolynomial (`#12951`_)  # Methods to evaluate the derivatives at a point (with out have to make a new object that is the derivative of the original).
-* common: trajectories: adds incremental construction of CubicHermite (`#12952`_)  # This will be used in the integrators to build the "dense output".
-* common: trajectories: support default scalars in PiecewiseTrajectory (`#12986`_)  # note: the signature of one virtual method changed in a way that I did not know how to deprecate properly: ``` MatrixX<T> value(double) const ``` is now ``` MatrixX<T> value(const T& t) const ``` and derived classes will need to update this to compile.  (unfortunately, the compiler gives a relatively verbose and unhelpful stream of errors because the derived classes become abstract classes)
-* common,solvers,systems: Make drake::symbolic::Expression::ToPolynomial => ::ToPolynomial (`#12950`_)  # * Add drake::Polynomial::FromExpression - Deprecate drake::symbolic::Expression::ToPolynomial.
+* Adds utility to "balance" two quadratic forms and uses it in RegionOfAttraction (`#12875`_, `#12882`_)
+* Support region of attraction when Vdot is indefinite at the origin (`#12864`_)
+* Adds the "star" region of attraction test (`#12881`_)
+* Add doxygen group for our suite of integrators (`#12900`_)
+* Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
+* Add symbolic expression support to ExplicitEulerIntegrator, RungeKutta2Integrator (`#12922`_, `#12919`_)
+* Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
+* Use symbolic integrator in direct transcription (`#12889`_, `#12929`_)  [not user visible change?]
+* Add symbolic::IsAffine (`#12933`_)
+* Add Polynomial::SetIndeterminates (`#12902`_)
+* Add Polynomial::CoefficientsAlmostEqual (`#12853`_)
+* Add Trajectory::vector_values (`#12855`_)
+* Add ScaleTime to PiecewisePolynomial (`#12966`_)
+* Add derivative-at-a-point methods to Polynomial, PiecewisePolynomial (`#12951`_)
+* Add incremental construction of CubicHermite (`#12952`_)
+* Construct HermitianDenseOutput from PiecewisePolynomial (`#12957`_, `#13006`_)
+* Support default scalars in Polynomial, PiecewiseTrajectory, PiecewisePolynomial (`#12973`_, `#12986`_, `#12991`_)
+* Add BsplineBasis and BsplineTrajectory classes (`#11990`_)
 
 New features
 
@@ -238,7 +206,7 @@ Newly-deprecated APIs
 
 * drake::symbolic::Expression::ToPolynomial (`#12950`_)
 
-  * Use drake::ToPolynomial(const Expression&).
+  * Use drake::Polynomial::FromExpression.
 
 * drake::systems::InitialValueProblem::SpecifiedValues (`#12931`_)
 
