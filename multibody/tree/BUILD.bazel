@@ -93,6 +93,7 @@ drake_cc_library(
         "body_node_impl.cc",
         "door_hinge.cc",
         "fixed_offset_frame.cc",
+        "gimbal_joint.cc",
         "joint_actuator.cc",
         "linear_bushing_roll_pitch_yaw.cc",
         "linear_spring_damper.cc",
@@ -123,6 +124,7 @@ drake_cc_library(
         "force_element.h",
         "frame.h",
         "frame_base.h",
+        "gimbal_joint.h",
         "joint.h",
         "joint_actuator.h",
         "linear_bushing_roll_pitch_yaw.h",
@@ -477,6 +479,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "prismatic_joint_test",
+    deps = [
+        ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gimbal_joint_test",
     deps = [
         ":tree",
     ],
