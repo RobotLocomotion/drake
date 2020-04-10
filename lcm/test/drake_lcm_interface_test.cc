@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -14,8 +14,8 @@
 // declared in drake_lcm_interface.h.
 //
 // Since DrakeLcmInterface and DrakeSubscription are pure virtual, we end up
-// using DrakeMockLcm's implementation of them and presuming DrakeMockLcm's
-// correctness in these test cases.
+// using DrakeLcm's implementation of them and presuming its correctness in
+// these test cases.
 
 namespace drake {
 namespace lcm {
@@ -38,7 +38,7 @@ class DrakeLcmInterfaceTest : public ::testing::Test {
   }
 
  protected:
-  DrakeMockLcm lcm_;
+  DrakeLcm lcm_;
   const std::string channel_ = "NAME";
 
   // A convenient, populated sample message and its encoded form.

@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -41,16 +41,17 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
 struct SampleData {
   lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
-  void MockPublish(
-      drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
+  void PublishAndHandle(
+      drake::lcm::DrakeLcmInterface* lcm,
+      const std::string& channel_name) const {
     Publish(lcm, channel_name, value);
-    lcm->HandleSubscriptions(0);
+    while (lcm->HandleSubscriptions(10) == 0) { /* retry */ }
   }
 };
 
 // Tests the forced update hander of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ForcedEventTest) {
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
   const std::string channel_name = "channel_name";
 
   // The "device under test".
@@ -60,9 +61,9 @@ GTEST_TEST(LcmSubscriberSystemTest, ForcedEventTest) {
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
-  // MockLcm produces a sample message.
+  // Produce a sample message.
   SampleData sample_data;
-  sample_data.MockPublish(&lcm, channel_name);
+  sample_data.PublishAndHandle(&lcm, channel_name);
 
   // Call the forced update handler to update the abstract states.
   std::unique_ptr<State<double>> tmp_state = context->CloneState();
@@ -78,7 +79,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ForcedEventTest) {
 
 // Tests LcmSubscriberSystem using a Serializer.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
   const std::string channel_name = "channel_name";
 
   // The "device under test".
@@ -88,9 +89,9 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
 
-  // MockLcm produces a sample message.
+  // Produce a sample message.
   SampleData sample_data;
-  sample_data.MockPublish(&lcm, channel_name);
+  sample_data.PublishAndHandle(&lcm, channel_name);
 
   // Verifies that the dut produces the output message.
   EvalOutputHelper(*dut, context.get(), output.get());
@@ -103,7 +104,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   // Ensure that `WaitForMessage` works as expected.
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
   const std::string channel_name = "channel_name";
 
   // Start device under test, with background LCM thread running.
@@ -126,7 +127,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
     return dut->WaitForMessage(0);
   });
   wait();
-  sample_data.MockPublish(&lcm, channel_name);
+  sample_data.PublishAndHandle(&lcm, channel_name);
   EXPECT_GE(future_count.get(), 1);
 
   // Test implicit value, retrieving message as well.
@@ -139,7 +140,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
     return message.get_value();
   });
   wait();
-  sample_data.MockPublish(&lcm, channel_name);
+  sample_data.PublishAndHandle(&lcm, channel_name);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
       future_message.get(), sample_data.value));
 
@@ -166,7 +167,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
     return dut->WaitForMessage(old_count, nullptr, 0.02 /** 20 ms */);
   });
   wait();
-  sample_data.MockPublish(&lcm, channel_name);
+  sample_data.PublishAndHandle(&lcm, channel_name);
   EXPECT_GE(second_timeout_count.get(), old_count + 1);
 }
 

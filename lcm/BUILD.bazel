@@ -36,7 +36,7 @@ drake_cc_library(
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
     deps = [
-        ":interface",
+        ":real",
     ],
 )
 
@@ -89,7 +89,7 @@ drake_cc_googletest(
     name = "drake_lcm_interface_test",
     deps = [
         ":lcmt_drake_signal_utils",
-        ":mock",
+        ":real",
         "//common/test_utilities",
     ],
 )

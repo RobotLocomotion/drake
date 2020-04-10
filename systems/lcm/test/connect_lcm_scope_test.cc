@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -15,7 +15,7 @@ namespace {
 
 // Scope a ConstantVectorSource and check the output.
 GTEST_TEST(ScopeTest, PublishTest) {
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
   const std::string channel = "my_channel";
 
   Eigen::VectorXd vec = Eigen::VectorXd::LinSpaced(5, 1.0, 2.0);
@@ -29,7 +29,7 @@ GTEST_TEST(ScopeTest, PublishTest) {
 
   drake::lcm::Subscriber<lcmt_drake_signal> sub(&lcm, channel);
   diagram->Publish(*context);
-  lcm.HandleSubscriptions(0);
+  LcmHandleSubscriptionsUntil(&lcm, [&sub]() { return sub.count() > 0; });
 
   const auto& message = sub.message();
   ASSERT_EQ(message.dim, vec.size());
