@@ -1,5 +1,6 @@
-import unittest
+import sys
 from types import ModuleType
+import unittest
 
 import pydrake.common.cpp_template as m
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
@@ -88,7 +89,11 @@ class TestCppTemplate(unittest.TestCase):
 
         with self.assertRaises(TypeError) as cm:
             assert_pickle(self, template)
-        self.assertIn("can't pickle module objects", str(cm.exception))
+        if sys.version_info[:2] >= (3, 8):
+            pickle_error = "cannot pickle 'module' object"
+        else:
+            pickle_error = "can't pickle module objects"
+        self.assertIn(pickle_error, str(cm.exception))
 
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
