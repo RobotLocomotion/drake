@@ -25,15 +25,13 @@ void FillWithNumbersIncreasingFromZero(Eigen::MatrixBase<Derived>& matrix) {
 
 class AutodiffJacobianTest : public ::testing::Test {};
 
-// This test ensures that math::jacobian() does not segfault on a constant
-// function. In the older math::jacobian() implementation, math::jacobian()
-// segfaults on a constant function when the return type uses scalar type
-// AutoDiffXd, because the derivative size of each chunk result is 0, and
-// indexing into the derivative will segfault.
+// This test ensures that math::jacobian() works properly on a constant
+// function when the return type uses scalar type AutoDiffXd. This function
+// is notable because the derivative size of each chunk result is 0.
 TEST_F(AutodiffJacobianTest, ConstantFunction) {
   using Eigen::Matrix3d;
   using Eigen::Vector3d;
-  Vector3d constant = Vector3d::Zero();
+  Vector3d constant = {-2.5, 1.25, 5.0};
 
   auto constant_func = [&](const auto& in) {
     return constant.cast<AutoDiffXd>().eval();
@@ -46,14 +44,12 @@ TEST_F(AutodiffJacobianTest, ConstantFunction) {
   // Ensure that value is correct.
   auto value_expected = constant_func(x);
   auto value = autoDiffToValueMatrix(jac);
-  EXPECT_TRUE(CompareMatrices(value_expected, value, 1e-12,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(value_expected, value));
 
   // Ensure that Jacobian is correct.
   auto jac_matrix = autoDiffToGradientMatrix(jac);
   auto jac_expected = Matrix3d::Zero();
-  EXPECT_TRUE(CompareMatrices(jac_expected, jac_matrix, 1e-12,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(jac_expected, jac_matrix));
 }
 
 TEST_F(AutodiffJacobianTest, QuadraticForm) {

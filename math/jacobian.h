@@ -65,8 +65,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
   using ArgScalar = typename ArgNoRef::Scalar;
 
   // Argument scalar type corresponding to return value of this function.
-  using ReturnArgDerType = Matrix<ArgScalar, ArgNoRef::SizeAtCompileTime, 1, 0,
-                                  ArgNoRef::MaxSizeAtCompileTime, 1>;
+  using ReturnArgDerType = VectorX<ArgScalar>;
   using ReturnArgAutoDiffScalar = AutoDiffScalar<ReturnArgDerType>;
 
   // Return type of this function.
@@ -75,8 +74,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
   using ReturnType = decltype(f(std::declval<ReturnArgAutoDiffType>()));
 
   // Scalar type of chunk arguments.
-  using ChunkArgDerType =
-      Matrix<ArgScalar, Eigen::Dynamic, 1, 0, MaxChunkSize, 1>;
+  using ChunkArgDerType = VectorX<ArgScalar>;
   using ChunkArgAutoDiffScalar = AutoDiffScalar<ChunkArgDerType>;
 
   // Allocate output.
@@ -127,22 +125,18 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
       // Instead, assign each element individually, making use of conversion
       // constructors.
 
-      // Normally, we should iterate j until j = chunk_size - 1. However, if
-      // chunk_result(i) has a smaller derivative vector, we also need to stop
-      // iterating j at that value to prevent segmentation faults.
-      Index j_limit =
-          std::min(chunk_size, chunk_result(i).derivatives().size());
-      for (Index j = 0; j < j_limit; j++) {
-        ret(i).derivatives()(deriv_num_start + j) =
-            chunk_result(i).derivatives()(j);
-      }
+      // Check to make sure chunk_result(i)'s derivative vector has a positive
+      // size; otherwise indexing into it will segfault.
+      if (chunk_result(i).derivatives().size() > 0) {
+        DRAKE_DEMAND(chunk_result(i).derivatives().size() >= chunk_size);
 
-      // Set the remainder of the derivatives to zero.
-      if (j_limit < chunk_size) {
-        ret(i)
-            .derivatives()
-            .segment(deriv_num_start + j_limit, chunk_size - j_limit)
-            .setZero();
+        for (Index j = 0; j < chunk_size; j++) {
+          ret(i).derivatives()(deriv_num_start + j) =
+              chunk_result(i).derivatives()(j);
+        }
+      } else {
+        // Set the derivatives to zero.
+        ret(i).derivatives().segment(deriv_num_start, chunk_size).setZero();
       }
     }
   }
