@@ -154,7 +154,7 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
     adiff_system_ = system.ToAutoDiffXd();
     adiff_context_ = adiff_system_->AllocateContext();
   }
-  const Context<T>& context = *(this->get_mutable_context());
+  const Context<T>& context = this->get_context();
   adiff_context_->SetTimeStateAndParametersFrom(context);
   adiff_system_->FixInputPortsFrom(system, context, adiff_context_.get());
 
