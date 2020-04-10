@@ -252,8 +252,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 elif geom.type == geom.MESH:
                     filename = geom.string_data
                     base, ext = os.path.splitext(filename)
-                    if (ext.lower() is not ".obj") and \
-                       substitute_collocated_mesh_files:
+                    if (ext.lower() != ".obj"
+                            and substitute_collocated_mesh_files):
                         # Check for a co-located .obj file (case insensitive).
                         for f in glob.glob(base + '.*'):
                             if f[-4:].lower() == '.obj':
