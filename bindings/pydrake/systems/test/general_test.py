@@ -15,7 +15,9 @@ from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
+    GetIntegrationSchemes,
     IntegratorBase, IntegratorBase_,
+    ResetIntegratorFromFlags,
     RungeKutta2Integrator, RungeKutta3Integrator,
     SimulatorStatus, Simulator, Simulator_,
     )
@@ -525,6 +527,17 @@ class TestGeneral(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             # TODO(12873) We need an API for this that isn't deprecated.
             simulator.reset_integrator(rk3)
+
+    def test_simulator_flags(self):
+        system = ConstantVectorSource([1])
+        simulator = Simulator(system)
+
+        ResetIntegratorFromFlags(simulator, "runge_kutta2", 0.00123)
+        integrator = simulator.get_integrator()
+        self.assertEqual(type(integrator), RungeKutta2Integrator)
+        self.assertEqual(integrator.get_maximum_step_size(), 0.00123)
+
+        self.assertGreater(len(GetIntegrationSchemes()), 5)
 
     def test_abstract_output_port_eval(self):
         model_value = AbstractValue.Make("Hello World")

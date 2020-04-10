@@ -586,7 +586,7 @@ class Simulator {
 
   template <class U>
   DRAKE_DEPRECATED(
-      "2020-05-01",
+      "2020-08-01",
       "Use void or max-step-size version of reset_integrator() instead.")
   U* reset_integrator(std::unique_ptr<U> integrator) {
     if (!integrator)
