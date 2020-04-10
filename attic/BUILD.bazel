@@ -1,7 +1,20 @@
 # -*- python -*-
 
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(["CPPLINT.cfg"])
+
+drake_cc_library(
+    name = "warning",
+    srcs = ["warning.cc"],
+    hdrs = ["warning.h"],
+    install_hdrs_exclude = ["warning.h"],
+    visibility = ["//attic:__subpackages__"],
+    deps = ["//common:essential"],
+)
 
 add_lint_tests()
