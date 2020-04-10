@@ -625,12 +625,12 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Variables to avoid heap allocations.
   VectorX<T> xn_, xdot_, xtplus_vie_, xtplus_hvie_;
-  std::unique_ptr<BasicVector<T>> qdot_{nullptr};
+  std::unique_ptr<BasicVector<T>> qdot_;
   // The following will help avoid repeated heap allocations when computing a
   // velocity Jacobian using automatic differentiation.
-  std::unique_ptr<System<AutoDiffXd>> adiff_system_{nullptr};
-  std::unique_ptr<Context<AutoDiffXd>> adiff_context_{nullptr};
-  std::unique_ptr<BasicVector<AutoDiffXd>> adiff_qdot_{nullptr};
+  std::unique_ptr<System<AutoDiffXd>> adiff_system_;
+  std::unique_ptr<Context<AutoDiffXd>> adiff_context_;
+  std::unique_ptr<BasicVector<AutoDiffXd>> adiff_qdot_;
 
   // The last computed velocity+misc Jacobian matrix.
   MatrixX<T> Jy_vie_;
