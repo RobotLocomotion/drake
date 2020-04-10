@@ -11,6 +11,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/force_element.h"
@@ -240,6 +241,31 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.acceleration_lower_limits.doc)
         .def("acceleration_upper_limits", &Class::acceleration_upper_limits,
             cls_doc.acceleration_upper_limits.doc);
+  }
+
+  // BallRpyJoint
+  {
+    using Class = BallRpyJoint<T>;
+    constexpr auto& cls_doc = doc.BallRpyJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "BallRpyJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(
+            py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("damping") = 0, cls_doc.ctor.doc)
+        .def("get_angles", &Class::get_angles, py::arg("context"),
+            cls_doc.get_angles.doc)
+        .def("set_angles", &Class::set_angles, py::arg("context"),
+            py::arg("angles"), cls_doc.set_angles.doc)
+        .def("set_random_angles_distribution",
+            &Class::set_random_angles_distribution, py::arg("angles"),
+            cls_doc.set_random_angles_distribution.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+            py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+            py::arg("context"), py::arg("w_FM"),
+            cls_doc.set_angular_velocity.doc);
   }
 
   // PrismaticJoint
