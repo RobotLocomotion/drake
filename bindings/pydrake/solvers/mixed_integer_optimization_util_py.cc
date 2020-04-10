@@ -8,7 +8,7 @@
 
 namespace drake {
 namespace pydrake {
-PYBIND11_MODULE(mip_utils, m) {
+PYBIND11_MODULE(mixed_integer_optimization_util, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
