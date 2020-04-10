@@ -82,7 +82,7 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   RadauIntegrator<double, num_stages> radau(quadratic, quadratic_context.get());
 
   // Ensure that the Radau3 integrator supports error estimation.
-  EXPECT_EQ(radau.supports_error_estimation(), true);
+  EXPECT_TRUE(radau.supports_error_estimation());
 
   const double t_final = 1.0;
   radau.set_maximum_step_size(t_final);
@@ -217,8 +217,8 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   ImplicitEulerIntegrator<double> ie(spring_damper, context_ie.get());
 
   // Ensure that both integrators support error estimation.
-  EXPECT_EQ(radau1.supports_error_estimation(), true);
-  EXPECT_EQ(radau1.supports_error_estimation(), ie.supports_error_estimation());
+  EXPECT_TRUE(radau1.supports_error_estimation());
+  EXPECT_TRUE(ie.supports_error_estimation());
 
   // Set maximum step sizes that are reasonable for this system.
   radau1.set_maximum_step_size(1e-2);

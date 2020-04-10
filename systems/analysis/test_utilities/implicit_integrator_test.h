@@ -917,12 +917,11 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
   using Integrator = TypeParam;
   Integrator integrator(*stationary, context.get());
 
+  integrator.set_maximum_step_size(1.0);
+
   if (integrator.supports_error_estimation()) {
-    integrator.set_maximum_step_size(1.0);
     integrator.set_target_accuracy(1e-3);
-    integrator.request_initial_step_size_target(1e-4);
-  } else {
-    integrator.set_maximum_step_size(1e-1);
+    integrator.request_initial_step_size_target(1e-3);
   }
 
   // Integrate the system
@@ -949,13 +948,13 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
     new_state.SetAtIndex(0, 0.0);
     new_state.SetAtIndex(1, 0.0);
 
+    integrator.set_maximum_step_size(1.0);
+
     if (integrator.supports_error_estimation()) {
-      integrator.set_maximum_step_size(1.0);
       integrator.set_target_accuracy(1e-3);
-      integrator.request_initial_step_size_target(1e-4);
-    } else {
-      integrator.set_maximum_step_size(1e-1);
+      integrator.request_initial_step_size_target(1e-3);
     }
+
     // Initialize the integrator to discard the cached Jacobian.
     integrator.Initialize();
 

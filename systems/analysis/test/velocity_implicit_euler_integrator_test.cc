@@ -10,11 +10,11 @@ namespace systems {
 namespace analysis_test {
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
-// corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
+// corresponding to f(t) ≡ 7t² + 7t + C, where C is the initial state) over
 // t ∈ [0, 1]. Since the error estimate has a Taylor series that is
 // accurate to O(h²) and since we have no terms beyond this order,
 // halving the step size should improve the error estimate by a factor of 4.
-// Furthemore, we test that the error estimate gives the exact error, with
+// Furthermore, we test that the error estimate gives the exact error, with
 // both the correct sign and magnitude.
 GTEST_TEST(VelocityImplicitIntegratorErrorEstimatorTest,
            QuadraticSystemAccuracy) {
@@ -29,11 +29,11 @@ GTEST_TEST(VelocityImplicitIntegratorErrorEstimatorTest,
 
   // Ensure that the velocity-implicit Euler integrator supports error
   // estimation.
-  ASSERT_EQ(vie.supports_error_estimation(), true);
+  ASSERT_TRUE(vie.supports_error_estimation());
 
   // Per the description in IntegratorBase::get_error_estimate_order(), this
   // should return "2", in accordance with the order of the polynomial in the
-  // Big-Oh term.
+  // Big-O term.
   ASSERT_EQ(vie.get_error_estimate_order(), 2);
 
   const double t_final = 1.5;
