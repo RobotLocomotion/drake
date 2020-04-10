@@ -36,7 +36,7 @@ drake_cc_library(
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
     deps = [
-        ":interface",
+        ":real",
     ],
 )
 
@@ -89,7 +89,21 @@ drake_cc_googletest(
     name = "drake_lcm_interface_test",
     deps = [
         ":lcmt_drake_signal_utils",
-        ":mock",
+        ":real",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_lcm_interface_leak_test",
+    tags = [
+        # The liblcm leaks when C++ exception handling crosses over it.
+        # Nothing we can do about that.
+        "no_lsan",
+        "no_memcheck",
+    ],
+    deps = [
+        ":lcmt_drake_signal_utils",
+        ":real",
         "//common/test_utilities",
     ],
 )

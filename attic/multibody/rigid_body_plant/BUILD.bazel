@@ -227,7 +227,7 @@ drake_cc_googletest(
     deps = [
         ":drake_visualizer",
         "//common:find_resource",
-        "//lcm:mock",
+        "//lcm:real",
         "//systems/analysis",
     ],
 )
@@ -241,7 +241,7 @@ drake_cc_googletest(
         ":frame_visualizer",
         "//attic/multibody/parsers",
         "//common:find_resource",
-        "//lcm:mock",
+        "//lcm:real",
     ],
 )
 

@@ -48,16 +48,8 @@ PYBIND11_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.DrakeLcm;
     py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", cls_doc.doc)
         .def(py::init<>(), cls_doc.ctor.doc_0args)
-        .def(py::init<std::string>(), py::arg("lcm_url"),
-            cls_doc.ctor.doc_1args);
-    // TODO(eric.cousineau): Add remaining methods.
-  }
-
-  {
-    using Class = DrakeMockLcm;
-    constexpr auto& cls_doc = doc.DrakeMockLcm;
-    py::class_<Class, DrakeLcmInterface>(m, "DrakeMockLcm", cls_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(
+            py::init<std::string>(), py::arg("lcm_url"), cls_doc.ctor.doc_1args)
         .def("Subscribe",
             [](Class* self, const std::string& channel,
                 PyHandlerFunction handler) {
@@ -65,10 +57,19 @@ PYBIND11_MODULE(lcm, m) {
                   channel, [handler](const void* data, int size) {
                     handler(py::bytes(static_cast<const char*>(data), size));
                   });
-              // Unsubscribe is not supported by the mock.
-              DRAKE_DEMAND(subscription == nullptr);
+              DRAKE_DEMAND(subscription != nullptr);
+              // This is already the default, but for clarity we'll repeat it.
+              subscription->set_unsubscribe_on_delete(false);
             },
             py::arg("channel"), py::arg("handler"), cls_doc.Subscribe.doc);
+    // TODO(eric.cousineau): Add remaining methods.
+  }
+
+  {
+    using Class = DrakeMockLcm;
+    constexpr auto& cls_doc = doc.DrakeMockLcm;
+    py::class_<Class, DrakeLcm>(m, "DrakeMockLcm", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc);
   }
 
   ExecuteExtraPythonCode(m);

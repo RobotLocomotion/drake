@@ -7,7 +7,6 @@
 
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/analysis/simulator.h"
@@ -24,22 +23,20 @@ namespace {
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
 using drake::lcm::DrakeLcmInterface;
-using drake::lcm::DrakeMockLcm;
 using drake::lcm::DrakeLcm;
 
 using Subscriber = drake::lcm::Subscriber<lcmt_drake_signal>;
 
 // Test that failure to specify an LCM interface results in an internal one
-// of being allocated. Can't check for operation in this case
-// since we won't have a mock LCM to look at.
+// being allocated.
 GTEST_TEST(LcmPublisherSystemTest, DefaultLcmTest) {
   const std::string channel_name = "junk";
 
   // Provide an explicit LCM interface and check that it gets used.
-  DrakeMockLcm mock_lcm;
+  DrakeLcm interface;
   auto dut1 = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &mock_lcm);
-  EXPECT_EQ(&(dut1->lcm()), &mock_lcm);
+      channel_name, &interface);
+  EXPECT_EQ(&(dut1->lcm()), &interface);
 
   // Now leave out the LCM interface and check that a DrakeLcm gets allocated.
   auto dut2 = LcmPublisherSystem::Make<lcmt_drake_signal>(
@@ -53,15 +50,15 @@ GTEST_TEST(LcmPublisherSystemTest, DefaultLcmTest) {
 GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   const std::string channel_name = "junk";
 
-  DrakeMockLcm mock_lcm;
+  DrakeLcm interface;
   auto dut1 = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &mock_lcm);
-  Subscriber sub(&mock_lcm, channel_name);
+      channel_name, &interface);
+  Subscriber sub(&interface, channel_name);
 
   bool init_was_called{false};
-  dut1->AddInitializationMessage([&dut1, &init_was_called](
+  dut1->AddInitializationMessage([&interface, &init_was_called](
       const Context<double>&, DrakeLcmInterface* lcm) {
-    EXPECT_EQ(lcm, &(dut1->lcm()));
+    EXPECT_EQ(lcm, &interface);
     init_was_called = true;
   });
 
@@ -80,17 +77,18 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   EXPECT_TRUE(init_was_called);
 
   // Nothing should have been published to this channel.
-  mock_lcm.HandleSubscriptions(0);
+  interface.HandleSubscriptions(0);
   EXPECT_EQ(sub.count(), 0);
 }
 
 // Tests LcmPublisherSystem using a Serializer.
 GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
-  lcm::DrakeMockLcm lcm;
+  lcm::DrakeLcm interface;
   const std::string channel_name = "channel_name";
 
   // The "device under test".
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
+      channel_name, &interface);
   ASSERT_NE(dut.get(), nullptr);
 
   // Establishes the context, output, and input for the dut.
@@ -102,20 +100,21 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   dut->get_input_port().FixValue(context.get(), sample_data);
 
   // Verifies that a correct message is published.
-  Subscriber sub(&lcm, channel_name);
+  Subscriber sub(&interface, channel_name);
   dut->Publish(*context.get());
-  lcm.HandleSubscriptions(0);
+  interface.HandleSubscriptions(0);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(sub.message(), sample_data));
 }
 
 // Tests that per-step publish generates the expected number of publishes.
 GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
-  lcm::DrakeMockLcm lcm;
+  lcm::DrakeLcm interface;
   const std::string channel_name = "channel_name";
-  Subscriber sub(&lcm, channel_name);
+  Subscriber sub(&interface, channel_name);
 
   // Instantiate the "device under test" in per-step publishing mode.
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
+      channel_name, &interface);
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
 
@@ -126,13 +125,13 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  lcm.HandleSubscriptions(0);
+  interface.HandleSubscriptions(0);
   EXPECT_EQ(sub.count(), 1);
 
   // Ensure that the integrator takes at least a few steps.
   for (double time = 0; time < 1; time += 0.25) {
     simulator.AdvanceTo(time);
-    lcm.HandleSubscriptions(0);
+    interface.HandleSubscriptions(0);
   }
 
   // Check that we get exactly the number of publishes desired: one (at
@@ -143,12 +142,12 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
 // When constructed via a publish_triggers set, tests that per-step publish
 // generates the expected number of publishes.
 GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
-  lcm::DrakeMockLcm lcm;
+  lcm::DrakeLcm interface;
   const std::string channel_name = "channel_name";
-  Subscriber sub(&lcm, channel_name);
+  Subscriber sub(&interface, channel_name);
 
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &lcm, {TriggerType::kPerStep});
+      &interface, {TriggerType::kPerStep});
 
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
@@ -160,7 +159,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  lcm.HandleSubscriptions(0);
+  interface.HandleSubscriptions(0);
   EXPECT_EQ(sub.count(), 1);
 
   // Ensure that the integrator takes at least a few steps.
@@ -168,7 +167,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   // will not subdivide its steps.
   for (double time = 0.0; time < 1; time += 0.25) {
     simulator.AdvanceTo(time);
-    lcm.HandleSubscriptions(0);
+    interface.HandleSubscriptions(0);
   }
 
   // Check that we get exactly the number of publishes desired: one (at
@@ -179,20 +178,20 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
 // When constructed via a publish_triggers set, tests that forced publish
 // generates the expected number of publishes.
 GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
-  lcm::DrakeMockLcm lcm;
+  lcm::DrakeLcm interface;
   const std::string channel_name = "channel_name";
   int force_publish_count = 3;
-  Subscriber sub(&lcm, channel_name);
+  Subscriber sub(&interface, channel_name);
 
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &lcm, {TriggerType::kForced});
+      &interface, {TriggerType::kForced});
 
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
 
   for (int i = 0; i < force_publish_count; i++) {
     dut->Publish(*context);
-    lcm.HandleSubscriptions(0);
+    interface.HandleSubscriptions(0);
   }
 
   // Check that we get exactly the number of publishes desired.
@@ -217,15 +216,15 @@ class TimeMessageSystem final : public LeafSystem<double> {
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
 
-  lcm::DrakeMockLcm lcm;
+  lcm::DrakeLcm interface;
   const std::string channel_name = "channel_name";
-  Subscriber sub(&lcm, channel_name);
+  Subscriber sub(&interface, channel_name);
 
   // Cascade a time source with the device under test.
   DiagramBuilder<double> builder;
   auto source = builder.AddSystem<TimeMessageSystem>();
   auto dut = builder.AddSystem(LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &lcm, kPublishPeriod));
+      channel_name, &interface, kPublishPeriod));
   builder.Connect(*source, *dut);
   auto diagram = builder.Build();
 
@@ -236,12 +235,12 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  lcm.HandleSubscriptions(0);
+  interface.HandleSubscriptions(0);
   EXPECT_EQ(sub.count(), 1);
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.AdvanceTo(time);
-    lcm.HandleSubscriptions(0);
+    interface.HandleSubscriptions(0);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =
@@ -259,13 +258,13 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
 
-  lcm::DrakeMockLcm lcm;
+  lcm::DrakeLcm interface;
   const std::string channel_name = "channel_name";
-  Subscriber sub(&lcm, channel_name);
+  Subscriber sub(&interface, channel_name);
 
   // Instantiates the "device under test".
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &lcm, {TriggerType::kPeriodic},
+      &interface, {TriggerType::kPeriodic},
       kPublishPeriod);
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
@@ -277,12 +276,12 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   simulator.Initialize();
 
   // Check that a message was transmitted during initialization.
-  lcm.HandleSubscriptions(0);
+  interface.HandleSubscriptions(0);
   EXPECT_EQ(sub.count(), 1);
 
   for (double time = 0.0; time < 4; time += 0.01) {
     simulator.AdvanceTo(time);
-    lcm.HandleSubscriptions(0);
+    interface.HandleSubscriptions(0);
   }
 
   // Check that we get the expected number of messages: one at initialization

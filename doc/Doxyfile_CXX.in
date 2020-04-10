@@ -138,11 +138,6 @@ EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*" \
                          "@INPUT_ROOT@/*/MG/*" \
                          "@INPUT_ROOT@/drake/attic/*"
 EXCLUDE_SYMBOLS        = "*::internal" "pybind11"
-# Sometimes using-statements confuse Doxygen and end up placing forward
-# declarations into a namespace that lacks the intiial "drake::" prefix.
-# Tell Doxygen to fully omit some top-level namespaces that will never
-# have any real documentation inside them.
-EXCLUDE_SYMBOLS        += "internal" "lcm" "manipulation"
 # Don't document our (obvious) Eigen overloads like "isinf", etc.
 EXCLUDE_SYMBOLS        += "Eigen"
 EXAMPLE_PATH           =

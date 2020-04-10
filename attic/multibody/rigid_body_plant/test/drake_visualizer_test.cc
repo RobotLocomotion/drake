@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
@@ -465,7 +465,7 @@ void PublishLoadRobotModelMessageHelper(
 // Tests the basic functionality of the DrakeVisualizer.
 GTEST_TEST(DrakeVisualizerTests, BasicTest) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
   const DrakeVisualizer dut(*tree, &lcm);
   LoadSubscriber load_sub(&lcm, "DRAKE_VIEWER_LOAD_ROBOT");
   DrawSubscriber draw_sub(&lcm, "DRAKE_VIEWER_DRAW");
@@ -498,7 +498,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
 
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
   LoadSubscriber load_sub(&lcm, "DRAKE_VIEWER_LOAD_ROBOT");
   DrawSubscriber draw_sub(&lcm, "DRAKE_VIEWER_DRAW");
 
@@ -534,7 +534,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
 // + num_velocity trajectories.
 GTEST_TEST(DrakeVisualizerTests, TestPlaybackTrajectory) {
   unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
 
   // Instantiates the "device under test".
   DrakeVisualizer dut(*tree, &lcm);

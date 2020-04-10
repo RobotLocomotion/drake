@@ -10,7 +10,7 @@ import numpy as np
 from robotlocomotion import header_t, quaternion_t
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.lcm import DrakeLcm, DrakeMockLcm, Subscriber
+from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
@@ -88,7 +88,7 @@ class TestSystemsLcm(unittest.TestCase):
         return simulator.get_context().Clone()
 
     def test_subscriber(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
         model_message = self._model_message()
@@ -99,7 +99,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_cpp(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
@@ -134,7 +134,7 @@ class TestSystemsLcm(unittest.TestCase):
         dut.Publish(context)
 
     def test_publisher(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
@@ -145,7 +145,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_publisher_cpp(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
@@ -162,4 +162,4 @@ class TestSystemsLcm(unittest.TestCase):
         mut.ConnectLcmScope(src=source.get_output_port(0),
                             channel="TEST_CHANNEL",
                             builder=builder,
-                            lcm=DrakeMockLcm())
+                            lcm=DrakeLcm())
