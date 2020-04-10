@@ -33,7 +33,7 @@ TEST_F(AutodiffJacobianTest, ConstantFunction) {
   using Eigen::Vector3d;
   Vector3d constant = {-2.5, 1.25, 5.0};
 
-  auto constant_func = [&](const auto& in) {
+  auto constant_func = [&](const auto&) {
     return constant.cast<AutoDiffXd>().eval();
   };
 
