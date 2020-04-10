@@ -136,6 +136,11 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const Eigen::MatrixXi>& codes);
 
+VectorX<symbolic::Variable> AddLogarithmicSos1Constraint(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
+    const std::string& binary_variable_name);
+
 /**
  * For a continuous variable whose range is cut into small intervals, we will
  * use binary variables to represent which interval the continuous variable is

@@ -77,6 +77,20 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "mip_utils_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+    ],
+    cc_srcs = ["mip_utils_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+    ],
+)
+
 drake_cc_library(
     name = "solvers_pybind",
     hdrs = ["solvers_pybind.h"],
@@ -191,6 +205,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
+    ":mip_utils_py",
     ":mosek_py",
     ":nlopt_py",
     ":osqp_py",
