@@ -5,6 +5,7 @@ from .mathematicalprogram import *  # noqa
 from .branch_and_bound import *  # noqa
 from .gurobi import *  # noqa
 from .ipopt import *  # noqa
+from .mip_utils import *  # noqa
 from .mosek import *  # noqa
 from .osqp import *  # noqa
 from .snopt import *  # noqa

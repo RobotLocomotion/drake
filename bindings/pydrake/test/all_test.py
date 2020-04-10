@@ -138,6 +138,8 @@ class TestAll(unittest.TestCase):
             # perception
             "PointCloud",
             # solvers
+            # - mip_utils
+            "AddLogarithmicSos2Constraint",
             # - gurobi
             "GurobiSolver",
             # - ik

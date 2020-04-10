@@ -17,13 +17,19 @@ PYBIND11_MODULE(mip_utils, m) {
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  m.def("AddLogarithmicSos1Condition",
-      [](MathematicalProgram* prog, const VectorX<symbolic::Expression>& lambda,
-          const VectorX<symbolic::Variable>& y, const Eigen::MatrixXi& codes) {
-        return AddLogarithmicSos1Constraint(prog, lambda, binary_variable_name);
+  m.def("AddLogarithmicSos2Constraint",
+      [](MathematicalProgram* prog,
+          const VectorX<symbolic::Expression>& lambdas,
+          const std::string& binary_variable_name) {
+        return AddLogarithmicSos2Constraint(
+            prog, lambdas, binary_variable_name);
       },
-      py::arg("prog"), py::arg("lambda"), py::arg("binary_variable_name") = "y",
+      py::arg("prog"), py::arg("lambdas"),
+      py::arg("binary_variable_name") = "y",
       doc.AddLogarithmicSos1Constraint.doc);
+
+  m.def("AddSos2Constraint", &AddSos2Constraint, py::arg("prog"),
+      py::arg("lambdas"), py::arg("y"), doc.AddSos2Constraint.doc);
 }
 }  // namespace pydrake
 }  // namespace drake

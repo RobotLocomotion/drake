@@ -325,6 +325,15 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "mip_utils_test",
+    deps = [
+        ":mip_utils_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
 add_pybind_coverage_data()
 
 add_lint_tests_pydrake()
