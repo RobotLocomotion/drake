@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers import mip_utils as mip_utils
+from pydrake.solvers import mixed_integer_optimization_util as mip_util
 
 
 class TestAddLogarithmicSos2Constraint(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestAddLogarithmicSos2Constraint(unittest.TestCase):
         lambdas = prog.NewContinuousVariables(3)
         # we use +lambdas to convert a numpy array of symbolic variables to a
         # numpy array of symbolic expressions
-        y = mip_utils.AddLogarithmicSos2Constraint(prog, +lambdas, "y")
+        y = mip_util.AddLogarithmicSos2Constraint(prog, +lambdas, "y")
         self.assertEqual(y.shape, (1,))
 
         def check_val(y_val, lambdas_val, satisfied_expected):
@@ -36,7 +36,7 @@ class TestAddSos2Constraint(unittest.TestCase):
         y = prog.NewBinaryVariables(2)
         # we use +lambdas to convert a numpy array of symbolic variables to a
         # numpy array of symbolic expressions
-        mip_utils.AddSos2Constraint(prog, +lambdas, +y)
+        mip_util.AddSos2Constraint(prog, +lambdas, +y)
 
         def check_val(y_val, lambdas_val, satisfied_expected):
             x_val = np.zeros(prog.num_vars())
