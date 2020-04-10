@@ -108,7 +108,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
     const auto& q_autodiff = q.cast<AutoDiffXd>().eval();
     const auto& qdd_autodiff = qdd.cast<AutoDiffXd>().eval();
-    const auto& qd_arg_dynamic = qd_arg;
+    const auto& qd_arg_dynamic = qd_arg.template cast<AutoDiffXd>().eval();
 
     auto kinematics_cache_coriolis =
         tree_rpy_->CreateKinematicsCacheWithType<AutoDiffXd>();
@@ -159,7 +159,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto vd_to_mass_matrix = [&](const auto& vd_arg) {
       const auto& q_autodiff = q.cast<AutoDiffXd>().eval();
       const auto& v_autodiff = v.cast<AutoDiffXd>().eval();
-      const auto& vd_arg_dynamic = vd_arg;
+      const auto& vd_arg_dynamic = vd_arg.template cast<AutoDiffXd>().eval();
 
       auto cache_xd = tree->CreateKinematicsCacheWithType<AutoDiffXd>();
       cache_xd.initialize(q_autodiff, v_autodiff);
@@ -213,7 +213,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
     const auto& gravitational_force_autodiff =
         gravitational_force.cast<AutoDiffXd>().eval();
-    const auto& q_arg_dynamic = q_arg;
+    const auto& q_arg_dynamic = q_arg.template cast<AutoDiffXd>().eval();
 
     auto cache_autodiff = tree->CreateKinematicsCacheWithType<AutoDiffXd>();
     cache_autodiff.initialize(q_arg_dynamic);

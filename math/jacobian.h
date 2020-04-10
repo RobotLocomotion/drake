@@ -65,7 +65,8 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
   using ArgScalar = typename ArgNoRef::Scalar;
 
   // Argument scalar type corresponding to return value of this function.
-  using ReturnArgDerType = VectorX<ArgScalar>;
+  using ReturnArgDerType = Matrix<ArgScalar, ArgNoRef::SizeAtCompileTime, 1, 0,
+                                  ArgNoRef::MaxSizeAtCompileTime, 1>;
   using ReturnArgAutoDiffScalar = AutoDiffScalar<ReturnArgDerType>;
 
   // Return type of this function.
@@ -74,7 +75,8 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
   using ReturnType = decltype(f(std::declval<ReturnArgAutoDiffType>()));
 
   // Scalar type of chunk arguments.
-  using ChunkArgDerType = VectorX<ArgScalar>;
+  using ChunkArgDerType =
+      Matrix<ArgScalar, Eigen::Dynamic, 1, 0, MaxChunkSize, 1>;
   using ChunkArgAutoDiffScalar = AutoDiffScalar<ChunkArgDerType>;
 
   // Allocate output.
