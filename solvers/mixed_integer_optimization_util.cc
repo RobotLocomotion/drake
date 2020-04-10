@@ -109,6 +109,17 @@ void AddLogarithmicSos1Constraint(
   }
 }
 
+std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
+AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_sections) {
+  const int num_y = CeilLog2(num_sections);
+  const auto codes = math::CalculateReflectedGrayCodes(num_y);
+  auto lambda = prog->NewContinuousVariables(num_sections);
+  auto y = prog->NewBinaryVariables(num_y);
+  AddLogarithmicSos1Constraint(prog, lambda.cast<symbolic::Expression>(), y,
+                               codes);
+  return std::make_pair(lambda, y);
+}
+
 void AddBilinearProductMcCormickEnvelopeMultipleChoice(
     MathematicalProgram* prog, const symbolic::Variable& x,
     const symbolic::Variable& y, const symbolic::Expression& w,

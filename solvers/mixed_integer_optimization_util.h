@@ -137,6 +137,32 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const Eigen::MatrixXi>& codes);
 
 /**
+ * Adds the special ordered set of type 1 (SOS1) constraint. Namely
+ * <pre>
+ *   λ(0) + ... + λ(n-1) = 1
+ *   λ(i) ≥ 0 ∀i
+ *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) = 1
+ * </pre>
+ * one and only one of λ(i) is strictly positive (equals to 1 in this case).
+ * We will need to add ⌈log₂(n)⌉ binary variables, where n is the number of
+ * rows in λ. For more information, please refer to
+ *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
+ *   Variables and Constraints
+ *   by J. Vielma and G. Nemhauser, 2011.
+ * @param prog The program to which the SOS1 constraint is added.
+ * @param num_sections n in the documentation above.
+ * @return (lambda, y) lambda is λ in the documentation above. Notice that
+ * λ are declared as continuous variables, but they only admit binary
+ * solutions. y are binary variables of size ⌈log₂(n)⌉.
+ * When this sos1 constraint is satisfied, suppose that
+ * λ(i)=1 and λ(j)=0 ∀ j≠i, then y is the Relected Gray code of i. For example,
+ * suppose n = 8, i = 5, then y is a vector of size ⌈log₂(n)⌉ = 3, and the value
+ * of y is (1, 1, 0) which equals to 5 according to reflected Gray code.
+ */
+std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
+AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_sections);
+
+/**
  * For a continuous variable whose range is cut into small intervals, we will
  * use binary variables to represent which interval the continuous variable is
  * in. We support two representations, either using logarithmic number of binary
