@@ -54,3 +54,23 @@ class TestAddSos2Constraint(unittest.TestCase):
         check_val([0, 1], [0., 0.3, 0.7], True)
         check_val([1, 1], [0., 0.3, 0.7], False)
         check_val([0, 0], [0., 0.3, 0.7], False)
+
+
+class TestAddLogarithmicSos1Constraint(unittest.TestCase):
+    def test(self):
+        prog = mp.MathematicalProgram()
+        (lambdas, y) = mip_util.AddLogarithmicSos1Constraint(prog, 4)
+
+        def check_val(y_val, lambdas_val, satisfied_expected):
+            x_val = np.zeros(prog.num_vars())
+            prog.SetDecisionVariableValueInVector(lambdas, lambdas_val, x_val)
+            prog.SetDecisionVariableValueInVector(y, y_val, x_val)
+            satisfied = True
+            for binding in prog.GetAllConstraints():
+                satisfied = satisfied and binding.evaluator().CheckSatisfied(
+                    prog.GetBindingVariableValues(binding, x_val))
+            self.assertEqual(satisfied, satisfied_expected)
+
+        check_val([1, 0], [0, 0, 0, 1], True)
+        check_val([1, 0], [0, 0, 1, 0], False)
+        check_val([1, 0], [0, 0, 0.5, 0.5], False)
