@@ -47,7 +47,7 @@ class ForceElement : public
 
   /// (Advanced) Computes the force contribution for `this` force element and
   /// **adds** it to the output arrays of forces. Depending on their model,
-  /// different force elements may write into the array of sptial forces
+  /// different force elements may write into the array of spatial forces
   /// `F_B_W` or the array of generalized forces `tau`.
   ///
   /// @param[in] context
