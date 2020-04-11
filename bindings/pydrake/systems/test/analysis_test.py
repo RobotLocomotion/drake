@@ -8,8 +8,10 @@ from pydrake.systems.primitives import (
 from pydrake.systems.analysis import (
     RungeKutta2Integrator_,
     RegionOfAttraction,
-    RegionOfAttractionOptions
+    RegionOfAttractionOptions,
+    Simulator
 )
+from pydrake.trajectories import PiecewisePolynomial
 
 
 class AnalysisTest(unittest.TestCase):
@@ -29,3 +31,21 @@ class AnalysisTest(unittest.TestCase):
 
         max_h = 0.1
         RungeKutta2Integrator_[Expression](sys, max_h, context)
+
+    def test_dense_integration(self):
+        x = Variable("x")
+        sys = SymbolicVectorSystem(state=[x], dynamics=[-x+x**3])
+        simulator = Simulator(sys)
+        integrator = simulator.get_mutable_integrator()
+        self.assertIsNone(integrator.get_dense_output())
+        integrator.StartDenseIntegration()
+        # If I include the following line, then I get a RuntimeError
+        # on StopDenseIntegration()
+        # a = integrator.get_dense_output()
+        self.assertIsInstance(integrator.get_dense_output(),
+                              PiecewisePolynomial)
+        simulator.AdvanceTo(1.0)
+        pp = integrator.StopDenseIntegration()
+        self.assertEqual(pp.start_time(), 0.0)
+        self.assertEqual(pp.end_time(), 1.0)
+        self.assertIsNone(integrator.get_dense_output())
