@@ -183,7 +183,8 @@ void Publish(DrakeLcmInterface* lcm, const std::string& channel,
  * error.
  *
  * @param on_error The callback when a message is received and cannot be
- * decoded; if no error handler is given, an exception is thrown instead.
+ * decoded; if no error handler is given, an exception is thrown instead
+ * and the LCM stack will leak the message's memory.
  *
  * @return the object used to unsubscribe if that is supported, or else nullptr
  * if unsubscribe is not supported.  The unsubscribe-on-delete default is
