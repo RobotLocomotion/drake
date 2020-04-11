@@ -362,6 +362,14 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13016: https://github.com/RobotLocomotion/drake/pull/13016
 .. _#13017: https://github.com/RobotLocomotion/drake/pull/13017
 
+TO BE FILED:
+* systems: Fixed PassThrough comment spelling (`#13023`_)
+* tools: pkg-config: blacklist various macOS system include paths (`#13019`_)
+* examples,manipulation: Move some helper functions from iiwa to manipulation/util (`#13015`_)  # These are items I've used in personal branches exploring planning/sim with different robots that don't currently have drake examples (or at least hadn't used this functionality yet).
+* tools: workspace: Add ros_xacro (`#13022`_)  # We plan to use this to manage robot URDFs, especially when the upstream vendor of the URDFs already stores them in xacro'd form.
+* bindings: pydrake: Minor code fixes for preliminary Python 3.8 support (`#13035`_)
+* attic,tools: attic: Add once-per-process deprecation warning (`#13030`_)
+
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
-  Current newest_commit 8f449959b0bd4acf8495d1a0a1dd4013da0d7be1 (inclusive).
+  Current newest_commit 8bdb4103c4fb37d44e8d62c18fded1954fa91b96 (inclusive).
