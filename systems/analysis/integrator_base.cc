@@ -89,6 +89,11 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
       ValidateSmallerStepSize(step_size_to_attempt, adjusted_step_size);
       ++num_shrinkages_from_substep_failures_;
       ++num_substep_failures_;
+      if (get_dense_output()) {
+        // Take dense output one step back to undo
+        // the last integration step.
+        dense_output_->RemoveFinalSegment();
+      }
     }
     step_size_to_attempt = adjusted_step_size;
 
