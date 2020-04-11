@@ -247,7 +247,6 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
 // Test various exception cases.  We want to check that these throw rather
 // than crash (or return potentially bad data).
 GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
-  const double less_than_epsilon = 1e-11;
   Eigen::VectorXd breaks(5);
   breaks << 0, 1, 2, 3, 4;
 
@@ -262,13 +261,6 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   // No throw with monotonic breaks.
   PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
       breaks, samples, true);
-
-  // Throw when breaks are too close.
-  breaks[1] = less_than_epsilon;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
-          breaks, samples, true),
-      std::runtime_error, "Times must be at least .* apart.");
 
   // Throw when breaks are not strictly monotonic.
   breaks[1] = 0;

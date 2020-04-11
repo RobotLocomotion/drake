@@ -476,10 +476,45 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
             this->kDt);
 }
 
+// Verifies that dense integration works with error-controlled integration.
+TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, DenseOutput) {
+  this->integrator->set_target_accuracy(1e-8);
+
+  // Set an initial time step target that is too large, so that we have step
+  // size "shrinkages".
+  this->integrator->request_initial_step_size_target(3.);
+  this->integrator->set_maximum_step_size(10.);
+
+  // Initialize the integrator.
+  this->integrator->Initialize();
+  this->integrator->StartDenseIntegration();
+
+  // Set the initial position and initial velocity.
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+  this->spring_mass->set_position(this->integrator->get_mutable_context(),
+                             initial_position);
+  this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
+                             initial_velocity);
+
+  // Integrate and confirm that we had to shrink the steps.
+  this->integrator->IntegrateWithMultipleStepsToTime(1.);
+  EXPECT_GE(this->integrator->get_num_step_shrinkages_from_error_control(), 0);
+
+  const std::unique_ptr<trajectories::PiecewisePolynomial<double>>
+      dense_output = this->integrator->StopDenseIntegration();
+
+  // Check the dense output.
+  EXPECT_EQ(dense_output->start_time(), 0.0);
+  EXPECT_EQ(dense_output->end_time(), 1.0);
+  EXPECT_EQ(dense_output->get_number_of_segments(),
+            this->integrator->get_num_steps_taken());
+}
+
 REGISTER_TYPED_TEST_SUITE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEstOrder, SpringMassStepEC, MaxStepSizeRespected,
-    IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
+    IllegalFixedStep, CheckStat, DenseOutput, StepToCurrentTimeNoOp);
 
 // T is the integrator type (e.g., RungeKutta3Integrator<double>).
 template <class T>

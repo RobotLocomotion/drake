@@ -173,6 +173,46 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   EXPECT_EQ(state.thetadot(), 0.0);
 }
 
+// Use the integrator's dense output to check the details of integration.
+GTEST_TEST(RimlessWheelTest, DenseOutput) {
+  const RimlessWheel<double> rw;
+  systems::Simulator<double> simulator(rw);
+  auto& context = simulator.get_mutable_context();
+  context.SetAccuracy(1e-8);
+  auto& integrator = simulator.get_mutable_integrator();
+
+  RimlessWheelContinuousState<double>& state =
+      rw.get_mutable_continuous_state(&context);
+  double& toe = rw.get_mutable_toe_position(&context.get_mutable_state());
+  const RimlessWheelParams<double>& params = rw.get_parameters(context);
+  const double alpha = rw.calc_alpha(params);
+
+  // A point that is just before a forward step:
+  state.set_theta(params.slope() + alpha / 2.0);
+  state.set_thetadot(1.);
+  toe = 0.0;
+
+  integrator.StartDenseIntegration();
+  simulator.AdvanceTo(.2);
+  const std::unique_ptr<trajectories::PiecewisePolynomial<double>>
+      dense_output = integrator.StopDenseIntegration();
+
+  // Check that I indeed took a step.
+  EXPECT_GE(toe, 0.0);
+
+  // Ensure that I can find the discontinuity in the dense output.
+  int num_forward_steps = 0;
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+  for (const double time : dense_output->get_segment_times()) {
+    // We have theta > 0 before impact, and theta < 0 after the impact.
+    if (dense_output->value(time - kEpsilon)(0) > 0 &&
+        dense_output->value(time + kEpsilon)(0) < 0) {
+      num_forward_steps++;
+    }
+  }
+  EXPECT_EQ(num_forward_steps, 1);
+}
+
 }  // namespace
 }  // namespace rimless_wheel
 }  // namespace examples

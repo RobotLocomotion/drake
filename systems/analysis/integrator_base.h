@@ -1504,24 +1504,23 @@ class IntegratorBase {
    */
   virtual bool DoStep(const T& h) = 0;
 
-  // TODO(hidmic): Make pure virtual and override on each subclass, as
-  // the 'optimal' dense output scheme is only known by the specific
-  // integration scheme being implemented.
+  // TODO(russt): Allow subclasses to override the interpolation scheme used, as
+  // the 'optimal' dense output scheme is only known by the specific integration
+  // scheme being implemented.
   /**
-   Derived classes may implement this method to (1) integrate the continuous
-   portion of this system forward by a single step of size @p h, (2) set the
-   error estimate (via get_mutable_error_estimate()) and (3) update their own
-   dense output implementation (via get_mutable_dense_output()).  This
-   method is called during the integration process (via
-   StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
-   IntegrateWithSingleFixedStepToTime()).
+   Calls DoStep(h) while recording the resulting step in the dense output.  If
+   the current dense output is already non-empty, then the time in the current
+   context must match either the final segment time of the dense output, or the
+   penultimate segment time (to support the case where the same integration step
+   is attempted multiple times, which occurs e.g. in witness function
+   isolation).
    @param h The integration step to take.
-   @returns `true` if successful, `false` if either the integrator was
-             unable to take a single step of size @p h or to advance
-             its dense output an equal step.
+   @returns `true` if successful, `false` if either the integrator was unable to
+           take a single step of size @p h or to advance its dense output an
+           equal step.
    @sa DoStep()
    */
-  virtual bool DoDenseStep(const T& h) {
+  bool DoDenseStep(const T& h) {
     const ContinuousState<T>& state = context_->get_continuous_state();
 
     // Note: It is tempting to avoid this initial call to EvalTimeDerivatives,
@@ -1536,6 +1535,19 @@ class IntegratorBase {
 
     // Performs the integration step.
     if (!DoStep(h)) return false;
+
+    // Allow this update to *replace* the final segment if the start_time of
+    // this step is earlier than the current end_time of the dense output and
+    // matches the start_time of the the final segment of the dense output.
+    // This happens, for instance, when the Simulator is doing WitnessFunction
+    // isolation; it routinely back up the integration and try the same step
+    // multiple times.  Note: we intentionally check for equality between
+    // double values here.
+    if (dense_output_->get_segment_times().size() > 1 &&
+        start_time < dense_output_->end_time() &&
+        start_time == dense_output_->get_segment_times().end()[-2]) {
+      dense_output_->RemoveFinalSegment();
+    }
 
     const ContinuousState<T>& derivatives = EvalTimeDerivatives(*context_);
     dense_output_->ConcatenateInTime(
