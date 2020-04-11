@@ -270,8 +270,8 @@ GTEST_TEST(TestLogarithmicSos1, Test5Lambda) {
 GTEST_TEST(TestLogarithmicSos1, Test) {
   MathematicalProgram prog;
   VectorX<symbolic::Variable> y, lambda;
-  std::tie(lambda, y) = AddLogarithmicSos1Constraint(&prog, 4);
-  EXPECT_EQ(lambda.rows(), 4);
+  std::tie(lambda, y) = AddLogarithmicSos1Constraint(&prog, 3);
+  EXPECT_EQ(lambda.rows(), 3);
   EXPECT_EQ(y.rows(), 2);
 
   auto check = [&prog, &y, &lambda](const Eigen::VectorXd& lambda_val,
@@ -288,11 +288,11 @@ GTEST_TEST(TestLogarithmicSos1, Test) {
     }
     EXPECT_EQ(satisfied, satisfied_expected);
   };
-  check(Eigen::Vector4d(0, 0, 0, 1), Eigen::Vector2d(1, 0), true);
-  check(Eigen::Vector4d(1, 0, 0, 1), Eigen::Vector2d(1, 0), false);
-  check(Eigen::Vector4d(0, 0, 0, 1), Eigen::Vector2d(1, 1), false);
-  check(Eigen::Vector4d(0, 0.5, 0, 0.5), Eigen::Vector2d(1, 1), false);
-  check(Eigen::Vector4d(0, 0.1, 0, 1), Eigen::Vector2d(1, 0), false);
+  check(Eigen::Vector3d(0, 0, 1), Eigen::Vector2d(1, 1), true);
+  check(Eigen::Vector3d(1, 0, 0), Eigen::Vector2d(1, 0), false);
+  check(Eigen::Vector3d(0, 1, 0), Eigen::Vector2d(0, 1), true);
+  check(Eigen::Vector3d(0, 0.5, 0.5), Eigen::Vector2d(1, 1), false);
+  check(Eigen::Vector3d(0, 0.1, 1), Eigen::Vector2d(1, 0), false);
 }
 
 GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {

@@ -125,17 +125,18 @@ void AddSos2Constraint(
  * @param lambda lambda is in SOS1.
  * @param y The binary variables indicating which λ is positive. For a given
  * assignment on the binary variable `y`, if (y(0), ..., y(⌈log₂(n)⌉) represents
- * integer M in `codes`, then only λ(M) is positive. Namely, if
- * (y(0), ..., y(⌈log₂(n)⌉) equals to codes.row(M), then λ(M) = 1
- * @param codes A n x ⌈log₂(n)⌉ matrix. code.row(i) represents integer i.
- * No two rows of `codes` can be the same.
- * @throws std::runtime_error if @p codes has a non-binary entry (0, 1).
+ * integer M in `binary_encoding`, then only λ(M) is positive. Namely, if
+ * (y(0), ..., y(⌈log₂(n)⌉) equals to binary_encoding.row(M), then λ(M) = 1
+ * @param binary_encoding A n x ⌈log₂(n)⌉ matrix. binary_encoding.row(i)
+ * represents integer i. No two rows of `binary_encoding` can be the same.
+ * @throws std::runtime_error if @p binary_encoding has a non-binary entry (0,
+ * 1).
  */
 void AddLogarithmicSos1Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorXDecisionVariable>& y,
-    const Eigen::Ref<const Eigen::MatrixXi>& codes);
+    const Eigen::Ref<const Eigen::MatrixXi>& binary_encoding);
 
 /**
  * Adds the special ordered set of type 1 (SOS1) constraint. Namely
@@ -151,7 +152,7 @@ void AddLogarithmicSos1Constraint(
  *   Variables and Constraints
  *   by J. Vielma and G. Nemhauser, 2011.
  * @param prog The program to which the SOS1 constraint is added.
- * @param num_sections n in the documentation above.
+ * @param num_lambda n in the documentation above.
  * @return (lambda, y) lambda is λ in the documentation above. Notice that
  * λ are declared as continuous variables, but they only admit binary
  * solutions. y are binary variables of size ⌈log₂(n)⌉.
@@ -161,7 +162,7 @@ void AddLogarithmicSos1Constraint(
  * of y is (1, 1, 0) which equals to 5 according to reflected Gray code.
  */
 std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
-AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_sections);
+AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda);
 
 /**
  * For a continuous variable whose range is cut into small intervals, we will

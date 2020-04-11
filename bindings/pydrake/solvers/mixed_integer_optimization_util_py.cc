@@ -35,7 +35,7 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
       [](MathematicalProgram* prog, int num_sections) {
         return AddLogarithmicSos1Constraint(prog, num_sections);
       },
-      py::arg("prog"), py::arg("num_sections"),
+      py::arg("prog"), py::arg("num_lambda"),
       doc.AddLogarithmicSos1Constraint.doc_2args);
 }
 }  // namespace pydrake
