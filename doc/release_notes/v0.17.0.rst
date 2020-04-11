@@ -6,7 +6,7 @@ Announcements
 -------------
 
 * RigidBodyPlant and all of the drake "attic" is scheduled for removal on
-  2020-09-01.
+  2020-09-01 (`#12158`_, `#13030`_).
 
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
@@ -116,6 +116,7 @@ Miscellaneous features and fixes
 
 * Add hand/arm only jaco 7dof URDFs, along with sphere collision versions (`#13007`_)
 * Add external torque fields for the jaco status message (`#13017`_)
+* Add some useful functions to manipulation/util (`#13015`_)
 * Add pyplot to geometry_inspector (`#12918`_)
 * Add yaml support for merge keys (`#12924`_)
 
@@ -152,6 +153,7 @@ Newly bound
 
 New features
 
+* Add preliminary Python 3.8 support for macOS (`#13035`_)
 * Add SystemSliders Tkinter-based controller for vector input ports (`#12925`_)
 * Add ConnectPlanarSceneGraphVisualizer sugar (`#12961`_)
 
@@ -166,6 +168,7 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Add new dependency on libx11-dev on Ubuntu; no change on macOS (`#12862`_)
+* Add new dependency on ros_xacro (`#13022`_)
 * Upgrade bazel_skylib to latest release 0.9.0 (`#12978`_)
 * Upgrade buildifier to latest release 2.2.1 (`#12977`_)
 * Upgrade dreal to latest release 4.20.03.4 (`#12905`_)
@@ -176,6 +179,7 @@ Build system and dependencies
 * Upgrade rules_python to latest commit (`#12978`_)
 * Annotate repository rules with configure=True (`#12988`_)
 * Fix drake_bazel_installed use in docker (`#13016`_)
+* Fix pkg-config problems on macOS (`#13019`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -288,7 +292,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#12864: https://github.com/RobotLocomotion/drake/pull/12864
 .. _#12865: https://github.com/RobotLocomotion/drake/pull/12865
 .. _#12866: https://github.com/RobotLocomotion/drake/pull/12866
-.. _#12871: https://github.com/RobotLocomotion/drake/pull/12871
 .. _#12872: https://github.com/RobotLocomotion/drake/pull/12872
 .. _#12875: https://github.com/RobotLocomotion/drake/pull/12875
 .. _#12879: https://github.com/RobotLocomotion/drake/pull/12879
@@ -307,7 +310,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#12905: https://github.com/RobotLocomotion/drake/pull/12905
 .. _#12909: https://github.com/RobotLocomotion/drake/pull/12909
 .. _#12910: https://github.com/RobotLocomotion/drake/pull/12910
-.. _#12914: https://github.com/RobotLocomotion/drake/pull/12914
 .. _#12915: https://github.com/RobotLocomotion/drake/pull/12915
 .. _#12916: https://github.com/RobotLocomotion/drake/pull/12916
 .. _#12917: https://github.com/RobotLocomotion/drake/pull/12917
@@ -359,16 +361,13 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13006: https://github.com/RobotLocomotion/drake/pull/13006
 .. _#13007: https://github.com/RobotLocomotion/drake/pull/13007
 .. _#13008: https://github.com/RobotLocomotion/drake/pull/13008
+.. _#13015: https://github.com/RobotLocomotion/drake/pull/13015
 .. _#13016: https://github.com/RobotLocomotion/drake/pull/13016
 .. _#13017: https://github.com/RobotLocomotion/drake/pull/13017
-
-TO BE FILED:
-* systems: Fixed PassThrough comment spelling (`#13023`_)
-* tools: pkg-config: blacklist various macOS system include paths (`#13019`_)
-* examples,manipulation: Move some helper functions from iiwa to manipulation/util (`#13015`_)  # These are items I've used in personal branches exploring planning/sim with different robots that don't currently have drake examples (or at least hadn't used this functionality yet).
-* tools: workspace: Add ros_xacro (`#13022`_)  # We plan to use this to manage robot URDFs, especially when the upstream vendor of the URDFs already stores them in xacro'd form.
-* bindings: pydrake: Minor code fixes for preliminary Python 3.8 support (`#13035`_)
-* attic,tools: attic: Add once-per-process deprecation warning (`#13030`_)
+.. _#13019: https://github.com/RobotLocomotion/drake/pull/13019
+.. _#13022: https://github.com/RobotLocomotion/drake/pull/13022
+.. _#13030: https://github.com/RobotLocomotion/drake/pull/13030
+.. _#13035: https://github.com/RobotLocomotion/drake/pull/13035
 
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
