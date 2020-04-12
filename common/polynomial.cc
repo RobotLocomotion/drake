@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <limits>
+#include <numeric>
 #include <set>
 #include <stdexcept>
 #include <utility>
@@ -11,6 +12,7 @@
 
 using Eigen::Dynamic;
 using Eigen::Matrix;
+using std::accumulate;
 using std::pair;
 using std::runtime_error;
 using std::string;
