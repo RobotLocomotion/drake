@@ -160,7 +160,7 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi 8.0.1
+ * Gurobi 9.0.0
  * MOSEK 9.0
  * SNOPT 7.4
 
@@ -169,7 +169,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 
 .. _gurobi:
 
-Gurobi 8.0.1
+Gurobi 9.0.0
 ------------
 
 Install on Ubuntu
@@ -177,16 +177,16 @@ Install on Ubuntu
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi8.0.1_linux64.tar.gz``
-5. Unzip it.  We suggest that you use ``/opt/gurobi801`` to simplify working with Drake installations.
-6. ``export GUROBI_PATH=/opt/gurobi801/linux64``
+4. Download ``gurobi9.0.0_linux64.tar.gz``
+5. Unzip it.  We suggest that you use ``/opt/gurobi900`` to simplify working with Drake installations.
+6. ``export GUROBI_PATH=/opt/gurobi900/linux64``
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi8.0.1_mac64.pkg``.
+4. Download and install ``gurobi9.0.0_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi:
