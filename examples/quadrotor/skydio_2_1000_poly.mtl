@@ -1,0 +1,25 @@
+newmtl PROP_b6bab1e6-a316-4071-88e4-b3a59acec0fe
+Kd 1.000 1.000 1.000
+d 1.000
+map_Kd ce03352e-bdf3-4487-8d0e-87660a4c7165.png
+newmtl PROP 3_9bb8d5a0-e770-4b7c-82cd-c45206a48648
+Kd 1.000 1.000 1.000
+d 1.000
+map_Kd ce03352e-bdf3-4487-8d0e-87660a4c7165.png
+newmtl PROP 1_b07d4dae-971d-453e-b0f7-b2d0baf6f7a5
+Kd 1.000 1.000 1.000
+d 1.000
+map_Kd ce03352e-bdf3-4487-8d0e-87660a4c7165.png
+newmtl PROP 2_201be636-242b-4ca2-bdb4-07a5aa74fd5f
+Kd 1.000 1.000 1.000
+d 1.000
+map_Kd ce03352e-bdf3-4487-8d0e-87660a4c7165.png
+newmtl BLACK_2230ddc1-e4a1-4be7-98df-a7bc5f47e5f2
+Kd 0.000 0.000 0.000
+d 1.000
+newmtl BLUE_f98311fc-be18-4992-82d3-4b4496dced19
+Kd 0.000 0.467 0.933
+d 1.000
+newmtl LED_10f534f5-ce55-4a9d-ad8c-e68928d211f2
+Kd 0.278 0.341 1.000
+d 1.000
