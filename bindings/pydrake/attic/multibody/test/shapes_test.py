@@ -5,6 +5,7 @@ import numpy as np
 
 import pydrake
 from pydrake.attic.multibody import shapes
+from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Isometry3
 
 
@@ -38,8 +39,8 @@ class TestShapes(unittest.TestCase):
         mesh_points = shapes.MeshPoints(pts)
         self.assertEqual(mesh_points.getPoints().shape, (3, 10))
 
-        obj_mesh_path = os.path.join(
-            pydrake.getDrakePath(), "examples/quadrotor/quadrotor_base.obj")
+        obj_mesh_path = FindResourceOrThrow(
+            "drake/examples/quadrotor/skydio_2_1000_poly.obj")
         obj_mesh_uri = "box_obj"
         mesh = shapes.Mesh(uri=obj_mesh_uri, resolved_filename=obj_mesh_path)
         self.assertTrue(np.allclose(mesh.scale, [1., 1., 1.]))

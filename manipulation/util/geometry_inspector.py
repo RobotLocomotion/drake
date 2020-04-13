@@ -6,6 +6,8 @@ the resulting geometry poses to available visualizers.
 If you wish to simply load a model and show it in multiple visualizers, see
 `show_model`.
 
+If you supply a relative path, it will try to resolve the path to inside Drake.
+
 Example usage (drake visualizer):
 
     cd drake
@@ -54,6 +56,7 @@ import sys
 
 import numpy as np
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.geometry import MakePhongIllustrationProperties
 from pydrake.manipulation.simple_ui import JointSliders
@@ -66,6 +69,19 @@ from pydrake.systems.planar_scenegraph_visualizer import (
     PlanarSceneGraphVisualizer
 )
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
+
+
+def resolve_path(args_parser, filename):
+    if os.path.isabs(filename):
+        if not os.path.isfile(filename):
+            args_parser.error(f"File does not exist: {filename}")
+        return filename
+    if filename.startswith("drake/"):
+        res_path = filename
+    else:
+        res_path = os.path.normpath(os.path.join("drake", filename))
+    print(f"Relative path; using FindResourceOrThrow: {res_path}")
+    return FindResourceOrThrow(res_path)
 
 
 def main():
@@ -112,9 +128,7 @@ def main():
     # availability of GetUniqueBaseBody requested in #9747.
     MeshcatVisualizer.add_argparse_argument(args_parser)
     args = args_parser.parse_args()
-    filename = args.filename
-    if not os.path.isfile(filename):
-        args_parser.error("File does not exist: {}".format(filename))
+    filename = resolve_path(args_parser, args.filename)
 
     builder = DiagramBuilder()
     scene_graph = builder.AddSystem(SceneGraph())
