@@ -4,6 +4,7 @@ exports_files(
     srcs = glob([
         "ycb/meshes/**",
         "franka_description/**",
+        "skydio_2/**",
     ]) or fail("No match"),
     visibility = ["//visibility:public"],
 )
