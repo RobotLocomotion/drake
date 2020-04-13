@@ -1441,10 +1441,14 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
   sphere2_props.AddProperty("phong", "diffuse_map", "empty.png");
+  sphere2_props.AddProperty("renderer", "accepting",
+                            std::set<std::string>{"not_dummy"});
   GeometryId sphere2_id = plant.RegisterVisualGeometry(
-      sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "visual", sphere2_props);
-  EXPECT_EQ(render_engine.num_registered(), 3);
+      sphere2, RigidTransformd::Identity(), geometry::Sphere(radius), "visual",
+      sphere2_props);
+  // Because sphere 2 white listed a *different* renderer, it didn't get added
+  // to render_engine.
+  EXPECT_EQ(render_engine.num_registered(), 2);
 
   // We are done defining the model.
   plant.Finalize();

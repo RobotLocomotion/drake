@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -22,6 +23,9 @@ namespace internal {
 
 using Eigen::Vector3d;
 using std::make_unique;
+using std::move;
+using std::set;
+using std::string;
 
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
@@ -304,6 +308,28 @@ IllustrationProperties MakeVisualPropertiesFromSdfVisual(
     add_property("ambient", &properties);
     add_property("specular", &properties);
     add_property("emissive", &properties);
+  }
+
+  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
+  //  a bit misleading; it isn't used by illustration, but we're not currently
+  //  parsing illustration and perception propeprties separately. So, we stash
+  //  them in the illustration propepties relying on it to be ignored by
+  //  illustration consumers but copied over to the perception properties.
+  const string kAcceptingTag = "drake:accepting_renderer";
+  if (visual_element->HasElement(kAcceptingTag)) {
+    set<string> accepting_names;
+    sdf::ElementPtr accepting = visual_element->GetElement(kAcceptingTag);
+    while (accepting != nullptr) {
+      const string& name = accepting->Get<string>();
+      if (name.empty()) {
+        throw std::runtime_error(
+            fmt::format("<{}> tag given without any name", kAcceptingTag));
+      }
+      accepting_names.insert(name);
+      accepting = accepting->GetNextElement(kAcceptingTag);
+    }
+    DRAKE_DEMAND(accepting_names.size() > 0);
+    properties.AddProperty("renderer", "accepting", move(accepting_names));
   }
 
   return properties;

@@ -30,6 +30,8 @@ using math::RigidTransformd;
 using std::make_pair;
 using std::make_unique;
 using std::move;
+using std::set;
+using std::string;
 using std::swap;
 using std::to_string;
 using systems::sensors::ImageDepth32F;
@@ -743,13 +745,26 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   // TODO(SeanCurtis-TRI): To support RoleAssign::kReplace, the render engines
   //  need to handle these changes.
 
+  auto accepting_renderers =
+      properties.GetPropertyOrDefault("renderer", "accepting", set<string>{});
+
   geometry.SetRole(std::move(properties));
 
-  for (auto& pair : render_engines_) {
-    auto& engine = pair.second;
-    engine->RegisterVisual(
-        geometry_id, geometry.shape(), *geometry.perception_properties(),
-        RigidTransformd(geometry.X_FG()), geometry.is_dynamic());
+  bool added_to_renderer{false};
+  for (auto& [name, engine] : render_engines_) {
+    if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
+      added_to_renderer =
+          engine->RegisterVisual(
+              geometry_id, geometry.shape(), *geometry.perception_properties(),
+              RigidTransformd(geometry.X_FG()), geometry.is_dynamic()) ||
+          added_to_renderer;
+    }
+  }
+  if (!added_to_renderer && render_engines_.size() > 0) {
+    // TODO(SeanCurtis-TRI): This message would be better with a geometry name.
+    drake::log()->warn(
+        "Perception role assigned to geometry {}, but no renderer accepted it",
+        geometry_id);
   }
 }
 

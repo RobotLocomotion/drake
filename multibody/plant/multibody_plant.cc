@@ -407,6 +407,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
         "phong", "diffuse_map",
         properties.GetProperty<std::string>("phong", "diffuse_map"));
   }
+  if (properties.HasProperty("renderer", "accepting")) {
+    perception_props.AddProperty(
+      "renderer", "accepting",
+      properties.GetProperty<std::set<std::string>>("renderer", "accepting"));
+  }
   member_scene_graph().AssignRole(*source_id_, id, perception_props);
 
   const int visual_index = geometry_id_to_visual_index_.size();
