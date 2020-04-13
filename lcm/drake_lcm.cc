@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -50,6 +51,7 @@ class DrakeLcm::Impl {
   std::string lcm_url_;
   ::lcm::LCM lcm_;
   std::vector<std::weak_ptr<DrakeSubscription>> subscriptions_;
+  std::string handle_subscriptions_error_message_;
 };
 
 DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
@@ -232,7 +234,21 @@ int DrakeLcm::HandleSubscriptions(int timeout_millis) {
     DRAKE_DEMAND(zero_or_one == 1);
     ++total_messages;
   }
+  // If a handler posted an error, raise it now that we're done with LCM C code.
+  if (!impl_->handle_subscriptions_error_message_.empty()) {
+    std::string message = std::move(impl_->handle_subscriptions_error_message_);
+    impl_->handle_subscriptions_error_message_ = {};
+    throw std::runtime_error(std::move(message));
+  }
   return total_messages;
+}
+
+void DrakeLcm::OnHandleSubscriptionsError(const std::string& error_message) {
+  DRAKE_DEMAND(!error_message.empty());
+  // Stash the exception message for later.  This is "last one wins" if there
+  // are multiple errors.  We can only throw one anyway, and doesn't matter
+  // which one we throw.
+  impl_->handle_subscriptions_error_message_ = error_message;
 }
 
 DrakeLcm::~DrakeLcm() {

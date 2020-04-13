@@ -43,6 +43,11 @@ int LcmInterfaceSystem::HandleSubscriptions(int timeout_millis) {
   return lcm_->HandleSubscriptions(timeout_millis);
 }
 
+void LcmInterfaceSystem::OnHandleSubscriptionsError(
+    const std::string& error_message) {
+  drake::lcm::internal::OnHandleSubscriptionsError(lcm_, error_message);
+}
+
 // The only effect of this override is that time is prevented from advancing
 // while there are messages in LCM receive queue.  This System is stateless, so
 // there is no Context data to update within any event handler on this System.

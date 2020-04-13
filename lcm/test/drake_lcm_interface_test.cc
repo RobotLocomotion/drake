@@ -1,10 +1,12 @@
 #include "drake/lcm/drake_lcm_interface.h"
 
+#include <stdexcept>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -57,6 +59,38 @@ TEST_F(DrakeLcmInterfaceTest, FreeFunctionPubSubTest) {
   Publish(&lcm_, channel_, sample_);
   EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
+}
+
+// Tests the Subscribe free function's default error handling.
+TEST_F(DrakeLcmInterfaceTest, DefaultErrorHandlingTest) {
+  // Subscribe using the helper free-function, using default error-handling.
+  Message received{};
+  Subscribe<Message>(&lcm_, channel_, [&](const Message& message) {
+    received = message;
+  });
+
+  // Publish successfully.
+  lcm_.Publish(channel_, sample_bytes_.data(), sample_bytes_.size(), {});
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
+  received = {};
+
+  // Corrupt the message.
+  std::vector<uint8_t> corrupt_bytes = sample_bytes_;
+  corrupt_bytes.at(0) = 0;
+  lcm_.Publish(channel_, corrupt_bytes.data(), corrupt_bytes.size(), {});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      lcm_.HandleSubscriptions(0),
+      std::runtime_error,
+      "Error decoding message on NAME");
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, Message{}));
+  received = {};
+
+  // We can still publish successfully.
+  lcm_.Publish(channel_, sample_bytes_.data(), sample_bytes_.size(), {});
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
+  received = {};
 }
 
 // Tests the Subscribe free function's customizable error handling.

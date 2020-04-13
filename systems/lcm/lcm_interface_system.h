@@ -66,6 +66,8 @@ class LcmInterfaceSystem final
  private:
   explicit LcmInterfaceSystem(std::unique_ptr<drake::lcm::DrakeLcmInterface>);
 
+  void OnHandleSubscriptionsError(const std::string&) final;
+
   void DoCalcNextUpdateTime(
       const Context<double>&,
       systems::CompositeEventCollection<double>*,
