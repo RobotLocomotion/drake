@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -106,6 +107,11 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
 
   // Advance log.
   next_event_ = log_->readNextEvent();
+}
+
+void DrakeLcmLog::OnHandleSubscriptionsError(const std::string& error_message) {
+  // We are not called via LCM C code, so it's safe to throw there.
+  throw std::runtime_error(error_message);
 }
 
 }  // namespace lcm
