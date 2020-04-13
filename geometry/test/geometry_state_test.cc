@@ -3103,6 +3103,98 @@ TEST_F(GeometryStateTest, AddRendererError) {
                   kName));
 }
 
+// Tests that when assigning a geometry the perception role, that the process
+// respects the ("renderer", "accepting") property with the following semantics:
+//  1. Missing property --> all renderers accept the geometry.
+//  2. Property has empty set --> all renderers accept the geometry.
+//  3. Property has non-empty set --> only renderers with matching names accept
+//     the geometries.
+TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
+  SetUpSingleSourceTree();
+
+  ASSERT_TRUE(geometry_state_.HasRenderer(kDummyRenderName));
+  const DummyRenderEngine& first_renderer =
+      dynamic_cast<const DummyRenderEngine&>(
+          gs_tester_.GetRenderEngineOrThrow(kDummyRenderName));
+
+  // We should already have a renderer with the name: kDummyRenderName. Add a
+  // new renderer.
+  auto new_renderer = make_unique<DummyRenderEngine>();
+  const DummyRenderEngine& second_renderer = *new_renderer.get();
+  const string second_name = "second_renderer";
+  geometry_state_.AddRenderer(second_name, move(new_renderer));
+  ASSERT_TRUE(geometry_state_.HasRenderer(second_name));
+
+  ASSERT_EQ(first_renderer.num_registered(), 0);
+  ASSERT_EQ(second_renderer.num_registered(), 0);
+
+  // Instantiate base properties with the minimum acceptable set of properties.
+  PerceptionProperties base_properties =
+      DummyRenderEngine().accepting_properties();
+  base_properties.AddProperty("phong", "diffuse",
+                              Vector4<double>{0.8, 0.8, 0.8, 1.0});
+  base_properties.AddProperty("label", "id", RenderLabel::kDontCare);
+  {
+    // Case: No property provided; geometry belongs to all.
+    const GeometryId id = geometries_[0];
+    geometry_state_.AssignRole(source_id_, id, base_properties);
+    EXPECT_TRUE(first_renderer.is_registered(id));
+    EXPECT_TRUE(second_renderer.is_registered(id));
+  }
+
+  {
+    // Case: Property provided with empty set of names.
+    PerceptionProperties properties(base_properties);
+    properties.AddProperty("renderer", "accepting", set<string>{});
+    const GeometryId id = geometries_[1];
+    geometry_state_.AssignRole(source_id_, id, move(properties));
+    EXPECT_TRUE(first_renderer.is_registered(id));
+    EXPECT_TRUE(second_renderer.is_registered(id));
+  }
+
+  {
+    // Case: Property provided with a single name.
+    PerceptionProperties properties(base_properties);
+    properties.AddProperty("renderer", "accepting",
+                           set<string>{kDummyRenderName});
+    const GeometryId id = geometries_[2];
+    geometry_state_.AssignRole(source_id_, id, move(properties));
+    EXPECT_TRUE(first_renderer.is_registered(id));
+    EXPECT_FALSE(second_renderer.is_registered(id));
+  }
+
+  {
+    // Case: Property provided with other single name.
+    PerceptionProperties properties(base_properties);
+    properties.AddProperty("renderer", "accepting", set<string>{second_name});
+    const GeometryId id = geometries_[3];
+    geometry_state_.AssignRole(source_id_, id, move(properties));
+    EXPECT_FALSE(first_renderer.is_registered(id));
+    EXPECT_TRUE(second_renderer.is_registered(id));
+  }
+
+  {
+    // Case: Property provided with other arbitrary name.
+    PerceptionProperties properties(base_properties);
+    properties.AddProperty("renderer", "accepting", set<string>{"junk"});
+    const GeometryId id = geometries_[4];
+    geometry_state_.AssignRole(source_id_, id, move(properties));
+    EXPECT_FALSE(first_renderer.is_registered(id));
+    EXPECT_FALSE(second_renderer.is_registered(id));
+  }
+
+  {
+    // Case: Property provided with all names.
+    PerceptionProperties properties(base_properties);
+    properties.AddProperty("renderer", "accepting",
+                           set<string>{kDummyRenderName, second_name});
+    const GeometryId id = geometries_[5];
+    geometry_state_.AssignRole(source_id_, id, move(properties));
+    EXPECT_TRUE(first_renderer.is_registered(id));
+    EXPECT_TRUE(second_renderer.is_registered(id));
+  }
+}
+
 TEST_F(GeometryStateTest, GetRenderEngine) {
   const render::RenderEngine& engine =
       gs_tester_.GetRenderEngineOrThrow(kDummyRenderName);

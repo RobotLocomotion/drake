@@ -98,6 +98,11 @@ class DummyRenderEngine final : public render::RenderEngine {
     return static_cast<int>(registered_geometries_.size());
   }
 
+  /** Reports `true` if the given id is registered with `this` engine.  */
+  bool is_registered(GeometryId id) const {
+    return registered_geometries_.count(id) > 0;
+  }
+
   /** Returns the ids that have been updated via a call to UpdatePoses() and
    the poses that were set.  */
   const std::map<GeometryId, math::RigidTransformd>& updated_ids() const {

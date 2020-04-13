@@ -853,6 +853,100 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   }
 }
 
+// Confirms that the <drake:accepting_renderer> tag gets properly parsed.
+GTEST_TEST(SceneGraphParseDetail, AcceptingRenderers) {
+  const std::string group = "renderer";
+  const std::string property = "accepting";
+
+  // Case: no <drake:accepting_renderer> tag.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "</visual>");
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_FALSE(material.HasProperty(group, property));
+  }
+
+  // Case: single <drake:accepting_renderer> tag.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
+        "</visual>");
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(material.HasProperty(group, property));
+    const auto& names =
+        material.GetProperty<std::set<std::string>>(group, property);
+    EXPECT_EQ(names.size(), 1);
+    EXPECT_EQ(names.count("renderer1"), 1);
+  }
+
+  // Case: Multiple <drake:accepting_renderer> tag.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
+        "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
+        "</visual>");
+    IllustrationProperties material =
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
+    EXPECT_TRUE(material.HasProperty(group, property));
+    const auto& names =
+        material.GetProperty<std::set<std::string>>(group, property);
+    EXPECT_EQ(names.size(), 2);
+    EXPECT_EQ(names.count("renderer1"), 1);
+    EXPECT_EQ(names.count("renderer2"), 1);
+  }
+
+  // Case: Missing names throws exception.
+  unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "  <drake:accepting_renderer> </drake:accepting_renderer>"
+        "</visual>");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
+      std::runtime_error,
+      "<drake:accepting_renderer> tag given without any name");
+}
+
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
 // frame G in the link frame L.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
