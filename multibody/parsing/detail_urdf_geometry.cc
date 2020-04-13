@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <memory>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
@@ -374,6 +375,29 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
     if (material.diffuse_map) {
       properties.AddProperty("phong", "diffuse_map", *(material.diffuse_map));
     }
+  }
+
+  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
+  //  a bit misleading; it isn't used by illustration, but we're not currently
+  //  parsing illustration and perception properties separately. So, we stash
+  //  them in the illustration properties relying on it to be ignored by
+  //  illustration consumers but copied over to the perception properties.
+  const char* kAcceptingTag = "drake:accepting_renderer";
+  const XMLElement* accepting_node = node->FirstChildElement(kAcceptingTag);
+  if (accepting_node) {
+    std::set<std::string> accepting_names;
+    while (accepting_node) {
+      std::string name;
+      if (!ParseStringAttribute(accepting_node, "name", &name)) {
+        throw std::runtime_error(
+            fmt::format("<{}}> tag given on line {} without any name",
+                        kAcceptingTag, accepting_node->GetLineNum()));
+      }
+      accepting_names.insert(name);
+      accepting_node = accepting_node->NextSiblingElement(kAcceptingTag);
+    }
+    DRAKE_DEMAND(accepting_names.size() > 0);
+    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
   }
 
   std::string geometry_name;
