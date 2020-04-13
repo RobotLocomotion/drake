@@ -369,6 +369,14 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13030: https://github.com/RobotLocomotion/drake/pull/13030
 .. _#13035: https://github.com/RobotLocomotion/drake/pull/13035
 
+TO BE FILED
+* Fixed spelling (`#13042`_)
+* Pybind sos2 (`#13029`_)  # Add python bindings for sos2 constraint.
+* lcm: Replace custom DrakeMockLcm implementation with memq (`#13028`_)  # The DrakeLcm object with memq backend works exactly like DrakeMockLcm. We've long since removed the extra sugar methods that used to live on DrakeMockLcm beyond those required by DrakeLcmInterface. Remove all in-tree uses of DrakeMockLcm; it's clearer to write exactly what we mean without this synonym. For tests it doesn't even matter, because we've set the default URL during bazel test in tools/bazel.rc. Perhaps we'll eventually deprecate the synonym. Also revert Doxygen omission of lcm-related namespaces, since it lost the docs for DrakeLcm, etc.  I can no longer find any problems with forward declarations related to lcm, manipulation, internal, etc. Also split a unit test case into a new file.  It turns out that in production, message decoding exceptions have always been leaking memory but we've never noticed because the mock didn't leak.
+* Added support for revolute joint spring in multibody plant parser (`#12992`_)  # Reads in <spring_stiffness> and <spring_reference> tags from joints in SDF files
+* analysis: Add simulator_flags helper (`#13013`_)  # This extends pydrake.systems.Simulator.reset_integrator's deprecation window because up to this point there was no viable replacement.
+* common: Fix includes and using in polynomial.cc (`#13046`_)  # Add to the polynomial.cc file the inclusion of the `numeric` header and  of the `using std;:accumulate` directive as it uses the `accumulate` function.
+
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
   Current newest_commit 8bdb4103c4fb37d44e8d62c18fded1954fa91b96 (inclusive).
