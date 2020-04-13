@@ -10,7 +10,6 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"
-#include "drake/math/jacobian.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/framework/basic_vector.h"
 

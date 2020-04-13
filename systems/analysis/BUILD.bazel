@@ -250,7 +250,6 @@ drake_cc_library(
     deps = [
         ":implicit_integrator",
         "//math:compute_numerical_gradient",
-        "//math:jacobian",
     ],
 )
 
