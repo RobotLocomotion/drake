@@ -102,14 +102,14 @@ DEFINE_bool(bowl, true, "true = use the bowl, false = do not use the bowl. "
  The center of the ball moves along Z-axis of World frame with coordinates
  (0, 0, z(t)) in World frame at time t. The sinusoidal motion has z(t) as:
 
-       z(t) = Zo + A * sin(2π t/T),
-      dz/dt = A * (2π/T) cos(2π t/T) => Set in DoCalcTimeDerivatives()
-       z(0) = Zo                     => Set in the constructor MovingBall()
+       z(t) = Zo + A * sin(2π t/T) => Set in CalcFramePoseOutput()
 
  where Zo is the z-coordinate of O in World frame, A is the amplitude of
  motion, and T is the time period.
 
  @system{MovingBall,, @output_port{geometry_pose} }
+
+ This system's output is strictly a function of time and has no state.
  */
 class MovingBall final : public LeafSystem<double> {
  public:
@@ -128,17 +128,14 @@ class MovingBall final : public LeafSystem<double> {
   static constexpr double kA = 0.005;
 
   explicit MovingBall(SceneGraph<double>* scene_graph) {
-    this->DeclareContinuousState(2);
-
     // Add geometry for a ball that moves based on sinusoidal derivatives.
     source_id_ = scene_graph->RegisterSource("moving_ball");
     frame_id_ =
         scene_graph->RegisterFrame(source_id_, GeometryFrame("moving_frame"));
     geometry_id_ = scene_graph->RegisterGeometry(
         source_id_, frame_id_,
-        make_unique<GeometryInstance>(RigidTransformd(Vector3d(0, 0, kZo)),
-                                      make_unique<Sphere>(kRadius),
-                                      "soft ball"));
+        make_unique<GeometryInstance>(
+            RigidTransformd(), make_unique<Sphere>(kRadius), "soft ball"));
     ProximityProperties prox_props;
     AddContactMaterial(1e8, {}, {}, &prox_props);
     AddSoftHydroelasticProperties(FLAGS_length, &prox_props);
@@ -161,20 +158,12 @@ class MovingBall final : public LeafSystem<double> {
   }
 
  private:
-  void DoCalcTimeDerivatives(
-      const Context<double>& context,
-      ContinuousState<double>* derivatives) const override {
-    const double t = context.get_time();
-    const double dz_dt = kA * k2Pi_T * std::cos(k2Pi_T * t);
-    dynamic_cast<BasicVector<double>&>(derivatives->get_mutable_vector())
-        .SetAtIndex(0, dz_dt);
-  }
-
   void CalcFramePoseOutput(const Context<double>& context,
                            FramePoseVector<double>* poses) const {
-    const double z = context.get_continuous_state().get_vector()[0];
-    RigidTransformd pose(Vector3d(0, 0, z));
-    *poses = {{frame_id_, pose}};
+    const double t = context.get_time();
+    // z(t) = Zo + A * sin(2π t/T)
+    const double z = kZo + kA * std::sin(k2Pi_T * t);
+    *poses = {{frame_id_, RigidTransformd(Vector3d(0, 0, z))}};
   }
 
   SourceId source_id_;
@@ -317,7 +306,7 @@ int do_main() {
   // Visualize contacts.
   auto& contact_to_lcm =
       *builder.AddSystem(LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm, 1.0 / 60));
+          "CONTACT_RESULTS", &lcm, 1.0 / 60.0));
   builder.Connect(contact_results, contact_to_lcm);
 
   auto diagram = builder.Build();
