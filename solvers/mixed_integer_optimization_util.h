@@ -115,7 +115,7 @@ void AddSos2Constraint(
  *   λ(i) ≥ 0 ∀i
  *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) = 1
  * </pre>
- * one and only one of λ(i) is strictly positive (equals to 1 in this case).
+ * where one and only one of λ(i) is 1, all other λ(j) are 0.
  * We will need to add ⌈log₂(n)⌉ binary variables, where n is the number of
  * rows in λ. For more information, please refer to
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
@@ -145,7 +145,7 @@ void AddLogarithmicSos1Constraint(
  *   λ(i) ≥ 0 ∀i
  *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) = 1
  * </pre>
- * one and only one of λ(i) equals to 1, all other λ(j) equals to 0.
+ * where one and only one of λ(i) is 1, all other λ(j) are 0.
  * We will need to add ⌈log₂(n)⌉ binary variables, where n is the number of
  * rows in λ. For more information, please refer to
  *   Modeling Disjunctive Constraints with a Logarithmic Number of Binary
