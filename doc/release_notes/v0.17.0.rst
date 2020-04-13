@@ -11,6 +11,8 @@ Announcements
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
 
+* DrakeMockLcm is now just a simple alias for the memq:// provider (`#13028`_)
+
 Breaking changes since v0.16.1
 ------------------------------
 
@@ -35,6 +37,7 @@ New features
 * Integrators
 
   * Add doxygen group for our suite of integrators (`#12900`_)
+  * Add simulator_flags configuration helper to select an integrator (`#13013`_)
   * Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
   * Add symbolic expression support to ExplicitEulerIntegrator and RungeKutta2Integrator (`#12922`_, `#12919`_)
   * Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
@@ -84,18 +87,19 @@ Multibody Dynamics
 
 New features
 
-* Added PointToPointDistanceConstraint (`#12896`_)
+* Add PointToPointDistanceConstraint (`#12896`_)
 * InverseKinematics allows ignoring joint limits in the constructor (`#12872`_)
-* Added missing energy and power overrides to MBP (`#12895`_, `#12955`_)
-* Added CoM methods from RBT to MBT/MBP (`#12839`_)  # * Adding CoM features from RBT to MBT/MBP * Allowing the user to specify the reference and expressed-in frame * Adding unit tests for new MBP CoM Jacobian methods * Adding TODO for future feature
+* Add missing energy and power overrides to MBP (`#12895`_, `#12955`_)
+* Add CoM methods to MultibodyPlant (`#12839`_)
 * Parse joint effort limits from URDF (`#12863`_)
+* Parse revolute joint <spring_stiffness> and <spring_reference> from SDF (`#12992`_)
 * Preliminary steps to introduce new RenderEngine implementation based on direct OpenGl calls
   (`#12850`_, `#12963`_, `#12964`_)
 
 * New ForceElement implementations
 
-  * Added bushing force element with 3D rotational (roll-pitch-yaw) and translational stiffness and damping (`#11946`_, `#13001`_)
-  * Added a door hinge force element (`#12812`_, `#12930`_, `#12960`_)
+  * Add bushing force element with 3D rotational (roll-pitch-yaw) and translational stiffness and damping (`#11946`_, `#13001`_)
+  * Add a door hinge force element (`#12812`_, `#12930`_, `#12960`_)
 
 * New hydroelastic contact model in progress (`#12975`_, `#12901`_, `#12954`_, `#12860`_,
   `#12998`_, `#12976`_, `#12909`_, `#12820`_, `#12935`_, `#12806`_, `#12932`_)
@@ -106,10 +110,10 @@ New features
 
 Fixes
 
-* Fixed ABI::IsPhysicallyValid() to avoid false negatives (`#12879`_)
-* Moved MBP::HydroelasticContactInfoAndBodySpatialForces into internal namespace (`#12953`_)
-* Modified cube texture coordinate generation so textures stretch across faces (`#12972`_)
-* Removed _implicit_ converting copy constructors from MultibodyPlant's and SceneGraph internals (`#12891`_)
+* Fix ABI::IsPhysicallyValid() to avoid false negatives (`#12879`_)
+* Move MBP::HydroelasticContactInfoAndBodySpatialForces into internal namespace (`#12953`_)
+* Modify cube texture coordinate generation so textures stretch across faces (`#12972`_)
+* Remove _implicit_ converting copy constructors from MultibodyPlant's and SceneGraph internals (`#12891`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,11 +123,10 @@ Miscellaneous features and fixes
 * Add some useful functions to manipulation/util (`#13015`_)
 * Add pyplot to geometry_inspector (`#12918`_)
 * Add yaml support for merge keys (`#12924`_)
+* Replace custom DrakeMockLcm implementation with memq (`#13028`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
-
-Newly bound
 
 * pydrake.examples.pendulum.PendulumInput.with_tau (`#12940`_)
 * pydrake.examples.pendulum.PendulumParams.with_damping (`#12940`_)
@@ -142,6 +145,8 @@ Newly bound
 * pydrake.solvers.branch_and_bound.MixedIntegerBranchAndBound (`#13002`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_constraints (`#13005`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_costs (`#13005`_)
+* pydrake.solvers.mixed_integer_optimization_util.AddLogarithmicSos2Constraint (`#13029`_)
+* pydrake.solvers.mixed_integer_optimization_util.AddSos2Constraint (`#13029`_)
 * pydrake.symbolic.Expression.is_polynomial (`#12854`_)
 * pydrake.systems.analysis.IntegratorBase for more scalar types (`#12922`_)
 * pydrake.systems.analysis.RungeKutta2Integrator for more scalar types (`#12922`_)
@@ -163,6 +168,7 @@ Fixes
 * Find fallback obj files in PlanarSceneGraphVisualizer (`#12917`_)
 * Improve args and doc for pyplot_visualizer (`#12915`_)
 * Plot sub-level sets in pydrake.visualization.plotting (`#12854`_)
+* Extend pydrake.systems.Simulator.reset_integrator's deprecation window (`#13013`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -351,6 +357,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#12986: https://github.com/RobotLocomotion/drake/pull/12986
 .. _#12988: https://github.com/RobotLocomotion/drake/pull/12988
 .. _#12991: https://github.com/RobotLocomotion/drake/pull/12991
+.. _#12992: https://github.com/RobotLocomotion/drake/pull/12992
 .. _#12993: https://github.com/RobotLocomotion/drake/pull/12993
 .. _#12995: https://github.com/RobotLocomotion/drake/pull/12995
 .. _#12998: https://github.com/RobotLocomotion/drake/pull/12998
@@ -361,21 +368,16 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13006: https://github.com/RobotLocomotion/drake/pull/13006
 .. _#13007: https://github.com/RobotLocomotion/drake/pull/13007
 .. _#13008: https://github.com/RobotLocomotion/drake/pull/13008
+.. _#13013: https://github.com/RobotLocomotion/drake/pull/13013
 .. _#13015: https://github.com/RobotLocomotion/drake/pull/13015
 .. _#13016: https://github.com/RobotLocomotion/drake/pull/13016
 .. _#13017: https://github.com/RobotLocomotion/drake/pull/13017
 .. _#13019: https://github.com/RobotLocomotion/drake/pull/13019
 .. _#13022: https://github.com/RobotLocomotion/drake/pull/13022
+.. _#13028: https://github.com/RobotLocomotion/drake/pull/13028
+.. _#13029: https://github.com/RobotLocomotion/drake/pull/13029
 .. _#13030: https://github.com/RobotLocomotion/drake/pull/13030
 .. _#13035: https://github.com/RobotLocomotion/drake/pull/13035
-
-TO BE FILED
-* Fixed spelling (`#13042`_)
-* Pybind sos2 (`#13029`_)  # Add python bindings for sos2 constraint.
-* lcm: Replace custom DrakeMockLcm implementation with memq (`#13028`_)  # The DrakeLcm object with memq backend works exactly like DrakeMockLcm. We've long since removed the extra sugar methods that used to live on DrakeMockLcm beyond those required by DrakeLcmInterface. Remove all in-tree uses of DrakeMockLcm; it's clearer to write exactly what we mean without this synonym. For tests it doesn't even matter, because we've set the default URL during bazel test in tools/bazel.rc. Perhaps we'll eventually deprecate the synonym. Also revert Doxygen omission of lcm-related namespaces, since it lost the docs for DrakeLcm, etc.  I can no longer find any problems with forward declarations related to lcm, manipulation, internal, etc. Also split a unit test case into a new file.  It turns out that in production, message decoding exceptions have always been leaking memory but we've never noticed because the mock didn't leak.
-* Added support for revolute joint spring in multibody plant parser (`#12992`_)  # Reads in <spring_stiffness> and <spring_reference> tags from joints in SDF files
-* analysis: Add simulator_flags helper (`#13013`_)  # This extends pydrake.systems.Simulator.reset_integrator's deprecation window because up to this point there was no viable replacement.
-* common: Fix includes and using in polynomial.cc (`#13046`_)  # Add to the polynomial.cc file the inclusion of the `numeric` header and  of the `using std;:accumulate` directive as it uses the `accumulate` function.
 
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
