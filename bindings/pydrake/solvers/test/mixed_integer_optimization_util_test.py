@@ -4,8 +4,8 @@ from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers import mixed_integer_optimization_util as mip_util
 
 
-class TestAddLogarithmicSos2Constraint(unittest.TestCase):
-    def test(self):
+class TestMixedIntegerOptimizationUtil(unittest.TestCase):
+    def test_AddLogarithmicSos2Constraint(self):
         prog = mp.MathematicalProgram()
         lambdas = prog.NewContinuousVariables(3)
         # we use +lambdas to convert a numpy array of symbolic variables to a
@@ -28,9 +28,7 @@ class TestAddLogarithmicSos2Constraint(unittest.TestCase):
         check_val([1], [0.2, 0.7, 0.], False)
         check_val([1], [0., 0.3, 0.7], True)
 
-
-class TestAddSos2Constraint(unittest.TestCase):
-    def test(self):
+    def test_AddSos2Constraint(self):
         prog = mp.MathematicalProgram()
         lambdas = prog.NewContinuousVariables(3)
         y = prog.NewBinaryVariables(2)
@@ -55,9 +53,7 @@ class TestAddSos2Constraint(unittest.TestCase):
         check_val([1, 1], [0., 0.3, 0.7], False)
         check_val([0, 0], [0., 0.3, 0.7], False)
 
-
-class TestAddLogarithmicSos1Constraint(unittest.TestCase):
-    def test(self):
+    def test_AddLogarithmicSos1Constraint(self):
         prog = mp.MathematicalProgram()
         (lambdas, y) = mip_util.AddLogarithmicSos1Constraint(prog, 4)
 
