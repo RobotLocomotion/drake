@@ -114,6 +114,9 @@ namespace systems {
  (t₀, x₀). Thus, integrators advance the continuous state of a dynamical
  system forward in time.
 
+ Drake's subclasses of IntegratorBase<T> should follow the naming pattern
+ `FooIntegrator<T>` by convention.
+
  @tparam_default_scalar
  @ingroup integrators
  */

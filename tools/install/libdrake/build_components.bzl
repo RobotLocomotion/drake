@@ -102,6 +102,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
+    # //attic:warning (indirectly)
     # //common:filesystem (indirectly)
     # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
 ]

@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/lcm/drake_mock_lcm.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
 
@@ -35,7 +35,7 @@ GTEST_TEST(FrameVisualizerTests, TestMessageGeneration) {
       RigidBodyFrame<double>("iiwa_link_ee",
           tree.FindBody("iiwa_link_ee"), X_BF));
 
-  drake::lcm::DrakeMockLcm lcm;
+  drake::lcm::DrakeLcm lcm;
 
   for (int i = 0; i < 2; ++i) {
     drake::log()->debug("i: {}", i);

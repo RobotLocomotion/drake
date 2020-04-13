@@ -230,7 +230,6 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_to_lcm_point_cloud_message_test.cc"],
     deps = [
         ":depth_sensor_to_lcm_point_cloud_message",
-        "//lcm:mock",
     ],
 )
 

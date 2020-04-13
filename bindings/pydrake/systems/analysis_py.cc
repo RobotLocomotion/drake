@@ -12,6 +12,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_flags.h"
 
 using std::unique_ptr;
 
@@ -113,24 +114,9 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.has_context.doc)
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
             // Keep alive, ownership: `context` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc);
-    // TODO(eric.cousineau): Bind `release_context` once some form of the
-    // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("reset_integrator",
-            WrapDeprecated(doc.Simulator.reset_integrator.doc_deprecated_1args,
-                [](Simulator<T>* self,
-                    std::unique_ptr<IntegratorBase<T>> integrator) {
-                  return self->reset_integrator(std::move(integrator));
-                }),
-            py::arg("integrator"),
-            // Keep alive, ownership: `integrator` keeps `self` alive.
-            py::keep_alive<2, 1>(),
-            doc.Simulator.reset_integrator.doc_deprecated_1args);
-#pragma GCC diagnostic pop
-    cls  // BR
+            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
+        // TODO(eric.cousineau): Bind `release_context` once some form of the
+        // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step,
             doc.Simulator.set_publish_every_time_step.doc)
@@ -143,8 +129,42 @@ PYBIND11_MODULE(analysis, m) {
         .def("get_actual_realtime_rate",
             &Simulator<T>::get_actual_realtime_rate,
             doc.Simulator.get_actual_realtime_rate.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const char* const reset_integrator_doc =
+        "(Deprecated.) pydrake.systems.Simulator.reset_integrator is "
+        "deprecated and will be removed from Drake on or after 2020-08-01. "
+        "Use pydrake.systems.ResetIntegratorFromFlags instead.";
+    cls  // BR
+        .def("reset_integrator",
+            WrapDeprecated(reset_integrator_doc,
+                [](Simulator<T>* self,
+                    std::unique_ptr<IntegratorBase<T>> integrator) {
+                  return self->reset_integrator(std::move(integrator));
+                }),
+            py::arg("integrator"),
+            // Keep alive, ownership: `integrator` keeps `self` alive.
+            py::keep_alive<2, 1>(), reset_integrator_doc);
+#pragma GCC diagnostic pop
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
+
+  // Simulator Flags
+  m  // BR
+      .def("ResetIntegratorFromFlags",
+          [](Simulator<double>* simulator, const std::string& scheme,
+              const double& max_step_size) {
+            IntegratorBase<double>& result =
+                ResetIntegratorFromFlags(simulator, scheme, max_step_size);
+            return &result;
+          },
+          py::arg("simulator"), py::arg("scheme"), py::arg("max_step_size"),
+          py_reference,
+          // Keep alive, reference: `return` keeps `simulator` alive.
+          py::keep_alive<0, 1>(),
+          pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)
+      .def("GetIntegrationSchemes", &GetIntegrationSchemes,
+          pydrake_doc.drake.systems.GetIntegrationSchemes.doc);
 
   // Monte Carlo Testing
   {

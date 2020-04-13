@@ -19,6 +19,7 @@
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -227,6 +228,36 @@ void AddJointActuatorFromSpecification(
   }
 }
 
+// Extracts the spring stiffness and the spring reference from a joint
+// specification and adds a revolute spring force element with the
+// corresponding spring reference if the spring stiffness is nonzero.
+// Only available for "revolute" joints. The units for spring
+// reference is radians and the units for spring stiffness is N⋅m/rad.
+void AddRevoluteSpringFromSpecification(
+    const sdf::Joint &joint_spec, const RevoluteJoint<double>& joint,
+    MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+      "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+
+  const double spring_reference = axis->SpringReference();
+  const double spring_stiffness = axis->SpringStiffness();
+
+  // We don't add a force element if stiffness is zero.
+  // If a negative value is passed in, RevoluteSpring will
+  // throw an error.
+  if (spring_stiffness != 0) {
+    plant->AddForceElement<RevoluteSpring>(
+      joint, spring_reference, spring_stiffness);
+  }
+}
+
 // Returns joint limits as the tuple (lower_limit, upper_limit,
 // velocity_limit).  The units of the limits depend on the particular joint
 // type.  For prismatic joints, units are meters for the position limits and
@@ -353,6 +384,7 @@ void AddJointFromSpecification(
       plant->get_mutable_joint(joint.index()).set_velocity_limits(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
       break;
     }
     default: {

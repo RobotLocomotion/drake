@@ -11,7 +11,7 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.lcm import DrakeMockLcm, Subscriber
+from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
@@ -115,13 +115,11 @@ class TestGeometry(unittest.TestCase):
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
-        # Use a mockable so that we can make a smoke test without side
-        # effects.
         T = float
         SceneGraph = mut.SceneGraph_[T]
         DiagramBuilder = DiagramBuilder_[T]
         Simulator = Simulator_[T]
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         role = mut.Role.kIllustration
         test_prefix = "TEST_PREFIX_"
 
