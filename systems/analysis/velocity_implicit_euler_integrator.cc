@@ -162,19 +162,30 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
     adiff_qdot_ = std::make_unique<BasicVector<AutoDiffXd>>(qn.size());
   }
 
-  // Define the lambda l_of_y to evaluate l(y).
-  auto l_of_y = [&t, &qk, &qn, &h, this](const auto& a_y) {
-        const auto& autodiff_a_y = a_y.template cast<AutoDiffXd>().eval();
-        return this->ComputeLOfY(
-            t, autodiff_a_y, qk, qn, h, this->adiff_qdot_.get(),
-            *(this->adiff_system_), this->adiff_context_.get());
-      };
+  // Initialize the an AutoDiff version of the variable y.
+  const int ny = y.size();
+  VectorX<AutoDiffXd> a_y = y;
+  for (int i = 0; i < ny; ++i) {
+    a_y(i).derivatives() = VectorX<T>::Unit(ny, i);
+  }
 
-  VectorX<AutoDiffXd> result = math::jacobian(l_of_y, y);
+  // Evaluate the AutoDiff system with a_y.
+  const VectorX<AutoDiffXd> result = this->ComputeLOfY(
+      t, a_y, qk, qn, h, this->adiff_qdot_.get(),
+      *(this->adiff_system_), this->adiff_context_.get());
 
   *Jy = math::autoDiffToGradientMatrix(result);
-  DRAKE_ASSERT(Jy->rows() == y.size());
-  DRAKE_ASSERT(Jy->cols() == y.size());
+
+  // Sometimes l(y) does not depend on y. In this case, make sure that the
+  // Jacobian isn't a n ✕ 0 matrix (this will cause a segfault when forming
+  // Newton iteration matrices); if it is, we set it equal to an n x n zero
+  // matrix.
+  if (Jy->cols() == 0) {
+    *Jy = MatrixX<T>::Zero(ny, ny);
+  }
+
+  DRAKE_ASSERT(Jy->rows() == ny);
+  DRAKE_ASSERT(Jy->cols() == ny);
 }
 
 template <class T>
