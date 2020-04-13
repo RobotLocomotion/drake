@@ -35,6 +35,8 @@ Develop Changes Locally
    ``github_archive(..., local_repository_override = <path>)``.
 #. Update ``drake/tools/workspace/models/files.bzl`` to incorporate the models
    you want.
+#. Update ``drake/tools/workspace/models/package.BUILD.bazel`` to export the
+   models.
 #. Ensure that you use ``forward_files`` to make the files available inside
    the Drake bazel workspace. For an example, see
    `drake/manipulation/models/ycb/BUILD.bazel <https://github.com/RobotLocomotion/drake/blob/master/manipulation/models/ycb/BUILD.bazel>`_.
