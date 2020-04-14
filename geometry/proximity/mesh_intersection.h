@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -114,7 +115,7 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
  the polygon contained in the half space (signed distance is <= 0).
  The half space `H_F` and vertex positions of `polygon_vertices_F` are both
  defined in a common frame F.
- @param[in] polygon_vertices_F
+ @param[in] polygon_vertices_F, num_polygon_vertices
      Input polygon is represented as a sequence of positions of its vertices.
      The input polygon is allowed to have zero area.
  @param[in] H_F
@@ -146,24 +147,28 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
         triangle with three duplicate vertices.
 */
 template <typename T>
-std::vector<Vector3<T>> ClipPolygonByHalfSpace(
-    const std::vector<Vector3<T>>& polygon_vertices_F,
+std::pair<std::array<Vector3<T>, 7>, int> ClipPolygonByHalfSpace(
+    const std::array<Vector3<T>, 7>& polygon_vertices_F,
+    const int num_polygon_vertices,
     const PosedHalfSpace<T>& H_F) {
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
   // clipping a polygon.
-  std::vector<Vector3<T>> output_vertices_F;
-  // Note: This code is correct for size < 3, but pointless so we make no effort
-  // to support it or test it.
-  const int size = static_cast<int>(polygon_vertices_F.size());
+  std::array<Vector3<T>, 7> output_vertices_F;
+  int num_output_vertices = 0;
+
+  // Note: This code is correct for num_polygon_vertices < 3, but pointless so
+  // we make no effort to support it or test it.
 
   // TODO(SeanCurtis-TRI): If necessary, this can be made more efficient:
   //  eliminating the modulus and eliminating the redundant "inside" calculation
   //  on previous (by pre-determining previous and its "containedness" and then
   //  propagating current -> previous in each loop. Probably a desirable
   //  optimization as we need to make all of this work as cheap as possible.
-  for (int i = 0; i < size; ++i) {
+  for (int i = 0; i < num_polygon_vertices; ++i) {
     const Vector3<T>& current = polygon_vertices_F[i];
-    const Vector3<T>& previous = polygon_vertices_F[(i - 1 + size) % size];
+    const Vector3<T>& previous =
+        polygon_vertices_F[(i - 1 + num_polygon_vertices) %
+                           num_polygon_vertices];
     const bool current_contained = H_F.CalcSignedDistance(current) <= 0;
     const bool previous_contained = H_F.CalcSignedDistance(previous) <= 0;
     if (current_contained) {
@@ -171,18 +176,21 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
         // Current is inside and previous is outside. Compute the point where
         // that edge enters the half space. This is a new vertex in the clipped
         // polygon and must be included before current.
-        output_vertices_F.push_back(CalcIntersection(current, previous, H_F));
+        output_vertices_F[num_output_vertices++] =
+            CalcIntersection(current, previous, H_F);
       }
-      output_vertices_F.push_back(current);
+      output_vertices_F[num_output_vertices++] = current;
     } else if (previous_contained) {
       // Current is outside and previous is inside. Compute the point where
       // the edge exits the half space. This is a new vertex in the clipped
       // polygon and is included *instead* of current.
-      output_vertices_F.push_back(CalcIntersection(current, previous, H_F));
+      output_vertices_F[num_output_vertices++] =
+          CalcIntersection(current, previous, H_F);
     }
   }
-  return output_vertices_F;
+  return {output_vertices_F, num_output_vertices};
 }
+
 
 /** Remove duplicate vertices from a polygon represented as a cyclical sequence
  of vertex positions. In other words, for a sequence `A,B,B,C,A`, the pair of
@@ -190,14 +198,14 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
  duplicates and the result would be `A,B,C`. The polygon might be reduced to a
  pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point (`A,A,A`
  becomes `A`).
- @param[in] polygon
+ @param[in] polygon, num_polygon_vertices
      The input polygon, pass by value.
  @return
      The equivalent polygon with no duplicate vertices.
  */
 template <typename T>
-std::vector<Vector3<T>> RemoveDuplicateVertices(
-    std::vector<Vector3<T>> polygon) {
+std::pair<std::array<Vector3<T>, 7>, int> RemoveDuplicateVertices(
+    std::array<Vector3<T>, 7> polygon, int num_polygon_vertices) {
   // TODO(SeanCurtis-TRI): The resulting polygon depends on the order of the
   //  inputs. Imagine I have vertices A, A', A'' (such that |X - X'| < eps.
   //  The sequence AA'A'' would be reduced to AA''
@@ -205,8 +213,8 @@ std::vector<Vector3<T>> RemoveDuplicateVertices(
   //  The sequence A''AA' would be reduced to A''A.
   //  In all three cases, the exact same polygon is defined on input, but the
   //  output is different. This should be documented and/or fixed.
-  if (polygon.size() <= 1)
-    return polygon;
+  if (num_polygon_vertices <= 1)
+    return {polygon, num_polygon_vertices};
 
   auto near = [](const Vector3<T>& p, const Vector3<T>& q) -> bool {
     // TODO(SeanCurtis-TRI): This represents 5-6 bits of loss. Confirm that a
@@ -222,26 +230,27 @@ std::vector<Vector3<T>> RemoveDuplicateVertices(
   // will change "A,B,B,C,C,A" to "A,B,C,A". To close the cyclic order, we
   // will check the first and the last vertices again near the end of the
   // function.
-  auto it = std::unique(polygon.begin(), polygon.end(), near);
-  polygon.resize(it - polygon.begin());
+  auto it = std::unique(polygon.begin(), polygon.begin() + num_polygon_vertices,
+                        near);
+  num_polygon_vertices = it - polygon.begin();
 
-  if (polygon.size() == 1)
-    return polygon;
+  if (num_polygon_vertices == 1)
+    return {polygon, num_polygon_vertices};
 
-  if (polygon.size() == 2) {
+  if (num_polygon_vertices == 2) {
     DRAKE_ASSERT(!near(polygon[0], polygon[1]));
-    return polygon;
+    return {polygon, num_polygon_vertices};
   }
 
-  DRAKE_ASSERT(polygon.size() >= 3);
+  DRAKE_ASSERT(num_polygon_vertices >= 3);
 
   // Check the first and the last vertices in the sequence. For example, given
   // "A,B,C,A", we want "A,B,C".
-  if (near(polygon[0], *polygon.rbegin())) {
-    polygon.pop_back();
+  if (near(polygon[0], polygon[num_polygon_vertices - 1])) {
+    --num_polygon_vertices;
   }
 
-  return polygon;
+  return {polygon, num_polygon_vertices};
 }
 
 /** Intersects a triangle with a tetrahedron, returning the portion of the
@@ -256,7 +265,7 @@ std::vector<Vector3<T>> RemoveDuplicateVertices(
      The surface mesh whose vertex positions are expressed in N's frame.
  @param X_MN
      The pose of the surface frame N in the volume frame M.
- @retval polygon_M
+ @retval polygon_M, num_polygon_vertices
      The output polygon represented by a sequence of positions of its
      vertices, expressed in M's frame. The nature of triangle-tetrahedron
      intersection means that this polygon can have up to seven vertices (i.e.,
@@ -272,23 +281,20 @@ std::vector<Vector3<T>> RemoveDuplicateVertices(
         tetrahedron (non-zero area restriction still applies).
  */
 template <typename T>
-std::vector<Vector3<T>> ClipTriangleByTetrahedron(
+std::pair<std::array<Vector3<T>, 7>, int> ClipTriangleByTetrahedron(
     VolumeElementIndex element, const VolumeMesh<T>& volume_M,
     SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN) {
   // Initialize output polygon in M's frame from the triangular `face` of
   // surface_N.
-  // TODO(SeanCurtis-TRI): Consider using a simple array-like object to avoid
-  //  allocation. Will require additional "size" parameter and possibly have
-  //  to change the return type.
-  std::vector<Vector3<T>> polygon_M;
-  polygon_M.reserve(7);
+  std::array<Vector3<T>, 7> polygon_M;
+  int num_polygon_vertices = 0;
   for (int i = 0; i < 3; ++i) {
     SurfaceVertexIndex v = surface_N.element(face).vertex(i);
     // TODO(SeanCurtis-TRI): The `M` in `r_MV()` is different from the M in this
     //  function. More evidence that the `vertex(v).r_MV()` notation is *bad*.
     const Vector3<T>& p_NV = surface_N.vertex(v).r_MV();
-    polygon_M.emplace_back(X_MN * p_NV);
+    polygon_M[num_polygon_vertices++] = X_MN * p_NV;
   }
   // Get the positions, in M's frame, of the four vertices of the tetrahedral
   // `element` of volume_M.
@@ -328,7 +334,8 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
     PosedHalfSpace<T> half_space_M(normal_M, p_MA);
     // Intersects the output polygon by the half space of each face of the
     // tetrahedron.
-    polygon_M = ClipPolygonByHalfSpace(polygon_M, half_space_M);
+    std::tie(polygon_M, num_polygon_vertices) =
+        ClipPolygonByHalfSpace(polygon_M, num_polygon_vertices, half_space_M);
   }
 
   // TODO(DamrongGuoy): Remove the code below when ClipPolygonByHalfSpace()
@@ -336,20 +343,22 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
   //  ClipPolygonByHalfSpace().
 
   // Remove possible duplicate vertices from ClipPolygonByHalfSpace().
-  polygon_M = RemoveDuplicateVertices(polygon_M);
-  if (polygon_M.size() < 3) {
+  std::tie(polygon_M, num_polygon_vertices) =
+      RemoveDuplicateVertices(polygon_M, num_polygon_vertices);
+  if (num_polygon_vertices < 3) {
     // RemoveDuplicateVertices() may have shrunk the polygon down to one or
     // two vertices, so we empty the polygon.
-    polygon_M.clear();
+    num_polygon_vertices = 0;
   }
 
   // TODO(DamrongGuoy): Calculate area of the polygon. If it's too small,
   //  return an empty polygon.
 
   // The output polygon could be at most a heptagon.
-  DRAKE_DEMAND(polygon_M.size() <= 7);
-  return polygon_M;
+  DRAKE_DEMAND(num_polygon_vertices <= 7);
+  return {polygon_M, num_polygon_vertices};
 }
+
 
 /** Determines whether a triangle of a rigid surface N and a tetrahedron of a
  soft volume M are suitable for building contact surface based on the face
@@ -512,19 +521,21 @@ void SampleVolumeFieldOnSurface(
       //  if the broadphase culling determines the surface and volume are
       //  disjoint regions, *no* vertices will be transformed. Unclear what the
       //  best balance for best average performance.
-      std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
-          tet_index, mesh_M, tri_index, surface_N, X_MN);
+      std::array<Vector3<T>, 7> polygon_vertices_M;
+      int num_polygon_vertices = 0;
+      std::tie(polygon_vertices_M, num_polygon_vertices) =
+          ClipTriangleByTetrahedron(tet_index, mesh_M, tri_index, surface_N,
+                                    X_MN);
 
-      const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
-      if (poly_vertex_count < 3) continue;
+      if (num_polygon_vertices < 3) continue;
 
       const int num_previous_vertices = surface_vertices_M.size();
 
       // Add the new polygon vertices to the mesh vertices and construct a
       // polygon from the vertex indices.
       std::vector<SurfaceVertexIndex> polygon;
-      polygon.reserve(polygon_vertices_M.size());
-      for (int i = 0; i < poly_vertex_count; ++i) {
+      polygon.reserve(num_polygon_vertices);
+      for (int i = 0; i < num_polygon_vertices; ++i) {
         polygon.emplace_back(surface_vertices_M.size());
         surface_vertices_M.emplace_back(polygon_vertices_M[i]);
       }
@@ -589,18 +600,20 @@ void SampleVolumeFieldOnSurface(
     //  if the broadphase culling determines the surface and volume are
     //  disjoint regions, *no* vertices will be transformed. Unclear what the
     //  best balance for best average performance.
-    std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
-        tet_index, mesh_M, tri_index, surface_N, X_MN);
+    std::array<Vector3<T>, 7> polygon_vertices_M;
+    int num_polygon_vertices = 0;
+    std::tie(polygon_vertices_M, num_polygon_vertices) =
+        ClipTriangleByTetrahedron(tet_index, mesh_M, tri_index, surface_N,
+                                  X_MN);
 
-    const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
-    if (poly_vertex_count < 3) return BvttCallbackResult::Continue;
+    if (num_polygon_vertices < 3) return BvttCallbackResult::Continue;
 
     const int num_previous_vertices = surface_vertices_M.size();
     // Add the new polygon vertices to the mesh vertices and construct a
     // polygon from the vertex indices.
     std::vector<SurfaceVertexIndex> polygon;
-    polygon.reserve(polygon_vertices_M.size());
-    for (int i = 0; i < poly_vertex_count; ++i) {
+    polygon.reserve(num_polygon_vertices);
+    for (int i = 0; i < num_polygon_vertices; ++i) {
       polygon.emplace_back(surface_vertices_M.size());
       surface_vertices_M.emplace_back(polygon_vertices_M[i]);
     }
