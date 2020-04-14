@@ -111,6 +111,7 @@ drake_cc_library(
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
+        "universal_mobilizer.cc",
         "weld_joint.cc",
         "weld_mobilizer.cc",
     ],
@@ -145,6 +146,7 @@ drake_cc_library(
         "rigid_body.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
+        "universal_mobilizer.h",
         "weld_joint.h",
         "weld_mobilizer.h",
     ],
@@ -388,6 +390,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "space_xyz_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "universal_mobilizer_test",
     deps = [
         ":mobilizer_tester",
         ":tree",
