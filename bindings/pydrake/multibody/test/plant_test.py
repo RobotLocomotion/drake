@@ -8,6 +8,7 @@ import warnings
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.multibody.tree import (
+    BallRpyJoint_,
     Body_,
     BodyIndex,
     DoorHinge_,
@@ -1073,10 +1074,19 @@ class TestPlant(unittest.TestCase):
                 damping=2.,
             )
 
+        def make_ball_rpy_joint(plant, P, C):
+            return BallRpyJoint_[T](
+                name="ball_rpy",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=2.,
+            )
+
         make_joint_list = [
             make_weld,
             make_prismatic,
             make_revolute,
+            make_ball_rpy_joint,
         ]
 
         for make_joint in make_joint_list:
