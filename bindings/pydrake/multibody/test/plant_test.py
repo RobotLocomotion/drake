@@ -8,6 +8,7 @@ import warnings
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.multibody.tree import (
+    BallRpyJoint_,
     Body_,
     BodyIndex,
     DoorHinge_,
@@ -1048,6 +1049,7 @@ class TestPlant(unittest.TestCase):
         x_axis = np.array([1., 0., 0.])
 
         tested_joints = [
+            [BallRpyJoint_[T], "ball_rpy", {"damping": 2}],
             [PrismaticJoint_[T], "prismatic", {"axis": x_axis, "damping": 2.}],
             [RevoluteJoint_[T], "revolute", {"axis": x_axis, "damping": 2.}],
             [WeldJoint_[T], "weld", {"X_PC": RigidTransform_[float]()}]
