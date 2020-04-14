@@ -305,6 +305,20 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
     return acc_upper_limits_;
   }
 
+  /// Sets the position limits to @p lower_limits and @p upper_limits.
+  /// @throws std::exception if the dimension of @p lower_limits or
+  /// @p upper_limits does not match num_positions().
+  /// @throws std::exception if any of @p lower_limits is larger than the
+  /// corresponding term in @p upper_limits.
+  void set_position_limits(const VectorX<double>& lower_limits,
+                           const VectorX<double>& upper_limits) {
+    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
+    DRAKE_THROW_UNLESS(lower_limits.size() == num_positions());
+    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
+    pos_lower_limits_ = lower_limits;
+    pos_upper_limits_ = upper_limits;
+  }
+
   /// Sets the velocity limits to @p lower_limits and @p upper_limits.
   /// @throws std::exception if the dimension of @p lower_limits or
   /// @p upper_limits does not match num_velocities().
