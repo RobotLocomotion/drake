@@ -89,6 +89,7 @@ drake_cc_library(
 drake_cc_library(
     name = "multibody_tree_core",
     srcs = [
+        "ball_rpy_joint.cc",
         "body.cc",
         "body_node_impl.cc",
         "door_hinge.cc",
@@ -114,6 +115,7 @@ drake_cc_library(
         "weld_mobilizer.cc",
     ],
     hdrs = [
+        "ball_rpy_joint.h",
         "body.h",
         "body_node.h",
         "body_node_impl.h",
@@ -470,6 +472,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "revolute_joint_test",
+    deps = [
+        ":tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ball_rpy_joint_test",
     deps = [
         ":tree",
     ],
