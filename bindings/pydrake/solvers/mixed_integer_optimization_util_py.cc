@@ -26,10 +26,17 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
       },
       py::arg("prog"), py::arg("lambdas"),
       py::arg("binary_variable_name") = "y",
-      doc.AddLogarithmicSos1Constraint.doc);
+      doc.AddLogarithmicSos2Constraint.doc_3args_prog_lambda_y);
 
   m.def("AddSos2Constraint", &AddSos2Constraint, py::arg("prog"),
       py::arg("lambdas"), py::arg("y"), doc.AddSos2Constraint.doc);
+
+  m.def("AddLogarithmicSos1Constraint",
+      [](MathematicalProgram* prog, int num_sections) {
+        return AddLogarithmicSos1Constraint(prog, num_sections);
+      },
+      py::arg("prog"), py::arg("num_lambda"),
+      doc.AddLogarithmicSos1Constraint.doc_2args);
 }
 }  // namespace pydrake
 }  // namespace drake

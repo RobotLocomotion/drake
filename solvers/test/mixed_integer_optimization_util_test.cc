@@ -267,6 +267,34 @@ GTEST_TEST(TestLogarithmicSos1, Test5Lambda) {
   LogarithmicSos1Test(5, codes.topRows<5>());
 }
 
+GTEST_TEST(TestLogarithmicSos1, Test) {
+  MathematicalProgram prog;
+  VectorX<symbolic::Variable> y, lambda;
+  std::tie(lambda, y) = AddLogarithmicSos1Constraint(&prog, 3);
+  EXPECT_EQ(lambda.rows(), 3);
+  EXPECT_EQ(y.rows(), 2);
+
+  auto check = [&prog, &y, &lambda](const Eigen::VectorXd& lambda_val,
+                                    const Eigen::VectorXd& y_val,
+                                    bool satisfied_expected) {
+    Eigen::VectorXd x_val = Eigen::VectorXd::Zero(prog.num_vars());
+    prog.SetDecisionVariableValueInVector(y, y_val, &x_val);
+    prog.SetDecisionVariableValueInVector(lambda, lambda_val, &x_val);
+    bool satisfied = true;
+    for (const auto& binding : prog.GetAllConstraints()) {
+      satisfied =
+          satisfied && binding.evaluator()->CheckSatisfied(
+                           prog.GetBindingVariableValues(binding, x_val));
+    }
+    EXPECT_EQ(satisfied, satisfied_expected);
+  };
+  check(Eigen::Vector3d(0, 0, 1), Eigen::Vector2d(1, 1), true);
+  check(Eigen::Vector3d(1, 0, 0), Eigen::Vector2d(1, 0), false);
+  check(Eigen::Vector3d(0, 1, 0), Eigen::Vector2d(0, 1), true);
+  check(Eigen::Vector3d(0, 0.5, 0.5), Eigen::Vector2d(1, 1), false);
+  check(Eigen::Vector3d(0, 0.1, 1), Eigen::Vector2d(1, 0), false);
+}
+
 GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   // Test if the return argument from
   // AddBilinearProductMcCormickEnvelopeSos2 has the right type.
