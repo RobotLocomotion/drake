@@ -6,9 +6,9 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 # Using the `drake` branch of this repository.
 _REPOSITORY = "RobotLocomotion/pybind11"
 
-_COMMIT = "146b5d4cab6e1ceaee3aeed1e85c211dc61324c8"
+_COMMIT = "cb82d59313b93f8728be0f0965309f59a2a321a3"
 
-_SHA256 = "3488cfa32a56d8b1de428d1c7f118320504b0f46684f7fde36456659270141a2"
+_SHA256 = "7cd04dcac2a8ab4d0772d8496f2c299bd9f91951efe40c5c2b42feb903d31516"
 
 def pybind11_repository(
         name,
