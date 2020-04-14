@@ -53,7 +53,12 @@ BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
                     "equal to twice the order ({}).",
                     knots_.size(), 2 * order));
   }
-  DRAKE_ASSERT(std::is_sorted(knots_.begin(), knots_.end()));
+  // This custom comparator is needed to explicitly convert Formula to bool when
+  // T == Expression.
+  const auto compare = [](const T& val, const T& other) {
+    return static_cast<bool>(val < other);
+  };
+  DRAKE_ASSERT(std::is_sorted(knots_.begin(), knots_.end(), compare));
 }
 
 template <typename T>
@@ -103,10 +108,16 @@ int BsplineBasis<T>::FindContainingInterval(const T& parameter_value) const {
   DRAKE_ASSERT(parameter_value <= final_parameter_value());
   const std::vector<T>& t = knots();
   const T& t_bar = parameter_value;
+  // This custom comparator is needed to explicitly convert Formula to bool when
+  // T == Expression.
+  const auto compare = [](const T& val, const T& other) {
+    return static_cast<bool>(val < other);
+  };
   return std::distance(
-      t.begin(), std::prev(t_bar < final_parameter_value()
-                               ? std::upper_bound(t.begin(), t.end(), t_bar)
-                               : std::lower_bound(t.begin(), t.end(), t_bar)));
+      t.begin(),
+      std::prev(t_bar < final_parameter_value()
+                    ? std::upper_bound(t.begin(), t.end(), t_bar, compare)
+                    : std::lower_bound(t.begin(), t.end(), t_bar, compare)));
 }
 
 template <typename T>
@@ -118,9 +129,8 @@ template <typename T>
 bool BsplineBasis<T>::operator!=(const BsplineBasis<T>& other) const {
   return !this->operator==(other);
 }
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class BsplineBasis)
-
 }  // namespace math
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::math::BsplineBasis)
