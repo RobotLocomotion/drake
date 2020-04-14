@@ -4,18 +4,13 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 filegroup(
     name = "models",
     srcs = glob([
-        "**/*.obj",
         "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
     ]),
 )
 
@@ -29,20 +24,15 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     deps = [
-        "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//geometry:geometry_visualization",
-        "//geometry:shape_specification",
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/tree",
-        "//systems/analysis:implicit_euler_integrator",
-        "//systems/analysis:runge_kutta3_integrator",
-        "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
         "//systems/framework:diagram",
-        "//systems/primitives:affine_system",
-        "//systems/primitives:constant_vector_source",
         "@gflags",
     ],
 )
