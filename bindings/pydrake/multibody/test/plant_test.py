@@ -25,6 +25,7 @@ from pydrake.multibody.tree import (
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
+    PrismaticJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
     RigidBody_,
@@ -1043,55 +1044,49 @@ class TestPlant(unittest.TestCase):
         """
         Tests joint constructors and `AddJoint`.
         """
-        MultibodyPlant = MultibodyPlant_[T]
-        RigidTransform = RigidTransform_[T]
-        RollPitchYaw = RollPitchYaw_[T]
 
-        instance_file = FindResourceOrThrow(
-            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
-        # Add different joints between multiple model instances.
-        # TODO(eric.cousineau): Remove the multiple instances and use
-        # programmatically constructed bodies once this API is exposed in
-        # Python.
-        num_joints = 2
-        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float](0.0)
-        parser = Parser(plant_f)
-        instances = []
-        for i in range(num_joints + 1):
-            instance = parser.AddModelFromFile(
-                instance_file, "instance_{}".format(i))
-            instances.append(instance)
-        proximal_frame = "base"
-        distal_frame = "lower_link"
-        joints_f = [
-            RevoluteJoint_[float](
-                name="revolve_things",
-                frame_on_parent=plant_f.GetBodyByName(
-                    distal_frame, instances[1]).body_frame(),
-                frame_on_child=plant_f.GetBodyByName(
-                    proximal_frame, instances[2]).body_frame(),
-                axis=[0, 0, 1],
-                damping=0.),
-            WeldJoint_[float](
-                name="weld_things",
-                parent_frame_P=plant_f.GetBodyByName(
-                    distal_frame, instances[0]).body_frame(),
-                child_frame_C=plant_f.GetBodyByName(
-                    proximal_frame, instances[1]).body_frame(),
-                X_PC=RigidTransform_[float].Identity()),
+        def make_weld(plant, P, C):
+            # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
+            # with other joints.
+            return WeldJoint_[T](
+                name="weld",
+                parent_frame_P=P,
+                child_frame_C=C,
+                X_PC=RigidTransform_[float](),
+            )
+
+        def make_prismatic(plant, P, C):
+            return PrismaticJoint_[T](
+                name="prismatic",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=[1., 0., 0.],
+                damping=2.,
+            )
+
+        def make_revolute(plant, P, C):
+            return RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=[1., 0., 0.],
+                damping=2.,
+            )
+
+        make_joint_list = [
+            make_weld,
+            make_prismatic,
+            make_revolute,
         ]
-        for joint_f in joints_f:
-            joint_out = plant_f.AddJoint(joint_f)
-            self.assertIs(joint_f, joint_out)
 
-        # The model is now complete.
-        plant_f.Finalize()
-        plant = to_type(plant_f, T)
-
-        for joint_f in joints_f:
-            # Not using `joint` because we converted the `plant_f` to `plant`
-            joint = plant.get_joint(joint_index=joint_f.index())
+        for make_joint in make_joint_list:
+            plant = MultibodyPlant_[T](0.0)
+            child = plant.AddRigidBody("Child", SpatialInertia_[float]())
+            joint = make_joint(
+                plant=plant, P=plant.world_frame(), C=child.body_frame())
+            joint_out = plant.AddJoint(joint)
+            self.assertIs(joint, joint_out)
+            plant.Finalize()
             self._test_joint_api(T, joint)
 
     @numpy_compare.check_all_types
