@@ -1,5 +1,6 @@
 import filecmp
 import os
+import sys
 import unittest
 
 
@@ -28,8 +29,16 @@ class TestLibclangParser(unittest.TestCase):
             self.get_test_file(
                 "test/sample_header_class_coverage_expected.csv"),
         )
-        self.assert_file_equal(
-            self.get_test_file("sample_header_documentation_test.xml"),
-            self.get_test_file(
-                "test/sample_header_documentation_pybind_expected.xml"),
-        )
+        if sys.version_info[:2] >= (3, 8):
+            self.assert_file_equal(
+                self.get_test_file("sample_header_documentation_test.xml"),
+                self.get_test_file(
+                    "test/sample_header_documentation_pybind_expected_python_3.8.xml"  # noqa
+                ),
+            )
+        else:
+            self.assert_file_equal(
+                self.get_test_file("sample_header_documentation_test.xml"),
+                self.get_test_file(
+                    "test/sample_header_documentation_pybind_expected.xml"),
+            )

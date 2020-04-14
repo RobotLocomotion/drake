@@ -138,6 +138,7 @@ filegroup(
     data = [
         "test/sample_header_class_coverage_expected.csv",
         "test/sample_header_documentation_pybind_expected.xml",
+        "test/sample_header_documentation_pybind_expected_python_3.8.xml",
         "test/sample_header_file_coverage_expected.csv",
     ],
 )

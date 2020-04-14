@@ -82,11 +82,11 @@ Drake requires a compiler running in C++17 mode.
 | Ubuntu 18.04 LTS (Bionic Beaver) | 2.1   | 3.10  | | Clang 6.0         | OpenJDK 11        | 3.6    |
 |                                  |       |       | | GCC 7.5 (default) |                   |        |
 +----------------------------------+       +-------+---------------------+-------------------+--------+
-| macOS Mojave (10.14)             |       | 3.16  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 13 | 3.7    |
+| macOS Mojave (10.14)             |       | 3.17  | | Apple LLVM 11.0.0 | | AdoptOpenJDK 14 | 3.8    |
 |                                  |       |       | | (Xcode 11.3)      | | (HotSpot JVM)   |        |
-+----------------------------------+       |       |                     |                   |        |
-| macOS Catalina (10.15)           |       |       |                     |                   |        |
-|                                  |       |       |                     |                   |        |
++----------------------------------+       |       +---------------------+                   |        |
+| macOS Catalina (10.15)           |       |       | | Apple LLVM 11.0.3 |                   |        |
+|                                  |       |       | | (Xcode 11.4)      |                   |        |
 +----------------------------------+-------+-------+---------------------+-------------------+--------+
 
 CPython is the only Python implementation supported. On Ubuntu, amd64
