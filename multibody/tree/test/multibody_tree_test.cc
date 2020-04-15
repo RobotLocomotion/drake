@@ -763,9 +763,151 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
                               MatrixCompareType::relative));
 }
 
+// This tests the method CalcBiasTranslationalAcceleration() against an expected
+// solution that uses AutoDiffXd to compute Dt(J𝑠) ⋅ 𝑠, where Dt(J𝑠) is the time
+// derivative of the Jacobian with respect to "speeds" 𝑠, and 𝑠 is either
+// q̇ (time-derivatives of generalized positions) or v (generalized velocities).
+TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
+  // Set state to arbitrary non-planar values for the joint's angles and rates.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set the joint angles and rates from generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // The number of generalized velocities in this Kuka iiwa robot arm model
+  // is equal to its number of generalized positions.
+  const int num_velocities = tree().num_velocities();
+  DRAKE_ASSERT(num_velocities == tree().num_positions());
+
+  // Bias acceleration is not a function of vdot (it is a function of q and v).
+  // Nan values for generalized accelerations vdot are chosen to highlight the
+  // fact that bias acceleration is not a function of vdot.
+  const VectorX<double> vdot = VectorX<double>::Constant(num_velocities,
+      std::numeric_limits<double>::quiet_NaN());
+
+  // Enable q_autodiff and v_autodiff to differentiate with respect to time.
+  // Note: Pass MatrixXd(v) so the return gradient uses AutoDiffXd (for which we
+  // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+  auto q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
+  auto v_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+
+  // Set the context for AutoDiffXd computations.
+  VectorX<AutoDiffXd> x_autodiff(2 * num_velocities);
+  x_autodiff << q_autodiff, v_autodiff;
+  tree_autodiff().GetMutablePositionsAndVelocities(context_autodiff_.get())
+      = x_autodiff;
+
+  // Points Ei (i = 0, 1) are affixed/welded to the end-effector E.
+  // Designate Ei's positions from origin Eo, expressed in frame E.
+  const int kNumPoints = 2;  // The set stores 2 points.
+  Matrix3X<double> p_EEi(3, kNumPoints);
+  p_EEi.col(0) << 0.1, -0.05, 0.02;
+  p_EEi.col(1) << 0.2, 0.3, -0.15;
+  const Matrix3X<AutoDiffXd> p_EEi_autodiff = p_EEi;
+
+  // Get shortcuts to end-effector link frame E and world frame W.
+  const Frame<AutoDiffXd>& frame_E_autodiff =
+      tree_autodiff().get_body(end_effector_link_->index()).body_frame();
+  const Frame<AutoDiffXd>& frame_W_autodiff = tree_autodiff().world_frame();
+
+  // Compute Ei's translational velocity Jacobian with respect to generalized
+  // velocities v in world frame W, expressed in W, and its time derivative.
+  MatrixX<AutoDiffXd> Jv_v_WEi_autodiff(3 * kNumPoints, num_velocities);
+  tree_autodiff().CalcJacobianTranslationalVelocity(*context_autodiff_,
+      JacobianWrtVariable::kV, frame_E_autodiff, frame_E_autodiff,
+      p_EEi_autodiff, frame_W_autodiff, frame_W_autodiff, &Jv_v_WEi_autodiff);
+
+  // Use AutoDiffXd to extract Dt(Jv_v_WEi), the ordinary time-derivative of
+  // Ei's translational Jacobian in world W, expressed in W.
+  auto Dt_Jv_v_WEi = math::autoDiffToGradientMatrix(Jv_v_WEi_autodiff);
+  Dt_Jv_v_WEi.resize(3 * kNumPoints, num_velocities);
+
+  // Form the expected bias translational acceleration via AutoDiffXd results.
+  const VectorX<double> avBias_WEi_W_expected_VectorX = Dt_Jv_v_WEi * v;
+
+  // Reshape the expected results from VectorX to Matrix3X.
+  Matrix3X<double> avBias_WEi_W_expected(3, kNumPoints);
+  avBias_WEi_W_expected.col(0) = avBias_WEi_W_expected_VectorX.head(3);
+  avBias_WEi_W_expected.col(1) = avBias_WEi_W_expected_VectorX.tail(3);
+
+  // Compute Ep's bias translational acceleration in world frame W.
+  const Frame<double>& frame_W = tree().world_frame();
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+
+  const Matrix3X<double> avBias_WEi_W =
+      tree().CalcBiasTranslationalAcceleration(
+          *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_W, frame_W);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+
+  // Verify computed bias translational acceleration numerical values and ensure
+  // the results are stored in a matrix of size (3 kNumPoints x num_velocities).
+  EXPECT_TRUE(CompareMatrices(avBias_WEi_W, avBias_WEi_W_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Express the expected bias acceleration result in the end-effector frame_E.
+  const RotationMatrix<double> R_WE =
+      frame_E.CalcRotationMatrixInWorld(*context_);
+  const RotationMatrix<double> R_EW = R_WE.inverse();
+  const Matrix3X<double> avBias_WEi_E_expected = R_EW * avBias_WEi_W_expected;
+
+  // Form Ei's bias translational acceleration in world frame, expressed in E
+  // and ensure it is nearly identical to the expected results.
+  const Matrix3X<double> avBias_WEi_E =
+      tree().CalcBiasTranslationalAcceleration(*context_,
+          JacobianWrtVariable::kV, frame_E, p_EEi, frame_W, frame_E);
+
+  EXPECT_TRUE(CompareMatrices(avBias_WEi_E, avBias_WEi_E_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Ensure CalcBiasTranslationalAcceleration() works when it is passed a single
+  // generic position vector, which should returns a single bias acceleration.
+  const VectorX<double> p_EEp = p_EEi.col(0);
+  const Vector3<double> avBias_WEp_E = tree().CalcBiasTranslationalAcceleration(
+      *context_, JacobianWrtVariable::kV, frame_E, p_EEp, frame_W, frame_E);
+  EXPECT_TRUE(CompareMatrices(avBias_WEp_E, avBias_WEi_E_expected.col(0),
+                            kTolerance, MatrixCompareType::relative));
+
+  // Ensure CalcBiasTranslationalAcceleration() works when it is passed a
+  // MatrixX<double> instead of a Matrix3X<double> of position vectors.
+  const MatrixX<double> p_EEj = p_EEi;
+  const MatrixX<double> avBias_WEj_E = tree().CalcBiasTranslationalAcceleration(
+      *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_W, frame_E);
+  EXPECT_TRUE(CompareMatrices(avBias_WEj_E, avBias_WEi_E_expected,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Verify CalcBiasTranslationalAcceleration() throws an exception if
+  // with_respect_to is JacobianWrtVariable::kQDot.
+  // TODO(Mitiguy) Remove this test when CalcBiasTranslationalAcceleration() is
+  //  improved to handle JacobianWrtVariable::kQDot.
+  EXPECT_THROW(tree().CalcBiasTranslationalAcceleration(*context_,
+      JacobianWrtVariable::kQDot, frame_E, p_EEi, frame_W, frame_W),
+          std::exception);
+
+  // Verify CalcBiasTranslationalAcceleration() throws an exception if
+  // measured-in-frame is something other than the world frame W.
+  // TODO(Mitiguy) Remove this test when CalcBiasTranslationalAcceleration() is
+  //  improved to handle an arbitrary measured-in-frame.
+  EXPECT_THROW(tree().CalcBiasTranslationalAcceleration(*context_,
+      JacobianWrtVariable::kV, frame_E, p_EEi, frame_E, frame_W),
+          std::exception);
+}
+
+
 // Unit tests MBT::CalcBiasForJacobianTranslationalVelocity() using
 // AutoDiffXd to compute time derivatives of a Jacobian to obtain a
 // reference solution.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -892,6 +1034,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
                    *frame_H_, world_frame),
                std::exception);
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Given a set of points Pi attached to the end effector frame G, this test
 // calculates Jq̇_v_WPi (Pi's translational velocity Jacobian with respect to q̇)
@@ -1080,8 +1223,92 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityA) {
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
+// This tests the method CalcBiasSpatialAcceleration() against an expected
+// solution that uses AutoDiffXd to compute Dt(J𝑠) ⋅ 𝑠, where Dt(J𝑠) is the time
+// derivative of the Jacobian with respect to "speeds" 𝑠, and 𝑠 is either
+// q̇ (time-derivatives of generalized positions) or v (generalized velocities).
+TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
+  // Set state to arbitrary non-planar values for the joint's angles and rates.
+  VectorX<double> q, v;
+  GetArbitraryNonZeroConfiguration(&q, &v);
+
+  // Set the joint angles and rates from generalized positions and velocities.
+  int angle_index = 0;
+  for (const RevoluteJoint<double>* joint : joints_) {
+    joint->set_angle(context_.get(), q[angle_index]);
+    joint->set_angular_rate(context_.get(), v[angle_index]);
+    angle_index++;
+  }
+
+  // The number of generalized velocities in this Kuka iiwa robot arm model
+  // is equal to its number of generalized positions.
+  const int num_velocities = tree().num_velocities();
+  DRAKE_ASSERT(num_velocities == tree().num_positions());
+
+  // Bias acceleration is not a function of vdot (it is a function of q and v).
+  // Nan values for generalized accelerations vdot are chosen to highlight the
+  // fact that bias acceleration is not a function of vdot.
+  const VectorX<double> vdot = VectorX<double>::Constant(
+      num_velocities, std::numeric_limits<double>::quiet_NaN());
+
+  // Enable q_autodiff and v_autodiff to differentiate with respect to time.
+  // Note: Pass MatrixXd(v) so the return gradient uses AutoDiffXd (for which we
+  // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
+  context_autodiff_->SetTimeStateAndParametersFrom(*context_);
+  auto q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(v));
+  auto v_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+
+  // Set the context for AutoDiffXd computations.
+  VectorX<AutoDiffXd> x_autodiff(2 * num_velocities);
+  x_autodiff << q_autodiff, v_autodiff;
+  tree_autodiff().GetMutablePositionsAndVelocities(context_autodiff_.get())
+      = x_autodiff;
+
+  // Point Ep is affixed/welded to the end-effector E.
+  const Vector3<double> p_EEp(0.1, -0.05, 0.02);
+  const Vector3<AutoDiffXd> p_EEp_autodiff = p_EEp;
+
+  // Get shortcuts to end-effector link frame E and world frame W.
+  const Frame<AutoDiffXd>& frame_E_autodiff =
+      tree_autodiff().get_body(end_effector_link_->index()).body_frame();
+  const Frame<AutoDiffXd>& frame_W_autodiff = tree_autodiff().world_frame();
+
+  // Compute point Ep's spatial velocity Jacobian with respect to generalized
+  // velocities v in world frame W, expressed in W, and its time derivative.
+  MatrixX<AutoDiffXd> Jv_V_WEp_autodiff(6, num_velocities);
+  tree_autodiff().CalcJacobianSpatialVelocity(
+      *context_autodiff_, JacobianWrtVariable::kV, frame_E_autodiff,
+      p_EEp_autodiff, frame_W_autodiff, frame_W_autodiff, &Jv_V_WEp_autodiff);
+
+  // Use AutoDiffXd to extract Dt(Jv_V_WEp), the ordinary time-derivative of
+  // Ep's spatial Jacobian in world W, expressed in W.
+  auto Dt_Jv_V_WEp = math::autoDiffToGradientMatrix(Jv_V_WEp_autodiff);
+  Dt_Jv_V_WEp.resize(6, num_velocities);
+
+  // Form the expected bias spatial acceleration via AutoDiffXd results.
+  const VectorX<double> AvBias_WEp_expected = Dt_Jv_V_WEp * v;
+
+  // Compute Ep's bias spatial acceleration in world frame W.
+  const Frame<double>& frame_W = tree().world_frame();
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+  const SpatialAcceleration<double> AvBias_WEp_W =
+      tree().CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
+                                         frame_E, p_EEp, frame_W, frame_W);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+
+  // Verify computed bias translational acceleration numerical values and ensure
+  // the results are stored in a matrix of size (6 x num_velocities).
+  EXPECT_TRUE(CompareMatrices(AvBias_WEp_W.get_coeffs(), AvBias_WEp_expected,
+                              kTolerance, MatrixCompareType::relative));
+}
+
 // Unit tests MBT::CalcBiasForJacobianSpatialVelocity() use AutoDiffXd to time-
 // differentiate a spatial velocity Jacobian to form a reference solution.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   // The number of generalized velocities in the Kuka iiwa robot arm model.
   const int kNumVelocities = tree().num_velocities();
@@ -1164,6 +1391,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(Abias_WHp, Abias_WHp_expected,
                               kTolerance, MatrixCompareType::relative));
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Verify that even when the input set of points and/or the Jacobian might
 // contain garbage on input, a query for the world body Jacobian will always
@@ -1330,7 +1558,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), nullptr),
-      std::exception, ".*'Jw_V_ABp_E != nullptr'.*");
+      std::exception, ".*'Js_V_ABp_E != nullptr'.*");
 
   // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of rows.
@@ -1340,7 +1568,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
-      std::exception, ".*'Jw_V_ABp_E->rows\\(\\) == 6'.*");
+      std::exception, ".*'Js_V_ABp_E->rows\\(\\) == 6'.*");
 
   // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of columns.
@@ -1349,7 +1577,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
-      std::exception, ".*'Jw_V_ABp_E->cols\\(\\) == num_columns'.*");
+      std::exception, ".*'Js_V_ABp_E->cols\\(\\) == num_columns'.*");
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in
