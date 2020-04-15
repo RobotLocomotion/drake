@@ -435,6 +435,11 @@ configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
 
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 
+set(BAZEL_EXTRA_ARGS "" CACHE STRING
+  "Additional arguments to pass to `bazel build` and `bazel run` (e.g. '--jobs=1'). Use a semicolon to separate arguments."
+)
+mark_as_advanced(BAZEL_EXTRA_ARGS)
+
 if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|MinSizeRel|Release|RelWithDebInfo)$")
   set(BAZEL_ARGS
     "$<$<CONFIG:Debug>:--config=Debug>$<$<CONFIG:MinSizeRel>:--config=MinSizeRel>$<$<CONFIG:Release>:--config=Release>$<$<CONFIG:RelWithDebInfo>:--config=RelWithDebInfo>"
@@ -499,6 +504,7 @@ ExternalProject_Add(drake_cxx_python
     ${BAZEL_STARTUP_ARGS}
     build
     ${BAZEL_ARGS}
+    ${BAZEL_EXTRA_ARGS}
     ${BAZEL_TARGETS}
   BUILD_IN_SOURCE ON
   BUILD_ALWAYS ON
@@ -508,6 +514,7 @@ ExternalProject_Add(drake_cxx_python
     ${BAZEL_STARTUP_ARGS}
     run
     ${BAZEL_ARGS}
+    ${BAZEL_EXTRA_ARGS}
     ${BAZEL_TARGETS}
     --
     ${BAZEL_TARGETS_ARGS}
