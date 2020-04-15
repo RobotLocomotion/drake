@@ -835,12 +835,11 @@ class IntegratorBase {
    */
   T get_working_minimum_step_size() const {
     using std::max;
+    using std::abs;
     // Tolerance is just a number close to machine epsilon.
     const double tol = 1e-14;
 
-    // Formula below requires time to be non-negative.
-    DRAKE_DEMAND(get_context().get_time() >= 0);
-    const T smart_minimum = max(tol, get_context().get_time() * tol);
+    const T smart_minimum = max(tol, abs(get_context().get_time()) * tol);
     return max(smart_minimum, req_min_step_size_);
   }
   // @}
