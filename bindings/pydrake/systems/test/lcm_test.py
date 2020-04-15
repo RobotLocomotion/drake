@@ -1,3 +1,6 @@
+"""
+Test bindings of LCM integration with the Systems framework.
+"""
 import pydrake.systems.lcm as mut
 
 import collections
@@ -88,7 +91,7 @@ class TestSystemsLcm(unittest.TestCase):
         return simulator.get_context().Clone()
 
     def test_subscriber(self):
-        lcm = DrakeLcm()
+        lcm = DrakeLcm(lcm_url="memq://")
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
         model_message = self._model_message()
@@ -99,7 +102,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_cpp(self):
-        lcm = DrakeLcm()
+        lcm = DrakeLcm(lcm_url="memq://")
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
@@ -134,7 +137,7 @@ class TestSystemsLcm(unittest.TestCase):
         dut.Publish(context)
 
     def test_publisher(self):
-        lcm = DrakeLcm()
+        lcm = DrakeLcm(lcm_url="memq://")
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
@@ -145,7 +148,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_publisher_cpp(self):
-        lcm = DrakeLcm()
+        lcm = DrakeLcm(lcm_url="memq://")
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
