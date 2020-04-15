@@ -41,7 +41,7 @@ For a similar symmetric argument, the same triangle is formed on the right
 In this example, we remove the joint at point **Bc** in the diagram that
 would usually connect link **B** to link **C**. To accomplish this we use a
 `LinearBushingRollPitchYaw` `ForceElement` placed at the joint. One of the
-many uses of this bushing element is to model a revolute joint. We module a z
+many uses of this bushing element is to model a revolute joint. We model a z
 -axis revolute joint by setting the torque stiffness (k₂) and torque damping
 (d₂) constants to 0. We choose the z axis (Yaw) to avoid gimbal lock. Two
 frames (one attached to **B** with origin at point **Bc** and one attached to

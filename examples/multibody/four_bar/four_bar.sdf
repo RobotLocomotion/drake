@@ -186,6 +186,8 @@
       <child>A</child>
       <parent>world</parent>
       <axis>
+        <!-- atan2(sqrt(15.0), 1.0) see the README for more details.-->
+        <initial_position>1.318116071652818</initial_position>
         <xyz>0 1 0</xyz>
         <limit>
           <!-- No limit provided. sdformat defaults to -1, which we parse as
@@ -202,6 +204,8 @@
       <child>B</child>
       <parent>A</parent>
       <axis>
+        <!-- M_PI - atan2(sqrt(15.0), 1.0) see the README for more details. -->
+        <initial_position>1.8234765819369751</initial_position>
         <xyz>0 1 0</xyz>
         <limit>
           <!-- An effort of 0 is parsed as an unactuated joint. -->
@@ -218,6 +222,8 @@
       <child>C</child>
       <parent>world</parent>
       <axis>
+        <!-- M_PI - atan2(sqrt(15.0), 1.0) see the README for more details. -->
+        <initial_position>1.8234765819369751</initial_position>
         <xyz>0 1 0</xyz>
         <limit>
           <!-- An effort of 0 is parsed as an unactuated joint. -->

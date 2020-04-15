@@ -18,7 +18,7 @@ drake_cc_binary(
     name = "passive_simulation",
     srcs = ["passive_simulation.cc"],
     add_test_rule = 1,
-    data = ["//examples/multibody/four_bar:models"],
+    data = [":models"],
     test_rule_args = [
         "--simulation_time=0.1",
         "--target_realtime_rate=0.0",
