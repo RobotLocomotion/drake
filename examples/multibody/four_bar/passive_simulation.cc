@@ -71,11 +71,6 @@ int do_main() {
   Parser parser(&four_bar, &scene_graph);
   parser.AddModelFromFile(full_name);
 
-  // Grab the two coincident frames at the midpoint of the coupler link
-  // One is attached to the Crank side, one to the Rocker side.
-  // The two frames will be welded together with a LinearBushingRollPitchYaw
-  // force element to approximate a closed-loop kinematic chain.
-
   // Grab the two frames, one attached to the end of the link B; the other
   // attached to the end of link C. The two frames will be welded together
   // with one rotational degree of freedom along the z axis of BC_Bushing.
