@@ -723,52 +723,51 @@ class IntegratorBase {
    Variable step integrators reduce their step sizes as needed to achieve
    requirements such as specified accuracy or step convergence. However, it is
    not possible to take an arbitrarily small step. Normally integrators choose
-   an appropriate minimum step and throw an exception if the requirements
-   can't be achieved without going below that. Methods in this section allow
-   you to influence two aspects of this procedure:
+   an appropriate minimum step and throw an exception if the requirements can't
+   be achieved without going below that. Methods in this section allow you to
+   influence two aspects of this procedure:
 
    - you can increase the minimum step size, and
-   - you can control whether an exception is thrown if a smaller step would
-     have been needed to achieve the aforementioned integrator requirements.
+   - you can control whether an exception is thrown if a smaller step would have
+     been needed to achieve the aforementioned integrator requirements.
 
-   By default, integrators allow a very small minimum step which can
-   result in long run times. Setting a larger minimum can be helpful as a
-   diagnostic to figure out what aspect of your simulation is requiring small
-   steps. You can set the minimum to what should be a "reasonable" minimum
-   based on what you know about the physical system. You will then get an
-   std::runtime_error exception thrown at any point in time where your model
-   behaves unexpectedly (due to, e.g., a discontinuity in the derivative
-   evaluation function).
+   By default, integrators allow a very small minimum step which can result in
+   long run times. Setting a larger minimum can be helpful as a diagnostic to
+   figure out what aspect of your simulation is requiring small steps. You can
+   set the minimum to what should be a "reasonable" minimum based on what you
+   know about the physical system. You will then get an std::runtime_error
+   exception thrown at any point in time where your model behaves unexpectedly
+   (due to, e.g., a discontinuity in the derivative evaluation function).
 
    If you disable the exception (via
    `set_throw_on_minimum_step_size_violation(false)`), the integrator will
-   simply proceed with a step of the minimum size: accuracy is guaranteed
-   only when the minimum step size is not violated. Beware that there can be
-   no guarantee about the magnitude of any errors introduced by violating the
-   accuracy "requirements" in this manner, so disabling the exception should
-   be done warily.
+   simply proceed with a step of the minimum size: accuracy is guaranteed only
+   when the minimum step size is not violated. Beware that there can be no
+   guarantee about the magnitude of any errors introduced by violating the
+   accuracy "requirements" in this manner, so disabling the exception should be
+   done warily.
 
    #### Details
-   Because time is maintained to finite precision, the integrator uses a
-   scalar `h_floor` to constrain time step h ≥ `h_floor` such that
-   `current_time + h > current_time` will be strictly satisfied.
-   The integrator will never automatically decrease its step below `h_floor`.
-   We calculate `h_floor=max(ε, ε⋅t)`, where t is the current time and ε is a
-   small multiple of machine precision, typically a number like 1e-14. Note
-   that `h_floor` necessarily grows with time; if that is a concern you should
-   limit how long your simulations are allowed to run without resetting time.
+   Because time is maintained to finite precision, the integrator uses a scalar
+   `h_floor` to constrain time step h ≥ `h_floor` such that `current_time + h >
+   current_time` will be strictly satisfied. The integrator will never
+   automatically decrease its step below `h_floor`. We calculate `h_floor=max(ε,
+   ε⋅abs(t))`, where t is the current time and ε is a small multiple of machine
+   precision, typically a number like 1e-14. Note that `h_floor` necessarily
+   grows with time; if that is a concern you should limit how long your
+   simulations are allowed to run without resetting time.
 
-   You may request a larger minimum step size `h_min`. Then at every time t,
-   the integrator determines a "working" minimum `h_work=max(h_min, h_floor)`.
-   If the step size selection algorithm determines that a step smaller than
-   `h_work` is needed to meet accuracy or other needs, then a
-   std::runtime_error exception will be thrown and the simulation halted. On
-   the other hand, if you have suppressed the exception (again, via
-   `set_throw_on_minimum_step_size_violation(false)`), the integration
-   will continue, taking a step of size `h_work`.
+   You may request a larger minimum step size `h_min`. Then at every time t, the
+   integrator determines a "working" minimum `h_work=max(h_min, h_floor)`. If
+   the step size selection algorithm determines that a step smaller than
+   `h_work` is needed to meet accuracy or other needs, then a std::runtime_error
+   exception will be thrown and the simulation halted. On the other hand, if you
+   have suppressed the exception (again, via
+   `set_throw_on_minimum_step_size_violation(false)`), the integration will
+   continue, taking a step of size `h_work`.
 
-   Under some circumstances the integrator may legitimately take a step of
-   size `h` smaller than your specified `h_min`, although never smaller than
+   Under some circumstances the integrator may legitimately take a step of size
+   `h` smaller than your specified `h_min`, although never smaller than
    `h_floor`. For example, occasionally the integrator may reach an event or
    time limit that occurs a very short time after the end of a previous step,
    necessitating that a tiny "sliver" of a step be taken to complete the
@@ -776,8 +775,8 @@ class IntegratorBase {
    convergence goals are achieved. Larger steps can resume immediately
    afterwards. Another circumstance is when one of the integrator's stepping
    methods is called directly requesting a very small step, for example
-   `IntegrateWithMultipleStepsToTime(h)`. No exception will be thrown in
-   either of these cases.
+   `IntegrateWithMultipleStepsToTime(h)`. No exception will be thrown in either
+   of these cases.
    */
 
   //@{
@@ -835,12 +834,11 @@ class IntegratorBase {
    */
   T get_working_minimum_step_size() const {
     using std::max;
+    using std::abs;
     // Tolerance is just a number close to machine epsilon.
     const double tol = 1e-14;
 
-    // Formula below requires time to be non-negative.
-    DRAKE_DEMAND(get_context().get_time() >= 0);
-    const T smart_minimum = max(tol, get_context().get_time() * tol);
+    const T smart_minimum = max(tol, abs(get_context().get_time()) * tol);
     return max(smart_minimum, req_min_step_size_);
   }
   // @}
