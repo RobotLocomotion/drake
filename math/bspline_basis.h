@@ -52,6 +52,11 @@ class BsplineBasis final {
   BsplineBasis<double>. This conversion is desireable. */
   template <typename U = T>
   BsplineBasis(const BsplineBasis<double>& other,
+               /* Prevents ambiguous declarations between default copy
+               constructor on double and conversion constructor on T = double.
+               The conversion constructor for T = double will fail to be 
+               instantiated because the second, "hidden" parameter will fail to
+               be defined for U = double. */
                typename std::enable_if_t<!std::is_same_v<U, double>>* = {})
       : order_(other.order()),
         num_basis_functions_(other.num_basis_functions()) {
@@ -60,6 +65,7 @@ class BsplineBasis final {
       knots_.push_back(T(knot));
     }
   }
+
   /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
 
