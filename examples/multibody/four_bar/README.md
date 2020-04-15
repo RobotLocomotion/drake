@@ -44,6 +44,7 @@ would usually connect link **B** to link **C**. To accomplish this we use a
 many uses of this bushing element is to model a revolute joint. We model a z
 -axis revolute joint by setting the torque stiffness (k₂) and torque damping
 (d₂) constants to 0. We choose the z axis (Yaw) to avoid gimbal lock. Two
-frames (one attached to **B** with origin at point **Bc** and one attached to
-**C** with origin at point **Cb**) are placed such that their z axes point
- out of the paper in the above diagram. 
+frames (one attached to **B** called `BC_Bushing` with origin at point **Bc
+** and one attached to **C** called `CB_Bushing` with origin at point **Cb
+**) are placed such that their z axes point out of the paper in the above
+ diagram. 
