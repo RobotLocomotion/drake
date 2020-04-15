@@ -485,6 +485,16 @@ Eigen::Index PiecewisePolynomial<T>::cols() const {
   }
 }
 
+template <typename T>
+void PiecewisePolynomial<T>::Reshape(int rows, int cols) {
+  DRAKE_DEMAND(rows * cols == this->rows() * this->cols());
+  for (auto& p : polynomials_) {
+    // Accordining to the Eigen documentation, data is preserved when the total
+    // number of elements does not change.
+    p.resize(rows, cols);
+  }
+}
+
 // Static generators for splines.
 
 // Throws std::runtime_error if these conditions are true:

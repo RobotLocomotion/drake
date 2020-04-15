@@ -393,6 +393,32 @@ GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
   TestScaling(spline, 4.3);
 }
 
+GTEST_TEST(testPiecewisePolynomial, ReshapeTest) {
+  std::vector<double> breaks = {0, .5, 1.};
+  std::vector<Eigen::MatrixXd> samples(3);
+  samples[0].resize(2, 3);
+  samples[0] << 1, 1, 2, 2, 0, 3;
+  samples[1].resize(2, 3);
+  samples[1] << 3, 4, 5, 6, 7, 8;
+  samples[2].resize(2, 3);
+  samples[2] << -.2, 33., 5.4, -2.1, 52, 12;
+
+  PiecewisePolynomial<double> zoh =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  EXPECT_EQ(zoh.rows(), 2);
+  EXPECT_EQ(zoh.cols(), 3);
+
+  zoh.Reshape(3, 2);
+  EXPECT_EQ(zoh.rows(), 3);
+  EXPECT_EQ(zoh.cols(), 2);
+
+  samples[0].resize(3, 2);
+  samples[1].resize(3, 2);
+  EXPECT_TRUE(CompareMatrices(zoh.value(0.25), samples[0]));
+  EXPECT_TRUE(CompareMatrices(zoh.value(0.75), samples[1]));
+}
+
+
 template <typename T>
 void TestScalarType() {
   VectorX<T> breaks(3);
