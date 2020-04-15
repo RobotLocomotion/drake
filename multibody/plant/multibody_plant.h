@@ -2447,6 +2447,96 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcBiasTerm(context, Cv);
   }
 
+  /// For each point Bi of (fixed to) a frame B, calculates 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢, Bi's
+  /// translational acceleration bias in frame A with respect to "speeds" 𝑠,
+  /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
+  /// (generalized velocities).  𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢 is the term in a_ABi (Bi's
+  /// translational acceleration in A) that does not include 𝑠̇, i.e.,<pre>
+  ///    a_ABi = J𝑠_v_ABi ⋅ 𝑠̇  +  𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢    (𝑠 = q̇ or 𝑠 = v), hence
+  ///    𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢 = a_ABi − J𝑠_v_ABi ⋅ 𝑠̇
+  /// </pre>
+  /// where J𝑠_v_ABi is Bi's translational velocity Jacobian in frame A for s.
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the translational
+  /// accceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// @param[in] frame_B The frame on which point Bi is fixed/welded.
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
+  /// position vector is expressed in frame_B.
+  /// @param[in] frame_A The frame that measures 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢.
+  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_E The frame in which 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢 is expressed on output.
+  /// @param[out] 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢_𝐄 Point Bi's translational acceleration bias in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢_𝐄 is a `3 x p` matrix, where p is the number of points Bi.
+  /// @throws std::exception if 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢_𝐄 is nullptr or not sized `3 x p`.
+  /// @note 𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢_𝐄 = J̇𝑠_v_ABi ⋅ s is quadratic in 𝑠, since<pre>
+  ///   v_ABi =  J𝑠_v_ABi ⋅ 𝑠       which upon vector differentiation in A gives
+  ///   a_ABi =  J𝑠_v_ABi ⋅ 𝑠̇  +  J̇𝑠_v_ABi ⋅ 𝑠   where J̇𝑠_v_ABi is linear in 𝑠
+  ///         =  J𝑠_v_ABi ⋅ 𝑠̇  +  𝐚𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐢
+  /// </pre>
+  /// @see CalcJacobianTranslationalVelocity() to compute J𝑠_v_ABi, point Bi's
+  /// translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @throws std::exception if p_BoBi_B does not have 3 rows.
+  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if frame_A is not the world frame.
+  VectorX<T> CalcBiasTranslationalAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const MatrixX<T>>& p_BoBi_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    // TODO(Mitiguy) Allow frame_A to be a non-World frame.
+    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
+        context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
+  }
+
+  /// For one point Bp of (fixed to) a frame B, calculates 𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩, Bp's
+  /// spatial acceleration bias in frame A with respect to "speeds" 𝑠,
+  /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
+  /// (generalized velocities).  𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩 is the term in A_ABp (Bp's
+  /// spatial acceleration in A) that does not include 𝑠̇, i.e.,<pre>
+  ///    A_ABp = J𝑠_V_ABp ⋅ 𝑠̇  +  𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩    (𝑠 = q̇ or 𝑠 = v), hence
+  ///    𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩 = A_ABp − J𝑠_V_ABp ⋅ 𝑠̇
+  /// </pre>
+  /// where J𝑠_V_ABp is Bp's spatial velocity Jacobian in frame A for speeds s.
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
+  /// is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// @param[in] frame_B The frame on which point Bp is fixed/welded.
+  /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to a point
+  /// Bp (regarded as fixed to B), expressed in frame_B.
+  /// @param[in] frame_A The frame that measures 𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩.
+  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_E The frame in which 𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩 is expressed on output.
+  /// @param[out] 𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩_𝐄 Point Bp's spatial acceleration bias in frame A
+  /// with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// @note 𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩_𝐄 = J̇𝑠_V_ABp ⋅ 𝑠 is quadratic in 𝑠, since  <pre>
+  ///   V_ABp =  J𝑠_V_ABp ⋅ 𝑠       which upon vector differentiation in A gives
+  ///   A_ABp =  J𝑠_V_ABp ⋅ 𝑠̇  +  J̇𝑠_V_ABp ⋅ 𝑠   where J̇𝑠_V_ABp is linear in 𝑠
+  ///         =  J𝑠_V_ABp ⋅ 𝑠̇  +  𝐀𝑠𝐁𝐢𝐚𝐬_𝐀𝐁𝐩
+  /// </pre>
+  /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
+  /// translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if frame_A is not the world frame.
+  SpatialAcceleration<T> CalcBiasSpatialAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    // TODO(Mitiguy) Allow frame_A to be a non-World frame.
+    return internal_tree().CalcBiasSpatialAcceleration(
+        context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
+  }
+
   /// For a point Fp that is fixed to a frame F, calculates Fp's translational
   /// acceleration "bias" term `abias_AFp = J̇s_v_AFp(q, s) * s` in frame A with
   /// respect to "speeds" 𝑠.

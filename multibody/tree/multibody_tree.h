@@ -1394,6 +1394,29 @@ class MultibodyTree {
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E) const;
 
+  /// See MultibodyPlant method.
+  VectorX<T> CalcBiasTranslationalAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const MatrixX<T>>& p_BoBi_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
+
+  /// See MultibodyPlant method.
+  SpatialAcceleration<T> CalcBiasSpatialAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
+
+  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_B,
+      const SpatialAcceleration<T>& AsBias_WA_W) const;
   /// @}
   // End of multibody Jacobian methods section.
 
