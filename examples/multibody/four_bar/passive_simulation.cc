@@ -1,3 +1,13 @@
+/** @file
+ An example showing:
+   - How to model a four bar linkage in SDF.
+   - Use the `multibody::Parser` to load a model from an SDF file into a
+   MultibodyPlant.
+   - Model a revolute joint with a `multibody::LinearBushingRollPitchYaw` to
+   model a closed kinematic chain.
+
+   Refer to README.md.
+ */
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
@@ -30,45 +40,37 @@ namespace multibody {
 namespace four_bar {
 namespace {
 
-DEFINE_double(target_realtime_rate, 1.0,
-              "Desired rate relative to real time.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
-
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
 DEFINE_double(force_stiffness, 30000,
-              "Desired force stiffness value for kx, ky, and kz of the "
+              "Desired force stiffness value for kx, ky, and kz in N/m of the "
               "LinearBushingRollPitchYaw ForceElement.");
 
 DEFINE_double(force_damping, 800,
-              "Desired force damping value for dx, dy, and dz of the "
+              "Desired force damping value for dx, dy, and dz in N*s/m of the "
               "LinearBushingRollPitchYaw ForceElement.");
 
 DEFINE_double(torque_stiffness, 30000,
-              "Desired torque stiffness value for k₀, k₁, and k₂ of the "
-              "LinearBushingRollPitchYaw ForceElement.");
+              "Desired torque stiffness value for k₀, k₁, and k₂ in N*m/rad "
+              "of the LinearBushingRollPitchYaw ForceElement.");
 
 DEFINE_double(torque_damping, 800,
-              "Desired torque damping value for d₀, d₁, and d₂ of the "
-              "LinearBushingRollPitchYaw ForceElement.");
+              "Desired torque damping value for d₀, d₁, and d₂ in N*m*s/rad of "
+              "the LinearBushingRollPitchYaw ForceElement.");
 
 int do_main() {
   // Build a generic MultibodyPlant and SceneGraph.
   DiagramBuilder<double> builder;
 
-  auto pair = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(0.0));
-
-  MultibodyPlant<double>& four_bar = pair.plant;
-  SceneGraph<double>& scene_graph = pair.scene_graph;
+  auto [four_bar, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
 
   // Make and add the four_bar model from an SDF model.
   const std::string relative_name =
       "drake/examples/multibody/four_bar/four_bar.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
 
-  Parser parser(&four_bar, &scene_graph);
+  Parser parser(&four_bar);
   parser.AddModelFromFile(full_name);
 
   // Grab the two frames, one attached to the end of the link B; the other
@@ -88,10 +90,10 @@ int do_main() {
 
   // See the documentation for LinearBushingRollPitchYaw.
   // This particular choice of parameters models a z-axis revolute joint.
-  const Vector3d torque_stiffness_constants{k_xyz, k_xyz, 0};
-  const Vector3d torque_damping_constants{d_xyz, k_xyz, 0};
-  const Vector3d force_stiffness_constants{k_012, k_012, k_012};
-  const Vector3d force_damping_constants{d_012, d_012, d_012};
+  const Vector3d torque_stiffness_constants{k_xyz, k_xyz, 0}; // N/m
+  const Vector3d torque_damping_constants{d_xyz, d_xyz, 0};   // N*s/m
+  const Vector3d force_stiffness_constants{k_012, k_012, k_012}; // N*m/rad
+  const Vector3d force_damping_constants{d_012, d_012, d_012};   // N*m*s/rad
 
   // Add a bushing force element where the joint between link B and link C
   // should be in an ideal 4-bar linkage.
@@ -117,12 +119,12 @@ int do_main() {
   four_bar.get_actuation_input_port().FixValue(&four_bar_context, 0.0);
 
   // Set initial conditions so the model will have some motion
-  RevoluteJoint<double>& WA_joint =
-      four_bar.GetMutableJointByName<RevoluteJoint>("q_WA");
-  RevoluteJoint<double>& WC_joint =
-      four_bar.GetMutableJointByName<RevoluteJoint>("q_WC");
-  RevoluteJoint<double>& AB_joint =
-      four_bar.GetMutableJointByName<RevoluteJoint>("q_AB");
+  const RevoluteJoint<double>& WA_joint =
+      four_bar.GetJointByName<RevoluteJoint>("q_WA");
+  const RevoluteJoint<double>& WC_joint =
+      four_bar.GetJointByName<RevoluteJoint>("q_WC");
+  const RevoluteJoint<double>& AB_joint =
+      four_bar.GetJointByName<RevoluteJoint>("q_AB");
 
   // See the README for an explanation of these angles.
   const double qA = atan2(sqrt(15.0), 1.0);
@@ -140,15 +142,12 @@ int do_main() {
   std::unique_ptr<Simulator<double>> simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
-  simulator->set_publish_every_time_step(false);
-  simulator->set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator->Initialize();
   simulator->AdvanceTo(FLAGS_simulation_time);
 
   // Print some useful statistics
   PrintSimulatorStatistics(*simulator);
 
-  return EXIT_SUCCESS;
+  return 0;
 }
 
 }  // namespace
@@ -160,7 +159,7 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A four bar linkage demo demonstrating the use of a linear bushing  as "
-      "a way to model kinematic loop. Launch drake-visualizer before running "
+      "a way to model a kinematic loop. Launch drake-visualizer before running "
       "this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::four_bar::do_main();

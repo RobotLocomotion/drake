@@ -9,33 +9,33 @@
 
 | Diagram of the four bar model found in `four_bar.sdf` |
 | :---: |
-| ![FourBarLinkageSchematic](images/FourBarLinkageSchematic.png)    | 
-|  | 
+| ![FourBarLinkageSchematic](images/FourBarLinkageSchematic.png)    |
+|  |
 
 ## Starting Configuration
 
 > The SDF defines all of the links with their x axes parallel to the world x
 > axis for convenience of measuring the angles in the state of the system
 > with respect to a fixed axis. Below we derive a valid initial configuration
-> of the three angles `q_A`, `q_B`, and `q_C`. 
+> of the three angles `q_A`, `q_B`, and `q_C`.
 
 | Derivation of starting configuration |
 | :---: |
-| ![FourBarLinkageSchematic](images/FourBarLinkageGeometry.png)    | 
-| | 
+| ![FourBarLinkageSchematic](images/FourBarLinkageGeometry.png)    |
+| |
 
 Because of the congruity of the link lengths, this initial condition is very
 symmetric, and forms an isosceles trapezoid. `q_A` is one angle of a right
 triangle with its adjacent side measuring 1m and hypotenuse measuring 4m. We
-can immediately calculate `q_A` as `atan2(sqrt(15), 1)`.  
- 
- Because link B is parallel with the `W_x` axis, `q_A` and `q_B` are
+can immediately calculate `q_A` as `atan2(sqrt(15), 1)`.
+
+Because link B is parallel with the `W_x` axis, `q_A` and `q_B` are
  supplementary, and thus we can set `q_B = M_PI - q_A`.
-  
+
 For a similar symmetric argument, the same triangle is formed on the right
  side of the trapezoid. Making `q_A` and `q_C` supplementary and thus `q_C
-  = M_PI - q_A` 
-  
+  = M_PI - q_A`.
+
 ## Modelling a revolute joint
 
 In this example, we remove the joint at point **Bc** in the diagram that
@@ -47,4 +47,4 @@ many uses of this bushing element is to model a revolute joint. We model a z
 frames (one attached to **B** called `BC_Bushing` with origin at point **Bc
 ** and one attached to **C** called `CB_Bushing` with origin at point **Cb
 **) are placed such that their z axes point out of the paper in the above
- diagram. 
+ diagram.
