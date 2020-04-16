@@ -11,14 +11,17 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
+#include "drake/math/autodiff_gradient.h"
 
+using drake::math::autoDiffToGradientMatrix;
+using drake::math::DiscardGradient;
 using Eigen::Matrix;
 using std::default_random_engine;
+using std::normal_distribution;
+using std::runtime_error;
+using std::uniform_int_distribution;
 using std::uniform_real_distribution;
 using std::vector;
-using std::runtime_error;
-using std::normal_distribution;
-using std::uniform_int_distribution;
 
 namespace drake {
 namespace trajectories {
@@ -476,6 +479,37 @@ GTEST_TEST(PiecewiseTrajectoryTest, SymbolicValues) {
       PiecewisePolynomial<Expression>::FirstOrderHold(breaks, symbolic_samples);
   EXPECT_TRUE(foh_w_symbolic_coeffs.value(0.25)(0).Expand().EqualTo(0.5 * x0 +
                                                                     0.5 * x1));
+}
+
+// Verifies that the derivatives obtained by evaluating a
+// `PiecewisePolynomial<AutoDiffXd>` and extracting the gradient of the result
+// match those obtained by taking the derivative of the whole trajectory and
+// evaluating it at the same point.
+GTEST_TEST(PiecewiseTrajectoryTest, AutoDiffDerivativesTest) {
+  VectorX<AutoDiffXd> breaks(3);
+  breaks << 0, .5, 1.;
+  MatrixX<AutoDiffXd> samples(2, 3);
+  samples << 1, 1, 2, 2, 0, 3;
+
+  const PiecewisePolynomial<AutoDiffXd> trajectory =
+      PiecewisePolynomial<AutoDiffXd>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+  std::unique_ptr<Trajectory<AutoDiffXd>> derivative_trajectory =
+      trajectory.MakeDerivative();
+  const int num_times = 100;
+  VectorX<double> t = VectorX<double>::LinSpaced(
+      num_times, ExtractDoubleOrThrow(trajectory.start_time()),
+      ExtractDoubleOrThrow(trajectory.end_time()));
+  const double tolerance = 20 * std::numeric_limits<double>::epsilon();
+  for (int k = 0; k < num_times; ++k) {
+    AutoDiffXd t_k = math::initializeAutoDiff(Vector1d{t(k)})[0];
+    MatrixX<double> derivative_value =
+        autoDiffToGradientMatrix(trajectory.value(t_k));
+    MatrixX<double> expected_derivative_value =
+        DiscardGradient(derivative_trajectory->value(t(k)));
+    EXPECT_TRUE(CompareMatrices(derivative_value, expected_derivative_value,
+                                tolerance));
+  }
 }
 
 }  // namespace

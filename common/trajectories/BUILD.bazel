@@ -122,6 +122,7 @@ drake_cc_googletest(
         ":random_piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
     ],
 )
 
