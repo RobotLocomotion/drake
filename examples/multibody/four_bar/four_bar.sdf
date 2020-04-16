@@ -6,8 +6,8 @@
     Links A, B, C, and (the implicit) World link complete the closed kinematic
     chain.
 
-    Each link A, B, C have length 4m and mass 20kg and are approximated by
-    boxes with dimensions (4m, 0.1m, 0.1m).
+    Each link A, B, C have length 4m and mass 20kg and and in 3D are modeled
+    by boxes with dimensions (4.2m, 0.1m, 0.1m).
 
     For each link we define a frame: A, B, C, and W.
 
@@ -20,29 +20,38 @@
    pointing left, and Wy pointing out of the page. Gravity points in the -Wz
    direction.
 
-   Frame A is coincident with frame W. In other words X_WA is the identity.
+   In the zero configuration, frame A is coincident with frame W. In other
+   words X_WA is the identity.
    The origin of the A frame measured in the world, p_WA, is (0, 0, 0).
-   Frame A's orientation measured in the world, R_WA, is the identity.
+   In the zero configuration, frame A's orientation measured in the world,
+   R_WA, is the identity.
    The Ax axis points along the link.
 
    Frame B is defined relative to A.
    The origin of the B frame measured in A, p_AB, is (-4, 0, 0)
-   Frame B's orientation measured in A, R_AB, is the identity.
+   In the zero configuration, frame B's orientation measured in A, R_AB,
+   is the identity.
    The Bx axis points along the link.
 
    Frame C is defined relative to W.
    The origin of the C frame measured in the world, p_WC, is (-2, 0, 0).
-   Frame C's orientation measured in the world, R_WC, is the identity.
+   In the zero configuration, frame C's orientation measured in the world,
+   R_WC, is the identity.
    The Cx axis points along the link.
 
-   For each link, we also define create a revolute joint, located at the
-   origin of that link's frame, aligned with the y-axis of that link's frame,
-   connecting it to it's "parent".
+   In pseudo code, the frames in the zero configuration can be written:
+   X_WA = RigidTransformd::Identity();
+   X_AB = RigidTransformd(Vector3d(4, 0, 0));
+   X_WC = RigidTransformd(Vector3d(-2, 0, 0));
+
+   For each link, we also define a revolute joint, located at the
+   origin of that link's frame, oriented along the world's y-axis.
+
    q_WA is the y-axis revolute joint between the parent world and the child A.
    q_AB is the y-axis revolute joint between the parent A and the child B.
    q_WC is the y-axis revolute joint between the parent world and the child B.
 
-   There is no joint connecting link B to link C. We will approximate a
+   There is no joint connecting link B to link C. We will model a
    revolute joint between them with a LinearBushingRollPitchYaw ForceElement in
    the code. For this we define two frames:
    BC_bushing is a frame attached to link B.
@@ -60,13 +69,15 @@
       <!-- The frame A measured in the world frame, X_WA is the identity. -->
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <!-- A_cm is located at the midpoint of the bar -->
+        <!-- Acm is located at the midpoint of the bar -->
         <pose>2 0 0 0 0 0</pose>
         <mass>20</mass>
         <inertia>
           <!-- Inertia tensor for a solid cuboid of dimensions
           (l, w, h) = (4.2, 0.1, 0.1) and mass 20kg-->
-          <ixx>0.0333333334</ixx><iyy>29.4166667</iyy><izz>29.4166667</izz>
+          <ixx>0.0333333334</ixx>
+          <iyy>29.4166667</iyy>
+          <izz>29.4166667</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
@@ -85,7 +96,8 @@
       <!-- A visual representing the revolute joint between the world and
        link A. -->
       <visual name='A_pivot_visual'>
-        <pose>0 0 0 1.57 0 0</pose>
+        <!-- 90-degree rotation around Ax, π/2 ≈ 1.57079632679 -->
+        <pose>0 0 0 1.57079632679 0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.01</radius>
@@ -104,13 +116,15 @@
       purposes -->
       <pose relative_to="A">4 0.1 0 0 0 0</pose>
       <inertial>
-        <!-- B_cm is located at the midpoint of the bar -->
+        <!-- Bcm is located at the midpoint of the bar -->
         <pose>2 0 0 0 0 0</pose>
         <mass>20</mass>
         <inertia>
           <!-- Inertia tensor for a solid cuboid of dimensions
           (l, w, h) = (4.2, 0.1, 0.1) and mass 20kg-->
-          <ixx>0.0333333334</ixx><iyy>29.4166667</iyy><izz>29.4166667</izz>
+          <ixx>0.0333333334</ixx>
+          <iyy>29.4166667</iyy>
+          <izz>29.4166667</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
@@ -118,7 +132,7 @@
       <visual name='B_visual'>
         <pose>2 0 0 0 0 0</pose>
         <geometry>
-          <box><size>4.1 0.1 0.1</size></box>
+          <box><size>4.2 0.1 0.1</size></box>
         </geometry>
         <material>
           <diffuse>0 0 1 1</diffuse>
@@ -127,7 +141,8 @@
       <!-- A visual representing the revolute joint between
       link A and link B.  -->
       <visual name='B_pivot_visual'>
-        <pose>0 -0.05 0 1.57 0 0</pose>
+        <!-- 90-degree rotation around Bx, π/2 ≈ 1.57079632679 -->
+        <pose>0 -0.05 0 1.57079632679 0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.01</radius>
@@ -146,13 +161,15 @@
       purposes -->
       <pose>-2 0.2 0 0 0 0</pose>
       <inertial>
-        <!-- C_cm is located at the midpoint of the bar -->
+        <!-- Ccm is located at the midpoint of the bar -->
         <pose>2 0 0 0 0 0</pose>
         <mass>20</mass>
         <inertia>
           <!-- Inertia tensor for a solid cuboid of dimensions
           (l, w, h) = (4.2, 0.1, 0.1) and mass 20kg-->
-          <ixx>0.0333333334</ixx><iyy>29.4166667</iyy><izz>29.4166667</izz>
+          <ixx>0.0333333334</ixx>
+          <iyy>29.4166667</iyy>
+          <izz>29.4166667</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
@@ -160,7 +177,7 @@
       <visual name='C_visual'>
         <pose>2 0 0 0 0 0</pose>
         <geometry>
-          <box><size>4.1 0.1 0.1</size></box>
+          <box><size>4.2 0.1 0.1</size></box>
         </geometry>
         <material>
           <diffuse>1 1 0 1</diffuse>
@@ -169,7 +186,8 @@
       <!-- A visual representing the revolute joint between the world
       and link C.  -->
       <visual name='C_pivot_visual'>
-        <pose>0 0 0 1.57 0 0</pose>
+        <!-- 90-degree rotation around Cx, π/2 ≈ 1.57079632679 -->
+        <pose>0 0 0 1.57079632679 0 0</pose>
         <geometry>
           <cylinder>
             <radius>0.01</radius>
@@ -186,7 +204,8 @@
       <child>A</child>
       <parent>world</parent>
       <axis>
-        <!-- atan2(sqrt(15.0), 1.0) see the README for more details.-->
+        <!-- atan2(sqrt(15.0), 1.0) or about 75.52°.
+             See the README for more details.-->
         <initial_position>1.318116071652818</initial_position>
         <xyz>0 1 0</xyz>
         <limit>
@@ -204,7 +223,8 @@
       <child>B</child>
       <parent>A</parent>
       <axis>
-        <!-- M_PI - atan2(sqrt(15.0), 1.0) see the README for more details. -->
+        <!-- M_PI - atan2(sqrt(15.0), 1.0) or about 104.48°.
+             See the README for more details. -->
         <initial_position>1.8234765819369751</initial_position>
         <xyz>0 1 0</xyz>
         <limit>
@@ -222,7 +242,8 @@
       <child>C</child>
       <parent>world</parent>
       <axis>
-        <!-- M_PI - atan2(sqrt(15.0), 1.0) see the README for more details. -->
+        <!-- M_PI - atan2(sqrt(15.0), 1.0) or about 104.48°.
+             See the README for more details. -->
         <initial_position>1.8234765819369751</initial_position>
         <xyz>0 1 0</xyz>
         <limit>
@@ -241,15 +262,17 @@
     done so the LinearBushingRollPitchYaw ForceElement freely rotates around
     its z axis (Yaw) to avoid gimbal lock on the y axis (Pitch) -->
     <frame name="BC_Bushing" attached_to="B">
-      <pose relative_to="B">4 0 0 -1.57 0 0</pose>
-    </frame>
+    <!-- -90-degree rotation around Bx, π/2 ≈ 1.57079632679 -->
+    <pose relative_to="B">4 0 0 -1.57079632679 0 0</pose>
+  </frame>
 
-    <!-- A frame at the end of the C link, down the Cx axis. The frame is
-    rotated so that the z of CB_Bushing is aligned with the Cy axis. This is
-    done so the LinearBushingRollPitchYaw ForceElement freely rotates around
-    its z axis (Yaw) to avoid gimbal lock on the y axis (Pitch) -->
+  <!-- A frame at the end of the C link, down the Cx axis. The frame is
+  rotated so that the z of CB_Bushing is aligned with the Cy axis. This is
+  done so the LinearBushingRollPitchYaw ForceElement freely rotates around
+  its z axis (Yaw) to avoid gimbal lock on the y axis (Pitch) -->
     <frame name="CB_Bushing" attached_to="C">
-      <pose relative_to="C">4 0 0 -1.57 0 0</pose>
+      <!-- -90-degree rotation around Cx, π/2 ≈ 1.57079632679 -->
+      <pose relative_to="C">4 0 0 -1.57079632679 0 0</pose>
     </frame>
 
   </model>
