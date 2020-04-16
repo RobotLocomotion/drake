@@ -20,7 +20,13 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import Box, SceneGraph
+from pydrake.geometry import (
+    Box,
+    GeometryFrame,
+    GeometryInstance,
+    MakePhongIllustrationProperties,
+    SceneGraph
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
@@ -156,6 +162,28 @@ class TestMeshcat(unittest.TestCase):
         simulator = Simulator(diagram)
         simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(.1)
+
+    def test_anchored_geometry_parsing(self):
+        builder = DiagramBuilder()
+        scene_graph = builder.AddSystem(SceneGraph())
+        meshcat = builder.AddSystem(
+            MeshcatVisualizer(scene_graph,
+                              zmq_url=ZMQ_URL,
+                              open_browser=False))
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            meshcat.get_input_port(0))
+
+        source_id = scene_graph.RegisterSource()
+        frame_id = scene_graph.RegisterFrame(source_id, GeometryFrame("body"))
+        geom_inst = GeometryInstance(RigidTransform(), Box(1., 1., 1.), "box")
+        geom_id = scene_graph.RegisterAnchoredGeometry(source_id, geom_inst)
+        properties = MakePhongIllustrationProperties([0.5, 0.5, 0.5, 1.])
+        scene_graph.AssignRole(source_id, geom_id, properties)
+
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+        simulator.Initialize()
 
     def test_contact_force(self):
         """A block sitting on a table."""
