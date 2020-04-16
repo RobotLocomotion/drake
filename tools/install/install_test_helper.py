@@ -71,13 +71,14 @@ def create_temporary_dir(name='tmp'):
 def get_python_executable():
     """Use appropriate Python executable
 
-    Call /usr/local/bin/python3 on macOS to force using python brew install.
-    Calling python system would result in a crash since pydrake was built
-    against brew python. On other systems, it will just fall-back to the
-    current Python executable.
+    Call /usr/local/opt/python@3.8/bin/python3 on macOS to force using the
+    Python executable from the python@3.8 formula. Calling a different Python
+    executable would result in a crash since pydrake was not built against
+    the Python library corresponding to that executable. On other systems, it
+    will just fall back to the current Python executable.
     """
     if sys.platform == "darwin":
-        return "/usr/local/bin/python3"
+        return "/usr/local/opt/python@3.8/bin/python3"
     else:
         return sys.executable
 
@@ -99,7 +100,12 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     """
     if from_install_dir:
         cmd[0] = os.path.join(get_install_dir(), cmd[0])
-    proc = subprocess.Popen(cmd, cwd='/')
+    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
+    # the python formula is updated to 3.8.
+    env = os.environ
+    if sys.platform == 'darwin':
+        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+    proc = subprocess.Popen(cmd, cwd='/', env=env)
     start = time.time()
     while time.time() - start < timeout:
         time.sleep(0.5)
@@ -121,7 +127,15 @@ def check_call(args, *extra_args, **kwargs):
     if args[0].endswith('.py'):
         # Ensure that we test with the same Python version that Bazel is using.
         args = [get_python_executable()] + args
-    return subprocess.check_call(args, cwd='/', *extra_args, **kwargs)
+    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
+    # the python formula is updated to 3.8.
+    if 'env' in kwargs:
+        env = kwargs.pop('env')
+    else:
+        env = os.environ
+    if sys.platform == 'darwin':
+        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+    return subprocess.check_call(args, cwd='/', env=env, *extra_args, **kwargs)
 
 
 def check_output(*args, **kwargs):
@@ -132,7 +146,16 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    return subprocess.check_output(cwd='/', *args, **kwargs).decode('utf8')
+    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
+    # the python formula is updated to 3.8.
+    if 'env' in kwargs:
+        env = kwargs.pop('env')
+    else:
+        env = os.environ
+    if sys.platform == 'darwin':
+        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+    return subprocess.check_output(
+        cwd='/', env=env, *args, **kwargs).decode('utf8')
 
 
 def get_python_site_packages_dir(install_dir):
