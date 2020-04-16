@@ -132,12 +132,6 @@ class BallRpyJoint final : public Joint<T> {
     return *this;
   }
 
-  /// Sets the default angles of this joint.  See get_angles() for details on
-  /// the angle representation.
-  void set_default_angles(const Vector3<double>& angles) {
-    get_mutable_mobilizer()->set_default_position(angles);
-  }
-
   /// Sets the random distribution that angles of this joint will be randomly
   /// sampled from. See get_angles() for details on the angle representation.
   void set_random_angles_distribution(
@@ -175,6 +169,25 @@ class BallRpyJoint final : public Joint<T> {
   }
 
   /// @}
+
+  /// Gets the default angles for `this` joint. Wrapper for the more general
+  /// `Joint::default_positions()`.
+  /// @returns The default angles of `this` stored in `default_positions_`
+  Vector3<double> get_default_angles() const {
+    return this->default_positions();
+  }
+
+  /// Sets the default angles of this joint.
+  /// If the parent tree has been finalized and the underlying mobilizer is
+  /// valid, this method sets the default positions of that mobilizer.
+  /// @param[in] angles
+  ///   The desired default angles of the joint
+  void set_default_angles(const Vector3<double>& angles) {
+    this->set_default_positions(angles);
+    if (this->has_implementation()) {
+      get_mutable_mobilizer()->set_default_position(this->default_positions());
+    }
+  }
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().
