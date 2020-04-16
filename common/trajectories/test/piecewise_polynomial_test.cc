@@ -96,6 +96,9 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise4_not_matching_cols =
         test::MakeRandomPiecewisePolynomial<T>(
             rows, cols + 1, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise5 =
+        test::MakeRandomPiecewisePolynomial<T>(
+            cols, rows, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
     double shift = normal(generator);
@@ -108,7 +111,7 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise1_minus_offset = piecewise1 - offset;
     PiecewisePolynomialType piecewise1_shifted = piecewise1;
     piecewise1_shifted.shiftRight(shift);
-    PiecewisePolynomialType product = piecewise1 * piecewise2;
+    PiecewisePolynomialType product = piecewise1 * piecewise5;
 
     const double total_time = segment_times.back() - segment_times.front();
     PiecewisePolynomialType piecewise2_twice = piecewise2;
@@ -164,10 +167,9 @@ void testBasicFunctionality() {
                                 piecewise1.value(t - shift), 1e-8,
                                 MatrixCompareType::absolute));
 
-    EXPECT_TRUE(CompareMatrices(
-        product.value(t),
-        (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
-        1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(product.value(t),
+                                piecewise1.value(t) * piecewise5.value(t), 1e-8,
+                                MatrixCompareType::absolute));
 
     // Checks that `piecewise2_twice` is effectively the concatenation of
     // `piecewise2` and a copy of `piecewise2` that is shifted to the right
