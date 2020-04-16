@@ -12,7 +12,6 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -63,8 +62,8 @@ int do_main() {
   // Build a generic MultibodyPlant and SceneGraph.
   DiagramBuilder<double> builder;
 
-  auto [four_bar, scene_graph] = AddMultibodyPlantSceneGraph(&builder,
-      std::make_unique<MultibodyPlant<double>>(0.0));
+  auto [four_bar, scene_graph] = AddMultibodyPlantSceneGraph(
+      &builder, std::make_unique<MultibodyPlant<double>>(0.0));
 
   // Make and add the four_bar model from an SDF model.
   const std::string relative_name =
@@ -91,10 +90,10 @@ int do_main() {
 
   // See the documentation for LinearBushingRollPitchYaw.
   // This particular choice of parameters models a z-axis revolute joint.
-  const Vector3d torque_stiffness_constants{k_xyz, k_xyz, 0}; // N/m
-  const Vector3d torque_damping_constants{d_xyz, d_xyz, 0};   // N*s/m
-  const Vector3d force_stiffness_constants{k_012, k_012, k_012}; // N*m/rad
-  const Vector3d force_damping_constants{d_012, d_012, d_012};   // N*m*s/rad
+  const Vector3d torque_stiffness_constants{k_xyz, k_xyz, 0};     // N/m
+  const Vector3d torque_damping_constants{d_xyz, d_xyz, 0};       // N*s/m
+  const Vector3d force_stiffness_constants{k_012, k_012, k_012};  // N*m/rad
+  const Vector3d force_damping_constants{d_012, d_012, d_012};    // N*m*s/rad
 
   // Add a bushing force element where the joint between link B and link C
   // should be in an ideal 4-bar linkage.
