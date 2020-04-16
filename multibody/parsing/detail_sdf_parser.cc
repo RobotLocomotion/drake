@@ -382,26 +382,59 @@ std::range GetModelFrames(
   ...
 }
 
+std::pair<std::string, std::string> SplitName(std::string full) {
+  const std::string delim = "::";  // get from libsdformat?
+  auto pos = full.rfind(delim);
+  std::string first = full.substr(0, pos);
+  std::string second = full.substr(pos + delim.size());
+  return {first, second};
+}
+
+
+// Preview of libsdformat structures
+struct sdf::NestedInclude {
+  // Resolved or not resolved?
+  // ERIC: My money is on unresolved.
+  std::string file_path;
+
+  // Name of the model in absolute hierarhcy.
+  // N.B. Should be unnecesssary if downstream consumer has composition. Not
+  // the case for Drake :(
+  std::string absolute_model_name;
+
+  // Name relative to immediate parent.
+  std::string local_model_name;
+
+  // Er... Something like this?
+  sdf::SemanticPose pose;
+};
+// END: Preview of libsdformat structures
+
+
 constexpr char kExtUrdf[] = ".urdf";
 // To test re-parsing an SDFormat document, but in complete isolation. Tests
 // out separate model formats.
-constexpr char kExtForcedNesting[] = ".sdf.forced_nesting";
+constexpr char kExtForcedNesting[] = ".forced_nesting.sdf";
 
+// This assumes that parent models will have their parsing start before child
+// models!
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     MultibodyPlant<double>* plant,
     sdf::NestedInclude include) {
   // Do not attempt to parse anything other than URDF or forced nesting files.
   const bool is_urdf = EndsWith(include.file_path, kExtUrdf);
-  const bool is_forced_nesting = EndsWith(include.file_path, kExtUrdf);
+  const bool is_forced_nesting =
+      EndsWith(include.file_path, kExtForcedNesting);
   if (!is_urdf && !is_forced_nesting) {
-    return std::nullptr;
+    return nullptr;
   }
 
-  // HACK: Most of these hacks (remembering model instances, getting silly name
-  // hierarchy) come about since MultibodyPlant does not have any mechanism for
-  // easy composition by itself (e.g. merging subtrees, or getting a subtree,
-  // etc.).
-  // If this every happens, this will *greatly* simplify this function!
+  // WARNING: Most of these hacks (remembering model instances, getting silly
+  // name hierarchy) come about since MultibodyPlant does not have any
+  // mechanism for easy composition by itself (e.g. merging subtrees, or
+  // getting a subtree, etc.).
+  // If this ever happens (see #12703), this logic will be *greatly*
+  // simplified.
 
   // Record all model instances beforehand.
   // N.B. This could be done by iterating by indices, but that seems
@@ -412,42 +445,47 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   if (is_urdf) {
     main_model_instance = LoadUrdfFromFile(
         plant, include.file_path, include.absolute_model_name);
-  } else if (is_forced_nesting) {
+  } else {
+    DRAKE_DEMAND(is_forced_nesting);
     main_model_instance = LoadSdfFromFile(
         plant, include.file_path, include.absolute_model_name);
-  } else {
-    DRAKE_DEMAND(false);
   }
   auto new_model_instances = GetModelInstanceSet(*plant) - old_model_instances;
   DRAKE_DEMAND(new_model_instances.count(main_model_instance) > 0);
 
+  sdf::InterfaceModelPtr main_interface_model(
+      new sdf::InterfaceModel(include.local_model_name));
   // To remember local hierarcjy.
   std::map<std::string, sdf::InterfaceModelPtr> hierarchy;
 
-  auto add_model = [&](ModelInstanceIndex model_instance) {
+  auto add_model = [&](ModelInstanceIndex model) {
     const std::string absolute_name = plant->GetModelInstanceName(model);
-    const auto [parent_name, local_name] = HackNameParse(name);
+    const auto [parent_name, local_name] = SplitName(name);
     auto out = std::make_shared<sdf::InterfaceModel>(local_name);
     // Record all frames and associated links.
     for (auto* link : GetModelLinks(plant, model)) {
       out->AddLink(sdf::InterfaceLink(link->name()));
     }
     for (auto* frame : GetModelFrames(plant, model)) {
-      out->AddLink(sdf::InterfaceLink(link->name()));
+      out->AddFrame(sdf::InterfaceLink(frame->name()));
     }
-    if (model != main_model_instance) {
+    if (model == main_model_instance) {
+      main_interface_model = out;
+    } else {
       // Register with its parent model.
-      hierarchy[parent_name].AddNestedModel(out);
+      sdf::InterfaceModelPtr parent = hierarchy[parent_name];
+      DRAKE_DEMAND(parent != nullptr);
+      parent->AddNestedModel(out);
     }
     return out;
   };
 
-  // Make sure it parses in order?
+  // This assumes it will parse in order?
   for (auto model : new_model_instances) {
     sdf::InterfaceModel interface_model = add_model(model);
   }
 
-  return hierarchy[include.local_model_name];
+  return main_interface_model;
 }
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
@@ -459,7 +497,8 @@ std::string LoadSdf(
 
   const std::string full_path = GetFullPath(file_name);
   // Load the SDF file.
-  // WARNING: This means that failed parsing could invalidate the plant. Meh.
+  // WARNING: This means that failed parsing should invalidate the plant
+  // forever?
   root->RegisterNestedModelParser(
     [plant](sdf::NestedInclude include) {
       return ParseNestedInterfaceModel(plant, include);
