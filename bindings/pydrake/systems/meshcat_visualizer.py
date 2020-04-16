@@ -282,11 +282,15 @@ class MeshcatVisualizer(LeafSystem):
         self.axis_radius = axis_radius
 
     def _parse_name(self, name):
-        # Parse name, split on the first (required) occurrence of `::` to get
-        # the source name, and let the rest be the frame name.
-        # TODO(eric.cousineau): Remove name parsing once #9128 is resolved.
+        # Parse name, split on the first occurrence of `::` to get the source
+        # name, and let the rest be the frame name. If `::` is not in name,
+        # source name is "unnamed" and the frame name is `name`.
+        # TODO(eric.cousineau): Remove name parsing once this is reimplemented
+        # to use Shape introspection.
         delim = "::"
-        assert delim in name
+        if delim not in name:
+            default_source = "unnamed"
+            return default_source, name
         pos = name.index(delim)
         source_name = name[:pos]
         frame_name = name[pos + len(delim):]
