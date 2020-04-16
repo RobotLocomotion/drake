@@ -63,7 +63,8 @@ int do_main() {
   // Build a generic MultibodyPlant and SceneGraph.
   DiagramBuilder<double> builder;
 
-  auto [four_bar, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
+  auto [four_bar, scene_graph] = AddMultibodyPlantSceneGraph(&builder,
+      std::make_unique<MultibodyPlant<double>>(0.0));
 
   // Make and add the four_bar model from an SDF model.
   const std::string relative_name =
