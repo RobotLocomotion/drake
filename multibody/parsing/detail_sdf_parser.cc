@@ -440,7 +440,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // N.B. This could be done by iterating by indices, but that seems
   // rather leaky.
   auto old_model_instances = GetModelInstanceSet(*plant);
-  // TODO(eric.cousineau): How to set initial pose of the model???
+
   ModelInstanceIndex main_model_instance;
   if (is_urdf) {
     main_model_instance = LoadUrdfFromFile(
@@ -453,31 +453,52 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   auto new_model_instances = GetModelInstanceSet(*plant) - old_model_instances;
   DRAKE_DEMAND(new_model_instances.count(main_model_instance) > 0);
 
+  // And because we don't have great composition, I need to go through and do
+  // hacks to override default initial poses.
+  // Process:
+  //  * Remember parsed pose from top-level model's pose.
+  //  * Measure delta between that and the overriding pose.
+  //  * Apply delta to each individual body's default pose :(
+  RigidTransformd X_WMdesired = ResolvePose(include.pose);
+  const Framed& main_model_frame = plant->GetFrameByName(
+      "__model__", main_model_instance);
+  RigidTransformd X_WMparsed =
+      plant->GetDefaultPose(main_model_frame.link()) *
+      main_model_frame.GetParentTransform();
+  RigidTransformd X_ParsedDesired = X_WMparsed.inverse() * X_WMdesired;
+
   sdf::InterfaceModelPtr main_interface_model(
       new sdf::InterfaceModel(include.local_model_name));
-  // To remember local hierarcjy.
-  std::map<std::string, sdf::InterfaceModelPtr> hierarchy;
+  // Record by name to remember local hierarchy.
+  // Related this comment:
+  // https://github.com/RobotLocomotion/drake/issues/12270#issuecomment-606757766
+  std::map<std::string, sdf::InterfaceModelPtr> interface_model_hierarchy;
 
   auto add_model = [&](ModelInstanceIndex model) {
     const std::string absolute_name = plant->GetModelInstanceName(model);
     const auto [parent_name, local_name] = SplitName(name);
-    auto out = std::make_shared<sdf::InterfaceModel>(local_name);
+    auto interface_model = std::make_shared<sdf::InterfaceModel>(local_name);
     // Record all frames and associated links.
     for (auto* link : GetModelLinks(plant, model)) {
-      out->AddLink(sdf::InterfaceLink(link->name()));
+      interface_model->AddLink(sdf::InterfaceLink(link->name()));
+      // Also pre-transform default pose, if specified.
+      RigidTransform X_WLparsed = plant->GetDefaultPose(*link);
+      RigidTransform X_WLdesired = X_WLparsed * X_ParsedDesired;
+      plant->SetDefaultPose(*link X_WLdesired);
     }
     for (auto* frame : GetModelFrames(plant, model)) {
-      out->AddFrame(sdf::InterfaceLink(frame->name()));
+      interface_model->AddFrame(sdf::InterfaceLink(frame->name()));
     }
     if (model == main_model_instance) {
-      main_interface_model = out;
+      main_interface_model = interface_model;
     } else {
       // Register with its parent model.
-      sdf::InterfaceModelPtr parent = hierarchy[parent_name];
+      sdf::InterfaceModelPtr parent_interface_model =
+          interface_model_hierarchy[parent_name];
       DRAKE_DEMAND(parent != nullptr);
-      parent->AddNestedModel(out);
+      parent_interface_model->AddNestedModel(interface_model);
     }
-    return out;
+    return interface_model;
   };
 
   // This assumes it will parse in order?
