@@ -134,7 +134,6 @@ TEST_F(RevoluteJointTest, AddInTorques) {
   joint1_->AddInTorque(*context_, some_value, &forces1);
   joint1_->AddInTorque(*context_, some_value, &forces1);
 
-
   MultibodyForces<double> forces2(tree());
   // Add value only once:
   joint1_->AddInTorque(*context_, some_value, &forces2);
@@ -208,6 +207,31 @@ TEST_F(RevoluteJointTest, SetVelocityAndAccelerationLimits) {
   // Lower limit is larger than upper limit.
   EXPECT_THROW(mutable_joint1_->set_acceleration_limits(Vector1<double>(2),
                                                         Vector1<double>(0)),
+               std::runtime_error);
+}
+
+TEST_F(RevoluteJointTest, DefaultAngle) {
+  const double default_angle = 0.0;
+
+  const double new_default_angle =
+      0.5 * kPositionLowerLimit + 0.5 * kPositionUpperLimit;
+
+  const double out_of_bounds_low_angle = kPositionLowerLimit - 1;
+  const double out_of_bounds_high_angle = kPositionUpperLimit + 1;
+
+  // Constructor should set the default angle to 0.0
+  EXPECT_EQ(joint1_->get_default_angle(), default_angle);
+
+  // Setting a new default angle should propogate so that `get_default_angle()`
+  // remains correct.
+  mutable_joint1_->set_default_angle(new_default_angle);
+  EXPECT_EQ(joint1_->get_default_angle(), new_default_angle);
+
+  // Setting the default angle out of the bounds of the position limits
+  // should throw an exception
+  EXPECT_THROW(mutable_joint1_->set_default_angle(out_of_bounds_low_angle),
+               std::runtime_error);
+  EXPECT_THROW(mutable_joint1_->set_default_angle(out_of_bounds_high_angle),
                std::runtime_error);
 }
 

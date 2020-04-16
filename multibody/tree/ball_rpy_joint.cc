@@ -56,9 +56,10 @@ template <typename T>
 std::unique_ptr<typename Joint<T>::BluePrint>
 BallRpyJoint<T>::MakeImplementationBlueprint() const {
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
-  blue_print->mobilizers_.push_back(
-      std::make_unique<internal::SpaceXYZMobilizer<T>>(this->frame_on_parent(),
-                                                       this->frame_on_child()));
+  auto ballrpy_mobilizer = std::make_unique<internal::SpaceXYZMobilizer<T>>(
+      this->frame_on_parent(), this->frame_on_child());
+  ballrpy_mobilizer->set_default_position(this->default_positions());
+  blue_print->mobilizers_.push_back(std::move(ballrpy_mobilizer));
   return std::move(blue_print);
 }
 

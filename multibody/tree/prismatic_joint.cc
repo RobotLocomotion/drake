@@ -9,8 +9,7 @@ namespace multibody {
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>>
-PrismaticJoint<T>::TemplatedDoCloneToScalar(
+std::unique_ptr<Joint<ToScalar>> PrismaticJoint<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& frame_on_parent_body_clone =
       tree_clone.get_variant(this->frame_on_parent());
