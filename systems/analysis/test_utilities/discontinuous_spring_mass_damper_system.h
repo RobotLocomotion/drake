@@ -74,6 +74,9 @@ class DiscontinuousSpringMassDamperSystem final
 
     // Second element of the derivative is spring acceleration.
     (*derivatives)[1] = force / this->get_mass();
+
+    // Third element of the derivative is the energy added into the spring.
+    (*derivatives)[2] = this->CalcConservativePower(context);
   }
 
  private:

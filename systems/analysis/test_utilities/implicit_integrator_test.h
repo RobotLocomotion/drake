@@ -18,11 +18,6 @@
 namespace drake {
 namespace systems {
 
-// TODO(antequ): remove this forward declaration once the Velocity-Implicit
-// Euler supports automatic differentiation and central differencing.
-template <typename T>
-class VelocityImplicitEulerIntegrator;
-
 namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
@@ -56,13 +51,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Separate context necessary for the double spring mass system.
     dspring_context_ = stiff_double_system_->CreateDefaultContext();
-
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler supports
-    // automatic differentiation and central differencing.
-    if constexpr (std::is_same_v<IntegratorType,
-                                 VelocityImplicitEulerIntegrator<double>>) {
-      integrator_supports_central_and_auto_diff_ = false;
-    }
   }
 
   void MiscAPITest(ReuseType type) {
@@ -173,7 +161,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
     IntegratorType integrator(*spring_mass_damper_,
                               spring_mass_damper_context_.get());
     integrator.set_maximum_step_size(large_h_);
-    integrator.set_requested_minimum_step_size(small_h_);
+    integrator.set_requested_minimum_step_size(10 * small_h_);
     integrator.set_throw_on_minimum_step_size_violation(false);
     integrator.set_reuse(reuse_type_to_bool(type));
 
@@ -224,56 +212,72 @@ class ImplicitIntegratorTest : public ::testing::Test {
     // Verify that integrator statistics are valid, and reset the statistics.
     CheckGeneralStatsValidity(&integrator);
 
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports autodiff and central differencing
-    if (integrator_supports_central_and_auto_diff_) {
-      // Switch to central differencing.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kCentralDifference);
+    // Switch to central differencing.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kCentralDifference);
 
-      // Reset the time, position, and velocity.
-      spring_mass_damper_context_->SetTime(0.0);
-      spring_mass_damper_->set_position(spring_mass_damper_context_.get(),
-                                        initial_position);
-      spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
-                                        initial_velocity);
+    // Reset the time, position, and velocity.
+    spring_mass_damper_context_->SetTime(0.0);
+    spring_mass_damper_->set_position(spring_mass_damper_context_.get(),
+                                      initial_position);
+    spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
+                                      initial_velocity);
 
-      // Integrate for t_final seconds again.
-      integrator.IntegrateWithMultipleStepsToTime(t_final);
-      x_final = xc_final.GetAtIndex(0);
-      v_final = xc_final.GetAtIndex(1);
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
+    integrator.Initialize();
 
-      // Verify that integrator statistics and outputs are valid, and reset the
-      // statistics.
-      EXPECT_NEAR(x_final_true, x_final, xtol);
-      EXPECT_NEAR(v_final_true, v_final, vtol);
-      CheckGeneralStatsValidity(&integrator);
+    // Integrate for t_final seconds again.
+    integrator.IntegrateWithMultipleStepsToTime(t_final);
+    x_final = xc_final.GetAtIndex(0);
+    v_final = xc_final.GetAtIndex(1);
 
-      // Switch to automatic differencing.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kAutomatic);
+    // Verify that integrator statistics and outputs are valid, and reset the
+    // statistics.
+    EXPECT_NEAR(x_final_true, x_final, xtol);
+    EXPECT_NEAR(v_final_true, v_final, vtol);
+    CheckGeneralStatsValidity(&integrator);
 
-      // Reset the time, position, and velocity.
-      spring_mass_damper_context_->SetTime(0.0);
-      spring_mass_damper_->set_position(spring_mass_damper_context_.get(),
-                                        initial_position);
-      spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
-                                        initial_velocity);
+    // Switch to automatic differencing.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kAutomatic);
 
-      // Integrate for t_final seconds again.
-      integrator.IntegrateWithMultipleStepsToTime(t_final);
-      x_final = xc_final.GetAtIndex(0);
-      v_final = xc_final.GetAtIndex(1);
+    // Reset the time, position, and velocity.
+    spring_mass_damper_context_->SetTime(0.0);
+    spring_mass_damper_->set_position(spring_mass_damper_context_.get(),
+                                      initial_position);
+    spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
+                                      initial_velocity);
 
-      // Verify that error control was used by making sure that the minimum step
-      // size was smaller than large_h_.
-      EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_h_);
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
+    integrator.Initialize();
 
-      // Verify that integrator statistics and outputs are valid.
-      EXPECT_NEAR(x_final_true, x_final, xtol);
-      EXPECT_NEAR(v_final_true, v_final, vtol);
-      CheckGeneralStatsValidity(&integrator);
-    }
+    // Integrate for t_final seconds again.
+    integrator.IntegrateWithMultipleStepsToTime(t_final);
+    x_final = xc_final.GetAtIndex(0);
+    v_final = xc_final.GetAtIndex(1);
+
+    // Verify that error control was used by making sure that the minimum step
+    // size was smaller than large_h_.
+    EXPECT_LT(integrator.get_smallest_adapted_step_size_taken(), large_h_);
+
+    // Verify that integrator statistics and outputs are valid.
+    EXPECT_NEAR(x_final_true, x_final, xtol);
+    EXPECT_NEAR(v_final_true, v_final, vtol);
+    CheckGeneralStatsValidity(&integrator);
   }
 
   // Integrate the modified mass-spring-damping system, which exhibits a
@@ -339,61 +343,77 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
     CheckGeneralStatsValidity(&integrator);
 
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports autodiff and central differencing
-    if (integrator_supports_central_and_auto_diff_) {
-      // Switch the Jacobian scheme to central differencing.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kCentralDifference);
+    // Switch the Jacobian scheme to central differencing.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kCentralDifference);
 
-      // Reset the time, position, and velocity.
-      mod_spring_mass_damper_context_->SetTime(0.0);
-      mod_spring_mass_damper_->set_position(
-          mod_spring_mass_damper_context_.get(), initial_position);
-      mod_spring_mass_damper_->set_velocity(
-          mod_spring_mass_damper_context_.get(), initial_velocity);
+    // Reset the time, position, and velocity.
+    mod_spring_mass_damper_context_->SetTime(0.0);
+    mod_spring_mass_damper_->set_position(
+        mod_spring_mass_damper_context_.get(), initial_position);
+    mod_spring_mass_damper_->set_velocity(
+        mod_spring_mass_damper_context_.get(), initial_velocity);
 
-      // Integrate again.
-      integrator.IntegrateWithMultipleStepsToTime(t_final);
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
+    integrator.Initialize();
 
-      // Check the solution and the time again, and reset the statistics again.
-      x_final = mod_spring_mass_damper_context_->get_continuous_state()
-                    .get_vector()
-                    .GetAtIndex(0);
-      xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
-                       .get_vector()
-                       .GetAtIndex(1);
-      EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
-      EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
-      EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
-      CheckGeneralStatsValidity(&integrator);
+    // Integrate again.
+    integrator.IntegrateWithMultipleStepsToTime(t_final);
 
-      // Switch the Jacobian scheme to automatic differentiation.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kAutomatic);
+    // Check the solution and the time again, and reset the statistics again.
+    x_final = mod_spring_mass_damper_context_->get_continuous_state()
+                  .get_vector()
+                  .GetAtIndex(0);
+    xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
+                      .get_vector()
+                      .GetAtIndex(1);
+    EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
+    EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
+    CheckGeneralStatsValidity(&integrator);
 
-      // Reset the time, position, and velocity.
-      mod_spring_mass_damper_context_->SetTime(0.0);
-      mod_spring_mass_damper_->set_position(
-          mod_spring_mass_damper_context_.get(), initial_position);
-      mod_spring_mass_damper_->set_velocity(
-          mod_spring_mass_damper_context_.get(), initial_velocity);
+    // Switch the Jacobian scheme to automatic differentiation.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kAutomatic);
 
-      // Integrate again.
-      integrator.IntegrateWithMultipleStepsToTime(t_final);
+    // Reset the time, position, and velocity.
+    mod_spring_mass_damper_context_->SetTime(0.0);
+    mod_spring_mass_damper_->set_position(
+        mod_spring_mass_damper_context_.get(), initial_position);
+    mod_spring_mass_damper_->set_velocity(
+        mod_spring_mass_damper_context_.get(), initial_velocity);
 
-      // Check the solution and the time again.
-      x_final = mod_spring_mass_damper_context_->get_continuous_state()
-                    .get_vector()
-                    .GetAtIndex(0);
-      xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
-                       .get_vector()
-                       .GetAtIndex(1);
-      EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
-      EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
-      EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
-      CheckGeneralStatsValidity(&integrator);
-    }
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
+    integrator.Initialize();
+
+    // Integrate again.
+    integrator.IntegrateWithMultipleStepsToTime(t_final);
+
+    // Check the solution and the time again.
+    x_final = mod_spring_mass_damper_context_->get_continuous_state()
+                  .get_vector()
+                  .GetAtIndex(0);
+    xdot_final = mod_spring_mass_damper_context_->get_continuous_state()
+                      .get_vector()
+                      .GetAtIndex(1);
+    EXPECT_NEAR(mod_spring_mass_damper_context_->get_time(), t_final, ttol);
+    EXPECT_NEAR(equilibrium_position, x_final, sol_tol);
+    EXPECT_NEAR(equilibrium_velocity, xdot_final, sol_tol);
+    CheckGeneralStatsValidity(&integrator);
   }
 
   // Integrate an undamped system and check its solution accuracy.
@@ -452,49 +472,66 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Verify that integrator statistics are valid and reset the statistics.
     CheckGeneralStatsValidity(&integrator);
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports autodiff and central differencing
-    if (integrator_supports_central_and_auto_diff_) {
-      // Switch to central differencing.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kCentralDifference);
 
-      // Reset the time, position, and velocity.
-      context->SetTime(0.0);
-      spring_mass.set_position(context.get(), initial_position);
-      spring_mass.set_velocity(context.get(), initial_velocity);
+    // Switch to central differencing.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kCentralDifference);
 
-      // Integrate for t_final seconds again.
-      integrator.IntegrateWithMultipleStepsToTime(t_final);
+    // Reset the time, position, and velocity.
+    context->SetTime(0.0);
+    spring_mass.set_position(context.get(), initial_position);
+    spring_mass.set_velocity(context.get(), initial_velocity);
 
-      // Check results again.
-      x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
-      EXPECT_NEAR(x_final_true, x_final, 5e-3);
-      EXPECT_NEAR(context->get_time(), t_final, ttol);
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
+    integrator.Initialize();
 
-      // Verify that integrator statistics are valid and reset the statistics.
-      CheckGeneralStatsValidity(&integrator);
+    // Integrate for t_final seconds again.
+    integrator.IntegrateWithMultipleStepsToTime(t_final);
 
-      // Switch to automatic differentiation.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kAutomatic);
+    // Check results again.
+    x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
+    EXPECT_NEAR(x_final_true, x_final, 5e-3);
+    EXPECT_NEAR(context->get_time(), t_final, ttol);
 
-      // Reset the time, position, and velocity.
-      context->SetTime(0.0);
-      spring_mass.set_position(context.get(), initial_position);
-      spring_mass.set_velocity(context.get(), initial_velocity);
+    // Verify that integrator statistics are valid and reset the statistics.
+    CheckGeneralStatsValidity(&integrator);
 
-      // Integrate for t_final seconds again.
-      integrator.IntegrateWithMultipleStepsToTime(t_final);
+    // Switch to automatic differentiation.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kAutomatic);
 
-      // Check results again.
-      x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
-      EXPECT_NEAR(x_final_true, x_final, 5e-3);
-      EXPECT_NEAR(context->get_time(), t_final, ttol);
+    // Reset the time, position, and velocity.
+    context->SetTime(0.0);
+    spring_mass.set_position(context.get(), initial_position);
+    spring_mass.set_velocity(context.get(), initial_velocity);
 
-      // Verify that integrator statistics are valid
-      CheckGeneralStatsValidity(&integrator);
-    }
+    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+    // some problems, the Jacobian may not be computed again because the
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
+    integrator.Initialize();
+
+    // Integrate for t_final seconds again.
+    integrator.IntegrateWithMultipleStepsToTime(t_final);
+
+    // Check results again.
+    x_final = context->get_continuous_state().get_vector().GetAtIndex(0);
+    EXPECT_NEAR(x_final_true, x_final, 5e-3);
+    EXPECT_NEAR(context->get_time(), t_final, ttol);
+
+    // Verify that integrator statistics are valid
+    CheckGeneralStatsValidity(&integrator);
   }
 
   // Checks the error estimator for the implicit Euler integrator using the
@@ -522,13 +559,9 @@ class ImplicitIntegratorTest : public ::testing::Test {
     integrator.set_fixed_step_mode(true);
     integrator.set_reuse(reuse_type_to_bool(type));
 
-    // TODO(antequ): remove this check once the Velocity-Implicit Euler
-    // supports autodiff and central differencing
-    if (integrator_supports_central_and_auto_diff_) {
-      // Use automatic differentiation because we can.
-      integrator.set_jacobian_computation_scheme(
-          IntegratorType::JacobianComputationScheme::kAutomatic);
-    }
+    // Use automatic differentiation because we can.
+    integrator.set_jacobian_computation_scheme(
+        IntegratorType::JacobianComputationScheme::kAutomatic);
 
     // Create the initial positions and velocities.
     const int n_initial_conditions = 3;
@@ -756,8 +789,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // stiff_damping_b / (2*sqrt(mass*stiff_spring_k)) = 353, meaning
   // that the system is overdamped.
   const double stiff_damping_b_ = 1e8;
-
-  bool integrator_supports_central_and_auto_diff_ = true;
 };
 TYPED_TEST_SUITE_P(ImplicitIntegratorTest);
 
