@@ -539,8 +539,8 @@ void TestScalarType() {
   EXPECT_THROW(p.Roots(), std::runtime_error);
   EXPECT_TRUE(static_cast<bool>(p.IsApprox(p, 1e-14)));
 
-  Polynomial<T> x("x");
-  Polynomial<T> y("y");
+  Polynomial<T> x("x", 1);
+  Polynomial<T> y("y", 1);
   const std::map<Polynomiald::VarType, double> eval_point = {
     {x.GetSimpleVariable(), 1},
     {y.GetSimpleVariable(), 2}};
@@ -552,6 +552,13 @@ void TestScalarType() {
 GTEST_TEST(PolynomialTest, ScalarTypes) {
   TestScalarType<AutoDiffXd>();
   TestScalarType<symbolic::Expression>();
+
+  // Checks that we can create an instance, Polynomial<T>(0). `Scalar(0)` (where
+  // Scalar = Polynomial<T>) is a common pattern in Eigen internals and we want
+  // to make sure that we can build these instances.
+  const Polynomial<double> p_double(0);
+  const Polynomial<AutoDiffXd> p_autodiffxd(0);
+  const Polynomial<symbolic::Expression> p_symbolic(0);
 }
 
 }  // anonymous namespace
