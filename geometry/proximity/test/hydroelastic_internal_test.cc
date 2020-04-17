@@ -535,6 +535,52 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
                 kEps * E);
   }
+
+  // Confirm that it respects the ("hydroelastic", "sparse_mesh")
+  // property in the following ways:
+  {
+      // It defaults to sparse if nothing is defined.
+      // Sphere 1 and sphere 2 have resolution hints that differ by a factor
+      // of two --> sphere 2's level of refinement is one greater than sphere
+      // 1's. Both are missing the "sparse_mesh" property so it should default
+      // to sparse. So, sphere 2 must have 4X the triangles as sphere 1.
+      EXPECT_EQ(sphere1->mesh().num_elements() * 4,
+                sphere2->mesh().num_elements());
+  }
+
+  {
+    // Defining false produces a mesh with dense number tets.
+    // Starting with sphere 1's properties, we'll set it to dense and observe
+    // more tets.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "sparse_mesh", false);
+    std::optional<SoftGeometry> dense_sphere =
+        MakeSoftRepresentation(sphere_spec, dense_properties);
+    EXPECT_LT(sphere1->mesh().num_elements(),
+              dense_sphere->mesh().num_elements());
+  }
+
+  {
+    // Explicitly defining true still produces sparse.
+    // Starting with sphere 1's properties, we'll explicitly set it to sparse
+    // and observe the same number of tets.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "sparse_mesh", true);
+    std::optional<SoftGeometry> dense_sphere =
+        MakeSoftRepresentation(sphere_spec, dense_properties);
+    EXPECT_EQ(sphere1->mesh().num_elements(),
+              dense_sphere->mesh().num_elements());
+  }
+
+  {
+    // A value that isn't a bool throws.
+    // Starting with sphere 1's properties, we'll set the property to be a
+    // string.  Should throw.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "sparse_mesh", Vector3d{0, 0, 0});
+    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
+                 std::logic_error);
+  }
 }
 
 // Test construction of a soft box.
@@ -612,6 +658,47 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
+  }
+
+  // Confirm that it respects the ("hydroelastic", "sparse_mesh")
+  // property in the following ways:
+  ProximityProperties basic_properties = soft_properties(0.08);
+  ProximityProperties sparse_properties(basic_properties);
+  sparse_properties.AddProperty(kHydroGroup, "sparse_mesh", true);
+  ProximityProperties dense_properties(basic_properties);
+  dense_properties.AddProperty(kHydroGroup, "sparse_mesh", false);
+
+  std::optional<SoftGeometry> implicit_sparse_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, basic_properties);
+  std::optional<SoftGeometry> sparse_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, sparse_properties);
+  std::optional<SoftGeometry> dense_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, dense_properties);
+
+  {
+    // It defaults to sparse if nothing is defined.
+    // The implicit sparsity ellipsoid should have the same number of tets
+    // as that declared explicitly.
+    EXPECT_EQ(implicit_sparse_ellipsoid->mesh().num_elements(),
+              sparse_ellipsoid->mesh().num_elements());
+  }
+
+  {
+    // Defining false produces a mesh with dense number tets.
+    // The dense ellipsoid (with the same resolution hint) should have more
+    // tets.
+    EXPECT_LT(sparse_ellipsoid->mesh().num_elements(),
+              dense_ellipsoid->mesh().num_elements());
+  }
+
+  {
+    // A value that isn't a bool throws.
+    // Starting with sphere 1's properties, we'll set the property to be a
+    // string.  Should throw.
+    ProximityProperties bad_properties(basic_properties);
+    bad_properties.AddProperty(kHydroGroup, "sparse_mesh", Vector3d{0, 0, 0});
+    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
+                 std::logic_error);
   }
 }
 
