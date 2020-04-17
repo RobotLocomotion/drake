@@ -155,6 +155,10 @@ pydrake bindings
 * pydrake.systems.analysis.Simulator.get_actual_realtime_rate (`#12920`_)
 * pydrake.systems.analysis.Simulator.get_target_realtime_rate (`#12920`_)
 * pydrake.systems.framework.ContinuousState.CopyToVector (`#12865`_)
+* TBD systems: py systems: Bind LcmInterfaceSystem (`#13067`_, `#13075`_)
+* TBD bindings: rimless wheel: bind calc_alpha method (`#13048`_)
+* TBD bindings: integrators: add python bindings for dense integration (`#13044`_)
+* TBD bindings: Add bindings for BallRpyJoint (`#13039`_)  # Co-Authored-By: Eric Cousineau <eric.cousineau@tri.global>
 
 New features
 
@@ -382,7 +386,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 TO BE FILED
 
 * tools: workspace: Update pybind11 fork to latest commit for Python 3.8 (`#13027`_)
-* bindings: rimless wheel: bind calc_alpha method (`#13048`_)
 * common,examples,systems: integrators: dense integration works with witness isolation (`#13045`_)  # - Adds a series of tests checking the dense output for error-controlled integration and witness isolation. - Fixes a few curiousities in the PiecewiseTrajectory / PiecewisePolynomial stack, including the unexplained large tolerance required between successive segments in a piecewisetrajectory. - IntegratorBase::DoDenseStep is no longer virtual, because the logic within has gotten more complicated and we need a more narrow entry point for any subclasses which eventually want to override the default dense output interpolation strategy.  [THIS IS TECHNICALLY A CHANGE TO THE PUBLIC API, BUT I BELIEVE IT IS ONE THAT HAS NO CONSUMERS].
 * lcm,systems: lcm: Rework error handling path to avoid exceptions across C code (`#13051`_)  # Un-split a unit test case back from its recently-added new file, since it no longer leaks. This is a breaking change via adding a new pure virtual method to an interface.
 * manipulation: Add unmodified copies of the franka urdfs along with license (`#13012`_)
@@ -395,20 +398,13 @@ TO BE FILED
 * doc: doc/installation: Add mention for previewing (`#12971`_)  # doc/python_bindings: Emphasize tutorials!
 * examples: Disable coverage tests on deprecated iiwa modules (`#13059`_)  # These started hitting timeouts in coverage tests after #13015 merged, which confuses me since none of the code which moved in that PR appears to be invoked by these tests.  Since the entire directory is scheduled for deprecation in a couple of weeks, I don't think it's worth further investigation.
 * tools: workspace: Update pybind11 fork to latest commit (`#13044`_)  # Better handling of ownership transfer from C++ to Python
-* bindings: integrators: add python bindings for dense integration (`#13044`_)
 * multibody: Enable mutating a Joint's position limits (`#13039`_)
 * multibody: Create BallRpyJoint (`#13039`_)
-* bindings: Refactor python joint testing code (`#13039`_)  # Co-Authored-By: Eric Cousineau <eric.cousineau@tri.global>
-* bindings: Add bindings for BallRpyJoint (`#13039`_)  # Co-Authored-By: Eric Cousineau <eric.cousineau@tri.global>
 * systems: integrators: integrators support negative times (`#13061`_)  # (e.g. if you start your simulation from time = -2.0)
 * CMakeLists.txt,doc,setup,tools: Use python@3.8 on macOS (`#13031`_)  # Co-authored-by: Eric Cousineau <eric.cousineau@tri.global>
 * setup: The cask for DejaVu fonts was renamed (`#13070`_)
 * common: trajectories: add reshape() to piecewise polynomial (`#13062`_)  # * trajectories: add Reshape() to piecewise polynomial
-* bindings: py systems: Make lcm_test pass under both `bazel run` and `bazel test` (`#102a7f577cc22b41cf8a69aee61ccc17f5bde004`_)
-* systems: py systems: Bind LcmInterfaceSystem (`#13067`_)
 * common: Effectively reverts #4854, but leaves an updated version of the test (`#13072`_)
-* bindings: Partially revert "Make lcm_test pass under ... bazel run ..." (`#13079`_)  # This reverts commit 102a7f577cc22b41cf8a69aee61ccc17f5bde004 but leaves its new file overview comment intact. Also remove additional memqs that snuck in during the subsequent commit or elsewhere. Running tests via bazel run is it is brittle and unsupported; we should not pretend otherwise, especially when doing so would add copypasta into dozens of unit test source files. Users should use --test_output to control output, not use bazel run. To move towards supporting it, we could enhance drake_cc_googletest_main and drake_py_unittest_main to partially re-implement the test environment that bazel sets up for us, not change individual unit tests to cope.
-* bindings: py systems: Fix keep_alive bug for lcm (`#13075`_)
 * systems: Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator, fourth PR of #12528 (`#12967`_)  # Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator, fourth PR of #12528 This commit: 1. Adds automatic differentiation as a velocity-Jacobian computation scheme for the velocity-implicit Euler integrator, by following the model of ImplicitIntegrator<T>::ComputeAutoDiffJacobian(). 2. Refactors ComputeLOfY() based on the templated <U> IntegratorBase<T>::EvalTimeDerivatives() to enable this computation. 3. Fixes the tests so that they reset integrators between testing the different Jacobian computation schemes, to force Jacobian recomputations. Filed #13069 so that this will not be needed in the future. 4. Removes the boolean flags that skip tests that require AutoDiff'd Jacobians.
 
 ..
