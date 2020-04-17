@@ -178,14 +178,10 @@ PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator*=(
   if (!this->SegmentTimesEqual(other))
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
-  if constexpr (std::is_same<T, double>::value) {
-    for (size_t i = 0; i < polynomials_.size(); i++) {
-      polynomials_[i] *= other.polynomials_[i];
-    }
-    return *this;
-  } else {
-    throw runtime_error("Multiplication only supported so far for T=double");
+  for (size_t i = 0; i < polynomials_.size(); i++) {
+    polynomials_[i] *= other.polynomials_[i];
   }
+  return *this;
 }
 
 template <typename T>
