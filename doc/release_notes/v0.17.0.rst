@@ -45,12 +45,12 @@ New features
 
   * Add doxygen group for our suite of integrators (`#12900`_)
   * Add simulator_flags configuration helper to select an integrator (`#13013`_)
+  * Add support for starting from negative times (`#13061`_)
   * Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
   * Add symbolic expression support to ExplicitEulerIntegrator and RungeKutta2Integrator (`#12922`_, `#12919`_)
   * Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
-  * TBD Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator (`#12967`_)  # This commit: 1. Adds automatic differentiation as a velocity-Jacobian computation scheme for the velocity-implicit Euler integrator, by following the model of ImplicitIntegrator<T>::ComputeAutoDiffJacobian(). 2. Refactors ComputeLOfY() based on the templated <U> IntegratorBase<T>::EvalTimeDerivatives() to enable this computation. 3. Fixes the tests so that they reset integrators between testing the different Jacobian computation schemes, to force Jacobian recomputations. Filed #13069 so that this will not be needed in the future. 4. Removes the boolean flags that skip tests that require AutoDiff'd Jacobians.
-  * TBD Integrators support starting from negative times (`#13061`_)
-  * TBD dense integration works with witness isolation (`#13045`_)  # - Adds a series of tests checking the dense output for error-controlled integration and witness isolation. - Fixes a few curiousities in the PiecewiseTrajectory / PiecewisePolynomial stack, including the unexplained large tolerance required between successive segments in a piecewisetrajectory. - IntegratorBase::DoDenseStep is no longer virtual, because the logic within has gotten more complicated and we need a more narrow entry point for any subclasses which eventually want to override the default dense output interpolation strategy.  [THIS IS TECHNICALLY A CHANGE TO THE PUBLIC API, BUT I BELIEVE IT IS ONE THAT HAS NO CONSUMERS].
+  * Dense integration works with witness isolation (`#13045`_)
+  * Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator (`#12967`_)
 
 * Trajectories
 
