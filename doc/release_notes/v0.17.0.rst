@@ -98,12 +98,12 @@ New features
 
 * Add PointToPointDistanceConstraint (`#12896`_)
 * InverseKinematics allows ignoring joint limits in the constructor (`#12872`_)
-* Add missing energy and power overrides to MBP (`#12895`_, `#12955`_)
+* Add missing energy and power overrides to MultibodyPlant (`#12895`_, `#12955`_)
 * Add CoM methods to MultibodyPlant (`#12839`_)
 * Parse joint effort limits from URDF (`#12863`_)
 * Parse revolute joint <spring_stiffness> and <spring_reference> from SDF (`#12992`_)
-* TBD multibody: Enable mutating a Joint's position limits (`#13039`_)
-* TBD multibody: Create BallRpyJoint (`#13039`_)
+* Add BallRpyJoint (`#13039`_)
+* Enable mutating a Joint's position limits (`#13039`_)
 * Preliminary steps to introduce new RenderEngine implementation based on direct OpenGl calls
   (`#12850`_, `#12963`_, `#12964`_)
 
@@ -122,7 +122,7 @@ New features
 Fixes
 
 * Fix ABI::IsPhysicallyValid() to avoid false negatives (`#12879`_)
-* Move MBP::HydroelasticContactInfoAndBodySpatialForces into internal namespace (`#12953`_)
+* Fix HydroelasticContactInfoAndBodySpatialForces runtime hash warning (`#12953`_)
 * Modify cube texture coordinate generation so textures stretch across faces (`#12972`_)
 * Remove _implicit_ converting copy constructors from MultibodyPlant's and SceneGraph internals (`#12891`_)
 
@@ -153,6 +153,7 @@ pydrake bindings
 * pydrake.examples.pendulum.PendulumPlant.get_state (`#12940`_)
 * pydrake.examples.pendulum.PendulumState.with_theta (`#12940`_)
 * pydrake.examples.pendulum.PendulumState.with_thetadot (`#12940`_)
+* pydrake.examples.rimless_wheel.RimlessWheel.calc_alpha (`#13048`_)
 * pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
 * pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
 * pydrake.multibody.plant.MultibodyPlant.get_reaction_forces_output_port (`#12883`_)
@@ -163,16 +164,16 @@ pydrake bindings
 * pydrake.solvers.mixed_integer_optimization_util.AddSos2Constraint (`#13029`_)
 * pydrake.symbolic.Expression.is_polynomial (`#12854`_)
 * pydrake.systems.analysis.IntegratorBase for more scalar types (`#12922`_)
+* pydrake.systems.analysis.IntegratorBase.StartDenseIntegration (`#13044`_)
+* pydrake.systems.analysis.IntegratorBase.StopDenseIntegration (`#13044`_)
+* pydrake.systems.analysis.IntegratorBase.get_dense_output (`#13044`_)
 * pydrake.systems.analysis.RungeKutta2Integrator for more scalar types (`#12922`_)
 * pydrake.systems.analysis.RungeKutta3Integrator for more scalar types (`#12922`_)
 * pydrake.systems.analysis.Simulator for more scalar types (`#12922`_)
 * pydrake.systems.analysis.Simulator.get_actual_realtime_rate (`#12920`_)
 * pydrake.systems.analysis.Simulator.get_target_realtime_rate (`#12920`_)
 * pydrake.systems.framework.ContinuousState.CopyToVector (`#12865`_)
-* TBD systems: py systems: Bind LcmInterfaceSystem (`#13067`_, `#13075`_)
-* TBD bindings: rimless wheel: bind calc_alpha method (`#13048`_)
-* TBD bindings: integrators: add python bindings for dense integration (`#13044`_)
-* TBD bindings: Add bindings for BallRpyJoint (`#13039`_)  # Co-Authored-By: Eric Cousineau <eric.cousineau@tri.global>
+* pydrake.systems.lcm.LcmInterfaceSystem (`#13067`_, `#13075`_)
 
 New features
 
