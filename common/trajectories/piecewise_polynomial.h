@@ -561,16 +561,12 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @param t The time at which to evaluate the %PiecewisePolynomial.
    * @return The matrix of evaluated values.
+   * @pre If T == symbolic::Expression, `t.is_constant()` must be true.
    *
    * @warning If t does not lie in the range that the polynomial is defined
    *          over, the polynomial will silently be evaluated at the closest
    *          point to t. For example, `value(-1)` will return `value(0)` for a
    *          polynomial defined over [0, 1].
-   * @warning This method only evaluates the polynomial in the segment defined
-   *          by @p t.  If T=symbolic::Expression, then this method will return
-   *          only the symbolic::Expression for the current segment if @p t can
-   *          be cast to double or throw std::runtime_error if @p t cannot be
-   *          cast to double.
    * @warning See warning in @ref polynomial_construction_warning.
    */
   MatrixX<T> value(const T& t) const override {

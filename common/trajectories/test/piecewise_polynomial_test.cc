@@ -468,9 +468,8 @@ GTEST_TEST(PiecewiseTrajectoryTest, SymbolicValues) {
       PiecewisePolynomial<Expression>::FirstOrderHold(symbolic_breaks, samples),
       std::runtime_error);
 
-  // Symbolic samples (and therefore coefficient) returns the symbolic form only
-  // inside the current segment.  This admittedly bad behavior is documented as
-  // a warning in the PiecewisePolynomial::value() documentation.
+  // For symbolic samples (and therefore coefficients), value() returns the
+  // symbolic form at the specified time.
   const Variable x0("x0");
   const Variable x1("x1");
   const Variable x2("x2");
