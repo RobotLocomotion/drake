@@ -74,7 +74,7 @@ New features
 
 Fixes
 
-* TBD
+* None
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -135,13 +135,11 @@ Miscellaneous features and fixes
 
 * Add hand/arm only jaco 7dof URDFs, along with sphere collision versions (`#13007`_)
 * Add external torque fields for the jaco status message (`#13017`_)
-* TBD Add a drake-ified version of the Franka Panda arm (`#13012`_)
+* Add a drake-ified version of the Franka Panda arm (`#13012`_)
 * Add some useful functions to manipulation/util (`#13015`_)
 * Add pyplot to geometry_inspector (`#12918`_)
 * Add yaml support for merge keys (`#12924`_)
 * Replace custom DrakeMockLcm implementation with memq (`#13028`_, `#13051`_)
-* TBD doc: doc/index: Add explicit Binder badge, separate Tutorials from Examples (`#12971`_)  # Replace Tutorials toctree link with (attempted) relative link
-* TBD doc: doc/installation: Add mention for previewing (`#12971`_)  # doc/python_bindings: Emphasize tutorials!
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
