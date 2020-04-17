@@ -66,10 +66,17 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
 // corresponding to f(t) ≡ C₂t² + C₁t + C₀, where C₀ is the initial state) over
-// t ∈ [0, 1]. The error estimate from 2-stage Radau is second-order accurate,
+// t ∈ [0, 1]. The error estimate from 2-stage Radau is third-order accurate,
 // meaning that the approximation error will be zero if f'''(t) = 0, which is
 // true for the quadratic equation. We check that the error estimate is zero
 // for this function.
+// Note: this test differs from [Velocity]ImplicitEulerIntegratorTest::
+// QuadraticSystemErrorEstimatorAccuracy in that the error estimation for the
+// two-stage Radau integrator is third-order accurate, so this test checks to
+// make sure the error estimate (and error) are zero, while both the implicit
+// Euler and the velocity-implicit Euler integrators have a second-order-
+// accurate error estimate, so their tests check to make sure the error
+// estimate is exact (not necessarily zero).
 GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   QuadraticScalarSystem quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();

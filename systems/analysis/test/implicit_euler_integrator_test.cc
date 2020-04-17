@@ -12,13 +12,19 @@ namespace systems {
 namespace analysis_test {
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
-// corresponding to f(t) ≡ 7t² + 7t + C, where C is the initial state) over
+// corresponding to f(t) ≡ 7t² + 7t + f₀, where f₀ is the initial state) over
 // t ∈ [0, 1]. Since the error estimate has a Taylor series that is
 // accurate to O(h²) and since we have no terms beyond this order,
 // halving the step size should improve the error estimate by a factor of 4.
 // Furthermore, we test that the error estimate gives the exact error, with
 // both the correct sign and magnitude.
-GTEST_TEST(ImplicitIntegratorErrorEstimatorTest, QuadraticSystemAccuracy) {
+// Note: this test differs from RadauIntegratorTest::QuadraticTest in that
+// the error estimation for the two-stage Radau integrator is third-order
+// accurate, so that test checks to make sure the error estimate (and error)
+// are zero, while this integrator has a second-order-accurate error estimate,
+// so this test checks to make sure the error estimate is exact (not necessarily
+// zero).
+GTEST_TEST(ImplicitEulerIntegratorTest, QuadraticSystemErrorEstimatorAccuracy) {
   QuadraticScalarSystem quadratic(7);
   auto quadratic_context = quadratic.CreateDefaultContext();
   const double C = quadratic.Evaluate(0);
