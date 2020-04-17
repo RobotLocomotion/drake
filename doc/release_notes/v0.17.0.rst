@@ -5,6 +5,17 @@ Drake v0.17.0
 Announcements
 -------------
 
+* On macOS, Drake now only supports Python 3.8.  See :ref:`Python Bindings
+  <python-bindings>` for new PATH and PYTHONPATH advice.
+
+* We've made substantial enhancements to Drake's integrators (including
+  documentation, configuration, dense output, and symbolic expressions) as well
+  as the trajectory family of data types.
+
+* We've added new multibody plant primitives (ball rpy joint, bushing force
+  element, door hinge force element) and added added a bit more SDF and URDF
+  parsing support.
+
 * RigidBodyPlant and all of the drake "attic" is scheduled for removal on
   2020-09-01 (`#12158`_, `#13030`_).
 
@@ -179,7 +190,7 @@ pydrake bindings
 
 New features
 
-* Add preliminary Python 3.8 support for macOS (`#13035`_)
+* Add Python 3.8 support for macOS (`#13035`_)
 * Add SystemSliders Tkinter-based controller for vector input ports (`#12925`_)
 * Add ConnectPlanarSceneGraphVisualizer sugar (`#12961`_)
 
@@ -289,9 +300,8 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.17.0>`__ named
-``drake-TBD-{bionic|mac}.tar.gz``. See
-https://drake.mit.edu/from_binary.html#nightly-releases for instructions on
-how to use them.
+``drake-TBD-{bionic|mac}.tar.gz``. See :ref:`Nightly Releases
+<nightly-releases>` for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT
 <https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
