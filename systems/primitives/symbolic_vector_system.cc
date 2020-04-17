@@ -254,55 +254,69 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
   const BasicVector<AutoDiffXd>& parameter =
       (parameter_vars_.size() > 0) ? context.get_numeric_parameter(0) : empty;
 
-  // Figure out the length of the derivative vector.  Some of the
-  // derivatives may have length zero, but we assume (as always) that any
-  // properly initialized derivatives in the Context will have a consistent
-  // size.
+  // Figure out the length of the derivative vector.  The derivatives must all
+  // have size zero or the same non-zero size.
   int num_gradients = time.derivatives().size();
-  if (state_vars_.size() > 0) {
-    num_gradients = std::max(num_gradients,
-                             static_cast<int>(state[0].derivatives().size()));
-  }
+  auto set_num_gradients = [&num_gradients](
+                               const VectorBase<AutoDiffXd>& vars) {
+    for (int i = 0; i < vars.size(); i++) {
+      if (vars[i].derivatives().size()) {
+        if (num_gradients == 0) {
+          num_gradients = static_cast<int>(vars[i].derivatives().size());
+        } else {
+          DRAKE_DEMAND(static_cast<int>(vars[i].derivatives().size()) ==
+                       num_gradients);
+        }
+      }
+    }
+  };
+  set_num_gradients(state);
   if (needs_inputs) {
-    num_gradients = std::max(num_gradients,
-                             static_cast<int>(input[0].derivatives().size()));
+    set_num_gradients(input);
   }
-  if (parameter_vars_.size() > 0) {
-    num_gradients = std::max(
-        num_gradients, static_cast<int>(parameter[0].derivatives().size()));
-  }
+  set_num_gradients(parameter);
 
-  Eigen::MatrixXd dvars(jacobian.cols(), num_gradients);
+  Eigen::MatrixXd dvars = Eigen::MatrixXd::Zero(jacobian.cols(), num_gradients);
   Environment env = env_;
   if (time_var_) {
     env[*time_var_] = time.value();
-    dvars.bottomRows<1>() = time.derivatives();
+    if (time.derivatives().size()) {
+      dvars.bottomRows<1>() = time.derivatives();
+    }
   }
   size_t dvars_row_idx = 0;
   for (int i = 0; i < state_vars_.size(); i++) {
     env[state_vars_[i]] = state[i].value();
-    dvars.row(dvars_row_idx++) = state[i].derivatives();
+    if (state[i].derivatives().size()) {
+      dvars.row(dvars_row_idx) = state[i].derivatives();
+    }
+    dvars_row_idx++;
   }
   if (needs_inputs) {
     // NOTE: The only way needs_inputs can be true is there *are* input
     // variables.
     for (int i = 0; i < input_vars_.size(); i++) {
       env[input_vars_[i]] = input[i].value();
-      dvars.row(dvars_row_idx++) = input[i].derivatives();
+      if (input[i].derivatives().size()) {
+        dvars.row(dvars_row_idx) = input[i].derivatives();
+      }
+      dvars_row_idx++;
     }
   } else if (input_vars_.size() > 0) {
     // If we don't depend on inputs, we haven't evaluated the ports. However, by
     // definition the value and derivatives must all be zero. So, we'll simply
     // shove those values in explicitly.
-    auto kZeros = Eigen::VectorXd::Zero(num_gradients);
     for (int i = 0; i < input_vars_.size(); i++) {
       env[input_vars_[i]] = 0.0;
-      dvars.row(dvars_row_idx++) = kZeros;
+      dvars_row_idx++;
     }
   }
   for (int i = 0; i < parameter_vars_.size(); i++) {
     env[parameter_vars_[i]] = parameter[i].value();
-    dvars.row(dvars_row_idx++) = parameter[i].derivatives();
+    if (parameter[i].derivatives().size()) {
+      dvars.row(dvars_row_idx) = parameter[i].derivatives();
+    }
+    dvars_row_idx++;
   }
 
   // Now actually compute the output values and derivatives.
