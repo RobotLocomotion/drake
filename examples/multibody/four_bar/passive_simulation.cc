@@ -1,12 +1,7 @@
 /** @file
- An example showing:
-   - How to model a four bar linkage in SDF.
-   - Use the `multibody::Parser` to load a model from an SDF file into a
-   MultibodyPlant.
-   - Model a revolute joint with a `multibody::LinearBushingRollPitchYaw` to
-   model a closed kinematic chain.
-
-   Refer to README.md.
+ An example showing how to model a revolute joint with a
+ `multibody::LinearBushingRollPitchYaw` to model a closed kinematic chain.
+ Refer to README.md for more details.
  */
 #include <gflags/gflags.h>
 
@@ -90,10 +85,10 @@ int do_main() {
 
   // See the documentation for LinearBushingRollPitchYaw.
   // This particular choice of parameters models a z-axis revolute joint.
-  const Vector3d torque_stiffness_constants{k_xyz, k_xyz, 0};     // N/m
-  const Vector3d torque_damping_constants{d_xyz, d_xyz, 0};       // N*s/m
-  const Vector3d force_stiffness_constants{k_012, k_012, k_012};  // N*m/rad
-  const Vector3d force_damping_constants{d_012, d_012, d_012};    // N*m*s/rad
+  const Vector3d force_stiffness_constants{k_xyz, k_xyz, k_xyz};  // N/m
+  const Vector3d force_damping_constants{d_xyz, d_xyz, d_xyz};    // N*s/m
+  const Vector3d torque_stiffness_constants{k_012, k_012, 0};     // N*m/rad
+  const Vector3d torque_damping_constants{d_012, d_012, 0};       // N*m*s/rad
 
   // Add a bushing force element where the joint between link B and link C
   // should be in an ideal 4-bar linkage.
@@ -127,15 +122,17 @@ int do_main() {
       four_bar.GetJointByName<RevoluteJoint>("q_AB");
 
   // See the README for an explanation of these angles.
-  const double qA = atan2(sqrt(15.0), 1.0);
-  const double qB = M_PI - qA;
+  const double qA = atan2(sqrt(15.0), 1.0);  // about 75.52°
+  const double qB = M_PI - qA;               // about 104.48°
   const double qC = qB;
 
   WA_joint.set_angle(&four_bar_context, qA);
   AB_joint.set_angle(&four_bar_context, qB);
   WC_joint.set_angle(&four_bar_context, qC);
 
-  // Set the velocity of qA so the model has some motion.
+  // Set the rate of change, in radians per second, of the angle qA,
+  // so the model has some motion.
+  // 3 radians per second = 171.88 degrees/second
   WA_joint.set_angular_rate(&four_bar_context, 3.0);
 
   // Create a simulator and run the simulation

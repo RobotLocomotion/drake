@@ -3,6 +3,10 @@
     <!--
     This sdf file produces a model of a four bar linkage.
 
+    We replace one of the 4 revolute joints with a model revolute joint
+    implemented with a LinearBushingRollPitchYaw ForceElement in the code.
+    This SDF provides the frames at which to place the above mentioned bushing.
+
     Links A, B, C, and (the implicit) World link complete the closed kinematic
     chain.
 
