@@ -25,6 +25,8 @@ These are breaking changes that did not undergo a deprecation period:
 * Add external torque fields for the jaco status message (`#13017`_)
 * Edit WitnessFunction constructor; users should not be using this constructor
   anyway (`#12894`_)
+* TBD lcm: Rework error handling path to avoid exceptions across C code (`#13051`_)  # This is a breaking change via adding a new pure virtual method to an interface.
+* TBD common,examples,systems: integrators: dense integration works with witness isolation (`#13045`_)  # - Adds a series of tests checking the dense output for error-controlled integration and witness isolation. - Fixes a few curiousities in the PiecewiseTrajectory / PiecewisePolynomial stack, including the unexplained large tolerance required between successive segments in a piecewisetrajectory. - IntegratorBase::DoDenseStep is no longer virtual, because the logic within has gotten more complicated and we need a more narrow entry point for any subclasses which eventually want to override the default dense output interpolation strategy.  [THIS IS TECHNICALLY A CHANGE TO THE PUBLIC API, BUT I BELIEVE IT IS ONE THAT HAS NO CONSUMERS].  Piecewise traj min epsilon is now epsilon.
 
 Changes since v0.16.1:
 ----------------------
@@ -41,6 +43,9 @@ New features
   * Add error control to Velocity-Implicit Euler Integrator (`#12528`_, `#12760`_)
   * Add symbolic expression support to ExplicitEulerIntegrator and RungeKutta2Integrator (`#12922`_, `#12919`_)
   * Replace integrators' DenseOutput with PiecewiseTrajectory (`#13008`_)
+  * TBD Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator (`#12967`_)  # This commit: 1. Adds automatic differentiation as a velocity-Jacobian computation scheme for the velocity-implicit Euler integrator, by following the model of ImplicitIntegrator<T>::ComputeAutoDiffJacobian(). 2. Refactors ComputeLOfY() based on the templated <U> IntegratorBase<T>::EvalTimeDerivatives() to enable this computation. 3. Fixes the tests so that they reset integrators between testing the different Jacobian computation schemes, to force Jacobian recomputations. Filed #13069 so that this will not be needed in the future. 4. Removes the boolean flags that skip tests that require AutoDiff'd Jacobians.
+  * TBD Integrators support starting from negative times (`#13061`_)
+  * TBD dense integration works with witness isolation (`#13045`_)  # - Adds a series of tests checking the dense output for error-controlled integration and witness isolation. - Fixes a few curiousities in the PiecewiseTrajectory / PiecewisePolynomial stack, including the unexplained large tolerance required between successive segments in a piecewisetrajectory. - IntegratorBase::DoDenseStep is no longer virtual, because the logic within has gotten more complicated and we need a more narrow entry point for any subclasses which eventually want to override the default dense output interpolation strategy.  [THIS IS TECHNICALLY A CHANGE TO THE PUBLIC API, BUT I BELIEVE IT IS ONE THAT HAS NO CONSUMERS].
 
 * Trajectories
 
@@ -123,7 +128,9 @@ Miscellaneous features and fixes
 * Add some useful functions to manipulation/util (`#13015`_)
 * Add pyplot to geometry_inspector (`#12918`_)
 * Add yaml support for merge keys (`#12924`_)
-* Replace custom DrakeMockLcm implementation with memq (`#13028`_)
+* Replace custom DrakeMockLcm implementation with memq (`#13028`_, `#13051`_)
+* TBD doc: doc/index: Add explicit Binder badge, separate Tutorials from Examples (`#12971`_)  # Replace Tutorials toctree link with (attempted) relative link
+* TBD doc: doc/installation: Add mention for previewing (`#12971`_)  # doc/python_bindings: Emphasize tutorials!
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -388,23 +395,16 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 TO BE FILED
 
-* common,examples,systems: integrators: dense integration works with witness isolation (`#13045`_)  # - Adds a series of tests checking the dense output for error-controlled integration and witness isolation. - Fixes a few curiousities in the PiecewiseTrajectory / PiecewisePolynomial stack, including the unexplained large tolerance required between successive segments in a piecewisetrajectory. - IntegratorBase::DoDenseStep is no longer virtual, because the logic within has gotten more complicated and we need a more narrow entry point for any subclasses which eventually want to override the default dense output interpolation strategy.  [THIS IS TECHNICALLY A CHANGE TO THE PUBLIC API, BUT I BELIEVE IT IS ONE THAT HAS NO CONSUMERS].
-* lcm,systems: lcm: Rework error handling path to avoid exceptions across C code (`#13051`_)  # Un-split a unit test case back from its recently-added new file, since it no longer leaks. This is a breaking change via adding a new pure virtual method to an interface.
 * manipulation: Add unmodified copies of the franka urdfs along with license (`#13012`_)
 * manipulation: Add transmissions to get actuated joints (`#13012`_)
 * manipulation: Add obj version of meshes (`#13012`_)
 * manipulation: Add inertial properties (`#13012`_)
 * manipulation: Shrink collision geometery significantly, convert to spheres (`#13012`_)
 * solvers: Logarithmic sos1 (`#13043`_)  # Add a new API for AddLogarithmicSos1Constraint. We encode sos1 constraint with logarithmic number of binary variables.
-* doc: doc/index: Add explicit Binder badge, separate Tutorials from Examples (`#12971`_)  # Replace Tutorials toctree link with (attempted) relative link
-* doc: doc/installation: Add mention for previewing (`#12971`_)  # doc/python_bindings: Emphasize tutorials!
-* examples: Disable coverage tests on deprecated iiwa modules (`#13059`_)  # These started hitting timeouts in coverage tests after #13015 merged, which confuses me since none of the code which moved in that PR appears to be invoked by these tests.  Since the entire directory is scheduled for deprecation in a couple of weeks, I don't think it's worth further investigation.
 * multibody: Enable mutating a Joint's position limits (`#13039`_)
 * multibody: Create BallRpyJoint (`#13039`_)
-* systems: integrators: integrators support negative times (`#13061`_)  # (e.g. if you start your simulation from time = -2.0)
 * common: trajectories: add reshape() to piecewise polynomial (`#13062`_)  # * trajectories: add Reshape() to piecewise polynomial
-* common: Effectively reverts #4854, but leaves an updated version of the test (`#13072`_)
-* systems: Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator, fourth PR of #12528 (`#12967`_)  # Add Automatic Differentiated Jacobians to Velocity-Implicit Euler Integrator, fourth PR of #12528 This commit: 1. Adds automatic differentiation as a velocity-Jacobian computation scheme for the velocity-implicit Euler integrator, by following the model of ImplicitIntegrator<T>::ComputeAutoDiffJacobian(). 2. Refactors ComputeLOfY() based on the templated <U> IntegratorBase<T>::EvalTimeDerivatives() to enable this computation. 3. Fixes the tests so that they reset integrators between testing the different Jacobian computation schemes, to force Jacobian recomputations. Filed #13069 so that this will not be needed in the future. 4. Removes the boolean flags that skip tests that require AutoDiff'd Jacobians.
+* common: Effectively reverts #4854 "Changed PiecewisePolynomial multiplication operator to be coefficient-wise", but leaves an updated version of the test (`#13072`_)
 
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
