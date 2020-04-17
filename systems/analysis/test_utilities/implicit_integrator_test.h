@@ -744,8 +744,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
   std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
       stiff_double_system_;
 
-  bool integrator_supports_central_and_auto_diff_ = true;
-
  private:
   bool reuse_type_to_bool(ReuseType type) {
     if (type == kNoReuse) {
@@ -793,6 +791,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // that the system is overdamped.
   const double stiff_damping_b_ = 1e8;
 };
+
 TYPED_TEST_SUITE_P(ImplicitIntegratorTest);
 
 TYPED_TEST_P(ImplicitIntegratorTest, MiscAPINoReuse) {
@@ -933,48 +932,44 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
   EXPECT_NEAR(state.GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
   ImplicitIntegratorTest<Integrator>::CheckGeneralStatsValidity(&integrator);
 
-  // TODO(antequ): remove this check once the Velocity-Implicit Euler
-  // supports autodiff and central differencing
-  if (this->integrator_supports_central_and_auto_diff_) {
-    // Set up the same problem with an AutoDiff'd Jacobian computation
-    // scheme.
-    integrator.set_jacobian_computation_scheme(
-        Integrator::JacobianComputationScheme::kAutomatic);
+  // Set up the same problem with an AutoDiff'd Jacobian computation
+  // scheme.
+  integrator.set_jacobian_computation_scheme(
+      Integrator::JacobianComputationScheme::kAutomatic);
 
-    // Reset the time, position, and velocity.
-    context->SetTime(0.0);
-    VectorBase<double>& new_state =
-        context->get_mutable_continuous_state().get_mutable_vector();
-    new_state.SetAtIndex(0, 0.0);
-    new_state.SetAtIndex(1, 0.0);
+  // Reset the time, position, and velocity.
+  context->SetTime(0.0);
+  VectorBase<double>& new_state =
+      context->get_mutable_continuous_state().get_mutable_vector();
+  new_state.SetAtIndex(0, 0.0);
+  new_state.SetAtIndex(1, 0.0);
 
-    integrator.set_maximum_step_size(1.0);
+  integrator.set_maximum_step_size(1.0);
 
-    if (integrator.supports_error_estimation()) {
-      integrator.set_target_accuracy(1e-3);
-      integrator.request_initial_step_size_target(1e-3);
-    }
-
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
-
-    // Integrate the system
-    integrator.IntegrateWithMultipleStepsToTime(1.0);
-
-    // Verify the solution.
-    EXPECT_NEAR(new_state.GetAtIndex(0), 0,
-                std::numeric_limits<double>::epsilon());
-    EXPECT_NEAR(new_state.GetAtIndex(1), 0,
-                std::numeric_limits<double>::epsilon());
-    ImplicitIntegratorTest<Integrator>::CheckGeneralStatsValidity(&integrator);
+  if (integrator.supports_error_estimation()) {
+    integrator.set_target_accuracy(1e-3);
+    integrator.request_initial_step_size_target(1e-3);
   }
+
+  // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+  // some problems, the Jacobian may not be computed again because the
+  // previous one was good enough for Newton-Raphson to converge.
+  // TODO(antequ): This issue only exists for velocity-implicit Euler
+  // integrator; other implicit integrators reset their Jacobians in
+  // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+  // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+  // and remove this call. See issue #13069.
+  integrator.Initialize();
+
+  // Integrate the system
+  integrator.IntegrateWithMultipleStepsToTime(1.0);
+
+  // Verify the solution.
+  EXPECT_NEAR(new_state.GetAtIndex(0), 0,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(new_state.GetAtIndex(1), 0,
+              std::numeric_limits<double>::epsilon());
+  ImplicitIntegratorTest<Integrator>::CheckGeneralStatsValidity(&integrator);
 }
 
 // Tests the implicit integrator on Robertson's stiff chemical reaction
