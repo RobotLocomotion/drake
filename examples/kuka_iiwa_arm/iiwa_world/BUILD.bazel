@@ -47,6 +47,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
+    tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.01"],
     deps = [
         "//attic/manipulation/util:sim_diagram_builder",
@@ -75,6 +76,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
+    tags = ["no_kcov"],
     deps = [
         ":iiwa_wsg_diagram_factory",
         "//common/test_utilities:eigen_matrix_compare",

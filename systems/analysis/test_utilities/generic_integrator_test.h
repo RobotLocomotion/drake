@@ -100,7 +100,17 @@ TYPED_TEST_P(GenericIntegratorTest, DenseOutput) {
   EXPECT_LT(dense_output->end_time(), this->context_->get_time());
 }
 
-REGISTER_TYPED_TEST_SUITE_P(GenericIntegratorTest, DenseOutput);
+// Confirm that integration supports times < 0.
+TYPED_TEST_P(GenericIntegratorTest, NegativeTime) {
+  this->integrator_->set_maximum_step_size(0.1);
+  this->integrator_->set_target_accuracy(1e-5);
+  this->integrator_->Initialize();
+  this->context_->SetTime(-1.0);
+  this->integrator_->IntegrateWithMultipleStepsToTime(-0.5);
+  EXPECT_EQ(this->context_->get_time(), -0.5);
+}
+
+REGISTER_TYPED_TEST_SUITE_P(GenericIntegratorTest, DenseOutput, NegativeTime);
 
 }  // namespace analysis_test
 }  // namespace systems

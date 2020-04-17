@@ -125,6 +125,8 @@ class DrakeLcmLog : public DrakeLcmInterface {
   }
 
  private:
+  void OnHandleSubscriptionsError(const std::string&) override;
+
   const bool is_write_;
   const bool overwrite_publish_time_with_system_clock_;
 

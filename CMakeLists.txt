@@ -203,8 +203,8 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/bin)
-  set(SUPPORTED_PYTHON_VERSIONS 3.7)
+  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/opt/python@3.8/bin)
+  set(SUPPORTED_PYTHON_VERSIONS 3.8)
 else()
   set(FIND_PROGRAM_PYTHON3_PATHS /usr/bin)
   set(SUPPORTED_PYTHON_VERSIONS 3.6)

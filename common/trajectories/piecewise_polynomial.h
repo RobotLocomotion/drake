@@ -623,6 +623,15 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   Eigen::Index cols() const override;
 
   /**
+   * Reshapes the dimensions of the Eigen::MatrixX<T> returned by value(),
+   * EvalDerivatives(), etc.
+   *
+   * @pre @p rows x @p cols must equal this.rows() * this.cols().
+   * @see Eigen::PlainObjectBase::resize().
+   */
+  void Reshape(int rows, int cols);
+
+  /**
    * Adds each Polynomial in the PolynomialMatrix of `other` to the
    * corresponding Polynomial in the PolynomialMatrix of `this`, storing the
    * result in `this`. If `this` corresponds to t² and `other` corresponds to

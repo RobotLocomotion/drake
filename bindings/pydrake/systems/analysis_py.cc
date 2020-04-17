@@ -58,7 +58,13 @@ PYBIND11_MODULE(analysis, m) {
             doc.IntegratorBase.set_throw_on_minimum_step_size_violation.doc)
         .def("get_throw_on_minimum_step_size_violation",
             &IntegratorBase<T>::get_throw_on_minimum_step_size_violation,
-            doc.IntegratorBase.get_throw_on_minimum_step_size_violation.doc);
+            doc.IntegratorBase.get_throw_on_minimum_step_size_violation.doc)
+        .def("StartDenseIntegration", &IntegratorBase<T>::StartDenseIntegration,
+            doc.IntegratorBase.StartDenseIntegration.doc)
+        .def("get_dense_output", &IntegratorBase<T>::get_dense_output,
+            py_reference_internal, doc.IntegratorBase.get_dense_output.doc)
+        .def("StopDenseIntegration", &IntegratorBase<T>::StopDenseIntegration,
+            doc.IntegratorBase.StopDenseIntegration.doc);
 
     DefineTemplateClassWithDefault<RungeKutta2Integrator<T>, IntegratorBase<T>>(
         m, "RungeKutta2Integrator", GetPyParam<T>(),

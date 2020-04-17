@@ -178,10 +178,14 @@ PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator*=(
   if (!this->SegmentTimesEqual(other))
     throw runtime_error(
         "Multiplication not yet implemented when segment times are not equal");
-  for (size_t i = 0; i < polynomials_.size(); i++) {
-    polynomials_[i].array() *= other.polynomials_[i].array();
+  if constexpr (std::is_same<T, double>::value) {
+    for (size_t i = 0; i < polynomials_.size(); i++) {
+      polynomials_[i] *= other.polynomials_[i];
+    }
+    return *this;
+  } else {
+    throw runtime_error("Multiplication only supported so far for T=double");
   }
-  return *this;
 }
 
 template <typename T>
@@ -482,6 +486,16 @@ Eigen::Index PiecewisePolynomial<T>::cols() const {
   } else {
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of columns is undefined.");
+  }
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::Reshape(int rows, int cols) {
+  DRAKE_DEMAND(rows * cols == this->rows() * this->cols());
+  for (auto& p : polynomials_) {
+    // Accordining to the Eigen documentation, data is preserved when the total
+    // number of elements does not change.
+    p.resize(rows, cols);
   }
 }
 

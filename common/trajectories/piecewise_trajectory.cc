@@ -27,7 +27,7 @@ boolean<T> PiecewiseTrajectory<T>::is_time_in_range(const T& time) const {
 
 template <typename T>
 int PiecewiseTrajectory<T>::get_number_of_segments() const {
-  return static_cast<int>(breaks_.size() - 1);
+  return static_cast<int>(breaks_.size() > 0 ? breaks_.size() - 1 : 0);
 }
 
 template <typename T>

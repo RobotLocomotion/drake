@@ -10,6 +10,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/lcm/connect_lcm_scope.h"
+#include "drake/systems/lcm/lcm_interface_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/serializer.h"
@@ -65,6 +66,20 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
   }
 };
 
+// Define warning related to lack of multiple inheritance with our fork of
+// pybind11. This will be sufficient for workflows in pure Python, but will
+// not readily support intermingling of C++-constructed LcmInterfaceSystem
+// classes which are then passed to Python.
+constexpr char kLcmInterfaceSystemClassWarning[] = R"""(
+
+Warning:
+    In C++, this class inherits both LeafSystem and DrakeLcmInterface. However,
+    in Python, this only inherits from LeafSystem since our fork of pybind11
+    does not support multiple inheritance. Additionally, it only exposes the
+    constructor accepting a DrakeLcmInterface, so that it can still be used in
+    interface code.
+)""";
+
 }  // namespace
 
 PYBIND11_MODULE(lcm, m) {
@@ -77,6 +92,16 @@ PYBIND11_MODULE(lcm, m) {
 
   py::module::import("pydrake.lcm");
   py::module::import("pydrake.systems.framework");
+
+  {
+    using Class = LcmInterfaceSystem;
+    constexpr auto& cls_doc = doc.LcmInterfaceSystem;
+    py::class_<Class, LeafSystem<double>>(m, "LcmInterfaceSystem",
+        (std::string(cls_doc.doc) + kLcmInterfaceSystemClassWarning).c_str())
+        .def(py::init<DrakeLcmInterface*>(),
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 2>(), py::arg("lcm"), cls_doc.ctor.doc_1args_lcm);
+  }
 
   {
     using Class = SerializerInterface;

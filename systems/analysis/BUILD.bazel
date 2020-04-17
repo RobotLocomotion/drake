@@ -489,6 +489,7 @@ drake_cc_googletest(
     name = "integrator_base_test",
     deps = [
         ":integrator_base",
+        "//common/test_utilities:expect_throws_message",
         "//systems/plants/spring_mass_system",
     ],
 )

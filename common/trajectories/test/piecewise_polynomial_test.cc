@@ -96,6 +96,9 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise4_not_matching_cols =
         test::MakeRandomPiecewisePolynomial<T>(
             rows, cols + 1, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise5 =
+        test::MakeRandomPiecewisePolynomial<T>(
+            cols, rows, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
     double shift = normal(generator);
@@ -108,7 +111,7 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise1_minus_offset = piecewise1 - offset;
     PiecewisePolynomialType piecewise1_shifted = piecewise1;
     piecewise1_shifted.shiftRight(shift);
-    PiecewisePolynomialType product = piecewise1 * piecewise2;
+    PiecewisePolynomialType product = piecewise1 * piecewise5;
 
     const double total_time = segment_times.back() - segment_times.front();
     PiecewisePolynomialType piecewise2_twice = piecewise2;
@@ -164,10 +167,9 @@ void testBasicFunctionality() {
                                 piecewise1.value(t - shift), 1e-8,
                                 MatrixCompareType::absolute));
 
-    EXPECT_TRUE(CompareMatrices(
-        product.value(t),
-        (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
-        1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(product.value(t),
+                                piecewise1.value(t) * piecewise5.value(t), 1e-8,
+                                MatrixCompareType::absolute));
 
     // Checks that `piecewise2_twice` is effectively the concatenation of
     // `piecewise2` and a copy of `piecewise2` that is shifted to the right
@@ -247,7 +249,6 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
 // Test various exception cases.  We want to check that these throw rather
 // than crash (or return potentially bad data).
 GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
-  const double less_than_epsilon = 1e-11;
   Eigen::VectorXd breaks(5);
   breaks << 0, 1, 2, 3, 4;
 
@@ -262,13 +263,6 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   // No throw with monotonic breaks.
   PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
       breaks, samples, true);
-
-  // Throw when breaks are too close.
-  breaks[1] = less_than_epsilon;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
-          breaks, samples, true),
-      std::runtime_error, "Times must be at least .* apart.");
 
   // Throw when breaks are not strictly monotonic.
   breaks[1] = 0;
@@ -400,6 +394,32 @@ GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
   TestScaling(spline, 2.0);
   TestScaling(spline, 4.3);
 }
+
+GTEST_TEST(testPiecewisePolynomial, ReshapeTest) {
+  std::vector<double> breaks = {0, .5, 1.};
+  std::vector<Eigen::MatrixXd> samples(3);
+  samples[0].resize(2, 3);
+  samples[0] << 1, 1, 2, 2, 0, 3;
+  samples[1].resize(2, 3);
+  samples[1] << 3, 4, 5, 6, 7, 8;
+  samples[2].resize(2, 3);
+  samples[2] << -.2, 33., 5.4, -2.1, 52, 12;
+
+  PiecewisePolynomial<double> zoh =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  EXPECT_EQ(zoh.rows(), 2);
+  EXPECT_EQ(zoh.cols(), 3);
+
+  zoh.Reshape(3, 2);
+  EXPECT_EQ(zoh.rows(), 3);
+  EXPECT_EQ(zoh.cols(), 2);
+
+  samples[0].resize(3, 2);
+  samples[1].resize(3, 2);
+  EXPECT_TRUE(CompareMatrices(zoh.value(0.25), samples[0]));
+  EXPECT_TRUE(CompareMatrices(zoh.value(0.75), samples[1]));
+}
+
 
 template <typename T>
 void TestScalarType() {
