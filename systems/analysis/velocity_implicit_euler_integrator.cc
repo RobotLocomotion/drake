@@ -96,7 +96,7 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& t,
       ImplicitIntegrator<T>::JacobianComputationScheme::kCentralDifference) {
     // Compute the Jacobian using numerical differencing.
     DRAKE_ASSERT(qdot_ != nullptr);
-    // Define the lambda l_of_y to evaluate l(y).
+    // Define the lambda l_of_y to evaluate ℓ(y).
     std::function<void(const VectorX<T>&, VectorX<T>*)> l_of_y =
         [&qk, &t, &qn, &h, this](const VectorX<T>& y_state,
                                  VectorX<T>* l_result) {
@@ -110,10 +110,10 @@ void VelocityImplicitEulerIntegrator<T>::CalcVelocityJacobian(const T& t,
         math::NumericalGradientMethod::kCentral :
         math::NumericalGradientMethod::kForward);
 
-    // Compute Jy by passing l(y) to math::ComputeNumericalGradient().
+    // Compute Jy by passing ℓ(y) to math::ComputeNumericalGradient().
     // TODO(antequ): Right now we modify the context twice each time we call
-    // l(y): once when we calculate qⁿ + h N(qₖ) v
-    // (SetTimeAndContinuousState()), and once when we calculate l(y)
+    // ℓ(y): once when we calculate qⁿ + h N(qₖ) v
+    // (SetTimeAndContinuousState()), and once when we calculate ℓ(y)
     // (get_mutable_generalized_position()). However, this is only necessary for
     // each y that modifies a velocity (v). For all but one of the
     // miscellaneous states (z), we can reuse the position so that the context
@@ -149,33 +149,33 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
   // be copied to the context used by the AutoDiff'd system (which is
   // accomplished using FixInputPortsFrom()).
   const System<T>& system = this->get_system();
-  if (adiff_system_ == nullptr) {
-    adiff_system_ = system.ToAutoDiffXd();
-    adiff_context_ = adiff_system_->AllocateContext();
+  if (system_ad_ == nullptr) {
+    system_ad_ = system.ToAutoDiffXd();
+    context_ad_ = system_ad_->AllocateContext();
   }
   const Context<T>& context = this->get_context();
-  adiff_context_->SetTimeStateAndParametersFrom(context);
-  adiff_system_->FixInputPortsFrom(system, context, adiff_context_.get());
+  context_ad_->SetTimeStateAndParametersFrom(context);
+  system_ad_->FixInputPortsFrom(system, context, context_ad_.get());
 
-  if (adiff_qdot_ == nullptr || adiff_qdot_->size() != qn.size()) {
-    adiff_qdot_ = std::make_unique<BasicVector<AutoDiffXd>>(qn.size());
+  if (qdot_ad_ == nullptr || qdot_ad_->size() != qn.size()) {
+    qdot_ad_ = std::make_unique<BasicVector<AutoDiffXd>>(qn.size());
   }
 
-  // Initialize the an AutoDiff version of the variable y.
+  // Initialize an AutoDiff version of the variable y.
   const int ny = y.size();
-  VectorX<AutoDiffXd> a_y = y;
+  VectorX<AutoDiffXd> y_ad = y;
   for (int i = 0; i < ny; ++i) {
-    a_y(i).derivatives() = VectorX<T>::Unit(ny, i);
+    y_ad(i).derivatives() = VectorX<T>::Unit(ny, i);
   }
 
-  // Evaluate the AutoDiff system with a_y.
+  // Evaluate the AutoDiff system with y_ad.
   const VectorX<AutoDiffXd> result = this->ComputeLOfY(
-      t, a_y, qk, qn, h, this->adiff_qdot_.get(),
-      *(this->adiff_system_), this->adiff_context_.get());
+      t, y_ad, qk, qn, h, this->qdot_ad_.get(),
+      *(this->system_ad_), this->context_ad_.get());
 
   *Jy = math::autoDiffToGradientMatrix(result);
 
-  // Sometimes l(y) does not depend on y. In this case, make sure that the
+  // Sometimes ℓ(y) does not depend on y. In this case, make sure that the
   // Jacobian isn't a n ✕ 0 matrix (this will cause a segfault when forming
   // Newton iteration matrices); if it is, we set it equal to an n x n zero
   // matrix.
@@ -286,7 +286,7 @@ template <class T>
 VectorX<T> VelocityImplicitEulerIntegrator<T>::ComputeResidualR(
     const T& t, const VectorX<T>& y, const VectorX<T>& qk, const VectorX<T>& qn,
     const VectorX<T>& yn, const T& h, BasicVector<T>* qdot) {
-  // Compute l(y), which also sets the time and y states of the context.
+  // Compute ℓ(y), which also sets the time and y states of the context.
   const VectorX<T> l_of_y = ComputeLOfY(t, y, qk, qn, h, qdot);
 
   // Evaluate R(y).
@@ -320,7 +320,7 @@ VectorX<U> VelocityImplicitEulerIntegrator<T>::ComputeLOfY(
       context->get_continuous_state().get_generalized_velocity(), &*qdot);
   const VectorX<U> q = qn + h * qdot->get_value();
 
-  // Evaluate l = f_y(t, q, v, z).
+  // Evaluate ℓ = f_y(t, q, v, z).
   // TODO(antequ): Right now this invalidates the entire cache that depends on
   // any of the continuous state. Investigate invalidating less of the cache
   // once we have a Context method for modifying just the generalized position.
@@ -407,7 +407,7 @@ bool VelocityImplicitEulerIntegrator<T>::StepVelocityImplicitEuler(
     ++num_nr_iterations_;
 
     // Evaluate the residual error, which is defined above as R(yₖ):
-    //     R(yₖ) = yₖ - yⁿ - h l(yₖ).
+    //     R(yₖ) = yₖ - yⁿ - h ℓ(yₖ).
     VectorX<T> residual = ComputeResidualR(tf, ytplus, qtplus, qn,
                                            yn, h, qdot_.get());
 

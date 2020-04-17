@@ -58,19 +58,19 @@ namespace systems {
  * To find a `(qₖ₊₁,yₖ₊₁)` that approximately satisfies (5-6), we linearize
  * the system (5-6) to compute a Newton step. Define
  *
- *     l(y) = f_y(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),            (7)
- *     Jₗ(y) = ∂l(y) / ∂y.                           (8)
+ *     ℓ(y) = f_y(tⁿ⁺¹,qⁿ + h N(qₖ) v,y),            (7)
+ *     Jₗ(y) = ∂ℓ(y) / ∂y.                           (8)
  *
  * To advance the Newton step, the velocity-implicit Euler integrator solves
  * the following linear equation for `Δy`:
  *
  *     (I - h Jₗ) Δy = - R(yₖ),                      (9)
- * where `R(y) = y - yⁿ - h l(y)` and `Δy = yₖ₊₁ - yₖ`. The `Δy` solution
+ * where `R(y) = y - yⁿ - h ℓ(y)` and `Δy = yₖ₊₁ - yₖ`. The `Δy` solution
  * directly gives us `yₖ₊₁`. It then substitutes the `vₖ₊₁` component of `yₖ₊₁`
  * in (5) to get `qₖ₊₁`.
  *
  * This implementation uses a Newton method and relies upon the convergence
- * to a solution for `y` in `R(y) = 0` where `R(y) = y - yⁿ - h l(y)`
+ * to a solution for `y` in `R(y) = 0` where `R(y) = y - yⁿ - h ℓ(y)`
  * as `h` becomes sufficiently small. General implementational details for
  * the Newton method were gleaned from Section IV.8 in [Hairer, 1996].
  *
@@ -400,24 +400,24 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // Compute the partial derivatives of the ordinary differential equations with
   // respect to the y variables of a given x(t). In particular, we compute the
-  // Jacobian, Jₗ(y), of the function l(y), used in this integrator's
+  // Jacobian, Jₗ(y), of the function ℓ(y), used in this integrator's
   // residual computation, with respect to y, where y = (v,z) and x = (q,v,z).
   // This Jacobian is then defined as:
-  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)          (7)
-  //     Jₗ(y) = ∂l(y)/∂y                              (8)
+  //     ℓ(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)          (7)
+  //     Jₗ(y) = ∂ℓ(y)/∂y                              (8)
   // We use the Jacobian computation scheme from
   // get_jacobian_computation_scheme(), which is either a first-order forward
   // difference, a second-order centered difference, or automatic
   // differentiation. See math::ComputeNumericalGradient() for more details on
   // the first two methods.
-  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y)
+  // @param t refers to tⁿ⁺¹, the time used in the definition of ℓ(y)
   // @param h is the timestep size parameter, h, used in the definition of
-  //        l(y)
+  //        ℓ(y)
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate Jₗ(y).
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
-  // @param qn refers to qⁿ, the initial position used in l(y)
+  //        ℓ(y).
+  // @param qn refers to qⁿ, the initial position used in ℓ(y)
   // @param [out] Jy is the Jacobian matrix, Jₗ(y).
   // @post The context's time will be set to t, and its continuous state will
   //       be indeterminate on return.
@@ -426,20 +426,20 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                             MatrixX<T>* Jy);
 
   // Uses automatic differentiation to compute the Jacobian, Jₗ(y), of the
-  // function l(y), used in this integrator's residual computation, with
+  // function ℓ(y), used in this integrator's residual computation, with
   // respect to y, where y = (v,z). This Jacobian is then defined as:
-  //     l(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
-  //     Jₗ(y) = ∂l(y)/∂y                       (8)
+  //     ℓ(y)  = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y)   (7)
+  //     Jₗ(y) = ∂ℓ(y)/∂y                       (8)
   // In this method, we compute the Jacobian Jₗ(y) using automatic
   // differentiation.
-  // @param t refers to tⁿ⁺¹, the time used in the definition of l(y).
+  // @param t refers to tⁿ⁺¹, the time used in the definition of ℓ(y).
   // @param h is the timestep size parameter, h, used in the definition of
-  //        l(y).
+  //        ℓ(y).
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate Jₗ(y).
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
-  // @param qn refers to qⁿ, the initial position used in l(y).
+  //        ℓ(y).
+  // @param qn refers to qⁿ, the initial position used in ℓ(y).
   // @param [out] Jy is the Jacobian matrix, Jₗ(y).
   // @note The context's time will be set to t, and its continuous state will
   //       be indeterminate on return.
@@ -479,7 +479,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate Jₗ(y).
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y), which is used in the definition of Jₗ(y).
+  //        ℓ(y), which is used in the definition of Jₗ(y).
   // @param qn is the generalized position at the beginning of the step.
   // @param h is the integration step size.
   // @param trial specifies which trial (1-4) the Newton-Raphson process is in
@@ -513,7 +513,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate Jₗ(y).
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y), which is used in the definition of Jₗ(y).
+  //        ℓ(y), which is used in the definition of Jₗ(y).
   // @param qn is qⁿ, the generalized position at the beginning of the step.
   // @param h the integration step size (for computing iteration matrices).
   // @param compute_and_factor_iteration_matrix a function pointer for
@@ -536,14 +536,14 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   // This helper method evaluates the Newton-Raphson residual R(y), defined as
   // the following:
-  //     R(y)  = y - yⁿ - h l(y),
-  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
+  //     R(y)  = y - yⁿ - h ℓ(y),
+  //     ℓ(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
   // with tⁿ⁺¹, y = (v, z), qₖ, qⁿ, yⁿ, and h passed in.
   // @param t refers to tⁿ⁺¹, the time at which to compute the residual R(y).
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate R(y).
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
+  //        ℓ(y).
   // @param qn is qⁿ, the generalized position at the beginning of the step.
   // @param yn is yⁿ, the generalized velocity and miscellaneous states at the
   //        beginning of the step
@@ -558,20 +558,20 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                               const VectorX<T>& yn, const T& h,
                               BasicVector<T>* qdot);
 
-  // This helper method evaluates l(y), defined as the following:
-  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
+  // This helper method evaluates ℓ(y), defined as the following:
+  //     ℓ(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
   // with tⁿ⁺¹, y = (v, z), qₖ, qⁿ, yⁿ, and h passed in.
   // @param t refers to tⁿ⁺¹, the time at which to compute the residual R(y).
   // @param y is the generalized velocity and miscellaneous states around which
-  //        to evaluate l(y).
+  //        to evaluate ℓ(y).
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
+  //        ℓ(y).
   // @param qn is qⁿ, the generalized position at the beginning of the step.
   // @param h is the step size.
   // @param [in, out] qdot is a temporary BasicVector<T> of the same size as qⁿ
   //        allocated by the caller so that this method avoids unnecessary heap
   //        allocations. Its value is indeterminate upon return.
-  // @param [out] result is set to l(y).
+  // @param [out] result is set to ℓ(y).
   // @post The context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
   VectorX<T> ComputeLOfY(const T& t, const VectorX<T>& y, const VectorX<T>& qk,
                          const VectorX<T>& qn, const T& h,
@@ -580,21 +580,21 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
         this->get_mutable_context());
   }
 
-  // This helper method evaluates l(y), defined as the following:
-  //     l(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
+  // This helper method evaluates ℓ(y), defined as the following:
+  //     ℓ(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),    (7)
   // with tⁿ⁺¹, y = (v, z), qₖ, qⁿ, yⁿ, and h passed in, for a system that can
   // use scalar type U, which is either a double or an AutoDiffXd scalar type.
   // If type U is different from T, then y, qdot, and context must also use
   // the U scalar type. This version of the method exists to allow the
-  // VelocityImplicitEulerIntegrator to include AutoDiff'd systems in l(y)
+  // VelocityImplicitEulerIntegrator to include AutoDiff'd systems in ℓ(y)
   // evaluations, which is necessary when computing an AutoDiff'd velocity
   // Jacobian; in particular, this version is explicitly called with type
   // U=AutoDiffXd in ComputeAutoDiffVelocityJacobian().
   // @param t refers to tⁿ⁺¹, the time at which to compute the residual R(y).
   // @param y is the generalized velocity and miscellaneous states around which
-  //        to evaluate l(y); it uses the scalar type U.
+  //        to evaluate ℓ(y); it uses the scalar type U.
   // @param qk is qₖ, the current-iteration position used in the definition of
-  //        l(y).
+  //        ℓ(y).
   // @param qn is qⁿ, the generalized position at the beginning of the step.
   // @param h is the step size.
   // @param [in, out] qdot is a temporary BasicVector<U> of the same size as qⁿ
@@ -604,7 +604,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //        U scalar type.
   // @param [in, out] context to pass in the time and continuous states when
   //        evaluating f_y(); its scalar type must also be U.
-  // @param [out] result is set to l(y).
+  // @param [out] result is set to ℓ(y).
   // @post context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
   template <typename U>
   VectorX<U> ComputeLOfY(const T& t, const VectorX<U>& y, const VectorX<T>& qk,
@@ -628,9 +628,9 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   std::unique_ptr<BasicVector<T>> qdot_;
   // The following will help avoid repeated heap allocations when computing a
   // velocity Jacobian using automatic differentiation.
-  std::unique_ptr<System<AutoDiffXd>> adiff_system_;
-  std::unique_ptr<Context<AutoDiffXd>> adiff_context_;
-  std::unique_ptr<BasicVector<AutoDiffXd>> adiff_qdot_;
+  std::unique_ptr<System<AutoDiffXd>>      system_ad_;
+  std::unique_ptr<Context<AutoDiffXd>>     context_ad_;
+  std::unique_ptr<BasicVector<AutoDiffXd>> qdot_ad_;
 
   // The last computed velocity+misc Jacobian matrix.
   MatrixX<T> Jy_vie_;

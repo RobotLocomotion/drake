@@ -225,7 +225,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Initialize to reset cached Jacobians. This is necessary; otherwise, for
     // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough.
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
@@ -252,7 +257,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Initialize to reset cached Jacobians. This is necessary; otherwise, for
     // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough.
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
@@ -346,7 +356,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Initialize to reset cached Jacobians. This is necessary; otherwise, for
     // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough.
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
     integrator.Initialize();
 
     // Integrate again.
@@ -377,7 +392,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Initialize to reset cached Jacobians. This is necessary; otherwise, for
     // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough.
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
     integrator.Initialize();
 
     // Integrate again.
@@ -464,7 +484,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Initialize to reset cached Jacobians. This is necessary; otherwise, for
     // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough.
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
@@ -489,7 +514,12 @@ class ImplicitIntegratorTest : public ::testing::Test {
 
     // Initialize to reset cached Jacobians. This is necessary; otherwise, for
     // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough.
+    // previous one was good enough for Newton-Raphson to converge.
+    // TODO(antequ): This issue only exists for velocity-implicit Euler
+    // integrator; other implicit integrators reset their Jacobians in
+    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+    // and remove this call. See issue #13069.
     integrator.Initialize();
 
     // Integrate for t_final seconds again.
