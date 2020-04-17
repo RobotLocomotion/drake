@@ -723,6 +723,25 @@ TEST_F(SymbolicVectorSystemAutoDiffXdTest, AutodiffXdGradientRelativeToInput) {
                               expected_yval0_deriv_.segment<2>(2)));
 }
 
+// Similar to AutodiffXdGradientRelativeToInput, but this time with some empty
+// derivatives.
+TEST_F(SymbolicVectorSystemAutoDiffXdTest, AutodiffXdGradientRelativeToState) {
+  VectorX<AutoDiffXd> txup = txupval_;
+  txup.head<2>() = math::initializeAutoDiff(txupval_.head<2>());
+  SetContext(txup);
+
+  const auto xdotval =
+      autodiff_system_->EvalTimeDerivatives(*context_).CopyToVector();
+  EXPECT_TRUE(CompareMatrices(xdotval[0].derivatives(),
+                              expected_xdotval0_deriv_.head<2>()));
+
+  const auto& yval = autodiff_system_->get_output_port(0)
+                         .template Eval<BasicVector<AutoDiffXd>>(*context_)
+                         .get_value();
+  EXPECT_TRUE(CompareMatrices(yval[0].derivatives(),
+                              expected_yval0_deriv_.head<2>()));
+}
+
 TEST_F(SymbolicVectorSystemAutoDiffXdTest,
        AutodiffXdGradientRelativeToParameter) {
   Eigen::MatrixXd gradient{Eigen::MatrixXd::Zero(6, 2)};
