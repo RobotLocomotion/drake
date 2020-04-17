@@ -6,6 +6,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <Eigen/Core>
@@ -36,7 +37,7 @@ namespace drake {
  *
  * Polynomials can be added, subtracted, and multiplied.  They may only be
  * divided by scalars (of T) because Polynomials are not closed under division.
- * 
+ *
  * @tparam_default_scalar
  */
 template <typename T = double>
@@ -99,14 +100,6 @@ class Polynomial {
     Monomial Factor(const Monomial& divisor) const;
   };
 
- private:
-  /// The Monomial atoms of the Polynomial.
-  std::vector<Monomial> monomials_;
-
-  /// True iff only 0 or 1 distinct variables appear in the Polynomial.
-  bool is_univariate_;
-
- public:
   /// Construct the vacuous polynomial, "0".
   Polynomial(void) : is_univariate_(true) {}
 
@@ -123,9 +116,20 @@ class Polynomial {
   Polynomial(typename std::vector<Monomial>::const_iterator start,
              typename std::vector<Monomial>::const_iterator finish);
 
+  /// Constructs a polynomial consisting of a single Monomial of the variable
+  /// named `varname1`.
+  ///
+  /// @note: This constructor is only provided if T = double. Otherwise, a user
+  /// should use the constructor with two arguments below (taking std::string
+  /// and unsigned int).
+  template <typename U = T>
+  explicit Polynomial(
+    const std::enable_if_t<std::is_same_v<U, double>, std::string>& varname)
+      : Polynomial<T>(varname, 1) {}
+
   /// Construct a polynomial consisting of a single Monomial of the variable
   /// named varname + num.
-  explicit Polynomial(const std::string varname, const unsigned int num = 1);
+  Polynomial(const std::string& varname, unsigned int num);
 
   /// Construct a single Monomial of the given coefficient and variable.
   Polynomial(const T& coeff, const VarType& v);
@@ -434,7 +438,7 @@ class Polynomial {
   static bool IsValidVariableName(const std::string name);
 
   static VarType VariableNameToId(const std::string name,
-                                  const unsigned int m = 1);
+                                  unsigned int m = 1);
 
   static std::string IdToVariableName(const VarType id);
   //@}
@@ -444,6 +448,12 @@ class Polynomial {
                            typename Polynomial<U>::PowerType n);
 
  private:
+  /// The Monomial atoms of the Polynomial.
+  std::vector<Monomial> monomials_;
+
+  /// True iff only 0 or 1 distinct variables appear in the Polynomial.
+  bool is_univariate_;
+
   /// Sorts through Monomial list and merges any that have the same powers.
   void MakeMonomialsUnique(void);
 };

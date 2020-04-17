@@ -82,8 +82,7 @@ Polynomial<T>::Polynomial(
 }
 
 template <typename T>
-Polynomial<T>::Polynomial(const string varname,
-                                        const unsigned int num) {
+Polynomial<T>::Polynomial(const string& varname, const unsigned int num) {
   Monomial m;
   m.coefficient = T{1};
   Term t;
