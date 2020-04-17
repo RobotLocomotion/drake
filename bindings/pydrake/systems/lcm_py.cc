@@ -99,8 +99,8 @@ PYBIND11_MODULE(lcm, m) {
     py::class_<Class, LeafSystem<double>>(m, "LcmInterfaceSystem",
         (std::string(cls_doc.doc) + kLcmInterfaceSystemClassWarning).c_str())
         .def(py::init<DrakeLcmInterface*>(),
-            // Keep alive, reference: `lcm` keeps `self` alive.
-            py::keep_alive<2, 1>(), py::arg("lcm"), cls_doc.ctor.doc_1args_lcm);
+            // Keep alive, reference: `self` keeps `lcm` alive.
+            py::keep_alive<1, 2>(), py::arg("lcm"), cls_doc.ctor.doc_1args_lcm);
   }
 
   {
