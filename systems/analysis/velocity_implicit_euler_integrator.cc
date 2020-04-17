@@ -144,6 +144,8 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
       "{}-Jacobian t={}", y.size(), t);
   DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
                      y.transpose());
+  // TODO(antequ): Investigate how to refactor this method to use
+  // math::jacobian(), if possible.
 
   // Get the system and the context in AutoDiffable format. Inputs must also
   // be copied to the context used by the AutoDiff'd system (which is
@@ -175,10 +177,10 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
 
   *Jy = math::autoDiffToGradientMatrix(result);
 
-  // Sometimes ℓ(y) does not depend on y. In this case, make sure that the
-  // Jacobian isn't a n ✕ 0 matrix (this will cause a segfault when forming
-  // Newton iteration matrices); if it is, we set it equal to an n x n zero
-  // matrix.
+  // Sometimes ℓ(y) does not depend on, for example, when ℓ(y) is a constant or
+  // when ℓ(y) depends only on t. In this case, make sure that the Jacobian
+  // isn't a n ✕ 0 matrix (this will cause a segfault when forming Newton
+  // iteration matrices); if it is, we set it equal to an n x n zero matrix.
   if (Jy->cols() == 0) {
     *Jy = MatrixX<T>::Zero(ny, ny);
   }
