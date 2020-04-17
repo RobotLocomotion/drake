@@ -1,8 +1,14 @@
 /** @file
- An example showing how to model a revolute joint with a
- `multibody::LinearBushingRollPitchYaw` to model a closed kinematic chain.
- Refer to README.md for more details.
- */
+A four bar linkage demo demonstrating the use of a linear bushing as
+a way to model a kinematic loop. It shows:
+  - How to model a four bar linkage in SDF.
+  - Use the `multibody::Parser` to load a model from an SDF file into a
+    MultibodyPlant.
+  - Model a revolute joint with a `multibody::LinearBushingRollPitchYaw` to
+    model a closed kinematic chain.
+
+  Refer to README.md for more details.
+*/
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"

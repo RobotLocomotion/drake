@@ -1,11 +1,13 @@
 # Four Bar Linkage Example
-> This example demonstrates loading a single SDF model into a generic
-> `MultiBodyPlant`. The model is a simple four bar linkage. This example also
-> demonstrates modeling a closed loop kinematic chain by replacing one of the
-> revolute joints in the four bar with a `LinearBushingRollPitchYaw
->` `ForceElement`.
-
-
+> A four-bar linkage example that demonstrates the use of a linear bushing as
+> a way to model a kinematic loop. The file
+> `FourBarLinkageValentineHeartStaticsDynamics.pdf` contains a problem
+> statement for a four bar linkage which this example shows how to model with
+> Drake's MultibodyPlant. This example demonstrates loading a single SDF model
+> into a generic `MultiBodyPlant`. The model is a simple four bar linkage
+>. This example also demonstrates modeling a closed loop kinematic chain by
+> replacing one of the revolute joints in the four bar with a
+> `LinearBushingRollPitchYaw` `ForceElement`.
 
 | Diagram of the four bar model found in `four_bar.sdf` |
 | :---: |
