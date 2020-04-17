@@ -18,16 +18,20 @@ Breaking changes since v0.16.1
 
 These are breaking changes that did not undergo a deprecation period:
 
-* Change PiecewiseTrajectory::value virtual method to pass-by-const-reference;
+* PiecewisePolynomial multiplication operator is no longer coefficient-wise
+  (`#4854`_, `#13072`_)
+* PiecewiseTrajectory::value virtual method is now pass-by-const-reference;
   classes that override it will need rework; callers are unchanged (`#12986`_)
-* Change integrators' dense output representation to use PiecewiseTrajectory
+* PiecewiseTrajectory tolerance for successive segments is now machine epsilon
+  instead of 1e-10 (`#13045`_)
+* Integrators' dense output representation is now PiecewiseTrajectory
   (`#13008`_)
-* Add external torque fields for the jaco status message (`#13017`_)
-* Edit WitnessFunction constructor; users should not be using this constructor
-  anyway (`#12894`_)
-* TBD lcm: Rework error handling path to avoid exceptions across C code (`#13051`_)  # This is a breaking change via adding a new pure virtual method to an interface.
-* TBD common,examples,systems: integrators: dense integration works with witness isolation (`#13045`_)  # - Adds a series of tests checking the dense output for error-controlled integration and witness isolation. - Fixes a few curiousities in the PiecewiseTrajectory / PiecewisePolynomial stack, including the unexplained large tolerance required between successive segments in a piecewisetrajectory. - IntegratorBase::DoDenseStep is no longer virtual, because the logic within has gotten more complicated and we need a more narrow entry point for any subclasses which eventually want to override the default dense output interpolation strategy.  [THIS IS TECHNICALLY A CHANGE TO THE PUBLIC API, BUT I BELIEVE IT IS ONE THAT HAS NO CONSUMERS].  Piecewise traj min epsilon is now epsilon.
-* TBD Effectively reverts #4854 "Changed PiecewisePolynomial multiplication operator to be coefficient-wise", but leaves an updated version of the test (`#13072`_)
+* IntegratorBase::DoDenseStep is no longer virtual (`#13045`_)
+* lcmt_jaco_status message now has external torque fields  (`#13017`_)
+* WitnessFunction constructor has changed; users should not be using this
+  constructor anyway (`#12894`_)
+* DrakeLcmInterface has a new pure virtual method; users should not be directly
+  inheriting from this class anyway (`#13051`_)
 
 Changes since v0.16.1:
 ----------------------
@@ -54,13 +58,13 @@ New features
   * Add Polynomial::SetIndeterminates (`#12902`_)
   * Add Polynomial::CoefficientsAlmostEqual (`#12853`_)
   * Add PiecewisePolynomial::ScaleTime and PiecewisePolynomial::ReverseTime (`#12966`_)
+  * Add PiecewisePolynomial::Reshape (`#13062`_)
   * Add derivative-at-a-point methods to Polynomial, PiecewisePolynomial (`#12951`_)
   * Support default scalars in Polynomial, PiecewiseTrajectory, PiecewisePolynomial (`#12973`_, `#12986`_, `#12991`_)
   * Add Trajectory::vector_values (`#12855`_)
   * Construct HermitianDenseOutput from PiecewisePolynomial (`#12952`_, `#12957`_, `#13006`_)
   * Add BsplineBasis and BsplineTrajectory (`#11990`_)
-  * TBD add reshape() to piecewise polynomial (`#13062`_)
-  * TBD Effectively reverts #4854 "Changed PiecewisePolynomial multiplication operator to be coefficient-wise", but leaves an updated version of the test (`#13072`_)
+  * PiecewisePolynomial multiplication operator is no longer coefficient-wise (`#4854`_, `#13072`_)
 
 * Region of attraction
 
@@ -82,7 +86,7 @@ New features
 * Add MathematicalProgram::Reparse for polynomials taken as arguments (`#12902`_)
 * Add dual solution to OsqpSolverDetails (`#12916`_)
 * Add DrakeSolverOption (`#12884`_)
-* TBD solvers: Logarithmic sos1 (`#13043`_)  # Add a new API for AddLogarithmicSos1Constraint. We encode sos1 constraint with logarithmic number of binary variables.
+* Add AddLogarithmicSos1Constraint overload with num_lambda (`#13043`_)
 
 Fixes
 
