@@ -1411,12 +1411,6 @@ class MultibodyTree {
       const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const;
-
-  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_A,
-      const Frame<T>& frame_B,
-      const SpatialAcceleration<T>& AsBias_WA_W) const;
   /// @}
   // End of multibody Jacobian methods section.
 
@@ -2530,6 +2524,40 @@ class MultibodyTree {
       const Vector3<T>& p_FoFp_F,
       const SpatialAcceleration<T>& Abias_WBo_W,
       const Frame<T>& frame_E) const;
+
+  // Shift bias spatial acceleration from the origin Ao of body A to a
+  // point Bp of (fixed to) a frame B, where frame B is fixed/welded to body A.
+  // @param[in] context The state of the multibody system.
+  // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  // JacobianWrtVariable::kV, indicating whether theput
+  // accceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
+  // @param[in] frame_B The frame on which point Bp is fixed/welded.
+  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to a point
+  // Bp (regarded as fixed to B), expressed in frame_B.
+  // @param[in] body_A The body on which frame_B is fixed/welded.
+  // @param[out] 𝐀𝑠𝐁𝐢𝐚𝐬_𝐖𝐀_𝐖 Point Ao's spatial acceleration bias in frame W
+  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
+  // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
+      const systems::Context<T>& context,
+      const Body<T>&  body_A,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const SpatialAcceleration<T>& AsBias_WA_W) const;
+
+  // Calculate a body_A's bias spatial acceleration in the world frame W.
+  // @param[in] context The state of the multibody system.
+  // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  // JacobianWrtVariable::kV, indicating whether the spatial acceleration bias
+  // is with respect to 𝑠 = q̇ or 𝑠 = v.
+  // @param[in] body_A The body whose bias spatial acceleration is calculated.
+  // @param[out] 𝐀𝑠𝐁𝐢𝐚𝐬_𝐖𝐀_𝐖 body_A's spatial acceleration bias in frame W
+  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
+  // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  SpatialAcceleration<T> CalcBodyBiasSpatialAccelerationInWorld(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Body<T>& body_A) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the
