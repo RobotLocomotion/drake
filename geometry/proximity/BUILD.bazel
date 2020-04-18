@@ -325,7 +325,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "mesh_intersection",
-    srcs = ["mesh_intersection.cc"],
+    srcs = ["mesh_intersection-orig.cc"],
     hdrs = ["mesh_intersection.h"],
     deps = [
         ":bounding_volume_hierarchy",
