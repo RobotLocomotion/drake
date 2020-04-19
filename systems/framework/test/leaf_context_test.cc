@@ -722,6 +722,7 @@ TEST_F(LeafContextTest, Invalidation) {
   context_.SetTime(context_.get_time() + 1);  // Ensure this is a change.
   CheckAllCacheValuesUpToDateExcept(cache,
       {depends[internal::kTimeTicket],
+       depends[internal::kAllSourcesExceptInputPortsTicket],
        depends[internal::kAllSourcesTicket]});
 
   // Accuracy.
@@ -731,6 +732,7 @@ TEST_F(LeafContextTest, Invalidation) {
       {depends[internal::kAccuracyTicket],
        depends[internal::kConfigurationTicket],
        depends[internal::kKinematicsTicket],
+       depends[internal::kAllSourcesExceptInputPortsTicket],
        depends[internal::kAllSourcesTicket]});
 
   // This is everything that depends on generalized positions q.
@@ -738,6 +740,7 @@ TEST_F(LeafContextTest, Invalidation) {
       depends[internal::kQTicket], depends[internal::kXcTicket],
       depends[internal::kXTicket], depends[internal::kConfigurationTicket],
       depends[internal::kKinematicsTicket],
+      depends[internal::kAllSourcesExceptInputPortsTicket],
       depends[internal::kAllSourcesTicket]};
 
   // This is everything that depends on generalized velocities v and misc. z.
@@ -746,6 +749,7 @@ TEST_F(LeafContextTest, Invalidation) {
       depends[internal::kXcTicket], depends[internal::kXTicket],
       depends[internal::kConfigurationTicket],
       depends[internal::kKinematicsTicket],
+      depends[internal::kAllSourcesExceptInputPortsTicket],
       depends[internal::kAllSourcesTicket]};
 
   // This is everything that depends on continuous state.
@@ -824,6 +828,7 @@ TEST_F(LeafContextTest, Invalidation) {
        depends[internal::kXTicket],
        depends[internal::kConfigurationTicket],
        depends[internal::kKinematicsTicket],
+       depends[internal::kAllSourcesExceptInputPortsTicket],
        depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_discrete_state();
@@ -852,6 +857,7 @@ TEST_F(LeafContextTest, Invalidation) {
        depends[internal::kXTicket],
        depends[internal::kConfigurationTicket],
        depends[internal::kKinematicsTicket],
+       depends[internal::kAllSourcesExceptInputPortsTicket],
        depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_abstract_state();
@@ -871,6 +877,7 @@ TEST_F(LeafContextTest, Invalidation) {
        depends[internal::kConfigurationTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllParametersTicket],
+       depends[internal::kAllSourcesExceptInputPortsTicket],
        depends[internal::kAllSourcesTicket]};
 
   const std::set<CacheIndex> pa_dependent
@@ -878,6 +885,7 @@ TEST_F(LeafContextTest, Invalidation) {
        depends[internal::kConfigurationTicket],
        depends[internal::kKinematicsTicket],
        depends[internal::kAllParametersTicket],
+       depends[internal::kAllSourcesExceptInputPortsTicket],
        depends[internal::kAllSourcesTicket]};
 
   std::set<CacheIndex> p_dependent(pn_dependent);
