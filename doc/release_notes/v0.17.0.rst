@@ -430,6 +430,12 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13075: https://github.com/RobotLocomotion/drake/pull/13075
 .. _#4854: https://github.com/RobotLocomotion/drake/pull/4854
 
+TBD TO BE FILED
+* Add missing implicit integration tests for error control and autodiff (`#12996`_)  # Add missing implicit integration tests for error control and autodiff This commit: 1. Adds a QuadraticSystemAccuracy test to verify that the implicit Euler and velocity-implicit Euler integrators have second-order error estimation (by halving the step size and comparing the error estimate) and that they achieve the exact right error on a quadratic system. 2. Adds a few lines to verify that the implicit integrators support error estimation. 3. Tests the StationarySystem with an Autodiff'd Jacobian Computation scheme, to make sure AutoDiff Jacobians function properly when the derivative does not depend on the state. 4. Fixes a bug in the AutoDiff Jacobian Computation where if the derivative does not depend on the state, implicit integrators segfault because the iteration matrix adds a Jacobian matrix with 0 width to an identity square matrix.
+* Update recommended Bazel version to 3.0 (`#13032`_)
+* Fix drake::Polynomial<T>(0) problem (`#13076`_)  # When T = symbolic::Expression and T = AutoDiffXd, Polynomial<T>(0) does not compile as there are two possible candidates. 1. Polynomial(const T& scalar); 2. explicit Polynomial(const std::string& varname, const unsigned int num = 1); This commit addresses the problem by: A. Make 2 have no default arguments. B. Provide Polynomial<double>(const std::string&) not to break code using the current API.
+* primitives: fix SymbolicVectorSystem autodiff when some derivatives are empty (`#13077`_)  # It was previously possible to get incorrect gradients out if the derivative vectors passed in were uninitialized for some elements of the context.
+
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
-  Current newest_commit a3bcb50db2674dccb3904e3e23bf7548b26284a0 (inclusive).
+  Current newest_commit e483b15f1e722ec428eb3c9261f3eb44efc69c4d (inclusive).
