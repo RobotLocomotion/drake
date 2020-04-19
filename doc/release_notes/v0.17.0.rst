@@ -71,7 +71,7 @@ New features
   * Add PiecewisePolynomial::ScaleTime and PiecewisePolynomial::ReverseTime (`#12966`_)
   * Add PiecewisePolynomial::Reshape (`#13062`_)
   * Add derivative-at-a-point methods to Polynomial, PiecewisePolynomial (`#12951`_)
-  * Support default scalars in Polynomial, PiecewiseTrajectory, PiecewisePolynomial (`#12973`_, `#12986`_, `#12991`_)
+  * Support default scalars in Polynomial, PiecewiseTrajectory, PiecewisePolynomial (`#12973`_, `#12986`_, `#12991`_, `#13076`_)
   * Add Trajectory::vector_values (`#12855`_)
   * Construct HermitianDenseOutput from PiecewisePolynomial (`#12952`_, `#12957`_, `#13006`_)
   * Add BsplineBasis and BsplineTrajectory (`#11990`_)
@@ -85,7 +85,7 @@ New features
 
 Fixes
 
-* None
+* Fix SymbolicVectorSystem autodiff when some derivatives are empty (`#13077`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -206,6 +206,7 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Use Python 3.8 on macOS (`#13031`_)
+* Upgrade recommended Bazel version to 3.0 (`#13032`_)
 * Add new dependency on libx11-dev on Ubuntu; no change on macOS (`#12862`_)
 * Add new dependency on ros_xacro (`#13022`_)
 * Upgrade bazel_skylib to latest release 0.9.0 (`#12978`_)
@@ -415,6 +416,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13029: https://github.com/RobotLocomotion/drake/pull/13029
 .. _#13030: https://github.com/RobotLocomotion/drake/pull/13030
 .. _#13031: https://github.com/RobotLocomotion/drake/pull/13031
+.. _#13032: https://github.com/RobotLocomotion/drake/pull/13032
 .. _#13035: https://github.com/RobotLocomotion/drake/pull/13035
 .. _#13039: https://github.com/RobotLocomotion/drake/pull/13039
 .. _#13043: https://github.com/RobotLocomotion/drake/pull/13043
@@ -428,13 +430,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13070: https://github.com/RobotLocomotion/drake/pull/13070
 .. _#13072: https://github.com/RobotLocomotion/drake/pull/13072
 .. _#13075: https://github.com/RobotLocomotion/drake/pull/13075
+.. _#13076: https://github.com/RobotLocomotion/drake/pull/13076
+.. _#13077: https://github.com/RobotLocomotion/drake/pull/13077
 .. _#4854: https://github.com/RobotLocomotion/drake/pull/4854
-
-TBD TO BE FILED
-* Add missing implicit integration tests for error control and autodiff (`#12996`_)  # Add missing implicit integration tests for error control and autodiff This commit: 1. Adds a QuadraticSystemAccuracy test to verify that the implicit Euler and velocity-implicit Euler integrators have second-order error estimation (by halving the step size and comparing the error estimate) and that they achieve the exact right error on a quadratic system. 2. Adds a few lines to verify that the implicit integrators support error estimation. 3. Tests the StationarySystem with an Autodiff'd Jacobian Computation scheme, to make sure AutoDiff Jacobians function properly when the derivative does not depend on the state. 4. Fixes a bug in the AutoDiff Jacobian Computation where if the derivative does not depend on the state, implicit integrators segfault because the iteration matrix adds a Jacobian matrix with 0 width to an identity square matrix.
-* Update recommended Bazel version to 3.0 (`#13032`_)
-* Fix drake::Polynomial<T>(0) problem (`#13076`_)  # When T = symbolic::Expression and T = AutoDiffXd, Polynomial<T>(0) does not compile as there are two possible candidates. 1. Polynomial(const T& scalar); 2. explicit Polynomial(const std::string& varname, const unsigned int num = 1); This commit addresses the problem by: A. Make 2 have no default arguments. B. Provide Polynomial<double>(const std::string&) not to break code using the current API.
-* primitives: fix SymbolicVectorSystem autodiff when some derivatives are empty (`#13077`_)  # It was previously possible to get incorrect gradients out if the derivative vectors passed in were uninitialized for some elements of the context.
 
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
