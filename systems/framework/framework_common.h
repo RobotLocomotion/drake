@@ -270,19 +270,20 @@ enum BuiltInTicketNumbers {
   kPnTicket             = 10,  // All numeric parameters.
   kPaTicket             = 11,  // All abstract parameters.
   kAllParametersTicket  = 12,  // All parameters p = {pn, pa}.
-  kAllInputPortsTicket  = 13,  // All input ports u.
-  kAllSourcesTicket     = 14,  // All of the above.
-  kConfigurationTicket  = 15,  // All values that may affect configuration.
-  kKinematicsTicket     = 16,  // Configuration plus velocity-affecting values.
+  kAllSourcesExceptInputPortsTicket = 13,  // Everything except input ports.
+  kAllInputPortsTicket  = 14,  // All input ports u.
+  kAllSourcesTicket     = 15,  // All of the above.
+  kConfigurationTicket  = 16,  // All values that may affect configuration.
+  kKinematicsTicket     = 17,  // Configuration plus velocity-affecting values.
   kLastSourceTicket     = kKinematicsTicket,  // (Used in testing.)
 
   // The rest of these are pre-defined computations with associated cache
   // entries.
-  kXcdotTicket          = 17,  // d/dt xc = {qdot, vdot, zdot}.
-  kPeTicket             = 18,  // Potential energy.
-  kKeTicket             = 19,  // Kinetic energy.
-  kPcTicket             = 20,  // Conservative power.
-  kPncTicket            = 21,  // Non-conservative power.
+  kXcdotTicket          = 18,  // d/dt xc = {qdot, vdot, zdot}.
+  kPeTicket             = 19,  // Potential energy.
+  kKeTicket             = 20,  // Kinetic energy.
+  kPcTicket             = 21,  // Conservative power.
+  kPncTicket            = 22,  // Non-conservative power.
 
   kNextAvailableTicket  = kPncTicket+1
 };
