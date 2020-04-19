@@ -471,7 +471,8 @@ drake_cc_googletest(
     deps = [
         ":implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",
-        "//systems/analysis/test_utilities",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -597,6 +598,7 @@ drake_cc_googletest(
     deps = [
         ":velocity_implicit_euler_integrator",
         "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
     ],
 )
 

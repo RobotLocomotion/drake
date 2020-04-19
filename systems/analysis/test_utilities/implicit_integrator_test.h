@@ -692,30 +692,8 @@ class ImplicitIntegratorTest : public ::testing::Test {
   double semistiff_spring_stiffness() const { return semistiff_spring_k_; }
   const SpringMassSystem<double>& spring_mass() const { return *spring_mass_; }
 
-  std::unique_ptr<Context<double>> spring_mass_context_;
-  std::unique_ptr<Context<double>> spring_mass_damper_context_;
-  std::unique_ptr<Context<double>> mod_spring_mass_damper_context_;
-  std::unique_ptr<Context<double>> dspring_context_;
-  std::unique_ptr<SpringMassSystem<double>> spring_mass_;
-  std::unique_ptr<implicit_integrator_test::SpringMassDamperSystem<double>>
-      spring_mass_damper_;
-  std::unique_ptr<
-      implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>>
-      mod_spring_mass_damper_;
-  std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
-      stiff_double_system_;
-
- private:
-  bool reuse_type_to_bool(ReuseType type) {
-    if (type == kNoReuse) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
   // Checks the validity of general integrator statistics and resets statistics.
-  void CheckGeneralStatsValidity(IntegratorType* integrator) {
+  static void CheckGeneralStatsValidity(IntegratorType* integrator) {
     EXPECT_GT(integrator->get_num_newton_raphson_iterations(), 0);
     if (integrator->supports_error_estimation()) {
       EXPECT_GT(integrator->get_num_error_estimator_newton_raphson_iterations(),
@@ -750,6 +728,29 @@ class ImplicitIntegratorTest : public ::testing::Test {
     EXPECT_GE(integrator->get_num_step_shrinkages_from_substep_failures(), 0);
     EXPECT_GE(integrator->get_num_step_shrinkages_from_error_control(), 0);
     integrator->ResetStatistics();
+  }
+
+ protected:
+  std::unique_ptr<Context<double>> spring_mass_context_;
+  std::unique_ptr<Context<double>> spring_mass_damper_context_;
+  std::unique_ptr<Context<double>> mod_spring_mass_damper_context_;
+  std::unique_ptr<Context<double>> dspring_context_;
+  std::unique_ptr<SpringMassSystem<double>> spring_mass_;
+  std::unique_ptr<implicit_integrator_test::SpringMassDamperSystem<double>>
+      spring_mass_damper_;
+  std::unique_ptr<
+      implicit_integrator_test::DiscontinuousSpringMassDamperSystem<double>>
+      mod_spring_mass_damper_;
+  std::unique_ptr<analysis::test::StiffDoubleMassSpringSystem<double>>
+      stiff_double_system_;
+
+ private:
+  bool reuse_type_to_bool(ReuseType type) {
+    if (type == kNoReuse) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   const double h_ = 1e-3;                 // Default integration step size.
@@ -790,6 +791,7 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // that the system is overdamped.
   const double stiff_damping_b_ = 1e8;
 };
+
 TYPED_TEST_SUITE_P(ImplicitIntegratorTest);
 
 TYPED_TEST_P(ImplicitIntegratorTest, MiscAPINoReuse) {
@@ -898,8 +900,10 @@ TYPED_TEST_P(ImplicitIntegratorTest, FullNewton) {
 
 // Tests the implicit integrator on a stationary system problem, which
 // stresses numerical differentiation (since the state does not change).
+// This test also verifies that integration with AutoDiff'd Jacobians
+// succeeds when the derivative does not depend on the state.
 TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
-  auto stationary = std::make_unique<StationarySystem>();
+  auto stationary = std::make_unique<StationarySystem<double>>();
   std::unique_ptr<Context<double>> context = stationary->CreateDefaultContext();
 
   // Set the initial condition for the stationary system.
@@ -912,12 +916,11 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
   using Integrator = TypeParam;
   Integrator integrator(*stationary, context.get());
 
+  integrator.set_maximum_step_size(1.0);
+
   if (integrator.supports_error_estimation()) {
-    integrator.set_maximum_step_size(1.0);
     integrator.set_target_accuracy(1e-3);
-    integrator.request_initial_step_size_target(1e-4);
-  } else {
-    integrator.set_maximum_step_size(1e-1);
+    integrator.request_initial_step_size_target(1e-3);
   }
 
   // Integrate the system
@@ -927,6 +930,46 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
   // Verify the solution.
   EXPECT_NEAR(state.GetAtIndex(0), 0, std::numeric_limits<double>::epsilon());
   EXPECT_NEAR(state.GetAtIndex(1), 0, std::numeric_limits<double>::epsilon());
+  ImplicitIntegratorTest<Integrator>::CheckGeneralStatsValidity(&integrator);
+
+  // Set up the same problem with an AutoDiff'd Jacobian computation
+  // scheme.
+  integrator.set_jacobian_computation_scheme(
+      Integrator::JacobianComputationScheme::kAutomatic);
+
+  // Reset the time, position, and velocity.
+  context->SetTime(0.0);
+  VectorBase<double>& new_state =
+      context->get_mutable_continuous_state().get_mutable_vector();
+  new_state.SetAtIndex(0, 0.0);
+  new_state.SetAtIndex(1, 0.0);
+
+  integrator.set_maximum_step_size(1.0);
+
+  if (integrator.supports_error_estimation()) {
+    integrator.set_target_accuracy(1e-3);
+    integrator.request_initial_step_size_target(1e-3);
+  }
+
+  // Initialize to reset cached Jacobians. This is necessary; otherwise, for
+  // some problems, the Jacobian may not be computed again because the
+  // previous one was good enough for Newton-Raphson to converge.
+  // TODO(antequ): This issue only exists for velocity-implicit Euler
+  // integrator; other implicit integrators reset their Jacobians in
+  // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
+  // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
+  // and remove this call. See issue #13069.
+  integrator.Initialize();
+
+  // Integrate the system
+  integrator.IntegrateWithMultipleStepsToTime(1.0);
+
+  // Verify the solution.
+  EXPECT_NEAR(new_state.GetAtIndex(0), 0,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(new_state.GetAtIndex(1), 0,
+              std::numeric_limits<double>::epsilon());
+  ImplicitIntegratorTest<Integrator>::CheckGeneralStatsValidity(&integrator);
 }
 
 // Tests the implicit integrator on Robertson's stiff chemical reaction

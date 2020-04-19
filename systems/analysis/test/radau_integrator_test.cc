@@ -66,10 +66,17 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
 // corresponding to f(t) ≡ C₂t² + C₁t + C₀, where C₀ is the initial state) over
-// t ∈ [0, 1]. The error estimate from 2-stage Radau is second order accurate,
+// t ∈ [0, 1]. The error estimate from 2-stage Radau is third-order accurate,
 // meaning that the approximation error will be zero if f'''(t) = 0, which is
-// true for the quadratic equation. We check that the error estimate is perfect
+// true for the quadratic equation. We check that the error estimate is zero
 // for this function.
+// Note: this test differs from [Velocity]ImplicitEulerIntegratorTest::
+// QuadraticSystemErrorEstimatorAccuracy in that the error estimation for the
+// two-stage Radau integrator is third-order accurate, so this test checks to
+// make sure the error estimate (and error) are zero, while both the implicit
+// Euler and the velocity-implicit Euler integrators have a second-order-
+// accurate error estimate, so their tests check to make sure the error
+// estimate is exact (not necessarily zero).
 GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   QuadraticScalarSystem quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
@@ -80,6 +87,10 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   // Create the integrator.
   const int num_stages = 2;
   RadauIntegrator<double, num_stages> radau(quadratic, quadratic_context.get());
+
+  // Ensure that the Radau3 integrator supports error estimation.
+  EXPECT_TRUE(radau.supports_error_estimation());
+
   const double t_final = 1.0;
   radau.set_maximum_step_size(t_final);
   radau.set_fixed_step_mode(true);
@@ -211,6 +222,10 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   RadauIntegrator<double, num_stages> radau1(spring_damper,
                                              context_radau1.get());
   ImplicitEulerIntegrator<double> ie(spring_damper, context_ie.get());
+
+  // Ensure that both integrators support error estimation.
+  EXPECT_TRUE(radau1.supports_error_estimation());
+  EXPECT_TRUE(ie.supports_error_estimation());
 
   // Set maximum step sizes that are reasonable for this system.
   radau1.set_maximum_step_size(1e-2);
