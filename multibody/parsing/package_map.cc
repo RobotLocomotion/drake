@@ -167,7 +167,7 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
         "The file type '{}' is not supported for '{}'",
         extension, model_file));
   }
-  const string model_dir = filesystem::path(model_file).parent_path();
+  const string model_dir = filesystem::path(model_file).parent_path().string();
 
   // Bail out if we can't determine the drake root.
   const std::optional<string> maybe_drake_path = MaybeGetDrakePath();
