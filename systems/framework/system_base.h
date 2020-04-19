@@ -660,9 +660,31 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns a ticket indicating dependence on every possible independent
+  source value _except_ input ports. This can be helpful in avoiding the
+  incorrect appearance of algebraic loops in a Diagram (those always involve
+  apparent input port dependencies). For an output port, use this ticket plus
+  tickets for just the input ports on which the output computation _actually_
+  depends. The sources included in this ticket are: time, accuracy, state,
+  and parameters. Note that dependencies on cache entries are _not_ included
+  here. Usually that won't matter since cache entries typically depend on at
+  least one of time, accuracy, state, or parameters so will be invalidated for
+  the same reason the current computation is. However, for a computation that
+  depends on a cache entry that depends only on input ports, be sure that
+  you have included those input ports in the dependency list, or include a
+  direct dependency on the cache entry.
+
+  @see input_port_ticket() to obtain a ticket for an input port.
+  @see cache_entry_ticket() to obtain a ticket for a cache entry.
+  @see all_sources_ticket() to also include all input ports as dependencies. */
+  static DependencyTicket all_sources_except_input_ports_ticket() {
+    return DependencyTicket(internal::kAllSourcesExceptInputPortsTicket);
+  }
+
+  /** Returns a ticket indicating dependence on every possible independent
   source value, including time, accuracy, state, input ports, and parameters
   (but not cache entries). This is the default dependency for computations that
-  have not specified anything more refined.
+  have not specified anything more refined. It is equivalent to the set
+  `{all_sources_except_input_ports_ticket(), all_input_ports_ticket()}`.
   @see cache_entry_ticket() to obtain a ticket for a cache entry. */
   static DependencyTicket all_sources_ticket() {
     return DependencyTicket(internal::kAllSourcesTicket);
