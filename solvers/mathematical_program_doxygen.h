@@ -125,7 +125,14 @@
  *    <td align="center">&diams;</td>
  *    <td></td>
  * </tr>
+ * <tr><td> &loz;
+ * @ref drake::solvers::MixedIntegerBranchAndBound "naive branch-and-bound" </td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
+ *    <td align="center">&diams;</td>
  * </table>
+ * &loz; This naive branch-and-bound implementation only works for small sized mixed integer convex optimization programs, with a dozen of binary variables.
  *
  * <b>Nonconvex Programming</b>
  *
