@@ -59,7 +59,8 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
   const string xml_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
       "package_map_test_packages/package_map_test_package_a/package.xml");
-  const string xml_dirname = filesystem::path(xml_filename).parent_path();
+  const string xml_dirname =
+      filesystem::path(xml_filename).parent_path().string();
   PackageMap package_map;
   package_map.AddPackageXml(xml_filename);
 
