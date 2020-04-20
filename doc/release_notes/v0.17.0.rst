@@ -139,7 +139,7 @@ Fixes
 * Fix ABI::IsPhysicallyValid() to avoid false negatives (`#12879`_)
 * Fix HydroelasticContactInfoAndBodySpatialForces runtime hash warning (`#12953`_)
 * Modify cube texture coordinate generation so textures stretch across faces (`#12972`_)
-* Remove _implicit_ converting copy constructors from MultibodyPlant's and SceneGraph internals (`#12891`_)
+* Remove *implicit* converting copy constructors from MultibodyPlant's and SceneGraph internals (`#12891`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
