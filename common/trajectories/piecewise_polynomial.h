@@ -88,14 +88,15 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   typedef MatrixX<Polynomial<T>> PolynomialMatrix;
 
   /**
-   * Single segment, constant value constructor over the interval [0, ∞].
+   * Single segment, constant value constructor over the interval [-∞, ∞].
    * The constructed %PiecewisePolynomial will return `constant_value` at
-   * every evaluated point (i.e., `value(t) = constant_value` ∀t ∈ [0, ∞]).
+   * every evaluated point (i.e., `value(t) = constant_value` ∀t ∈ [-∞, ∞]).
    */
   template <typename Derived>
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& constant_value)
-      : PiecewiseTrajectory<T>(std::vector<T>(
-            {0.0, std::numeric_limits<double>::infinity()})) {
+      : PiecewiseTrajectory<T>(
+            std::vector<T>({-std::numeric_limits<double>::infinity(),
+                            std::numeric_limits<double>::infinity()})) {
     polynomials_.push_back(constant_value.template cast<Polynomial<T>>());
   }
 
