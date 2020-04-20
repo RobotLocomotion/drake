@@ -581,7 +581,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     MeshcatPointCloudVisualizer is a System block that visualizes a
     PointCloud in meshcat. The PointCloud:
 
-    * Must have XYZ values. Assumed to be in point cloud frmae, ``P``.
+    * Must have XYZ values. Assumed to be in point cloud frame, ``P``.
     * RGB values are optional; if provided, they must be on the range [0..255].
 
     An example using a pydrake MeshcatVisualizer::

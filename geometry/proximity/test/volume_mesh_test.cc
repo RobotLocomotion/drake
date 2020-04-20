@@ -239,7 +239,7 @@ GTEST_TEST(VolumeMeshTest, TestCalcBarycentricAutoDiffXd) {
 template<typename T>
 void TestCalcGradBarycentric() {
   // The mesh M consists of one tetrahedral element whose vertices are at the
-  // origin and on the coordinate axes of M's frmae. The chosen vertex
+  // origin and on the coordinate axes of M's frame. The chosen vertex
   // coordinates avoid symmetry but are easy to calculate ∇bᵢ manually.
   //
   //                                 Z
