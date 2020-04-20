@@ -6,7 +6,7 @@ Announcements
 -------------
 
 * On macOS, Drake now only supports Python 3.8.  See :ref:`Python Bindings
-  <python-bindings>` for new PATH and PYTHONPATH advice.
+  <python-bindings>` for new mandatory PATH and PYTHONPATH advice.
 
 * We've made substantial enhancements to Drake's integrators (including
   documentation, configuration, dense output, and symbolic expressions) as well
