@@ -158,6 +158,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
         .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
+        .def("num_force_elements", &Class::num_force_elements,
+            cls_doc.num_force_elements.doc)
         .def("num_model_instances", &Class::num_model_instances,
             cls_doc.num_model_instances.doc)
         .def("num_positions",
@@ -691,7 +693,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
         .def("Finalize", py::overload_cast<>(&Class::Finalize),
-            cls_doc.Finalize.doc);
+            cls_doc.Finalize.doc)
+        .def("set_penetration_allowance", &Class::set_penetration_allowance,
+            py::arg("penetration_allowance") = 0.001,
+            cls_doc.set_penetration_allowance.doc);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def("GetMutablePositionsAndVelocities",

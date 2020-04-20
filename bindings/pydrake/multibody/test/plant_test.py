@@ -1165,6 +1165,9 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=True)
 
+        # Gravity is the only force element
+        self.assertEqual(plant.num_force_elements(), 1)
+
         B = plant.MakeActuationMatrix()
         numpy_compare.assert_float_equal(B, np.array([[0.], [1.]]))
 
@@ -1184,6 +1187,7 @@ class TestPlant(unittest.TestCase):
         link2 = plant.GetBodyByName("Link2")
         self.assertIsInstance(
             link2.GetForceInWorld(context, forces), SpatialForce)
+        self.assertFalse(link2.is_floating())
         forces.SetZero()
         F_expected = np.array([1., 2., 3., 4., 5., 6.])
         link2.AddInForceInWorld(
@@ -1242,6 +1246,7 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant_[float](0.0)
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
+        plant.set_penetration_allowance(0.0001)
         contact_results_to_lcm = ContactResultsToLcmSystem(plant)
         context = contact_results_to_lcm.CreateDefaultContext()
         contact_results_to_lcm.get_input_port(0).FixValue(
