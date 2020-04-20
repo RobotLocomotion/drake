@@ -132,7 +132,7 @@
  *    <td align="center">&diams;</td>
  *    <td align="center">&diams;</td>
  * </table>
- * &loz; This naive branch-and-bound implementation only works for small sized mixed integer convex optimization programs, with a dozen of binary variables.
+ * &loz; We implement only the basic branch-and-bound algorithm, without cutting planes nor advanced branching heuristics. Its usefulness is likely restricted to small-sized problems with dozens of binary variables.
  *
  * <b>Nonconvex Programming</b>
  *
