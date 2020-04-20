@@ -195,6 +195,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self->AddJoint(std::move(joint));
             },
             py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
+        .def("AddJointActuator", &Class::AddJointActuator,
+            py_reference_internal, py::arg("name"), py::arg("joint"),
+            py::arg("effort_limit") = std::numeric_limits<double>::infinity(),
+            cls_doc.AddJointActuator.doc)
         .def("AddFrame",
             [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {
               return self->AddFrame(std::move(frame));
