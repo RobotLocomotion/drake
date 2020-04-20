@@ -18,6 +18,8 @@ ExponentialPlusPiecewisePolynomial<T>::
       alpha_(MatrixX<T>::Zero(
           1, piecewise_polynomial_part.get_number_of_segments())),
       piecewise_polynomial_part_(piecewise_polynomial_part) {
+  using std::isfinite;
+  DRAKE_DEMAND(isfinite(piecewise_polynomial_part.start_time()));
   DRAKE_ASSERT(piecewise_polynomial_part.cols() == 1);
 }
 

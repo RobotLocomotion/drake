@@ -281,20 +281,22 @@ GTEST_TEST(testPiecewisePolynomial, AllTests) {
 }
 
 GTEST_TEST(testPiecewisePolynomial, VectorValueTest) {
-  const std::vector<double> times = {0, .5, 1, 1.5};
+  // Note: Keep one negative time to confirm that negative values can work for
+  // constant trajectories.
+  const std::vector<double> times = {-1.5, 0, .5, 1, 1.5};
   const Eigen::Vector3d value(1, 2, 3);
 
   const PiecewisePolynomial<double> col(value);
   Eigen::MatrixXd out = col.vector_values(times);
   EXPECT_EQ(out.rows(), 3);
-  EXPECT_EQ(out.cols(), 4);
+  EXPECT_EQ(out.cols(), 5);
   for (int i = 0; i < 4; i++) {
     EXPECT_TRUE(CompareMatrices(out.col(i), value, 0));
   }
 
   PiecewisePolynomial<double> row(value.transpose());
   out = row.vector_values(times);
-  EXPECT_EQ(out.rows(), 4);
+  EXPECT_EQ(out.rows(), 5);
   EXPECT_EQ(out.cols(), 3);
   for (int i = 0; i < 4; i++) {
     EXPECT_TRUE(CompareMatrices(out.row(i), value.transpose(), 0));
