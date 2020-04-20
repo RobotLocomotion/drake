@@ -1043,7 +1043,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_multibody_add_joint(self, T):
         """
-        Tests joint constructors, `AddJoint`, and `AddJointActuator`.
+        Tests joint constructors, `AddJoint`, `AddJointActuator` and
+        `HasJointActuatorNamed`.
         """
 
         def make_weld(plant, P, C):
@@ -1097,8 +1098,14 @@ class TestPlant(unittest.TestCase):
             joint_out = plant.AddJoint(joint)
             self.assertIs(joint, joint_out)
             if joint.num_velocities() == 1:
+                self.assertFalse(plant.HasJointActuatorNamed("tau"))
+                self.assertFalse(plant.HasJointActuatorNamed(
+                    "tau", default_model_instance()))
                 actuator = plant.AddJointActuator(
                     name="tau", joint=joint, effort_limit=1.0)
+                self.assertTrue(plant.HasJointActuatorNamed("tau"))
+                self.assertTrue(plant.HasJointActuatorNamed(
+                    "tau", default_model_instance()))
                 self.assertIsInstance(actuator, JointActuator_[T])
             plant.Finalize()
             self._test_joint_api(T, joint)

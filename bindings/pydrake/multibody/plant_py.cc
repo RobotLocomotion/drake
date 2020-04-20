@@ -509,6 +509,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::HasJointNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointNamed.doc_2args)
+        .def("HasJointActuatorNamed",
+            overload_cast_explicit<bool, const string&>(
+                &Class::HasJointActuatorNamed),
+            py::arg("name"), cls_doc.HasJointActuatorNamed.doc_1args)
+        .def("HasJointActuatorNamed",
+            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+                &Class::HasJointActuatorNamed),
+            py::arg("name"), py::arg("model_instance"),
+            cls_doc.HasJointActuatorNamed.doc_2args)
         .def("GetFrameByName",
             overload_cast_explicit<const Frame<T>&, const string&>(
                 &Class::GetFrameByName),
