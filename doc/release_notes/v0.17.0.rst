@@ -6,7 +6,11 @@ Announcements
 -------------
 
 * On macOS, Drake now only supports Python 3.8.  See :ref:`Python Bindings
-  <python-bindings>` for new mandatory PATH and PYTHONPATH advice.
+  <python-bindings>` and `#13097`_ for new mandatory PATH and PYTHONPATH advice.
+
+  * When paths are set incorrectly, you will see an error such as this::
+
+      ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
 
 * We've made substantial enhancements to Drake's integrators (including
   documentation, configuration, dense output, and symbolic expressions) as well
@@ -432,6 +436,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13075: https://github.com/RobotLocomotion/drake/pull/13075
 .. _#13076: https://github.com/RobotLocomotion/drake/pull/13076
 .. _#13077: https://github.com/RobotLocomotion/drake/pull/13077
+.. _#13097: https://github.com/RobotLocomotion/drake/pull/13097
 .. _#4854: https://github.com/RobotLocomotion/drake/pull/4854
 
 ..
