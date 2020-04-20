@@ -1161,6 +1161,9 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=True)
 
+        # Gravity is the only force element
+        self.assertEqual(plant.num_force_elements(), 1)
+
         B = plant.MakeActuationMatrix()
         numpy_compare.assert_float_equal(B, np.array([[0.], [1.]]))
 

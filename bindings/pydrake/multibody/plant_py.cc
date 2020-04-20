@@ -158,6 +158,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
         .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
+        .def("num_force_elements", &Class::num_force_elements,
+            cls_doc.num_force_elements.doc)
         .def("num_model_instances", &Class::num_model_instances,
             cls_doc.num_model_instances.doc)
         .def("num_positions",
