@@ -1322,7 +1322,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
   /// reasonable penalty method coefficients as a function of the input
   /// penetration allowance. Users will want to run their simulation a number of
-  /// times and asses they are satisfied with the level of inter-penetration
+  /// times and assess they are satisfied with the level of inter-penetration
   /// actually observed in the simulation; if the observed penetration is too
   /// large, the user will want to set a smaller penetration allowance. If the
   /// system is too stiff and the time integration requires very small time
