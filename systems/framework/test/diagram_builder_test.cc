@@ -340,7 +340,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
   {
     auto context = diagram->CreateDefaultContext();
     const ExponentialPlusPiecewisePolynomiald input(
-        PiecewisePolynomiald(Vector1d(22.0)));
+        PiecewisePolynomiald::ZeroOrderHold(Eigen::Vector2d(0., 1.),
+                                            Eigen::RowVector2d(22.0, 22.0)));
     diagram->get_input_port(0).FixValue(
         context.get(), Value<Trajectoryd>(input));
     const auto& output =
