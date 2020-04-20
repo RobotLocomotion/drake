@@ -40,23 +40,22 @@ namespace multibody {
 namespace four_bar {
 namespace {
 
-DEFINE_double(simulation_time, 10.0,
-              "Desired duration of the simulation in seconds.");
+DEFINE_double(simulation_time, 10.0, "Duration of the simulation in seconds.");
 
 DEFINE_double(force_stiffness, 30000,
-              "Desired force stiffness value for kx, ky, and kz in N/m of the "
+              "Force stiffness value for kx, ky, kz in N/m of the "
               "LinearBushingRollPitchYaw ForceElement.");
 
-DEFINE_double(force_damping, 800,
-              "Desired force damping value for dx, dy, and dz in N*s/m of the "
+DEFINE_double(force_damping, 1500,
+              "Force damping value for dx, dy, dz in N·s/m of the "
               "LinearBushingRollPitchYaw ForceElement.");
 
 DEFINE_double(torque_stiffness, 30000,
-              "Desired torque stiffness value for k₀, k₁, and k₂ in N*m/rad "
+              "Torque stiffness value for k₀, k₁, k₂ in N·m/rad "
               "of the LinearBushingRollPitchYaw ForceElement.");
 
-DEFINE_double(torque_damping, 800,
-              "Desired torque damping value for d₀, d₁, and d₂ in N*m*s/rad of "
+DEFINE_double(torque_damping, 1500,
+              "Torque damping value for d₀, d₁, and d₂ in N·m·s/rad of "
               "the LinearBushingRollPitchYaw ForceElement.");
 
 int do_main() {
@@ -74,11 +73,13 @@ int do_main() {
   Parser parser(&four_bar);
   parser.AddModelFromFile(full_name);
 
-  // Grab the two frames, one attached to the end of the link B; the other
-  // attached to the end of link C. The two frames will be welded together
-  // with one rotational degree of freedom along the z axis of BC_Bushing.
+  // Get the two frames that define the bushing, namely frame BC that is
+  // welded to the end of link B and frame CB that is welded to the end of
+  // link C. Although the bushing allows 6 degrees-of-freedom between frames
+  // BC and CB, the stiffness and damping constants are chosen to approximate
+  // the connection between frames BC and CB as having only one rotational
+  // degree of freedom along the bushing's z-axis.
   const Frame<double>& bc_bushing = four_bar.GetFrameByName("BC_Bushing");
-
   const Frame<double>& cb_bushing = four_bar.GetFrameByName("CB_Bushing");
 
   // TODO(joemasterjohn) come up with a way to estimate correct parameters
@@ -91,10 +92,15 @@ int do_main() {
 
   // See the documentation for LinearBushingRollPitchYaw.
   // This particular choice of parameters models a z-axis revolute joint.
+  // Note: since each link is constrained to rigid motion in the X-Z plane
+  // by the revolute joints specified in the SDF, it is unnecessary for the
+  // bushing to have non-zero values for: k_y, d_y, k_0, d_0, k_1, d_1
+  // but they are left here as an example of how to parameterize a general
+  // z-axis revolute joint sans other constraints.
   const Vector3d force_stiffness_constants{k_xyz, k_xyz, k_xyz};  // N/m
-  const Vector3d force_damping_constants{d_xyz, d_xyz, d_xyz};    // N*s/m
-  const Vector3d torque_stiffness_constants{k_012, k_012, 0};     // N*m/rad
-  const Vector3d torque_damping_constants{d_012, d_012, 0};       // N*m*s/rad
+  const Vector3d force_damping_constants{d_xyz, d_xyz, d_xyz};    // N·s/m
+  const Vector3d torque_stiffness_constants{k_012, k_012, 0};     // N·m/rad
+  const Vector3d torque_damping_constants{d_012, d_012, 0};       // N·m·s/rad
 
   // Add a bushing force element where the joint between link B and link C
   // should be in an ideal 4-bar linkage.
@@ -129,16 +135,16 @@ int do_main() {
 
   // See the README for an explanation of these angles.
   const double qA = atan2(sqrt(15.0), 1.0);  // about 75.52°
-  const double qB = M_PI - qA;               // about 104.48°
-  const double qC = qB;
+  const double qB = M_PI - qA - 0.3;         // about 104.48°
+  const double qC = qB;                      // about 104.48°
 
   WA_joint.set_angle(&four_bar_context, qA);
   AB_joint.set_angle(&four_bar_context, qB);
   WC_joint.set_angle(&four_bar_context, qC);
 
-  // Set the rate of change, in radians per second, of the angle qA,
+  // Set the rate of change, in radians/second, of the angle qA,
   // so the model has some motion.
-  // 3 radians per second = 171.88 degrees/second
+  // 3 radians/second ≈ 171.88 degrees/second
   WA_joint.set_angular_rate(&four_bar_context, 3.0);
 
   // Create a simulator and run the simulation
