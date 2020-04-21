@@ -32,6 +32,11 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(os.environ.get('TEST_TMPDIR'),
                          pydrake.common.temp_directory())
 
+    def test_tolerance_type(self):
+        # Simply test the spelling
+        pydrake.common.ToleranceType.absolute
+        pydrake.common.ToleranceType.relative
+
     def test_random_distribution(self):
         # Simply test the spelling
         pydrake.common.RandomDistribution.kUniform

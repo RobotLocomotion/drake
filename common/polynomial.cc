@@ -1,5 +1,6 @@
 #include "drake/common/polynomial.h"
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <numeric>
@@ -31,6 +32,16 @@ bool Polynomial<T>::Monomial::HasSameExponents(
     if (match == other.terms.end()) return false;
   }
   return true;
+}
+
+template <typename T>
+bool Polynomial<T>::Monomial::HasVariable(const VarType& var) const {
+  for (const auto& t : terms) {
+    if (t.var == var) {
+      return true;
+    }
+  }
+  return false;
 }
 
 template <typename T>
@@ -244,7 +255,7 @@ Polynomial<T> Polynomial<T>::EvaluatePartial(
 
 template <typename T>
 void Polynomial<T>::Subs(const VarType& orig,
-                                       const VarType& replacement) {
+                               const VarType& replacement) {
   for (typename vector<Monomial>::iterator iter = monomials_.begin();
        iter != monomials_.end(); iter++) {
     for (typename vector<Term>::iterator t = iter->terms.begin();
@@ -253,6 +264,31 @@ void Polynomial<T>::Subs(const VarType& orig,
     }
   }
 }
+
+template <typename T>
+Polynomial<T> Polynomial<T>::Substitute(
+    const VarType& orig, const Polynomial<T>& replacement) const {
+  // TODO(russt): Consider making this more efficient.
+  Polynomial<T> p;
+  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
+       iter != monomials_.end(); iter++) {
+    if (iter->HasVariable(orig)) {
+      Polynomial<T> m = iter->coefficient;
+      for (const Term& t : iter->terms) {
+        if (t.var == orig) {
+          m *= pow(replacement, t.power);
+        } else {
+          m *= Polynomial(1.0, std::vector<Term>{t});
+        }
+        p += m;
+      }
+    } else {
+      // Then this monomial is not changed; add it in directly.
+      p += Polynomial(iter, iter+1);
+    }
+  }
+  return p;
+}  // namespace drake
 
 template <typename T>
 Polynomial<T> Polynomial<T>::Derivative(
@@ -522,22 +558,42 @@ typename Polynomial<T>::RootsType Polynomial<T>::Roots() const {
 
 template <typename T>
 boolean<T> Polynomial<T>::IsApprox(const Polynomial<T>& other,
-                             const Polynomial<T>::RealScalar& tol) const {
-  return GetCoefficients().isApprox(other.GetCoefficients(), tol);
-}
-
-template <>
-boolean<symbolic::Expression> Polynomial<symbolic::Expression>::IsApprox(
-    const Polynomial<symbolic::Expression>& other,
-    const Polynomial<symbolic::Expression>::RealScalar& tol) const {
-  const VectorX<symbolic::Expression> a = GetCoefficients();
-  const VectorX<symbolic::Expression> b = other.GetCoefficients();
-  if (a.size() != b.size()) return symbolic::Formula(false);
-  symbolic::Formula compare{true};
-  for (int i = 0; i < a.rows(); i++) {
-    compare = compare && (abs(a(i) - b(i)) <= tol);
+                                   const Polynomial<T>::RealScalar& tol,
+                                   const ToleranceType& tol_type) const {
+  using std::abs;
+  using std::min;
+  std::vector<bool> monomial_has_match(monomials_.size(), false);
+  boolean<T> comparison{true};
+  for (const auto& m : other.GetMonomials()) {
+    bool found_matching_term = false;
+    for (size_t i = 0; i < monomials_.size(); i++) {
+      if (monomial_has_match[i]) continue;
+      if (m.terms == monomials_[i].terms) {
+        found_matching_term = true;
+        if (tol_type == ToleranceType::absolute) {
+          comparison = comparison &&
+                       abs(m.coefficient - monomials_[i].coefficient) <= tol;
+        } else {
+          comparison =
+              comparison &&
+              abs(m.coefficient - monomials_[i].coefficient) <=
+                  tol * min(abs(m.coefficient), abs(monomials_[i].coefficient));
+        }
+        monomial_has_match[i] = true;
+        break;
+      }
+    }
+    if (!found_matching_term) {
+      // then I can still succeed, if my coefficient is close to zero.
+      comparison = comparison && abs(m.coefficient) <= tol;
+    }
   }
-  return compare;
+  // Finally, check any monomials in this that did not have a match in other.
+  for (size_t i = 0; i < monomials_.size(); i++) {
+    if (monomial_has_match[i]) continue;
+    comparison = comparison && abs(monomials_[i].coefficient) <= tol;
+  }
+  return comparison;
 }
 
 constexpr char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";

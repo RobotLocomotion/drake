@@ -7,11 +7,12 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/constants.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
 
-enum class MatrixCompareType { absolute, relative };
+typedef ToleranceType MatrixCompareType;
 
 /**
  * Compares two matrices to determine whether they are equal to within a certain
