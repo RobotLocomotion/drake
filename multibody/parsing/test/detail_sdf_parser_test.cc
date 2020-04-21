@@ -19,7 +19,12 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -27,6 +32,7 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
@@ -469,7 +475,16 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   AddModelFromSdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
-  const Joint<double>& revolute_joint = plant.GetJointByName("revolute_joint");
+  // Revolute joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<RevoluteJoint>("revolute_joint"));
+  const RevoluteJoint<double>& revolute_joint =
+      plant.GetJointByName<RevoluteJoint>("revolute_joint");
+  EXPECT_EQ(revolute_joint.name(), "revolute_joint");
+  EXPECT_EQ(revolute_joint.parent_body().name(), "link1");
+  EXPECT_EQ(revolute_joint.child_body().name(), "link2");
+  EXPECT_EQ(revolute_joint.revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(revolute_joint.damping(), 0.2);
   EXPECT_TRUE(CompareMatrices(
       revolute_joint.position_lower_limits(), Vector1d(-1)));
   EXPECT_TRUE(CompareMatrices(
@@ -479,8 +494,16 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(
       revolute_joint.velocity_upper_limits(), Vector1d(100)));
 
-  const Joint<double>& prismatic_joint =
-      plant.GetJointByName("prismatic_joint");
+  // Prismatic joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<PrismaticJoint>("prismatic_joint"));
+  const PrismaticJoint<double>& prismatic_joint =
+      plant.GetJointByName<PrismaticJoint>("prismatic_joint");
+  EXPECT_EQ(prismatic_joint.name(), "prismatic_joint");
+  EXPECT_EQ(prismatic_joint.parent_body().name(), "link2");
+  EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
+  EXPECT_EQ(prismatic_joint.translation_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(prismatic_joint.damping(), 0.3);
   EXPECT_TRUE(CompareMatrices(
       prismatic_joint.position_lower_limits(), Vector1d(-2)));
   EXPECT_TRUE(CompareMatrices(
@@ -490,15 +513,60 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(
       prismatic_joint.velocity_upper_limits(), Vector1d(5)));
 
-  const Joint<double>& no_limit_joint =
-      plant.GetJointByName("revolute_joint_no_limits");
+  // Limitless revolute joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<RevoluteJoint>("revolute_joint_no_limits"));
+  const RevoluteJoint<double>& no_limit_joint =
+      plant.GetJointByName<RevoluteJoint>("revolute_joint_no_limits");
+  EXPECT_EQ(no_limit_joint.name(), "revolute_joint_no_limits");
+  EXPECT_EQ(no_limit_joint.parent_body().name(), "link3");
+  EXPECT_EQ(no_limit_joint.child_body().name(), "link4");
+  EXPECT_EQ(no_limit_joint.revolute_axis(), Vector3d::UnitZ());
   const Vector1d inf(std::numeric_limits<double>::infinity());
   const Vector1d neg_inf(-std::numeric_limits<double>::infinity());
-
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+
+  // Ball joint
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<BallRpyJoint>("ball_joint"));
+  const BallRpyJoint<double>& ball_joint =
+      plant.GetJointByName<BallRpyJoint>("ball_joint");
+  EXPECT_EQ(ball_joint.name(), "ball_joint");
+  EXPECT_EQ(ball_joint.parent_body().name(), "link4");
+  EXPECT_EQ(ball_joint.child_body().name(), "link5");
+  EXPECT_EQ(ball_joint.damping(), 0.1);
+  const Vector3d inf3(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity());
+  const Vector3d neg_inf3(-std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(CompareMatrices(ball_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.velocity_upper_limits(), inf3));
+
+  // Universal joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<UniversalJoint>("universal_joint"));
+  const UniversalJoint<double>& universal_joint =
+      plant.GetJointByName<UniversalJoint>("universal_joint");
+  EXPECT_EQ(universal_joint.name(), "universal_joint");
+  EXPECT_EQ(universal_joint.parent_body().name(), "link5");
+  EXPECT_EQ(universal_joint.child_body().name(), "link6");
+  EXPECT_EQ(universal_joint.damping(), 0.1);
+  const Vector2d inf2(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity());
+  const Vector2d neg_inf2(-std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(CompareMatrices(universal_joint.position_lower_limits(),
+                              neg_inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.position_upper_limits(), inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
+                              neg_inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
