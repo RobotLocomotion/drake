@@ -27,6 +27,7 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
@@ -499,6 +500,32 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+
+  const Vector3d inf3(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity());
+  const Vector3d neg_inf3(-std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
+  const Joint<double>& ball_joint =
+      plant.GetJointByName("ball_joint");
+  EXPECT_TRUE(CompareMatrices(ball_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.velocity_upper_limits(), inf3));
+
+  const Vector2d inf2(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity());
+  const Vector2d neg_inf2(-std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
+  const Joint<double>& universal_joint =
+      plant.GetJointByName("universal_joint");
+  EXPECT_TRUE(CompareMatrices(universal_joint.position_lower_limits(),
+                              neg_inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.position_upper_limits(), inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
+                              neg_inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
