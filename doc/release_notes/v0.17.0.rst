@@ -440,18 +440,14 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#4854: https://github.com/RobotLocomotion/drake/pull/4854
 
 TO BE FILED
-* doc: Use python@3.8/bin not python@3/bin (`#13093`_)  # Everywhere else in Drake says 3.8/bin which apparently always exists, whereas 3/bin reportedly only sometimes exists.
-* Made typo fixes in documentation (`#13095`_)
 * Force uninstall font-dejavu-sans (`#13098`_)
 * multibody: add python binding for AddJointActuator (`#13092`_)
 * pydrake meshcat: Fix name parsing bug (`#13018`_)
 * Adds finite horizon linear quadratic regulator (`#13078`_)  # First version -- continuous-time only, Q and R are time-invariant. Resolves #9013.
-* Fix the broken link to py_reference in pydrake_doxygen.h (`#13101`_)
 * trajectories:  PiecewisePolynomial constant trajectory is ∀t ∈ [-∞, ∞] (`#13096`_)  # There should not be anything special about zero here. The Riccati solver in the finite-horizon LQR sometimes starts at negative time, and should be able to use these constant trajectories.
 * Add naive branch-and-bound to solver matrix documentation (`#13090`_)
 * pydrake: Add more multibody plant bindings (`#13094`_)  # * Added binding for num_force_elements * Added binding for body.is_floating * Added binding for set_penetration_tolerance
 * Add python binding for HasJointActuatorNamed (`#13100`_)
-* primitives: Fix missing include in multiplexer.cc and demultiplexer.cc (`#13104`_)
 * [render] Allow a geometry to target a renderer (`#13053`_)  # * Allow a geometry to target a renderer This allows for a geometry to define a property in its perception properties which determines whether a RenderEngine will implement it or not. It works by matching the renderer's name with an optionally whitelisted set of "accepting" renderers. Add new tag to the SDF and URDF files. - URDF: <visual><drake:accepting_renderer name="renderer_name"/></visual> - SDF: <visual> <drake:accepting_renderer>renderer_name </drake:accepting_renderer> </visual>
 
 ..
