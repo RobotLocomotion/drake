@@ -176,9 +176,14 @@ pydrake bindings
 * pydrake.examples.pendulum.PendulumState.with_theta (`#12940`_)
 * pydrake.examples.pendulum.PendulumState.with_thetadot (`#12940`_)
 * pydrake.examples.rimless_wheel.RimlessWheel.calc_alpha (`#13048`_)
+* pydrake.multibody.plant.MultibodyPlant.AddJointActuator (`#13092`_)
+* pydrake.multibody.plant.MultibodyPlant.HasJointActuatorNamed (`#13100`_)
 * pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
 * pydrake.multibody.plant.MultibodyPlant.get_generalized_acceleration_output_port (`#12883`_)
 * pydrake.multibody.plant.MultibodyPlant.get_reaction_forces_output_port (`#12883`_)
+* pydrake.multibody.plant.MultibodyPlant.num_force_elements (`#13094`_)
+* pydrake.multibody.plant.MultibodyPlant.set_penetration_tolerance (`#13094`_)
+* pydrake.multibody.tree.Body.is_floating (`#13094`_)
 * pydrake.solvers.branch_and_bound.MixedIntegerBranchAndBound (`#13002`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_constraints (`#13005`_)
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.generic_costs (`#13005`_)
@@ -196,9 +201,6 @@ pydrake bindings
 * pydrake.systems.analysis.Simulator.get_target_realtime_rate (`#12920`_)
 * pydrake.systems.framework.ContinuousState.CopyToVector (`#12865`_)
 * pydrake.systems.lcm.LcmInterfaceSystem (`#13067`_, `#13075`_)
-* TBD Add more multibody plant bindings (`#13094`_)  # * Added binding for num_force_elements * Added binding for body.is_floating * Added binding for set_penetration_tolerance
-* TBD Add python binding for HasJointActuatorNamed (`#13100`_)
-* TBD add python binding for AddJointActuator (`#13092`_)
 
 New features
 
