@@ -17,6 +17,7 @@ from pydrake.systems.controllers import (
     LinearProgrammingApproximateDynamicProgramming,
     PeriodicBoundaryCondition, PidControlledSystem, PidController
 )
+from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import Integrator, LinearSystem
 
 
@@ -52,6 +53,8 @@ class TestControllers(unittest.TestCase):
             PeriodicBoundaryCondition(0, 0., 2.*math.pi)
         ]
         options.visualization_callback = callback
+        options.input_port_index = InputPortSelection.kUseFirstInputIfItExists
+        options.assume_non_continuous_states_are_fixed = False
 
         policy, cost_to_go = FittedValueIteration(simulator,
                                                   quadratic_regulator_cost,

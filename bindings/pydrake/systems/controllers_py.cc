@@ -53,7 +53,14 @@ PYBIND11_MODULE(controllers, m) {
           doc.DynamicProgrammingOptions.convergence_tol.doc)
       .def_readwrite("visualization_callback",
           &DynamicProgrammingOptions::visualization_callback,
-          doc.DynamicProgrammingOptions.visualization_callback.doc);
+          doc.DynamicProgrammingOptions.visualization_callback.doc)
+      .def_readwrite("input_port_index",
+          &DynamicProgrammingOptions::input_port_index,
+          doc.DynamicProgrammingOptions.input_port_index.doc)
+      .def_readwrite("assume_non_continuous_states_are_fixed",
+          &DynamicProgrammingOptions::assume_non_continuous_states_are_fixed,
+          doc.DynamicProgrammingOptions.assume_non_continuous_states_are_fixed
+              .doc);
 
   py::class_<InverseDynamics<double>, LeafSystem<double>> idyn(
       m, "InverseDynamics", doc.InverseDynamics.doc);
