@@ -418,6 +418,33 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
                             a.derivatives() * (b * pow(a.value(), b - 1)));
 }
 
+// We have these implementations here because Eigen's implementations do not
+// have consistent behavior when a == b. We propose the following rules for that
+// case:
+// - If both a and b are ADS with non-empty derivatives, return a.
+// - If both a and b are doubles, return a.
+// - If one of a, b is a double, and the other is an ADS, return the ADS.
+// - Treat ADS with empty derivatives as though they were doubles.
+inline const AutoDiffScalar<VectorXd> min(const AutoDiffScalar<VectorXd>& a,
+                                          const AutoDiffScalar<VectorXd>& b) {
+  // If both a and b have derivatives, then their derivative sizes must match.
+  DRAKE_ASSERT(
+      a.derivatives().size() == 0 || b.derivatives().size() == 0 ||
+      a.derivatives().size() == b.derivatives().size());
+  // The smaller of a or b wins; ties go to a iff it has any derivatives.
+  return ((a < b) || ((a == b) && (a.derivatives().size() != 0))) ? a : b;
+}
+
+inline const AutoDiffScalar<VectorXd> max(const AutoDiffScalar<VectorXd>& a,
+                                          const AutoDiffScalar<VectorXd>& b) {
+  // If both a and b have derivatives, then their derivative sizes must match.
+  DRAKE_ASSERT(
+      a.derivatives().size() == 0 || b.derivatives().size() == 0 ||
+      a.derivatives().size() == b.derivatives().size());
+  // The larger of a or b wins; ties go to a iff it has any derivatives.
+  return ((a > b) || ((a == b) && (a.derivatives().size() != 0))) ? a : b;
+}
+
 #endif
 
 }  // namespace Eigen
