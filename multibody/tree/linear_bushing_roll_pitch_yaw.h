@@ -25,7 +25,7 @@ template <typename T> class Body;
 /// (in an angle-axis sense) between the unit vectors of frame A and frame C.
 /// Frame B is a "floating" frame in the sense that it is calculated from the
 /// position and orientation of frames A and C (B is not welded to the bushing).
-/// @image html multibody/tree/images/LinearBushingRollPitchYaw.png width=100%
+/// @image html multibody/tree/images/LinearBushingRollPitchYaw.png width=70%
 ///
 /// The set of forces on frame C from the bushing is equivalent to a
 /// torque 𝐭 on frame C and a force 𝐟 applied to a point Cp of C.
@@ -187,21 +187,56 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   }
 
   /// Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
+  /// One way to approximate torque stiffness constants is with concepts that
+  /// parallel the force stiffness constants described below.  For example,
+  /// k₀ can be estimated by specifying a maximum bushing angular displacement
+  /// θ₀Max, estimating a maximum moment load Mx, and using k₀ ≈ Mx / θ₀Max.
+  /// Alternatively, as described below a value for k₀ can be determined by
+  /// choosing a characteristic moment of inertia I₀ (directionally dependent),
+  /// then choosing ωₙ (e.g., from setting_time), and then using k₀ ≈ I₀ ωₙ².
   const Vector3<double>& torque_stiffness_constants() const {
     return torque_stiffness_constants_;
   }
 
   /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
+  /// One way to approximate torque damping constants is with concepts that
+  /// parallel the force damping constants described below.  For example, with
+  /// k₀ available and a damping ratio ζ chosen (e.g., ζ = 1), b ≈ 2 ζ √(I₀ k₀).
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
   }
 
   /// Returns the force stiffness constants `[kx ky kz]` (units of N/m).
+  /// There are multiple ways to estimate values for [kx ky kz].
+  /// Consider estimating values for [kx ky kz] using one of the methods below,
+  /// another method, or a combination thereof.
+  /// One way to estimate [kx ky kz] is by loading / displacement.
+  /// For example, one could specify a maximum bushing displacement in a
+  /// direction (e.g., xMax), estimate a maximum directional load (Fx) that
+  /// combines gravity forces, applied forces, and inertia forces (centripetal,
+  /// Coriolus, gyroscopic), and calculate kx = Fx / xMax.
+  /// Another way uses a characteristic mass and ωₙ (or settling time) and a
+  /// related linear constant-coefficient 2ⁿᵈ-order ODE <pre>
+  ///  m ÿ  +      b ẏ  +    k y = 0     or equivalently
+  ///  m ÿ  + 2 ζ ωₙ ẏ  +  ωₙ² y = 0     where ωₙ² = k/m,   ζ = b / (2 √(m k))
+  /// </pre>
+  /// After choosing a characteristic mass m (which may be directionally
+  /// dependent) and choosing ωₙ, k ≈ m ωₙ² (where k is kx or ky or kz).
+  /// Note: One way to pick ωₙ is to choose a settling_time which approximates
+  /// the desired time for the bushing to settle to within 5% of an equilibrium
+  /// solution, then use ωₙ ≈ 5 / settling_time and k ≈ m ωₙ².
+  /// Note: Stiffness [kx ky kz] affects simulation time and accuracy.
+  /// Generally, a stiffer bushing more closely resembles an ideal joint (e.g.,
+  /// revolute joint or fixed/weld joint).  However (depending on integrator),
+  /// a stiffer bushing increases numerical integration time.
   const Vector3<double>& force_stiffness_constants() const {
     return force_stiffness_constants_;
   }
 
   /// Returns the force damping constants `[dx dy dz]` (units of N*s/m).
+  /// One way to approximate force damping constants is by picking a damping
+  /// ratio ζ (e.g., ζ ≈ 1, critical damping), using the previously estimated
+  /// value of k, then calculate b ≈ 2 ζ √(m k).
   const Vector3<double>& force_damping_constants() const {
     return force_damping_constants_;
   }
