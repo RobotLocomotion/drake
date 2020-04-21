@@ -13,6 +13,8 @@ namespace pydrake {
 
 PYBIND11_MODULE(polynomial, m) {
   {
+    py::module::import("pydrake.common");
+
     using T = double;
     using Class = Polynomial<T>;
     constexpr auto& cls_doc = pydrake_doc.drake.Polynomial;
@@ -31,7 +33,9 @@ PYBIND11_MODULE(polynomial, m) {
             cls_doc.Derivative.doc)
         .def("Integral", &Class::Integral,
             py::arg("integration_constant") = 0.0, cls_doc.Integral.doc)
-        .def("IsApprox", &Class::IsApprox, py::arg("other"), py::arg("tol"),
+        .def("IsApprox", &Class::IsApprox, py::arg("other"),
+            py::arg("tol") = 0.0,
+            py::arg("tol_type") = ToleranceType::kRelative,
             cls_doc.IsApprox.doc)
         // Arithmetic
         .def(-py::self)

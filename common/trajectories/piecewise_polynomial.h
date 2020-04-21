@@ -716,14 +716,14 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // TODO(russt): Update return type to boolean<T> so that callers can obtain a
   // Formula when T=symbolic::Expression.
   /**
-   * Checks whether a %PiecewisePolynomial is approximately equal to this one.
+   * Checks whether a %PiecewisePolynomial is approximately equal to this one by
+   * calling Polynomial<T>::IsApprox() on every element of every segment.
+   * 
+   * @see Polynamial<T>::IsApprox().
    *
-   * Checks that every coefficient of `other` is within `tol` of the
-   * corresponding coefficient of this %PiecewisePolynomial.
-   * @throws std::exception if any Polynomial in either %PiecewisePolynomial is
-   * not univariate.
    */
-  bool isApprox(const PiecewisePolynomial& other, double tol) const;
+  bool isApprox(const PiecewisePolynomial& other, double tol,
+                const ToleranceType& tol_type = ToleranceType::kRelative) const;
 
   /**
    * Concatenates `other` to the end of `this`.
