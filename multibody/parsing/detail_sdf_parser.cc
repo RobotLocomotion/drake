@@ -22,6 +22,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
@@ -179,7 +180,8 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
 // is no <axis> under <joint>.
 double ParseJointDamping(const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
-      joint_spec.Type() == sdf::JointType::PRISMATIC);
+      joint_spec.Type() == sdf::JointType::PRISMATIC ||
+      joint_spec.Type() == sdf::JointType::UNIVERSAL);
 
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
@@ -386,6 +388,14 @@ void AddJointFromSpecification(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
+      break;
+    }
+    case sdf::JointType::UNIVERSAL: {
+      const double damping = ParseJointDamping(joint_spec);
+      plant->AddJoint<UniversalJoint>(
+        joint_spec.Name(),
+        parent_body, X_PJ,
+        child_body, X_CJ, damping);
       break;
     }
     default: {
