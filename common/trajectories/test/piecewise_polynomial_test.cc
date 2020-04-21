@@ -31,12 +31,10 @@ void testIntegralAndDerivative() {
   int rows = 3;
   int cols = 5;
 
-  typedef PiecewisePolynomial<T> PiecewisePolynomialType;
-
   default_random_engine generator;
   vector<double> segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
-  PiecewisePolynomialType piecewise =
+  PiecewisePolynomial<T> piecewise =
       test::MakeRandomPiecewisePolynomial<T>(
           rows, cols, num_coefficients, segment_times);
 
@@ -47,13 +45,13 @@ void testIntegralAndDerivative() {
                       1e-10, MatrixCompareType::absolute));
 
   // differentiate integral, get original back
-  PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
+  PiecewisePolynomial<T> piecewise_back = piecewise.integral().derivative();
   if (!piecewise.isApprox(piecewise_back, 1e-10)) throw runtime_error("wrong");
 
   // check value at start time
   MatrixX<T> desired_value_at_t0 =
       MatrixX<T>::Random(piecewise.rows(), piecewise.cols());
-  PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
+  PiecewisePolynomial<T> integral = piecewise.integral(desired_value_at_t0);
   auto value_at_t0 = integral.value(piecewise.start_time());
   EXPECT_TRUE(CompareMatrices(desired_value_at_t0, value_at_t0, 1e-10,
                               MatrixCompareType::absolute));
@@ -73,8 +71,6 @@ void testBasicFunctionality() {
   default_random_engine generator;
   uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
-  typedef PiecewisePolynomial<T> PiecewisePolynomialType;
-
   for (int i = 0; i < num_tests; ++i) {
     int num_coefficients = int_distribution(generator);
     int num_segments = int_distribution(generator);
@@ -84,50 +80,48 @@ void testBasicFunctionality() {
     vector<double> segment_times =
         PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments,
                                                         generator);
-    PiecewisePolynomialType piecewise1 =
-        test::MakeRandomPiecewisePolynomial<T>(
-            rows, cols, num_coefficients, segment_times);
-    PiecewisePolynomialType piecewise2 =
-        test::MakeRandomPiecewisePolynomial<T>(
-            rows, cols, num_coefficients, segment_times);
-    PiecewisePolynomialType piecewise3_not_matching_rows =
-        test::MakeRandomPiecewisePolynomial<T>(
-            rows + 1, cols, num_coefficients, segment_times);
-    PiecewisePolynomialType piecewise4_not_matching_cols =
-        test::MakeRandomPiecewisePolynomial<T>(
-            rows, cols + 1, num_coefficients, segment_times);
-    PiecewisePolynomialType piecewise5 =
-        test::MakeRandomPiecewisePolynomial<T>(
-            cols, rows, num_coefficients, segment_times);
+    PiecewisePolynomial<T> piecewise1 = test::MakeRandomPiecewisePolynomial<T>(
+        rows, cols, num_coefficients, segment_times);
+    PiecewisePolynomial<T> piecewise2 = test::MakeRandomPiecewisePolynomial<T>(
+        rows, cols, num_coefficients, segment_times);
+    PiecewisePolynomial<T> piecewise3_not_matching_rows =
+        test::MakeRandomPiecewisePolynomial<T>(rows + 1, cols, num_coefficients,
+                                               segment_times);
+    PiecewisePolynomial<T> piecewise4_not_matching_cols =
+        test::MakeRandomPiecewisePolynomial<T>(rows, cols + 1, num_coefficients,
+                                               segment_times);
+    PiecewisePolynomial<T> piecewise5 = test::MakeRandomPiecewisePolynomial<T>(
+        cols, rows, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
     double shift = normal(generator);
     MatrixX<T> offset =
         MatrixX<T>::Random(piecewise1.rows(), piecewise1.cols());
 
-    PiecewisePolynomialType sum = piecewise1 + piecewise2;
-    PiecewisePolynomialType difference = piecewise2 - piecewise1;
-    PiecewisePolynomialType piecewise1_plus_offset = piecewise1 + offset;
-    PiecewisePolynomialType piecewise1_minus_offset = piecewise1 - offset;
-    PiecewisePolynomialType piecewise1_shifted = piecewise1;
+    PiecewisePolynomial<T> sum = piecewise1 + piecewise2;
+    PiecewisePolynomial<T> difference = piecewise2 - piecewise1;
+    PiecewisePolynomial<T> piecewise1_plus_offset = piecewise1 + offset;
+    PiecewisePolynomial<T> piecewise1_minus_offset = piecewise1 - offset;
+    PiecewisePolynomial<T> piecewise1_shifted = piecewise1;
     piecewise1_shifted.shiftRight(shift);
-    PiecewisePolynomialType product = piecewise1 * piecewise5;
+    PiecewisePolynomial<T> product = piecewise1 * piecewise5;
+    PiecewisePolynomial<T> unary_minus = -piecewise1;
 
     const double total_time = segment_times.back() - segment_times.front();
-    PiecewisePolynomialType piecewise2_twice = piecewise2;
-    PiecewisePolynomialType piecewise2_shifted = piecewise2;
+    PiecewisePolynomial<T> piecewise2_twice = piecewise2;
+    PiecewisePolynomial<T> piecewise2_shifted = piecewise2;
     piecewise2_shifted.shiftRight(total_time);
 
     // Checks that concatenation of trajectories that are not time
     // aligned at the connecting ends is a failure.
-    PiecewisePolynomialType piecewise2_shifted_twice = piecewise2;
+    PiecewisePolynomial<T> piecewise2_shifted_twice = piecewise2;
     piecewise2_shifted_twice.shiftRight(2. * total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
         piecewise2_shifted_twice), std::runtime_error);
 
     // Checks that concatenation of trajectories that have different
     // row counts is a failure.
-    PiecewisePolynomialType piecewise3_not_matching_rows_shifted =
+    PiecewisePolynomial<T> piecewise3_not_matching_rows_shifted =
         piecewise3_not_matching_rows;
     piecewise3_not_matching_rows_shifted.shiftRight(total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
@@ -135,7 +129,7 @@ void testBasicFunctionality() {
 
     // Checks that concatenation of trajectories that have different
     // col counts is a failure.
-    PiecewisePolynomialType piecewise4_not_matching_cols_shifted =
+    PiecewisePolynomial<T> piecewise4_not_matching_cols_shifted =
         piecewise4_not_matching_cols;
     piecewise4_not_matching_cols_shifted.shiftRight(total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
@@ -171,6 +165,8 @@ void testBasicFunctionality() {
                                 piecewise1.value(t) * piecewise5.value(t), 1e-8,
                                 MatrixCompareType::absolute));
 
+    EXPECT_TRUE(CompareMatrices(unary_minus.value(t), -(piecewise1.value(t))));
+
     // Checks that `piecewise2_twice` is effectively the concatenation of
     // `piecewise2` and a copy of `piecewise2` that is shifted to the right
     // (i.e. towards increasing values of t) by an amount equal to its entire
@@ -186,14 +182,11 @@ void testBasicFunctionality() {
 
 template<typename T>
 void testValueOutsideOfRange() {
-  typedef PiecewisePolynomial<T> PiecewisePolynomialType;
-
   default_random_engine generator;
   vector<double> segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(6, generator);
-  PiecewisePolynomialType piecewise =
-      test::MakeRandomPiecewisePolynomial<T>(
-          3, 4, 5, segment_times);
+  PiecewisePolynomial<T> piecewise =
+      test::MakeRandomPiecewisePolynomial<T>(3, 4, 5, segment_times);
 
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.start_time()),
                               piecewise.value(piecewise.start_time() - 1.0),
