@@ -561,5 +561,39 @@ GTEST_TEST(PolynomialTest, ScalarTypes) {
   const Polynomial<symbolic::Expression> p_symbolic(0);
 }
 
+GTEST_TEST(PolynomialTest, IsApproxTest) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  EXPECT_FALSE(x.IsApprox(y));
+  EXPECT_TRUE((x + y).IsApprox(y + x));
+
+  EXPECT_TRUE((x + x * x + 3 * pow(x, 3)).IsApprox(3 * pow(x, 3) + x + x * x));
+
+  // Test missing monomials.
+  EXPECT_FALSE((x + y + 0.01 * x * x).IsApprox(x + y));
+  EXPECT_FALSE((x + y).IsApprox(x + y + 0.01 * x * x));
+  // Missing is ok if their coefficient are less than tol.
+  EXPECT_TRUE((x + y + 0.01 * x * x).IsApprox(x + y, 0.02));
+  EXPECT_TRUE((x + y).IsApprox(x + y + 0.01 * x * x, 0.02));
+}
+
+GTEST_TEST(PolynomialTest, SubsitutionTest) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  Polynomiald::VarType xvar = x.GetSimpleVariable();
+  Polynomiald::VarType yvar = y.GetSimpleVariable();
+
+  EXPECT_TRUE(x.Substitute(xvar, y).IsApprox(y));
+
+  Polynomiald p1 = x + 3 * x * x + 3 * y;
+  EXPECT_TRUE(p1.Substitute(xvar, 1 + x)
+                  .IsApprox(1 + x + 3 * (1 + x) * (1 + x) + 3 * y));
+  EXPECT_TRUE(p1.Substitute(yvar, 1 + x).IsApprox(3 + 4 * x + 3 * x * x));
+  EXPECT_TRUE(
+      p1.Substitute(xvar, x * x).IsApprox(x * x + 3 * pow(x, 4) + 3 * y));
+}
+
 }  // anonymous namespace
 }  // namespace drake

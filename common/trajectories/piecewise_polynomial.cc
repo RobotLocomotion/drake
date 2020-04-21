@@ -346,37 +346,14 @@ void PiecewisePolynomial<T>::ReverseTime() {
       for (int col = 0; col < cols(); col++) {
         const int d = matrix(row, col).GetDegree();
         if (d == 0) continue;
-        const VectorX<T> coeffs = matrix(row, col).GetCoefficients();
-
         // Must shift this segment by h, because it will now be evaluated
         // relative to breaks[i+1] instead of breaks[i], via p_after(t) =
-        // p_before(t+h). This is a slightly involved operation, because
-        // substituing (t+h) in a monomial with degree k will effect the
-        // coefficients for many monomials.
-
-        // We can perform the time-reversal at the same time, using the variant
-        // p_after(t) = p_before(h-t).
-
-        // Compute (h-t) powers, where (h-t)^(j+1) = \sum_j H(j,k) t^(k-1).
-        // TODO(russt): For efficiency, I could compute this outside the loop
-        // (being careful that every polynomial could have a different
-        // degree).
-        MatrixX<T> H = MatrixX<T>::Zero(d, d + 1);
-        H(0, 0) = h;
-        H(0, 1) = -1;
-        for (int j = 1; j < d; j++) {
-          H.block(j, 0, 1, j + 1) = h * H.block(j - 1, 0, 1, j + 1);
-          H.block(j, 1, 1, j + 1) -= H.block(j - 1, 0, 1, j + 1);
-        }
-
-        VectorX<T> new_coeffs = VectorX<T>::Zero(d + 1);
-        new_coeffs(0) = coeffs(0);
-        // Update coefficients.
-        for (int j = 0; j < d; j++) {
-          new_coeffs += coeffs(j + 1) * H.row(j);
-        }
-
-        matrix(row, col) = Polynomial<T>(new_coeffs);
+        // p_before(t+h).  But we can perform the time-reversal at the same
+        // time, using the variant p_after(t) = p_before(h-t).
+        const typename Polynomial<T>::VarType& t =
+            *matrix(row, col).GetVariables().begin();
+        matrix(row, col) =
+            matrix(row, col).Substitute(t, h - Polynomial<T>(1.0, t));
       }
     }
   }

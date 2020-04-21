@@ -463,8 +463,10 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
 
   // Test CubicHermite(T, Y, Ydots)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
-    std::vector<double> T =
-        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
+    std::vector<double> T(N);
+    for (int i = 0; i < N; i++) {
+      T[i] = i;
+    }
     std::vector<MatrixX<double>> Y(N);
     std::vector<MatrixX<double>> Ydot(N);
 
