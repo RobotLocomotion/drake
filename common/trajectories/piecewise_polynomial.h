@@ -693,6 +693,12 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
 
   /**
+   * Implements unary minus operator. Multiplies each Polynomial in `this` by
+   * -1.
+   */
+  const PiecewisePolynomial operator-() const;
+
+  /**
    * Multiplies each Polynomial in the PolynomialMatrix of `other` by the
    * corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
    * coefficient-wise multiplication). If `this` corresponds to t² and `other`
