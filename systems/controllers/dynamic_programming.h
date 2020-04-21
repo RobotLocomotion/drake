@@ -88,6 +88,7 @@ struct DynamicProgrammingOptions {
 /// in through @p simulator) and a single vector output (which is the input
 /// of the system passed in through @p simulator).
 ///
+/// @ingroup control_systems
 std::pair<std::unique_ptr<BarycentricMeshSystem<double>>, Eigen::RowVectorXd>
 FittedValueIteration(
     Simulator<double>* simulator,
@@ -152,6 +153,7 @@ FittedValueIteration(
 /// @return params the VectorXd of parameters that optimizes the
 /// supplied cost-to-go function.
 ///
+/// @ingroup control_systems
 Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
     Simulator<double>* simulator,
     const std::function<double(const Context<double>& context)>& cost_function,

@@ -158,6 +158,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
         .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
+        .def("num_force_elements", &Class::num_force_elements,
+            cls_doc.num_force_elements.doc)
         .def("num_model_instances", &Class::num_model_instances,
             cls_doc.num_model_instances.doc)
         .def("num_positions",
@@ -195,6 +197,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self->AddJoint(std::move(joint));
             },
             py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
+        .def("AddJointActuator", &Class::AddJointActuator,
+            py_reference_internal, py::arg("name"), py::arg("joint"),
+            py::arg("effort_limit") = std::numeric_limits<double>::infinity(),
+            cls_doc.AddJointActuator.doc)
         .def("AddFrame",
             [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {
               return self->AddFrame(std::move(frame));
@@ -503,6 +509,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::HasJointNamed),
             py::arg("name"), py::arg("model_instance"),
             cls_doc.HasJointNamed.doc_2args)
+        .def("HasJointActuatorNamed",
+            overload_cast_explicit<bool, const string&>(
+                &Class::HasJointActuatorNamed),
+            py::arg("name"), cls_doc.HasJointActuatorNamed.doc_1args)
+        .def("HasJointActuatorNamed",
+            overload_cast_explicit<bool, const string&, ModelInstanceIndex>(
+                &Class::HasJointActuatorNamed),
+            py::arg("name"), py::arg("model_instance"),
+            cls_doc.HasJointActuatorNamed.doc_2args)
         .def("GetFrameByName",
             overload_cast_explicit<const Frame<T>&, const string&>(
                 &Class::GetFrameByName),
@@ -687,7 +702,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.world_frame.doc)
         .def("is_finalized", &Class::is_finalized, cls_doc.is_finalized.doc)
         .def("Finalize", py::overload_cast<>(&Class::Finalize),
-            cls_doc.Finalize.doc);
+            cls_doc.Finalize.doc)
+        .def("set_penetration_allowance", &Class::set_penetration_allowance,
+            py::arg("penetration_allowance") = 0.001,
+            cls_doc.set_penetration_allowance.doc);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def("GetMutablePositionsAndVelocities",

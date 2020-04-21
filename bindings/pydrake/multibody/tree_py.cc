@@ -181,6 +181,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body_frame", &Class::body_frame, py_reference_internal,
             cls_doc.body_frame.doc)
+        .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)
         .def("GetForceInWorld", &Class::GetForceInWorld, py::arg("context"),
             py::arg("forces"), cls_doc.GetForceInWorld.doc)
         .def("AddInForceInWorld", &Class::AddInForceInWorld, py::arg("context"),

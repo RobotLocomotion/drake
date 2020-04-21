@@ -18,7 +18,7 @@ installed as a single package called ``pydrake``.
 
 .. warning::
    On macOS, Drake only supports Python 3.8, which is located at
-   ``/usr/local/opt/python@3/bin/python3`` and is not usually on the
+   ``/usr/local/opt/python@3.8/bin/python3`` and is not usually on the
    ``PATH``.
 
 .. _python-bindings-binary:

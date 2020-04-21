@@ -328,7 +328,7 @@ Some aliases are provided; prefer these to the full spellings.
 
 `namespace py` is a shorthand alias to `pybind11` for consistency.
 
-@see py_reference, py_reference_internal for dealing with %common ownership
+@see @ref drake::pydrake::py_reference "py_reference", @ref drake::pydrake::py_reference_internal "py_reference_internal" for dealing with %common ownership
      issues.
 
 @note Downstream users should avoid `using namespace drake::pydrake`, as
