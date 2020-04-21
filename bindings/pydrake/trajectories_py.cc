@@ -177,7 +177,8 @@ PYBIND11_MODULE(trajectories, m) {
       .def("cols", &PiecewisePolynomial<T>::cols,
           doc.PiecewisePolynomial.cols.doc)
       .def("isApprox", &PiecewisePolynomial<T>::isApprox, py::arg("other"),
-          py::arg("tol"), doc.PiecewisePolynomial.isApprox.doc)
+          py::arg("tol"), py::arg("tol_type") = drake::ToleranceType::kRelative,
+          doc.PiecewisePolynomial.isApprox.doc)
       .def("ConcatenateInTime", &PiecewisePolynomial<T>::ConcatenateInTime,
           py::arg("other"), doc.PiecewisePolynomial.ConcatenateInTime.doc)
       .def("AppendCubicHermiteSegment",

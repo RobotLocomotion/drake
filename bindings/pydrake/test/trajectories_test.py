@@ -1,6 +1,7 @@
 import numpy as np
 import unittest
 
+from pydrake.common import ToleranceType
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
@@ -97,7 +98,8 @@ class TestTrajectories(unittest.TestCase):
         x = np.array([[10.], [20.], [30.]]).transpose()
         pp1 = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         pp2 = PiecewisePolynomial.FirstOrderHold([2., 3., 4.], x)
-        self.assertTrue(pp1.isApprox(other=pp1, tol=1e-14))
+        self.assertTrue(pp1.isApprox(
+            other=pp1, tol=1e-14, tol_type=ToleranceType.relative))
         pp1.ConcatenateInTime(other=pp2)
         self.assertEqual(pp1.end_time(), 4.)
 

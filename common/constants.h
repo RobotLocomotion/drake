@@ -16,4 +16,6 @@ constexpr int kHomogeneousTransformSize = 16;
 
 const int kRotmatSize = kSpaceDimension * kSpaceDimension;
 
+enum class ToleranceType { kAbsolute, kRelative };
+
 }  // namespace drake

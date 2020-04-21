@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
@@ -35,6 +36,10 @@ PYBIND11_MODULE(_module_py, m) {
   // Python's `logging` module; possibly use `pyspdlog`.
   m.def("set_log_level", &logging::set_log_level, py::arg("level"),
       doc.logging.set_log_level.doc);
+
+  py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
+      .value("absolute", drake::ToleranceType::kAbsolute)
+      .value("relative", drake::ToleranceType::kRelative);
 
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
