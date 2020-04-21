@@ -35,6 +35,7 @@ These are breaking changes that did not undergo a deprecation period:
 
 * PiecewisePolynomial multiplication operator is no longer coefficient-wise
   (`#4854`_, `#13072`_)
+* PiecewisePolynomial constant trajectory is now ∀t ∈ [-∞, ∞] not just [0, ∞] (`#13096`_)
 * PiecewiseTrajectory::value virtual method is now pass-by-const-reference;
   classes that override it will need rework; callers are unchanged (`#12986`_)
 * PiecewiseTrajectory tolerance for successive segments is now machine epsilon
@@ -80,12 +81,14 @@ New features
   * Construct HermitianDenseOutput from PiecewisePolynomial (`#12952`_, `#12957`_, `#13006`_)
   * Add BsplineBasis and BsplineTrajectory (`#11990`_)
   * PiecewisePolynomial multiplication operator is no longer coefficient-wise (`#4854`_, `#13072`_)
+  * PiecewisePolynomial constant trajectory is now ∀t ∈ [-∞, ∞] not just [0, ∞] (`#13096`_)
 
-* Region of attraction
+* Controllers
 
   * Add utility to "balance" two quadratic forms and uses it in RegionOfAttraction (`#12875`_, `#12882`_)
   * Support region of attraction when Vdot is indefinite at the origin (`#12864`_)
   * Add the "star" region of attraction test (`#12881`_)
+  * Add finite horizon linear quadratic regulator (first version -- continuous-time only, Q and R are time-invariant) (`#13078`_)
 
 Fixes
 
@@ -109,6 +112,7 @@ Fixes
 * Add default std::nullopt arguments to SolverBase::Solve (`#12866`_)
 * Check x_init size for all solvers (`#12995`_)
 * Check constraint bounds size (`#13004`_)
+* Mention naive branch-and-bound solver in documentation (`#13090`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -123,6 +127,7 @@ New features
 * Parse revolute joint <spring_stiffness> and <spring_reference> from SDF (`#12992`_)
 * Add BallRpyJoint (`#13039`_)
 * Enable mutating a Joint's position limits (`#13039`_)
+* Allow a geometry to target a renderer (`#13053`_)
 * Preliminary steps to introduce new RenderEngine implementation based on direct OpenGl calls
   (`#12850`_, `#12963`_, `#12964`_)
 
@@ -191,6 +196,9 @@ pydrake bindings
 * pydrake.systems.analysis.Simulator.get_target_realtime_rate (`#12920`_)
 * pydrake.systems.framework.ContinuousState.CopyToVector (`#12865`_)
 * pydrake.systems.lcm.LcmInterfaceSystem (`#13067`_, `#13075`_)
+* TBD Add more multibody plant bindings (`#13094`_)  # * Added binding for num_force_elements * Added binding for body.is_floating * Added binding for set_penetration_tolerance
+* TBD Add python binding for HasJointActuatorNamed (`#13100`_)
+* TBD add python binding for AddJointActuator (`#13092`_)
 
 New features
 
@@ -202,6 +210,7 @@ Fixes
 
 * API docs now show constructors first (`#12787`_, `#12910`_, `#12921`_)
 * Find fallback obj files in PlanarSceneGraphVisualizer (`#12917`_)
+* Fix meshcat name parsing (`#13018`_)
 * Improve args and doc for pyplot_visualizer (`#12915`_)
 * Plot sub-level sets in pydrake.visualization.plotting (`#12854`_)
 * Extend pydrake.systems.Simulator.reset_integrator's deprecation window (`#13013`_)
@@ -223,7 +232,7 @@ Build system and dependencies
 * Upgrade rules_pkg to latest release 0.2.5 (`#12978`_)
 * Upgrade rules_python to latest commit (`#12978`_)
 * Annotate repository rules with configure=True (`#12988`_)
-* Fix macOS cask rename for DejaVu fonts (`#13070`_)
+* Fix macOS cask rename for DejaVu fonts (`#13070`_, `#13098`_)
 * Fix drake_bazel_installed use in docker (`#13016`_)
 * Fix pkg-config problems on macOS (`#13019`_)
 
@@ -413,6 +422,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13015: https://github.com/RobotLocomotion/drake/pull/13015
 .. _#13016: https://github.com/RobotLocomotion/drake/pull/13016
 .. _#13017: https://github.com/RobotLocomotion/drake/pull/13017
+.. _#13018: https://github.com/RobotLocomotion/drake/pull/13018
 .. _#13019: https://github.com/RobotLocomotion/drake/pull/13019
 .. _#13022: https://github.com/RobotLocomotion/drake/pull/13022
 .. _#13027: https://github.com/RobotLocomotion/drake/pull/13027
@@ -428,6 +438,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13045: https://github.com/RobotLocomotion/drake/pull/13045
 .. _#13048: https://github.com/RobotLocomotion/drake/pull/13048
 .. _#13051: https://github.com/RobotLocomotion/drake/pull/13051
+.. _#13053: https://github.com/RobotLocomotion/drake/pull/13053
 .. _#13061: https://github.com/RobotLocomotion/drake/pull/13061
 .. _#13062: https://github.com/RobotLocomotion/drake/pull/13062
 .. _#13067: https://github.com/RobotLocomotion/drake/pull/13067
@@ -436,19 +447,15 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13075: https://github.com/RobotLocomotion/drake/pull/13075
 .. _#13076: https://github.com/RobotLocomotion/drake/pull/13076
 .. _#13077: https://github.com/RobotLocomotion/drake/pull/13077
+.. _#13078: https://github.com/RobotLocomotion/drake/pull/13078
+.. _#13090: https://github.com/RobotLocomotion/drake/pull/13090
+.. _#13092: https://github.com/RobotLocomotion/drake/pull/13092
+.. _#13094: https://github.com/RobotLocomotion/drake/pull/13094
+.. _#13096: https://github.com/RobotLocomotion/drake/pull/13096
 .. _#13097: https://github.com/RobotLocomotion/drake/pull/13097
+.. _#13098: https://github.com/RobotLocomotion/drake/pull/13098
+.. _#13100: https://github.com/RobotLocomotion/drake/pull/13100
 .. _#4854: https://github.com/RobotLocomotion/drake/pull/4854
-
-TO BE FILED
-* Force uninstall font-dejavu-sans (`#13098`_)
-* multibody: add python binding for AddJointActuator (`#13092`_)
-* pydrake meshcat: Fix name parsing bug (`#13018`_)
-* Adds finite horizon linear quadratic regulator (`#13078`_)  # First version -- continuous-time only, Q and R are time-invariant. Resolves #9013.
-* trajectories:  PiecewisePolynomial constant trajectory is ∀t ∈ [-∞, ∞] (`#13096`_)  # There should not be anything special about zero here. The Riccati solver in the finite-horizon LQR sometimes starts at negative time, and should be able to use these constant trajectories.
-* Add naive branch-and-bound to solver matrix documentation (`#13090`_)
-* pydrake: Add more multibody plant bindings (`#13094`_)  # * Added binding for num_force_elements * Added binding for body.is_floating * Added binding for set_penetration_tolerance
-* Add python binding for HasJointActuatorNamed (`#13100`_)
-* [render] Allow a geometry to target a renderer (`#13053`_)  # * Allow a geometry to target a renderer This allows for a geometry to define a property in its perception properties which determines whether a RenderEngine will implement it or not. It works by matching the renderer's name with an optionally whitelisted set of "accepting" renderers. Add new tag to the SDF and URDF files. - URDF: <visual><drake:accepting_renderer name="renderer_name"/></visual> - SDF: <visual> <drake:accepting_renderer>renderer_name </drake:accepting_renderer> </visual>
 
 ..
   Current oldest_commit b2293bc15d192473dbe76e48e9861c860c739549 (inclusive).
