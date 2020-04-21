@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -68,14 +69,32 @@ auto WrapCallbacks(Func&& func) {
 /// @tparam Class the C++ class.
 /// @tparam T type for the member we wish to apply keep alive semantics.
 template <typename PyClass, typename Class, typename T>
-void DefReadWriteKeepAlive(PyClass* cls, const char* name, T Class::*member) {
+void DefReadWriteKeepAlive(
+    PyClass* cls, const char* name, T Class::*member, const char* doc = "") {
   auto getter = [member](const Class* obj) { return obj->*member; };
   auto setter = [member](Class* obj, const T& value) { obj->*member = value; };
   cls->def_property(name,  // BR
       py::cpp_function(getter),
       py::cpp_function(setter,
           // Keep alive, reference: `self` keeps `value` alive.
-          py::keep_alive<1, 2>()));
+          py::keep_alive<1, 2>()),
+      doc);
+}
+
+/// Idempotent to pybind11's `def_readonly()`, which works for unique_ptr
+/// elements; the getter is protected with keep_alive on a `member` variable
+/// that is a unique_ptr.
+///
+/// @tparam PyClass the python class.
+/// @tparam Class the C++ class.
+/// @tparam T type for the member we wish to apply keep alive semantics.
+template <typename PyClass, typename Class, typename T>
+void DefReadUniquePtr(PyClass* cls, const char* name,
+    const std::unique_ptr<T> Class::*member, const char* doc = "") {
+  auto getter = py::cpp_function(
+      [member](const Class* obj) { return (obj->*member).get(); },
+      py_reference_internal);
+  cls->def_property_readonly(name, getter, doc);
 }
 
 }  // namespace pydrake

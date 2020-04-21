@@ -39,22 +39,26 @@ GTEST_TEST(FiniteHorizonLQRTest, InfiniteHorizonTest) {
   FiniteHorizonLinearQuadraticRegulatorResult result =
       FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, tf, Q, R,
                                             options);
-  EXPECT_TRUE(result.S.start_time() == t0);
-  EXPECT_TRUE(result.S.end_time() == tf);
+  EXPECT_TRUE(result.S->start_time() == t0);
+  EXPECT_TRUE(result.S->end_time() == tf);
   // Confirm that it's initialized to zero.
-  EXPECT_TRUE(result.S.value(tf).isZero(1e-12));
+  EXPECT_TRUE(result.S->value(tf).isZero(1e-12));
   // Confirm that it converges to the solution.
-  EXPECT_TRUE(CompareMatrices(result.S.value(t0), lqr_result.S, 1e-5));
-  EXPECT_TRUE(result.K.start_time() == t0);
-  EXPECT_TRUE(result.K.end_time() == tf);
-  EXPECT_TRUE(CompareMatrices(result.K.value(t0), lqr_result.K, 1e-5));
+  EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 1e-5));
+  EXPECT_TRUE(result.K->start_time() == t0);
+  EXPECT_TRUE(result.K->end_time() == tf);
+  EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-5));
+  EXPECT_TRUE(CompareMatrices(result.x0->value(t0), Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(CompareMatrices(result.x0->value(tf), Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(CompareMatrices(result.u0->value(t0), Vector1d::Zero()));
+  EXPECT_TRUE(CompareMatrices(result.u0->value(tf), Vector1d::Zero()));
 
   // Test that it stays at the fixed-point if initialized at the fixed point.
   options.Qf = lqr_result.S;
   result = FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, t0 + 0.1, Q,
                                                  R, options);
-  EXPECT_TRUE(CompareMatrices(result.S.value(t0), lqr_result.S, 1e-12));
-  EXPECT_TRUE(CompareMatrices(result.K.value(t0), lqr_result.K, 1e-12));
+  EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 1e-12));
+  EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-12));
 }
 
 // Verify that we can stabilize a non-zero fixed-point specified via the
@@ -97,9 +101,13 @@ GTEST_TEST(FiniteHorizonLQRTest, NominalTrajectoryTest) {
         FiniteHorizonLinearQuadraticRegulator(*system, *context, t0, tf,
                                               Q, R, options);
     EXPECT_TRUE(
-        CompareMatrices(result.S.value(t0), result.S.value(tf), 1e-12));
-    EXPECT_TRUE(CompareMatrices(result.S.value(t0), lqr_result.S, 1e-12));
-    EXPECT_TRUE(CompareMatrices(result.K.value(t0), lqr_result.K, 1e-12));
+        CompareMatrices(result.S->value(t0), result.S->value(tf), 1e-12));
+    EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 1e-12));
+    EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-12));
+    EXPECT_TRUE(CompareMatrices(result.x0->value(t0), x0v));
+    EXPECT_TRUE(CompareMatrices(result.x0->value(tf), x0v));
+    EXPECT_TRUE(CompareMatrices(result.u0->value(t0), u0v));
+    EXPECT_TRUE(CompareMatrices(result.u0->value(tf), u0v));
   }
 }
 

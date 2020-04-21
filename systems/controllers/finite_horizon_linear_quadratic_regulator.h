@@ -16,6 +16,8 @@ A structure to facilitate passing the myriad of optional arguments to the
 FiniteHorizonLinearQuadraticRegulator algorithms.
 */
 struct FiniteHorizonLinearQuadraticRegulatorOptions {
+  FiniteHorizonLinearQuadraticRegulatorOptions() = default;
+
   /**
   A num_states x num_states positive semi-definite matrix which specified the
   cost at the final time. If unset, then Qf will be set to the zero matrix.
@@ -52,8 +54,10 @@ results. The finite-horizon cost-to-go is given by (x-x0(t))'*S(t)*(x-x0(t)) and
 the optimal controller is given by u-u0(t) = -K(t)*(x-x0(t)).
 */
 struct FiniteHorizonLinearQuadraticRegulatorResult {
-  trajectories::PiecewisePolynomial<double> K;
-  trajectories::PiecewisePolynomial<double> S;
+  std::unique_ptr<trajectories::Trajectory<double>> x0;
+  std::unique_ptr<trajectories::Trajectory<double>> u0;
+  std::unique_ptr<trajectories::Trajectory<double>> K;
+  std::unique_ptr<trajectories::Trajectory<double>> S;
 };
 
 // TODO(russt): Add support for difference-equation systems.
@@ -73,10 +77,10 @@ optimal cost-to-go for the finite-horizon linear quadratic regulator:
 @f]
 
 where A(t), B(t), and c(t) are taken from the gradients of the continuous-time
-dynamics ẋ = f(t,x,u), as A(t) = dfdx(t, x0(t), u0(t)), B(t) = dfdu(t,
-x0(t), u0(t)), and c(t) = f(t, x0(t), u0(t)).  x0(t) and u0(t) can be specified
-in @p options, otherwise are taken to be constant trajectories with values
-given by @p context.
+dynamics ẋ = f(t,x,u), as A(t) = dfdx(t, x0(t), u0(t)), B(t) = dfdu(t, x0(t),
+u0(t)), and c(t) = f(t, x0(t), u0(t)).  x0(t) and u0(t) can be specified in @p
+options, otherwise are taken to be constant trajectories with values given by @p
+context.  The current implementation assumes that ẋ0(t) = f(t, x0(t), u0(t)).
 
 @param system a System<double> representing the plant.
 @param context a Context<double> used to pass the default input, state, and

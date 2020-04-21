@@ -17,6 +17,11 @@ struct MyContainer {
   const MyValue* member{nullptr};
 };
 
+struct MyUniquePtr {
+  explicit MyUniquePtr(double val) : member(new double(val)) {}
+  std::unique_ptr<double> member;
+};
+
 }  // namespace
 
 PYBIND11_MODULE(wrap_test_util, m) {
@@ -27,7 +32,13 @@ PYBIND11_MODULE(wrap_test_util, m) {
   py::class_<MyContainer> my_container(m, "MyContainer");
   my_container  // BR
       .def(py::init<>());
-  DefReadWriteKeepAlive(&my_container, "member", &MyContainer::member);
+  DefReadWriteKeepAlive(
+      &my_container, "member", &MyContainer::member, "MyContainer doc");
+
+  py::class_<MyUniquePtr> my_unique(m, "MyUniquePtr");
+  my_unique.def(py::init<double>());
+  DefReadUniquePtr(
+      &my_unique, "member", &MyUniquePtr::member, "MyUniquePtr doc");
 }
 
 }  // namespace pydrake
