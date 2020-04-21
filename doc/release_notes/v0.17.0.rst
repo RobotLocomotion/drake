@@ -5,10 +5,12 @@ Drake v0.17.0
 Announcements
 -------------
 
-* On macOS, Drake now only supports Python 3.8.  See :ref:`Python Bindings
-  <python-bindings>` and `#13097`_ for new mandatory PATH and PYTHONPATH advice.
+.. warning::
 
-  * When paths are set incorrectly, you will see an error such as this::
+  On macOS, Drake now only supports Python 3.8.  Users **must** read `#13097`_
+  for upgrade instructions.
+
+  When paths are set incorrectly, you will see an error such as this::
 
       ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
 
