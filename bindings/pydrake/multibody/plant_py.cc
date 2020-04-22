@@ -19,6 +19,7 @@
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
+#include "drake/multibody/plant/propeller.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
 PYBIND11_MAKE_OPAQUE(
@@ -913,6 +914,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
     }
     AddValueInstantiation<Class>(m);
   }
+
+  // Propeller
+  {
+    using Class = Propeller<T>;
+    constexpr auto& cls_doc = doc.Propeller;
+    auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+        m, "Propeller", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
+                 double, double>(),
+            py::arg("body_index"),
+            py::arg("X_BP") = math::RigidTransform<double>::Identity(),
+            py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0,
+            doc.Propeller.ctor.doc_4args)
+        .def(py::init<const std::vector<PropellerInfo>&>(),
+            py::arg("propeller_info"), doc.Propeller.ctor.doc_1args)
+        .def("num_propellers", &Class::num_propellers,
+            doc.Propeller.num_propellers.doc)
+        .def("get_command_input_port", &Class::get_command_input_port,
+            py_reference_internal, doc.Propeller.get_command_input_port.doc)
+        .def("get_body_poses_input_port", &Class::get_body_poses_input_port,
+            py_reference_internal, doc.Propeller.get_body_poses_input_port.doc)
+        .def("get_spatial_forces_output_port",
+            &Class::get_spatial_forces_output_port, py_reference_internal,
+            doc.Propeller.get_spatial_forces_output_port.doc);
+  }
   // NOLINTNEXTLINE(readability/fn_size)
 }
 }  // namespace
@@ -966,6 +993,20 @@ PYBIND11_MODULE(plant, m) {
       // Keep alive, transitive: `lcm` keeps `builder` alive.
       py::keep_alive<3, 1>(),
       doc.ConnectContactResultsToDrakeVisualizer.doc_3args);
+
+  py::class_<PropellerInfo>(m, "PropellerInfo", doc.PropellerInfo.doc)
+      .def(py::init<const BodyIndex&, const math::RigidTransform<double>&,
+               double, double>(),
+          py::arg("body_index"),
+          py::arg("X_BP") = math::RigidTransform<double>::Identity(),
+          py::arg("thrust_ratio") = 1.0, py::arg("moment_ratio") = 0.0)
+      .def_readwrite("body_index", &PropellerInfo::body_index,
+          doc.PropellerInfo.body_index.doc)
+      .def_readwrite("X_BP", &PropellerInfo::X_BP, doc.PropellerInfo.X_BP.doc)
+      .def_readwrite("thrust_ratio", &PropellerInfo::thrust_ratio,
+          doc.PropellerInfo.thrust_ratio.doc)
+      .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
+          doc.PropellerInfo.moment_ratio.doc);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
