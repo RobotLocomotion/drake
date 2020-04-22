@@ -43,7 +43,11 @@ class RenderEngineGl final : public RenderEngine {
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
   /** @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
-   this will throw an exception.  */
+   this will throw an exception.
+
+   Note that the display window triggered by `show_window` is shared with
+   RenderLabelImage(), and only the last color or label image rendered will be
+   visible in the window (once these methods are implemented).  */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const final;
@@ -54,7 +58,11 @@ class RenderEngineGl final : public RenderEngine {
       systems::sensors::ImageDepth32F* depth_image_out) const final;
 
   /** @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
-   this will throw an exception.  */
+   this will throw an exception.
+
+   Note that the display window triggered by `show_window` is shared with
+   RenderColorImage(), and only the last color or label image rendered will be
+   visible in the window (once these methods are implemented).  */
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const final;
@@ -124,6 +132,18 @@ class RenderEngineGl final : public RenderEngine {
   static internal::OpenGlGeometry CreateGlGeometry(
       const internal::VertexBuffer& vertices,
       const internal::IndexBuffer& indices);
+
+  // Sets the display window visibility and populates it with the _last_ image
+  // rendered, if visible.
+  // If `show_window` is true:
+  //  - the window is made visible (or remains visible).
+  //  - the window's contents display the last image rendered to `target`.
+  // If `show_window` is false:
+  //  - the window is made hidden (or remains hidden).
+  // @pre RenderTarget's frame buffer has the same dimensions as reported by the
+  // camera.
+  void SetWindowVisibility(const CameraProperties& camera, bool show_window,
+                           const internal::RenderTarget& target) const;
 
   // The cached value transformation between camera and world frame.
   math::RigidTransformd X_CW_;
