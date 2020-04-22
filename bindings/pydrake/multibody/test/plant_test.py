@@ -52,6 +52,8 @@ from pydrake.multibody.plant import (
     ExternallyAppliedSpatialForce_,
     MultibodyPlant_,
     PointPairContactInfo_,
+    PropellerInfo,
+    Propeller_,
     VectorExternallyAppliedSpatialForced_,
 )
 from pydrake.multibody.parsing import Parser
@@ -1350,3 +1352,35 @@ class TestPlant(unittest.TestCase):
         id_, = plant.GetCollisionGeometriesForBody(
             body=plant.GetBodyByName("body1"))
         self.assertIsInstance(id_, GeometryId)
+
+    def test_propeller(self):
+        plant = MultibodyPlant_[float](time_step=0.0)
+        scene_graph = SceneGraph_[float]()
+        plant.RegisterAsSourceForSceneGraph(scene_graph)
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        info = PropellerInfo(multibody_plant=plant,
+                             body=plant.get_body(BodyIndex(1)),
+                             X_BP=RigidTransform_[float](),
+                             thrust_ratio=1.0,
+                             moment_ratio=0.1)
+        self.assertEqual(info.thrust_ratio, 1.0)
+        self.assertEqual(info.moment_ratio, 0.1)
+
+        prop = Propeller_[float](multibody_plant=plant,
+                                 body=plant.get_body(BodyIndex(1)),
+                                 X_BP=RigidTransform_[float](),
+                                 thrust_ratio=1.0,
+                                 moment_ratio=0.1)
+        self.assertEqual(prop.num_propellers(), 1)
+        self.assertIsInstance(prop.get_command_input_port(), InputPort_[float])
+        self.assertIsInstance(prop.get_geometry_poses_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(prop.get_spatial_forces_output_port(),
+                              OutputPort_[float])
+
+        prop2 = Propeller_[float]([info])
+        self.assertEqual(prop2.num_propellers(), 1)
