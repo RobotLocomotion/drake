@@ -77,8 +77,8 @@ that connects links **B** and **C** with a `LinearBushingRollPitchYaw`
 z-axis revolute joint by setting torque stiffness constant k₂ = 0 and 
 torque damping constant d₂ = 0.  We chose the z-axis (Yaw) to avoid 
 a singularity associated with "gimbal lock". Two frames (one attached to
-**B** called `BC_Bushing` with origin at point **Bc** and one attached to
-**C** called `CB_Bushing` with origin at point **Cb**) are oriented so
+**B** called `Bc_Bushing` with origin at point **Bc** and one attached to
+**C** called `Cb_Bushing` with origin at point **Cb**) are oriented so
 their z-axes are perpedicular to the planar four-bar linkage.
 
 ## Estimate force stiffness [kx ky kz] from loading/displacement

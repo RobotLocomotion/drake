@@ -1,4 +1,4 @@
-/** @file
+/* @file
 A four bar linkage demo demonstrating the use of a linear bushing as
 a way to model a kinematic loop. It shows:
   - How to model a four bar linkage in SDF.
@@ -42,21 +42,32 @@ namespace {
 
 DEFINE_double(simulation_time, 10.0, "Duration of the simulation in seconds.");
 
-DEFINE_double(force_stiffness, 30000,
-              "Force stiffness value for kx, ky, kz in N/m of the "
-              "LinearBushingRollPitchYaw ForceElement.");
+DEFINE_double(
+    force_stiffness, 30000,
+    "Force (translational) stiffness value for kx, ky, kz in N/m of the "
+    "LinearBushingRollPitchYaw ForceElement.");
 
-DEFINE_double(force_damping, 1500,
-              "Force damping value for dx, dy, dz in N·s/m of the "
-              "LinearBushingRollPitchYaw ForceElement.");
+DEFINE_double(
+    force_damping, 1500,
+    "Force (translational) damping value for dx, dy, dz in N·s/m of the "
+    "LinearBushingRollPitchYaw ForceElement.");
 
 DEFINE_double(torque_stiffness, 30000,
-              "Torque stiffness value for k₀, k₁, k₂ in N·m/rad "
+              "Torque (rotational) stiffness value for k₀, k₁, k₂ in N·m/rad "
               "of the LinearBushingRollPitchYaw ForceElement.");
 
-DEFINE_double(torque_damping, 1500,
-              "Torque damping value for d₀, d₁, and d₂ in N·m·s/rad of "
-              "the LinearBushingRollPitchYaw ForceElement.");
+DEFINE_double(
+    torque_damping, 1500,
+    "Torque (rotational) damping value for d₀, d₁, and d₂ in N·m·s/rad of "
+    "the LinearBushingRollPitchYaw ForceElement.");
+
+DEFINE_double(applied_torque, 0.0,
+              "Constant torque applied to joint_WA, denoted Tᴀ in the README.");
+
+DEFINE_double(
+    initial_velocity, 3.0,
+    "Initial velocity, q̇A, of joint_WA. Default set to 3 radians/second ≈ "
+    "171.88 degrees/second so that the model has some motion.");
 
 int do_main() {
   // Build a generic MultibodyPlant and SceneGraph.
@@ -73,18 +84,17 @@ int do_main() {
   Parser parser(&four_bar);
   parser.AddModelFromFile(full_name);
 
-  // Get the two frames that define the bushing, namely frame BC that is
-  // welded to the end of link B and frame CB that is welded to the end of
+  // Get the two frames that define the bushing, namely frame Bc that is
+  // welded to the end of link B and frame Cb that is welded to the end of
   // link C. Although the bushing allows 6 degrees-of-freedom between frames
-  // BC and CB, the stiffness and damping constants are chosen to approximate
-  // the connection between frames BC and CB as having only one rotational
+  // Bc and Cb, the stiffness and damping constants are chosen to approximate
+  // the connection between frames Bc and Cb as having only one rotational
   // degree of freedom along the bushing's z-axis.
-  const Frame<double>& bc_bushing = four_bar.GetFrameByName("BC_Bushing");
-  const Frame<double>& cb_bushing = four_bar.GetFrameByName("CB_Bushing");
+  const Frame<double>& bc_bushing = four_bar.GetFrameByName("Bc_bushing");
+  const Frame<double>& cb_bushing = four_bar.GetFrameByName("Cb_bushing");
 
-  // TODO(joemasterjohn) come up with a way to estimate correct parameters
-  //  for stiffness and damping constants. These are hand tuned to fit the
-  //  linkages used in this example and make the simulation "look right".
+  // See the README for a discussion of how these parameters were selected
+  // for this particular example.
   const double k_xyz = FLAGS_force_stiffness;
   const double d_xyz = FLAGS_force_damping;
   const double k_012 = FLAGS_torque_stiffness;
@@ -115,37 +125,35 @@ int do_main() {
   ConnectDrakeVisualizer(&builder, scene_graph);
   auto diagram = builder.Build();
 
-  // Create a context for this system and sub-context for the four bar system:
+  // Create a context for this system and sub-context for the four bar system.
   std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
-  diagram->SetDefaultContext(diagram_context.get());
   Context<double>& four_bar_context =
-      diagram->GetMutableSubsystemContext(four_bar, diagram_context.get());
+      four_bar.GetMyMutableContextFromRoot(diagram_context.get());
 
-  // A constant source for a zero applied torque at the Crank joint.
-  four_bar.get_actuation_input_port().FixValue(&four_bar_context, 0.0);
+  // A constant source for applied torque (Tᴀ) at joint_WA.
+  four_bar.get_actuation_input_port().FixValue(&four_bar_context,
+                                               FLAGS_applied_torque);
 
   // Set initial conditions so the model will have some motion
-  const RevoluteJoint<double>& WA_joint =
-      four_bar.GetJointByName<RevoluteJoint>("q_WA");
-  const RevoluteJoint<double>& WC_joint =
-      four_bar.GetJointByName<RevoluteJoint>("q_WC");
-  const RevoluteJoint<double>& AB_joint =
-      four_bar.GetJointByName<RevoluteJoint>("q_AB");
+  const RevoluteJoint<double>& joint_WA =
+      four_bar.GetJointByName<RevoluteJoint>("joint_WA");
+  const RevoluteJoint<double>& joint_WC =
+      four_bar.GetJointByName<RevoluteJoint>("joint_WC");
+  const RevoluteJoint<double>& joint_AB =
+      four_bar.GetJointByName<RevoluteJoint>("joint_AB");
 
   // See the README for an explanation of these angles.
   const double qA = atan2(sqrt(15.0), 1.0);  // about 75.52°
   const double qB = M_PI - qA;               // about 104.48°
   const double qC = qB;                      // about 104.48°
 
-  WA_joint.set_angle(&four_bar_context, qA);
-  AB_joint.set_angle(&four_bar_context, qB);
-  WC_joint.set_angle(&four_bar_context, qC);
+  joint_WA.set_angle(&four_bar_context, qA);
+  joint_AB.set_angle(&four_bar_context, qB);
+  joint_WC.set_angle(&four_bar_context, qC);
 
-  // Set the rate of change, in radians/second, of the angle qA,
-  // so the model has some motion.
-  // 3 radians/second ≈ 171.88 degrees/second
-  WA_joint.set_angular_rate(&four_bar_context, 2.0);
+  // Set q̇A,the rate of change in radians/second of the angle qA.
+  joint_WA.set_angular_rate(&four_bar_context, FLAGS_initial_velocity);
 
   // Create a simulator and run the simulation
   std::unique_ptr<Simulator<double>> simulator =
