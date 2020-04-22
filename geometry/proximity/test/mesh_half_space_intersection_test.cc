@@ -293,7 +293,7 @@ TYPED_TEST_P(MeshHalfspaceIntersectionTest, NoIntersection) {
       Vector3d(0, 0, 3), Vector3d(1, 0, 3), Vector3d(0, 1, 3));
 
   // Verify no intersection.
-  // X_WF = I -- because there is no intersection, the frame of the non-existant
+  // X_WF = I -- because there is no intersection, the frame of the non-existent
   // intersection mesh is irrelevant.
   this->CallConstructTriangleHalfspaceIntersectionPolygon(mesh_F, {});
   EXPECT_TRUE(this->new_vertices_W().empty());

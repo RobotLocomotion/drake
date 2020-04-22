@@ -270,7 +270,7 @@ void SdpaFreeFormat::AddBoundsOnRegisteredDecisionVariable(
   } else {
     throw std::runtime_error(
         "SdpaFreeFormat::AddBoundsOnRegisteredDecisionVariable(): "
-        "the registed variable should be an entry in X.");
+        "the registered variable should be an entry in X.");
   }
 }
 

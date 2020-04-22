@@ -224,7 +224,7 @@ class SmallestEllipsoidCoveringProblem {
   const VectorX<symbolic::Variable>& a() const { return a_; }
 
  private:
-  // CheckSolution() already checks if the result is succesful, and if all the
+  // CheckSolution() already checks if the result is successful, and if all the
   // points are within the ellipsoid, with at least one point on the boundary
   // of the ellipsoid. CheckSolutionExtra can do extra checks for each specific
   // problem.

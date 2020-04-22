@@ -6,7 +6,7 @@ from pydrake.systems.framework import AbstractValue, LeafSystem
 
 
 def _TransformPoints(points_Ci, X_CiSi):
-    # Make homogenous copy of points.
+    # Make homogeneous copy of points.
     points_h_Ci = np.vstack((points_Ci,
                              np.ones((1, points_Ci.shape[1]))))
 

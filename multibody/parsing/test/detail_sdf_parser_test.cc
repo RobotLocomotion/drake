@@ -638,7 +638,7 @@ void FailWithReservedName(const std::string& inner) {
 }
 
 GTEST_TEST(SdfParser, TestUnsupportedFrames) {
-  // Model frames cannnot attach to / nor be relative to the world frame.
+  // Model frames cannot attach to / nor be relative to the world frame.
   FailWithInvalidWorld(R"(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->

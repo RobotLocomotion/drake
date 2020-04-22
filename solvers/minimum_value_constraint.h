@@ -88,7 +88,7 @@ class MinimumValueConstraint final : public solvers::Constraint {
   elements larger than the provided influence distance.
   @param value_function_double Optional user-provide function that computes the
   same values as `value_function` but for double rather than AutoDiffXd. If
-  ommited, `value_function` will be called (and the gradients discarded) when
+  omitted, `value_function` will be called (and the gradients discarded) when
   this constraint is evaluated for doubles.
   @pre `value_function_double(math::autoDiffToValueMatrix(x), v_influence) ==
   math::autoDiffToValueMatrix(value_function(x, v_influence))` for all x.

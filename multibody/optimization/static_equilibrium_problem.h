@@ -63,7 +63,7 @@ class StaticEquilibriumProblem {
   const VectorX<symbolic::Variable>& u_vars() const { return u_vars_; }
 
   /**
-   * Retrive the solution to all contact wrenches.
+   * Retrieve the solution to all contact wrenches.
    * @param result The result of solving prog().
    */
   std::vector<ContactWrench> GetContactWrenchSolution(

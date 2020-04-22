@@ -115,7 +115,7 @@ class HydroelasticModelTests : public ::testing::Test {
                                   lightBlue);
 
     geometry::ProximityProperties props;
-    // This should produce a level-2 refinement (two steps beyond octohedron).
+    // This should produce a level-2 refinement (two steps beyond octahedron).
     geometry::AddSoftHydroelasticProperties(radius / 2, &props);
     geometry::AddContactMaterial(
         elastic_modulus, dissipation,

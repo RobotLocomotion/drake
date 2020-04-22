@@ -143,7 +143,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    trivially reports success.
 
    @param plane_F       The slicing plane (measured and expressed in Frame F).
-   @param X_FM          The relative pose between the trivial meshes's canoncial
+   @param X_FM          The relative pose between the trivial mesh's canonical
                         frame M and the query frame F.
    @param do_analysis   If `true`, evaluate the resulting intersection mesh for
                         consistency and return the result.

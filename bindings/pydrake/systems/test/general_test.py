@@ -659,7 +659,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(type(value), int)
         self.assertEqual(value, 1)
 
-        # Fixing to an explicitly-typed Value instantation is an error ...
+        # Fixing to an explicitly-typed Value instantiation is an error ...
         with self.assertRaises(RuntimeError):
             input_port.FixValue(context, AbstractValue.Make("string"))
         # ... but implicit typing works just fine.

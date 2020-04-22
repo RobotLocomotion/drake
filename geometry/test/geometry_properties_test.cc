@@ -137,7 +137,7 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
       "exists, but is of a different type. Requested 'std::string', but found "
       "'double'");
 
-  // Using r-values as defaults; this tests both compilability and correctness.
+  // Using r-values as defaults; this tests both compatibility and correctness.
   properties.AddProperty("strings", "valid_string", "valid_string");
   std::string valid_value = properties.GetPropertyOrDefault(
       "strings", "valid_string", "missing");
@@ -155,7 +155,7 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   const std::string prop_name("some_property");
 
   // Getter errors
-  // Case: Asking for property from non-existant group.
+  // Case: Asking for property from non-existent group.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
       ".*Trying to read property .* from group .*. But the group does not "
@@ -184,7 +184,7 @@ GTEST_TEST(GeometryProperties, PropertyIteration) {
     properties.AddProperty(default_group, pair.first, pair.second);
   }
 
-  // Get exception for non-existant group.
+  // Get exception for non-existent group.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetPropertiesInGroup("bad group"), std::logic_error,
       ".*Can't retrieve properties for a group that doesn't exist.*");

@@ -272,7 +272,7 @@ GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddConstraint(constraint, x);
 
-  // The initial guess for velocity is 6, ouside of the bound.
+  // The initial guess for velocity is 6, outside of the bound.
   auto result = Solve(prog, Eigen::Vector2d(1, 6));
 
   EXPECT_EQ(result.get_solution_result(),

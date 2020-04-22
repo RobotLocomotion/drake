@@ -123,7 +123,7 @@ def drake_cc_vector_gen(
 
     This rule only generates C++ code -- it does not compile it; within Drake,
     use the drake_cc_vector_gen_library rule below is likely a better choice.
-    It will both geneate and compile the code all in one rule.  This rule is
+    It will both generate and compile the code all in one rule.  This rule is
     intended for use by external projects that do not want to use Drake's
     cc_library defaults.
     """

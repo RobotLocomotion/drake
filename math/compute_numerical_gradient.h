@@ -109,7 +109,7 @@ ComputeNumericalGradient(
   using std::max;
 
   // Notation:
-  // We will allways approximate the derivative as:
+  // We will always approximate the derivative as:
   //   J.ⱼ = (y⁺ - y⁻) / dxⱼ
   // where J.ⱼ is the j-th column of J. We define y⁺ = y(x⁺) and y⁻ = y(x⁻)
   // depending on the scheme as:

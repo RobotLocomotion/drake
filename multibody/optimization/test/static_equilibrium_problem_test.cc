@@ -71,7 +71,7 @@ GTEST_TEST(StaticEquilibriumProblemTest, SphereOnGroundTest) {
   Eigen::VectorXd x_init(dut.prog().num_vars());
   x_init.setZero();
 
-  // The sphere is in penetration with the ground in the intial pose.
+  // The sphere is in penetration with the ground in the initial pose.
   dut.prog().SetDecisionVariableValueInVector(
       dut.q_vars().head<4>(), Eigen::Vector4d(1, 0, 0, 0), &x_init);
   check_static_equilibrium_problem_solve(x_init);
@@ -204,7 +204,7 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
   Eigen::VectorXd x_init(dut.prog().num_vars());
   x_init.setZero();
 
-  // The intial poses for both spheres are above the ground.
+  // The initial poses for both spheres are above the ground.
   Eigen::VectorXd q_init(14);
   q_init.head<4>() << 1, 0, 0, 0;
   q_init.segment<3>(4) << 0.2, 0, radii[0] + 0.6;

@@ -156,7 +156,7 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-These docstrings are avaialable within `constexpr struct ... pydrake_doc`
+These docstrings are available within `constexpr struct ... pydrake_doc`
 as `const char*` values . When these are not available or not suitable for
 Python documentation, provide custom strings. If this custom string is long,
 consider placing them in a heredoc string.

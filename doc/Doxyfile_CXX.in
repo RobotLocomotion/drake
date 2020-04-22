@@ -306,7 +306,7 @@ PREDEFINED            += DRAKE_DOXYGEN_CXX=1 HAVE_SPDLOG=1
 # file must be kept in sync!
 # =============================================================================
 # The following macros are carefully crafted to retain good markup when they
-# pass through Doxygen's preprocesor.
+# pass through Doxygen's preprocessor.
 PREDEFINED            += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
 /** \name Does not allow copy, move, or assignment */ \
 /** \{ */ \

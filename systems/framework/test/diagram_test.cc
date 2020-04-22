@@ -2444,7 +2444,7 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
   // Selectively apply the update; only hold1 should get notified.
   diagram_.ApplyUnrestrictedUpdate(unrestricted_events, updates.get(),
                                        context_.get());
-  // Sanity check that the update actually occured -- should have added time
+  // Sanity check that the update actually occurred -- should have added time
   // to sys1's abstract id.
   EXPECT_EQ(get_sys1_abstract_data_as_double(), kSys1Id + next_time);
   EXPECT_EQ(get_sys2_abstract_data_as_double(), kSys2Id);
