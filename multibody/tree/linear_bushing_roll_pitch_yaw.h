@@ -25,7 +25,7 @@ template <typename T> class Body;
 /// (in an angle-axis sense) between the unit vectors of frame A and frame C.
 /// Frame B is a "floating" frame in the sense that it is calculated from the
 /// position and orientation of frames A and C (B is not welded to the bushing).
-/// @image html multibody/tree/images/LinearBushingRollPitchYaw.png width=70%
+/// @image html multibody/tree/images/LinearBushingRollPitchYaw.png width=80%
 ///
 /// The set of forces on frame C from the bushing is equivalent to a
 /// torque 𝐭 on frame C and a force 𝐟 applied to a point Cp of C.
@@ -89,7 +89,7 @@ template <typename T> class Body;
 /// ^                               | d₀₁₂ = `[d₀ d₁ d₂]` | dxyz = `[dx dy dz]`
 ///
 /// Angles q₀, q₁, q₂ are calculated from frame C's orientation relative to
-/// frame A, with `[−π < q₀ <= π, −π/2 <= q₁ <= π/2, −π < q₂ <= π]`,
+/// frame A, with `[−π < q₀ ≤ π, −π/2 ≤ q₁ ≤ π/2, −π < q₂ ≤ π]`,
 /// hence, there is no angle wrapping and torque stiffness has a limited range.
 /// Gimbal torques τ can be discontinuous if one of q₀, q₁, q₂ is discontinuous
 /// and its associated torque spring constant is nonzero. For example, τ₂ is
@@ -187,56 +187,95 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   }
 
   /// Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
-  /// One way to approximate torque stiffness constants is with concepts that
-  /// parallel the force stiffness constants described below.  For example,
-  /// k₀ can be estimated by specifying a maximum bushing angular displacement
-  /// θ₀Max, estimating a maximum moment load Mx, and using k₀ ≈ Mx / θ₀Max.
-  /// Alternatively, as described below a value for k₀ can be determined by
-  /// choosing a characteristic moment of inertia I₀ (directionally dependent),
-  /// then choosing ωₙ (e.g., from setting_time), and then using k₀ ≈ I₀ ωₙ².
+  /// One way to estimate a bushing's torque stiffness constants is with an
+  /// experiment, e.g., by applying a known moment load Mx and measuring the
+  /// associated angular displacement Δθ and estimating `k₀ = Mx / Δθ`.
+  /// Another way to estimate k₀ is with FEA (finite element analysis) software.
+  /// A third way to choose k₀ is with the concepts described in the method
+  /// force_stiffness_constants().  For example, k₀ can be estimated by choosing
+  /// a maximum angular displacement θMax, estimating a maximum moment load Mx,
+  /// and using `k₀ = Mx / θMax`.
+  /// A fourth way to choose k₀ is by choosing a characteristic moment of
+  /// inertia I₀ (directionally dependent), choosing ωₙ > 0 (speed of response),
+  /// and using a related linear constant-coefficient 2ⁿᵈ-order ODE <pre>
+  ///  I₀ θ̈ +     d₀ θ̇ +  k₀ θ = 0   or alternatively as
+  ///     θ̈ + 2 ζ ωₙ θ̇ + ωₙ² θ = 0   where ωₙ = √(k₀/I₀),  ζ = d₀ / (2 √(I₀ k₀))
+  /// </pre>
+  /// Rearranging ωₙ = √(k₀/I₀) produces k₀ = I₀ ωₙ².
+  /// @see force_stiffness_constants() for how to choose ωₙ from settling time,
+  /// how stiffness affects simulation time and accuracy, what loads to consider
+  /// for k₀ = Mx / θMax, and guidance about modeling ideal joints.
   const Vector3<double>& torque_stiffness_constants() const {
     return torque_stiffness_constants_;
   }
 
   /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
-  /// One way to approximate torque damping constants is with concepts that
-  /// parallel the force damping constants described below.  For example, with
-  /// k₀ available and a damping ratio ζ chosen (e.g., ζ = 1), b ≈ 2 ζ √(I₀ k₀).
+  /// One way to estimate the torque damping constant d₀ is to choose a damping
+  /// ratio ζ (e.g., ζ = 1, critical damping) and then calculate d₀ in terms of
+  /// the previously estimated I₀ and k₀ as d₀ = 2 ζ √(I₀ k₀).
+  /// A 2ⁿᵈ way to estimate d₀ is to choose a damping ratio ζ (e.g., ζ = 1),
+  /// a settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then d₀ = 2 ζ k₀ / ωₙ.
+  //  Note this 2ⁿᵈ way does not require a characteristic moment of inertia I₀.
+  /// @see torque_stiffness_constants() for details on I₀ and k₀.
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
   }
 
   /// Returns the force stiffness constants `[kx ky kz]` (units of N/m).
-  /// There are multiple ways to estimate values for [kx ky kz].
-  /// Consider estimating values for [kx ky kz] using one of the methods below,
-  /// another method, or a combination thereof.
-  /// One way to estimate [kx ky kz] is by loading / displacement.
-  /// For example, one could specify a maximum bushing displacement in a
+  /// One way to estimate a bushing's force stiffness constants is with an
+  /// experiment, e.g., by applying a known moment load Fx and measuring the
+  /// associated displacement (stretch) Δx and estimating `kx = Fx / Δx`.
+  /// Another way to estimate kx is with FEA (finite element analysis) software
+  /// A third way to choose kx is to specify a maximum bushing displacement in a
   /// direction (e.g., xMax), estimate a maximum directional load (Fx) that
   /// combines gravity forces, applied forces, and inertia forces (centripetal,
-  /// Coriolus, gyroscopic), and calculate kx = Fx / xMax.
-  /// Another way uses a characteristic mass and ωₙ (or settling time) and a
-  /// related linear constant-coefficient 2ⁿᵈ-order ODE <pre>
-  ///  m ÿ  +      b ẏ  +    k y = 0     or equivalently
-  ///  m ÿ  + 2 ζ ωₙ ẏ  +  ωₙ² y = 0     where ωₙ² = k/m,   ζ = b / (2 √(m k))
+  /// Coriolis, gyroscopic), and calculate `kx = Fx / xMax`.
+  /// A fourth way to choose kx is by choosing a characteristic mass m (which
+  /// may be directionally dependent), choosing ωₙ > 0 (speed of response),
+  /// and using a related constant-coefficient 2ⁿᵈ-order ODE for stretch x <pre>
+  ///  m ẍ +     dx ẋ +  kx x = 0    or alternatively as
+  ///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0    where ωₙ = √(kx/m),  ζ = dx / (2 √(m kx))
   /// </pre>
-  /// After choosing a characteristic mass m (which may be directionally
-  /// dependent) and choosing ωₙ, k ≈ m ωₙ² (where k is kx or ky or kz).
-  /// Note: One way to pick ωₙ is to choose a settling_time which approximates
-  /// the desired time for the bushing to settle to within 5% of an equilibrium
-  /// solution, then use ωₙ ≈ 5 / settling_time and k ≈ m ωₙ².
-  /// Note: Stiffness [kx ky kz] affects simulation time and accuracy.
+  /// Rearranging ωₙ = √(kx/m) produces kx = m ωₙ².
+  /// @note One way to choose ωₙ is to choose a settling time tₛ which
+  /// approximates the desired time for stretch x to settle to within 1% (0.01)
+  /// of an equilibrium solution, and choose a damping ratio ζ (e.g., ζ = 1,
+  /// critical damping), then calculate ωₙ = -log(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ).
+  /// @note Stiffness [kx ky kz] affects simulation time and accuracy.
   /// Generally, a stiffer bushing more closely resembles an ideal joint (e.g.,
-  /// revolute joint or fixed/weld joint).  However (depending on integrator),
-  /// a stiffer bushing increases numerical integration time.
+  /// a revolute joint or fixed/weld joint).  However (depending on integrator),
+  /// a stiffer bushing usually increases numerical integration time.
+  /// @note Described above are four ways to estimate force stiffness constants.
+  /// Use a method or combination of methods appropriate for your application.
+  /// For example, the 1ˢᵗ and/or 2ⁿᵈ method are more useful for a real bushing
+  /// whereas the 3ʳᵈ and/or 4ᵗʰ method can be more useful when replacing an
+  /// ideal joint (such as a revolute or fixed/weld joint) with a bushing.
+  /// For example, the 3ʳᵈ method is a "penalty method" substitute for a "hard"
+  /// constraint. Since a bushing is inherently compliant it will violate a
+  /// hard constraint somewhat.  The stiffer the bushing, the more accurately
+  /// it enforces the hard constraint, but at a cost of more computational time.
+  /// Choose stiffness k and damping d to balance accuracy versus time. For a
+  /// penalty method, consider your tolerance for constraint errors -- if the
+  /// bushing allows deviations of xMax = 1 mm (for example) is that OK for your
+  /// application?  The choice of force damping dx to damp out oscillations can
+  /// be determined by a "reasonably small" settling time tₛ > 0.  For example,
+  /// tₛ = 0.01 s may be negligible for a robot arm with a 10 s reach maneuver.
+  /// After choosing settling time tₛ and damping ratio ζ (e.g., ζ = 1), ωₙ can
+  /// be calculated as ωₙ = -log(0.01) / (ζ tₛ) and damping dx = 2 ζ kx / ωₙ.
+  /// In summary, this penalty method example requires choices for tₛ, ζ and an
+  /// estimate of kx, but not a characteristic mass m.
   const Vector3<double>& force_stiffness_constants() const {
     return force_stiffness_constants_;
   }
 
   /// Returns the force damping constants `[dx dy dz]` (units of N*s/m).
-  /// One way to approximate force damping constants is by picking a damping
-  /// ratio ζ (e.g., ζ ≈ 1, critical damping), using the previously estimated
-  /// value of k, then calculate b ≈ 2 ζ √(m k).
+  /// One way to estimate the force damping constant dx is to choose a damping
+  /// ratio ζ (e.g., ζ = 1, critical damping) and then calculate dx in terms of
+  /// the previously estimated mass m and kx as `dx = 2 ζ √(m kx)`.
+  /// A 2ⁿᵈ way to estimate dx is to choose a damping ratio ζ (e.g., ζ = 1),
+  /// a settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then dx = 2 ζ kx / ωₙ.
+  //  Note this 2ⁿᵈ way does not require a characteristic mass m.
+  /// @see force_stiffness_constants() for details on mass m and stiffness kx.
   const Vector3<double>& force_damping_constants() const {
     return force_damping_constants_;
   }
@@ -337,7 +376,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
 
   // Uses the rotation matrix R_AC that relates frames A and C to calculate the
   // RollPitchYaw angles `[roll pitch yaw] = [q₀ q₁ q₂]`, with the range
-  // `[−π < q₀ <= π, −π/2 <= q₁ <= π/2, −π < q₂ <= π]`.
+  // `[−π < q₀ ≤ π, −π/2 ≤ q₁ ≤ π/2, −π < q₂ ≤ π]`.
   // @param[in] context The state of the multibody system.
   math::RollPitchYaw<T> CalcBushingRollPitchYawAngles(
       const systems::Context<T>& context) const {
