@@ -427,6 +427,7 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
 // 4) Treat ADS with empty derivatives as though they were doubles.
 // Points (1) and (4) are handled here. Points (2) and (3) are already handled
 // by Eigen's overloads.
+// See https://gitlab.com/libeigen/eigen/-/issues/1870.
 inline const AutoDiffScalar<VectorXd> min(const AutoDiffScalar<VectorXd>& a,
                                           const AutoDiffScalar<VectorXd>& b) {
   // If both a and b have derivatives, then their derivative sizes must match.
