@@ -26,8 +26,9 @@ constexpr char kVertexSource[] = R"_(
 constexpr char kFragmentSource[] = R"_(
   #version 330
   uniform float test_uniform;
+  uniform vec4 test_uniform4;
   void main() {
-    gl_FragColor = vec4(0.18, 0.54, 0.34, test_uniform);
+    gl_FragColor = vec4(0.18, 0.54, 0.34, test_uniform) + test_uniform4;
   }
 )_";
 
@@ -149,6 +150,12 @@ TEST_F(ShaderProgramTest, UniformAccess) {
   DRAKE_EXPECT_THROWS_MESSAGE(program.SetUniformValue("invalid", 1.75f),
                               std::runtime_error,
                               "Cannot get shader uniform invalid");
+
+  EXPECT_NO_THROW(program.SetUniformValue("test_uniform4",
+                                          Vector4<float>(0.2, 0.1, 0.1, 0.3)));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      program.SetUniformValue("invalid", Vector4<float>(0.2, 0.1, 0.1, 0.3)),
+      std::runtime_error, "Cannot get shader uniform invalid");
 }
 
 TEST_F(ShaderProgramTest, Binding) {
