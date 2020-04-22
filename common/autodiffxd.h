@@ -419,7 +419,7 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
 }
 
 // We have these implementations here because Eigen's implementations do not
-// have consistent behavior when a == b. We propose the following rules for that
+// have consistent behavior when a == b. We enforce the following rules for that
 // case:
 // 1) If both a and b are ADS with non-empty derivatives, return a.
 // 2) If both a and b are doubles, return a.
