@@ -452,7 +452,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
   // ImplicitIntegrator<T>::MaybeFreshenMatrices(). We implement our own version
-  // here to use a specialized Jacobian Jₗ(y). The aformentioned method was
+  // here to use a specialized Jacobian Jₗ(y). The aforementioned method was
   // designed for use in DoImplicitIntegratorStep() processes that follow this
   // model:
   // 1. DoImplicitIntegratorStep(h) is called;

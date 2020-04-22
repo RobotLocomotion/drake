@@ -104,8 +104,8 @@ GTEST_TEST(MakeSphereMesh, AutoDiffRefinement) {
 
 // Confirms that the SplitOctohedron function splits in the expected direction.
 GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
-  // Define a tet such that when we divide all the edges in half the octohedron
-  // remaining is the canonical octohedron with vertices at (±1, 0, 0),
+  // Define a tet such that when we divide all the edges in half the octahedron
+  // remaining is the canonical octahedron with vertices at (±1, 0, 0),
   // (0, ±1, 0), and (0, 0, ±1). We do this so there's no question about the
   // semantics of vertices e-j as defined in the make unit sphere
   // infrastructure.
@@ -149,7 +149,7 @@ GTEST_TEST(MakeSphereMesh, SplitOctohedron) {
   ASSERT_TRUE(CompareMatrices(unit_p_MVs[i].r_MV(), Vector3d(0, 0, 1)));
   ASSERT_TRUE(CompareMatrices(unit_p_MVs[j].r_MV(), Vector3d(-1, 0, 0)));
 
-  // We're going to implicitly scale the tetrahedron so that the octohedron
+  // We're going to implicitly scale the tetrahedron so that the octahedron
   // is no longer symmetric; we scale it along the three axes by a factor of
   // 1, 2, and 2. The axis under test is scaled by 1 and the other axes by 2.
   // SplitOctohedron() will favor splitting along the shortest axis. In the
@@ -251,7 +251,7 @@ GTEST_TEST(MakeSphereVolumeMesh, ConfirmEdgeLength) {
 }
 
 // Confirms that edge length larger than sphere diameter still produces the
-// octohedron.
+// octahedron.
 GTEST_TEST(MakeSphereVolumeMesh, MassiveEdgeLength) {
   const Sphere sphere(1.5);
   const double edge_length = 3 * sphere.radius();

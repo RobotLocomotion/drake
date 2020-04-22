@@ -79,8 +79,8 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
       VolumeMesh<T>(std::move(tetrahedra), std::move(vertices)), is_boundary);
 }
 
-/** Given the six vertices that form the interior octohedron, decomposes the
- octohedron into the "best" set of four tetrahedra. The vertices are encoded
+/** Given the six vertices that form the interior octahedron, decomposes the
+ octahedron into the "best" set of four tetrahedra. The vertices are encoded
  by six vertex indices into the collection of vertex positions. The resulting
  tetrahedra are appended to `tets`.
 
@@ -90,7 +90,7 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
  and cd (otherwise known as e, f, g, h, i, and j in `SplitTetrahedron`).
 
  @param vertex_indices      The ordered indices of the six vertices that form
-                            the octohedron.
+                            the octahedron.
  @param p_MVs               The position vector of each vertex V in the mesh
                             frame M -- indexed by `vertex_indices`.
  @param[inout] tets         The collection of tetrahedra; the best four
@@ -396,7 +396,7 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
  change the output mesh. This algorithm will not produce a tetrahedral mesh with
  more than approximately 100 million tetrahedra. Similarly, for arbitrarily
  large values of `resolution_hint`, the coarsest possible mesh is a tessellated
- octohedron.
+ octahedron.
 
  @param sphere              The sphere for which a mesh is created.
  @param resolution_hint     The positive characteristic edge length for the
@@ -412,7 +412,7 @@ template <typename T>
 VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
                                    double resolution_hint) {
   /*
-    The volume mesh is formed by successively refining an octohedron. At the
+    The volume mesh is formed by successively refining an octahedron. At the
     equator, that means we go from 4 edges, to 8 edges, to 16 edges, etc.,
     doubling at each level of refinement. These edges are simply chords across
     fixed-length arcs of the sphere. Based on that we can easily compute the

@@ -102,7 +102,7 @@ GTEST_TEST(SolverBaseTest, SolveAsOutputArgument) {
   EXPECT_EQ(result.get_x_val()[1], 41.0);
 }
 
-// Check the error message when the solver is not avilable.
+// Check the error message when the solver is not available.
 GTEST_TEST(SolverBaseTest, AvailableError) {
   const MathematicalProgram prog;
   StubSolverBase dut;

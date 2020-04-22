@@ -152,7 +152,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
  * constraint.
  * @param q_vars The variable for the generalized position q in @p prog.
  * @param v_vars The variable for the generalized velocity v in @p prog.
- * @param lambda_vars The varaibles to parameterize the contact wrench between
+ * @param lambda_vars The variables to parameterize the contact wrench between
  * this pair of geometry.
  * @param prog The optimization program to which the sliding friction
  * complementarity constraint is imposed.

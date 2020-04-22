@@ -59,7 +59,7 @@ struct SoftMesh {
  elastic modulus, `d` is the positive penetration measure, and `h` is the slab
  thickness -- a simple linear function where pressure is a scale of the depth.
  This model is valid for small penetrations but fails to capture the increased
- stiffness for deformations that approch or penetrate the rigid substrate.
+ stiffness for deformations that approach or penetrate the rigid substrate.
 
  The hydroelastic representation combines elastic modulus and slab thickness
  into a "pressure scale" value: `s = E / h`, which maps penetration depth to

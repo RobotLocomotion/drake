@@ -110,7 +110,7 @@ class LadderTest : public ::testing::Test {
 
   // Adds the model for the ladder pinned to the ground at the origin.
   void AddPinnedLadder() {
-    // We split the ladder into two halfs and join them with a weld joint so
+    // We split the ladder into two halves and join them with a weld joint so
     // that we can evaluate the reaction force right at the middle.
     // We define body frame Bl and Bu for the lower and upper portions of the
     // ladder respectively.
@@ -158,7 +158,7 @@ class LadderTest : public ::testing::Test {
                                             {}, *ladder_lower_, {},
                                             Vector3d::UnitY(), kPinDamping_);
 
-    // Weld the two halfs.
+    // Weld the two halves.
     const RigidTransformd X_BlBu(Vector3d(0.0, 0.0, kLadderLength_ / 2.0));
     weld_ = &plant_->WeldFrames(ladder_lower_->body_frame(),
                                 ladder_upper_->body_frame(), X_BlBu);

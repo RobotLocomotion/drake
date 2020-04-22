@@ -19,7 +19,7 @@ two ways to do this:
 To create the ~/.config/readonly_github_api_token.txt file used by (2), open a
 browser to https://github.com/settings/tokens and create a new token (it does
 not need any extra permissions; the default "no checkboxes are set" is good),
-and save the plaintext hexidecimal token to that file.
+and save the plaintext hexadecimal token to that file.
 """
 
 import argparse

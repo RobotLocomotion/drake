@@ -464,7 +464,7 @@ class MultibodyTree {
   ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
   ///   const Body<double>& child_body =
   ///     model.AddBody<RigidBody>(SpatialInertia<double>(...));
-  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
+  ///   // Define the pose X_BM of a frame M rigidly attached to child body B.
   ///   const RevoluteJoint<double>& elbow =
   ///     model.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */

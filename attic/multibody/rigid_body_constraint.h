@@ -327,7 +327,7 @@ class SingleTimeLinearPostureConstraint : public RigidBodyConstraint {
 
 /*
  * Constrain the kinematics of the robot at individual time. Need to call
- * doKinematics first for the robot and then evaulate this constraint.
+ * doKinematics first for the robot and then evaluate this constraint.
  */
 class SingleTimeKinematicConstraint : public RigidBodyConstraint {
  public:

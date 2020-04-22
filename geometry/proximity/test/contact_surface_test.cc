@@ -237,7 +237,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
         are_identical(dut.mesh_W().element(f), original.mesh_W().element(f)));
   }
 
-  // Evalute the mesh field, once per face for an arbitrary point Q on the
+  // Evaluate the mesh field, once per face for an arbitrary point Q on the
   // interior of the triangle. We expect e_MN function hasn't changed.
   const SurfaceMesh<double>::Barycentric b_Q{0.25, 0.25, 0.5};
   for (SurfaceFaceIndex f(0); f < original.mesh_W().num_faces(); ++f) {

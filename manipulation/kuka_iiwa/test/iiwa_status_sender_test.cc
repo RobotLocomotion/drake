@@ -72,7 +72,7 @@ TEST_F(IiwaStatusSenderTest, AcceptanceTest) {
   Fix(dut_.get_velocity_estimated_input_port(), v0_estimated);
   Fix(dut_.get_torque_measured_input_port(), t0_measured);
   Fix(dut_.get_torque_external_input_port(), t0_external);
-  // ... so all ouputs have values.
+  // ... so all outputs have values.
   EXPECT_EQ(output().joint_position_commanded, as_vector(q0_commanded));
   EXPECT_EQ(output().joint_position_measured, as_vector(q0_measured));
   EXPECT_EQ(output().joint_torque_commanded, as_vector(t0_commanded));

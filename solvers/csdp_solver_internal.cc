@@ -225,7 +225,7 @@ void GenerateCsdpProblemDataWithoutFreeVariables(
   } else {
     throw std::runtime_error(
         "GenerateCsdpProblemDataWithoutFreeVariables(): the formulation has "
-        "free variables, you should't call this method.");
+        "free variables, you shouldn't call this method.");
   }
 }
 

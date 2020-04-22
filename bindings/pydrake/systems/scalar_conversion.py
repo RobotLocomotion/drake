@@ -115,7 +115,7 @@ class TemplateSystem(TemplateClass):
         convertible System as a template.
 
         The decorated function must be of the form ``f(T)``, which returns a
-        class which will be the instantation for type ``T`` of the given
+        class which will be the instantiation for type ``T`` of the given
         template.
 
         Args:

@@ -5,7 +5,7 @@ Drake is concerned with the simulation of _physical_ phenomena, including
 contact between simulated objects.
 Drake approximates real-world physical contact phenomena with a combination
 of geometric techniques and response models. Here we discuss the
-parameterization and idiosyncracies of a particular contact response model,
+parameterization and idiosyncrasies of a particular contact response model,
 based on point contact, non-penetration imposed with a penalty force, and a
 continuous model of friction approximating Coulomb stiction and sliding friction
 effects.
@@ -211,8 +211,8 @@ Next topic: @ref contact_engineering
  <h2>Choice of Time Advancement Strategy</h2>
 
  @ref drake::multibody::MultibodyPlant "MultibodyPlant" offers two different
- modalities to model mechanical sytems in time. These are:
-   1. As a discrete system with periodic updates (the prefered method for
+ modalities to model mechanical systems in time. These are:
+   1. As a discrete system with periodic updates (the preferred method for
       robustness and speed).
    2. As a continuous system.
 

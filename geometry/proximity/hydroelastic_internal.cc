@@ -138,7 +138,7 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
 // instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
 // "rigid" or "soft") strings (to help give intelligible error messages) and
 // then attempts to extract a typed value from a set of proximity properties --
-// spewing meaningful error messages based on absence, type mis-match, and
+// spewing meaningful error messages based on absence, type mismatch, and
 // invalid values.
 template <typename ValueType>
 class Validator {

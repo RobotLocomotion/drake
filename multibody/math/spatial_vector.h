@@ -227,8 +227,8 @@ class SpatialVector {
   /// (Advanced) Addition operator. Implements the addition of V1 and V2 as
   /// elements in ℝ⁶.
   /// @warning This operation might not be physical for certain spatial
-  /// quantities. For instace, combining the spatial accelerations of two frames
-  /// does not correspond to this operation.
+  /// quantities. For instance, combining the spatial accelerations of two
+  /// frames does not correspond to this operation.
   friend SpatialQuantity operator+(const SpatialQuantity& V1,
                                    const SpatialQuantity& V2) {
     return SpatialQuantity(V1) += V2;

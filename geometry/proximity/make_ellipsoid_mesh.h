@@ -32,7 +32,7 @@ namespace internal {
  change the output mesh. This algorithm will not produce a tetrahedral mesh with
  more than approximately 100 million tetrahedra. Similarly, for arbitrarily
  large values of `resolution_hint`, the coarsest possible mesh is a tessellated
- octohedron.
+ octahedron.
 
  @param ellipsoid           The ellipsoid for which a mesh is created.
  @param resolution_hint     The positive characteristic edge length for the

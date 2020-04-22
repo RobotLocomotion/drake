@@ -553,8 +553,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
   ///
-  /// %MultibodyPlant offers two different modalities to model mechanical sytems
-  /// in time. These are:
+  /// %MultibodyPlant offers two different modalities to model mechanical
+  /// systems in time. These are:
   ///  1. As a discrete system with periodic updates, `time_step` is strictly
   ///     greater than zero.
   ///  2. As a continuous system, `time_step` equals exactly zero.
@@ -791,7 +791,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   const RigidBody<double>& body_2 =
   ///     plant.AddRigidBody("Body2", SpatialInertia<double>(...));
   ///   // Body 1 serves as parent, Body 2 serves as child.
-  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
+  ///   // Define the pose X_BM of a frame M rigidly attached to child body B.
   ///   const RevoluteJoint<double>& elbow =
   ///     plant.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */

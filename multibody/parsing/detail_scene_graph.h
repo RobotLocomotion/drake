@@ -113,7 +113,7 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  of these properties.
  | Tag                              | Group        | Property                  | Notes                                                                                                                            |
  | :------------------------------: | :----------: | :-----------------------: | :------------------------------------------------------------------------------------------------------------------------------: |
- | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tesselation to support hydroelastic contact.                                                    |
+ | drake:mesh_resolution_hint       | hydroelastic | resolution_hint           | Required for shapes that require tessellation to support hydroelastic contact.                                                    |
  | drake:elastic_modulus            | material     | elastic_modulus           | Finite positive value. Required for soft hydroelastic representations.                                                           |
  | drake:hunt_crossley_dissipation  | material     | hunt_crossley_dissipation |                                                                                                                                  |
  | drake:mu_dynamic                 | material     | coulomb_friction          | See note below on friction.                                                                                                      |

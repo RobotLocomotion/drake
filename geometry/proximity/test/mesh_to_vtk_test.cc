@@ -25,7 +25,7 @@ using std::unique_ptr;
 // content of the output VTK files.
 
 // TODO(DamrongGuoy): Use VTK library to read the files for verification.
-//  Rigth now we manually load the files into ParaView for verification.
+//  Right now we manually load the files into ParaView for verification.
 
 GTEST_TEST(MeshToVtkTest, BoxTetrahedra) {
   const Box box(4.0, 4.0, 2.0);

@@ -351,7 +351,7 @@ void PiecewisePolynomial<T>::ReverseTime() {
         // Must shift this segment by h, because it will now be evaluated
         // relative to breaks[i+1] instead of breaks[i], via p_after(t) =
         // p_before(t+h). This is a slightly involved operation, because
-        // substituing (t+h) in a monomial with degree k will effect the
+        // substituting (t+h) in a monomial with degree k will effect the
         // coefficients for many monomials.
 
         // We can perform the time-reversal at the same time, using the variant

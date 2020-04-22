@@ -228,7 +228,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   explicit Diagram(SystemScalarConverter converter);
 
   /// For the subsystem associated with @p witness_func, gets its subcontext
-  /// from @p context, passes the subcontext to @p witness_func' Evaulate
+  /// from @p context, passes the subcontext to @p witness_func' Evaluate
   /// method and returns the result. Aborts if the subsystem is not part of
   /// this Diagram.
   T DoCalcWitnessValue(const Context<T>& context,

@@ -279,7 +279,7 @@ def patch_document_members(original, self, all_members=False):
     members_check_module, members = self.get_object_members(want_all)
 
     # This method changed after version 1.6.7.
-    # We accomodate the changes till version 2.4.4.
+    # We accommodate the changes till version 2.4.4.
     # https://github.com/sphinx-doc/sphinx/commit/6e1e35c98ac29397d4552caf72710ccf4bf98bea
     if sphinx_version[:3] >= (1, 8, 0):
         exclude_members_all = self.options.exclude_members is autodoc.ALL
@@ -299,7 +299,7 @@ def patch_document_members(original, self, all_members=False):
     memberdocumenters = []  # type: List[Tuple[Documenter, bool]]
     for (mname, member, isattr) in self.filter_members(members, want_all):
         # This method changed after version 1.6.7.
-        # We accomodate the changes till version 2.4.4.
+        # We accommodate the changes till version 2.4.4.
         # https://github.com/sphinx-doc/sphinx/commit/5d6413b7120cfc6d3d0cc9367cfe8b6f7ee87523
         if sphinx_version[:3] >= (1, 7, 0):
             documenters = self.documenters

@@ -962,7 +962,7 @@ void SolveWithGivenOptions(
   UpdateLinearConstraint(prog, prog.linear_complementarity_constraints(),
                          &linear_constraints_triplets, &Flow, &Fupp,
                          &constraint_index, &linear_constraint_index);
-  // Scale the matrix in linear constriants
+  // Scale the matrix in linear constraints
   for (auto & triplet : linear_constraints_triplets) {
     auto it = scale_map.find(triplet.col());
     if (it != scale_map.end()) {

@@ -18,7 +18,7 @@ struct SnoptSolverDetails {
   /**
    * The exit condition of the solver. Please refer to section "EXIT conditions"
    * in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
-   * Programming" by Philip E. Gill to interprete the exit condition.
+   * Programming" by Philip E. Gill to interpret the exit condition.
    */
   int info{};
 

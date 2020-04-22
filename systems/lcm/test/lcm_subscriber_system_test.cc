@@ -49,7 +49,7 @@ struct SampleData {
   }
 };
 
-// Tests the forced update hander of LcmSubscriberSystem.
+// Tests the forced update handler of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ForcedEventTest) {
   drake::lcm::DrakeLcm lcm;
   const std::string channel_name = "channel_name";
