@@ -161,6 +161,19 @@
           <diffuse>0 1 0 1</diffuse>
         </material>
       </visual>
+      <!-- A visual representing the 'Coupler-Point' P -->
+      <visual name='CouplerPoint'>
+        <!-- Translation down Bx by 2 and down Bz by -2 -->
+        <pose relative_to="B">2 0 -2 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
     </link>
 
     <link name='C'>

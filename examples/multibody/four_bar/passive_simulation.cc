@@ -102,11 +102,11 @@ int do_main() {
 
   // See the documentation for LinearBushingRollPitchYaw.
   // This particular choice of parameters models a z-axis revolute joint.
-  // Note: since each link is constrained to rigid motion in the X-Z plane
-  // by the revolute joints specified in the SDF, it is unnecessary for the
-  // bushing to have non-zero values for: k_y, d_y, k_0, d_0, k_1, d_1
-  // but they are left here as an example of how to parameterize a general
-  // z-axis revolute joint without other constraints.
+  // Note: since each link is constrained to rigid motion in the world X-Z
+  // plane (X-Y plane of the bushing) by the revolute joints specified in the
+  // SDF, it is unnecessary for the bushing to have non-zero values for: k_z,
+  // d_z, k_0, d_0, k_1, d_1. They are left here as an example of how to
+  // parameterize a general z-axis revolute joint without other constraints.
   const Vector3d force_stiffness_constants{k_xyz, k_xyz, k_xyz};  // N/m
   const Vector3d force_damping_constants{d_xyz, d_xyz, d_xyz};    // N·s/m
   const Vector3d torque_stiffness_constants{k_012, k_012, 0};     // N·m/rad
@@ -175,7 +175,7 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A four bar linkage demo demonstrating the use of a linear bushing  as "
+      "A four bar linkage demo demonstrating the use of a linear bushing as "
       "a way to model a kinematic loop. Launch drake-visualizer before running "
       "this example.");
   // Changes the default realtime rate to 1.0, so the visualization looks
