@@ -96,6 +96,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
                  this->mesh().num_vertices());
     if (calculate_gradient) {
       CalcGradientField();
+      CalcValueAtMeshOriginForAllElements();
     }
   }
 
@@ -116,7 +117,13 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   T EvaluateCartesian(
                  typename MeshType::ElementIndex e,
                  const typename MeshType::Cartesian& p_MQ) const final {
-    return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
+    if (gradients_.size() == 0) {
+      return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
+    } else {
+      DRAKE_ASSERT(e < gradients_.size());
+      DRAKE_ASSERT(e < values_at_Mo_.size());
+      return gradients_[e].dot(p_MQ) + values_at_Mo_[e];
+    }
   }
 
   /** Evaluates the gradient in the domain of the element indicated by `e`.
@@ -186,8 +193,10 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return std::make_unique<MeshFieldLinear>(*this);
   }
   void CalcGradientField();
-  Vector3<T> CalcGradientVector(
-      typename MeshType::ElementIndex e) const;
+  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const;
+
+  void CalcValueAtMeshOriginForAllElements();
+  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const;
 
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
@@ -197,6 +206,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   // gradients_[i] is the gradient vector on elements_[i]. The elements could
   // be tetrahedra for VolumeMesh or triangles for SurfaceMesh.
   std::vector<Vector3<T>> gradients_;
+  std::vector<T> values_at_Mo_;
 };
 
 /**
