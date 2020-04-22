@@ -317,6 +317,26 @@ void RenderEngineGl::RenderAt(const Eigen::Matrix4f& X_CW) const {
   shader_program_->Unuse();
 }
 
+void RenderEngineGl::SetWindowVisibility(const CameraProperties& camera,
+                                         bool show_window,
+                                         const RenderTarget& target) const {
+  if (show_window) {
+    // Use the render target buffer as the read buffer and the default buffer
+    // (0) as the draw buffer for displaying in the window. We transfer the full
+    // image from source to destination. The semantics of glBlitNamedFrameBuffer
+    // are inclusive of the "minimum" pixel (0, 0) and exclusive of the
+    // "maximum" pixel (width, height).
+    opengl_context_->DisplayWindow(camera.width, camera.height);
+    glBlitNamedFramebuffer(target.frame_buffer, 0,
+                           0, 0, camera.width, camera.height,  // Src bounds.
+                           0, 0, camera.width, camera.height,  // Dest bounds.
+                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    opengl_context_->UpdateWindow();
+  } else {
+    opengl_context_->HideWindow();
+  }
+}
+
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);

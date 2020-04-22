@@ -73,24 +73,60 @@ class OpenGlContext::Impl {
     // https://sidvind.com/index.php?title=Opengl/windowless
 
     // Get framebuffer configs.
-    const int kVisualAttribs[] = {None};
+    const int kVisualAttribs[] = {GLX_X_RENDERABLE,
+                                  True,
+                                  GLX_X_VISUAL_TYPE,
+                                  GLX_TRUE_COLOR,
+                                  GLX_RED_SIZE,
+                                  8,
+                                  GLX_GREEN_SIZE,
+                                  8,
+                                  GLX_BLUE_SIZE,
+                                  8,
+                                  GLX_ALPHA_SIZE,
+                                  8,
+                                  GLX_DEPTH_SIZE,
+                                  24,
+                                  GLX_DOUBLEBUFFER,
+                                  True,
+                                  None};
     int fb_count = 0;
-    GLXFBConfig* fb_configs = glXChooseFBConfig(
-        display(), DefaultScreen(display()), kVisualAttribs, &fb_count);
+    const int screen_id = DefaultScreen(display());
+    GLXFBConfig* fb_configs =
+        glXChooseFBConfig(display(), screen_id, kVisualAttribs, &fb_count);
     ScopeExit guard([fb_configs]() { XFree(fb_configs); });
     if (fb_configs == nullptr) {
       throw std::runtime_error(
           "Error initializing OpenGL Context for RenderEngineGL; no suitable "
           "frame buffer configuration found.");
     }
-
-    // Create an OpenGL context.
-    const int kContextAttribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-                                   GLX_CONTEXT_MINOR_VERSION_ARB, 3, None};
     // Since we have provided attributes in the call to glXChooseFBConfig, we
     // are guaranteed to have a valid result in fb_configs as we have already
     // checked for null.
     DRAKE_DEMAND(fb_count > 0);
+
+    // Set up window for displaying render results.
+    XVisualInfo* visual = glXGetVisualFromFBConfig(display(), fb_configs[0]);
+    if (visual == nullptr) {
+      throw std::runtime_error(
+          "Unable to generate an OpenGl display window; visual info "
+          "unavailable.");
+    }
+    ScopeExit visual_guard([visual]() { XFree(visual); });
+    XSetWindowAttributes window_attribs;
+    window_attribs.colormap = XCreateColormap(
+        display(), RootWindow(display(), screen_id), visual->visual, AllocNone);
+    // Enable just the Expose event so we know when the window is ready to be
+    // redrawn.
+    window_attribs.event_mask = ExposureMask;
+    window_ = XCreateWindow(display(), RootWindow(display(), screen_id), 0, 0,
+                            window_width_, window_height_, 0, visual->depth,
+                            InputOutput, visual->visual,
+                            CWColormap | CWEventMask, &window_attribs);
+
+    // Create an OpenGL context.
+    const int kContextAttribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+                                   GLX_CONTEXT_MINOR_VERSION_ARB, 3, None};
     // NOTE: The consts True and False come from gl/glx.h (indirectly), but
     // ultimately from X11/Xlib.h.
     context_ = glXCreateContextAttribsARB(display(), fb_configs[0], 0, True,
@@ -116,13 +152,71 @@ class OpenGlContext::Impl {
 
   ~Impl() {
     glXDestroyContext(display(), context_);
+    XWindowAttributes window_attribs;
+    XGetWindowAttributes(display(), window_, &window_attribs);
+    XFreeColormap(display(), window_attribs.colormap);
+    XDestroyWindow(display(), window_);
   }
 
   void MakeCurrent() {
     if (glXGetCurrentContext() != context_ &&
-        !glXMakeCurrent(display(), None, context_)) {
+        !glXMakeCurrent(display(), window_, context_)) {
       throw std::runtime_error("Error making an OpenGL context current");
     }
+  }
+
+  void DisplayWindow(const int width, const int height) {
+    if (width != window_width_ || height != window_height_) {
+      XResizeWindow(display(), window_, width, height);
+      WaitForExposeEvent();
+      window_width_ = width;
+      window_height_ = height;
+    }
+    if (!IsWindowViewable()) {
+      XMapRaised(display(), window_);
+      WaitForExposeEvent();
+    }
+    // We wait for confirmation events to make sure we don't attempt to draw
+    // to the window that isn't available yet. Without waiting for the events,
+    // the XServer could process the events in such a way that the rendering
+    // doesn't make it to the visible window (based on race conditions in the
+    // XServer).
+  }
+
+  void HideWindow() {
+    if (IsWindowViewable()) {
+      XUnmapWindow(display(), window_);
+      // Unmapping a window provides no events on that window.
+    }
+  }
+
+  bool IsWindowViewable() const {
+    XWindowAttributes attr;
+    const Status status = XGetWindowAttributes(display(), window_, &attr);
+
+    // In xlib, a zero status implies function failure.
+    // https://tronche.com/gui/x/xlib/introduction/errors.html#Status
+    if (status == 0) {
+      throw std::runtime_error(
+          "Unable to determine the status of the window associated with the "
+          "OpenGl context");
+    }
+
+    if (attr.map_state == IsViewable) return true;
+    return false;
+  }
+
+  void UpdateWindow() {
+    XClearWindow(display(), window_);
+    glXSwapBuffers(display(), window_);
+  }
+
+  // Waits for the display() to transmit an Expose event.
+  void WaitForExposeEvent() const {
+    XEvent event;
+    // This blocks until the window gets an "Expose" event.
+    XWindowEvent(display(), window_, ExposureMask, &event);
+    DRAKE_DEMAND(event.type == Expose);
   }
 
   static GLint max_texture_size() {
@@ -157,6 +251,12 @@ class OpenGlContext::Impl {
   }
 
   GLXContext context_{nullptr};
+
+  // The associated window to support display of rendering results.
+  Window window_;
+  // The window's current size.
+  int window_width_{640};
+  int window_height_{480};
 };
 
 OpenGlContext::OpenGlContext(bool debug)
@@ -165,6 +265,18 @@ OpenGlContext::OpenGlContext(bool debug)
 OpenGlContext::~OpenGlContext() = default;
 
 void OpenGlContext::MakeCurrent() { impl_->MakeCurrent(); }
+
+void OpenGlContext::DisplayWindow(const int width, const int height) {
+  impl_->DisplayWindow(width, height);
+}
+
+void OpenGlContext::HideWindow() { impl_->HideWindow(); }
+
+bool OpenGlContext::IsWindowViewable() const {
+  return impl_->IsWindowViewable();
+}
+
+void OpenGlContext::UpdateWindow() { impl_->UpdateWindow(); }
 
 GLint OpenGlContext::max_texture_size() {
   return OpenGlContext::Impl::max_texture_size();
