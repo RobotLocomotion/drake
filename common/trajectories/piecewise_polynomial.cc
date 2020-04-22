@@ -217,6 +217,15 @@ const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator-(
 }
 
 template <typename T>
+const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator-() const {
+  PiecewisePolynomial<T> ret = *this;
+  for (size_t i = 0; i < polynomials_.size(); i++) {
+    ret.polynomials_[i] = -polynomials_[i];
+  }
+  return ret;
+}
+
+template <typename T>
 const PiecewisePolynomial<T> PiecewisePolynomial<T>::operator*(
     const PiecewisePolynomial<T>& other) const {
   PiecewisePolynomial<T> ret = *this;
