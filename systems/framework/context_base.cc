@@ -209,6 +209,25 @@ void ContextBase::CreateBuiltInTrackers() {
   auto& u_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllInputPortsTicket), "u");
 
+  // Allocate the "all sources except input ports" tracker. The complete list of
+  // known sources is t,a,x,p. Note that cache entries are not included.
+  // Usually that won't matter since cache entries typically depend on at least
+  // one of t,a,x, or p so will be invalided for the same reason the current
+  // computation is. However, any dependency on a cache entry that depends only
+  // on input ports would have to be declared explicitly. (In practice specific
+  // input port trackers should be active with this one and logically that
+  // should take care of cache entries also -- otherwise there is a contributing
+  // input port that wasn't listed.)
+  auto& all_sources_except_input_ports_tracker =
+      graph.CreateNewDependencyTracker(
+          DependencyTicket(internal::kAllSourcesExceptInputPortsTicket),
+          "all sources except input ports");
+  all_sources_except_input_ports_tracker.SubscribeToPrerequisite(&time_tracker);
+  all_sources_except_input_ports_tracker.SubscribeToPrerequisite(
+      &accuracy_tracker);
+  all_sources_except_input_ports_tracker.SubscribeToPrerequisite(&x_tracker);
+  all_sources_except_input_ports_tracker.SubscribeToPrerequisite(&p_tracker);
+
   // Allocate the "all sources" tracker. The complete list of known sources
   // is t,a,x,p,u. Note that cache entries are not included. Under normal
   // operation that doesn't matter because cache entries are invalidated only
@@ -217,10 +236,8 @@ void ContextBase::CreateBuiltInTrackers() {
   // same reason so doesn't need to explicitly list cache entries.
   auto& all_sources_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kAllSourcesTicket), "all sources");
-  all_sources_tracker.SubscribeToPrerequisite(&time_tracker);
-  all_sources_tracker.SubscribeToPrerequisite(&accuracy_tracker);
-  all_sources_tracker.SubscribeToPrerequisite(&x_tracker);
-  all_sources_tracker.SubscribeToPrerequisite(&p_tracker);
+  all_sources_tracker.SubscribeToPrerequisite(
+      &all_sources_except_input_ports_tracker);
   all_sources_tracker.SubscribeToPrerequisite(&u_tracker);
 
   // Allocate kinematics trackers to provide a level of abstraction from the
