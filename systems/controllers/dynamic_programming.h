@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <utility>
+#include <variant>
 
 #include "drake/common/symbolic.h"
 #include "drake/math/barycentric.h"
@@ -52,6 +53,19 @@ struct DynamicProgrammingOptions {
       int iteration, const math::BarycentricMesh<double>& state_mesh,
       const Eigen::RowVectorXd& cost_to_go, const Eigen::MatrixXd& policy)>
       visualization_callback{nullptr};
+
+  /// For systems with multiple input ports, we must specify which input port is
+  /// being used in the control design.  @see systems::InputPortSelection.
+  std::variant<systems::InputPortSelection, InputPortIndex> input_port_index{
+      systems::InputPortSelection::kUseFirstInputIfItExists};
+
+  /// (Advanced) Boolean which, if true, allows this algorithm to optimize
+  /// without considering the dynamics of any non-continuous states. This is
+  /// helpful for optimizing systems that might have some additional
+  /// book-keeping variables in their state. Only use this if you are sure that
+  /// the dynamics of the additional state variables cannot impact the dynamics
+  /// of the continuous states.  @default false.
+  bool assume_non_continuous_states_are_fixed{false};
 };
 
 /// Implements Fitted Value Iteration on a (triangulated) Barycentric Mesh,

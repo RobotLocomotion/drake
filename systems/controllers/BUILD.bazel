@@ -176,11 +176,17 @@ drake_cc_googletest(
     name = "dynamic_programming_test",
     # Test timeout increased to not timeout when run with Valgrind.
     timeout = "long",
+    data = [
+        "//examples/pendulum:models",
+    ],
     deps = [
         ":dynamic_programming",
         ":linear_quadratic_regulator",
         "//common/proto:call_python",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
         "//systems/primitives:integrator",
         "//systems/primitives:linear_system",
     ],

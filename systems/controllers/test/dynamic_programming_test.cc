@@ -4,10 +4,14 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/proto/call_python.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/barycentric.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
 
@@ -141,7 +145,7 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
 
   Simulator<double> simulator(sys);
 
-  // minimum time cost function (1 for all non-zero states).
+  // Quadratic regulator cost function.
   const auto cost_function = [&sys, &Q, &R](const Context<double>& context) {
     const Eigen::Vector2d x = context.get_continuous_state().CopyToVector();
     const double u = sys.get_input_port().Eval(context)[0];
@@ -196,6 +200,64 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
       EXPECT_NEAR(state_mesh.Eval(cost_to_go_values, x)[0], J, 1. + .2 * J);
     }
   }
+}
+
+// Ensure that FittedValueIteration can be called on a MultibodyPlant/SceneGraph
+// combo.
+GTEST_TEST(FittedValueIteration, MultibodyPlant) {
+  DiagramBuilder<double> builder;
+
+  multibody::MultibodyPlant<double>* mbp;
+  geometry::SceneGraph<double>* scene_graph;
+  std::tie(mbp, scene_graph) =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
+
+  multibody::Parser(mbp, scene_graph)
+      .AddModelFromFile(
+          FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
+  mbp->WeldFrames(mbp->world_frame(), mbp->GetFrameByName("base"));
+  mbp->Finalize();
+
+  // Export an input that we don't need, and export it first, just to test the
+  // input_port_index option.
+  builder.ExportInput(mbp->get_applied_generalized_force_input_port(),
+                      "extra_input");
+
+  builder.ExportInput(mbp->get_actuation_input_port(), "pendulum_input");
+
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+  const double timestep = 0.1;
+
+  math::BarycentricMesh<double>::MeshGrid state_grid(2);
+  math::BarycentricMesh<double>::MeshGrid input_grid(1);
+  // Note: these meshes are intentionally small for this unit test.
+  for (int i = 0; i < 5; i++) {
+    state_grid[0].insert(2.0 * M_PI * i / 4);
+    state_grid[1].insert(-10.0 + 4 * i);
+    input_grid[0].insert(-2.5 + i / 2.0);
+  }
+
+  DynamicProgrammingOptions options;
+  options.input_port_index = diagram->get_input_port(1).get_index();
+  options.assume_non_continuous_states_are_fixed = true;
+  options.periodic_boundary_conditions = {
+      DynamicProgrammingOptions::PeriodicBoundaryCondition(0, 0, 2 * M_PI)};
+
+  // Quadratic regulator cost function.
+  const auto cost_function = [&diagram](const Context<double>& context) {
+    const Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+    const double R = 1.;
+    const Eigen::Vector2d x = context.get_continuous_state().CopyToVector();
+    const double u = diagram->get_input_port(1).Eval(context)[0];
+    return x.dot(Q * x) + u * R * u;
+  };
+
+  // Just check that it runs without error.
+  options.discount_factor = 1.;
+  options.convergence_tol = 1e4;
+  FittedValueIteration(&simulator, cost_function, state_grid, input_grid,
+                       timestep, options);
 }
 
 // Minimum-time problem for the single integrator (which has a trivial solution,
