@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/render/render_label.h"
 
 namespace drake {
 namespace geometry {
@@ -62,7 +63,8 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
   const OpenGlGeometry geometry(1, 2, 3, 4);
   const RigidTransformd X_WG{Vector3d{-1, -2, 3}};
   const Vector3d scale{0.25, 0.5, 0.75};
-  const OpenGlInstance instance{geometry, X_WG, scale};
+  const RenderLabel label(17);
+  const OpenGlInstance instance{geometry, X_WG, scale, label};
 
   EXPECT_EQ(instance.geometry.vertex_array, geometry.vertex_array);
   EXPECT_EQ(instance.geometry.vertex_buffer, geometry.vertex_buffer);
@@ -71,6 +73,7 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
   EXPECT_TRUE(
       CompareMatrices(instance.X_WG.GetAsMatrix34(), X_WG.GetAsMatrix34()));
   EXPECT_TRUE(CompareMatrices(instance.scale, scale));
+  EXPECT_EQ(instance.label, label);
 }
 
 }  // namespace
