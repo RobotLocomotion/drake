@@ -3,11 +3,12 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/render/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_includes.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 /** Definition of a GLSL shader program including a vertex and fragment shader.
@@ -48,6 +49,7 @@ class ShaderProgram {
 };
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

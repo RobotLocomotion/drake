@@ -1,10 +1,11 @@
-#include "drake/geometry/render/gl_renderer/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_context.h"
 
 #include <gtest/gtest.h>
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 namespace {
 
@@ -29,6 +30,7 @@ GTEST_TEST(OpenGlContext, GetContext) {
 
 }  // namespace
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

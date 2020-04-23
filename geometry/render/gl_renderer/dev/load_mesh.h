@@ -5,11 +5,12 @@
 
 #include <Eigen/Dense>
 
-#include "drake/geometry/render/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_includes.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 using VertexBuffer = Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor>;
@@ -24,6 +25,7 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
     const std::string& filename);
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

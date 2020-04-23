@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_context.h"
 
 #include <algorithm>
 #include <cstring>
@@ -19,6 +19,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 namespace {
@@ -180,6 +181,7 @@ GLint OpenGlContext::max_allowable_texture_size() {
 }
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

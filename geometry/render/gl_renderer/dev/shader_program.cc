@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/shader_program.h"
+#include "drake/geometry/render/gl_renderer/dev/shader_program.h"
 
 #include <fstream>
 #include <sstream>
@@ -9,6 +9,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 namespace {
@@ -106,6 +107,7 @@ ShaderProgram::~ShaderProgram() {
 }
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
