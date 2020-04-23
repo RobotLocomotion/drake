@@ -16,21 +16,19 @@ py_library(
     deps = ["//:module_py"],
 )
 
-# TODO(eric.cousineau): Consider using a `./run`-like script for this, rather
-# than `drake_runfiles_binary`. Then this can be renamed to `drake_visualizer`.
+# TODO(eric.cousineau): Move this to //tools/workspace:drake_visualizer.
 py_binary(
     name = "drake_visualizer_py",
-    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer.py"],
+    srcs = ["//tools/workspace/drake_visualizer:drake_visualizer_bazel.py"],
     data = [
         "//examples:prod_models",
         "@drake_visualizer",
     ],
-    main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
-    # Python libraries to import.
+    main = "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",
     deps = [
         "//lcmtypes:lcmtypes_drake_py",
+        "//tools/workspace/drake_visualizer:builtin_scripts_py",
         "//tools/workspace/drake_visualizer:stub_pydrake",
-        "//tools/workspace/drake_visualizer/plugin",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],

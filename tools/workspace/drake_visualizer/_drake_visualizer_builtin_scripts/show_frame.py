@@ -8,7 +8,7 @@ from director import transformUtils
 from director import visualization as vis
 import robotlocomotion as lcmrobotlocomotion
 
-from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
+from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
 class FrameChannel(object):
