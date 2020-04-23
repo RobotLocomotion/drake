@@ -10,6 +10,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity_properties.h"
 
 namespace drake {
@@ -535,6 +536,59 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     EXPECT_NEAR(sphere1->pressure_field().EvaluateAtVertex(v), expected_p,
                 kEps * E);
   }
+
+  // Confirm that it respects the ("hydroelastic", "tessellation_strategy")
+  // property in the following ways:
+  {
+      // It defaults to single-interior-vertex if nothing is defined.
+
+      // Sphere 1 and sphere 2 have resolution hints that differ by a factor
+      // of two --> sphere 2's level of refinement is one greater than sphere
+      // 1's. Both are missing the "tessellation_strategy" property so it should
+      // default to kSingleInteriorVertex. So, sphere 2 must have 4X the
+      // tetrahedra as sphere 1.
+      EXPECT_EQ(sphere1->mesh().num_elements() * 4,
+                sphere2->mesh().num_elements());
+  }
+
+  {
+    // Defining kDenseInteriorVertices produces a mesh with an increased number
+    // of tets (compared to an otherwise identical mesh declared to sparse).
+
+    // Starting with sphere 1's properties, we'll set it to dense and observe
+    // more tets.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kDenseInteriorVertices);
+    std::optional<SoftGeometry> dense_sphere =
+        MakeSoftRepresentation(sphere_spec, dense_properties);
+    EXPECT_LT(sphere1->mesh().num_elements(),
+              dense_sphere->mesh().num_elements());
+  }
+
+  {
+    // Explicitly defining kSingleInteriorVertex still produces sparse.
+
+    // Starting with sphere 1's properties, we'll explicitly set it to sparse
+    // and observe the same number of tets.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kSingleInteriorVertex);
+    std::optional<SoftGeometry> dense_sphere =
+        MakeSoftRepresentation(sphere_spec, dense_properties);
+    EXPECT_EQ(sphere1->mesh().num_elements(),
+              dense_sphere->mesh().num_elements());
+  }
+
+  {
+    // A value that isn't a TessellationStrategy throws.
+    // Starting with sphere 1's properties, we'll set the property to be a
+    // string. Should throw.
+    ProximityProperties dense_properties(properties1);
+    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
+    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
+                 std::logic_error);
+  }
 }
 
 // Test construction of a soft box.
@@ -612,6 +666,54 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
     EXPECT_LE(pressure, E);
+  }
+
+  // The remaining tests confirm that it respects the
+  // ("hydroelastic", "tessellation_strategy") property.
+
+  ProximityProperties basic_properties = soft_properties(0.08);
+  ProximityProperties sparse_properties(basic_properties);
+  sparse_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                                TessellationStrategy::kSingleInteriorVertex);
+  ProximityProperties dense_properties(basic_properties);
+  dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
+                               TessellationStrategy::kDenseInteriorVertices);
+
+  std::optional<SoftGeometry> implicit_sparse_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, basic_properties);
+  std::optional<SoftGeometry> sparse_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, sparse_properties);
+  std::optional<SoftGeometry> dense_ellipsoid =
+      MakeSoftRepresentation(ellipsoid_spec, dense_properties);
+
+  {
+    // It defaults to kSingleInteriorVertex if nothing is defined.
+
+    // The implicitly sparse ellipsoid should have the same number of tets
+    // as that declared explicitly.
+    EXPECT_EQ(implicit_sparse_ellipsoid->mesh().num_elements(),
+              sparse_ellipsoid->mesh().num_elements());
+  }
+
+  {
+    // Explicitly specifying the two strategies produces meshes with different
+    // numbers of tets.
+
+    // The dense ellipsoid (with the same resolution hint) should have more
+    // tets.
+    EXPECT_LT(sparse_ellipsoid->mesh().num_elements(),
+              dense_ellipsoid->mesh().num_elements());
+  }
+
+  {
+    // A value that isn't a TessellationStrategy throws.
+
+    // Starting with the basic properties, we'll set the property to be a
+    // string. Should throw.
+    ProximityProperties bad_properties(basic_properties);
+    bad_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
+    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
+                 std::logic_error);
   }
 }
 

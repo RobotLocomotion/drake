@@ -12,6 +12,8 @@ namespace multibody {
 namespace hydroelastics {
 namespace internal {
 
+// TODO(SeanCurtis-TRI): This appears to be unused and untested. Delete me!
+
 /// Creates a HydroelasticField for a sphere of a given radius.
 /// The input parameter `refinement_level`, ℓ ∈ ℕ₀, controls the resolution of
 /// the mesh generated. The resulting number of tetrahedra nₜ can
@@ -31,9 +33,10 @@ namespace internal {
 /// requirements; a quadratic function of the radius, ε(r) = 0.5 [1 - (r / R)²].
 template <typename T>
 std::unique_ptr<HydroelasticField<T>> MakeSphereHydroelasticField(
-    int refinement_level, double sphere_radius) {
+    int refinement_level, double sphere_radius,
+    geometry::internal::TessellationStrategy strategy) {
   geometry::VolumeMesh<T> unit_sphere_mesh =
-      geometry::internal::MakeUnitSphereMesh<T>(refinement_level);
+      geometry::internal::MakeUnitSphereMesh<T>(refinement_level, strategy);
 
   // Scale the unit sphere to have the desired radius.
   std::vector<geometry::VolumeElement> tetrahedra =
