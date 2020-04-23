@@ -1,6 +1,18 @@
+# N.B. This file should be importable by any Drake Python target, and should
+# not depend on anything that requires Drake Visualizer / director.
+
 from functools import wraps
 from warnings import warn
 import weakref
+
+# N.B. Keep this in sync with `use_builtin_scripts.py`.
+AVAILABLE_SCRIPTS = [
+    "frame",
+    "hydroelastic_contact",
+    "image",
+    "point_pair_contact",
+    "time",
+]
 
 
 def scoped_singleton_func(f):

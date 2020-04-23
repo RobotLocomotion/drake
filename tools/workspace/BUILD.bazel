@@ -48,7 +48,6 @@ drake_py_binary(
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "bullet",
     "ccd",
-    "drake_visualizer",
     "fcl",
     "fmt",
     "ghc_filesystem",
@@ -68,6 +67,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "cds",
+    "drake_visualizer",
     "dreal",
     "net_sf_jchart2d",
     "optitrack_driver",
@@ -94,6 +94,13 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": ["@scs//:install"],
     "//tools:no_scs": [],
 })
+
+install(
+    name = "install_module_py",
+    targets = [":module_py"],
+    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools/workspace",
+    visibility = ["//:__pkg__"],
+)
 
 install(
     name = "install_external_packages",

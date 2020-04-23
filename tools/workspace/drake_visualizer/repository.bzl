@@ -136,6 +136,9 @@ install_files(
     name = "install",
     dest = ".",
     files = [":drake_visualizer"],
+    rename = {
+        "bin/drake-visualizer": "drake-visualizer-real",
+    },
     visibility = ["//visibility:public"],
 )
 """
