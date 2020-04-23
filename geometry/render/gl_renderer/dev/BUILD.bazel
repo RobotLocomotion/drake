@@ -7,38 +7,49 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
-    "defs.bzl",
+    "@drake//geometry/render/gl_renderer:defs.bzl",
     "drake_cc_googletest_gl_ubuntu_only",
     "drake_cc_library_gl_ubuntu_only",
     "drake_cc_package_library_gl_per_os",
 )
 
-package(default_visibility = ["//geometry/render/gl_renderer:__subpackages__"])
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library_gl_per_os(
-    name = "gl_renderer",
+    name = "dev",
     macos_deps = [
         ":render_engine_gl",
     ],
     ubuntu_deps = [
-        ":opengl_context",
+        ":load_mesh",
+        ":opengl_geometry",
         ":render_engine_gl",
+        ":shader_program",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "load_mesh",
+    srcs = ["load_mesh.cc"],
+    hdrs = ["load_mesh.h"],
+    # NOTE: Required for compatibility with tinyobjloader.
+    linkstatic = 1,
+    deps = [
+        "//common:essential",
+        "//geometry/render/gl_renderer:opengl_context",
+        "@tinyobjloader",
     ],
 )
 
 drake_cc_library_gl_ubuntu_only(
-    name = "opengl_context",
-    srcs = ["opengl_context.cc"],
-    hdrs = [
-        "opengl_context.h",
-        "opengl_includes.h",
-    ],
+    name = "opengl_geometry",
+    hdrs = ["opengl_geometry.h"],
     deps = [
-        "//common:essential",
-        "//common:scope_exit",
-        "@opengl",
-        "@x11",
+        "//geometry/render/gl_renderer:opengl_context",
+        "//math:geometric_transform",
     ],
 )
 
@@ -49,36 +60,36 @@ drake_cc_library(
         "//tools/cc_toolchain:apple": ["no_render_engine_gl_factory.cc"],
         "//conditions:default": [
             "render_engine_gl.cc",
-            "render_engine_gl_factory.cc",
         ],
     }),
     hdrs = select({
         "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
         "//conditions:default": [
+            "buffer_dim.h",
             "render_engine_gl.h",
-            "render_engine_gl_factory.h",
         ],
     }),
+    visibility = ["//visibility:public"],
     deps = select({
         "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
         "//conditions:default": [
-            ":opengl_context",
+            ":load_mesh",
+            ":opengl_geometry",
+            ":shader_program",
+            "//common:essential",
             "//geometry/render:render_engine",
+            "//systems/sensors:image",
         ],
     }),
 )
 
-drake_cc_googletest_gl_ubuntu_only(
-    name = "opengl_context_test",
-    tags = [
-        # GLX functions show up with bad reads, bad writes, possibly lost, and
-        # definitely lost.  We will investiate soon but for now we'll omit the
-        # memcheck tests in order to make progress on related code.
-        # TODO(#12962) Investigate, fix or suppress, then re-enable this test.
-        "no_memcheck",
-    ],
+drake_cc_library_gl_ubuntu_only(
+    name = "shader_program",
+    srcs = ["shader_program.cc"],
+    hdrs = ["shader_program.h"],
     deps = [
-        ":opengl_context",
+        "//common:essential",
+        "//geometry/render/gl_renderer:opengl_context",
     ],
 )
 
@@ -88,29 +99,16 @@ drake_cc_googletest(
         "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
+        "//common:find_resource",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
     ],
 )
 
-drake_cc_googletest(
-    name = "no_render_engine_gl_test",
-    args = select({
-        "//tools/cc_toolchain:linux": ["--gtest_filter=-*"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":render_engine_gl",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-add_lint_tests(
-    cpplint_extra_srcs = [
-        "no_render_engine_gl_factory.cc",
-        "render_engine_gl.cc",
-        "render_engine_gl.h",
-        "render_engine_gl_factory.cc",
-        "render_engine_gl_factory.h",
-    ],
-)
+add_lint_tests()
