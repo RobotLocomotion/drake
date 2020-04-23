@@ -38,9 +38,9 @@ using std::make_unique;
 using std::unique_ptr;
 
 // Friend class for working with QueryObjects in a test context.
-class QueryObjectTester {
+class QueryObjectTest {
  public:
-  QueryObjectTester() = delete;
+  QueryObjectTest() = delete;
 
   template <typename T>
   static QueryObject<T> MakeNullQueryObject() {
@@ -103,15 +103,15 @@ class SceneGraphTest : public ::testing::Test {
  public:
   SceneGraphTest()
       : ::testing::Test(),
-        query_object_(QueryObjectTester::MakeNullQueryObject<double>()) {}
+        query_object_(QueryObjectTest::MakeNullQueryObject<double>()) {}
 
  protected:
   void AllocateContext() {
     // TODO(SeanCurtis-TRI): This will probably have to be moved into an
     // explicit call so it can be run *after* topology has been set.
     context_ = scene_graph_.AllocateContext();
-    QueryObjectTester::set_query_object(&query_object_, &scene_graph_,
-                                        context_.get());
+    QueryObjectTest::set_query_object(&query_object_, &scene_graph_,
+                                      context_.get());
   }
 
   const QueryObject<double>& query_object() const {
@@ -566,7 +566,7 @@ GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   auto context = scene_graph.AllocateContext();
 
   QueryObject<AutoDiffXd> handle =
-      QueryObjectTester::MakeNullQueryObject<AutoDiffXd>();
+      QueryObjectTest::MakeNullQueryObject<AutoDiffXd>();
   SceneGraphTester::GetQueryObjectPortValue(scene_graph, *context, &handle);
 }
 
