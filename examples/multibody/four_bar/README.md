@@ -107,10 +107,10 @@ Due to equal link lengths, the initial condition (static equilibrium)
 forms an isosceles trapezoid and initial values can be determined from
 trigonometry. 𝐪ᴀ is one angle of a right triangle with its adjacent
 side measuring 1 m and its hypotenuse measuring 4 m.  Hence, initially
-𝐪ᴀ = tan⁻¹(√15) ≈ 1.318 radians ≈ 104.48°.
+𝐪ᴀ = tan⁻¹(√15) ≈ 1.318 radians ≈ 75.52°.
 
 Because link *B* is parallel to **Ŵ**𝐱, 𝐪ᴀ and 𝐪ʙ are supplementary,
-hence the initial value is 𝐪ʙ = π - 𝐪ᴀ ≈ 1.823 radians ≈ 75.52°.
+hence the initial value is 𝐪ʙ = π - 𝐪ᴀ ≈ 1.823 radians ≈  104.48°.
 Similarly, 𝐪ᴀ and 𝐪ᴄ are supplementary, so initially 𝐪ᴄ = 𝐪ʙ. 
 
 # Modeling the revolute joint between links B and C with a bushing
@@ -162,8 +162,8 @@ approximated via a related linear constant-coefficient 2ⁿᵈ-order ODE:
 
 |  |  |
 | ----- | ---- |
-|  m ẍ +     dx ẋ +  kx x = 0  |  or alternatively as |
-|    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0  |  where ωₙ = √(kx/m),  ζ = dx / (2 √(m kx)) |
+|  m ẍ +     dₓ ẋ +  kₓ x = 0  |  or alternatively as |
+|    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0  |  where ωₙ = √(kₓ/m),  ζ = dx / (2 √(m kₓ)) |
 
 Values for kx can be determined by choosing a characteristic mass m
 (which may be directionally dependent) and then choosing ωₙ > 0
@@ -172,10 +172,14 @@ One way to choose ωₙ is to choose a settling time tₛ which
 approximates the desired time for stretch x to settle to within 1% (0.01)
 of an equilibrium solution, and choose a damping ratio ζ (e.g., ζ = 1,
 critical damping), then calculate ωₙ = -log(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ).
+For the included example code, a characteristic mass m = 20 kg was chosen
+with tₛ = 0.12 and ζ = 1 (critical damping). Thus
+ωₙ = -log(0.01) / 0.12 ≈ 38.38 and kx = (20)*(38.38)² ≈ 30000.
 
 ### Estimate force damping [dx dy dz] from mass and stiffness 
 Once m and kx have been chosen, damping dx can be estimated by picking a
-damping ratio ζ (e.g., ζ ≈ 1, critical damping), then d ≈ 2 ζ √(m k).
+damping ratio ζ (e.g., ζ ≈ 1, critical damping), then dx ≈ 2 ζ √(m kx).
+For our example dx ≈ 2·√(20·30000) ≈ 1500.
 
 ### Estimating torque stiffness [k₀ k₁ k₂] and damping [d₀ d₁ d₂]
 The bushing in this planar example replaces a revolute joint. The links are
