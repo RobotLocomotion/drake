@@ -394,6 +394,10 @@ def main(args):
     parser.add_argument(
         '--strip_tool', type=str, default='strip',
         help='strip program')
+    parser.add_argument(
+        '--pre_clean', action='store_true', default=False,
+        help='ensure clean install by removing `prefix` dir if it exists '
+             'before installing')
     args = parser.parse_args(args)
 
     color = args.color
@@ -404,6 +408,7 @@ def main(args):
     strip = args.strip
     strip_tool = args.strip_tool
     install_name_tool = args.install_name_tool
+    pre_clean = args.pre_clean
 
     # Transform install prefix if DESTDIR is set.
     # https://www.gnu.org/prep/standards/html_node/DESTDIR.html
@@ -425,6 +430,11 @@ def main(args):
     else:
         ansi_color_escape = ""
         ansi_reset_escape = ""
+
+    if pre_clean:
+        if os.path.isdir(prefix):
+            print(f"Remove previous directory: {prefix}")
+            shutil.rmtree(prefix)
 
     if strip:
         # Match the output of the CMake install/strip target
