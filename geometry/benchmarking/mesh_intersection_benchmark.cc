@@ -204,7 +204,8 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
       : ellipsoid_{kEllipsoidDimension[0], kEllipsoidDimension[1],
                    kEllipsoidDimension[2]},
         sphere_{kSphereDimension},
-        mesh_S_(MakeEllipsoidVolumeMesh<double>(ellipsoid_, 1)),
+        mesh_S_(MakeEllipsoidVolumeMesh<double>(
+            ellipsoid_, 1, TessellationStrategy::kDenseInteriorVertices)),
         field_S_(MakeEllipsoidPressureField<double>(ellipsoid_, &mesh_S_,
                                                     kElasticModulus)),
         mesh_R_(MakeEllipsoidSurfaceMesh<double>(ellipsoid_, 1)) {}
@@ -222,7 +223,9 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
     const auto [resolution, contact_overlap, rotation_factor] =
         ReadState(state);
     const double resolution_hint = kResolutionHint[resolution];
-    mesh_S_ = MakeEllipsoidVolumeMesh<double>(ellipsoid_, resolution_hint);
+    mesh_S_ = MakeEllipsoidVolumeMesh<double>(
+        ellipsoid_, resolution_hint,
+        TessellationStrategy::kDenseInteriorVertices);
     field_S_ = MakeEllipsoidPressureField<double>(ellipsoid_, &mesh_S_,
                                                   kElasticModulus);
     mesh_R_ = MakeSphereSurfaceMesh<double>(sphere_, resolution_hint);

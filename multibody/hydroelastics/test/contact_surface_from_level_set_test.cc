@@ -21,6 +21,7 @@ namespace internal {
 namespace {
 
 using drake::geometry::internal::MakeUnitSphereMesh;
+using drake::geometry::internal::TessellationStrategy;
 using drake::geometry::SurfaceFace;
 using drake::geometry::SurfaceFaceIndex;
 using drake::geometry::SurfaceMesh;
@@ -514,7 +515,8 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
 
   // A tessellation of a unit sphere. Vertices are in the mesh frame M.
   // This creates a volume mesh with over 32K tetrahedra.
-  const VolumeMesh<double> sphere_M = MakeUnitSphereMesh<double>(4);
+  const VolumeMesh<double> sphere_M = MakeUnitSphereMesh<double>(
+      4, TessellationStrategy::kDenseInteriorVertices);
 
   // We generate scalar and vector fields linear in the position coordinates.
   // Since CalcZeroLevelSetInMeshDomain() uses linear interpolations, we
