@@ -557,9 +557,9 @@ typename Polynomial<T>::RootsType Polynomial<T>::Roots() const {
 }
 
 template <typename T>
-boolean<T> Polynomial<T>::IsApprox(const Polynomial<T>& other,
-                                   const Polynomial<T>::RealScalar& tol,
-                                   const ToleranceType& tol_type) const {
+boolean<T> Polynomial<T>::CoefficientsAlmostEqual(
+    const Polynomial<T>& other, const Polynomial<T>::RealScalar& tol,
+    const ToleranceType& tol_type) const {
   using std::abs;
   using std::min;
   std::vector<bool> monomial_has_match(monomials_.size(), false);

@@ -395,13 +395,21 @@ class Polynomial {
    * Checks that every coefficient of `other` is within `tol` of the
    * corresponding coefficient of this Polynomial.
    *
-   * Note: Even when @p tol_type is ToleranceType::relative, we still use an
-   * absolute tolerance (coefficient < tol) for monomials that appear only in
-   * `this` or only in `other`, because we cannot test relative to zero.
+   * Note: When `tol_type` is kRelative, if any monomials appear in `this` or
+   * `other` but not both, then the method returns false (since the comparison
+   * is relative to a missing zero coefficient).  Use kAbsolute if you want to
+   * ignore non-matching monomials with coefficients less than `tol`.
    */
-  boolean<T> IsApprox(
+  boolean<T> CoefficientsAlmostEqual(
       const Polynomial<T>& other, const RealScalar& tol = 0.0,
-      const ToleranceType& tol_type = ToleranceType::relative) const;
+      const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
+
+  DRAKE_DEPRECATED("2020-08-01",
+                   "Use CoefficientsAlmostEqual with tol_type=kRelative "
+                   "instead of IsApprox.")
+  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const {
+    return CoefficientsAlmostEqual(other, tol, ToleranceType::kRelative);
+  }
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
    * Note that the ID of a variable is preserved in this translation.

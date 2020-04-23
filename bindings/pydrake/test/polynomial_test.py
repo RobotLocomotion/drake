@@ -22,7 +22,8 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(p_d.GetDegree(), 1)
         p_i = p.Integral(integration_constant=0)
         self.assertEqual(p_i.GetDegree(), 3)
-        self.assertTrue(p.IsApprox(p, 1e-14, ToleranceType.relative))
+        self.assertTrue(
+            p.CoefficientsAlmostEqual(p, 1e-14, ToleranceType.relative))
 
     def test_arithmetic(self):
         p = Polynomial([0, 1])
