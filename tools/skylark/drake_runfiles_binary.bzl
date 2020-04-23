@@ -1,5 +1,8 @@
 # -*- python -*-
 
+# TODO(eric.cousineau): Deprecate and remove this when our binaries gain the
+# ability to use Rlocation from Python.
+
 def _drake_runfiles_binary_impl(ctx):
     # See doc below for `drake_runfiles_binary`.
     # Using `$(location ...)` expansion for generated scripts gives crappy

@@ -5,7 +5,7 @@ from director import lcmUtils
 from director import applogic
 from director.visualization import updateText
 
-from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
+from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
 class TimeVisualizer(object):
