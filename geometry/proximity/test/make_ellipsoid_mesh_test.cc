@@ -20,14 +20,16 @@ GTEST_TEST(MakeEllipsoidMeshTest, MakeEllipsoidVolumeMesh) {
   // axis 16cm. The coarsest mesh is an octahedron with 7 vertices and 8
   // tetrahedra.
   {
-    const auto coarse_mesh = MakeEllipsoidVolumeMesh<double>(ellipsoid, 0.16);
+    const auto coarse_mesh =
+        MakeEllipsoidVolumeMesh<double>(ellipsoid, 0.16, false /* sparse */);
     EXPECT_EQ(7, coarse_mesh.num_vertices());
     EXPECT_EQ(8, coarse_mesh.num_elements());
   }
   // Cutting the resolution_hint in half from 16cm down to 8cm increases
   // the number of tetrahedra by 8X.
   {
-    const auto medium_mesh = MakeEllipsoidVolumeMesh<double>(ellipsoid, 0.08);
+    const auto medium_mesh =
+        MakeEllipsoidVolumeMesh<double>(ellipsoid, 0.08, false /* sparse */);
     EXPECT_EQ(64, medium_mesh.num_elements());
   }
 }

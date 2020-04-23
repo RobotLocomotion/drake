@@ -256,8 +256,14 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   PositiveDouble validator("Sphere", "soft");
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // TODO(SeanCurtis-TRI): just about anything that can implicitly be converted
+  //  to a bool successfully gets cast as a bool in this operation. Before
+  //  releasing this *particular* propeprty to the public, we need to change
+  //  the value type to be less ambiguous.
+  const bool sparse_mesh =
+      props.GetPropertyOrDefault(kHydroGroup, "sparse_mesh", true);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeSphereVolumeMesh<double>(sphere, edge_length));
+      MakeSphereVolumeMesh<double>(sphere, edge_length, sparse_mesh));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
@@ -307,8 +313,14 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   PositiveDouble validator("Ellipsoid", "soft");
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // TODO(SeanCurtis-TRI): just about anything that can implicitly be converted
+  //  to a bool successfully gets cast as a bool in this operation. Before
+  //  releasing this *particular* propeprty to the public, we need to change
+  //  the value type to be less ambiguous.
+  const bool sparse_mesh =
+      props.GetPropertyOrDefault(kHydroGroup, "sparse_mesh", true);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length));
+      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length, sparse_mesh));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);

@@ -40,13 +40,21 @@ namespace internal {
                             octahedron) is guaranteed for any value of
                             `resolution_hint` greater than or equal to the
                             `ellipsoid`'s major axis.
+ @param sparse_internal_vertices    If `true`, there will be only a single
+                            interior vertex (at the ellipsoid center) which may
+                            lead to long skinny tetrahedra, depending on the
+                            `resolution_hint`. Otherwise, the ellipsoid will be
+                            tessellated with interior vertices to maintain
+                            tetrahedra with reasonable aspect ratios (but
+                            producing a mesh with many more tetrahedra).
  @return The volume mesh for the given ellipsoid.
  @tparam T The Eigen-compatible scalar for representing the mesh vertex
            positions.
 */
 template <typename T>
 VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
-                                      double resolution_hint) {
+                                      double resolution_hint,
+                                      bool sparse_internal_vertices) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   const double a = ellipsoid.a();
   const double b = ellipsoid.b();
@@ -54,8 +62,8 @@ VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
   const double r = std::max({a, b, c});
 
   const double unit_sphere_resolution = resolution_hint / r;
-  auto unit_sphere_mesh =
-      MakeSphereVolumeMesh<T>(Sphere(1.0), unit_sphere_resolution);
+  auto unit_sphere_mesh = MakeSphereVolumeMesh<T>(
+      Sphere(1.0), unit_sphere_resolution, sparse_internal_vertices);
 
   const Vector3<T> scale{a, b, c};
   std::vector<VolumeVertex<T>> vertices;
@@ -86,8 +94,8 @@ template <typename T>
 SurfaceMesh<T> MakeEllipsoidSurfaceMesh(const Ellipsoid& ellipsoid,
                                         double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
-  return ConvertVolumeToSurfaceMesh<T>(
-      MakeEllipsoidVolumeMesh<T>(ellipsoid, resolution_hint));
+  return ConvertVolumeToSurfaceMesh<T>(MakeEllipsoidVolumeMesh<T>(
+      ellipsoid, resolution_hint, true /* sparse */));
 }
 
 }  // namespace internal

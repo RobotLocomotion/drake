@@ -514,7 +514,8 @@ GTEST_TEST(SpherePlaneIntersectionTest, VerifyInterpolations) {
 
   // A tessellation of a unit sphere. Vertices are in the mesh frame M.
   // This creates a volume mesh with over 32K tetrahedra.
-  const VolumeMesh<double> sphere_M = MakeUnitSphereMesh<double>(4);
+  const VolumeMesh<double> sphere_M =
+      MakeUnitSphereMesh<double>(4, false /* sparse */);
 
   // We generate scalar and vector fields linear in the position coordinates.
   // Since CalcZeroLevelSetInMeshDomain() uses linear interpolations, we
