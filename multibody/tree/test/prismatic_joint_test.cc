@@ -175,8 +175,7 @@ TEST_F(PrismaticJointTest, RandomTranslationTest) {
   // zero state.
   RandomGenerator generator;
   tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
-  EXPECT_EQ(joint1_->get_translation(*context_),
-            joint1_->get_default_translation());
+  EXPECT_EQ(joint1_->get_translation(*context_), 0.);
 
   // Setup distribution for random initial conditions.
   std::uniform_real_distribution<symbolic::Expression> uniform(

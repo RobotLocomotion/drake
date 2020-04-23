@@ -23,6 +23,8 @@ constexpr double kVelocityUpperLimit = 1.6;
 constexpr double kAccelerationLowerLimit = -1.2;
 constexpr double kAccelerationUpperLimit = 1.7;
 constexpr double kDamping = 3;
+constexpr double kPositionNonZeroDefault =
+    (kPositionLowerLimit + kPositionUpperLimit) / 2;
 
 class BallRpyJointTest : public ::testing::Test {
  public:
@@ -205,7 +207,7 @@ TEST_F(BallRpyJointTest, DefaultAngles) {
   const Vector3d default_angles = Vector3d::Zero();
 
   const Vector3d new_default_angles =
-      0.5 * lower_limit_angles + 0.5 * upper_limit_angles;
+      Vector3d::Constant(kPositionNonZeroDefault);
 
   const Vector3d out_of_bounds_low_angles =
       lower_limit_angles - Vector3d::Constant(1);
