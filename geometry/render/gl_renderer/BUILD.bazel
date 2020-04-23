@@ -14,7 +14,7 @@ load(
     "drake_cc_package_library_gl_per_os",
 )
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//geometry/render/gl_renderer:__subpackages__"])
 
 drake_cc_package_library_gl_per_os(
     name = "gl_renderer",
@@ -34,7 +34,6 @@ drake_cc_library_gl_ubuntu_only(
         "opengl_context.h",
         "opengl_includes.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//common:essential",
         "//common:scope_exit",
