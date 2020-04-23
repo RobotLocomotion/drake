@@ -2,11 +2,12 @@
 
 #include <memory>
 
-#include "drake/geometry/render/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_includes.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 /** Handle OpenGL context initialization, clean-up, and generic OpenGL queries.
@@ -47,6 +48,7 @@ class OpenGlContext {
 };
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

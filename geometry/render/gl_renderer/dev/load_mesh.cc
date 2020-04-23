@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/dev/load_mesh.h"
 
 #include <algorithm>
 #include <fstream>
@@ -14,6 +14,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 using std::string;
@@ -81,6 +82,7 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
 }
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

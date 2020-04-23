@@ -1,10 +1,11 @@
-#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render/gl_renderer/dev/render_engine_gl.h"
 
 #include <fmt/format.h>
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 using math::RigidTransformd;
@@ -583,6 +584,7 @@ OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
 RenderEngineGl::~RenderEngineGl() = default;
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

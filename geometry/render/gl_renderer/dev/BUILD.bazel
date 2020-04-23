@@ -9,7 +9,7 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
-    "defs.bzl",
+    "@drake//geometry/render/gl_renderer:defs.bzl",
     "drake_cc_googletest_gl_ubuntu_only",
     "drake_cc_library_gl_ubuntu_only",
     "drake_cc_package_library_gl_per_os",
@@ -18,7 +18,7 @@ load(
 package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library_gl_per_os(
-    name = "gl_renderer",
+    name = "dev",
     macos_deps = [
         ":render_engine_gl",
     ],
@@ -29,6 +29,7 @@ drake_cc_package_library_gl_per_os(
         ":render_engine_gl",
         ":shader_program",
     ],
+    visibility = ["//visibility:private"],
 )
 
 drake_cc_library_gl_ubuntu_only(

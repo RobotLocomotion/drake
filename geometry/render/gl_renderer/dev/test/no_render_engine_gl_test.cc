@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
+#include "drake/geometry/render/gl_renderer/dev/render_engine_gl_factory.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace {
 
 // Tests that attempting to use the unsupported RenderEngineGl throws.
@@ -16,6 +17,7 @@ GTEST_TEST(RenderEngineGl, NoRenderEngineGlSupport) {
 }
 
 }  // namespace
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

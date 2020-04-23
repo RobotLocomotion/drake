@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
+#include "drake/geometry/render/gl_renderer/dev/render_engine_gl.h"
 
 #include <array>
 #include <unordered_map>
@@ -8,7 +8,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/render/gl_renderer/render_engine_gl_factory.h"
+#include "drake/geometry/render/gl_renderer/dev/render_engine_gl_factory.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
@@ -16,6 +16,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 namespace {
 
@@ -660,6 +661,7 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
 
 }  // namespace
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

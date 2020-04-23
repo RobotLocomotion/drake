@@ -7,11 +7,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
-#include "drake/geometry/render/gl_renderer/buffer_dim.h"
-#include "drake/geometry/render/gl_renderer/load_mesh.h"
-#include "drake/geometry/render/gl_renderer/opengl_context.h"
-#include "drake/geometry/render/gl_renderer/opengl_geometry.h"
-#include "drake/geometry/render/gl_renderer/shader_program.h"
+#include "drake/geometry/render/gl_renderer/dev/buffer_dim.h"
+#include "drake/geometry/render/gl_renderer/dev/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_context.h"
+#include "drake/geometry/render/gl_renderer/dev/opengl_geometry.h"
+#include "drake/geometry/render/gl_renderer/dev/shader_program.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/image.h"
@@ -19,6 +19,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace dev {
 namespace internal {
 
 /** See documentation of MakeRenderEngineGl().  */
@@ -147,6 +148,7 @@ class RenderEngineGl final : public RenderEngine {
 };
 
 }  // namespace internal
+}  // namespace dev
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
