@@ -717,9 +717,10 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // Formula when T=symbolic::Expression.
   /**
    * Checks whether a %PiecewisePolynomial is approximately equal to this one by
-   * calling Polynomial<T>::IsApprox() on every element of every segment.
-   * 
-   * @see Polynamial<T>::IsApprox().
+   * calling Polynomial<T>::CoefficientsAlmostEqual() on every element of every
+   * segment.
+   *
+   * @see Polynomial<T>::CoefficientsAlmostEqual().
    *
    */
   bool isApprox(const PiecewisePolynomial& other, double tol,

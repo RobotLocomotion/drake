@@ -263,7 +263,8 @@ bool PiecewisePolynomial<T>::isApprox(const PiecewisePolynomial<T>& other,
     const PolynomialMatrix& other_matrix = other.polynomials_[segment_index];
     for (Eigen::Index row = 0; row < rows(); row++) {
       for (Eigen::Index col = 0; col < cols(); col++) {
-        if (!matrix(row, col).IsApprox(other_matrix(row, col), tol, tol_type)) {
+        if (!matrix(row, col).CoefficientsAlmostEqual(other_matrix(row, col),
+                                                      tol, tol_type)) {
           return false;
         }
       }
