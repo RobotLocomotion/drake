@@ -415,6 +415,20 @@ GTEST_TEST(testPiecewisePolynomial, ReshapeTest) {
   EXPECT_TRUE(CompareMatrices(zoh.value(0.75), samples[1]));
 }
 
+GTEST_TEST(testPiecewisePolynomial, IsApproxTest) {
+  Eigen::VectorXd breaks(3);
+  breaks << 0, .5, 1.;
+  Eigen::MatrixXd samples(2, 3);
+  samples << 1, 2, 3, -5, -4, -3;
+  // Make the numbers bigger to exaggerate the tolerance test.
+  samples *= 1000;
+
+  const PiecewisePolynomial<double> pp1 =
+      PiecewisePolynomial<double>::FirstOrderHold(breaks, samples);
+  const PiecewisePolynomial<double> pp2 = pp1 + Eigen::Vector2d::Ones();
+  EXPECT_FALSE(pp1.isApprox(pp2, 0.1, ToleranceType::kAbsolute));
+  EXPECT_TRUE(pp1.isApprox(pp2, 0.1, ToleranceType::kRelative));
+}
 
 template <typename T>
 void TestScalarType() {

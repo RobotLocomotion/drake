@@ -43,6 +43,8 @@ namespace drake {
 template <typename T = double>
 class Polynomial {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polynomial);
+
   typedef unsigned int VarType;
   /// This should be 'unsigned int' but MSVC considers a call to std::pow(...,
   /// unsigned int) ambiguous because it won't cast unsigned int to int.
@@ -95,6 +97,7 @@ class Polynomial {
     int GetDegree() const;
     int GetDegreeOf(VarType var) const;
     bool HasSameExponents(const Monomial& other) const;
+    bool HasVariable(const VarType& var) const;
 
     /// Factors this by other; returns 0 iff other does not divide this.
     Monomial Factor(const Monomial& divisor) const;
@@ -278,6 +281,10 @@ class Polynomial {
   /// Replaces all instances of variable orig with replacement.
   void Subs(const VarType& orig, const VarType& replacement);
 
+  /// Replaces all instances of variable orig with replacement.
+  Polynomial Substitute(const VarType& orig,
+                        const Polynomial& replacement) const;
+
   /** Takes the derivative of this (univariate) Polynomial.
    *
    * Returns a new Polynomial that is the derivative of this one in its sole
@@ -383,13 +390,26 @@ class Polynomial {
    */
   RootsType Roots() const;
 
-  /** Checks if a (univariate) Polynomial is approximately equal to this one.
+  /** Checks if a Polynomial is approximately equal to this one.
    *
-   * Checks that every coefficient of other is within tol of the
+   * Checks that every coefficient of `other` is within `tol` of the
    * corresponding coefficient of this Polynomial.
-   * @throws std::exception if either Polynomial is not univariate.
+   *
+   * Note: When `tol_type` is kRelative, if any monomials appear in `this` or
+   * `other` but not both, then the method returns false (since the comparison
+   * is relative to a missing zero coefficient).  Use kAbsolute if you want to
+   * ignore non-matching monomials with coefficients less than `tol`.
    */
-  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const;
+  boolean<T> CoefficientsAlmostEqual(
+      const Polynomial<T>& other, const RealScalar& tol = 0.0,
+      const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
+
+  DRAKE_DEPRECATED("2020-08-01",
+                   "Use CoefficientsAlmostEqual with tol_type=kRelative "
+                   "instead of IsApprox.")
+  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const {
+    return CoefficientsAlmostEqual(other, tol, ToleranceType::kRelative);
+  }
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
    * Note that the ID of a variable is preserved in this translation.
@@ -496,11 +516,6 @@ std::ostream& operator<<(
   }
   return os;
 }
-
-template <>
-boolean<symbolic::Expression> Polynomial<symbolic::Expression>::IsApprox(
-    const Polynomial<symbolic::Expression>& other,
-    const Polynomial<symbolic::Expression>::RealScalar& tol) const;
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace symbolic {
