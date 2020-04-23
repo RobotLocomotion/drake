@@ -88,7 +88,8 @@ TEST_F(BVHTest, TestComputeBoundingVolume) {
   // bounding box should encompass the whole ellipsoid with a center of 0 and
   // half width of 1, 2, 3.
   std::vector<std::pair<VolumeElementIndex, Vector3d>> tet_centroids;
-  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1., 2., 3.), 6);
+  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(
+      Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
   for (VolumeElementIndex i(0); i < volume_mesh.num_elements(); ++i) {
     tet_centroids.emplace_back(i, Vector3d(0.5, 0.5, 0.5));
   }
@@ -248,7 +249,8 @@ TEST_F(BVHTest, TestCollideEarlyExit) {
 TEST_F(BVHTest, TestCollideSurfaceVolume) {
   // The two octahedrons are tangentially touching along the X-axis, so there
   // should be 4 elements each that are colliding, resulting in 4^2 = 16.
-  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1.5, 2., 3.), 6);
+  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(
+      Ellipsoid(1.5, 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
   BoundingVolumeHierarchy<VolumeMesh<double>> tet_bvh(volume_mesh);
   auto surface_mesh = MakeSphereSurfaceMesh<double>(Sphere(1.5), 3);
   RigidTransformd X_WV{Vector3d{3, 0, 0}};
@@ -270,7 +272,8 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestComputeCentroid) {
   // 2/3, and 3/3.
   EXPECT_TRUE(CompareMatrices(centroid, Vector3d(1. / 3., 2. / 3., 1.)));
 
-  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(Ellipsoid(1., 2., 3.), 6);
+  auto volume_mesh = MakeEllipsoidVolumeMesh<double>(
+      Ellipsoid(1., 2., 3.), 6, TessellationStrategy::kSingleInteriorVertex);
   centroid = BVHTester::ComputeCentroid<VolumeMesh<double>>(
       volume_mesh, VolumeElementIndex(0));
   // The first face of our octahedron is a tet with vertices at 1, 2, and 3

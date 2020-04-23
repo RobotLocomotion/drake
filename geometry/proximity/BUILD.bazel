@@ -43,6 +43,7 @@ drake_cc_package_library(
         ":proximity_utilities",
         ":sorted_triplet",
         ":surface_mesh",
+        ":tessellation_strategy",
         ":volume_mesh",
         ":volume_to_surface_mesh",
     ],
@@ -185,6 +186,7 @@ drake_cc_library(
         ":obj_to_surface_mesh",
         ":proximity_utilities",
         ":surface_mesh",
+        ":tessellation_strategy",
         ":volume_mesh",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -280,6 +282,7 @@ drake_cc_library(
     hdrs = ["make_sphere_mesh.h"],
     deps = [
         ":surface_mesh",
+        ":tessellation_strategy",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common:essential",
@@ -437,6 +440,11 @@ drake_cc_library(
         "//common",
         "//math:geometric_transform",
     ],
+)
+
+drake_cc_library(
+    name = "tessellation_strategy",
+    hdrs = ["tessellation_strategy.h"],
 )
 
 drake_cc_library(
