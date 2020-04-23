@@ -120,10 +120,10 @@ that connects links *B* and *C* with a
 [drake::multibody::LinearBushingRollPitchYaw](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html)
 (there are many other uses of a bushing).  We model a z-axis revolute joint by
 setting torque stiffness constant k₂ = 0 and  torque damping constant d₂ = 0.
-We chose the z-axis (Yaw) to avoid a singularity associated with "gimbal lock". 
-Two frames (one attached to *B* called `Bc_Bushing` with origin at point 
-**Bc** and one attached to *C* called `Cb_Bushing` with origin at point 
-**Cb**) are oriented so their z-axes are perpedicular to the planar 
+We chose the z-axis (Yaw) to avoid a singularity associated with "gimbal lock".
+Two frames (one attached to *B* called `Bc_Bushing` with origin at point
+**Bc** and one attached to *C* called `Cb_Bushing` with origin at point
+**Cb**) are oriented so their z-axes are perpedicular to the planar
 four-bar linkage.
 
 ## Estimating bushing parameters
@@ -149,13 +149,12 @@ time tolerance. For a more detailed discussion on choosing bushing parameters
 for a variety of its uses, see [drake::multibody::LinearBushingRollPitchYaw](https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_linear_bushing_roll_pitch_yaw.html).
 
 ### Estimate force stiffness [kx ky kz] from loading/displacement
-The bushing's force stiffness constants [kx ky kz] can be 
+The bushing's force stiffness constants [kx ky kz] can be
 approximated via various methods (or a combination thereof).
 For example, one could specify a maximum bushing displacement in a
 direction (e.g.,  xₘₐₓ), estimate a maximum directional load (Fx) that
 combines gravity forces, applied forces, inertia forces (centripetal,
-Coriolus, gyroscopic), and then calculate kx ≈ Fx /  xₘₐₓ.  
-
+Coriolus, gyroscopic), and then calculate kx ≈ Fx /  xₘₐₓ.
 
 ### Estimate force stiffness [kx ky kz] constants from mass and ωₙ
 The bushing's force stiffness constants [kx ky kz] can be
@@ -182,15 +181,15 @@ damping ratio ζ (e.g., ζ ≈ 1, critical damping), then d ≈ 2 ζ √(m k).
 The bushing in this planar example replaces a revolute joint. The links are
 constrained to planar motion by the existing joints, hence no
 torque stiffness nor torque damping is needed.  An alternative way to
-deal with this four-bar's closed kinematic loop is to "cut" one of the 
+deal with this four-bar's closed kinematic loop is to "cut" one of the
 four-bar's rigid links in half and join those halves with a bushing
 that has both force and torque stiffness/damping.  If this technique
 is used, torque stiffness is needed.  One way to approximate torque
 stiffness is with concepts similar to the force stiffness above.
-For example, the bushing's torque stiffness k₀ could be calculated 
+For example, the bushing's torque stiffness k₀ could be calculated
 by specifing a maximum bushing angular displacement θₘₐₓ, estimating
 a maximum moment load Mx and calculating k₀ = Mx / θₘₐₓ.
-Alternatively, a value for k₀ can be determined by choosing a 
+Alternatively, a value for k₀ can be determined by choosing a
 characteristic moment of inertia I₀ (which is directionally dependent)
 and then choosing ωₙ (e.g., from setting time), then using k₀ ≈ I₀ ωₙ².
 With k₀ available and a damping ratio ζ chosen, d₀ ≈ 2 ζ √(I₀ k₀).
