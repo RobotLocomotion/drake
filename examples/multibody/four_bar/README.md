@@ -165,21 +165,21 @@ approximated via a related linear constant-coefficient 2ⁿᵈ-order ODE:
 |  m ẍ +     dₓ ẋ +  kₓ x = 0  |  or alternatively as |
 |    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0  |  where ωₙ = √(kₓ/m),  ζ = dx / (2 √(m kₓ)) |
 
-Values for kx can be determined by choosing a characteristic mass m
+Values for kₓ can be determined by choosing a characteristic mass m
 (which may be directionally dependent) and then choosing ωₙ > 0
-(speed of response). Rearranging ωₙ = √(kx/m) produces kx = m ωₙ².
+(speed of response). Rearranging ωₙ = √(kₓ/m) produces kₓ = m ωₙ².
 One way to choose ωₙ is to choose a settling time tₛ which
 approximates the desired time for stretch x to settle to within 1% (0.01)
 of an equilibrium solution, and choose a damping ratio ζ (e.g., ζ = 1,
-critical damping), then calculate ωₙ = -log(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ).
+critical damping), then calculate ωₙ = -ln(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ).
 For the included example code, a characteristic mass m = 20 kg was chosen
 with tₛ = 0.12 and ζ = 1 (critical damping). Thus
-ωₙ = -log(0.01) / 0.12 ≈ 38.38 and kx = (20)*(38.38)² ≈ 30000.
+ωₙ = -ln(0.01) / 0.12 ≈ 38.38 and kₓ = (20)*(38.38)² ≈ 30000.
 
 ### Estimate force damping [dx dy dz] from mass and stiffness 
-Once m and kx have been chosen, damping dx can be estimated by picking a
-damping ratio ζ (e.g., ζ ≈ 1, critical damping), then dx ≈ 2 ζ √(m kx).
-For our example dx ≈ 2·√(20·30000) ≈ 1500.
+Once m and kₓ have been chosen, damping dₓ can be estimated by picking a
+damping ratio ζ (e.g., ζ ≈ 1, critical damping), then dₓ ≈ 2 ζ √(m kx).
+For our example dₓ ≈ 2·√(20·30000) ≈ 1500.
 
 ### Estimating torque stiffness [k₀ k₁ k₂] and damping [d₀ d₁ d₂]
 The bushing in this planar example replaces a revolute joint. The links are
