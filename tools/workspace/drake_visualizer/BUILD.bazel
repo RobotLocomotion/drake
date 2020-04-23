@@ -1,10 +1,13 @@
 # -*- python -*-
 
+load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/skylark:py.bzl", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/install:install.bzl", "install", "install_files")
 
 exports_files(
-    ["drake_visualizer.py"],
+    # To be consumed by `//tools:drake_visualizer_py`.
+    ["drake_visualizer_bazel.py"],
     visibility = ["//tools:__pkg__"],
 )
 
@@ -13,6 +16,16 @@ py_library(
     srcs = ["__init__.py"],
     visibility = [":__subpackages__"],
     deps = ["//tools/workspace:module_py"],
+)
+
+py_library(
+    name = "exec_drake_visualizer_with_plugins_py",
+    srcs = ["_exec_drake_visualizer_with_plugins.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":module_py",
+        "//tools/workspace/drake_visualizer/plugin",
+    ],
 )
 
 # When developing within Drake, we don't want //tools:drake_visualizer to
@@ -28,4 +41,40 @@ py_library(
     visibility = ["//tools:__pkg__"],
 )
 
-add_lint_tests()
+install_files(
+    name = "install_wrapper_script",
+    dest = "bin",
+    files = ["drake_visualizer_installed.py"],
+    rename = {
+        "bin/drake_visualizer_installed.py": "drake-visualizer",
+    },
+)
+
+install(
+    name = "install",
+    install_tests = [":test/drake_visualizer_installed_help_test.py"],
+    targets = [
+        ":module_py",
+        ":exec_drake_visualizer_with_plugins_py",
+    ],
+    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools/workspace/drake_visualizer",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = [
+        ":install_wrapper_script",
+        "//tools/workspace/drake_visualizer/plugin:install",
+        "@drake_visualizer//:install",
+    ],
+)
+
+drake_py_unittest(
+    name = "drake_visualizer_bazel_help_test",
+    data = [
+        "//tools:drake_visualizer",
+    ],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "drake_visualizer_installed.py",
+    ],
+)

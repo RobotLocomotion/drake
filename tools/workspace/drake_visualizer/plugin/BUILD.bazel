@@ -2,6 +2,7 @@
 
 load("//tools/skylark:py.bzl", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/install:install.bzl", "install")
 
 py_library(
     name = "module_py",
@@ -24,6 +25,16 @@ py_library(
     deps = [
         ":module_py",
     ],
+)
+
+install(
+    name = "install",
+    targets = [
+        ":module_py",
+        ":plugin",
+    ],
+    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools/workspace/drake_visualizer/plugin",  # noqa
+    visibility = ["//tools/workspace/drake_visualizer:__pkg__"],
 )
 
 add_lint_tests()

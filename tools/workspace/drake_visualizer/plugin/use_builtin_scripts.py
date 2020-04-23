@@ -6,6 +6,7 @@ import os
 import sys
 
 from drake.tools.workspace.drake_visualizer.plugin import (
+    AVAILABLE_SCRIPTS,
     show_frame,
     show_hydroelastic_contact,
     show_image,
@@ -24,6 +25,13 @@ def init_visualizer():
         ("point_pair_contact", show_point_pair_contact.init_visualizer),
         ("time", show_time.init_visualizer),
     ))
+    available_scripts = list(available.keys())
+    # N.B. Keep these in sync.
+    assert available_scripts == AVAILABLE_SCRIPTS, (
+        f"Discrepancy between AVAILABLE_SCRIPTS in .../plugin/__init__.py` "
+        f"(used for --help) and those defined here (available_scripts):\n"
+        f"  AVAILABE_SCRIPTS: {AVAILABE_SCRIPTS}\n"
+        f"  available_scripts: {available_scripts}\n")
     print("")
     print("Drake Scripts:")
     scripts_raw = os.environ["_DRAKE_VISUALIZER_BUILTIN_SCRIPTS"]
