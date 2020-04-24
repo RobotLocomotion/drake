@@ -18,6 +18,81 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// Forward declaration of Tester class, so we can grant friend access.
+template <typename T> class IntersectSurfaceVolumeTester;
+
+/** %IntersectSurfaceVolume performs a mesh-intersection algorithm between a
+ triangulated surface mesh and a tetrahedral volume mesh with a field
+ variable. It also interpolates the field variable onto the resulted
+ surface.
+
+ @tparam T Currently, only T = double is supported.
+ */
+template <typename T>
+class IntersectSurfaceVolume {
+ public:
+  IntersectSurfaceVolume() {
+    // We know that each contact polygon has at most 7 vertices.
+    // Each surface triangle is clipped by four half-spaces of the four
+    // triangular faces of a tetrahedron.
+    polygon_[0].reserve(7);
+    polygon_[1].reserve(7);
+    contact_polygon_.reserve(7);
+  }
+
+  // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
+  //  remove the note in the function documentation.
+
+/** Samples a field on a two-dimensional manifold. The field is defined over
+ a volume mesh and the manifold is the intersection of the volume mesh and a
+ surface mesh. The resulting manifold's topology is a function of both the
+ volume and surface mesh topologies. The winding of the resulting manifold's
+ faces will be such that its face normals will point in the same direction as
+ the input surface mesh's corresponding faces.
+ Computes the intersecting surface `surface_MN` between a soft geometry M
+ and a rigid geometry N, and sets the pressure field and the normal vector
+ field on `surface_MN`. This does not use any broadphase culling but compares
+ each element of the meshes.
+ @param[in] volume_field_M
+     The field to sample from. The field contains the volume mesh M that defines
+     its domain. The vertex positions of the mesh are measured and expressed in
+     frame M. And the field can be evaluated at positions likewise measured and
+     expressed in frame M.
+ @param[in] surface_N
+     The surface mesh intersected with the volume mesh to define the sample
+     domain. Its vertex positions are measured and expressed in frame N.
+ @param[in] X_MN
+     The pose of frame N in frame M.
+ @param[out] surface_MN_M
+     The intersecting surface between the volume mesh M and the surface N.
+     Vertex positions are measured and expressed in M's frame. If no
+     intersection exists, this will not change.
+ @param[out] e_MN
+     The sampled field values on the intersecting surface (samples to support
+     a linear mesh field -- i.e., one per vertex). If no intersection exists,
+     this will not change.
+ @note
+     The output surface mesh may have duplicate vertices.
+ */
+  void SampleVolumeFieldOnSurface(
+      const VolumeMeshField<T, T>& volume_field_M,
+      const SurfaceMesh<T>& surface_N,
+      const math::RigidTransform<T>& X_MN,
+      std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+
+/** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
+ reduce the number of element-pairs evaluated.  */
+  void SampleVolumeFieldOnSurface(
+      const VolumeMeshField<T, T>& volume_field_M,
+      const BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M,
+      const SurfaceMesh<T>& surface_N,
+      const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_N,
+      const math::RigidTransform<T>& X_MN,
+      std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+
+ private:
 /** Calculates the intersection point between an infinite straight line spanning
  points A and B and the bounding plane of the half space H.
  @param p_FA
@@ -34,11 +109,9 @@ namespace internal {
      3. The line is _not_ parallel with the half space. Given previous
         requirements, this implies that they cannot both lie *on* the boundary
         of the half space.
- @tparam T Currently, only T = double is supported.
  */
-template <typename T>
-Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const PosedHalfSpace<T>& H_F);
+  Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                              const PosedHalfSpace<T>& H_F);
 
 // TODO(SeanCurtis-TRI): This function duplicates functionality implemented in
 //  mesh_half_space_intersection.h. Reconcile the two implementations.
@@ -78,28 +151,23 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
      3. For an input polygon P outside the half space with one vertex on the
         plane of the half space, the output polygon will be a zero-area
         triangle with three duplicate vertices.
- @tparam T Currently, only T = double is supported.
 */
-template <typename T>
-std::vector<Vector3<T>> ClipPolygonByHalfSpace(
-    const std::vector<Vector3<T>>& polygon_vertices_F,
-    const PosedHalfSpace<T>& H_F);
+  void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& polygon_vertices_F,
+                              const PosedHalfSpace<T>& H_F,
+                              std::vector<Vector3<T>>* output_vertices_F);
 
-/** Remove duplicate vertices from a polygon represented as a cyclical sequence
- of vertex positions. In other words, for a sequence `A,B,B,C,A`, the pair of
- B's is reduced to one B and the first and last A vertices are considered
- duplicates and the result would be `A,B,C`. The polygon might be reduced to a
- pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point (`A,A,A`
- becomes `A`).
+/** Remove duplicate vertices from a polygon represented as a cyclical
+ sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
+ pair of B's is reduced to one B and the first and last A vertices are
+ considered duplicates and the result would be `A,B,C`. The polygon might be
+ reduced to a pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point
+ (`A,A,A` becomes `A`).
  @param[in] polygon
      The input polygon, pass by value.
  @return
      The equivalent polygon with no duplicate vertices.
- @tparam T Currently, only T = double is supported.
  */
-template <typename T>
-std::vector<Vector3<T>> RemoveDuplicateVertices(
-    std::vector<Vector3<T>> polygon);
+  void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon);
 
 /** Intersects a triangle with a tetrahedron, returning the portion of the
  triangle with non-zero area contained in the tetrahedron.
@@ -127,13 +195,11 @@ std::vector<Vector3<T>> RemoveDuplicateVertices(
      3. If the triangle lies on the plane of a tetrahedron face, the output
         polygon will be that part of the triangle inside the face of the
         tetrahedron (non-zero area restriction still applies).
- @tparam T Currently, only T = double is supported.
  */
-template <typename T>
-std::vector<Vector3<T>> ClipTriangleByTetrahedron(
-    VolumeElementIndex element, const VolumeMesh<T>& volume_M,
-    SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
-    const math::RigidTransform<T>& X_MN);
+  std::vector<Vector3<T>>* ClipTriangleByTetrahedron(
+      VolumeElementIndex element, const VolumeMesh<T>& volume_M,
+      SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
+      const math::RigidTransform<T>& X_MN);
 
 /** Determines whether a triangle of a rigid surface N and a tetrahedron of a
  soft volume M are suitable for building contact surface based on the face
@@ -211,71 +277,19 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
  @note    This function is a work in progress. There is no single threshold
           that works for all cases. We pick 5π/8 empirically.
           See @ref module_contact_surface.
- @tparam T Currently, only T = double is supported.
  */
-template <typename T>
-bool IsFaceNormalAlongPressureGradient(
-    const VolumeMeshField<T, T>& volume_field_M,
-    const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
-    const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
+  bool IsFaceNormalAlongPressureGradient(
+      const VolumeMeshField<T, T>& volume_field_M,
+      const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
+      const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
 
-// TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
-//  remove the note in the function documentation.
+  // To avoid heap allocation by std::vector in low-level functions, we use
+  // these member variables instead of local variables in the functions.
+  std::vector<Vector3<T>> polygon_[2];
+  std::vector<SurfaceVertexIndex> contact_polygon_;
 
-// TODO(tehbelinda): Restructure how the intersecting mesh and field are
-// returned and stop passing around bare pointers to unique_ptrs.
-
-/** Samples a field on a two-dimensional manifold. The field is defined over
- a volume mesh and the manifold is the intersection of the volume mesh and a
- surface mesh. The resulting manifold's topology is a function of both the
- volume and surface mesh topologies. The winding of the resulting manifold's
- faces will be such that its face normals will point in the same direction as
- the input surface mesh's corresponding faces.
- Computes the intersecting surface `surface_MN` between a soft geometry M
- and a rigid geometry N, and sets the pressure field and the normal vector
- field on `surface_MN`. This does not use any broadphase culling but compares
- each element of the meshes.
- @param[in] volume_field_M
-     The field to sample from. The field contains the volume mesh M that defines
-     its domain. The vertex positions of the mesh are measured and expressed in
-     frame M. And the field can be evaluated at positions likewise measured and
-     expressed in frame M.
- @param[in] surface_N
-     The surface mesh intersected with the volume mesh to define the sample
-     domain. Its vertex positions are measured and expressed in frame N.
- @param[in] X_MN
-     The pose of frame N in frame M.
- @param[out] surface_MN_M
-     The intersecting surface between the volume mesh M and the surface N.
-     Vertex positions are measured and expressed in M's frame. If no
-     intersection exists, this will not change.
- @param[out] e_MN
-     The sampled field values on the intersecting surface (samples to support
-     a linear mesh field -- i.e., one per vertex). If no intersection exists,
-     this will not change.
- @note
-     The output surface mesh may have duplicate vertices.
- @tparam T Currently, only T = double is supported.
- */
-template <typename T>
-void SampleVolumeFieldOnSurface(
-    const VolumeMeshField<T, T>& volume_field_M,
-    const SurfaceMesh<T>& surface_N,
-    const math::RigidTransform<T>& X_MN,
-    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
-
-/** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
- reduce the number of element-pairs evaluated.  */
-template <typename T>
-void SampleVolumeFieldOnSurface(
-    const VolumeMeshField<T, T>& volume_field_M,
-    const BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M,
-    const SurfaceMesh<T>& surface_N,
-    const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_N,
-    const math::RigidTransform<T>& X_MN,
-    std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+  friend class IntersectSurfaceVolumeTester<T>;
+};
 
 /** Computes the contact surface between a soft geometry S and a rigid
  geometry R. This does not use any broadphase culling.
