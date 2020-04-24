@@ -61,7 +61,7 @@ install_files(
 
 install(
     name = "install",
-    install_tests = [":test/drake_visualizer_installed_help_test.py"],
+    install_tests = [":test/drake_visualizer_installed_test.py"],
     visibility = ["//tools/workspace:__pkg__"],
     deps = [
         ":install_wrapper_script",
@@ -71,7 +71,7 @@ install(
 )
 
 drake_py_unittest(
-    name = "drake_visualizer_bazel_help_test",
+    name = "drake_visualizer_bazel_test",
     data = [
         "//tools:drake_visualizer",
     ],

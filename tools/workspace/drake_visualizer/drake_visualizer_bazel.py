@@ -8,6 +8,10 @@ import os
 from os.path import exists, join
 import sys
 
+# N.B. Necessary to avoid spewing `__pycache__` when running from `./bazel-bin`
+# or `bazel run`.
+sys.dont_write_bytecode = True  # noqa
+
 from _drake_visualizer_builtin_scripts import (
     _exec_drake_visualizer_with_plugins,
 )

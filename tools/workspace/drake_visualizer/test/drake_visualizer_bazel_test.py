@@ -1,11 +1,11 @@
-import os
 from os.path import isfile
 import subprocess
 import unittest
 
 
-class TestDrakeVisualizerHelp(unittest.TestCase):
-    def test(self):
+class TestDrakeVisualizerBazel(unittest.TestCase):
+    def test_help(self):
+        """Ensure we can call drake_visualizer --help in Bazel."""
         bin_path = "tools/drake_visualizer"
         self.assertTrue(isfile(bin_path), bin_path)
         text = subprocess.check_output([bin_path, "--help"], encoding="utf8")

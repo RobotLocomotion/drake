@@ -28,8 +28,8 @@ def init_visualizer():
     available_scripts = list(available.keys())
     # N.B. Keep these in sync.
     assert available_scripts == AVAILABLE_SCRIPTS, (
-        f"Discrepancy between AVAILABLE_SCRIPTS in .../plugin/__init__.py` "
-        f"(used for --help) and those defined here (available_scripts):\n"
+        f"Discrepancy between __init__.py` (AVAILABLE_SCRIPTS) (used for "
+        f"--help) and those defined in this file (available_scripts):\n"
         f"  AVAILABE_SCRIPTS: {AVAILABE_SCRIPTS}\n"
         f"  available_scripts: {available_scripts}\n")
     print("")
