@@ -100,6 +100,35 @@ template <typename T> class Body;
 /// occurs when `pitch = q₁ = π/2`).  Note: Due to the relationship of 𝐭 to τ
 /// shown below, 𝐭 is discontinuous if τ is discontinuous.
 ///
+/// @anchor How_to_choose_bushing_torque_stiffness_and_damping_constants
+/// ### How to choose a torque stiffness constant k₀ or damping constant d₀.
+/// - Use an experiment.  For example, apply a known moment load Mx, measure
+/// the associated angular displacement Δθ, and estimate `k₀ = Mx / Δθ`.
+/// - Use FEA (finite element analysis) software to estimate k₀.
+/// - Pick a maximum angular displacement θₘₐₓ, estimate a maximum moment load
+/// Mxₘₐₓ, and estimate `k₀ = Mxₘₐₓ / θₘₐₓ`.
+/// - Choose a characteristic moment of inertia I₀ (directionally dependent),
+/// choose a speed of response ωₙ > 0 (in rad/sec) and estimate `k₀ = I₀ ωₙ²`.
+/// - Choose a damping ratio ζ (e.g., ζ = 1) and calculate `d₀ = 2 ζ √(I₀ k₀)`.
+/// - Choose a damping ratio ζ (e.g., ζ = 1, critical damping), choose a 1%
+/// settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then `d₀ = 2 ζ k₀ / ωₙ`.
+/// <br> \ref More_on_how_to_choose_bushing_stiffness_and_damping_constants
+/// .
+/// @anchor How_to_choose_bushing_force_stiffness_and_damping_constants
+/// ### How to choose a force stiffness constant kx or damping constant dx.
+/// - Use an experiment.  For example, apply a known force load Fx, measure
+/// the associated displacement (stretch) Δx, and estimate `kx = Fx / Δx`.
+/// - Use FEA (finite element analysis) software to estimate kx.
+/// - Pick a maximum displacement xₘₐₓ, estimate a maximum force load Fxₘₐₓ,
+///  and estimate `kx = Fxₘₐₓ / xₘₐₓ`.
+/// - Choose a characteristic mass m (which may be directionally dependent),
+/// choose a speed of response ωₙ > 0 (in rad/sec) and estimate `kx = m ωₙ²`.
+/// - Choose a damping ratio ζ (e.g., ζ = 1) and calculate `dx = 2 ζ √(m kx)`.
+/// - Choose a damping ratio ζ (e.g., ζ = 1, critical damping), choose a 1%
+/// settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then `dx = 2 ζ kx / ωₙ`.
+/// <br> \ref More_on_how_to_choose_bushing_stiffness_and_damping_constants
+/// .
+///
 /// ### Advanced: Relationship of 𝐭 to τ.
 /// To understand how "gimbal torques" τ relate to 𝐭, it helps to remember that
 /// the RollPitchYaw class documentation states that a Space-fixed (extrinsic)
@@ -118,6 +147,45 @@ template <typename T> class Body;
 /// ⌈ tx ⌉      ⌈ τ₀ ⌉            ⌈ cos(q₂)/cos(q₁)  sin(q₂)/cos(q₁)   0 ⌉
 /// | ty | = Nᵀ | τ₁ |  where N = |   −sin(q2)            cos(q2)      0 |
 /// ⌊ tz ⌋      ⌊ τ₂ ⌋            ⌊ cos(q₂)*tan(q₁)   sin(q₂)*tan(q₁)  1 ⌋</pre>
+///
+/// @anchor More_on_how_to_choose_bushing_stiffness_and_damping_constants
+/// ### Advanced: More on how to choose bushing stiffness and damping constants.
+/// - Stiffness [kx ky kz] affects simulation time and accuracy.
+/// Generally, a stiffer bushing better resembles an ideal joint (e.g., a
+/// revolute joint or fixed/weld joint).  However (depending on integrator), a
+/// stiffer bushing usually increases numerical integration time.
+/// - An estimate for a maximum load Mxₘₐₓ or Fxₘₐₓ accounts for gravity forces,
+/// applied forces, inertia forces (centripetal, Coriolis, gyroscopic), etc.
+/// - One way to choose ωₙ is to choose a settling time tₛ which approximates
+/// the desired time for system to settle to within 1% (0.01) of an equilibrium
+/// solution, choose a damping ratio ζ (e.g., ζ = 1, critical damping), then
+/// calculate ωₙ = -log(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ).
+/// - ωₙ is called "undamped natural frequency" and is a measure of |ẋ| (speed
+/// of response) in the linear constant-coefficient 2ⁿᵈ-order ODE <pre>
+///  m ẍ +     dx ẋ +  kx x = 0   or alternatively as
+///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0   where ωₙ² = kx/m,  ζ = dx / (2 √(m kx))</pre>
+/// ωₙ also appears in the related ODE for rotational systems, namely<pre>
+///  I₀ θ̈ +     d₀ θ̇ +  k₀ θ = 0   or alternatively as
+///     θ̈ + 2 ζ ωₙ θ̇ + ωₙ² θ = 0   where ωₙ² = k₀/I₀,  ζ = d₀ / (2 √(I₀ k₀))
+/// </pre>
+/// - There are multiple ways to estimate force stiffness constants.
+/// Use a method or combination of methods appropriate for your application.
+/// For example, the 1ˢᵗ and/or 2ⁿᵈ method are more useful for a real bushing
+/// whereas the 3ʳᵈ and/or 4ᵗʰ method can be more useful when replacing an
+/// ideal joint (such as a revolute or fixed/weld joint) with a bushing.
+/// - The 3ʳᵈ method is a "penalty method" substitute for a "hard" constraint
+/// Since a bushing is inherently compliant it will violate a hard constraint
+/// somewhat.  The stiffer the bushing, the more accurately it enforces the hard
+/// constraint, but at a cost of more computational time.  To balance accuracy
+/// versus time, consider your tolerance for constraint errors.  For example,
+/// is it OK for your bushing to displace xₘₐₓ = 1 mm for Fxₘₐₓ = 100 N?  The
+/// choice of force damping dx can be determined from a "reasonably small"
+/// settling time tₛ > 0, e.g., is tₛ = 0.01 s negligible for a robot arm with a
+/// 10 s reach maneuver?  After choosing settling time tₛ and damping ratio ζ
+/// (e.g., ζ = 1), form ωₙ = -log(0.01) / (ζ tₛ) and then dx = 2 ζ kx / ωₙ.
+/// In summary, this penalty method example requires choices for xₘₐₓ, Fxₘₐₓ,
+/// tₛ, ζ (but not characteristic mass m) to estimate kx and dx.
+/// .
 ///
 /// @note The complete theory for this bushing is documented in the source code.
 /// Please look there if you want more information.
@@ -187,95 +255,24 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   }
 
   /// Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
-  /// One way to estimate a bushing's torque stiffness constants is with an
-  /// experiment, e.g., by applying a known moment load Mx and measuring the
-  /// associated angular displacement Δθ and estimating `k₀ = Mx / Δθ`.
-  /// Another way to estimate k₀ is with FEA (finite element analysis) software.
-  /// A third way to choose k₀ is with the concepts described in the method
-  /// force_stiffness_constants().  For example, k₀ can be estimated by choosing
-  /// a maximum angular displacement θMax, estimating a maximum moment load Mx,
-  /// and using `k₀ = Mx / θMax`.
-  /// A fourth way to choose k₀ is by choosing a characteristic moment of
-  /// inertia I₀ (directionally dependent), choosing ωₙ > 0 (speed of response),
-  /// and using a related linear constant-coefficient 2ⁿᵈ-order ODE <pre>
-  ///  I₀ θ̈ +     d₀ θ̇ +  k₀ θ = 0   or alternatively as
-  ///     θ̈ + 2 ζ ωₙ θ̇ + ωₙ² θ = 0   where ωₙ = √(k₀/I₀),  ζ = d₀ / (2 √(I₀ k₀))
-  /// </pre>
-  /// Rearranging ωₙ = √(k₀/I₀) produces k₀ = I₀ ωₙ².
-  /// @see force_stiffness_constants() for how to choose ωₙ from settling time,
-  /// how stiffness affects simulation time and accuracy, what loads to consider
-  /// for k₀ = Mx / θMax, and guidance about modeling ideal joints.
+  /// @see \ref How_to_choose_bushing_torque_stiffness_and_damping_constants
   const Vector3<double>& torque_stiffness_constants() const {
     return torque_stiffness_constants_;
   }
 
-  /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
-  /// One way to estimate the torque damping constant d₀ is to choose a damping
-  /// ratio ζ (e.g., ζ = 1, critical damping) and then calculate d₀ in terms of
-  /// the previously estimated I₀ and k₀ as d₀ = 2 ζ √(I₀ k₀).
-  /// A 2ⁿᵈ way to estimate d₀ is to choose a damping ratio ζ (e.g., ζ = 1),
-  /// a settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then d₀ = 2 ζ k₀ / ωₙ.
-  //  Note this 2ⁿᵈ way does not require a characteristic moment of inertia I₀.
-  /// @see torque_stiffness_constants() for details on I₀ and k₀.
+  /// @see \ref How_to_choose_bushing_torque_stiffness_and_damping_constants
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
   }
 
   /// Returns the force stiffness constants `[kx ky kz]` (units of N/m).
-  /// One way to estimate a bushing's force stiffness constants is with an
-  /// experiment, e.g., by applying a known moment load Fx and measuring the
-  /// associated displacement (stretch) Δx and estimating `kx = Fx / Δx`.
-  /// Another way to estimate kx is with FEA (finite element analysis) software
-  /// A third way to choose kx is to specify a maximum bushing displacement in a
-  /// direction (e.g., xMax), estimate a maximum directional load (Fx) that
-  /// combines gravity forces, applied forces, and inertia forces (centripetal,
-  /// Coriolis, gyroscopic), and calculate `kx = Fx / xMax`.
-  /// A fourth way to choose kx is by choosing a characteristic mass m (which
-  /// may be directionally dependent), choosing ωₙ > 0 (speed of response),
-  /// and using a related constant-coefficient 2ⁿᵈ-order ODE for stretch x <pre>
-  ///  m ẍ +     dx ẋ +  kx x = 0    or alternatively as
-  ///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0    where ωₙ = √(kx/m),  ζ = dx / (2 √(m kx))
-  /// </pre>
-  /// Rearranging ωₙ = √(kx/m) produces kx = m ωₙ².
-  /// @note One way to choose ωₙ is to choose a settling time tₛ which
-  /// approximates the desired time for stretch x to settle to within 1% (0.01)
-  /// of an equilibrium solution, and choose a damping ratio ζ (e.g., ζ = 1,
-  /// critical damping), then calculate ωₙ = -log(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ).
-  /// @note Stiffness [kx ky kz] affects simulation time and accuracy.
-  /// Generally, a stiffer bushing more closely resembles an ideal joint (e.g.,
-  /// a revolute joint or fixed/weld joint).  However (depending on integrator),
-  /// a stiffer bushing usually increases numerical integration time.
-  /// @note Described above are four ways to estimate force stiffness constants.
-  /// Use a method or combination of methods appropriate for your application.
-  /// For example, the 1ˢᵗ and/or 2ⁿᵈ method are more useful for a real bushing
-  /// whereas the 3ʳᵈ and/or 4ᵗʰ method can be more useful when replacing an
-  /// ideal joint (such as a revolute or fixed/weld joint) with a bushing.
-  /// For example, the 3ʳᵈ method is a "penalty method" substitute for a "hard"
-  /// constraint. Since a bushing is inherently compliant it will violate a
-  /// hard constraint somewhat.  The stiffer the bushing, the more accurately
-  /// it enforces the hard constraint, but at a cost of more computational time.
-  /// Choose stiffness k and damping d to balance accuracy versus time. For a
-  /// penalty method, consider your tolerance for constraint errors -- if the
-  /// bushing allows deviations of xMax = 1 mm (for example) is that OK for your
-  /// application?  The choice of force damping dx to damp out oscillations can
-  /// be determined by a "reasonably small" settling time tₛ > 0.  For example,
-  /// tₛ = 0.01 s may be negligible for a robot arm with a 10 s reach maneuver.
-  /// After choosing settling time tₛ and damping ratio ζ (e.g., ζ = 1), ωₙ can
-  /// be calculated as ωₙ = -log(0.01) / (ζ tₛ) and damping dx = 2 ζ kx / ωₙ.
-  /// In summary, this penalty method example requires choices for tₛ, ζ and an
-  /// estimate of kx, but not a characteristic mass m.
+  /// @see \ref How_to_choose_bushing_force_stiffness_and_damping_constants
   const Vector3<double>& force_stiffness_constants() const {
     return force_stiffness_constants_;
   }
 
   /// Returns the force damping constants `[dx dy dz]` (units of N*s/m).
-  /// One way to estimate the force damping constant dx is to choose a damping
-  /// ratio ζ (e.g., ζ = 1, critical damping) and then calculate dx in terms of
-  /// the previously estimated mass m and kx as `dx = 2 ζ √(m kx)`.
-  /// A 2ⁿᵈ way to estimate dx is to choose a damping ratio ζ (e.g., ζ = 1),
-  /// a settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then dx = 2 ζ kx / ωₙ.
-  //  Note this 2ⁿᵈ way does not require a characteristic mass m.
-  /// @see force_stiffness_constants() for details on mass m and stiffness kx.
+  /// @see \ref How_to_choose_bushing_force_stiffness_and_damping_constants
   const Vector3<double>& force_damping_constants() const {
     return force_damping_constants_;
   }
