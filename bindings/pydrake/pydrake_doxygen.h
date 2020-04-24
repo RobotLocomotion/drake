@@ -314,6 +314,20 @@ This works about 80% of the time.
 - Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
 (using perfect forwarding when appropriate).
 
+### C++ API Considerations
+
+Parameter packs are an attractive C++ syntactic sugar generally used for
+emplace-like functionality. However, they can complicate Python bindings if
+that is the only method that is exposed to the public API.
+(For more information, see the "Parameter Pack" section in
+python_bindings.rst).
+
+In general, you should aim to expose a non-parameter pack variant that should
+leverage type-erasure, e.g. in addition to the sugar
+`MultibodyPlant<T>::AddJoint<JointType, Args...>(...)`, you should also expose
+`MultibodyPlant<T>::AddJoint<JointType>(unique_ptr<JointType>)`, and ensure
+that this is the primary code-path backing up the parameter-pack flavor.
+
 ## Python Subclassing of C++ Classes
 
 In general, minimize the amount in which users may subclass C++ classes in

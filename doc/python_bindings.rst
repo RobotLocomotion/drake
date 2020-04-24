@@ -343,6 +343,40 @@ Additionally, you may convert an instance (if the conversion is available) using
     >>> print(adder.ToSymbolic())
     <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
 
+Parameter Packs
+^^^^^^^^^^^^^^^
+
+In C++11 (and above),
+`Parameter Packs <https://en.cppreference.com/w/cpp/language/parameter_pack>`_
+were introduced which allows you to do *compile-time* forwarding of arguments
+(and types). This manifests itself in the C++ API in methods like:
+
+.. code-block:: cpp
+
+    MultibodyPlant<T>::AddJoint<JointType, Args...>(...)
+    MultibodyPlant<T>::AddFrame<FrameType, Args...>(...)
+
+Generally, these are done as a syntactic sugar for
+`emplace <https://en.cppreference.com/w/cpp/container/vector/emplace>`_-like
+functionality.
+
+However, the Python bindings must concretely declare all overloads (including
+variadic forms), and thus must either bind every imaginable concrete parameter
+pack variation, or it should bind a *decoupled* registration method, which is
+generally type-erased (e.g. ``AbstractValue`` + ``Value``) and/or explicitly
+polymorphic (e.g. ``RevoluteJoint_[T]`` with parent class ``Joint_[T]``).
+
+In ``pydrake``, the decision was made to use the decoupled approach, thus the
+``pydrake`` bindings of the C++ functions above look like:
+
+.. code-block:: pycon
+
+    MultibodyPlant_[T].AddJoint(JointType(...))
+    MultibodyPlant_[T].AddFrame(FrameType(...))
+
+where ``JointType`` and ``FrameType`` are replaced with the concrete type in
+question (e.g. ``RevoluteJoint_[T]`` or ``FixedOffsetFrame_[T]``).
+
 Debugging with the Python Bindings
 ----------------------------------
 
