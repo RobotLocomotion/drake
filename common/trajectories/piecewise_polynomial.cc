@@ -360,10 +360,10 @@ void PiecewisePolynomial<T>::ReverseTime() {
         // Must shift this segment by h, because it will now be evaluated
         // relative to breaks[i+1] instead of breaks[i], via p_after(t) =
         // p_before(t+h).  But we can perform the time-reversal at the same
-        // time, using the variant p_after(t) = p_before(h-t). Note: We use
-        // begin() here to get the only variable in the univariate polynomial.
-        const typename Polynomial<T>::VarType& t =
-            *matrix(row, col).GetVariables().begin();
+        // time, using the variant p_after(t) = p_before(h-t).
+        const auto& vars = matrix(row, col).GetVariables();
+        DRAKE_ASSERT(vars.size() == 1);
+        const typename Polynomial<T>::VarType& t = *vars.begin();
         matrix(row, col) =
             matrix(row, col).Substitute(t, h - Polynomial<T>(1.0, t));
       }
