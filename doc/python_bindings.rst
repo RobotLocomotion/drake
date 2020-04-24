@@ -263,8 +263,8 @@ Differences with C++ API
 In general, the `Python API <pydrake/index.html#://>`_ should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:
 
-C++ Template Instantiations in Python
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C++ Class Template Instantiations in Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When you define a general class template, e.g.
 ``template <typename T> class Value``, something like ``Value<std::string>`` is
@@ -342,6 +342,63 @@ Additionally, you may convert an instance (if the conversion is available) using
     <pydrake.systems.primitives.Adder_[AutoDiffXd] object at 0x...>
     >>> print(adder.ToSymbolic())
     <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
+
+C++ Function and Method Template Instantiations in Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The above section indicates that C++ types are generally registered with
+Python, and the same approach could be used for function and method templates.
+However, these templates usually fit a certain pattern and can be Pythonized in
+such a way that simplifies implementation, but may change the "feel" of the
+signature.
+
+The three common (non-metaprogramming) applications of templated functions and
+methods present in Drake are:
+
+* `Emplace <https://en.cppreference.com/w/cpp/container/vector/emplace>`_-like
+  functionality, using `parameter packs <https://en.cppreference.com/w/cpp/language/parameter_pack>`_,
+* Registration methods for containers whose items use
+  `inheritance <https://en.wikipedia.org/wiki/Inheritance_(object-oriented_programming)>`_, and
+* `Type erasure <https://en.wikipedia.org/wiki/Type_erasure>`_.
+
+However, exact Python bindings of C++ templates require that all *possible*
+instantiations must be bound, which would be nonideal if there were a large
+number of possible template parameters. Instead, the ``pydrake`` bindings aim
+to expose *decoupled* registration methods, which are explicitly polymorphic
+and/or type-erased.
+
+The following form of parameter packs and inheritance-based containers in C++:
+
+.. code-block:: cpp
+
+    DiagramBuilder<T>::AddSystem<SystemType>(args...)
+    MultibodyPlant<T>::AddJoint<JointType>(args...)
+    MultibodyPlant<T>::AddFrame<FrameType>(args...)
+
+will look like the following code in Python:
+
+.. code-block:: pycon
+
+    DiagramBuilder_[T].AddSystem(SystemType(args, ...))
+    MultibodyPlant_[T].AddJoint(JointType(args, ...))
+    MultibodyPlant_[T].AddFrame(FrameType(args, ...))
+
+where the ``*Type`` tokens are replaced with the concrete type in question
+(e.g. ``Adder_[T]``, ``RevoluteJoint_[T]`` ``FixedOffsetFrame_[T]``).
+
+The following form of type erasure in C++:
+
+.. code-block:: cpp
+
+    InputPort<T>::Eval<ValueType>(context)
+    GeometryProperties::AddProperty<ValueType>(group_name, name, value)
+
+will look like the following in Python:
+
+.. code-block:: pycon
+
+    InputPort_[T].Eval(context)
+    GeometryProperties.AddProperty(group_name, name, value)
 
 Debugging with the Python Bindings
 ----------------------------------
