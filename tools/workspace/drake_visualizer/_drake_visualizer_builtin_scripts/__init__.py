@@ -58,7 +58,7 @@ def _exec_drake_visualizer_with_plugins(drake_visualizer_real, arg0):
     available_script_options = ["all"] + AVAILABLE_SCRIPTS
     parser = argparse.ArgumentParser(
         prog="Drake Modifications",
-        description=__doc__,
+        description="Runs Drake Visualizer with Drake's builtin scripts",
         add_help=False,
     )
     parser.add_argument(

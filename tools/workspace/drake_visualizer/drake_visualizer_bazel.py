@@ -4,10 +4,8 @@ and LD_LIBRARY_PATH to ensure it runs with the given externals."""
 # TODO(eric.cousineau): At some point, environment manipulations should be
 # removed.
 
-import argparse
 import os
 from os.path import exists, join
-import subprocess
 import sys
 
 from _drake_visualizer_builtin_scripts import (

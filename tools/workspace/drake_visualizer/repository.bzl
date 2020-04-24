@@ -137,7 +137,8 @@ install_files(
     dest = ".",
     files = [":drake_visualizer"],
     rename = {
-        "bin/drake-visualizer": "drake-visualizer-real",
+        # Try to 'hide' the binary so that they only use the wrapper script.
+        "bin/drake-visualizer": ".drake-visualizer-real",
     },
     visibility = ["//visibility:public"],
 )
