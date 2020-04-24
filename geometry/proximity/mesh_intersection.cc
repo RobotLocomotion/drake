@@ -46,8 +46,9 @@ namespace internal {
 
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
 template <typename T>
-Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
-                            const PosedHalfSpace<T>& H_F) {
+Vector3<T> IntersectVolumeFieldSurfaceMesh<T>::CalcIntersection(
+    const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+    const PosedHalfSpace<T>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
   const T b = H_F.CalcSignedDistance(p_FB);
   // We require that A and B classify in opposite directions (one inside and one
@@ -88,7 +89,8 @@ Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
 }
 
 template <typename T>
-std::vector<Vector3<T>> ClipPolygonByHalfSpace(
+std::vector<Vector3<T>>
+IntersectVolumeFieldSurfaceMesh<T>::ClipPolygonByHalfSpace(
     const std::vector<Vector3<T>>& polygon_vertices_F,
     const PosedHalfSpace<T>& H_F) {
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
@@ -127,7 +129,8 @@ std::vector<Vector3<T>> ClipPolygonByHalfSpace(
 }
 
 template <typename T>
-std::vector<Vector3<T>> RemoveDuplicateVertices(
+std::vector<Vector3<T>>
+IntersectVolumeFieldSurfaceMesh<T>::RemoveDuplicateVertices(
     std::vector<Vector3<T>> polygon) {
   // TODO(SeanCurtis-TRI): The resulting polygon depends on the order of the
   //  inputs. Imagine I have vertices A, A', A'' (such that |X - X'| < eps.
@@ -176,7 +179,8 @@ std::vector<Vector3<T>> RemoveDuplicateVertices(
 }
 
 template <typename T>
-std::vector<Vector3<T>> ClipTriangleByTetrahedron(
+std::vector<Vector3<T>>
+IntersectVolumeFieldSurfaceMesh<T>::ClipTriangleByTetrahedron(
     VolumeElementIndex element, const VolumeMesh<T>& volume_M,
     SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN) {
@@ -256,7 +260,7 @@ std::vector<Vector3<T>> ClipTriangleByTetrahedron(
 }
 
 template <typename T>
-bool IsFaceNormalAlongPressureGradient(
+bool IntersectVolumeFieldSurfaceMesh<T>::IsFaceNormalAlongPressureGradient(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
     const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
@@ -272,7 +276,7 @@ bool IsFaceNormalAlongPressureGradient(
 }
 
 template <typename T>
-void SampleVolumeFieldOnSurface(
+void IntersectVolumeFieldSurfaceMesh<T>::SampleVolumeFieldOnSurface(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN,
@@ -347,7 +351,7 @@ void SampleVolumeFieldOnSurface(
 /** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
  reduce the number of element-pairs evaluated.  */
 template <typename T>
-void SampleVolumeFieldOnSurface(
+void IntersectVolumeFieldSurfaceMesh<T>::SampleVolumeFieldOnSurface(
     const VolumeMeshField<T, T>& volume_field_M,
     const BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M,
     const SurfaceMesh<T>& surface_N,
@@ -361,11 +365,11 @@ void SampleVolumeFieldOnSurface(
   const auto& mesh_M = volume_field_M.mesh();
 
   auto callback = [&volume_field_M, &surface_N, &surface_faces,
-                   &surface_vertices_M, &surface_e, &mesh_M,
-                   &X_MN](VolumeElementIndex tet_index,
-                          SurfaceFaceIndex tri_index) -> BvttCallbackResult {
-    if (!IsFaceNormalAlongPressureGradient(volume_field_M, surface_N, X_MN,
-                                           tet_index, tri_index)) {
+                   &surface_vertices_M, &surface_e, &mesh_M, &X_MN,
+                   this](VolumeElementIndex tet_index,
+                         SurfaceFaceIndex tri_index) -> BvttCallbackResult {
+    if (!this->IsFaceNormalAlongPressureGradient(volume_field_M, surface_N,
+                                                 X_MN, tet_index, tri_index)) {
       return BvttCallbackResult::Continue;
     }
 
@@ -379,8 +383,9 @@ void SampleVolumeFieldOnSurface(
     //  if the broadphase culling determines the surface and volume are
     //  disjoint regions, *no* vertices will be transformed. Unclear what the
     //  best balance for best average performance.
-    std::vector<Vector3<T>> polygon_vertices_M = ClipTriangleByTetrahedron(
-        tet_index, mesh_M, tri_index, surface_N, X_MN);
+    std::vector<Vector3<T>> polygon_vertices_M =
+        this->ClipTriangleByTetrahedron(tet_index, mesh_M, tri_index, surface_N,
+                                        X_MN);
 
     const int poly_vertex_count = static_cast<int>(polygon_vertices_M.size());
     if (poly_vertex_count < 3) return BvttCallbackResult::Continue;
@@ -448,7 +453,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
-  SampleVolumeFieldOnSurface(field_S, mesh_R, X_SR, &surface_SR, &e_SR);
+  IntersectVolumeFieldSurfaceMesh<T>().SampleVolumeFieldOnSurface(
+      field_S, mesh_R, X_SR, &surface_SR, &e_SR);
 
   if (surface_SR == nullptr) return nullptr;
 
@@ -494,8 +500,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
-  SampleVolumeFieldOnSurface(field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR,
-                             &e_SR);
+  IntersectVolumeFieldSurfaceMesh<T>().SampleVolumeFieldOnSurface(
+      field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR, &e_SR);
 
   if (surface_SR == nullptr) return nullptr;
 
@@ -515,43 +521,12 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
                                              std::move(e_SR));
 }
 
-template Vector3<double> CalcIntersection(const Vector3<double>& p_FA,
-                                          const Vector3<double>& p_FB,
-                                          const PosedHalfSpace<double>& H_F);
-
-template std::vector<Vector3<double>> ClipPolygonByHalfSpace(
-    const std::vector<Vector3<double>>& polygon_vertices_F,
-    const PosedHalfSpace<double>& H_F);
-
-template std::vector<Vector3<double>> RemoveDuplicateVertices(
-    std::vector<Vector3<double>> polygon);
-
-template std::vector<Vector3<double>> ClipTriangleByTetrahedron(
-    VolumeElementIndex element, const VolumeMesh<double>& volume_M,
-    SurfaceFaceIndex face, const SurfaceMesh<double>& surface_N,
-    const math::RigidTransform<double>& X_MN);
-
-template bool IsFaceNormalAlongPressureGradient(
-    const VolumeMeshField<double, double>& volume_field_M,
-    const SurfaceMesh<double>& surface_N,
-    const math::RigidTransform<double>& X_MN,
-    const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
-
-template void SampleVolumeFieldOnSurface(
-    const VolumeMeshField<double, double>& volume_field_M,
-    const SurfaceMesh<double>& surface_N,
-    const math::RigidTransform<double>& X_MN,
-    std::unique_ptr<SurfaceMesh<double>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<double, double>>* e_MN);
-
-template void SampleVolumeFieldOnSurface(
-    const VolumeMeshField<double, double>& volume_field_M,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_M,
-    const SurfaceMesh<double>& surface_N,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_N,
-    const math::RigidTransform<double>& X_MN,
-    std::unique_ptr<SurfaceMesh<double>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<double, double>>* e_MN);
+template class IntersectVolumeFieldSurfaceMesh<double>;
+// This template instantiation:
+//   template class IntersectVolumeFieldSurfaceMesh<AutoDiffXd>;
+// triggers compile error because:
+//   BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M
+// does not support VolumeMesh<AutoDiffXd>.
 
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
@@ -608,3 +583,4 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
+

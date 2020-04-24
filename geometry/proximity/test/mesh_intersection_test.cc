@@ -18,6 +18,42 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+
+template<typename T>
+class IntersectVolumeFieldSurfaceMeshTester {
+ public:
+  Vector3<T> CalcIntersection(const Vector3<T>& p_FA, const Vector3<T>& p_FB,
+                              const PosedHalfSpace<T>& H_F) {
+    return intersect_.CalcIntersection(p_FA, p_FB, H_F);
+  }
+  std::vector<Vector3<T>> ClipPolygonByHalfSpace(
+      const std::vector<Vector3<T>>& polygon_vertices_F,
+      const PosedHalfSpace<T>& H_F) {
+    return intersect_.ClipPolygonByHalfSpace(polygon_vertices_F, H_F);
+  }
+  std::vector<Vector3<T>> RemoveDuplicateVertices(
+      std::vector<Vector3<T>> polygon) {
+    return intersect_.RemoveDuplicateVertices(polygon);
+  }
+  std::vector<Vector3<T>> ClipTriangleByTetrahedron(
+      VolumeElementIndex element, const VolumeMesh<T>& volume_M,
+      SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
+      const math::RigidTransform<T>& X_MN) {
+    return intersect_.ClipTriangleByTetrahedron(element, volume_M, face,
+                                                surface_N, X_MN);
+  }
+  bool IsFaceNormalAlongPressureGradient(
+      const VolumeMeshField<T, T>& volume_field_M,
+      const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
+      const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
+    return intersect_.IsFaceNormalAlongPressureGradient(
+        volume_field_M, surface_N, X_MN, tet_index, tri_index);
+  }
+
+ private:
+  IntersectVolumeFieldSurfaceMesh<T> intersect_;
+};
+
 namespace {
 
 using Eigen::Vector3d;
@@ -45,7 +81,9 @@ GTEST_TEST(MeshIntersectionTest, CalcIntersection) {
   {
     const Vector3d p_HA = Vector3d::Zero();
     const Vector3d p_HB(4, 6, 10);
-    const Vector3d intersection = CalcIntersection(p_HA, p_HB, half_space_H);
+    const Vector3d intersection =
+        IntersectVolumeFieldSurfaceMeshTester<double>().CalcIntersection(
+            p_HA, p_HB, half_space_H);
     const Vector3d expect_intersection(2, 3, 5);
     EXPECT_LE((expect_intersection - intersection).norm(), kEps);
   }
@@ -54,7 +92,9 @@ GTEST_TEST(MeshIntersectionTest, CalcIntersection) {
   {
     const Vector3d p_HA(plane_offset + 2.0 * kEps, 0., 0.);
     const Vector3d p_HB(plane_offset - 2.0 * kEps, 1., 1.);
-    const Vector3d intersection = CalcIntersection(p_HA, p_HB, half_space_H);
+    const Vector3d intersection =
+        IntersectVolumeFieldSurfaceMeshTester<double>().CalcIntersection(
+            p_HA, p_HB, half_space_H);
     const Vector3d expect_intersection(2., 0.5, 0.5);
     EXPECT_LE((expect_intersection - intersection).norm(), kEps);
   }
@@ -109,7 +149,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Also, by construction, the winding matches, so we will also not be
     // explicitly testing that.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space_H);
+        IntersectVolumeFieldSurfaceMeshTester<double>().ClipPolygonByHalfSpace(
+            input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // The input polygon is on the plane X=0, which is parallel to the plane of
@@ -127,7 +168,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Because we expect the output polygon to *be* the input polygon, we don't
     // need to explicitly test planarity or winding.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space_H);
+        IntersectVolumeFieldSurfaceMeshTester<double>().ClipPolygonByHalfSpace(
+            input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // The input polygon is on the plane X=3, which is parallel to the plane of
@@ -144,7 +186,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // clang-format on
     // Empty polygons have no winding and no planarity.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space_H);
+        IntersectVolumeFieldSurfaceMeshTester<double>().ClipPolygonByHalfSpace(
+            input_polygon, half_space_H);
     const std::vector<Vector3d> empty_polygon;
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, output_polygon));
   }
@@ -162,7 +205,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // Because we expect the output polygon to *be* the input polygon, we don't
     // need to explicitly test planarity or winding.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space_H);
+        IntersectVolumeFieldSurfaceMeshTester<double>().ClipPolygonByHalfSpace(
+            input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // The input polygon is outside the half space, but it has one edge on the
@@ -186,7 +230,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // By construction, expected output is planar (z = 0 for all vertices). It
     // has no area, so winding is immaterial.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space_H);
+        IntersectVolumeFieldSurfaceMeshTester<double>().ClipPolygonByHalfSpace(
+            input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // The input polygon is outside the half space, but it has one vertex on the
@@ -208,7 +253,8 @@ GTEST_TEST(MeshIntersectionTest, ClipPolygonByHalfSpace) {
     // By construction, expected output is planar (z = 0 for all vertices). It
     // has no area, so winding is immaterial.
     const std::vector<Vector3d> output_polygon =
-        ClipPolygonByHalfSpace(input_polygon, half_space_H);
+        IntersectVolumeFieldSurfaceMeshTester<double>().ClipPolygonByHalfSpace(
+            input_polygon, half_space_H);
     EXPECT_TRUE(CompareConvexPolygon(expect_output_polygon, output_polygon));
   }
   // TODO(SeanCurtis-TRI): Clip a triangle into a quad. Clip a triangle into a
@@ -227,7 +273,8 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     const std::vector<Vector3d> output_polygon =
-        RemoveDuplicateVertices(input_polygon);
+        IntersectVolumeFieldSurfaceMeshTester<double>().RemoveDuplicateVertices(
+            input_polygon);
     EXPECT_TRUE(CompareConvexPolygon(input_polygon, output_polygon));
   }
   // AAA: Three identical vertices reduced to a single vertex A.
@@ -243,7 +290,8 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     const std::vector<Vector3d> output_polygon =
-        RemoveDuplicateVertices(input_polygon);
+        IntersectVolumeFieldSurfaceMeshTester<double>().RemoveDuplicateVertices(
+            input_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_single_vertex, output_polygon));
   }
   // AABB: Two pairs of duplicate vertices. Reduced to two vertices AB.
@@ -261,7 +309,8 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     const std::vector<Vector3d> output_polygon =
-        RemoveDuplicateVertices(input_polygon);
+        IntersectVolumeFieldSurfaceMeshTester<double>().RemoveDuplicateVertices(
+            input_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_two_vertices, output_polygon));
   }
   // TODO(SeanCurtis-TRI): Add tests:
@@ -288,7 +337,8 @@ GTEST_TEST(MeshIntersectionTest, RemoveDuplicateVertices) {
     };
     // clang-format on
     const std::vector<Vector3d> output_polygon =
-        RemoveDuplicateVertices(input_polygon);
+        IntersectVolumeFieldSurfaceMeshTester<double>().RemoveDuplicateVertices(
+            input_polygon);
     EXPECT_TRUE(CompareConvexPolygon(expect_three_vertices, output_polygon));
   }
 }
@@ -462,8 +512,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   // face of the tetrahedron. Expect the output polygon to be empty.
   {
     const auto X_MN = RigidTransformd(Vector3d::UnitX());
-    const auto polygon =
-        ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N, X_MN);
+    const auto polygon = IntersectVolumeFieldSurfaceMeshTester<double>()
+                             .ClipTriangleByTetrahedron(element0, *volume_M,
+                                                        face, *surface_N, X_MN);
     const std::vector<Vector3d> expect_empty_polygon;
     EXPECT_TRUE(CompareConvexPolygon(expect_empty_polygon, polygon));
   }
@@ -473,8 +524,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd(RollPitchYawd(0, 0, M_PI_2),
                                              Vector3d::Zero());
-    const auto polygon =
-        ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N, X_MN);
+    const auto polygon = IntersectVolumeFieldSurfaceMeshTester<double>()
+                             .ClipTriangleByTetrahedron(element0, *volume_M,
+                                                        face, *surface_N, X_MN);
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, polygon));
   }
 
@@ -486,9 +538,13 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd::Identity();
     const auto polygon0_M =
-        ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N, X_MN);
+        IntersectVolumeFieldSurfaceMeshTester<double>()
+            .ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N,
+                                       X_MN);
     const auto polygon1_M =
-        ClipTriangleByTetrahedron(element1, *volume_M, face, *surface_N, X_MN);
+        IntersectVolumeFieldSurfaceMeshTester<double>()
+            .ClipTriangleByTetrahedron(element1, *volume_M, face, *surface_N,
+                                       X_MN);
     // clang-format off
     const std::vector<Vector3d> expect_triangle_M{
         {0, 0, 0},
@@ -504,7 +560,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
     const auto polygon0_M =
-        ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N, X_MN);
+        IntersectVolumeFieldSurfaceMeshTester<double>()
+            .ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N,
+                                       X_MN);
     // clang-format off
     const std::vector<Vector3d> expect_triangle_M{
         {0,   0,   0.5},
@@ -519,7 +577,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
   {
     const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
     const auto polygon1_M =
-        ClipTriangleByTetrahedron(element1, *volume_M, face, *surface_N, X_MN);
+        IntersectVolumeFieldSurfaceMeshTester<double>()
+            .ClipTriangleByTetrahedron(element1, *volume_M, face, *surface_N,
+                                       X_MN);
     EXPECT_TRUE(CompareConvexPolygon(empty_polygon, polygon1_M));
   }
 
@@ -529,7 +589,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedron) {
     const auto X_MN = RigidTransformd(RollPitchYawd(0, 0, M_PI),
                                              Vector3d(0.5, 0.5, 0));
     const auto polygon0_M =
-        ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N, X_MN);
+        IntersectVolumeFieldSurfaceMeshTester<double>()
+            .ClipTriangleByTetrahedron(element0, *volume_M, face, *surface_N,
+                                       X_MN);
     // clang-format off
     const std::vector<Vector3d> expect_square_M{
         {0,   0,   0},
@@ -631,8 +693,9 @@ GTEST_TEST(MeshIntersectionTest, ClipTriangleByTetrahedronIntoHeptagon) {
   const VolumeElementIndex tetrahedron(0);
   const SurfaceFaceIndex triangle(0);
   const auto X_MN = RigidTransformd::Identity();
-  const auto polygon_M = ClipTriangleByTetrahedron(tetrahedron, *volume_M,
-                                                   triangle, *surface_N, X_MN);
+  const auto polygon_M =
+      IntersectVolumeFieldSurfaceMeshTester<double>().ClipTriangleByTetrahedron(
+          tetrahedron, *volume_M, triangle, *surface_N, X_MN);
   // clang-format off
   const std::vector<Vector3d> expect_heptagon_M{
       {1.,    1.,   0.},
@@ -692,9 +755,11 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
     // general X_MN as an argument to the tested function
     // IsFaceNormalAlongPressureGradient().
     const auto X_MN = X_MF * X_FN;
-    EXPECT_EQ(t.expect_result, IsFaceNormalAlongPressureGradient<double>(
-                                   *volume_field_M, *rigid_N, X_MN,
-                                   VolumeElementIndex(0), SurfaceFaceIndex(0)));
+    EXPECT_EQ(t.expect_result,
+              IntersectVolumeFieldSurfaceMeshTester<double>()
+                  .IsFaceNormalAlongPressureGradient(
+                      *volume_field_M, *rigid_N, X_MN, VolumeElementIndex(0),
+                      SurfaceFaceIndex(0)));
   }
 }
 
@@ -709,8 +774,8 @@ GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
 
   unique_ptr<SurfaceMesh<double>> surface;
   unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
-  SampleVolumeFieldOnSurface(*volume_field_M, *rigid_N, X_MN, &surface,
-                             &e_field);
+  IntersectVolumeFieldSurfaceMesh<double>().SampleVolumeFieldOnSurface(
+      *volume_field_M, *rigid_N, X_MN, &surface, &e_field);
 
   const double kEps = std::numeric_limits<double>::epsilon();
   EXPECT_EQ(3, surface->num_faces());
