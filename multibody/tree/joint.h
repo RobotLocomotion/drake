@@ -321,6 +321,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// @p upper_limits does not match num_positions().
   /// @throws std::exception if any of @p lower_limits is larger than the
   /// corresponding term in @p upper_limits.
+  /// @note Setting the position limits does not affect the
+  /// `default_positions()`, regardless of whether the current
+  /// `default_positions()` satisfy the new position limits.
   void set_position_limits(const VectorX<double>& lower_limits,
                            const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -361,6 +364,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// Sets the default positions to @p default_positions.
   /// @throws std::exception if the dimension of @p default_positions does not
   /// match num_positions().
+  /// @note The values in @p default_positions are NOT constrained to be within
+  /// `position_lower_limits()` and `position_upper_limits()`.
   void set_default_positions(const VectorX<double>& default_positions) {
     DRAKE_THROW_UNLESS(default_positions.size() == num_positions());
     default_positions_ = default_positions;
