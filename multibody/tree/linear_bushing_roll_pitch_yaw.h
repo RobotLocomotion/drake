@@ -128,7 +128,6 @@ template <typename T> class Body;
 /// settling time tₛ, form ωₙ = -log(0.01) / (ζ tₛ), then `dx = 2 ζ kx / ωₙ`.
 /// <br> \ref More_on_how_to_choose_bushing_stiffness_and_damping_constants
 /// .
-///
 /// ### Advanced: Relationship of 𝐭 to τ.
 /// To understand how "gimbal torques" τ relate to 𝐭, it helps to remember that
 /// the RollPitchYaw class documentation states that a Space-fixed (extrinsic)
@@ -186,7 +185,6 @@ template <typename T> class Body;
 /// In summary, this penalty method example requires choices for xₘₐₓ, Fxₘₐₓ,
 /// tₛ, ζ (but not characteristic mass m) to estimate kx and dx.
 /// .
-///
 /// @note The complete theory for this bushing is documented in the source code.
 /// Please look there if you want more information.
 ///
@@ -260,6 +258,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return torque_stiffness_constants_;
   }
 
+  /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
   /// @see \ref How_to_choose_bushing_torque_stiffness_and_damping_constants
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
