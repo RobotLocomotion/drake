@@ -158,6 +158,9 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Test the deprecated interface.
 
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
@@ -191,6 +194,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   ImageLabel16I label;
   EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
       properties, FrameId::get_new_id(), X_WC, false, &label));
+#pragma GCC diagnostic pop
 
 #undef EXPECT_DEFAULT_ERROR
 }

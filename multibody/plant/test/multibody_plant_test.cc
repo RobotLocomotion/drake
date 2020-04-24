@@ -19,7 +19,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/query_object.h"
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/geometry/test_utilities/geometry_set_tester.h"
@@ -57,7 +57,7 @@ using geometry::GeometryId;
 using geometry::IllustrationProperties;
 using geometry::internal::DummyRenderEngine;
 using geometry::PenetrationAsPointPair;
-using geometry::QueryObject;
+using geometry::ProximityQueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using math::RigidTransform;
@@ -1038,7 +1038,7 @@ class SphereChainScenario {
   ComputePointPairPenetration() const {
     // Grab query object to test for collisions.
     const auto& query_object = plant_->get_geometry_query_input_port().
-        Eval<geometry::QueryObject<double>>(*plant_context_);
+        Eval<geometry::ProximityQueryObject<double>>(*plant_context_);
     return query_object.ComputePointPairPenetration();
   }
 
@@ -1460,11 +1460,12 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
 
   unique_ptr<Context<double>> context = scene_graph.CreateDefaultContext();
   unique_ptr<AbstractValue> state_value =
-      scene_graph.get_query_output_port().Allocate();
-  DRAKE_EXPECT_NO_THROW(state_value->get_value<QueryObject<double>>());
-  const QueryObject<double>& query_object =
-      state_value->get_value<QueryObject<double>>();
-  scene_graph.get_query_output_port().Calc(*context, state_value.get());
+      scene_graph.get_proximity_query_output_port().Allocate();
+  DRAKE_EXPECT_NO_THROW(state_value->get_value<ProximityQueryObject<double>>());
+  const ProximityQueryObject<double>& query_object =
+      state_value->get_value<ProximityQueryObject<double>>();
+  scene_graph.get_proximity_query_output_port().Calc(*context,
+                                                     state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
   {

@@ -207,7 +207,7 @@ public ::testing::TestWithParam<RigidTransform<double>> {
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
     const auto& query_object = plant_->get_geometry_query_input_port().
-        template Eval<geometry::QueryObject<double>>(*plant_context_);
+        template Eval<geometry::ProximityQueryObject<double>>(*plant_context_);
     const geometry::FrameId frameM_id = query_object.inspector().GetFrameId(
         contact_surface_->id_M());
     const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(

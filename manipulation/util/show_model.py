@@ -59,7 +59,7 @@ def main():
     scene_graph = builder.AddSystem(SceneGraph())
     plant.RegisterAsSourceForSceneGraph(scene_graph)
     builder.Connect(
-        scene_graph.get_query_output_port(),
+        scene_graph.get_proximity_query_output_port(),
         plant.get_geometry_query_input_port())
     builder.Connect(
         plant.get_geometry_poses_output_port(),

@@ -542,7 +542,7 @@ void ManipulationStation<T>::Finalize(
   builder.Connect(
       plant_->get_geometry_poses_output_port(),
       scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
-  builder.Connect(scene_graph_->get_query_output_port(),
+  builder.Connect(scene_graph_->get_proximity_query_output_port(),
                   plant_->get_geometry_query_input_port());
 
   const int num_iiwa_positions =
@@ -686,7 +686,7 @@ void ManipulationStation<T>::Finalize(
 
       auto camera = builder.template AddSystem<systems::sensors::RgbdSensor>(
           parent_body_id.value(), X_PC, info.properties);
-      builder.Connect(scene_graph_->get_query_output_port(),
+      builder.Connect(scene_graph_->get_perception_query_output_port(),
                       camera->query_object_input_port());
 
       builder.ExportOutput(camera->color_image_output_port(),

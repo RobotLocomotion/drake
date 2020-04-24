@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint_utilities.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
@@ -21,14 +22,15 @@ VectorX<S> Distances(const MultibodyPlant<T>& plant,
   const auto& query_port = plant.get_geometry_query_input_port();
   if (!query_port.HasValue(*context)) {
     throw std::invalid_argument(
-        "MinimumDistanceConstraint: Cannot get a valid geometry::QueryObject. "
-        "Either the plant geometry_query_input_port() is not properly "
-        "connected to the SceneGraph's output port, or the plant_context_ is "
-        "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
-        "MultibodyPlant to SceneGraph.");
+        "MinimumDistanceConstraint: Cannot get a valid "
+        "geometry::ProximityQueryObject. Either the plant "
+        "geometry_query_input_port() is not properly connected to the "
+        "SceneGraph's ProximityQueryObject output port, or the plant_context_ "
+        "is incorrect. Please refer to AddMultibodyPlantSceneGraph on "
+        "connecting MultibodyPlant to SceneGraph.");
   }
   const auto& query_object =
-      query_port.template Eval<geometry::QueryObject<T>>(*context);
+      query_port.template Eval<geometry::ProximityQueryObject<T>>(*context);
 
   const std::vector<geometry::SignedDistancePair<T>> signed_distance_pairs =
       query_object.ComputeSignedDistancePairwiseClosestPoints(
@@ -82,7 +84,8 @@ void MinimumDistanceConstraint::Initialize(
   // Maximum number of SignedDistancePairs returned by calls to
   // ComputeSignedDistancePairwiseClosestPoints().
   const int num_collision_candidates =
-      query_port.template Eval<geometry::QueryObject<T>>(*plant_context)
+      query_port
+          .template Eval<geometry::ProximityQueryObject<T>>(*plant_context)
           .inspector()
           .GetCollisionCandidates()
           .size();

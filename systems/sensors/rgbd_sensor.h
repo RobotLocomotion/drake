@@ -10,7 +10,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/query_object.h"
+#include "drake/geometry/perception_query_object.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -166,7 +166,7 @@ class RgbdSensor final : public LeafSystem<double> {
   /** Returns the id of the frame to which the base is affixed.  */
   geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
 
-  /** Returns the geometry::QueryObject<double>-valued input port.  */
+  /** Returns the geometry::PerceptionQueryObject<double>-valued input port.  */
   const InputPort<double>& query_object_input_port() const;
 
   /** Returns the abstract-valued output port that contains an ImageRgba8U.  */
@@ -211,7 +211,7 @@ class RgbdSensor final : public LeafSystem<double> {
 
   // Extract the query object from the given context (via the appropriate input
   // port.
-  const geometry::QueryObject<double>& get_query_object(
+  const geometry::PerceptionQueryObject<double>& get_query_object(
       const Context<double>& context) const;
 
   const InputPort<double>* query_object_input_port_{};

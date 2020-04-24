@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint_utilities.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
@@ -50,7 +51,7 @@ void EvalDistance(const MultibodyPlant<T>& plant,
   internal::UpdateContextConfiguration(context, plant, x);
   const auto& query_port = plant.get_geometry_query_input_port();
   const auto& query_object =
-      query_port.template Eval<geometry::QueryObject<T>>(*context);
+      query_port.template Eval<geometry::ProximityQueryObject<T>>(*context);
   const geometry::SignedDistancePair<T> signed_distance_pair =
       query_object.ComputeSignedDistancePairClosestPoints(
           geometry_pair.first(), geometry_pair.second());

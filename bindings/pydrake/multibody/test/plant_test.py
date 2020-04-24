@@ -1294,7 +1294,8 @@ class TestPlant(unittest.TestCase):
         # bodies to be coincident, and thus collide.
         context = diagram.CreateDefaultContext()
         sg_context = diagram.GetMutableSubsystemContext(scene_graph, context)
-        query_object = scene_graph.get_query_output_port().Eval(sg_context)
+        query_object = scene_graph.get_proximity_query_output_port().Eval(
+            sg_context)
         # Implicitly require that this should be size 1.
         point_pair, = query_object.ComputePointPairPenetration()
         self.assertIsInstance(point_pair, PenetrationAsPointPair_[float])

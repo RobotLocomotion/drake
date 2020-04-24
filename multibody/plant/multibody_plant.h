@@ -79,7 +79,7 @@ enum class ContactModel {
   /// Contact forces are computed using the hydroelastic model, where possible.
   /// For most other unsupported colliding pairs, the point model from
   /// kPointContactOnly is used. See
-  /// geometry::QueryObject:ComputeContactSurfacesWithFallback for more
+  /// geometry::ProximityQueryObject:ComputeContactSurfacesWithFallback for more
   /// details.
   kHydroelasticWithFallback
 };
@@ -328,16 +328,16 @@ enum class ContactModel {
 /// If %MultibodyPlant registers geometry with a SceneGraph via calls to
 /// RegisterCollisionGeometry(), an input port for geometric queries will be
 /// declared at Finalize() time, see get_geometry_query_input_port(). Users must
-/// connect this input port to the output port for geometric queries of the
+/// connect this input port to the output port for spatial queries of the
 /// SceneGraph used for registration, which can be obtained with
-/// SceneGraph::get_query_output_port().
+/// SceneGraph::get_proximity_query_output_port().
 /// In summary, if %MultibodyPlant registers collision geometry, the setup
 /// process will include:
 ///
 /// 1. Call to RegisterAsSourceForSceneGraph().
 /// 2. Calls to RegisterCollisionGeometry(), as many as needed.
 /// 3. Call to Finalize(), user is done specifying the model.
-/// 4. Connect SceneGraph::get_query_output_port() to
+/// 4. Connect SceneGraph::get_proximity_query_output_port() to
 ///    get_geometry_query_input_port().
 ///
 /// Refer to the documentation provided in each of the methods above for further
@@ -467,8 +467,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// can be applied to any number of bodies in the plant.
   const systems::InputPort<T>& get_applied_spatial_force_input_port() const;
 
-  /// Returns a constant reference to the input port used to perform geometric
-  /// queries on a SceneGraph. See SceneGraph::get_query_output_port().
+  /// Returns a constant reference to the input port used to perform spatial
+  /// queries on a SceneGraph.
+  /// See SceneGraph::get_proximity_query_output_port().
   /// Refer to section @ref mbp_geometry "Geometry" of this class's
   /// documentation for further details on collision geometry registration and
   /// connection with a SceneGraph.
@@ -974,7 +975,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// All geometry registration methods return a @ref geometry::GeometryId
   /// GeometryId. This is how SceneGraph refers to the geometries. The
   /// properties of an individual geometry can be accessed with its id and
-  /// geometry::SceneGraphInspector and geometry::QueryObject (for its
+  /// geometry::SceneGraphInspector and geometry::ProximityQueryObject (for its
   /// state-dependent pose in world).
   ///
   /// <h4>%Body frames and SceneGraph frames</h4>

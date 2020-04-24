@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/multibody/optimization/test/optimization_with_contact_utilities.h"
@@ -27,7 +28,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
         spheres_->spheres(), spheres_->boxes(), spheres_->ground_friction());
     const auto& query_port = spheres_->plant().get_geometry_query_input_port();
     const auto& query_object =
-        query_port.Eval<geometry::QueryObject<AutoDiffXd>>(
+        query_port.Eval<geometry::ProximityQueryObject<AutoDiffXd>>(
             spheres_->plant_context());
     const std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>
         collision_candidate_pairs =
@@ -68,7 +69,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
 
     const auto& query_port = spheres_->plant().get_geometry_query_input_port();
     const auto& query_object =
-        query_port.Eval<geometry::QueryObject<AutoDiffXd>>(
+        query_port.Eval<geometry::ProximityQueryObject<AutoDiffXd>>(
             spheres_->plant_context());
     const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
         signed_distance_pairs =

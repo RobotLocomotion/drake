@@ -38,7 +38,7 @@ def main():
     assert cart_pole.geometry_source_is_registered()
 
     builder.Connect(
-        scene_graph.get_query_output_port(),
+        scene_graph.get_proximity_query_output_port(),
         cart_pole.get_geometry_query_input_port())
     builder.Connect(
         cart_pole.get_geometry_poses_output_port(),

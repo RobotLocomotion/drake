@@ -41,7 +41,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   DRAKE_DEMAND(source_id.is_valid());
 
   geometry_query_port_ = this->DeclareAbstractInputPort(
-      systems::kUseDefaultName, Value<geometry::QueryObject<T>>{})
+      systems::kUseDefaultName, Value<geometry::ProximityQueryObject<T>>{})
           .get_index();
   state_port_ =
       this->DeclareVectorOutputPort(BouncingBallVector<T>(),
@@ -126,7 +126,7 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
   BouncingBallVector<T>& derivative_vector = get_mutable_state(derivatives);
 
   const auto& query_object = get_geometry_query_input_port().
-      template Eval<geometry::QueryObject<T>>(context);
+      template Eval<geometry::ProximityQueryObject<T>>(context);
 
   std::vector<PenetrationAsPointPair<T>> penetrations =
       query_object.ComputePointPairPenetration();

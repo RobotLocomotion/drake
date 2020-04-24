@@ -165,7 +165,7 @@ int do_main() {
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
 
-  builder.Connect(scene_graph.get_query_output_port(),
+  builder.Connect(scene_graph.get_proximity_query_output_port(),
                   plant.get_geometry_query_input_port());
 
   builder.Connect(

@@ -55,7 +55,7 @@ using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
-using geometry::QueryObject;
+using geometry::ProximityQueryObject;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
@@ -165,7 +165,7 @@ class ContactResultMaker final : public LeafSystem<double> {
       : use_strict_hydro_{use_strict_hydro} {
     geometry_query_input_port_ =
         this->DeclareAbstractInputPort("query_object",
-                                       Value<QueryObject<double>>())
+                                       Value<ProximityQueryObject<double>>())
             .get_index();
     contact_result_output_port_ =
         this->DeclareAbstractOutputPort("contact_result",
@@ -181,7 +181,7 @@ class ContactResultMaker final : public LeafSystem<double> {
   void CalcContactResults(const Context<double>& context,
                           lcmt_contact_results_for_viz* results) const {
     const auto& query_object =
-        get_geometry_query_port().Eval<QueryObject<double>>(context);
+        get_geometry_query_port().Eval<ProximityQueryObject<double>>(context);
     std::vector<ContactSurface<double>> surfaces;
     std::vector<PenetrationAsPointPair<double>> points;
     if (use_strict_hydro_) {
@@ -307,7 +307,7 @@ int do_main() {
 
   // Make and visualize contacts.
   auto& contact_results = *builder.AddSystem<ContactResultMaker>(!FLAGS_hybrid);
-  builder.Connect(scene_graph.get_query_output_port(),
+  builder.Connect(scene_graph.get_proximity_query_output_port(),
                   contact_results.get_geometry_query_port());
 
   // Now visualize.
