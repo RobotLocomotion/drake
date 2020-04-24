@@ -40,6 +40,14 @@ std::vector<T> MakeKnotVector(int order, int num_basis_functions,
   }
   return knots;
 }
+
+// This custom comparator is needed to explicitly convert Formula to bool when
+// T == Expression.
+template <typename T>
+bool less_than_with_cast(const T& val, const T& other) {
+  return static_cast<bool>(val < other);
+}
+
 }  // namespace
 
 template <typename T>
@@ -53,12 +61,8 @@ BsplineBasis<T>::BsplineBasis(int order, std::vector<T> knots)
                     "equal to twice the order ({}).",
                     knots_.size(), 2 * order));
   }
-  // This custom comparator is needed to explicitly convert Formula to bool when
-  // T == Expression.
-  const auto compare = [](const T& val, const T& other) {
-    return static_cast<bool>(val < other);
-  };
-  DRAKE_ASSERT(std::is_sorted(knots_.begin(), knots_.end(), compare));
+  DRAKE_ASSERT(
+      std::is_sorted(knots_.begin(), knots_.end(), less_than_with_cast<T>));
 }
 
 template <typename T>
@@ -108,16 +112,12 @@ int BsplineBasis<T>::FindContainingInterval(const T& parameter_value) const {
   DRAKE_ASSERT(parameter_value <= final_parameter_value());
   const std::vector<T>& t = knots();
   const T& t_bar = parameter_value;
-  // This custom comparator is needed to explicitly convert Formula to bool when
-  // T == Expression.
-  const auto compare = [](const T& val, const T& other) {
-    return static_cast<bool>(val < other);
-  };
   return std::distance(
-      t.begin(),
-      std::prev(t_bar < final_parameter_value()
-                    ? std::upper_bound(t.begin(), t.end(), t_bar, compare)
-                    : std::lower_bound(t.begin(), t.end(), t_bar, compare)));
+      t.begin(), std::prev(t_bar < final_parameter_value()
+                               ? std::upper_bound(t.begin(), t.end(), t_bar,
+                                                  less_than_with_cast<T>)
+                               : std::lower_bound(t.begin(), t.end(), t_bar,
+                                                  less_than_with_cast<T>)));
 }
 
 template <typename T>
