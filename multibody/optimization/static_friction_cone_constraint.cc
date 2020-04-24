@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
@@ -55,11 +56,12 @@ void StaticFrictionConeConstraint::DoEval(
   if (!query_port.HasValue(context)) {
     throw std::invalid_argument(
         "StaticFrictionConeConstraint: Cannot get a valid "
-        "geometry::QueryObject. Please refer to AddMultibodyPlantSceneGraph "
-        "on connecting MultibodyPlant to SceneGraph.");
+        "geometry::ProximityQueryObject. Please refer to "
+        "AddMultibodyPlantSceneGraph on connecting MultibodyPlant to "
+        "SceneGraph.");
   }
   const auto& query_object =
-      query_port.Eval<geometry::QueryObject<AutoDiffXd>>(context);
+      query_port.Eval<geometry::ProximityQueryObject<AutoDiffXd>>(context);
   const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();

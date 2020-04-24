@@ -16,7 +16,7 @@ SignedDistanceWithTimeDerivative CalcDistanceAndTimeDerivative(
   }
   const auto& query_port = plant.get_geometry_query_input_port();
   const auto& query_object =
-      query_port.Eval<geometry::QueryObject<double>>(context);
+      query_port.Eval<geometry::ProximityQueryObject<double>>(context);
   const geometry::SignedDistancePair<double> signed_distance_pair =
       query_object.ComputeSignedDistancePairClosestPoints(
           geometry_pair.first(), geometry_pair.second());

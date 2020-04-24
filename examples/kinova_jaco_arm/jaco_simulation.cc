@@ -59,7 +59,7 @@ int DoMain() {
       scene_graph->get_source_pose_port(
           jaco_plant->get_source_id().value()));
   builder.Connect(
-      scene_graph->get_query_output_port(),
+      scene_graph->get_proximity_query_output_port(),
       jaco_plant->get_geometry_query_input_port());
 
   const multibody::ModelInstanceIndex jaco_id =

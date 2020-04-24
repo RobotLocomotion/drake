@@ -74,7 +74,6 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryStateTester;
 using geometry::internal::DummyRenderEngine;
-using geometry::QueryObject;
 using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
 using geometry::render::RenderEngine;
@@ -127,7 +126,7 @@ class RgbdSensorTest : public ::testing::Test {
     scene_graph_ = builder.AddSystem<SceneGraph<double>>();
     scene_graph_->AddRenderer(kRendererName, make_unique<DummyRenderEngine>());
     sensor_ = builder.AddSystem(make_sensor(scene_graph_));
-    builder.Connect(scene_graph_->get_query_output_port(),
+    builder.Connect(scene_graph_->get_perception_query_output_port(),
                     sensor_->query_object_input_port());
     diagram_ = builder.Build();
     context_ = diagram_->AllocateContext();
