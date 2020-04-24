@@ -361,16 +361,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   /// Sets the default positions to @p default_positions.
   /// @throws std::exception if the dimension of @p default_positions does not
   /// match num_positions().
-  /// @throws std::exception if any of @p default_positions is smaller than
-  /// the corresponding term in `position_lower_limits()`.
-  /// @throws std::exception if any of @p default_positions is larger than
-  /// the corresponding term in `position_upper_limits()`.
   void set_default_positions(const VectorX<double>& default_positions) {
     DRAKE_THROW_UNLESS(default_positions.size() == num_positions());
-    DRAKE_THROW_UNLESS(
-        (position_lower_limits().array() <= default_positions.array()).all());
-    DRAKE_THROW_UNLESS(
-        (default_positions.array() <= position_upper_limits().array()).all());
     default_positions_ = default_positions;
   }
   /// @}

@@ -204,13 +204,11 @@ TEST_F(PrismaticJointTest, DefaultTranslation) {
   EXPECT_EQ(joint1_->get_default_translation(), new_default_translation);
 
   // Setting the default angle out of the bounds of the position limits
-  // should throw an exception
-  EXPECT_THROW(
-      mutable_joint1_->set_default_translation(out_of_bounds_low_translation),
-      std::runtime_error);
-  EXPECT_THROW(
-      mutable_joint1_->set_default_translation(out_of_bounds_high_translation),
-      std::runtime_error);
+  // should NOT throw an exception
+  EXPECT_NO_THROW(
+      mutable_joint1_->set_default_translation(out_of_bounds_low_translation));
+  EXPECT_NO_THROW(
+      mutable_joint1_->set_default_translation(out_of_bounds_high_translation));
 }
 
 }  // namespace

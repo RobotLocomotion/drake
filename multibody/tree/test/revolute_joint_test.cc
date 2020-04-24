@@ -229,11 +229,9 @@ TEST_F(RevoluteJointTest, DefaultAngle) {
   EXPECT_EQ(joint1_->get_default_angle(), new_default_angle);
 
   // Setting the default angle out of the bounds of the position limits
-  // should throw an exception
-  EXPECT_THROW(mutable_joint1_->set_default_angle(out_of_bounds_low_angle),
-               std::runtime_error);
-  EXPECT_THROW(mutable_joint1_->set_default_angle(out_of_bounds_high_angle),
-               std::runtime_error);
+  // should NOT throw an exception
+  EXPECT_NO_THROW(mutable_joint1_->set_default_angle(out_of_bounds_low_angle));
+  EXPECT_NO_THROW(mutable_joint1_->set_default_angle(out_of_bounds_high_angle));
 }
 
 }  // namespace

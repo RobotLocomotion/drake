@@ -223,11 +223,11 @@ TEST_F(BallRpyJointTest, DefaultAngles) {
   EXPECT_EQ(joint_->get_default_angles(), new_default_angles);
 
   // Setting the default angle out of the bounds of the position limits
-  // should throw an exception
-  EXPECT_THROW(mutable_joint_->set_default_angles(out_of_bounds_low_angles),
-               std::runtime_error);
-  EXPECT_THROW(mutable_joint_->set_default_angles(out_of_bounds_high_angles),
-               std::runtime_error);
+  // should NOT throw an exception
+  EXPECT_NO_THROW(
+      mutable_joint_->set_default_angles(out_of_bounds_low_angles));
+  EXPECT_NO_THROW(
+      mutable_joint_->set_default_angles(out_of_bounds_high_angles));
 }
 
 }  // namespace
