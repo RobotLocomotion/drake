@@ -18,13 +18,13 @@ py_library(
     deps = ["//tools/workspace:module_py"],
 )
 
+# TODO(eric.cousineau): Merge this with `drake_visualizer_py` once it moves
+# from `//tools` to here.
 py_library(
-    name = "exec_drake_visualizer_with_plugins_py",
-    srcs = ["_exec_drake_visualizer_with_plugins.py"],
+    name = "builtin_scripts_py",
     visibility = ["//tools:__pkg__"],
     deps = [
-        ":module_py",
-        "//tools/workspace/drake_visualizer/plugin",
+        "//tools/workspace/drake_visualizer/_drake_visualizer_builtin_scripts",
     ],
 )
 
@@ -53,15 +53,10 @@ install_files(
 install(
     name = "install",
     install_tests = [":test/drake_visualizer_installed_help_test.py"],
-    targets = [
-        ":module_py",
-        ":exec_drake_visualizer_with_plugins_py",
-    ],
-    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools/workspace/drake_visualizer",
     visibility = ["//tools/workspace:__pkg__"],
     deps = [
         ":install_wrapper_script",
-        "//tools/workspace/drake_visualizer/plugin:install",
+        "//tools/workspace/drake_visualizer/_drake_visualizer_builtin_scripts:install",  # noqa
         "@drake_visualizer//:install",
     ],
 )

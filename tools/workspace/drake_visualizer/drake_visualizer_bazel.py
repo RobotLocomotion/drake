@@ -10,7 +10,7 @@ from os.path import exists, join
 import subprocess
 import sys
 
-from drake.tools.workspace.drake_visualizer import (
+from _drake_visualizer_builtin_scripts import (
     _exec_drake_visualizer_with_plugins,
 )
 
@@ -76,7 +76,7 @@ def main():
     # Execute wrapper.
     drake_visualizer_real = resolve_path(
         "external/drake_visualizer/bin/drake-visualizer")
-    _exec_drake_visualizer_with_plugins.main(
+    _exec_drake_visualizer_with_plugins(
         drake_visualizer_real=drake_visualizer_real,
         # Ensure the wrapped binary shows 'drake-visualizer' in its usage.
         arg0=drake_visualizer_real,

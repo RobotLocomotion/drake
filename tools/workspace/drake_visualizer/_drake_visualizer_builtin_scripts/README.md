@@ -20,22 +20,3 @@ bazel build //tools:drake_visualizer
 ./bazel-bin/tools/drake_visualizer --use_builtin_scripts=  # No scripts
 ./bazel-bin/tools/drake_visualizer --use_builtin_scripts=image  # Image only
 ```
-
-## Backwards Compatibility
-
-If you update this infrastructure, please briefly ensure that the change does
-not break previous spellings of these scripts:
-
-    (
-        set -eux;
-        compatibility_scripts=$(echo "
-            multibody/rigid_body_plant/visualization/contact_viz.py
-            multibody/rigid_body_plant/visualization/show_frames.py
-            multibody/rigid_body_plant/visualization/show_time.py
-            systems/sensors/visualization/show_images.py
-            ")
-        for script in ${compatibility_scripts}; do
-            ./bazel-bin/tools/drake_visualizer --script ${script} \
-                --use_builtin_scripts=
-        done
-    )

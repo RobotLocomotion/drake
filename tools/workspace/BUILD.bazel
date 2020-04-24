@@ -96,13 +96,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 })
 
 install(
-    name = "install_module_py",
-    targets = [":module_py"],
-    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools/workspace",
-    visibility = ["//:__pkg__"],
-)
-
-install(
     name = "install_external_packages",
     visibility = ["//:__pkg__"],
     deps = _DRAKE_EXTERNAL_PACKAGE_INSTALLS,

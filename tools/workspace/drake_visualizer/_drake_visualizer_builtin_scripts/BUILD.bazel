@@ -7,12 +7,11 @@ load("@drake//tools/install:install.bzl", "install")
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
-    visibility = ["//visibility:public"],
-    deps = ["//tools/workspace/drake_visualizer:module_py"],
+    imports = [".."],
 )
 
 py_library(
-    name = "plugin",
+    name = "_drake_visualizer_builtin_scripts",
     srcs = [
         "show_frame.py",
         "show_hydroelastic_contact.py",
@@ -21,7 +20,9 @@ py_library(
         "show_time.py",
         "use_builtin_scripts.py",
     ],
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//tools/workspace/drake_visualizer:__pkg__",
+    ],
     deps = [
         ":module_py",
     ],
@@ -31,9 +32,9 @@ install(
     name = "install",
     targets = [
         ":module_py",
-        ":plugin",
+        ":_drake_visualizer_builtin_scripts",
     ],
-    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools/workspace/drake_visualizer/plugin",  # noqa
+    py_dest = "@PYTHON_SITE_PACKAGES@/_drake_visualizer_builtin_scripts",  # noqa
     visibility = ["//tools/workspace/drake_visualizer:__pkg__"],
 )
 

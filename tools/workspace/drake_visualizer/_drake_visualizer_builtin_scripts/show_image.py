@@ -35,7 +35,7 @@ from PythonQt import QtGui
 
 import robotlocomotion as rl
 
-from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
+from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 _is_vtk_5 = vtk.vtkVersion().GetVTKMajorVersion() == 5
 

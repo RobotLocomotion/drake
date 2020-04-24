@@ -5,7 +5,7 @@ from collections import OrderedDict
 import os
 import sys
 
-from drake.tools.workspace.drake_visualizer.plugin import (
+from _drake_visualizer_builtin_scripts import (
     AVAILABLE_SCRIPTS,
     show_frame,
     show_hydroelastic_contact,

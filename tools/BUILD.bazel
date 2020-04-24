@@ -2,7 +2,6 @@
 
 load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/skylark:drake_runfiles_binary.bzl",
     "drake_runfiles_binary",
@@ -18,8 +17,6 @@ py_library(
 )
 
 # TODO(eric.cousineau): Move this to //tools/workspace:drake_visualizer.
-# TODO(eric.cousineau): Consider using a `./run`-like script for this, rather
-# than `drake_runfiles_binary`. Then this can be renamed to `drake_visualizer`.
 py_binary(
     name = "drake_visualizer_py",
     srcs = ["//tools/workspace/drake_visualizer:drake_visualizer_bazel.py"],
@@ -30,7 +27,7 @@ py_binary(
     main = "//tools/workspace/drake_visualizer:drake_visualizer_bazel.py",
     deps = [
         "//lcmtypes:lcmtypes_drake_py",
-        "//tools/workspace/drake_visualizer:exec_drake_visualizer_with_plugins_py",  # noqa
+        "//tools/workspace/drake_visualizer:builtin_scripts_py",  # noqa
         "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
@@ -132,13 +129,6 @@ config_setting(
 config_setting(
     name = "no_scs",
     values = {"define": "NO_SCS=ON"},
-)
-
-install(
-    name = "install_module_py",
-    targets = [":module_py"],
-    py_dest = "@PYTHON_SITE_PACKAGES@/drake/tools",
-    visibility = ["//:__pkg__"],
 )
 
 add_lint_tests()
