@@ -48,10 +48,13 @@ class BsplineBasis final {
                const T& initial_parameter_value = 0,
                const T& final_parameter_value = 1);
 
-  /** Constructs a B-spline basis with a non-double scalar type from a
-  BsplineBasis<double>. This conversion is desireable. */
+#ifdef DRAKE_DOXYGEN_CXX
+  /** Conversion constructor. Constructs an instance of BsplineBasis<T> from a
+  double-valued basis. */
+  explicit BsplineBasis(const BsplineBasis<double>& other);
+#else
   template <typename U = T>
-  BsplineBasis(const BsplineBasis<double>& other,
+  explicit BsplineBasis(const BsplineBasis<double>& other,
                /* Prevents ambiguous declarations between default copy
                constructor on double and conversion constructor on T = double.
                The conversion constructor for T = double will fail to be 
@@ -65,6 +68,7 @@ class BsplineBasis final {
       knots_.push_back(T(knot));
     }
   }
+#endif
 
   /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
