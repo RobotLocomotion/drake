@@ -30,6 +30,17 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       X_WH.GetAsMatrix34(), X_WH_expected.GetAsMatrix34(),
       kTolerance, MatrixCompareType::relative));
 
+  // Alternative, we can get the pose X_WE using the plant's output port for
+  // poses.
+  const auto& X_WB_all =
+      plant_->get_body_poses_output_port()
+          .Eval<std::vector<RigidTransform<double>>>(*context_);
+  const RigidTransform<double>& X_WE_from_port =
+      X_WB_all[end_effector_link_->index()];
+  EXPECT_TRUE(CompareMatrices(
+      X_WE.GetAsMatrix34(), X_WE_from_port.GetAsMatrix34(),
+      kTolerance, MatrixCompareType::relative));
+
   const RotationMatrix<double> R_WH =
       frame_H_->CalcRotationMatrixInWorld(*context_);
   const RotationMatrix<double> R_WH_expected = X_WH_expected.rotation();
