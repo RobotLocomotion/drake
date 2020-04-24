@@ -314,6 +314,58 @@ This works about 80% of the time.
 - Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
 (using perfect forwarding when appropriate).
 
+### Public C++ API Considerations for Templates
+
+The motivation behind this section can be found under the
+"Parameter Packs and Type Erasure" section in doc/python_bindings.rst.
+
+In general, if you expose public API that uses methods like parameter packs or
+type erasure, you should also expose a method whose concrete instantiation is
+used to handle the sugar-version.
+
+As an example for parameter packs,
+`MultibodyPlant<T>::AddJoint<JointType, Args...>(...)` is a C++ sugar method
+that uses parameter packs and ultimately passes the result to
+`MultibodyPlant<T>::AddJoint<JointType>(unique_ptr<JointType>)`, and only the
+`unique_ptr` function is bound (
+[permalink to in-tree snippet](https://git.io/Jfqie)):
+
+```
+using Class = MultibodyPlant<T>;
+...
+    .def("AddJoint",
+        [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
+          return self->AddJoint(std::move(joint));
+        },
+        py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
+...
+```
+
+As an example for parameter packs,
+`GeometryProperties::AddProperty<ValueType>` is a C++ sugar method that uses
+type erasure and ultimately passes the result to
+`GeometryProperties::AddPropertyAbstract`, and only the `AddPropertyAbstract`
+flavor is used in the bindings, but in such a way that it is similar to the C++
+API for `AddProperty` (
+[permalink to in-tree snippet](https://git.io/JfqiT)):
+
+```
+using Class = GeometryProperties;
+py::handle abstract_value_cls =
+    py::module::import("pydrake.systems.framework").attr("AbstractValue");
+...
+    .def("AddProperty",
+        [abstract_value_cls](Class* self, const std::string& group_name,
+            const std::string& name, py::object value) {
+          py::object abstract = abstract_value_cls.attr("Make")(value);
+          self->AddPropertyAbstract(
+              group_name, name, abstract.cast<const AbstractValue&>());
+        },
+        py::arg("group_name"), py::arg("name"), py::arg("value"),
+        cls_doc.AddProperty.doc)
+...
+```
+
 ## Python Subclassing of C++ Classes
 
 In general, minimize the amount in which users may subclass C++ classes in

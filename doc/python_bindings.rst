@@ -343,6 +343,49 @@ Additionally, you may convert an instance (if the conversion is available) using
     >>> print(adder.ToSymbolic())
     <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
 
+Parameter Packs and Type Erasure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Aside from scalar-type generics, Drake's public C++ API also uses templates for
+`parameter packs <https://en.cppreference.com/w/cpp/language/parameter_pack>`_,
+used to do *compile-time* forwarding of arguments and types (generally for
+syntactic sugar for
+`emplace <https://en.cppreference.com/w/cpp/container/vector/emplace>`_-like
+functionality), and
+`type erasure <https://en.wikipedia.org/wiki/Type_erasure>`_, used to defer
+type checking to run-time.
+
+Examples of methods using these conventions:
+
+.. code-block:: cpp
+
+    // Polymorphism.
+    MultibodyPlant<T>::AddJoint<JointType>(args...)
+    MultibodyPlant<T>::AddFrame<FrameType>(args...)
+
+    // Type erasure.
+    GeometryProperties::AddProperty<ValueType>(group_name, name, value)
+
+However, Python bindings must concretely declare all overloads (including
+variadic forms), which would be nonideal if we wanted to reflect the C++ API.
+Instead, the ``pydrake`` bindings aim to expose *decoupled* registration
+methods, which are explicitly polymorphic and/or type-erased.
+
+An example of the above methods, but what their usage would generally look like
+in Python:
+
+.. code-block:: pycon
+
+    # Polymorphism.
+    MultibodyPlant_[T].AddJoint(JointType(...))
+    MultibodyPlant_[T].AddFrame(FrameType(...))
+
+    # Type erasure.
+    GeometryProperties.AddProperty(group_name, name, value)
+
+where ``JointType`` and ``FrameType`` are replaced with the concrete type in
+question (e.g. ``RevoluteJoint_[T]`` or ``FixedOffsetFrame_[T]``).
+
 Debugging with the Python Bindings
 ----------------------------------
 
