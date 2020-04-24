@@ -108,6 +108,7 @@ enum class ContactModel {
 ///     model_instance_name[i]</em>_actuation}
 ///   @input_port{<span style="color:green">geometry_query</span>},
 ///   @output_port{continuous_state}
+///   @output_port{body_poses}
 ///   @output_port{generalized_acceleration}
 ///   @output_port{reaction_forces}
 ///   @output_port{contact_results}
@@ -418,6 +419,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Output ports provide information about the entire %MultibodyPlant
   /// or its individual model instances.
   /// @{
+
+  /// Returns the output port of all body poses in the world frame.
+  /// You can obtain the pose `X_WB` of a body B in the world frame W with:
+  /// @code
+  ///   const auto& X_WB_all = plant.get_body_poses_output_port().
+  ///       .Eval<std::vector<math::RigidTransform<double>>(plant_context);
+  ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
+  ///   const math::RigidTransform<double>& X_WArm = X_WB_all[arm_body_index];
+  /// @endcode
+  /// As shown in the example above, the resulting `std::vector` of body poses
+  /// is indexed by BodyIndex, and it has size num_bodies().
+  /// BodyIndex "zero" (0) always corresponds to the world body, with pose
+  /// equal to the identity at all times.
+  const systems::OutputPort<T>& get_body_poses_output_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
@@ -3765,6 +3780,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
+  // Evaluates the pose X_WB of each body in the model and copies it into
+  // X_WB_all, indexed by BodyIndex.
+  void CalcBodyPosesOutput(
+      const systems::Context<T>& context,
+      std::vector<math::RigidTransform<T>>* X_WB_all) const;
+
   // Method to compute spatial contact forces for continuous plants.
   void CalcSpatialContactForcesContinuous(
       const drake::systems::Context<T>& context,
@@ -4116,6 +4137,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Port for externally applied spatial forces F.
   systems::InputPortIndex applied_spatial_force_input_port_;
+
+  // Port for the pose of all bodies in the model.
+  systems::OutputPortIndex body_poses_port_;
 
   // A port presenting state x=[q v] for the whole system, and a vector of
   // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,

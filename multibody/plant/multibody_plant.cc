@@ -2272,6 +2272,14 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                     {this->all_state_ticket()})
           .get_index();
 
+  // Declare the output port for the poses of all bodies in the world.
+  body_poses_port_ =
+      this->DeclareAbstractOutputPort(
+              "body_poses", std::vector<math::RigidTransform<T>>(num_bodies()),
+              &MultibodyPlant<T>::CalcBodyPosesOutput,
+              {this->configuration_ticket()})
+          .get_index();
+
   const auto& generalized_accelerations_cache_entry =
       this->get_cache_entry(cache_indexes_.generalized_accelerations);
 
@@ -2783,6 +2791,18 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcBodyPosesOutput(
+    const Context<T>& context,
+    std::vector<math::RigidTransform<T>>* X_WB_all) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  X_WB_all->resize(num_bodies());
+  for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    X_WB_all->at(body_index) = EvalBodyPoseInWorld(context, body);
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -2902,6 +2922,12 @@ void MultibodyPlant<T>::CalcReactionForces(
     const RotationMatrix<T> R_JcW = R_WJc.inverse();
     F_CJc_Jc_array->at(joint_index) = R_JcW * F_CJc_W;
   }
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::get_body_poses_output_port()
+const {
+  return systems::System<T>::get_output_port(body_poses_port_);
 }
 
 template <typename T>
