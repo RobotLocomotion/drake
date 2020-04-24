@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -23,7 +24,9 @@ namespace internal {
  unit sphere and an additional vertex at the origin. The volume is then
  tessellated into eight tetrahedra.
  The additional vector of booleans indicates `true` if the corresponding
- vertex lies on the surface of the sphere.  */
+ vertex lies on the surface of the sphere.
+ Each tet is constructed such that the common vertex (the origin) is the fourth
+ vertex.  */
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   std::vector<VolumeElement> tetrahedra;
@@ -59,16 +62,16 @@ std::pair<VolumeMesh<T>, std::vector<bool>> MakeSphereMeshLevel0() {
   using V = VolumeVertexIndex;
 
   // Top tetrahedra.
-  tetrahedra.emplace_back(V(2), V(0), V(1), V(5));
-  tetrahedra.emplace_back(V(3), V(0), V(2), V(5));
-  tetrahedra.emplace_back(V(4), V(0), V(3), V(5));
-  tetrahedra.emplace_back(V(1), V(0), V(4), V(5));
+  tetrahedra.emplace_back(V(1), V(5), V(2), V(0));
+  tetrahedra.emplace_back(V(2), V(5), V(3), V(0));
+  tetrahedra.emplace_back(V(3), V(5), V(4), V(0));
+  tetrahedra.emplace_back(V(4), V(5), V(1), V(0));
 
   // Bottom tetrahedra.
-  tetrahedra.emplace_back(V(1), V(0), V(2), V(6));
-  tetrahedra.emplace_back(V(2), V(0), V(3), V(6));
-  tetrahedra.emplace_back(V(3), V(0), V(4), V(6));
-  tetrahedra.emplace_back(V(4), V(0), V(1), V(6));
+  tetrahedra.emplace_back(V(2), V(6), V(1), V(0));
+  tetrahedra.emplace_back(V(3), V(6), V(2), V(0));
+  tetrahedra.emplace_back(V(4), V(6), V(3), V(0));
+  tetrahedra.emplace_back(V(1), V(6), V(4), V(0));
 
   // Indicate what vertices are on the surface of the sphere.
   // All vertices are boundaries but the first one at (0, 0, 0).
@@ -297,7 +300,8 @@ std::vector<VolumeElement> SplitTetrahedron(
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
     const VolumeMesh<T>& mesh, const std::vector<bool>& is_boundary) {
-  // First generate all new unique vertices by splitting all edges.
+  // Initialize the set of new vertices with all of the original vertices; we
+  // will grow this set by splitting edges.
   std::vector<VolumeVertex<T>> all_vertices(mesh.vertices());
   std::vector<bool> all_boundary(is_boundary);
 
@@ -343,6 +347,114 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
           all_boundary};
 }
 
+/** Creates a finer volume mesh approximating a unit sphere (not generally
+ applicable to refining other meshes). The refinement is achieved by decomposing
+ every tetrahedron face that lies on the sphere boundary into four faces by
+ splitting each edge. Four tets are created from those four faces and the
+ central vertex to replace the original tetrahedron.
+
+ This algorithm has two interesting properties:
+
+   - It guarantees to introduce no duplicate vertices.
+   - All exterior vertices lie on the surface of the unit sphere, regardless of
+     refinement level.
+
+ The position vectors to the new mesh's vertices are measured and expressed in
+ the same frame as the input mesh.
+
+ @param mesh            The mesh to refine -- must be a mesh generated either by
+                        MakeSphereMeshLevel0() or a previous invocation of
+                        RefineUnitSphereMeshOnSurface().
+ @param center_index    The index of the vertex at the center of the sphere.
+ @returns  A new mesh (the refined version of the input mesh) and the
+ index of the center vertex in that mesh.
+ @pre Every tet in the input mesh includes the origin vertex and has it as its
+ _fourth_ vertex.
+ @post The returned mesh is a viable mesh for further refinement by this method.
+
+ @tparam T  The Eigen scalar for the underlying vertex position representation.
+ */
+template <typename T>
+std::pair<VolumeMesh<T>, VolumeVertexIndex> RefineUnitSphereMeshOnSurface(
+    const VolumeMesh<T>& mesh, VolumeVertexIndex center_index) {
+  // Initialize the set of new vertices with all of the original vertices; we
+  // will grow this set by splitting edges.
+  std::vector<VolumeVertex<T>> all_vertices(mesh.vertices());
+
+  using VIndex = VolumeVertexIndex;
+  // A map from the indices of two vertices on an edge to the index of the
+  // new vertex that sits in the middle of that same edge.
+  std::unordered_map<SortedPair<VIndex>, VIndex> edge_vertex_map;
+  // An enumeration of the edges of the tets that lie on the surface; we rely on
+  // the documented behavior that the level 0 mesh has the origin as the fourth
+  // vertex in each tet and preserves this property on all refined tetrahedra.
+  const std::vector<std::pair<int, int>> kEdges{{0, 1}, {0, 2}, {1, 2}};
+  for (const auto& t : mesh.tetrahedra()) {
+    DRAKE_DEMAND(t.vertex(3) == center_index);
+    for (const auto& v_pair : kEdges) {
+      const SortedPair<VIndex> key{t.vertex(v_pair.first),
+                                   t.vertex(v_pair.second)};
+      // TODO(SeanCurtis-TRI): Refactor edge refinement into a single method.
+      if (edge_vertex_map.count(key) == 0) {
+        // We haven't already split this edge; compute the vertex and determine
+        // its boundary condition.
+        const Vector3<T>& p_MA = mesh.vertex(key.first()).r_MV();
+        const Vector3<T>& p_MB = mesh.vertex(key.second()).r_MV();
+        Vector3<T> p_MV = (p_MA + p_MB) / 2.0;
+        // "Inflate" the surface vertex to the unit sphere surface.
+        p_MV.normalize();
+        VIndex split_index(static_cast<int>(all_vertices.size()));
+
+        all_vertices.emplace_back(p_MV);
+        edge_vertex_map.insert({key, split_index});
+      }
+    }
+  }
+
+  // Now split the tetrahedra.
+  std::vector<VolumeElement> all_tets;
+  // Every input tetrahedron becomes 4 smaller tetrahedra.
+  all_tets.reserve(mesh.num_elements() * 4);
+
+  /*
+                  │                     Vertex v0 represents the center of the
+                  ● v0                  sphere. Vertices a, b, and c are the
+                  │                     vertices of the original tet that lie on
+                  │                     the sphere surface. The vertices d, e,
+                  │                     and f are:
+                  │                        d ≜ the split vertex between b & c
+                  │                        e ≜ the split vertex between a & b
+                  │ c   d     b            f ≜ the split vertex between a & c
+                  ●────◯─────●───       The four new tets we create are:
+                 ╱                         (a, e, f, v0)
+                ╱      ◯ e                 (b, d, e, v0)
+               ◯ f                         (c, f, d, v0)
+              ╱                            (e, d, f, v0)
+             ● a
+            ╱
+  */
+  const VIndex v0 = center_index;
+  for (const auto& t : mesh.tetrahedra()) {
+    // We've already confirmed that vertex 3 of every tetrahedron is the center
+    // vertex.
+    const VIndex a = t.vertex(0);
+    const VIndex b = t.vertex(1);
+    const VIndex c = t.vertex(2);
+    const VIndex d = edge_vertex_map.at(SortedPair<VIndex>{b, c});
+    const VIndex e = edge_vertex_map.at(SortedPair<VIndex>{a, b});
+    const VIndex f = edge_vertex_map.at(SortedPair<VIndex>{a, c});
+    all_tets.emplace_back(a, e, f, v0);
+    all_tets.emplace_back(b, d, e, v0);
+    all_tets.emplace_back(c, f, d, v0);
+    all_tets.emplace_back(e, d, f, v0);
+  }
+  return {VolumeMesh<T>(std::move(all_tets), std::move(all_vertices)),
+          center_index};
+}
+
+// TODO(SeanCurtis-TRI): Consider splitting this into two different functions.
+//  This could ease profiling because it is apparent what type of mesh is being
+//  generated by the function invocation.
 /** This method implements a variant of the generator described in
  [Everett, 1997]. It is based on a recursive refinement of an initial
  (refinement_level = 0) coarse mesh representation of the unit sphere. The
@@ -364,17 +476,43 @@ std::pair<VolumeMesh<T>, std::vector<bool>> RefineUnitSphereMesh(
  sphere. Department of Geophysics, Charles University in Prague.
  */
 template <typename T>
-VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
+VolumeMesh<T> MakeUnitSphereMesh(int refinement_level,
+                                 TessellationStrategy strategy) {
   DRAKE_THROW_UNLESS(refinement_level >= 0);
-  std::pair<VolumeMesh<T>, std::vector<bool>> pair = MakeSphereMeshLevel0<T>();
-  VolumeMesh<T>& mesh = pair.first;
-  std::vector<bool>& is_boundary = pair.second;
+  auto [mesh, is_boundary] = MakeSphereMeshLevel0<T>();
 
-  for (int level = 1; level <= refinement_level; ++level) {
-    std::tie(mesh, is_boundary) = RefineUnitSphereMesh<T>(mesh, is_boundary);
-    DRAKE_DEMAND(mesh.vertices().size() == is_boundary.size());
+  switch (strategy) {
+    case TessellationStrategy::kSingleInteriorVertex: {
+      using VIndex = VolumeVertexIndex;
+      VIndex center_index{};
+      for (VIndex i(0); i < is_boundary.size(); ++i) {
+        if (is_boundary[i] == false) {
+          // There should be only *one* vertex not on the boundary of the level
+          // 0 mesh -- the center vertex.
+          center_index = i;
+          break;
+        }
+      }
+
+      DRAKE_DEMAND(center_index.is_valid());
+      for (int level = 1; level <= refinement_level; ++level) {
+        std::tie(mesh, center_index) =
+            RefineUnitSphereMeshOnSurface<T>(mesh, center_index);
+        DRAKE_DEMAND(center_index == 0);
+      }
+      break;
+    }
+    case TessellationStrategy::kDenseInteriorVertices: {
+      for (int level = 1; level <= refinement_level; ++level) {
+        std::tie(mesh, is_boundary) =
+            RefineUnitSphereMesh<T>(mesh, is_boundary);
+        DRAKE_DEMAND(mesh.vertices().size() == is_boundary.size());
+      }
+      break;
+    }
+    default:
+      DRAKE_UNREACHABLE();
   }
-
   return std::move(mesh);
 }
 
@@ -393,10 +531,12 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
  tetrahdra.
 
  Ultimately, successively smaller values of `resolution_hint` will no longer
- change the output mesh. This algorithm will not produce a tetrahedral mesh with
- more than approximately 100 million tetrahedra. Similarly, for arbitrarily
- large values of `resolution_hint`, the coarsest possible mesh is a tessellated
- octahedron.
+ change the output mesh. This algorithm limits the maximum resolution to prevent
+ accidental instantiation of impractical meshes. At its maximum resolution,
+ the sphere's surface will have approximately half a million triangles (with
+ the corresponding number of interior tetrahedra based on the given tessellation
+ strategy). Similarly, for arbitrarily large values of `resolution_hint`, the
+ coarsest possible mesh is a tessellated octahedron.
 
  @param sphere              The sphere for which a mesh is created.
  @param resolution_hint     The positive characteristic edge length for the
@@ -404,13 +544,16 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level) {
                             The coarsest possible mesh (an octahedron) is
                             guaranteed for any value of `resolution_hint`
                             greater than or equal to the `sphere`'s diameter.
+ @param strategy            The strategy to use to tessellate the sphere. See
+                            TesselationStrategy for details.
  @return The volume mesh for the given sphere.
  @tparam T  The Eigen-compatible scalar for representing the mesh vertex
             positions.
  */
 template <typename T>
 VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
-                                   double resolution_hint) {
+                                   double resolution_hint,
+                                   TessellationStrategy strategy) {
   /*
     The volume mesh is formed by successively refining an octahedron. At the
     equator, that means we go from 4 edges, to 8 edges, to 16 edges, etc.,
@@ -451,9 +594,11 @@ VolumeMesh<T> MakeSphereVolumeMesh(const Sphere& sphere,
           std::ceil(std::log2(M_PI / std::asin(edge_length / (2.0 * r)))) - 2));
   // TODO(SeanCurtis-TRI): Consider pushing the radius into the sphere creation
   //  so that copying vertices and tets is no longer necessary.
-  // Note: With refinement L = 8, we'd get 8 ^(8 + 1) = 134M tetrahedra,
-  // satisfying the promise that we won't produce unlimited tetrahedra.
-  VolumeMesh<T> unit_mesh = MakeUnitSphereMesh<T>(std::min(L, 8));
+
+  // Note: With refinement L = 8, we'd get 8 ^(8 + 1) = 134M tetrahedra for a
+  // dense mesh and 8 * 4^8 = 500K tetrahedra for a sparse mesh, satisfying the
+  // promise that we won't produce unlimited tetrahedra.
+  VolumeMesh<T> unit_mesh = MakeUnitSphereMesh<T>(std::min(L, 8), strategy);
   std::vector<VolumeVertex<T>> vertices;
   vertices.reserve(unit_mesh.vertices().size());
   for (auto& v : unit_mesh.vertices()) {
@@ -481,8 +626,8 @@ template <typename T>
 SurfaceMesh<T> MakeSphereSurfaceMesh(const Sphere& sphere,
                                      double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
-  return ConvertVolumeToSurfaceMesh<T>(
-      MakeSphereVolumeMesh<T>(sphere, resolution_hint));
+  return ConvertVolumeToSurfaceMesh<T>(MakeSphereVolumeMesh<T>(
+      sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
 }
 
 }  // namespace internal

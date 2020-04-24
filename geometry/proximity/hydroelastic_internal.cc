@@ -13,6 +13,7 @@
 #include "drake/geometry/proximity/make_sphere_field.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
+#include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 
 namespace drake {
@@ -256,8 +257,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   PositiveDouble validator("Sphere", "soft");
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // If nothing is said, let's go for the *cheap* tessellation strategy.
+  const TessellationStrategy strategy =
+      props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kSingleInteriorVertex);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeSphereVolumeMesh<double>(sphere, edge_length));
+      MakeSphereVolumeMesh<double>(sphere, edge_length, strategy));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
@@ -307,8 +312,12 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   PositiveDouble validator("Ellipsoid", "soft");
   // First, create the mesh.
   const double edge_length = validator.Extract(props, kHydroGroup, kRezHint);
+  // If nothing is said, let's go for the *cheap* tessellation strategy.
+  const TessellationStrategy strategy =
+      props.GetPropertyOrDefault(kHydroGroup, "tessellation_strategy",
+                                 TessellationStrategy::kSingleInteriorVertex);
   auto mesh = make_unique<VolumeMesh<double>>(
-      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length));
+      MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length, strategy));
 
   const double elastic_modulus =
       validator.Extract(props, kMaterialGroup, kElastic);
