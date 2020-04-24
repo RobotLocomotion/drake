@@ -27,6 +27,15 @@ class IntersectVolumeFieldSurfaceMesh {
 // TODO(DamrongGuoy): Maintain book keeping to avoid duplicate vertices and
 //  remove the note in the function documentation.
 
+  IntersectVolumeFieldSurfaceMesh() {
+    // We know that each contact polygon has at most 7 vertices.
+    // Each surface triangle is clipped by four half-spaces of the four
+    // triangular faces of a tetrahedron.
+    polygon_[0].reserve(7);
+    polygon_[1].reserve(7);
+    contact_polygon_.reserve(7);
+  }
+
 /** Samples a field on a two-dimensional manifold. The field is defined over
  a volume mesh and the manifold is the intersection of the volume mesh and a
  surface mesh. The resulting manifold's topology is a function of both the
@@ -139,54 +148,53 @@ class IntersectVolumeFieldSurfaceMesh {
         triangle with three duplicate vertices.
  @tparam T Currently, only T = double is supported.
 */
-  std::vector<Vector3<T>> ClipPolygonByHalfSpace(
-      const std::vector<Vector3<T>>& polygon_vertices_F,
-      const PosedHalfSpace<T>& H_F);
+  void ClipPolygonByHalfSpace(const std::vector<Vector3<T>>& polygon_vertices_F,
+                              const PosedHalfSpace<T>& H_F,
+                              std::vector<Vector3<T>>* output_vertices_F);
 
-/** Remove duplicate vertices from a polygon represented as a cyclical sequence
- of vertex positions. In other words, for a sequence `A,B,B,C,A`, the pair of
- B's is reduced to one B and the first and last A vertices are considered
- duplicates and the result would be `A,B,C`. The polygon might be reduced to a
- pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point (`A,A,A`
- becomes `A`).
- @param[in] polygon
-     The input polygon, pass by value.
- @return
-     The equivalent polygon with no duplicate vertices.
- @tparam T Currently, only T = double is supported.
- */
-  std::vector<Vector3<T>> RemoveDuplicateVertices(
-      std::vector<Vector3<T>> polygon);
+  /** Remove duplicate vertices from a polygon represented as a cyclical
+   sequence of vertex positions. In other words, for a sequence `A,B,B,C,A`, the
+   pair of B's is reduced to one B and the first and last A vertices are
+   considered duplicates and the result would be `A,B,C`. The polygon might be
+   reduced to a pair of points (i.e., `A,A,B,B` becomes `A,B`) or a single point
+   (`A,A,A` becomes `A`).
+   @param[in] polygon
+       The input polygon, pass by value.
+   @return
+       The equivalent polygon with no duplicate vertices.
+   @tparam T Currently, only T = double is supported.
+   */
+  void RemoveDuplicateVertices(std::vector<Vector3<T>>* polygon);
 
-/** Intersects a triangle with a tetrahedron, returning the portion of the
- triangle with non-zero area contained in the tetrahedron.
- @param element
-     Index of the tetrahedron in a volume mesh.
- @param volume_M
-     The volume mesh whose vertex positions are expressed in M's frame.
- @param face
-     Index of the triangle in a surface mesh.
- @param surface_N
-     The surface mesh whose vertex positions are expressed in N's frame.
- @param X_MN
-     The pose of the surface frame N in the volume frame M.
- @retval polygon_M
-     The output polygon represented by a sequence of positions of its
-     vertices, expressed in M's frame. The nature of triangle-tetrahedron
-     intersection means that this polygon can have up to seven vertices (i.e.,
-     if the plane of the triangle cuts the tetrahedron into a rectangle, and
-     the a vertex of the rectangle lies inside the triangle).
- @note
-     1. If the triangle is outside the tetrahedron with one vertex on a
-        face of the tetrahedron, the output polygon will be empty.
-     2. If the triangle is outside the tetrahedron with an edge on a face
-        of the tetrahedron, the output polygon will be empty.
-     3. If the triangle lies on the plane of a tetrahedron face, the output
-        polygon will be that part of the triangle inside the face of the
-        tetrahedron (non-zero area restriction still applies).
- @tparam T Currently, only T = double is supported.
- */
-  std::vector<Vector3<T>> ClipTriangleByTetrahedron(
+  /** Intersects a triangle with a tetrahedron, returning the portion of the
+   triangle with non-zero area contained in the tetrahedron.
+   @param element
+       Index of the tetrahedron in a volume mesh.
+   @param volume_M
+       The volume mesh whose vertex positions are expressed in M's frame.
+   @param face
+       Index of the triangle in a surface mesh.
+   @param surface_N
+       The surface mesh whose vertex positions are expressed in N's frame.
+   @param X_MN
+       The pose of the surface frame N in the volume frame M.
+   @retval polygon_M
+       The output polygon represented by a sequence of positions of its
+       vertices, expressed in M's frame. The nature of triangle-tetrahedron
+       intersection means that this polygon can have up to seven vertices (i.e.,
+       if the plane of the triangle cuts the tetrahedron into a rectangle, and
+       the a vertex of the rectangle lies inside the triangle).
+   @note
+       1. If the triangle is outside the tetrahedron with one vertex on a
+          face of the tetrahedron, the output polygon will be empty.
+       2. If the triangle is outside the tetrahedron with an edge on a face
+          of the tetrahedron, the output polygon will be empty.
+       3. If the triangle lies on the plane of a tetrahedron face, the output
+          polygon will be that part of the triangle inside the face of the
+          tetrahedron (non-zero area restriction still applies).
+   @tparam T Currently, only T = double is supported.
+   */
+  std::vector<Vector3<T>>* ClipTriangleByTetrahedron(
       VolumeElementIndex element, const VolumeMesh<T>& volume_M,
       SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
       const math::RigidTransform<T>& X_MN);
@@ -273,6 +281,11 @@ class IntersectVolumeFieldSurfaceMesh {
       const VolumeMeshField<T, T>& volume_field_M,
       const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
       const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index);
+
+  // To avoid heap allocation by std::vector in low-level functions, we use
+  // these member variables instead of local variables in the functions.
+  std::vector<Vector3<T>> polygon_[2];
+  std::vector<SurfaceVertexIndex> contact_polygon_;
 
   friend class IntersectVolumeFieldSurfaceMeshTester<T>;
 };
