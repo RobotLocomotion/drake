@@ -23,7 +23,7 @@ namespace sensors {
 
 using Eigen::Translation3d;
 using geometry::FrameId;
-using geometry::QueryObject;
+using geometry::PerceptionQueryObject;
 using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
 using geometry::SceneGraph;
@@ -48,7 +48,7 @@ RgbdSensor::RgbdSensor(FrameId parent_id,
       X_BC_(camera_poses.X_BC),
       X_BD_(camera_poses.X_BD) {
   query_object_input_port_ = &this->DeclareAbstractInputPort(
-      "geometry_query", Value<geometry::QueryObject<double>>{});
+      "geometry_query", Value<PerceptionQueryObject<double>>{});
 
   ImageRgba8U color_image(color_camera_info_.width(),
                           color_camera_info_.height());
@@ -109,14 +109,14 @@ const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
 
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
-  const QueryObject<double>& query_object = get_query_object(context);
+  const PerceptionQueryObject<double>& query_object = get_query_object(context);
   query_object.RenderColorImage(color_properties_, parent_frame_id_,
                                 X_PB_ * X_BC_, show_window_, color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
-  const QueryObject<double>& query_object = get_query_object(context);
+  const PerceptionQueryObject<double>& query_object = get_query_object(context);
   query_object.RenderDepthImage(depth_properties_, parent_frame_id_,
                                 X_PB_ * X_BD_, depth_image);
 }
@@ -130,7 +130,7 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
-  const QueryObject<double>& query_object = get_query_object(context);
+  const PerceptionQueryObject<double>& query_object = get_query_object(context);
   query_object.RenderLabelImage(color_properties_, parent_frame_id_,
                                 X_PB_ * X_BC_, show_window_, label_image);
 }
@@ -143,7 +143,8 @@ void RgbdSensor::CalcX_WB(
   if (parent_frame_id_ == SceneGraph<double>::world_frame_id()) {
     X_WB = X_PB_;
   } else {
-    const QueryObject<double>& query_object = get_query_object(context);
+    const PerceptionQueryObject<double>& query_object =
+        get_query_object(context);
     X_WB = query_object.X_WF(parent_frame_id_) * X_PB_;
   }
 
@@ -170,10 +171,10 @@ void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,
 // to do something weird with GeometryState such that the rgbd_sensor_test.cc
 // was unable to instantiate an GeometryStateTester that GCC recognized as a
 // friend to GeometryState.
-const geometry::QueryObject<double>& RgbdSensor::get_query_object(
+const PerceptionQueryObject<double>& RgbdSensor::get_query_object(
     const Context<double>& context) const {
   return query_object_input_port().
-      Eval<geometry::QueryObject<double>>(context);
+      Eval<PerceptionQueryObject<double>>(context);
 }
 
 RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,

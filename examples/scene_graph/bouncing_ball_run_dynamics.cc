@@ -93,12 +93,12 @@ int do_main() {
 
   builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(ball_source_id1));
-  builder.Connect(scene_graph->get_query_output_port(),
+  builder.Connect(scene_graph->get_proximity_query_output_port(),
                   bouncing_ball1->get_geometry_query_input_port());
 
   builder.Connect(bouncing_ball2->get_geometry_pose_output_port(),
                   scene_graph->get_source_pose_port(ball_source_id2));
-  builder.Connect(scene_graph->get_query_output_port(),
+  builder.Connect(scene_graph->get_proximity_query_output_port(),
                   bouncing_ball2->get_geometry_query_input_port());
 
   DrakeLcm lcm;
@@ -131,7 +131,7 @@ int do_main() {
 
     auto camera = builder.AddSystem<RgbdSensor>(
         scene_graph->world_frame_id(), X_WB, camera_properties);
-    builder.Connect(scene_graph->get_query_output_port(),
+    builder.Connect(scene_graph->get_perception_query_output_port(),
                     camera->query_object_input_port());
 
     // Broadcast the images.

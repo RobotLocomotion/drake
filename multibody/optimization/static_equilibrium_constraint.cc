@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 namespace drake {
@@ -57,11 +58,12 @@ void StaticEquilibriumConstraint::DoEval(
   if (!query_port.HasValue(*context_)) {
     throw std::invalid_argument(
         "StaticEquilibriumConstraint: Cannot get a valid "
-        "geometry::QueryObject. Please refer to AddMultibodyPlantSceneGraph "
-        "on connecting MultibodyPlant to SceneGraph.");
+        "geometry::ProximityQueryObject. Please refer to "
+        "AddMultibodyPlantSceneGraph on connecting MultibodyPlant to "
+        "SceneGraph.");
   }
   const auto& query_object =
-      query_port.Eval<geometry::QueryObject<AutoDiffXd>>(*context_);
+      query_port.Eval<geometry::ProximityQueryObject<AutoDiffXd>>(*context_);
   const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
       signed_distance_pairs =
           query_object.ComputeSignedDistancePairwiseClosestPoints();

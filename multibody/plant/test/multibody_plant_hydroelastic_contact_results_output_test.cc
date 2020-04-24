@@ -58,7 +58,7 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     // it.
     DRAKE_DEMAND(!!plant_->get_source_id());
 
-    builder.Connect(scene_graph.get_query_output_port(),
+    builder.Connect(scene_graph.get_proximity_query_output_port(),
                     plant_->get_geometry_query_input_port());
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
@@ -107,7 +107,8 @@ TEST_F(HydroelasticContactResultsOutputTester, ContactSurfaceEquivalent) {
   // Get the query object so that we can compute the contact surfaces.
   const auto& query_object =
       plant_->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<double>>(*plant_context_);
+          .template Eval<geometry::ProximityQueryObject<double>>(
+              *plant_context_);
 
   // Compute the contact surface using the hydroelastic engine.
   std::vector<geometry::ContactSurface<double>> contact_surfaces =

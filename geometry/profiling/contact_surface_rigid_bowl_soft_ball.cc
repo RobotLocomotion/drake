@@ -25,7 +25,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/proximity_properties.h"
-#include "drake/geometry/query_object.h"
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
@@ -59,7 +59,7 @@ using geometry::AddSoftHydroelasticProperties;
 using geometry::IllustrationProperties;
 using geometry::Mesh;
 using geometry::ProximityProperties;
-using geometry::QueryObject;
+using geometry::ProximityQueryObject;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
@@ -187,7 +187,7 @@ class ContactResultMaker final : public LeafSystem<double> {
   ContactResultMaker() {
     geometry_query_input_port_ =
         this->DeclareAbstractInputPort("query_object",
-                                       Value<QueryObject<double>>())
+                                       Value<ProximityQueryObject<double>>())
             .get_index();
     contact_result_output_port_ =
         this->DeclareAbstractOutputPort("contact_result",
@@ -203,7 +203,7 @@ class ContactResultMaker final : public LeafSystem<double> {
   void CalcContactResults(const Context<double>& context,
                           lcmt_contact_results_for_viz* results) const {
     const auto& query_object =
-        get_geometry_query_port().Eval<QueryObject<double>>(context);
+        get_geometry_query_port().Eval<ProximityQueryObject<double>>(context);
     std::vector<ContactSurface<double>> contacts =
         query_object.ComputeContactSurfaces();
     const int num_contacts = static_cast<int>(contacts.size());
@@ -292,7 +292,7 @@ int do_main() {
 
   // Make and visualize contacts.
   auto& contact_results = *builder.AddSystem<ContactResultMaker>();
-  builder.Connect(scene_graph.get_query_output_port(),
+  builder.Connect(scene_graph.get_proximity_query_output_port(),
                   contact_results.get_geometry_query_port());
 
   // Now visualize.
