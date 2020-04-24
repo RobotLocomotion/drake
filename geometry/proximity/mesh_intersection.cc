@@ -46,7 +46,7 @@ namespace internal {
 
 // TODO(DamrongGuoy): Handle the case that the line is parallel to the plane.
 template <typename T>
-Vector3<T> IntersectVolumeFieldSurfaceMesh<T>::CalcIntersection(
+Vector3<T> IntersectSurfaceVolume<T>::CalcIntersection(
     const Vector3<T>& p_FA, const Vector3<T>& p_FB,
     const PosedHalfSpace<T>& H_F) {
   const T a = H_F.CalcSignedDistance(p_FA);
@@ -89,7 +89,7 @@ Vector3<T> IntersectVolumeFieldSurfaceMesh<T>::CalcIntersection(
 }
 
 template <typename T>
-void IntersectVolumeFieldSurfaceMesh<T>::ClipPolygonByHalfSpace(
+void IntersectSurfaceVolume<T>::ClipPolygonByHalfSpace(
     const std::vector<Vector3<T>>& polygon_vertices_F,
     const PosedHalfSpace<T>& H_F, std::vector<Vector3<T>>* output_vertices_F) {
   // Note: this is the inner loop of a modified Sutherland-Hodgman algorithm for
@@ -127,7 +127,7 @@ void IntersectVolumeFieldSurfaceMesh<T>::ClipPolygonByHalfSpace(
 }
 
 template <typename T>
-void IntersectVolumeFieldSurfaceMesh<T>::RemoveDuplicateVertices(
+void IntersectSurfaceVolume<T>::RemoveDuplicateVertices(
     std::vector<Vector3<T>>* polygon) {
   // TODO(SeanCurtis-TRI): The resulting polygon depends on the order of the
   //  inputs. Imagine I have vertices A, A', A'' (such that |X - X'| < eps.
@@ -175,7 +175,7 @@ void IntersectVolumeFieldSurfaceMesh<T>::RemoveDuplicateVertices(
 
 template <typename T>
 std::vector<Vector3<T>>*
-IntersectVolumeFieldSurfaceMesh<T>::ClipTriangleByTetrahedron(
+IntersectSurfaceVolume<T>::ClipTriangleByTetrahedron(
     VolumeElementIndex element, const VolumeMesh<T>& volume_M,
     SurfaceFaceIndex face, const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN) {
@@ -260,7 +260,7 @@ IntersectVolumeFieldSurfaceMesh<T>::ClipTriangleByTetrahedron(
 }
 
 template <typename T>
-bool IntersectVolumeFieldSurfaceMesh<T>::IsFaceNormalAlongPressureGradient(
+bool IntersectSurfaceVolume<T>::IsFaceNormalAlongPressureGradient(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
     const VolumeElementIndex& tet_index, const SurfaceFaceIndex& tri_index) {
@@ -276,7 +276,7 @@ bool IntersectVolumeFieldSurfaceMesh<T>::IsFaceNormalAlongPressureGradient(
 }
 
 template <typename T>
-void IntersectVolumeFieldSurfaceMesh<T>::SampleVolumeFieldOnSurface(
+void IntersectSurfaceVolume<T>::SampleVolumeFieldOnSurface(
     const VolumeMeshField<T, T>& volume_field_M,
     const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN,
@@ -351,7 +351,7 @@ void IntersectVolumeFieldSurfaceMesh<T>::SampleVolumeFieldOnSurface(
 /** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
  reduce the number of element-pairs evaluated.  */
 template <typename T>
-void IntersectVolumeFieldSurfaceMesh<T>::SampleVolumeFieldOnSurface(
+void IntersectSurfaceVolume<T>::SampleVolumeFieldOnSurface(
     const VolumeMeshField<T, T>& volume_field_M,
     const BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M,
     const SurfaceMesh<T>& surface_N,
@@ -453,7 +453,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
-  IntersectVolumeFieldSurfaceMesh<T>().SampleVolumeFieldOnSurface(
+  IntersectSurfaceVolume<T>().SampleVolumeFieldOnSurface(
       field_S, mesh_R, X_SR, &surface_SR, &e_SR);
 
   if (surface_SR == nullptr) return nullptr;
@@ -500,7 +500,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
-  IntersectVolumeFieldSurfaceMesh<T>().SampleVolumeFieldOnSurface(
+  IntersectSurfaceVolume<T>().SampleVolumeFieldOnSurface(
       field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR, &e_SR);
 
   if (surface_SR == nullptr) return nullptr;
@@ -521,9 +521,9 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
                                              std::move(e_SR));
 }
 
-template class IntersectVolumeFieldSurfaceMesh<double>;
+template class IntersectSurfaceVolume<double>;
 // This template instantiation:
-//   template class IntersectVolumeFieldSurfaceMesh<AutoDiffXd>;
+//   template class IntersectSurfaceVolume<AutoDiffXd>;
 // triggers compile error because:
 //   BoundingVolumeHierarchy<VolumeMesh<T>>& bvh_M
 // does not support VolumeMesh<AutoDiffXd>.
