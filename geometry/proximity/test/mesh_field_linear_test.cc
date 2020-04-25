@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -167,6 +168,115 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
 
   EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
+}
+
+// Confirms that invoking EvaluateCartesian() produces equivalent expected
+// values whether gradients have been pre-computed or not. Also characterizes
+// the differences in accuracy between the two modes.
+GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
+  // This mesh is symmetric with respect to the x=0 plane in frame M, so we
+  // can use it to define the field abs(x) accurately. No edges of
+  // tetrahedra cross the x=0 plane.
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.125);
+
+  // Verify the symmetry and classify tetrahedra. Each tetrahedron is either
+  // in the x ≥ 0 half-space or the x ≤ 0 half-space. Here we call the former
+  // "positive tetrahedron" and the latter "negative tetrahedron".
+  // No tetrahedron crosses the x = 0 plane in frame M. Obviously we assume
+  // the tetrahedra fill the volume of the box.
+  std::set<VolumeElementIndex> positive_set;  // set of positive tetrahedra.
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    int num_positive_or_zero = 0;
+    int num_negative_or_zero = 0;
+    for (int i = 0; i < 4; ++i) {
+      const Vector3d p_MV = mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV();
+      if (p_MV.x() >= 0) ++num_positive_or_zero;
+      if (p_MV.x() <= 0) ++num_negative_or_zero;
+    }
+    // If, in the future, the implementation of MakeBoxVolumeMesh changes so
+    // that the mesh generated here no longer has strictly positive/negative
+    // tetrahedra, the mesh used for this test will need to be changed to one
+    // that does satisfy that requirement.
+    ASSERT_TRUE(num_positive_or_zero == 4 || num_negative_or_zero == 4)
+        << "Mesh no longer satisfies the requirements for this test";
+    // Assume no tetrahedron has both num_positive_or_zero == 4 and
+    // num_negative_or_zero == 4. It would be a zero-volume tetrahedron with
+    // all four vertices lying on the x=0 plane.
+    ASSERT_FALSE(num_positive_or_zero == 4 && num_negative_or_zero == 4)
+        << "Mesh no longer satisfies the requirements for this test";
+    if (num_positive_or_zero == 4) positive_set.insert(e);
+  }
+
+  // Sampling abs(x) function. For tetrahedral elements in the x ≥ 0 half-space,
+  // they will represent f(x) = x. For tetrahedral elements in the x ≤ 0
+  // half-space, they will represent f(x) = -x.
+  using std::abs;
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(abs(v.r_MV().x()));
+  }
+  std::vector<double> values_copy = values;
+
+  const MeshFieldLinear<double, VolumeMesh<double>> field_without_gradient(
+      "abs(x)", std::move(values_copy), &mesh_M, false);
+  const MeshFieldLinear<double, VolumeMesh<double>> field_with_gradient(
+      "abs(x)", std::move(values), &mesh_M, true);
+
+  ASSERT_THROW(field_without_gradient.EvaluateGradient(VolumeElementIndex(0)),
+               std::runtime_error);
+  ASSERT_NO_THROW(field_with_gradient.EvaluateGradient(VolumeElementIndex(0)));
+
+  // Generally, evaluating the field without gradients produces more error than
+  // with gradients. This is largely attributable to the transformations to
+  // barycentric coordinates required in the absence of the gradient. The error
+  // tends to scale with the distance between the query popint Q and the tet.
+  // For this field and this mesh, the gradients seems to perfectly reproduce
+  // the field. This may not generally be the case.
+
+  {
+    // Evaluating the field for points within tetrahedra.
+    using Barycentric = VolumeMesh<double>::Barycentric;
+    constexpr double kEps = std::numeric_limits<double>::epsilon();
+    for (const Barycentric& b_Q :
+        {Barycentric{0.25, 0.25, 0.25, 0.25} /* centroid */,
+         Barycentric{0.5, 0.5, 0, 0} /* on edge */,
+         Barycentric{0.49999, 0.49999, 1e-5, 1e-5} /* near edge */}) {
+      // TODO(SeanCurtis-TRI): it's ridiculous that we don't have a mesh method
+      //  that turns (element index, barycentric) --> cartesian.
+      for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+        Vector3d p_MQ{0, 0, 0};
+        for (int i = 0; i < 4; ++i) {
+          p_MQ += mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV() * b_Q(i);
+        }
+        EXPECT_NEAR(abs(p_MQ.x()),
+                    field_without_gradient.EvaluateCartesian(e, p_MQ), kEps);
+        EXPECT_NEAR(abs(p_MQ.x()),
+                    field_with_gradient.EvaluateCartesian(e, p_MQ), 0);
+      }
+    }
+  }
+
+  // Evaluating the field for points that don't necessarily lie within the tet.
+  for (const Vector3d& p_MQ :
+      {Vector3d{1e-15, 1e-15, 1e-15}, Vector3d{0.1, 0.2, 0.3},
+       Vector3d{-10.23, 27, 77}, Vector3d{321.3, -843.2, 202.02}}) {
+    const double kEps = 4 * std::numeric_limits<double>::epsilon() *
+        std::max(1.0, std::abs(p_MQ.cwiseAbs().maxCoeff()));
+    for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+      if (positive_set.count(e) == 1) {
+        // f(x,y,z) = x
+        EXPECT_NEAR(p_MQ.x(), field_without_gradient.EvaluateCartesian(e, p_MQ),
+                    kEps);
+        EXPECT_EQ(p_MQ.x(), field_with_gradient.EvaluateCartesian(e, p_MQ));
+      } else {
+        // f(x,y,z) = -x
+        EXPECT_NEAR(-p_MQ.x(),
+                    field_without_gradient.EvaluateCartesian(e, p_MQ), kEps);
+        EXPECT_EQ(-p_MQ.x(), field_with_gradient.EvaluateCartesian(e, p_MQ));
+      }
+    }
+  }
 }
 
 }  // namespace
