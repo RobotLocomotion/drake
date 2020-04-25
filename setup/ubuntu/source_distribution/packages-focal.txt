@@ -13,7 +13,7 @@ gdb
 gfortran
 git
 jupyter
-kcov-35
+kcov
 libblas-dev
 libbz2-dev
 libclang-6.0-dev
@@ -33,7 +33,7 @@ libogg-dev
 libpng-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
-libstdc++6-7-dbg
+libstdc++6-10-dbg
 libsuitesparse-dev
 libtheora-dev
 libtiff5-dev
