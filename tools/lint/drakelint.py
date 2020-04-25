@@ -55,14 +55,17 @@ def _check_shebang(filename, disallow_executable):
     acceptable shebang lines, and 1 otherwise.
     """
     is_executable = os.access(filename, os.X_OK)
-    if is_executable and disallow_executable:
+    with open(filename, mode='r', encoding='utf8') as file:
+        shebang = file.readline().rstrip("\n")
+    has_shebang = shebang.startswith("#!")
+    # TODO(eric.cousineau): Remove this whenever Bazel stops forcing genfiles
+    # to be executable.
+    ignore_executable = (shebang == "# NOLINT(executable genfile)")
+    if is_executable and disallow_executable and not ignore_executable:
         print("ERROR: {} is executable, but should not be".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
         return 1
-    with open(filename, mode='r', encoding='utf8') as file:
-        shebang = file.readline().rstrip("\n")
-        has_shebang = shebang.startswith("#!")
-    if is_executable and not has_shebang:
+    if is_executable and not has_shebang and not ignore_executable:
         print("ERROR: {} is executable but lacks a shebang".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
         return 1

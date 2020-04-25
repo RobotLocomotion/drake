@@ -84,6 +84,8 @@ def repository_python_info(repository_ctx):
     version_major, _ = version.split(".")
 
     # Perform sanity checks on supplied Python binary.
+    # At present, only one implementation is supported.
+    supported_implementation = "CPython"
     implementation = execute_or_fail(
         repository_ctx,
         [
@@ -92,9 +94,13 @@ def repository_python_info(repository_ctx):
             "import platform as m; print(m.python_implementation())",
         ],
     ).stdout.strip()
-    if implementation != "CPython":
-        fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
-              "supported.").format(python, implementation))
+    if implementation != supported_implementation:
+        fail(("The implementation of '{}' is '{}', but only '{}' is " +
+              "supported.").format(
+            python,
+            implementation,
+            supported_implementation,
+        ))
 
     # Development Note: This should generally be the correct configuration. If
     # you are hacking with `virtualenv` (which is officially unsupported),
@@ -124,6 +130,7 @@ def repository_python_info(repository_ctx):
         site_packages_relpath = site_packages_relpath,
         version = version,
         version_major = version_major,
+        implementation = implementation,
         os = os_result,
     )
 
@@ -199,10 +206,12 @@ def _impl(repository_ctx):
 
 PYTHON_BIN_PATH = "{bin_path}"
 PYTHON_VERSION = "{version}"
+PYTHON_IMPLEMENTATION = "{implementation}"
 PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
 """.format(
         bin_path = py_info.python,
         version = py_info.version,
+        implementation = py_info.implementation,
         site_packages_relpath = py_info.site_packages_relpath,
     )
     repository_ctx.file(

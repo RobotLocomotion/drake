@@ -1,0 +1,37 @@
+# NOLINT(executable genfile)
+import platform
+import sys
+import warnings
+
+# N.B. Use Python2-compatible features until Python2 is removed from all
+# platforms.
+
+PYTHON_VERSION = "@PYTHON_VERSION@"
+PYTHON_IMPLEMENTATION = "@PYTHON_IMPLEMENTATION@"
+
+
+def _check_interpreter_info():
+    """Ensure that we have the appropriate interpreter for `pydrake`, or fail
+    fast."""
+    # Check implementation.
+    compiled_implementation = PYTHON_IMPLEMENTATION
+    actual_implementation = platform.python_implementation()
+    if compiled_implementation != actual_implementation:
+        raise SystemError(
+            "Current interpreter's (" + sys.executable + ") implementation "
+            "(" + actual_implementation + ") does not match compiled "
+            "implementation (" + compiled_implementation + ").")
+
+    # Check major-minor version.
+    # TODO(eric.cousineau): Should warn about patch versions too? That may have
+    # contributed to issues with conda (e.g. 3.6.8 vs 3.6.9):
+    # https://stackoverflow.com/q/61429574/7829525
+    # TODO(eric.cousineau): Remove this if we decorate the C Python extensions
+    # with their appropriate platform information?
+    compiled_version = PYTHON_VERSION
+    actual_version = ".".join(map(str, sys.version_info[:2]))
+    if compiled_version != actual_version:
+        raise SystemError(
+            "Current interpreter's (" + sys.executable + ") major-minor "
+            "version (" + actual_version + ") does not match compiled version "
+            "(" + compiled_version + ").")

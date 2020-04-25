@@ -2,6 +2,11 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load("@python//:version.bzl", "PYTHON_IMPLEMENTATION", "PYTHON_VERSION")
+load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -44,12 +49,23 @@ drake_py_library(
     name = "module_py",
     srcs = [
         "__init__.py",
+        "_python_version.py",
     ],
     deps = [
         # We use `common:_init_py` to avoid dependency cycles.
         "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
         "//bindings/pydrake/common:deprecation_py",
+    ],
+)
+
+cmake_configure_file(
+    name = "python_version",
+    src = "_python_version.py.in",
+    out = "_python_version.py",
+    defines = [
+        "PYTHON_VERSION=" + PYTHON_VERSION,
+        "PYTHON_IMPLEMENTATION=" + PYTHON_IMPLEMENTATION,
     ],
 )
 
@@ -309,8 +325,7 @@ drake_py_library(
 install(
     name = "install",
     install_tests = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
+        ":test/pydrake_install_test.py",
     ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
@@ -544,7 +559,6 @@ generate_pybind_coverage(
 
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
-        ":test/all_install_test.py",
-        ":test/common_install_test.py",
+        ":test/pydrake_install_test.py",
     ],
 )

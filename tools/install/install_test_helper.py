@@ -83,6 +83,21 @@ def get_python_executable():
         return sys.executable
 
 
+def get_install_env(env=None):
+    """Returns environment necessary for performing install-tree subprocess
+    calls."""
+    if env is None:
+        env = dict(os.environ)
+    else:
+        env = dict(env)
+    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
+    # the python formula is updated to 3.8.
+    if sys.platform == 'darwin':
+        assert 'PATH' in env
+        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+    return env
+
+
 def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     """Convenient function to start a command and kill it automatically.
 
@@ -100,12 +115,7 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     """
     if from_install_dir:
         cmd[0] = os.path.join(get_install_dir(), cmd[0])
-    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
-    # the python formula is updated to 3.8.
-    env = os.environ
-    if sys.platform == 'darwin':
-        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
-    proc = subprocess.Popen(cmd, cwd='/', env=env)
+    proc = subprocess.Popen(cmd, cwd='/', env=get_install_env())
     start = time.time()
     while time.time() - start < timeout:
         time.sleep(0.5)
@@ -116,7 +126,7 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     assert proc.wait() == -signal.SIGTERM
 
 
-def check_call(args, *extra_args, **kwargs):
+def check_call(args, *extra_args, env=None, **kwargs):
     """Helper function for `subprocess.check_call()`.
 
     Install tests should use this function instead of
@@ -124,21 +134,16 @@ def check_call(args, *extra_args, **kwargs):
     calls `subprocess.check_call()` and updates the current working directory
     to `/`.
     """
+    # TODO(eric.cousineau): Remove this function, make more explicit and less
+    # coupled.
     if args[0].endswith('.py'):
         # Ensure that we test with the same Python version that Bazel is using.
         args = [get_python_executable()] + args
-    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
-    # the python formula is updated to 3.8.
-    if 'env' in kwargs:
-        env = kwargs.pop('env')
-    else:
-        env = os.environ
-    if sys.platform == 'darwin':
-        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
-    return subprocess.check_call(args, cwd='/', env=env, *extra_args, **kwargs)
+    return subprocess.check_call(
+        args, cwd='/', env=get_install_env(env), *extra_args, **kwargs)
 
 
-def check_output(*args, **kwargs):
+def check_output(*args, env=None, **kwargs):
     """Helper function for `subprocess.check_output()`.
 
     Install tests should use this function instead of
@@ -146,16 +151,10 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
-    # the python formula is updated to 3.8.
-    if 'env' in kwargs:
-        env = kwargs.pop('env')
-    else:
-        env = os.environ
-    if sys.platform == 'darwin':
-        env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
+    # TODO(eric.cousineau): Remove this function, make more explicit and less
+    # coupled.
     return subprocess.check_output(
-        cwd='/', env=env, *args, **kwargs).decode('utf8')
+        cwd='/', env=get_install_env(env), *args, **kwargs).decode('utf8')
 
 
 def get_python_site_packages_dir(install_dir):

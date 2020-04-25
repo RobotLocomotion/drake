@@ -17,6 +17,9 @@ import os
 import sys
 import warnings
 
+from ._python_version import _check_interpreter_info
+_check_interpreter_info()  # noqa
+
 # When importing `pydrake` as an external under Bazel, Bazel will use a shared
 # library whose relative RPATHs are incorrect for `libdrake.so`, and thus will
 # fail to load; this issue is captured in bazelbuild/bazel#4594. As a
