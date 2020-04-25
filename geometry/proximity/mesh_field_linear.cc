@@ -5,8 +5,8 @@
 namespace drake {
 namespace geometry {
 
-template <class FieldValue, class MeshType>
-void MeshFieldLinear<FieldValue, MeshType>::CalcGradientField() {
+template <class T, class MeshType>
+void MeshFieldLinear<T, MeshType>::CalcGradientField() {
   gradients_.clear();
   gradients_.reserve(this->mesh().num_elements());
   for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
@@ -15,14 +15,31 @@ void MeshFieldLinear<FieldValue, MeshType>::CalcGradientField() {
   }
 }
 
-template <class FieldValue, class MeshType>
-Vector3<FieldValue> MeshFieldLinear<FieldValue, MeshType>::CalcGradientVector(
+template <class T, class MeshType>
+Vector3<T> MeshFieldLinear<T, MeshType>::CalcGradientVector(
     typename MeshType::ElementIndex e) const {
-  std::array<FieldValue, MeshType::kVertexPerElement> u;
+  std::array<T, MeshType::kVertexPerElement> u;
   for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
     u[i] = values_[this->mesh().element(e).vertex(i)];
   }
   return this->mesh().CalcGradientVectorOfLinearField(u, e);
+}
+
+template <class T, class MeshType>
+void MeshFieldLinear<T, MeshType>::CalcValueAtMeshOriginForAllElements() {
+  values_at_Mo_.clear();
+  values_at_Mo_.reserve(this->mesh().num_elements());
+  for (typename MeshType::ElementIndex e(0); e < this->mesh().num_elements();
+       ++e) {
+    values_at_Mo_.push_back(CalcValueAtMeshOrigin(e));
+  }
+}
+
+template <class T, class MeshType>
+T MeshFieldLinear<T, MeshType>::CalcValueAtMeshOrigin(
+    typename MeshType::ElementIndex e) const {
+  const typename MeshType::Cartesian Mo(0, 0, 0);
+  return Evaluate(e, this->mesh().CalcBarycentric(Mo, e));
 }
 
 template class MeshFieldLinear<double, SurfaceMesh<double>>;

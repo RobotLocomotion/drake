@@ -18,6 +18,9 @@
 namespace drake {
 namespace geometry {
 
+// Forward declaration of Tester class, so we can grant friend access.
+template <class T, class MeshType> class MeshFieldLinearTester;
+
 /**
  %MeshFieldLinear represents a piecewise linear scalar field f defined on a
  simplicial-element (triangular or tetrahedral) mesh; the field value
@@ -47,16 +50,16 @@ namespace geometry {
  words, vertex Vᵢ is the iᵗʰ vertex of E, not the iᵗʰ vertex among all vertices
  in the mesh. The point Q in E can be expressed as:
 
-    Q = ∑bᵢ(Q)Vᵢ,
+       Q = ∑bᵢ(Q)Vᵢ,
 
  where we indicate the barycentric coordinate of a point Q on an element E as
  bᵢ(Q) -- omitting E for typographical convenience.
 
- <h3> Field value </h3>
+ <h3> Field value from barycentric coordinates </h3>
 
  At a point Q in element E, the piecewise linear field f has value:
 
-    f(Q) = ∑bᵢ(Q)Fᵢ
+       f(Q) = ∑bᵢ(Q)Fᵢ
 
  where Fᵢ is the field value at the iᵗʰ vertex of E.
 
@@ -65,10 +68,20 @@ namespace geometry {
  Consider each bᵢ as a linear scalar field on element E, the gradient of
  the piecewise linear field f on E is:
 
-      ∇f = ∑Fᵢ∇bᵢ
+       ∇f = ∑Fᵢ∇bᵢ
 
  Each gradient vector ∇bᵢ is constant on E and depends on the shape of the
  triangle or tetrahedron E.
+
+ <h3> Field value from Cartesian coordinates </h3>
+
+ At a point Q in Element E with Cartesian coordinates (x,y,z), the piecewise
+ linear field f has value:
+
+       f(Q) = ∇f⋅(x,y,z) + fᵉ(0,0,0)
+
+ where fᵉ is the linear function that represents the piecewise linear field f
+ on Element E.
 
  @tparam T  a valid Eigen scalar for field values.
  @tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh.
@@ -96,6 +109,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
                  this->mesh().num_vertices());
     if (calculate_gradient) {
       CalcGradientField();
+      CalcValueAtMeshOriginForAllElements();
     }
   }
 
@@ -116,7 +130,13 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   T EvaluateCartesian(
                  typename MeshType::ElementIndex e,
                  const typename MeshType::Cartesian& p_MQ) const final {
-    return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
+    if (gradients_.size() == 0) {
+      return Evaluate(e, this->mesh().CalcBarycentric(p_MQ, e));
+    } else {
+      DRAKE_ASSERT(e < gradients_.size());
+      DRAKE_ASSERT(e < values_at_Mo_.size());
+      return gradients_[e].dot(p_MQ) + values_at_Mo_[e];
+    }
   }
 
   /** Evaluates the gradient in the domain of the element indicated by `e`.
@@ -171,9 +191,8 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
       if (values_.at(i) != field_linear->values_.at(i))
         return false;
     }
-    // Check gradient vectors.
     if (gradients_ != field_linear->gradients_) return false;
-
+    if (values_at_Mo_ != field_linear->values_at_Mo_) return false;
     // All checks passed.
     return true;
   }
@@ -186,8 +205,10 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return std::make_unique<MeshFieldLinear>(*this);
   }
   void CalcGradientField();
-  Vector3<T> CalcGradientVector(
-      typename MeshType::ElementIndex e) const;
+  Vector3<T> CalcGradientVector(typename MeshType::ElementIndex e) const;
+
+  void CalcValueAtMeshOriginForAllElements();
+  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const;
 
   std::string name_;
   // The field values are indexed in the same way as vertices, i.e.,
@@ -197,6 +218,12 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   // gradients_[i] is the gradient vector on elements_[i]. The elements could
   // be tetrahedra for VolumeMesh or triangles for SurfaceMesh.
   std::vector<Vector3<T>> gradients_;
+  // values_at_Mo_[i] is the value of the linear function that represents the
+  // piecewise linear field on the mesh elements_[i] at Mo the origin of
+  // frame M of the mesh. Notice that Mo may or may not lie inside elements_[i].
+  std::vector<T> values_at_Mo_;
+
+  friend class MeshFieldLinearTester<T, MeshType>;
 };
 
 /**

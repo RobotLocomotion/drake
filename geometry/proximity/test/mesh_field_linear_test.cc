@@ -7,12 +7,33 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace geometry {
+
+template <class T, class MeshType>
+class MeshFieldLinearTester {
+ public:
+  explicit MeshFieldLinearTester(MeshFieldLinear<T, MeshType>* field)
+      : field_(*field) {}
+  void CalcGradientField() {
+    field_.CalcGradientField();
+  }
+  void CalcValueAtMeshOriginForAllElements() {
+    field_.CalcValueAtMeshOriginForAllElements();
+  }
+  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const {
+    return field_.CalcValueAtMeshOrigin(e);
+  }
+
+ private:
+  MeshFieldLinear<T, MeshType>& field_;
+};
+
 namespace {
 
 using math::RigidTransformd;
@@ -167,6 +188,71 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
 
   EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestCalcValueAtMeshOrigin) {
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.25);
+
+  // Use one linear function f for the entire mesh for simplicity.
+  auto f = [](const Vector3d& p_MQ) -> double {
+    return 3.5 * p_MQ.x() - 2.7 * p_MQ.y() + 0.7 * p_MQ.z() + 1.23;
+  };
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(f(v.r_MV()));
+  }
+  MeshFieldLinear<double, VolumeMesh<double>> field("f", std::move(values),
+                                                    &mesh_M);
+  MeshFieldLinearTester<double, VolumeMesh<double>> tester(&field);
+
+  // Testing one representative tetrahedral element would have been adequate,
+  // but we test all elements for completion.
+  const double f_at_Mo = f(Vector3d::Zero());
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    // The tolerance 1e-14 is empirically determined. It is related to
+    // gradient calculation and conversion between Cartesian coordinates and
+    // barycentric coordinates. We might need a larger tolerance if we use a
+    // larger geometry.
+    EXPECT_NEAR(f_at_Mo, tester.CalcValueAtMeshOrigin(e), 1e-14);
+  }
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestCalcValueAtMeshOriginForAllElements) {
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.25);
+
+  // Use one linear function f for the entire mesh for simplicity.
+  auto f = [](const Vector3d& p_MQ) -> double {
+    return 3.5 * p_MQ.x() - 2.7 * p_MQ.y() + 0.7 * p_MQ.z() + 1.23;
+  };
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(f(v.r_MV()));
+  }
+  // First we construct the field without gradient.
+  MeshFieldLinear<double, VolumeMesh<double>> field(
+      "f", std::move(values), &mesh_M, false /* no calcultion of gradient */);
+  MeshFieldLinearTester<double, VolumeMesh<double>> tester(&field);
+
+  tester.CalcGradientField();
+  tester.CalcValueAtMeshOriginForAllElements();
+
+  Vector3d p_MQ(1.2, 2.3, 3.4);
+  double f_at_Q = f(p_MQ);
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    // The tolerance 1e-13 is empirically determined. It is related to
+    // gradient calculation and conversion between Cartesian coordinates and
+    // barycentric coordinates. We might need a larger tolerance if we use a
+    // larger geometry.
+    //     We use EvaluateCartesian() as an indicator that
+    // CalcValueAtMeshOriginForAllElements() did the right job.
+    //     Notice that p_MQ is outside the box geometry, so it is outside every
+    // tetrahedral element. There are applications that need to evaluate the
+    // linear function of a tetrahedral element at a point outside the
+    // tetrahedron.
+    EXPECT_NEAR(f_at_Q, field.EvaluateCartesian(e, p_MQ), 1e-13);
+  }
 }
 
 }  // namespace
