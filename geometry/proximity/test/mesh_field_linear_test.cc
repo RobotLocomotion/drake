@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -167,6 +168,135 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
 
   EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
+}
+
+// Tests EvaluateCartesian() of MeshFieldLinear that has calculated gradients
+// and that has not. Evaluates the field values at various points inside and
+// outside tetrahedral elements including the origin and a point outside the
+// mesh. We pick the piecewise-linear field abs(x) as the ground truth, so that
+// some tetrahedra have f(x,y,z)=x, and the others have f(x,y,z)=-x.
+GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
+  // This mesh is symmetric with respect to the x=0 plane in frame M, so we
+  // can use it to define the field abs(x) accurately.
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.125);
+
+  // Verify the symmetry and classify tetrahedra. Each tetrahedron is either
+  // in the x ≥ 0 half-space or the x ≤ 0 half-space. Here we call the former
+  // "positive tetrahedron" and the latter "negative tetrahedron".
+  // No tetrahedron crosses the x = 0 plane in frame M. Obviously we assume
+  // the tetrahedra fill the volume of the box.
+  std::set<VolumeElementIndex> positive_set;  // set of positive tetrahedra.
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    int num_positive_or_zero = 0;
+    int num_negative_or_zero = 0;
+    for (int i = 0; i < 4; ++i) {
+      const Vector3d p_MV = mesh_M.vertex(mesh_M.element(e).vertex(i)).r_MV();
+      if (p_MV.x() >= 0) ++num_positive_or_zero;
+      if (p_MV.x() <= 0) ++num_negative_or_zero;
+    }
+    // If in the future we change the mesh, this assertion might fail. You
+    // might want to use a different mesh that has x=0 symmetry.
+    ASSERT_TRUE(num_positive_or_zero == 4 || num_negative_or_zero == 4);
+    // Assume no tetrahedron has both num_positive_or_zero == 4 and
+    // num_negative_or_zero == 4. It would be a zero-volume tetrahedron with
+    // all four vertices lying on the x=0 plane.
+    ASSERT_FALSE(num_positive_or_zero == 4 && num_negative_or_zero == 4);
+    if (num_positive_or_zero == 4) positive_set.insert(e);
+  }
+
+  // Sampling abs(x) function. For tetrahedral elements in the x ≥ 0 half-space,
+  // they will represent f(x) = x. For tetrahedral elements in the x ≤ 0
+  // half-space, they will represent f(x) = -x.
+  using std::abs;
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(abs(v.r_MV().x()));
+  }
+  std::vector<double> values_too = values;
+
+  const MeshFieldLinear<double, VolumeMesh<double>> field_without_gradient(
+      "abs(x)", std::move(values_too), &mesh_M, false);
+  const MeshFieldLinear<double, VolumeMesh<double>> field_with_gradient(
+      "abs(x)", std::move(values), &mesh_M, true);
+
+  ASSERT_THROW(field_without_gradient.EvaluateGradient(VolumeElementIndex(0)),
+               std::runtime_error);
+  ASSERT_NO_THROW(field_with_gradient.EvaluateGradient(VolumeElementIndex(0)));
+
+  // Empirically the remaining tests suggest that field_with_gradient is more
+  // accurate probably because the gradient vectors (1,0,0) for f(x,y,z)=x and
+  // (-1,0,0) for f(x,y,z)=-x are represented accurately. The
+  // field_without_gradient has to solve a linear system to convert Cartesian
+  // coordinates to barycentric coordinates.
+
+  // Evaluate field value at a point inside each tetrahedron.
+  // Pick the centroid of each tetrahedral element.
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    const Vector3d p_MV0 = mesh_M.vertex(mesh_M.element(e).vertex(0)).r_MV();
+    const Vector3d p_MV1 = mesh_M.vertex(mesh_M.element(e).vertex(1)).r_MV();
+    const Vector3d p_MV2 = mesh_M.vertex(mesh_M.element(e).vertex(2)).r_MV();
+    const Vector3d p_MV3 = mesh_M.vertex(mesh_M.element(e).vertex(3)).r_MV();
+    const Vector3d p_MC = (p_MV0 + p_MV1 + p_MV2 + p_MV3) / 4.0;
+    EXPECT_NEAR(abs(p_MC.x()),
+                field_without_gradient.EvaluateCartesian(e, p_MC), 0.0);
+    EXPECT_NEAR(abs(p_MC.x()), field_with_gradient.EvaluateCartesian(e, p_MC),
+                0.0);
+  }
+
+  // Evaluate field value at origin, which is inside some tetrahedra and
+  // outside others. The tolerance is zero in this case.
+  {
+    const Vector3d p_Mo(0, 0, 0);
+    for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+      EXPECT_NEAR(0.0, field_without_gradient.EvaluateCartesian(e, p_Mo), 0.0);
+      EXPECT_NEAR(0.0, field_with_gradient.EvaluateCartesian(e, p_Mo), 0.0);
+    }
+  }
+
+  // Evaluate field value at a generic point in the box. It is inside some
+  // tetrahedra and outside others. Empirically the tolerance for
+  // field_without_gradient is 1e-15, and the tolerance for
+  // field_with_gradient is 0.0.
+  {
+    const Vector3d p_MQ(0.1, 0.2, 0.3);
+    for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+      if (positive_set.count(e) == 1) {
+        // f(x,y,z) = x
+        EXPECT_NEAR(0.1, field_without_gradient.EvaluateCartesian(e, p_MQ),
+                    1e-15);
+        EXPECT_NEAR(0.1, field_with_gradient.EvaluateCartesian(e, p_MQ), 0.0);
+      } else {
+        // f(x,y,z) = -x
+        EXPECT_NEAR(-0.1, field_without_gradient.EvaluateCartesian(e, p_MQ),
+                    1e-15);
+        EXPECT_NEAR(-0.1, field_with_gradient.EvaluateCartesian(e, p_MQ), 0.0);
+      }
+    }
+  }
+
+  // Evaluate field value at a point outside the box.
+  // The tolerance 1e-13 for field_without_gradient is empirically determined.
+  // It is larger than the previous block probably because larger coordinates
+  // introduce larger errors. The tolerance 0.0 for field_with_gradient is
+  // empirically determined.
+  {
+    const Vector3d p_MQ(-10.23, 27, 77);
+    for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+      if (positive_set.count(e) == 1) {
+        // f(x,y,z) = x, f(-10.23, 27, 77) = -10.23.
+        EXPECT_NEAR(-10.23, field_without_gradient.EvaluateCartesian(e, p_MQ),
+                    1e-13);
+        EXPECT_NEAR(-10.23, field_with_gradient.EvaluateCartesian(e, p_MQ),
+                    0.0);
+      } else {
+        // f(x,y,z) = -x, f(-10.23, 27, 77) = 10.23.
+        EXPECT_NEAR(10.23, field_without_gradient.EvaluateCartesian(e, p_MQ),
+                    1e-13);
+        EXPECT_NEAR(10.23, field_with_gradient.EvaluateCartesian(e, p_MQ), 0.0);
+      }
+    }
+  }
 }
 
 }  // namespace
