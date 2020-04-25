@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 18.04 (Bionic).
+# Ubuntu 18.04 (Bionic) or 20.04 (Focal).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -23,8 +23,11 @@ EOF
 
 codename=$(lsb_release -sc)
 
-wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+if [[ "${codename}" == 'bionic' ]]; then
+  # We only need this apt site for kcov-35 on Bionic.
+  wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
+  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+fi
 
 apt-get update
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
