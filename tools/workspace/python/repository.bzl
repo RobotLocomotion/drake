@@ -47,6 +47,7 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 # CMakeLists.txt and doc/developers.rst.
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:18.04": ["3.6"],
+    "ubuntu:20.04": ["3.8"],
     "macos": ["3.8"],
 }
 
