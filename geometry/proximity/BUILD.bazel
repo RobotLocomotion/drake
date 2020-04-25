@@ -651,6 +651,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mesh_field_linear_test",
     deps = [
+        ":make_box_mesh",
         ":mesh_field",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
