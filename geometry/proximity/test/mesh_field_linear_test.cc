@@ -7,12 +7,33 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace geometry {
+
+template <class T, class MeshType>
+class MeshFieldLinearTester {
+ public:
+  explicit MeshFieldLinearTester(MeshFieldLinear<T, MeshType>* field)
+      : field_(*field) {}
+  void CalcGradientField() {
+    field_.CalcGradientField();
+  }
+  void CalcValueAtMeshOriginForAllElements() {
+    field_.CalcValueAtMeshOriginForAllElements();
+  }
+  T CalcValueAtMeshOrigin(typename MeshType::ElementIndex e) const {
+    return field_.CalcValueAtMeshOrigin(e);
+  }
+
+ private:
+  MeshFieldLinear<T, MeshType>& field_;
+};
+
 namespace {
 
 using math::RigidTransformd;
@@ -167,6 +188,127 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
   Vector3d expect_gradient_N = X_MN.rotation() * expect_gradient_M;
 
   EXPECT_TRUE(CompareMatrices(expect_gradient_N, gradient_N, 1e-14));
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestCalcValueAtMeshOrigin) {
+  // We use a moderate-size box mesh because it includes both the case that
+  // the origin Mo is outside a tetrahedral element E, and also the case that
+  // Mo is in E.
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.25);
+
+  // Use one linear function f for the entire mesh for simplicity. Linear
+  // function is represented accurately on any linear element, up to
+  // numerical rounding, independent of the mesh.
+  auto f = [](const Vector3d& p_MQ) -> double {
+    return 3.5 * p_MQ.x() - 2.7 * p_MQ.y() + 0.7 * p_MQ.z() + 1.23;
+  };
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(f(v.r_MV()));
+  }
+  MeshFieldLinear<double, VolumeMesh<double>> field("f", std::move(values),
+                                                    &mesh_M);
+  MeshFieldLinearTester<double, VolumeMesh<double>> tester(&field);
+
+  // Testing one representative tetrahedral element would have been adequate,
+  // but we test all elements for completion.
+  const double f_at_Mo = f(Vector3d::Zero());
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    // The tolerance 1e-14 is empirically determined. It is related to
+    // gradient calculation. We might need a larger tolerance if we use a
+    // larger geometry.
+    EXPECT_NEAR(f_at_Mo, tester.CalcValueAtMeshOrigin(e), 1e-14);
+  }
+}
+
+GTEST_TEST(MeshFieldLinearTest, TestCalcValueAtMeshOriginForAllElements) {
+  // We use a moderate-size box mesh because it includes both the case that
+  // the origin Mo is outside a tetrahedral element E, and also the case that
+  // Mo is in E.
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.25);
+
+  // Use one linear function f for the entire mesh for simplicity. Linear
+  // function is represented accurately on any linear element, up to
+  // numerical rounding, independent of the mesh.
+  auto f = [](const Vector3d& p_MQ) -> double {
+    return 3.5 * p_MQ.x() - 2.7 * p_MQ.y() + 0.7 * p_MQ.z() + 1.23;
+  };
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(f(v.r_MV()));
+  }
+  // First we construct the field without gradient, so it won't do
+  // CalcValueAtMeshOriginForAllElements() yet. After that, we will
+  // explicitly call CalcValueAtMeshOriginForAllElements() for testing.
+  MeshFieldLinear<double, VolumeMesh<double>> field(
+      "f", std::move(values), &mesh_M, false /* no calcultion of gradient */);
+  MeshFieldLinearTester<double, VolumeMesh<double>> tester(&field);
+
+  // We need gradients_ before CalcValueAtMeshOriginForAllElements().
+  tester.CalcGradientField();
+  tester.CalcValueAtMeshOriginForAllElements();
+
+  Vector3d p_MQ(1.2, 2.3, 3.4);
+  double f_at_Q = f(p_MQ);
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    // The tolerance 1e-13 is empirically determined. It is related to
+    // gradient calculation. We might need a larger tolerance if we use a
+    // larger geometry.
+    //     We use EvaluateCartesian() as an indicator that
+    // CalcValueAtMeshOriginForAllElements() did the right job.
+    //     Notice that p_MQ is outside the box geometry, so it is outside every
+    // tetrahedral element. There are applications that need to evaluate the
+    // linear function of a tetrahedral element at a point outside the
+    // tetrahedron.
+    EXPECT_NEAR(f_at_Q, field.EvaluateCartesian(e, p_MQ), 1e-13);
+  }
+}
+
+GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
+  const VolumeMesh<double> mesh_M =
+      internal::MakeBoxVolumeMesh<double>(Box(0.5, 1.5, 2), 0.25);
+
+  // Sampling dₒ = distance-to-origin function. Our MeshFieldLinear cannot
+  // represent dₒ accurately because dₒ is not piecewise linear. That is
+  // ok because we will only compare two ways of EvaluateCartesian() of the
+  // same piecewise linear approximation of dₒ.
+  std::vector<double> values;
+  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+    values.push_back(v.r_MV().norm());
+  }
+  std::vector<double> values_too = values;
+
+  const MeshFieldLinear<double, VolumeMesh<double>> field_with_gradient(
+      "d_o", std::move(values), &mesh_M, true);
+  const MeshFieldLinear<double, VolumeMesh<double>> field_without_gradient(
+      "d_o", std::move(values_too), &mesh_M, false);
+
+  // Evaluate the field value at the centroid of each tetrahedral element.
+  // The field_with_gradient will calculate one way, and the
+  // field_without_gradient will calculate another way. The tolerance 1e-15
+  // is empirically determined. It is related to gradient calculation.
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    const Vector3d p_MV0 = mesh_M.vertex(mesh_M.element(e).vertex(0)).r_MV();
+    const Vector3d p_MV1 = mesh_M.vertex(mesh_M.element(e).vertex(1)).r_MV();
+    const Vector3d p_MV2 = mesh_M.vertex(mesh_M.element(e).vertex(2)).r_MV();
+    const Vector3d p_MV3 = mesh_M.vertex(mesh_M.element(e).vertex(3)).r_MV();
+    const Vector3d p_MC = (p_MV0 + p_MV1 + p_MV2 + p_MV3) / 4.0;
+    EXPECT_NEAR(field_without_gradient.EvaluateCartesian(e, p_MC),
+                field_with_gradient.EvaluateCartesian(e, p_MC), 1e-15);
+  }
+
+  // Evaluate the element function fᵉ at the point Q outside the box geometry.
+  // Do it for all elements E, and compare field_with_gradient and
+  // field_without_gradient. The tolerance 1e-13 is empirically determined.
+  // It is larger than the previous block (point inside tetrahedral element)
+  // because the point further away introduces larger errors.
+  const Vector3d p_MQ(-10, 27, 77);
+  for (VolumeElementIndex e(0); e < mesh_M.num_elements(); ++e) {
+    EXPECT_NEAR(field_without_gradient.EvaluateCartesian(e, p_MQ),
+                field_with_gradient.EvaluateCartesian(e, p_MQ), 1e-13);
+  }
 }
 
 }  // namespace
