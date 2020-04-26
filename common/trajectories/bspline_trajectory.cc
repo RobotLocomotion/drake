@@ -42,12 +42,12 @@ MatrixX<T> BsplineTrajectory<T>::value(const T& time) const {
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
+std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
     int derivative_order) const {
   if (derivative_order == 0) {
     return this->Clone();
   } else if (derivative_order > 1) {
-    return MakeDerivative(1)->MakeDerivative(derivative_order - 1);
+    return this->MakeDerivative(1)->MakeDerivative(derivative_order - 1);
   } else if (derivative_order == 1) {
     std::vector<T> derivative_knots;
     const int num_derivative_knots = basis_.knots().size() - 2;

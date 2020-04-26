@@ -60,11 +60,6 @@ class ExponentialPlusPiecewisePolynomial final
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
 
-  std::unique_ptr<Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override {
-    return derivative(derivative_order).Clone();
-  };
-
   Eigen::Index rows() const override;
 
   Eigen::Index cols() const override;
@@ -72,6 +67,11 @@ class ExponentialPlusPiecewisePolynomial final
   void shiftRight(double offset);
 
  private:
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order = 1) const override {
+    return derivative(derivative_order).Clone();
+  };
+
   MatrixX<T> K_;
   MatrixX<T> A_;
   MatrixX<T> alpha_;

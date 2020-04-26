@@ -22,7 +22,11 @@ PYBIND11_MODULE(trajectories, m) {
 
   using T = double;
 
-  py::class_<Trajectory<T>>(m, "Trajectory", doc.Trajectory.doc);
+  py::class_<Trajectory<T>>(m, "Trajectory", doc.Trajectory.doc)
+      .def("EvalDerivative", &Trajectory<T>::EvalDerivative, py::arg("t"),
+          py::arg("derivative_order") = 1, doc.Trajectory.EvalDerivative.doc)
+      .def("rows", &Trajectory<T>::rows, doc.Trajectory.rows.doc)
+      .def("cols", &Trajectory<T>::cols, doc.Trajectory.cols.doc);
 
   py::class_<PiecewiseTrajectory<T>, Trajectory<T>>(
       m, "PiecewiseTrajectory", doc.PiecewiseTrajectory.doc)
@@ -156,9 +160,6 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
       .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
           doc.PiecewisePolynomial.value.doc)
-      .def("EvalDerivative", &PiecewisePolynomial<T>::EvalDerivative,
-          py::arg("t"), py::arg("derivative_order") = 1,
-          doc.PiecewisePolynomial.EvalDerivative.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
           py::arg("derivative_order") = 1,
           doc.PiecewisePolynomial.derivative.doc)
@@ -172,10 +173,6 @@ PYBIND11_MODULE(trajectories, m) {
           &PiecewisePolynomial<T>::getSegmentPolynomialDegree,
           py::arg("segment_index"), py::arg("row") = 0, py::arg("col") = 0,
           doc.PiecewisePolynomial.getSegmentPolynomialDegree.doc)
-      .def("rows", &PiecewisePolynomial<T>::rows,
-          doc.PiecewisePolynomial.rows.doc)
-      .def("cols", &PiecewisePolynomial<T>::cols,
-          doc.PiecewisePolynomial.cols.doc)
       .def("isApprox", &PiecewisePolynomial<T>::isApprox, py::arg("other"),
           py::arg("tol"), py::arg("tol_type") = drake::ToleranceType::kRelative,
           doc.PiecewisePolynomial.isApprox.doc)
