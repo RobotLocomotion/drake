@@ -142,13 +142,6 @@ Vector3<T> PiecewiseQuaternionSlerp<T>::angular_velocity(double t) const {
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::MakeDerivative(
-    int) const {
-  throw std::runtime_error("Derivatives of PiecewiseQuaternionSlerp are not "
-                               "implemented yet.");
-}
-
-template <typename T>
 Vector3<T> PiecewiseQuaternionSlerp<T>::angular_acceleration(double) const {
   return Vector3<T>::Zero();
 }

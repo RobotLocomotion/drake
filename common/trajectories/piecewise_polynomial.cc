@@ -113,8 +113,8 @@ T PiecewisePolynomial<T>::scalarValue(const T& t, Eigen::Index row,
 }
 
 template <typename T>
-MatrixX<T> PiecewisePolynomial<T>::EvalDerivative(const T& t,
-                                                  int derivative_order) const {
+MatrixX<T> PiecewisePolynomial<T>::DoEvalDerivative(
+    const T& t, int derivative_order) const {
   const int segment_index = this->get_segment_index(t);
   const T time = min(max(t, this->start_time()), this->end_time());
   Eigen::Matrix<T, PolynomialMatrix::RowsAtCompileTime,

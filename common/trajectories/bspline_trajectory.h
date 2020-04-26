@@ -54,12 +54,6 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
            `value(0)` for a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
-  // TODO(avalenzu): The default parameter here violates the GSG, but is
-  // included to match the parent class. It should be removed along with the
-  // corresponding one in trajectories::Trajectory.
-  std::unique_ptr<trajectories::Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override;
-
   Eigen::Index rows() const override { return control_points()[0].rows(); }
 
   Eigen::Index cols() const override { return control_points()[0].cols(); }
@@ -118,6 +112,9 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
  private:
+  std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override;
+
   math::BsplineBasis<T> basis_;
   std::vector<MatrixX<T>> control_points_;
 };
