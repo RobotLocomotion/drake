@@ -69,7 +69,7 @@ namespace multibody {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Joint : public MultibodyElement<Joint, T, JointIndex>  {
+class Joint : public MultibodyElement<Joint, T, JointIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
@@ -118,7 +118,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
         const VectorX<double>& acc_lower_limits,
         const VectorX<double>& acc_upper_limits)
       : MultibodyElement<Joint, T, JointIndex>(
-            frame_on_child.model_instance()),
+        frame_on_child.model_instance()),
         name_(name),
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),
@@ -139,6 +139,12 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
 
     DRAKE_DEMAND(acc_lower_limits.size() == acc_upper_limits.size());
     DRAKE_DEMAND((acc_lower_limits.array() <= acc_upper_limits.array()).all());
+
+    // N.B. We cannot use `num_positions()` here because it is virtual.
+    const int num_positions = pos_lower_limits.size();
+
+    // intialize the default positions.
+    default_positions_ = VectorX<double>::Zero(num_positions);
   }
 
   virtual ~Joint() {}
@@ -263,7 +269,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
   ///   to which this joint belongs.
   // NVI to DoAddInOneForce().
   void AddInDamping(
-      const systems::Context<T> &context, MultibodyForces<T>* forces) const {
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInDamping(context, forces);
@@ -305,11 +311,19 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
     return acc_upper_limits_;
   }
 
+  /// Returns the default positions.
+  const VectorX<double>& default_positions() const {
+    return default_positions_;
+  }
+
   /// Sets the position limits to @p lower_limits and @p upper_limits.
   /// @throws std::exception if the dimension of @p lower_limits or
   /// @p upper_limits does not match num_positions().
   /// @throws std::exception if any of @p lower_limits is larger than the
   /// corresponding term in @p upper_limits.
+  /// @note Setting the position limits does not affect the
+  /// `default_positions()`, regardless of whether the current
+  /// `default_positions()` satisfy the new position limits.
   void set_position_limits(const VectorX<double>& lower_limits,
                            const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -345,6 +359,16 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
     DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
     acc_lower_limits_ = lower_limits;
     acc_upper_limits_ = upper_limits;
+  }
+
+  /// Sets the default positions to @p default_positions.
+  /// @throws std::exception if the dimension of @p default_positions does not
+  /// match num_positions().
+  /// @note The values in @p default_positions are NOT constrained to be within
+  /// `position_lower_limits()` and `position_upper_limits()`.
+  void set_default_positions(const VectorX<double>& default_positions) {
+    DRAKE_THROW_UNLESS(default_positions.size() == num_positions());
+    default_positions_ = default_positions;
   }
   /// @}
 
@@ -527,10 +551,15 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
     return *implementation_;
   }
 
+  /// Returns whether `this` joint owns a particular implementation.
+  /// If the MultibodyTree has been finalized, this will return true.
+  bool has_implementation() const { return implementation_ != nullptr; }
+
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
   // Joint<ToScalar>::JointImplementation from CloneToScalar<ToScalar>().
-  template <typename> friend class Joint;
+  template <typename>
+  friend class Joint;
 
   // JointImplementationBuilder is a friend so that it can access the
   // Joint<T>::BluePrint and protected method MakeImplementationBlueprint().
@@ -561,6 +590,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex>  {
   // such limits.
   VectorX<double> acc_lower_limits_;
   VectorX<double> acc_upper_limits_;
+
+  // Joint default position. This vector has zero size for joints with no state.
+  VectorX<double> default_positions_;
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;

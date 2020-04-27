@@ -186,6 +186,31 @@ TEST_F(PrismaticJointTest, RandomTranslationTest) {
   EXPECT_GE(kPositionUpperLimit, joint1_->get_translation(*context_));
 }
 
+TEST_F(PrismaticJointTest, DefaultTranslation) {
+  const double default_translation = 0.0;
+
+  const double new_default_translation =
+      0.5 * kPositionLowerLimit + 0.5 * kPositionUpperLimit;
+
+  const double out_of_bounds_low_translation = kPositionLowerLimit - 1;
+  const double out_of_bounds_high_translation = kPositionUpperLimit + 1;
+
+  // Constructor should set the default tranlation to 0.0
+  EXPECT_EQ(joint1_->get_default_translation(), default_translation);
+
+  // Setting a new default translation should propogate so that
+  // `get_default_translation()` remains correct.
+  mutable_joint1_->set_default_translation(new_default_translation);
+  EXPECT_EQ(joint1_->get_default_translation(), new_default_translation);
+
+  // Setting the default angle out of the bounds of the position limits
+  // should NOT throw an exception
+  EXPECT_NO_THROW(
+      mutable_joint1_->set_default_translation(out_of_bounds_low_translation));
+  EXPECT_NO_THROW(
+      mutable_joint1_->set_default_translation(out_of_bounds_high_translation));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

@@ -23,6 +23,8 @@ constexpr double kVelocityUpperLimit = 1.6;
 constexpr double kAccelerationLowerLimit = -1.2;
 constexpr double kAccelerationUpperLimit = 1.7;
 constexpr double kDamping = 3;
+constexpr double kPositionNonZeroDefault =
+    (kPositionLowerLimit + kPositionUpperLimit) / 2;
 
 class BallRpyJointTest : public ::testing::Test {
  public:
@@ -196,6 +198,36 @@ TEST_F(BallRpyJointTest, SetVelocityAndAccelerationLimits) {
   EXPECT_THROW(mutable_joint_->set_acceleration_limits(Vector3d::Constant(2),
                                                        Vector3d::Constant(0)),
                std::runtime_error);
+}
+
+TEST_F(BallRpyJointTest, DefaultAngles) {
+  const Vector3d lower_limit_angles = Vector3d::Constant(kPositionLowerLimit);
+  const Vector3d upper_limit_angles = Vector3d::Constant(kPositionUpperLimit);
+
+  const Vector3d default_angles = Vector3d::Zero();
+
+  const Vector3d new_default_angles =
+      Vector3d::Constant(kPositionNonZeroDefault);
+
+  const Vector3d out_of_bounds_low_angles =
+      lower_limit_angles - Vector3d::Constant(1);
+  const Vector3d out_of_bounds_high_angles =
+      upper_limit_angles + Vector3d::Constant(1);
+
+  // Constructor should set the default angle to Vector3d::Zero()
+  EXPECT_EQ(joint_->get_default_angles(), default_angles);
+
+  // Setting a new default angle should propogate so that `get_default_angle()`
+  // remains correct.
+  mutable_joint_->set_default_angles(new_default_angles);
+  EXPECT_EQ(joint_->get_default_angles(), new_default_angles);
+
+  // Setting the default angle out of the bounds of the position limits
+  // should NOT throw an exception
+  EXPECT_NO_THROW(
+      mutable_joint_->set_default_angles(out_of_bounds_low_angles));
+  EXPECT_NO_THROW(
+      mutable_joint_->set_default_angles(out_of_bounds_high_angles));
 }
 
 }  // namespace
