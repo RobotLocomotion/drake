@@ -1415,19 +1415,6 @@ VectorX<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcBiasForJacobianTranslationalVelocity(
-    const systems::Context<T>& context,
-    JacobianWrtVariable with_respect_to,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const MatrixX<T>>& p_FP_list,
-    const Frame<T>& frame_A,
-    const Frame<T>& frame_E) const {
-  return CalcBiasTranslationalAcceleration(context, with_respect_to,
-                                           frame_F, p_FP_list,
-                                           frame_A, frame_E);
-}
-
-template <typename T>
 void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const systems::Context<T>& context,
     const JacobianWrtVariable with_respect_to,
@@ -1636,19 +1623,6 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
       Js_v_ABi_E->template block<3, Eigen::Dynamic>(3 * i, 0, 3, num_columns);
     }
   }
-}
-
-template <typename T>
-Vector6<T> MultibodyTree<T>::CalcBiasForJacobianSpatialVelocity(
-    const systems::Context<T>& context,
-    JacobianWrtVariable with_respect_to,
-    const Frame<T>& frame_F,
-    const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
-    const Frame<T>& frame_A,
-    const Frame<T>& frame_E) const {
-  const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
-      context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
-  return Abias_WFp.get_coeffs();
 }
 
 template <typename T>

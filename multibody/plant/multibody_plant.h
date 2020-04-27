@@ -2589,8 +2589,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // TODO(Mitiguy) Issue #12140: Rename to CalcBiasTranslationalAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
-    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
-        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
+    return CalcBiasTranslationalAcceleration(context, with_respect_to,
+                                             frame_F, p_FP_list,
+                                             frame_A, frame_E);
   }
 
   /// For a point Fp that is fixed to a frame F, calculates Fp's spatial
@@ -2643,8 +2644,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // TODO(Mitiguy) Issue #12140: Rename to CalcBiasSpatialAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
-    return internal_tree().CalcBiasForJacobianSpatialVelocity(
+    const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
+    return Abias_WFp.get_coeffs();
   }
 
   /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's

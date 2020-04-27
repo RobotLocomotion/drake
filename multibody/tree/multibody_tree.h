@@ -1313,7 +1313,11 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const;
+      const Frame<T>& frame_E) const {
+    return CalcBiasTranslationalAcceleration(context, with_respect_to,
+                                             frame_F, p_FP_list,
+                                             frame_A, frame_E);
+  }
 
   /// See MultibodyPlant method.
   DRAKE_DEPRECATED("2020-08-01", "CalcBiasForJacobianSpatialVelocity() "
@@ -1324,7 +1328,11 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const;
+      const Frame<T>& frame_E) const{
+    const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
+        context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
+    return Abias_WFp.get_coeffs();
+  }
 
   /// See MultibodyPlant method.
   void CalcJacobianSpatialVelocity(
