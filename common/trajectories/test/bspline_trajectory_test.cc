@@ -18,7 +18,6 @@ namespace trajectories {
 using math::autoDiffToGradientMatrix;
 using math::BsplineBasis;
 using math::ComputeNumericalGradient;
-using math::DiscardGradient;
 using math::KnotVectorType;
 using math::NumericalGradientMethod;
 using math::NumericalGradientOption;
@@ -234,21 +233,21 @@ TYPED_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
 // evaluating it at the same point.
 GTEST_TEST(BsplineTrajectoryDerivativeTests, AutoDiffTest) {
   BsplineTrajectory<AutoDiffXd> trajectory = MakeCircleTrajectory<AutoDiffXd>();
-  std::unique_ptr<Trajectory<AutoDiffXd>> derivative_trajectory =
-      trajectory.MakeDerivative();
+  std::unique_ptr<Trajectory<double>> derivative_trajectory =
+      MakeCircleTrajectory<double>().MakeDerivative();
   const int num_times = 100;
   VectorX<double> t = VectorX<double>::LinSpaced(
       num_times, ExtractDoubleOrThrow(trajectory.start_time()),
       ExtractDoubleOrThrow(trajectory.end_time()));
-  const double tolerance = 20 * std::numeric_limits<double>::epsilon();
+  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
   for (int k = 0; k < num_times; ++k) {
     AutoDiffXd t_k = math::initializeAutoDiff(Vector1d{t(k)})[0];
     MatrixX<double> derivative_value =
         autoDiffToGradientMatrix(trajectory.value(t_k));
     MatrixX<double> expected_derivative_value =
-        DiscardGradient(derivative_trajectory->value(t(k)));
+        derivative_trajectory->value(t(k));
     EXPECT_TRUE(CompareMatrices(derivative_value, expected_derivative_value,
-                                tolerance));
+                                kTolerance));
   }
 }
 
