@@ -1328,7 +1328,7 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const{
+      const Frame<T>& frame_E) const {
     const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
     return Abias_WFp.get_coeffs();
