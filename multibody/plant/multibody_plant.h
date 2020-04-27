@@ -2490,7 +2490,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
     // TODO(Mitiguy) Allow frame_A to be a non-World frame.
-    return internal.tree().CalcBiasTranslationalAcceleration(
+    return internal_tree().CalcBiasTranslationalAcceleration(
         context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
   }
 
