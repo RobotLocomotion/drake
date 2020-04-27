@@ -82,7 +82,9 @@ def _determine_linux(repository_ctx):
 
     # Match supported Ubuntu release(s). These should match those listed in
     # both doc/developers.rst the root CMakeLists.txt.
-    for ubuntu_release in ["18.04"]:
+    for ubuntu_release in ["18.04", "20.04"]:
+        if ubuntu_release == "20.04":
+            print("WARNING: Drake is not officially supported on Ubuntu 20.04 (Focal)")  # noqa
         if distro == "Ubuntu " + ubuntu_release:
             return _make_result(ubuntu_release = ubuntu_release)
 

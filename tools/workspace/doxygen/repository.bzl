@@ -28,6 +28,7 @@ def _impl(repo_ctx):
         version = version,
         codename = {
             "18.04": "bionic",
+            "20.04": "focal",
         }[os_result.ubuntu_release],
     )
     url = [
@@ -36,6 +37,7 @@ def _impl(repo_ctx):
     ]
     sha256 = {
         "18.04": "16b4ce1fcee27495c0de23dc4a2ab9bd24ee218800a2fb0db17a9c5bf8955e4e",  # noqa
+        "20.04": "0" * 64,  # This is a dummy value; 20.04 is not supported.
     }[os_result.ubuntu_release]
     repo_ctx.download_and_extract(
         url = url,

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development and runtime prerequisites for both binary and source
-# distributions of Drake on Ubuntu 18.04 (Bionic).
+# distributions of Drake on Ubuntu 18.04 (Bionic) or 20.04 (Focal).
 
 set -euo pipefail
 
