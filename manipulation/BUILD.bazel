@@ -1,0 +1,16 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    # N.B. deps = ["//:module_py"] is currently implicit.
+    visibility = ["//manipulation/util:__pkg__"],
+)
+
+add_lint_tests()
