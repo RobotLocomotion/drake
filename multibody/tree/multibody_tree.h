@@ -1305,6 +1305,8 @@ class MultibodyTree {
   /// @{
 
   /// See MultibodyPlant method.
+  DRAKE_DEPRECATED("2020-08-01", "CalcBiasForJacobianTranslationalVelocity() "
+                                 "renamed to CalcBiasSpatialAcceleration().")
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -1314,6 +1316,8 @@ class MultibodyTree {
       const Frame<T>& frame_E) const;
 
   /// See MultibodyPlant method.
+  DRAKE_DEPRECATED("2020-08-01", "CalcBiasForJacobianSpatialVelocity() "
+                                 "renamed to CalcBiasSpatialAcceleration().")
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2500,30 +2504,6 @@ class MultibodyTree {
   // The world body is special in that it is the only body in the model with no
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
-
-  // Helper method for CalcBiasForJacobianTranslationalVelocity() and
-  // CalcBiasForJacobianSpatialVelocity() which shifts the spatial acceleration
-  // bias term from point Fo (the origin of a frame F) to point Fp (fixed on F),
-  // where frame F is fixed to a body B.
-  // @param[in] context The state of the multibody system, which includes the
-  // generalized positions q and generalized velocities v.
-  // @param[in] frame_F The frame on which point Fp is fixed/welded.
-  // @param[in] X_BF rigid transform relating body B's frame to frame F.
-  // @param[in] p_FoFp_F position vector from Fo (frame F's origin) to Fp,
-  // expressed in frame F.
-  // @param[in] Abias_WBo_W spatial acceleration bias of Bo (body B's origin) in
-  // world W, expressed in W.
-  // expressed in frame F.
-  // @param[in] frame_E The frame in which `Abias_WFp` is expressed on output.
-  // @returns Abias_WFp_E  Fp's spatial acceleration bias in world frame W,
-  // expressed in frame_E.
-  SpatialAcceleration<T> CalcSpatialAccelerationBiasShift(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const math::RigidTransform<T>& X_BF,
-      const Vector3<T>& p_FoFp_F,
-      const SpatialAcceleration<T>& Abias_WBo_W,
-      const Frame<T>& frame_E) const;
 
   // Shift bias spatial acceleration from the origin Ao of body A to a
   // point Bp of (fixed to) a frame B, where frame B is fixed/welded to body A.

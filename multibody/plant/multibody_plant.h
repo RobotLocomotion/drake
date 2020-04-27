@@ -2490,7 +2490,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
     // TODO(Mitiguy) Allow frame_A to be a non-World frame.
-    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
+    return internal.tree().CalcBiasTranslationalAcceleration(
         context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
   }
 
@@ -2577,6 +2577,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
+  DRAKE_DEPRECATED("2020-08-01", "CalcBiasForJacobianTranslationalVelocity() "
+                                 "renamed to CalcBiasSpatialAcceleration().")
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2629,6 +2631,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Vector6, it is actually a SpatialAcceleration (having units of that type).
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
+  DRAKE_DEPRECATED("2020-08-01", "CalcBiasForJacobianSpatialVelocity() "
+                                 "renamed to CalcBiasSpatialAcceleration().")
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
