@@ -13,16 +13,16 @@ namespace quadrotor {
 namespace {
 Matrix3d default_moment_of_inertia() {
   return (Eigen::Matrix3d() <<  // BR
-          0.0023, 0, 0,  // BR
-          0, 0.0023, 0,  // BR
-          0, 0, 0.0040).finished();
+          0.0015, 0, 0,  // BR
+          0, 0.0025, 0,  // BR
+          0, 0, 0.0035).finished();
 }
 }  // namespace
 
 template <typename T>
 QuadrotorPlant<T>::QuadrotorPlant()
-    : QuadrotorPlant(0.5,    // m (kg)
-                     0.175,  // L (m)
+    : QuadrotorPlant(0.775,  // m (kg)
+                     0.15,  // L (m)
                      default_moment_of_inertia(),
                      1.0,    // kF
                      0.0245  // kM
@@ -41,6 +41,7 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
   this->DeclareVectorOutputPort("state", systems::BasicVector<T>(12),
                                 &QuadrotorPlant::CopyStateOut,
                                 {this->all_state_ticket()});
+  // TODO(russt): Declare input limits.  R2 has @ 2:1 thrust to weight ratio.
 }
 
 template <typename T>
@@ -58,6 +59,7 @@ void QuadrotorPlant<T>::CopyStateOut(const systems::Context<T> &context,
       context.get_continuous_state_vector().CopyToVector());
 }
 
+// TODO(russt): Generalize this to support the rotor locations on the Skydio R2.
 template <typename T>
 void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
