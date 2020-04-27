@@ -25,7 +25,7 @@ PYBIND11_MODULE(nlopt, m) {
 
   py::class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)
-      .def_readwrite("status", &NloptSolverDetails::status,
+      .def_readonly("status", &NloptSolverDetails::status,
           doc.NloptSolverDetails.status.doc);
   AddValueInstantiation<NloptSolverDetails>(m);
 }

@@ -23,30 +23,30 @@ PYBIND11_MODULE(scs, m) {
       .def(py::init<>(), doc.ScsSolver.ctor.doc);
 
   py::class_<ScsSolverDetails>(m, "ScsSolverDetails", doc.ScsSolverDetails.doc)
-      .def_readwrite("scs_status", &ScsSolverDetails::scs_status,
+      .def_readonly("scs_status", &ScsSolverDetails::scs_status,
           doc.ScsSolverDetails.scs_status.doc)
-      .def_readwrite(
+      .def_readonly(
           "iter", &ScsSolverDetails::iter, doc.ScsSolverDetails.iter.doc)
-      .def_readwrite("primal_objective", &ScsSolverDetails::primal_objective,
+      .def_readonly("primal_objective", &ScsSolverDetails::primal_objective,
           doc.ScsSolverDetails.primal_objective.doc)
-      .def_readwrite("dual_objective", &ScsSolverDetails::dual_objective,
+      .def_readonly("dual_objective", &ScsSolverDetails::dual_objective,
           doc.ScsSolverDetails.dual_objective.doc)
-      .def_readwrite("primal_residue", &ScsSolverDetails::primal_residue,
+      .def_readonly("primal_residue", &ScsSolverDetails::primal_residue,
           doc.ScsSolverDetails.primal_residue.doc)
-      .def_readwrite("residue_infeasibility",
+      .def_readonly("residue_infeasibility",
           &ScsSolverDetails::residue_infeasibility,
           doc.ScsSolverDetails.residue_infeasibility.doc)
-      .def_readwrite("residue_unbounded", &ScsSolverDetails::residue_unbounded,
+      .def_readonly("residue_unbounded", &ScsSolverDetails::residue_unbounded,
           doc.ScsSolverDetails.residue_unbounded.doc)
-      .def_readwrite("relative_duality_gap",
+      .def_readonly("relative_duality_gap",
           &ScsSolverDetails::relative_duality_gap,
           doc.ScsSolverDetails.relative_duality_gap.doc)
-      .def_readwrite("scs_setup_time", &ScsSolverDetails::scs_setup_time,
+      .def_readonly("scs_setup_time", &ScsSolverDetails::scs_setup_time,
           doc.ScsSolverDetails.scs_setup_time.doc)
-      .def_readwrite("scs_solve_time", &ScsSolverDetails::scs_solve_time,
+      .def_readonly("scs_solve_time", &ScsSolverDetails::scs_solve_time,
           doc.ScsSolverDetails.scs_solve_time.doc)
-      .def_readwrite("y", &ScsSolverDetails::y, doc.ScsSolverDetails.y.doc)
-      .def_readwrite("s", &ScsSolverDetails::s, doc.ScsSolverDetails.s.doc);
+      .def_readonly("y", &ScsSolverDetails::y, doc.ScsSolverDetails.y.doc)
+      .def_readonly("s", &ScsSolverDetails::s, doc.ScsSolverDetails.s.doc);
   AddValueInstantiation<ScsSolverDetails>(m);
 }
 
