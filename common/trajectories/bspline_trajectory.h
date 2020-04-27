@@ -26,11 +26,11 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
                     std::vector<MatrixX<T>> control_points);
 
 #ifdef DRAKE_DOXYGEN_CXX
-  /** Constructs a B-spline trajectory with the given (double) `basis` and
-  `control_points`.
+  /** Constructs a T-valued B-spline trajectory from a double-valued `basis` and
+  T-valued `control_points`.
   @pre control_points.size() == basis.num_basis_functions() */
   BsplineTrajectory(math::BsplineBasis<double> basis,
-                    std::vector<MatrixX<T>> control_points,
+                    std::vector<MatrixX<T>> control_points);
 #else
   template <typename U = T>
   BsplineTrajectory(math::BsplineBasis<double> basis,
