@@ -4,6 +4,8 @@ available visualizers.
 To view the model with a simple gui to change joint positions, please see
 `geometry_inspector`.
 
+If you supply a relative path, it will try to resolve the path to inside Drake.
+
 Example usage:
 
     cd drake
@@ -31,6 +33,7 @@ import argparse
 import os
 import sys
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.lcm import DrakeLcm
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.multibody.parsing import Parser
@@ -38,6 +41,19 @@ from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+
+
+def resolve_path(args_parser, filename):
+    if os.path.isabs(filename):
+        if not os.path.isfile(filename):
+            args_parser.error(f"File does not exist: {filename}")
+        return filename
+    if filename.startswith("drake/"):
+        res_path = filename
+    else:
+        res_path = os.path.normpath(os.path.join("drake", filename))
+    print(f"Relative path; using FindResourceOrThrow: {res_path}")
+    return FindResourceOrThrow(res_path)
 
 
 def main():
@@ -49,9 +65,7 @@ def main():
         help="Path to an SDF or URDF file.")
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
-    filename = args.filename
-    if not os.path.isfile(filename):
-        parser.error("File does not exist: {}".format(filename))
+    filename = resolve_path(parser, args.filename)
 
     # Construct Plant + SceneGraph.
     builder = DiagramBuilder()
