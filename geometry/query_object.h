@@ -513,7 +513,7 @@ class QueryObject {
   // SceneGraph is the only class that may call set().
   friend class SceneGraph<T>;
   // Convenience class for testing.
-  friend class QueryObjectTester;
+  friend class QueryObjectTest;
 
   // Access the GeometryState associated with this QueryObject.
   // @pre ThrowIfNotCallable() has been invoked prior to this.
