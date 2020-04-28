@@ -76,6 +76,14 @@ SceneGraph<T>::SceneGraph()
   query_port_index_ =
       this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
           .get_index();
+  proximity_query_port_index_ =
+      this->DeclareAbstractOutputPort("proximity_query",
+                                      &SceneGraph::CalcProximityQueryObject)
+          .get_index();
+  perception_query_port_index_ =
+      this->DeclareAbstractOutputPort("perception_query",
+                                      &SceneGraph::CalcPerceptionQueryObject)
+          .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
       "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
@@ -344,8 +352,8 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
 }
 
 template <typename T>
-void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
-                                    QueryObject<T>* output) const {
+void SceneGraph<T>::MakeQueryObjectLive(const Context<T>& context,
+                                        QueryObject<T>* output) const {
   // NOTE: This is an exception to the style guide. It takes a const reference
   // but then hangs onto a const pointer. The guide says the parameter should
   // itself be a const pointer. We're breaking the guide to satisfy the
@@ -358,6 +366,30 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   //
   // See the todo in the header for an alternate formulation.
   output->set(&context, this);
+}
+
+template <typename T>
+void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
+                                    QueryObject<T>* output) const {
+  // Making it "live" is the only work necessary for "Calc"ing a
+  // QueryObject-like thing.
+  MakeQueryObjectLive(context, output);
+}
+
+template <typename T>
+void SceneGraph<T>::CalcProximityQueryObject(
+    const Context<T>& context, ProximityQueryObject<T>* output) const {
+  // Making it "live" is the only work necessary for "Calc"ing a
+  // QueryObject-like thing.
+  MakeQueryObjectLive(context, output);
+}
+
+template <typename T>
+void SceneGraph<T>::CalcPerceptionQueryObject(
+    const Context<T>& context, PerceptionQueryObject<T>* output) const {
+  // Making it "live" is the only work necessary for "Calc"ing a
+  // QueryObject-like thing.
+  MakeQueryObjectLive(context, output);
 }
 
 template <typename T>

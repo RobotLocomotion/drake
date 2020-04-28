@@ -19,9 +19,11 @@ namespace geometry {
 template <typename T>
 class SceneGraph;
 
-/** The %QueryObject serves as a mechanism to perform geometry queries on the
- world's geometry. The SceneGraph has an abstract-valued port that contains
- a  %QueryObject (i.e., a %QueryObject-valued output port).
+/** The %QueryObject serves as a mechanism to query the state of the world's
+ geometry. It can be used to introspect geometry properties, topology (via its
+ SceneGraphInspector), or to query its current poses. The SceneGraph has an
+ abstract-valued port that contains a %QueryObject (i.e., a %QueryObject-valued
+ output port).
 
  To perform geometry queries on SceneGraph:
    - a LeafSystem must have a %QueryObject-valued input port and connect it to
@@ -59,6 +61,9 @@ class SceneGraph;
  where the query is expressed in terms of scalar `T`, the query may have
  restrictions. If a query has restricted scalar support, it is included in
  the query's documentation.
+
+ @note To perform proximity or perception queries, please see the
+ ProximityQueryObject or PerceptionQueryObject classes, respectively.
 
  @tparam_nonsymbolic_scalar
 */
@@ -509,15 +514,25 @@ class QueryObject {
 
   //@}
 
+ protected:
+  /** Confirms that the %QueryObject (and its child classes) can operate on
+   valid state. _Every_ query should invoke this method before doing any other
+   work.
+   @throws std::runtime_error if this query object is not valid for queries.  */
+  void ValidateAndUpdate() const {
+    ThrowIfNotCallable();
+    FullPoseUpdate();
+  }
+
+  /** Access the GeometryState associated with this QueryObject.
+   @pre ThrowIfNotCallable() has been invoked prior to this. */
+  const GeometryState<T>& geometry_state() const;
+
  private:
   // SceneGraph is the only class that may call set().
   friend class SceneGraph<T>;
   // Convenience class for testing.
   friend class QueryObjectTest;
-
-  // Access the GeometryState associated with this QueryObject.
-  // @pre ThrowIfNotCallable() has been invoked prior to this.
-  const GeometryState<T>& geometry_state() const;
 
   // Sets the query object to be *live*. That means the `context` and
   // `scene_graph` cannot be null.
@@ -533,10 +548,7 @@ class QueryObject {
 
   // Update all poses. This method does no work if this is a "baked" query
   // object (see class docs for discussion).
-  void FullPoseUpdate() const {
-    // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
-    if (scene_graph_) scene_graph_->FullPoseUpdate(*context_);
-  }
+  void FullPoseUpdate() const;
 
   // Reports true if this object is configured so that it can support a query.
   bool is_callable() const {
