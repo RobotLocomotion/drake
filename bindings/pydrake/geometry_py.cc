@@ -347,6 +347,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init(), doc.QueryObject.ctor.doc)
         .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
             doc.QueryObject.inspector.doc)
+        .def("X_WF", &QueryObject<T>::X_WF, doc.QueryObject.X_WF.doc)
+        .def("X_PF", &QueryObject<T>::X_PF, doc.QueryObject.X_PF.doc)
+        .def("X_WG", &QueryObject<T>::X_WG, doc.QueryObject.X_WG.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
@@ -567,10 +570,14 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<>(), doc.HalfSpace.ctor.doc);
     py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc);
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
+        .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
+        .def("scale", &Mesh::scale, doc.Mesh.scale.doc);
     py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
-            py::arg("scale") = 1.0, doc.Convex.ctor.doc);
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc)
+        .def("filename", &Convex::filename, doc.Convex.filename.doc)
+        .def("scale", &Convex::scale, doc.Convex.scale.doc);
   }
 
   // GeometryFrame
