@@ -178,12 +178,6 @@ class TestGeometry(unittest.TestCase):
         obj.clear()
         self.assertEqual(obj.size(), 0)
 
-    def test_query_object_api(self):
-        # TODO(eric.cousineau): Create self-contained unittests (#9899).
-        # Pending that, the relevant API is exercised via
-        # `test_scene_graph_queries` in `plant_test.py`.
-        pass
-
     def test_identifier_api(self):
         cls_list = [
             mut.SourceId,
@@ -361,6 +355,10 @@ class TestGeometry(unittest.TestCase):
         SceneGraph = mut.SceneGraph_[T]
         QueryObject = mut.QueryObject_[T]
         SceneGraphInspector = mut.SceneGraphInspector_[T]
+
+        # First, ensure we can default-construct it.
+        model = QueryObject()
+        self.assertIsInstance(model, QueryObject)
 
         scene_graph = SceneGraph()
         render_params = mut.render.RenderEngineVtkParams()
