@@ -10,6 +10,7 @@ labels.  Each label uses the format ``group: value``, where ``group`` is one
 of the following:
 
 * ``team``: Indicates the engineering team that owns the issue.
+* ``component``: Indicates the primary affected feature area.
 * ``type``: Indicates the nature of the issue.
 * ``priority``: Indicates the urgency of resolution.
 * ``configuration``: The supported configurations affected, if applicable.
@@ -56,6 +57,32 @@ their responsibilities are:
   lead: RussTedrake
 
   responsibilities: examples/requests from MIT projects / MIT courses
+
+.. _issues-component:
+
+Component
+=========
+
+Every issue must have at most one ``component`` label. The components are:
+
+- ``build system``
+
+  description: Bazel, CMake, dependencies, memory checkers, linters, etc.
+
+  typical team: kitware
+
+- ``continuous integration``
+
+  description: Jenkins, CDash, mirroring of externals, Drake website, etc.
+
+  typical team: kitware
+
+- ``distribution``
+
+  description: nightly binaries, monthly releases, docker, installation
+  via apt or brew, etc.
+
+  typical team: kitware
 
 .. _issues-priority:
 
