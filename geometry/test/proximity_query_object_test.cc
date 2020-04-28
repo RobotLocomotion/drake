@@ -1,4 +1,4 @@
-#include "drake/geometry/query_object.h"
+#include "drake/geometry/proximity_query_object.h"
 
 #include <gtest/gtest.h>
 
@@ -7,10 +7,11 @@
 namespace drake {
 namespace geometry {
 
-using systems::Context;
+using std::vector;
 
 // Friend class to QueryObject -- left in `drake::geometry` to match the friend
-// declaration.
+// declaration. The name gives it access to the private/protected access of
+// ProximityQueryObject's *parent* class, QueryObject.
 class QueryObjectTest : public ::testing::Test {
  protected:
   template <typename T>
@@ -38,7 +39,8 @@ class QueryObjectTest : public ::testing::Test {
 // wrapper merely confirms that the state is correct and that wrapper
 // functionality is tested in DefaultQueryThrows.
 TEST_F(QueryObjectTest, DefaultQueryThrows) {
-  QueryObject<double> default_object;
+  ProximityQueryObject<double> default_object;
+
   EXPECT_TRUE(is_default(default_object));
 
 #define EXPECT_DEFAULT_ERROR(expression) \
@@ -52,6 +54,10 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfaces());
+  vector<ContactSurface<double>> surfaces;
+  vector<PenetrationAsPointPair<double>> point_pairs;
+  EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
+      &surfaces, &point_pairs));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(

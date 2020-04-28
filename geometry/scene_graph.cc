@@ -76,6 +76,14 @@ SceneGraph<T>::SceneGraph()
   query_port_index_ =
       this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
           .get_index();
+  proximity_query_port_index_ =
+      this->DeclareAbstractOutputPort("proximity_query",
+                                      &SceneGraph::CalcProximityQueryObject)
+          .get_index();
+  perception_query_port_index_ =
+      this->DeclareAbstractOutputPort("perception_query",
+                                      &SceneGraph::CalcPerceptionQueryObject)
+          .get_index();
 
   auto& pose_update_cache_entry = this->DeclareCacheEntry(
       "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
@@ -358,6 +366,40 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   //
   // See the todo in the header for an alternate formulation.
   output->set(&context, this);
+}
+
+template <typename T>
+void SceneGraph<T>::CalcProximityQueryObject(
+    const Context<T>& context, ProximityQueryObject<T>* output) const {
+  // NOTE: This is an exception to the style guide. It takes a const reference
+  // but then hangs onto a const pointer. The guide says the parameter should
+  // itself be a const pointer. We're breaking the guide to satisfy the
+  // following constraints:
+  //   1. This function serves as the output port calc callback; the signature
+  //      *must* be a const ref.
+  //   2. The design of the QueryObject requires a persisted pointer to the
+  //      context. However, the docs for the class emphasize that this should
+  //      *not* be persisted (and copying it clears this persisted copy).
+  //
+  // See the todo in the header for an alternate formulation.
+  reinterpret_cast<QueryObject<T>*>(output)->set(&context, this);
+}
+
+template <typename T>
+void SceneGraph<T>::CalcPerceptionQueryObject(
+    const Context<T>& context, PerceptionQueryObject<T>* output) const {
+  // NOTE: This is an exception to the style guide. It takes a const reference
+  // but then hangs onto a const pointer. The guide says the parameter should
+  // itself be a const pointer. We're breaking the guide to satisfy the
+  // following constraints:
+  //   1. This function serves as the output port calc callback; the signature
+  //      *must* be a const ref.
+  //   2. The design of the QueryObject requires a persisted pointer to the
+  //      context. However, the docs for the class emphasize that this should
+  //      *not* be persisted (and copying it clears this persisted copy).
+  //
+  // See the todo in the header for an alternate formulation.
+  reinterpret_cast<QueryObject<T>*>(output)->set(&context, this);
 }
 
 template <typename T>
