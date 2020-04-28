@@ -1,0 +1,25 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
+
+package(default_visibility = ["//visibility:public"])
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "load_hsr_simplified_test",
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+)
+
+install_data()
+
+add_lint_tests()
