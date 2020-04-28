@@ -5,6 +5,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/proto/call_python.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/math/autodiff_gradient.h"
@@ -12,9 +13,18 @@
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/knot_vector_type.h"
 
+DEFINE_bool(visualize, false,
+            "If true, emit Python plotting commands using CallPython(). "
+            "You must build and run //common/proto:call_python_client_cli "
+            "first in order to see the resulting plots (you will also need to "
+            "set up an rpc file - see the --help for call_python_client_cli "
+            "for more information). This option does not work with "
+            "`bazel run`. Run the binary from bazel-bin instead.");
+
 namespace drake {
 namespace trajectories {
 
+using common::CallPython;
 using math::autoDiffToGradientMatrix;
 using math::BsplineBasis;
 using math::ComputeNumericalGradient;
@@ -220,10 +230,28 @@ TYPED_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
       VectorX<T>::LinSpaced(num_times, original_trajectory.start_time(),
                             original_trajectory.end_time());
   const double tolerance = 2 * std::numeric_limits<double>::epsilon();
+  if constexpr (std::is_same<T, double>::value) {
+    if (FLAGS_visualize) {
+      CallPython("figure");
+    }
+  }
   for (int k = 0; k < num_times; ++k) {
     MatrixX<T> value = trajectory_with_new_knots.value(t(k));
     MatrixX<T> expected_value = original_trajectory.value(t(k));
     EXPECT_TRUE(CompareMatrices(value, expected_value, tolerance));
+    if constexpr (std::is_same<T, double>::value) {
+      if (FLAGS_visualize) {
+        CallPython(
+            "plot", t(k), value.transpose(),
+            CompareMatrices(value, expected_value, tolerance) ? "gs" : "rs");
+        CallPython("plot", t(k), expected_value.transpose(), "ko");
+      }
+    }
+  }
+  if constexpr (std::is_same<T, double>::value) {
+    if (FLAGS_visualize) {
+      CallPython("grid", true);
+    }
   }
 }
 
