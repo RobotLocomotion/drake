@@ -25,14 +25,14 @@ PYBIND11_MODULE(ipopt, m) {
 
   py::class_<IpoptSolverDetails>(
       m, "IpoptSolverDetails", doc.IpoptSolverDetails.doc)
-      .def_readwrite("status", &IpoptSolverDetails::status,
+      .def_readonly("status", &IpoptSolverDetails::status,
           doc.IpoptSolverDetails.status.doc)
-      .def_readwrite(
+      .def_readonly(
           "z_L", &IpoptSolverDetails::z_L, doc.IpoptSolverDetails.z_L.doc)
-      .def_readwrite(
+      .def_readonly(
           "z_U", &IpoptSolverDetails::z_U, doc.IpoptSolverDetails.z_U.doc)
-      .def_readwrite("g", &IpoptSolverDetails::g, doc.IpoptSolverDetails.g.doc)
-      .def_readwrite("lambda_val", &IpoptSolverDetails::lambda,
+      .def_readonly("g", &IpoptSolverDetails::g, doc.IpoptSolverDetails.g.doc)
+      .def_readonly("lambda_val", &IpoptSolverDetails::lambda,
           doc.IpoptSolverDetails.lambda.doc)
       .def("ConvertStatusToString", &IpoptSolverDetails::ConvertStatusToString,
           doc.IpoptSolverDetails.ConvertStatusToString.doc);

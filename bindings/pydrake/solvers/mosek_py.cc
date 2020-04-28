@@ -30,11 +30,11 @@ PYBIND11_MODULE(mosek, m) {
 
   py::class_<MosekSolverDetails>(
       m, "MosekSolverDetails", doc.MosekSolverDetails.doc)
-      .def_readwrite("optimizer_time", &MosekSolverDetails::optimizer_time,
+      .def_readonly("optimizer_time", &MosekSolverDetails::optimizer_time,
           doc.MosekSolverDetails.optimizer_time.doc)
-      .def_readwrite("rescode", &MosekSolverDetails::rescode,
+      .def_readonly("rescode", &MosekSolverDetails::rescode,
           doc.MosekSolverDetails.rescode.doc)
-      .def_readwrite("solution_status", &MosekSolverDetails::solution_status,
+      .def_readonly("solution_status", &MosekSolverDetails::solution_status,
           doc.MosekSolverDetails.solution_status.doc);
   AddValueInstantiation<MosekSolverDetails>(m);
 }
