@@ -180,9 +180,9 @@ class BsplineBasis final {
   `parameter_value`. */
   T EvaluateBasisFunctionI(int i, const T& parameter_value) const;
 
-  bool operator==(const BsplineBasis& other) const;
+  boolean<T> operator==(const BsplineBasis& other) const;
 
-  bool operator!=(const BsplineBasis& other) const;
+  boolean<T> operator!=(const BsplineBasis& other) const;
 
  private:
   int order_{};

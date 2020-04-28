@@ -1,6 +1,7 @@
 #include "drake/math/bspline_basis.h"
 
 #include <algorithm>
+#include <functional>
 #include <set>
 #include <utility>
 
@@ -121,12 +122,25 @@ int BsplineBasis<T>::FindContainingInterval(const T& parameter_value) const {
 }
 
 template <typename T>
-bool BsplineBasis<T>::operator==(const BsplineBasis<T>& other) const {
-  return this->order() == other.order() && this->knots() == other.knots();
+boolean<T> BsplineBasis<T>::operator==(const BsplineBasis<T>& other) const {
+  if (this->order() == other.order() &&
+      this->num_basis_functions() == other.num_basis_functions()) {
+    boolean<T> result{true};
+    const int num_knots{num_basis_functions() + order()};
+    for (int i = 0; i < num_knots; ++i) {
+      result = result && (this->knots()[i] == other.knots()[i]);
+      if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
+        break;
+      }
+    }
+    return result;
+  } else {
+    return boolean<T>{false};
+  }
 }
 
 template <typename T>
-bool BsplineBasis<T>::operator!=(const BsplineBasis<T>& other) const {
+boolean<T> BsplineBasis<T>::operator!=(const BsplineBasis<T>& other) const {
   return !this->operator==(other);
 }
 }  // namespace math
