@@ -1,5 +1,8 @@
 #include "drake/math/bspline_basis.h"
 
+#include <algorithm>
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/default_scalars.h"
@@ -34,8 +37,21 @@ TYPED_TEST(BsplineBasisTests, ConstructorTest) {
                         const std::vector<T>& expected_knots) {
     EXPECT_EQ(basis.order(), expected_order);
     EXPECT_EQ(basis.num_basis_functions(), expected_num_basis_functions);
-    EXPECT_EQ(basis.knots(), expected_knots);
+
+    // Checks basics.knots() == expected_knots.
+    //
+    // Note: When T = symbolic::Expression, (knot1 == knot2) forms a
+    // symbolic::Formula in which we do not define implicit conversion to bool.
+    // As a result, `basics.knots() == expected_knots` causes a compilation
+    // error. We use std::equal and explicitly pass a binary predicate which
+    // uses std::equal_to<T> instead.
+    EXPECT_TRUE(std::equal(basis.knots().begin(), basis.knots().end(),
+                           expected_knots.begin(), expected_knots.end(),
+                           [](const auto& knot1, const auto& knot2) {
+                             return std::equal_to<T>{}(knot1, knot2);
+                           }));
   };
+
   // Check the order and num_basis_functions constructor with kClampedUniform.
   check_basis(BsplineBasis<T>(order, num_basis_functions,
                               KnotVectorType::kClampedUniform,
