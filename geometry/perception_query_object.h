@@ -1,21 +1,40 @@
 #pragma once
 
+#include "drake/geometry/query_object.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace geometry {
 
+/** An extension of QueryObject which renders the SceneGraph world -- color,
+ depth, etc. -- in addition to the queries made available by QueryObject.
+ SceneGraph has an abstract-valued port that contains a %PerceptionQueryObject
+ (i.e., a %PerceptionQueryObject-valued output port).
+
+ Other than the additional queries that this class provides above and beyond
+ those of QueryObject, acquiring a reference to a %PerceptionQueryObject,
+ working with it, the semantics of copying it, etc., are all the same as the
+ parent class. Please refer to QueryObject's documentation for details.
+
+ @tparam_nonsymbolic_scalar
+*/
 template <typename T>
-class QueryObject {
+class PerceptionQueryObject : public QueryObject<T> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PerceptionQueryObject)
+
+  /** Constructs a default %PerceptionQueryObject (all pointers are null). */
+  PerceptionQueryObject() = default;
+
   /**
    @anchor render_queries
    @name                Render Queries
 
    The methods support queries along the lines of "What do I see?" They support
    simulation of sensors. External entities define a sensor camera -- its
-   extrinsic and intrinsic properties and %QueryObject renders into the
-   provided image.
+   extrinsic and intrinsic properties and %PerceptionQueryObject renders into
+   the provided image.
 
    <!-- TODO(SeanCurtis-TRI): Currently, pose is requested as a transform of
    double. This puts the burden on the caller to be compatible. Provide
@@ -69,7 +88,6 @@ class QueryObject {
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
   //@}
-
 };
 
 }  // namespace geometry

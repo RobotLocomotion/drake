@@ -208,6 +208,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_reference_internal, cls_doc.get_pose_bundle_output_port.doc)
         .def("get_query_output_port", &Class::get_query_output_port,
             py_reference_internal, cls_doc.get_query_output_port.doc)
+        .def("get_proximity_query_output_port",
+            &Class::get_proximity_query_output_port, py_reference_internal,
+            cls_doc.get_proximity_query_output_port.doc)
+        .def("get_perception_query_output_port",
+            &Class::get_perception_query_output_port, py_reference_internal,
+            cls_doc.get_perception_query_output_port.doc)
         .def("model_inspector", &Class::model_inspector, py_reference_internal,
             cls_doc.model_inspector.doc)
         .def("RegisterSource",
@@ -400,6 +406,82 @@ void DoScalarDependentDefinitions(py::module m, T) {
             doc.QueryObject.RenderLabelImage.doc);
 
     AddValueInstantiation<QueryObject<T>>(m);
+  }
+
+  //  ProximityQueryObject
+  {
+    using Class = ProximityQueryObject<T>;
+    auto cls = DefineTemplateClassWithDefault<Class, QueryObject<T>>(
+        m, "ProximityQueryObject", param, doc.ProximityQueryObject.doc);
+    cls  // BR
+        .def("ComputePointPairPenetration",
+            &ProximityQueryObject<T>::ComputePointPairPenetration,
+            doc.ProximityQueryObject.ComputePointPairPenetration.doc)
+        .def("FindCollisionCandidates",
+            &ProximityQueryObject<T>::FindCollisionCandidates,
+            doc.ProximityQueryObject.FindCollisionCandidates.doc)
+        .def("HasCollisions", &ProximityQueryObject<T>::HasCollisions,
+            doc.ProximityQueryObject.HasCollisions.doc)
+        .def("ComputeSignedDistancePairwiseClosestPoints",
+            &ProximityQueryObject<
+                T>::ComputeSignedDistancePairwiseClosestPoints,
+            py::arg("max_distance") = std::numeric_limits<double>::infinity(),
+            doc.ProximityQueryObject.ComputeSignedDistancePairwiseClosestPoints
+                .doc)
+        .def("ComputeSignedDistancePairClosestPoints",
+            &ProximityQueryObject<T>::ComputeSignedDistancePairClosestPoints,
+            py::arg("id_A"), py::arg("id_B"),
+            doc.ProximityQueryObject.ComputeSignedDistancePairClosestPoints.doc)
+        .def("ComputeSignedDistanceToPoint",
+            &ProximityQueryObject<T>::ComputeSignedDistanceToPoint,
+            py::arg("p_WQ"),
+            py::arg("threshold") = std::numeric_limits<double>::infinity(),
+            doc.ProximityQueryObject.ComputeSignedDistanceToPoint.doc);
+
+    AddValueInstantiation<ProximityQueryObject<T>>(m);
+  }
+
+  //  PerceptionQueryObject
+  {
+    using Class = PerceptionQueryObject<T>;
+    auto cls = DefineTemplateClassWithDefault<Class, QueryObject<T>>(
+        m, "PerceptionQueryObject", param, doc.PerceptionQueryObject.doc);
+    cls  // BR
+        .def("RenderColorImage",
+            [](const Class* self, const render::CameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC,
+                bool show_window) {
+              systems::sensors::ImageRgba8U img(camera.width, camera.height);
+              self->RenderColorImage(
+                  camera, parent_frame, X_PC, show_window, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            doc.PerceptionQueryObject.RenderColorImage.doc)
+        .def("RenderDepthImage",
+            [](const Class* self, const render::DepthCameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC) {
+              systems::sensors::ImageDepth32F img(camera.width, camera.height);
+              self->RenderDepthImage(camera, parent_frame, X_PC, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            doc.PerceptionQueryObject.RenderDepthImage.doc)
+        .def("RenderLabelImage",
+            [](const Class* self, const render::CameraProperties& camera,
+                FrameId parent_frame, const math::RigidTransformd& X_PC,
+                bool show_window = false) {
+              systems::sensors::ImageLabel16I img(camera.width, camera.height);
+              self->RenderLabelImage(
+                  camera, parent_frame, X_PC, show_window, &img);
+              return img;
+            },
+            py::arg("camera"), py::arg("parent_frame"), py::arg("X_PC"),
+            py::arg("show_window") = false,
+            doc.PerceptionQueryObject.RenderLabelImage.doc);
+
+    AddValueInstantiation<PerceptionQueryObject<T>>(m);
   }
 
   // SignedDistancePair

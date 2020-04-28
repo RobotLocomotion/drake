@@ -3,6 +3,7 @@
 #include <limits>
 #include <vector>
 
+#include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
@@ -11,9 +12,26 @@
 namespace drake {
 namespace geometry {
 
+/** An extension of QueryObject which performs proximity queries -- contact,
+ signed distance, etc. -- in addition to the queries made available by
+ QueryObject. SceneGraph has an abstract-valued port that contains a
+ %ProximityQueryObject (i.e., a %ProximityQueryObject-valued output port).
+
+ Other than the additional queries that this class provides above and beyond
+ those of QueryObject, acquiring a reference to a %ProximityQueryObject, working
+ with it, the semantics of copying it, etc., are all the same as the parent
+ class. Please refer to QueryObject's documentation for details.
+
+ @tparam_nonsymbolic_scalar
+*/
 template <typename T>
-class QueryObject {
+class ProximityQueryObject : public QueryObject<T> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ProximityQueryObject)
+
+  /** Constructs a default ProximityQueryObject (all pointers are null). */
+  ProximityQueryObject() = default;
+
   /**
    @anchor collision_queries
    @name                Collision Queries
@@ -30,7 +48,7 @@ class QueryObject {
 
    These methods are affected by collision filtering; element pairs that
    have been filtered will not produce contacts, even if their collision
-   geometry is penetrating.     */
+   geometry is penetrating.  */
   //@{
 
   /** Computes the penetrations across all pairs of geometries in the world
@@ -56,10 +74,11 @@ class QueryObject {
    AutoDiffXd support. At the very least, it should be declared on T and throw
    for AutoDiffXd. This is related to PR 11143
    https://github.com/RobotLocomotion/drake/pull/11143. In that PR, MBP is
-   taking responsibility to know whether or not QueryObject supports AutoDiff
-   penetration queries; MBP should not be responsible for that knowledge. By
-   moving the exception into SceneGraph, it removes the false dependency and
-   allows us to gradually increase the AutoDiff support for penetration.
+   taking responsibility to know whether or not ProximityQueryObject supports
+   AutoDiff penetration queries; MBP should not be responsible for that
+   knowledge. By moving the exception into SceneGraph, it removes the false
+   dependency and allows us to gradually increase the AutoDiff support for
+   penetration.
    -->
 
    @returns A vector populated with all detected penetrations characterized as
@@ -329,10 +348,9 @@ class QueryObject {
                               distance values (and supporting data).
                               See SignedDistanceToPoint.
    */
-  std::vector<SignedDistanceToPoint<T>>
-  ComputeSignedDistanceToPoint(const Vector3<T> &p_WQ,
-                               const double threshold
-                               = std::numeric_limits<double>::infinity()) const;
+  std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
+      const Vector3<T>& p_WQ,
+      const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 };
 
