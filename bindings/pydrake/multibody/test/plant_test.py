@@ -33,6 +33,7 @@ from pydrake.multibody.tree import (
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
+    UniversalJoint_,
     WeldJoint_,
     world_index,
     world_model_instance,
@@ -1075,6 +1076,14 @@ class TestPlant(unittest.TestCase):
                 damping=2.,
             )
 
+        def make_universal_joint(plant, P, C):
+            return UniversalJoint_[T](
+                name="universal",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=2.,
+            )
+
         def make_weld_joint(plant, P, C):
             # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
             # with other joints.
@@ -1089,6 +1098,7 @@ class TestPlant(unittest.TestCase):
             make_ball_rpy_joint,
             make_prismatic_joint,
             make_revolute_joint,
+            make_universal_joint,
             make_weld_joint,
         ]
 
