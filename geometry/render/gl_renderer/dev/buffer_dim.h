@@ -9,7 +9,8 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-/** Simple class for recording the dimensions of a render target. */
+/** Simple class for recording the dimensions of a render target. Used store
+ unique RenderTarget instances based on render size.  */
 class BufferDim {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BufferDim)
