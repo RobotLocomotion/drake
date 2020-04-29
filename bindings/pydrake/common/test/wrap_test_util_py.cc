@@ -10,35 +10,37 @@ namespace {
 // A simple struct with a value.
 struct MyValue {
   double value{0.};
+  explicit MyValue(double value_in) : value(value_in) {}
 };
 
 // A simple struct with a bare pointer member.
-struct MyContainer {
+struct MyContainerRawPtr {
   const MyValue* member{nullptr};
 };
 
-struct MyUniquePtr {
-  explicit MyUniquePtr(double val) : member(new double(val)) {}
-  std::unique_ptr<double> member;
+struct MyContainerUniquePtr {
+  explicit MyContainerUniquePtr(MyValue member_in)
+      : member(new MyValue(member_in)) {}
+  std::unique_ptr<MyValue> member;
 };
 
 }  // namespace
 
 PYBIND11_MODULE(wrap_test_util, m) {
   py::class_<MyValue>(m, "MyValue")
-      .def(py::init<>())
+      .def(py::init<double>(), py::arg("value"))
       .def_readwrite("value", &MyValue::value, py_reference_internal);
 
-  py::class_<MyContainer> my_container(m, "MyContainer");
+  py::class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
   my_container  // BR
-      .def(py::init<>());
-  DefReadWriteKeepAlive(
-      &my_container, "member", &MyContainer::member, "MyContainer doc");
+      .def(py::init());
+  DefReadWriteKeepAlive(&my_container, "member", &MyContainerRawPtr::member,
+      "MyContainerRawPtr doc");
 
-  py::class_<MyUniquePtr> my_unique(m, "MyUniquePtr");
-  my_unique.def(py::init<double>());
-  DefReadUniquePtr(
-      &my_unique, "member", &MyUniquePtr::member, "MyUniquePtr doc");
+  py::class_<MyContainerUniquePtr> my_unique(m, "MyContainerUniquePtr");
+  my_unique.def(py::init<MyValue>(), py::arg("member"));
+  DefReadUniquePtr(&my_unique, "member", &MyContainerUniquePtr::member,
+      "MyContainerUniquePtr doc");
 }
 
 }  // namespace pydrake

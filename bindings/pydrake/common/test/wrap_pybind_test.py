@@ -3,34 +3,37 @@ import gc
 import unittest
 
 from pydrake.common.wrap_test_util import (
-    MyContainer,
-    MyUniquePtr,
+    MyContainerRawPtr,
+    MyContainerUniquePtr,
     MyValue,
 )
 
 
 class TestWrapPybind(unittest.TestCase):
-    def test_read_write_keep_alive(self):
+    def test_def_read_write_keep_alive(self):
+        """Tests DefReadWriteKeepAlive."""
+        c = MyContainerRawPtr()
         # Original value; we don't really care about its life.
-        value_a = MyValue()
-        value_a.value = 42.
-        c = MyContainer()
-        c.member = value_a
+        c.member = MyValue(value=42.)
         # Ensure that setter keeps the new pointee alive.
-        value_b = MyValue()
-        value_b.value = 7.
-        c.member = value_b
-        del value_b
+        member_b = MyValue(value=7.)
+        c.member = member_b
+        del member_b
         gc.collect()
         # Ensure that we have not lost our value.
         self.assertTrue(c.member.value == 7.)
 
-    def test_unique_ptr_keep_alive(self):
-        u = MyUniquePtr(42)
-        self.assertEqual(u.member, 42)
-        val = u.member
+    def test_def_read_unique_ptr(self):
+        """Tests DefReadUniquePtr."""
+        u = MyContainerUniquePtr(member=MyValue(value=42))
+        # Ensure this is truly read-only.
+        with self.assertRaises(AttributeError):
+            u.member = None
+        self.assertEqual(u.member.value, 42)
+        # Get a reference-only view on the member.
+        member = u.member
         # Ensure that the getter keeps the container alive.
         del u
         gc.collect()
         # Ensure that we have not lost our value.
-        self.assertEqual(val, 42)
+        self.assertEqual(member.value, 42)
