@@ -366,6 +366,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init(), doc.QueryObject.ctor.doc)
         .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
             doc.QueryObject.inspector.doc)
+        .def("X_WF", &QueryObject<T>::X_WF, doc.QueryObject.X_WF.doc)
+        .def("X_PF", &QueryObject<T>::X_PF, doc.QueryObject.X_PF.doc)
+        .def("X_WG", &QueryObject<T>::X_WG, doc.QueryObject.X_WG.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
