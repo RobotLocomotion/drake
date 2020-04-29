@@ -5,6 +5,7 @@
 # named "latest" is not allowed, however they do not (yet) enforce that
 # restriction.
 FROM robotlocomotion/drake:latest
+
 ARG NB_USER=jovyan
 ARG NB_UID=1000
 ARG NB_GID=100
@@ -12,7 +13,7 @@ EXPOSE 7000/tcp
 EXPOSE 8888/tcp
 RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update -qq \
-  && apt-get install --no-install-recommends -qq \
+  && apt-get install --no-install-recommends -qq python3-pip \
     -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew \
     -o Dpkg::Use-Pty=0 \
       locales \
@@ -20,6 +21,20 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && rm -rf /var/lib/apt/lists/* \
   && locale-gen en_US.UTF-8 \
   && useradd -d "/home/$NB_USER" -G $NB_GID -mU -s /bin/bash "$NB_USER"
+
+RUN pip3 install wheel
+RUN pip3 install itkwidgets
+RUN pip3 install itk
+RUN pip3 install open3d==0.9.0
+RUN pip3 install pandas
+RUN pip3 install pyntcloud
+
+RUN jupyter nbextension install --py --symlink --sys-prefix itkwidgets
+RUN jupyter nbextension enable --py --sys-prefix itkwidgets
+RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension
+RUN jupyter nbextension install --py --symlink --sys-prefix open3d
+RUN jupyter nbextension enable --py --sys-prefix open3d
+
 ENV HOME="/home/$NB_USER" \
   LANG=en_US.UTF-8 \
   LANGUAGE=en_US.UTF-8 \
@@ -34,6 +49,8 @@ COPY ["tutorials/*.ipynb", "$HOME/tutorials/"]
 RUN chown -R $NB_UID:$NB_GID \
   /opt/drake/bin/binder-entrypoint \
   "$HOME/tutorials"
+
+ENV PYTHONPATH="/home/jovyan/.local/lib/python3.6/site-packages:$PYTHONPATH"
 USER "$NB_USER"
 ENTRYPOINT ["/opt/drake/bin/binder-entrypoint"]
 CMD ["jupyter", "notebook", "--ip", "0.0.0.0"]
