@@ -30,7 +30,6 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//manipulation/kuka_iiwa:iiwa_constants",
@@ -59,19 +58,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "oracular_state_estimator",
-    srcs = ["oracular_state_estimator.cc"],
-    hdrs = ["oracular_state_estimator.h"],
-    copts = ["-Wno-deprecated-declarations"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//attic/manipulation/util:robot_state_msg_translator",
-        "//systems/framework:leaf_system",
-        "@lcmtypes_bot2_core",
-    ],
-)
-
-drake_cc_library(
     name = "lcm_plan_interpolator",
     srcs = ["lcm_plan_interpolator.cc"],
     hdrs = [
@@ -94,8 +80,6 @@ drake_cc_library(
     hdrs = ["kuka_torque_controller.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//attic/multibody:rigid_body_tree",
-        "//attic/systems/controllers:rbt_inverse_dynamics",
         "//multibody/plant",
         "//systems/controllers:inverse_dynamics",
         "//systems/controllers:pid_controller",
@@ -120,35 +104,6 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//lcm:drake_lcm",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_binary(
-    name = "iiwa_wsg_simulation",
-    srcs = ["iiwa_wsg_simulation.cc"],
-    add_test_rule = 1,
-    copts = ["-Wno-deprecated-declarations"],
-    data = [
-        ":models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-    ],
-    # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
-    # causes timeouts in kcov.
-    tags = ["no_kcov"],
-    test_rule_args = ["--simulation_sec=0.01"],
-    deps = [
-        ":iiwa_common",
-        ":iiwa_lcm",
-        ":oracular_state_estimator",
-        "//common:add_text_logging_gflags",
-        "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "//lcm",
-        "//manipulation/schunk_wsg",
-        "//systems/analysis",
-        "//systems/primitives:constant_vector_source",
-        "//systems/primitives:demultiplexer",
-        "//systems/primitives:discrete_derivative",
     ],
 )
 
@@ -299,12 +254,10 @@ sh_test(
 install(
     name = "install",
     install_tests = [
-        ":test/iiwa_wsg_simulation_installed_test.py",
         ":test/kuka_plan_runner_installed_test.py",
         ":test/kuka_simulation_installed_test.py",
     ],
     targets = [
-        ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
         ":kuka_simulation",
     ],
@@ -322,7 +275,6 @@ install(
 
 add_lint_tests(
     python_lint_extra_srcs = [
-        ":test/iiwa_wsg_simulation_installed_test.py",
         ":test/kuka_plan_runner_installed_test.py",
         ":test/kuka_simulation_installed_test.py",
     ],

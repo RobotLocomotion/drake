@@ -1,73 +1,21 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 
 #include <map>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/manipulation/util/robot_plan_utils.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/util/drakeGeometryUtil.h"
 
-using Eigen::Vector3d;
-using Eigen::Vector2d;
-using Eigen::VectorXd;
-using Eigen::MatrixXd;
-using Eigen::aligned_allocator;
 using std::string;
 using std::vector;
-using std::unique_ptr;
-using std::make_unique;
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
-
-template <typename T>
-Matrix6<T> ComputeLumpedGripperInertiaInEndEffectorFrame(
-    const RigidBodyTree<T>& world_tree,
-    int iiwa_instance, const std::string& end_effector_link_name,
-    int wsg_instance) {
-  KinematicsCache<T> world_cache = world_tree.CreateKinematicsCache();
-  world_cache.initialize(world_tree.getZeroConfiguration());
-  world_tree.doKinematics(world_cache);
-
-  const RigidBody<T>* end_effector = world_tree.FindBody(
-      end_effector_link_name, "iiwa14", iiwa_instance);
-  Isometry3<T> X_WEE =
-    world_tree.CalcBodyPoseInWorldFrame(world_cache, *end_effector);
-
-  // The inertia of the added gripper is lumped into the last link of the
-  // controller's iiwa arm model. This is motivated by the fact that the
-  // gripper inertia is relatively large compared to the last couple links
-  // in the iiwa arm model. And to completely rely on using feedback to cope
-  // with added inertia, we need to either rely on larger gains (which will
-  // cause simulation to explode without the gripper), or wait longer for
-  // the integrator to kick in.
-
-  // Computes the lumped inertia for the gripper.
-  std::set<int> gripper_instance_set = {wsg_instance};
-  Matrix6<T> lumped_gripper_inertia_W =
-    world_tree.LumpedSpatialInertiaInWorldFrame(
-        world_cache, gripper_instance_set);
-  // Transfer it to the last iiwa link's body frame.
-  Matrix6<T> lumped_gripper_inertia_EE =
-      transformSpatialInertia(X_WEE.inverse(), lumped_gripper_inertia_W);
-  lumped_gripper_inertia_EE += end_effector->get_spatial_inertia();
-
-  return lumped_gripper_inertia_EE;
-}
-
-template Matrix6<double>
-ComputeLumpedGripperInertiaInEndEffectorFrame(
-    const RigidBodyTree<double>&, int, const std::string&, int);
 
 void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   std::map<std::string, int> name_to_idx = tree.computePositionNameToIndexMap();
@@ -87,20 +35,6 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
   DRAKE_DEMAND(name_to_idx["iiwa_joint_6"] == joint_idx++);
   DRAKE_DEMAND(name_to_idx.count("iiwa_joint_7"));
   DRAKE_DEMAND(name_to_idx["iiwa_joint_7"] == joint_idx++);
-}
-
-void CreateTreedFromFixedModelAtPose(const std::string& model_file_name,
-                                     RigidBodyTreed* tree,
-                                     const Vector3d& position,
-                                     const Vector3d& orientation) {
-  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
-      aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr, position,
-      orientation);
-
-  // TODO(naveenoid) : consider implementing SDF version of this method.
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      model_file_name, drake::multibody::joints::kFixed,
-      weld_to_frame, tree);
 }
 
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
