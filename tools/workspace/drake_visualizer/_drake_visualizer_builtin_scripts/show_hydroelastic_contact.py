@@ -11,8 +11,8 @@ from PythonQt import QtCore, QtGui
 
 import drake as lcmdrakemsg
 
-from drake.tools.workspace.drake_visualizer.plugin import scoped_singleton_func
-from drake.tools.workspace.drake_visualizer.plugin.show_point_pair_contact \
+from _drake_visualizer_builtin_scripts import scoped_singleton_func
+from _drake_visualizer_builtin_scripts.show_point_pair_contact \
      import ContactVisModes
 
 # TODO(seancurtis-TRI) Make the dialog box for scaling force arrows in
