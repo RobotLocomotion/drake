@@ -256,6 +256,14 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
+    name = "acrobot_plant_test",
+    deps = [
+        ":acrobot_plant",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "acrobot_geometry_test",
     deps = [
         ":acrobot_geometry",
