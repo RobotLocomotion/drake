@@ -4,10 +4,13 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
+#include <Eigen/Dense>
 #include "fmt/ostream.h"
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 
@@ -253,11 +256,17 @@ class GeometryProperties {
    @param value        The value to assign to the property.
    @throws std::logic_error if `name` already exists in the group `group_name`.
    @tparam ValueType   The type of data to store with the attribute -- must be
-                       copy constructible or cloneable (see Value).  */
+                       copy constructible or cloneable (see Value).
+
+   @note (Advanced) If ValueType is an Eigen type, then the specified
+         `ValueType` will be converted in a compatible dynamic matrix or
+         vector. This is only important if you are using the
+         GetPropertyAbstract or SetPropertyAbstract APIs.
+  */
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    AddPropertyAbstract(group_name, name, Value(value));
+    AddPropertyAbstract(group_name, name, Value(MaybeConvertInput(value)));
   }
 
   /** Adds a property with the given `name` and type-erased `value` to the the
@@ -287,12 +296,17 @@ class GeometryProperties {
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
    @throws std::logic_error if a) the group name is invalid,
-                            b) the property name is invalid, or
-                            c) the property type is not that specified.
-   @tparam ValueType  The expected type of the desired property.  */
+                            b) the property name is invalid,
+                            c) the property type is not that specified, or
+                            d) the property type is an Eigen matrix and the
+                               requested size is incompatible with the
+                               specified size.
+   @tparam ValueType  The expected type of the desired property.
+   @sa AddProperty() for note about Eigen type conversions.
+  */
   template <typename ValueType>
-  const ValueType& GetProperty(const std::string& group_name,
-                               const std::string& name) const {
+  const auto& GetProperty(const std::string& group_name,
+                          const std::string& name) const {
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
     return GetValueOrThrow<ValueType>(
         "GetProperty", group_name, name, abstract);
@@ -395,19 +409,82 @@ class GeometryProperties {
       const std::string& group_name, const std::string& name,
       bool throw_for_bad_group) const;
 
+  // To facilitate simple metaprogramming.
+  template <typename T>
+  struct type_tag { using type = T; };
+
+  // Simplify Eigen types: discard all attributes, only keep dimension and
+  // scalar type, and ensure it's dynamically-sized. For all other types, pass
+  // through.
+  template <typename ValueType>
+  static auto ToStoredTypeTag() {
+    if constexpr (is_eigen_type<ValueType>::value) {
+      using Scalar = typename ValueType::Scalar;
+      if constexpr (ValueType::ColsAtCompileTime == 1) {
+        return type_tag<VectorX<Scalar>>{};
+      } else {
+        return type_tag<MatrixX<Scalar>>{};
+      }
+    } else {
+      // N.B. const rvalue is necessary to avoid extra copies.
+      return type_tag<const ValueType&>{};
+    }
+  }
+
+  // Type-only version of `ToStoredTypeTag`.
+  template <typename ValueType>
+  using to_stored_type = typename decltype(ToStoredTypeTag<ValueType>())::type;
+
+  // To facilitate python bindings, we've decided that GeometryProperties (or
+  // any public API using AbstractValue) cannot store fixed-size Eigen types.
+  // This ensures all Eigen types are represented by a dynamically-sized type
+  // for storage.
+  template <typename ValueType>
+  static to_stored_type<ValueType> MaybeConvertInput(const ValueType& value) {
+    return value;
+  }
+
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
-  static const ValueType& GetValueOrThrow(
+  static const auto& GetValueOrThrow(
       const std::string& method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract) {
-    const ValueType* value = abstract.maybe_get_value<ValueType>();
+    using StoredType = std::decay_t<to_stored_type<ValueType>>;
+    const StoredType* value = abstract.maybe_get_value<StoredType>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property '{}' in group '{}' exists, "
           "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, NiceTypeName::Get<ValueType>(),
+          method, name, group_name, NiceTypeName::Get<StoredType>(),
           abstract.GetNiceTypeName()));
+    }
+    if constexpr (!std::is_same<ValueType, StoredType>::value) {
+      // Provide user-friendly errors for vectors / matrices.
+      constexpr int kRows = ValueType::RowsAtCompileTime;
+      constexpr int kCols = ValueType::ColsAtCompileTime;
+      auto dim_good = [](int real, int spec) {
+        return (spec == Eigen::Dynamic || real == spec);
+      };
+      if (!dim_good(value->rows(), kRows) || !dim_good(value->cols(), kCols)) {
+        auto dim_to_string = [](int dim) {
+          if (dim == Eigen::Dynamic) {
+            return std::string("Dynamic");
+          } else {
+            return std::to_string(dim);
+          }
+        };
+        std::string requested_shape = fmt::format(
+            "rows={}, cols={}", dim_to_string(kRows), dim_to_string(kCols));
+        std::string stored_shape = fmt::format(
+            "rows={}, cols={}", value->rows(), value->cols());
+        throw std::logic_error(fmt::format(
+          "{}(): The property '{}' in group '{}' exists as a vector / matrix, "
+          "but is stored as a different size. Requested '{}' ({}), but found "
+          "'{}' ({})", method, name, group_name,
+          NiceTypeName::Get<ValueType>(), requested_shape,
+          NiceTypeName::Get<StoredType>(), stored_shape));
+      }
     }
     return *value;
   }
