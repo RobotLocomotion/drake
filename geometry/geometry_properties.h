@@ -4,15 +4,88 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
+#include <Eigen/Dense>
 #include "fmt/ostream.h"
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 
 namespace drake {
 namespace geometry {
+
+namespace internal {
+
+// Ensure the user does not request things like `const ValueType`.
+template <typename ValueType>
+static void CheckValueType() {
+  static_assert(
+      std::is_same_v<ValueType, std::decay_t<ValueType>>,
+      "Only intrinsic C++ types are permitted. Other types (pointers, "
+      "arrays, cv-qualified types) are not permitted.");
+}
+
+// To facilitate simple metaprogramming. Supports `MaybeConvertInput` below.
+template <typename T>
+struct type_tag { using type = T; };
+
+// Produces simplified Eigen type tag. Supports `MaybeConvertInput` below.
+template <typename ValueType>
+static auto ToQualifiedStoredTypeTag() {
+  if constexpr (is_eigen_type<ValueType>::value) {
+    using Scalar = typename ValueType::Scalar;
+    if constexpr (ValueType::ColsAtCompileTime == 1) {
+      return type_tag<VectorX<Scalar>>{};
+    } else {
+      return type_tag<MatrixX<Scalar>>{};
+    }
+  } else {
+    // N.B. const rvalue is necessary to avoid extra copies.
+    return type_tag<const ValueType&>{};
+  }
+}
+
+// Qualified type version of `ToQualifiedStoredTypeTag`. Supports
+// `MaybeConvertInput` below.
+template <typename ValueType>
+using QualifiedStoredTypeOf =
+    typename decltype(ToQualifiedStoredTypeTag<ValueType>())::type;
+
+// Intrinsic version of `QualifiedStoredTypeOf<>`. Supports
+// `MaybeConvertInput` below.
+template <typename ValueType>
+using StoredTypeOf = std::decay_t<QualifiedStoredTypeOf<ValueType>>;
+
+// To facilitate python bindings, we've decided that GeometryProperties (or
+// any public API using AbstractValue) cannot store fixed-size Eigen types.
+// This ensures all Eigen types are represented by a dynamically-sized type
+// for storage.
+template <typename ValueType>
+static QualifiedStoredTypeOf<ValueType>
+MaybeConvertInput(const ValueType& value) {
+  return value;
+}
+
+template <typename ValueType>
+static auto ToQualifiedReturnTypeTag() {
+  using StoredType = StoredTypeOf<ValueType>;
+  if constexpr (!std::is_same_v<ValueType, StoredType>) {
+    // Copy.
+    return type_tag<ValueType>{};
+  } else {
+    // Reference.
+    return type_tag<const ValueType&>{};
+  }
+}
+
+template <typename ValueType>
+using QualifiedReturnTypeOf =
+    typename decltype(ToQualifiedReturnTypeTag<ValueType>())::type;
+
+}  // namespace internal
 
 /** The base class for defining a set of geometry properties.
 
@@ -253,11 +326,14 @@ class GeometryProperties {
    @param value        The value to assign to the property.
    @throws std::logic_error if `name` already exists in the group `group_name`.
    @tparam ValueType   The type of data to store with the attribute -- must be
-                       copy constructible or cloneable (see Value).  */
+                       copy constructible or cloneable (see Value).
+   @sa AddPropertyAbstract() for note about Eigen type conversions.
+  */
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    AddPropertyAbstract(group_name, name, Value(value));
+    AddPropertyAbstract(
+        group_name, name, Value(internal::MaybeConvertInput(value)));
   }
 
   /** Adds a property with the given `name` and type-erased `value` to the the
@@ -267,7 +343,12 @@ class GeometryProperties {
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
    @throws std::logic_error if `name` already exists in the group
-                            `group_name`.  */
+                            `group_name`.
+
+   @note (Advanced) If `ValueType` is an Eigen vector or matrix, then the
+         requested `ValueType` will be converted into a compatible dynamic-sized
+         Eigen vector or matrix.
+  */
   void AddPropertyAbstract(
       const std::string& group_name, const std::string& name,
       const AbstractValue& value);
@@ -287,12 +368,18 @@ class GeometryProperties {
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
    @throws std::logic_error if a) the group name is invalid,
-                            b) the property name is invalid, or
-                            c) the property type is not that specified.
-   @tparam ValueType  The expected type of the desired property.  */
+                            b) the property name is invalid,
+                            c) the property type is not that specified, or
+                            d) the stored property type is an Eigen matrix or
+                               vector whose size is incompatible with the size
+                               of the specified Eigen type.
+   @tparam ValueType  The expected type of the desired property.
+   @sa AddPropertyAbstract() for note about Eigen type conversions.
+  */
   template <typename ValueType>
-  const ValueType& GetProperty(const std::string& group_name,
-                               const std::string& name) const {
+  internal::QualifiedReturnTypeOf<ValueType>
+  GetProperty(const std::string& group_name, const std::string& name) const {
+    internal::CheckValueType<ValueType>();
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
     return GetValueOrThrow<ValueType>(
         "GetProperty", group_name, name, abstract);
@@ -303,7 +390,9 @@ class GeometryProperties {
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
    @throws std::logic_error if a) the group name is invalid, or
-                            b) the property name is invalid. */
+                            b) the property name is invalid.
+
+   @sa AddPropertyAbstract() for note about Eigen type conversions.*/
   const AbstractValue& GetPropertyAbstract(
       const std::string& group_name, const std::string& name) const;
 
@@ -335,6 +424,7 @@ class GeometryProperties {
   ValueType GetPropertyOrDefault(const std::string& group_name,
                                  const std::string& name,
                                  ValueType default_value) const {
+    internal::CheckValueType<ValueType>();
     const AbstractValue* abstract =
         GetPropertyAbstractMaybe(group_name, name, false);
     if (!abstract) {
@@ -398,18 +488,50 @@ class GeometryProperties {
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
-  static const ValueType& GetValueOrThrow(
+  static internal::QualifiedReturnTypeOf<ValueType> GetValueOrThrow(
       const std::string& method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract) {
-    const ValueType* value = abstract.maybe_get_value<ValueType>();
-    if (value == nullptr) {
+    using StoredType = internal::StoredTypeOf<ValueType>;
+    const StoredType* stored = abstract.maybe_get_value<StoredType>();
+    if (stored == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property '{}' in group '{}' exists, "
           "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, NiceTypeName::Get<ValueType>(),
+          method, name, group_name, NiceTypeName::Get<StoredType>(),
           abstract.GetNiceTypeName()));
     }
-    return *value;
+    constexpr bool is_eigen_with_changed_type =
+        is_eigen_type<ValueType>::value &&
+        !std::is_same_v<ValueType, StoredType>;
+    if constexpr (is_eigen_with_changed_type) {
+      // Provide user-friendly errors for vectors / matrices.
+      constexpr int kRows = ValueType::RowsAtCompileTime;
+      constexpr int kCols = ValueType::ColsAtCompileTime;
+      auto dim_good = [](int real, int spec) {
+        return (spec == Eigen::Dynamic || real == spec);
+      };
+      if (!dim_good(stored->rows(), kRows) ||
+          !dim_good(stored->cols(), kCols)) {
+        auto dim_to_string = [](int dim) {
+          if (dim == Eigen::Dynamic) {
+            return std::string("Dynamic");
+          } else {
+            return std::to_string(dim);
+          }
+        };
+        std::string requested_shape = fmt::format(
+            "rows={}, cols={}", dim_to_string(kRows), dim_to_string(kCols));
+        std::string stored_shape = fmt::format(
+            "rows={}, cols={}", stored->rows(), stored->cols());
+        throw std::logic_error(fmt::format(
+          "{}(): The property '{}' in group '{}' exists as a vector / matrix, "
+          "but is stored as a different size. Requested '{}' ({}), but found "
+          "'{}' ({})", method, name, group_name,
+          NiceTypeName::Get<ValueType>(), requested_shape,
+          NiceTypeName::Get<StoredType>(), stored_shape));
+      }
+    }
+    return *stored;
   }
 
   friend std::ostream& operator<<(std::ostream& out,

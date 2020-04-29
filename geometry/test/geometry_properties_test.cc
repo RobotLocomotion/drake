@@ -3,12 +3,19 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace geometry {
 namespace {
+
+using Eigen::Matrix4d;
+using Eigen::MatrixXd;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 // A constructible sub-class of GeometryProperties.
 class TestProperties : public GeometryProperties {
@@ -288,6 +295,100 @@ GTEST_TEST(GeometryProperties, CopyMoveSemantics) {
   move_assign = std::move(move_construct);
   EXPECT_FALSE(properties_equal(reference, move_construct));
   EXPECT_TRUE(properties_equal(reference, move_assign));
+}
+
+GTEST_TEST(GeometryProperties, EigenVector4d) {
+  TestProperties properties;
+  const std::string& group_name{"some_group"};
+  const std::string fixed_name("fixed");
+  const std::string real_name("real");
+  const Vector4d fixed_value = Vector4d::Zero();
+  const VectorXd real_value = Vector4d::Ones();
+
+  properties.AddProperty(group_name, fixed_name, fixed_value);
+  // WARNING: The return value will be a temporary value.
+  EXPECT_EQ(
+      fixed_value,
+      properties.GetProperty<Vector4d>(group_name, fixed_name));
+  // N.B. This is *not* a temporary value.
+  EXPECT_EQ(
+      fixed_value,
+      properties.GetProperty<VectorXd>(group_name, fixed_name));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      properties.GetProperty<Eigen::Vector3d>(group_name, fixed_name),
+      std::logic_error,
+      R"(.*exists as a vector / matrix.*)"
+      R"(Requested 'Eigen::Vector3d' \(rows=3, cols=1\), but found )"
+      R"('Eigen::VectorXd' \(rows=4, cols=1\).*)");
+  EXPECT_THROW(
+      properties.GetProperty<Eigen::Vector3d>(group_name, fixed_name),
+      std::exception);
+
+  const auto& fixed_abstract =
+      properties.GetPropertyAbstract(group_name, fixed_name);
+  EXPECT_EQ(fixed_abstract.maybe_get_value<Vector4d>(), nullptr);
+  EXPECT_NE(fixed_abstract.maybe_get_value<VectorXd>(), nullptr);
+
+  properties.AddProperty(group_name, real_name, real_value);
+  EXPECT_EQ(
+      real_value,
+      properties.GetProperty<Vector4d>(group_name, real_name));
+  EXPECT_EQ(
+      real_value,
+      properties.GetProperty<VectorXd>(group_name, real_name));
+  const auto& real_abstract =
+      properties.GetPropertyAbstract(group_name, real_name);
+  EXPECT_EQ(real_abstract.maybe_get_value<Vector4d>(), nullptr);
+  EXPECT_NE(real_abstract.maybe_get_value<VectorXd>(), nullptr);
+}
+
+GTEST_TEST(GeometryProperties, EigenMatrix4d) {
+  TestProperties properties;
+  const std::string& group_name{"some_group"};
+  const std::string fixed_name("fixed");
+  const std::string real_name("real");
+  const Matrix4d fixed_value = Matrix4d::Zero();
+  const MatrixXd real_value = fixed_value;
+
+  properties.AddProperty(group_name, fixed_name, fixed_value);
+  // WARNING: The return value will be a temporary value.
+  EXPECT_EQ(
+      fixed_value,
+      properties.GetProperty<Matrix4d>(group_name, fixed_name));
+  // N.B. This is *not* a temporary value.
+  EXPECT_EQ(
+      fixed_value,
+      properties.GetProperty<MatrixXd>(group_name, fixed_name));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      properties.GetProperty<Eigen::Matrix3d>(group_name, fixed_name),
+      std::logic_error,
+      R"(.*exists as a vector / matrix.*)"
+      R"(Requested 'Eigen::Matrix3d' \(rows=3, cols=3\), but found )"
+      R"('Eigen::MatrixXd' \(rows=4, cols=4\).*)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      properties.GetProperty<Eigen::Matrix3Xd>(group_name, fixed_name),
+      std::logic_error,
+      R"(.*exists as a vector / matrix.*)"
+      R"(Requested 'Eigen::Matrix<double,3,-1,.*>' \(rows=3, cols=Dynamic\), )"
+      R"(but found 'Eigen::MatrixXd' \(rows=4, cols=4\).*)");
+
+  const auto& fixed_abstract =
+      properties.GetPropertyAbstract(group_name, fixed_name);
+  EXPECT_EQ(fixed_abstract.maybe_get_value<Matrix4d>(), nullptr);
+  EXPECT_NE(fixed_abstract.maybe_get_value<MatrixXd>(), nullptr);
+
+  properties.AddProperty(group_name, real_name, real_value);
+  EXPECT_EQ(
+      real_value,
+      properties.GetProperty<Matrix4d>(group_name, real_name));
+  EXPECT_EQ(
+      real_value,
+      properties.GetProperty<MatrixXd>(group_name, real_name));
+  const auto& real_abstract =
+      properties.GetPropertyAbstract(group_name, real_name);
+  EXPECT_EQ(real_abstract.maybe_get_value<Matrix4d>(), nullptr);
+  EXPECT_NE(real_abstract.maybe_get_value<MatrixXd>(), nullptr);
 }
 
 }  // namespace
