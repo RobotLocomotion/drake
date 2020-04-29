@@ -8,9 +8,8 @@ def models_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/models",
-        # Working temporary SHA1 until the models PR 9 is merged.
-        commit = "0dad1ff4dc6ba56f29d34caa2a566f62316007ef",
-        sha256 = "d5f7f4d4a7be5e7e808bad8f22a88ca96f91a3c5750cd529d59c674535623d20",  # noqa
+        commit = "527933b8687cdc54c36a22c5ce2541192baa6731",
+        sha256 = "c545096cda709ee994265663c98045c2bd0bda0134ddf7b399294f9c716d80aa",  # noqa
         build_file = "@drake//tools/workspace/models:package.BUILD.bazel",
         mirrors = mirrors,
     )
