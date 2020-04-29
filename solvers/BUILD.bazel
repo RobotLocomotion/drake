@@ -787,12 +787,6 @@ drake_cc_library(
         ],
     }),
     hdrs = ["snopt_solver.h"],
-    copts = select({
-        "//tools:with_snopt_fortran": [
-            "-DWITH_SNOPT_FORTRAN=1",
-        ],
-        "//conditions:default": [],
-    }),
     deps = select({
         "//tools:with_snopt": [
             ":mathematical_program",

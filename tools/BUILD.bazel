@@ -63,14 +63,6 @@ config_setting(
     values = {"define": "WITH_SNOPT=ON"},
 )
 
-# TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
-# The --config=snopt_fortran spelling is no longer supported.
-# Instead, use --config=snopt for the same effect.
-config_setting(
-    name = "with_snopt_fortran",
-    values = {"define": "WITH_SNOPT_FORTRAN=ON"},
-)
-
 # CSDP is an open-source solver, and is included in the Drake build by default.
 # The CSDP solver is irrelevant to some users of MathematicalProgram, so we
 # provide a hidden switch to shut it off for developers who don't actually need
