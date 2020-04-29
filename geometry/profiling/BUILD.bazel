@@ -5,7 +5,6 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
-load("@drake//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 
@@ -14,10 +13,6 @@ _EVO_MESH = forward_files(
     dest_prefix = "",
     strip_prefix = "@models//:dishes/bowls/",
     visibility = ["//visibility:private"],
-)
-
-install_data(
-    extra_prod_models = _EVO_MESH,
 )
 
 drake_cc_binary(
@@ -39,6 +34,11 @@ drake_cc_binary(
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",
     ],
+)
+
+filegroup(
+    name = "models",
+    srcs = _EVO_MESH
 )
 
 add_lint_tests()
