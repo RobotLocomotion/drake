@@ -4,9 +4,11 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace pydrake {
@@ -35,12 +37,57 @@ void AddPrimitiveValueInstantiations(py::module m) {
   AddValueInstantiation<Object, PyObjectValue>(m);  // Value[object]
 }
 
+template <typename T, typename Class = drake::Value<T>>
+py::class_<Class> AddEigenValueInstantiation(py::module scope) {
+  py::module py_common = py::module::import("pydrake.common.value");
+  py::class_<Class, drake::AbstractValue> py_class(
+      scope, TemporaryClassName<Class>().c_str());
+  // Register instantiation, but do not bind emplace constructor.
+  AddTemplateClass(py_common, "Value", py_class, GetPyParam<T>());
+  py_class  // BR
+      .def(py::init())
+      .def(py::init<const T&>())
+      .def("get_value", &Class::get_value, py_reference_internal)
+      .def(
+          "get_mutable_value", &Class::get_mutable_value, py_reference_internal)
+      .def("set_value", &Class::set_value);
+  return py_class;
+}
+
+constexpr char kEigenPlaceholderDoc[] = R"""(
+Placeholder to refer to C++ Eigen Type. This class cannot be instantiated.
+)""";
+
+template <typename T>
+void BindEigenValueInstantiations(py::module m, T = {}) {
+  py::handle create_placeholder_cls = m.attr("_create_placeholder_cls");
+  py::handle vector_template = m.attr("VectorX");
+  py::object vector_cls = create_placeholder_cls(
+      vector_template, GetPyParam<T>(), kEigenPlaceholderDoc);
+  RegisterTypeAlias<VectorX<T>>(vector_cls);
+  AddEigenValueInstantiation<VectorX<T>>(m);
+
+  py::handle matrix_template = m.attr("MatrixX");
+  py::object matrix_cls = create_placeholder_cls(
+      matrix_template, GetPyParam<T>(), kEigenPlaceholderDoc);
+  RegisterTypeAlias<MatrixX<T>>(matrix_cls);
+  AddEigenValueInstantiation<MatrixX<T>>(m);
+}
+
+void BindAllEigenValueInstantiations(py::module m) {
+  type_visit([m](auto dummy) { BindEigenValueInstantiations(m, dummy); },
+      CommonScalarPack{});
+}
+
 }  // namespace
 
 PYBIND11_MODULE(value, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for //common:value";
   constexpr auto& doc = pydrake_doc.drake;
+
+  py::module::import("pydrake.autodiffutils");
+  py::module::import("pydrake.symbolic");
 
   // `AddValueInstantiation` will define methods specific to `T` for
   // `Value<T>`. Since Python is nominally dynamic, these methods are
@@ -88,6 +135,13 @@ PYBIND11_MODULE(value, m) {
         return py_value_class(value);
       },
       doc.AbstractValue.Make.doc);
+
+  // For supporting mapping between Eigen and NumPy, namely for abstract
+  // values.
+  m.def("_bind_all_eigen_value_instantiations",
+      [m]() { BindAllEigenValueInstantiations(m); });
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

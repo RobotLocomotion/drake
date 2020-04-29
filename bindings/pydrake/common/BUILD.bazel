@@ -142,6 +142,9 @@ drake_pybind_library(
     name = "value_py",
     cc_deps = [
         ":cpp_param_pybind",
+        ":cpp_template_pybind",
+        ":default_scalars_pybind",
+        ":type_pack",
         ":value_pybind",
         "//bindings/pydrake:documentation_pybind",
     ],
@@ -149,9 +152,12 @@ drake_pybind_library(
     cc_srcs = ["value_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        ":module_py",
         ":cpp_template_py",
+        ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
     ],
+    py_srcs = ["_value_extra.py"],
 )
 
 # N.B. Any C++ libraries that include this must include `cpp_template_py` when
@@ -557,6 +563,7 @@ drake_py_unittest(
         ":module_py",
         ":value_py",
         ":value_test_util_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

@@ -1,12 +1,16 @@
 import copy
 import unittest
 
-from pydrake.common.value import AbstractValue, Value
+import numpy as np
+
+from pydrake.common.value import (
+    AbstractValue, Value, VectorX, MatrixX)
 
 from pydrake.common.test.value_test_util import (
     make_abstract_value_cc_type_unregistered,
     MoveOnlyType,
 )
+from pydrake.common.test_utilities import numpy_compare
 
 
 class TestValue(unittest.TestCase):
@@ -92,3 +96,47 @@ class TestValue(unittest.TestCase):
         Value[object]
         Value[str]
         Value[bool]
+
+    def test_eigen_placeholder_api(self):
+        VectorXd = VectorX[float]
+        # TODO: Fix module name? Should not be `cpp_template`.
+        self.assertEqual(
+            str(VectorXd),
+            f"<class 'pydrake.common.cpp_template.VectorX[float]'>")
+        self.assertEqual(
+            str(Value[VectorXd]),
+            f"<class 'pydrake.common.value.Value[VectorX[float]]'>")
+        with self.assertRaises(NotImplementedError):
+            VectorXd()
+
+        MatrixXd = MatrixX[float]
+        self.assertEqual(
+            str(MatrixXd),
+            f"<class 'pydrake.common.cpp_template.MatrixX[float]'>")
+        self.assertEqual(
+            str(Value[MatrixXd]),
+            f"<class 'pydrake.common.value.Value[MatrixX[float]]'>")
+        with self.assertRaises(NotImplementedError):
+            MatrixXd()
+
+    @numpy_compare.check_all_types
+    def test_eigen_value_existence(self, T):
+        VectorX[T]
+        Value[VectorX[T]]
+
+    def test_eigen_value_api(self):
+        VectorXd = VectorX[float]
+        value = Value[VectorXd]()
+        x = np.array([1., 2, 3])
+        value.set_value(x)
+        numpy_compare.assert_equal(value.get_value(), x)
+        numpy_compare.assert_equal(value.get_mutable_value(), x)
+        self.assertIsInstance(AbstractValue.Make(x), Value[VectorXd])
+
+        MatrixXd = MatrixX[float]
+        value = Value[MatrixXd]()
+        x = np.eye(3)
+        value.set_value(x)
+        numpy_compare.assert_equal(value.get_value(), x)
+        numpy_compare.assert_equal(value.get_mutable_value(), x)
+        self.assertIsInstance(AbstractValue.Make(x), Value[MatrixXd])

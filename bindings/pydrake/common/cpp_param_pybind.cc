@@ -47,43 +47,43 @@ py::object GetPyHash(const std::type_info& tinfo) {
   return py::make_tuple("cpp_type", tinfo.hash_code());
 }
 
-// Registers C++ type.
-template <typename T>
-void RegisterType(
-    py::module m, py::object param_aliases, const std::string& canonical_str) {
-  // Create an object that is a unique hash.
-  py::object canonical = py::eval(canonical_str, m.attr("__dict__"));
-  py::list aliases(1);
-  aliases[0] = GetPyHash(typeid(T));
-  param_aliases.attr("register")(canonical, aliases);
-}
-
 // Registers common C++ types.
-void RegisterCommon(py::module m, py::object param_aliases) {
+void RegisterCommon() {
   // Make mappings for C++ RTTI to Python types.
   // Unfortunately, this is hard to obtain from `pybind11`.
-  RegisterType<bool>(m, param_aliases, "bool");
-  RegisterType<std::string>(m, param_aliases, "str");
-  RegisterType<double>(m, param_aliases, "float");
-  RegisterType<float>(m, param_aliases, "np.float32");
-  RegisterType<int>(m, param_aliases, "int");
-  RegisterType<uint8_t>(m, param_aliases, "np.uint8");
-  RegisterType<uint16_t>(m, param_aliases, "np.uint16");
-  RegisterType<int16_t>(m, param_aliases, "np.int16");
-  RegisterType<uint32_t>(m, param_aliases, "np.uint32");
-  RegisterType<int64_t>(m, param_aliases, "np.int64");
+  py::module builtins = py::module::import("builtins");
+  py::module np = py::module::import("numpy");
+  RegisterTypeAlias<bool>(builtins.attr("bool"));
+  RegisterTypeAlias<std::string>(builtins.attr("str"));
+  RegisterTypeAlias<double>(builtins.attr("float"));
+  RegisterTypeAlias<float>(np.attr("float32"));
+  RegisterTypeAlias<int>(builtins.attr("int"));
+  RegisterTypeAlias<uint8_t>(np.attr("uint8"));
+  RegisterTypeAlias<uint16_t>(np.attr("uint16"));
+  RegisterTypeAlias<int16_t>(np.attr("int16"));
+  RegisterTypeAlias<uint32_t>(np.attr("uint32"));
+  RegisterTypeAlias<int64_t>(np.attr("int64"));
   // For supporting generic Python types.
-  RegisterType<Object>(m, param_aliases, "object");
+  RegisterTypeAlias<Object>(builtins.attr("object"));
 }
 
 }  // namespace
+
+void RegisterTypeAliasImpl(const std::type_info& tinfo, py::object canonical) {
+  // Create an object that is a unique hash.
+  py::object param_aliases =
+      py::module::import("pydrake.common.cpp_param").attr("_param_aliases");
+  py::list aliases(1);
+  aliases[0] = GetPyHash(tinfo);
+  param_aliases.attr("register")(canonical, aliases);
+}
 
 py::object GetParamAliases() {
   py::module m = py::module::import("pydrake.common.cpp_param");
   py::object param_aliases = m.attr("_param_aliases");
   const char registered_check[] = "_register_common_cpp";
   if (!py::hasattr(m, registered_check)) {
-    RegisterCommon(m, param_aliases);
+    RegisterCommon();
     m.attr(registered_check) = true;
   }
   return param_aliases;

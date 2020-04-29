@@ -112,6 +112,8 @@ inline py::object GetPyParamScalarImpl(
   return py::cast(Value);
 }
 
+void RegisterTypeAliasImpl(const std::type_info& tinfo, py::object canonical);
+
 }  // namespace internal
 
 /// Gets the canonical Python parameters for each C++ type.
@@ -127,6 +129,13 @@ inline py::object GetPyParamScalarImpl(
 template <typename... Ts>
 inline py::tuple GetPyParam(type_pack<Ts...> = {}) {
   return py::make_tuple(internal::GetPyParamScalarImpl(type_pack<Ts>{})...);
+}
+
+// Registers a C++ type (that is not explicitly bound in Pybind) with
+// given Python class.
+template <typename T>
+inline void RegisterTypeAlias(py::object canonical) {
+  return internal::RegisterTypeAliasImpl(typeid(T), canonical);
 }
 
 }  // namespace pydrake
