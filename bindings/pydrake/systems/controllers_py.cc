@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/controllers/dynamic_programming.h"
+#include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
@@ -32,6 +33,7 @@ PYBIND11_MODULE(controllers, m) {
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
+  py::module::import("pydrake.trajectories");
 
   py::class_<DynamicProgrammingOptions::PeriodicBoundaryCondition>(m,
       "PeriodicBoundaryCondition",
@@ -242,6 +244,48 @@ PYBIND11_MODULE(controllers, m) {
       py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
       py::arg("input_port_index") = 0, doc.LinearQuadraticRegulator.doc_6args);
+
+  py::class_<FiniteHorizonLinearQuadraticRegulatorOptions> fhlqr_options(m,
+      "FiniteHorizonLinearQuadraticRegulatorOptions",
+      doc.FiniteHorizonLinearQuadraticRegulatorOptions.doc);
+  fhlqr_options
+      .def(py::init<>(),
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions.ctor.doc)
+      .def_readwrite("Qf", &FiniteHorizonLinearQuadraticRegulatorOptions::Qf,
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions.Qf.doc)
+      .def_readwrite("input_port_index",
+          &FiniteHorizonLinearQuadraticRegulatorOptions::input_port_index,
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions.input_port_index
+              .doc);
+  DefReadWriteKeepAlive(&fhlqr_options, "x0",
+      &FiniteHorizonLinearQuadraticRegulatorOptions::x0,
+      doc.FiniteHorizonLinearQuadraticRegulatorOptions.x0.doc);
+  DefReadWriteKeepAlive(&fhlqr_options, "u0",
+      &FiniteHorizonLinearQuadraticRegulatorOptions::u0,
+      doc.FiniteHorizonLinearQuadraticRegulatorOptions.u0.doc);
+
+  py::class_<FiniteHorizonLinearQuadraticRegulatorResult> fhlqr_result(m,
+      "FiniteHorizonLinearQuadraticRegulatorResult",
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.doc);
+  DefReadUniquePtr(&fhlqr_result, "x0",
+      &FiniteHorizonLinearQuadraticRegulatorResult::x0,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.x0.doc);
+  DefReadUniquePtr(&fhlqr_result, "u0",
+      &FiniteHorizonLinearQuadraticRegulatorResult::u0,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.u0.doc);
+  DefReadUniquePtr(&fhlqr_result, "K",
+      &FiniteHorizonLinearQuadraticRegulatorResult::K,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.K.doc);
+  DefReadUniquePtr(&fhlqr_result, "S",
+      &FiniteHorizonLinearQuadraticRegulatorResult::S,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.S.doc);
+
+  m.def("FiniteHorizonLinearQuadraticRegulator",
+      &FiniteHorizonLinearQuadraticRegulator, py::arg("system"),
+      py::arg("context"), py::arg("t0"), py::arg("tf"), py::arg("Q"),
+      py::arg("R"),
+      py::arg("options") = FiniteHorizonLinearQuadraticRegulatorOptions(),
+      doc.FiniteHorizonLinearQuadraticRegulator.doc);
 }
 
 }  // namespace pydrake

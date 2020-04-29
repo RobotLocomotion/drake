@@ -4,6 +4,7 @@ import unittest
 
 from pydrake.common.wrap_test_util import (
     MyContainer,
+    MyUniquePtr,
     MyValue,
 )
 
@@ -23,3 +24,13 @@ class TestWrapPybind(unittest.TestCase):
         gc.collect()
         # Ensure that we have not lost our value.
         self.assertTrue(c.member.value == 7.)
+
+    def test_unique_ptr_keep_alive(self):
+        u = MyUniquePtr(42)
+        self.assertEqual(u.member, 42)
+        val = u.member
+        # Ensure that the getter keeps the container alive.
+        del u
+        gc.collect()
+        # Ensure that we have not lost our value.
+        self.assertEqual(val, 42)
