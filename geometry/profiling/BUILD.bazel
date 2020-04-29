@@ -5,7 +5,20 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
 )
+load("@drake//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+
+_EVO_MESH = forward_files(
+    srcs = ["@models//:dishes/bowls/evo_bowl_no_mtl.obj"],
+    dest_prefix = "",
+    strip_prefix = "@models//:dishes/bowls/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = _EVO_MESH,
+)
 
 drake_cc_binary(
     name = "contact_surface_rigid_bowl_soft_ball",
@@ -26,14 +39,6 @@ drake_cc_binary(
         "//systems/lcm:lcm_pubsub_system",
         "@gflags",
     ],
-)
-
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-    ]),
-    visibility = ["//visibility:public"],
 )
 
 add_lint_tests()
