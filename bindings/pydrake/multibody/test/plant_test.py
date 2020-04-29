@@ -1049,7 +1049,33 @@ class TestPlant(unittest.TestCase):
         `HasJointActuatorNamed`.
         """
 
-        def make_weld(plant, P, C):
+        def make_ball_rpy_joint(plant, P, C):
+            return BallRpyJoint_[T](
+                name="ball_rpy",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=2.,
+            )
+
+        def make_prismatic_joint(plant, P, C):
+            return PrismaticJoint_[T](
+                name="prismatic",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=[1., 0., 0.],
+                damping=2.,
+            )
+
+        def make_revolute_joint(plant, P, C):
+            return RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=[1., 0., 0.],
+                damping=2.,
+            )
+
+        def make_weld_joint(plant, P, C):
             # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
             # with other joints.
             return WeldJoint_[T](
@@ -1059,37 +1085,11 @@ class TestPlant(unittest.TestCase):
                 X_PC=RigidTransform_[float](),
             )
 
-        def make_prismatic(plant, P, C):
-            return PrismaticJoint_[T](
-                name="prismatic",
-                frame_on_parent=P,
-                frame_on_child=C,
-                axis=[1., 0., 0.],
-                damping=2.,
-            )
-
-        def make_revolute(plant, P, C):
-            return RevoluteJoint_[T](
-                name="revolute",
-                frame_on_parent=P,
-                frame_on_child=C,
-                axis=[1., 0., 0.],
-                damping=2.,
-            )
-
-        def make_ball_rpy_joint(plant, P, C):
-            return BallRpyJoint_[T](
-                name="ball_rpy",
-                frame_on_parent=P,
-                frame_on_child=C,
-                damping=2.,
-            )
-
         make_joint_list = [
-            make_weld,
-            make_prismatic,
-            make_revolute,
             make_ball_rpy_joint,
+            make_prismatic_joint,
+            make_revolute_joint,
+            make_weld_joint,
         ]
 
         for make_joint in make_joint_list:
