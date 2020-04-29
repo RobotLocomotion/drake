@@ -124,7 +124,7 @@ class TestValue(unittest.TestCase):
         VectorX[T]
         Value[VectorX[T]]
 
-    def test_eigen_value_api(self):
+    def test_eigen_value_api_vector(self):
         VectorXd = VectorX[float]
         value = Value[VectorXd]()
         x = np.array([1., 2, 3])
@@ -132,7 +132,10 @@ class TestValue(unittest.TestCase):
         numpy_compare.assert_equal(value.get_value(), x)
         numpy_compare.assert_equal(value.get_mutable_value(), x)
         self.assertIsInstance(AbstractValue.Make(x), Value[VectorXd])
+        # N.B. Lists are still interpreted as generic objects.
+        self.assertIsInstance(AbstractValue.Make(x.tolist()), Value[object])
 
+    def test_eigen_value_api_matrix(self):
         MatrixXd = MatrixX[float]
         value = Value[MatrixXd]()
         x = np.eye(3)
@@ -140,3 +143,5 @@ class TestValue(unittest.TestCase):
         numpy_compare.assert_equal(value.get_value(), x)
         numpy_compare.assert_equal(value.get_mutable_value(), x)
         self.assertIsInstance(AbstractValue.Make(x), Value[MatrixXd])
+        # N.B. Lists are still interpreted as generic objects.
+        self.assertIsInstance(AbstractValue.Make(x.tolist()), Value[object])
