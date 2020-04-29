@@ -37,7 +37,7 @@ drake_cc_binary(
 
 filegroup(
     name = "models",
-    srcs = _EVO_MESH
+    srcs = _EVO_MESH,
 )
 
 add_lint_tests()
