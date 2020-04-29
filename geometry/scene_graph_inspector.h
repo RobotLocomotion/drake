@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/shape_specification.h"
@@ -124,22 +123,12 @@ class SceneGraphInspector {
     return state_->NumDynamicGeometries();
   }
 
-  DRAKE_DEPRECATED("2020-05-01", "Use NumDynamicGeometries() instead.")
-  int GetNumDynamicGeometries() const {
-    return NumDynamicGeometries();
-  }
-
   /** Reports the total number of _anchored_ geometries. This should provide
    the same answer as calling NumGeometriesForFrame() with the world frame id.
    */
   int NumAnchoredGeometries() const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->NumAnchoredGeometries();
-  }
-
-  DRAKE_DEPRECATED("2020-05-01", "Use NumAnchoredGeometries() instead.")
-  int GetNumAnchoredGeometries() const {
-    return NumAnchoredGeometries();
   }
 
   /** Returns all pairs of geometries that are candidates for collision (in no

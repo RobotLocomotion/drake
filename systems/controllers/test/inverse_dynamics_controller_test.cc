@@ -18,7 +18,7 @@ namespace {
 // derived results for the kuka iiwa arm at a given state (q, v), when
 // asked to track reference state (q_r, v_r) and reference acceleration (vd_r).
 GTEST_TEST(InverseDynamicsControllerTest, TestTorque) {
-  auto robot = std::make_unique<MultibodyPlant<double>>();
+  auto robot = std::make_unique<MultibodyPlant<double>>(0.0);
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   multibody::Parser(robot.get()).AddModelFromFile(full_name);

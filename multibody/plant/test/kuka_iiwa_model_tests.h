@@ -42,7 +42,7 @@ class KukaIiwaModelTests : public ::testing::Test {
     // the world and therefore the model is free floating in space. This makes
     // for a more interesting setup to test the computation of Jacobians with
     // respect to q̇ (time-derivative of generalized positions).
-    plant_ = std::make_unique<MultibodyPlant<double>>();
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
     // Add a frame H with a fixed pose X_EH in the end effector frame E.

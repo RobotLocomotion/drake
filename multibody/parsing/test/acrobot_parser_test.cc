@@ -28,7 +28,7 @@ class AcrobotModelTests :
   void SetUp() override {
     const std::string base_name = "drake/multibody/benchmarks/acrobot/acrobot";
     auto load_model = GetParam();
-    plant_ = std::make_unique<MultibodyPlant<double>>();
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     load_model(base_name, plant_.get(), nullptr);
     // We are done adding models.
     plant_->Finalize();

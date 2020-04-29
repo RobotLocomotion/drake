@@ -273,7 +273,7 @@ enum class ContactModel {
 /// @endcode
 /// or taking advantage of C++17's structured binding
 /// @code
-///   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
+///   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
 ///   ...
 ///   plant.DoFoo(...);
 ///   scene_graph.DoBar(...);
@@ -558,12 +558,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///  After calling Finalize(), you may invoke %MultibodyPlant
   /// methods that perform computations. See Finalize() for details.
   /// @{
-
-  /// Default constructor creates a plant modeled as a continuous system.
-  /// Please refer to MultibodyPlant(double) for details.
-  DRAKE_DEPRECATED("2020-05-01",
-                   "Use MultibodyPlant(double) with time_step = 0.")
-  MultibodyPlant() : MultibodyPlant(0.0) {}
 
   /// This constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
@@ -4252,13 +4246,6 @@ AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder,
     std::unique_ptr<MultibodyPlant<T>> plant,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
-
-/// Adds a new continuous MultibodyPlant to `builder`.
-template <typename T>
-DRAKE_DEPRECATED("2020-05-01", "Use alternative overloads explicitly providing a continuous or discrete MultibodyPlant modality. To retain the prior behavior of using a continuous-time plant, pass time_step = 0.0.")  // NOLINT(whitespace/line_length)
-AddMultibodyPlantSceneGraphResult<T>
-AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<T>* builder);
 
 /// Temporary result from `AddMultibodyPlantSceneGraph`. This cannot be
 /// constructed outside of this method.
