@@ -19,27 +19,33 @@ namespace internal {
 using std::string;
 using std::vector;
 
-std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
+std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
+    std::istream* input_stream) {
   tinyobj::attrib_t attrib;
   vector<tinyobj::shape_t> shapes;
   vector<tinyobj::material_t> materials;
   string err;
   // This renderer assumes everything is triangles -- we rely on tinyobj to
   // triangulate for us.
-  bool do_tinyobj_triangulation = true;
+  const bool do_tinyobj_triangulation = true;
 
   // Tinyobj doesn't infer the search directory from the directory containing
   // the obj file. We have to provide that directory; of course, this assumes
   // that the material library reference is relative to the obj directory.
-  size_t pos = filename.find_last_of('/');
-  const string obj_folder = filename.substr(0, pos + 1);
-  const char* mtl_basedir = obj_folder.c_str();
-  bool ret =
-      tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename.c_str(),
-                       mtl_basedir, do_tinyobj_triangulation);
-  if (!ret || !err.empty()) {
+  // Ignore material-library file.
+  tinyobj::MaterialReader* material_reader = nullptr;
+  const bool ret =
+      tinyobj::LoadObj(&attrib, &shapes, &materials, &err, input_stream,
+                       material_reader, do_tinyobj_triangulation);
+  // As of tinyobj v1.0.6, we expect that `ret` will *always* be true. We are
+  // capturing it and asserting it so that if the version advances, and false is
+  // ever returned, CI will inform us so we can update the error messages.
+  DRAKE_DEMAND(ret == true);
+
+  if (shapes.size() == 0) {
     throw std::runtime_error(
-        fmt::format("Error parsing file '{}': {}", filename, err));
+        "The OBJ data appears to have no faces; it could be missing faces or "
+        "might not be an OBJ file");
   }
 
   DRAKE_DEMAND(shapes.size() > 0);
@@ -78,6 +84,15 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
     }
   }
   return std::make_pair(vertices, indices);
+}
+
+std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
+  std::ifstream input_stream(filename);
+  if (!input_stream.is_open()) {
+    throw std::runtime_error(
+        fmt::format("Cannot load the obj file '{}'", filename));
+  }
+  return LoadMeshFromObj(&input_stream);
 }
 
 }  // namespace internal
