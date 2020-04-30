@@ -4,6 +4,7 @@
 #include <optional>
 #include <variant>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/system.h"
 
@@ -54,10 +55,10 @@ results. The finite-horizon cost-to-go is given by (x-x0(t))'*S(t)*(x-x0(t)) and
 the optimal controller is given by u-u0(t) = -K(t)*(x-x0(t)).
 */
 struct FiniteHorizonLinearQuadraticRegulatorResult {
-  std::unique_ptr<trajectories::Trajectory<double>> x0;
-  std::unique_ptr<trajectories::Trajectory<double>> u0;
-  std::unique_ptr<trajectories::Trajectory<double>> K;
-  std::unique_ptr<trajectories::Trajectory<double>> S;
+  copyable_unique_ptr<trajectories::Trajectory<double>> x0;
+  copyable_unique_ptr<trajectories::Trajectory<double>> u0;
+  copyable_unique_ptr<trajectories::Trajectory<double>> K;
+  copyable_unique_ptr<trajectories::Trajectory<double>> S;
 };
 
 // TODO(russt): Add support for difference-equation systems.
@@ -104,6 +105,21 @@ listed in the code as TODOs).
 */
 FiniteHorizonLinearQuadraticRegulatorResult
 FiniteHorizonLinearQuadraticRegulator(
+    const System<double>& system, const Context<double>& context, double t0,
+    double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const FiniteHorizonLinearQuadraticRegulatorOptions& options =
+        FiniteHorizonLinearQuadraticRegulatorOptions());
+
+/** Variant of FiniteHorizonLinearQuadraticRegulator that returns a System
+implementing the regulator (controller) as a System, with a single
+"plant_state" input for the estimated plant state, and a single "control"
+output for the regulator control output. 
+
+@see FiniteHorizonLinearQuadraticRegulator for details on the arguments.
+@ingroup control_systems
+*/
+std::unique_ptr<System<double>> MakeFiniteHorizonLinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context, double t0,
     double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,

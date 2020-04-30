@@ -286,6 +286,13 @@ PYBIND11_MODULE(controllers, m) {
       py::arg("R"),
       py::arg("options") = FiniteHorizonLinearQuadraticRegulatorOptions(),
       doc.FiniteHorizonLinearQuadraticRegulator.doc);
+
+  m.def("MakeFiniteHorizonLinearQuadraticRegulator",
+      &MakeFiniteHorizonLinearQuadraticRegulator, py::arg("system"),
+      py::arg("context"), py::arg("t0"), py::arg("tf"), py::arg("Q"),
+      py::arg("R"),
+      py::arg("options") = FiniteHorizonLinearQuadraticRegulatorOptions(),
+      doc.MakeFiniteHorizonLinearQuadraticRegulator.doc);
 }
 
 }  // namespace pydrake
