@@ -377,61 +377,8 @@ OpenGlGeometry RenderEngineGl::GetSphere() {
     const int kLatitudeBands = 50;
     const int kLongitudeBands = 50;
 
-    const int tri_count = 2 * (kLatitudeBands - 1) * kLongitudeBands;
-    const int vert_count = (kLatitudeBands - 1) * kLongitudeBands + 2;
-
-    VertexBuffer vertices{vert_count, 3};
-    IndexBuffer indices{tri_count, 3};
-
-    vertices.block<1, 3>(0, 0) << 0.f, 0.f, 1.f;
-
-    // We don't take slices of the sphere that are equidistant along the z-axis.
-    // Instead, we create slices so that the chord length along the perimeter
-    // of the longitudinal circle are equal.
-    int v = 1;
-    int t = 0;
-
-    GLfloat z = cos(M_PI / kLatitudeBands);
-    GLfloat radius = sqrt(1.0 - z * z);
-    int line_start = 1;
-    for (int i = 0; i < kLongitudeBands; ++i) {
-      const GLfloat theta = i * M_PI * 2 / kLongitudeBands;
-      const GLfloat cos_theta = cos(theta);
-      const GLfloat sin_theta = sin(theta);
-      vertices.block<1, 3>(v++, 0) << radius * cos_theta, radius * sin_theta, z;
-      indices.block<1, 3>(t++, 0) << 0, line_start + i,
-          line_start + (i + 1) % kLongitudeBands;
-    }
-
-    // Latitudinal bands
-    for (int latitude = 1; latitude < kLatitudeBands - 1; ++latitude) {
-      int previous_line_start = line_start;
-      line_start += kLongitudeBands;
-      z = cos((latitude + 1) * M_PI / kLatitudeBands);
-      radius = sqrt(1.0f - z * z);
-      for (int i = 0; i < kLongitudeBands; ++i) {
-        const GLfloat theta = i * M_PI * 2 / kLongitudeBands;
-        const GLfloat cos_theta = cos(theta);
-        const GLfloat sin_theta = sin(theta);
-        vertices.block<1, 3>(v++, 0) << radius * cos_theta, radius * sin_theta,
-            z;
-        const int next = (i + 1) % kLongitudeBands;
-        indices.block<1, 3>(t++, 0) << previous_line_start + i, line_start + i,
-            line_start + next;
-        indices.block<1, 3>(t++, 0) << previous_line_start + i,
-            line_start + next, previous_line_start + next;
-      }
-    }
-
-    // South pole fan
-    vertices.block<1, 3>(v++, 0) << 0.f, 0.f, -1.f;
-    DRAKE_DEMAND(v == vert_count);
-    const int south_pole = line_start + kLongitudeBands;
-    for (int i = 0; i < kLongitudeBands; ++i) {
-      indices.block<1, 3>(t++, 0) << line_start + i, south_pole,
-          line_start + (i + 1) % kLongitudeBands;
-    }
-    DRAKE_DEMAND(t == tri_count);
+    auto [vertices, indices] =
+        MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
 
     sphere_ = SetupVAO(vertices, indices);
   }
