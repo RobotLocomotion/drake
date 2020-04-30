@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/load_mesh.h"
+#include "drake/geometry/render/gl_renderer/dev/shape_meshes.h"
 
 #include <sstream>
 

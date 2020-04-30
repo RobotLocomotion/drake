@@ -14,7 +14,7 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_package_library_gl_per_os(
     name = "dev",
     ubuntu_deps = [
-        ":load_mesh",
+        ":shape_meshes",
         ":opengl_geometry",
         ":render_engine_gl",
         ":shader_program",
@@ -23,9 +23,9 @@ drake_cc_package_library_gl_per_os(
 )
 
 drake_cc_library_gl_ubuntu_only(
-    name = "load_mesh",
-    srcs = ["load_mesh.cc"],
-    hdrs = ["load_mesh.h"],
+    name = "shape_meshes",
+    srcs = ["shape_meshes.cc"],
+    hdrs = ["shape_meshes.h"],
     # NOTE: Required for compatibility with tinyobjloader.
     linkstatic = 1,
     deps = [
@@ -53,9 +53,9 @@ drake_cc_library_gl_ubuntu_only(
         "render_engine_gl.h",
     ],
     deps = [
-        ":load_mesh",
         ":opengl_geometry",
         ":shader_program",
+        ":shape_meshes",
         "//common:essential",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
@@ -81,12 +81,12 @@ drake_cc_googletest_gl_ubuntu_only(
 )
 
 drake_cc_googletest_gl_ubuntu_only(
-    name = "load_mesh_test",
+    name = "shape_meshes_test",
     data = [
         "//systems/sensors:test_models",
     ],
     deps = [
-        ":load_mesh",
+        ":shape_meshes",
         "//common:find_resource",
         "//common/test_utilities:expect_throws_message",
     ],
