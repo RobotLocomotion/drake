@@ -1,5 +1,15 @@
 # -*- python -*-
 
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "stub",
+    srcs = ["stub.cc"],
+    deps = ["@tinydir//:tinydir_for_stub_test"],
+)
 
 add_lint_tests()
