@@ -11,7 +11,6 @@ cc_library(
         "vtkCapsuleSource.cxx",
     ],
     hdrs = ["vtkCapsuleSource.h"],
-    include_prefix = "third_party/com_github_finetjul_bender/",
     licenses = ["notice"],  # Apache-2.0
     tags = ["nolint"],
     visibility = ["//geometry:__subpackages__"],
