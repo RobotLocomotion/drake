@@ -10,11 +10,12 @@ cc_library(
     name = "tinydir",
     hdrs = ["tinydir.h"],
     includes = ["."],
+    deprecation = "DRAKE DEPRECATED: The @tinydir external is being removed from Drake on or after 2020-08-01.  Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
 )
 
-# We do not install the header file (its a private dependency), but we still
-# need to install its license file.
-install(
-    name = "install",
-    docs = ["COPYING"],
+# N.B. Not intended for public use!  This is only intended for the regression
+# test in @drake//tools/workspace/tinydir, and will be removed on 2020-08-01.
+cc_library(
+    name = "tinydir_for_stub_test",
+    deps = [":tinydir"],
 )

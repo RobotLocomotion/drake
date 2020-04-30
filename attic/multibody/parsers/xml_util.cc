@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <string>
 
-#include <tinydir.h>
-
 #include "drake/common/drake_assert.h"
 #include "drake/math/rotation_matrix.h"
 

@@ -52,7 +52,6 @@ drake_cc_library(
     ],
     deps = [
         "//common",
-        "@tinydir",
         "@tinyxml2",
     ],
 )
