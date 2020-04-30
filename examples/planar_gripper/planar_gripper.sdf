@@ -91,10 +91,9 @@
       <visual name="link2_visual">
         <pose>0 0 -0.02 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <length>0.04</length>
-            <radius>0.011</radius>
-          </cylinder>
+          <box>
+            <size> 0.022 0.022 0.04 </size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 0 0 1</diffuse>
@@ -105,10 +104,9 @@
       <collision name="link2_collision">
         <pose>0 0 -0.0299 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <length>0.0598</length>
-            <radius>0.011</radius>
-          </cylinder>
+          <box>
+            <size> 0.022 0.022 0.0598 </size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 0 1 1</diffuse>
@@ -301,10 +299,9 @@
       <visual name="link2_visual">
         <pose>0 0 -0.02 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <length>0.04</length>
-            <radius>0.011</radius>
-          </cylinder>
+          <box>
+            <size> 0.022 0.022 0.04 </size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 0 0 1</diffuse>
@@ -315,10 +312,9 @@
       <collision name="link2_collision">
         <pose>0 0 -0.0299 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <length>0.0598</length>
-            <radius>0.011</radius>
-          </cylinder>
+          <box>
+            <size> 0.022 0.022 0.0598 </size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 0 1 1</diffuse>
@@ -511,10 +507,9 @@
       <visual name="link2_visual">
         <pose>0 0 -0.02 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <length>0.04</length>
-            <radius>0.011</radius>
-          </cylinder>
+          <box>
+            <size> 0.022 0.022 0.04 </size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 0 0 1</diffuse>
@@ -525,10 +520,9 @@
       <collision name="link2_collision">
         <pose>0 0 -0.0299 0 0 0</pose>
         <geometry>
-          <cylinder>
-            <length>0.0598</length>
-            <radius>0.011</radius>
-          </cylinder>
+          <box>
+            <size> 0.022 0.022 0.0598 </size>
+          </box>
         </geometry>
         <material>
           <diffuse>1 0 1 1</diffuse>
