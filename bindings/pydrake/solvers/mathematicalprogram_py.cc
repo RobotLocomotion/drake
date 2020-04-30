@@ -92,6 +92,52 @@ auto RegisterBinding(py::handle* scope, const string& name) {
   return binding_cls;
 }
 
+enum class ArrayShapeType { Scalar, Vector };
+
+void CheckArray(py::str var_name, py::array x, ArrayShapeType shape, int size) {
+  bool ndim_is_good{};
+  py::str ndim_hint;
+  if (shape == ArrayShapeType::Scalar) {
+    ndim_is_good = (x.ndim() == 0);
+    ndim_hint = "0 (scalar)";
+  } else {
+    ndim_is_good = (x.ndim() == 1 || x.ndim() == 2);
+    ndim_hint = "1 or 2 (vector)";
+  }
+  if (!ndim_is_good || x.size() != size) {
+    throw std::runtime_error(
+        py::str("{} must be of .ndim = {} and .size = {}. "
+                "Got .ndim = {} and .size = {} instead.")
+            .format(var_name, ndim_hint, size, x.ndim(), x.size()));
+  }
+}
+
+// TODO(eric.cousineau): Make dtype=object provide better error messages.
+// Wraps user function to provide better user-friendliness.
+template <typename Func>
+Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
+    int num_outputs, ArrayShapeType output_shape) {
+  // TODO(eric.cousineau): It would be nicer to write this in Python.
+  py::cpp_function wrapped = [=](py::array x) {
+    // Check input.
+    // WARNING: If the input is badly sized, we will only reach this error in
+    // Release mode. In debug mode, an assertion error will be triggered.
+    CheckArray(py::str("{}: Input").format(cls_name), x, ArrayShapeType::Vector,
+        num_vars);
+    // N.B. We use `py::object` instead of `py::array` for the return type
+    /// because for dtype=object, you cannot implicitly cast `np.array(T())`
+    // (numpy scalar) to `T` (object), at least for AutoDiffXd.
+    py::object y = func(x);
+    // Check output.
+    CheckArray(
+        py::str("{}: Output").format(cls_name), y, output_shape, num_outputs);
+    return y;
+  };
+  return wrapped.cast<Func>();
+}
+
+// TODO(eric.cousineau): Make a Python virtual base, and implement this in
+// Python instead.
 class PyFunctionCost : public Cost {
  public:
   using DoubleFunc = std::function<double(const Eigen::VectorXd&)>;
@@ -100,8 +146,8 @@ class PyFunctionCost : public Cost {
   PyFunctionCost(
       int num_vars, const py::function& func, const std::string& description)
       : Cost(num_vars, description),
-        double_func_(py::cast<DoubleFunc>(func)),
-        autodiff_func_(py::cast<AutoDiffFunc>(func)) {}
+        double_func_(Wrap<DoubleFunc>(func)),
+        autodiff_func_(Wrap<AutoDiffFunc>(func)) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -123,10 +169,18 @@ class PyFunctionCost : public Cost {
   }
 
  private:
+  template <typename Func>
+  Func Wrap(py::function func) {
+    return WrapUserFunc<Func>("PyFunctionCost", func, num_vars(), num_outputs(),
+        ArrayShapeType::Scalar);
+  }
+
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
 };
 
+// TODO(eric.cousineau): Make a Python virtual base, and implement this in
+// Python instead.
 class PyFunctionConstraint : public Constraint {
  public:
   using DoubleFunc = std::function<Eigen::VectorXd(const Eigen::VectorXd&)>;
@@ -137,8 +191,8 @@ class PyFunctionConstraint : public Constraint {
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
-        double_func_(py::cast<DoubleFunc>(func)),
-        autodiff_func_(py::cast<AutoDiffFunc>(func)) {}
+        double_func_(Wrap<DoubleFunc>(func)),
+        autodiff_func_(Wrap<AutoDiffFunc>(func)) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -158,6 +212,12 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
+  template <typename Func>
+  Func Wrap(py::function func) {
+    return WrapUserFunc<Func>("PyFunctionConstraint", func, num_vars(),
+        num_outputs(), ArrayShapeType::Vector);
+  }
+
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
 };

@@ -1,7 +1,7 @@
 import os
 import unittest
 
-import pydrake.common
+import pydrake.common as mut
 
 
 class TestCommon(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestCommon(unittest.TestCase):
         # C++ assertion failure from Python and confirm that an exception with
         # an appropriate type and message comes out.
         try:
-            pydrake.common.trigger_an_assertion_failure()
+            mut.trigger_an_assertion_failure()
             self.fail("Did not get a SystemExit")
         except SystemExit as e:
             self.assertTrue(e.code is not None)
@@ -24,32 +24,35 @@ class TestCommon(unittest.TestCase):
                 ]))
 
     def test_find_resource_or_throw(self):
-        pydrake.common.FindResourceOrThrow(
+        mut.FindResourceOrThrow(
             'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
             )
 
     def test_temp_directory(self):
         self.assertEqual(os.environ.get('TEST_TMPDIR'),
-                         pydrake.common.temp_directory())
+                         mut.temp_directory())
 
     def test_tolerance_type(self):
         # Simply test the spelling
-        pydrake.common.ToleranceType.absolute
-        pydrake.common.ToleranceType.relative
+        mut.ToleranceType.absolute
+        mut.ToleranceType.relative
 
     def test_random_distribution(self):
         # Simply test the spelling
-        pydrake.common.RandomDistribution.kUniform
-        pydrake.common.RandomDistribution.kGaussian
-        pydrake.common.RandomDistribution.kExponential
+        mut.RandomDistribution.kUniform
+        mut.RandomDistribution.kGaussian
+        mut.RandomDistribution.kExponential
 
     def test_logging(self):
-        self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
+        self.assertTrue(mut._module_py._HAVE_SPDLOG)
         self.assertIsInstance(
-            pydrake.common.set_log_level(level="unchanged"), str)
+            mut.set_log_level(level="unchanged"), str)
 
     def test_random_generator(self):
-        g1 = pydrake.common.RandomGenerator()
+        g1 = mut.RandomGenerator()
         self.assertEqual(g1(), 3499211612)
-        g2 = pydrake.common.RandomGenerator(10)
+        g2 = mut.RandomGenerator(10)
         self.assertEqual(g2(), 3312796937)
+
+    def test_private_members(self):
+        self.assertIsInstance(mut._DRAKE_ASSERT_IS_ARMED, bool)
