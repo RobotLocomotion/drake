@@ -25,6 +25,8 @@ import pydrake.symbolic as sym
 
 
 SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
+# MathematicalProgram is only bound for float and AutoDiffXd.
+SCALAR_TYPES = [float, AutoDiffXd]
 
 
 class TestCost(unittest.TestCase):
@@ -591,6 +593,69 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(prog.generic_costs()), 1)
         self.assertEqual(
             prog.generic_costs()[0].evaluator(), cost_binding.evaluator())
+
+    def test_pycost_wrap_error(self):
+        """Tests for checks using PyFunctionCost::Wrap."""
+        # TODO(eric.cousineau): It would be nice to not need a
+        # MathematicalProgram to test these.
+
+        def bad_user_cost(x):
+            # WARNING: This should return a scalar, not a vector!
+            return x
+
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        binding = prog.AddCost(bad_user_cost, vars=x)
+        for T in SCALAR_TYPES:
+            array_T = np.vectorize(T)
+            x0 = array_T([0.])
+            x0_bad = array_T([0., 1.])
+            # Bad input (before function is called).
+            with self.assertRaises(RuntimeError) as cm:
+                binding.evaluator().Eval(x0_bad)
+            self.assertEqual(
+                str(cm.exception),
+                "PyFunctionCost: Input must be of .ndim = 1 or 2 (vector) "
+                "and .size = 1. Got .ndim = 1 and .size = 2 instead.")
+            # Bad output.
+            with self.assertRaises(RuntimeError) as cm:
+                binding.evaluator().Eval(x0)
+            self.assertEqual(
+                str(cm.exception),
+                "PyFunctionCost: Output must be of .ndim = 0 (scalar) and "
+                ".size = 1. Got .ndim = 1 and .size = 1 instead.")
+
+    def test_pyconstraint_wrap_error(self):
+        """Tests for checks using PyFunctionConstraint::Wrap."""
+        # TODO(eric.cousineau): It would be nice to not need a
+        # MathematicalProgram to test these.
+
+        def bad_user_constraint(x):
+            # WARNING: This should return a vector, not a scalar!
+            return x[0]
+
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        binding = prog.AddConstraint(
+            bad_user_constraint, lb=[0.], ub=[2.], vars=x)
+        for T in SCALAR_TYPES:
+            array_T = np.vectorize(T)
+            x0 = array_T([0.])
+            x0_bad = array_T([0., 1.])
+            # Bad input (before function is called).
+            with self.assertRaises(RuntimeError) as cm:
+                binding.evaluator().Eval(x0_bad)
+            self.assertEqual(
+                str(cm.exception),
+                "PyFunctionConstraint: Input must be of .ndim = 1 or 2 "
+                "(vector) and .size = 1. Got .ndim = 1 and .size = 2 instead.")
+            # Bad output.
+            with self.assertRaises(RuntimeError) as cm:
+                binding.evaluator().Eval(x0)
+            self.assertEqual(
+                str(cm.exception),
+                "PyFunctionConstraint: Output must be of .ndim = 1 or 2 "
+                "(vector) and .size = 1. Got .ndim = 0 and .size = 1 instead.")
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()
