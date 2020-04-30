@@ -37,6 +37,25 @@ void VerifyMatch(const PackageMap& package_map,
   }
 }
 
+void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
+  const string root_path = GetTestDataRoot();
+  map<string, string> expected_packages = {
+    {"package_map_test_package_a", root_path +
+        "package_map_test_packages/package_map_test_package_a/"},
+    {"package_map_test_package_b", root_path +
+        "package_map_test_packages/package_map_test_package_b/"},
+    {"package_map_test_package_c", root_path +
+        "package_map_test_packages/package_map_test_package_set/"
+        "package_map_test_package_c/"},
+    {"package_map_test_package_d", root_path +
+        "package_map_test_packages/package_map_test_package_set/"
+        "package_map_test_package_d/"},
+    {"box_model", root_path +
+        "box_package/"},
+  };
+  VerifyMatch(package_map, expected_packages);
+}
+
 // Tests that the PackageMap can be manually populated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   filesystem::create_directory("package_foo");
@@ -73,52 +92,18 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
 // Tests that PackageMap can be populated by crawling down a directory tree.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   const string root_path = GetTestDataRoot();
-
   PackageMap package_map;
   package_map.PopulateFromFolder(root_path);
-
-  map<string, string> expected_packages = {
-    {"package_map_test_package_a", root_path +
-        "package_map_test_packages/package_map_test_package_a/"},
-    {"package_map_test_package_b", root_path +
-        "package_map_test_packages/package_map_test_package_b/"},
-    {"package_map_test_package_c", root_path +
-        "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_c/"},
-    {"package_map_test_package_d", root_path +
-        "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_d/"},
-    {"box_model", root_path +
-        "box_package/"},
-  };
-
-  VerifyMatch(package_map, expected_packages);
+  VerifyMatchWithTestDataRoot(package_map);
 }
 
 // Tests that PackageMap can handle being populated by crawling down a directory
 // tree when it is provided a path with extraneous trailing slashes.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
   const string root_path = GetTestDataRoot();
-
   PackageMap package_map;
   package_map.PopulateFromFolder(root_path + "///////");
-
-  map<string, string> expected_packages = {
-    {"package_map_test_package_a", root_path +
-        "package_map_test_packages/package_map_test_package_a/"},
-    {"package_map_test_package_b", root_path +
-        "package_map_test_packages/package_map_test_package_b/"},
-    {"package_map_test_package_c", root_path +
-        "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_c/"},
-    {"package_map_test_package_d", root_path +
-        "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_d/"},
-    {"box_model", root_path +
-        "box_package/"},
-  };
-
-  VerifyMatch(package_map, expected_packages);
+  VerifyMatchWithTestDataRoot(package_map);
 }
 
 // Tests that PackageMap can be populated by crawling up a directory tree.
@@ -138,6 +123,29 @@ GTEST_TEST(PackageMapTest, TestPopulateUpstreamToDrake) {
   };
 
   VerifyMatch(package_map, expected_packages);
+}
+
+// Tests that PackageMap can be populated from an env var.
+GTEST_TEST(PackageMapTest, TestPopulateFromEnvironment) {
+  PackageMap package_map;
+
+  // Test a null environment.
+  package_map.PopulateFromEnvironment("FOOBAR");
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test an empty environment.
+  ::setenv("FOOBAR", "", 1);
+  package_map.PopulateFromEnvironment("FOOBAR");
+  EXPECT_EQ(package_map.size(), 0);
+
+  // Test three environment entries, concatenated:
+  // - one bad path
+  // - one good path
+  // - one empty path
+  const std::string value = "/does/not/exist:" + GetTestDataRoot() + ":";
+  ::setenv("FOOBAR", value.c_str(), 1);
+  package_map.PopulateFromEnvironment("FOOBAR");
+  VerifyMatchWithTestDataRoot(package_map);
 }
 
 // Tests that PackageMap's streaming to-string operator works.
