@@ -11,6 +11,7 @@
 
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -91,6 +92,16 @@ void DefReadWriteKeepAlive(
 template <typename PyClass, typename Class, typename T>
 void DefReadUniquePtr(PyClass* cls, const char* name,
     const std::unique_ptr<T> Class::*member, const char* doc = "") {
+  auto getter = py::cpp_function(
+      [member](const Class* obj) { return (obj->*member).get(); },
+      py_reference_internal);
+  cls->def_property_readonly(name, getter, doc);
+}
+
+// Variant of DefReadUniquePtr() for copyable_unique_ptr.
+template <typename PyClass, typename Class, typename T>
+void DefReadUniquePtr(PyClass* cls, const char* name,
+    const copyable_unique_ptr<T> Class::*member, const char* doc = "") {
   auto getter = py::cpp_function(
       [member](const Class* obj) { return (obj->*member).get(); },
       py_reference_internal);

@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/copyable_unique_ptr.h"
 
 namespace drake {
 namespace pydrake {
@@ -19,9 +20,11 @@ struct MyContainerRawPtr {
 };
 
 struct MyContainerUniquePtr {
-  explicit MyContainerUniquePtr(MyValue member_in)
-      : member(new MyValue(member_in)) {}
+  explicit MyContainerUniquePtr(MyValue member_in, MyValue copyable_member_in)
+      : member(new MyValue(member_in)),
+        copyable_member(new MyValue(copyable_member_in)) {}
   std::unique_ptr<MyValue> member;
+  copyable_unique_ptr<MyValue> copyable_member;
 };
 
 }  // namespace
@@ -38,9 +41,12 @@ PYBIND11_MODULE(wrap_test_util, m) {
       "MyContainerRawPtr doc");
 
   py::class_<MyContainerUniquePtr> my_unique(m, "MyContainerUniquePtr");
-  my_unique.def(py::init<MyValue>(), py::arg("member"));
+  my_unique.def(py::init<MyValue, MyValue>(), py::arg("member"),
+      py::arg("copyable_member"));
   DefReadUniquePtr(&my_unique, "member", &MyContainerUniquePtr::member,
       "MyContainerUniquePtr doc");
+  DefReadUniquePtr(&my_unique, "copyable_member",
+      &MyContainerUniquePtr::copyable_member, "MyContainerUniquePtr doc");
 }
 
 }  // namespace pydrake

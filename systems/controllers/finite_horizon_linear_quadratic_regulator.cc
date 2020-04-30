@@ -234,6 +234,72 @@ FiniteHorizonLinearQuadraticRegulator(
   return result;
 }
 
+namespace {
+
+// Implements the (time-varying) linear controller described by a
+// FiniteHorizonLinearQuadraticRegulatorResult.
+// TODO(russt): Consider removing this class entirely and using
+// TrajectoryAffineSystem instead, once we support enough Trajectory algebra
+// (including adding and multiplying PiecewisePolynomial trajectories with
+// different segment times).
+template <typename T>
+class Controller final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Controller)
+
+  // Constructs the controller, and assumes ownership of the required components
+  // of the FiniteHorizonLinearQuadraticRegulatorResult.  This is appropriate,
+  // since the class is internal to this .cc file and is only ever constructed
+  // via a Make*Regulator() workflow which will discard the result structure.
+  Controller(std::unique_ptr<trajectories::Trajectory<double>> x0,
+             std::unique_ptr<trajectories::Trajectory<double>> u0,
+             std::unique_ptr<trajectories::Trajectory<double>> K)
+      : LeafSystem<T>(SystemTypeTag<Controller>()),
+        x0_(std::move(x0)),
+        u0_(std::move(u0)),
+        K_(std::move(K)) {
+    this->DeclareVectorInputPort("plant_state", BasicVector<T>(K_->cols()));
+    this->DeclareVectorOutputPort("command", BasicVector<T>(K_->rows()),
+                                  &Controller::CalcOutput);
+  }
+
+  // Scalar-type converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Controller(const Controller<U>& other)
+      : Controller(other.x0_->Clone(), other.u0_->Clone(), other.K_->Clone()) {}
+
+ private:
+  template <typename U>
+  friend class Controller;
+
+  // Calculate the (time-varying) output.
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const {
+    // Note: The stored trajectories are always double, even when T != double.
+    const double t = ExtractDoubleOrThrow(context.get_time());
+    const auto& x = this->get_input_port(0).Eval(context);
+    output->get_mutable_value() =
+        u0_->value(t) - K_->value(t) * (x - x0_->value(t));
+  }
+
+  std::unique_ptr<trajectories::Trajectory<double>> x0_;
+  std::unique_ptr<trajectories::Trajectory<double>> u0_;
+  std::unique_ptr<trajectories::Trajectory<double>> K_;
+};
+
+}  // namespace
+
+std::unique_ptr<System<double>> MakeFiniteHorizonLinearQuadraticRegulator(
+    const System<double>& system, const Context<double>& context, double t0,
+    double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const FiniteHorizonLinearQuadraticRegulatorOptions& options) {
+  FiniteHorizonLinearQuadraticRegulatorResult result =
+      FiniteHorizonLinearQuadraticRegulator(system, context, t0, tf, Q, R,
+                                            options);
+  return std::make_unique<Controller<double>>(
+      std::move(result.x0), std::move(result.u0), std::move(result.K));
+}
+
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
