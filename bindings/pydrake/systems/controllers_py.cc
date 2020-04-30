@@ -279,6 +279,9 @@ PYBIND11_MODULE(controllers, m) {
   DefReadUniquePtr(&fhlqr_result, "S",
       &FiniteHorizonLinearQuadraticRegulatorResult::S,
       doc.FiniteHorizonLinearQuadraticRegulatorResult.S.doc);
+  fhlqr_result.def("MakeSystem",
+      &FiniteHorizonLinearQuadraticRegulatorResult::MakeSystem,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.MakeSystem.doc);
 
   m.def("FiniteHorizonLinearQuadraticRegulator",
       &FiniteHorizonLinearQuadraticRegulator, py::arg("system"),

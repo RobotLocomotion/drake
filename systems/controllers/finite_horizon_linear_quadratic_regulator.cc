@@ -234,6 +234,67 @@ FiniteHorizonLinearQuadraticRegulator(
   return result;
 }
 
+namespace {
+
+// Implements the (time-varying) linear controller described by a
+// FiniteHorizonLinearQuadraticRegulatorResult.
+// TODO(russt): Consider removing this class entirely and using
+// TrajectoryAffineSystem instead, once we support enough Trajectory algebra
+// (including adding and multiplying PiecewisePolynomial trajectories with
+// different segment times).
+template <typename T>
+class Controller final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Controller)
+
+  /** Constructs the controller.  All trajectories in @p result are cloned; this
+  constructor does not make any assumptions about ownership. */
+  explicit Controller(const FiniteHorizonLinearQuadraticRegulatorResult& result)
+      : LeafSystem<T>(SystemTypeTag<Controller>()) {
+    result_.x0 = result.x0->Clone();
+    result_.u0 = result.u0->Clone();
+    result_.K = result.K->Clone();
+    // Note: Don't actually need S.
+
+    this->DeclareVectorInputPort("plant_state",
+                                 BasicVector<T>(result_.K->cols()));
+    this->DeclareVectorOutputPort("command", BasicVector<T>(result_.K->rows()),
+                                  &Controller::CalcOutput);
+  }
+
+  // Scalar-type converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Controller(const Controller<U>& other)
+      : Controller(other.get_partial_result()) {}
+
+  // Note: the stored result does not contain S.
+  const FiniteHorizonLinearQuadraticRegulatorResult& get_partial_result()
+      const {
+    return result_;
+  }
+
+ private:
+  // Calculate the (time-varying) output.
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const {
+    // Note: The stored trajectories are always double, even when T != double.
+    const double t = ExtractDoubleOrThrow(context.get_time());
+    const auto& x = this->get_input_port(0).Eval(context);
+    output->get_mutable_value() =
+        result_.u0->value(t) - result_.K->value(t) * (x - result_.x0->value(t));
+  }
+
+  FiniteHorizonLinearQuadraticRegulatorResult result_;
+};
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(class Controller)
+
+}  // namespace
+
+std::unique_ptr<System<double>>
+FiniteHorizonLinearQuadraticRegulatorResult::MakeSystem() const {
+  return std::make_unique<Controller<double>>(*this);
+}
+
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake
