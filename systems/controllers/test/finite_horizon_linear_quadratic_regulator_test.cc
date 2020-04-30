@@ -53,6 +53,17 @@ GTEST_TEST(FiniteHorizonLQRTest, InfiniteHorizonTest) {
   EXPECT_TRUE(CompareMatrices(result.u0->value(t0), Vector1d::Zero()));
   EXPECT_TRUE(CompareMatrices(result.u0->value(tf), Vector1d::Zero()));
 
+  // Test that the System version also works.
+  const std::unique_ptr<LeafSystem<double>> regulator = result.MakeSystem();
+  auto regulator_context = regulator->CreateDefaultContext();
+  const Eigen::Vector2d x(.1, -.3);
+  regulator_context->FixInputPort(0, x);
+  EXPECT_EQ(regulator->get_input_port(0).size(), 2);
+  EXPECT_EQ(regulator->get_output_port(0).size(), 1);
+  EXPECT_TRUE(
+      CompareMatrices(regulator->get_output_port(0).Eval(*regulator_context),
+                      -lqr_result.K * x, 1e-5));
+
   // Test that it stays at the fixed-point if initialized at the fixed point.
   options.Qf = lqr_result.S;
   result = FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, t0 + 0.1, Q,
@@ -108,7 +119,40 @@ GTEST_TEST(FiniteHorizonLQRTest, NominalTrajectoryTest) {
     EXPECT_TRUE(CompareMatrices(result.x0->value(tf), x0v));
     EXPECT_TRUE(CompareMatrices(result.u0->value(t0), u0v));
     EXPECT_TRUE(CompareMatrices(result.u0->value(tf), u0v));
+
+    // Test that the System version also works.
+    const std::unique_ptr<LeafSystem<double>> regulator = result.MakeSystem();
+    auto regulator_context = regulator->CreateDefaultContext();
+    const Vector1d xs(-.3);
+    regulator_context->FixInputPort(0, xs);
+    EXPECT_EQ(regulator->get_input_port(0).size(), 1);
+    EXPECT_EQ(regulator->get_output_port(0).size(), 1);
+    EXPECT_TRUE(
+        CompareMatrices(regulator->get_output_port(0).Eval(*regulator_context),
+                        u0v - lqr_result.K * (xs - x0v), 1e-5));
   }
+}
+
+// Ensures that we can scalar convert the System version of the regulator.
+GTEST_TEST(FiniteHorizonLQRTest, ResultSystemIsScalarConvertible) {
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  A << 0, 1, 0, 0;
+  B << 0, 1;
+  LinearSystem<double> sys(A, B, Eigen::Matrix<double, 0, 2>::Zero(),
+                           Eigen::Matrix<double, 0, 1>::Zero());
+  auto context = sys.CreateDefaultContext();
+  context->FixInputPort(0, Vector1d(0.0));
+  const double t0 = 0.0;
+  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+  Vector1d R = Vector1d(1.0);
+
+  const std::unique_ptr<LeafSystem<double>> regulator =
+      FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, t0 + 0.1, Q, R)
+          .MakeSystem();
+
+  regulator->ToAutoDiffXd();
+  regulator->ToSymbolic();
 }
 
 }  // namespace

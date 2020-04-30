@@ -309,3 +309,7 @@ class TestControllers(unittest.TestCase):
         self.assertEqual(result.K.value(0).shape, (1, 2))
         self.assertIsInstance(result.S, Trajectory)
         self.assertEqual(result.S.value(0).shape, (2, 2))
+
+        regulator = result.MakeSystem()
+        self.assertEqual(regulator.get_input_port(0).size(), 2)
+        self.assertEqual(regulator.get_output_port(0).size(), 1)

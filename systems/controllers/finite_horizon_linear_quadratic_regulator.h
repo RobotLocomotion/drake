@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
 
 namespace drake {
@@ -58,6 +59,14 @@ struct FiniteHorizonLinearQuadraticRegulatorResult {
   std::unique_ptr<trajectories::Trajectory<double>> u0;
   std::unique_ptr<trajectories::Trajectory<double>> K;
   std::unique_ptr<trajectories::Trajectory<double>> S;
+
+  // Note: This minor style-guide violation enables the desired workflow:
+  // auto system = FiniteHorizonLinearQuadraticRegulator(...).MakeSystem();
+  // and as well as the simple property accessors: result.x0, result.u0, ...
+  /** Constructs a LeafSystem that implements the (time-varying) regulator, with
+  a single "plant_state" input for the estimated plant state, and a single
+  "control" output for the regulator control output. */
+  std::unique_ptr<LeafSystem<double>> MakeSystem() const;
 };
 
 // TODO(russt): Add support for difference-equation systems.
