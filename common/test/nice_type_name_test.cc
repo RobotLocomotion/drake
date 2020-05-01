@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/nice_type_name_override.h"
 
 using std::string;
 
@@ -17,16 +18,23 @@ namespace drake {
 namespace {
 enum class Color { Red, Green, Blue };
 
+// Tests enumeration types.
 struct ForTesting {
   enum MyEnum { One, Two, Three };
   enum class MyEnumClass { Four, Five, Six };
 };
 
+// Test RTTI for inheritance.
 class Base {
  public:
   virtual ~Base() = default;
 };
 class Derived : public Base {};
+
+// Type to have its NiceTypeName be overridden via
+// `SetNiceTypeNamePtrOverride`.
+class OverrideName {};
+
 }  // namespace
 
 namespace {
@@ -204,6 +212,25 @@ GTEST_TEST(NiceTypeNameTest, RemoveNamespaces) {
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("::"), "::");
   // No final type segment -- should leave unprocessed.
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("blah::blah2::"), "blah::blah2::");
+}
+
+// This test must be last.
+GTEST_TEST(NiceTypeNameTest, Override) {
+  internal::SetNiceTypeNamePtrOverride(
+      [](const internal::type_erased_ptr& ptr) -> std::string {
+        EXPECT_NE(ptr.raw, nullptr);
+        if (ptr.info == typeid(OverrideName)) {
+          return "example_override";
+        } else {
+          return NiceTypeName::Get(ptr.info);
+        }
+      });
+
+  EXPECT_EQ(
+      NiceTypeName::Get<OverrideName>(),
+      "drake::(anonymous)::OverrideName");
+  const OverrideName obj;
+  EXPECT_EQ(NiceTypeName::Get(obj), "example_override");
 }
 
 }  // namespace
