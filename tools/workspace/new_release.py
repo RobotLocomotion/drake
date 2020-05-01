@@ -47,7 +47,7 @@ _IGNORED_REPOSITORIES = [
 # For these repositories, we only look at tags, not releases.  For the dict
 # value, use a blank value to match the latest tag or a regex to only select
 # tags that share the match with the tag currently in use.  (This can be used
-# to ping to a given major or major.minor release series.)
+# to pin to a given major or major.minor release series.)
 _OVERLOOK_RELEASE_REPOSITORIES = {
     "github3_py": r"^(\d+.)",
     "pycodestyle": "",
