@@ -399,8 +399,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "nice_type_name",
-    srcs = ["nice_type_name.cc"],
-    hdrs = ["nice_type_name.h"],
+    srcs = [
+        "nice_type_name.cc",
+        "nice_type_name_override.cc",
+    ],
+    hdrs = [
+        "nice_type_name.h",
+        "nice_type_name_override.h",
+    ],
     deps = [
         ":essential",
     ],

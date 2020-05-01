@@ -14,6 +14,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 #include <string>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/nice_type_name_override.h"
 
 using std::string;
 
@@ -31,7 +32,7 @@ namespace drake {
 // On gcc and clang typeid(T).name() returns an indecipherable mangled string
 // that requires processing to become human readable. Microsoft returns a
 // reasonable name directly.
-string drake::NiceTypeName::Demangle(const char* typeid_name) {
+string NiceTypeName::Demangle(const char* typeid_name) {
 #if defined(__GNUG__)
   int status = -100;  // just in case it doesn't get set
   char* ret = abi::__cxa_demangle(typeid_name, NULL, NULL, &status);
@@ -48,7 +49,7 @@ string drake::NiceTypeName::Demangle(const char* typeid_name) {
 // Given a demangled string, attempt to canonicalize it for platform
 // indpendence. We'll remove Microsoft's "class ", "struct ", etc.
 // designations, and get rid of all unnecessary spaces.
-string drake::NiceTypeName::Canonicalize(const string& demangled) {
+string NiceTypeName::Canonicalize(const string& demangled) {
   using SPair = std::pair<std::regex, string>;
   using SPairList = std::initializer_list<SPair>;
   // These are applied in this order.
@@ -98,7 +99,7 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
   return canonical;
 }
 
-string drake::NiceTypeName::RemoveNamespaces(const string& canonical) {
+string NiceTypeName::RemoveNamespaces(const string& canonical) {
   // Removes everything up to and including the last "::" that isn't part of a
   // template argument. If the string ends with "::", returns the original
   // string unprocessed. We are depending on the fact that namespaces can't be
@@ -112,5 +113,15 @@ string drake::NiceTypeName::RemoveNamespaces(const string& canonical) {
   return no_namespace.empty() ? canonical : no_namespace;
 }
 
-}  // namespace drake
+std::string NiceTypeName::GetWithPossibleOverride(
+      const void* ptr, const std::type_info& info) {
+  internal::NiceTypeNamePtrOverride ptr_override =
+      internal::GetNiceTypeNamePtrOverride();
+  if (ptr_override) {
+    return ptr_override(internal::type_erased_ptr{ptr, info});
+  } else {
+    return Get(info);
+  }
+}
 
+}  // namespace drake
