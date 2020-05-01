@@ -1,14 +1,36 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <typeinfo>
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 
 namespace drake {
+
+namespace internal {
+
+struct type_erased_ptr {
+  const void* raw;
+  const std::type_info& info;
+
+  template <typename T>
+  explicit type_erased_ptr(const T* ptr)
+      : raw(ptr), info(typeid(*ptr)) {
+    DRAKE_DEMAND(ptr != nullptr);
+  }
+};
+
+using NiceTypeNamePtrOverride =
+    std::function<std::string(const type_erased_ptr&)>;
+
+void SetNiceTypeNamePtrOverride(NiceTypeNamePtrOverride new_ptr_override);
+
+}  // namespace internal
 
 /** @brief Obtains canonicalized, platform-independent, human-readable names for
 arbitrarily-complicated C++ types.
@@ -64,7 +86,11 @@ class NiceTypeName {
   differ. */
   template <typename T>
   static std::string Get(const T& thing) {
-    return Get(typeid(thing));
+    if (ptr_override) {
+      return ptr_override(internal::type_erased_ptr(&thing));
+    } else {
+      return Get(typeid(thing));
+    }
   }
 
   /** Returns the nicely demangled and canonicalized type name of `info`. This
@@ -101,6 +127,21 @@ class NiceTypeName {
  private:
   // No instances of this class should be created.
   NiceTypeName() = delete;
+
+  static internal::NiceTypeNamePtrOverride ptr_override;
+  friend void internal::SetNiceTypeNamePtrOverride(
+      internal::NiceTypeNamePtrOverride new_ptr_override);
 };
+
+namespace internal {
+
+inline void
+SetNiceTypeNamePtrOverride(NiceTypeNamePtrOverride new_ptr_override) {
+  DRAKE_DEMAND(!!new_ptr_override);
+  DRAKE_DEMAND(!NiceTypeName::ptr_override);
+  NiceTypeName::ptr_override = new_ptr_override;
+}
+
+}  // namespace internal
 
 }  // namespace drake
