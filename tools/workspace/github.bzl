@@ -138,11 +138,11 @@ Consult the macro documentation for full API details.
 """
 
 def setup_github_repository(repository_ctx):
-    """This is reusable formulation of the github_archive() macro.  It is identical
-    to the macro except that (1) it does not support local_repository_override,
-    and (2) it returns a status struct, instead of failing internally.  The
-    result struct has a field `error` that will be non-None iff there were any
-    errors.  Consult the macro documentation for additional API details.
+    """This is a reusable formulation of the github_archive() macro. It is
+    identical to the macro except that (1) it does not support local repository
+    override, and (2) it returns a status struct instead of failing internally.
+    The result struct has a field `error` that will be non-None iff there were
+    any errors.  Consult the macro documentation for additional API details.
     """
 
     # Do the download step first.  (This also writes the metadata.)
