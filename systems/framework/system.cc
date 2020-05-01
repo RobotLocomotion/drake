@@ -1083,16 +1083,6 @@ Eigen::VectorBlock<VectorX<T>> System<T>::GetMutableOutputVector(
 }
 
 template <typename T>
-void System<T>::DoCheckValidContext(const ContextBase& context_base) const {
-  const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
-  DRAKE_THROW_UNLESS(context != nullptr);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  CheckValidContextT(*context);
-#pragma GCC diagnostic pop
-}
-
-template <typename T>
 std::function<void(const AbstractValue&)>
 System<T>::MakeFixInputPortTypeChecker(
     InputPortIndex port_index) const {

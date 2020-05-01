@@ -12,6 +12,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator_status.h"
@@ -594,16 +595,6 @@ class Simulator {
     initialization_done_ = false;
     integrator_ = std::move(integrator);
     return static_cast<U*>(integrator_.get());
-  }
-
-  template <class U, typename... Args>
-  DRAKE_DEPRECATED(
-      "2020-05-01",
-      "Use void or max-step-size version of reset_integrator() instead.")
-  U* reset_integrator(Args&&... args) {
-    auto integrator = std::make_unique<U>(std::forward<Args>(args)...);
-    integrator->reset_context(&get_mutable_context());
-    return reset_integrator(std::move(integrator));
   }
 
   /// Resets the integrator with a new one using factory construction.
