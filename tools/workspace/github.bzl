@@ -6,10 +6,6 @@ load(
     "generate_repository_metadata",
 )
 
-# The github.bzl and bitbucket.bzl implementations are very similar.  Try to
-# keep the two files relatively well-synchronized -- or even better, rework
-# them to share code where doing so is an improvement.
-
 def github_archive(
         name,
         repository = None,

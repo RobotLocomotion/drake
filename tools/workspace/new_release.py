@@ -87,10 +87,6 @@ def run(gh, args, metadata):
         key = data["repository_rule_type"]
         if key == "github":
             old_commit, new_commit = _handle_github(gh, data)
-        elif key == "bitbucket":
-            # TODO(jwnimmer-tri) Implement for real.
-            old_commit = data["commit"]
-            new_commit = None
         elif key == "pypi":
             # TODO(jwnimmer-tri) Implement for real.
             print("{} version {} needs manual inspection".format(

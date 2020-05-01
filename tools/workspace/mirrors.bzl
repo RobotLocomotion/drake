@@ -2,8 +2,8 @@
 # vi: set ft=python :
 
 # This constant contains Drake's default lists of mirrors.  It is keyed by the
-# repository type using magic strings ("github", "bitbucket", etc.), and has
-# values of type list-of-string; each string is a pattern for a mirror URL.
+# repository type using magic strings ("github", etc.), and has values of type
+# list-of-string; each string is a pattern for a mirror URL.
 #
 # When calling a Drake workspace rule that requires a mirror= argument, this
 # constant is a reasonable default value.
@@ -19,6 +19,8 @@
 # PyPI, etc.) to CloudFront backed by an S3 bucket.
 #
 DEFAULT_MIRRORS = {
+    # TODO(jwnimmer-tri) Remove the entire "bitbucket" stanza here on
+    # 2020-08-01 when bitbucket.bzl is removed.
     "bitbucket": [
         "https://bitbucket.org/{repository}/get/{commit}.tar.gz",
         "https://drake-mirror.csail.mit.edu/bitbucket/{repository}/{commit}.tar.gz",  # noqa
