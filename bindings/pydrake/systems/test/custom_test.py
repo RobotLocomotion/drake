@@ -607,10 +607,10 @@ class TestCustom(unittest.TestCase):
             self.assertEqual(value.get_value(), expected_output_value)
 
     def test_deprecated_abstract_input_port(self):
-        """This test case confirms that the deprecated API for abstract input ports
-        continues to operate correctly, until such a time as we remove it.  For
-        an example of non-deprecated APIs to use abstract input ports, see the
-        test_abstract_io_port case, above.
+        """This test case confirms that the deprecated API for abstract input
+        ports continues to operate correctly, until such a time as we remove
+        it. For an example of non-deprecated APIs to use abstract input ports,
+        see the test_abstract_io_port case, above.
         """
         test = self
 

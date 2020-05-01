@@ -57,31 +57,31 @@ class TestSystemSliders(unittest.TestCase):
             output.get_vector_data(0).get_value(), [-5, -5, -5])
 
         # Incorrect size of q when setting slider positions.
-        with self.assertRaisesRegex(ValueError, "Size of q \(2\) doesn't " +
-                                                "match input port size \(3\)"
-                                    ):
+        with self.assertRaisesRegex(
+                ValueError,
+                r"Size of q \(2\) doesn't match input port size \(3\)"):
             slider.set_position([2, 4])
 
         # Incorrect size of passed in slider names.
-        with self.assertRaisesRegex(ValueError, "Slider names size \(2\) " +
-                                                "doesn't match port size \(3\)"
-                                    ):
+        with self.assertRaisesRegex(
+                ValueError,
+                r"Slider names size \(2\) doesn't match port size \(3\)"):
             SystemSliders(port_size, slider_names=["a", "b"])
 
         # Incorrect size of passed in lower limits.
-        with self.assertRaisesRegex(ValueError, "Size of lower_limit \(4\) " +
-                                                "doesn't match port size \(3\)"
-                                    ):
+        with self.assertRaisesRegex(
+                ValueError,
+                r"Size of lower_limit \(4\) doesn't match port size \(3\)"):
             SystemSliders(port_size, lower_limit=[2, 3, 4, 5])
 
         # Incorrect size of passed in upper limits.
-        with self.assertRaisesRegex(ValueError, "Size of upper_limit \(0\) " +
-                                                "doesn't match port size \(3\)"
-                                    ):
+        with self.assertRaisesRegex(
+                ValueError,
+                r"Size of upper_limit \(0\) doesn't match port size \(3\)"):
             SystemSliders(port_size, upper_limit=[])
 
         # Incorrect size of passed in resolutions.
-        with self.assertRaisesRegex(ValueError, "Size of resolution \(5\) " +
-                                                "doesn't match port size \(3\)"
-                                    ):
+        with self.assertRaisesRegex(
+                ValueError,
+                r"Size of resolution \(5\) doesn't match port size \(3\)"):
             SystemSliders(port_size, resolution=[1, 2, 3, 4, 5])
