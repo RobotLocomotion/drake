@@ -10,6 +10,7 @@ def _bazel_lint(name, files, ignore):
     if files:
         if ignore:
             ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
+        ignore[0] += ",W504"  # TODO(jwnimmer-tri) Re-enable soon.
 
         locations = ["$(locations %s)" % f for f in files]
 

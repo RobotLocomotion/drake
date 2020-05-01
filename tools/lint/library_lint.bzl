@@ -7,9 +7,9 @@ _TAG_EXCLUDE_FROM_PACKAGE = "exclude_from_package"
 
 def library_lint(
         existing_rules = None):
-    """Within the current package, checks that drake_cc_package_library has been
-    used correctly, reports a lint (test) error if not.  (To understand proper
-    use of drake_cc_package_library, consult its API documentation.)
+    """Within the current package, checks that drake_cc_package_library has
+    been used correctly, reports a lint (test) error if not.  (To understand
+    proper use of drake_cc_package_library, consult its API documentation.)
 
     Note that //examples/... packages are excluded from some checks, because
     they should generally not use drake_cc_package_library.

@@ -9,6 +9,7 @@ PYTHON_LINT_IGNORE_DEFAULT = "E121,E123,E126,E226,E24,E704,W503".split(",")
 # Internal helper.
 def _python_lint(name_prefix, files, ignore, disallow_executable):
     ignore_types = PYTHON_LINT_IGNORE_DEFAULT + (ignore or [])
+    ignore_types += ["W504"]  # TODO(jwnimmer-tri) Re-enable soon.
     ignore_args = ["--ignore={}".format(",".join(ignore_types))]
 
     # Pycodestyle.
