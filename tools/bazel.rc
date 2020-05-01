@@ -76,11 +76,6 @@ build:mosek --define=WITH_MOSEK=ON
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
 
-# TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
-# The --config=snopt_fortran spelling is no longer supported.
-# Instead, use --config=snopt for the same effect.
-build:snopt_fortran --define=WITH_SNOPT_FORTRAN=ON
-
 ### A configuration that enables all optional dependencies. ###
 test:everything --test_tag_filters=-no_everything
 
