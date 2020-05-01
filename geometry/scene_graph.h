@@ -7,6 +7,8 @@
 
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/perception_query_object.h"
+#include "drake/geometry/proximity_query_object.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph_inspector.h"
@@ -37,8 +39,9 @@ class QueryObject;
  current context, and performing geometric queries.
 
  @system{SceneGraph,
-   @input_port{source_pose{0}} @input_port{...} @input_port{source_pose{N-1}},
+   @input_port{source_pose{0}} @input_port{...} @input_port{source_pose{N-1}}
    @output_port{lcm_visualization} @output_port{query}
+   @output_port{proximity_query} @output_port{perception_query}
  }
 
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
@@ -82,22 +85,38 @@ class QueryObject;
 
  @section geom_sys_outputs Outputs
 
- %SceneGraph has two output ports:
-
- __query port__: An abstract-valued port containing an instance of QueryObject.
- It provides a "ticket" for downstream LeafSystem instances to perform geometric
- queries on the %SceneGraph. To perform geometric queries, downstream
- LeafSystem instances acquire the QueryObject from %SceneGraph's output port
- and provide it as a parameter to one of %SceneGraph's query methods (e.g.,
- SceneGraph::ComputeContact()). This assumes that the querying system has
- access to a const pointer to the connected %SceneGraph instance. Use
- get_query_output_port() to acquire the output port for the query handle.
+ %SceneGraph has four output ports:
 
  __lcm visualization port__: An abstract-valued port containing an instance of
  PoseBundle. This is a convenience port designed to feed LCM update messages to
  drake_visualizer for the purpose of visualizing the state of the world's
  geometry. Additional uses of this port are strongly discouraged; instead, use
  an appropriate geometric query to obtain the state of the world's geometry.
+
+ __Query object ports__
+
+ %SceneGraph has three _query object_ ports. They support different types of
+ queries. This decomposition allows for articulating diagrams with more limited
+ dependencies. Although they may differ in the types of queries that can be
+ performed on them, they all work in the same way. They each serve as a
+ "handle" for downstream LeafSystem instances to query the state of %SceneGraph.
+ To perform such queries, downstream LeafSystem instances acquire the
+ QueryObject by connecting to %SceneGraph's output port. Connect to the
+ "smallest" query object that satisfies the query you wish to make (see below).
+
+ __geometry query port__: An abstract-valued port containing an instance of
+ QueryObject. This entails only the _attributes_ of the geometries themselves:
+ poses and, via the SceneGraphInspector, shape, name, properties, topology, etc.
+
+ __proximity query port__: An abstract-valued port containing an instance of
+ ProximityQueryObject. The ProximityQueryObject includes all of the queries
+ supported by QueryObject but also includes queries characterizing the spatial
+ relationships between geometries (distance, signed distance, contact, etc.)
+
+ __perception query port__: An abstract-valued port containing an instance of
+ PerceptionQueryObject. The PerceptionQueryObject includes all of the queries
+ supported by QueryObject but also includes rendering queries -- drawing the
+ contents of %SceneGraph into an image.
 
  @section geom_sys_workflow Working with SceneGraph
 
@@ -111,15 +130,11 @@ class QueryObject;
  Consumers perform geometric queries upon the world geometry. %SceneGraph
  _serves_ those queries. As indicated above, in order for a LeafSystem to act
  as a consumer, it must:
-   1. define a QueryObject-valued input port and connect it to %SceneGraph's
-   corresponding output port, and
-   2. have a reference to the connected %SceneGraph instance.
 
- With those two requirements satisfied, a LeafSystem can perform geometry
- queries by:
-   1. evaluating the QueryObject input port, and
-   2. passing the returned query object into the appropriate query method on
-   SceneGraph (e.g., SceneGraph::ComputeContact()).
+   1. define a query object-valued input port and connect it to %SceneGraph's
+      corresponding output port,
+   2. evaluate the query object input port, and
+   3. invoke the appropriate query method on the resulting QueryObject.
 
  __Producer__
 
@@ -276,10 +291,22 @@ class SceneGraph final : public systems::LeafSystem<T> {
     return systems::System<T>::get_output_port(bundle_port_index_);
   }
 
-  /** Returns the output port which produces the QueryObject for performing
+  /** @returns the output port which produces the QueryObject for performing
    geometric queries.  */
   const systems::OutputPort<T>& get_query_output_port() const {
     return systems::System<T>::get_output_port(query_port_index_);
+  }
+
+  /** @returns the output port which produces the ProximityQueryObject for
+   performing geometric queries.  */
+  const systems::OutputPort<T>& get_proximity_query_output_port() const {
+    return systems::System<T>::get_output_port(proximity_query_port_index_);
+  }
+
+  /** @returns the output port which produces the PerceptionQueryObject for
+   performing geometric queries.  */
+  const systems::OutputPort<T>& get_perception_query_output_port() const {
+    return systems::System<T>::get_output_port(perception_query_port_index_);
   }
 
   //@}
@@ -786,10 +813,26 @@ class SceneGraph final : public systems::LeafSystem<T> {
   friend void DispatchLoadMessage(const SceneGraph<double>&,
                                   lcm::DrakeLcmInterface*, Role role);
 
+  // Makes the given query object live by settings its system and context to
+  // _this_ system and the given context. This is a common operation to _all_
+  // QueryObject types.
+  void MakeQueryObjectLive(const systems::Context<T>& context,
+                           QueryObject<T>* output) const;
+
   // Sets the context into the output port value so downstream consumers can
   // perform queries.
   void CalcQueryObject(const systems::Context<T>& context,
                        QueryObject<T>* output) const;
+
+  // Sets the context into the output port value so downstream consumers can
+  // perform spatial queries.
+  void CalcProximityQueryObject(const systems::Context<T>& context,
+                                ProximityQueryObject<T>* output) const;
+
+  // Sets the context into the output port value so downstream consumers can
+  // perform render queries.
+  void CalcPerceptionQueryObject(const systems::Context<T>& context,
+                                 PerceptionQueryObject<T>* output) const;
 
   // Constructs a PoseBundle of length equal to the concatenation of all inputs.
   // This is the method used by the allocator for the output port.
@@ -845,6 +888,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};
+  // The index of the output port with the ProximityQueryObject abstract value.
+  int proximity_query_port_index_{-1};
+  // The index of the output port with the PerceptionQueryObject abstract value.
+  int perception_query_port_index_{-1};
 
   // A raw pointer to the default geometry state (which serves as the model for
   // allocating contexts for this system). The instance is owned by
