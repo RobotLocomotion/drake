@@ -39,7 +39,7 @@ Helpful Information
 -------------------
 
 When reporting an issue, please consider providing the following information
-(*examples in italics*):
+(*examples in italics*, ``helper command in monospace``):
 
 *   Operating system (*Ubuntu 18.04, macOS Catalina*)
 *   Language (C++, :ref:`Python <python-bindings>`)
@@ -50,7 +50,7 @@ When reporting an issue, please consider providing the following information
 
 *   If building from source:
 
-    -   Build system (Bazel, CMake*)
+    -   Build system (Bazel, CMake)
 
         +  Bazel version (``which bazel; bazel version``)
         +  Bazel C++ compiler (``bazel run @drake//common:print_host_settings``)
