@@ -215,7 +215,7 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
   file.close();
   PlantAndSceneGraph pair;
-  pair.plant = std::make_unique<MultibodyPlant<double>>();
+  pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
   pair.scene_graph = std::make_unique<SceneGraph<double>>();
   PackageMap package_map;
   pair.plant->RegisterAsSourceForSceneGraph(pair.scene_graph.get());

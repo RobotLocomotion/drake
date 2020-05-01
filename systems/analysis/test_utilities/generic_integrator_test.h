@@ -15,7 +15,7 @@ template <class T>
 struct GenericIntegratorTest : public ::testing::Test {
  public:
   void SetUp() {
-    plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
+    plant_ = std::make_unique<multibody::MultibodyPlant<double>>(0.0);
 
     // Add a single free body to the world.
     const double radius = 0.05;  // m

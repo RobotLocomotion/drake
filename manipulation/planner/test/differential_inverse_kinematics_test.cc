@@ -32,7 +32,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
  protected:
   void SetUp() {
     // Load the IIWA SDF, welding link_0 to the world.
-    plant_ = std::make_unique<MultibodyPlant<double>>();
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     multibody::Parser parser(plant_.get());
     const std::string filename = FindResourceOrThrow(
         "drake/manipulation/models/"

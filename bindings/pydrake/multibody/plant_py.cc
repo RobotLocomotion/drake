@@ -149,11 +149,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "MultibodyPlant", param, cls_doc.doc);
     // N.B. These are defined as they appear in the class declaration.
     // Forwarded methods from `MultibodyTree`.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def(py_init_deprecated<Class>(cls_doc.ctor.doc_deprecated),
-        cls_doc.ctor.doc_deprecated);
-#pragma GCC diagnostic pop
     cls  // BR
         .def(py::init<double>(), py::arg("time_step"), cls_doc.ctor.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
@@ -857,30 +852,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         py::arg("scene_graph") = nullptr,
         doc.AddMultibodyPlantSceneGraph
             .doc_3args_systemsDiagramBuilder_double_stduniqueptr);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    m.def("AddMultibodyPlantSceneGraph",
-        WrapDeprecated(
-            doc.AddMultibodyPlantSceneGraph
-                .doc_deprecated_deprecated_1args_systemsDiagramBuilder,
-            [](systems::DiagramBuilder<T>* builder) {
-              auto pair = AddMultibodyPlantSceneGraph<T>(builder);
-              // Must do manual keep alive to dig into tuple.
-              py::object builder_py = py::cast(builder, py_reference);
-              py::object plant_py = py::cast(pair.plant, py_reference);
-              py::object scene_graph_py =
-                  py::cast(pair.scene_graph, py_reference);
-              return py::make_tuple(
-                  // Keep alive, ownership: `plant` keeps `builder` alive.
-                  py_keep_alive(plant_py, builder_py),
-                  // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-                  py_keep_alive(scene_graph_py, builder_py));
-            }),
-        py::arg("builder"),
-        doc.AddMultibodyPlantSceneGraph
-            .doc_deprecated_deprecated_1args_systemsDiagramBuilder);
-#pragma GCC diagnostic pop
   }
 
   // ExternallyAppliedSpatialForce

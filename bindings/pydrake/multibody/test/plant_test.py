@@ -63,7 +63,6 @@ from pydrake.multibody.benchmarks.acrobot import (
 )
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import (
     Box,
@@ -142,15 +141,6 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(numpy_compare.to_float(x))))
         if nonzero:
             numpy_compare.assert_float_not_equal(x, 0.)
-
-    def test_deprecated_zero_argument_constructor(self):
-        with catch_drake_warnings(expected_count=1):
-            MultibodyPlant_[float]()
-
-    def test_deprecated_construction_api(self):
-        builder = DiagramBuilder_[float]()
-        with catch_drake_warnings(expected_count=1):
-            AddMultibodyPlantSceneGraph(builder)
 
     @numpy_compare.check_nonsymbolic_types
     def test_multibody_plant_construction_api(self, T):
