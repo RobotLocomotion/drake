@@ -142,7 +142,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   systems::DiagramBuilder<double> builder;
 
   // Make a trivial plant with at least one body.
-  auto plant = builder.AddSystem<MultibodyPlant>();
+  auto plant = builder.AddSystem<MultibodyPlant>(0.0);
   plant->AddRigidBody("link", SpatialInertia<double>());
   plant->Finalize();
 

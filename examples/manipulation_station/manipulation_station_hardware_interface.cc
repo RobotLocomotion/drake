@@ -35,7 +35,7 @@ using robotlocomotion::image_array_t;
 // (only) constructing one internally.
 ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
     std::vector<std::string> camera_names)
-    : owned_controller_plant_(std::make_unique<MultibodyPlant<double>>()),
+    : owned_controller_plant_(std::make_unique<MultibodyPlant<double>>(0.0)),
       owned_lcm_(new lcm::DrakeLcm()),
       camera_names_(std::move(camera_names)) {
   systems::DiagramBuilder<double> builder;
