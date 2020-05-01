@@ -25,11 +25,5 @@ bool SnoptSolver::is_bounded_lp_broken() {
       "solver.");
 }
 
-// TODO(jwnimmer-tri) Remove this stanza on or after 2020-05-01.
-#ifdef WITH_SNOPT_FORTRAN
-// NOLINTNEXTLINE(whitespace/line_length)
-#error "The bazel --config=snopt_fortran spelling is no longer supported.  Instead, use --config=snopt for the same effect."
-#endif
-
 }  // namespace solvers
 }  // namespace drake
