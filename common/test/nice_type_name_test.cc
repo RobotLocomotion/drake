@@ -19,16 +19,22 @@ namespace drake {
 namespace nice_type_name_test {
 enum class Color { Red, Green, Blue };
 
+// Tests enumeration types.
 struct ForTesting {
   enum MyEnum { One, Two, Three };
   enum class MyEnumClass { Four, Five, Six };
 };
 
+// Test RTTI for inheritance.
 class Base {
  public:
   virtual ~Base() = default;
 };
 class Derived : public Base {};
+
+// Type to be have an explicit override via `SetNiceTypeNamePtrOverride`.
+class OverrideName {};
+
 }  // namespace nice_type_name_test
 
 namespace {
@@ -208,6 +214,27 @@ GTEST_TEST(NiceTypeNameTest, RemoveNamespaces) {
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("::"), "::");
   // No final type segment -- should leave unprocessed.
   EXPECT_EQ(NiceTypeName::RemoveNamespaces("blah::blah2::"), "blah::blah2::");
+}
+
+// This test must be last.
+GTEST_TEST(NiceTypeNameTest, Override) {
+  using nice_type_name_test::OverrideName;
+
+  internal::SetNiceTypeNamePtrOverride(
+      [](const internal::type_erased_ptr& ptr) -> std::string {
+        EXPECT_NE(ptr.raw, nullptr);
+        if (ptr.info == typeid(OverrideName)) {
+          return "example_override";
+        } else {
+          return NiceTypeName::Get(ptr.info);
+        }
+      });
+
+  EXPECT_EQ(
+      NiceTypeName::Get<OverrideName>(),
+      "drake::nice_type_name_test::OverrideName");
+  const OverrideName obj;
+  EXPECT_EQ(NiceTypeName::Get(obj), "example_override");
 }
 
 }  // namespace

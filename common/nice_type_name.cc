@@ -112,5 +112,7 @@ string drake::NiceTypeName::RemoveNamespaces(const string& canonical) {
   return no_namespace.empty() ? canonical : no_namespace;
 }
 
+internal::NiceTypeNamePtrOverride NiceTypeName::ptr_override;
+
 }  // namespace drake
 
