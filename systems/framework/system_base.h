@@ -74,20 +74,6 @@ class SystemBase : public internal::SystemMessageInterface {
   @see NiceTypeName for more specifics. */
   std::string GetSystemType() const final { return NiceTypeName::Get(*this); }
 
-  /** Throws an exception with an appropriate message if the given `context` is
-  not compatible with this System. Restrictions may vary for different systems;
-  the error message should explain. This can be an expensive check so you may
-  want to limit it to Debug builds. */
-  DRAKE_DEPRECATED("2020-05-01",
-                   "This method is no longer necessary. See ValidateContext() "
-                   "for a possible replacement.")
-  void ThrowIfContextNotCompatible(const ContextBase& context) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    CheckValidContext(context);
-#pragma GCC diagnostic pop
-  }
-
   /** Returns a Context suitable for use with this System. Context resources
   are allocated based on resource requests that were made during System
   construction. */
@@ -478,16 +464,6 @@ class SystemBase : public internal::SystemMessageInterface {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
   //@}
-
-  DRAKE_DEPRECATED(
-      "2020-05-01",
-      "This method's functionality has been replaced by ValidateContext().")
-  void CheckValidContext(const ContextBase& context) const {
-    // TODO(sherm1) Add base class checks.
-
-    // Let derived classes have their say.
-    DoCheckValidContext(context);
-  }
 
   //============================================================================
   /** @name                     Dependency tickets
@@ -1169,10 +1145,6 @@ class SystemBase : public internal::SystemMessageInterface {
     if (n > 0)
       implicit_time_derivatives_residual_size_ = n;
   }
-
-  // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
-  // removed, also remove this function.
-  virtual void DoCheckValidContext(const ContextBase&) const {}
 
   /** (Internal) Gets the id used to tag context data as being created by this
   system. */

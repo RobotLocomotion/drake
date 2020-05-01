@@ -978,38 +978,6 @@ class System : public SystemBase {
   system. */
   void CheckValidOutput(const SystemOutput<T>* output) const;
 
-  template <typename T1 = T>
-  DRAKE_DEPRECATED(
-      "2020-05-01",
-      "This method's functionality has been replaced by ValidateContext().")
-  void CheckValidContextT(const Context<T1>& context) const {
-    // Checks that the number of input ports in the context is consistent with
-    // the number of ports declared by the System.
-    DRAKE_THROW_UNLESS(context.num_input_ports() ==
-                       this->num_input_ports());
-
-    DRAKE_THROW_UNLESS(context.num_output_ports() ==
-                       this->num_output_ports());
-
-    // Checks that the size of the fixed vector input ports in the context
-    // matches the declarations made by the system.
-    for (InputPortIndex i(0); i < this->num_input_ports(); ++i) {
-      const FixedInputPortValue* port_value =
-          context.MaybeGetFixedInputPortValue(i);
-
-      // If the port isn't fixed, we don't have anything else to check.
-      if (port_value == nullptr) continue;
-      const auto& input_port = get_input_port_base(i);
-      // In the vector-valued case, check the size.
-      if (input_port.get_data_type() == kVectorValued) {
-        const BasicVector<T1>& input_vector =
-            port_value->template get_vector_value<T1>();
-        DRAKE_THROW_UNLESS(input_vector.size() == input_port.size());
-      }
-      // In the abstract-valued case, there is nothing else to check.
-    }
-  }
-
   /** Returns a copy of the continuous state vector x꜀ into an Eigen
   vector. */
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const;
@@ -1668,11 +1636,6 @@ class System : public SystemBase {
   // specified by @p input_port.  This is final in LeafSystem and Diagram.
   virtual std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<T>& input_port) const = 0;
-
-  // TODO(jwnimmer-tri) Remove this function when CheckValidContext() has been
-  // removed.
-  // SystemBase override checks a Context of same type T.
-  void DoCheckValidContext(const ContextBase& context_base) const final;
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex port_index) const final;
