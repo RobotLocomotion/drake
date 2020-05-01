@@ -11,7 +11,6 @@
 # should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
     "//attic/manipulation/planner",
-    "//attic/manipulation/util",
     "//attic/multibody",
     "//attic/multibody/collision",
     "//attic/multibody/joints",
