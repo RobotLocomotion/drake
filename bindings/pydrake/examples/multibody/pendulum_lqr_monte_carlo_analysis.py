@@ -146,8 +146,8 @@ def main():
     # torque = r x f = r * (m * 9.81 * sin(theta))
     # theta = asin(torque / (r * m))
     if torque_limit <= (arm_radius * arm_mass * 9.81):
-        roa_half_width = np.arcsin(torque_limit /
-                                   (arm_radius * arm_mass * 9.81))
+        roa_half_width = np.arcsin(torque_limit
+                                   / (arm_radius * arm_mass * 9.81))
     else:
         roa_half_width = np.pi
 

@@ -101,7 +101,7 @@ class TestControllers(unittest.TestCase):
 
     def test_inverse_dynamics(self):
         sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
@@ -117,7 +117,7 @@ class TestControllers(unittest.TestCase):
 
     def test_inverse_dynamics_controller(self):
         sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)

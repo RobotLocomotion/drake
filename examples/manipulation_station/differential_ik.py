@@ -65,8 +65,8 @@ class DifferentialIK(LeafSystem):
         err_vec = np.zeros(6)
         err_vec[-3:] = X_WE_desired.translation() - pose.translation()
 
-        rot_err = AngleAxis(X_WE_desired.rotation() *
-                            pose.rotation().transpose())
+        rot_err = AngleAxis(X_WE_desired.rotation()
+                            * pose.rotation().transpose())
         err_vec[:3] = rot_err.axis() * rot_err.angle()
 
     def DoCalcDiscreteVariableUpdates(

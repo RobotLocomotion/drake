@@ -366,11 +366,11 @@ class CallPythonClient(object):
         kwargs = None
         for i, arg in enumerate(msg.rhs):
             value = None
-            if (arg.data_type ==
-                    lcmt_call_python_data.REMOTE_VARIABLE_REFERENCE):
+            if (arg.data_type
+                    == lcmt_call_python_data.REMOTE_VARIABLE_REFERENCE):
                 id = np.frombuffer(arg.data, dtype=np.uint64).reshape(1)[0]
                 if id not in self._client_vars:
-                    raise RuntimeError("Unknown local variable. " +
+                    raise RuntimeError("Unknown local variable. "
                                        "Dropping message.")
                 value = self._client_vars[id]
             elif arg.data_type == lcmt_call_python_data.DOUBLE:
@@ -423,8 +423,8 @@ class CallPythonClient(object):
         if not self._had_error and execution_check.count != 0:
             self._had_error = True
             sys.stderr.write(
-                "ERROR: Invalid termination. " +
-                "'execution_check.finish' called insufficient number of " +
+                "ERROR: Invalid termination. "
+                "'execution_check.finish' called insufficient number of "
                 "times: {}\n".format(execution_check.count))
         if self._wait and not self._had_error:
             wait_func = self.scope_globals["wait"]
@@ -585,8 +585,8 @@ def main(argv):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--no_wait", action='store_true',
-        help="Close client after messages are processed. " +
-             "For FIFO, this means the client will close after the C++ " +
+        help="Close client after messages are processed. "
+             "For FIFO, this means the client will close after the C++ "
              "binary is executed once.")
     parser.add_argument(
         "--no_threading", action='store_true',

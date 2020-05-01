@@ -44,7 +44,7 @@ def prepend_path(key, relpath):
 
 def main():
     assert RUNFILES_DIR, (
-        "This must be called by a script generated using the " +
+        "This must be called by a script generated using the "
         "`drake_runfiles_binary` macro.")
 
     # Stub out pydrake (refer to our ./BUILD.bazel comments for rationale).

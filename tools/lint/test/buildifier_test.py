@@ -42,13 +42,13 @@ class BuildifierTest(unittest.TestCase):
         self.assertEqual(returncode, 1, output)
         self.assertListEqual(output.splitlines(), [
             "ERROR: buildifier: the required formatting is incorrect",
-            ("ERROR: tmp/BUILD.bazel:1: " +
+            ("ERROR: tmp/BUILD.bazel:1: "
              "error: the required formatting is incorrect"),
-            ("ERROR: tmp/BUILD.bazel:1: note: " +
+            ("ERROR: tmp/BUILD.bazel:1: note: "
              "fix via bazel-bin/tools/lint/buildifier tmp/BUILD.bazel"),
-            ("ERROR: tmp/BUILD.bazel:1: note: " +
-             "if that program does not exist, " +
-             "you might need to compile it first: " +
+            ("ERROR: tmp/BUILD.bazel:1: note: "
+             "if that program does not exist, "
+             "you might need to compile it first: "
              "bazel build //tools/lint/..."),
             "NOTE: see https://drake.mit.edu/bazel.html#buildifier"
         ])

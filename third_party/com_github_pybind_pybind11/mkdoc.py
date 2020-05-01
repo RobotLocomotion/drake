@@ -217,7 +217,7 @@ def extract_comment(cursor, deprecations):
 
     # Append the deprecation text.
     result += (
-        r" (Deprecated.) \deprecated {} " +
+        r" (Deprecated.) \deprecated {} "
         "This will be removed from Drake on or after {}.").format(
             message, removal_date)
 
@@ -636,10 +636,10 @@ def process_comment(comment):
             for y in re.split(r'(?: *\n *){2,}', x):
                 lines = re.split(r'(?: *\n *)', y)
                 # Do not reflow lists or section headings.
-                if (re.match(r'^(?:[*+\-]|[0-9]+[.)]) ', lines[0]) or
-                    (len(lines) > 1 and
-                     (lines[1] == '=' * len(lines[0]) or
-                      lines[1] == '-' * len(lines[0])))):
+                if (re.match(r'^(?:[*+\-]|[0-9]+[.)]) ', lines[0])
+                    or (len(lines) > 1
+                        and (lines[1] == '=' * len(lines[0])
+                             or lines[1] == '-' * len(lines[0])))):
                     result += y + '\n\n'
                 else:
                     wrapped = wrapper.fill(re.sub(r'\s+', ' ', y).strip())
@@ -846,10 +846,10 @@ def choose_doc_var_names(symbols):
                 # the argument types" heuristics.
                 result[i] = "doc_move"
             elif (  # Look for a constructor like Foo<T>(const Foo<U>&).
-                cursor.kind == CursorKind.FUNCTION_TEMPLATE and
-                cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE and
-                re.search(r"^(.*)<T>\(const \1<U> *&\)$",
-                          utf8(cursor.displayname))):
+                cursor.kind == CursorKind.FUNCTION_TEMPLATE
+                and cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE
+                and re.search(r"^(.*)<T>\(const \1<U> *&\)$",
+                              utf8(cursor.displayname))):
                 # Special case for scalar conversion constructors; we want to
                 # have a nice short name for these, that doesn't necessarily
                 # conflte with any *other* 1-argument constructor.
