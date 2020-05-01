@@ -17,7 +17,7 @@ import warnings
 import numpy as np
 
 import pydrake
-from pydrake.common import _DRAKE_ASSERT_IS_ARMED
+from pydrake.common import kDrakeAssertIsArmed
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
@@ -612,7 +612,7 @@ class TestMathematicalProgram(unittest.TestCase):
             x0 = array_T([0.])
             x0_bad = array_T([0., 1.])
             # Bad input (before function is called).
-            if _DRAKE_ASSERT_IS_ARMED:
+            if kDrakeAssertIsArmed:
                 # See note in `WrapUserFunc`.
                 input_error_cls = SystemExit
                 input_error_expected = (
@@ -651,7 +651,7 @@ class TestMathematicalProgram(unittest.TestCase):
             x0 = array_T([0.])
             x0_bad = array_T([0., 1.])
             # Bad input (before function is called).
-            if _DRAKE_ASSERT_IS_ARMED:
+            if kDrakeAssertIsArmed:
                 # See note in `WrapUserFunc`.
                 input_error_cls = SystemExit
                 input_error_expected = (
