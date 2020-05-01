@@ -54,5 +54,5 @@ class TestCommon(unittest.TestCase):
         g2 = mut.RandomGenerator(10)
         self.assertEqual(g2(), 3312796937)
 
-    def test_private_members(self):
-        self.assertIsInstance(mut._DRAKE_ASSERT_IS_ARMED, bool)
+    def test_assert_is_armed(self):
+        self.assertIsInstance(mut.kDrakeAssertIsArmed, bool)
