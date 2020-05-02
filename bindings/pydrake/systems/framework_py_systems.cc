@@ -275,6 +275,8 @@ struct Impl {
     auto system_cls = DefineTemplateClassWithDefault<System<T>, PySystem>(
         m, "System", GetPyParam<T>(), doc.SystemBase.doc);
     system_cls  // BR
+        .def("GetSystemType", &System<T>::GetSystemType,
+            doc.SystemBase.GetSystemType.doc)
         .def("get_name", &System<T>::get_name, doc.SystemBase.get_name.doc)
         .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
