@@ -10,7 +10,7 @@ def get_clang_format_path(version=None):
     Otherwise, pass the desired major verison as an int.
     """
     if version is None:
-        version = 6
+        version = 9
     if sys.platform == "darwin":
         path = f"/usr/local/opt/llvm@{version}/bin/clang-format"
     else:
