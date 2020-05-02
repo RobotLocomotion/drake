@@ -58,6 +58,11 @@ if __name__ == '__main__':
               "marked executable in the filesystem; fix this via chmod a-x " +
               test_basename)
         sys.exit(1)
+
+    # On import, force all drake deprecation warnings to trigger an error.
+    if has_pydrake:
+        warnings.simplefilter("error", DrakeDeprecationWarning)
+
     module = SourceFileLoader(test_name, runfiles_test_filename).load_module(
         test_name)
 
