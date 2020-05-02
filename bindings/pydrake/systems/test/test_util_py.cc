@@ -63,7 +63,10 @@ class MoveOnlyType {
   int x_{};
 };
 
-struct UnknownType {};
+// This type is explicitly not registered with pybind11.
+struct UnregisteredType {
+  int junk{};
+};
 
 // A simple 2-dimensional subclass of BasicVector for testing.
 template <typename T>
@@ -105,8 +108,8 @@ PYBIND11_MODULE(test_util, m) {
   py::class_<MyVector2<T>, BasicVector<T>>(m, "MyVector2")
       .def(py::init<const Eigen::Vector2d&>(), py::arg("data"));
 
-  m.def("make_unknown_abstract_value",
-      []() { return AbstractValue::Make(UnknownType{}); });
+  m.def("make_abstract_value_cc_type_unregistered",
+      []() { return AbstractValue::Make(UnregisteredType{}); });
 
   // Call overrides to ensure a custom Python class can override these methods.
 

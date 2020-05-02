@@ -16,7 +16,7 @@ from pydrake.systems.framework import (
     VectorBase,
     )
 from pydrake.systems.test.test_util import (
-    make_unknown_abstract_value,
+    make_abstract_value_cc_type_unregistered,
     MoveOnlyType,
 )
 
@@ -139,15 +139,15 @@ class TestValue(unittest.TestCase):
             value = AbstractValue.Make(BasicVector_[T](size=1))
             self.assertIsInstance(value, Value[BasicVector_[T]])
 
-    def test_abstract_value_unknown(self):
-        value = make_unknown_abstract_value()
+    def test_abstract_value_cc_type_unregistered(self):
+        value = make_abstract_value_cc_type_unregistered()
         self.assertIsInstance(value, AbstractValue)
         with self.assertRaises(RuntimeError) as cm:
             value.get_value()
         self.assertTrue(all(
             s in str(cm.exception) for s in [
                 "AbstractValue",
-                "UnknownType",
+                "UnregisteredType",
                 "get_value",
                 "AddValueInstantiation",
             ]), cm.exception)
