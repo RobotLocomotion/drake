@@ -390,6 +390,8 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
   MatrixX<T>& J = get_mutable_jacobian();
   if (!get_reuse() || J.rows() == 0 || IsBadJacobian(J)) {
     J = CalcJacobian(t, xt);
+    // Mark the Jacobian as fresh so that we don't recompute it.
+    jacobian_is_fresh_ = true;
     ++num_iter_factorizations_;
     compute_and_factor_iteration_matrix(J, h, iteration_matrix);
     return true;  // Indicate success.
@@ -427,6 +429,8 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
 
       // Reform the Jacobian matrix and refactor the iteration matrix.
       J = CalcJacobian(t, xt);
+      // Mark the Jacobian as fresh so that we don't recompute it.
+      jacobian_is_fresh_ = true;
       ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;

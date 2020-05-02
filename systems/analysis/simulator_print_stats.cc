@@ -55,6 +55,8 @@ void PrintSimulatorStatistics(const Simulator<double>& simulator) {
                integrator.get_num_step_shrinkages_from_error_control());
   }
 
+  fmt::print("Number of derivative evaluations = {:d}\n",
+      integrator.get_num_derivative_evaluations());
   // These two statistics can only be nonzero with implicit integrators, but
   // because they're available in IntegratorBase, we print them for all
   // integrators as a sanity check.
