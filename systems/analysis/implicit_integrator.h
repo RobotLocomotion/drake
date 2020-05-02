@@ -410,6 +410,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // @param x the continuous state around which to compute the Jacobian matrix.
   // @post the context's time and continuous state will be temporarily set
   //       during this call (and then reset to their original values) on return.
+  //       Furthermore, the jacobian_is_fresh_ flag is set to "true", indicating
+  //       that the Jacobian was computed from the most recent time t.
   const MatrixX<T>& CalcJacobian(const T& t, const VectorX<T>& x);
 
   // Computes the Jacobian of the ordinary differential equations around time
@@ -467,13 +469,24 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     ++num_jacobian_evaluations_;
   }
 
+  void set_jacobian_is_fresh(bool flag) {
+    jacobian_is_fresh_ = flag;
+  }
+
  private:
   bool DoStep(const T& h) final {
     bool result = DoImplicitIntegratorStep(h);
     // If the implicit step is successful (result is true), we need a new
     // Jacobian (fresh is false). Otherwise, a failed step (result is false)
     // means we can keep the Jacobian (fresh is true). Therefore fresh =
-    // !result, always.
+    // !result, almost always.
+
+    // The exception is when the implicit step fails during the second half-
+    // step of ImplicitEulerIntegrator, in which case the Jacobian is not from
+    // the beginning of the step, and so fresh should be false. We leave it
+    // untouched here to keep the design of ImplicitIntegrator<T> simple, and
+    // let ImplicitEulerIntegrator<T> handle this flag on its own at the
+    // beginning of ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep().
     jacobian_is_fresh_ = !result;
 
     return result;
@@ -487,7 +500,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // The last computed Jacobian matrix.
   MatrixX<T> J_;
 
-  // Whether the Jacobian matrix is fresh.
+  // Indicates whether the Jacobian matrix is fresh. We say the Jacobian is
+  // "fresh" if it was last computed at a state (t0, x0) from the beginning of
+  // the current step. This indicates to MaybeFreshenMatrices that it should
+  // not recompute the Jacobian, but rather it should fail immediately. This
+  // is only used when use_full_newton_ and reuse_ are set to false.
   bool jacobian_is_fresh_{false};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations

@@ -223,6 +223,10 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
                                              context_radau1.get());
   ImplicitEulerIntegrator<double> ie(spring_damper, context_ie.get());
 
+  // Tell IE to use implicit trapezoid for error estimation to match
+  // Radau1.
+  ie.set_use_implicit_trapezoid_error_estimation(true);
+
   // Ensure that both integrators support error estimation.
   EXPECT_TRUE(radau1.supports_error_estimation());
   EXPECT_TRUE(ie.supports_error_estimation());
