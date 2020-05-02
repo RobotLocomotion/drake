@@ -18,6 +18,11 @@
 namespace drake {
 namespace systems {
 
+// Forward declare VelocityImplicitEulerIntegrator for the Reuse test
+// because the VIE integrator has slightly different logic.
+template <class T>
+class VelocityImplicitEulerIntegrator;
+
 namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
@@ -762,13 +767,38 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   // Attempt to integrate the system. Our past experience indicates that this
   // system fails to converge from the initial state for this large step size.
   // This tests the case where the Jacobian matrix has yet to be formed. There
-  // should be two Jacobian matrix evaluations- once at trial 1 and another
-  // at trial 3. There should be three iteration matrix factorizations: once
-  // at trial 1, another at trial 2, and the third at trial 3.
+  // should be one Jacobian matrix evaluation - once at trial 1. There should
+  // also be two iteration matrix factorizations: once at trial 1, and another
+  // at trial 2. Trial 3 should be skipped because the first Jacobian matrix
+  // computation makes the Jacobian "fresh". The exception is the
+  // VelocityImplicitEulerIntegrator, which will recompute both on trial 3
+  // because it does not reuse Jacobians for different step sizes; hence
+  // it will have 3 factorizations and 2 Jacobian evaluations.
+  // TODO(antequ): In two particular cases, it may compute the same
+  // iteration matrix twice. Currently they are rare and unimportant, but
+  // in the future, it may be worth it to investigate optimizing these two
+  // cases if they make a performance difference:
+  // 1. During the first time step of the simulation, trial 1 will compute
+  // the initial iteration matrix, and trial 2 will compute the same
+  // iteration matrix again if trial 1 fails.
+  // 2. For implicit Euler with step doubling, it is possible that trial 3
+  // gets triggered on the first small step, which then fails, and after the
+  // step size is halved, trial 2 is triggered on the first large step,
+  // which requires the same iteration matrix (so the matrix is correct
+  // and does not actually need recomputation).
+  // In both cases, the right thing to do would be to skip to trial 3.
+  // This is the same TODO as the TODO in
+  // ImplicitIntegrator<T>::MaybeFreshenMatrices()
   integrator.Initialize();
   ASSERT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(1e-2));
-  EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 3);
-  EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 2);
+  if (!std::is_same<Integrator,
+      VelocityImplicitEulerIntegrator<double>>::value) {
+    EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 2);
+    EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 1);
+  } else {
+    EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 3);
+    EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 2);
+  }
 
   // Now integrate again but with a smaller size. Again, past experience
   // that this step size should be sufficiently small for the integrator to
