@@ -115,6 +115,14 @@ Every issue must have at most one ``component`` label. The components are:
 
   typical team: dynamics
 
+- ``jupyter``
+
+  Jupyter notebook infrastructure, Binder integration, etc.
+
+  *Note*: This label does not imply content authoring for tutorials.
+
+  typical team: kitware
+
 - ``mathematical program``
 
   Formulating and solving mathematical programs through numerical optimization,
@@ -128,6 +136,13 @@ Every issue must have at most one ``component`` label. The components are:
   usually in ``drake/multibody``.
 
   typical team: dynamics
+
+- ``pydrake``
+
+  Python API and documentation under ``//bindings/pydrake`` (and
+  its supporting Starlark macros), the ``RobotLocomotion/pybind11`` fork, etc.
+
+  typical team: kitware
 
 - ``simulator``
 
