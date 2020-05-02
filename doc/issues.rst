@@ -84,6 +84,19 @@ Every issue must have at most one ``component`` label. The components are:
 
   typical team: kitware
 
+- ``pydrake``
+
+  description: Python API, Python bindings, Python documentation, etc.
+
+  typical team: kitware or manipulation
+
+- ``jupyter``
+
+  description: jupyter notebooks (Python tutorials), Binder / nbviewer
+  integration
+
+  typical team: kitware
+
 .. _issues-priority:
 
 Priority
