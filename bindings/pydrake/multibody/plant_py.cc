@@ -657,6 +657,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::get_applied_spatial_force_input_port),
             py_reference_internal,
             cls_doc.get_applied_spatial_force_input_port.doc)
+        .def("get_body_poses_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&>(
+                &Class::get_body_poses_output_port),
+            py_reference_internal, cls_doc.get_body_poses_output_port.doc)
         .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_state_output_port),

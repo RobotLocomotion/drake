@@ -635,8 +635,7 @@ class TestPlant(unittest.TestCase):
         plant_f.Finalize()
         plant = to_type(plant_f, T)
 
-        # Test that we can get an actuation input port and a continuous state
-        # output port.
+        # Test that we can get the input and output ports.
         self.assertIsInstance(
             plant.get_actuation_input_port(iiwa_model), InputPort)
         self.assertIsInstance(
@@ -649,6 +648,7 @@ class TestPlant(unittest.TestCase):
             plant.get_generalized_contact_forces_output_port(
                 model_instance=gripper_model),
             OutputPort)
+        self.assertIsInstance(plant.get_body_poses_output_port(), OutputPort)
 
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):
