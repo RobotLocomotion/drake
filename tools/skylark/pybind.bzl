@@ -428,6 +428,9 @@ def add_pybind_coverage_data(
             subpackage + ":pybind_coverage_data"
             for subpackage in subpackages
         ],
+        # N.B. Without this, we will duplicate error messages between
+        # *cc_libraries and this rule.
+        tags = ["nolint"],
         visibility = ["//bindings/pydrake:__pkg__"],
     )
 
