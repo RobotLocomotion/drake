@@ -10,7 +10,8 @@ from pydrake.common.test.value_test_util import (
 
 
 class TestValue(unittest.TestCase):
-    def test_abstract_value_copyable(self):
+    def test_abstract_value_type_conversion(self):
+        """Tests type-conversion types (passed by value, not reference)."""
         expected = "Hello world"
         value = Value[str](expected)
         self.assertIsInstance(value, AbstractValue)
@@ -20,8 +21,16 @@ class TestValue(unittest.TestCase):
         self.assertEqual(value.get_value(), expected_new)
         # Test docstring.
         self.assertFalse("unique_ptr" in value.set_value.__doc__)
+        with self.assertRaises(RuntimeError) as cm:
+            value.get_mutable_value()
+        self.assertEqual(
+            str(cm.exception),
+            "Cannot get mutable value (or reference) for a type-conversion "
+            "type: <class 'str'>")
 
-    def test_abstract_value_move_only(self):
+    def test_abstract_value_registered_class(self):
+        """Tests registered class types (passable by reference and value). Also
+        tests a move-only class type."""
         obj = MoveOnlyType(10)
         self.assertEqual(
             str(Value[MoveOnlyType]),
@@ -30,7 +39,7 @@ class TestValue(unittest.TestCase):
         value = Value[MoveOnlyType](obj)
         self.assertTrue(value.get_value() is not obj)
         self.assertEqual(value.get_value().x(), 10)
-        # Set value.
+        # Set value (via `get_mutable_value`).
         value.get_mutable_value().set_x(20)
         self.assertEqual(value.get_value().x(), 20)
         # Test custom emplace constructor.
