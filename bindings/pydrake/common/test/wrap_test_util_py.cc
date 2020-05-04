@@ -4,8 +4,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/copyable_unique_ptr.h"
 
-namespace drake {
-namespace pydrake {
+namespace drake::pydrake {
 namespace {
 
 // A simple struct with a value.
@@ -27,8 +26,44 @@ struct MyContainerUniquePtr {
   copyable_unique_ptr<MyValue> copyable_member;
 };
 
-}  // namespace
+struct TypeConversionExample {
+  std::string value;
+};
 
+// Wrapper for TypeConversionExample.
+struct wrapper_type_conversion_exaple {
+  using Type = TypeConversionExample;
+  static constexpr auto original_name = py::detail::_("TypeConversionExample");
+  using WrappedType = std::string;
+  static constexpr auto wrapped_name = py::detail::_("str");
+
+  static TypeConversionExample unwrap(const std::string& value) {
+    return TypeConversionExample{value};
+  }
+  static std::string wrap(const TypeConversionExample& obj) {
+    return obj.value;
+  }
+};
+
+TypeConversionExample MakeTypeConversionExample() {
+  return TypeConversionExample{"hello"};
+}
+
+bool CheckTypeConversionExample(const TypeConversionExample& obj) {
+  return obj.value == "hello";
+}
+
+}  // namespace
+}  // namespace drake::pydrake
+
+namespace pybind11::detail {
+template <>
+struct type_caster<drake::pydrake::TypeConversionExample>
+    : public drake::pydrake::internal::type_caster_wrapped<
+          drake::pydrake::wrapper_type_conversion_exaple> {};
+}  // namespace pybind11::detail
+
+namespace drake::pydrake {
 PYBIND11_MODULE(wrap_test_util, m) {
   py::class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
@@ -47,7 +82,11 @@ PYBIND11_MODULE(wrap_test_util, m) {
       "MyContainerUniquePtr doc");
   DefReadUniquePtr(&my_unique, "copyable_member",
       &MyContainerUniquePtr::copyable_member, "MyContainerUniquePtr doc");
-}
 
-}  // namespace pydrake
-}  // namespace drake
+  m.def("MakeTypeConversionExample", &MakeTypeConversionExample);
+  m.def("MakeTypeConversionExampleBadRvp", &MakeTypeConversionExample,
+      py_reference);
+  m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
+      py::arg("obj"));
+}
+}  // namespace drake::pydrake

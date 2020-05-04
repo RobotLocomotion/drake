@@ -43,7 +43,8 @@ GTEST_TEST(CppParamTest, PrimitiveTypes) {
   ASSERT_TRUE(CheckPyParam<int>("int,"));
   ASSERT_TRUE(CheckPyParam<uint32_t>("np.uint32,"));
   ASSERT_TRUE(CheckPyParam<int64_t>("np.int64,"));
-  ASSERT_TRUE(CheckPyParam<py::object>("object,"));
+  // N.B. CheckPyParam<py::object>(...) should cause a compile-time failure.
+  ASSERT_TRUE(CheckPyParam<Object>("object,"));
 }
 
 // Dummy type.
