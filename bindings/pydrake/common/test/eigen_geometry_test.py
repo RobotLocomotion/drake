@@ -7,6 +7,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
+from pydrake.common.value import Value
 import pydrake.common.test.eigen_geometry_test_util as test_util
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -271,3 +272,8 @@ class TestEigenGeometry(unittest.TestCase):
             return np.hstack((value.angle(), value.axis()))
 
         assert_pickle(self, value, get_vector, T=T)
+
+    @numpy_compare.check_all_types
+    def test_value_instantiations(self, T):
+        # Existence checks.
+        Value[mut.Isometry3_[T]]
