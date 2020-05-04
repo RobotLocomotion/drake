@@ -5,8 +5,11 @@
 
 #include <string>
 
+#include <fmt/format.h>
+
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/value.h"
@@ -24,6 +27,7 @@ namespace pydrake {
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     py::module scope) {
+  static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
   py::module py_common = py::module::import("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
@@ -53,24 +57,45 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     const T& v = caster;  // Use implicit conversion from `type_caster<>`.
     return new Class(v);
   }));
-  // N.B. `reference_internal` for pybind POD types (int, str, etc.) does not
-  // really do anything meaningful.
-  // TODO(eric.cousineau): Add check to warn about this.
-  py_class  // BR
-      .def("get_value", &Class::get_value, py_reference_internal)
-      .def("get_mutable_value", &Class::get_mutable_value,
-          py_reference_internal);
-  std::string set_value_docstring = "Replaces stored value with a new one.";
-  if (!std::is_copy_constructible<T>::value) {
-    set_value_docstring += R"""(
+  if constexpr (internal::is_generic_pybind<T>::value) {
+    py_class  // BR
+        .def("get_value", &Class::get_value, py_reference_internal)
+        .def("get_mutable_value", &Class::get_mutable_value,
+            py_reference_internal);
+    std::string set_value_docstring = "Replaces stored value with a new one.";
+    if (!std::is_copy_constructible<T>::value) {
+      set_value_docstring += R"""(
 
 @note The value type for this class is non-copyable.
 You should ensure that you do not have any dangling references to previous
-values returned by `get_value` or `get_mutable_value`, because this memory will
+values returned by `get_value` or `get_mutable_value`, because this memory
+will
 be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
-)""";
+  )""";
+    }
+    py_class.def("set_value", &Class::set_value, set_value_docstring.c_str());
+  } else if constexpr (std::is_same_v<T, Object>) {
+    py_class  // BR
+        .def("get_value", &Class::get_value)
+        // mutable in this case is OK, because this is effectively a reference
+        // value.
+        .def("get_mutable_value", &Class::get_value)
+        .def("set_value", &Class::set_value);
+  } else {
+    py_class  // BR
+        .def("get_value", &Class::get_value)
+        .def("get_mutable_value",
+            [py_T](const Class&) {
+              // For more info:
+              // https://pybind11.readthedocs.io/en/stable/advanced/cast/index.html
+              throw std::logic_error(
+                  fmt::format("Cannot get mutable value (or reference) for a "
+                              "type-conversion "
+                              "type: {}",
+                      py::str(py_T).cast<std::string>()));
+            })
+        .def("set_value", &Class::set_value);
   }
-  py_class.def("set_value", &Class::set_value, set_value_docstring.c_str());
   return py_class;
 }
 

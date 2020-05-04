@@ -182,6 +182,7 @@ drake_cc_library(
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
+        ":wrap_pybind",
         "//:drake_shared_library",
         "//bindings/pydrake:pydrake_pybind",
     ],
@@ -217,6 +218,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":type_pack",
+        ":wrap_pybind",
         "//bindings/pydrake:pydrake_pybind",
         "@pybind11",
     ],

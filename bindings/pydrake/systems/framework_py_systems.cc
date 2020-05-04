@@ -492,7 +492,7 @@ Note: The above is for the C++ documentation. For Python, use
               WarnDeprecated(
                   "`DeclareAbstractInputPort(self, name)` is deprecated. "
                   "Please use `(self, name, model_value)` instead.");
-              drake::Value<py::object> model_value;
+              drake::Value<Object> model_value;
               return self->DeclareAbstractInputPort(name, model_value);
             },
             py_reference_internal, py::arg("name"),

@@ -12,16 +12,18 @@ namespace pydrake {
 
 namespace {
 
-// Specialize C++ implementation for `Value[object]` instantiation.
-class PyObjectValue : public drake::Value<py::object> {
+// Local inheritance-based specialization of C++ implementation for
+// `Value[object]` instantiation.
+// TODO(eric.cousineau): Make this public?
+class PyObjectValue : public drake::Value<Object> {
  public:
-  using Base = Value<py::object>;
+  using Base = Value<Object>;
   using Base::Base;
-  // Override `Value<py::object>::Clone()` to perform a deep copy on the
-  // object.
+  // Override `Clone()` to perform a deep copy on the object.
   std::unique_ptr<AbstractValue> Clone() const override {
     py::object py_copy = py::module::import("copy").attr("deepcopy");
-    return std::make_unique<PyObjectValue>(py_copy(get_value()));
+    py::object copied = py_copy(get_value().to_pyobject<py::object>());
+    return std::make_unique<PyObjectValue>(Object::from_pyobject(copied));
   }
 };
 
@@ -30,7 +32,7 @@ class PyObjectValue : public drake::Value<py::object> {
 void AddPrimitiveValueInstantiations(py::module m) {
   AddValueInstantiation<std::string>(m);
   AddValueInstantiation<bool>(m);
-  AddValueInstantiation<py::object, PyObjectValue>(m);
+  AddValueInstantiation<Object, PyObjectValue>(m);  // Value[object]
 }
 
 }  // namespace
