@@ -23,6 +23,10 @@ namespace internal {
 template <typename T, typename = void>
 struct wrap_ref_ptr : public wrap_arg_default<T> {};
 
+// Determines if a type will go through pybind11's generic caster. This
+// implies that the type has been declared using `py::class_`, and can have
+// a reference passed through. Otherwise, the type uses type-conversion:
+// https://pybind11.readthedocs.io/en/stable/advanced/cast/index.html
 template <typename T>
 using is_generic_pybind = std::is_base_of<py::detail::type_caster_generic,
     py::detail::make_caster<T>>;
@@ -44,6 +48,68 @@ struct wrap_callback<const std::function<Signature>&>
 template <typename Signature>
 struct wrap_callback<std::function<Signature>>
     : public wrap_callback<const std::function<Signature>&> {};
+
+// Implements a `py::detail::type_caster<>` specialization used to convert
+// types using a specific wrapping policy.
+// @tparam Wrapper
+//  Struct which must provide `Type`, `WrappedType`, `unwrap`, `wrap`,
+// `wrapped_name`, and `original_name`.
+// Fails-fast at runtime if there is an attempt to pass by reference.
+template <typename Wrapper>
+struct type_caster_wrapped {
+  using Type = typename Wrapper::Type;
+  using WrappedType = typename Wrapper::WrappedType;
+  using WrappedTypeCaster = py::detail::type_caster<WrappedType>;
+
+  // Python to C++.
+  bool load(py::handle src, bool converter) {
+    WrappedTypeCaster caster;
+    if (!caster.load(src, converter)) {
+      return false;
+    }
+    value_ = Wrapper::unwrap(caster.operator WrappedType&());
+    loaded_ = true;
+    return true;
+  }
+
+  // See `pybind11/eigen.h`, `type_caster<>` implementations.
+  // N.B. Do not use `PYBIND11_TYPE_CASTER(...)` so we can avoid casting
+  // garbage values.
+  operator Type&() {
+    if (!loaded_) {
+      throw py::cast_error("Internal error: value not loaded?");
+    }
+    return value_;
+  }
+
+  template <typename T>
+  using cast_op_type = py::detail::movable_cast_op_type<T>;
+
+  static constexpr auto name = Wrapper::wrapped_name;
+
+  // C++ to Python.
+  template <typename TType>
+  static py::handle cast(
+      TType&& src, py::return_value_policy policy, py::handle parent) {
+    if (policy == py::return_value_policy::reference ||
+        policy == py::return_value_policy::reference_internal) {
+      // N.B. We must declare a local `static constexpr` here to prevent
+      // linking errors. This does not appear achievable with
+      // `constexpr char[]`, so we use `py::detail::descr`.
+      // See `pybind11/pybind11.h`, `cpp_function::initialize(...)` for an
+      // example.
+      static constexpr auto original_name = Wrapper::original_name;
+      throw py::cast_error(
+          std::string("Can only pass ") + original_name.text + " by value.");
+    }
+    return WrappedTypeCaster::cast(
+        Wrapper::wrap(std::forward<TType>(src)), policy, parent);
+  }
+
+ private:
+  bool loaded_{false};
+  Type value_;
+};
 
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
