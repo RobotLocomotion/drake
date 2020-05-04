@@ -22,6 +22,7 @@ from pydrake.systems.analysis import (
     SimulatorStatus, Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     BasicVector, BasicVector_,
     Context, Context_,
     ContinuousState, ContinuousState_,
@@ -58,9 +59,6 @@ from pydrake.systems.primitives import (
     SignalLogger,
     ZeroOrderHold,
     )
-
-with catch_drake_warnings(expected_count=2):
-    from pydrake.systems.framework import AbstractValue, Value
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and

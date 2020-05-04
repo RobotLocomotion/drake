@@ -6,9 +6,7 @@
 namespace drake {
 namespace pydrake {
 
-// TODO(eric.cousineau): Remove leading underscore once deprecation shim module
-// is removed.
-PYBIND11_MODULE(_framework, m) {
+PYBIND11_MODULE(framework, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for the core Systems framework.";
 

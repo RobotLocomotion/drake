@@ -6,7 +6,6 @@ import warnings
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     Simulator,
@@ -14,6 +13,7 @@ from pydrake.systems.analysis import (
 from pydrake.systems.framework import (
     AbstractParameterIndex,
     AbstractStateIndex,
+    AbstractValue,
     BasicVector, BasicVector_,
     CacheIndex,
     Context,

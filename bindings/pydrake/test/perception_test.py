@@ -4,9 +4,9 @@ import unittest
 
 import numpy as np
 
-from pydrake.common.value import AbstractValue, Value
 from pydrake.systems.sensors import CameraInfo, PixelType
-from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.systems.framework import (
+    AbstractValue, InputPort, OutputPort, Value)
 
 
 class TestPerception(unittest.TestCase):

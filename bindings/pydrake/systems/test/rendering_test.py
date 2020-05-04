@@ -13,7 +13,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.value import AbstractValue
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.math import (
@@ -21,6 +20,7 @@ from pydrake.multibody.math import (
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import (
+    AbstractValue,
     BasicVector,
     PortDataType,
 )
