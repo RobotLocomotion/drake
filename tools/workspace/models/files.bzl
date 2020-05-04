@@ -33,6 +33,28 @@ def franka_description_mesh_files():
         "franka_description/meshes/visual/link7.obj",
     ]
 
+def jaco_description_mesh_files():
+    return [
+        "jaco_description/LICENSE",
+        "jaco_description/meshes/arm.obj",
+        "jaco_description/meshes/arm_half_1.obj",
+        "jaco_description/meshes/arm_half_2.obj",
+        "jaco_description/meshes/arm_mico.obj",
+        "jaco_description/meshes/base.obj",
+        "jaco_description/meshes/finger_distal.obj",
+        "jaco_description/meshes/finger_proximal.obj",
+        "jaco_description/meshes/forearm.obj",
+        "jaco_description/meshes/forearm_mico.obj",
+        "jaco_description/meshes/hand_2finger.obj",
+        "jaco_description/meshes/hand_3finger.obj",
+        "jaco_description/meshes/ring_big.obj",
+        "jaco_description/meshes/ring_small.obj",
+        "jaco_description/meshes/shoulder.obj",
+        "jaco_description/meshes/wrist.obj",
+        "jaco_description/meshes/wrist_spherical_1.obj",
+        "jaco_description/meshes/wrist_spherical_2.obj",
+    ]
+
 def skydio_2_mesh_files():
     return [
         "skydio_2/skydio_2_1000_poly.mtl",

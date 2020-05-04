@@ -7,6 +7,7 @@ exports_files(
     srcs = glob([
         "dishes/**",
         "franka_description/**",
+        "jaco_description/**",
         "skydio_2/**",
         "ycb/meshes/**",
     ], allow_empty = False),
