@@ -262,9 +262,12 @@ new link on the GitHub issue, and close the issue.
 Handling User StackOverflow Questions
 -------------------------------------
 
-Please subscribe to the ``drake`` tag by following
-`these general instructions <https://meta.stackoverflow.com/a/336515/7829525>`_,
-if you are able to.
+Please subscribe to the ``drake`` tag by following these instructions:
+
+.. toctree::
+    :maxdepth: 1
+
+    stackoverflow_notifications
 
 Please also monitor for `unanswered StackOverflow posts
 <https://stackoverflow.com/unanswered/tagged/drake?tab=noanswers>`_
@@ -277,6 +280,7 @@ it:
 
   - Russ Tedrake
   - Eric Cousineau
+  - Michael Sherman
 
 Continuous Integration Notes
 ============================
