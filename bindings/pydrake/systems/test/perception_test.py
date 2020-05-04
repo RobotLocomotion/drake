@@ -3,10 +3,11 @@
 import unittest
 import numpy as np
 
+from pydrake.common.value import AbstractValue
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import AbstractValue, DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.perception import (
     PointCloudConcatenation, _ConcatenatePointClouds, _TileColors,
     _TransformPoints)
