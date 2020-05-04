@@ -8,8 +8,9 @@ def sdformat_repository(
     github_archive(
         name = name,
         repository = "osrf/sdformat",
-        commit = "sdformat9_9.1.0",
-        sha256 = "e5ac1e7b9b37edf2236a87c7ef4c82d20710439d16933a7e4602a31c82e95367",  # noqa
+        # DNM: Drake CI test for PR https://github.com/osrf/sdformat/pull/268
+        commit = "9f794faa76ff62715a26f139358e001e41ce653b",
+        sha256 = "7b0253e3ea40904a456285b9ac8f6d75a3b15c6c7384b7c7e7fb5717675c3ec7",  # noqa
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
     )
