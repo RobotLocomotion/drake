@@ -1,34 +1,11 @@
 # -*- python -*-
 
-def ycb_mesh_files():
-    """Manual enumeration of mesh files, to avoid needing to write extra Bazel
-    logic.
+# Keep the macros sorted alphabetically by macro name.
+# Keep the lists of files sorted alphabetically by filename.
 
-    Recipe to reproduce:
-        $ cd models
-        $ find ycb/meshes -type f | \
-            python3 -c 'import sys; print(repr(sys.stdin.read().split()))'
-    """
+def dishes_files():
     return [
-        "ycb/meshes/003_cracker_box_textured.mtl",
-        "ycb/meshes/003_cracker_box_textured.obj",
-        "ycb/meshes/003_cracker_box_textured.png",
-        "ycb/meshes/004_sugar_box_textured.mtl",
-        "ycb/meshes/004_sugar_box_textured.obj",
-        "ycb/meshes/004_sugar_box_textured.png",
-        "ycb/meshes/005_tomato_soup_can_textured.mtl",
-        "ycb/meshes/005_tomato_soup_can_textured.obj",
-        "ycb/meshes/005_tomato_soup_can_textured.png",
-        "ycb/meshes/006_mustard_bottle_textured.mtl",
-        "ycb/meshes/006_mustard_bottle_textured.obj",
-        "ycb/meshes/006_mustard_bottle_textured.png",
-        "ycb/meshes/009_gelatin_box_textured.mtl",
-        "ycb/meshes/009_gelatin_box_textured.obj",
-        "ycb/meshes/009_gelatin_box_textured.png",
-        "ycb/meshes/010_potted_meat_can_textured.mtl",
-        "ycb/meshes/010_potted_meat_can_textured.obj",
-        "ycb/meshes/010_potted_meat_can_textured.png",
-        "ycb/meshes/LICENSE.txt",
+        "dishes/bowls/evo_bowl_no_mtl.obj",
     ]
 
 def franka_description_mesh_files():
@@ -64,7 +41,33 @@ def skydio_2_mesh_files():
         "skydio_2/LICENSE",
     ]
 
-def dishes_files():
+def ycb_mesh_files():
+    """Manual enumeration of mesh files, to avoid needing to write extra Bazel
+    logic.
+
+    Recipe to reproduce:
+        $ cd models
+        $ find ycb/meshes -type f | \
+            python3 -c 'import sys; print(repr(sys.stdin.read().split()))'
+    """
     return [
-        "dishes/bowls/evo_bowl_no_mtl.obj",
+        "ycb/meshes/003_cracker_box_textured.mtl",
+        "ycb/meshes/003_cracker_box_textured.obj",
+        "ycb/meshes/003_cracker_box_textured.png",
+        "ycb/meshes/004_sugar_box_textured.mtl",
+        "ycb/meshes/004_sugar_box_textured.obj",
+        "ycb/meshes/004_sugar_box_textured.png",
+        "ycb/meshes/005_tomato_soup_can_textured.mtl",
+        "ycb/meshes/005_tomato_soup_can_textured.obj",
+        "ycb/meshes/005_tomato_soup_can_textured.png",
+        "ycb/meshes/006_mustard_bottle_textured.mtl",
+        "ycb/meshes/006_mustard_bottle_textured.obj",
+        "ycb/meshes/006_mustard_bottle_textured.png",
+        "ycb/meshes/009_gelatin_box_textured.mtl",
+        "ycb/meshes/009_gelatin_box_textured.obj",
+        "ycb/meshes/009_gelatin_box_textured.png",
+        "ycb/meshes/010_potted_meat_can_textured.mtl",
+        "ycb/meshes/010_potted_meat_can_textured.obj",
+        "ycb/meshes/010_potted_meat_can_textured.png",
+        "ycb/meshes/LICENSE.txt",
     ]
