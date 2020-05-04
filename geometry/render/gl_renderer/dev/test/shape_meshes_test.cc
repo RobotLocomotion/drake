@@ -196,7 +196,13 @@ GTEST_TEST(ShapeMeshesTest, ConfirmUtilities) {
   EXPECT_EQ(centroid(vertices, indices, 0), Vector3<GLfloat>(0.5f, 0.5f, 0));
 }
 
-GTEST_TEST(MakeLongLatUnitSphere, ConfirmSphere) {
+/* The tests for these tessellated primitives are merely suggestive; they don't
+ guarantee correct meshes. We *might* consider confirming there are no holes in
+ the mesh. In practice that may not be necessary; those kinds of artifacts would
+ be immediately apparent in rendered images. Defer those heavyweight types of
+ tests until there's a proven bug. */
+
+GTEST_TEST(PrimitiveMeshTests, ConfirmMakeLongLatUnitSphere) {
   const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
 
   // Closed form solution for surface area of unit sphere.
@@ -232,12 +238,55 @@ GTEST_TEST(MakeLongLatUnitSphere, ConfirmSphere) {
           << "for resolution: " << resolution << " and triangle " << t;
     }
   }
+}
 
-  /* These tests are merely suggestive; they don't guarantee a correct sphere
-   mesh. We *might* consider confirming there are no holes in the mesh. In
-   practice that may not be necessary; those kinds of artifacts would be
-   immediately apparent in rendered images. Defer those heavyweight types of
-   tests until there's a proven bug. */
+GTEST_TEST(PrimitiveMeshTests, ConfirmCylinder) {
+  const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
+
+  // Closed form solution for surface area of unit cylinder: H = 1, R = 1.
+  //  Total cap area: 2 * 4πR = 2 * 4π = 8π
+  //  Bareal area: 2πRH = 2π
+  //  Total area = 8π + 2π = 10π
+  const GLfloat kIdealArea = static_cast<GLfloat>(10 * M_PI);
+
+  float prev_area = 0;
+  for (int resolution : {3, 10, 20, 40}) {
+    auto [vertices, indices] = MakeUnitCylinder(resolution, resolution);
+
+    // Confirm area converges towards (but not above) ideal area.
+    float total_area = 0;
+    for (int t = 0; t < indices.rows(); ++t) {
+      const auto a = area(vertices, indices, t);
+      total_area += a;
+    }
+    EXPECT_GT(total_area, prev_area) << "for resolution " << resolution;
+    EXPECT_LE(total_area, kIdealArea) << "for resolution " << resolution;
+    prev_area = total_area;
+
+    // All vertices (except first and last) are 1 unit away from z-axis.
+    for (int v_i = 1; v_i < vertices.rows() - 1; ++v_i) {
+      Vector3<GLfloat> v = vertices.block<1, 3>(v_i, 0);
+      v(2) = 0;
+      EXPECT_NEAR(v.norm(), 1.f, kEps)
+          << "for resolution: " << resolution << " and vertex " << v_i;
+    }
+    // First and last vertices are *on* the z axis.
+    for (int v_i : {0, static_cast<int>(vertices.rows() - 1)}) {
+      Vector3<GLfloat> v = vertices.block<1, 3>(v_i, 0);
+      v(2) = 0;
+      EXPECT_NEAR(v.norm(), 0.f, kEps)
+          << "for resolution: " << resolution << " and vertex " << v_i;
+    }
+
+    // All face normals point outward
+    for (int t = 0; t < indices.rows(); ++t) {
+      Vector3<GLfloat> c = centroid(vertices, indices, t);
+      Vector3<GLfloat> n = normal(vertices, indices, t);
+      // If the winding were backwards, this dot product would be negative.
+      EXPECT_GT(n.dot(c), 0)
+          << "for resolution: " << resolution << " and triangle " << t;
+    }
+  }
 }
 
 }  // namespace
