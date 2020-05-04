@@ -1072,7 +1072,7 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
           "is not connected.");
     }
     const auto& query_object = get_geometry_query_input_port().
-        Eval<geometry::QueryObject<double>>(context);
+        Eval<geometry::ProximityQueryObject<double>>(context);
     return query_object.ComputePointPairPenetration();
   }
   return std::vector<PenetrationAsPointPair<double>>();
@@ -1087,7 +1087,7 @@ MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>& context) const {
   if (num_collision_geometries() > 0) {
     const auto &query_object = get_geometry_query_input_port().
-        Eval<geometry::QueryObject<AutoDiffXd>>(context);
+        Eval<geometry::ProximityQueryObject<AutoDiffXd>>(context);
     auto results = query_object.ComputePointPairPenetration();
     if (results.size() > 0) {
       throw std::logic_error(
@@ -1491,7 +1491,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Combined Hunt & Crossley dissipation.
     const auto& query_object = get_geometry_query_input_port().
-        template Eval<geometry::QueryObject<T>>(context);
+        template Eval<geometry::ProximityQueryObject<T>>(context);
     const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
         geometryM_id, geometryN_id, query_object.inspector());
 
@@ -1727,7 +1727,7 @@ void MultibodyPlant<T>::CalcContactSurfaces(
 
   const auto& query_object =
       this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+          .template Eval<geometry::ProximityQueryObject<T>>(context);
 
   *contact_surfaces = query_object.ComputeContactSurfaces();
 }
@@ -1756,7 +1756,7 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
 
     const auto &query_object =
         this->get_geometry_query_input_port()
-            .template Eval<geometry::QueryObject<double>>(context);
+            .template Eval<geometry::ProximityQueryObject<double>>(context);
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
@@ -2774,11 +2774,11 @@ MultibodyPlant<T>::get_reaction_forces_output_port() const {
 namespace {
 // A dummy, placeholder type.
 struct SymbolicGeometryValue {};
-// An alias for QueryObject<T>, except when T = Expression.
+// An alias for ProximityQueryObject<T>, except when T = Expression.
 template <typename T>
 using ModelQueryObject = typename std::conditional<
     std::is_same<T, symbolic::Expression>::value,
-    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
+    SymbolicGeometryValue, geometry::ProximityQueryObject<T>>::type;
 }  // namespace
 
 template <typename T>
@@ -3007,7 +3007,7 @@ AddMultibodyPlantSceneGraph(
       scene_graph_ptr->get_source_pose_port(
           plant_ptr->get_source_id().value()));
   builder->Connect(
-      scene_graph_ptr->get_query_output_port(),
+      scene_graph_ptr->get_proximity_query_output_port(),
       plant_ptr->get_geometry_query_input_port());
   return {plant_ptr, scene_graph_ptr};
 }
