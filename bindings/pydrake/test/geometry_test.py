@@ -11,7 +11,6 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
@@ -19,6 +18,7 @@ from pydrake.systems.analysis import (
     Simulator_,
 )
 from pydrake.systems.framework import (
+    AbstractValue,
     DiagramBuilder_,
     InputPort_,
     OutputPort_,

@@ -1,9 +1,8 @@
 import numpy as np
 
-from pydrake.common.value import AbstractValue
 from pydrake.math import RigidTransform
 from pydrake.perception import BaseField, Fields, PointCloud
-from pydrake.systems.framework import LeafSystem
+from pydrake.systems.framework import AbstractValue, LeafSystem
 
 
 def _TransformPoints(points_Ci, X_CiSi):

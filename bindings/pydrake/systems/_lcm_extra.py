@@ -1,6 +1,6 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
-from pydrake.common.value import AbstractValue
+from pydrake.systems.framework import AbstractValue
 
 
 class PySerializer(SerializerInterface):

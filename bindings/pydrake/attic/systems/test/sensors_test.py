@@ -7,14 +7,13 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Isometry3
-from pydrake.common.value import Value
 from pydrake.attic.multibody.rigid_body_tree import (
     AddModelInstancesFromSdfString,
     FloatingBaseType,
     RigidBodyTree,
     RigidBodyFrame,
 )
-from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.systems.framework import InputPort, OutputPort, Value
 
 
 class TestSensors(unittest.TestCase):

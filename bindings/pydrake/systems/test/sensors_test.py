@@ -6,7 +6,6 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
-from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import FrameId
 from pydrake.geometry.render import CameraProperties, DepthCameraProperties
 from pydrake.math import (
@@ -14,8 +13,10 @@ from pydrake.math import (
     RollPitchYaw,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     InputPort,
     OutputPort,
+    Value,
     )
 
 # Shorthand aliases, to reduce verbosity.
