@@ -392,63 +392,9 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
   if (!cylinder_.is_defined()) {
     const int kLongitudeBands = 50;
 
-    // A fan of triangles on each cap with kLongitudeBands triangles, and then
-    // that many rectangles along the barrels (with twice as many triangles).
-    const int tri_count = 4 * kLongitudeBands;
-    // A pair of vertices for each longitudinal band + 1 for each cap.
-    const int vert_count = 2 * kLongitudeBands + 2;
-
-    VertexBuffer vertices{vert_count, 3};
-    IndexBuffer indices{tri_count, 3};
-
-    vertices.block<1, 3>(0, 0) << 0.f, 0.f, 0.5f;
-
-    // Both caps are triangle fans around central points (leading to nicer
-    // triangles).
-    const GLfloat radius = 1.f;
-    int line_start = 1;
-    // Index of the previous vertices and triangles, respectively.
-    int v = 0;
-    int t = -1;
-
-    // Top cap.
-    GLfloat z = 0.5f;
-    for (int i = 0; i < kLongitudeBands; ++i) {
-      const auto theta = static_cast<GLfloat>(i * M_PI * 2 / kLongitudeBands);
-      const auto cos_theta = static_cast<GLfloat>(cos(theta));
-      const auto sin_theta = static_cast<GLfloat>(sin(theta));
-      vertices.block<1, 3>(++v, 0) << radius * cos_theta, radius * sin_theta, z;
-      indices.block<1, 3>(++t, 0) << 0, line_start + i,
-          line_start + (i + 1) % kLongitudeBands;
-    }
-
-    // Barrel.
-    line_start += kLongitudeBands;
-    z = -0.5;
-    const int previous_line_start = 1;
-    for (int i = 0; i < kLongitudeBands; ++i) {
-      const auto theta = static_cast<GLfloat>(i * M_PI * 2 / kLongitudeBands);
-      const auto cos_theta = static_cast<GLfloat>(cos(theta));
-      const auto sin_theta = static_cast<GLfloat>(sin(theta));
-      vertices.block<1, 3>(++v, 0) << radius * cos_theta, radius * sin_theta, z;
-      const int next = (i + 1) % kLongitudeBands;
-      indices.block<1, 3>(++t, 0) << previous_line_start + i, line_start + i,
-          line_start + next;
-      indices.block<1, 3>(++t, 0) << previous_line_start + i, line_start + next,
-          previous_line_start + next;
-    }
-
-    // Bottom cap.
-    line_start += kLongitudeBands;
-    vertices.block<1, 3>(++v, 0) << 0, 0, z;
-    for (int i = 0; i < kLongitudeBands; ++i) {
-      indices.block<1, 3>(++t, 0) << v, line_start + (i + 1) % kLongitudeBands,
-          line_start + i;
-    }
-
-    DRAKE_DEMAND(v == vert_count - 1);
-    DRAKE_DEMAND(t == tri_count - 1);
-
+    // For long skinny cylinders, it would be better to offer some subdivisions
+    // along the length. For now, we'll simply save the triangles.
+    auto [vertices, indices] = MakeUnitCylinder(kLongitudeBands, 1);
     cylinder_ = SetupVAO(vertices, indices);
   }
 
