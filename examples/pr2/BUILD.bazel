@@ -3,13 +3,50 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
+drake_cc_library(
+    name = "sim_world",
+    srcs = [
+        "sim_world.cc",
+    ],
+    hdrs = [
+        "sim_world.h",
+    ],
+    data = [
+        ":config",
+        ":models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:find_resource",
+        "//examples/pr2/common",
+        "//examples/pr2/parameters",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//math:geometric_transform",
+        "//multibody/benchmarks/inclined_plane",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives",
+    ],
+)
+
 # === test/ ===
+
+drake_cc_googletest(
+    name = "sim_world_test",
+    deps = [
+        ":sim_world",
+    ],
+)
 
 drake_cc_googletest(
     name = "load_pr2_simplified_test",

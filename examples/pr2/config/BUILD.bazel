@@ -1,0 +1,12 @@
+# -*- python -*-
+
+load("//tools/install:install_data.bzl", "install_data")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "config",
+    srcs = glob([
+        "*.yaml",
+    ]),
+)

@@ -1,0 +1,55 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/*.yaml",
+    ]),
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
+drake_cc_library(
+    name = "parameters",
+    srcs = [
+        "robot_parameters_loader.cc",
+        "sim_parameters.cc",
+    ],
+    hdrs = [
+        "robot_parameters.h",
+        "robot_parameters_loader.h",
+        "sim_parameters.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common:essential",
+        "//common/yaml:yaml_read_archive",
+        "//examples/pr2/common",
+        "//geometry:scene_graph",
+        "//multibody/tree",
+        "@gflags",
+    ],
+)
+
+# === test/ ===
+drake_cc_googletest(
+    name = "robot_parameters_loader_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":parameters",
+    ],
+)
+
+add_lint_tests()
