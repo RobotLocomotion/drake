@@ -175,14 +175,10 @@ drake_cc_library(
 drake_cc_library(
     name = "scene_graph",
     srcs = [
-        "perception_query_object.cc",
-        "proximity_query_object.cc",
         "query_object.cc",
         "scene_graph.cc",
     ],
     hdrs = [
-        "perception_query_object.h",
-        "proximity_query_object.h",
         "query_object.h",
         "scene_graph.h",
     ],
@@ -391,22 +387,6 @@ drake_cc_googletest(
     name = "geometry_visualization_test",
     deps = [
         ":geometry_visualization",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "perception_query_object_test",
-    deps = [
-        ":scene_graph",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "proximity_query_object_test",
-    deps = [
-        ":scene_graph",
         "//common/test_utilities:expect_throws_message",
     ],
 )
