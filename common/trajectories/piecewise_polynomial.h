@@ -516,11 +516,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   PiecewisePolynomial<T> derivative(int derivative_order = 1) const;
 
-  std::unique_ptr<Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override {
-    return derivative(derivative_order).Clone();
-  };
-
   /**
    * Returns a %PiecewisePolynomial that is the indefinite integral of this one.
    * Any rules or limitations of Polynomial::integral() also apply to this
@@ -571,17 +566,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   MatrixX<T> value(const T& t) const override {
       const int derivative_order = 0;
-      return EvalDerivative(t, derivative_order);
+      return DoEvalDerivative(t, derivative_order);
   }
-
-  /**
-   * Evaluates the %PiecwisePolynomial derivative at the given time @p t.
-   * Returns the nth derivative, where `n` is the value of @p derivative_order.
-   *
-   * @warning This method comes with the same caveats as value(). See value().
-   * @pre derivative_order must be non-negative.
-   */
-  MatrixX<T> EvalDerivative(const T& t, int derivative_order = 1) const;
 
   /**
    * Gets the matrix of Polynomials corresponding to the given segment index.
@@ -621,7 +607,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Reshapes the dimensions of the Eigen::MatrixX<T> returned by value(),
-   * EvalDerivatives(), etc.
+   * EvalDerivative(), etc.
    *
    * @pre @p rows x @p cols must equal this.rows() * this.cols().
    * @see Eigen::PlainObjectBase::resize().
@@ -812,6 +798,18 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
  private:
+  // Evaluates the %PiecwisePolynomial derivative at the given time @p t.
+  // Returns the nth derivative, where `n` is the value of @p derivative_order.
+  //
+  // @warning This method comes with the same caveats as value(). See value()
+  // @pre derivative_order must be non-negative.
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
+
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override {
+    return derivative(derivative_order).Clone();
+  };
+
   T EvaluateSegmentAbsoluteTime(int segment_index, const T& t, Eigen::Index row,
                                 Eigen::Index col,
                                 int derivative_order = 0) const;

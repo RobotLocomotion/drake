@@ -6,10 +6,6 @@ load(
     "generate_repository_metadata",
 )
 
-# The github.bzl and bitbucket.bzl implementations are very similar.  Try to
-# keep the two files relatively well-synchronized -- or even better, rework
-# them to share code where doing so is an improvement.
-
 def github_archive(
         name,
         repository = None,
@@ -142,11 +138,11 @@ Consult the macro documentation for full API details.
 """
 
 def setup_github_repository(repository_ctx):
-    """This is reusable formulation of the github_archive() macro.  It is identical
-    to the macro except that (1) it does not support local_repository_override,
-    and (2) it returns a status struct, instead of failing internally.  The
-    result struct has a field `error` that will be non-None iff there were any
-    errors.  Consult the macro documentation for additional API details.
+    """This is a reusable formulation of the github_archive() macro. It is
+    identical to the macro except that (1) it does not support local repository
+    override, and (2) it returns a status struct instead of failing internally.
+    The result struct has a field `error` that will be non-None iff there were
+    any errors.  Consult the macro documentation for additional API details.
     """
 
     # Do the download step first.  (This also writes the metadata.)

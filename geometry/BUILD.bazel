@@ -23,7 +23,6 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_visualization",
-        ":identifier",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -176,10 +175,14 @@ drake_cc_library(
 drake_cc_library(
     name = "scene_graph",
     srcs = [
+        "perception_query_object.cc",
+        "proximity_query_object.cc",
         "query_object.cc",
         "scene_graph.cc",
     ],
     hdrs = [
+        "perception_query_object.h",
+        "proximity_query_object.h",
         "query_object.h",
         "scene_graph.h",
     ],
@@ -242,24 +245,6 @@ drake_cc_library(
         "//common:copyable_unique_ptr",
         "//common:essential",
         "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "identifier",
-    srcs = ["identifier.cc"],
-    hdrs = ["identifier.h"],
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deprecation = "The @drake//geometry:identifier library is deprecated and will be removed on 2020-05-01.  Use @drake//common:identifier instead.",  # noqa
-    tags = [
-        # Avoid 'build //...' yelling at us.
-        "manual",
-    ],
-    deps = [
-        "//common:identifier",
     ],
 )
 
@@ -406,6 +391,22 @@ drake_cc_googletest(
     name = "geometry_visualization_test",
     deps = [
         ":geometry_visualization",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "perception_query_object_test",
+    deps = [
+        ":scene_graph",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "proximity_query_object_test",
+    deps = [
+        ":scene_graph",
         "//common/test_utilities:expect_throws_message",
     ],
 )

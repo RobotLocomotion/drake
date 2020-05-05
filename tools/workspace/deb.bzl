@@ -6,10 +6,10 @@ load(
 )
 
 def setup_new_deb_archive(repo_ctx):
-    """Behaves like new_deb_archive, except that (1) this is a macro instead of a
-    rule and (2) this macro returns an error status instead of fail()ing.  The
-    return value is a struct with a field `error` that will be None on success
-    or else a detailed message on any failure.
+    """Behaves like new_deb_archive, except that (1) this is a macro instead of
+    a rule and (2) this macro returns an error status instead of fail()ing.
+    The return value is a struct with a field `error` that will be None on
+    success or else a detailed message on any failure.
     """
     name = repo_ctx.attr.name
     filenames = repo_ctx.attr.filenames

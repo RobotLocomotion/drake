@@ -263,8 +263,8 @@ Differences with C++ API
 In general, the `Python API <pydrake/index.html#://>`_ should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:
 
-C++ Template Instantiations in Python
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C++ Class Template Instantiations in Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When you define a general class template, e.g.
 ``template <typename T> class Value``, something like ``Value<std::string>`` is
@@ -342,6 +342,56 @@ Additionally, you may convert an instance (if the conversion is available) using
     <pydrake.systems.primitives.Adder_[AutoDiffXd] object at 0x...>
     >>> print(adder.ToSymbolic())
     <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
+
+C++ Function and Method Template Instantiations in Python
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The above section indicates that C++ types are generally registered with
+Python, and a similar approach could be used for function and method templates.
+However, these templates usually fit a certain pattern and can be Pythonized in
+such a way that simplifies implementation, but may change the "feel" of the
+signature.
+
+Two common (non-metaprogramming) applications of templated functions and
+methods present in Drake are `emplace <https://en.cppreference.com/w/cpp/container/vector/emplace>`_-like
+functionality (using `parameter packs
+<https://en.cppreference.com/w/cpp/language/parameter_pack>`_) and
+`type erasure <https://en.wikipedia.org/wiki/Type_erasure>`_.
+However, Python doesn't literally support these C++ language features. So, in
+binding them, they get "Pythonized".
+
+C++ APIs which use parameter packs, such as:
+
+.. code-block:: cpp
+
+    DiagramBuilder<T>::AddSystem<SystemType>(args...)
+    MultibodyPlant<T>::AddJoint<JointType>(args...)
+    MultibodyPlant<T>::AddFrame<FrameType>(args...)
+
+will become the following in Python:
+
+.. code-block:: pycon
+
+    DiagramBuilder_[T].AddSystem(SystemType(args, ...))
+    MultibodyPlant_[T].AddJoint(JointType(args, ...))
+    MultibodyPlant_[T].AddFrame(FrameType(args, ...))
+
+where the ``*Type`` tokens are replaced with the concrete type in question
+(e.g. ``Adder_[T]``, ``RevoluteJoint_[T]``, ``FixedOffsetFrame_[T]``).
+
+Similarly, type-erasure C++ APIs that look like:
+
+.. code-block:: cpp
+
+    InputPort<T>::Eval<ValueType>(context)
+    GeometryProperties::AddProperty<ValueType>(group_name, name, value)
+
+will become the following in Python:
+
+.. code-block:: pycon
+
+    InputPort_[T].Eval(context)
+    GeometryProperties.AddProperty(group_name, name, value)
 
 Debugging with the Python Bindings
 ----------------------------------

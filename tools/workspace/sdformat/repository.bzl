@@ -1,19 +1,15 @@
 # -*- python -*-
 
-load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 def sdformat_repository(
         name,
         mirrors = None):
-    # From tags listed here:
-    # https://bitbucket.org/osrf/sdformat/downloads/?tab=tags
-    commit = "632993e4b142"  # tag/sdformat9_9.1.0
-    bitbucket_archive(
+    github_archive(
         name = name,
         repository = "osrf/sdformat",
-        commit = commit,
-        sha256 = "407599011850143d4de8ca9d5d7370b9f48f2b1d6404d381dfdd4ec23b4e6520",  # noqa
-        strip_prefix = "osrf-sdformat-%s" % (commit),
+        commit = "sdformat9_9.1.0",
+        sha256 = "e5ac1e7b9b37edf2236a87c7ef4c82d20710439d16933a7e4602a31c82e95367",  # noqa
         build_file = "@drake//tools/workspace/sdformat:package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -19,10 +19,6 @@ fi
 
 /usr/local/bin/brew update
 
-# TODO(jamiesnape): Remove the below two lines on or after 2020-05-01.
-/usr/local/bin/brew uninstall bazelbuild/tap/bazel 2>/dev/null || true
-/usr/local/bin/brew untap bazelbuild/tap 2>/dev/null || true
-
 # TODO(jamiesnape): Remove the below line on or after 2020-07-01.
 /usr/local/bin/brew cask uninstall font-dejavu-sans 2>/dev/null || true
 

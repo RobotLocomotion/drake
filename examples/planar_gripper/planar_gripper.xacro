@@ -115,10 +115,9 @@
         <collision name='link2_collision'>
           <pose>0 0 -${(l2_length + sensor_length + tip_adapter_length + tip_cylinder_length)/2} 0 0 0</pose>
           <geometry>
-            <cylinder>
-              <length>${l2_length + sensor_length + tip_adapter_length + tip_cylinder_length}</length>
-              <radius>${l2_radius}</radius>
-            </cylinder>
+            <box>
+              <size> ${2 * l2_radius} ${2 * l2_radius} ${l2_length + sensor_length + tip_adapter_length + tip_cylinder_length} </size>
+            </box>
           </geometry>
           <material>
             <diffuse>1 0 1 1</diffuse>

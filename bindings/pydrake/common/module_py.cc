@@ -2,7 +2,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/constants.h"
@@ -108,6 +107,8 @@ PYBIND11_MODULE(_module_py, m) {
       "Set Drake's assertion failure mechanism to be exceptions");
   m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
       "Trigger a Drake C++ assertion failure");
+
+  m.attr("kDrakeAssertIsArmed") = kDrakeAssertIsArmed;
 }
 
 }  // namespace pydrake

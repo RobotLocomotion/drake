@@ -42,10 +42,17 @@ _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3",
     "pybind11",
-    # Our "find something new" heuristics get confused by these repositories.
-    "github3_py",
-    "pycodestyle",
 ]
+
+# For these repositories, we only look at tags, not releases.  For the dict
+# value, use a blank value to match the latest tag or a regex to only select
+# tags that share the match with the tag currently in use.  (This can be used
+# to ping to a given major or major.minor release series.)
+_OVERLOOK_RELEASE_REPOSITORIES = {
+    "github3_py": r"^(\d+.)",
+    "pycodestyle": "",
+    "ros_xacro": r"^(\d+\.\d+\.)",
+}
 
 
 def _check_output(args):
@@ -65,39 +72,60 @@ def _get_default_username():
     return git_user or http_user
 
 
-def _handle_github(gh, data):
+def _handle_github(workspace_name, gh, data):
     time.sleep(0.2)  # Don't make github angry.
     old_commit = data["commit"]
     owner, repo_name = data["repository"].split("/")
     gh_repo = gh.repository(owner, repo_name)
+
+    # If we're tracking via git commit, then upgrade to the newest commit.
     if len(old_commit) == 40:
         new_commit = gh_repo.commit("HEAD").sha
-    else:
-        try:
-            new_commit = gh_repo.latest_release().tag_name
-        except github3.exceptions.NotFoundError:
-            new_commit = next(gh_repo.tags()).name
+        return old_commit, new_commit
+
+    # Sometimes prefer checking only tags, not releases.
+    tags_pattern = _OVERLOOK_RELEASE_REPOSITORIES.get(workspace_name)
+    if tags_pattern == "":
+        new_commit = next(gh_repo.tags()).name
+        return old_commit, new_commit
+
+    # Sometimes limit candidate tags to those matching a regex.
+    if tags_pattern is not None:
+        match = re.search(tags_pattern, old_commit)
+        assert match, f"No {tags_pattern} in {old_commit}"
+        (old_hit,) = match.groups()
+        for tag in gh_repo.tags():
+            match = re.search(tags_pattern, tag.name)
+            if match:
+                (new_hit,) = match.groups()
+                if old_hit == new_hit:
+                    new_commit = tag.name
+                    break
+        return old_commit, new_commit
+
+    # By default, use the latest release if there is one.  Otherwise, use the
+    # latest tag.
+    try:
+        new_commit = gh_repo.latest_release().tag_name
+    except github3.exceptions.NotFoundError:
+        new_commit = next(gh_repo.tags()).name
     return old_commit, new_commit
 
 
 def run(gh, args, metadata):
-    for name, data in sorted(metadata.items()):
-        if name in _IGNORED_REPOSITORIES:
+    for workspace_name, data in sorted(metadata.items()):
+        if workspace_name in _IGNORED_REPOSITORIES:
             continue
         key = data["repository_rule_type"]
         if key == "github":
-            old_commit, new_commit = _handle_github(gh, data)
-        elif key == "bitbucket":
-            # TODO(jwnimmer-tri) Implement for real.
-            old_commit = data["commit"]
-            new_commit = None
+            old_commit, new_commit = _handle_github(workspace_name, gh, data)
         elif key == "pypi":
             # TODO(jwnimmer-tri) Implement for real.
             print("{} version {} needs manual inspection".format(
-                data["name"], data["version"]))
+                workspace_name, data["version"]))
             continue
         elif key == "manual":
-            print("{} needs manual inspection".format(data["name"]))
+            print("{} needs manual inspection".format(workspace_name))
             continue
         else:
             raise RuntimeError("Bad key " + key)
@@ -105,10 +133,10 @@ def run(gh, args, metadata):
             continue
         elif new_commit is not None:
             print("{} needs upgrade from {} to {}".format(
-                data["name"], old_commit, new_commit))
+                workspace_name, old_commit, new_commit))
         else:
             print("{} version {} needs manual inspection".format(
-                data["name"], old_commit))
+                workspace_name, old_commit))
 
 
 def main():

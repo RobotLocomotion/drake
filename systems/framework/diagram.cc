@@ -256,6 +256,45 @@ void Diagram<T>::DoCalcTimeDerivatives(const Context<T>& context,
 }
 
 template <typename T>
+void Diagram<T>::DoCalcImplicitTimeDerivativesResidual(
+    const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const {
+  // Check that the arguments are at least structurally compatible with
+  // this Diagram.
+  auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
+  DRAKE_DEMAND(diagram_context != nullptr);
+  const auto* diagram_derivatives =
+      dynamic_cast<const DiagramContinuousState<T>*>(&proposed_derivatives);
+  DRAKE_DEMAND(diagram_derivatives != nullptr);
+  const int n = diagram_derivatives->num_substates();
+  DRAKE_DEMAND(num_subsystems() == n);
+
+  // The public method has already verified that the output vector is the right
+  // length.
+
+  // Evaluate the residuals from each constituent system.
+  int next = 0;  // Next available slot in residual vector.
+  for (SubsystemIndex i(0); i < n; ++i) {
+    const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
+    const ContinuousState<T>& subderivatives =
+        diagram_derivatives->get_substate(i);
+    const System<T>& subsystem = *registered_systems_[i];
+    const int num_sub_residuals =
+        subsystem.implicit_time_derivatives_residual_size();
+
+    // The "const" here is for the returned object; the data to which it
+    // refers is still mutable because residual is.
+    const auto segment = residual->segment(next, num_sub_residuals);
+    subsystem.CalcImplicitTimeDerivativesResidual(subcontext, subderivatives,
+                                                  &segment);
+    next += num_sub_residuals;
+  }
+
+  // Make sure we wrote to every element.
+  DRAKE_DEMAND(next == residual->size());
+}
+
+template <typename T>
 const System<T>& Diagram<T>::GetSubsystemByName(const std::string& name) const {
   for (const auto& child : registered_systems_) {
     if (child->get_name() == name) {
@@ -1343,13 +1382,16 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
       AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
           &System<T>::AllocateForcedUnrestrictedUpdateEventCollection));
 
-  // Total up all needed Context resources. Note that we are depending
-  // on sub-Diagrams already to have been initialized so that their counts
-  // are already correct.
+  // Total up all needed Context resources, and the size of the implicit time
+  // derivative residual. Note that we are depending on sub-Diagrams already to
+  // have been initialized so that their counts are already correct.
   SystemBase::ContextSizes& sizes = this->get_mutable_context_sizes();
+  int residual_size = 0;
   for (const auto& system : registered_systems_) {
     sizes += SystemBase::get_context_sizes(*system);
+    residual_size += system->implicit_time_derivatives_residual_size();
   }
+  this->set_implicit_time_derivatives_residual_size(residual_size);
 }
 
 template <typename T>

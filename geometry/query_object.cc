@@ -46,27 +46,21 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>& query_object) {
 
 template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_WF(FrameId id) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_world(id);
 }
 
 template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_PF(FrameId id) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_parent(id);
 }
 
 template <typename T>
 const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.get_pose_in_world(id);
 }
@@ -74,9 +68,7 @@ const RigidTransform<T>& QueryObject<T>::X_WG(GeometryId id) const {
 template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 QueryObject<T>::ComputePointPairPenetration() const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputePointPairPenetration();
 }
@@ -84,18 +76,14 @@ QueryObject<T>::ComputePointPairPenetration() const {
 template <typename T>
 std::vector<SortedPair<GeometryId>> QueryObject<T>::FindCollisionCandidates()
     const {
-  ThrowIfNotCallable();
-  // TODO(amcastro-tri): Modify this when the cache system is in place.
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.FindCollisionCandidates();
 }
 
 template <typename T>
 bool QueryObject<T>::HasCollisions() const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.HasCollisions();
 }
@@ -103,9 +91,7 @@ bool QueryObject<T>::HasCollisions() const {
 template <typename T>
 std::vector<ContactSurface<T>>
 QueryObject<T>::ComputeContactSurfaces() const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeContactSurfaces();
 }
@@ -116,10 +102,7 @@ void QueryObject<T>::ComputeContactSurfacesWithFallback(
     std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
   DRAKE_DEMAND(surfaces);
   DRAKE_DEMAND(point_pairs);
-
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   state.ComputeContactSurfacesWithFallback(surfaces, point_pairs);
 }
@@ -128,9 +111,7 @@ template <typename T>
 std::vector<SignedDistancePair<T>>
 QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
     const double max_distance) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairwiseClosestPoints(max_distance);
 }
@@ -138,9 +119,7 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
 template <typename T>
 SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
     GeometryId id_A, GeometryId id_B) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistancePairClosestPoints(id_A, id_B);
 }
@@ -150,9 +129,7 @@ std::vector<SignedDistanceToPoint<T>>
 QueryObject<T>::ComputeSignedDistanceToPoint(
     const Vector3<T>& p_WQ,
     const double threshold) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.ComputeSignedDistanceToPoint(p_WQ, threshold);
 }
@@ -163,9 +140,7 @@ void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
                                       const RigidTransformd& X_PC,
                                       bool show_window,
                                       ImageRgba8U* color_image_out) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.RenderColorImage(camera, parent_frame, X_PC, show_window,
                                 color_image_out);
@@ -176,9 +151,7 @@ void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
                                       FrameId parent_frame,
                                       const RigidTransformd& X_PC,
                                       ImageDepth32F* depth_image_out) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
 }
@@ -189,9 +162,7 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
                                       const RigidTransformd& X_PC,
                                       bool show_window,
                                       ImageLabel16I* label_image_out) const {
-  ThrowIfNotCallable();
-
-  FullPoseUpdate();
+  ValidateAndUpdate();
   const GeometryState<T>& state = geometry_state();
   return state.RenderLabelImage(camera, parent_frame, X_PC, show_window,
                                 label_image_out);
@@ -206,6 +177,12 @@ const GeometryState<T>& QueryObject<T>::geometry_state() const {
   } else {
     return *state_;
   }
+}
+
+template <typename T>
+void QueryObject<T>::FullPoseUpdate() const {
+  // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
+  if (scene_graph_) scene_graph_->FullPoseUpdate(*context_);
 }
 
 }  // namespace geometry

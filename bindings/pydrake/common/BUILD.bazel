@@ -45,7 +45,6 @@ drake_pybind_library(
     name = "_init_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_so_name = "_module_py",
     cc_srcs = ["module_py.cc"],
@@ -174,7 +173,6 @@ drake_pybind_library(
     cc_deps = [
         ":cpp_template_pybind",
         ":default_scalars_pybind",
-        ":deprecation_pybind",
         ":eigen_geometry_pybind",
         ":type_pack",
     ],

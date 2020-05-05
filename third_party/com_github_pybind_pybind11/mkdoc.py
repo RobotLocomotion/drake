@@ -598,16 +598,16 @@ def process_comment(comment):
         '---',
         '--',
         '::',
-        '\.',
+        r'\.',
         '"',
         '&',
         '#',
         '%',
         '<',
         '>',
-        '\$',
+        r'\$',
         '@',
-        '\\\\',
+        r'\\',
     ):
         s = re.sub(r'[@\\](%s)' % escaped_, r'\1', s)
 
@@ -636,7 +636,7 @@ def process_comment(comment):
             for y in re.split(r'(?: *\n *){2,}', x):
                 lines = re.split(r'(?: *\n *)', y)
                 # Do not reflow lists or section headings.
-                if (re.match('^(?:[*+\-]|[0-9]+[.)]) ', lines[0]) or
+                if (re.match(r'^(?:[*+\-]|[0-9]+[.)]) ', lines[0]) or
                     (len(lines) > 1 and
                      (lines[1] == '=' * len(lines[0]) or
                       lines[1] == '-' * len(lines[0])))):

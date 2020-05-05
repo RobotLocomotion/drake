@@ -1,5 +1,8 @@
 #include "drake/common/trajectories/bspline_trajectory.h"
 
+#include <algorithm>
+#include <functional>
+
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
@@ -81,7 +84,14 @@ TYPED_TEST(BsplineTrajectoryTests, ConstructorTest) {
   EXPECT_EQ(trajectory.cols(), expected_cols);
   EXPECT_EQ(trajectory.start_time(), expected_start_time);
   EXPECT_EQ(trajectory.end_time(), expected_end_time);
-  EXPECT_EQ(trajectory.control_points(), expected_control_points);
+  // Use std::equal (not EXPECT_EQ) to deal with symbolic::Formula.
+  const auto& traj_control_points = trajectory.control_points();
+  EXPECT_TRUE(std::equal(
+      traj_control_points.begin(), traj_control_points.end(),
+      expected_control_points.begin(), expected_control_points.end(),
+      [](const auto& traj_matrix, const auto& expected_matrix) {
+        return (traj_matrix - expected_matrix).norm() == 0.0;
+      }));
 
   // Verify that construction from BsplineBasis<double> works.
   std::vector<double> knots_double{};
@@ -106,8 +116,10 @@ TYPED_TEST(BsplineTrajectoryTests, ValueTest) {
                                        trajectory.end_time() + 0.1);
   for (int k = 0; k < num_times; ++k) {
     MatrixX<T> value = trajectory.value(t(k));
-    T t_clamped = std::min(std::max(t(k), trajectory.start_time()),
-                           trajectory.end_time());
+    using std::max;
+    using std::min;
+    T t_clamped = min(max(t(k), trajectory.start_time()),
+                      trajectory.end_time());
     MatrixX<T> expected_value = trajectory.basis().EvaluateCurve(
         trajectory.control_points(), t_clamped);
     EXPECT_TRUE(CompareMatrices(value, expected_value,

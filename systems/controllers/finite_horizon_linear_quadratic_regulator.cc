@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
@@ -31,8 +32,7 @@ class RiccatiSystem : public LeafSystem<double> {
   RiccatiSystem(const System<double>& system, const Context<double>& context,
                 const Eigen::Ref<const Eigen::MatrixXd>& Q,
                 const Eigen::Ref<const Eigen::MatrixXd>& R,
-                const Trajectory<double>& x0,
-                const Trajectory<double>& u0,
+                const Trajectory<double>& x0, const Trajectory<double>& u0,
                 const FiniteHorizonLinearQuadraticRegulatorOptions& options)
       : system_(System<double>::ToAutoDiffXd(system)),
         input_port_(
@@ -81,15 +81,18 @@ class RiccatiSystem : public LeafSystem<double> {
     context_->SetTime(system_time);
 
     // Get (time-varying) linearization of the plant.
-    auto autodiff_args = math::initializeAutoDiffTuple(
-        x0_.value(system_time), u0_.value(system_time));
+    auto autodiff_args = math::initializeAutoDiffTuple(x0_.value(system_time),
+                                                       u0_.value(system_time));
     context_->SetContinuousState(std::get<0>(autodiff_args));
     input_port_->FixValue(context_.get(), std::get<1>(autodiff_args));
 
     const VectorX<AutoDiffXd> autodiff_xdot0 =
         system_->EvalTimeDerivatives(*context_).CopyToVector();
 
-    const Eigen::VectorXd xdot0 = math::autoDiffToValueMatrix(autodiff_xdot0);
+    // Note: This version assumes that the nominal trajectory is a feasible
+    // trajectory of the system.
+    // TODO(russt): Implement the affine terms.
+
     const Eigen::MatrixXd AB = math::autoDiffToGradientMatrix(autodiff_xdot0);
     const Eigen::Ref<const Eigen::MatrixXd>& A = AB.leftCols(num_states_);
     const Eigen::Ref<const Eigen::MatrixXd>& B = AB.rightCols(num_inputs_);
@@ -170,7 +173,7 @@ FiniteHorizonLinearQuadraticRegulator(
   DRAKE_DEMAND(system.num_input_ports() > 0);
   DRAKE_DEMAND(tf > t0);
   const int num_states = context.num_total_states();
-  std::unique_ptr<Trajectory<double>> x0;
+  std::unique_ptr<PiecewisePolynomial<double>> x0;
   if (options.x0) {
     DRAKE_DEMAND(options.x0->start_time() <= t0);
     DRAKE_DEMAND(options.x0->end_time() >= tf);
@@ -180,7 +183,7 @@ FiniteHorizonLinearQuadraticRegulator(
         context.get_continuous_state_vector().CopyToVector());
   }
 
-  std::unique_ptr<Trajectory<double>> u0;
+  std::unique_ptr<PiecewisePolynomial<double>> u0;
   if (options.u0) {
     DRAKE_DEMAND(options.u0->start_time() <= t0);
     DRAKE_DEMAND(options.u0->end_time() >= tf);
@@ -218,12 +221,83 @@ FiniteHorizonLinearQuadraticRegulator(
   simulator.AdvanceTo(-t0);
 
   FiniteHorizonLinearQuadraticRegulatorResult result;
-  result.S = std::move(*(integrator.StopDenseIntegration()));
-  result.S.ReverseTime();
-  result.S.Reshape(num_states, num_states);
-  result.K = riccati.MakeKTrajectory(result.S);
+  std::unique_ptr<PiecewisePolynomial<double>> S =
+      integrator.StopDenseIntegration();
+  S->ReverseTime();
+  S->Reshape(num_states, num_states);
+  result.K = std::make_unique<PiecewisePolynomial<double>>(
+      riccati.MakeKTrajectory(*S));
+  result.x0 = options.x0 ? options.x0->Clone() : std::move(x0);
+  result.u0 = options.u0 ? options.u0->Clone() : std::move(u0);
+  result.S = std::move(S);
 
   return result;
+}
+
+namespace {
+
+// Implements the (time-varying) linear controller described by a
+// FiniteHorizonLinearQuadraticRegulatorResult.
+// TODO(russt): Consider removing this class entirely and using
+// TrajectoryAffineSystem instead, once we support enough Trajectory algebra
+// (including adding and multiplying PiecewisePolynomial trajectories with
+// different segment times).
+template <typename T>
+class Controller final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Controller)
+
+  // Constructs the controller, and assumes ownership of the required components
+  // of the FiniteHorizonLinearQuadraticRegulatorResult.  This is appropriate,
+  // since the class is internal to this .cc file and is only ever constructed
+  // via a Make*Regulator() workflow which will discard the result structure.
+  Controller(std::unique_ptr<trajectories::Trajectory<double>> x0,
+             std::unique_ptr<trajectories::Trajectory<double>> u0,
+             std::unique_ptr<trajectories::Trajectory<double>> K)
+      : LeafSystem<T>(SystemTypeTag<Controller>()),
+        x0_(std::move(x0)),
+        u0_(std::move(u0)),
+        K_(std::move(K)) {
+    this->DeclareVectorInputPort("plant_state", BasicVector<T>(K_->cols()));
+    this->DeclareVectorOutputPort("command", BasicVector<T>(K_->rows()),
+                                  &Controller::CalcOutput);
+  }
+
+  // Scalar-type converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit Controller(const Controller<U>& other)
+      : Controller(other.x0_->Clone(), other.u0_->Clone(), other.K_->Clone()) {}
+
+ private:
+  template <typename U>
+  friend class Controller;
+
+  // Calculate the (time-varying) output.
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const {
+    // Note: The stored trajectories are always double, even when T != double.
+    const double t = ExtractDoubleOrThrow(context.get_time());
+    const auto& x = this->get_input_port(0).Eval(context);
+    output->get_mutable_value() =
+        u0_->value(t) - K_->value(t) * (x - x0_->value(t));
+  }
+
+  std::unique_ptr<trajectories::Trajectory<double>> x0_;
+  std::unique_ptr<trajectories::Trajectory<double>> u0_;
+  std::unique_ptr<trajectories::Trajectory<double>> K_;
+};
+
+}  // namespace
+
+std::unique_ptr<System<double>> MakeFiniteHorizonLinearQuadraticRegulator(
+    const System<double>& system, const Context<double>& context, double t0,
+    double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const FiniteHorizonLinearQuadraticRegulatorOptions& options) {
+  FiniteHorizonLinearQuadraticRegulatorResult result =
+      FiniteHorizonLinearQuadraticRegulator(system, context, t0, tf, Q, R,
+                                            options);
+  return std::make_unique<Controller<double>>(
+      std::move(result.x0), std::move(result.u0), std::move(result.K));
 }
 
 }  // namespace controllers

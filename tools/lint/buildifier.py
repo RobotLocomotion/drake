@@ -62,9 +62,9 @@ def _find_buildifier_sources(workspace_name):
 
 
 def _passes_check_mode(args):
-    """The `args` list should be as per subprocess.check_call.  Returns True iff
-    builfidier runs with exitcode 0 and no output, or else returns False iff
-    reformat is needed, or else raises an exception.
+    """The `args` list should be as per subprocess.check_call.  Returns True
+    iff builfidier runs with exitcode 0 and no output, or else returns False
+    iff reformat is needed, or else raises an exception.
     """
     try:
         output = subprocess.check_output(args)

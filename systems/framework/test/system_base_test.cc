@@ -23,18 +23,13 @@ namespace system_base_test_internal {
 // A minimal concrete ContextBase object suitable for some simple tests.
 class MyContextBase final : public ContextBase {
  public:
-  explicit MyContextBase(bool is_good) : is_good_{is_good} {}
+  MyContextBase() = default;
   MyContextBase(const MyContextBase&) = default;
-
-  bool is_good() const { return is_good_; }
 
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
     return std::make_unique<MyContextBase>(*this);
   }
-
-  // For testing error checking for bad contexts.
-  bool is_good_{false};
 };
 
 // A minimal concrete SystemBase object suitable for some simple tests.
@@ -44,16 +39,9 @@ class MySystemBase final : public SystemBase {
 
  private:
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
-    auto context = std::make_unique<MyContextBase>(true);  // A valid context.
+    auto context = std::make_unique<MyContextBase>();
     InitializeContextBase(&*context);
     return context;
-  }
-
-  void DoCheckValidContext(const ContextBase& context) const final {
-    auto& my_context = dynamic_cast<const MyContextBase&>(context);
-    if (my_context.is_good())
-      return;
-    throw std::logic_error("This Context is totally unacceptable!");
   }
 
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
@@ -92,19 +80,6 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
                               std::exception,
                               ".*Context.*was not created for.*");
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(SystemBaseTest, DeprecatedValidationTest) {
-  MySystemBase system;
-  auto context = system.AllocateContext();
-  DRAKE_EXPECT_NO_THROW(system.ThrowIfContextNotCompatible(*context));
-  MyContextBase bad_context(false);
-  DRAKE_EXPECT_THROWS_MESSAGE(system.ThrowIfContextNotCompatible(bad_context),
-                              std::logic_error,
-                              ".*Context.*unacceptable.*");
-}
-#pragma GCC diagnostic pop
 
 }  // namespace system_base_test_internal
 }  // namespace systems

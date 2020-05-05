@@ -10,8 +10,8 @@ def fmt_repository(
         repository = "fmtlib/fmt",
         # When changing the fmt version, also update the URL in the file
         # overview docstring of drake/common/text_logging.h.
-        commit = "6.1.2",
-        sha256 = "1cafc80701b746085dddf41bd9193e6d35089e1c6ec1940e037fcb9c98f62365",  # noqa
+        commit = "6.2.0",
+        sha256 = "fe6e4ff397e01c379fc4532519339c93da47404b9f6674184a458a9967a76575",  # noqa
         build_file = "@drake//tools/workspace/fmt:package.BUILD.bazel",
         mirrors = mirrors,
     )

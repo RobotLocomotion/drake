@@ -73,7 +73,6 @@ drake_cc_library(
         "drake_assertion_error.h",
         "drake_copyable.h",
         "drake_deprecated.h",
-        "drake_nodiscard.h",
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
@@ -767,17 +766,6 @@ drake_cc_googletest(
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
-    ],
-)
-
-drake_cc_googletest(
-    name = "drake_nodiscard_test",
-    copts = [
-        "-Wno-cpp",
-    ],
-    deps = [
-        ":essential",
-        ":unused",
     ],
 )
 

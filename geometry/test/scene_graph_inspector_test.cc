@@ -101,12 +101,6 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   tester.mutable_state().AssignRole(source_id, geometry_id2,
                                     ProximityProperties());
   inspector.CollisionFiltered(geometry_id, geometry_id2);
-
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  inspector.GetNumDynamicGeometries();
-  inspector.GetNumAnchoredGeometries();
-  #pragma GCC diagnostic pop
 }
 
 }  // namespace

@@ -99,11 +99,6 @@ this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
 https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
-## Updating bitbucket_archive software versions
-
-The `bitbucket_archive` instructions are isomorphic to the `github_archive`
-instructions; please see above for detailed steps.
-
 ## Updating pypi_archive software versions
 
 To lock in a new version, change the `version` argument of the `pypi_archive`

@@ -3,6 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -72,20 +73,6 @@ class SystemBase : public internal::SystemMessageInterface {
   present.
   @see NiceTypeName for more specifics. */
   std::string GetSystemType() const final { return NiceTypeName::Get(*this); }
-
-  /** Throws an exception with an appropriate message if the given `context` is
-  not compatible with this System. Restrictions may vary for different systems;
-  the error message should explain. This can be an expensive check so you may
-  want to limit it to Debug builds. */
-  DRAKE_DEPRECATED("2020-05-01",
-                   "This method is no longer necessary. See ValidateContext() "
-                   "for a possible replacement.")
-  void ThrowIfContextNotCompatible(const ContextBase& context) const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    CheckValidContext(context);
-#pragma GCC diagnostic pop
-  }
 
   /** Returns a Context suitable for use with this System. Context resources
   are allocated based on resource requests that were made during System
@@ -478,16 +465,6 @@ class SystemBase : public internal::SystemMessageInterface {
           all_sources_ticket()});
   //@}
 
-  DRAKE_DEPRECATED(
-      "2020-05-01",
-      "This method's functionality has been replaced by ValidateContext().")
-  void CheckValidContext(const ContextBase& context) const {
-    // TODO(sherm1) Add base class checks.
-
-    // Let derived classes have their say.
-    DoCheckValidContext(context);
-  }
-
   //============================================================================
   /** @name                     Dependency tickets
   @anchor DependencyTicket_documentation
@@ -807,6 +784,16 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns the number of declared abstract parameters. */
   int num_abstract_parameters() const {
     return context_sizes_.num_abstract_parameters;
+  }
+
+  /** Returns the size of the implicit time derivatives residual vector.
+  By default this is the same as num_continuous_states() but a LeafSystem
+  can change it during construction via
+  LeafSystem::DeclareImplicitTimeDerivativesResidualSize(). */
+  int implicit_time_derivatives_residual_size() const {
+    return implicit_time_derivatives_residual_size_.has_value()
+               ? *implicit_time_derivatives_residual_size_
+               : num_continuous_states();
   }
 
   /** Checks whether the given context was created for this system.
@@ -1142,9 +1129,22 @@ class SystemBase : public internal::SystemMessageInterface {
     return system.get_context_sizes();
   }
 
-  // TODO(jwnimmer-tri) On 2020-05-01, when CheckValidContext() has been
-  // removed, also remove this function.
-  virtual void DoCheckValidContext(const ContextBase&) const {}
+  /** Allows a LeafSystem to override the default size for the implicit time
+  derivatives residual and a Diagram to sum up the total size. If no value
+  is set, the default size is n=num_continuous_states().
+
+  @param[in] n The size of the residual vector output argument of
+               System::CalcImplicitTimeDerivativesResidual(). If n <= 0
+               restore to the default, num_continuous_states().
+
+  @see implicit_time_derivatives_residual_size()
+  @see LeafSystem::DeclareImplicitTimeDerivativesResidualSize()
+  @see System::CalcImplicitTimeDerivativesResidual() */
+  void set_implicit_time_derivatives_residual_size(int n) {
+    implicit_time_derivatives_residual_size_.reset();
+    if (n > 0)
+      implicit_time_derivatives_residual_size_ = n;
+  }
 
   /** (Internal) Gets the id used to tag context data as being created by this
   system. */
@@ -1225,6 +1225,10 @@ class SystemBase : public internal::SystemMessageInterface {
   // declaration for LeafSystem construction; computed recursively during
   // Diagram construction.
   ContextSizes context_sizes_;
+
+  // Defaults to num_continuous_states() if no value here. Diagrams always
+  // fill this in by summing the value from their immediate subsystems.
+  std::optional<int> implicit_time_derivatives_residual_size_;
 };
 
 // Implementations of templatized DeclareCacheEntry() methods.

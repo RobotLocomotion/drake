@@ -94,13 +94,6 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   Vector3<T> angular_velocity(double t) const;
 
   /**
-   * @throws std::runtime_error (always) because it is not implemented yet.
-   */
-  // TODO(russt): Implement this if/when someone needs it!
-  std::unique_ptr<Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override;
-
-  /**
    * Interpolates angular acceleration.
    * @param t Time for interpolation.
    * @return The interpolated angular acceleration at `t`,

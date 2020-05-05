@@ -18,6 +18,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
+        self.assertGreater(result.get_solver_details().optimizer_time, 0.)
+        self.assertEqual(result.get_solver_details().error_code, 0)
+        self.assertEqual(result.get_solver_details().optimization_status, 2)
+        self.assertTrue(np.isnan(result.get_solver_details().objective_bound))
 
     def test_gurobi_license(self):
         # Nominal use case.

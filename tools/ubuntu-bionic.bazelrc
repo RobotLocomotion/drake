@@ -7,3 +7,9 @@ build:_helgrind --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
 # Configure ${PATH} for actions.
 # N.B. Ensure this is consistent with `execute.bzl`.
 build --action_env=PATH=/usr/bin:/bin
+
+# Disable python imports from ~/.local (pip -U) during build and test.
+# https://github.com/bazelbuild/bazel/issues/4939
+# https://github.com/RobotLocomotion/drake/issues/8475
+build --action_env=PYTHONNOUSERSITE=1
+build --test_env=PYTHONNOUSERSITE=1

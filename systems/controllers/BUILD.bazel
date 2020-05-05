@@ -199,6 +199,7 @@ drake_cc_googletest(
         ":linear_quadratic_regulator",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//systems/framework/test_utilities:scalar_conversion",
         "//systems/primitives:linear_system",
         "//systems/primitives:symbolic_vector_system",
     ],

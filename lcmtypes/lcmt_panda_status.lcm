@@ -1,0 +1,65 @@
+package drake;
+
+// The current status of a Franka Panda arm.  All angular
+// positions/velocities are expressed in radians and radians/second.
+//
+// The fields of this message are based on the franka::RobotState message
+// found in libfranka, see
+// https://frankaemika.github.io/libfranka/structfranka_1_1RobotState.html
+// Where the names of some fields have been changed to be more "drake-like",
+// the original field name is referenced here.
+struct lcmt_panda_status
+{
+  // The timestamp in microseconds.
+  int64_t utime;
+
+  int32_t num_joints;
+
+  // franka::RobotState.q
+  double joint_position[num_joints];
+  // franka::RobotState.q_d
+  double joint_position_desired[num_joints];
+  // franka::RobotState.dq
+  double joint_velocity[num_joints];
+  // franka::RobotState.dq_d
+  double joint_velocity_desired[num_joints];
+  // franka::RobotState.ddq_d
+  double joint_acceleration_desired[num_joints];
+  // franka::RobotState.tau_J
+  double joint_torque[num_joints];
+  // franka::RobotState.tau_J_d
+  double joint_torque_desired[num_joints];
+  // franka::RobotState.tau_ext_hat_filtered
+  double joint_torque_external[num_joints];
+
+  double control_command_success_rate;
+
+  // enum for robot mode
+  const int8_t kOther = 0;
+  const int8_t kIdle = 1;
+  const int8_t kMove = 2;
+  const int8_t kGuiding = 3;
+  const int8_t kReflex = 4;
+  const int8_t kUserStopped = 5;
+  const int8_t kAutomaticErrorRecovery = 6;
+  int8_t robot_mode;
+
+  // franka::RobotState.time.toMSec() * 1000
+  int64_t robot_utime;
+
+  // Information about how the driver's control mode is configured, as
+  // described in
+  // https://frankaemika.github.io/docs/libfranka.html#realtime-commands and
+  // https://frankaemika.github.io/libfranka/classfranka_1_1Robot.html
+  //
+  // For a driver based on libfranka, at most one of position or velocity
+  // control would be enabled at any given time.  In other circumstances
+  // (e.g. simulation) both position and velocity commands may potentially be
+  // used.
+  const int8_t CONTROL_MODE_POSITION = 1;
+  const int8_t CONTROL_MODE_VELOCITY = 2;
+  const int8_t CONTROL_MODE_TORQUE = 4;
+
+  // Mask of enabled control modes
+  int8_t control_mode;
+}

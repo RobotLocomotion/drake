@@ -34,7 +34,6 @@ load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
-load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
@@ -163,8 +162,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ignition_math_repository(name = "ignition_math", mirrors = mirrors)
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
-    if "json" not in excludes:
-        json_repository(name = "json", mirrors = mirrors)
     if "jsoncpp" not in excludes:
         jsoncpp_repository(name = "jsoncpp")
     if "lapack" not in excludes:
