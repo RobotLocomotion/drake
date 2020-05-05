@@ -262,21 +262,18 @@ new link on the GitHub issue, and close the issue.
 Handling User StackOverflow Questions
 -------------------------------------
 
-Please subscribe to the ``drake`` tag by following
-`these general instructions <https://meta.stackoverflow.com/a/336515/7829525>`_,
-if you are able to.
+Please subscribe to the ``drake`` tag by following these instructions:
+
+.. toctree::
+    :maxdepth: 1
+
+    stackoverflow_notifications
 
 Please also monitor for `unanswered StackOverflow posts
 <https://stackoverflow.com/unanswered/tagged/drake?tab=noanswers>`_
 once per day. If there are unanswered questions that you are unsure of the
 answer, consider posting on the Slack ``#onramp`` channel to see if someone
 can can look into the question.
-
-The following developers are subscribed to the ``drake`` tag, and will monitor
-it:
-
-  - Russ Tedrake
-  - Eric Cousineau
 
 Continuous Integration Notes
 ============================
