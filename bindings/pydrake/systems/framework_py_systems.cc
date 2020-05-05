@@ -8,7 +8,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -487,16 +486,6 @@ Note: The above is for the C++ documentation. For Python, use
             },
             py_reference_internal, py::arg("name"), py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractInputPort.doc_2args)
-        .def("DeclareAbstractInputPort",
-            [](PyLeafSystem* self, const std::string& name) -> InputPort<T>& {
-              WarnDeprecated(
-                  "`DeclareAbstractInputPort(self, name)` is deprecated. "
-                  "Please use `(self, name, model_value)` instead.");
-              drake::Value<py::object> model_value;
-              return self->DeclareAbstractInputPort(name, model_value);
-            },
-            py_reference_internal, py::arg("name"),
-            "(This method is deprecated.)")
         .def("DeclareAbstractParameter",
             &PyLeafSystem::DeclareAbstractParameter, py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractParameter.doc)

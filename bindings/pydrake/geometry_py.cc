@@ -8,7 +8,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -39,17 +38,7 @@ template <typename Class>
 void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
   constexpr auto& cls_doc = pydrake_doc.drake.Identifier;
 
-  py::class_<Class> cls(m, name.c_str(), id_doc);
-  py::handle cls_handle = cls;
-  cls  // BR
-      .def(py::init([cls_handle]() {
-        WarnDeprecated(
-            py::str("The constructor for {} in Python is deprecated. "
-                    "Use `get_new_id()` if necessary.")
-                .format(cls_handle));
-        return Class{};
-      }),
-          cls_doc.ctor.doc)
+  py::class_<Class>(m, name.c_str(), id_doc)
       .def("get_value", &Class::get_value, cls_doc.get_value.doc)
       .def("is_valid", &Class::is_valid, cls_doc.is_valid.doc)
       .def(py::self == py::self)
@@ -247,9 +236,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.RegisterAnchoredGeometry.doc)
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
-        .def("AddRenderer", WrapDeprecated("Deprecated", &Class::AddRenderer),
-            py::arg("renderer_name"), py::arg("renderer"),
-            cls_doc.AddRenderer.doc)
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
             cls_doc.HasRenderer.doc)
         .def("RendererCount", &Class::RendererCount, cls_doc.RendererCount.doc)

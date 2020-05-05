@@ -55,7 +55,6 @@ drake_pybind_library(
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
@@ -70,7 +69,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["branch_and_bound_py.cc"],
     package_info = PACKAGE_INFO,
@@ -84,7 +82,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["mixed_integer_optimization_util_py.cc"],
     package_info = PACKAGE_INFO,

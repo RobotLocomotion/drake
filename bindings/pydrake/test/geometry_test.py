@@ -28,13 +28,9 @@ from pydrake.systems.sensors import (
     ImageDepth32F,
     ImageLabel16I
     )
-from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 class TestGeometry(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter('error', DrakeDeprecationWarning)
-
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
@@ -190,9 +186,6 @@ class TestGeometry(unittest.TestCase):
         ]
 
         for cls in cls_list:
-            with self.assertRaises(DrakeDeprecationWarning) as exc:
-                cls()
-            self.assertIn(cls.__name__, str(exc.exception))
             a = cls.get_new_id()
             self.assertTrue(a.is_valid())
             b = cls.get_new_id()

@@ -44,7 +44,6 @@ from pydrake.systems.test.test_util import (
     )
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 def noop(*args, **kwargs):
@@ -605,32 +604,3 @@ class TestCustom(unittest.TestCase):
             system.CalcOutput(context, output)
             value = output.get_data(0)
             self.assertEqual(value.get_value(), expected_output_value)
-
-    def test_deprecated_abstract_input_port(self):
-        """This test case confirms that the deprecated API for abstract input
-        ports continues to operate correctly, until such a time as we remove
-        it. For an example of non-deprecated APIs to use abstract input ports,
-        see the test_abstract_io_port case, above.
-        """
-        test = self
-
-        # A system that takes a Value[object] on its input, and parses the
-        # input value's first element to a float on its output.
-        class ParseFloatSystem(LeafSystem_[float]):
-            def __init__(self):
-                LeafSystem_[float].__init__(self)
-                with catch_drake_warnings(expected_count=1):
-                    self.DeclareAbstractInputPort("in")
-                self.DeclareVectorOutputPort("out", BasicVector(1), self._Out)
-
-            def _Out(self, context, y_data):
-                py_obj = self.EvalAbstractInput(context, 0).get_value()[0]
-                y_data.SetAtIndex(0, float(py_obj))
-
-        system = ParseFloatSystem()
-        context = system.CreateDefaultContext()
-        output = system.AllocateOutput()
-        system.get_input_port(0).FixValue(context,
-                                          AbstractValue.Make(["22.2"]))
-        system.CalcOutput(context, output)
-        self.assertEqual(output.get_vector_data(0).GetAtIndex(0), 22.2)
