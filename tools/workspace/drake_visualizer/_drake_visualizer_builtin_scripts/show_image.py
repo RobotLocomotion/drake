@@ -408,8 +408,8 @@ class LcmImageHandler(ImageHandler):
         with self.lock:
             self.utime = msg.header.utime
             self._image = decode_image_t(msg, self._image)
-            self._is_depth_image = (msg.pixel_format ==
-                                    rl.image_t.PIXEL_FORMAT_DEPTH)
+            self._is_depth_image = (msg.pixel_format
+                                    == rl.image_t.PIXEL_FORMAT_DEPTH)
 
     def update_image(self, image_out):
         """
@@ -468,7 +468,7 @@ class LcmImageArraySubscriber(object):
                 issues.append("Got extra image '{}'".format(frame_name))
 
         if issues:
-            print("LcmImageArraySubscriber: For image channel '{}' " +
+            print("LcmImageArraySubscriber: For image channel '{}' "
                   "({} images), with frames {}:"
                   .format(self._channel, msg.num_images, msg_frame_names))
             for issue in issues:

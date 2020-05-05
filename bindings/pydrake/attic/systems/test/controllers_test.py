@@ -14,7 +14,7 @@ from pydrake.attic.multibody.rigid_body_tree import (
 class TestControllers(unittest.TestCase):
     def test_inverse_dynamics(self):
         urdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/urdf/iiwa14_primitive_collision.urdf")
         tree = RigidBodyTree(urdf_path,
                              floating_base_type=FloatingBaseType.kFixed)
@@ -63,7 +63,7 @@ class TestControllers(unittest.TestCase):
 
     def test_inverse_dynamics_controller(self):
         urdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/urdf/iiwa14_primitive_collision.urdf")
         tree = RigidBodyTree(
                 urdf_path, floating_base_type=FloatingBaseType.kFixed)

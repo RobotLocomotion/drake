@@ -261,8 +261,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                                 break
                         if filename[-4:].lower() != '.obj':
                             raise RuntimeError(
-                                "The given file " + filename + " is not "
-                                "supported and no alternate " + base +
+                                f"The given file {filename} is not "
+                                f"supported and no alternate {base}"
                                 ".obj could be found.")
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(

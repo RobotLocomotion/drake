@@ -44,19 +44,19 @@ if __name__ == '__main__':
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):
-                print("error: " + test_basename + " appears to have a main " +
-                      "function (checks 'if __name__ == ') or call the main " +
-                      "function of unittest ('unittest.main') but also uses " +
-                      "drake_py_unittest; when using drake_py_unittest, " +
-                      "the boilerplate main function should not be used; " +
-                      "if this test is not based on unittest, declare it " +
-                      "as drake_py_test instead of drake_py_unittest and " +
+                print(f"error: {test_basename} appears to have a main "
+                      "function (checks 'if __name__ == ') or call the main "
+                      "function of unittest ('unittest.main') but also uses "
+                      "drake_py_unittest; when using drake_py_unittest, "
+                      "the boilerplate main function should not be used; "
+                      "if this test is not based on unittest, declare it "
+                      "as drake_py_test instead of drake_py_unittest and "
                       "keep the main function intact")
                 sys.exit(1)
     if os.access(realpath_test_filename, os.X_OK):
-        print("error: " + test_basename + " uses drake_py_unittest but is " +
-              "marked executable in the filesystem; fix this via chmod a-x " +
-              test_basename)
+        print(f"error: {test_basename} uses drake_py_unittest but is "
+              "marked executable in the filesystem; fix this via "
+              f"chmod a-x {test_basename}")
         sys.exit(1)
 
     # On import, force all drake deprecation warnings to trigger an error.
@@ -95,21 +95,21 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Drake-specific arguments")
     parser.add_argument(
         "--trace", type=str, choices=["none", "user", "sys"], default="none",
-        help="Enable source tracing. `none` implies no tracing, `user` " +
-             "implies tracing user code, and `sys` implies tracing all " +
+        help="Enable source tracing. `none` implies no tracing, `user` "
+             "implies tracing user code, and `sys` implies tracing all "
              "code. Default is `none`.")
     parser.add_argument(
         "--nostdout_to_stderr", action="store_true",
-        help="Do not pipe stdout to stderr. When running from the Bazel " +
-             "client (non-batch), output may be mixed, so piping makes " +
+        help="Do not pipe stdout to stderr. When running from the Bazel "
+             "client (non-batch), output may be mixed, so piping makes "
              "the output more readable.")
     parser.add_argument(
         "--deprecation_action", type=str, default="once",
-        help="Action for any deprecation warnings. See " +
+        help="Action for any deprecation warnings. See "
              "`warnings.simplefilter()`.")
     parser.add_argument(
         "--drake_deprecation_action", type=str, default="error",
-        help="Action for Drake deprecation warnings. Applied after " +
+        help="Action for Drake deprecation warnings. Applied after "
              "--deprecation_action.")
     args, remaining = parser.parse_known_args()
     sys.argv = sys.argv[:1] + remaining

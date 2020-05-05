@@ -451,8 +451,8 @@ class TestGeneral(unittest.TestCase):
             t = times[i]
             self.assertEqual(context_i.get_time(), t)
             xc = context_i.get_continuous_state_vector().CopyToVector()
-            xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial) +
-                           xc_initial)
+            xc_expected = (float(i) / (n - 1) * (xc_final - xc_initial)
+                           + xc_initial)
             self.assertTrue(np.allclose(xc, xc_expected))
 
     def test_simulator_context_manipulation(self):

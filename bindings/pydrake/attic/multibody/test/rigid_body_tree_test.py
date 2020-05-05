@@ -656,8 +656,8 @@ class TestRigidBodyTree(unittest.TestCase):
         possible_points = [np.array([0.5, 0., 0.]), np.array([-0.5, 0.0, 0.0])]
         for pt in [pp.ptA, pp.ptB]:
             self.assertTrue(
-                np.allclose(pt, np.array([0.5, 0., 0.])) or
-                np.allclose(pt, np.array([-0.5, 0., 0.])))
+                np.allclose(pt, np.array([0.5, 0., 0.]))
+                or np.allclose(pt, np.array([-0.5, 0., 0.])))
         self.assertTrue(
             np.allclose(np.abs(pp.normal), np.array([1., 0., 0.])))
         self.assertEqual(pp.distance, -0.5)
