@@ -245,9 +245,6 @@ class BallRpyJoint final : public Joint<T> {
   template <typename>
   friend class BallRpyJoint;
 
-  // Friend class to facilitate testing.
-  friend class JointTester;
-
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.

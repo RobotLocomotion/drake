@@ -48,19 +48,11 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   FreeRotatingBodyPlant<double> free_body_plant(benchmark_.get_I(),
                                                 benchmark_.get_J());
 
-  // We expect the body in this model to be a floating body, however not modeled
-  // using a quaternion mobilizer (it uses a SpaceXYZMobilizer).
-  EXPECT_TRUE(free_body_plant.body().is_floating());
+  // The body in this model is not a floating body but is free to rotate. The
+  // rotation is not modeled using a quaternion mobilizer (it uses a
+  // SpaceXYZMobilizer).
+  EXPECT_FALSE(free_body_plant.body().is_floating());
   EXPECT_FALSE(free_body_plant.body().has_quaternion_dofs());
-
-  // For this simple example with a single floating body we can verify indexes
-  // into the state. In addition, the test above verifies we are not using a
-  // quaternions, but a SpaceXYZMobilizer (3-dofs).
-  // In the state vector x for the model, positions q go first followed by
-  // velocities v. Similarly, angular components go first, followed by
-  // translational components.
-  EXPECT_EQ(free_body_plant.body().floating_positions_start(), 0);
-  EXPECT_EQ(free_body_plant.body().floating_velocities_start(), 3);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
