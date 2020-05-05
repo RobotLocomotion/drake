@@ -34,6 +34,16 @@ apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${code
 
 locale-gen en_US.UTF-8
 
+if [[ "${codename}" == 'focal' ]]; then
+  # We need a working /usr/bin/python (of any version).  On Bionic it's there
+  # by default, but on Focal we have to ask for it.
+  if [[ ! -e /usr/bin/python ]]; then
+    apt-get install --no-install-recommends python-is-python3
+  else
+    echo "/usr/bin/python is already installed"
+  fi
+fi
+
 dpkg_install_from_wget() {
   package="$1"
   version="$2"
