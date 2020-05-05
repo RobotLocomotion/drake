@@ -597,9 +597,8 @@ class HydroelasticContactVisualizer(object):
                                 #  would be skipped.
                                 scale /= traction_mag
 
-                            d.addArrow(start=origin, end=origin +
-                                       auto_traction_scale *
-                                       traction * scale,
+                            offset = auto_traction_scale * traction * scale
+                            d.addArrow(start=origin, end=origin + offset,
                                        tubeRadius=0.000125,
                                        headRadius=0.00025, color=[1, 0, 1])
                         else:
@@ -622,9 +621,8 @@ class HydroelasticContactVisualizer(object):
                                 # vector would be skipped.
                                 scale /= slip_mag
 
-                            d.addArrow(start=origin, end=origin +
-                                       auto_slip_velocity_scale *
-                                       slip * scale,
+                            offset = auto_slip_velocity_scale * slip * scale
+                            d.addArrow(start=origin, end=origin + offset,
                                        tubeRadius=0.000125,
                                        headRadius=0.00025, color=[0, 1, 1])
                         else:

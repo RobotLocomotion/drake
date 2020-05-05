@@ -396,7 +396,7 @@ class TestGeometry(unittest.TestCase):
             # in response to invalid ids as evidence of correct binding.
             self.assertRaisesRegex(
                 RuntimeError,
-                "The geometry given by id \\d+ does not reference a geometry" +
+                "The geometry given by id \\d+ does not reference a geometry"
                 " that can be used in a signed distance query",
                 q_o.ComputeSignedDistancePairClosestPoints,
                 mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())

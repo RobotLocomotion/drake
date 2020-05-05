@@ -177,8 +177,8 @@ def _register_autodiff():
         np.testing.assert_equal(a.derivatives(), b.derivatives())
 
     def autodiff_ne(a, b):
-        if (a.value() == b.value() and
-                (a.derivatives() == b.derivatives()).all()):
+        if (a.value() == b.value()
+                and (a.derivatives() == b.derivatives()).all()):
             raise _UnwantedEquality(str(a.value(), b.derivatives()))
 
     _registry.register_to_float(AutoDiffXd, AutoDiffXd.value)

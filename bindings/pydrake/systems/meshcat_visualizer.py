@@ -343,10 +343,10 @@ class MeshcatVisualizer(LeafSystem):
                 else:
                     robot_name = "world"
                     link_name = frame_name
-                if (robot_name in self.frames_to_draw.keys() and
-                        link_name in self.frames_to_draw[robot_name]):
-                    prefix = (self.prefix + '/' + source_name + '/' +
-                              str(link.robot_num) + '/' + frame_name)
+                if (robot_name in self.frames_to_draw.keys()
+                        and link_name in self.frames_to_draw[robot_name]):
+                    prefix = (self.prefix + '/' + source_name + '/'
+                              + str(link.robot_num) + '/' + frame_name)
                     AddTriad(
                         self.vis,
                         name="frame",
@@ -473,8 +473,8 @@ class MeshcatContactVisualizer(LeafSystem):
             if old_bodies == new_bodies:
                 # Reaching here means that `old` and `new`
                 # describe contact between the same pair of bodies.
-                v = np.sqrt(old.info.separation_speed()**2 +
-                            old.info.slip_speed()**2)
+                v = np.sqrt(old.info.separation_speed()**2
+                            + old.info.slip_speed()**2)
                 if np.linalg.norm(new.p_BC - old.p_BC) < v * dt:
                     old.info = new.info
                     old.p_BC = new.p_BC

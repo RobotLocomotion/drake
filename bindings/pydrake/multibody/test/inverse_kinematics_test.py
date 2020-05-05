@@ -98,10 +98,10 @@ class TestInverseKinematics(unittest.TestCase):
         body2_rotmat = Quaternion(body2_quat).rotation()
         p_AQ = body2_rotmat.transpose().dot(
             body1_rotmat.dot(p_BQ) + body1_pos - body2_pos)
-        self.assertTrue(np.greater(p_AQ, p_AQ_lower -
-                                   1E-6 * np.ones((3, 1))).all())
-        self.assertTrue(np.less(p_AQ, p_AQ_upper +
-                                1E-6 * np.ones((3, 1))).all())
+        self.assertTrue(np.greater(
+            p_AQ, p_AQ_lower - 1E-6 * np.ones((3, 1))).all())
+        self.assertTrue(np.less(
+            p_AQ, p_AQ_upper + 1E-6 * np.ones((3, 1))).all())
 
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
@@ -192,9 +192,12 @@ class TestInverseKinematics(unittest.TestCase):
         p_WT = body2_pos + body2_rotmat.dot(p_BT)
         p_ST_W = p_WT - p_WS
         n_W = body1_rotmat.dot(n_A)
-        self.assertGreater(p_ST_W.dot(n_W), np.linalg.norm(
-            p_ST_W) * np.linalg.norm(n_W) *
-            math.cos(cone_half_angle) - 1E-6)
+        self.assertGreater(
+            p_ST_W.dot(n_W),
+            (np.linalg.norm(p_ST_W)
+                * np.linalg.norm(n_W)
+                * math.cos(cone_half_angle))
+            - 1E-6)
 
     def test_AddAngleBetweenVectorsConstraint(self):
         na_A = np.array([0.2, -0.4, 0.9])
@@ -219,8 +222,8 @@ class TestInverseKinematics(unittest.TestCase):
         na_W = body1_rotmat.dot(na_A)
         nb_W = body2_rotmat.dot(nb_B)
 
-        angle = math.acos(na_W.transpose().dot(nb_W) /
-                          (np.linalg.norm(na_W) * np.linalg.norm(nb_W)))
+        angle = math.acos(na_W.transpose().dot(nb_W)
+                          / (np.linalg.norm(na_W) * np.linalg.norm(nb_W)))
 
         self.assertLess(math.fabs(angle - angle_lower), 1E-6)
 
