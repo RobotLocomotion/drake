@@ -1,0 +1,5 @@
+name: pr2
+model_file_path: drake/examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf
+parent_frame_name: world_frame
+child_frame_name: base_link_for_rbt_compat
+is_floating_base: False

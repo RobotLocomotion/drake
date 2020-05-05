@@ -3,13 +3,95 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
+drake_cc_library(
+    name = "common",
+    hdrs = [
+        "model_instance_info.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "parameters",
+    srcs = [
+        "robot_parameters_loader.cc",
+        "sim_parameters.cc",
+    ],
+    hdrs = [
+        "robot_parameters.h",
+        "robot_parameters_loader.h",
+        "sim_parameters.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common",
+        "//common:essential",
+        "//common/yaml:yaml_read_archive",
+        "//geometry:scene_graph",
+        "//multibody/tree",
+        "@gflags",
+    ],
+)
+
+drake_cc_library(
+    name = "sim_world",
+    srcs = [
+        "sim_world.cc",
+    ],
+    hdrs = [
+        "sim_world.h",
+    ],
+    data = [
+        ":config",
+        ":models",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common",
+        ":parameters",
+        "//common:find_resource",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//math:geometric_transform",
+        "//multibody/benchmarks/inclined_plane",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives",
+    ],
+)
+
 # === test/ ===
+
+drake_cc_googletest(
+    name = "robot_parameters_loader_test",
+    data = [
+        "test/test_robot_invalid.yaml",
+        "test/test_robot_valid.yaml",
+    ],
+    deps = [
+        ":parameters",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sim_world_test",
+    deps = [
+        ":sim_world",
+    ],
+)
 
 drake_cc_googletest(
     name = "load_pr2_simplified_test",
