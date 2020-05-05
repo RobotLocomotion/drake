@@ -404,22 +404,60 @@ The first step to debugging is to consider running your code using the
 have a ``if __name__ == "__main__"`` clause. If you do this, then it is easy to
 trace. As an example:
 
+..
+    N.B. These code snippets should be kept in sync with
+    `drake_py_unittest_main.py`.
+
 .. code-block:: python
 
+    def reexecute_if_unbuffered():
+        """Ensures that output is immediately flushed (e.g. for segfaults).
+        ONLY use this at your entrypoint. Otherwise, you may have code be
+        re-executed that will clutter your console."""
+        import os
+        import shlex
+        import sys
+        if os.environ.get("PYTHONUNBUFFERED") in (None, ""):
+            os.environ["PYTHONUNBUFFERED"] = "1"
+            argv = list(sys.argv)
+            if argv[0] != sys.executable:
+                argv.insert(0, sys.executable)
+            cmd = " ".join([shlex.quote(arg) for arg in argv])
+            sys.stdout.flush()
+            os.execv(argv[0], argv)
+
+
+    def traced(func, ignoredirs=None):
+        """Decorates func such that it's execution is traced, but filters out
+        any Python code outside of the system prefix."""
+        import functools
+        import sys
+        import trace
+        if ignoredirs is None:
+            ignoredirs = ["/usr", sys.prefix]
+        tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredir)
+
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            return tracer.runfunc(func, *args, **kwargs)
+
+        return wrapped
+
+
+    # NOTE: You don't have to trace all of your code. If you can identify a
+    # single function, then you can just decorate it with this. If you're
+    # decorating a class method, then be sure to declare these functions above
+    # it.
+    @traced
     def main():
         insert_awesome_code_here()
 
-    if __name__ == "__main__":
-        # main()  # Normal invocation; commented out, because we will trace it.
 
-        # The following (a) imports minimum dependencies, (b) ensures that
-        # output is immediately flushed (e.g. for segfaults), and (c) traces
-        # execution of your function, but filtering out any Python code outside
-        # of the system prefix.
-        import sys, trace
-        sys.stdout = sys.stderr
-        tracer = trace.Trace(trace=1, count=0, ignoredirs=["/usr", sys.prefix])
-        tracer.runfunc(main)
+    if __name__ == "__main__":
+        reexecute_if_unbuffered()
+        main()
+
+
 
 .. note::
 
