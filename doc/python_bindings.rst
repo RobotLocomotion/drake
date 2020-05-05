@@ -406,20 +406,49 @@ trace. As an example:
 
 .. code-block:: python
 
+    def reexecute_if_unbuffered():
+        # Ensures that output is immediately flushed (e.g. for segfaults).
+        # ONLY use this at your entrypoint. Otherwise, you may have code be
+        # re-executed that will clutter your console.
+        import os, shlex, sys
+        if os.environ.get("PYTHONUNBUFFERED") != "1":
+            os.environ["PYTHONUNBUFFERED"] = "1"
+            argv = list(sys.argv)
+            if argv[0] != sys.executable:
+                argv.insert(0, sys.executable)
+            cmd = " ".join([shlex.quote(arg) for arg in argv])
+            print(f"Re-executing with env PYTHONUNBUFFERED=1:\n+ {cmd}")
+            sys.stdout.flush()
+            os.execv(argv[0], argv)
+
+
+    def traced(f):
+        # Decorates f such that it's execution is traced, but filters out any
+        # Python code outside of the system prefix.
+        import functools, sys, trace
+        tracer = trace.Trace(trace=1, count=0, ignoredirs=["/usr", sys.prefix])
+
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            return tracer.runfunc(f, *args, **kwargs)
+
+        return wrapped
+
+
+    # NOTE: You don't have to trace all of your code. If you can identify a
+    # single function, then you can just decorate it with this. If you're
+    # decorating a class method, then be sure to declare these functions above
+    # it.
+    @traced
     def main():
         insert_awesome_code_here()
 
-    if __name__ == "__main__":
-        # main()  # Normal invocation; commented out, because we will trace it.
 
-        # The following (a) imports minimum dependencies, (b) ensures that
-        # output is immediately flushed (e.g. for segfaults), and (c) traces
-        # execution of your function, but filtering out any Python code outside
-        # of the system prefix.
-        import sys, trace
-        sys.stdout = sys.stderr
-        tracer = trace.Trace(trace=1, count=0, ignoredirs=["/usr", sys.prefix])
-        tracer.runfunc(main)
+    if __name__ == "__main__":
+        reexecute_if_unbuffered()
+        main()
+
+
 
 .. note::
 
