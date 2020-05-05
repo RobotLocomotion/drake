@@ -2,7 +2,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
@@ -93,15 +92,6 @@ PYBIND11_MODULE(manipulation_station, m) {
               &ManipulationStation<T>::SetIiwaPosition),
           py::arg("station_context"), py::arg("q"),
           doc.ManipulationStation.SetIiwaPosition.doc_2args)
-      .def("SetIiwaPosition",
-          [](ManipulationStation<T>* self,
-              const Eigen::Ref<const VectorX<T>>& q,
-              systems::Context<T>* context) {
-            WarnDeprecated(
-                "SetIiwaPosition(q, context) is deprecated.  Please use "
-                "(context, q) instead.");
-            self->SetIiwaPosition(context, q);
-          })
       .def("GetIiwaVelocity", &ManipulationStation<T>::GetIiwaVelocity,
           doc.ManipulationStation.GetIiwaVelocity.doc)
       .def("SetIiwaVelocity",
@@ -110,15 +100,6 @@ PYBIND11_MODULE(manipulation_station, m) {
               &ManipulationStation<T>::SetIiwaVelocity),
           py::arg("station_context"), py::arg("v"),
           doc.ManipulationStation.SetIiwaVelocity.doc_2args)
-      .def("SetIiwaVelocity",
-          [](ManipulationStation<T>* self,
-              const Eigen::Ref<const VectorX<T>>& v,
-              systems::Context<T>* context) {
-            WarnDeprecated(
-                "SetIiwaVelocity(v, context) is deprecated.  Please use "
-                "(context, v) instead.");
-            self->SetIiwaVelocity(context, v);
-          })
       .def("GetWsgPosition", &ManipulationStation<T>::GetWsgPosition,
           doc.ManipulationStation.GetWsgPosition.doc)
       .def("SetWsgPosition",
@@ -126,14 +107,6 @@ PYBIND11_MODULE(manipulation_station, m) {
               &ManipulationStation<T>::SetWsgPosition),
           py::arg("station_context"), py::arg("q"),
           doc.ManipulationStation.SetWsgPosition.doc_2args)
-      .def("SetWsgPosition",
-          [](ManipulationStation<T>* self, const T& q,
-              systems::Context<T>* context) {
-            WarnDeprecated(
-                "SetWsgPosition(q, context) is deprecated.  Please use "
-                "(context, q) instead.");
-            self->SetWsgPosition(context, q);
-          })
       .def("GetWsgVelocity", &ManipulationStation<T>::GetWsgVelocity,
           doc.ManipulationStation.GetWsgVelocity.doc)
       .def("SetWsgVelocity",
@@ -141,14 +114,6 @@ PYBIND11_MODULE(manipulation_station, m) {
               &ManipulationStation<T>::SetWsgVelocity),
           py::arg("station_context"), py::arg("v"),
           doc.ManipulationStation.SetWsgVelocity.doc_2args)
-      .def("SetWsgVelocity",
-          [](ManipulationStation<T>* self, const T& v,
-              systems::Context<T>* context) {
-            WarnDeprecated(
-                "SetWsgVelocity(v, context) is deprecated.  Please use "
-                "(context, v) instead.");
-            self->SetWsgVelocity(context, v);
-          })
       .def("GetStaticCameraPosesInWorld",
           &ManipulationStation<T>::GetStaticCameraPosesInWorld,
           py_reference_internal,

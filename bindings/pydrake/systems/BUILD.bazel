@@ -48,7 +48,6 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -175,7 +174,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,
@@ -212,7 +210,6 @@ drake_pybind_library(
     cc_deps = [
         ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = [
         "lcm_py.cc",
