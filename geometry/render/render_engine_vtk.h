@@ -81,8 +81,8 @@ class ShaderCallback : public vtkCommand {
 #endif  // !DRAKE_DOXYGEN_CXX
 
 /** See documentation of MakeRenderEngineVtk().  */
-class RenderEngineVtk final : public RenderEngine,
-                              private internal::ModuleInitVtkRenderingOpenGL2 {
+class RenderEngineVtk : public RenderEngine,
+                        private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
   /** \name Does not allow copy, move, or assignment  */
   //@{
@@ -146,6 +146,16 @@ class RenderEngineVtk final : public RenderEngine,
   using RenderEngine::default_render_label;
   //@}
 
+ protected:
+  const std::unordered_map<GeometryId,
+                           std::array<vtkSmartPointer<vtkActor>, 3>>&
+  actors() const {
+    return actors_;
+  }
+ protected:
+  // Copy constructor for the purpose of cloning.
+  RenderEngineVtk(const RenderEngineVtk& other);
+
  private:
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(
@@ -160,10 +170,7 @@ class RenderEngineVtk final : public RenderEngine,
   bool DoRemoveGeometry(GeometryId id) final;
 
   // @see RenderEngine::DoClone().
-  std::unique_ptr<RenderEngine> DoClone() const final;
-
-  // Copy constructor for the purpose of cloning.
-  RenderEngineVtk(const RenderEngineVtk& other);
+  std::unique_ptr<RenderEngine> DoClone() const override;
 
   // Initializes the VTK pipelines.
   void InitializePipelines();
@@ -198,7 +205,7 @@ class RenderEngineVtk final : public RenderEngine,
   void UpdateWindow(const DepthCameraProperties& camera,
                     const RenderingPipeline* p) const;
 
-  void SetDefaultLightPosition(const Vector3<double>& X_DL);
+  void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
 
   // Three pipelines: rgb, depth, and label.
   static constexpr int kNumPipelines = 3;

@@ -60,6 +60,13 @@ class SceneGraphInspector {
   // set the state variable. Every query should start by demanding that state_
   // is defined.
 
+  /** Returns the named render engine, if it exists.  */
+  const render::RenderEngine* RenderEngineByName(
+      const std::string& name) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->RenderEngineByName(name);
+  }
+
   //----------------------------------------------------------------------------
 
   /** @name              Scene-graph wide data  */

@@ -347,6 +347,10 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       } else {
         clone.SetTexture(source.GetTexture());
       }
+      const auto& source_textures = source.GetProperty()->GetAllTextures();
+      for (auto& [name, texture] : source_textures) {
+        clone.GetProperty()->SetTexture(name.c_str(), texture);
+      }
 
       // NOTE: The clone renderer and original renderer *share* polygon
       // data. If the meshes were *deformable* this would be invalid.
