@@ -33,6 +33,7 @@ from pydrake.multibody.tree import (
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
+    UniversalJoint_,
     WeldJoint_,
     world_index,
     world_model_instance,
@@ -1065,6 +1066,14 @@ class TestPlant(unittest.TestCase):
                 damping=2.,
             )
 
+        def make_universal_joint(plant, P, C):
+            return UniversalJoint_[T](
+                name="universal",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=2.,
+            )
+
         def make_weld_joint(plant, P, C):
             # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
             # with other joints.
@@ -1079,6 +1088,7 @@ class TestPlant(unittest.TestCase):
             make_ball_rpy_joint,
             make_prismatic_joint,
             make_revolute_joint,
+            make_universal_joint,
             make_weld_joint,
         ]
 
@@ -1123,6 +1133,13 @@ class TestPlant(unittest.TestCase):
                 set_point = 1.
                 joint.set_angle(context=context, angle=set_point)
                 self.assertIsInstance(joint.get_angle(context=context), T)
+            elif joint.name() == "universal":
+                set_point = np.array([1., 2.])
+                joint.set_angles(context=context, angles=set_point)
+                self.assertEqual(len(joint.get_angles(context=context)), 2)
+                joint.set_angular_rates(context=context, theta_dot=set_point)
+                self.assertEqual(
+                    len(joint.get_angular_rates(context=context)), 2)
             elif joint.name() == "weld":
                 # No joint specifc methods to test
                 pass
