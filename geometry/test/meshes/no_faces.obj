@@ -1,0 +1,9 @@
+# Specifies vertices and texture coordinates, but builds no faces.
+v -0.5 -0.5 0
+v 0.5 -0.5 0
+v 0.5 0.5 0
+v -0.5 0.5 0
+vt 0 0
+vt 1 0
+vt 1 1
+vt 0 1
