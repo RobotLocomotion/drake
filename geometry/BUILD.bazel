@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":geometry_visualization",
         ":internal_frame",
         ":internal_geometry",
+        ":mesh_painter_system",
         ":proximity_engine",
         ":proximity_properties",
         ":scene_graph",
@@ -163,6 +164,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "mesh_painter_system",
+    srcs = ["mesh_painter_system.cc"],
+    hdrs = ["mesh_painter_system.h"],
+    deps = [
+        ":geometry_ids",
+        ":scene_graph",
+        "//common:essential",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:make_cylinder_mesh",
+        "//geometry/proximity:make_ellipsoid_mesh",
+        "//geometry/proximity:make_sphere_mesh",
+        "//geometry/proximity:volume_mesh",
+        "//systems/framework:leaf_system",
+        "@tinyobjloader",
+    ],
+)
+
+drake_cc_library(
     name = "proximity_properties",
     srcs = ["proximity_properties.cc"],
     hdrs = ["proximity_properties.h"],
@@ -279,12 +298,10 @@ drake_cc_library(
 filegroup(
     name = "test_obj_files",
     testonly = 1,
-    srcs = [
-        "test/forbidden_two_cubes.obj",
-        "test/non_convex_mesh.obj",
-        "test/quad_cube.mtl",
-        "test/quad_cube.obj",
-    ],
+    srcs = glob([
+        "test/**/*.mtl",
+        "test/**/*.obj",
+    ]),
 )
 
 drake_cc_googletest(
@@ -387,6 +404,15 @@ drake_cc_googletest(
     name = "geometry_visualization_test",
     deps = [
         ":geometry_visualization",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_painter_system_test",
+    data = [":test_obj_files"],
+    deps = [
+        ":mesh_painter_system",
         "//common/test_utilities:expect_throws_message",
     ],
 )

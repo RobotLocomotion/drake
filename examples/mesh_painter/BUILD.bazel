@@ -1,0 +1,45 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+drake_cc_binary(
+    name = "painting_a_mesh",
+    srcs = ["painting_a_mesh.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    tags = vtk_test_tags(),
+    test_rule_args = [
+        "--simulation_time=0.01",
+    ],
+    deps = [
+        "//geometry:geometry_visualization",
+        "//geometry:mesh_painter_system",
+        "//geometry:scene_graph",
+        "//geometry/render:render_engine_vtk",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "@gflags",
+    ],
+)
+
+filegroup(
+    name = "models",
+    srcs = glob([
+        "**/*.obj",
+        "**/*.sdf",
+        "**/*.urdf",
+        "**/*.xml",
+        "**/*.png",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests()
