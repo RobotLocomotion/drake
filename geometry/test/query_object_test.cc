@@ -192,6 +192,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
       properties, FrameId::get_new_id(), X_WC, false, &label));
 
+  EXPECT_DEFAULT_ERROR(default_object.GetRenderEngineByName("dummy"));
+
 #undef EXPECT_DEFAULT_ERROR
 }
 

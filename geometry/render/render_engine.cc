@@ -1,5 +1,9 @@
 #include "drake/geometry/render/render_engine.h"
 
+#include <typeinfo>
+
+#include "drake/common/nice_type_name.h"
+
 namespace drake {
 namespace geometry {
 namespace render {
@@ -7,7 +11,21 @@ namespace render {
 using math::RigidTransformd;
 
 std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
-  return std::unique_ptr<RenderEngine>(DoClone());
+  std::unique_ptr<RenderEngine> clone(DoClone());
+  // Make sure that derived classes have actually overridden DoClone().
+  // Particularly important for derivations of derivations.
+  // Note: clang considers typeid(*clone) to be an expression with side effects.
+  // So, we capture a reference to the polymorphic type and provide that to
+  // typeid to make both clang and gcc happy.
+  const RenderEngine& clone_ref = *clone;
+  if (typeid(*this) != typeid(clone_ref)) {
+    throw std::logic_error(fmt::format(
+        "Error in cloning RenderEngine class of type {}; the clone returns "
+        "type {}. {}::DoClone() was probably not implemented",
+        NiceTypeName::Get(*this), NiceTypeName::Get(clone_ref),
+        NiceTypeName::Get(*this)));
+  }
+  return clone;
 }
 
 bool RenderEngine::RegisterVisual(

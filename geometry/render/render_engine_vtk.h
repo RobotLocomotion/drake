@@ -81,13 +81,13 @@ class ShaderCallback : public vtkCommand {
 #endif  // !DRAKE_DOXYGEN_CXX
 
 /** See documentation of MakeRenderEngineVtk().  */
-class RenderEngineVtk final : public RenderEngine,
-                              private internal::ModuleInitVtkRenderingOpenGL2 {
+class RenderEngineVtk : public RenderEngine,
+                        private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
   /** \name Does not allow copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
-  // Note: the copy assignment operator is actually private to serve as the
+  // Note: the copy constructor operator is actually protected to serve as the
   // basis for implementing the DoClone() method.
   RenderEngineVtk(const RenderEngineVtk&) = delete;
 #endif
@@ -105,34 +105,34 @@ class RenderEngineVtk final : public RenderEngine,
       const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
 
   /** @see RenderEngine::UpdateViewpoint().  */
-  void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
+  void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
   /** @see RenderEngine::RenderColorImage().  */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageRgba8U* color_image_out) const final;
+      systems::sensors::ImageRgba8U* color_image_out) const override;
 
   /** @see RenderEngine::RenderDepthImage().  */
   void RenderDepthImage(
       const DepthCameraProperties& camera,
-      systems::sensors::ImageDepth32F* depth_image_out) const final;
+      systems::sensors::ImageDepth32F* depth_image_out) const override;
 
   /** @see RenderEngine::RenderLabelImage().  */
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
-      systems::sensors::ImageLabel16I* label_image_out) const final;
+      systems::sensors::ImageLabel16I* label_image_out) const override;
 
   /** @name    Shape reification  */
   //@{
   using RenderEngine::ImplementGeometry;
-  void ImplementGeometry(const Sphere& sphere, void* user_data) final;
-  void ImplementGeometry(const Cylinder& cylinder, void* user_data) final;
-  void ImplementGeometry(const HalfSpace& half_space, void* user_data) final;
-  void ImplementGeometry(const Box& box, void* user_data) final;
-  void ImplementGeometry(const Capsule& capsule, void* user_data) final;
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) final;
-  void ImplementGeometry(const Mesh& mesh, void* user_data) final;
-  void ImplementGeometry(const Convex& convex, void* user_data) final;
+  void ImplementGeometry(const Sphere& sphere, void* user_data) override;
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
+  void ImplementGeometry(const HalfSpace& half_space, void* user_data) override;
+  void ImplementGeometry(const Box& box, void* user_data) override;
+  void ImplementGeometry(const Capsule& capsule, void* user_data) override;
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
+  void ImplementGeometry(const Mesh& mesh, void* user_data) override;
+  void ImplementGeometry(const Convex& convex, void* user_data) override;
   //@}
 
   /** @name    Access the default properties
@@ -146,24 +146,34 @@ class RenderEngineVtk final : public RenderEngine,
   using RenderEngine::default_render_label;
   //@}
 
+ protected:
+  /** Returns all actors registered with the engine, keyed by the SceneGraph
+   GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
+   label. */
+  const std::unordered_map<GeometryId,
+                           std::array<vtkSmartPointer<vtkActor>, 3>>&
+  actors() const {
+    return actors_;
+  }
+
+  /** Copy constructor for the purpose of cloning. */
+  RenderEngineVtk(const RenderEngineVtk& other);
+
  private:
   // @see RenderEngine::DoRegisterVisual().
-  bool DoRegisterVisual(
-      GeometryId id, const Shape& shape, const PerceptionProperties& properties,
-      const math::RigidTransformd& X_WG) final;
+  bool DoRegisterVisual(GeometryId id, const Shape& shape,
+                        const PerceptionProperties& properties,
+                        const math::RigidTransformd& X_WG) override;
 
   // @see RenderEngine::DoUpdateVisualPose().
   void DoUpdateVisualPose(GeometryId id,
-                          const math::RigidTransformd& X_WG) final;
+                          const math::RigidTransformd& X_WG) override;
 
   // @see RenderEngine::DoRemoveGeometry().
-  bool DoRemoveGeometry(GeometryId id) final;
+  bool DoRemoveGeometry(GeometryId id) override;
 
   // @see RenderEngine::DoClone().
-  std::unique_ptr<RenderEngine> DoClone() const final;
-
-  // Copy constructor for the purpose of cloning.
-  RenderEngineVtk(const RenderEngineVtk& other);
+  std::unique_ptr<RenderEngine> DoClone() const override;
 
   // Initializes the VTK pipelines.
   void InitializePipelines();
@@ -198,7 +208,7 @@ class RenderEngineVtk final : public RenderEngine,
   void UpdateWindow(const DepthCameraProperties& camera,
                     const RenderingPipeline* p) const;
 
-  void SetDefaultLightPosition(const Vector3<double>& X_DL);
+  void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
 
   // Three pipelines: rgb, depth, and label.
   static constexpr int kNumPipelines = 3;

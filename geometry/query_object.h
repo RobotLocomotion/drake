@@ -507,6 +507,12 @@ class QueryObject {
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
+
+  /** Returns the named render engine, if it exists. The RenderEngine is
+   guaranteed to be up to date w.r.t. the poses and data in the context. */
+  const render::RenderEngine* GetRenderEngineByName(
+      const std::string& name) const;
+
   //@}
 
  private:
