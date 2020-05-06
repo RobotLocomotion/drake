@@ -64,6 +64,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
     GeometryId,
@@ -81,7 +82,6 @@ from pydrake.math import (
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector_,
     DiagramBuilder_,
     System_,
@@ -619,10 +619,10 @@ class TestPlant(unittest.TestCase):
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
@@ -746,10 +746,10 @@ class TestPlant(unittest.TestCase):
         RollPitchYaw = RollPitchYaw_[T]
 
         wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
@@ -891,10 +891,10 @@ class TestPlant(unittest.TestCase):
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         timestep = 0.0002

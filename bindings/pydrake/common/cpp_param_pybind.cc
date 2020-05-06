@@ -4,18 +4,47 @@
 
 namespace drake {
 namespace pydrake {
+
+// N.B. py::handle::inc_ref() and ::dec_ref() use the Py_X* variants, implying
+// that they are safe to use on nullptr, thus we do not need any
+// `ptr != nullptr` checks.
+Object::Object(::PyObject* ptr) : ptr_(ptr) {
+  inc_ref();
+}
+Object::~Object() {
+  dec_ref();
+}
+Object::Object(const Object& other) : Object(other.ptr()) {}
+Object::Object(Object&& other) {
+  ptr_ = other.ptr_;
+  other.ptr_ = nullptr;
+}
+Object& Object::operator=(const Object& other) {
+  dec_ref();
+  ptr_ = other.ptr();
+  inc_ref();
+  return *this;
+}
+Object& Object::operator=(Object&& other) {
+  dec_ref();
+  ptr_ = other.ptr_;
+  other.ptr_ = nullptr;
+  return *this;
+}
+void Object::inc_ref() {
+  py::handle(ptr_).inc_ref();
+}
+void Object::dec_ref() {
+  py::handle(ptr_).dec_ref();
+}
+
 namespace internal {
 namespace {
 
 // Creates a Python object that should uniquely hash for a primitive C++
 // type.
 py::object GetPyHash(const std::type_info& tinfo) {
-  // N.B. Using `::hash_code() for `py::` symbols on Mac may fail depending on
-  // import order. This was encountered in the failure documented by #8704. The
-  // code change introduced was the usage of `GetPyParam()` in
-  // `framework_py*.cc`, which caused a different `py::object` typeid to be
-  // used, making `analysis_py.cc` to fail when it tried to obtain its type.
-  return py::make_tuple("cpp_type", tinfo.name());
+  return py::make_tuple("cpp_type", tinfo.hash_code());
 }
 
 // Registers C++ type.
@@ -44,7 +73,7 @@ void RegisterCommon(py::module m, py::object param_aliases) {
   RegisterType<uint32_t>(m, param_aliases, "np.uint32");
   RegisterType<int64_t>(m, param_aliases, "np.int64");
   // For supporting generic Python types.
-  RegisterType<py::object>(m, param_aliases, "object");
+  RegisterType<Object>(m, param_aliases, "object");
 }
 
 }  // namespace

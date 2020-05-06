@@ -13,6 +13,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.math import (
@@ -20,7 +21,6 @@ from pydrake.multibody.math import (
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector,
     PortDataType,
 )
@@ -117,8 +117,8 @@ class TestRendering(unittest.TestCase):
         v = [0., 1., 2.]
         frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
         bundle.set_velocity(kIndex, frame_velocity)
-        self.assertTrue((bundle.get_pose(kIndex).matrix() ==
-                         Isometry3(q, p).matrix()).all())
+        self.assertTrue((bundle.get_pose(kIndex).matrix()
+                         == Isometry3(q, p).matrix()).all())
         vel_actual = bundle.get_velocity(kIndex).get_velocity()
         self.assertTrue(np.allclose(vel_actual.rotational(), w))
         self.assertTrue(np.allclose(vel_actual.translational(), v))

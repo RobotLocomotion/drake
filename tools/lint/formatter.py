@@ -85,8 +85,8 @@ class FormatterBase(object):
         lines.
         """
         return (
-            set(self._working_lines + ["\n"]) ==
-            set(self._original_lines + ["\n"]))
+            set(self._working_lines + ["\n"])
+            == set(self._original_lines + ["\n"]))
 
     def is_valid_index(self, index):
         return 0 <= index and index < len(self._working_lines)
@@ -268,10 +268,10 @@ class IncludeFormatter(FormatterBase):
         # We want all include statements, but until clang-format gets
         # IncludeIsMainRegex support, we need omit the "related header"s.
         return (
-            clang_format_on and
-            line.startswith("#include") and
-            '-inl.h"' not in line and
-            line not in self._related_headers)
+            clang_format_on
+            and line.startswith("#include")
+            and '-inl.h"' not in line
+            and line not in self._related_headers)
 
     def format_includes(self):
         """Reformat the #include statements in the working list (possibly also

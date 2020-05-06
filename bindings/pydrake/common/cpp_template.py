@@ -13,8 +13,8 @@ def _get_module_from_stack(frame=2):
 
 
 def _is_pybind11_type_error(e):
-    return ("incompatible function arguments" in str(e) or
-            "incompatible constructor arguments" in str(e))
+    return ("incompatible function arguments" in str(e)
+            or "incompatible constructor arguments" in str(e))
 
 
 def get_or_init(scope, name, template_cls, *args, **kwargs):

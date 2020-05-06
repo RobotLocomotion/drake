@@ -227,9 +227,9 @@ def patch_class_add_directive_header(original, self, sig):
         bases = getattr(self.object, '__bases__', None)
         if not bases:
             return
-        bases = [b.__module__ in ('__builtin__', 'builtins') and
-                 u':class:`%s`' % b.__name__ or
-                 u':class:`%s.%s`' % (b.__module__, b.__name__)
+        bases = [b.__module__ in ('__builtin__', 'builtins')
+                 and u':class:`%s`' % b.__name__
+                 or u':class:`%s.%s`' % (b.__module__, b.__name__)
                  for b in bases
                  if b.__name__ != "pybind11_object"]
         if not bases:
@@ -290,8 +290,8 @@ def patch_document_members(original, self, all_members=False):
         members = [
             (membername, member) for (membername, member) in members
             if (
-                exclude_members_all or
-                membername not in self.options.exclude_members
+                exclude_members_all
+                or membername not in self.options.exclude_members
                 )
             ]
 

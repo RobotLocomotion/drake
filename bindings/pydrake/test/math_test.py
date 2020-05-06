@@ -2,6 +2,7 @@ import pydrake.math as mut
 import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
+from pydrake.common.value import Value
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
@@ -357,3 +358,9 @@ class TestMath(unittest.TestCase):
         R = [0.3]
 
         mut.DiscreteAlgebraicRiccatiEquation(A=A, B=B, Q=Q, R=R)
+
+    @numpy_compare.check_all_types
+    def test_value_instantiations(self, T):
+        # Existence checks.
+        Value[mut.RigidTransform_[T]]
+        Value[mut.RotationMatrix_[T]]

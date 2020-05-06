@@ -2,10 +2,13 @@ import copy
 import gc
 import unittest
 
-from pydrake.common.wrap_test_util import (
+from pydrake.common.test.wrap_test_util import (
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,
+    MakeTypeConversionExample,
+    MakeTypeConversionExampleBadRvp,
+    CheckTypeConversionExample,
 )
 
 
@@ -43,3 +46,14 @@ class TestWrapPybind(unittest.TestCase):
         # Ensure that we have not lost our value.
         self.assertEqual(member.value, 42)
         self.assertEqual(copyable_member.value, 9.7)
+
+    def test_type_caster_wrapped(self):
+        value = MakeTypeConversionExample()
+        self.assertIsInstance(value, str)
+        self.assertEqual(value, "hello")
+        with self.assertRaises(RuntimeError) as cm:
+            MakeTypeConversionExampleBadRvp()
+        self.assertEqual(
+            str(cm.exception),
+            "Can only pass TypeConversionExample by value.")
+        self.assertTrue(CheckTypeConversionExample(obj=value))

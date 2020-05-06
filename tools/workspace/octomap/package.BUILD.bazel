@@ -1,10 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-
 licenses(["notice"])  # BSD-3-Clause
 
 package(default_visibility = ["//visibility:public"])
@@ -52,10 +47,12 @@ cc_library(
     includes = ["octomap/include"],
     linkstatic = 1,
     deps = [":octomath"],
+    deprecation = "DRAKE DEPRECATED: The @octomap external is being removed from Drake on or after 2020-09-01.  Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
 )
 
-install(
-    name = "install",
-    docs = ["octomap/LICENSE.txt"],
-    doc_strip_prefix = ["octomap"],
+# N.B. Not intended for public use!  This is only intended for the regression
+# test in @drake//tools/workspace/octomap, and will be removed on 2020-09-01.
+cc_library(
+    name = "octomap_for_stub_test",
+    deps = [":octomap"],
 )

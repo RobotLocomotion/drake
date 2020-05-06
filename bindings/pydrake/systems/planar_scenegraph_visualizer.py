@@ -17,10 +17,10 @@ with warnings.catch_warnings():  # noqa
 
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import AbstractValue
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 from pydrake.systems.rendering import PoseBundle
 
@@ -261,8 +261,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                                 break
                         if filename[-4:].lower() != '.obj':
                             raise RuntimeError(
-                                "The given file " + filename + " is not "
-                                "supported and no alternate " + base +
+                                f"The given file {filename} is not "
+                                f"supported and no alternate {base}"
                                 ".obj could be found.")
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
