@@ -198,6 +198,16 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
 }
 
 template <typename T>
+const render::RenderEngine* QueryObject<T>::GetRenderEngineByName(
+    const std::string& name) const {
+  ThrowIfNotCallable();
+  FullPoseUpdate();
+
+  const GeometryState<T>& state = geometry_state();
+  return state.GetRenderEngineByName(name);
+}
+
+template <typename T>
 const GeometryState<T>& QueryObject<T>::geometry_state() const {
   // Some extra insurance in case some query *hadn't* called this.
   DRAKE_ASSERT_VOID(ThrowIfNotCallable());

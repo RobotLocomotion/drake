@@ -3101,6 +3101,12 @@ TEST_F(GeometryStateTest, AddRendererError) {
       std::logic_error,
       fmt::format("AddRenderer..: A renderer with the name '{}' already exists",
                   kName));
+
+  EXPECT_EQ(geometry_state_.GetRenderEngineByName("invliad_name"), nullptr);
+  const render::RenderEngine* engine =
+      geometry_state_.GetRenderEngineByName(kName);
+  EXPECT_NE(engine, nullptr);
+  EXPECT_NE(dynamic_cast<const DummyRenderEngine*>(engine), nullptr);
 }
 
 // Tests that when assigning a geometry the perception role, that the process

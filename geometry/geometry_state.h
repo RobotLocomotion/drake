@@ -475,6 +475,15 @@ class GeometryState {
     return render_engines_.count(name) > 0;
   }
 
+  /** Implementation of QueryObject::GetRenderEngineByName.  */
+  const render::RenderEngine* GetRenderEngineByName(
+      const std::string& name) const {
+    if (render_engines_.count(name) > 0) {
+      return render_engines_.at(name).get();
+    }
+    return nullptr;
+  }
+
   /** Implementation of SceneGraph::RendererCount().  */
   int RendererCount() const { return static_cast<int>(render_engines_.size()); }
 

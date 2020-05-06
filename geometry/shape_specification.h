@@ -371,8 +371,10 @@ class ShapeReifier {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
 
- private:
-  void ThrowUnsupportedGeometry(const std::string& shape_name);
+  /** Derived ShapeReifiers can replace the default message for unsupported
+   geometries by overriding this method. The name of the unsupported shape type
+   is given as the single parameter.  */
+  virtual void ThrowUnsupportedGeometry(const std::string& shape_name);
 };
 
 template <typename S>
