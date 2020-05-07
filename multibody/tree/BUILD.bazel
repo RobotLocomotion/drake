@@ -464,6 +464,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "force_element_test",
+    deps = [
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "door_hinge_test",
     timeout = "moderate",
     shard_count = 2,
