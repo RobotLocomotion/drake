@@ -205,10 +205,11 @@ drake_cc_binary(
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
+        "//common:is_approx_equal_abstol",
         "//geometry:geometry_visualization",
         "//solvers:solve",
         "//systems/analysis:simulator",
-        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/controllers:finite_horizon_linear_quadratic_regulator",
         "//systems/primitives:trajectory_source",
         "//systems/trajectory_optimization:direct_collocation",
         "@gflags",
