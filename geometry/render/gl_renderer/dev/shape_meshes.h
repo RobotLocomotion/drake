@@ -13,6 +13,9 @@ namespace geometry {
 namespace render {
 namespace internal {
 
+// TODO(SeanCurtis-TRI): All of these methods ultimately need to provide
+//  normals and texture coordinates.
+
 // These are pseudo-public aliases -- they are exposed to other classes in the
 // render::internal namespace, but aren't part of the public API.
 
@@ -48,6 +51,23 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
  file. */
 std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
     const std::string& filename);
+
+// TODO(SeanCurtis-TRI): Provide a geodesic sphere (or a tessellation like that
+//  produced for hydroelastics).
+/* Creates an OpenGL-compaptible mesh representation of a unit sphere
+ (radius = 1). The sphere is tessellated along longitude and latitude bands.
+
+ @param longitude_bands     The number of triangle bands running from pole to
+                            pole.
+ @param latitude_bands      The number of triangle bands running parallel
+                            with the sphere equator.
+ @pre `longitude_bands` >= 3 and `latitude_bands` >= 2 (otherwise the sphere
+      will have no volume).  */
+std::pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(
+    int longitude_bands = 50, int latitude_bands = 50);
+
+// TODO(SeanCurtis): Box, Cylinder, Half space, capsule, ellipsoid.
+
 }  // namespace internal
 }  // namespace render
 }  // namespace geometry
