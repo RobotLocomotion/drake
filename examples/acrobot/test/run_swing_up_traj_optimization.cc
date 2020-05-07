@@ -12,7 +12,7 @@
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/solvers/solve.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
@@ -34,12 +34,18 @@ DEFINE_double(realtime_factor, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int do_main() {
+  if (!solvers::SnoptSolver::is_available()) {
+    std::cout << "This test was flaky with IPOPT, so currently requires SNOPT."
+              << std::endl;
+    return 0;
+  }
+
   AcrobotPlant<double> acrobot;
   auto context = acrobot.CreateDefaultContext();
 
   const int kNumTimeSamples = 21;
-  const double kMinimumTimeStep = 0.2;
-  const double kMaximumTimeStep = 0.5;
+  const double kMinimumTimeStep = 0.05;
+  const double kMaximumTimeStep = 0.2;
   systems::trajectory_optimization::DirectCollocation dircol(
       &acrobot, *context, kNumTimeSamples, kMinimumTimeStep, kMaximumTimeStep);
 
@@ -56,19 +62,16 @@ int do_main() {
   dircol.AddLinearConstraint(dircol.initial_state() == x0);
   dircol.AddLinearConstraint(dircol.final_state() == xG);
 
-  const double R = 20;  // Cost on input "effort".
+  const double R = 10;  // Cost on input "effort".
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
-  // Certain solvers (SNOPT) are very sensitive when the initial guess starts
-  // exactly in the straight-down configuration. This term nudges the initial
-  // guess away from that configuration.
-  const Eigen::Vector4d x0_perturbation{0.01,
-                                        0, 0, 0};
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
-      {0, timespan_init}, {x0 + x0_perturbation, xG});
+      {0, timespan_init}, {x0, xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
-  const auto result = solvers::Solve(dircol);
+
+  solvers::SnoptSolver solver;
+  const auto result = solver.Solve(dircol);
   if (!result.is_success()) {
     std::cerr << "No solution found.\n";
     return 1;
