@@ -189,7 +189,10 @@ DirectCollocation::DirectCollocation(
     AddConstraint(constraint,
                   {h_vars().segment<1>(i),
                    x_vars().segment(i * num_states(), num_states() * 2),
-                   u_vars().segment(i * num_inputs(), num_inputs() * 2)});
+                   u_vars().segment(i * num_inputs(), num_inputs() * 2)})
+        .evaluator()
+        ->set_description(
+            fmt::format("collocation constraint for segment {}", i));
   }
 }
 
