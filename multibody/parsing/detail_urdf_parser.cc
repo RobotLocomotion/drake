@@ -13,6 +13,7 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
@@ -568,7 +569,7 @@ void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
   };
 
   // Functor to read a child element with a string valued `name` attribute.
-  // Throws an error if unable to find the tag of if the name attribute is 
+  // Throws an error if unable to find the tag of if the name attribute is
   // improperly formed.
   auto read_frame = [node,
                      plant](const char* element_name) -> const Frame<double>& {

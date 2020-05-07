@@ -54,10 +54,10 @@ geometry::ProximityProperties ParseProximityProperties(
     bool is_rigid, bool is_soft);
 
 /// Populates a LinearBushingRollPitchYaw from a reading interface in a URDF/SDF
-/// agnostic manner. This function does no semantic parsing and leaves the 
+/// agnostic manner. This function does no semantic parsing and leaves the
 /// responsibility of handling errors or missing values to the individual
 /// parsers. All values are expected to exist and be well formed. Through this,
-/// the API to specify the linear_bushing_rpy tag in both SDF and URDF can be 
+/// the API to specify the linear_bushing_rpy tag in both SDF and URDF can be
 /// controlled/modified in a single function.
 
 /// SDF:
@@ -74,11 +74,11 @@ geometry::ProximityProperties ParseProximityProperties(
 ///
 /// URDF:
 ///
-/// 
+///
 /// <drake:linear_bushing_rpy>
-///   <drake:bushing_frameA name="frameA"/> 
+///   <drake:bushing_frameA name="frameA"/>
 ///   <drake:bushing_frameC name="frameC"/>
-///   
+///
 ///   <drake:bushing_torque_stiffness value="0 0 0"/>
 ///   <drake:bushing_torque_damping   value="0 0 0"/>
 ///   <drake:bushing_force_stiffness  value="0 0 0"/>
