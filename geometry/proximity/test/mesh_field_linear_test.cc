@@ -172,8 +172,7 @@ GTEST_TEST(MeshFieldLinearTest, TestTransformGradients) {
 }
 
 // Confirms that invoking EvaluateCartesian() produces equivalent expected
-// values whether gradients have been pre-computed or not. Also characterizes
-// the differences in accuracy between the two modes.
+// values whether gradients have been pre-computed or not.
 GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   // This mesh is symmetric with respect to the x=0 plane in frame M, so we
   // can use it to define the testing field (defined below) accurately. No
