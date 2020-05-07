@@ -84,6 +84,12 @@ Every issue must have at most one ``component`` label. The components are:
 
   typical team: kitware
 
+- ``geometry externals``
+
+  description: VTK, FCL, drake_visualizer
+
+  typical team: kitware
+
 - ``multibody plant``
 
   MultibodyPlant and related code and documentation
