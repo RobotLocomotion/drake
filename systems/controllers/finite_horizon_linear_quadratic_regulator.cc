@@ -12,6 +12,7 @@
 #include "drake/math/matrix_util.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
 namespace systems {
@@ -259,8 +260,9 @@ class Controller final : public LeafSystem<T> {
         u0_(std::move(u0)),
         K_(std::move(K)) {
     this->DeclareVectorInputPort("plant_state", BasicVector<T>(K_->cols()));
-    this->DeclareVectorOutputPort("command", BasicVector<T>(K_->rows()),
-                                  &Controller::CalcOutput);
+    this->DeclareVectorOutputPort(
+        "command", BasicVector<T>(K_->rows()), &Controller::CalcOutput,
+        {this->time_ticket(), this->input_port_ticket(InputPortIndex(0))});
   }
 
   // Scalar-type converting copy constructor. See @ref system_scalar_conversion.
@@ -301,5 +303,12 @@ std::unique_ptr<System<double>> MakeFiniteHorizonLinearQuadraticRegulator(
 }
 
 }  // namespace controllers
+
+// Explicitly disable symbolic::Expression (pending resolution of #12253).
+namespace scalar_conversion {
+template <>
+struct Traits<controllers::Controller> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+
 }  // namespace systems
 }  // namespace drake
