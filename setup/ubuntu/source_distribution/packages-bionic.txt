@@ -65,7 +65,6 @@ python3-sphinx-rtd-theme
 python3-tk-dbg
 python3-yaml-dbg
 python3-zmq-dbg
-ruby
 unzip
 valgrind
 valgrind-dbg
