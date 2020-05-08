@@ -1,0 +1,94 @@
+*************
+Drake v0.18.0
+*************
+
+Announcements
+-------------
+
+.. warning::
+
+  On macOS, Drake only supports Python 3.8.  Users **must** read `#13097`_ for
+  upgrade instructions.
+
+  When paths are set incorrectly, you will see an error such as this::
+
+      ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
+
+* RigidBodyPlant and all of the drake "attic" is scheduled for removal on
+  2020-09-01 (`#12158`_, `#13030`_).
+
+  * Please see `#12158`_ for details of the timeline, and let us know if this
+    will cause a problem.
+
+Breaking changes since v0.17.0
+------------------------------
+
+These are breaking changes that did not undergo a deprecation period:
+
+Changes since v0.17.0:
+----------------------
+
+Dynamical Systems
+~~~~~~~~~~~~~~~~~
+
+New features
+
+Fixes
+
+Mathematical Program
+~~~~~~~~~~~~~~~~~~~~
+
+New features
+
+Fixes
+
+Multibody Dynamics
+~~~~~~~~~~~~~~~~~~
+
+New features
+
+Fixes
+
+Miscellaneous features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+pydrake bindings
+~~~~~~~~~~~~~~~~
+
+* TBD new binding
+
+New features
+
+Fixes
+
+Build system and dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Newly-deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~
+
+Removal of deprecated items
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Notes
+-----
+
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.18.0>`__ named
+``drake-YYYYMMDD-{bionic|mac}.tar.gz``. See :ref:`Nightly Releases
+<nightly-releases>` for instructions on how to use them.
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
+.. _#12158: https://github.com/RobotLocomotion/drake/pull/12158
+.. _#13030: https://github.com/RobotLocomotion/drake/pull/13030
+.. _#13097: https://github.com/RobotLocomotion/drake/pull/13097
+
+..
+  Prior newest_commit 4f7475f1fae564fef30ba82111f962a4e9f119b2 (inclusive).
+  Current oldest_commit TBD (inclusive).
+  Current newest_commit TBD (inclusive).
