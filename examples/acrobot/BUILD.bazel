@@ -199,9 +199,12 @@ drake_cc_binary(
     name = "run_swing_up_traj_optimization",
     srcs = ["test/run_swing_up_traj_optimization.cc"],
     add_test_rule = 1,
-    # Make SNOPT-only due to consistent and non-deterministic IPOPT-related
-    # failures (notably on macOS, see #10276).
-    tags = ["snopt"],
+    # TODO(ggould) Temporarily turned off (tagged "manual") due to mac test
+    # failures, see #10276.
+    tags = [
+        "manual",
+        "snopt",
+    ],
     test_rule_args = ["-realtime_factor=0.0"],
     deps = [
         ":acrobot_geometry",
