@@ -147,15 +147,12 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * tools: tools: Disable python imports from ~/.local (pip -U) (`#13190`_)  # On Ubuntu, we purposefully do not use pip.  By removing the homedir from imports, we can ensure more reproducible builds and tests.
 * third_party: third_party: Remove spurious include path (`#13189`_)  # The default include paths are already correct.  Adding an extra suffix results in "undeclared inclusion" warnings downstream.
 * tools: workspace: Update buildifier to latest release 3.0.0 (`#13198`_)
-* geometry: [geometry] Parcel QueryObject queries into unique classes (`#13161`_)  # QueryObject functionality is spread across three classes: QueryObject, ProximityQueryObject, and PerceptionQueryObject. QueryObject: keeps poses for frames and geometries and the scene graph inspector. ProximityQueryObject: inherits from QueryObject (picking up that functionality) plus all proximity queries: collisions, signed distance, etc. PerceptionQueryObject: inherits from QueryObject (picking up that functionality) plus all perception queries: image rendering. SceneGraph is modified to support all three query object types. Bindings for all classes are updated. This does *not* deprecate current functionality. That comes next.
 * bindings: py common: Use kDrakeAssertIsArmed instead of _DRAKE_ASSERT_IS_ARMED (`#13195`_)
 * common,tools: workspace: Upgrade fmt to latest release 6.2.0 (`#13200`_)
 * tools: workspace: Upgrade lcm to latest commit (`#13199`_)
 * tools: tools: Improve new_release checking heuristics (`#13196`_)
-* bindings: py common.value: Move AbstractValue and Value here (`#12430`_)  # This is intended to reflect the C++ API change in #10357 Deprecate old spellings
 * common,manipulation,third_party,tools: workspace: Upgrade pycodestyle to latest release 2.5.0 (`#13197`_)  # Fix new formatting nits and invalid string literals that it now flags. Upgrade semantic_version to latest release 2.8.5.
 * common: drake_py_unittest: Force deprecation warnings to be errors (`#13191`_)  # This change implies stricter error checking for future tests. Previously, Drake deprecations that occurred at import-time in a module (not when running a unittest) did not get translated into an error. This causes them to be an error.
-* bindings: Revert "py common.value: Move AbstractValue and Value here" (`#13217`_)  # This reverts commit e0723bc9d91d91e5325c1f47b753817c2c450245.
 * examples: Change planar gripper link2 collision geometry to box (`#13185`_)
 * tools: models: Sort lists alphabetically for better maintainability (`#13223`_)
 * systems: controllers: Support for Finite Horizon LQR result as a System (`#13178`_)
@@ -168,8 +165,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * common,examples,manipulation,third_party,tools: lint: Enable W504 for python (`#13204`_)
 * common: nice_type_name: Update test for anonymous namespaces (`#13239`_)
 * tools: tools: Trim FCL to only compile the parts we need (`#13230`_)  # Deprecate @octomap external (now unused).
-* bindings: pydrake: Resolve RTTI inconsistency on macOS, restore pydrake Value move (`#13225`_)  # * Revert "Revert "py common.value: Move AbstractValue and Value here" (#13217)" This reverts commit 7a03e312cea8bfb1ea2177c1ab49312d577d9c7a. * Fix RTTI behavior
-* geometry: Revert "[geometry] Parcel QueryObject queries into unique classes" (`#13243`_)  # This reverts commit 1abc951c4cc01f147b26391e847005353e2f4809.
+* bindings: pydrake: Resolve RTTI inconsistency on macOS, restore pydrake Value move (`#13225`_)  # py common.value: Move AbstractValue and Value here" (#13217)
 * tutorials: Add tutorial on AddVisualizationCallback (`#13211`_)
 * examples,systems: controllers: add example of finite horizon LQR working on the acrobot (`#13250`_)  # Also had to remove support for symbolic::Expression in the finite horizon LQR controller, pending resolution of #12253.
 * geometry: Use linear f(x,y,z) on tetrahedron directly instead of barycentric interpolation (`#13140`_)  # * [geometry] MeshFieldLinear uses linear function instead of barycentric interpolation.
