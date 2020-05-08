@@ -63,6 +63,21 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   EXPECT_EQ(plant.num_model_instances(), 3);
 }
 
+// Acceptance test that libsdformat can upgrade very old files.  This ensures
+// the upgrade machinery keeps working (in particular our re-implementation of
+// the embedSdf.rb tool within tools/workspace/sdformat).
+GTEST_TEST(MultibodyPlantSdfParserTest, VeryOldVersion) {
+  MultibodyPlant<double> plant(0.0);
+  PackageMap package_map;
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/very_old_version.sdf");
+
+  EXPECT_EQ(plant.num_model_instances(), 2);
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, nullptr);
+  plant.Finalize();
+  EXPECT_EQ(plant.num_model_instances(), 3);
+}
+
 // Verifies model instances are correctly created in the plant.
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   // We start with the world and default model instances (model_instance.h
