@@ -177,7 +177,7 @@ After following the above install steps, check to ensure you can import
 
     If you are using Gurobi, you must either have it installed in the suggested
     location under ``/opt/...`` mentioned in :ref:`gurobi`, or you must ensure
-    that you define the ``${GUROBI_PATH}`` environment variable, or specify
+    that you define the ``${GUROBI_HOME}`` environment variable, or specify
     ``${GUROBI_INCLUDE_DIR}`` via CMake.
 
 .. _whats-available-from-python:

@@ -12,7 +12,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: Gurobi 9.0.2 is not installed at {gurobi_path}, export GUROBI_PATH to the correct value' && false",  # noqa
+    cmd = "echo 'error: Gurobi 9.0.2 is not installed at {gurobi_home}, export GUROBI_HOME to the correct value' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
