@@ -9,7 +9,7 @@ set -euxo pipefail
 
 rm -f doxygen-*-bionic-x86_64.tar.gz
 
-docker build --tag doxygen-bionic "${BASH_SOURCE%/*}"
+docker build --build-arg UBUNTU_CODENAME=bionic --tag doxygen-bionic "${BASH_SOURCE%/*}"
 trap 'docker rmi doxygen-bionic' EXIT
 docker run --detach --name doxygen-bionic-build --tty doxygen-bionic
 trap 'docker stop doxygen-bionic-build && docker rm doxygen-bionic-build && docker rmi doxygen-bionic' EXIT
