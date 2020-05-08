@@ -73,8 +73,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
                    const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  bool is_floating() const override { return true; }
-
   bool has_quaternion_dofs() const override { return false; }
 
   /// Retrieves from `context` the three space x-y-z angles θ₁, θ₂, θ₃ which
