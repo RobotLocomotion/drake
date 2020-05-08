@@ -36,7 +36,7 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 * common: common: Use BsplineBasis<T> in BsplineTrajectory<T> (`#13149`_)  # Resolves #13150.
-* common: common::polynomial : Add Subsitute(var, Polynomial) (`#13108`_)  # Also drecates Polynomial::IsApprox with Polynomial::CoefficientsAlmostEqual. The new incarnation is different in several ways: - Support multibariate polynomials (as opposed to the univariate restriction of IsApprox) - The new test will faillif the polynomials have different variables. -  The comparison supports either relative or absolute comparisons (with slightly different behavior for treating monomials that don't have a match in the other polynomial.
+* common: common::polynomial : Add Subsitute(var, Polynomial) (`#13108`_)  # The new incarnation is different in several ways: - Support multibariate polynomials (as opposed to the univariate restriction of IsApprox) - The new test will faillif the polynomials have different variables. -  The comparison supports either relative or absolute comparisons (with slightly different behavior for treating monomials that don't have a match in the other polynomial.
 * common: trajectories: add DiscreteTimeTrajectory (`#13157`_)
 * common: trajectories: add Trajectory::has_derivative and EvalDerivative (`#13144`_)  # I've started the NVI pattern here, rather than adding another public virtual. It's inconsistent with the rest of the class, but the goal is to move this direction.  I've moved MakeTrajectory to NVI, as well. Also started trajectory.cc => trajectory is now @tparam default_scalar, instead of @tparam ANY
 * common: trajectories: add piecewisepolynomial unary minus (`#13109`_)
@@ -95,6 +95,8 @@ Miscellaneous features and fixes
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
+Newly bound
+
 * pydrake.common.kDrakeAssertIsArmed (`#13183`_, `#13195`_)
 * pydrake.geometry.QueryObject.__init__ (`#13156`_)
 * pydrake.multibody.plant.MultibodyPlant.get_body_poses_output_port (`#13229`_)
@@ -131,6 +133,9 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
+* drake::Polynomial::IsApprox (`#13108`_)
+* pydrake.systems.framework.AbstractValue (`#13217`_, `#13225`_)
+* pydrake.systems.framework.Value (`#13217`_, `#13225`_)
 * The octomap external (`#13230`_)
 * The tinydir external (`#13180`_)
 * The bitbucket.bzl macros (`#13193`_)
