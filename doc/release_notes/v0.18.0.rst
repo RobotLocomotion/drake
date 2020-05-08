@@ -48,7 +48,7 @@ Dynamical Systems
 * systems: controllers: Support for Finite Horizon LQR result as a System (`#13178`_)
 * systems: controllers: add python bindings for finite-horizon LQR (`#13145`_)  # as discussed on slack, this uses a work-around to binding the std::unique_ptr member variables in FiniteLQRResult. also includes a few small improvements to finite-horizon LQR, in preparation for the supporting discrete-time systems.
 * systems: Add System support for implicit equations (`#13068`_)  # * Implementation of implicit equations with acrobot test.
-* systems: controllers: add example of finite horizon LQR working on the acrobot (`#13250`_)  # Also had to remove support for symbolic::Expression in the finite horizon LQR controller, pending resolution of #12253.
+* systems: controllers: add example of finite horizon LQR working on the acrobot (`#13250`_, `#13252`_)  # Also had to remove support for symbolic::Expression in the finite horizon LQR controller, pending resolution of #12253.
 
 New features
 
@@ -57,11 +57,11 @@ Fixes
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
-* solvers: Fix memcpy undefined behavior in unconstrained optimization (`#13111`_)  # Calling memcpy on nullptr is undefined.
-
 New features
 
 Fixes
+
+* Fix memcpy undefined behavior in unconstrained optimization (`#13111`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -70,6 +70,7 @@ Multibody Dynamics
 * multibody: Implements MBP::get_body_poses_output_port() (`#13137`_)
 * multibody: Make joint store default value (`#13105`_)  # This is a PR to have the Joint class store a default value and to pass the value to its mobilizer implementation upon construction of the joint implementation. Solves the issue of mobilizers storing default joint positions (#13065)
 * multibody: multibody: adds a Propeller model for use with MultibodyPlant (`#13135`_)  # Includes python bindings. Partially resolves #12401.
+* examples: Four Bar Linkage example (`#13036`_)  # Adds a planar four bar linkage simulation.
 
 * geometry,multibody: Add alternate Sphere volume mesh generation (`#13114`_)  # Rather than creating a sphere by sub-dividing *all* edges of the previous level of refinement, we refine only those edges on the surface of the sphere. The resultant mesh has a single interior vertex (at the sphere origin) and all of the resolution increases curvature. In contrast to the interior vertices which increases the number of tets by a factor of 8 each time, this only increases it by a factor of 4. It retains an option to tessellate on the interior as well, but no longer defaults to that. This also provides a mechanism through proximity properties to toggle what type of sphere tessellation is used. An optional parameter (kHydroGroup, "sparse_mesh") has been added which will control whether the sphere gets tessellated on the interior or not (defaults to not). This cascaded to a number of other pieces of code that made use of the sphere. The ellipsoid representation as well as the tests.
 * geometry,tools: [geometry] Example for contact-surface profiling: rigid bowl, soft ball (`#13138`_)
@@ -86,13 +87,10 @@ Fixes
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* common: common: Add implementations of {min,max}(AutoDiffXd, AutoDiffXd) (`#13112`_)  # Resolves #13082.
-* lcmtypes: Add lcmtypes for panda command/status (`#13163`_)
-* examples,systems: examples: make Acrobot swing-up with trajectory optimization SNOPT only (`#13252`_)
-* examples,tools: quadrotor: Upgrade to Skydio R2 model (`#13050`_)  # provided by Abe Bachrach from Skydio
-* examples: Change planar gripper link2 collision geometry to box (`#13185`_)
-* examples: Four Bar Linkage example (`#13036`_)  # Adds a planar four bar linkage simulation.
-* tools: drake_visualizer: Install builtin scripts (`#13127`_)  # Put under test, both in Bazel and install
+* Upgrade quadrotor to Skydio R2 model (`#13050`_)
+* Add lcmtypes for panda command/status (`#13163`_)
+* Fix AutoDiffXd derivatives for min and max (`#13112`_)
+* Install Drake's custom drake_visualizer plugins (`#13127`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
