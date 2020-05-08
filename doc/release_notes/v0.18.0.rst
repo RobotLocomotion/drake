@@ -91,6 +91,7 @@ Miscellaneous features and fixes
 * examples,tools: quadrotor: Upgrade to Skydio R2 model (`#13050`_)  # provided by Abe Bachrach from Skydio
 * examples: Change planar gripper link2 collision geometry to box (`#13185`_)
 * examples: Four Bar Linkage example (`#13036`_)  # Adds a planar four bar linkage simulation.
+* tools: drake_visualizer: Install builtin scripts (`#13127`_)  # Put under test, both in Bazel and install
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -112,32 +113,27 @@ Fixes
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* attic,multibody,tools: parsing: Rewrite package.xml crawl to avoid using @tinydir (`#13180`_)  # The tinydir external is now deprecated and will be removed on 2020-08-01.
-* tools: Update meshcat (only) (`#13141`_)  # To get @gizatt's fix for the skydio parsing issue.
-* tools: Use dReal-4.20.04.1 (`#13133`_)  # nlopt-2.6.2 introduces new enum value `NUM_RESULTS` and this version handles it.
-* tools: drake_visualizer: Install builtin scripts (`#13127`_)  # Put under test, both in Bazel and install
-* tools: install.py: Add --pre_clean option for ease of debugging (`#13127`_)
-* tools: models: Sort lists alphabetically for better maintainability (`#13223`_)
-* tools: pybind: Avoid duplicate linting with `add_pybind_coverage_data` (`#13228`_)
-* tools: tools: Disable python imports from ~/.local (pip -U) (`#13190`_)  # On Ubuntu, we purposefully do not use pip.  By removing the homedir from imports, we can ensure more reproducible builds and tests.
-* tools: tools: Improve new_release checking heuristics (`#13196`_)
-* tools: tools: Trim FCL to only compile the parts we need (`#13230`_)  # Deprecate @octomap external (now unused).
-* tools: workspace: Deprecate bitbucket.bzl (`#13193`_)
-* tools: workspace: Switch sdformat and ignition_math to GitHub (`#13188`_)
-* tools: workspace: Update buildifier to latest release 3.0.0 (`#13198`_)
-* tools: workspace: Upgrade lcm to latest commit (`#13199`_)
-* workspace: Upgrade fmt to latest release 6.2.0 (`#13200`_)
-* workspace: Upgrade pycodestyle to latest release 2.5.0 (`#13197`_)  # Fix new formatting nits and invalid string literals that it now flags. Upgrade semantic_version to latest release 2.8.5.
-* third_party: third_party: Remove spurious include path (`#13189`_)  # The default include paths are already correct.  Adding an extra suffix results in "undeclared inclusion" warnings downstream.
-* setup,tools: setup,tools: Add Ubuntu 20.04 Focal Fossa (`#13142`_)  # Drake is not officially supported on Ubuntu 20.04 (Focal).  This commit enables CI to run `bazel build //common:essential`, so that we may work towards official support.
-* setup: setup: Install /usr/bin/python for Focal source builds (`#13235`_)
-* lint: Enable W504 for python (`#13204`_)
-* manipulation,tools: models: Move jaco_description meshes to RobotLocomotion/models (`#13222`_)
+* Upgrade buildifier to latest release 3.0.0 (`#13198`_)
+* Upgrade dreal to latest commit (`#13133`_)
+* Upgrade fmt to latest release 6.2.0 (`#13200`_)
+* Upgrade lcm to latest commit (`#13199`_)
+* Upgrade meshcat to latest commit (`#13141`_)
+* Upgrade pycodestyle to latest release 2.5.0 (`#13197`_, `#13204`_)
+* Upgrade semantic_version to latest release 2.8.5 (`#13197`_)
+* Only compile the parts of FCL that we need (`#13230`_)
+* Remove use of octomap (`#13230`_)
+* Remove use of tinydir (`#13180`_) 
+* Disable python imports from ~/.local during build on Ubuntu (`#13190`_)
+* Fetch sdformat and ignition_math from GitHub, not Bitbucket (`#13188`_)
+* Fix bazel third_party include path complaints (`#13189`_)
+* Begin Ubuntu 20.04 (Focal Fossa) accomodations (`#13142`_, `#13235`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* attic,multibody,tools: parsing: Rewrite package.xml crawl to avoid using @tinydir (`#13180`_)  # The tinydir external is now deprecated and will be removed on 2020-08-01.
+* The octomap external (`#13230`_)
+* The tinydir external (`#13180`_)
+* The bitbucket.bzl macros (`#13193`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
