@@ -62,14 +62,14 @@ class TestFormatterBase(unittest.TestCase):
         original_lines = [
             '#include "line0"\r\n',
         ]
-        with self.assertRaisesRegexp(Exception, "DOS newline"):
+        with self.assertRaisesRegex(Exception, "DOS newline"):
             FormatterBase("filename.cc", readlines=original_lines)
 
     def test_missing_eof(self):
         original_lines = [
             '#include "line0"',
         ]
-        with self.assertRaisesRegexp(Exception, "newline.*end of file"):
+        with self.assertRaisesRegex(Exception, "newline.*end of file"):
             FormatterBase("filename.cc", readlines=original_lines)
 
 
@@ -307,5 +307,5 @@ namespace { }
         original_lines = ['#include  "nontrivial.h"\n']
         dut = IncludeFormatter("nontrivial.cc", readlines=original_lines)
         dut.format_includes()
-        with self.assertRaisesRegexp(Exception, 'not just a shuffle'):
+        with self.assertRaisesRegex(Exception, 'not just a shuffle'):
             dut.rewrite_file()
