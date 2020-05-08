@@ -3,9 +3,9 @@
 
 find_path(Gurobi_INCLUDE_DIR NAMES gurobi_c.h
   PATHS
-    /Library/gurobi900/mac64
-    /opt/gurobi900/linux64
-    /opt/gurobi900/power64
+    /Library/gurobi902/mac64
+    /opt/gurobi902/linux64
+    /opt/gurobi902/power64
     ENV GUROBI_PATH
   PATH_SUFFIXES include
 )
@@ -38,9 +38,9 @@ find_library(Gurobi_LIBRARY
   NAMES "gurobi${Gurobi_VERSION_MAJOR}${Gurobi_VERSION_MINOR}"
   HINTS "${_GUROBI_ROOT}"
   PATHS
-    /Library/gurobi900/mac64
-    /opt/gurobi900/linux64
-    /opt/gurobi900/power64
+    /Library/gurobi902/mac64
+    /opt/gurobi902/linux64
+    /opt/gurobi902/power64
     ENV GUROBI_PATH
   PATH_SUFFIXES lib
 )
