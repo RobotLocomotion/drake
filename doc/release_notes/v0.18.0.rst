@@ -22,6 +22,7 @@ Announcements
 
 * tutorials: Add tutorial on AddVisualizationCallback (`#13211`_)
 * tutorials: tutorials: Explicitly refer to nbviewer for best browsing experience (`#13120`_)  # Update developer notes section
+* bindings: Add python binding for GurobiSolverDetails (`#13152`_)  # Backwards-incompatible: This changes all *SolverDetails structures to be read-only for Python. This was deemed OK to break for now.
 
 Breaking changes since v0.17.0
 ------------------------------
@@ -96,19 +97,20 @@ Miscellaneous features and fixes
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
-* bindings: Add python binding for GurobiSolverDetails (`#13152`_)  # Backwards-incompatible: This changes all *SolverDetails structures to be read-only for Python. This was deemed OK to break for now.
-* bindings: Add python binding for MosekSolverDetails (`#13151`_)
-* bindings: multibody: add python binding for get_body_poses_output_port() (`#13229`_)
-* bindings: py common: Expose _DRAKE_ASSERT_IS_ARMED (`#13183`_)
-* bindings: py common: Use kDrakeAssertIsArmed instead of _DRAKE_ASSERT_IS_ARMED (`#13195`_)
-* bindings: py geometry: Bind QueryObject constructor (`#13156`_)  # Enables writing Python LeafSystems which declare ports using this object
-* bindings: py mathematical_program: Add friendlier errors for user-functions (`#13183`_)  # Also makes checks stricter
-* bindings: py wrap_pybind_test: Fix test for DefReadUniquePtr (`#13175`_)  # Other minor changes
-* bindings: pydrake: Resolve RTTI inconsistency on macOS, restore pydrake Value move (`#13225`_)  # common.value: Move AbstractValue and Value here" (#13217)
+* pydrake.common.kDrakeAssertIsArmed (`#13183`_, `#13195`_)
+* pydrake.geometry.QueryObject.__init__ (`#13156`_)
+* pydrake.multibody.plant.MultibodyPlant.get_body_poses_output_port (`#13229`_)
+* pydrake.solvers.gurobi.GurobiSolverDetails (`#13152`_)
+* pydrake.solvers.mosek.MosekSolverDetails (`#13151`_)
 
 New features
 
+* Move the Value and AbstractValue classes from the pydrake.systems.framework module to the pydrake.common.value module (`#13217`_, `#13225`_)
+
 Fixes
+
+* Add stricter checks and friendlier errors for mathematical program user-functions (`#13183`_)
+* Resolve AbstractValue RTTI linking inconsistency on macOS (`#13225`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
