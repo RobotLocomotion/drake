@@ -92,14 +92,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
   Current newest_commit bc4638164b9994119f8b50b48d268c172e34bdfe (inclusive).
 
-* doc: doc: Add release notes v0.17.0 (`#13020`_)
-* doc: doc: Highlight v0.17.0's macOS warning (`#13107`_)
 * systems: controllers: FittedValueIteration supports MBP+SceneGraph (`#13113`_)  # Takes the input port as an argument, and can ignore the scene graph abstract state (related to #9501)
 * common: trajectories: add piecewisepolynomial unary minus (`#13109`_)
 * geometry: [geometry] Move mesh_intersection code from .h to .cc (`#13086`_)
 * multibody,solvers: solvers: Fix memcpy undefined behavior in unconstrained optimization (`#13111`_)  # Calling memcpy on nullptr is undefined.
 * common: common: Add implementations of {min,max}(AutoDiffXd, AutoDiffXd) (`#13112`_)  # Resolves #13082.
-* attic,common,doc,examples,geometry,manipulation,math,multibody,solvers,systems,tools,tutorials: Automatically fix various spelling mistakes (`#13118`_)
 * systems: Add a dependency ticket for all sources excluding input ports (`#13088`_)  # * Add dependency ticket for all sources excluding input ports.
 * common: common: Add Eigen issue link for {min,max}(AutoDiffXd, AutoDiffXd) (`#13119`_)
 * common: Add PiecewisePolynomialDerivativeTests/AutoDiffTest (`#13080`_)
@@ -118,17 +115,15 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * multibody: Make joint store default value (`#13105`_)  # This is a PR to have the Joint class store a default value and to pass the value to its mobilizer implementation upon construction of the joint implementation. Solves the issue of mobilizers storing default joint positions (#13065)
 * tools: Update meshcat (only) (`#13141`_)  # To get @gizatt's fix for the skydio parsing issue.
 * geometry: Refactor QueryObject test (`#13136`_)  # This doesn't change the *nature* of the test. Merely the spelling. It eliminates some of the overhead cruft such that the test harness has direct access to the private/protected elements of QueryObject.
-* doc,examples,tools: quadrotor: Upgrade to Skydio R2 model (`#13050`_)  # provided by Abe Bachrach from Skydio
+* examples,tools: quadrotor: Upgrade to Skydio R2 model (`#13050`_)  # provided by Abe Bachrach from Skydio
 * math: math: Add BsplineBasis<T>(const BsplineBasis<double>&) (`#13057`_)  # This is a step towards resolution of #13150.
 * bindings: Add python binding for MosekSolverDetails (`#13151`_)
 * math: math: Fix BsplineBasis<Expression>::operator==() (`#13158`_)
 * bindings: py geometry: Bind QueryObject constructor (`#13156`_)  # Enables writing Python LeafSystems which declare ports using this object
 * common: common: Use BsplineBasis<T> in BsplineTrajectory<T> (`#13149`_)  # Resolves #13150.
-* doc: doc: Begin to define issue components (`#13159`_)
 * multibody: Implement UniversalMobilizer (`#13054`_)
 * tools: install.py: Add --pre_clean option for ease of debugging (`#13127`_)
-* geometry: Porting RenderEngineGl Step 1 - copy code to dev (`#13129`_)  # This includes copying all of the source unique source files for the render engine into a dev folder and sufficient tweaking of includes and builds to allow it to run. Co-authored-by: Belinda Teh <belzteh@gmail.com> Co-authored-by: Duy-Nguyen Ta <duynguyen.ta@tri.global> Co-authored-by: Eric Cousineau <eric.cousineau@tri.global> Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global> Co-authored-by: Kunimatsu Hashimoto <kunimatsu.hashimoto@tri.global>
-* tools: drake_visualizer: Install builtin scripts (`#13127`_)  # Put under test, both in Bazel and install Co-Authored-By: Jeremy Nimmer <jeremy.nimmer@tri.global>
+* tools: drake_visualizer: Install builtin scripts (`#13127`_)  # Put under test, both in Bazel and install
 * bindings: Add python binding for GurobiSolverDetails (`#13152`_)  # Backwards-incompatible: This changes all *SolverDetails structures to be read-only for Python. This was deemed OK to break for now.
 * common: trajectories: add Trajectory::has_derivative and EvalDerivative (`#13144`_)  # I've started the NVI pattern here, rather than adding another public virtual. It's inconsistent with the rest of the class, but the goal is to move this direction.  I've moved MakeTrajectory to NVI, as well. Also started trajectory.cc => trajectory is now @tparam default_scalar, instead of @tparam ANY
 * lcmtypes: Add lcmtypes for panda command/status (`#13163`_)
@@ -139,7 +134,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * common: trajectories: add DiscreteTimeTrajectory (`#13157`_)
 * geometry: [geometry] Optimize mesh_intersection to avoid heap allocation by using std::vector as member variables (`#13130`_)
 * bindings: py wrap_pybind_test: Fix test for DefReadUniquePtr (`#13175`_)  # Other minor changes
-* geometry: [geometry/dev] Cosmetic clean up and missing tests (`#13174`_)  # * Cosmetic clean up and missing tests 1. LoadMeshFromObj made more testable by given a std::istream overload. 2. Documentation in `load_mesh.*` and `buffer_dim.h` updated. 2. Unit tests added for LoadMeshFromObj and BufferDim.
 * attic,multibody,tools: parsing: Rewrite package.xml crawl to avoid using @tinydir (`#13180`_)  # The tinydir external is now deprecated and will be removed on 2020-08-01.
 * bindings: py common: Expose _DRAKE_ASSERT_IS_ARMED (`#13183`_)
 * bindings: py mathematical_program: Add friendlier errors for user-functions (`#13183`_)  # Also makes checks stricter
@@ -154,10 +148,8 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * third_party: third_party: Remove spurious include path (`#13189`_)  # The default include paths are already correct.  Adding an extra suffix results in "undeclared inclusion" warnings downstream.
 * tools: workspace: Update buildifier to latest release 3.0.0 (`#13198`_)
 * geometry: [geometry] Parcel QueryObject queries into unique classes (`#13161`_)  # QueryObject functionality is spread across three classes: QueryObject, ProximityQueryObject, and PerceptionQueryObject. QueryObject: keeps poses for frames and geometries and the scene graph inspector. ProximityQueryObject: inherits from QueryObject (picking up that functionality) plus all proximity queries: collisions, signed distance, etc. PerceptionQueryObject: inherits from QueryObject (picking up that functionality) plus all perception queries: image rendering. SceneGraph is modified to support all three query object types. Bindings for all classes are updated. This does *not* deprecate current functionality. That comes next.
-* doc: pydrake doc: Add user and dev docs for C++ template considerations (`#13134`_)
 * bindings: py common: Use kDrakeAssertIsArmed instead of _DRAKE_ASSERT_IS_ARMED (`#13195`_)
 * common,tools: workspace: Upgrade fmt to latest release 6.2.0 (`#13200`_)
-* doc: getting_help: Remove stray asterisk, add template on helper commands (`#13203`_)
 * tools: workspace: Upgrade lcm to latest commit (`#13199`_)
 * tools: tools: Improve new_release checking heuristics (`#13196`_)
 * bindings: py common.value: Move AbstractValue and Value here (`#12430`_)  # This is intended to reflect the C++ API change in #10357 Deprecate old spellings
@@ -172,7 +164,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * manipulation,tools: models: Move jaco_description meshes to RobotLocomotion/models (`#13222`_)
 * geometry: geometry_properties: Explicitly test number of copies / moves (`#13232`_)
 * bindings: pydrake: Remove old (undated) deprecations (`#13233`_)
-* doc: Add instructions for getting Stackoverflow drake-tag notifications (`#13216`_)
 * setup: setup: Install /usr/bin/python for Focal source builds (`#13235`_)
 * common,examples,manipulation,third_party,tools: lint: Enable W504 for python (`#13204`_)
 * common: nice_type_name: Update test for anonymous namespaces (`#13239`_)
@@ -181,7 +172,5 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * geometry: Revert "[geometry] Parcel QueryObject queries into unique classes" (`#13243`_)  # This reverts commit 1abc951c4cc01f147b26391e847005353e2f4809.
 * tutorials: Add tutorial on AddVisualizationCallback (`#13211`_)
 * examples,systems: controllers: add example of finite horizon LQR working on the acrobot (`#13250`_)  # Also had to remove support for symbolic::Expression in the finite horizon LQR controller, pending resolution of #12253.
-* geometry: [render/dev] Start pulling mesh generation *out* of render engine (`#13226`_)  # This: 1. Renames load_mesh.* to shape_meshes.*. 2. It moves the logic for generating a sphere mesh *out* of RenderEngineGl and into load_mesh. 3. Other mesh types are to follow.
-* doc: Add some Dynamics component labels for GitHub issues (`#13256`_)
 * geometry: Use linear f(x,y,z) on tetrahedron directly instead of barycentric interpolation (`#13140`_)  # * [geometry] MeshFieldLinear uses linear function instead of barycentric interpolation.
 * examples,systems: examples: make Acrobot swing-up with trajectory optimization SNOPT only (`#13252`_)
