@@ -179,7 +179,7 @@ Install on Ubuntu
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
 4. Download ``gurobi9.0.2_linux64.tar.gz``
 5. Unzip it.  We suggest that you use ``/opt/gurobi902`` to simplify working with Drake installations.
-6. ``export GUROBI_PATH=/opt/gurobi902/linux64``
+6. ``export GUROBI_HOME=/opt/gurobi902/linux64`` You may set this on Ubuntu to override the default installation path.
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
