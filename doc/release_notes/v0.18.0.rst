@@ -20,14 +20,16 @@ Announcements
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
 
-* tutorials: Add tutorial on AddVisualizationCallback (`#13211`_)
-* tutorials: tutorials: Explicitly refer to nbviewer for best browsing experience (`#13120`_)  # Update developer notes section
-* bindings: Add python binding for GurobiSolverDetails (`#13152`_)  # Backwards-incompatible: This changes all *SolverDetails structures to be read-only for Python. This was deemed OK to break for now.
+  * New tutorials:
+
+    * AddVisualizationCallback (`#13211`_)
 
 Breaking changes since v0.17.0
 ------------------------------
 
 These are breaking changes that did not undergo a deprecation period:
+
+* All pydrake.solvers SolverDetails classes are now read-only. (`#13152`_)
 
 Changes since v0.17.0:
 ----------------------
@@ -66,23 +68,21 @@ Fixes
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
-* multibody: Implement UniversalMobilizer (`#13054`_)
-* multibody: Implements MBP::get_body_poses_output_port() (`#13137`_)
-* multibody: Make joint store default value (`#13105`_)  # This is a PR to have the Joint class store a default value and to pass the value to its mobilizer implementation upon construction of the joint implementation. Solves the issue of mobilizers storing default joint positions (#13065)
-* multibody: multibody: adds a Propeller model for use with MultibodyPlant (`#13135`_)  # Includes python bindings. Partially resolves #12401.
-* examples: Four Bar Linkage example (`#13036`_)  # Adds a planar four bar linkage simulation.
-
-* geometry,multibody: Add alternate Sphere volume mesh generation (`#13114`_)  # Rather than creating a sphere by sub-dividing *all* edges of the previous level of refinement, we refine only those edges on the surface of the sphere. The resultant mesh has a single interior vertex (at the sphere origin) and all of the resolution increases curvature. In contrast to the interior vertices which increases the number of tets by a factor of 8 each time, this only increases it by a factor of 4. It retains an option to tessellate on the interior as well, but no longer defaults to that. This also provides a mechanism through proximity properties to toggle what type of sphere tessellation is used. An optional parameter (kHydroGroup, "sparse_mesh") has been added which will control whether the sphere gets tessellated on the interior or not (defaults to not). This cascaded to a number of other pieces of code that made use of the sphere. The ellipsoid representation as well as the tests.
-* geometry,tools: [geometry] Example for contact-surface profiling: rigid bowl, soft ball (`#13138`_)
-* geometry: Refactor QueryObject test (`#13136`_)  # This doesn't change the *nature* of the test. Merely the spelling. It eliminates some of the overhead cruft such that the test harness has direct access to the private/protected elements of QueryObject.
-* geometry: Use linear f(x,y,z) on tetrahedron directly instead of barycentric interpolation (`#13140`_)  # * [geometry] MeshFieldLinear uses linear function instead of barycentric interpolation.
-* geometry: [geometry] Move mesh_intersection code from .h to .cc (`#13086`_)
-* geometry: [geometry] Optimize mesh_intersection to avoid heap allocation by using std::vector as member variables (`#13130`_)
-* geometry: geometry_properties: Explicitly test number of copies / moves (`#13232`_)
-
 New features
 
+* Add universal mobilizer (`#13054`_)
+* Add propeller model (`#13135`_)
+* Add planar four bar linkage example (`#13036`_)
+* Add get_body_poses_output_port (`#13137`_)
+* Make joint store default value (`#13105`_)
+
+* New hydroelastic contact model in progress (`#13114`_, `#13138`_, `#13140`_)
+
+  * Still only experimental
+
 Fixes
+
+TBD
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
