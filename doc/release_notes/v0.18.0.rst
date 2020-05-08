@@ -37,24 +37,30 @@ Changes since v0.17.0:
 Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
-* common: common: Use BsplineBasis<T> in BsplineTrajectory<T> (`#13149`_)  # Resolves #13150.
-* common: common::polynomial : Add Subsitute(var, Polynomial) (`#13108`_)  # The new incarnation is different in several ways: - Support multibariate polynomials (as opposed to the univariate restriction of IsApprox) - The new test will faillif the polynomials have different variables. -  The comparison supports either relative or absolute comparisons (with slightly different behavior for treating monomials that don't have a match in the other polynomial.
-* common: trajectories: add DiscreteTimeTrajectory (`#13157`_)
-* common: trajectories: add Trajectory::has_derivative and EvalDerivative (`#13144`_)  # I've started the NVI pattern here, rather than adding another public virtual. It's inconsistent with the rest of the class, but the goal is to move this direction.  I've moved MakeTrajectory to NVI, as well. Also started trajectory.cc => trajectory is now @tparam default_scalar, instead of @tparam ANY
-* common: trajectories: add piecewisepolynomial unary minus (`#13109`_)
-* math: math: Add BsplineBasis<T>(const BsplineBasis<double>&) (`#13057`_)  # This is a step towards resolution of #13150.
-* math: math: Fix BsplineBasis<Expression>::operator==() (`#13158`_)
-
-* systems: Add a dependency ticket for all sources excluding input ports (`#13088`_)  # * Add dependency ticket for all sources excluding input ports.
-* systems: controllers: FittedValueIteration supports MBP+SceneGraph (`#13113`_)  # Takes the input port as an argument, and can ignore the scene graph abstract state (related to #9501)
-* systems: controllers: Support for Finite Horizon LQR result as a System (`#13178`_)
-* systems: controllers: add python bindings for finite-horizon LQR (`#13145`_)  # as discussed on slack, this uses a work-around to binding the std::unique_ptr member variables in FiniteLQRResult. also includes a few small improvements to finite-horizon LQR, in preparation for the supporting discrete-time systems.
-* systems: Add System support for implicit equations (`#13068`_)  # * Implementation of implicit equations with acrobot test.
-* systems: controllers: add example of finite horizon LQR working on the acrobot (`#13250`_, `#13252`_)  # Also had to remove support for symbolic::Expression in the finite horizon LQR controller, pending resolution of #12253.
-
 New features
 
+* Trajectories
+
+  * Add Trajectory::has_derivative and EvalDerivative (`#13144`_)
+  * Add DiscreteTimeTrajectory (`#13157`_)
+  * Improve BsplineBasis and BsplineTrajectory (`#13149`_, `#13057`_, `#13158`_)
+  * Add PiecewisePolynomial unary minus (`#13109`_)
+  * Add Subsitute(var, Polynomial) with support for multivariate polynomials (`#13108`_)
+
+* System
+
+  * Add support for implicit equations (`#13068`_)
+  * Add a dependency ticket for all sources excluding input ports (`#13088`_)
+
+* Controllers
+
+  * FittedValueIteration supports MultibodyPlant + SceneGraph (`#13113`_)
+  * Add support for Finite Horizon LQR result as a System (`#13178`_)
+  * Add Acrobot example of Finite Lorizon LQR (`#13250`_, `#13252`_)
+
 Fixes
+
+TBD
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
