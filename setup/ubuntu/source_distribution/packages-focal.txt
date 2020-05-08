@@ -1,6 +1,6 @@
 bash-completion
 clang
-clang-format
+clang-format-9
 coinor-libclp-dev
 coinor-libipopt-dev
 default-jdk
