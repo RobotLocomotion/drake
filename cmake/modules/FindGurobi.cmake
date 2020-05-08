@@ -6,7 +6,7 @@ find_path(Gurobi_INCLUDE_DIR NAMES gurobi_c.h
     /Library/gurobi902/mac64
     /opt/gurobi902/linux64
     /opt/gurobi902/power64
-    ENV GUROBI_PATH
+    ENV GUROBI_HOME
   PATH_SUFFIXES include
 )
 
@@ -41,7 +41,7 @@ find_library(Gurobi_LIBRARY
     /Library/gurobi902/mac64
     /opt/gurobi902/linux64
     /opt/gurobi902/power64
-    ENV GUROBI_PATH
+    ENV GUROBI_HOME
   PATH_SUFFIXES lib
 )
 
