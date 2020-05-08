@@ -3,7 +3,7 @@
  texture the mesh painter controls is simply output to drake visualizer.
 
  In this case, the canvas object is a single quad and the painter is a cylinder
- that intersects the quad and moves in a circular path (drawing a circle on the
+ that intersects the quad and moves in a fixed path (drawing a flower on the
  plane).
  */
 #include <utility>
@@ -11,6 +11,8 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/examples/mesh_painter/mask_image_camera.h"
+#include "drake/examples/mesh_painter/render_engine_mask_image.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_ids.h"
@@ -50,6 +52,7 @@ namespace drake {
 namespace examples {
 namespace mesh_painter {
 
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::Box;
 using geometry::ConnectDrakeVisualizer;
@@ -66,9 +69,12 @@ using geometry::PerceptionProperties;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::SourceId;
+using geometry::render::DepthCameraProperties;
+using geometry::render::RenderEngineVtkParams;
 using geometry::render::RenderLabel;
 using lcm::DrakeLcm;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -211,6 +217,27 @@ int do_main() {
   illustration_box.AddProperty("phong", "diffuse",
                                Vector4d{0.5, 0.5, 0.45, 1.0});
   scene_graph.AssignRole(source_id, ground_id, illustration_box);
+  PerceptionProperties percep_props;
+  percep_props.AddProperty("phong", "diffuse", Vector4d{0.2, 0.5, 0.25, 1.0});
+  percep_props.AddProperty("label", "id",
+                           RenderLabel(ground_id.get_value()));
+  // NOTE: The name "ground_texture" must match the name given to the
+  // MeshPainterSystem below -- it's how SceneGraph knows to apply that system's
+  // image to this geometry.
+  percep_props.AddProperty("paint_shader", "dynamic_mask", "ground_texture");
+  percep_props.AddProperty(
+      "paint_shader", "paint_diffuse",
+      FindResourceOrThrow("drake/examples/mesh_painter/diag_gradient.png"));
+  percep_props.AddProperty("paint_shader", "canvas_diffuse",
+                           Vector4d{0.9, 0.85, 0.7, 1.0});
+  percep_props.AddProperty("paint_shader", "canvas_label",
+                           RenderLabel(ground_id.get_value()));
+  // Pick an arbitrarily large label value for the paint label so that the
+  // labels can be easily _visually_ distinguished in the image -- otherwise,
+  // the number has no significance.
+  percep_props.AddProperty("paint_shader", "paint_label", RenderLabel(200));
+
+  scene_graph.AssignRole(source_id, ground_id, percep_props);
 
   // Now visualize.
   DrakeLcm lcm;
@@ -241,6 +268,47 @@ int do_main() {
                   image_array_lcm_publisher.get_input_port());
 
   builder.Connect(painter_system.texture_output_port(), texture_port);
+
+  // Add MaskImageCamera.
+  const std::string render_name("renderer");
+  auto render_engine =
+      make_unique<RenderEngineMaskImage>(RenderEngineVtkParams());
+  // RenderEngineMaskImage* potato_render_engine;
+  scene_graph.AddRenderer(render_name, move(render_engine));
+  DepthCameraProperties camera_prop(640, 480, M_PI_4, render_name, 0.1, 2.0);
+
+  // We need to position and orient the camera. We have the camera body frame
+  // B (see rgbd_sensor.h) and the camera frame C (see camera_info.h).
+  // By default X_BC = I in the MaskImageCamera. So, to aim the camera, Cz = Bz
+  // should point from the camera position to the origin. By points *down* the
+  // image, so we need to align it in the -Wz direction. So,  we compute the
+  // basis using camera Y-ish in the By ≈ -Wz direction to compute Bx, and
+  // then use Bx an and Bz to compute By.
+  const Vector3d p_WB = Vector3d(0.75, -1.9, 1.5) * 1.5;
+  const Vector3d p_WT{0, -0.5, 0};
+  // Set rotation looking at the origin.
+  const Vector3d Bz_W = (p_WT - p_WB).normalized();
+  const Vector3d Bx_W = -Vector3d::UnitZ().cross(Bz_W).normalized();
+  const Vector3d By_W = Bz_W.cross(Bx_W).normalized();
+  const RotationMatrixd R_WB =
+      RotationMatrixd::MakeFromOrthonormalColumns(Bx_W, By_W, Bz_W);
+  const RigidTransformd X_WB(R_WB, p_WB);
+
+  auto& camera = *builder.AddSystem<MaskImageCamera>(
+      scene_graph.world_frame_id(), X_WB, "renderer", ground_id, camera_prop);
+  builder.Connect(scene_graph.get_query_output_port(),
+                  camera.query_object_input_port());
+  const auto& rgb_port =
+      image_to_lcm_image_array.DeclareImageInputPort<PixelType::kRgba8U>(
+          "color");
+  builder.Connect(camera.color_image_output_port(), rgb_port);
+  const auto& label_port =
+      image_to_lcm_image_array.DeclareImageInputPort<PixelType::kLabel16I>(
+          "label");
+  builder.Connect(camera.label_image_output_port(), label_port);
+  // Connect to Potato camera.
+  builder.Connect(painter_system.texture_output_port(),
+                  camera.mask_texture_input_port());
 
   auto diagram = builder.Build();
 

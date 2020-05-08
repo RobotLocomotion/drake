@@ -8,6 +8,40 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
+drake_cc_library(
+    name = "painter_shader",
+    srcs = ["painter_shader.cc"],
+    hdrs = ["painter_shader.h"],
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_roles",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingOpenGL2",
+    ],
+)
+
+drake_cc_library(
+    name = "mask_image_camera",
+    srcs = ["mask_image_camera.cc"],
+    hdrs = ["mask_image_camera.h"],
+    deps = [
+        ":render_engine_mask_image",
+        "//systems/sensors:rgbd_sensor",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_mask_image",
+    srcs = ["render_engine_mask_image.cc"],
+    hdrs = ["render_engine_mask_image.h"],
+    deps = [
+        ":painter_shader",
+        "//geometry/render:render_engine_vtk",
+    ],
+)
+
 drake_cc_binary(
     name = "painting_a_mesh",
     srcs = ["painting_a_mesh.cc"],
@@ -18,10 +52,11 @@ drake_cc_binary(
         "--simulation_time=0.01",
     ],
     deps = [
+        ":mask_image_camera",
+        ":render_engine_mask_image",
         "//geometry:geometry_visualization",
         "//geometry:mesh_painter_system",
         "//geometry:scene_graph",
-        "//geometry/render:render_engine_vtk",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
