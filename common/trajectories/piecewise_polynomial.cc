@@ -484,6 +484,27 @@ void PiecewisePolynomial<T>::Reshape(int rows, int cols) {
   }
 }
 
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::Block(int start_row,
+                                                     int start_col,
+                                                     int block_rows,
+                                                     int block_cols) const {
+  DRAKE_DEMAND(start_row >= 0 && start_row < rows());
+  DRAKE_DEMAND(start_col >= 0 && start_col < cols());
+  DRAKE_DEMAND(block_rows >= 0 && start_row + block_rows <= rows());
+  DRAKE_DEMAND(block_cols >= 0 && start_col + block_cols <= cols());
+
+  std::vector<PolynomialMatrix> block_polynomials;
+  std::transform(polynomials_.begin(), polynomials_.end(),
+                 std::back_inserter(block_polynomials),
+                 [start_row, start_col, block_rows,
+                  block_cols](const PolynomialMatrix& matrix) {
+                   return matrix.block(start_row, start_col, block_rows,
+                                       block_cols);
+                 });
+  return PiecewisePolynomial<T>(block_polynomials, this->breaks());
+}
+
 // Static generators for splines.
 
 // Throws std::runtime_error if these conditions are true:
@@ -984,6 +1005,58 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
   return PiecewisePolynomial<T>(polynomials, times);
 }
 
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
+    const std::vector<T>& times, const std::vector<MatrixX<T>>& samples) {
+  using std::pow;
+
+  // Check the inputs.
+  DRAKE_DEMAND(times.size() > 1);
+  DRAKE_DEMAND(samples.size() == times.size());
+  const int rows = samples[0].rows();
+  const int cols = samples[0].cols();
+  for (size_t i = 1; i < times.size(); ++i) {
+    DRAKE_DEMAND(times[i] - times[i - 1] >
+                 PiecewiseTrajectory<T>::kEpsilonTime);
+    DRAKE_DEMAND(samples[i].rows() == rows);
+    DRAKE_DEMAND(samples[i].cols() == cols);
+  }
+
+  // https://en.wikipedia.org/wiki/Polynomial_interpolation notes that
+  // this Vandermonde matrix can be poorly conditioned if times are close
+  // together, and suggests that there are special O(n^2) algorithms available
+  // for this particular problem.  But we just implement the simple algorithm
+  // here for now.
+
+  // Set up the system of linear equations to solve for the coefficients.
+  MatrixX<T> A(times.size(), times.size());
+  VectorX<T> b(times.size());
+
+  // Only need to set up the A matrix once.
+  for (size_t i = 0; i < times.size(); ++i) {
+    const T relative_time = times[i] - times[0];
+    A(i, 0) = 1.0;
+    for (size_t j = 1; j < times.size(); ++j) {
+      A(i, j) = A(i, j-1)*relative_time;
+    }
+  }
+  Eigen::ColPivHouseholderQR<MatrixX<T>> Aqr(A);
+
+  // Solve for the coefficient matrices.
+  PolynomialMatrix polynomials(rows, cols);
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      for (size_t k = 0; k < times.size(); ++k) {
+        b(k) = samples[k](i, j);
+      }
+      polynomials(i, j) = Polynomial<T>(Aqr.solve(b));
+    }
+  }
+
+  return PiecewisePolynomial<T>({polynomials},
+                                {times[0], times[times.size() - 1]});
+}
+
 namespace {
 
 // Helper method to go from the Eigen entry points to the std::vector versions.
@@ -1065,6 +1138,16 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
   std::vector<T> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
       my_breaks, ColsToStdVector(samples), periodic_end_condition);
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
+    const Eigen::Ref<const VectorX<T>>& times,
+    const Eigen::Ref<const MatrixX<T>>& samples) {
+  DRAKE_DEMAND(samples.cols() == times.size());
+  std::vector<T> my_times(times.data(), times.data() + times.size());
+  return PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
+      my_times, ColsToStdVector(samples));
 }
 
 // Computes the cubic spline coefficients based on the given values and first
