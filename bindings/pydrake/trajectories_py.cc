@@ -158,6 +158,12 @@ PYBIND11_MODULE(trajectories, m) {
                 breaks, samples, periodic_end);
           },
           py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
+      .def_static("LagrangeInterpolatingPolynomial",
+          py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const MatrixX<T>>&>(
+              &PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial),
+          py::arg("times"), py::arg("samples"),
+          doc.PiecewisePolynomial.LagrangeInterpolatingPolynomial.doc)
       .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
           doc.PiecewisePolynomial.value.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
@@ -184,6 +190,10 @@ PYBIND11_MODULE(trajectories, m) {
           doc.PiecewisePolynomial.AppendCubicHermiteSegment.doc)
       .def("RemoveFinalSegment", &PiecewisePolynomial<T>::RemoveFinalSegment,
           doc.PiecewisePolynomial.RemoveFinalSegment.doc)
+      .def("ReverseTime", &PiecewisePolynomial<T>::ReverseTime,
+          doc.PiecewisePolynomial.ReverseTime.doc)
+      .def("ScaleTime", &PiecewisePolynomial<T>::ScaleTime, py::arg("scale"),
+          doc.PiecewisePolynomial.ScaleTime.doc)
       .def("slice", &PiecewisePolynomial<T>::slice,
           py::arg("start_segment_index"), py::arg("num_segments"),
           doc.PiecewisePolynomial.slice.doc)

@@ -81,6 +81,24 @@ class TestTrajectories(unittest.TestCase):
             breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
             sample_dot_at_end=[0., 0., 0.])
 
+    def test_lagrange_interpolating_polynomial(self):
+        t = [0., 1., 2.]
+        x = np.diag((4., 5., 6.))
+        pp = PiecewisePolynomial.LagrangeInterpolatingPolynomial(times=t,
+                                                                 samples=x)
+        self.assertEqual(pp.get_number_of_segments(), 1)
+        np.testing.assert_array_almost_equal(x[:, [1]], pp.value(1.), 1e-12)
+
+    def test_reverse_and_scale_time(self):
+        x = np.array([[10.], [20.], [30.]]).transpose()
+        pp = PiecewisePolynomial.FirstOrderHold([0.5, 1., 2.], x)
+        pp.ReverseTime()
+        self.assertEqual(pp.start_time(), -2.0)
+        self.assertEqual(pp.end_time(), -0.5)
+        pp.ScaleTime(2.0)
+        self.assertEqual(pp.start_time(), -4.0)
+        self.assertEqual(pp.end_time(), -1.0)
+
     def test_slice_and_shift(self):
         x = np.array([[10.], [20.], [30.]]).transpose()
         pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
