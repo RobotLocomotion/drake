@@ -158,6 +158,12 @@ PYBIND11_MODULE(trajectories, m) {
                 breaks, samples, periodic_end);
           },
           py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
+      .def_static("LagrangeInterpolatingPolynomial",
+          py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const MatrixX<T>>&>(
+              &PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial),
+          py::arg("times"), py::arg("samples"),
+          doc.PiecewisePolynomial.LagrangeInterpolatingPolynomial.doc)
       .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
           doc.PiecewisePolynomial.value.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
@@ -176,6 +182,11 @@ PYBIND11_MODULE(trajectories, m) {
       .def("isApprox", &PiecewisePolynomial<T>::isApprox, py::arg("other"),
           py::arg("tol"), py::arg("tol_type") = drake::ToleranceType::kRelative,
           doc.PiecewisePolynomial.isApprox.doc)
+      .def("Reshape", &PiecewisePolynomial<T>::Reshape, py::arg("rows"),
+          py::arg("cols"), doc.PiecewisePolynomial.Reshape.doc)
+      .def("Block", &PiecewisePolynomial<T>::Block, py::arg("start_row"),
+          py::arg("start_col"), py::arg("block_rows"), py::arg("block_cols"),
+          doc.PiecewisePolynomial.Block.doc)
       .def("ConcatenateInTime", &PiecewisePolynomial<T>::ConcatenateInTime,
           py::arg("other"), doc.PiecewisePolynomial.ConcatenateInTime.doc)
       .def("AppendCubicHermiteSegment",
@@ -184,6 +195,10 @@ PYBIND11_MODULE(trajectories, m) {
           doc.PiecewisePolynomial.AppendCubicHermiteSegment.doc)
       .def("RemoveFinalSegment", &PiecewisePolynomial<T>::RemoveFinalSegment,
           doc.PiecewisePolynomial.RemoveFinalSegment.doc)
+      .def("ReverseTime", &PiecewisePolynomial<T>::ReverseTime,
+          doc.PiecewisePolynomial.ReverseTime.doc)
+      .def("ScaleTime", &PiecewisePolynomial<T>::ScaleTime, py::arg("scale"),
+          doc.PiecewisePolynomial.ScaleTime.doc)
       .def("slice", &PiecewisePolynomial<T>::slice,
           py::arg("start_segment_index"), py::arg("num_segments"),
           doc.PiecewisePolynomial.slice.doc)

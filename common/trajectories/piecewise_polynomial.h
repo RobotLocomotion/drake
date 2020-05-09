@@ -223,8 +223,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Version of ZeroOrderHold(breaks, samples) that uses vector samples and
-   * Eigen VectorXd/MatrixX<T> inputs. Each column of `samples` represents a sample
-   * point.
+   * Eigen VectorXd/MatrixX<T> arguments. Each column of `samples` represents a
+   * sample point.
    *
    * @pre `samples.cols() == breaks.size()`
    * @throws std::runtime_error under the conditions specified under
@@ -247,8 +247,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Version of FirstOrderHold(breaks, samples) that uses vector samples and
-   * Eigen VectorXd / MatrixX<T> inputs. Each column of `samples`
-   * represents a sample point.
+   * Eigen VectorXd / MatrixX<T> arguments. Each column of `samples` represents
+   * a sample point.
    *
    * @pre `samples.cols() == breaks.size()`
    * @throws std::runtime_error under the conditions specified under
@@ -316,8 +316,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Version of CubicShapePreserving(breaks, samples,
-   * zero_end_point_derivatives) that uses vector samples and Eigen VectorXd
-   * and MatrixX<T> inputs. Each column of `samples` represents a sample point.
+   * zero_end_point_derivatives) that uses vector samples and Eigen VectorXd and
+   * MatrixX<T> arguments. Each column of `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
    * @throws std::runtime_error under the conditions specified under
@@ -369,7 +369,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Version of CubicWithContinuousSecondDerivatives() that uses vector
-   * samples and Eigen VectorXd / MatrixX<T> inputs. Each column of
+   * samples and Eigen VectorXd / MatrixX<T> arguments. Each column of
    * `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
@@ -395,11 +395,11 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples and
-   * derivatives of samples (`samples_dot`); each matrix element of `samples_dot`
-   * represents the derivative with respect to the independent variable (e.g.,
-   * the time derivative) of the corresponding entry in `samples`.
-   * Each segment is fully specified by `samples` and `sample_dot` at both ends.
-   * Second derivatives are not continuous.
+   * derivatives of samples (`samples_dot`); each matrix element of
+   * `samples_dot` represents the derivative with respect to the independent
+   * variable (e.g., the time derivative) of the corresponding entry in
+   * `samples`. Each segment is fully specified by `samples` and `sample_dot` at
+   * both ends. Second derivatives are not continuous.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -418,10 +418,10 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   }
 
   /**
-   * Version of CubicHermite(breaks, samples, samples_dot) that uses vector samples and
-   * Eigen VectorXd / MatrixX<T> inputs. Corresponding columns of `samples` and
-   * `samples_dot` are used as the sample point and independent variable derivative,
-   * respectively.
+   * Version of CubicHermite(breaks, samples, samples_dot) that uses vector
+   * samples and Eigen VectorXd / MatrixX<T> arguments. Corresponding columns of
+   * `samples` and `samples_dot` are used as the sample point and independent
+   * variable derivative, respectively.
    *
    * @pre `samples.cols() == samples_dot.cols() == breaks.size()`.
    */
@@ -481,7 +481,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Version of CubicWithContinuousSecondDerivatives(breaks, samples) that
-   * uses vector samples and Eigen VectorXd / MatrixX<T> inputs. Each column
+   * uses vector samples and Eigen VectorXd / MatrixX<T> arguments. Each column
    * of `samples` represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`.
@@ -498,6 +498,30 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
     return CubicWithContinuousSecondDerivatives(breaks, samples,
         periodic_end_condition);
   }
+
+  /**
+   * Constructs a polynomial with a *single segment* of the lowest possible
+   * degree that passes through all of the sample points.  See "polynomial
+   * interpolation" and/or "Lagrange polynomial" on Wikipedia for more
+   * information.
+   * @pre `times` must be monotonically increasing.
+   * @pre `samples.size() == times.size()`.
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   */
+  static PiecewisePolynomial LagrangeInterpolatingPolynomial(
+      const std::vector<T>& times, const std::vector<MatrixX<T>>& samples);
+
+  /**
+   * Version of LagrangeInterpolatingPolynomial(times, samples) that
+   * uses vector samples and Eigen VectorXd / MatrixX<T> arguments. Each column
+   * of `samples` represents a sample point.
+   *
+   * @pre `samples.cols() == times.size()`.
+   */
+  static PiecewisePolynomial<T> LagrangeInterpolatingPolynomial(
+      const Eigen::Ref<const VectorX<T>>& times,
+      const Eigen::Ref<const MatrixX<T>>& samples);
+
   // @}
 
   /**
@@ -613,6 +637,15 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @see Eigen::PlainObjectBase::resize().
    */
   void Reshape(int rows, int cols);
+
+  /**
+   * Extracts a trajectory representing a block of size (block_rows, block_cols)
+   * starting at (start_row, start_col) from the PiecewisePolynomial.
+   * @returns a PiecewisePolynomial such that
+   *   ret.value(t) = this.value(t).block(i,j,p,q);
+   */
+  PiecewisePolynomial Block(int start_row, int start_col, int block_rows,
+                            int block_cols) const;
 
   /**
    * Adds each Polynomial in the PolynomialMatrix of `other` to the

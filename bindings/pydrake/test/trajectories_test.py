@@ -70,7 +70,7 @@ class TestTrajectories(unittest.TestCase):
 
     def test_cubic(self):
         t = [0., 1., 2.]
-        x = np.diag((4., 5., 6.))
+        x = np.diag([4., 5., 6.])
         periodic_end = False
         # Just test the spelling for these.
         pp1 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
@@ -80,6 +80,37 @@ class TestTrajectories(unittest.TestCase):
         pp3 = PiecewisePolynomial.CubicWithContinuousSecondDerivatives(
             breaks=t, samples=x, sample_dot_at_start=[0., 0., 0.],
             sample_dot_at_end=[0., 0., 0.])
+
+    def test_lagrange_interpolating_polynomial(self):
+        t = [0., 1., 2.]
+        x = np.diag([4., 5., 6.])
+        pp = PiecewisePolynomial.LagrangeInterpolatingPolynomial(times=t,
+                                                                 samples=x)
+        self.assertEqual(pp.get_number_of_segments(), 1)
+        np.testing.assert_array_almost_equal(x[:, [1]], pp.value(1.), 1e-12)
+
+    def test_reverse_and_scale_time(self):
+        x = np.array([[10.], [20.], [30.]]).transpose()
+        pp = PiecewisePolynomial.FirstOrderHold([0.5, 1., 2.], x)
+        pp.ReverseTime()
+        self.assertEqual(pp.start_time(), -2.0)
+        self.assertEqual(pp.end_time(), -0.5)
+        pp.ScaleTime(2.0)
+        self.assertEqual(pp.start_time(), -4.0)
+        self.assertEqual(pp.end_time(), -1.0)
+
+    def test_reshape_and_block(self):
+        t = [0., 1., 2., 3.]
+        x = np.diag([4., 5., 6., 7.])
+        pp = PiecewisePolynomial.FirstOrderHold(t, x)
+        self.assertEqual(pp.rows(), 4)
+        self.assertEqual(pp.cols(), 1)
+        pp.Reshape(rows=2, cols=2)
+        self.assertEqual(pp.rows(), 2)
+        self.assertEqual(pp.cols(), 2)
+        pp2 = pp.Block(start_row=0, start_col=0, block_rows=2, block_cols=1)
+        self.assertEqual(pp2.rows(), 2)
+        self.assertEqual(pp2.cols(), 1)
 
     def test_slice_and_shift(self):
         x = np.array([[10.], [20.], [30.]]).transpose()
