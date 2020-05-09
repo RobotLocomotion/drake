@@ -282,8 +282,11 @@ class TestControllers(unittest.TestCase):
 
         options = FiniteHorizonLinearQuadraticRegulatorOptions()
         options.Qf = Q
+        self.assertIsNone(options.N)
         self.assertIsNone(options.x0)
         self.assertIsNone(options.u0)
+        self.assertIsNone(options.xd)
+        self.assertIsNone(options.ud)
         self.assertEqual(options.input_port_index,
                          InputPortSelection.kUseFirstInputIfItExists)
 
@@ -310,6 +313,12 @@ class TestControllers(unittest.TestCase):
         self.assertEqual(result.K.value(0).shape, (1, 2))
         self.assertIsInstance(result.S, Trajectory)
         self.assertEqual(result.S.value(0).shape, (2, 2))
+        self.assertIsInstance(result.k0, Trajectory)
+        self.assertEqual(result.k0.value(0).shape, (1, 1))
+        self.assertIsInstance(result.sx, Trajectory)
+        self.assertEqual(result.sx.value(0).shape, (2, 1))
+        self.assertIsInstance(result.s0, Trajectory)
+        self.assertEqual(result.s0.value(0).shape, (1, 1))
 
         regulator = MakeFiniteHorizonLinearQuadraticRegulator(
             system=double_integrator,
