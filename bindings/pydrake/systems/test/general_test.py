@@ -385,14 +385,20 @@ class TestGeneral(unittest.TestCase):
         size = 3
 
         builder = DiagramBuilder()
+        self.assertTrue(builder.empty())
         adder0 = builder.AddSystem(Adder(2, size))
         adder0.set_name("adder0")
+        self.assertFalse(builder.empty())
 
         adder1 = builder.AddSystem(Adder(2, size))
         adder1.set_name("adder1")
 
         integrator = builder.AddSystem(Integrator(size))
         integrator.set_name("integrator")
+
+        self.assertEqual(
+            builder.GetMutableSystems(),
+            [adder0, adder1, integrator])
 
         builder.Connect(adder0.get_output_port(0), adder1.get_input_port(0))
         builder.Connect(adder1.get_output_port(0),
