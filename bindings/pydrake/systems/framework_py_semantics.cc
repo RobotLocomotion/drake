@@ -384,6 +384,20 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("system"),
             // Keep alive, ownership: `system` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
+        .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
+        .def("GetMutableSystems",
+            [](DiagramBuilder<T>* self) {
+              py::list out;
+              py::object self_py = py::cast(self, py_reference);
+              for (auto* system : self->GetMutableSystems()) {
+                py::object system_py = py::cast(system, py_reference);
+                // Keep alive, ownership: `system` keeps `self` alive.
+                py_keep_alive(system_py, self_py);
+                out.append(system_py);
+              }
+              return out;
+            },
+            doc.DiagramBuilder.GetMutableSystems.doc)
         .def("Connect",
             py::overload_cast<const OutputPort<T>&, const InputPort<T>&>(
                 &DiagramBuilder<T>::Connect),
@@ -434,7 +448,8 @@ void DefineFrameworkPySemantics(py::module m) {
             "as a BasicVector. Most users should call Eval() instead. "
             "This method is only needed when the result will be passed "
             "into some other API that only accepts a BasicVector.",
-            py_reference_internal);
+            py_reference_internal)
+        .def("Allocate", &OutputPort<T>::Allocate, doc.OutputPort.Allocate.doc);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
