@@ -434,7 +434,8 @@ void DefineFrameworkPySemantics(py::module m) {
             "as a BasicVector. Most users should call Eval() instead. "
             "This method is only needed when the result will be passed "
             "into some other API that only accepts a BasicVector.",
-            py_reference_internal);
+            py_reference_internal)
+        .def("Allocate", &OutputPort<T>::Allocate, doc.OutputPort.Allocate.doc);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
