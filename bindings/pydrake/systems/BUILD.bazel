@@ -205,6 +205,7 @@ drake_cc_library(
     deps = [
         "//bindings/pydrake:pydrake_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:value_pybind",
     ],
 )
 

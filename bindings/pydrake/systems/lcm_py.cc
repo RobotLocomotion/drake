@@ -92,6 +92,10 @@ PYBIND11_MODULE(lcm, m) {
   py::module::import("pydrake.lcm");
   py::module::import("pydrake.systems.framework");
 
+  py::module m_cpp_types = m.def_submodule("_cpp_types");
+  m_cpp_types.attr("py_to_cpp") = py::dict();
+  m_cpp_types.attr("cpp_to_py") = py::dict();
+
   {
     using Class = LcmInterfaceSystem;
     constexpr auto& cls_doc = doc.LcmInterfaceSystem;

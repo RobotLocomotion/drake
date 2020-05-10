@@ -1,6 +1,7 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import AbstractValue, Value
+from pydrake.systems.lcm import _cpp_types
 
 
 class PySerializer(SerializerInterface):
@@ -43,7 +44,7 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
     if not use_cpp_serializer:
         serializer = PySerializer(lcm_type)
     else:
-        serializer = _Serializer_[lcm_type]()
+        serializer = _cpp_types.Serializer_[lcm_type]()
     return LcmSubscriberSystem(channel, serializer, lcm)
 
 
@@ -64,9 +65,49 @@ def _make_lcm_publisher(
     if not use_cpp_serializer:
         serializer = PySerializer(lcm_type)
     else:
-        serializer = _Serializer_[lcm_type]()
+        serializer = _cpp_types.Serializer_[lcm_type]()
     return LcmPublisherSystem(channel, serializer, lcm, publish_period)
 
 
 LcmSubscriberSystem.Make = _make_lcm_subscriber
 LcmPublisherSystem.Make = _make_lcm_publisher
+
+
+def lcm_value_cpp_to_py(value):
+    """
+    Takes a Value[CppType] for a LCM message (bound via `BindCppSerializer`)
+    and converts it to Value[object] for its Python message type.
+    """
+    # TODO(eric.cousineau): Register translators directly in pydrake, without
+    # needing `AbstractValue` and `SerializerInterface`.
+    assert isinstance(value, AbstractValue), (
+        f"Must be an AbstractValue: {type(value)}")
+    assert not isinstance(value, Value[object]), (
+        f"Must not be Value[object]. Stored type: {type(value.get_value())}")
+    cpp_cls = type(value.get_value())
+    py_cls = _cpp_types.cpp_to_py.get(cpp_cls)
+    assert py_cls is not None, f"Unregistered C++ LCM type: {cpp_cls}"
+    cpp_serializer = _cpp_types.Serializer_[py_cls]()
+    data = cpp_serializer.Serialize(value)
+    py_serializer = PySerializer(py_cls)
+    new_value = py_serializer.CreateDefaultValue()
+    py_serializer.Deserialize(data, new_value)
+    return new_value
+
+
+def lcm_value_py_to_cpp(value):
+    """
+    Takes a Value[object] for a Python LCM message and converts it to
+    Value[CppType] for its C++ type (bound via `BindCppSerializer`).
+    """
+    assert isinstance(value, Value[object]), (
+        f"Must be Value[object]: {type(value)}")
+    py_cls = type(value.get_value())
+    cpp_cls = _cpp_types.py_to_cpp.get(py_cls)
+    assert cpp_cls is not None, f"Unregistered Python LCM type: {py_cls}"
+    py_serializer = PySerializer(py_cls)
+    data = py_serializer.Serialize(value)
+    cpp_serializer = _cpp_types.Serializer_[py_cls]()
+    new_value = cpp_serializer.CreateDefaultValue()
+    cpp_serializer.Deserialize(data, new_value)
+    return new_value

@@ -43,14 +43,14 @@ class TestSystemsLcm(unittest.TestCase):
         return message
 
     def _model_value_cpp(self):
-        serializer = mut._Serializer_[quaternion_t]()
+        serializer = mut._cpp_types.Serializer_[quaternion_t]()
         model_message = self._model_message()
         model_value = serializer.CreateDefaultValue()
         serializer.Deserialize(model_message.encode(), model_value)
         return model_value
 
     def _cpp_value_to_py_message(self, value):
-        serializer = mut._Serializer_[quaternion_t]()
+        serializer = mut._cpp_types.Serializer_[quaternion_t]()
         raw = serializer.Serialize(value)
         return quaternion_t.decode(raw)
 
@@ -194,3 +194,24 @@ class TestSystemsLcm(unittest.TestCase):
             simulator.get_mutable_context())
         actual_message = subscriber.get_output_port(0).Eval(context)
         self.assert_lcm_equal(actual_message, model_message)
+
+    def test_value_conversion_cpp_py(self):
+        model_message = self._model_message()
+        model_value_cpp = self._model_value_cpp()
+        model_value_py = mut.lcm_value_cpp_to_py(model_value_cpp)
+        model_value_cpp_2 = mut.lcm_value_py_to_cpp(model_value_py)
+        model_value_py_2 = mut.lcm_value_cpp_to_py(model_value_cpp_2)
+        self.assert_lcm_equal(model_value_py.get_value(), model_message)
+        self.assert_lcm_equal(model_value_py_2.get_value(), model_message)
+        with self.assertRaises(AssertionError) as cm:
+            mut.lcm_value_cpp_to_py(model_value_py)
+        self.assertEqual(
+            str(cm.exception),
+            "Must not be Value[object]. Stored type: "
+            "<class 'robotlocomotion.quaternion_t.quaternion_t'>")
+        with self.assertRaises(AssertionError) as cm:
+            mut.lcm_value_py_to_cpp(model_value_cpp)
+        self.assertEqual(
+            str(cm.exception),
+            "Must be Value[object]: <class "
+            "'pydrake.common.value.Value[quaternion_t]'>")
