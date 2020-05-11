@@ -157,16 +157,22 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Legacy ("attic") ``manipulation/util`` (`#13169`_)
-* ``drake/examples/kuka_iiwa/iiwa_wsg_simulation`` (`#13169`_)
-* drake::examples::kuka_iiwa_arm::KukaTorqueController for RigidBodyTree (`#13169`_)
-* drake::examples::kuka_iiwa_arm::OracularStateEstimation (`#13169`_)
-* drake::examples::kuka_iiwa_arm::IiwaAndWsgPlantWithStateEstimator (`#13169`_)
+* DRAKE_NODISCARD in common/drake_nodiscard.h (`#13170`_)
 * drake::examples::kuka_iiwa_arm::ComputeLumpedGripperInertiaInEndEffectorFrame (`#13169`_)
 * drake::examples::kuka_iiwa_arm::CreateTreedFromFixedModelAtPose (`#13169`_)
-* TBD Remove deprecated code 2020-05 (`#13170`_)
-* TBD Remove deprecated code 2020-05 (`#13171`_)
-* TBD Remove deprecated code 2020-05 (`#13172`_)
+* drake::examples::kuka_iiwa_arm::IiwaAndWsgPlantWithStateEstimator (`#13169`_)
+* drake::examples::kuka_iiwa_arm::KukaTorqueController for RigidBodyTree (`#13169`_)
+* drake::examples::kuka_iiwa_arm::OracularStateEstimation (`#13169`_)
+* drake::geometry::Identifier (`#13170`_)
+* drake::geometry::SceneGraphInspector::GetNumAnchoredGeometries (`#13170`_)
+* drake::geometry::SceneGraphInspector::GetNumDynamicGeometries (`#13170`_)
+* drake::multibody::AddMultibodyPlantSceneGraph(builder) (`#13170`_)
+* drake::multibody::MultibodyPlant default constructor (`#13170`_)
+* drake::systems::Simulator::reset_integrator (`#13172`_)
+* drake::systems::System::CheckValidContextT (`#13172`_)
+* drake::systems::SystemBase::CheckValidContext (`#13172`_)
+* drake::systems::SystemBase::DoCheckValidContext (`#13172`_)
+* drake::systems::SystemBase::ThrowIfContextNotCompatible (`#13172`_)
 * pydrake.examples.manipulation_station.ManipulationStation.SetIiwaPosition(q, context) (`#13233`_)
 * pydrake.examples.manipulation_station.ManipulationStation.SetIiwaVelocity(v, context) (`#13233`_)
 * pydrake.examples.manipulation_station.ManipulationStation.SetWsgPosition(q, context) (`#13233`_)
@@ -175,6 +181,12 @@ Removal of deprecated items
 * pydrake.geometry.GeometryId constructor (`#13233`_)
 * pydrake.geometry.SceneGraph.AddRenderer(renderer_name=) (`#13233`_)
 * pydrake.geometry.SourceId constructor (`#13233`_)
+* pydrake.multibody.AddMultibodyPlantSceneGraph(builder) (`#13170`_)
+* pydrake.multibody.MultibodyPlant zero-argument constructor (`#13170`_)
+* Legacy ("attic") manipulation/util (`#13169`_)
+* The json external (`#13171`_)
+* The --config=snopt_fortran bazel option (`#13171`_)
+* drake/examples/kuka_iiwa/iiwa_wsg_simulation (`#13169`_)
 
 Notes
 -----
