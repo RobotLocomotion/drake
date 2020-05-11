@@ -157,11 +157,11 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Remove deprecated code 2020-05 (`#13169`_)
-* Remove deprecated code 2020-05 (`#13170`_)
-* Remove deprecated code 2020-05 (`#13171`_)
-* Remove deprecated code 2020-05 (`#13172`_)
-* Remove old (undated) deprecations (`#13233`_)
+* TBD Remove deprecated code 2020-05 (`#13169`_)
+* TBD Remove deprecated code 2020-05 (`#13170`_)
+* TBD Remove deprecated code 2020-05 (`#13171`_)
+* TBD Remove deprecated code 2020-05 (`#13172`_)
+* TBD Remove old (undated) deprecations (`#13233`_)
 
 Notes
 -----
