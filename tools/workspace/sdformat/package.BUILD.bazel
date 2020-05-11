@@ -9,10 +9,6 @@ load(
     "cmake_configure_file",
 )
 load(
-    "@drake//tools/workspace:generate_export_header.bzl",
-    "generate_export_header",
-)
-load(
     "@drake//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
 )
@@ -21,7 +17,7 @@ load(
     "install",
 )
 
-licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause
+licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
 
 package(default_visibility = ["//visibility:public"])
 
@@ -164,8 +160,6 @@ SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
     "include/sdf/sdf_config.h",  # from cmake_configure_file above
 ]
 
-SDFORMAT_DATA = glob(["sdf/1.6/*.sdf"])
-
 # Generates the library exported to users. The explicitly listed srcs= matches
 # upstream's explicitly listed sources. The explicitly listed hdrs= matches
 # upstream's private headers. We exclude the irrelevant ign.hh and ign.cc.
@@ -235,13 +229,11 @@ cc_library(
     # runtime. This was likely caused by different translation units being
     # compiled with different visibility settings."
     copts = ["-w"],
-    data = SDFORMAT_DATA,
     defines = ["SDFORMAT_STATIC_DEFINE"],
     includes = ["include"],
     linkstatic = 1,
     deps = [
         ":urdfdom",
-        "@boost//:boost_headers",
         "@ignition_math",
         "@tinyxml",
     ],
@@ -249,7 +241,6 @@ cc_library(
 
 install(
     name = "install",
-    data = SDFORMAT_DATA,
     docs = [
         "COPYING",
         "LICENSE",
