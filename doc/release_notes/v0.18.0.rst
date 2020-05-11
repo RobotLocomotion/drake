@@ -208,4 +208,8 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
-  Current newest_commit 3cae4801eac3f9cc3d948c193022ebb8bfba5124 (inclusive).
+  Current newest_commit 82057e6789cdaf7be1b228298d9b7484bfe645c5 (inclusive).
+
+* Update to Gurobi 9.0.2 and use GUROBI_HOME instead of GUROBI_PATH (`#13049`_)  # * Update to gurobi9. * Use gurobi 9.0.2 instead of 9.0.0 * Use GUROBI_HOME instead of GUROBI_PATH environment variable.
+* Add module for "accuracy" and "tolerance" conventions (`#13267`_)
+* Update FCL to latest commit (`#13274`_)  # Fixes seg-fault for contact between convex and half space
