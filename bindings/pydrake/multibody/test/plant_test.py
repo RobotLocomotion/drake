@@ -33,6 +33,7 @@ from pydrake.multibody.tree import (
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
+    UniversalJoint_,
     WeldJoint_,
     world_index,
     world_model_instance,
@@ -1039,7 +1040,41 @@ class TestPlant(unittest.TestCase):
         `HasJointActuatorNamed`.
         """
 
-        def make_weld(plant, P, C):
+        def make_ball_rpy_joint(plant, P, C):
+            return BallRpyJoint_[T](
+                name="ball_rpy",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=2.,
+            )
+
+        def make_prismatic_joint(plant, P, C):
+            return PrismaticJoint_[T](
+                name="prismatic",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=[1., 0., 0.],
+                damping=2.,
+            )
+
+        def make_revolute_joint(plant, P, C):
+            return RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=[1., 0., 0.],
+                damping=2.,
+            )
+
+        def make_universal_joint(plant, P, C):
+            return UniversalJoint_[T](
+                name="universal",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=2.,
+            )
+
+        def make_weld_joint(plant, P, C):
             # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
             # with other joints.
             return WeldJoint_[T](
@@ -1049,37 +1084,12 @@ class TestPlant(unittest.TestCase):
                 X_PC=RigidTransform_[float](),
             )
 
-        def make_prismatic(plant, P, C):
-            return PrismaticJoint_[T](
-                name="prismatic",
-                frame_on_parent=P,
-                frame_on_child=C,
-                axis=[1., 0., 0.],
-                damping=2.,
-            )
-
-        def make_revolute(plant, P, C):
-            return RevoluteJoint_[T](
-                name="revolute",
-                frame_on_parent=P,
-                frame_on_child=C,
-                axis=[1., 0., 0.],
-                damping=2.,
-            )
-
-        def make_ball_rpy_joint(plant, P, C):
-            return BallRpyJoint_[T](
-                name="ball_rpy",
-                frame_on_parent=P,
-                frame_on_child=C,
-                damping=2.,
-            )
-
         make_joint_list = [
-            make_weld,
-            make_prismatic,
-            make_revolute,
             make_ball_rpy_joint,
+            make_prismatic_joint,
+            make_revolute_joint,
+            make_universal_joint,
+            make_weld_joint,
         ]
 
         for make_joint in make_joint_list:
@@ -1101,6 +1111,41 @@ class TestPlant(unittest.TestCase):
                 self.assertIsInstance(actuator, JointActuator_[T])
             plant.Finalize()
             self._test_joint_api(T, joint)
+
+            context = plant.CreateDefaultContext()
+            if joint.name() == "ball_rpy":
+                set_point = np.array([1., 2., 3.])
+                joint.set_angles(context=context, angles=set_point)
+                self.assertEqual(len(joint.get_angles(context=context)), 3)
+                joint.set_angular_velocity(context=context, w_FM=set_point)
+                self.assertEqual(
+                    len(joint.get_angular_velocity(context=context)), 3)
+            elif joint.name() == "prismatic":
+                set_point = 1.
+                joint.set_translation(context=context, translation=set_point)
+                self.assertIsInstance(
+                    joint.get_translation(context=context), T)
+                joint.set_translation_rate(context=context,
+                                           translation_dot=set_point)
+                self.assertIsInstance(
+                    joint.get_translation_rate(context=context), T)
+            elif joint.name() == "revolute":
+                set_point = 1.
+                joint.set_angle(context=context, angle=set_point)
+                self.assertIsInstance(joint.get_angle(context=context), T)
+            elif joint.name() == "universal":
+                set_point = np.array([1., 2.])
+                joint.set_angles(context=context, angles=set_point)
+                self.assertEqual(len(joint.get_angles(context=context)), 2)
+                joint.set_angular_rates(context=context, theta_dot=set_point)
+                self.assertEqual(
+                    len(joint.get_angular_rates(context=context)), 2)
+            elif joint.name() == "weld":
+                # No joint specifc methods to test
+                pass
+            else:
+                raise TypeError(
+                    "Joint type " + joint.name() + " not recognized.")
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):

@@ -102,7 +102,9 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(u1.get_index(), 1)
         self.assertEqual(u1.size(), 10)
         self.assertIsNotNone(u1.ticket())
-        self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
+        y = system.GetOutputPort("sum")
+        self.assertEqual(y.get_index(), 0)
+        self.assertIsInstance(y.Allocate(), Value[BasicVector])
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
 
@@ -383,14 +385,20 @@ class TestGeneral(unittest.TestCase):
         size = 3
 
         builder = DiagramBuilder()
+        self.assertTrue(builder.empty())
         adder0 = builder.AddSystem(Adder(2, size))
         adder0.set_name("adder0")
+        self.assertFalse(builder.empty())
 
         adder1 = builder.AddSystem(Adder(2, size))
         adder1.set_name("adder1")
 
         integrator = builder.AddSystem(Integrator(size))
         integrator.set_name("integrator")
+
+        self.assertEqual(
+            builder.GetMutableSystems(),
+            [adder0, adder1, integrator])
 
         builder.Connect(adder0.get_output_port(0), adder1.get_input_port(0))
         builder.Connect(adder1.get_output_port(0),

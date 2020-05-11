@@ -1,6 +1,7 @@
 bash-completion
 clang
-clang-format
+clang-format-6.0
+clang-format-9
 coinor-libclp-dev
 coinor-libipopt-dev
 default-jdk
@@ -65,7 +66,6 @@ python3-sphinx-rtd-theme
 python3-tk-dbg
 python3-yaml-dbg
 python3-zmq-dbg
-ruby
 unzip
 valgrind
 valgrind-dbg

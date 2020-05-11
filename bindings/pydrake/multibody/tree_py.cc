@@ -26,6 +26,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
@@ -318,6 +319,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_random_angle_distribution",
             &Class::set_random_angle_distribution, py::arg("angle"),
             cls_doc.set_random_angle_distribution.doc);
+  }
+
+  // UniversalJoint
+  {
+    using Class = UniversalJoint<T>;
+    constexpr auto& cls_doc = doc.UniversalJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "UniversalJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(
+            py::init<const string&, const Frame<T>&, const Frame<T>&, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("damping") = 0, cls_doc.ctor.doc)
+        .def("get_angles", &Class::get_angles, py::arg("context"),
+            cls_doc.get_angles.doc)
+        .def("set_angles", &Class::set_angles, py::arg("context"),
+            py::arg("angles"), cls_doc.set_angles.doc)
+        .def("get_angular_rates", &Class::get_angular_rates, py::arg("context"),
+            cls_doc.get_angular_rates.doc)
+        .def("set_angular_rates", &Class::set_angular_rates, py::arg("context"),
+            py::arg("theta_dot"), cls_doc.set_angular_rates.doc)
+        .def("set_random_angles_distribution",
+            &Class::set_random_angles_distribution, py::arg("angles"),
+            cls_doc.set_random_angles_distribution.doc);
   }
 
   // WeldJoint
