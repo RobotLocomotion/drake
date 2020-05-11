@@ -61,7 +61,7 @@ New features
 
 Fixes
 
-TBD
+* None
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -89,7 +89,7 @@ New features
 
 Fixes
 
-TBD
+* None
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
