@@ -359,13 +359,13 @@ set(BAZEL_CONFIGS)
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 8.0.1 EXACT MODULE REQUIRED)
+  find_package(Gurobi 9.0.2 EXACT MODULE REQUIRED)
 
   list(APPEND BAZEL_CONFIGS --config=gurobi)
 
   if(NOT APPLE)
-    get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
-    list(APPEND BAZEL_ENV "GUROBI_PATH=${GUROBI_PATH}")
+    get_filename_component(GUROBI_HOME "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    list(APPEND BAZEL_ENV "GUROBI_HOME=${GUROBI_HOME}")
   endif()
 endif()
 
