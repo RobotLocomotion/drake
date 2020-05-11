@@ -49,9 +49,10 @@ test --test_env=MPLBACKEND=Template
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set
-# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_PATH
+# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_HOME
 # -- environment variable must be set to the linux64 directory of the extracted
-# -- archive downloaded from gurobi.com.
+# -- archive downloaded from gurobi.com when the installation was not at the
+# -- default location of /opt/gurobi902/linux64.
 #
 # -- To run tests where Gurobi is used, ensure that you include
 # -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.

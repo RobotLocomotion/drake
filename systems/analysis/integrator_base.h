@@ -180,8 +180,9 @@ class IntegratorBase {
    The precise meaning of *accuracy* is a complicated discussion, but it
    translates roughly to the number of significant digits you want in the
    results. By convention it is supplied as `10^-digits`, meaning that an
-   accuracy of 1e-3 provides about three significant digits. For continued
-   discussion of accuracy, see [Sherman 2011].
+   accuracy of 1e-3 provides about three significant digits. For more
+   discussion of accuracy, see @ref accuracy_and_tolerance and ref.
+   [[1]](https://dx.doi.org/10.1016/j.piutam.2011.04.023).
 
    Integrators vary in the range of accuracy (loosest to tightest) that they
    can support, and each integrator will choose a default accuracy to be used
@@ -197,9 +198,8 @@ class IntegratorBase {
    certainly implies greater error in the ODE solution and might impact the
    stability of the solution negatively as well.
 
-   - [Sherman, 2011]  M. Sherman, et al. Procedia IUTAM 2:241-261 (2011),
-                      Section 3.3.
-                      http://dx.doi.org/10.1016/j.piutam.2011.04.023
+   - [1] M. Sherman, A. Seth, S. Delp. Procedia IUTAM 2:241-261 (2011),
+     Section 3.3. https://dx.doi.org/10.1016/j.piutam.2011.04.023
 
    @{
    */
