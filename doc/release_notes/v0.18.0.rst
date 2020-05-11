@@ -46,6 +46,7 @@ New features
   * Improve BsplineBasis and BsplineTrajectory (`#13149`_, `#13057`_, `#13158`_)
   * Add PiecewisePolynomial unary minus (`#13109`_)
   * Add Subsitute(var, Polynomial) with support for multivariate polynomials (`#13108`_)
+  * Add Lagrange Interpolating Polynomial and Block(i,j,p,q) (`#13269`_)
 
 * System
 
@@ -76,7 +77,7 @@ Multibody Dynamics
 
 New features
 
-* Add universal mobilizer (`#13054`_)
+* Add universal joint and mobilizer (`#13055`_, `#13054`_)
 * Add propeller model (`#13135`_)
 * Add planar four bar linkage example (`#13036`_)
 * Add get_body_poses_output_port (`#13137`_)
@@ -108,6 +109,9 @@ Newly bound
 * pydrake.multibody.plant.MultibodyPlant.get_body_poses_output_port (`#13229`_)
 * pydrake.solvers.gurobi.GurobiSolverDetails (`#13152`_)
 * pydrake.solvers.mosek.MosekSolverDetails (`#13151`_)
+* pydrake.systems.framework.DiagramBuilder.GetMutableSystems (`#13270`_)
+* pydrake.systems.framework.DiagramBuilder.empty (`#13270`_)
+* pydrake.systems.framework.OutputPort.Allocate (`#13270`_)
 
 New features
 
@@ -121,6 +125,7 @@ Fixes
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Add clang-format-9 (`#13260`_)
 * Upgrade buildifier to latest release 3.0.0 (`#13198`_)
 * Upgrade dreal to latest commit (`#13133`_)
 * Upgrade fmt to latest release 6.2.0 (`#13200`_)
@@ -130,9 +135,11 @@ Build system and dependencies
 * Upgrade semantic_version to latest release 2.8.5 (`#13197`_)
 * Only compile the parts of FCL that we need (`#13230`_)
 * Remove use of octomap (`#13230`_)
+* Remove use of ruby (`#13262`_)
 * Remove use of tinydir (`#13180`_) 
 * Disable python imports from ~/.local during build on Ubuntu (`#13190`_)
 * Fetch sdformat and ignition_math from GitHub, not Bitbucket (`#13188`_)
+* Don't install unused sdformat data (`#13268`_)
 * Fix bazel third_party include path complaints (`#13189`_)
 * Begin Ubuntu 20.04 (Focal Fossa) accomodations (`#13142`_, `#13235`_)
 
@@ -143,6 +150,7 @@ Newly-deprecated APIs
 * pydrake.systems.framework.AbstractValue (`#13217`_, `#13225`_)
 * pydrake.systems.framework.Value (`#13217`_, `#13225`_)
 * The octomap external (`#13230`_)
+* The ruby external (`#13262`_)
 * The tinydir external (`#13180`_)
 * The bitbucket.bzl macros (`#13193`_)
 
@@ -176,15 +184,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
   Current newest_commit 3cae4801eac3f9cc3d948c193022ebb8bfba5124 (inclusive).
-
-* Implement UniversalJoint (`#13055`_)
-* Add bindings for UniversalJoint (`#13055`_)
-* workspace: Remove dependency on ruby (`#13262`_)  # Cherry-pick a patch from sdformat upstream to make the data embedding easier, and then re-implement the embedder in python. Deprecate the ruby external.
-* setup: Add dependency on clang-format-9 (`#13260`_)  # We will be switching to this version to re-align all of our supported platforms on a common version.
-* Proposed component tag for geometry-related kitware issues (`#13254`_)
-* parsing: Add regression test for libsdformat version upgrades (`#13265`_)
-* Temporarily remove //examples/acrobot:run_swing_up_traj_optimization_test (`#13263`_)  # * Make //examples/acrobot:run_swing_up_traj_optimization_test manual
-* trajectories: add Lagrange Interpolating Polynomial and Block(i,j,p,q) (`#13269`_)  # These are in service of the implementation of the affine terms in the finite-horizon LQR code (which will be PR'd once this lands). also includes the python bindings (and some bindings that I had skipped in my previous commit).
-* py systems: Bind OutputPort.Allocate() (`#13270`_)
-* py systems: Bind DiagramBuilder.empty() and .GetMutableSystems() (`#13270`_)
-* workspace: Remove vestigial sdformat build rules (`#13268`_)  # Don't install extra files. Remove unused boost dependency. Remove unused BUILD rules.
