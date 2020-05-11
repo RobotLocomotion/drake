@@ -552,8 +552,7 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // e.g. <element_name>0 0 0</element_name>
   // Throws an error if the tag does not exist or if the value is not properly
   // formatted.
-  auto read_vector = [node,
-                      plant](const char* element_name) -> Eigen::Vector3d {
+  auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
     if (!node->HasElement(element_name)) {
       throw std::runtime_error(
           fmt::format("Unable to find the <{}> tag.", element_name));
@@ -563,7 +562,7 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
         element_name, ignition::math::Vector3d());
 
     if (!successful) {
-      std::runtime_error(fmt::format(
+      throw std::runtime_error(fmt::format(
           "Unable to read the value of the <{}> tag.", element_name));
     }
 
@@ -585,8 +584,14 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
         node->Get<std::string>(element_name, std::string());
 
     if (!successful) {
-      std::runtime_error(fmt::format(
-          "Unable to read the 'name' of the <{}> tag.", element_name));
+      throw std::runtime_error(fmt::format(
+          "Unable to read the value of the <{}> tag.", element_name));
+    }
+
+    if (!plant->HasFrameNamed(frame_name)) {
+      throw std::runtime_error(fmt::format(
+          "Frame: {} specified for <{}> does not exist in the model.",
+          frame_name, element_name));
     }
 
     return plant->GetFrameByName(frame_name);

@@ -59,8 +59,8 @@ geometry::ProximityProperties ParseProximityProperties(
 /// parsers. All values are expected to exist and be well formed. Through this,
 /// the API to specify the linear_bushing_rpy tag in both SDF and URDF can be
 /// controlled/modified in a single function.
-
-/// SDF:
+///
+/// __SDF__:
 ///
 /// <drake:linear_bushing_rpy>
 ///   <drake:bushing_frameA>frameA</drake:bushing_frameA>
@@ -72,7 +72,7 @@ geometry::ProximityProperties ParseProximityProperties(
 ///   <drake:bushing_force_damping>0 0 0</drake:bushing_force_damping>
 /// </drake:linear_bushing_rpy>
 ///
-/// URDF:
+/// __URDF__:
 ///
 ///
 /// <drake:linear_bushing_rpy>
@@ -84,8 +84,6 @@ geometry::ProximityProperties ParseProximityProperties(
 ///   <drake:bushing_force_stiffness  value="0 0 0"/>
 ///   <drake:bushing_force_damping    value="0 0 0"/>
 /// </drake:linear_bushing_rpy>
-///
-
 const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
     const std::function<Eigen::Vector3d(const char*)>& read_vector,
     const std::function<const Frame<double>&(const char*)>& read_frame,

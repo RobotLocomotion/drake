@@ -562,7 +562,7 @@ void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
       }
     } else {
       throw std::runtime_error(
-          fmt::format("Unable to fine the <{}> "
+          fmt::format("Unable to find the <{}> "
                       "tag on line {}",
                       element_name, node->GetLineNum()));
     }
@@ -574,12 +574,29 @@ void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
   auto read_frame = [node,
                      plant](const char* element_name) -> const Frame<double>& {
     XMLElement* value_node = node->FirstChildElement(element_name);
-    std::string name;
-    if (!ParseStringAttribute(value_node, "name", &name)) {
-      throw std::runtime_error("ERROR parsing frame name.");
-    }
 
-    return plant->GetFrameByName(name);
+    if (value_node != nullptr) {
+      std::string frame_name;
+      if (ParseStringAttribute(value_node, "name", &frame_name)) {
+        if (!plant->HasFrameNamed(frame_name)) {
+          throw std::runtime_error(fmt::format(
+              "Frame: {} specified for <{}> does not exist in the model.",
+              frame_name, element_name));
+        }
+        return plant->GetFrameByName(frame_name);
+
+      } else {
+        throw std::runtime_error(
+            fmt::format("Unable to read the 'name' attribute for the <{}> "
+                        "tag on line {}",
+                        element_name, value_node->GetLineNum()));
+      }
+
+    } else {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> tag on line {}", element_name,
+                      node->GetLineNum()));
+    }
   };
 
   ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
