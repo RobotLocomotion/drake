@@ -175,4 +175,16 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
-  Current newest_commit bc4638164b9994119f8b50b48d268c172e34bdfe (inclusive).
+  Current newest_commit 3cae4801eac3f9cc3d948c193022ebb8bfba5124 (inclusive).
+
+* Implement UniversalJoint (`#13055`_)
+* Add bindings for UniversalJoint (`#13055`_)
+* workspace: Remove dependency on ruby (`#13262`_)  # Cherry-pick a patch from sdformat upstream to make the data embedding easier, and then re-implement the embedder in python. Deprecate the ruby external.
+* setup: Add dependency on clang-format-9 (`#13260`_)  # We will be switching to this version to re-align all of our supported platforms on a common version.
+* Proposed component tag for geometry-related kitware issues (`#13254`_)
+* parsing: Add regression test for libsdformat version upgrades (`#13265`_)
+* Temporarily remove //examples/acrobot:run_swing_up_traj_optimization_test (`#13263`_)  # * Make //examples/acrobot:run_swing_up_traj_optimization_test manual
+* trajectories: add Lagrange Interpolating Polynomial and Block(i,j,p,q) (`#13269`_)  # These are in service of the implementation of the affine terms in the finite-horizon LQR code (which will be PR'd once this lands). also includes the python bindings (and some bindings that I had skipped in my previous commit).
+* py systems: Bind OutputPort.Allocate() (`#13270`_)
+* py systems: Bind DiagramBuilder.empty() and .GetMutableSystems() (`#13270`_)
+* workspace: Remove vestigial sdformat build rules (`#13268`_)  # Don't install extra files. Remove unused boost dependency. Remove unused BUILD rules.
