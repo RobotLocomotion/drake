@@ -209,7 +209,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
             continue;
           }
           const auto joint_index = plant_.GetJointByName(
-              plan_state.joint_name[j]).index();
+              plan_state.joint_name[j]).position_start();
           knots[i](joint_index, 0) = plan_state.joint_position[j];
         }
       }
