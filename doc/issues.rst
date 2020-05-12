@@ -86,9 +86,34 @@ Every issue must have at most one ``component`` label. The components are:
 
 - ``geometry externals``
 
-  VTK, FCL, drake_visualizer, etc.
+  VTK, FCL, drake_visualizer (core behavior), etc.
 
   typical team: kitware
+
+- ``geometry general``
+
+  Geometry infrastructure or topics that defy categorization into other geometry
+  components.
+
+  typical team: dynamics
+
+- ``geometry illustration``
+
+  What and how geometry gets communicated to external visualizers.
+
+  typical team: dynamics
+
+- ``geometry perception``
+
+  How geometry appears in color, depth, and label images (via the RenderEngine API).
+
+  typical team: dynamics
+
+- ``geometry proximity``
+
+  Contact, distance, signed distance queries and related properties.
+
+  typical team: dynamics
 
 - ``multibody plant``
 
