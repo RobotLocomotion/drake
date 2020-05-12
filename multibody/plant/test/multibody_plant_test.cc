@@ -1158,9 +1158,8 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   RigidBody<double> body{SpatialInertia<double>()};
   // The case where the plant has *not* been finalized.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CollectRegisteredGeometries({&body}), std::logic_error,
-      "Pre-finalize calls to 'CollectRegisteredGeometries\\(\\)' are not "
-      "allowed; you must call Finalize\\(\\) first.");
+      plant.CollectRegisteredGeometries({&body}), std::runtime_error,
+      "Failure .* in CollectRegisteredGeometries.* failed.");
 
   // The case where the plant has *not* been registered as a source.
   plant.Finalize();

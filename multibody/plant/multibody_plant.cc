@@ -479,7 +479,6 @@ MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
 template <typename T>
 geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
     const std::vector<const Body<T>*>& bodies) const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
 
   geometry::GeometrySet geometry_set;
