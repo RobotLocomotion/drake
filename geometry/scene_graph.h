@@ -713,21 +713,32 @@ class SceneGraph final : public systems::LeafSystem<T> {
    These filter methods essentially create new sets of pairs and then subtract
    them from the candidate set C. See each method for details.
 
-   Modifications to C _must_ be performed before context allocation.  */
+   Modifications to C _must_ be performed before context allocation.
+
+   @warning All collision filtering is done based on geometry state at the time
+   of the collision filtering calls. More concretely:
+    - If the set includes geometries identified by a FrameId, the all
+      geometries attached to that FrameId will be "filtered". If you
+      subsequently add new geometry to this FrameId, the new geometry will
+      *not* be part of the "filter".
+    - If the set includes geometries which have _not_ been assigned a proximity
+      role, those geometries will be ignored. If a proximity role is
+      subsequently assigned, those geometries will _still_ not be part of any
+      collision filters.
+    - In general, adding collisions and assinging proximity roles should
+      _generally_ happen prior to collision filter configuration.
+   */
   //@{
 
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
    `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
 
-   If the set includes geometries which have _not_ been assigned a proximity
-   role, those geometries will be ignored. If a proximity role is subsequently
-   assigned, those geometries will _still_ not be part of any collision filters.
-   Proximity roles should _generally_ be assigned prior to collision filter
-   configuration.
-
    This method modifies the underlying model and requires a new Context to be
    allocated.
+
+   @sa @ref scene_graph_collision_filtering for requirements and how collision
+   filtering works.
 
    @throws std::logic_error if the set includes ids that don't exist in the
                             scene graph.  */
@@ -735,7 +746,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** systems::Context-modifying variant of ExcludeCollisionsWithin(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
-   in the provided context.  */
+   in the provided context.
+
+   @sa @ref scene_graph_collision_filtering for requirements and how collision
+   filtering works.  */
   void ExcludeCollisionsWithin(systems::Context<T>* context,
                                const GeometrySet& set) const;
 
@@ -745,23 +759,20 @@ class SceneGraph final : public systems::LeafSystem<T> {
    geometries `setA` and `setB`, respectively. This does _not_ preclude
    collisions between members of the _same_ set.
 
-   If the sets include geometries which have _not_ been assigned a proximity
-   role, those geometries will be ignored. If a proximity role is subsequently
-   assigned, those geometries will _still_ not be part of any collision filters.
-   Proximity roles should _generally_ be assigned prior to collision filter
-   configuration.
-
-   This method modifies the underlying model and requires a new Context to be
-   allocated.
+   @sa @ref scene_graph_collision_filtering for requirements and how collision
+   filtering works.
 
    @throws std::logic_error if the groups include ids that don't exist in the
-                            scene graph.   */
+                            scene graph.  */
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
   /** systems::Context-modifying variant of ExcludeCollisionsBetween(). Rather
    than modifying %SceneGraph's model, it modifies the copy of the model stored
-   in the provided context.  */
+   in the provided context.
+
+   @sa @ref scene_graph_collision_filtering for requirements and how collision
+   filtering works.  */
   void ExcludeCollisionsBetween(systems::Context<T>* context,
                                 const GeometrySet& setA,
                                 const GeometrySet& setB) const;
