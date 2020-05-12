@@ -344,14 +344,16 @@ struct Impl {
             overload_cast_explicit<unique_ptr<DiscreteValues<T>>>(
                 &System<T>::AllocateDiscreteVariables),
             doc.System.AllocateDiscreteVariables.doc)
-        .def("EvalVectorInput",
+        .def(
+            "EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalVectorInput(arg1, arg2);
             },
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.EvalVectorInput.doc)
-        .def("EvalAbstractInput",
+        .def(
+            "EvalAbstractInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalAbstractInput(arg1, arg2);
             },
@@ -402,7 +404,8 @@ struct Impl {
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Sugar.
-        .def("GetGraphvizString",
+        .def(
+            "GetGraphvizString",
             [str_py](const System<T>* self, int max_depth) {
               // @note This is a workaround; for some reason,
               // casting this using `py::str` does not work, but directly
@@ -419,7 +422,8 @@ struct Impl {
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
-        .def("IsDifferenceEquationSystem",
+        .def(
+            "IsDifferenceEquationSystem",
             [](const System<T>& self) {
               double period = 0.0;
               bool retval = self.IsDifferenceEquationSystem(&period);
@@ -437,12 +441,14 @@ Note: The above is for the C++ documentation. For Python, use
         .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
             py::arg("context"), doc.System.EvalKineticEnergy.doc)
         // Scalar types.
-        .def("ToAutoDiffXd",
+        .def(
+            "ToAutoDiffXd",
             [](const System<T>& self) { return self.ToAutoDiffXd(); },
             doc.System.ToAutoDiffXd.doc_0args)
         .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe,
             doc.System.ToAutoDiffXdMaybe.doc)
-        .def("ToSymbolic",
+        .def(
+            "ToSymbolic",
             [](const System<T>& self) { return self.ToSymbolic(); },
             doc.System.ToSymbolic.doc_0args)
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
@@ -450,7 +456,8 @@ Note: The above is for the C++ documentation. For Python, use
         .def("FixInputPortsFrom", &System<T>::FixInputPortsFrom,
             py::arg("other_system"), py::arg("other_context"),
             py::arg("target_context"), doc.System.FixInputPortsFrom.doc)
-        .def("GetWitnessFunctions",
+        .def(
+            "GetWitnessFunctions",
             [](const System<T>& self, const Context<T>& context) {
               std::vector<const WitnessFunction<T>*> witnesses;
               self.GetWitnessFunctions(context, &witnesses);
@@ -479,7 +486,8 @@ Note: The above is for the C++ documentation. For Python, use
         // old-style `py::init`, which is deprecated in Python...
         .def(py::init<SystemScalarConverter>(), py::arg("converter"),
             doc.LeafSystem.ctor.doc_1args)
-        .def("DeclareAbstractInputPort",
+        .def(
+            "DeclareAbstractInputPort",
             [](PyLeafSystem* self, const std::string& name,
                 const AbstractValue& model_value) -> const InputPort<T>& {
               return self->DeclareAbstractInputPort(name, model_value);
@@ -512,7 +520,8 @@ Note: The above is for the C++ documentation. For Python, use
             py_reference_internal, py::arg("alloc"), py::arg("calc"),
             doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
-        .def("DeclareVectorInputPort",
+        .def(
+            "DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
                 std::optional<RandomDistribution> random_type)
@@ -545,7 +554,8 @@ Note: The above is for the C++ documentation. For Python, use
             py_reference_internal,
             doc.LeafSystem.DeclareVectorOutputPort
                 .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc)
-        .def("DeclareInitializationEvent",
+        .def(
+            "DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclareInitializationEvent(event);
             },
@@ -558,14 +568,16 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
-        .def("DeclarePeriodicEvent",
+        .def(
+            "DeclarePeriodicEvent",
             [](PyLeafSystem* self, double period_sec, double offset_sec,
                 const Event<T>& event) {
               self->DeclarePeriodicEvent(period_sec, offset_sec, event);
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
             doc.LeafSystem.DeclarePeriodicEvent.doc)
-        .def("DeclarePerStepEvent",
+        .def(
+            "DeclarePerStepEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclarePerStepEvent(event);
             },

@@ -73,7 +73,8 @@ PYBIND11_MODULE(value, m) {
   py::object py_object_type = py::eval("object");
   // `Value` was defined by the first call to `AddValueInstantiation`.
   py::object py_value_template = m.attr("Value");
-  abstract_value.def_static("Make",
+  abstract_value.def_static(
+      "Make",
       [py_type_func, py_value_template, py_object_type](py::object value) {
         // Try to infer type from the object. If that does not work, just return
         // `Value[object]`.

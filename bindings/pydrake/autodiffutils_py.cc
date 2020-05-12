@@ -77,7 +77,8 @@ PYBIND11_MODULE(autodiffutils, m) {
       .def(py::self >= py::self)
       .def(py::self >= double())
       // Additional math
-      .def("__pow__",
+      .def(
+          "__pow__",
           [](const AutoDiffXd& base, double exponent) {
             return pow(base, exponent);
           },
@@ -103,7 +104,8 @@ PYBIND11_MODULE(autodiffutils, m) {
   autodiff.attr("arccos") = autodiff.attr("acos");
   autodiff.attr("arctan2") = autodiff.attr("atan2");
 
-  m.def("initializeAutoDiff",
+  m.def(
+      "initializeAutoDiff",
       [](const Eigen::MatrixXd& mat, Eigen::DenseIndex num_derivatives,
           Eigen::DenseIndex deriv_num_start) {
         return initializeAutoDiff(mat, num_derivatives, deriv_num_start);
@@ -111,19 +113,22 @@ PYBIND11_MODULE(autodiffutils, m) {
       py::arg("mat"), py::arg("num_derivatives") = -1,
       py::arg("deriv_num_start") = 0, doc.initializeAutoDiff.doc_3args);
 
-  m.def("autoDiffToValueMatrix",
+  m.def(
+      "autoDiffToValueMatrix",
       [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
         return autoDiffToValueMatrix(autodiff_matrix);
       },
       py::arg("autodiff_matrix"), doc.autoDiffToValueMatrix.doc);
 
-  m.def("autoDiffToGradientMatrix",
+  m.def(
+      "autoDiffToGradientMatrix",
       [](const MatrixX<AutoDiffXd>& autodiff_matrix) {
         return autoDiffToGradientMatrix(autodiff_matrix);
       },
       py::arg("autodiff_matrix"), doc.autoDiffToGradientMatrix.doc);
 
-  m.def("initializeAutoDiffGivenGradientMatrix",
+  m.def(
+      "initializeAutoDiffGivenGradientMatrix",
       [](const Eigen::VectorXd& val, const Eigen::MatrixXd& gradient) {
         return initializeAutoDiffGivenGradientMatrix(val, gradient);
       },

@@ -253,7 +253,8 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<int, double>(), py::arg("num_positions"),
             py::arg("time_step"),
             doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
-        .def("set_initial_position",
+        .def(
+            "set_initial_position",
             [](const StateInterpolatorWithDiscreteDerivative<T>* self,
                 Context<T>* context,
                 const Eigen::Ref<const VectorX<T>>& position) {
@@ -262,7 +263,8 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("context"), py::arg("position"),
             doc.StateInterpolatorWithDiscreteDerivative.set_initial_position
                 .doc)
-        .def("set_initial_position",
+        .def(
+            "set_initial_position",
             [](const StateInterpolatorWithDiscreteDerivative<T>* self,
                 State<T>* state, const Eigen::Ref<const VectorX<T>>& position) {
               self->set_initial_position(state, position);

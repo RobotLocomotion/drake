@@ -17,7 +17,8 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  m.def("AddLogarithmicSos2Constraint",
+  m.def(
+      "AddLogarithmicSos2Constraint",
       [](MathematicalProgram* prog,
           const VectorX<symbolic::Expression>& lambdas,
           const std::string& binary_variable_name) {
@@ -31,7 +32,8 @@ PYBIND11_MODULE(mixed_integer_optimization_util, m) {
   m.def("AddSos2Constraint", &AddSos2Constraint, py::arg("prog"),
       py::arg("lambdas"), py::arg("y"), doc.AddSos2Constraint.doc);
 
-  m.def("AddLogarithmicSos1Constraint",
+  m.def(
+      "AddLogarithmicSos1Constraint",
       [](MathematicalProgram* prog, int num_sections) {
         return AddLogarithmicSos1Constraint(prog, num_sections);
       },

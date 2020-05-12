@@ -192,7 +192,8 @@ void DefineFrameworkPySemantics(py::module m) {
             static_cast<const AbstractValues& (Context<T>::*)() const>(
                 &Context<T>::get_abstract_state),
             py_reference_internal, doc.Context.get_abstract_state.doc_0args)
-        .def("get_abstract_state",
+        .def(
+            "get_abstract_state",
             [](const Context<T>* self, int index) -> auto& {
               return self->get_abstract_state().get_value(index);
             },
@@ -233,7 +234,8 @@ void DefineFrameworkPySemantics(py::module m) {
                 &Context<T>::SetDiscreteState),
             py::arg("group_index"), py::arg("xd"),
             doc.Context.SetDiscreteState.doc_2args)
-        .def("SetAbstractState",
+        .def(
+            "SetAbstractState",
             [](py::object self, int index, py::object value) {
               // Use type erasure from Python bindings of Value[T].set_value.
               py::object abstract_value =
@@ -288,13 +290,15 @@ void DefineFrameworkPySemantics(py::module m) {
                 &Context<T>::get_mutable_discrete_state),
             py_reference_internal,
             doc.Context.get_mutable_discrete_state.doc_1args)
-        .def("get_mutable_abstract_state",
+        .def(
+            "get_mutable_abstract_state",
             [](Context<T>* self) -> AbstractValues& {
               return self->get_mutable_abstract_state();
             },
             py_reference_internal,
             doc.Context.get_mutable_abstract_state.doc_0args)
-        .def("get_mutable_abstract_state",
+        .def(
+            "get_mutable_abstract_state",
             [](Context<T>* self, int index) -> AbstractValue& {
               return self->get_mutable_abstract_state().get_mutable_value(
                   index);
@@ -327,7 +331,8 @@ void DefineFrameworkPySemantics(py::module m) {
     auto bind_context_methods_templated_on_a_secondary_scalar =
         [m, &doc, &context_cls](auto dummy_u) {
           using U = decltype(dummy_u);
-          context_cls.def("SetTimeStateAndParametersFrom",
+          context_cls.def(
+              "SetTimeStateAndParametersFrom",
               [](Context<T>* self, const Context<U>& source) {
                 self->SetTimeStateAndParametersFrom(source);
               },
@@ -377,7 +382,8 @@ void DefineFrameworkPySemantics(py::module m) {
     DefineTemplateClassWithDefault<DiagramBuilder<T>>(
         m, "DiagramBuilder", GetPyParam<T>(), doc.DiagramBuilder.doc)
         .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
-        .def("AddSystem",
+        .def(
+            "AddSystem",
             [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
               return self->AddSystem(std::move(system));
             },
@@ -385,7 +391,8 @@ void DefineFrameworkPySemantics(py::module m) {
             // Keep alive, ownership: `system` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
         .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
-        .def("GetMutableSystems",
+        .def(
+            "GetMutableSystems",
             [](DiagramBuilder<T>* self) {
               py::list out;
               py::object self_py = py::cast(self, py_reference);
@@ -422,12 +429,14 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.PortBase.get_data_type.doc)
         .def("get_index", &OutputPort<T>::get_index,
             doc.OutputPortBase.get_index.doc)
-        .def("Eval",
+        .def(
+            "Eval",
             [](const OutputPort<T>* self, const Context<T>& context) {
               return DoEval(self, context);
             },
             doc.OutputPort.Eval.doc)
-        .def("EvalAbstract",
+        .def(
+            "EvalAbstract",
             [](const OutputPort<T>* self, const Context<T>& c) {
               const auto& abstract = self->template Eval<AbstractValue>(c);
               return py::cast(&abstract);
@@ -438,7 +447,8 @@ void DefineFrameworkPySemantics(py::module m) {
             "This method is only needed when the result will be passed "
             "into some other API that only accepts an AbstractValue.",
             py_reference_internal)
-        .def("EvalBasicVector",
+        .def(
+            "EvalBasicVector",
             [](const OutputPort<T>* self, const Context<T>& c) {
               const auto& basic = self->template Eval<BasicVector<T>>(c);
               return py::cast(&basic);
@@ -472,7 +482,8 @@ void DefineFrameworkPySemantics(py::module m) {
             doc.PortBase.get_data_type.doc)
         .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
         .def("ticket", &InputPort<T>::ticket, doc.PortBase.ticket.doc)
-        .def("Eval",
+        .def(
+            "Eval",
             [](const InputPort<T>* self, const Context<T>& context) {
               return DoEval(self, context);
               DRAKE_UNREACHABLE();
@@ -485,7 +496,8 @@ void DefineFrameworkPySemantics(py::module m) {
             "This method is only needed when the result will be passed "
             "into some other API that only accepts an AbstractValue.",
             py_reference_internal)
-        .def("EvalBasicVector",
+        .def(
+            "EvalBasicVector",
             [](const InputPort<T>* self, const Context<T>& c) {
               const auto& basic = self->template Eval<BasicVector<T>>(c);
               return py::cast(&basic);
@@ -497,7 +509,8 @@ void DefineFrameworkPySemantics(py::module m) {
             "into some other API that only accepts a BasicVector.",
             py_reference_internal)
         // For FixValue, treat an already-erased AbstractValue specially ...
-        .def("FixValue",
+        .def(
+            "FixValue",
             [](const InputPort<T>* self, Context<T>* context,
                 const AbstractValue& value) {
               FixedInputPortValue& result = self->FixValue(context, value);
@@ -507,7 +520,8 @@ void DefineFrameworkPySemantics(py::module m) {
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
         // ... but then for anything not yet erased, use set_value to copy.
-        .def("FixValue",
+        .def(
+            "FixValue",
             [](const InputPort<T>* self, Context<T>* context,
                 const py::object& value) {
               const auto& system = self->get_system();
@@ -571,13 +585,15 @@ void DefineFrameworkPySemantics(py::module m) {
             // Keep alive, ownership: `value` keeps `self` alive.
             py::keep_alive<2, 1>(), py::arg("numeric_params"),
             doc.Parameters.set_numeric_parameters.doc)
-        .def("get_abstract_parameter",
+        .def(
+            "get_abstract_parameter",
             [](const Parameters<T>* self, int index) -> auto& {
               return self->get_abstract_parameter(index);
             },
             py_reference_internal, py::arg("index"),
             doc.Parameters.get_abstract_parameter.doc_1args_index)
-        .def("get_mutable_abstract_parameter",
+        .def(
+            "get_mutable_abstract_parameter",
             [](Parameters<T>* self, int index) -> AbstractValue& {
               return self->get_mutable_abstract_parameter(index);
             },
@@ -591,7 +607,8 @@ void DefineFrameworkPySemantics(py::module m) {
             // Keep alive, ownership: `value` keeps `self` alive.
             py::keep_alive<2, 1>(), py::arg("abstract_params"),
             doc.Parameters.set_abstract_parameters.doc)
-        .def("SetFrom",
+        .def(
+            "SetFrom",
             [](Parameters<T>* self, const Parameters<double>& other) {
               self->SetFrom(other);
             },
@@ -618,7 +635,8 @@ void DefineFrameworkPySemantics(py::module m) {
             static_cast<const AbstractValues& (State<T>::*)() const>(
                 &State<T>::get_abstract_state),
             py_reference_internal, doc.State.get_abstract_state.doc)
-        .def("get_mutable_abstract_state",
+        .def(
+            "get_mutable_abstract_state",
             [](State<T>* self) -> AbstractValues& {
               return self->get_mutable_abstract_state();
             },

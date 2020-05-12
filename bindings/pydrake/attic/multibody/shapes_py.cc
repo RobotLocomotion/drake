@@ -30,21 +30,24 @@ PYBIND11_MODULE(shapes, m) {
   py::class_<Geometry>(m, "Geometry", doc.Geometry.doc)
       .def("getShape", &Geometry::getShape, doc.Geometry.getShape.doc)
       .def("hasFaces", &Geometry::hasFaces, doc.Geometry.hasFaces.doc)
-      .def("getFaces",
+      .def(
+          "getFaces",
           [](const Geometry* self) {
             TrianglesVector triangles;
             self->getFaces(&triangles);
             return triangles;
           },
           doc.Geometry.getFaces.doc)
-      .def("getPoints",
+      .def(
+          "getPoints",
           [](const Geometry* self) {
             Eigen::Matrix3Xd pts(3, 0);
             self->getPoints(pts);
             return pts;
           },
           doc.Geometry.getPoints.doc)
-      .def("getBoundingBoxPoints",
+      .def(
+          "getBoundingBoxPoints",
           [](const Geometry* self) {
             Eigen::Matrix3Xd pts(3, 0);
             self->getBoundingBoxPoints(pts);
@@ -86,7 +89,8 @@ PYBIND11_MODULE(shapes, m) {
       .def("hasGeometry", &Element::hasGeometry, doc.Element.hasGeometry.doc)
       .def("getGeometry", &Element::getGeometry, py_reference_internal,
           doc.Element.getGeometry.doc)
-      .def("getLocalTransform",
+      .def(
+          "getLocalTransform",
           [](const Element* self) {
             return self->getLocalTransform().matrix();
           },

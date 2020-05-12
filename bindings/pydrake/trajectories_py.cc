@@ -86,7 +86,8 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("samples"),
           py::arg("zero_end_point_derivatives") = false,
           doc.PiecewisePolynomial.CubicShapePreserving.doc)
-      .def_static("Pchip",
+      .def_static(
+          "Pchip",
           [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
               const Eigen::Ref<const MatrixX<T>>& samples,
               bool zero_end_point_derivatives) {
@@ -108,7 +109,8 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("sample_dot_at_end"),
           doc.PiecewisePolynomial.CubicWithContinuousSecondDerivatives
               .doc_4args)
-      .def_static("Cubic",
+      .def_static(
+          "Cubic",
           [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
               const Eigen::Ref<const MatrixX<T>>& samples,
               const Eigen::Ref<const VectorX<T>>& sample_dot_at_start,
@@ -129,7 +131,8 @@ PYBIND11_MODULE(trajectories, m) {
               &PiecewisePolynomial<T>::CubicHermite),
           py::arg("breaks"), py::arg("samples"), py::arg("samples_dot"),
           doc.PiecewisePolynomial.CubicHermite.doc)
-      .def_static("Cubic",
+      .def_static(
+          "Cubic",
           [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
               const Eigen::Ref<const MatrixX<T>>& samples,
               const Eigen::Ref<const MatrixX<T>>& samples_dot) {
@@ -147,7 +150,8 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("samples"), py::arg("periodic_end"),
           doc.PiecewisePolynomial.CubicWithContinuousSecondDerivatives
               .doc_3args)
-      .def_static("Cubic",
+      .def_static(
+          "Cubic",
           [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
               const Eigen::Ref<const MatrixX<T>>& samples, bool periodic_end) {
             WarnDeprecated(

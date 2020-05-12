@@ -96,7 +96,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             cls_doc.get_num_contacts.doc)
         .def("get_contact_info", &Class::get_contact_info,
             py_reference_internal, cls_doc.get_contact_info.doc)
-        .def("set_generalized_contact_force",
+        .def(
+            "set_generalized_contact_force",
             [](Class* self, const Eigen::VectorXd& f) {
               self->set_generalized_contact_force(f);
             },
@@ -253,7 +254,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             cls_doc.kinematics_results_output_port.doc)
         .def("contact_results_output_port", &Class::contact_results_output_port,
             py_reference_internal, cls_doc.contact_results_output_port.doc)
-        .def("GetStateVector",
+        .def(
+            "GetStateVector",
             [](const Class* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
               return self->GetStateVector(context);
