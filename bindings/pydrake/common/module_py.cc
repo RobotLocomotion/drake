@@ -59,7 +59,8 @@ PYBIND11_MODULE(_module_py, m) {
       .def(py::init<RandomGenerator::result_type>(),
           "Constructs the engine and initializes the state with a given "
           "value.")
-      .def("__call__", [](RandomGenerator& self) { return self(); },
+      .def(
+          "__call__", [](RandomGenerator& self) { return self(); },
           "Generates a pseudo-random value.");
 
   // Turn DRAKE_ASSERT and DRAKE_DEMAND exceptions into native SystemExit.
@@ -93,7 +94,8 @@ PYBIND11_MODULE(_module_py, m) {
   // be a C++ method named drake::GetDrakePath(). For backward compatibility,
   // we'll keep the pydrake function name intact even though there's no
   // matching C++ method anymore.
-  m.def("GetDrakePath",
+  m.def(
+      "GetDrakePath",
       []() {
         py::object result;
         if (auto optional_result = MaybeGetDrakePath()) {

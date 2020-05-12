@@ -26,26 +26,30 @@ PYBIND11_MODULE(branch_and_bound, m) {
         .def("Solve", &Class::Solve, cls_doc.Solve.doc)
         .def("GetOptimalCost", &Class::GetOptimalCost,
             cls_doc.GetOptimalCost.doc)
-        .def("GetSubOptimalCost",
+        .def(
+            "GetSubOptimalCost",
             [](const Class& self, int nth_suboptimal_cost) {
               return self.GetSubOptimalCost(nth_suboptimal_cost);
             },
             py::arg("nth_suboptimal_cost"), cls_doc.GetSubOptimalCost.doc)
-        .def("GetSolution",
+        .def(
+            "GetSolution",
             [](const Class& self, const symbolic::Variable& mip_var,
                 int nth_best_solution) {
               return self.GetSolution(mip_var, nth_best_solution);
             },
             py::arg("mip_var"), py::arg("nth_best_solution") = 0,
             cls_doc.GetSolution.doc_2args_mip_var_nth_best_solution)
-        .def("GetSolution",
+        .def(
+            "GetSolution",
             [](const Class& self, const VectorXDecisionVariable& mip_vars,
                 int nth_best_solution) {
               return self.GetSolution(mip_vars, nth_best_solution);
             },
             py::arg("mip_vars"), py::arg("nth_best_solution") = 0,
             cls_doc.GetSolution.doc_2args_constEigenMatrixBase_int)
-        .def("GetSolution",
+        .def(
+            "GetSolution",
             [](const Class& self, const MatrixXDecisionVariable& mip_vars,
                 int nth_best_solution) {
               return self.GetSolution(mip_vars, nth_best_solution);

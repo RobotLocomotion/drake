@@ -43,8 +43,8 @@ void BindAcquireLicense(PyClass* pcls, Doc&& cls_doc) {
       .def("is_valid", &PyLicense::is_valid,
           "Indicates that this has a valid license that has not been "
           "released.");
-  cls.def_static("AcquireLicense",
-      []() { return PyLicense{Class::AcquireLicense()}; },
+  cls.def_static(
+      "AcquireLicense", []() { return PyLicense{Class::AcquireLicense()}; },
       cls_doc.AcquireLicense.doc);
 }
 

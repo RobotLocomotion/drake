@@ -20,18 +20,21 @@ void BindSpatialVectorMixin(PyClass* pcls) {
   using Class = typename PyClass::type;
   auto& cls = *pcls;
   cls  // BR
-      .def("rotational",
+      .def(
+          "rotational",
           [](const Class* self) -> const Vector3<T> {
             return self->rotational();
           },
           doc.SpatialVector.rotational.doc_0args_const)
-      .def("translational",
+      .def(
+          "translational",
           [](const Class* self) -> const Vector3<T> {
             return self->translational();
           },
           doc.SpatialVector.translational.doc_0args_const)
       .def("SetZero", &Class::SetZero, doc.SpatialVector.SetZero.doc)
-      .def("get_coeffs", [](const Class& self) { return self.get_coeffs(); },
+      .def(
+          "get_coeffs", [](const Class& self) { return self.get_coeffs(); },
           doc.SpatialVector.get_coeffs.doc_0args_const)
       .def_static("Zero", &Class::Zero, doc.SpatialVector.Zero.doc);
 }
