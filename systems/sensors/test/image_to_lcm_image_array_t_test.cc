@@ -1,7 +1,7 @@
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
-#include <gtest/gtest.h>
 #include "robotlocomotion/image_array_t.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/systems/sensors/image.h"
 

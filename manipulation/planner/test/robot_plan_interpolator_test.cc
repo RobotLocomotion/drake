@@ -1,7 +1,7 @@
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
 
-#include <gtest/gtest.h>
 #include "robotlocomotion/robot_plan_t.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 
