@@ -84,11 +84,36 @@ Every issue must have at most one ``component`` label. The components are:
 
   typical team: kitware
 
+- ``geometry``
+
+  Geometry infrastructure or topics that defy categorization into other geometry
+  components
+
+  typical team: dynamics
+
 - ``geometry externals``
 
-  VTK, FCL, drake_visualizer, etc.
+  VTK, FCL, drake_visualizer (core behavior), etc.
 
   typical team: kitware
+
+- ``geometry illustration``
+
+  drake_visualizer (plug-ins), meshcat, etc.
+
+  typical team: dynamics
+
+- ``geometry perception``
+
+  Rendering requests, geometry, lighting, camera, etc. properties
+
+  typical team: dynamics
+
+- ``geometry proximity``
+
+  Contact, distance, signed distance queries and related properties
+
+  typical team: dynamics
 
 - ``multibody plant``
 
