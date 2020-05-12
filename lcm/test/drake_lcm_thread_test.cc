@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <thread>
 
-#include <gtest/gtest.h>
 #include "lcm/lcm-cpp.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm.h"

@@ -10,9 +10,9 @@
 #include <variant>
 #include <vector>
 
+#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
-#include "yaml-cpp/yaml.h"
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"

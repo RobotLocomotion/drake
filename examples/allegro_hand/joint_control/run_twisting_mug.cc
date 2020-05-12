@@ -10,9 +10,9 @@
 /// has finished the current motion, either by reaching the target position or
 /// get stuck by collisions.
 
+#include "lcm/lcm-cpp.hpp"
 #include <Eigen/Dense>
 #include <gflags/gflags.h>
-#include "lcm/lcm-cpp.hpp"
 
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"

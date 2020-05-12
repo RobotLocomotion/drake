@@ -6,8 +6,8 @@
 #include <iostream>
 #include <memory>
 
-#include <gflags/gflags.h>
 #include "robotlocomotion/robot_plan_t.hpp"
+#include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"

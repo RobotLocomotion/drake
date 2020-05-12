@@ -4,8 +4,8 @@
 /// depth frames, and retransmits the images.  The output can be viewed in
 /// drake_visualizer.
 
-#include <gflags/gflags.h>
 #include "robotlocomotion/image_array_t.hpp"
+#include <gflags/gflags.h>
 
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"

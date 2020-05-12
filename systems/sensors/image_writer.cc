@@ -7,12 +7,12 @@
 #include <utility>
 #include <vector>
 
+#include "fmt/ostream.h"
 #include <vtkImageData.h>
 #include <vtkNew.h>
 #include <vtkPNGWriter.h>
 #include <vtkSmartPointer.h>
 #include <vtkTIFFWriter.h>
-#include "fmt/ostream.h"
 
 #include "drake/common/filesystem.h"
 

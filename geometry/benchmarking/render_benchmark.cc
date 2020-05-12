@@ -1,8 +1,8 @@
 #include <unistd.h>
 
+#include "fmt/format.h"
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
-#include "fmt/format.h"
 
 #include "drake/common/filesystem.h"
 #include "drake/geometry/render/render_engine_ospray_factory.h"

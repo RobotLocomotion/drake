@@ -60,5 +60,4 @@ IncludeCategories:
     Priority: 50
   # Other libraries' h files (with quotes).
   - Regex:    '^"'
-    Priority: 41
-
+    Priority: 40

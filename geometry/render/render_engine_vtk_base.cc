@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
 #include <vtkInformation.h>
@@ -14,7 +15,6 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataAlgorithm.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
-#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 
 #include "drake/common/scope_exit.h"
 

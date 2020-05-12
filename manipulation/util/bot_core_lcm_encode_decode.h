@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 #include "bot_core/position_3d_t.hpp"
 #include "bot_core/quaternion_t.hpp"
 #include "bot_core/twist_t.hpp"
 #include "bot_core/vector_3d_t.hpp"
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include "drake/common/eigen_types.h"
 

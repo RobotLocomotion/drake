@@ -10,10 +10,10 @@
 #include <variant>
 #include <vector>
 
-#include <Eigen/Core>
-#include <fmt/format.h>
 #include "yaml-cpp/emitfromevents.h"
 #include "yaml-cpp/yaml.h"
+#include <Eigen/Core>
+#include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"

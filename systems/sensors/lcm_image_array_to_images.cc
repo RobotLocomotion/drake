@@ -2,12 +2,12 @@
 
 #include <vector>
 
+#include "robotlocomotion/image_array_t.hpp"
 #include <png.h>
 #include <vtkImageExport.h>
 #include <vtkJPEGReader.h>
 #include <vtkNew.h>
 #include <zlib.h>
-#include "robotlocomotion/image_array_t.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

@@ -6,8 +6,8 @@
 /// current calculated position of the end effector is printed before, during,
 /// and after the commanded motion.
 
-#include <gflags/gflags.h>
 #include "lcm/lcm-cpp.hpp"
+#include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
