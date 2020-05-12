@@ -71,8 +71,8 @@ PYBIND11_MODULE(cc_module, m) {
         "2038-01-19.";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def_property("deprecated_prop",
-        [](const Class* self) { return self->prop; },
+    cls.def_property(
+        "deprecated_prop", [](const Class* self) { return self->prop; },
         [](Class* self, int value) { self->prop = value; },
         deprecated_prop_doc);
 #pragma GCC diagnostic pop

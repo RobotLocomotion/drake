@@ -59,7 +59,8 @@ void DefineFrameworkPyValues(py::module m) {
             doc.BasicVector.ctor.doc_1args_vec)
         .def(py::init<int>(), py::arg("size"),
             doc.BasicVector.ctor.doc_1args_size)
-        .def("get_value",
+        .def(
+            "get_value",
             [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
               return self->get_value();
             },
@@ -70,12 +71,14 @@ void DefineFrameworkPyValues(py::module m) {
             [](const BasicVector<T>* self) -> VectorX<T> {
               return self->get_value();
             })
-        .def("get_mutable_value",
+        .def(
+            "get_mutable_value",
             [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
               return self->get_mutable_value();
             },
             py_reference_internal, doc.BasicVector.get_mutable_value.doc)
-        .def("GetAtIndex",
+        .def(
+            "GetAtIndex",
             [](BasicVector<T>* self, int index) -> T& {
               return self->GetAtIndex(index);
             },
@@ -96,12 +99,14 @@ void DefineFrameworkPyValues(py::module m) {
     using T = decltype(dummy);
     auto cls = AddValueInstantiation<BasicVector<T>>(m);
     cls  // BR
-        .def("set_value",
+        .def(
+            "set_value",
             [](Value<BasicVector<T>>* self, const T& value) {
               self->set_value(BasicVector<T>{value});
             },
             py::arg("value"))
-        .def("set_value",
+        .def(
+            "set_value",
             [](Value<BasicVector<T>>* self,
                 const Eigen::Ref<const Eigen::VectorXd>& value) {
               self->set_value(BasicVector<T>(value));

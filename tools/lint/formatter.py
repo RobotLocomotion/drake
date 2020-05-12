@@ -202,9 +202,7 @@ class FormatterBase(object):
 
         # Run clang-format.
         command = [
-            # TODO(jwnimmer-tri) Remove the version=9 argument once it's our
-            # project-wide default.
-            clang_format_lib.get_clang_format_path(version=9),
+            clang_format_lib.get_clang_format_path(),
             "--style=file",
             "--assume-filename=%s" % self._filename] + \
             lines_args

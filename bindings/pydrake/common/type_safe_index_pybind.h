@@ -19,10 +19,12 @@ auto BindTypeSafeIndex(
   cls  // BR
       .def(py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
       .def("__int__", &Type::operator int)
-      .def("__eq__",
+      .def(
+          "__eq__",
           [](const Type* self, const Type* other) { return *self == *other; },
           py::is_operator())
-      .def("__eq__", [](const Type* self, int other) { return *self == other; },
+      .def(
+          "__eq__", [](const Type* self, int other) { return *self == other; },
           py::is_operator())
       // TODO(eric.cousineau): Add more operators.
       .def("is_valid", &Type::is_valid,

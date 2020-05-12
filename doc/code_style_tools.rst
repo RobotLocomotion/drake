@@ -62,4 +62,4 @@ To run clang-format::
     /usr/local/opt/llvm@6/bin/clang-format -i -style=file [file name]
 
     # For development on Ubuntu:
-    clang-format-6.0 -i -style=file [file name]
+    clang-format-9 -i -style=file [file name]
