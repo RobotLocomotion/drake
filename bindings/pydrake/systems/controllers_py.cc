@@ -201,7 +201,8 @@ PYBIND11_MODULE(controllers, m) {
       WrapCallbacks(&LinearProgrammingApproximateDynamicProgramming),
       doc.LinearProgrammingApproximateDynamicProgramming.doc);
 
-  m.def("LinearQuadraticRegulator",
+  m.def(
+      "LinearQuadraticRegulator",
       [](const Eigen::Ref<const Eigen::MatrixXd>& A,
           const Eigen::Ref<const Eigen::MatrixXd>& B,
           const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -214,7 +215,8 @@ PYBIND11_MODULE(controllers, m) {
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
       doc.LinearQuadraticRegulator.doc_5args);
 
-  m.def("DiscreteTimeLinearQuadraticRegulator",
+  m.def(
+      "DiscreteTimeLinearQuadraticRegulator",
       [](const Eigen::Ref<const Eigen::MatrixXd>& A,
           const Eigen::Ref<const Eigen::MatrixXd>& B,
           const Eigen::Ref<const Eigen::MatrixXd>& Q,

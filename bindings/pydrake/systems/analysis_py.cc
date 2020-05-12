@@ -157,7 +157,8 @@ PYBIND11_MODULE(analysis, m) {
 
   // Simulator Flags
   m  // BR
-      .def("ResetIntegratorFromFlags",
+      .def(
+          "ResetIntegratorFromFlags",
           [](Simulator<double>* simulator, const std::string& scheme,
               const double& max_step_size) {
             IntegratorBase<double>& result =

@@ -62,8 +62,8 @@ void DefCast(PyClass* cls, const char* doc, UPack U_pack = {}) {
   using Class = typename PyClass::type;
   auto bind_scalar = [cls, doc](auto U_dummy) {
     using U = decltype(U_dummy);
-    AddTemplateMethod(*cls, "cast",
-        [](const Class& self) { return self.template cast<U>(); },
+    AddTemplateMethod(
+        *cls, "cast", [](const Class& self) { return self.template cast<U>(); },
         GetPyParam<U>(), doc);
   };
   type_visit(bind_scalar, U_pack);

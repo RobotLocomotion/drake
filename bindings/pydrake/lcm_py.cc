@@ -28,7 +28,8 @@ PYBIND11_MODULE(lcm, m) {
     py::class_<Class>(m, "DrakeLcmInterface", cls_doc.doc)
         // N.B. We do not bind `Subscribe` as multi-threading from C++ may
         // wreak havoc on the Python GIL with a callback.
-        .def("Publish",
+        .def(
+            "Publish",
             [](Class* self, const std::string& channel, py::bytes buffer,
                 std::optional<double> time_sec) {
               // TODO(eric.cousineau): See if there is a way to extra the raw
@@ -49,7 +50,8 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(
             py::init<std::string>(), py::arg("lcm_url"), cls_doc.ctor.doc_1args)
-        .def("Subscribe",
+        .def(
+            "Subscribe",
             [](Class* self, const std::string& channel,
                 PyHandlerFunction handler) {
               auto subscription = self->Subscribe(

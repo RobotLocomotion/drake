@@ -38,7 +38,8 @@ PYBIND11_MODULE(polynomial, m) {
             py::arg("other"), py::arg("tol") = 0.0,
             py::arg("tol_type") = ToleranceType::kAbsolute,
             cls_doc.CoefficientsAlmostEqual.doc)
-        .def("IsApprox",
+        .def(
+            "IsApprox",
             [](Polynomial<T>* self, const Polynomial<T>& other,
                 const Polynomial<T>::RealScalar& tol) {
               WarnDeprecated(
