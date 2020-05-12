@@ -9,9 +9,11 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/kinova_jaco_arm/jaco_lcm.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/manipulation/kinova_jaco/jaco_command_receiver.h"
+#include "drake/manipulation/kinova_jaco/jaco_constants.h"
+#include "drake/manipulation/kinova_jaco/jaco_status_sender.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -32,6 +34,11 @@ using Eigen::VectorXd;
 
 using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
+using drake::manipulation::kinova_jaco::JacoCommandReceiver;
+using drake::manipulation::kinova_jaco::JacoStatusSender;
+using drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
+using drake::manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
+using drake::manipulation::kinova_jaco::kJacoLcmStatusPeriod;
 using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
@@ -91,8 +98,8 @@ int DoMain() {
           "KINOVA_JACO_COMMAND", lcm));
   auto command_receiver = builder.AddSystem<JacoCommandReceiver>();
   builder.Connect(command_sub->get_output_port(),
-                  command_receiver->get_input_port(0));
-  builder.Connect(command_receiver->get_output_port(0),
+                  command_receiver->get_input_port());
+  builder.Connect(command_receiver->get_output_port(),
                   jaco_controller->get_input_port_desired_state());
   builder.Connect(jaco_controller->get_output_port_control(),
                   jaco_plant->get_actuation_input_port(jaco_id));
@@ -106,8 +113,8 @@ int DoMain() {
   // down the simulation significantly.
   auto status_sender = builder.AddSystem<JacoStatusSender>();
   builder.Connect(jaco_plant->get_state_output_port(jaco_id),
-                  status_sender->get_input_port(0));
-  builder.Connect(status_sender->get_output_port(0),
+                  status_sender->get_state_input_port());
+  builder.Connect(status_sender->get_output_port(),
                   status_pub->get_input_port());
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
