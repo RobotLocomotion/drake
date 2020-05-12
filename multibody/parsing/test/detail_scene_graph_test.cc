@@ -5,8 +5,8 @@
 #include <optional>
 #include <sstream>
 
-#include <gtest/gtest.h>
 #include "fmt/ostream.h"
+#include <gtest/gtest.h>
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"

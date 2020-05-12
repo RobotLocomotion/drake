@@ -1,7 +1,7 @@
 #include "drake/systems/sensors/optitrack_sender.h"
 
-#include <gtest/gtest.h>
 #include "optitrack/optitrack_frame_t.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/math/rigid_transform.h"

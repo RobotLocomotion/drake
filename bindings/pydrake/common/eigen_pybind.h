@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include "pybind11/eigen.h"
+#include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
 
