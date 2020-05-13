@@ -10,6 +10,7 @@ def yaml_cpp_repository(
         licenses = ["notice"],  # X11
         modname = "yaml-cpp",
         atleast_version = "0.5.2",
+        build_file_template = "@drake//tools/workspace/yaml_cpp:package.pkg_config.BUILD.tpl",  # noqa
         extra_deps = ["@boost//:boost_headers"],
         pkg_config_paths = ["/usr/local/opt/yaml-cpp/lib/pkgconfig"],
         **kwargs):
@@ -18,6 +19,7 @@ def yaml_cpp_repository(
         licenses = licenses,
         modname = modname,
         atleast_version = atleast_version,
+        build_file_template = build_file_template,
         extra_deps = extra_deps,
         pkg_config_paths = pkg_config_paths,
         **kwargs
