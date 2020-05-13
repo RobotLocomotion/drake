@@ -734,7 +734,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.Finalize.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
             py::arg("penetration_allowance") = 0.001,
-            cls_doc.set_penetration_allowance.doc);
+            cls_doc.set_penetration_allowance.doc)
+        .def("get_contact_penalty_method_time_scale",
+            &Class::get_contact_penalty_method_time_scale,
+            cls_doc.get_contact_penalty_method_time_scale.doc)
+        .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
+            py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc);
     // Position and velocity accessors and mutators.
     cls  // BR
         .def(
