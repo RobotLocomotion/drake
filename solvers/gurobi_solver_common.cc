@@ -2,6 +2,9 @@
 #include "drake/solvers/gurobi_solver.h"
 /* clang-format on */
 
+#include <cstdlib>
+#include <cstring>
+
 #include "drake/common/never_destroyed.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -12,13 +15,20 @@ namespace drake {
 namespace solvers {
 
 GurobiSolver::GurobiSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 GurobiSolver::~GurobiSolver() = default;
 
 SolverId GurobiSolver::id() {
   static const never_destroyed<SolverId> singleton{"Gurobi"};
   return singleton.access();
+}
+
+bool GurobiSolver::is_enabled() {
+  const char* grb_license_file = std::getenv("GRB_LICENSE_FILE");
+  return ((grb_license_file != nullptr) &&
+          (std::strlen(grb_license_file) > 0));
 }
 
 bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {

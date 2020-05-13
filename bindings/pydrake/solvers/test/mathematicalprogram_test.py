@@ -819,6 +819,9 @@ class DummySolverInterface(SolverInterface):
     def available(self):
         return True
 
+    def enabled(self):
+        return True
+
     def solver_id(self):
         return SolverId("dummy")
 
@@ -833,6 +836,7 @@ class TestSolverInterface(unittest.TestCase):
     def test_dummy_solver_interface(self):
         solver = DummySolverInterface()
         self.assertTrue(solver.available())
+        self.assertTrue(solver.enabled())
         self.assertEqual(solver.solver_id().name(), "dummy")
         self.assertIsInstance(solver, SolverInterface)
         prog = mp.MathematicalProgram()

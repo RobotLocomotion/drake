@@ -1033,7 +1033,8 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
 
 template <typename T>
 MobyLCPSolver<T>::MobyLCPSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 template <typename T>
 MobyLCPSolver<T>::~MobyLCPSolver() = default;
@@ -1050,6 +1051,11 @@ SolverId MobyLCPSolver<T>::id() {
 
 template <typename T>
 bool MobyLCPSolver<T>::is_available() {
+  return true;
+}
+
+template <typename T>
+bool MobyLCPSolver<T>::is_enabled() {
   return true;
 }
 

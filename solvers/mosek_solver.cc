@@ -4,7 +4,6 @@
 #include <array>
 #include <atomic>
 #include <cmath>
-#include <cstdlib>
 #include <limits>
 #include <list>
 #include <stdexcept>
@@ -1201,8 +1200,7 @@ MSKrescodee AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
 class MosekSolver::License {
  public:
   License() {
-    const char* moseklm_license_file = std::getenv("MOSEKLM_LICENSE_FILE");
-    if (moseklm_license_file == nullptr) {
+    if (!MosekSolver::is_enabled()) {
       throw std::runtime_error(
           "Could not locate MOSEK license file because MOSEKLM_LICENSE_FILE "
           "environment variable was not set.");

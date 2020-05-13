@@ -151,6 +151,9 @@ class GurobiSolver final : public SolverBase {
   //@{
   static SolverId id();
   static bool is_available();
+  /// Returns true iff the environment variable GRB_LICENSE_FILE has been set
+  /// to a non-empty value.
+  static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   //@}
 

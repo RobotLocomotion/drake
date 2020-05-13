@@ -15,11 +15,14 @@ namespace drake {
 namespace solvers {
 
 LinearSystemSolver::LinearSystemSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 LinearSystemSolver::~LinearSystemSolver() = default;
 
 bool LinearSystemSolver::is_available() { return true; }
+
+bool LinearSystemSolver::is_enabled() { return true; }
 
 void LinearSystemSolver::DoSolve(
     const MathematicalProgram& prog,

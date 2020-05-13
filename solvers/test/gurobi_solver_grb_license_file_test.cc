@@ -45,11 +45,12 @@ GTEST_TEST(GrbLicenseFileTest, GrbLicenseFileUnset) {
     MathematicalProgramResult result;
     solver.Solve(program, {}, {}, &result);
     ADD_FAILURE() << "Expected exception of type std::runtime_error.";
-  } catch (const std::runtime_error& err) {
-    EXPECT_EQ(err.what(), std::string("Could not locate Gurobi license key "
-        "file because GRB_LICENSE_FILE environment variable was not set."));
+  } catch (const std::exception& err) {
+    EXPECT_EQ(err.what(), std::string(
+        "drake::solvers::GurobiSolver::is_enabled() is false; "
+        "see its documentation for how to enable."));
   } catch (...) {
-    ADD_FAILURE() << "Expected exception of type std::runtime_error.";
+    ADD_FAILURE() << "Expected std::exception.";
   }
 
   const int setenv_result = ::setenv("GRB_LICENSE_FILE", grb_license_file, 1);

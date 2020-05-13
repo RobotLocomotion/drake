@@ -12,7 +12,7 @@ namespace drake {
 namespace solvers {
 
 CsdpSolver::CsdpSolver(CsdpSolver::RemoveFreeVariableMethod method)
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied),
+    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied),
       method_{method} {}
 
 CsdpSolver::~CsdpSolver() = default;
@@ -21,6 +21,8 @@ SolverId CsdpSolver::id() {
   static const never_destroyed<SolverId> singleton{"CSDP"};
   return singleton.access();
 }
+
+bool CsdpSolver::is_enabled() { return true; }
 
 bool CsdpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(

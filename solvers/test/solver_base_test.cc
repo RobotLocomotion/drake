@@ -16,6 +16,7 @@ class StubSolverBase final : public SolverBase {
   StubSolverBase() : SolverBase(
       &id,
       [this](){ return available_; },
+      [this](){ return enabled_; },
       [this](const auto& prog){ return satisfied_; }) {}
 
   void DoSolve(
@@ -43,6 +44,7 @@ class StubSolverBase final : public SolverBase {
 
   // The return values for stubbed methods.
   bool available_{true};
+  bool enabled_{true};
   bool satisfied_{true};
 };
 
@@ -54,6 +56,11 @@ GTEST_TEST(SolverBaseTest, Accessors) {
   EXPECT_FALSE(dut.available());
   dut.available_ = true;
   EXPECT_TRUE(dut.available());
+
+  dut.enabled_ = false;
+  EXPECT_FALSE(dut.enabled());
+  dut.enabled_ = true;
+  EXPECT_TRUE(dut.enabled());
 
   const MathematicalProgram prog;
   dut.satisfied_ = false;

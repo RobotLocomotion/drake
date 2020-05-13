@@ -9,7 +9,8 @@ namespace drake {
 namespace solvers {
 
 NloptSolver::NloptSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 NloptSolver::~NloptSolver() = default;
 
@@ -17,6 +18,8 @@ SolverId NloptSolver::id() {
   static const never_destroyed<SolverId> singleton{"NLopt"};
   return singleton.access();
 }
+
+bool NloptSolver::is_enabled() { return true; }
 
 bool NloptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
