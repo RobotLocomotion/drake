@@ -11,8 +11,7 @@
 #include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 
 /// Base class for a single distribution, to be used with YAML archives.
@@ -272,5 +271,4 @@ Eigen::VectorXd GetDeterministicValue(
     const DistributionVectorVariant<Size>& vec);
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake
