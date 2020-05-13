@@ -4,6 +4,8 @@
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 
 namespace drake {
 namespace multibody {
@@ -50,6 +52,42 @@ inline CoulombFriction<double> default_friction() {
 geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_soft);
+
+/// Populates a LinearBushingRollPitchYaw from a reading interface in a URDF/SDF
+/// agnostic manner. This function does no semantic parsing and leaves the
+/// responsibility of handling errors or missing values to the individual
+/// parsers. All values are expected to exist and be well formed. Through this,
+/// the API to specify the linear_bushing_rpy tag in both SDF and URDF can be
+/// controlled/modified in a single function.
+///
+/// __SDF__:
+///
+/// <drake:linear_bushing_rpy>
+///   <drake:bushing_frameA>frameA</drake:bushing_frameA>
+///   <drake:bushing_frameC>frameC</drake:bushing_frameC>
+///
+///   <drake:bushing_torque_stiffness>0 0 0</drake:bushing_torque_stiffness>
+///   <drake:bushing_torque_damping>0 0 0</drake:bushing_torque_damping>
+///   <drake:bushing_force_stiffness>0 0 0</drake:bushing_force_stiffness>
+///   <drake:bushing_force_damping>0 0 0</drake:bushing_force_damping>
+/// </drake:linear_bushing_rpy>
+///
+/// __URDF__:
+///
+///
+/// <drake:linear_bushing_rpy>
+///   <drake:bushing_frameA name="frameA"/>
+///   <drake:bushing_frameC name="frameC"/>
+///
+///   <drake:bushing_torque_stiffness value="0 0 0"/>
+///   <drake:bushing_torque_damping   value="0 0 0"/>
+///   <drake:bushing_force_stiffness  value="0 0 0"/>
+///   <drake:bushing_force_damping    value="0 0 0"/>
+/// </drake:linear_bushing_rpy>
+const LinearBushingRollPitchYaw<double>& ParseLinearBushingRollPitchYaw(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const Frame<double>&(const char*)>& read_frame,
+    MultibodyPlant<double>* plant);
 
 }  // namespace internal
 }  // namespace multibody

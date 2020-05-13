@@ -7,9 +7,12 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 
 namespace drake {
 namespace multibody {
@@ -340,6 +343,143 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, VisualGeometryParsing) {
       "drake/multibody/parsing/test/urdf_parser_test/"
       "all_geometries_as_visual.urdf",
       geometry::Role::kPerception);
+}
+
+struct PlantAndSceneGraph {
+  std::unique_ptr<MultibodyPlant<double>> plant;
+  std::unique_ptr<SceneGraph<double>> scene_graph;
+};
+
+PlantAndSceneGraph ParseTestString(const std::string& inner) {
+  const std::string filename = temp_directory() + "/test_string.urdf";
+  std::ofstream file(filename);
+  file << "<?xml version='1.0' ?>\n" << inner << "\n\n";
+  file.close();
+  PlantAndSceneGraph pair;
+  pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  pair.scene_graph = std::make_unique<SceneGraph<double>>();
+  PackageMap package_map;
+  pair.plant->RegisterAsSourceForSceneGraph(pair.scene_graph.get());
+  drake::log()->debug("inner: {}", inner);
+  AddModelFromUrdfFile(filename, {}, package_map, pair.plant.get());
+  return pair;
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
+  // Test successful parsing
+  auto [plant, scene_graph] = ParseTestString(R"(
+    <robot name="bushing_test">
+        <link name='A'/>
+        <link name='C'/>
+        <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
+        <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
+        <drake:linear_bushing_rpy>
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameC"/>
+            <drake:bushing_torque_stiffness value="1 2 3"/>
+            <drake:bushing_torque_damping   value="4 5 6"/>
+            <drake:bushing_force_stiffness  value="7 8 9"/>
+            <drake:bushing_force_damping    value="10 11 12"/>
+        </drake:linear_bushing_rpy>
+    </robot>)");
+
+  // MBP will always create a UniformGravityField, so the only other
+  // ForceElement should be the LinearBushingRollPitchYaw element parsed.
+  EXPECT_EQ(plant->num_force_elements(), 2);
+
+  const LinearBushingRollPitchYaw<double>& bushing =
+      plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
+
+  EXPECT_STREQ(bushing.frameA().name().c_str(), "frameA");
+  EXPECT_STREQ(bushing.frameC().name().c_str(), "frameC");
+  EXPECT_EQ(bushing.torque_stiffness_constants(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(bushing.torque_damping_constants(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(bushing.force_stiffness_constants(), Eigen::Vector3d(7, 8, 9));
+  EXPECT_EQ(bushing.force_damping_constants(), Eigen::Vector3d(10, 11, 12));
+
+  // Test missing frame tag
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <robot name="bushing_test">
+        <link name='A'/>
+        <link name='C'/>
+        <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
+        <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
+        <drake:linear_bushing_rpy>
+            <drake:bushing_frameA name="frameA"/>
+            <!-- missing the drake:bushing_frameC tag -->
+            <drake:bushing_torque_stiffness value="1 2 3"/>
+            <drake:bushing_torque_damping   value="4 5 6"/>
+            <drake:bushing_force_stiffness  value="7 8 9"/>
+            <drake:bushing_force_damping    value="10 11 12"/>
+        </drake:linear_bushing_rpy>
+    </robot>)"),
+      std::runtime_error,
+      "Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
+
+  // Test non-existent frame
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <robot name="bushing_test">
+        <link name='A'/>
+        <link name='C'/>
+        <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
+        <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
+        <drake:linear_bushing_rpy>
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameZ"/>
+            <!-- frameZ does not exist in the model -->
+            <drake:bushing_torque_stiffness value="1 2 3"/>
+            <drake:bushing_torque_damping   value="4 5 6"/>
+            <drake:bushing_force_stiffness  value="7 8 9"/>
+            <drake:bushing_force_damping    value="10 11 12"/>
+        </drake:linear_bushing_rpy>
+    </robot>)"),
+      std::runtime_error,
+      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      "the model.");
+
+  // Test missing constants tag
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <robot name="bushing_test">
+        <link name='A'/>
+        <link name='C'/>
+        <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
+        <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
+        <drake:linear_bushing_rpy>
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameC"/>
+            <drake:bushing_torque_stiffness value="1 2 3"/>
+            <!-- missing the drake:bushing_torque_damping tag -->
+            <drake:bushing_force_stiffness  value="7 8 9"/>
+            <drake:bushing_force_damping    value="10 11 12"/>
+        </drake:linear_bushing_rpy>
+    </robot>)"),
+      std::runtime_error,
+      "Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
+
+  // Test missing `value` attribute
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <robot name="bushing_test">
+        <link name='A'/>
+        <link name='C'/>
+        <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
+        <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
+        <drake:linear_bushing_rpy>
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameC"/>
+            <!-- missing `value` attribute -->
+            <drake:bushing_torque_stiffness />
+            <drake:bushing_torque_damping   value="4 5 6"/>
+            <drake:bushing_force_stiffness  value="7 8 9"/>
+            <drake:bushing_force_damping    value="10 11 12"/>
+        </drake:linear_bushing_rpy>
+    </robot>)"),
+      std::runtime_error,
+      "Unable to read the 'value' attribute for the"
+      " <drake:bushing_torque_stiffness> tag on line [0-9]+");
 }
 
 }  // namespace

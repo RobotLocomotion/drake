@@ -18,6 +18,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -775,6 +776,100 @@ GTEST_TEST(SdfParser, VisualGeometryParsing) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "all_geometries_as_visual.sdf",
       geometry::Role::kPerception);
+}
+
+GTEST_TEST(SdfParser, BushingParsing) {
+  // Test successful parsing
+  auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <drake:bushing_frameC>frameC</drake:bushing_frameC>
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)");
+
+  // MBP will always create a UniformGravityField, so the only other
+  // ForceElement should be the LinearBushingRollPitchYaw element parsed.
+  EXPECT_EQ(plant->num_force_elements(), 2);
+
+  const LinearBushingRollPitchYaw<double>& bushing =
+      plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
+
+  EXPECT_STREQ(bushing.frameA().name().c_str(), "frameA");
+  EXPECT_STREQ(bushing.frameC().name().c_str(), "frameC");
+  EXPECT_EQ(bushing.torque_stiffness_constants(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(bushing.torque_damping_constants(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(bushing.force_stiffness_constants(), Eigen::Vector3d(7, 8, 9));
+  EXPECT_EQ(bushing.force_damping_constants(), Eigen::Vector3d(10, 11, 12));
+
+  // Test missing frame tag
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <!-- missing the drake:bushing_frameC tag -->
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)"),
+      std::runtime_error,
+      "Unable to find the <drake:bushing_frameC> tag.");
+
+  // Test non-existent frame
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <drake:bushing_frameC>frameZ</drake:bushing_frameC>
+        <!-- frameZ does not exist in the model -->
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)"),
+      std::runtime_error,
+      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      "the model.");
+
+  // Test missing constants tag
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <drake:bushing_frameC>frameC</drake:bushing_frameC>
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <!-- missing the drake:bushing_torque_damping tag -->
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)"),
+      std::runtime_error,
+      "Unable to find the <drake:bushing_torque_damping> tag.");
 }
 
 }  // namespace
