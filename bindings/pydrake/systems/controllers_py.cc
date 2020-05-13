@@ -255,6 +255,8 @@ PYBIND11_MODULE(controllers, m) {
           doc.FiniteHorizonLinearQuadraticRegulatorOptions.ctor.doc)
       .def_readwrite("Qf", &FiniteHorizonLinearQuadraticRegulatorOptions::Qf,
           doc.FiniteHorizonLinearQuadraticRegulatorOptions.Qf.doc)
+      .def_readwrite("N", &FiniteHorizonLinearQuadraticRegulatorOptions::N,
+          doc.FiniteHorizonLinearQuadraticRegulatorOptions.N.doc)
       .def_readwrite("input_port_index",
           &FiniteHorizonLinearQuadraticRegulatorOptions::input_port_index,
           doc.FiniteHorizonLinearQuadraticRegulatorOptions.input_port_index
@@ -265,6 +267,12 @@ PYBIND11_MODULE(controllers, m) {
   DefReadWriteKeepAlive(&fhlqr_options, "u0",
       &FiniteHorizonLinearQuadraticRegulatorOptions::u0,
       doc.FiniteHorizonLinearQuadraticRegulatorOptions.u0.doc);
+  DefReadWriteKeepAlive(&fhlqr_options, "xd",
+      &FiniteHorizonLinearQuadraticRegulatorOptions::xd,
+      doc.FiniteHorizonLinearQuadraticRegulatorOptions.xd.doc);
+  DefReadWriteKeepAlive(&fhlqr_options, "ud",
+      &FiniteHorizonLinearQuadraticRegulatorOptions::ud,
+      doc.FiniteHorizonLinearQuadraticRegulatorOptions.ud.doc);
 
   py::class_<FiniteHorizonLinearQuadraticRegulatorResult> fhlqr_result(m,
       "FiniteHorizonLinearQuadraticRegulatorResult",
@@ -281,6 +289,15 @@ PYBIND11_MODULE(controllers, m) {
   DefReadUniquePtr(&fhlqr_result, "S",
       &FiniteHorizonLinearQuadraticRegulatorResult::S,
       doc.FiniteHorizonLinearQuadraticRegulatorResult.S.doc);
+  DefReadUniquePtr(&fhlqr_result, "k0",
+      &FiniteHorizonLinearQuadraticRegulatorResult::k0,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.k0.doc);
+  DefReadUniquePtr(&fhlqr_result, "sx",
+      &FiniteHorizonLinearQuadraticRegulatorResult::sx,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.sx.doc);
+  DefReadUniquePtr(&fhlqr_result, "s0",
+      &FiniteHorizonLinearQuadraticRegulatorResult::s0,
+      doc.FiniteHorizonLinearQuadraticRegulatorResult.s0.doc);
 
   m.def("FiniteHorizonLinearQuadraticRegulator",
       &FiniteHorizonLinearQuadraticRegulator, py::arg("system"),
