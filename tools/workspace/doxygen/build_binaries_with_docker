@@ -7,12 +7,20 @@
 
 set -euxo pipefail
 
-rm -f doxygen-*-bionic-x86_64.tar.gz
+rm -f doxygen-*-*-x86_64.tar.gz doxygen-*-x86_64.tar.gz.sha256
 
-docker build --tag doxygen-bionic "${BASH_SOURCE%/*}"
+docker build --build-arg UBUNTU_CODENAME=bionic --tag doxygen-bionic "${BASH_SOURCE%/*}"
 trap 'docker rmi doxygen-bionic' EXIT
 docker run --detach --name doxygen-bionic-build --tty doxygen-bionic
-trap 'docker stop doxygen-bionic-build && docker rm doxygen-bionic-build && docker rmi doxygen-bionic' EXIT
+trap 'docker rm -f doxygen-bionic-build && docker rmi doxygen-bionic' EXIT
 docker cp doxygen-bionic-build:$(docker exec doxygen-bionic-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-bionic-x86_64.tar.gz') .
 
 shasum --algorithm 256 doxygen-*-bionic-x86_64.tar.gz | tee doxygen-bionic-x86_64.tar.gz.sha256
+
+docker build --build-arg UBUNTU_CODENAME=focal --tag doxygen-focal "${BASH_SOURCE%/*}"
+trap 'docker rm -f doxygen-bionic-build && docker rmi doxygen-bionic doxygen-focal' EXIT
+docker run --detach --name doxygen-focal-build --tty doxygen-focal
+trap 'docker rm -f doxygen-bionic-build doxygen-focal-build && docker rmi doxygen-bionic doxygen-focal' EXIT
+docker cp doxygen-focal-build:$(docker exec doxygen-focal-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-focal-x86_64.tar.gz') .
+
+shasum --algorithm 256 doxygen-*-focal-x86_64.tar.gz | tee doxygen-focal-x86_64.tar.gz.sha256

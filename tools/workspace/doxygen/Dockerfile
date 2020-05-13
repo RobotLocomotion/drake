@@ -3,9 +3,10 @@
 # during the build. They are neither called during the build nor expected to be
 # called by most developers or users of the project.
 
-FROM ubuntu:bionic
+ARG UBUNTU_CODENAME=bionic
+FROM ubuntu:${UBUNTU_CODENAME}
 RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get update --quiet \
+  && apt-get update --quiet --quiet \
   && apt-get install --no-install-recommends --quiet --yes \
     bison \
     ca-certificates \
@@ -19,23 +20,28 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     lsb-release \
     ninja-build \
     python3 \
+    wget \
   && rm -rf /var/lib/apt/lists/*
-RUN git clone --branch Release_1_8_15 --config advice.detachedHead=false --depth 1 --quiet https://github.com/doxygen/doxygen.git \
+ARG DOXYGEN_VERSION=1.8.16
+ARG DOXYGEN_SHA256=ff981fb6f5db4af9deb1dd0c0d9325e0f9ba807d17bd5750636595cf16da3c82
+RUN wget --quiet "https://drake-mirror.csail.mit.edu/other/doxygen/doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
+  && echo "${DOXYGEN_SHA256}  doxygen-${DOXYGEN_VERSION}.src.tar.gz" | sha256sum --check - \
+  && tar -xzf "doxygen-${DOXYGEN_VERSION}.src.tar.gz" \
   && mkdir -p doxygen-build /opt/doxygen \
   && cd doxygen-build \
   && cmake \
     -DCMAKE_BUILD_TYPE:STRING=Release \
-    -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong  -Wno-unused-result -Wno-stringop-overflow' \
-    -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-unused-result -Wno-stringop-overflow' \
+    -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
+    -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-return-local-addr -Wno-return-type -Wno-unused-result -Wno-stringop-overflow' \
     -DCMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
     -DCMAKE_INSTALL_PREFIX:PATH=/opt/doxygen \
     -DPYTHON_EXECUTABLE:PATH=/usr/bin/python3 \
     -GNinja \
     -Wno-dev \
-    ../doxygen \
+    "../doxygen-${DOXYGEN_VERSION}" \
   && ninja install/strip \
   && cd .. \
-  && cp doxygen/LICENSE /opt/doxygen/bin \
-  && rm -rf doxygen doxygen-build
+  && cp -f "doxygen-${DOXYGEN_VERSION}/LICENSE" /opt/doxygen/bin \
+  && rm -rf doxygen-*
 RUN cd /opt/doxygen/bin \
-  && tar -czf doxygen-$(./doxygen --version)-$(lsb_release --codename --short)-x86_64.tar.gz doxygen LICENSE
+  && tar -czf "doxygen-$(./doxygen --version)-$(lsb_release --codename --short)-$(uname --processor).tar.gz" doxygen LICENSE
