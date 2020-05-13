@@ -766,7 +766,6 @@ GTEST_TEST(SdfParser, VisualGeometryParsing) {
 GTEST_TEST(SdfParser, BushingParsing) {
   // Test successful parsing
   auto [plant, scene_graph] = ParseTestString(R"(
-
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -806,6 +805,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
       <frame name='frameC' attached_to='C'/>
       <drake:linear_bushing_rpy>
         <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <!-- missing the drake:bushing_frameC tag -->
 
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
         <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
@@ -813,8 +813,8 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"),
-                              std::runtime_error,
-                              "Unable to find the <drake:bushing_frameC> tag.");
+      std::runtime_error,
+      "Unable to find the <drake:bushing_frameC> tag.");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -827,6 +827,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
       <drake:linear_bushing_rpy>
         <drake:bushing_frameA>frameA</drake:bushing_frameA>
         <drake:bushing_frameC>frameZ</drake:bushing_frameC>
+        <!-- frameZ does not exist in the model -->
 
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
         <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
@@ -851,6 +852,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_frameC>frameC</drake:bushing_frameC>
 
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <!-- missing the drake:bushing_torque_damping tag -->
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>

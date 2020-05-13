@@ -559,7 +559,7 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
     }
 
     auto [value, successful] = node->Get<ignition::math::Vector3d>(
-        element_name, ignition::math::Vector3d());
+        element_name, ignition::math::Vector3d() /* default value. not used */);
 
     if (!successful) {
       throw std::runtime_error(fmt::format(
@@ -580,8 +580,8 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
           fmt::format("Unable to find the <{}> tag.", element_name));
     }
 
-    auto [frame_name, successful] =
-        node->Get<std::string>(element_name, std::string());
+    auto [frame_name, successful] = node->Get<std::string>(
+        element_name, std::string() /* default value. not used */);
 
     if (!successful) {
       throw std::runtime_error(fmt::format(
@@ -675,12 +675,6 @@ ModelInstanceIndex AddModelFromSpecification(
   }
 
   drake::log()->trace("sdf_parser: Add linear_bushing_rpy");
-  // Call `HasElement` first because `GetElement` will create an element if it
-  // does not already exist........
-  // This is super inefficient because each call to `HasElement` and
-  // `NextElement` loop through all of the the models child elements, first to
-  // find the current node, and then to go from that iterator to the next
-  // sibling with the name "drake:linear_bushing_rpy"
   if (model.Element()->HasElement("drake:linear_bushing_rpy")) {
     for (sdf::ElementPtr bushing_node =
              model.Element()->GetElement("drake:linear_bushing_rpy");

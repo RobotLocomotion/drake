@@ -375,8 +375,8 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
  
         <drake:linear_bushing_rpy>
-            <drake:bushing_frameA name="frameA"/>  
-            <drake:bushing_frameC name="frameC"/> 
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameC"/>
             <drake:bushing_torque_stiffness value="1 2 3"/>
             <drake:bushing_torque_damping   value="4 5 6"/>
             <drake:bushing_force_stiffness  value="7 8 9"/>
@@ -408,7 +408,8 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
  
         <drake:linear_bushing_rpy>
-            <drake:bushing_frameA name="frameA"/>  
+            <drake:bushing_frameA name="frameA"/>
+            <!-- missing the drake:bushing_frameC tag -->
             <drake:bushing_torque_stiffness value="1 2 3"/>
             <drake:bushing_torque_damping   value="4 5 6"/>
             <drake:bushing_force_stiffness  value="7 8 9"/>
@@ -428,8 +429,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
  
         <drake:linear_bushing_rpy>
-            <drake:bushing_frameA name="frameA"/>  
-            <drake:bushing_frameC name="frameZ"/> 
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameZ"/>
+            <!-- frameZ does not exist in the model -->
+
             <drake:bushing_torque_stiffness value="1 2 3"/>
             <drake:bushing_torque_damping   value="4 5 6"/>
             <drake:bushing_force_stiffness  value="7 8 9"/>
@@ -450,15 +453,40 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
  
         <drake:linear_bushing_rpy>
-            <drake:bushing_frameA name="frameA"/>  
-            <drake:bushing_frameC name="frameC"/> 
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameC"/>
             <drake:bushing_torque_stiffness value="1 2 3"/>
+            <!-- missing the drake:bushing_torque_damping tag -->
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
     </robot>)"),
       std::runtime_error,
       "Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
+
+  // Test missing `value` attribute
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <robot name="bushing_test">
+        <link name='A'/>
+        <link name='C'/>
+        <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
+        <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
+ 
+        <drake:linear_bushing_rpy>
+            <drake:bushing_frameA name="frameA"/>
+            <drake:bushing_frameC name="frameC"/>
+
+            <!-- missing `value` attribute -->
+            <drake:bushing_torque_stiffness />
+            <drake:bushing_torque_damping   value="4 5 6"/>
+            <drake:bushing_force_stiffness  value="7 8 9"/>
+            <drake:bushing_force_damping    value="10 11 12"/>
+        </drake:linear_bushing_rpy>
+    </robot>)"),
+      std::runtime_error,
+      "Unable to read the 'value' attribute for the"
+      " <drake:bushing_torque_stiffness> tag on line [0-9]+");
 }
 
 }  // namespace

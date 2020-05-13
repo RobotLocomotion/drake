@@ -551,7 +551,7 @@ void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
   auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
     const XMLElement* value_node = node->FirstChildElement(element_name);
     if (value_node != nullptr) {
-      Eigen::Vector3d value{};
+      Eigen::Vector3d value;
       if (ParseVectorAttribute(value_node, "value", &value)) {
         return value;
       } else {
