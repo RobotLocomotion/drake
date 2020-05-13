@@ -112,10 +112,19 @@ def setup_pkg_config_repository(repository_ctx):
                         linkopts[i] = linkopt
                         break
 
-        # Add `-Wl,-rpath <path>` for `-L<path>`.
-        # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
         if linkopt.startswith("-L"):
-            linkopts.insert(i, "-Wl,-rpath " + linkopt[2:])
+            libdir = linkopt[2:]
+            if repository_ctx.path(libdir).exists:
+                # Add `-Wl,-rpath,<path>` for `-L<path>`.
+                # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
+                linkopts.insert(i, "-Wl,-rpath," + libdir)
+            else:
+                print(("pkg-config of {} returned a library search path " +
+                       "that does NOT exist: {}").format(
+                    repository_ctx.attr.modname,
+                    libdir,
+                ))
+                linkopts.pop(i)
             continue
 
         # Switches stay put.
