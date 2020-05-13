@@ -14,5 +14,8 @@ def ros_xacro_repository(
         commit = "1.13.5",
         sha256 = "145da225ab360e4d8cb9e2a190ff7427550e65c834919f58989284bc83d8f188",  # noqa
         build_file = "@drake//tools/workspace/ros_xacro:package.BUILD.bazel",
+        patches = [
+            "@drake//tools/workspace/ros_xacro:disable-import-warning.patch",
+        ],
         mirrors = mirrors,
     )
