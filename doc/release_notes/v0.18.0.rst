@@ -20,9 +20,7 @@ Announcements
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
 
-  * New tutorials:
-
-    * AddVisualizationCallback (`#13211`_)
+* A new tutorial on AddVisualizationCallback is available (`#13211`_).
 
 Breaking changes since v0.17.0
 ------------------------------
@@ -68,9 +66,12 @@ Mathematical Program
 
 New features
 
+* None
+
 Fixes
 
 * Fix memcpy undefined behavior in unconstrained optimization (`#13111`_)
+* Fix AutoDiffXd derivatives for min and max (`#13112`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -96,7 +97,6 @@ Miscellaneous features and fixes
 
 * Upgrade quadrotor to Skydio R2 model (`#13050`_)
 * Add lcmtypes for panda command/status (`#13163`_)
-* Fix AutoDiffXd derivatives for min and max (`#13112`_)
 * Install Drake's custom drake_visualizer plugins (`#13127`_)
 
 pydrake bindings
@@ -196,7 +196,7 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.18.0>`__ named
-``drake-YYYYMMDD-{bionic|mac}.tar.gz``. See :ref:`Nightly Releases
+``drake-20200513-{bionic|mac}.tar.gz``. See :ref:`Nightly Releases
 <nightly-releases>` for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT
