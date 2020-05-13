@@ -774,7 +774,6 @@ GTEST_TEST(SdfParser, BushingParsing) {
       <drake:linear_bushing_rpy>
         <drake:bushing_frameA>frameA</drake:bushing_frameA>
         <drake:bushing_frameC>frameC</drake:bushing_frameC>
-
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
         <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
@@ -806,7 +805,6 @@ GTEST_TEST(SdfParser, BushingParsing) {
       <drake:linear_bushing_rpy>
         <drake:bushing_frameA>frameA</drake:bushing_frameA>
         <!-- missing the drake:bushing_frameC tag -->
-
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
         <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
@@ -828,7 +826,6 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_frameA>frameA</drake:bushing_frameA>
         <drake:bushing_frameC>frameZ</drake:bushing_frameC>
         <!-- frameZ does not exist in the model -->
-
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
         <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
@@ -850,7 +847,6 @@ GTEST_TEST(SdfParser, BushingParsing) {
       <drake:linear_bushing_rpy>
         <drake:bushing_frameA>frameA</drake:bushing_frameA>
         <drake:bushing_frameC>frameC</drake:bushing_frameC>
-
         <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
         <!-- missing the drake:bushing_torque_damping tag -->
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>

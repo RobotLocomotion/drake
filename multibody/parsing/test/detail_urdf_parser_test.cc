@@ -373,7 +373,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <link name='C'/>
         <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
- 
         <drake:linear_bushing_rpy>
             <drake:bushing_frameA name="frameA"/>
             <drake:bushing_frameC name="frameC"/>
@@ -406,7 +405,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <link name='C'/>
         <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
- 
         <drake:linear_bushing_rpy>
             <drake:bushing_frameA name="frameA"/>
             <!-- missing the drake:bushing_frameC tag -->
@@ -427,12 +425,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <link name='C'/>
         <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
- 
         <drake:linear_bushing_rpy>
             <drake:bushing_frameA name="frameA"/>
             <drake:bushing_frameC name="frameZ"/>
             <!-- frameZ does not exist in the model -->
-
             <drake:bushing_torque_stiffness value="1 2 3"/>
             <drake:bushing_torque_damping   value="4 5 6"/>
             <drake:bushing_force_stiffness  value="7 8 9"/>
@@ -451,7 +447,6 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <link name='C'/>
         <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
- 
         <drake:linear_bushing_rpy>
             <drake:bushing_frameA name="frameA"/>
             <drake:bushing_frameC name="frameC"/>
@@ -472,11 +467,9 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
         <link name='C'/>
         <frame name="frameA" link="A" rpy="0 0 0" xyz="0 0 0"/>
         <frame name="frameC" link="C" rpy="0 0 0" xyz="0 0 0"/>
- 
         <drake:linear_bushing_rpy>
             <drake:bushing_frameA name="frameA"/>
             <drake:bushing_frameC name="frameC"/>
-
             <!-- missing `value` attribute -->
             <drake:bushing_torque_stiffness />
             <drake:bushing_torque_damping   value="4 5 6"/>
