@@ -287,14 +287,16 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.SolverInterface.available.doc)
       .def("solver_id", &SolverInterface::solver_id,
           doc.SolverInterface.solver_id.doc)
-      .def("AreProgramAttributesSatisfied",
+      .def(
+          "AreProgramAttributesSatisfied",
           [](const SolverInterface& self,
               const solvers::MathematicalProgram& prog) {
             return self.AreProgramAttributesSatisfied(prog);
           },
           py::arg("prog"),
           doc.SolverInterface.AreProgramAttributesSatisfied.doc)
-      .def("Solve",
+      .def(
+          "Solve",
           [](const SolverInterface& self,
               const solvers::MathematicalProgram& prog,
               const std::optional<Eigen::VectorXd>& initial_guess,
@@ -304,7 +306,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
           py::arg("result"), doc.SolverInterface.Solve.doc)
-      .def("Solve",
+      .def(
+          "Solve",
           // This method really lives on SolverBase, but we manually write it
           // out here to avoid all of the overloading / inheritance hassles.
           [](const SolverInterface& self, const MathematicalProgram& prog,
@@ -361,7 +364,8 @@ top-level documentation for :py:mod:`pydrake.math`.
               const std::string&>(&SolverOptions::SetOption),
           py::arg("solver_id"), py::arg("solver_option"),
           py::arg("option_value"), doc.SolverOptions.SetOption.doc)
-      .def("GetOptions",
+      .def(
+          "GetOptions",
           [](const SolverOptions& solver_options, SolverId solver_id) {
             py::dict out;
             py::object update = out.attr("update");
@@ -386,7 +390,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgramResult.get_optimal_cost.doc)
       .def("get_solver_id", &MathematicalProgramResult::get_solver_id,
           doc.MathematicalProgramResult.get_solver_id.doc)
-      .def("get_solver_details",
+      .def(
+          "get_solver_details",
           [](const MathematicalProgramResult& self) {
             const auto& abstract = self.get_abstract_solver_details();
             // TODO(#9398): Figure out why `py_reference` is necessary.
@@ -395,31 +400,36 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py_reference_internal,
           doc.MathematicalProgramResult.get_solver_details.doc)
-      .def("GetSolution",
+      .def(
+          "GetSolution",
           [](const MathematicalProgramResult& self) {
             return self.GetSolution();
           },
           doc.MathematicalProgramResult.GetSolution.doc_0args)
-      .def("GetSolution",
+      .def(
+          "GetSolution",
           [](const MathematicalProgramResult& self, const Variable& var) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution.doc_1args_var)
-      .def("GetSolution",
+      .def(
+          "GetSolution",
           [](const MathematicalProgramResult& self,
               const VectorXDecisionVariable& var) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution
               .doc_1args_constEigenMatrixBase)
-      .def("GetSolution",
+      .def(
+          "GetSolution",
           [](const MathematicalProgramResult& self,
               const MatrixXDecisionVariable& var) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution
               .doc_1args_constEigenMatrixBase)
-      .def("GetSolution",
+      .def(
+          "GetSolution",
           [](const MathematicalProgramResult& self,
               const symbolic::Expression& e) { return self.GetSolution(e); },
           doc.MathematicalProgramResult.GetSolution.doc_1args_e)
@@ -428,38 +438,44 @@ top-level documentation for :py:mod:`pydrake.math`.
               const MatrixX<symbolic::Expression>& mat) {
             return self.GetSolution(mat);
           })
-      .def("GetSuboptimalSolution",
+      .def(
+          "GetSuboptimalSolution",
           [](const MathematicalProgramResult& self,
               const symbolic::Variable& var, int solution_number) {
             return self.GetSuboptimalSolution(var, solution_number);
           },
           doc.MathematicalProgramResult.GetSuboptimalSolution
               .doc_2args_var_solution_number)
-      .def("GetSuboptimalSolution",
+      .def(
+          "GetSuboptimalSolution",
           [](const MathematicalProgramResult& self,
               const VectorXDecisionVariable& var, int solution_number) {
             return self.GetSuboptimalSolution(var, solution_number);
           },
           doc.MathematicalProgramResult.GetSuboptimalSolution
               .doc_2args_constEigenMatrixBase_int)
-      .def("GetSuboptimalSolution",
+      .def(
+          "GetSuboptimalSolution",
           [](const MathematicalProgramResult& self,
               const MatrixXDecisionVariable& var, int solution_number) {
             return self.GetSuboptimalSolution(var, solution_number);
           },
           doc.MathematicalProgramResult.GetSuboptimalSolution
               .doc_2args_constEigenMatrixBase_int)
-      .def("num_suboptimal_solution()",
+      .def(
+          "num_suboptimal_solution()",
           [](const MathematicalProgramResult& self) {
             return self.num_suboptimal_solution();
           },
           doc.MathematicalProgramResult.num_suboptimal_solution.doc)
-      .def("get_suboptimal_objective",
+      .def(
+          "get_suboptimal_objective",
           [](const MathematicalProgramResult& self, int solution_number) {
             return self.get_suboptimal_objective(solution_number);
           },
           doc.MathematicalProgramResult.get_suboptimal_objective.doc)
-      .def("EvalBinding",
+      .def(
+          "EvalBinding",
           [](const MathematicalProgramResult& self,
               const Binding<EvaluatorBase>& binding) {
             return self.EvalBinding(binding);
@@ -491,7 +507,8 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::NewBinaryVariables<Dynamic, Dynamic>),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "b",
           doc.MathematicalProgram.NewBinaryVariables.doc_3args)
-      .def("NewSymmetricContinuousVariables",
+      .def(
+          "NewSymmetricContinuousVariables",
           // `py::overload_cast` and `overload_cast_explict` struggle with
           // overloads that compete with templated methods.
           [](MathematicalProgram* self, int rows, const string& name) {
@@ -548,14 +565,16 @@ top-level documentation for :py:mod:`pydrake.math`.
               double, double, const symbolic::Variable&)>(
               &MathematicalProgram::AddBoundingBoxConstraint),
           doc.MathematicalProgram.AddBoundingBoxConstraint.doc_3args_lb_ub_var)
-      .def("AddBoundingBoxConstraint",
+      .def(
+          "AddBoundingBoxConstraint",
           [](MathematicalProgram* self, double lb, double ub,
               const Eigen::Ref<const MatrixX<symbolic::Variable>>& vars) {
             return self->AddBoundingBoxConstraint(lb, ub, vars);
           },
           doc.MathematicalProgram.AddBoundingBoxConstraint
               .doc_3args_double_double_constEigenMatrixBase)
-      .def("AddConstraint",
+      .def(
+          "AddConstraint",
           [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
@@ -584,7 +603,8 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::AddConstraint),
           py::arg("constraint"), py::arg("vars"),
           doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
-      .def("AddConstraint",
+      .def(
+          "AddConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixX<Formula>>& formulas) {
             return self->AddConstraint(formulas);
@@ -618,7 +638,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddLinearConstraint),
           py::arg("f"), doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
-      .def("AddLinearConstraint",
+      .def(
+          "AddLinearConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const VectorX<Formula>>& formulas) {
             return self->AddLinearConstraint(formulas.array());
@@ -648,7 +669,8 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
               &MathematicalProgram::AddLorentzConeConstraint),
           doc.MathematicalProgram.AddLorentzConeConstraint.doc)
-      .def("AddPositiveSemidefiniteConstraint",
+      .def(
+          "AddPositiveSemidefiniteConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
             return self->AddPositiveSemidefiniteConstraint(vars);
@@ -662,20 +684,23 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearComplementarityConstraint),
           doc.MathematicalProgram.AddLinearComplementarityConstraint.doc)
-      .def("AddPositiveSemidefiniteConstraint",
+      .def(
+          "AddPositiveSemidefiniteConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixX<Expression>>& e) {
             return self->AddPositiveSemidefiniteConstraint(e);
           },
           doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
               .doc_1args_constEigenMatrixBase)
-      .def("AddExponentialConeConstraint",
+      .def(
+          "AddExponentialConeConstraint",
           [](MathematicalProgram* self,
               const Eigen::Ref<const Vector3<symbolic::Expression>>& z) {
             return self->AddExponentialConeConstraint(z);
           },
           doc.MathematicalProgram.AddExponentialConeConstraint.doc_1args)
-      .def("AddCost",
+      .def(
+          "AddCost",
           [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
               std::string& description) {
@@ -835,7 +860,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.MathematicalProgram.indeterminate.doc)
       .def("indeterminates_index", &MathematicalProgram::indeterminates_index,
           doc.MathematicalProgram.indeterminates_index.doc)
-      .def("EvalBinding",
+      .def(
+          "EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
               const VectorX<double>& prog_var_vals) {
@@ -843,7 +869,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
-      .def("EvalBinding",
+      .def(
+          "EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
               const VectorX<AutoDiffXd>& prog_var_vals) {
@@ -851,7 +878,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
-      .def("EvalBindings",
+      .def(
+          "EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
               const VectorX<double>& prog_var_vals) {
@@ -859,7 +887,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
-      .def("EvalBindings",
+      .def(
+          "EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
               const VectorX<AutoDiffXd>& prog_var_vals) {
@@ -867,7 +896,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
-      .def("GetBindingVariableValues",
+      .def(
+          "GetBindingVariableValues",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
               const VectorX<double>& prog_var_vals) {
@@ -875,27 +905,31 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.GetBindingVariableValues.doc)
-      .def("GetInitialGuess",
+      .def(
+          "GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
             return prog.GetInitialGuess(decision_variable);
           },
           doc.MathematicalProgram.GetInitialGuess.doc_1args_decision_variable)
-      .def("GetInitialGuess",
+      .def(
+          "GetInitialGuess",
           [](MathematicalProgram& prog,
               const VectorXDecisionVariable& decision_variables) {
             return prog.GetInitialGuess(decision_variables);
           },
           doc.MathematicalProgram.GetInitialGuess
               .doc_1args_constEigenMatrixBase)
-      .def("GetInitialGuess",
+      .def(
+          "GetInitialGuess",
           [](MathematicalProgram& prog,
               const MatrixXDecisionVariable& decision_variables) {
             return prog.GetInitialGuess(decision_variables);
           },
           doc.MathematicalProgram.GetInitialGuess
               .doc_1args_constEigenMatrixBase)
-      .def("SetInitialGuess",
+      .def(
+          "SetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable,
               double variable_guess_value) {
@@ -903,7 +937,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           doc.MathematicalProgram.SetInitialGuess
               .doc_2args_decision_variable_variable_guess_value)
-      .def("SetInitialGuess",
+      .def(
+          "SetInitialGuess",
           [](MathematicalProgram& prog,
               const MatrixXDecisionVariable& decision_variable_mat,
               const Eigen::MatrixXd& x0) {
@@ -911,12 +946,14 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           doc.MathematicalProgram.SetInitialGuess
               .doc_2args_constEigenMatrixBase_constEigenMatrixBase)
-      .def("SetInitialGuessForAllVariables",
+      .def(
+          "SetInitialGuessForAllVariables",
           [](MathematicalProgram& prog, const Eigen::VectorXd& x0) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
-      .def("SetDecisionVariableValueInVector",
+      .def(
+          "SetDecisionVariableValueInVector",
           [](const MathematicalProgram& prog,
               const symbolic::Variable& decision_variable,
               double decision_variable_new_value,
@@ -928,7 +965,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("values"),
           doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variable_decision_variable_new_value_values)
-      .def("SetDecisionVariableValueInVector",
+      .def(
+          "SetDecisionVariableValueInVector",
           [](const MathematicalProgram& prog,
               const Eigen::Ref<const MatrixXDecisionVariable>&
                   decision_variables,
@@ -1024,7 +1062,8 @@ top-level documentation for :py:mod:`pydrake.math`.
     auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
       using T_x = decltype(dummy_x);
       using T_y = decltype(dummy_y);
-      cls.def("Eval",
+      cls.def(
+          "Eval",
           [](const Class& self, const Eigen::Ref<const VectorX<T_x>>& x) {
             VectorX<T_y> y(self.num_outputs());
             self.Eval(x, &y);
@@ -1054,17 +1093,20 @@ top-level documentation for :py:mod:`pydrake.math`.
           doc.Constraint.lower_bound.doc)
       .def("upper_bound", &Constraint::upper_bound,
           doc.Constraint.upper_bound.doc)
-      .def("CheckSatisfied",
+      .def(
+          "CheckSatisfied",
           [](Constraint& self, const Eigen::Ref<const Eigen::VectorXd>& x,
               double tol) { return self.CheckSatisfied(x, tol); },
           py::arg("x"), py::arg("tol") = 1E-6,
           doc.Constraint.CheckSatisfied.doc)
-      .def("CheckSatisfied",
+      .def(
+          "CheckSatisfied",
           [](Constraint& self, const Eigen::Ref<const AutoDiffVecXd>& x,
               double tol) { return self.CheckSatisfied(x, tol); },
           py::arg("x"), py::arg("tol") = 1E-6,
           doc.Constraint.CheckSatisfied.doc)
-      .def("CheckSatisfied",
+      .def(
+          "CheckSatisfied",
           [](Constraint& self,
               const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
             return self.CheckSatisfied(x);
@@ -1081,24 +1123,28 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("A"), py::arg("lb"), py::arg("ub"),
           doc.LinearConstraint.ctor.doc)
       .def("A", &LinearConstraint::A, doc.LinearConstraint.A.doc)
-      .def("UpdateCoefficients",
+      .def(
+          "UpdateCoefficients",
           [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
               const Eigen::VectorXd& new_lb, const Eigen::VectorXd& new_ub) {
             self.UpdateCoefficients(new_A, new_lb, new_ub);
           },
           py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"),
           doc.LinearConstraint.UpdateCoefficients.doc)
-      .def("UpdateLowerBound",
+      .def(
+          "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
             self.UpdateLowerBound(new_lb);
           },
           py::arg("new_lb"), doc.Constraint.UpdateLowerBound.doc)
-      .def("UpdateUpperBound",
+      .def(
+          "UpdateUpperBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_ub) {
             self.UpdateUpperBound(new_ub);
           },
           py::arg("new_ub"), doc.Constraint.UpdateUpperBound.doc)
-      .def("set_bounds",
+      .def(
+          "set_bounds",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb,
               const Eigen::VectorXd& new_ub) {
             self.set_bounds(new_lb, new_ub);
@@ -1112,7 +1158,8 @@ top-level documentation for :py:mod:`pydrake.math`.
   py::class_<LinearEqualityConstraint, LinearConstraint,
       std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint", doc.LinearEqualityConstraint.doc)
-      .def("UpdateCoefficients",
+      .def(
+          "UpdateCoefficients",
           [](LinearEqualityConstraint& self,  // BR
               const Eigen::MatrixXd& Aeq, const Eigen::VectorXd& beq) {
             self.UpdateCoefficients(Aeq, beq);
@@ -1160,7 +1207,8 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("a"), py::arg("b"), doc.LinearCost.ctor.doc)
       .def("a", &LinearCost::a, doc.LinearCost.a.doc)
       .def("b", &LinearCost::b, doc.LinearCost.b.doc)
-      .def("UpdateCoefficients",
+      .def(
+          "UpdateCoefficients",
           [](LinearCost& self, const Eigen::VectorXd& new_a, double new_b) {
             self.UpdateCoefficients(new_a, new_b);
           },
@@ -1177,7 +1225,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("Q", &QuadraticCost::Q, doc.QuadraticCost.Q.doc)
       .def("b", &QuadraticCost::b, doc.QuadraticCost.b.doc)
       .def("c", &QuadraticCost::c, doc.QuadraticCost.c.doc)
-      .def("UpdateCoefficients",
+      .def(
+          "UpdateCoefficients",
           [](QuadraticCost& self, const Eigen::MatrixXd& new_Q,
               const Eigen::VectorXd& new_b,
               double new_c) { self.UpdateCoefficients(new_Q, new_b, new_c); },

@@ -183,27 +183,6 @@ namespace { }
 """
         self._check("dut.cc", original, original, None)
 
-    def test_cc_uses_single_inl(self):
-        # Only a single "-inl.h" include.
-        original = """
-#include "drake/dummy/dut-inl.h"
-
-namespace { }
-"""
-        self._check("dut.cc", original, original, None)
-
-    def test_cc_uses_inl_and_more(self):
-        # Presence of "-inl.h" pattern and other things.
-        original = """
-#include "drake/dummy/dut-inl.h"
-
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
-
-namespace { }
-"""
-        self._check("xxx.cc", original, original, None)
-
     def test_target_is_header(self):
         # A header file.
         original = """
@@ -220,17 +199,6 @@ namespace { }
 namespace { }
 """
         self._check("dut.h", original, expected, 0)
-
-    def test_target_is_inl(self):
-        # An *-inl.h file.
-        original = """
-#include "drake/dummy/dut.h"
-
-#include <vector>
-
-namespace { }
-"""
-        self._check("dut-inl.h", original, original, None)
 
     def test_associated_comment(self):
         # A comment prior to a line.

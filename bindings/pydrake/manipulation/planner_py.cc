@@ -90,7 +90,8 @@ PYBIND11_MODULE(planner, m) {
             cls_doc.set_joint_acceleration_limits.doc);
   }
 
-  m.def("DoDifferentialInverseKinematics",
+  m.def(
+      "DoDifferentialInverseKinematics",
       [](const Eigen::VectorXd& q_current, const Eigen::VectorXd& v_current,
           const Eigen::VectorXd& V, const Eigen::MatrixXd& J,
           const manipulation::planner::DifferentialInverseKinematicsParameters&
@@ -103,7 +104,8 @@ PYBIND11_MODULE(planner, m) {
       doc.DoDifferentialInverseKinematics
           .doc_5args_q_current_v_current_V_J_parameters);
 
-  m.def("DoDifferentialInverseKinematics",
+  m.def(
+      "DoDifferentialInverseKinematics",
       [](const multibody::MultibodyPlant<double>& robot,
           const systems::Context<double>& context,
           const Vector6<double>& V_WE_desired,
@@ -118,7 +120,8 @@ PYBIND11_MODULE(planner, m) {
       doc.DoDifferentialInverseKinematics
           .doc_5args_robot_context_V_WE_desired_frame_E_parameters);
 
-  m.def("DoDifferentialInverseKinematics",
+  m.def(
+      "DoDifferentialInverseKinematics",
       [](const multibody::MultibodyPlant<double>& robot,
           const systems::Context<double>& context,
           const Isometry3<double>& X_WE_desired,

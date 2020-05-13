@@ -109,7 +109,7 @@ only updated nightly.</p>
 
  `accuracy` α is a unitless quantity describing permissible relative error.
  (This is similar to the "relative tolerance" `rtol` parameter in many
- numerical packages, including some commonly used with Drake) Ideally you can
+ numerical packages, including some commonly used with Drake.) Ideally you can
  think of `accuracy` as specifying the number of correct significant digits in
  the desired result. For example, specifying `α = 10⁻³` should yield a result
  correct to three digits while `α = 10⁻⁶` should give six. This is a Platonic
@@ -144,7 +144,7 @@ only updated nightly.</p>
 
  ### Given accuracy, we can determine tolerance
 
- In Drake numerical tests and and error controlled numerical methods, we
+ In Drake numerical tests and error controlled numerical methods, we
  typically determine an absolute tolerance using the user-supplied `accuracy`
  value α, via `ε = α|q|` where q is the quantity of interest. This works well
  provided that `|q| ≫ 0`. When q is near zero the tolerance ε could be

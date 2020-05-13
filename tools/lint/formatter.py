@@ -203,8 +203,8 @@ class FormatterBase(object):
         # Run clang-format.
         command = [
             clang_format_lib.get_clang_format_path(),
-            "-style=file",
-            "-assume-filename=%s" % self._filename] + \
+            "--style=file",
+            "--assume-filename=%s" % self._filename] + \
             lines_args
         formatter = Popen(command, stdin=PIPE, stdout=PIPE)
         text = "".join(self._working_lines)
@@ -304,6 +304,16 @@ class IncludeFormatter(FormatterBase):
         # Run the formatter over only the in-scope #include statements.
         self.clang_format()
 
+        # Undo any internal whitespace buffer that clang-format added around
+        # each group of include statements.
+        include_indices = self.get_format_indices()
+        blank_indices_to_remove = []
+        for i, j in zip(include_indices, include_indices[1:]):
+            # If a pair of include statements spans a blank line, remove it.
+            if i + 2 == j and self.get_line(i + 1) == "\n":
+                blank_indices_to_remove.append(i + 1)
+        self.remove_all(blank_indices_to_remove)
+
         # Turn each run of spacers within an include block into a blank line.
         # Remove any runs of spaces at the start or end.
         include_indices = self.get_format_indices()
@@ -317,7 +327,7 @@ class IncludeFormatter(FormatterBase):
             if all([x in include_indices
                     for x in [before_spacer, after_spacer]]):
                 # Interior group of spacers.  Replace with a blank line.
-                self.set_line(one_range[0], u"\n")
+                self.set_line(one_range[0], "\n")
                 one_range = one_range[1:]
             spacer_indices_to_remove.extend(one_range)
         self.remove_all(spacer_indices_to_remove)

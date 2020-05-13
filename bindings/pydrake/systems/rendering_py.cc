@@ -1,6 +1,6 @@
-#include <Eigen/Dense>
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
+#include <Eigen/Dense>
 
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -84,12 +84,14 @@ PYBIND11_MODULE(rendering, m) {
       m, "PoseVelocityInputPorts", doc.PoseVelocityInputPorts.doc)
       // N.B. We use lambdas below since we cannot use `def_readonly` with
       // reference members.
-      .def_property_readonly("pose_input_port",
+      .def_property_readonly(
+          "pose_input_port",
           [](PoseVelocityInputPorts<T>* self) -> const InputPort<T>& {
             return self->pose_input_port;
           },
           doc.PoseVelocityInputPorts.pose_input_port.doc)
-      .def_property_readonly("velocity_input_port",
+      .def_property_readonly(
+          "velocity_input_port",
           [](PoseVelocityInputPorts<T>* self) -> const InputPort<T>& {
             return self->velocity_input_port;
           },
