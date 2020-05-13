@@ -964,10 +964,13 @@ class SphereChainScenario {
  public:
   SphereChainScenario(
       int sphere_count,
-      std::function<void(SphereChainScenario*)> apply_filters = nullptr) {
+      std::function<void(SphereChainScenario*)> apply_filters = nullptr,
+      bool finalize = true)
+      : sphere_count_(sphere_count),
+        apply_filters_(apply_filters) {
     using std::to_string;
-    systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    std::tie(plant_, scene_graph_) =
+        AddMultibodyPlantSceneGraph(&builder_, 0.0);
 
     // A half-space for the ground geometry.
     ground_id_ = plant_->RegisterCollisionGeometry(
@@ -991,7 +994,7 @@ class SphereChainScenario {
     };
 
     // Add sphere bodies.
-    for (int i = 0; i < sphere_count; ++i) {
+    for (int i = 0; i < sphere_count_; ++i) {
       // TODO(SeanCurtis-TRI): Make this prettier when C++17 is available.
       // E.g., auto [id, geometry] = make_sphere(i);
       GeometryId id{};
@@ -1001,7 +1004,7 @@ class SphereChainScenario {
       sphere_ids_.push_back(id);
     }
     // Add hinges between spheres.
-    for (int i = 0; i < sphere_count - 1; ++i) {
+    for (int i = 0; i < sphere_count_ - 1; ++i) {
       plant_->AddJoint<RevoluteJoint>(
           "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
           std::nullopt, *spheres_[i + 1], std::nullopt, Vector3d::UnitY());
@@ -1011,12 +1014,18 @@ class SphereChainScenario {
     no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
                                               SpatialInertia<double>());
 
+    if (finalize) {
+      Finalize();
+    }
+  }
+
+  void Finalize() {
     // We are done defining the model.
     plant_->Finalize();
 
-    if (apply_filters != nullptr) apply_filters(this);
+    if (apply_filters_) apply_filters_(this);
 
-    diagram_ = builder.Build();
+    diagram_ = builder_.Build();
     context_ = diagram_->CreateDefaultContext();
 
     // Set the zero configuration.
@@ -1024,9 +1033,9 @@ class SphereChainScenario {
         &diagram_->GetMutableSubsystemContext(*plant_, context_.get());
 
     // NOTE: Only ids for collision geometries are included.
-    for (int i = 0; i < sphere_count; ++i) {
+    for (int i = 0; i < sphere_count_; ++i) {
       unfiltered_collisions_.insert(std::make_pair(ground_id(), sphere_id(i)));
-      for (int j = i + 2; j < sphere_count; ++j) {
+      for (int j = i + 2; j < sphere_count_; ++j) {
         unfiltered_collisions_.insert(
             std::make_pair(sphere_id(i), sphere_id(j)));
       }
@@ -1070,6 +1079,11 @@ class SphereChainScenario {
   }
 
  private:
+  // For plant and scene graph construction.
+  int sphere_count_{};
+  systems::DiagramBuilder<double> builder_;
+  std::function<void(SphereChainScenario*)> apply_filters_;
+
   // The diagram components.
   std::unique_ptr<Diagram<double>> diagram_{};
   std::unique_ptr<Context<double>> context_{};
@@ -1158,9 +1172,8 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
   RigidBody<double> body{SpatialInertia<double>()};
   // The case where the plant has *not* been finalized.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CollectRegisteredGeometries({&body}), std::logic_error,
-      "Pre-finalize calls to 'CollectRegisteredGeometries\\(\\)' are not "
-      "allowed; you must call Finalize\\(\\) first.");
+      plant.CollectRegisteredGeometries({&body}), std::runtime_error,
+      "Failure .* in CollectRegisteredGeometries.* failed.");
 
   // The case where the plant has *not* been registered as a source.
   plant.Finalize();
@@ -1181,56 +1194,73 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
   using geometry::GeometrySet;
   using geometry::GeometrySetTester;
 
-  SphereChainScenario scenario(5);
+  const bool finalize = false;
+  SphereChainScenario scenario(5, nullptr, finalize);
 
   const MultibodyPlant<double>& plant = *scenario.mutable_plant();
 
-  // Case: Empty vector produces empty geometry set.
+  auto check_geometries = [&]() {
+    // Case: Empty vector produces empty geometry set.
+    {
+      GeometrySet set = plant.CollectRegisteredGeometries({});
+      GeometrySetTester tester(&set);
+      EXPECT_EQ(tester.num_geometries(), 0);
+      EXPECT_EQ(tester.num_frames(), 0);
+    }
+
+    // Case: Single body produces single, corresponding frame.
+    {
+      GeometrySet set =
+          plant.CollectRegisteredGeometries({&scenario.sphere(0)});
+      GeometrySetTester tester(&set);
+      EXPECT_EQ(tester.num_geometries(), 0);
+      EXPECT_EQ(tester.num_frames(), 1);
+      FrameId id_0 = plant.GetBodyFrameIdOrThrow(scenario.sphere(0).index());
+      EXPECT_TRUE(tester.contains(id_0));
+    }
+
+    // Case: Body with no corresponding geometry frame.
+    {
+      GeometrySet set =
+          plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
+      GeometrySetTester tester(&set);
+      EXPECT_EQ(tester.num_geometries(), 0);
+      EXPECT_EQ(tester.num_frames(), 1);
+    }
+
+    // Case: Include the world body.
+    {
+      GeometrySet set =
+          plant.CollectRegisteredGeometries(
+              {&scenario.mutable_plant()->world_body()});
+      GeometrySetTester tester(&set);
+      EXPECT_EQ(tester.num_frames(), 1);
+      EXPECT_EQ(tester.num_geometries(), 0);
+      EXPECT_FALSE(tester.contains(scenario.ground_id()));
+    }
+
+    // Case: Consider all bodies.
+    {
+      GeometrySet set =
+          plant.CollectRegisteredGeometries(scenario.get_all_bodies());
+      GeometrySetTester tester(&set);
+      EXPECT_EQ(tester.num_frames(), plant.num_bodies());
+      EXPECT_EQ(tester.num_geometries(), 0);
+      EXPECT_FALSE(tester.contains(scenario.ground_id()));
+    }
+  };
+
   {
-    GeometrySet set = plant.CollectRegisteredGeometries({});
-    GeometrySetTester tester(&set);
-    EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_EQ(tester.num_frames(), 0);
+    SCOPED_TRACE("pre-finalize");
+    EXPECT_FALSE(plant.is_finalized());
+    check_geometries();
   }
 
-  // Case: Single body produces single, corresponding frame.
   {
-    GeometrySet set = plant.CollectRegisteredGeometries({&scenario.sphere(0)});
-    GeometrySetTester tester(&set);
-    EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_EQ(tester.num_frames(), 1);
-    FrameId id_0 = plant.GetBodyFrameIdOrThrow(scenario.sphere(0).index());
-    EXPECT_TRUE(tester.contains(id_0));
-  }
-
-  // Case: Body with no corresponding geometry frame.
-  {
-    GeometrySet set =
-        plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
-    GeometrySetTester tester(&set);
-    EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_EQ(tester.num_frames(), 1);
-  }
-
-  // Case: Include the world body.
-  {
-    GeometrySet set =
-        plant.CollectRegisteredGeometries(
-            {&scenario.mutable_plant()->world_body()});
-    GeometrySetTester tester(&set);
-    EXPECT_EQ(tester.num_frames(), 1);
-    EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_FALSE(tester.contains(scenario.ground_id()));
-  }
-
-  // Case: Consider all bodies.
-  {
-    GeometrySet set =
-        plant.CollectRegisteredGeometries(scenario.get_all_bodies());
-    GeometrySetTester tester(&set);
-    EXPECT_EQ(tester.num_frames(), plant.num_bodies());
-    EXPECT_EQ(tester.num_geometries(), 0);
-    EXPECT_FALSE(tester.contains(scenario.ground_id()));
+    SCOPED_TRACE("post-finalize");
+    scenario.Finalize();
+    EXPECT_TRUE(plant.is_finalized());
+    check_geometries();
   }
 }
 
