@@ -125,7 +125,7 @@ Fixes
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Add clang-format-9 (`#13260`_)
+* Use clang-format version 9, not version 6 (`#13259`_, `#13260`_, `#13286`_, `#13287`_)
 * Upgrade buildifier to latest release 3.0.0 (`#13198`_)
 * Upgrade dreal to latest commit (`#13133`_)
 * Upgrade fcl to latest commit (`#13274`_)
@@ -133,6 +133,7 @@ Build system and dependencies
 * Upgrade gurobi to 9.0.2 and use GUROBI_HOME instead of GUROBI_PATH (`#13049`_)
 * Upgrade lcm to latest commit (`#13199`_)
 * Upgrade meshcat to latest commit (`#13141`_)
+* Upgrade meshcat_python to latest commit (`#13155`_)
 * Upgrade pycodestyle to latest release 2.5.0 (`#13197`_, `#13204`_)
 * Upgrade semantic_version to latest release 2.8.5 (`#13197`_)
 * Only compile the parts of FCL that we need (`#13230`_)
@@ -234,6 +235,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13149: https://github.com/RobotLocomotion/drake/pull/13149
 .. _#13151: https://github.com/RobotLocomotion/drake/pull/13151
 .. _#13152: https://github.com/RobotLocomotion/drake/pull/13152
+.. _#13155: https://github.com/RobotLocomotion/drake/pull/13155
 .. _#13156: https://github.com/RobotLocomotion/drake/pull/13156
 .. _#13157: https://github.com/RobotLocomotion/drake/pull/13157
 .. _#13158: https://github.com/RobotLocomotion/drake/pull/13158
@@ -264,19 +266,16 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13235: https://github.com/RobotLocomotion/drake/pull/13235
 .. _#13250: https://github.com/RobotLocomotion/drake/pull/13250
 .. _#13252: https://github.com/RobotLocomotion/drake/pull/13252
+.. _#13259: https://github.com/RobotLocomotion/drake/pull/13259
 .. _#13260: https://github.com/RobotLocomotion/drake/pull/13260
 .. _#13262: https://github.com/RobotLocomotion/drake/pull/13262
 .. _#13268: https://github.com/RobotLocomotion/drake/pull/13268
 .. _#13269: https://github.com/RobotLocomotion/drake/pull/13269
 .. _#13270: https://github.com/RobotLocomotion/drake/pull/13270
 .. _#13274: https://github.com/RobotLocomotion/drake/pull/13274
+.. _#13286: https://github.com/RobotLocomotion/drake/pull/13286
+.. _#13287: https://github.com/RobotLocomotion/drake/pull/13287
 
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
-  Current newest_commit 82057e6789cdaf7be1b228298d9b7484bfe645c5 (inclusive).
-
-* Fix a couple of typos (`#13277`_)
-* tools: Upgrade to clang-format-9 for includes (`#13259`_)  # Remove test cases for the inl pattern.  Drake does not permit this pattern anymore, and supporting it under clang-format-9 is difficult.
-* tools: Change order of third-party includes (`#13286`_)  # The new clang-format-9 prefers quote includes before angle includes. To use a different order, we'd have to insert an empty line between them, and we don't want to do that. So, we'll relent and allow the quote includes to appear first.
-* workspace: Bump meshcat_python to latest commit (`#13155`_)
-* tools: Upgrade to clang-format-9 (`#13287`_)  # This is flag day cut-over, since we have clang-format idempotence enforced by the linters within pydrake.
+  Current newest_commit 462b7ec8de4a5bfa3aa11248ca937dbe2a3e2e72 (inclusive).
