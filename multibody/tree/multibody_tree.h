@@ -1317,16 +1317,8 @@ class MultibodyTree {
     const int num_points = p_FP_list.cols();
     DRAKE_THROW_UNLESS(num_points > 0 && p_FP_list.rows() == 3);
 
-    // This deprecated method calls a new method which has a slightly different
-    // signature (Matrix3X instead of MatrixX) and a different return value
-    // (new method returns Matrix3X, old method returns VectorX).
-    // Change the position vector argument from MatrixX to Matrix3X.
-    Matrix3X<T> position_vectors(3, num_points);
-    for (int i = 0; i < num_points; ++i)
-      position_vectors.col(i) = p_FP_list.col(i);
-
     const Matrix3X<T> asBias_AFp_E = CalcBiasTranslationalAcceleration(
-        context, with_respect_to, frame_F, position_vectors, frame_A, frame_E);
+        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
 
     // This deprecated method needs to return a VectorX<T>.
     VectorX<T> asBias_AFp_E_as_VectorX(3 * num_points);

@@ -805,7 +805,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
   tree_autodiff().GetMutablePositionsAndVelocities(context_autodiff_.get())
       = x_autodiff;
 
-  // Points Ei (i = 0, 1) are rigidly attached (welded) to end effector frame E.
+  // Points Ei (i = 0, 1) are affixed/welded to the end-effector E.
   // Designate Ei's positions from origin Eo, expressed in frame E.
   const int kNumPoints = 2;  // The set stores 2 points.
   Matrix3X<double> p_EEi(3, kNumPoints);
@@ -1252,7 +1252,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
   tree_autodiff().GetMutablePositionsAndVelocities(context_autodiff_.get())
       = x_autodiff;
 
-  // Point Ep is fixed/welded to the end-effector E.
+  // Point Ep is affixed/welded to the end-effector E.
   const Vector3<double> p_EEp(0.1, -0.05, 0.02);
   const Vector3<AutoDiffXd> p_EEp_autodiff = p_EEp;
 
