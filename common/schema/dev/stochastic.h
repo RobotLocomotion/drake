@@ -6,14 +6,31 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
+
+// TODO(ggould-tri) The documentation on DistributionVector{,Variant} isn't
+// really adequate to Drake standards. It's misleadingly minimal and doesn't
+// capture the subtlety of the semantics, in particular with respect to the
+// homogeneity of the vector -- it is really a distribution over vectors more
+// than a vector of distributions, since you can't have a DistributionVector
+// that is [Gaussian, Gaussian, Uniform] or similarly non-homogeneous. This
+// will become acute as people try to create stochastic free body states where
+// the translational and rotational coordinates require different approaches:
+// The type names will become the classic "maze of twisty little passages, all
+// alike" in the style of BasicVector/VectorBase unless there is a worked
+// example in hand for them to copy from that will avoid ever touching those
+// pitfalls.
+//
+// When transform.h comes over from Anzu, then its documentation will become
+// the most acute place where this information is missing. This class really
+// needs a more doxygen-oriented explanation that includes examples.
 
 /// Base class for a single distribution, to be used with YAML archives.
 /// (See struct DistributionVector for vector-valued distributions.)
@@ -23,12 +40,19 @@ struct Distribution {
   virtual double Sample(drake::RandomGenerator* generator) const = 0;
   virtual double Mean() const = 0;
   virtual drake::symbolic::Expression ToSymbolic() const = 0;
+
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Distribution)
+  Distribution();
 };
 
 /// A single deterministic `value`.
 struct Deterministic final : public Distribution {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Deterministic)
+
   Deterministic();
   explicit Deterministic(double value);
+
   ~Deterministic() final;
 
   double Sample(drake::RandomGenerator*) const final;
@@ -45,6 +69,8 @@ struct Deterministic final : public Distribution {
 
 /// A gaussian distribution with `mean` and `std`.
 struct Gaussian final : public Distribution {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Gaussian)
+
   Gaussian();
   Gaussian(double mean, double std);
   ~Gaussian() final;
@@ -65,6 +91,8 @@ struct Gaussian final : public Distribution {
 
 /// A uniform distribution with `min` inclusive and `max` exclusive.
 struct Uniform final : public Distribution {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform)
+
   Uniform();
   Uniform(double min, double max);
   ~Uniform() final;
@@ -85,6 +113,8 @@ struct Uniform final : public Distribution {
 
 /// Chooses from among discrete `values` with equal probability.
 struct UniformDiscrete final : public Distribution {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformDiscrete)
+
   UniformDiscrete();
   explicit UniformDiscrete(std::vector<double> values);
   ~UniformDiscrete() final;
@@ -150,12 +180,18 @@ struct DistributionVector {
   virtual Eigen::VectorXd Sample(drake::RandomGenerator* generator) const = 0;
   virtual Eigen::VectorXd Mean() const = 0;
   virtual drake::VectorX<drake::symbolic::Expression> ToSymbolic() const = 0;
+
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DistributionVector)
+  DistributionVector();
 };
 
 /// A single deterministic vector `value`.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
 struct DeterministicVector final : public DistributionVector {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeterministicVector)
+
   DeterministicVector();
   explicit DeterministicVector(const drake::Vector<double, Size>& value);
   ~DeterministicVector() final;
@@ -175,7 +211,9 @@ struct DeterministicVector final : public DistributionVector {
 /// A gaussian distribution with vector `mean` and vector or scalar `std`.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
-struct GaussianVector : public DistributionVector {
+struct GaussianVector final : public DistributionVector {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GaussianVector)
+
   GaussianVector();
   GaussianVector(const drake::Vector<double, Size>& mean,
                  const drake::VectorX<double>& std);
@@ -199,7 +237,9 @@ struct GaussianVector : public DistributionVector {
 /// exclusive.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
-struct UniformVector : public DistributionVector {
+struct UniformVector final : public DistributionVector {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformVector)
+
   UniformVector();
   UniformVector(const drake::Vector<double, Size>& min,
                 const drake::Vector<double, Size>& max);
@@ -272,5 +312,4 @@ Eigen::VectorXd GetDeterministicValue(
     const DistributionVectorVariant<Size>& vec);
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake

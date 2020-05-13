@@ -1,4 +1,4 @@
-#include "common/schema/stochastic.h"
+#include "drake/common/schema/dev/stochastic.h"
 
 #include <stdexcept>
 #include <type_traits>
@@ -17,9 +17,10 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }  // namespace
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
+
+Distribution::Distribution() {}
 
 Distribution::~Distribution() {}
 
@@ -185,6 +186,8 @@ drake::VectorX<Expression> ToSymbolic(
   }
   return result;
 }
+
+DistributionVector::DistributionVector() {}
 
 DistributionVector::~DistributionVector() {}
 
@@ -431,7 +434,7 @@ Eigen::VectorXd GetDeterministicValue(
   return ToDistributionVector(vec)->Mean();
 }
 
-#define ANZU_INSTANTIATE_ALL_SIZES(Clazz) \
+#define DRAKE_INSTANTIATE_ALL_SIZES(Clazz) \
   template Clazz<Eigen::Dynamic>; \
   template Clazz<1>; \
   template Clazz<2>; \
@@ -440,13 +443,13 @@ Eigen::VectorXd GetDeterministicValue(
   template Clazz<5>; \
   template Clazz<6>;
 
-ANZU_INSTANTIATE_ALL_SIZES(class DeterministicVector)
-ANZU_INSTANTIATE_ALL_SIZES(class GaussianVector)
-ANZU_INSTANTIATE_ALL_SIZES(class UniformVector)
+DRAKE_INSTANTIATE_ALL_SIZES(struct DeterministicVector)
+DRAKE_INSTANTIATE_ALL_SIZES(struct GaussianVector)
+DRAKE_INSTANTIATE_ALL_SIZES(struct UniformVector)
 
-#undef ANZU_INSTANTIATE_ALL_SIZES
+#undef DRAKE_INSTANTIATE_ALL_SIZES
 
-#define ANZU_INSTANTIATE_ALL_SIZES(Func) \
+#define DRAKE_INSTANTIATE_ALL_SIZES(Func) \
   template Func(const DistributionVectorVariantX&); \
   template Func(const DistributionVectorVariant<1>&); \
   template Func(const DistributionVectorVariant<2>&); \
@@ -455,12 +458,11 @@ ANZU_INSTANTIATE_ALL_SIZES(class UniformVector)
   template Func(const DistributionVectorVariant<5>&); \
   template Func(const DistributionVectorVariant<6>&);
 
-ANZU_INSTANTIATE_ALL_SIZES(unique_ptr<DistributionVector> ToDistributionVector)
-ANZU_INSTANTIATE_ALL_SIZES(bool IsDeterministic)
-ANZU_INSTANTIATE_ALL_SIZES(Eigen::VectorXd GetDeterministicValue)
+DRAKE_INSTANTIATE_ALL_SIZES(unique_ptr<DistributionVector> ToDistributionVector)
+DRAKE_INSTANTIATE_ALL_SIZES(bool IsDeterministic)
+DRAKE_INSTANTIATE_ALL_SIZES(Eigen::VectorXd GetDeterministicValue)
 
-#undef ANZU_INSTANTIATE_ALL_SIZES
+#undef DRAKE_INSTANTIATE_ALL_SIZES
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake
