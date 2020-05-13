@@ -1,0 +1,38 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_library(
+    name = "stochastic",
+    srcs = ["stochastic.cc"],
+    hdrs = ["stochastic.h"],
+    deps = [
+        "//common:essential",
+        "//common:name_value",
+        "//common:random",
+        "//common:symbolic",
+        "//common:unused",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "stochastic_test",
+    deps = [
+        ":stochastic",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//common/yaml:yaml_read_archive",
+    ],
+)
+
+add_lint_tests()

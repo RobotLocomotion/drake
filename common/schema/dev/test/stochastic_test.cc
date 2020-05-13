@@ -1,4 +1,4 @@
-#include "common/schema/stochastic.h"
+#include "drake/common/schema/dev/stochastic.h"
 
 #include <algorithm>
 
@@ -14,8 +14,7 @@ using drake::symbolic::Variable;
 using drake::symbolic::Variables;
 using drake::yaml::YamlReadArchive;
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 namespace {
 
@@ -68,7 +67,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   DistributionStruct variants;
   YamlReadArchive(YAML::Load(all_variants)).Accept(&variants);
 
-  drake::RandomGenerator generator;
+  RandomGenerator generator;
 
   const Deterministic& d = std::get<Deterministic>(variants.vec[0]);
   EXPECT_EQ(d.Sample(&generator), 5.0);
@@ -134,8 +133,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_EQ(vec(3), 1.5);
   EXPECT_EQ(vec(4), 3.2);
 
-  drake::VectorX<drake::symbolic::Expression> symbolic_vec =
-      ToSymbolic(variants.vec);
+  VectorX<Expression> symbolic_vec = ToSymbolic(variants.vec);
   ASSERT_EQ(symbolic_vec.size(), 5);
   EXPECT_PRED2(ExprEqual, symbolic_vec(0), 5.0);
   CheckGaussianSymbolic(symbolic_vec(1), g.mean, g.std);
@@ -147,7 +145,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   YamlReadArchive(YAML::Load(floats)).Accept(&variants);
   vec = Sample(variants.vec, &generator);
   ASSERT_EQ(vec.size(), 3);
-  EXPECT_TRUE(drake::CompareMatrices(vec, Eigen::Vector3d(5.0, 6.1, 7.2)));
+  EXPECT_TRUE(CompareMatrices(vec, Eigen::Vector3d(5.0, 6.1, 7.2)));
 }
 
 struct DistributionVectorStruct {
@@ -188,12 +186,12 @@ GTEST_TEST(StochasticTest, VectorTest) {
   DistributionVectorStruct variants;
   YamlReadArchive(YAML::Load(vector_variants)).Accept(&variants);
 
-  drake::RandomGenerator generator;
+  RandomGenerator generator;
 
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.vector)->Sample(&generator),
       Eigen::Vector3d(1., 2., 3.)));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.vector)->Mean(),
       Eigen::Vector3d(1., 2., 3.)));
   auto symbolic_vector = ToDistributionVector(variants.vector)->ToSymbolic();
@@ -202,10 +200,10 @@ GTEST_TEST(StochasticTest, VectorTest) {
   EXPECT_PRED2(ExprEqual, symbolic_vector(1), 2.);
   EXPECT_PRED2(ExprEqual, symbolic_vector(2), 3.);
 
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.deterministic)->Sample(&generator),
       Eigen::Vector3d(3., 4., 5.)));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.deterministic)->Mean(),
       Eigen::Vector3d(3., 4., 5.)));
   symbolic_vector = ToDistributionVector(variants.deterministic)->ToSymbolic();
@@ -216,7 +214,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
 
   EXPECT_EQ(
       ToDistributionVector(variants.gaussian1)->Sample(&generator).size(), 3);
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.gaussian1)->Mean(),
       Eigen::Vector3d(1.1, 1.2, 1.3)));
   symbolic_vector = ToDistributionVector(variants.gaussian1)->ToSymbolic();
@@ -227,7 +225,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
 
   EXPECT_EQ(
       ToDistributionVector(variants.gaussian2)->Sample(&generator).size(), 4);
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.gaussian2)->Mean(),
       Eigen::Vector4d(2.1, 2.2, 2.3, 2.4)));
   symbolic_vector = ToDistributionVector(variants.gaussian2)->ToSymbolic();
@@ -238,12 +236,12 @@ GTEST_TEST(StochasticTest, VectorTest) {
   CheckGaussianSymbolic(symbolic_vector(3), 2.4, 1.0);
 
   EXPECT_TRUE(IsDeterministic(variants.vector));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(variants.vector),
       Eigen::Vector3d(1., 2., 3.)));
 
   EXPECT_TRUE(IsDeterministic(variants.deterministic));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(variants.deterministic),
       Eigen::Vector3d(3., 4., 5.)));
 
@@ -260,9 +258,9 @@ GTEST_TEST(StochasticTest, VectorTest) {
                std::logic_error);
 
   EXPECT_TRUE(IsDeterministic(variants.deterministic_scalar));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(variants.deterministic_scalar),
-      drake::Vector1d(19.5)));
+      Vector1d(19.5)));
 
   EXPECT_FALSE(IsDeterministic(variants.gaussian_scalar));
   EXPECT_THROW(GetDeterministicValue(variants.gaussian_scalar),
@@ -279,7 +277,7 @@ GTEST_TEST(StochasticTest, VectorTest) {
   EXPECT_GE(11, uniform(0));
   EXPECT_LE(20, uniform(1));
   EXPECT_GE(22, uniform(1));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.uniform)->Mean(),
       Eigen::Vector2d(10.5, 21.0)));
   symbolic_vector = ToDistributionVector(variants.uniform)->ToSymbolic();
@@ -291,25 +289,25 @@ GTEST_TEST(StochasticTest, VectorTest) {
         ToDistributionVector(variants.deterministic_scalar)->Sample(&generator);
   ASSERT_EQ(deterministic_scalar.size(), 1);
   EXPECT_EQ(deterministic_scalar(0), 19.5);
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.deterministic_scalar)->Mean(),
-      drake::Vector1d(19.5)));
+      Vector1d(19.5)));
 
   Eigen::VectorXd gaussian_scalar =
       ToDistributionVector(variants.gaussian_scalar)->Sample(&generator);
   ASSERT_EQ(gaussian_scalar.size(), 1);
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.gaussian_scalar)->Mean(),
-      drake::Vector1d(5.0)));
+      Vector1d(5.0)));
 
   Eigen::VectorXd uniform_scalar =
       ToDistributionVector(variants.uniform_scalar)->Sample(&generator);
   ASSERT_EQ(uniform_scalar.size(), 1);
   EXPECT_LE(1, uniform_scalar(0));
   EXPECT_GE(2, uniform_scalar(0));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       ToDistributionVector(variants.uniform_scalar)->Mean(),
-      drake::Vector1d(1.5)));
+      Vector1d(1.5)));
 }
 
 // Check the special cases of IsDeterministic for zero-size ranges.
@@ -322,27 +320,26 @@ GTEST_TEST(StochasticTest, ZeroSizeRandomRanges) {
   DistributionVectorVariantX uniform_scalar = Uniform(1.5, 1.5);
 
   EXPECT_TRUE(IsDeterministic(gaussian));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(gaussian),
       Eigen::VectorXd::Constant(3, 4.5)));
 
   EXPECT_TRUE(IsDeterministic(uniform));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(uniform),
       Eigen::VectorXd::Constant(2, 1.5)));
 
   EXPECT_TRUE(IsDeterministic(gaussian_scalar));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(gaussian_scalar),
       Eigen::VectorXd::Constant(1, 4.5)));
 
   EXPECT_TRUE(IsDeterministic(uniform_scalar));
-  EXPECT_TRUE(drake::CompareMatrices(
+  EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(uniform_scalar),
       Eigen::VectorXd::Constant(1, 1.5)));
 }
 
 }  // namespace
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake
