@@ -274,3 +274,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
   Current newest_commit 82057e6789cdaf7be1b228298d9b7484bfe645c5 (inclusive).
+
+* Fix a couple of typos (`#13277`_)
+* tools: Upgrade to clang-format-9 for includes (`#13259`_)  # Remove test cases for the inl pattern.  Drake does not permit this pattern anymore, and supporting it under clang-format-9 is difficult.
+* tools: Change order of third-party includes (`#13286`_)  # The new clang-format-9 prefers quote includes before angle includes. To use a different order, we'd have to insert an empty line between them, and we don't want to do that. So, we'll relent and allow the quote includes to appear first.
+* workspace: Bump meshcat_python to latest commit (`#13155`_)
+* tools: Upgrade to clang-format-9 (`#13287`_)  # This is flag day cut-over, since we have clang-format idempotence enforced by the linters within pydrake.
