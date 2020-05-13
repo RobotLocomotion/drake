@@ -2671,8 +2671,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
   /// Bp (regarded as affixed/welded to B), expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
-  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
-  /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAi_A
+  /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
+  /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
   /// because Bp's velocity in A is defined as the derivative in frame A of
   /// Bp's position vector from _any_ point affixed to A.
   /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
@@ -2682,15 +2682,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
   /// The Jacobian is a function of only generalized positions q (which are
   /// pulled from the context).
-  /// Note: The first three rows of the returned `6 x n` matrix stores frame B's
-  /// angular velocity Jacobian in A.  Rows 4-6 store point Bp's translational
-  /// velocity Jacobian in A, i.e.,
-  ///   ```
+  /// Note: The returned `6 x n` matrix stores frame B's angular velocity
+  /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
+  /// Jacobian in A in rows 4-6, i.e., <pre>
   ///     J𝑠_wAB_E = J𝑠_V_ABp_E.topRows<3>();
   ///     J𝑠_vABp_E = J𝑠_V_ABp_E.bottomRows<3>();
-  ///   ```
+  /// </pre>
   /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
-  /// affixed to frame B and CalcJacobianAngularVelocity() to calculate
+  /// affixed to frame B and consider CalcJacobianAngularVelocity() to calculate
   /// frame B's angular velocity Jacobian.
   /// @throws std::exception if `J𝑠_V_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
