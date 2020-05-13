@@ -1285,9 +1285,15 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBodyBiasSpatialAccelerationInWorld(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // As documentated in MultibodyPlant::CalcBiasSpatialAcceleration(),
-  // A_WA = J𝑠_V_WA ⋅ 𝑠̇  +  𝐀𝑠𝐁𝐢𝐚𝐬_𝐖𝐀_𝐖, so evaluate A_WA with 𝑠̇ = 0.
-  // Set 𝑠̇ = 0 to calculate all bodies' spatial acceleration biases in world W.
+  // To calculate body A's spatial acceleration bias in world W, note that
+  // body A's spatial velocity in world W is
+  //     V_WA = J𝑠_V_WA ⋅ 𝑠
+  // which upon vector differentiation in W gives A's spatial acceleration in W
+  //     A_WA = J𝑠_V_WA ⋅ 𝑠̇  +  J̇𝑠_V_WA ⋅ 𝑠
+  // Since A𝑠Bias_WA can be defined as the term in A_WA that does not include 𝑠̇,
+  //     A𝑠Bias_WA = J̇𝑠_V_WA ⋅ 𝑠  =  A_WA − J𝑠_V_WA ⋅ 𝑠̇
+  // One way to calculate A𝑠Bias_WA is to evaluate A_WA with 𝑠̇ = 0.  Hence, set
+  // 𝑠̇ = 0 to calculate all bodies' spatial acceleration biases in world W.
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   std::vector<SpatialAcceleration<T>> AsBias_WBodies(num_bodies());
@@ -1368,11 +1374,11 @@ SpatialAcceleration<T> MultibodyTree<T>::ShiftSpatialAccelerationBiasInWorld(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
+Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
     const systems::Context<T>& context,
     JacobianWrtVariable with_respect_to,
     const Frame<T>& frame_B,
-    const Eigen::Ref<const MatrixX<T>>& p_BoBi_B,
+    const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
     const Frame<T>& frame_A,
     const Frame<T>& frame_E) const {
   // There must be 3 rows in a position vector or array of positions vectors.
@@ -1398,7 +1404,7 @@ VectorX<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
 
   // Allocate the output vector.
   const int num_points = p_BoBi_B.cols();
-  VectorX<T> asBias_WBi_E_array(3 * num_points);
+  Matrix3X<T> asBias_WBi_E_array(3, num_points);
 
   // Fill the output vector with translational acceleration biases.
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
@@ -1409,7 +1415,7 @@ VectorX<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
 
     // Output translational component only.
     const Vector3<T> asBias_WBi_E = R_EW * AsBias_WBi_W.translational();
-    asBias_WBi_E_array.template segment<3>(3 * ipoint) = asBias_WBi_E;
+    asBias_WBi_E_array.col(ipoint) = asBias_WBi_E;
   }
   return asBias_WBi_E_array;
 }

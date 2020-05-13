@@ -1314,9 +1314,29 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const {
-    return CalcBiasTranslationalAcceleration(context, with_respect_to,
-                                             frame_F, p_FP_list,
-                                             frame_A, frame_E);
+    const int num_points = p_FP_list.cols();
+    DRAKE_THROW_UNLESS(num_points > 0 && p_FP_list.rows() == 3);
+
+    // This deprecated method calls a new method which has a slightly different
+    // signature (Matrix3X instead of MatrixX) and a different return value
+    // (new method returns Matrix3X, old method returns VectorX).
+    // Change the position vector argument from MatrixX to Matrix3X.
+    Matrix3X<T> position_vectors(3, num_points);
+    for (int i = 0; i < num_points; ++i)
+      position_vectors.col(i) = p_FP_list.col(i);
+
+    const Matrix3X<T> asBias_AFp_E = CalcBiasTranslationalAcceleration(
+        context, with_respect_to, frame_F, position_vectors, frame_A, frame_E);
+
+    // This deprecated method needs to return a VectorX<T>.
+    VectorX<T> asBias_AFp_E_as_VectorX(3 * num_points);
+    for (int i = 0;  i < num_points; ++i) {
+      const Vector3<T> acceleration_bias_i = asBias_AFp_E.col(i);
+      for (int j = 0; j < 3;  ++j)
+        asBias_AFp_E_as_VectorX(3*i + j) = acceleration_bias_i(j);
+    }
+
+    return asBias_AFp_E_as_VectorX;
   }
 
   /// See MultibodyPlant method.
@@ -1407,11 +1427,11 @@ class MultibodyTree {
       const Frame<T>& frame_A, const Frame<T>& frame_E) const;
 
   /// See MultibodyPlant method.
-  VectorX<T> CalcBiasTranslationalAcceleration(
+  Matrix3X<T> CalcBiasTranslationalAcceleration(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B,
-      const Eigen::Ref<const MatrixX<T>>& p_BoBi_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
       const Frame<T>& frame_A,
       const Frame<T>& frame_E) const;
 
