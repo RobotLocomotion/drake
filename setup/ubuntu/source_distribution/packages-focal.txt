@@ -28,7 +28,7 @@ libjsoncpp-dev
 liblapack-dev
 liblz4-dev
 libnetcdf-dev
-libnlopt-dev
+libnlopt-cxx-dev
 libogg-dev
 libpng-dev
 libqt5opengl5-dev

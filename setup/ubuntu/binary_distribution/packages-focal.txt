@@ -19,7 +19,7 @@ libjsoncpp1
 liblapack3
 libldl2
 libnetcdf15
-libnlopt0
+libnlopt-cxx0
 libogg0
 libpng16-16
 libqt5multimedia5
