@@ -20,6 +20,7 @@ class LinearSystemSolver final : public SolverBase {
   //@{
   static SolverId id();
   static bool is_available();
+  static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   //@}
 

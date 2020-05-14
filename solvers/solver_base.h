@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
@@ -34,17 +35,27 @@ class SolverBase : public SolverInterface {
       const std::optional<SolverOptions>&, MathematicalProgramResult*) const
       override;
   bool available() const override;
+  bool enabled() const override;
   SolverId solver_id() const override;
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
 
  protected:
   /// Constructs a SolverBase with the given default implementations of the
-  /// solver_id(), available(), and AreProgramAttributesSatisfied() methods.
-  /// (Typically, the subclass will just pass the address of its static method,
-  /// e.g. `&id`, for these functors.)  Any of the functors can be null, in
-  /// which case the subclass should override the virtual method instead.
+  /// solver_id(), available(), enabled(), and AreProgramAttributesSatisfied()
+  /// methods.  (Typically, the subclass will just pass the address of its
+  /// static method, e.g. `&id`, for these functors.)  Any of the functors can
+  /// be nullptr, in which case the subclass should override the virtual method
+  /// instead.
   SolverBase(
-      std::function<SolverId()> id, std::function<bool()> available,
+      std::function<SolverId()> id,
+      std::function<bool()> available,
+      std::function<bool()> enabled,
+      std::function<bool(const MathematicalProgram&)> satisfied);
+
+  DRAKE_DEPRECATED("2020-09-01", "The 'enabled' argument will become required.")
+  SolverBase(
+      std::function<SolverId()> id,
+      std::function<bool()> available,
       std::function<bool(const MathematicalProgram&)> satisfied);
 
   /// Hook for subclasses to implement Solve.  Prior to the SolverBase's call
@@ -59,8 +70,10 @@ class SolverBase : public SolverInterface {
       const SolverOptions& merged_options,
       MathematicalProgramResult* result) const = 0;
 
+ private:
   std::function<SolverId()> default_id_;
   std::function<bool()> default_available_;
+  std::function<bool()> default_enabled_;
   std::function<bool(const MathematicalProgram&)> default_satisfied_;
 };
 

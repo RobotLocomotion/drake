@@ -14,10 +14,20 @@ namespace solvers {
 SolverBase::SolverBase(
     std::function<SolverId()> id,
     std::function<bool()> available,
+    std::function<bool()> enabled,
     std::function<bool(const MathematicalProgram&)> satisfied)
     : default_id_(std::move(id)),
       default_available_(std::move(available)),
+      default_enabled_(std::move(enabled)),
       default_satisfied_(std::move(satisfied)) {}
+
+SolverBase::SolverBase(
+      std::function<SolverId()> id,
+      std::function<bool()> available,
+      std::function<bool(const MathematicalProgram&)> satisfied)
+    : SolverBase(
+          std::move(id), std::move(available),
+          []() { return true; }, std::move(satisfied)) {}
 
 SolverBase::~SolverBase() = default;
 
@@ -38,6 +48,11 @@ void SolverBase::Solve(const MathematicalProgram& prog,
   if (!available()) {
     throw std::invalid_argument(fmt::format(
         "The {} is not available in this build", NiceTypeName::Get(*this)));
+  }
+  if (!enabled()) {
+    throw std::invalid_argument(fmt::format(
+        "{}::is_enabled() is false; see its documentation for how to enable.",
+        NiceTypeName::Get(*this)));
   }
   if (!AreProgramAttributesSatisfied(prog)) {
     throw std::invalid_argument(fmt::format(
@@ -66,6 +81,11 @@ void SolverBase::Solve(const MathematicalProgram& prog,
 bool SolverBase::available() const {
   DRAKE_DEMAND(default_available_ != nullptr);
   return default_available_();
+}
+
+bool SolverBase::enabled() const {
+  DRAKE_DEMAND(default_enabled_ != nullptr);
+  return default_enabled_();
 }
 
 SolverId SolverBase::solver_id() const {

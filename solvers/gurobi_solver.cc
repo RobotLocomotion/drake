@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -644,8 +643,7 @@ bool GurobiSolver::is_available() { return true; }
 class GurobiSolver::License {
  public:
   License() {
-    const char* grb_license_file = std::getenv("GRB_LICENSE_FILE");
-    if (grb_license_file == nullptr) {
+    if (!GurobiSolver::is_enabled()) {
       throw std::runtime_error(
           "Could not locate Gurobi license key file because GRB_LICENSE_FILE "
           "environment variable was not set.");

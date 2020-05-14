@@ -12,7 +12,8 @@ namespace drake {
 namespace solvers {
 
 DrealSolver::DrealSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 DrealSolver::~DrealSolver() = default;
 
@@ -20,6 +21,8 @@ SolverId DrealSolver::id() {
   static const never_destroyed<SolverId> singleton{"dReal"};
   return singleton.access();
 }
+
+bool DrealSolver::is_enabled() { return true; }
 
 bool DrealSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
