@@ -9,6 +9,8 @@
 #include <Eigen/Dense>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
+#include <vtkOpenGLTexture.h>
+#include <vtkProperty.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/find_resource.h"
@@ -1174,6 +1176,62 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
           ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
     }
   }
+}
+
+// This class exists solely for the purpopse of injecting an arbitrary texture
+// onto an actor and confirm that the texture is preserved over the copy.
+class TextureSetterEngine : public RenderEngineVtk {
+ public:
+  TextureSetterEngine() = default;
+
+  /* Reports if the color actor for the geometry with the given `id` has the
+   property texture append by this class's DoRegisterVisual() implementaiton. */
+  bool GeometryHasColorTexture(GeometryId id,
+                               const std::string& texture_name) const {
+    const auto color_actor = actors().at(id)[0];
+    return color_actor->GetProperty()->GetTexture(texture_name.c_str()) !=
+           nullptr;
+  }
+
+  /* Applies a texture with the given name to the color actor for the geometry
+   indicated by the given id. */
+  void ApplyColorTextureToGeometry(GeometryId id,
+                                   const std::string& texture_name) {
+    const auto color_actor = actors().at(id)[0];
+    vtkNew<vtkImageData> image_data;
+    vtkNew<vtkOpenGLTexture> texture;
+    texture->SetRepeat(false);
+    texture->InterpolateOn();
+    texture->SetInputDataObject(image_data.Get());
+    color_actor->GetProperty()->SetTexture(texture_name.c_str(), texture.Get());
+  }
+
+ protected:
+  std::unique_ptr<RenderEngine> DoClone() const override {
+    return make_unique<TextureSetterEngine>(*this);
+  }
+};
+
+// Confirms that arbitrary textures assigned to an actors property are preserved
+// through cloning.
+TEST_F(RenderEngineVtkTest, PreservePropertyTexturesOverClone) {
+  const std::string texture_name("test_texture");
+  TextureSetterEngine engine;
+  Sphere sphere{0.5};
+  const GeometryId id = GeometryId::get_new_id();
+  const RenderLabel label(12345);  // an arbitrary value.
+  PerceptionProperties material;
+  material.AddProperty("phong", "diffuse", Vector4d{1.0, 1.0, 1.0, 1.0});
+  material.AddProperty("label", "id", label);
+  engine.RegisterVisual(id, sphere, material, RigidTransformd(),
+                        true /* needs update */);
+  engine.ApplyColorTextureToGeometry(id, texture_name);
+  ASSERT_TRUE(engine.GeometryHasColorTexture(id, texture_name));
+  auto clone_ptr = engine.Clone();
+  const TextureSetterEngine* clone =
+      dynamic_cast<TextureSetterEngine*>(clone_ptr.get());
+  ASSERT_NE(clone, nullptr);
+  ASSERT_TRUE(clone->GeometryHasColorTexture(id, texture_name));
 }
 
 }  // namespace
