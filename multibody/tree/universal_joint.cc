@@ -27,7 +27,7 @@ std::unique_ptr<Joint<ToScalar>> UniversalJoint<T>::TemplatedDoCloneToScalar(
   joint_clone->set_acceleration_limits(this->acceleration_lower_limits(),
                                        this->acceleration_upper_limits());
 
-  return std::move(joint_clone);
+  return joint_clone;
 }
 
 template <typename T>
@@ -59,7 +59,7 @@ UniversalJoint<T>::MakeImplementationBlueprint() const {
       this->frame_on_parent(), this->frame_on_child());
   univeral_mobilizer->set_default_position(this->default_positions());
   blue_print->mobilizers_.push_back(std::move(univeral_mobilizer));
-  return std::move(blue_print);
+  return blue_print;
 }
 
 }  // namespace multibody

@@ -19,5 +19,5 @@ std::unique_ptr<DrakeJoint> HelicalJoint::DoClone() const {
   auto joint = std::make_unique<HelicalJoint>(get_name(),
                                               get_transform_to_parent_body(),
                                               axis_, pitch_);
-  return std::move(joint);
+  return joint;
 }

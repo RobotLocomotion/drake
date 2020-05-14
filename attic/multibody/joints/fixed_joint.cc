@@ -19,5 +19,5 @@ Eigen::VectorXd FixedJoint::randomConfiguration(
 std::unique_ptr<DrakeJoint> FixedJoint::DoClone() const {
   auto joint = std::make_unique<FixedJoint>(get_name(),
                                             get_transform_to_parent_body());
-  return std::move(joint);
+  return joint;
 }

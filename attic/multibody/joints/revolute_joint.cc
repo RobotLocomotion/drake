@@ -17,5 +17,5 @@ std::unique_ptr<DrakeJoint> RevoluteJoint::DoClone() const {
   auto joint = std::make_unique<RevoluteJoint>(get_name(),
                                                get_transform_to_parent_body(),
                                                rotation_axis_);
-  return std::move(joint);
+  return joint;
 }
