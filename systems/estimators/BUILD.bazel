@@ -57,6 +57,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:is_dynamic_castable",
         "//examples/pendulum:pendulum_plant",
+        "//systems/framework/test_utilities:scalar_conversion",
         "//systems/primitives:linear_system",
     ],
 )

@@ -30,7 +30,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
       SteadyStateKalmanFilter(system->A(), system->C(), W, V);
 
   return std::make_unique<LuenbergerObserver<double>>(
-      std::move(system), system->CreateDefaultContext(), L);
+      std::move(system), *system->CreateDefaultContext(), L);
 }
 
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
@@ -52,7 +52,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
       SteadyStateKalmanFilter(linear_system->A(), linear_system->C(), W, V);
 
   return std::make_unique<LuenbergerObserver<double>>(std::move(system),
-                                                      std::move(context), L);
+                                                      *context, L);
 }
 
 }  // namespace estimators
