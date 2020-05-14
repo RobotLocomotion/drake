@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/lcm/lcm_messages.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
@@ -37,7 +38,9 @@ void SchunkWsgCommandReceiver::CalcPositionOutput(
       this->get_input_port(0).Eval<lcmt_schunk_wsg_command>(context);
 
   double target_position = initial_position_;
-  if (message.utime != 0.0) {
+  // N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
+  // value-initialization.
+  if (!lcm::AreLcmMessagesEqual(message, lcmt_schunk_wsg_command{})) {
     target_position = message.target_position_mm / 1e3;
     if (std::isnan(target_position)) {
       target_position = 0;
@@ -53,7 +56,9 @@ void SchunkWsgCommandReceiver::CalcForceLimitOutput(
       this->get_input_port(0).Eval<lcmt_schunk_wsg_command>(context);
 
   double force_limit = initial_force_;
-  if (message.utime != 0.0) {
+  // N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
+  // value-initialization.
+  if (!lcm::AreLcmMessagesEqual(message, lcmt_schunk_wsg_command{})) {
     force_limit = message.force;
   }
 
