@@ -278,4 +278,16 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
-  Current newest_commit 462b7ec8de4a5bfa3aa11248ca937dbe2a3e2e72 (inclusive).
+  Current newest_commit 3e70123bd8cfbeebba57aa513531383d5e52d1cb (inclusive).
+
+* controllers: support affine terms in finite-horizon LQR (`#13272`_)  # The corresponding derivation is in: http://underactuated.mit.edu/lqr.html#finite_horizon_derivation This is the last major piece of functionality that I hoped to support for continuous-time systems.  (Richer cost specification would be the one easy thing to add if/when it's needed).  But I still hope to add the discrete-time formulations before I'm completely satisfied.
+* mbp: Allow CollectRegisteredGeometries to be called pre-finalize (`#13281`_)
+* py mbp: Bind set_stiction_tolerance, get_contact_penalty_method_time_scale (`#13294`_)
+* Cleanup Jaco LCM helpers and move from examples to manipulation (`#13275`_)  # This brings the non-examples Jaco support to a roughly equivalent level as the iiwa has had since #10567.
+* [doc] Add four new components that are all geometry related (`#13290`_)
+* Parses custom LinearBushingRollPitchYaw tag in SDF/URDF (`#13255`_)  # parses a custom drake:linear_bushing_rpy tag in both URDF and SDF to add `LinearBushingRollPitchYaw` force elements to a multibody plant.
+* schema: Copy stochastic from Anzu (`#13295`_)  # Co-authored-by: Grant Gould <ggould@tri.global> Co-authored-by: Sam Creasey <sam.creasey@tri.global>
+* schema: Adapt stochastic to Drake and add to BUILD (`#13295`_)  # Adjust constructors for clang++ compability.
+* setup: fix various package names on Focal (`#13303`_)  # * resolve transitional packages to their new name * add or replace packages where their function has substantially changed * add several missing runtime dependencies
+* nice_type_name: Permit overriding (`#13194`_)
+* pydrake: Override NiceTypeName::Get(ptr) when possible (`#13194`_)
