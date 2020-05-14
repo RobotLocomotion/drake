@@ -21,7 +21,7 @@ class SolverInterface {
   virtual ~SolverInterface();
 
   /// Returns true iff this solver was enabled at compile-time. Certain solvers
-  /// may be exlucded at compile-time due to licensing or linking restrictions.
+  /// may be excluded at compile-time due to licensing or linking restrictions.
   /// When this method returns false, the Solve method will throw.
   virtual bool available() const = 0;
 
