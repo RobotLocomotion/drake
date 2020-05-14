@@ -24,7 +24,10 @@ class MoveOnlyType {
   int x_{};
 };
 
-struct UnknownType {};
+// This type is explicitly not registered with pybind11.
+struct UnregisteredType {
+  int junk{};
+};
 
 }  // namespace
 
@@ -38,8 +41,8 @@ PYBIND11_MODULE(value_test_util, m) {
   // Define `Value` instantiation.
   AddValueInstantiation<MoveOnlyType>(m);
 
-  m.def("make_unknown_abstract_value",
-      []() { return AbstractValue::Make(UnknownType{}); });
+  m.def("make_abstract_value_cc_type_unregistered",
+      []() { return AbstractValue::Make(UnregisteredType{}); });
 }
 
 }  // namespace pydrake

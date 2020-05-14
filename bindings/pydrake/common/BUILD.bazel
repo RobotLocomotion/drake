@@ -47,6 +47,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
+        "//common:nice_type_name_override_header",
     ],
     cc_so_name = "_module_py",
     cc_srcs = [

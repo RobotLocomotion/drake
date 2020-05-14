@@ -9,6 +9,8 @@
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/nice_type_name.h"
+#include "drake/common/nice_type_name_override.h"
 #include "drake/common/random.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
@@ -16,14 +18,74 @@
 namespace drake {
 namespace pydrake {
 
+using drake::internal::type_erased_ptr;
+
 // This function is defined in drake/common/drake_assert_and_throw.cc.
 extern "C" void drake_set_assertion_failure_to_throw_exception();
 
 namespace {
+
 void trigger_an_assertion_failure() {
   DRAKE_DEMAND(false);
 }
-}  // namespace
+
+// Resolves to a Python handle given a type erased pointer. If the instance or
+// lowest-level RTTI type are unregistered, returns an empty handle.
+py::handle ResolvePyObject(const type_erased_ptr& ptr) {
+  auto py_type_info = py::detail::get_type_info(ptr.info);
+  return py::detail::get_object_handle(ptr.raw, py_type_info);
+}
+
+// Gets a class's fully-qualified name.
+std::string GetPyClassName(py::handle obj) {
+  DRAKE_DEMAND(!!obj);
+  py::handle type = py::module::import("builtins").attr("type");
+  py::handle cls = type(obj);
+  return py::str("{}.{}").format(
+      cls.attr("__module__"), cls.attr("__qualname__"));
+}
+
+// Override for SetNiceTypeNamePtrOverride, to ensure that instances that are
+// registered (along with their types) can use their Python class's name.
+std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
+  DRAKE_DEMAND(ptr.raw != nullptr);
+  const std::string cc_name = NiceTypeName::Get(ptr.info);
+  if (cc_name.find("pydrake::") != std::string::npos) {
+    py::handle obj = ResolvePyObject(ptr);
+    if (obj) {
+      return GetPyClassName(obj);
+    }
+  }
+  return cc_name;
+}
+
+namespace testing {
+// Registered type. Also a base class for UnregisteredDerivedType.
+class RegisteredType {
+ public:
+  virtual ~RegisteredType() {}
+};
+// Completely unregistered type.
+class UnregisteredType {};
+// Unregistered type, but with a registered base.
+class UnregisteredDerivedType : public RegisteredType {};
+
+void def_testing(py::module m) {
+  py::class_<RegisteredType>(m, "RegisteredType").def(py::init());
+  // See comments in `module_test.py`.
+  m.def("get_nice_type_name_cc_registered_instance",
+      [](const RegisteredType& obj) { return NiceTypeName::Get(obj); });
+  m.def("get_nice_type_name_cc_unregistered_instance",
+      []() { return NiceTypeName::Get(RegisteredType()); });
+  m.def("get_nice_type_name_cc_typeid",
+      [](const RegisteredType& obj) { return NiceTypeName::Get(typeid(obj)); });
+  m.def("get_nice_type_name_cc_unregistered_type",
+      []() { return NiceTypeName::Get(UnregisteredType()); });
+  m.def("make_cc_unregistered_derived_type", []() {
+    return std::unique_ptr<RegisteredType>(new UnregisteredDerivedType());
+  });
+}
+}  // namespace testing
 
 PYBIND11_MODULE(_module_py, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
@@ -112,7 +174,15 @@ PYBIND11_MODULE(_module_py, m) {
       "Trigger a Drake C++ assertion failure");
 
   m.attr("kDrakeAssertIsArmed") = kDrakeAssertIsArmed;
+
+  // Make nice_type_name use Python type info when available.
+  drake::internal::SetNiceTypeNamePtrOverride(PyNiceTypeNamePtrOverride);
+
+  // Define testing.
+  py::module m_testing = m.def_submodule("_testing");
+  testing::def_testing(m_testing);
 }
 
+}  // namespace
 }  // namespace pydrake
 }  // namespace drake
