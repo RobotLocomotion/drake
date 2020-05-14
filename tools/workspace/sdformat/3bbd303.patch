@@ -1,3 +1,7 @@
+The following patch was taken from upstream sdformat, and then reworked to
+remove merge conflicts when applied to the libsdformat tag used by Drake.
+Specifically, irrelevant files (CMakeLists, Ruby code) were removed.
+
 From 3bbd303c8b94b20244d102eae095ffcbaa4c550d Mon Sep 17 00:00:00 2001
 From: Jeremy Nimmer <jeremy.nimmer@tri.global>
 Date: Thu, 7 May 2020 19:09:57 -0400
@@ -28,12 +32,12 @@ in future commits, due to fewer functions to repair.
 
 diff --git a/src/Converter.cc b/src/Converter.cc
 index 4e5abcbf..4dc66a1d 100644
---- src/Converter.cc
-+++ src/Converter.cc
+--- a/src/Converter.cc
++++ b/src/Converter.cc
 @@ -29,12 +29,18 @@
- #include "sdf/Converter.hh"
- #include "sdf/SDFImpl.hh"
  #include "sdf/Types.hh"
+ 
+ #include "Converter.hh"
 -
 -// This include file is generated at configure time.
 -#include "sdf/EmbeddedSdf.hh"
@@ -125,7 +129,7 @@ diff --git a/src/EmbeddedSdf.hh b/src/EmbeddedSdf.hh
 new file mode 100755
 index 00000000..b0c447b1
 --- /dev/null
-+++ src/EmbeddedSdf.hh
++++ b/src/EmbeddedSdf.hh
 @@ -0,0 +1,40 @@
 +/*
 + * Copyright 2020 Open Source Robotics Foundation
@@ -169,8 +173,8 @@ index 00000000..b0c447b1
 +#endif
 diff --git a/src/SDF.cc b/src/SDF.cc
 index 48c1943b..20dcd4c6 100644
---- src/SDF.cc
-+++ src/SDF.cc
+--- a/src/SDF.cc
++++ b/src/SDF.cc
 @@ -31,9 +31,7 @@
  #include "sdf/SDFImpl.hh"
  #include "SDFImplPrivate.hh"
