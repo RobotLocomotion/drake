@@ -39,7 +39,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
 
   // Start off with the gripper closed (zero) and a command to open to
   // 100mm.
-  initial_command.utime = 1;
+  initial_command.utime = 0;
   initial_command.target_position_mm = 100;
   initial_command.force = 40;
   message_input_port.FixValue(context.get(), initial_command);
@@ -81,7 +81,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
             0.0);
 
   // Check that we can read out valid input.
-  status.utime = 1;
+  status.utime = 0;
   status.actual_position_mm = 100;
   status.actual_speed_mm_per_s = 324;
   status.actual_force = 40;
