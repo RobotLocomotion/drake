@@ -53,32 +53,17 @@ const sdf::Element* MaybeGetChildElement(
   return nullptr;
 }
 
-// Helper to return the child element of `element` named `child_name`.
-// Throws std::runtime_error if not found.
-const sdf::Element& GetChildElementOrThrow(
-    const sdf::Element& element, const std::string &child_name) {
-  // First verify <child_name> is present (otherwise GetElement() has the
-  // side effect of adding new elements if not present!!).
-  if (!element.HasElement(child_name)) {
-    throw std::runtime_error(
-        "Element <" + child_name + "> not found nested within element <" +
-            element.GetName() + ">.");
-  }
-  // NOTE: The const_cast() here is needed because sdformat does not provide
-  // a const version of GetElement(). However, the snippet below still
-  // guarantees "element" is not changed as promised by this method's
-  // signature. See sdformat issue #188.
-  return *const_cast<sdf::Element &>(element).GetElement(child_name);
-}
-
 // Helper to return the value of a child of `element` named `child_name`.
 // A std::runtime_error is thrown if the `<child_name>` tag is missing from the
-// SDF file, or the tag has a bad or missing value.
+// SDF file and no `default_value` is supplied, or the tag has a bad or missing
+// value.
 template <typename T>
-T GetChildElementValueOrThrow(const sdf::Element& element,
-                              const std::string& child_name) {
+T GetChildElementValue(const sdf::Element& element,
+                       const std::string& child_name,
+                       const std::optional<T>& default_value = std::nullopt) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
   if (!element.HasElement(child_name)) {
+    if (default_value) return *default_value;
     throw std::runtime_error(
         "Element <" + child_name + "> is required within element "
             "<" + element.GetName() + ">.");
@@ -107,19 +92,19 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
         const sdf::ElementPtr capsule_element =
             sdf_geometry.Element()->GetElement("drake:capsule");
         const double radius =
-            GetChildElementValueOrThrow<double>(*capsule_element, "radius");
+            GetChildElementValue<double>(*capsule_element, "radius");
         const double length =
-            GetChildElementValueOrThrow<double>(*capsule_element, "length");
+            GetChildElementValue<double>(*capsule_element, "length");
         return make_unique<geometry::Capsule>(radius, length);
       } else if (sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
         const sdf::ElementPtr ellipsoid_element =
             sdf_geometry.Element()->GetElement("drake:ellipsoid");
         const double a =
-            GetChildElementValueOrThrow<double>(*ellipsoid_element, "a");
+            GetChildElementValue<double>(*ellipsoid_element, "a");
         const double b =
-            GetChildElementValueOrThrow<double>(*ellipsoid_element, "b");
+            GetChildElementValue<double>(*ellipsoid_element, "b");
         const double c =
-            GetChildElementValueOrThrow<double>(*ellipsoid_element, "c");
+            GetChildElementValue<double>(*ellipsoid_element, "c");
         return make_unique<geometry::Ellipsoid>(a, b, c);
       }
 
@@ -157,11 +142,11 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       DRAKE_DEMAND(mesh_element != nullptr);
       const std::string file_name =
           resolve_filename(
-              GetChildElementValueOrThrow<std::string>(*mesh_element, "uri"));
+              GetChildElementValue<std::string>(*mesh_element, "uri"));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         const ignition::math::Vector3d& scale_vector =
-            GetChildElementValueOrThrow<ignition::math::Vector3d>(
+            GetChildElementValue<ignition::math::Vector3d>(
                 *mesh_element, "scale");
         // geometry::Mesh only supports isotropic scaling and therefore we
         // enforce it.
@@ -400,7 +385,7 @@ ProximityProperties MakeProximityPropertiesForCollision(
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
       if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
-        return GetChildElementValueOrThrow<double>(*drake_element,
+        return GetChildElementValue<double>(*drake_element,
                                                    element_name);
       }
       return {};
@@ -461,24 +446,27 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
   // object. Only a bug could cause this.
   DRAKE_DEMAND(collision_element != nullptr);
 
+  // Look for a surface/friction/ode element. If any are missing, we return
+  // default friction properties.
+  // TODO(eric.cousineau): Use sdf::Surface once it is more complete.
   const sdf::Element* const surface_element =
       MaybeGetChildElement(*collision_element, "surface");
 
-  // If the surface is not found, we return default friction properties.
   if (!surface_element) return default_friction();
+  const sdf::Element* friction_element =
+      MaybeGetChildElement(*surface_element, "friction");
+  if (!friction_element) return default_friction();
+  const sdf::Element* ode_element =
+      MaybeGetChildElement(*friction_element, "ode");
+  if (!ode_element) return default_friction();
 
-  // Once <surface> is found, <friction> and <ode> are required.
-  const sdf::Element& friction_element =
-      GetChildElementOrThrow(*surface_element, "friction");
-  const sdf::Element& ode_element =
-      GetChildElementOrThrow(friction_element, "ode");
-
-  // Once <ode> is found, <mu> (for static) and <mu2> (for dynamic) are
-  // required.
+  // Read <mu> (for static) and <mu2> (for dynamic), with default values.
   const double static_friction =
-      GetChildElementValueOrThrow<double>(ode_element, "mu");
+      GetChildElementValue<double>(
+          *ode_element, "mu", default_friction().static_friction());
   const double dynamic_friction =
-      GetChildElementValueOrThrow<double>(ode_element, "mu2");
+      GetChildElementValue<double>(
+          *ode_element, "mu2", default_friction().dynamic_friction());
 
   return CoulombFriction<double>(static_friction, dynamic_friction);
 }
