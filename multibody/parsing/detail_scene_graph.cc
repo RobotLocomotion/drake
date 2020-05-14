@@ -59,9 +59,8 @@ const sdf::Element* MaybeGetChildElement(
 // value.
 template <typename T>
 T GetChildElementValue(const sdf::Element& element,
-                              const std::string& child_name,
-                              const std::optional<T>& default_value =
-                                  std::nullopt) {
+                       const std::string& child_name,
+                       const std::optional<T>& default_value = std::nullopt) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
   if (!element.HasElement(child_name)) {
     if (default_value) return *default_value;
@@ -447,14 +446,12 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
   // object. Only a bug could cause this.
   DRAKE_DEMAND(collision_element != nullptr);
 
+  // Look for a surface/friction/ode element. If missing, we return default
+  // friction properties.
   // TODO(eric.cousineau): Use sdf::Surface once it is more complete.
   const sdf::Element* const surface_element =
       MaybeGetChildElement(*collision_element, "surface");
-
-  // If the surface is not found, we return default friction properties.
   if (!surface_element) return default_friction();
-
-  // Once <surface> is found, <friction> and <ode> are optional.
   const sdf::Element* friction_element =
       MaybeGetChildElement(*surface_element, "friction");
   if (!friction_element) return default_friction();
@@ -462,8 +459,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
       MaybeGetChildElement(*friction_element, "ode");
   if (!ode_element) return default_friction();
 
-  // Once <ode> is found, <mu> (for static) and <mu2> (for dynamic) are
-  // optional.
+  // Read <mu> (for static) and <mu2> (for dynamic), with default values.
   const double static_friction =
       GetChildElementValue<double>(
           *ode_element, "mu", default_friction().static_friction());

@@ -1308,6 +1308,9 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </ode>"
       "  </surface>"
       "</collision>");
+  // TODO(jwnimmer-tri) Ideally, the misplaced <ode/> element above would
+  // report a parsing error and/or raise an exception.  For now though, we
+  // ignore it and use the defaults.
   EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
       default_friction());
@@ -1330,6 +1333,9 @@ GTEST_TEST(SceneGraphParserDetail,
           "    </friction>"
           "  </surface>"
           "</collision>");
+  // TODO(jwnimmer-tri) Ideally, the misplaced <friction/> element above would
+  // report a parsing error and/or raise an exception.  For now though, we
+  // ignore it and use the defaults.
   EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
       default_friction());
