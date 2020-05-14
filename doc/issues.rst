@@ -115,6 +115,13 @@ Every issue must have at most one ``component`` label. The components are:
 
   typical team: dynamics
 
+- ``mathematical program``
+
+  Formulating and solving mathematical programs through numerical optimization,
+  usually in ``drake/solvers``.
+
+  typical team: manipulation
+
 - ``multibody plant``
 
   MultibodyPlant and related code and documentation
