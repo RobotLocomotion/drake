@@ -54,6 +54,7 @@ New features
 * Controllers
 
   * FittedValueIteration supports MultibodyPlant + SceneGraph (`#13113`_)
+  * Add support for affine terms in finite-horizon LQR (`#13272`_)
   * Add support for Finite Horizon LQR result as a System (`#13178`_)
   * Add Acrobot example of Finite Lorizon LQR (`#13250`_, `#13252`_)
 
@@ -81,6 +82,7 @@ New features
 * Add universal joint and mobilizer (`#13055`_, `#13054`_)
 * Add propeller model (`#13135`_)
 * Add planar four bar linkage example (`#13036`_)
+* Add custom <drake:linear_bushing_rpy/> tag in SDF/URDF (`#13255`_)
 * Add get_body_poses_output_port (`#13137`_)
 * Make joint store default value (`#13105`_)
 
@@ -90,13 +92,14 @@ New features
 
 Fixes
 
-* None
+* Allow CollectRegisteredGeometries to be called pre-finalize (`#13281`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Upgrade quadrotor to Skydio R2 model (`#13050`_)
 * Add lcmtypes for panda command/status (`#13163`_)
+* Move Jaco LCM helpers from examples to manipulation (`#13275`_)
 * Install Drake's custom drake_visualizer plugins (`#13127`_)
 
 pydrake bindings
@@ -107,6 +110,8 @@ Newly bound
 * pydrake.common.kDrakeAssertIsArmed (`#13183`_, `#13195`_)
 * pydrake.geometry.QueryObject.__init__ (`#13156`_)
 * pydrake.multibody.plant.MultibodyPlant.get_body_poses_output_port (`#13229`_)
+* pydrake.multibody.plant.MultibodyPlant.get_contact_penalty_method_time_scale (`#13294`_)
+* pydrake.multibody.plant.MultibodyPlant.set_stiction_tolerance (`#13294`_)
 * pydrake.solvers.gurobi.GurobiSolverDetails (`#13152`_)
 * pydrake.solvers.mosek.MosekSolverDetails (`#13151`_)
 * pydrake.systems.framework.DiagramBuilder.GetMutableSystems (`#13270`_)
@@ -121,6 +126,7 @@ Fixes
 
 * Add stricter checks and friendlier errors for mathematical program user-functions (`#13183`_)
 * Resolve AbstractValue RTTI linking inconsistency on macOS (`#13225`_)
+* Provide more specific type names in diagnostics (`#13194`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,7 +150,7 @@ Build system and dependencies
 * Fetch sdformat and ignition_math from GitHub, not Bitbucket (`#13188`_)
 * Don't install unused sdformat data (`#13268`_)
 * Fix bazel third_party include path complaints (`#13189`_)
-* Begin Ubuntu 20.04 (Focal Fossa) accomodations (`#13142`_, `#13235`_)
+* Begin Ubuntu 20.04 (Focal Fossa) accomodations (`#13142`_, `#13235`_, `#13303`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -196,7 +202,7 @@ Notes
 
 This release provides `pre-compiled binaries
 <https://github.com/RobotLocomotion/drake/releases/tag/v0.18.0>`__ named
-``drake-20200513-{bionic|mac}.tar.gz``. See :ref:`Nightly Releases
+``drake-20200514-{bionic|mac}.tar.gz``. See :ref:`Nightly Releases
 <nightly-releases>` for instructions on how to use them.
 
 Drake binary releases incorporate a pre-compiled version of `SNOPT
@@ -279,15 +285,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 77a7b9437331f1540666b9089395b53da403e4fa (inclusive).
   Current newest_commit 3e70123bd8cfbeebba57aa513531383d5e52d1cb (inclusive).
-
-* controllers: support affine terms in finite-horizon LQR (`#13272`_)  # The corresponding derivation is in: http://underactuated.mit.edu/lqr.html#finite_horizon_derivation This is the last major piece of functionality that I hoped to support for continuous-time systems.  (Richer cost specification would be the one easy thing to add if/when it's needed).  But I still hope to add the discrete-time formulations before I'm completely satisfied.
-* mbp: Allow CollectRegisteredGeometries to be called pre-finalize (`#13281`_)
-* py mbp: Bind set_stiction_tolerance, get_contact_penalty_method_time_scale (`#13294`_)
-* Cleanup Jaco LCM helpers and move from examples to manipulation (`#13275`_)  # This brings the non-examples Jaco support to a roughly equivalent level as the iiwa has had since #10567.
-* [doc] Add four new components that are all geometry related (`#13290`_)
-* Parses custom LinearBushingRollPitchYaw tag in SDF/URDF (`#13255`_)  # parses a custom drake:linear_bushing_rpy tag in both URDF and SDF to add `LinearBushingRollPitchYaw` force elements to a multibody plant.
-* schema: Copy stochastic from Anzu (`#13295`_)  # Co-authored-by: Grant Gould <ggould@tri.global> Co-authored-by: Sam Creasey <sam.creasey@tri.global>
-* schema: Adapt stochastic to Drake and add to BUILD (`#13295`_)  # Adjust constructors for clang++ compability.
-* setup: fix various package names on Focal (`#13303`_)  # * resolve transitional packages to their new name * add or replace packages where their function has substantially changed * add several missing runtime dependencies
-* nice_type_name: Permit overriding (`#13194`_)
-* pydrake: Override NiceTypeName::Get(ptr) when possible (`#13194`_)
