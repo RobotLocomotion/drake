@@ -31,9 +31,9 @@ index 4e5abcbf..4dc66a1d 100644
 --- src/Converter.cc
 +++ src/Converter.cc
 @@ -29,12 +29,18 @@
- #include "sdf/Converter.hh"
- #include "sdf/SDFImpl.hh"
  #include "sdf/Types.hh"
+ 
+ #include "Converter.hh"
 -
 -// This include file is generated at configure time.
 -#include "sdf/EmbeddedSdf.hh"
