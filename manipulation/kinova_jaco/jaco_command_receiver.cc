@@ -18,6 +18,25 @@ namespace {
 std::unique_ptr<AbstractValue> MakeCommandMessage() {
   return std::make_unique<Value<lcmt_jaco_command>>();
 }
+
+void SanityCheckMessage(const lcmt_jaco_command& message) {
+  DRAKE_DEMAND(
+      message.num_joints == static_cast<int>(message.joint_position.size()));
+  DRAKE_DEMAND(
+      message.num_joints == static_cast<int>(message.joint_velocity.size()));
+  DRAKE_DEMAND(
+      message.num_fingers == static_cast<int>(message.finger_position.size()));
+  DRAKE_DEMAND(
+      message.num_fingers == static_cast<int>(message.finger_velocity.size()));
+}
+
+// N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
+// value-initialization.
+bool IsDefaultValueInitializedMessage(const lcmt_jaco_command& message) {
+  return (
+      message.utime == 0 && message.num_joints == 0
+      && message.num_fingers == 0);
+}
 }  // namespace
 
 JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
@@ -71,9 +90,10 @@ void JacoCommandReceiver::CalcInput(
 
   // Copies the (sole) input value, converting from JacoCommand if necessary.
   *result = get_input_port().Eval<lcmt_jaco_command>(context);
+  SanityCheckMessage(*result);
 
-  // If we haven't received a legit message yet, use the initial command.
-  if (result->utime == 0.0) {
+  // If we haven't received a non-default message yet, use the initial command.
+  if (IsDefaultValueInitializedMessage(*result)) {
     const VectorXd arm_param = context.get_numeric_parameter(0).get_value();
     result->num_joints = num_joints_;
     result->joint_position =
