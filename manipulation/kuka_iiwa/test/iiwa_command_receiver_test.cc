@@ -66,7 +66,7 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTest) {
   // First, try with empty torques.
   const VectorXd q1 = VectorXd::LinSpaced(N, 0.3, 0.4);
   lcmt_iiwa_command command{};
-  command.utime = 1;
+  command.utime = 0;
   command.num_joints = N;
   command.joint_position = {q1.data(), q1.data() + q1.size()};
   SetInput(command);

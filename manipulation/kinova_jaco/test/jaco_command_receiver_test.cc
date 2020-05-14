@@ -69,7 +69,7 @@ TEST_F(JacoCommandReceiverTest, AcceptanceTest) {
       VectorXd::LinSpaced(kJacoDefaultArmNumFingers, 1.5, 1.6) *
       kFingerUrdfToSdk;
   lcmt_jaco_command command{};
-  command.utime = 1;
+  command.utime = 0;
   command.num_joints = kJacoDefaultArmNumJoints;
   command.joint_position = {q1_arm.data(), q1_arm.data() + q1_arm.size()};
   command.joint_velocity = {v1_arm.data(), v1_arm.data() + v1_arm.size()};
