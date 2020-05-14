@@ -1263,10 +1263,9 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </friction>"
       "  </surface>"
       "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <mu> is required within element <ode>.");
+      CoulombFriction<double>(default_friction().static_friction(), 0.8));
 }
 
 GTEST_TEST(SceneGraphParserDetail,
@@ -1282,15 +1281,14 @@ GTEST_TEST(SceneGraphParserDetail,
       "  <surface>"
       "    <friction>"
       "      <ode>"
-      "        <mu>0.8</mu>"
+      "        <mu>1.1</mu>"
       "      </ode>"
       "    </friction>"
       "  </surface>"
       "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <mu2> is required within element <ode>.");
+      CoulombFriction<double>(1.1, default_friction().dynamic_friction()));
 }
 
 GTEST_TEST(SceneGraphParserDetail,
@@ -1304,16 +1302,18 @@ GTEST_TEST(SceneGraphParserDetail,
       "    </plane>"
       "  </geometry>"
       "  <surface>"
-      "    <ode>"
+      "    <ode>"  // WRONG: This should be //surface/friction/ode.
       "      <mu>0.3</mu>"
       "      <mu2>0.8</mu2>"
       "    </ode>"
       "  </surface>"
       "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  // TODO(jwnimmer-tri) Ideally, the misplaced <ode/> element above would
+  // report a parsing error and/or raise an exception.  For now though, we
+  // ignore it and use the defaults.
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <friction> not found nested within element <surface>.");
+      default_friction());
 }
 
 GTEST_TEST(SceneGraphParserDetail,
@@ -1327,16 +1327,18 @@ GTEST_TEST(SceneGraphParserDetail,
           "    </plane>"
           "  </geometry>"
           "  <surface>"
-          "    <friction>"
+          "    <friction>"  // WRONG: This should be //surface/friction/ode.
           "      <mu>0.3</mu>"
           "      <mu2>0.8</mu2>"
           "    </friction>"
           "  </surface>"
           "</collision>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
+  // TODO(jwnimmer-tri) Ideally, the misplaced <friction/> element above would
+  // report a parsing error and/or raise an exception.  For now though, we
+  // ignore it and use the defaults.
+  EXPECT_EQ(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::runtime_error,
-      "Element <ode> not found nested within element <friction>.");
+      default_friction());
 }
 
 }  // namespace
