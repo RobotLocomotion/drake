@@ -18,6 +18,13 @@ namespace {
 std::unique_ptr<AbstractValue> MakeCommandMessage() {
   return std::make_unique<Value<lcmt_iiwa_command>>();
 }
+
+// N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
+// value-initialization.
+bool IsDefaultValueInitializedMessage(const lcmt_iiwa_command& message) {
+  return (
+    message.utime == 0 && message.num_joints == 0 && message.num_torques == 0);
+}
 }  // namespace
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
@@ -77,8 +84,8 @@ void IiwaCommandReceiver::CalcInput(
   // Copies the (sole) input value, converting from IiwaCommand if necessary.
   *result = get_input_port().Eval<lcmt_iiwa_command>(context);
 
-  // If we haven't received a legit message yet, use the initial command.
-  if (result->utime == 0.0) {
+  // If we haven't received a non-default message yet, use the initial command.
+  if (IsDefaultValueInitializedMessage(*result)) {
     const VectorXd param = context.get_numeric_parameter(0).get_value();
     result->num_joints = param.size();
     result->joint_position = {param.data(), param.data() + param.size()};

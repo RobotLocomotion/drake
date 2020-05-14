@@ -16,6 +16,16 @@ namespace schunk_wsg {
 using systems::BasicVector;
 using systems::Context;
 
+namespace {
+// N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
+// value-initialization.
+bool IsDefaultValueInitializedMessage(const lcmt_schunk_wsg_command& message) {
+  return (
+      message.utime == 0 && message.target_position_mm == 0
+      && message.force == 0);
+}
+}  // namespace
+
 SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
                                                    double initial_force)
     : initial_position_(initial_position), initial_force_(initial_force) {
@@ -37,7 +47,7 @@ void SchunkWsgCommandReceiver::CalcPositionOutput(
       this->get_input_port(0).Eval<lcmt_schunk_wsg_command>(context);
 
   double target_position = initial_position_;
-  if (message.utime != 0.0) {
+  if (!IsDefaultValueInitializedMessage(message)) {
     target_position = message.target_position_mm / 1e3;
     if (std::isnan(target_position)) {
       target_position = 0;
@@ -53,7 +63,7 @@ void SchunkWsgCommandReceiver::CalcForceLimitOutput(
       this->get_input_port(0).Eval<lcmt_schunk_wsg_command>(context);
 
   double force_limit = initial_force_;
-  if (message.utime != 0.0) {
+  if (!IsDefaultValueInitializedMessage(message)) {
     force_limit = message.force;
   }
 
