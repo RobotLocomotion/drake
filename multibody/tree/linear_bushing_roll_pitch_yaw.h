@@ -209,7 +209,17 @@ template <typename T> class Body;
 /// This section provides advanced details on the performance tradeoff between
 /// high stiffness and long simulation time, loads that affect estimates of
 /// Mxₘₐₓ or Fxₘₐₓ, and how a linear 2ⁿᵈ-order ODE provides insight on how to
-/// experimentally estimate a damping ratio ζ (and hence damping constants).
+/// experimentally estimate an "undamped natural frequency" ωₙ or a "damping
+/// ratio" ζ.  The constants ωₙ (units of rad/s) and ζ (no units) are useful
+/// mathematical intermediaries for subsequent determinination of stiffness and
+/// damping constants.  The symbols ωₙ and ζ appear in the prototypical linear
+/// constant-coefficient 2ⁿᵈ-order ODE  <pre>
+///  m ẍ +     dx ẋ +  kx x = 0   or alternatively as
+///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0   where ωₙ² = kx/m,  ζ = dx / (2 √(m kx))</pre>
+/// ωₙ and ζ also appear in the related ODE for rotational systems, namely<pre>
+///  I₀ q̈ +     d₀ q̇ +  k₀ q = 0   or alternatively as
+///     q̈ + 2 ζ ωₙ q̇ + ωₙ² q = 0   where ωₙ² = k₀/I₀,  ζ = d₀ / (2 √(I₀ k₀))
+/// </pre>
 /// - Stiffness [kx ky kz] affects simulation time and accuracy.
 /// Generally, a stiffer bushing better resembles an ideal joint (e.g., a
 /// revolute joint or fixed/weld joint).  However (depending on integrator), a
@@ -217,18 +227,32 @@ template <typename T> class Body;
 /// - An estimate for a maximum load Mxₘₐₓ or Fxₘₐₓ accounts for gravity forces,
 /// applied forces, inertia forces (centripetal, Coriolis, gyroscopic), etc.
 /// - One way to determine ωₙ is from settling time tₛ which approximates the
-///  time for a system to settle to within 1% (0.01) of an equilibrium solution.
-///  When ζ < 0.7 (underdamped) ωₙ ≈ -ln(0.01) / (ζ tₛ) ≈ 4.6 / (ζ tₛ), whereas
-/// when ζ ≈ 1 (critically damped) wn ≈ 6.64 / tₛ, when ζ > 1.01 (overdamped)
-/// ωₙ ≈ -ln(0.02 sz/s₂) / (s₁ tₛ) with sz = √(ζ²-1), s₁ = ζ - sz, s₂ = ζ + sz.
-/// - ωₙ is called "undamped natural frequency" and is a measure of |ẋ|ₘₐₓ
-/// (speed of response) in the linear constant-coefficient 2ⁿᵈ-order ODE <pre>
-///  m ẍ +     dx ẋ +  kx x = 0   or alternatively as
-///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0   where ωₙ² = kx/m,  ζ = dx / (2 √(m kx))</pre>
-/// ωₙ also appears in the related ODE for rotational systems, namely<pre>
-///  I₀ q̈ +     d₀ q̇ +  k₀ q = 0   or alternatively as
-///     q̈ + 2 ζ ωₙ q̇ + ωₙ² q = 0   where ωₙ² = k₀/I₀,  ζ = d₀ / (2 √(I₀ k₀))
-/// </pre>
+///  time for a system to settle to within a specified settling ratio of an
+///  equilibrium solutions.  Typical values for settling ratio are 1% (0.01),
+///  2% (0.02), or 5% (0.05).
+///  - When ζ < 0.7 (underdamped), a commonly used approximation for ωₙ is
+///    ωₙ ≈ -ln(settling_ratio) / (ζ tₛ) which for settling ratios 0.01 and 0.05
+///    give ωₙ ≈ 4.6 / (ζ tₛ) and ωₙ ≈ 3 / (ζ tₛ).  Another commonly used
+///    approximation is ωₙ ≈ -ln(settling_ratio √(1- ζ²)) / (ζ tₛ).
+///    See @https://en.wikipedia.org/wiki/Settling_time or the book
+///    Modern Control Engineering by Katsuhiko Ogata.
+///  - When ζ ≈ 1 (critically damped), ωₙ is determined by choosing a settling
+///    ratio and then solving for (ωₙ tₛ) via the nonlinear algebraic equation
+///    (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio.
+///    For settling ratio = 0.01, ωₙ ≈ 6.64 / tₛ.
+///    For settling ratio = 0.02, ωₙ ≈ 5.83 / tₛ.
+///    For settling ratio = 0.05, ωₙ ≈ 4.74 / tₛ.
+///    See @https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
+///  - When ζ > 1.01 (overdamped), ωₙ ≈ -ln(2 settling_ratio sz/s₂) / (s₁ tₛ)
+///    where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz.
+///    This formula arises from a "dominant pole" analysis of the solution to
+///    the prototypical linear constant-coefficient 2ⁿᵈ-order ODE. <pre>
+///    For ẋ(0) = 0 and defining poles p₁ = -ωₙ s₁ and p₂ -ωₙ s₂, math gives
+///    x(t) / x(0) = p₂/(p₂-p₁)*exp(p₁*t) - p₁/(p₂-p₁)*exp(p₂*t)
+///                = s₂/(s₂-s₁)*exp(p₁*t) - s₁/(s₂-s₁)*exp(p₂*t)
+///                =  k/( k-1 )*exp(p₁*t) -  1/( k-1 )*exp(p₂*t)
+///    where k = s₂ / s₁  is real so k > 0, i.e., s₂ = k * s₁.
+/// <pre>
 /// - For a real physical bushing, an experiment is one way to estimate damping
 /// constants.  For example, to estimate a torque damping constant d₀ associated
 /// with underdamped vibrations (damping ratio 0 < ζ < 1), attach the bushing to
