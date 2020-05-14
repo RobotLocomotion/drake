@@ -52,13 +52,24 @@ class TestAutoDiffXd(unittest.TestCase):
         # Test construction from `float` and `int`.
         numpy_compare.assert_equal(AD(1), AD(1., []))
         numpy_compare.assert_equal(AD(1.), AD(1., []))
-        # Test implicit conversion.
+        # Test implicit conversion from a simple dtype to AutoDiff.
         numpy_compare.assert_equal(
             autodiff_scalar_pass_through(1),  # int
             AD(1., []))
         numpy_compare.assert_equal(
             autodiff_scalar_pass_through(1.),  # float
             AD(1., []))
+        # Test explicit conversion to float.
+        with self.assertRaises(TypeError) as cm:
+            float(a)
+        self.assertIn(
+            "not 'pydrake.autodiffutils.AutoDiffXd'", str(cm.exception))
+        a_scalar = np.array(a)
+        with self.assertRaises(TypeError) as cm:
+            float(a_scalar)
+        self.assertEqual(
+            "don't know how to convert scalar number to float",
+            str(cm.exception))
         # Test multi-element pass-through.
         x = np.array([AD(1.), AD(2.), AD(3.)])
         numpy_compare.assert_equal(autodiff_vector_pass_through(x), x)

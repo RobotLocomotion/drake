@@ -7,6 +7,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -94,7 +95,9 @@ auto RegisterBinding(py::handle* scope, const string& name) {
 
 enum class ArrayShapeType { Scalar, Vector };
 
-void CheckArray(py::str var_name, py::array x, ArrayShapeType shape, int size) {
+// Checks array shape, provides user-friendly message if it fails.
+void CheckArrayShape(
+    py::str var_name, py::array x, ArrayShapeType shape, int size) {
   bool ndim_is_good{};
   py::str ndim_hint;
   if (shape == ArrayShapeType::Scalar) {
@@ -112,25 +115,34 @@ void CheckArray(py::str var_name, py::array x, ArrayShapeType shape, int size) {
   }
 }
 
-// TODO(eric.cousineau): Make dtype=object provide better error messages.
+// Checks array type, provides user-friendly message if it fails.
+template <typename T>
+void CheckArrayType(py::str var_name, py::array x) {
+  py::module m = py::module::import("pydrake.solvers.mathematicalprogram");
+  m.attr("_check_array_type")(var_name, x, GetPyParam<T>()[0]);
+}
+
 // Wraps user function to provide better user-friendliness.
-template <typename Func>
+template <typename T, typename Func>
 Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
     int num_outputs, ArrayShapeType output_shape) {
   // TODO(eric.cousineau): It would be nicer to write this in Python.
+  // TODO(eric.cousineau): Consider using `py::detail::make_caster<>`. However,
+  // this may mean the argument is converted twice.
   py::cpp_function wrapped = [=](py::array x) {
     // Check input.
     // WARNING: If the input is badly sized, we will only reach this error in
     // Release mode. In debug mode, an assertion error will be triggered.
-    CheckArray(py::str("{}: Input").format(cls_name), x, ArrayShapeType::Vector,
-        num_vars);
+    CheckArrayShape(py::str("{}: Input").format(cls_name), x,
+        ArrayShapeType::Vector, num_vars);
     // N.B. We use `py::object` instead of `py::array` for the return type
     /// because for dtype=object, you cannot implicitly cast `np.array(T())`
     // (numpy scalar) to `T` (object), at least for AutoDiffXd.
     py::object y = func(x);
     // Check output.
-    CheckArray(
+    CheckArrayShape(
         py::str("{}: Output").format(cls_name), y, output_shape, num_outputs);
+    CheckArrayType<T>(py::str("{}: Output").format(cls_name), y);
     return y;
   };
   return wrapped.cast<Func>();
@@ -146,8 +158,8 @@ class PyFunctionCost : public Cost {
   PyFunctionCost(
       int num_vars, const py::function& func, const std::string& description)
       : Cost(num_vars, description),
-        double_func_(Wrap<DoubleFunc>(func)),
-        autodiff_func_(Wrap<AutoDiffFunc>(func)) {}
+        double_func_(Wrap<double, DoubleFunc>(func)),
+        autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -169,10 +181,10 @@ class PyFunctionCost : public Cost {
   }
 
  private:
-  template <typename Func>
+  template <typename T, typename Func>
   Func Wrap(py::function func) {
-    return WrapUserFunc<Func>("PyFunctionCost", func, num_vars(), num_outputs(),
-        ArrayShapeType::Scalar);
+    return WrapUserFunc<T, Func>("PyFunctionCost", func, num_vars(),
+        num_outputs(), ArrayShapeType::Scalar);
   }
 
   const DoubleFunc double_func_;
@@ -191,8 +203,8 @@ class PyFunctionConstraint : public Constraint {
       const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
       const std::string& description)
       : Constraint(lb.size(), num_vars, lb, ub, description),
-        double_func_(Wrap<DoubleFunc>(func)),
-        autodiff_func_(Wrap<AutoDiffFunc>(func)) {}
+        double_func_(Wrap<double, DoubleFunc>(func)),
+        autodiff_func_(Wrap<AutoDiffXd, AutoDiffFunc>(func)) {}
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -212,9 +224,9 @@ class PyFunctionConstraint : public Constraint {
   }
 
  private:
-  template <typename Func>
+  template <typename T, typename Func>
   Func Wrap(py::function func) {
-    return WrapUserFunc<Func>("PyFunctionConstraint", func, num_vars(),
+    return WrapUserFunc<T, Func>("PyFunctionConstraint", func, num_vars(),
         num_outputs(), ArrayShapeType::Vector);
   }
 
@@ -274,12 +286,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   py::module::import("pydrake.autodiffutils");
-  py::object variable = py::module::import("pydrake.symbolic").attr("Variable");
-  py::object variables =
-      py::module::import("pydrake.symbolic").attr("Variables");
-  py::object expression =
-      py::module::import("pydrake.symbolic").attr("Expression");
-  py::object formula = py::module::import("pydrake.symbolic").attr("Formula");
+  py::module::import("pydrake.symbolic");
 
   py::class_<SolverInterface, PySolverInterface>(
       m, "SolverInterface", doc.SolverInterface.doc)
@@ -1262,6 +1269,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
           py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
           doc.GetInfeasibleConstraints.doc);
+
+  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
