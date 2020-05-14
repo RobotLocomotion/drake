@@ -2,6 +2,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
+
 /// Defines a "relative distance constraint" that models a constraint between
 /// points on two different rigid bodies. The relative distance constraint is
 /// specified by the indexes of two different `RigidBody` objects (bodyA and

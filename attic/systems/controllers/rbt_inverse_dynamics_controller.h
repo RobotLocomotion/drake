@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/rbt_inverse_dynamics.h"

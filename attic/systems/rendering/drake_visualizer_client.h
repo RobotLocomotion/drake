@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/attic_warning.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/multibody/shapes/visual_element.h"
 

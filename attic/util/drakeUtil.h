@@ -1,12 +1,5 @@
 #pragma once
 
-/*
- * drakeUtil.h
- *
- *  Created on: Jun 19, 2013
- *      Author: russt
- */
-
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -14,6 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_assert.h"
 
 // TODO(siyuan.feng): Cleanup the naming according to the style guide.

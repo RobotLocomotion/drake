@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/attic_warning.h"
+
 /// @file
 /// Template method implementations for kinematics_cache.h.
 /// Most users should only include that file, not this one.

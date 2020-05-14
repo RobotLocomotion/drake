@@ -7,6 +7,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
+
 /**
  * A map from the name of a material to its color. The color is specified in
  * RGBA (Red, Green, Blue, Alpha) format.

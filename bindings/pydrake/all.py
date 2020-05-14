@@ -25,9 +25,6 @@ To see example usages, please see `doc/python_bindings.rst`.
 """
 
 
-# Legacy symbols.
-from .attic.all import *
-
 # Normal symbols.
 from . import getDrakePath
 from .autodiffutils import *

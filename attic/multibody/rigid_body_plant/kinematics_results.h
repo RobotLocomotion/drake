@@ -2,6 +2,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"

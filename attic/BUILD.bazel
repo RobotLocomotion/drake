@@ -9,10 +9,11 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 exports_files(["CPPLINT.cfg"])
 
 drake_cc_library(
-    name = "warning",
-    srcs = ["warning.cc"],
-    hdrs = ["warning.h"],
-    install_hdrs_exclude = ["warning.h"],
+    name = "attic_warning",
+    srcs = ["attic_warning.cc"],
+    hdrs = ["attic_warning.h"],
+    copts = ["-Wno-deprecated-declarations"],
+    strip_include_prefix = "/attic",
     visibility = ["//attic:__subpackages__"],
     deps = ["//common:essential"],
 )

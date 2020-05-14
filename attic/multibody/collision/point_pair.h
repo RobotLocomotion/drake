@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/collision/element.h"
 

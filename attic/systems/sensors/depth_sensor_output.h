@@ -2,6 +2,7 @@
 
 #include <limits>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"

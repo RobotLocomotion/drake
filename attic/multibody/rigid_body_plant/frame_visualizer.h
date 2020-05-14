@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_draw.hpp"

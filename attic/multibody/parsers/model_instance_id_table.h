@@ -3,6 +3,8 @@
 #include <map>
 #include <string>
 
+#include "drake/attic_warning.h"
+
 namespace drake {
 namespace parsers {
 

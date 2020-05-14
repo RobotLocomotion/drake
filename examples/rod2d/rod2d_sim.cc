@@ -18,9 +18,14 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/lcm/serializer.h"
-#include "drake/systems/rendering/drake_visualizer_client.h"
 #include "drake/systems/rendering/pose_aggregator.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
+
+// TODO(jwnimmer-tri) Port this demo to use SceneGraph.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include "drake/systems/rendering/drake_visualizer_client.h"
+#pragma GCC diagnostic pop
 
 using Rod2D = drake::examples::rod2d::Rod2D<double>;
 using drake::lcm::DrakeLcm;

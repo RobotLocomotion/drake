@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
 #include "drake/multibody/parsers/package_map.h"

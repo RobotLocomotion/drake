@@ -12,6 +12,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "drake/attic_warning.h"
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"

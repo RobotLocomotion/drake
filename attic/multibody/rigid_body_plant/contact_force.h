@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 

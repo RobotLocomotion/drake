@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/attic_warning.h"
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"

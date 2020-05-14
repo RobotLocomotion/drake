@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/rigid_body_tree.h"

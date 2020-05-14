@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include "drake/attic_warning.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"

@@ -4,6 +4,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
+
 // TODO(siyuan.feng): Cleanup the naming according to the style guide.
 
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal,

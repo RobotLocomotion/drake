@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {

@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/constraint_wrappers.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/decision_variable.h"

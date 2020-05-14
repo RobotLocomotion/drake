@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/multibody/shapes/visual_element.h"

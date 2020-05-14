@@ -74,6 +74,14 @@ drake_py_library(
     deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
+drake_py_unittest(
+    name = "all_test",
+    deps = [
+        ":all_py",
+        # "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
+)
+
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
     name = "attic",

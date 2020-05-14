@@ -3,6 +3,8 @@
 #include <limits>
 #include <string>
 
+#include "drake/attic_warning.h"
+
 template <typename T>
 class RigidBody;
 

@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/attic_warning.h"
 #include "drake/math/gradient.h"
 #include "drake/multibody/joints/drake_joint.h"
 

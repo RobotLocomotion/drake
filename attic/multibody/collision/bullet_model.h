@@ -10,6 +10,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 #include "btBulletCollisionCommon.h"
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
