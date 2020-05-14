@@ -841,7 +841,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override {
     return derivative(derivative_order).Clone();
-  };
+  }
+
+  bool do_has_derivative() const override { return true; }
 
   T EvaluateSegmentAbsoluteTime(int segment_index, const T& t, Eigen::Index row,
                                 Eigen::Index col,

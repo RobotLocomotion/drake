@@ -13,6 +13,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
@@ -545,6 +546,60 @@ const Frame<double>& AddFrameFromSpecification(
   return frame;
 }
 
+const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
+    const sdf::ElementPtr node, MultibodyPlant<double>* plant) {
+  // Functor to read a vector valued child tag with tag name: `element_name`
+  // e.g. <element_name>0 0 0</element_name>
+  // Throws an error if the tag does not exist or if the value is not properly
+  // formatted.
+  auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
+    if (!node->HasElement(element_name)) {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> tag.", element_name));
+    }
+
+    auto [value, successful] = node->Get<ignition::math::Vector3d>(
+        element_name, ignition::math::Vector3d() /* default value. not used */);
+
+    if (!successful) {
+      throw std::runtime_error(fmt::format(
+          "Unable to read the value of the <{}> tag.", element_name));
+    }
+
+    return ToVector3(value);
+  };
+
+  // Functor to read a child tag with tag name: `element_name` that specifies a
+  // frame name, e.g. <element_name>frame_name</element_name>
+  // Throws an error if the tag does not exist or if the value
+  // is not properly formatted.
+  auto read_frame = [node,
+                     plant](const char* element_name) -> const Frame<double>& {
+    if (!node->HasElement(element_name)) {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> tag.", element_name));
+    }
+
+    auto [frame_name, successful] = node->Get<std::string>(
+        element_name, std::string() /* default value. not used */);
+
+    if (!successful) {
+      throw std::runtime_error(fmt::format(
+          "Unable to read the value of the <{}> tag.", element_name));
+    }
+
+    if (!plant->HasFrameNamed(frame_name)) {
+      throw std::runtime_error(fmt::format(
+          "Frame: {} specified for <{}> does not exist in the model.",
+          frame_name, element_name));
+    }
+
+    return plant->GetFrameByName(frame_name);
+  };
+
+  return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+}
+
 // Helper to determine if two links are welded together.
 bool AreWelded(
     const MultibodyPlant<double>& plant, const Body<double>& a,
@@ -617,6 +672,16 @@ ModelInstanceIndex AddModelFromSpecification(
        ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+  }
+
+  drake::log()->trace("sdf_parser: Add linear_bushing_rpy");
+  if (model.Element()->HasElement("drake:linear_bushing_rpy")) {
+    for (sdf::ElementPtr bushing_node =
+             model.Element()->GetElement("drake:linear_bushing_rpy");
+         bushing_node; bushing_node = bushing_node->GetNextElement(
+                           "drake:linear_bushing_rpy")) {
+      AddBushingFromSpecification(bushing_node, plant);
+    }
   }
 
   if (model.Static()) {
