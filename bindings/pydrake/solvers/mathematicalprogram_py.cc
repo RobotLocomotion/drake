@@ -239,6 +239,10 @@ class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
     PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, available);
   }
 
+  bool enabled() const override {
+    PYBIND11_OVERLOAD_PURE(bool, solvers::SolverInterface, enabled);
+  }
+
   void Solve(const solvers::MathematicalProgram& prog,
       const std::optional<Eigen::VectorXd>& initial_guess,
       const std::optional<solvers::SolverOptions>& solver_options,

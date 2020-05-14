@@ -92,7 +92,8 @@ void GetEqualityConstrainedQPSolverOptions(
 }  // namespace
 
 EqualityConstrainedQPSolver::EqualityConstrainedQPSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 EqualityConstrainedQPSolver::~EqualityConstrainedQPSolver() = default;
 
@@ -304,6 +305,8 @@ SolverId EqualityConstrainedQPSolver::id() {
 }
 
 bool EqualityConstrainedQPSolver::is_available() { return true; }
+
+bool EqualityConstrainedQPSolver::is_enabled() { return true; }
 
 bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
     const MathematicalProgram& prog) {
