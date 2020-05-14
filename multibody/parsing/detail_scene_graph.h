@@ -192,9 +192,8 @@ geometry::ProximityProperties MakeProximityPropertiesForCollision(
      </surface>
    </collision>
  ```
- If a `<surface>` is not found, it returns arbitrary default coefficients
- (typically mu = mu2 = 1). If `<surface>` is found, all other nested elements
- are required and an exception is thrown if not present.  */
+ If mu or mu2 (or both) are not found, it returns the default coefficients of
+ mu = mu2 = 1, consistent with the SDFormat specification. */
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
 
