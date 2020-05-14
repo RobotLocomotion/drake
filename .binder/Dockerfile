@@ -25,10 +25,15 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 RUN pip3 install wheel
 RUN pip3 install itkwidgets
 RUN pip3 install itk
+RUN pip3 install open3d==0.9.0
+RUN pip3 install pandas
+RUN pip3 install pyntcloud
 
 RUN jupyter nbextension install --py --symlink --sys-prefix itkwidgets
 RUN jupyter nbextension enable --py --sys-prefix itkwidgets
 RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension
+RUN jupyter nbextension install --py --symlink --sys-prefix open3d
+RUN jupyter nbextension enable --py --sys-prefix open3d
 
 ENV HOME="/home/$NB_USER" \
   LANG=en_US.UTF-8 \
