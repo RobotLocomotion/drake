@@ -3,6 +3,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
+#include "drake/lcm/lcm_messages.h"
 
 namespace drake {
 namespace manipulation {
@@ -77,8 +78,10 @@ void IiwaCommandReceiver::CalcInput(
   // Copies the (sole) input value, converting from IiwaCommand if necessary.
   *result = get_input_port().Eval<lcmt_iiwa_command>(context);
 
-  // If we haven't received a legit message yet, use the initial command.
-  if (result->utime == 0.0) {
+  // If we haven't received a non-default message yet, use the initial command.
+  // N.B. This works due to lcm::Serializer<>::CreateDefaultValue() using
+  // value-initialization.
+  if (lcm::AreLcmMessagesEqual(*result, lcmt_iiwa_command{})) {
     const VectorXd param = context.get_numeric_parameter(0).get_value();
     result->num_joints = param.size();
     result->joint_position = {param.data(), param.data() + param.size()};
