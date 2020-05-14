@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/lcm/lcm_messages.h"
 
 namespace drake {
 namespace lcm {
@@ -181,12 +182,8 @@ template <typename Message>
 void Publish(DrakeLcmInterface* lcm, const std::string& channel,
              const Message& message, std::optional<double> time_sec = {}) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
-  const int num_bytes = message.getEncodedSize();
-  DRAKE_THROW_UNLESS(num_bytes >= 0);
-  const size_t size_bytes = static_cast<size_t>(num_bytes);
-  std::vector<uint8_t> bytes(size_bytes);
-  message.encode(bytes.data(), 0, num_bytes);
-  lcm->Publish(channel, bytes.data(), num_bytes, time_sec);
+  const std::vector<uint8_t> bytes = EncodeLcmMessage(message);
+  lcm->Publish(channel, bytes.data(), bytes.size(), time_sec);
 }
 
 /**
