@@ -1,10 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include <Eigen/Dense>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -20,13 +23,20 @@ namespace estimators {
 ///
 /// The output of the observer system is @f$\hat{x}@f$.
 ///
+/// @system{LuenbergerObserver,
+///   @input_port{observed system input}
+///   @input_port{observed_system_output},
+///   @output_port{estimated_state}
+/// }
+///
 /// @ingroup estimator_systems
+/// @tparam_default_scalars
 template <typename T>
-class LuenbergerObserver : public systems::LeafSystem<T> {
+class LuenbergerObserver final: public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LuenbergerObserver)
 
-  /// Constructs the oberver.
+  /// Constructs the observer.
   ///
   /// @param observed_system  The forward model for the observer.  Currently,
   /// this system must have a maximum of one input port and exactly one output
@@ -37,13 +47,33 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   /// variables in @p observed_system, and n is the dimension of the output port
   /// of @p observed_system.
   ///
-  /// Note: Takes ownership of the unique_ptrs to the observed_system and the
-  /// observed_system_context.
-  /// @throws std::bad_cast if the observed_system output is not vector-valued.
-  LuenbergerObserver(
-      std::unique_ptr<systems::System<T>> observed_system,
-      std::unique_ptr<systems::Context<T>> observed_system_context,
-      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
+  /// @pre The observed_system output port must be vector-valued.
+  ///
+  /// Note: The `observed_system` reference must remain valid for the lifetime
+  /// of this system.
+  LuenbergerObserver(const System<T>& observed_system,
+                     const Context<T>& observed_system_context,
+                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
+      : LuenbergerObserver(&observed_system, nullptr, observed_system_context,
+                           observer_gain) {}
+
+  /// Constructs the observer, taking ownership of `observed_system`.
+  LuenbergerObserver(std::unique_ptr<System<T>> observed_system,
+                     const Context<T>& observed_system_context,
+                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
+      : LuenbergerObserver(nullptr, std::move(observed_system),
+                           observed_system_context, observer_gain) {}
+
+  DRAKE_DEPRECATED(
+      "2020-10-01",
+      "Use a constructor which passes the context by reference.")
+  LuenbergerObserver(std::unique_ptr<System<T>> observed_system,
+                     std::unique_ptr<Context<T>> observed_system_context,
+                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
+      : LuenbergerObserver(nullptr, std::move(observed_system),
+                           *observed_system_context, observer_gain) {}
+
+  // TODO(russt): Support scalar conversion.
 
   /// Provides access to the observer gain.
   const Eigen::MatrixXd& observer_gain() { return observer_gain_; }
@@ -52,28 +82,33 @@ class LuenbergerObserver : public systems::LeafSystem<T> {
   const Eigen::MatrixXd& L() { return observer_gain_; }
 
  private:
-  // Advance the state estimate using forward dynamics and the observer gains.
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
+  LuenbergerObserver(const System<T>* system,
+                     std::unique_ptr<System<T>> owned_system,
+                     const Context<T>& context,
+                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
+
+  // Advance the state estimate using forward dynamics and the observer
+  // gains.
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override;
 
   // Outputs the estimated state.
-  void CalcEstimatedState(const systems::Context<T>& context,
-                          systems::BasicVector<T>* output) const;
+  void CalcEstimatedState(const Context<T>& context,
+                          BasicVector<T>* output) const;
 
-  const std::unique_ptr<systems::System<T>> observed_system_;
+  void UpdateObservedSystemContext(const Context<T>& context,
+                                   Context<T>* observed_system_context) const;
+
+  const std::unique_ptr<System<T>> owned_system_{};
+  const System<T>* observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
 
-  // A (mutable) context is needed to efficiently call the observed system's
-  // dynamics and output methods.  Does not add any undeclared state.  This
-  // simply avoids the need to allocate a new context on every function
-  // evaluation.
-  const std::unique_ptr<systems::Context<T>> observed_system_context_;
-  const std::unique_ptr<systems::SystemOutput<T>> observed_system_output_;
-  const std::unique_ptr<systems::ContinuousState<T>>
-  observed_system_derivatives_;
+  const CacheEntry* observed_system_context_;
 };
 
 }  // namespace estimators
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::estimators::LuenbergerObserver)
