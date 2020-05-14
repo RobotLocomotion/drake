@@ -24,7 +24,7 @@ class ScalarViewDenseOutputTest : public ::testing::Test {
                 this->kFinalStateDerivative);
     dense_output->Update(std::move(step));
     dense_output->Consolidate();
-    return std::move(dense_output);
+    return dense_output;
   }
 
   const double kInvalidTime{-1.0};

@@ -513,7 +513,7 @@ VolumeMesh<T> MakeUnitSphereMesh(int refinement_level,
     default:
       DRAKE_UNREACHABLE();
   }
-  return std::move(mesh);
+  return mesh;
 }
 
 /** Creates a volume mesh for the given `sphere`; the level of tessellation is

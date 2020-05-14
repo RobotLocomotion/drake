@@ -387,7 +387,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         this->get_implementation().template CloneToScalar<ToScalar>(tree_clone);
     joint_clone->OwnImplementation(std::move(implementation_clone));
 
-    return std::move(joint_clone);
+    return joint_clone;
   }
 #endif
   // End of hidden Doxygen section.
@@ -442,7 +442,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
             &tree_clone->get_mutable_variant(*mobilizer);
         implementation_clone->mobilizers_.push_back(mobilizer_clone);
       }
-      return std::move(implementation_clone);
+      return implementation_clone;
     }
 #endif
     // End of hidden Doxygen section.
