@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <string>
 #include <vector>
@@ -97,6 +98,160 @@ pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(const string& filename) {
   return LoadMeshFromObj(&input_stream);
 }
 
+namespace {
+/* Creates a triangle mesh for a revolute surface. It is, essentially, a curve
+ that is revolved around the z-axis. The revolute surface is discrete, so the
+ curve is evaluted at fixed angular samples (determined by the
+ `rotate_sample_count`). The curve is defined implicitly and is sampled along
+ its length a fixed number of times (determined by the `curve_samle_count`).
+
+ This assumes that the two end points of the curve *lie* on the Cz axes. So, the
+ top and bottom of the revolute mesh are single vertices (with a triangle fan
+ radiating outward).
+
+ Another way to consider this is that we're lofting circles to symmetrically fit
+ the curve path (i.e., every circle's center lies on the z axis). The total
+ number of circles is `curve_sample_count` with the expectation that the first
+ and last circles have radius zero. They are enumerated c_1, c_2, c_N, where
+ `N = curve_sample_count`. For a given circle index, we need to know the
+ circle's radius and its position on the z-axis.
+
+ @param rotate_sample_count  The total number of radial samples in the
+                             revolution.
+ @param curve_sample_count   The total number of circles lofting.
+ @param calc_radius_i        A function that reports the radius of the ith
+                             circle.
+ @param calc_z_i             A function that reports the position of the ith
+                             circle center along the z axis.
+ @pre `calc_radius_i(0)` and `calc_radius_i(curve_sample_count - 1) = 0`.
+ */
+pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
+    int rotate_sample_count, int curve_sample_count,
+    const std::function<GLfloat(int i)>& calc_radius_i,
+    const std::function<GLfloat(int i)>& calc_z_i) {
+  const GLfloat delta_theta =
+      static_cast<GLfloat>(2 * M_PI / rotate_sample_count);
+
+  /* We have R revolute samples and C curve samples.
+
+   Vertex count:
+   The first and last curve samples are single vertices. Every other curve
+   sample forms a ring with R vertices. So, total vertices = (C - 2) * R + 2.
+
+   Triangle count:
+   We create triangles by spanning between rings. Because rings 0 and C-1 are
+   zero-radius, we span rings 0 and 1 with a triangle fan of R triangles. The
+   same between rings C-2 and C-1. Between all other adjacent rings, we create
+   2R triangles. There are C - 2 non-zero-radius rings that bound C - 3 spanning
+   bands. So, total triangles:
+       R + R + (C - 3) * 2R
+     = 2R + (C - 3) * 2R
+     = 2R(1 + (C - 3))
+     = 2R(C - 2). */
+  const int vert_count = (curve_sample_count - 2) * rotate_sample_count + 2;
+  const int tri_count = (curve_sample_count - 2) * 2 * rotate_sample_count;
+
+  VertexBuffer vertices{vert_count, 3};
+  IndexBuffer indices{tri_count, 3};
+
+  // Insertion points into vertices and indices for each new vertex and tri.
+  int v_index = 0;
+  int t_index = 0;
+
+  // Ring 0 is a single point; add that "ring".
+  vertices.block<1, 3>(v_index, 0) << 0, 0, calc_z_i(0);
+  ++v_index;
+
+  // Index of the ring whose vertices are being added, the ring's position on
+  // the z axis, and its radius.
+  int ring_i = 1;
+  GLfloat z_i = calc_z_i(ring_i);
+  GLfloat r_i = calc_radius_i(ring_i);
+
+  // Triangles spanning ring 0 to ring 1 is simply a triangle fan around vertex
+  // 0.
+  /* Each iteration of the for loop adds vertex v_j = [0, R-1] in the *current*
+   ring. Its global index in vertices is tracked by v_index. p is the global
+   index of the vertex that topologically precedes v in its ring. For example,
+   in a given for loop, v_index would take the values of the ring's vertices
+   in sequence: e.g., [11, 12, 13, 14, ... 20]. p would then iterate through
+   the values [20, 11, 12, ..., 19]. While p "precedes" v_j in some sense,
+   p < v_index is not always true; the vertex that "precedes" the first vertex
+   in the ring is the last vertex in the ring added to vertices. This same
+   pattern gets repeated as we iterate through ring (see below). */
+  int p = v_index + rotate_sample_count - 1;
+  for (int v_j = 0; v_j < rotate_sample_count; ++v_j) {
+    const GLfloat theta = v_j * delta_theta;
+    const GLfloat v_x = r_i * cosf(theta);
+    const GLfloat v_y = r_i * sinf(theta);
+    vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
+    indices.block<1, 3>(t_index++, 0) << 0, p, v_index;
+    p = v_index++;
+  }
+
+  // All of the rings from the curve samples with non-zero radius (i.e., rings
+  // [1, N-1]).
+  /*
+     We add all the vertices for ring_i and build triangles between ring_i and
+     ring_i-1. The triangles are formed with the following vertices:
+
+         │ c    │ b
+     ────•──────•────                      <-- ring i-1
+         │ ╲    │
+         │   ╲  │
+         │ p   ╲│ v
+     ────•──────•────                      <-- ring i
+         │      │
+
+     The vertices are labeled by their *global* _indices_ v, p, b, and c.
+      v: the jth vertex for ring i -- added in this iteration of the for loop.
+      p: the topologically previous vertex to v in the same ring (with periodic
+         conditions).
+      b = v - R
+      c = p - R
+    */
+  for (ring_i = 2; ring_i < curve_sample_count - 1; ++ring_i) {
+    z_i = calc_z_i(ring_i);
+    r_i = calc_radius_i(ring_i);
+
+    p = v_index + rotate_sample_count - 1;
+    for (int v_j = 0; v_j < rotate_sample_count; ++v_j) {
+      const GLfloat theta = v_j * delta_theta;
+      const GLfloat v_x = r_i * cosf(theta);
+      const GLfloat v_y = r_i * sinf(theta);
+      vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
+      const int b = v_index - rotate_sample_count;
+      const int c = p - rotate_sample_count;
+      indices.block<1, 3>(t_index++, 0) << v_index, c, p;
+      indices.block<1, 3>(t_index++, 0) << v_index, b, c;
+      p = v_index++;
+    }
+  }
+
+  // Triangles spanning ring C-2 to ring C-1; a triangle fan around the last
+  // vertex.
+  vertices.block<1, 3>(v_index, 0) << 0.f, 0.f, calc_z_i(ring_i);
+  const int prev_ring_start = v_index - rotate_sample_count;
+  // Post-increment v_index so its value represents the total number of
+  // vertices added.
+  const int ring_C_vertex = v_index++;
+  p = ring_C_vertex - 1;
+  // We have all the vertices, we just need to create the spanning triangles.
+  for (int v_j = 0; v_j < rotate_sample_count; ++v_j) {
+    const int v = prev_ring_start + v_j;
+    indices.block<1, 3>(t_index++, 0) << v, p, ring_C_vertex;
+    p = v;
+  }
+
+  // The process of building should match our predicted counts.
+  DRAKE_DEMAND(v_index == vert_count);
+  DRAKE_DEMAND(t_index == tri_count);
+
+  return make_pair(vertices, indices);
+}
+
+}  // namespace
+
 pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(int longitude_bands,
                                                       int latitude_bands) {
   /*
@@ -138,6 +293,12 @@ pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(int longitude_bands,
   The algorithm starts at the north pole and works to the south pole, tracking
   which longitude ring we're on. For 0 < t_i < T, we also generate the triangles
   spanning rings t_i and t_i-1. The poles are treated as a special cases.
+
+  As a revolute shape, the number of longitude bands is exactly the number of
+  rotation samples. The "curve" we're revolving is a half circle. We are
+  sampling it from pole to pole forming `latitude_bands` number of bands; which
+  means, from the revolute surface function's perspective, we are sampling the
+  half circle `latitute_bands + 1` times.
   */
   // Minimum values that create a sphere approximation with volume.
   DRAKE_DEMAND(longitude_bands >= 3);
@@ -149,102 +310,122 @@ pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(int longitude_bands,
   // Angle separating latitudinal rings measured in the longitudinal direction
   // (defines the height of rings).
   const GLfloat delta_phi = static_cast<GLfloat>(M_PI / latitude_bands);
-  // Angle separating longitudinal lines measured in the latitudinal direction
-  // (defines distribution of vertices on the ring).
-  const GLfloat delta_theta = static_cast<GLfloat>(2 * M_PI / longitude_bands);
-
-  VertexBuffer vertices{vert_count, 3};
-  IndexBuffer indices{tri_count, 3};
-
-  // Insertion points into vertices and indices for each new vertex and tri.
-  int v_index = 0;
-  int t_index = 0;
-
-  // Add the single vertex for the north pole.
-  vertices.block<1, 3>(v_index, 0) << 0, 0, 1;
-  ++v_index;
-
-  // Index of the ring we're working on, its height and radius.
-  int t_i = 1;
-  GLfloat z_i = cosf(t_i * delta_phi);
-  GLfloat r_i = sqrtf(1.0 - z_i * z_i);
-
-  // North pole fan betwen ring t_1 and t_0 (north pole vertex).
-
-  // The for loop adds vertex v_j. p_j is the index of the vertex that precedes
-  // v_j in the same latitudinal ring. This pattern is repeated multiple times.
-  // In a given for loop, v_index iterates through the indices of the vertices
-  // being added for the new ring: e.g., [11, 12, 13, 14, ... 20]. p would then
-  // iterate throug the values [20, 11, 12, ..., 19]. In each case, it is the
-  // index of the vertex in the same ring that "precedes" the vertex indicated
-  // by v_index -- but p < v_index is not strictly true; the vertex that
-  // "precedes" the first vertex in the ring is the last vertex in the ring.
-  int p = v_index + longitude_bands - 1;
-  for (int v_j = 0; v_j < longitude_bands; ++v_j) {
-    const GLfloat theta = v_j * delta_theta;
-    const GLfloat v_x = r_i * cosf(theta);
-    const GLfloat v_y = r_i * sinf(theta);
-    vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
-    indices.block<1, 3>(t_index++, 0) << 0, p, v_index;
-    p = v_index++;
-  }
-
-  // Latitudinal bands
-  for (t_i = 2; t_i < latitude_bands; ++t_i) {
-    z_i = cosf(t_i * delta_phi);
-    r_i = sqrtf(1.0f - z_i * z_i);
-    /*
-     We add all the vertices for t_i and build triangles between t_i and t_i-1.
-     The triangles are formed with the following vertices:
-
-         │ c    │ b
-     ────•──────•────                      <-- circle for t_i-1
-         │ ╲    │
-         │   ╲  │
-         │ p   ╲│ v
-     ────•──────•────                      <-- circle for t_i
-         │      │
-
-     The vertices are labeled by their _indices_ v, p, b, and c.
-      v: the vertex we just added for longitude line v_j.
-      p: the previous vertex to v in the same latitudinal ring (with periodic
-         conditions).
-      b = v - G
-      c = p - G
-    */
-    p = v_index + longitude_bands - 1;
-    for (int v_j = 0; v_j < longitude_bands; ++v_j) {
-      const GLfloat theta = v_j * delta_theta;
-      const GLfloat v_x = r_i * cosf(theta);
-      const GLfloat v_y = r_i * sinf(theta);
-      vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
-      const int b = v_index - longitude_bands;
-      const int c = p - longitude_bands;
-      indices.block<1, 3>(t_index++, 0) << v_index, c, p;
-      indices.block<1, 3>(t_index++, 0) << v_index, b, c;
-      p = v_index++;
-    }
-  }
-
-  // South pole fan. Ring t_T-1 has already been added, just add the vertex
-  // at the south pole and connect into triangles.
-  vertices.block<1, 3>(v_index, 0) << 0.f, 0.f, -1.f;
-  const int prev_ring_start = v_index - longitude_bands;
-  // Post-increment v_index so its value represents the total number of
-  // vertices added.
-  const int south_pole = v_index++;
-  p = south_pole - 1;
-  for (int v_j = 0; v_j < longitude_bands; ++v_j) {
-    const int v = prev_ring_start + v_j;
-    indices.block<1, 3>(t_index++, 0) << v, p, south_pole;
-    p = v;
-  }
+  auto calc_z_i = [delta_phi, latitude_bands](int ring_i) {
+    DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
+    return cosf(ring_i * delta_phi); };
+  auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) {
+    DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
+    if (ring_i == 0 || ring_i == latitude_bands) return 0.f;
+    const GLfloat z_i = calc_z_i(ring_i);
+    return sqrtf(1.0 - z_i * z_i);
+  };
+  auto buffers = MakeRevoluteShape(longitude_bands, latitude_bands + 1,
+                                   calc_radius_i, calc_z_i);
 
   // The process of building should match our predicted counts.
-  DRAKE_DEMAND(v_index == vert_count);
-  DRAKE_DEMAND(t_index == tri_count);
+  DRAKE_DEMAND(buffers.first.rows() == vert_count);
+  DRAKE_DEMAND(buffers.second.rows() == tri_count);
 
-  return make_pair(vertices, indices);
+  return buffers;
+}
+
+pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
+                                                 int num_bands) {
+  /*
+   For notational convenience
+     S = number of strips
+     B = number of bands
+
+                     *****
+                  ***╲   ╱***
+      cap -->    *─────*─────*                <─── Ring 0 (center vertex)
+                 ****╱ │ ╲****                <─── Ring 1 (circle edge)
+                 *  │*****│  *
+                 *  │  │  │  *  <──┐ b
+                 *  │  │  │  *     │ a        <─── Ring 1
+    barrel -->   *╲ │  │  │ ╱*     │ n
+                 * ─│──│──│─ *     │ d
+                 *  │  │  │  *  <──┘ s
+                 *  │  │  │  *                <─── Ring 2
+                  ***  │  ***
+                  │  *****  │
+                  │   │  │  │
+                  └───┴──┴──┘
+                     strips
+
+   The cylinder has one barrel and two caps. The caps are divided into triangle
+   fans consisting of S triangles around a central vertex. The barrel is
+   decomposed into B bands of 2S triangles each.
+
+   Vertex count
+   There are B + 1 rings of vertices plus two more vertices in the centers of
+   the caps. Each ring has S vertices for a total vertex count of:
+   (B + 1) * S + 2.
+
+   Triange count
+   Each band on the barrel creates 2S triangles. Each cap produces S triangles
+   for a total triangle count of: B * 2S + 2 * S = 2(B + 1) * S.
+
+   Treated as a revolute surface, the curve we're revolving is a half box:
+
+             0       1
+             ┆       ┆
+          z0 ┆       ┆ z1
+             o━━━━━━━o┄┄┄┄┄┄ 0.5
+             ┆       ┃ z2
+             ┆───────o
+             ┆       ┃ z3
+         ┄┄┄┄┼┄┄┄┄┄┄┄o┄┄┄┄┄
+             ┆       ┃ z4
+             ┆───────o
+          z6 ┆       ┃ z5
+             o━━━━━━━o┄┄┄┄┄┄ -0.5
+             ┆
+  The number of strips is exactly the number of rotation samples. For
+  `num_bands` bands of triangles on the barrels we need `num_bands` + 1 curve
+  samples. We need two *more* samples at the points where the half box touches
+  the vertical axis giving us a total of `num_bands + 3` curve samples.
+
+  In the example above, we have 4 bands creating seven curve samples. Note that
+  circles 0 and 1 have a z-value of 0.5 (the top of the unit cylinder) and
+  circles 5 and 6 similarly have a z-value of -0.5 (the bottom of the unit
+  cylinder). The z-values of circles 2, 3, and 4 are uniformly distrubted
+  between the top and bottom.
+  */
+  DRAKE_DEMAND(num_strips >= 3);
+  DRAKE_DEMAND(num_bands >= 1);
+
+  const int vert_count = (num_bands + 1) * num_strips + 2;
+  const int tri_count = 2 * (num_bands + 1) * num_strips;
+
+  // The height of each band along the length of the barrel.
+  const GLfloat band_height = 1.f / num_bands;
+
+  // As illustrated above, circle 0 & 1 have a z-value of 0.5, circles
+  // C-2 and C-1 are at -0.5, and all other circles are distributed bewteen.
+  // Because C = B + 3, C-2 = B + 1 and C-1 = B + 2.
+  auto calc_z_i = [band_height, num_bands](int ring_i) {
+    DRAKE_DEMAND(ring_i >= 0 && ring_i <= num_bands + 2);
+    if (ring_i < 2) return 0.5f;
+    if (ring_i > num_bands) return -0.5f;
+    // Circles 2, 3, ... C - 3 should have a displacement of 1, 2, ..., C-4
+    // band_height below the top cap.
+    return 0.5f - (ring_i - 1) * band_height;
+  };
+  auto calc_radius_i = [num_bands](int ring_i) {
+    // Circles 0 and C-1 are zero-radius circles. C-1 = (B + 3) -1 = B + 2.
+    DRAKE_DEMAND(ring_i >= 0 && ring_i <= num_bands + 2);
+    if (ring_i == 0 || ring_i == num_bands + 2) return 0.f;
+    return 1.f;
+  };
+  auto buffers = MakeRevoluteShape(num_strips, num_bands + 3,
+                                   calc_radius_i, calc_z_i);
+
+  // The process of building should match our predicted counts.
+  DRAKE_DEMAND(buffers.first.rows() == vert_count);
+  DRAKE_DEMAND(buffers.second.rows() == tri_count);
+
+  return buffers;
 }
 
 }  // namespace internal

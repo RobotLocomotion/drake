@@ -66,7 +66,25 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
 std::pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(
     int longitude_bands = 50, int latitude_bands = 50);
 
-// TODO(SeanCurtis): Box, Cylinder, Half space, capsule, ellipsoid.
+// TODO(SeanCurtis): Box, Half space, capsule, ellipsoid.
+
+/* Creates an OpenGL-compatible mesh representation of a unit cylinder; its
+ radius and height are equal to 1. It is centered on the origin of its canonical
+ frame C and aligned with Frame C's z axis: Cz.
+ The cylinder's geometry consists of the two caps and the barrel and is
+ tessellated as follows. The barrel is divided in two directions: into a
+ given number of _bands_ of equal height along its length, and into a given
+ number of strips of equal width around its curvature. At the top and bottom
+ circular caps a triangular fan is created from a vertex at the center of each
+ circular cap to all of the vertices on the edge where cap and barrel meet.
+
+ @param num_strips  The number of strips the barrel's curvature is divided into.
+ @param num_bands   The number of equal-width bands spanning the height of the
+                    clinder.
+ @pre `num_strips` >= 3 (otherwise the cylinder will have no volume).
+ @pre `num_bands` >= 1.  */
+std::pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips = 50,
+                                                      int num_bands = 1);
 
 }  // namespace internal
 }  // namespace render
