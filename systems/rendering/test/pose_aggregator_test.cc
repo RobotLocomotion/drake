@@ -14,8 +14,9 @@
 #include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_vector.h"
 
+using drake::math::RigidTransform;
+using drake::math::RigidTransformd;
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
 using Eigen::Vector3d;
 
 namespace drake {
@@ -58,8 +59,9 @@ PoseBundle<AutoDiffXd> ToAutoDiffXd(const PoseBundle<double>& original) {
   // as discussed in https://github.com/RobotLocomotion/drake/issues/5454
   PoseBundle<AutoDiffXd> result(original.get_num_poses());
   for (int i = 0; i < original.get_num_poses(); i++) {
-    Isometry3<AutoDiffXd> pose(original.get_pose(i));
-    result.set_pose(i, pose);
+    RigidTransform<AutoDiffXd> pose(
+        original.get_transform(i).cast<AutoDiffXd>());
+    result.set_transform(i, pose);
     FrameVelocity<AutoDiffXd> velocity;
     velocity.set_velocity(multibody::SpatialVelocity<AutoDiffXd>(
         original.get_velocity(i).get_velocity().get_coeffs()));
@@ -77,11 +79,11 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   // Set some arbitrary translations in the PoseBundle input, and a velocity
   // for one of the poses.
   PoseBundle<double> generic_input(2);
-  Eigen::Translation3d translation_0(0, 1, 0);
-  Eigen::Translation3d translation_1(0, 1, 1);
+  Vector3d translation_0{0, 1, 0};
+  Vector3d translation_1{0, 1, 1};
   const int kSherlockModelInstanceId = 17;
   generic_input.set_name(0, "Sherlock");
-  generic_input.set_pose(0, Isometry3d(translation_0));
+  generic_input.set_transform(0, RigidTransformd(translation_0));
   generic_input.set_model_instance_id(0, kSherlockModelInstanceId);
   FrameVelocity<double> sherlock_velocity;
   sherlock_velocity.get_mutable_value() << 2.5, 5.0, 7.5, 10.0, 12.5, 15.0;
@@ -89,7 +91,7 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
 
   const int kMycroftModelInstanceId = 13;
   generic_input.set_name(1, "Mycroft");
-  generic_input.set_pose(1, Isometry3d(translation_1));
+  generic_input.set_transform(1, RigidTransformd(translation_1));
   generic_input.set_model_instance_id(1, kMycroftModelInstanceId);
   aggregator_.get_input_port(0).FixValue(context_.get(), generic_input);
 
@@ -129,25 +131,25 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   // output.
   EXPECT_EQ("bundle::Sherlock", bundle.get_name(0));
   EXPECT_EQ(kSherlockModelInstanceId, bundle.get_model_instance_id(0));
-  const Isometry3d& generic_pose_0 = bundle.get_pose(0);
-  EXPECT_TRUE(CompareMatrices(Isometry3d(translation_0).matrix(),
+  const RigidTransformd& generic_pose_0 = bundle.get_transform(0);
+  EXPECT_TRUE(CompareMatrices(RigidTransformd(translation_0).matrix(),
                               generic_pose_0.matrix()));
   EXPECT_TRUE(CompareMatrices(sherlock_velocity.get_value(),
                               bundle.get_velocity(0).get_value()));
 
   EXPECT_EQ("bundle::Mycroft", bundle.get_name(1));
   EXPECT_EQ(kMycroftModelInstanceId, bundle.get_model_instance_id(1));
-  const Isometry3d& generic_pose_1 = bundle.get_pose(1);
-  EXPECT_TRUE(CompareMatrices(Isometry3d(translation_1).matrix(),
+  const RigidTransformd& generic_pose_1 = bundle.get_transform(1);
+  EXPECT_TRUE(CompareMatrices(RigidTransformd(translation_1).matrix(),
                               generic_pose_1.matrix()));
 
   // Check that the PoseVector pose with velocity is passed through to the
   // output.
   EXPECT_EQ("single_xv", bundle.get_name(2));
   EXPECT_EQ(42, bundle.get_model_instance_id(2));
-  const Isometry3d& xv_pose = bundle.get_pose(2);
+  const RigidTransformd& xv_pose = bundle.get_transform(2);
   EXPECT_TRUE(CompareMatrices(
-      Isometry3d(Eigen::Translation<double, 3>(0.5, 1.5, 2.5)).matrix(),
+      RigidTransformd(Vector3d(0.5, 1.5, 2.5)).matrix(),
       xv_pose.matrix()));
   for (int i = 0; i < 6; ++i) {
     EXPECT_EQ(1.0 + i, bundle.get_velocity(2)[i]);
@@ -157,9 +159,11 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   // the output.
   EXPECT_EQ("single_x", bundle.get_name(3));
   EXPECT_EQ(43, bundle.get_model_instance_id(3));
-  const Isometry3d& x_pose = bundle.get_pose(3);
+  const RigidTransformd& x_pose = bundle.get_transform(3);
   EXPECT_TRUE(CompareMatrices(
-      Isometry3d(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5)).matrix(),
+      RigidTransformd(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5),
+                      Vector3d{0, 0, 0})
+          .matrix(),
       x_pose.matrix()));
 
   // The sequel checks the AutoDiffXd conversion.
@@ -182,9 +186,10 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
       autodiff_output->get_data(0)->get_value<PoseBundle<AutoDiffXd>>();
   ASSERT_EQ(bundle.get_num_poses(), autodiff_bundle.get_num_poses());
   for (int i = 0; i < bundle.get_num_poses(); i++) {
-    EXPECT_TRUE(CompareMatrices(
-        bundle.get_pose(i).matrix(),
-        math::autoDiffToValueMatrix(autodiff_bundle.get_pose(i).matrix())));
+    EXPECT_TRUE(
+        CompareMatrices(bundle.get_transform(i).matrix(),
+                        math::autoDiffToValueMatrix(
+                            autodiff_bundle.get_transform(i).matrix())));
     EXPECT_TRUE(
         CompareMatrices(bundle.get_velocity(i).get_value(),
                         math::autoDiffToValueMatrix(

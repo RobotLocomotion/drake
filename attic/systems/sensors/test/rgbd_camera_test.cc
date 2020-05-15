@@ -14,6 +14,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/unused.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -303,7 +304,8 @@ TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
         dynamic_cast<rendering::PoseVector<double>*>(
             output_->GetMutableVectorData(3));
 
-    const Eigen::Isometry3d actual = camera_base_pose->get_isometry();
+    const Eigen::Isometry3d actual =
+        camera_base_pose->get_transform().GetAsIsometry3();
     EXPECT_TRUE(CompareMatrices(position.matrix(),
                                 actual.translation().matrix(), kTolerance));
     const math::RollPitchYaw<double> rpy(orientation);
@@ -325,9 +327,9 @@ TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
         dynamic_cast<rendering::PoseVector<double>*>(
             output_->GetMutableVectorData(3));
 
-    const Eigen::Isometry3d actual = camera_base_pose->get_isometry();
-    EXPECT_TRUE(CompareMatrices(X_WB.matrix(),
-                                actual.matrix(), kTolerance));
+    const Eigen::Isometry3d actual =
+        camera_base_pose->get_transform().GetAsIsometry3();
+    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), actual.matrix(), kTolerance));
   }
 }
 

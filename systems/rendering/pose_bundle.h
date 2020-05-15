@@ -8,8 +8,10 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/rendering/frame_velocity.h"
 
 namespace drake {
@@ -38,7 +40,12 @@ class PoseBundle {
   ~PoseBundle();
 
   int get_num_poses() const;
-  const Isometry3<T>& get_pose(int index) const;
+  const math::RigidTransform<T>& get_transform(int index) const;
+  void set_transform(int index, const math::RigidTransform<T>& pose);
+
+  DRAKE_DEPRECATED("2020-09-01", "Please use get_transform()")
+  const Isometry3<T> get_pose(int index) const;
+  DRAKE_DEPRECATED("2020-09-01", "Please use set_transform()")
   void set_pose(int index, const Isometry3<T>& pose);
 
   const FrameVelocity<T>& get_velocity(int index) const;
@@ -51,7 +58,7 @@ class PoseBundle {
   void set_model_instance_id(int index, int id);
 
  private:
-  std::vector<Isometry3<T>> poses_;
+  std::vector<math::RigidTransform<T>> poses_;
   std::vector<FrameVelocity<T>> velocities_;
   std::vector<std::string> names_;
   std::vector<int> ids_;

@@ -55,6 +55,7 @@ drake_cc_library(
     hdrs = ["pose_vector.h"],
     deps = [
         "//common:default_scalars",
+        "//math:geometric_transform",
         "//systems/framework:vector",
     ],
 )
