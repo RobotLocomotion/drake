@@ -15,6 +15,9 @@
 
 namespace drake {
 
+using Eigen::Vector3d;
+using math::RigidTransform;
+using math::RigidTransformd;
 using symbolic::test::ExprEqual;
 
 namespace systems {
@@ -24,9 +27,13 @@ namespace {
 // Tests that the default PoseVector is initialized to identity.
 GTEST_TEST(PoseVector, InitiallyIdentity) {
   const PoseVector<double> vec;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_TRUE(CompareMatrices(Isometry3<double>::Identity().matrix(),
                               vec.get_isometry().matrix()));
-
+#pragma GCC diagnostic pop
+EXPECT_TRUE(CompareMatrices(RigidTransformd().matrix(),
+                              vec.transform().matrix()));
   // Check that the underlying storage has the values we'd expect.
   for (int i = 0; i < 3; ++i) {
     // p_WA is entirely zero.
@@ -50,8 +57,16 @@ GTEST_TEST(PoseVector, FullyParameterizedCtor) {
 
   Eigen::Isometry3d isometry_expected(translation);
   isometry_expected.rotate(rotation);
-  EXPECT_TRUE(CompareMatrices(isometry_expected.matrix(),
-                              vec.get_isometry().matrix()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_TRUE(
+      CompareMatrices(isometry_expected.matrix(), vec.get_isometry().matrix()));
+#pragma GCC diagnostic pop
+  RigidTransformd transform_expected =
+      RigidTransformd(translation) *
+      RigidTransformd(rotation, Vector3d::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(transform_expected.matrix(), vec.transform().matrix()));
   EXPECT_TRUE(CompareMatrices(
       Eigen::Isometry3d(translation).matrix(),
       Eigen::Isometry3d(vec.get_translation()).matrix()));
@@ -67,7 +82,7 @@ GTEST_TEST(PoseVector, Rotation) {
     EXPECT_EQ(0.5, vec[i]);
   }
   // Check that the isometry transforms the x-axis to the y-axis.
-  const Isometry3<double> X_WA = vec.get_isometry();
+  const RigidTransformd X_WA = vec.transform();
   const Eigen::Vector3d p_in = {1.0, 0.0, 0.0};
   const Eigen::Vector3d p_out = X_WA * p_in;
   EXPECT_EQ((Eigen::Vector3d{0.0, 1.0, 0.0}), p_out);
@@ -81,7 +96,7 @@ GTEST_TEST(PoseVector, Translation) {
     EXPECT_EQ(1.0 * (i + 1), vec[i]);
   }
   // Check that the isometry is a pure translation.
-  const Isometry3<double> X_WA = vec.get_isometry();
+  const RigidTransformd X_WA = vec.transform();
   const Eigen::Vector3d p_in = {1.0, 2.0, 3.0};
   const Eigen::Vector3d p_out = X_WA * p_in;
   EXPECT_EQ((Eigen::Vector3d{2.0, 4.0, 6.0}), p_out);
@@ -105,14 +120,28 @@ GTEST_TEST(PoseVector, Symbolic) {
   vec[6] = symbolic::Variable("c");
 
   // Spot-check some terms from the output.
-  const Isometry3<symbolic::Expression> X_WA = vec.get_isometry();
+  const RigidTransform<symbolic::Expression> X_WA = vec.transform();
   const auto matrix = X_WA.matrix();
+  // Note: RigidTransform normalizes the quaternion in an order of operations
+  // that leads to a *very* specific set of symbolic expressions. That is what
+  // is represented below.
+
+  // The squared L2 norm of the quaternion; if it were already unit length,
+  // this factor would be one and the expressions down below would be much
+  // simpler.
+  const symbolic::Expression q_norm2 =
+      vec[3] * vec[3] + vec[4] * vec[4] + vec[5] * vec[5] + vec[6] * vec[6];
+  
   // Rotation - first element on the diagonal
-  EXPECT_PRED2(ExprEqual,
-               1 - 2 * vec[5] * vec[5] - 2 * vec[6] * vec[6], matrix(0, 0));
+  EXPECT_PRED2(
+      ExprEqual,
+      1 - vec[5] * ((2 * vec[5]) / q_norm2) - vec[6] * ((2 * vec[6]) / q_norm2),
+      matrix(0, 0));
   // Rotation - second element in the third row
-  EXPECT_PRED2(ExprEqual,
-               2 * vec[5] * vec[6] + 2 * vec[3] * vec[4], matrix(2, 1));
+  EXPECT_PRED2(
+      ExprEqual,
+      vec[5] * ((2 * vec[6]) / q_norm2) + vec[3] * ((2 * vec[4]) / q_norm2),
+      matrix(2, 1));
   // Translation - fourth element in the second row
   EXPECT_PRED2(ExprEqual, vec[1], matrix(1, 3));
 }
@@ -132,7 +161,7 @@ GTEST_TEST(PoseVector, Autodiff) {
   }
 
   // Spot-check some terms from the output.
-  const Isometry3<AutoDiffXd> X_WA = vec.get_isometry();
+  const RigidTransform<AutoDiffXd> X_WA = vec.transform();
   auto matrix = X_WA.matrix();
 
   // The partial of the first element of the rotation matrix with respect to
