@@ -29,6 +29,7 @@ drake_cc_package_library(
     name = "util",
     deps = [
         ":bot_core_lcm_encode_decode",
+        ":move_ik_demo_base",
         ":moving_average_filter",
         ":robot_plan_utils",
         ":trajectory_utils",
@@ -60,6 +61,23 @@ drake_py_unittest(
     data = [
         ":geometry_inspector",
         "//multibody/benchmarks/acrobot:models",
+    ],
+)
+
+drake_cc_library(
+    name = "move_ik_demo_base",
+    srcs = [
+        "move_ik_demo_base.cc",
+    ],
+    hdrs = [
+        "move_ik_demo_base.h",
+    ],
+    deps = [
+        ":robot_plan_utils",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -121,6 +139,17 @@ drake_cc_googletest(
     deps = [
         ":bot_core_lcm_encode_decode",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "move_ik_demo_base_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":move_ik_demo_base",
+        "//manipulation/kuka_iiwa:iiwa_constants",
     ],
 )
 
