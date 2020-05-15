@@ -1014,6 +1014,7 @@ drake_cc_googletest(
         ":binding",
         ":constraint",
         ":cost",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

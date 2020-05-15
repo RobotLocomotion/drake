@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/hash.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -73,6 +74,44 @@ class Binding {
     std::ostringstream os;
     os << *this;
     return os.str();
+  }
+
+  /**
+   * Compare two bindings based on their evaluator pointers and the bound
+   * variables.
+   */
+  bool equal_to(const Binding<C>& other) const {
+    if (this->evaluator().get() != other.evaluator().get()) {
+      return false;
+    }
+    if (vars_.rows() != other.vars_.rows()) {
+      return false;
+    }
+    for (int i = 0; i < vars_.rows(); ++i) {
+      if (!vars_(i).equal_to(other.vars_(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool operator==(const Binding<C>& other) const {
+    return this->equal_to(other);
+  }
+
+  bool operator!=(const Binding<C>& other) const {
+    return !this->equal_to(other);
+  }
+
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Binding<C>& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, reinterpret_cast<uintptr_t>(item.evaluator().get()));
+    for (int i = 0; i < item.variables().rows(); ++i) {
+      hash_append(hasher, item.variables()(i));
+    }
   }
 
  private:

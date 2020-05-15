@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/text_logging.h"
 #include "drake/solvers/constraint.h"
@@ -17,31 +18,61 @@ GTEST_TEST(TestBinding, TestConstraint) {
   const symbolic::Variable x1("x1");
   const symbolic::Variable x2("x2");
   const symbolic::Variable x3("x3");
-  auto bb_con = std::make_shared<BoundingBoxConstraint>(
+  auto bb_con1 = std::make_shared<BoundingBoxConstraint>(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
 
   // Checks if the bound variables are stored in the right order.
   Binding<BoundingBoxConstraint> binding1(
-      bb_con,
+      bb_con1,
       {VectorDecisionVariable<2>(x3, x1), VectorDecisionVariable<1>(x2)});
   EXPECT_EQ(binding1.GetNumElements(), 3u);
   VectorDecisionVariable<3> var1_expected(x3, x1, x2);
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding1.variables()(i), var1_expected(i));
   }
-  bb_con->set_description("dummy bb");
+  bb_con1->set_description("dummy bb");
   const std::string str_expected1 =
       "BoundingBoxConstraint described as 'dummy bb'\n0 <= x3 <= 1\n0 <= x1 <= "
       "1\n0 <= x2 <= 1\n";
   EXPECT_EQ(fmt::format("{}", binding1), str_expected1);
+  EXPECT_TRUE(binding1.equal_to(binding1));
+  EXPECT_EQ(binding1, binding1);
 
   // Creates a binding with a single VectorDecisionVariable.
   Binding<BoundingBoxConstraint> binding2(
-      bb_con, VectorDecisionVariable<3>(x3, x1, x2));
+      bb_con1, VectorDecisionVariable<3>(x3, x1, x2));
   EXPECT_EQ(binding2.GetNumElements(), 3u);
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding2.variables()(i), var1_expected(i));
   }
+  EXPECT_TRUE(binding1.equal_to(binding2));
+  EXPECT_EQ(binding1, binding2);
+  // binding3 has different variables.
+  Binding<BoundingBoxConstraint> binding3(
+      bb_con1, VectorDecisionVariable<3>(x3, x2, x1));
+  EXPECT_FALSE(binding1.equal_to(binding3));
+  EXPECT_NE(binding1, binding3);
+  // bb_con2 has different address from bb_con1, although they have the same
+  // bounds.
+  auto bb_con2 = std::make_shared<BoundingBoxConstraint>(
+      Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  EXPECT_TRUE(CompareMatrices(bb_con2->lower_bound(), bb_con1->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(bb_con2->upper_bound(), bb_con1->upper_bound()));
+  Binding<BoundingBoxConstraint> binding4(
+      bb_con2, VectorDecisionVariable<3>(x3, x1, x2));
+  EXPECT_FALSE(binding1.equal_to(binding4));
+  EXPECT_FALSE(binding2.equal_to(binding4));
+  EXPECT_FALSE(binding3.equal_to(binding4));
+
+  // Test using Binding as unordered_map key.
+  std::unordered_map<Binding<BoundingBoxConstraint>, int, drake::DefaultHash>
+      map;
+  map.emplace(binding1, 1);
+  EXPECT_EQ(map.at(binding1), 1);
+  EXPECT_EQ(map.at(binding2), 1);
+  EXPECT_EQ(map.find(binding3), map.end());
+  map.emplace(binding3, 3);
+  EXPECT_EQ(map.at(binding3), 3);
 
   // Test to_string() for LinearEqualityConstraint binding.
   Eigen::Matrix2d Aeq;
