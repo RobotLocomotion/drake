@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include <Eigen/Dense>
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -14,6 +15,12 @@
 
 namespace drake {
 namespace pydrake {
+namespace {
+constexpr char doc_iso3_deprecation[] = R"""(
+This API using Isometry3 is / will be deprecated soon with the resolution of
+#9865. We only offer it for backwards compatibility. DO NOT USE!.
+)""";
+}  // namespace
 
 PYBIND11_MODULE(rendering, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -36,8 +43,21 @@ PYBIND11_MODULE(rendering, m) {
                const Eigen::Translation<T, 3>&>(),
           py::arg("rotation"), py::arg("translation"),
           doc.PoseVector.ctor.doc_2args)
-      .def("get_isometry", &PoseVector<T>::get_isometry,
-          doc.PoseVector.get_isometry.doc)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      .def("get_isometry",
+          [](const PoseVector<T>* self) {
+            WarnDeprecated(
+                "Use get_transform() instead of get_isometry(). Support will "
+                "be removed after 2020-09-01.");
+            return self->get_isometry();
+          },
+          doc_iso3_deprecation)
+#pragma GCC diagnostic pop
+      .def("get_transform", &PoseVector<T>::get_transform,
+          doc.PoseVector.transform.doc)
+      .def("set_transform", &PoseVector<T>::set_transform,
+          doc.PoseVector.set_transform.doc)
       .def("get_translation", &PoseVector<T>::get_translation,
           doc.PoseVector.get_translation.doc)
       .def("set_translation", &PoseVector<T>::set_translation,
@@ -66,8 +86,29 @@ PYBIND11_MODULE(rendering, m) {
       .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc)
       .def("get_num_poses", &PoseBundle<T>::get_num_poses,
           doc.PoseBundle.get_num_poses.doc)
-      .def("get_pose", &PoseBundle<T>::get_pose, doc.PoseBundle.get_pose.doc)
-      .def("set_pose", &PoseBundle<T>::set_pose, doc.PoseBundle.set_pose.doc)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      .def("get_pose",
+          [](const PoseBundle<T>* self, int index) {
+            WarnDeprecated(
+                "Use get_transform() instead of get_pose(). Support will be "
+                "removed after 2020-09-01.");
+            return self->get_pose(index);
+          },
+          doc_iso3_deprecation)
+      .def("set_pose",
+          [](PoseBundle<T>* self, int index, const Isometry3<T>& pose) {
+            WarnDeprecated(
+                "Use set_set_transform() instead of set_pose(). Support will "
+                "be removed after 2020-09-01.");
+            return self->set_pose(index, pose);
+          },
+          doc_iso3_deprecation)
+#pragma GCC diagnostic pop
+      .def("get_transform", &PoseBundle<T>::get_transform,
+          doc.PoseBundle.transform.doc)
+      .def("set_transform", &PoseBundle<T>::set_transform,
+          doc.PoseBundle.set_transform.doc)
       .def("get_velocity", &PoseBundle<T>::get_velocity,
           doc.PoseBundle.get_velocity.doc)
       .def("set_velocity", &PoseBundle<T>::set_velocity,

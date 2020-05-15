@@ -33,6 +33,19 @@ Isometry3<T> PoseVector<T>::get_isometry() const {
 }
 
 template <typename T>
+math::RigidTransform<T> PoseVector<T>::get_transform() const {
+  const auto& data = *this;
+  return math::RigidTransform<T>{get_rotation(),
+                                 Vector3<T>{data[0], data[1], data[2]}};
+}
+
+template <typename T>
+void PoseVector<T>::set_transform(const math::RigidTransform<T>& transform) {
+  this->set_translation(Eigen::Translation<T, 3>(transform.translation()));
+  this->set_rotation(transform.rotation().ToQuaternion());
+}
+
+template <typename T>
 Eigen::Translation<T, 3> PoseVector<T>::get_translation() const {
   return Eigen::Translation<T, 3>((*this)[0], (*this)[1], (*this)[2]);
 }

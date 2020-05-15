@@ -352,7 +352,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             full_name = pose_bundle.get_name(frame_i)
             model_id = pose_bundle.get_model_instance_id(frame_i)
 
-            X_WB = RigidTransform(pose_bundle.get_pose(frame_i))
+            X_WB = pose_bundle.get_transform(frame_i)
             patch_Wlist, _ = self._get_view_patches(full_name, X_WB)
             for i, patch_W in enumerate(patch_Wlist):
                 # Project the object vertices from 3d in world frame W to 2d in
