@@ -211,12 +211,13 @@ template <typename T> class Body;
 /// Mxₘₐₓ or Fxₘₐₓ, and how a linear 2ⁿᵈ-order ODE provides insight on how to
 /// experimentally estimate an "undamped natural frequency" ωₙ or a "damping
 /// ratio" ζ.  The constants ωₙ (units of rad/s) and ζ (no units) are useful
-/// mathematical intermediaries for subsequent determinination of stiffness and
-/// damping constants.  The symbols ωₙ and ζ appear in the prototypical linear
-/// constant-coefficient 2ⁿᵈ-order ODE  <pre>
+/// mathematical intermediaries for determining stiffness constants (e.g., kx)
+/// and damping constants (e.g., dx). The symbols ωₙ and ζ relate to mass m,
+/// physical damping constant dx, and physical stiffness constant kx via the
+/// prototypical linear constant-coefficient 2ⁿᵈ-order ODEs below.  <pre>
 ///  m ẍ +     dx ẋ +  kx x = 0   or alternatively as
 ///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0   where ωₙ² = kx/m,  ζ = dx / (2 √(m kx))</pre>
-/// ωₙ and ζ also appear in the related ODE for rotational systems, namely<pre>
+/// ωₙ and ζ also appear in the related ODEs for rotational systems, namely<pre>
 ///  I₀ q̈ +     d₀ q̇ +  k₀ q = 0   or alternatively as
 ///     q̈ + 2 ζ ωₙ q̇ + ωₙ² q = 0   where ωₙ² = k₀/I₀,  ζ = d₀ / (2 √(I₀ k₀))
 /// </pre>
@@ -234,7 +235,7 @@ template <typename T> class Body;
 ///    ωₙ ≈ -ln(settling_ratio) / (ζ tₛ) which for settling ratios 0.01 and 0.05
 ///    give ωₙ ≈ 4.6 / (ζ tₛ) and ωₙ ≈ 3 / (ζ tₛ).  Another commonly used
 ///    approximation is ωₙ ≈ -ln(settling_ratio √(1- ζ²)) / (ζ tₛ).
-///    See @https://en.wikipedia.org/wiki/Settling_time or the book
+///    See @ref https://en.wikipedia.org/wiki/Settling_time or the book
 ///    Modern Control Engineering by Katsuhiko Ogata.
 ///  - When ζ ≈ 1 (critically damped), ωₙ is determined by choosing a settling
 ///    ratio and then solving for (ωₙ tₛ) via the nonlinear algebraic equation
@@ -242,17 +243,22 @@ template <typename T> class Body;
 ///    For settling ratio = 0.01, ωₙ ≈ 6.64 / tₛ.
 ///    For settling ratio = 0.02, ωₙ ≈ 5.83 / tₛ.
 ///    For settling ratio = 0.05, ωₙ ≈ 4.74 / tₛ.
-///    See @https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
+///    See @ref https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 ///  - When ζ > 1.01 (overdamped), ωₙ ≈ -ln(2 settling_ratio sz/s₂) / (s₁ tₛ)
 ///    where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz.
-///    This formula arises from a "dominant pole" analysis of the solution to
-///    the prototypical linear constant-coefficient 2ⁿᵈ-order ODE. <pre>
-///    For ẋ(0) = 0 and defining poles p₁ = -ωₙ s₁ and p₂ -ωₙ s₂, math gives
-///    x(t) / x(0) = p₂/(p₂-p₁)*exp(p₁*t) - p₁/(p₂-p₁)*exp(p₂*t)
-///                = s₂/(s₂-s₁)*exp(p₁*t) - s₁/(s₂-s₁)*exp(p₂*t)
-///                =  k/( k-1 )*exp(p₁*t) -  1/( k-1 )*exp(p₂*t)
-///    where k = s₂ / s₁  is real so k > 0, i.e., s₂ = k * s₁.
-/// <pre>
+///    This formula arises from the "dominant pole" part of the solution to the
+///    prototypical linear constant-coefficient 2ⁿᵈ-order ODE.  For ẋ(0) = 0,
+///    mathematics shows poles p₁ = -ωₙ s₁,  p₂ = -ωₙ s₂, and math gives <pre>
+///    x(t) / x(0) = p₂/(p₂-p₁) exp(p₁ t) - p₁/(p₂-p₁) exp(p₂ t)
+///                = s₂/(s₂-s₁) exp(p₁ t) - s₁/(s₂-s₁) exp(p₂ t)
+///                =  k/( k-1 ) exp(p₁ t) -  1/( k-1 ) exp(p₂ t)
+///    where k = s₂ / s₁ is real so k > 0, s₂ = k s₁, and p₁ > p₂ (p₁ dominant).
+///    Since k/(k - 1) = s₂ / s₁ / (s₂/s₁ -1) = s₂ / (s₂ - s₁) = s2 / (2 sz),
+///    x(t) / x(0) ≈  k/( k-1 ) exp(p₁ t)
+///                ≈  s₂ / (2 sz) exp(-s₁ ωₙ t), hence
+///    settling_ratio ≈ s₂ / (2 sz) exp(-s₁ ωₙ tₛ), so
+///    ωₙ ≈ -ln(settling_ratio 2 sz / s₂) / (s₁ tₛ)
+/// </pre>
 /// - For a real physical bushing, an experiment is one way to estimate damping
 /// constants.  For example, to estimate a torque damping constant d₀ associated
 /// with underdamped vibrations (damping ratio 0 < ζ < 1), attach the bushing to
@@ -261,7 +267,8 @@ template <typename T> class Body;
 /// successive peak heights above the final steady-state value) calculate
 /// logarithmic decrement δ = -ln(decay_ratio), calculate damping ratio
 /// ζ = √(δ² / (4π² + δ²)), then calculate d₀ using d₀ = 2 ζ √(I₀ k₀) or
-/// d₀ = 2 ζ k₀ / ωₙ.
+/// d₀ = 2 ζ k₀ / ωₙ. For more information, see
+/// @ref https://en.wikipedia.org/wiki/Damping_ratio#Logarithmic_decrement
 ///
 /// @note The complete theory for this bushing is documented in the source code.
 /// Please look there if you want more information.
