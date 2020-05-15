@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_tree.h"

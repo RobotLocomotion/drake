@@ -5,6 +5,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/fixed_axis_one_dof_joint.h"

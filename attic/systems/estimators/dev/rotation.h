@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "drake/attic_warning.h"
+
 // TODO(russt): Add unit test coverage and move to drake/solvers/
 // TODO(all): Add PSDlift, McCormick envelope, bilinear SOCP relaxations, etc.
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/kinematics_cache_helper.h"
 #include "drake/systems/trajectory_optimization/generalized_constraint_force_evaluator.h"
 

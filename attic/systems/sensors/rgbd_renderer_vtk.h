@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/attic_warning.h"
 #include "drake/systems/sensors/rgbd_renderer.h"
 
 namespace drake {

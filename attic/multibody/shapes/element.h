@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/shapes/geometry.h"
 
 namespace DrakeShapes {

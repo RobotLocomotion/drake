@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/collision/model.h"
 
 namespace drake {
