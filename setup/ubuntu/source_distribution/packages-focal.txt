@@ -5,7 +5,6 @@ coinor-libclp-dev
 coinor-libipopt-dev
 default-jdk
 diffstat
-doxygen
 file
 fonts-dejavu-core
 fonts-dejavu-extra
