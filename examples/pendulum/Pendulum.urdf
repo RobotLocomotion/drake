@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <robot name="Pendulum"
     xmlns="https://drake.mit.edu"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="https://drake.mit.edu ../../doc/drakeURDF.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <material name="green">
     <color rgba=".3 .6 .4 1"/>
   </material>

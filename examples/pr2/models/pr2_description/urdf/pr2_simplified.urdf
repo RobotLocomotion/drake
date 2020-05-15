@@ -20,7 +20,7 @@
 <!-- |    keeping multiple URDFs or an XACRO with simplified collision geometry or     | -->
 <!-- |    removed collision geometry.                                                  | -->
 <!-- =================================================================================== -->
-<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor" xmlns:joint="http://playerstage.sourceforge.net/gazebo/xmlschema/#slider" xmlns:body="http://playerstage.sourceforge.net/gazebo/xmlschema/#body" xmlns:geom="http://playerstage.sourceforge.net/gazebo/xmlschema/#geom" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller" xmlns:xacro="http://ros.org/wiki/xacro" xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface" xsi:schemaLocation="https://drake.mit.edu ../../doc/drakeURDF.xsd" name="pr2">
+<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor" xmlns:joint="http://playerstage.sourceforge.net/gazebo/xmlschema/#slider" xmlns:body="http://playerstage.sourceforge.net/gazebo/xmlschema/#body" xmlns:geom="http://playerstage.sourceforge.net/gazebo/xmlschema/#geom" xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller" xmlns:xacro="http://ros.org/wiki/xacro" xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface" name="pr2">
   <!-- The following included files set up definitions of parts of the robot body -->
   <!-- misc common stuff? -->
   <!-- PR2 Arm -->
