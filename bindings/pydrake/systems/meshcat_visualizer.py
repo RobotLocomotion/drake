@@ -369,9 +369,9 @@ class MeshcatVisualizer(LeafSystem):
             model_id = pose_bundle.get_model_instance_id(frame_i)
             # The MBP parsers only register the plant as a nameless source.
             # TODO(russt): Use a more textual naming convention here?
-            pose_matrix = pose_bundle.get_pose(frame_i)
+            pose_matrix = pose_bundle.get_transform(frame_i)
             self.vis[self.prefix][source_name][str(model_id)][frame_name]\
-                .set_transform(pose_matrix.matrix())
+                .set_transform(pose_matrix.GetAsMatrix4())
 
 
 class MeshcatContactVisualizer(LeafSystem):
@@ -453,7 +453,7 @@ class MeshcatContactVisualizer(LeafSystem):
             (source_name, frame_name) = self._meshcat_viz._parse_name(
                 pose_bundle.get_name(frame_i))
             model_instance = pose_bundle.get_model_instance_id(frame_i)
-            pose_matrix = pose_bundle.get_pose(frame_i)
+            pose_matrix = pose_bundle.get_transform(frame_i)
             _, frame_name = frame_name.split("::")
             key = (model_instance, frame_name)
             X_WB_map[key] = pose_matrix

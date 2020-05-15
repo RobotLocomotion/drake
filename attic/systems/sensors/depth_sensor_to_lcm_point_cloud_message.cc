@@ -70,7 +70,7 @@ void DepthSensorToLcmPointCloudMessage::CalcPointCloudMessage(
   message.points.clear();
   for (int i = 0; i < point_cloud_S.cols(); ++i) {
     const auto& point_S = point_cloud_S.col(i);
-    Eigen::Vector3d point_W = X_WS->get_isometry() * point_S;
+    Eigen::Vector3d point_W = X_WS->get_transform() * point_S;
     message.points.push_back(std::vector<float>{
         static_cast<float>(point_W(0)),
         static_cast<float>(point_W(1)),
