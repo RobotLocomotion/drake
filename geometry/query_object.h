@@ -174,7 +174,8 @@ class QueryObject {
 
    @returns A vector populated with all detected penetrations characterized as
             point pairs.
-   @note    Silently ignore Mesh geometries. */
+   @warning This silently ignores Mesh geometries (but Convex mesh geometries
+            are included). */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
@@ -257,12 +258,14 @@ class QueryObject {
    the remaining, unculled geometry pairs are *actually* in collision.
 
    @returns A vector populated with collision pair candidates.
-   @note    Silently ignore Mesh geometries. */
+   @warning This silently ignores Mesh geometries (but Convex mesh geometries
+            are included). */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
    world.
-   @note Silently ignore Mesh geometries. */
+   @warning This silently ignores Mesh geometries (but Convex mesh geometries
+            are included). */
   bool HasCollisions() const;
 
   //@}
