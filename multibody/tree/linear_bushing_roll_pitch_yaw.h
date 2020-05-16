@@ -172,7 +172,7 @@ template <typename T> class Body;
 ///    the Advanced section), then `dx = 2 ζ kx / ωₙ` (units of N*s/m).
 /// 2. Choose a damping ratio ζ (e.g., ζ = 1, critical damping) and a desired
 ///    settling time tₛ, calculate ωₙ (as shown below in the Advanced section),
-///    then `d₀ = 2 ζ k₀ / ωₙ` (units of N*m*s/rad).
+///    then `dx = 2 ζ kx / ωₙ` (units of N*s/m).
 /// 3. Choose a damping ratio ζ (e.g., ζ = 1, critical damping), estimate a
 ///    characteristic mass m and calculate `dx = 2 ζ √(m kx)` (units of N*s/m).
 ///
@@ -206,28 +206,29 @@ template <typename T> class Body;
 /// - @ref Basic_bushing_force_stiffness_and_damping
 ///        "How to choose force stiffness and damping constants"
 ///
-/// This section provides advanced details on the performance tradeoff between
-/// high stiffness and long simulation time, loads that affect estimates of
-/// Mxₘₐₓ or Fxₘₐₓ, and how a linear 2ⁿᵈ-order ODE provides insight on how to
-/// experimentally estimate an "undamped natural frequency" ωₙ or a "damping
-/// ratio" ζ.  The constants ωₙ (units of rad/s) and ζ (no units) are useful
-/// mathematical intermediaries for determining stiffness constants (e.g., kx)
-/// and damping constants (e.g., dx). The symbols ωₙ and ζ relate to mass m,
-/// physical damping constant dx, and physical stiffness constant kx via the
-/// prototypical linear constant-coefficient 2ⁿᵈ-order ODEs below.  <pre>
+/// The list below provides more detail on: The performance tradeoff between
+/// high stiffness and long simulation time; loads that affect estimates of
+/// Mxₘₐₓ or Fxₘₐₓ; and how a linear 2ⁿᵈ-order ODE provides insight on how to
+/// experimentally determine stiffness and damping constants.
+/// - Stiffness [k₀ k₁ k₂] and [kx ky kz] affect simulation time and accuracy.
+/// Generally, a stiffer bushing better resembles an ideal joint (e.g., a
+/// revolute joint or fixed/weld joint).  However (depending on integrator), a
+/// stiffer bushing usually increases numerical integration time.
+/// - An estimate for a maximum load Mxₘₐₓ or Fxₘₐₓ accounts for gravity forces,
+/// applied forces, inertia forces (centripetal, Coriolis, gyroscopic), etc.
+/// - One way to determine physical stiffness and damping constants is through
+/// the mathematical intermediaries ωₙ (units of rad/s) and ζ (no units).
+/// The constant ωₙ (called "undamped natural frequency" or "angular frequency")
+/// and constant ζ (called "damping ratio") relate to the physical constants
+/// mass m, damping constant dx, and stiffness constant kx via the following
+/// prototypical linear constant-coefficient 2ⁿᵈ-order ODEs. <pre>
 ///  m ẍ +     dx ẋ +  kx x = 0   or alternatively as
 ///    ẍ + 2 ζ ωₙ ẋ + ωₙ² x = 0   where ωₙ² = kx/m,  ζ = dx / (2 √(m kx))</pre>
 /// ωₙ and ζ also appear in the related ODEs for rotational systems, namely<pre>
 ///  I₀ q̈ +     d₀ q̇ +  k₀ q = 0   or alternatively as
 ///     q̈ + 2 ζ ωₙ q̇ + ωₙ² q = 0   where ωₙ² = k₀/I₀,  ζ = d₀ / (2 √(I₀ k₀))
 /// </pre>
-/// - Stiffness [kx ky kz] affects simulation time and accuracy.
-/// Generally, a stiffer bushing better resembles an ideal joint (e.g., a
-/// revolute joint or fixed/weld joint).  However (depending on integrator), a
-/// stiffer bushing usually increases numerical integration time.
-/// - An estimate for a maximum load Mxₘₐₓ or Fxₘₐₓ accounts for gravity forces,
-/// applied forces, inertia forces (centripetal, Coriolis, gyroscopic), etc.
-/// - One way to determine ωₙ is from settling time tₛ which approximates the
+/// One way to determine ωₙ is from settling time tₛ which approximates the
 ///  time for a system to settle to within a specified settling ratio of an
 ///  equilibrium solutions.  Typical values for settling ratio are 1% (0.01),
 ///  2% (0.02), or 5% (0.05).
@@ -240,9 +241,11 @@ template <typename T> class Body;
 ///  - When ζ ≈ 1 (critically damped), ωₙ is determined by choosing a settling
 ///    ratio and then solving for (ωₙ tₛ) via the nonlinear algebraic equation
 ///    (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio.
-///    For settling ratio = 0.01, ωₙ ≈ 6.64 / tₛ.
-///    For settling ratio = 0.02, ωₙ ≈ 5.83 / tₛ.
-///    For settling ratio = 0.05, ωₙ ≈ 4.74 / tₛ.
+///    Settling ratio | ωₙ
+///    -------------- | -------------
+///    0.01           | 6.64 / tₛ
+///    0.02           | 5.83 / tₛ
+///    0.05           | 4.74 / tₛ
 ///    See @ref https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 ///  - When ζ > 1.01 (overdamped), ωₙ ≈ -ln(2 settling_ratio sz/s₂) / (s₁ tₛ)
 ///    where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz.
