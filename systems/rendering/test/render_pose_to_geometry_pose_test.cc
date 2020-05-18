@@ -30,7 +30,7 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, InputOutput) {
   ASSERT_TRUE(output.has_id(frame_id));
   EXPECT_TRUE(CompareMatrices(
       output.value(frame_id).matrix(),
-      input.get_isometry().matrix()));
+      input.get_transform().matrix()));
 
   EXPECT_TRUE(dut.HasAnyDirectFeedthrough());
 }

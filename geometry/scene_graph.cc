@@ -393,9 +393,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
     const std::string& frame_name = g_state.GetName(f_id);
     output->set_name(i, source_name + "::" + frame_name);
     output->set_model_instance_id(i, g_state.GetFrameGroup(f_id));
-    // TODO(#11888): Remove GetAsIsometry3() when PoseBundle supports
-    //  RigidTransform.
-    output->set_pose(i, g_state.get_pose_in_world(f_id).GetAsIsometry3());
+    output->set_transform(i, g_state.get_pose_in_world(f_id));
     // TODO(SeanCurtis-TRI): Handle velocity.
   }
 }
