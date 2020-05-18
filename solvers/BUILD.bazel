@@ -96,6 +96,7 @@ drake_cc_library(
     hdrs = ["binding.h"],
     deps = [
         ":decision_variable",
+        ":evaluator_base",
     ],
 )
 

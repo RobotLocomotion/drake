@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <ostream>
 #include <sstream>
@@ -9,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/solvers/decision_variable.h"
+#include "drake/solvers/evaluator_base.h"
 
 namespace drake {
 namespace solvers {
@@ -80,7 +82,7 @@ class Binding {
    * Compare two bindings based on their evaluator pointers and the bound
    * variables.
    */
-  bool equal_to(const Binding<C>& other) const {
+  bool operator==(const Binding<C>& other) const {
     if (this->evaluator().get() != other.evaluator().get()) {
       return false;
     }
@@ -95,12 +97,8 @@ class Binding {
     return true;
   }
 
-  bool operator==(const Binding<C>& other) const {
-    return this->equal_to(other);
-  }
-
   bool operator!=(const Binding<C>& other) const {
-    return !this->equal_to(other);
+    return !((*this) == (other));
   }
 
   /** Implements the @ref hash_append concept. */
@@ -108,7 +106,9 @@ class Binding {
   friend void hash_append(HashAlgorithm& hasher,
                           const Binding<C>& item) noexcept {
     using drake::hash_append;
-    hash_append(hasher, reinterpret_cast<uintptr_t>(item.evaluator().get()));
+    const EvaluatorBase* const base = item.evaluator().get();
+    hash_append(hasher, reinterpret_cast<std::uintptr_t>(base));
+    hash_append(hasher, item.variables().rows());
     for (int i = 0; i < item.variables().rows(); ++i) {
       hash_append(hasher, item.variables()(i));
     }
@@ -151,3 +151,8 @@ Binding<To> BindingDynamicCast(const Binding<From>& binding) {
 
 }  // namespace solvers
 }  // namespace drake
+
+namespace std {
+template <typename C>
+struct hash<drake::solvers::Binding<C>> : public drake::DefaultHash {};
+}  // namespace std

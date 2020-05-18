@@ -35,7 +35,6 @@ GTEST_TEST(TestBinding, TestConstraint) {
       "BoundingBoxConstraint described as 'dummy bb'\n0 <= x3 <= 1\n0 <= x1 <= "
       "1\n0 <= x2 <= 1\n";
   EXPECT_EQ(fmt::format("{}", binding1), str_expected1);
-  EXPECT_TRUE(binding1.equal_to(binding1));
   EXPECT_EQ(binding1, binding1);
 
   // Creates a binding with a single VectorDecisionVariable.
@@ -45,12 +44,18 @@ GTEST_TEST(TestBinding, TestConstraint) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(VarEqual, binding2.variables()(i), var1_expected(i));
   }
-  EXPECT_TRUE(binding1.equal_to(binding2));
   EXPECT_EQ(binding1, binding2);
+  // binding2_cast casts BoundingBoxConstraint to LinearConstraint, and then
+  // cast back to BoundingBoxConstraint. This shows that after casting, as long
+  // as the types of the constraint are the same, we can still compare the
+  // Binding objects.
+  const Binding<BoundingBoxConstraint> binding2_cast =
+      internal::BindingDynamicCast<BoundingBoxConstraint>(
+          internal::BindingDynamicCast<LinearConstraint>(binding2));
+  EXPECT_EQ(binding2, binding2_cast);
   // binding3 has different variables.
   Binding<BoundingBoxConstraint> binding3(
       bb_con1, VectorDecisionVariable<3>(x3, x2, x1));
-  EXPECT_FALSE(binding1.equal_to(binding3));
   EXPECT_NE(binding1, binding3);
   // bb_con2 has different address from bb_con1, although they have the same
   // bounds.
@@ -60,13 +65,10 @@ GTEST_TEST(TestBinding, TestConstraint) {
   EXPECT_TRUE(CompareMatrices(bb_con2->upper_bound(), bb_con1->upper_bound()));
   Binding<BoundingBoxConstraint> binding4(
       bb_con2, VectorDecisionVariable<3>(x3, x1, x2));
-  EXPECT_FALSE(binding1.equal_to(binding4));
-  EXPECT_FALSE(binding2.equal_to(binding4));
-  EXPECT_FALSE(binding3.equal_to(binding4));
+  EXPECT_NE(binding3, binding4);
 
   // Test using Binding as unordered_map key.
-  std::unordered_map<Binding<BoundingBoxConstraint>, int, drake::DefaultHash>
-      map;
+  std::unordered_map<Binding<BoundingBoxConstraint>, int> map;
   map.emplace(binding1, 1);
   EXPECT_EQ(map.at(binding1), 1);
   EXPECT_EQ(map.at(binding2), 1);
