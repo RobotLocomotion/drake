@@ -1,0 +1,24 @@
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Tue, 12 May 2019 00:00:00 -0400
+Subject: [PATCH] Do not define uint8, uint16, uint32, uint64 when compiling
+  ospcommon with ISPC 1.13 and above
+---
+ ospray/common/OSPCommon.ih | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/ospray/common/OSPCommon.ih b/ospray/common/OSPCommon.ih
+index 63c2273ee..1ddb79949 100644
+--- a/ospray/common/OSPCommon.ih
++++ b/ospray/common/OSPCommon.ih
+@@ -20,11 +20,6 @@
+
+ #include "OSPConfig.h"
+
+-typedef unsigned int64 uint64;
+-typedef unsigned int32 uint32;
+-typedef unsigned int16 uint16;
+-typedef unsigned int8  uint8;
+-
+ #define LOG(x)
+
+ #define PRINT(x) print(#x" = %\n", x)

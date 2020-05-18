@@ -59,8 +59,11 @@ def _impl(repository_ctx):
         archive = "dv-0.1.0-406-g4c3e570a-python-3.8.2-qt-5.14.1-vtk-8.2.0-mac-x86_64.tar.gz"  # noqa
         sha256 = "d09c2bfc80c4e50e178f588c6c2e80b5ce627251ca14c9841dba1f6c0c07fc31"  # noqa
     elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.8-qt-5.9.5-vtk-8.2.0-bionic-x86_64.tar.gz"  # noqa
-        sha256 = "70043c4bff0ea142e06b2b26c9dfceb549db5131c14a139bc57e1b4fa35094af"  # noqa
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.6.9-qt-5.9.5-vtk-8.2.0-bionic-x86_64.tar.gz"  # noqa
+        sha256 = "e38aab14d06b4ef6b49db625aa3aa87e290bd5a1044cb43f5e7e6d69cc1ab8e2"  # noqa
+    elif os_result.ubuntu_release == "20.04":
+        archive = "dv-0.1.0-406-g4c3e570a-python-3.8.2-qt-5.12.8-vtk-8.2.0-focal-x86_64.tar.gz"  # noqa
+        sha256 = "b6566cec9fb738176e58b0b19122b9f0a04fdbffe844d44f0b69de15287127df"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
