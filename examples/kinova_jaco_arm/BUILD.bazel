@@ -68,11 +68,11 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//lcmtypes:jaco",
-        "//manipulation/planner:differential_inverse_kinematics",
+        "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
-        "//multibody/parsing",
-        "//multibody/plant",
         "@lcm",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
