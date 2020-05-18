@@ -25,11 +25,11 @@ GTEST_TEST(DiscreteDerivativeTest, Topology) {
   EXPECT_FALSE(deriv.HasAnyDirectFeedthrough());
 }
 
-GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
+void RunFirstOrderHold(const bool want_transient) {
   DiagramBuilder<double> builder;
 
   const double kDuration = 1.0;
-  // Create an input system u(t) = [ 2*t, 3*t ].
+  // Create an input system u(t) = [ 4+2*t, 5+3*t ].
   Matrix2d knots;
   // clang-format off
   knots << 4, 4+2,
@@ -53,6 +53,10 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
   Simulator<double> simulator(*diagram);
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
+  if (want_transient) {
+    deriv->set_input_history(&simulator.get_mutable_context(),
+                             Vector2d(0.0, 0.0));
+  }
   simulator.AdvanceTo(kDuration);
 
   for (int i = 0; i < log->sample_times().size(); i++) {
@@ -61,15 +65,31 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
       // conditions).
       EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
     } else if (log->sample_times()(i) <= time_step) {
-      // The outputs should jump for one timestep because u(0) is non-zero.
-      EXPECT_TRUE(CompareMatrices(
-          log->data().col(i), Vector2d(4. / time_step, 5. / time_step), 1e-12));
+      if (want_transient) {
+        // The outputs should jump for one timestep because u(0) is non-zero.
+        EXPECT_TRUE(CompareMatrices(
+            log->data().col(i), Vector2d(4. / time_step, 5. / time_step),
+            1e-12));
+      } else {
+        // The outputs should remain zero until there two input samples.
+        EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
+      }
     } else {
       // Once time has advanced, outputs should have the steady-state
       // derivatives.
       EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(2, 3), 1e-12));
     }
   }
+}
+
+GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
+  const bool want_transient = true;
+  RunFirstOrderHold(want_transient);
+}
+
+GTEST_TEST(DiscreteDerivativeTest, FirstOrderHoldNoTransient) {
+  const bool want_transient = false;
+  RunFirstOrderHold(want_transient);
 }
 
 GTEST_TEST(DiscreteDerivativeTest, SetState) {
