@@ -108,10 +108,14 @@ class Binding {
     using drake::hash_append;
     const EvaluatorBase* const base = item.evaluator().get();
     hash_append(hasher, reinterpret_cast<std::uintptr_t>(base));
-    hash_append(hasher, item.variables().rows());
+    // We follow the pattern in
+    // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html#hash_append_vector
+    // to append the hash for a std::vector, first to append all its elements,
+    // and then append the vector size.
     for (int i = 0; i < item.variables().rows(); ++i) {
       hash_append(hasher, item.variables()(i));
     }
+    hash_append(hasher, item.variables().rows());
   }
 
  private:
