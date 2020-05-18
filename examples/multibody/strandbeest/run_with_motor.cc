@@ -137,7 +137,7 @@ int do_main() {
     total_mass += body.get_default_mass();
   }
 
-  // Set the penetration allowand and stiction tolerance to values that make
+  // Set the penetration allowance and stiction tolerance to values that make
   // sense for the scale of our simulation.
   strandbeest.set_penetration_allowance(FLAGS_penetration_allowance);
   strandbeest.set_stiction_tolerance(FLAGS_stiction_tolerance);
@@ -159,7 +159,8 @@ int do_main() {
                   torque_source->get_input_port(0));
   auto diagram = builder.Build();
 
-  // Create a context for this system and context for the strandbeest system.
+  // Create a context for the diagram and extract the context for the
+  // strandbeest model.
   std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   Context<double>& strandbeest_context =
@@ -204,9 +205,9 @@ int do_main() {
     const LinearBushingRollPitchYaw<double>& bushing =
         strandbeest.GetForceElement<LinearBushingRollPitchYaw>(bushing_index);
 
-    ik.AddPointToPointDistanceConstraint(bushing.frameA(), Eigen::Vector3d(),
-                                         bushing.frameC(), Eigen::Vector3d(), 0,
-                                         0);
+    ik.AddPointToPointDistanceConstraint(
+        bushing.frameA(), Eigen::Vector3d(0, 0, 0), bushing.frameC(),
+        Eigen::Vector3d(0, 0, 0), 0, 0);
   }
 
   // Solve the IK. The solved positions will be stored in the context passed

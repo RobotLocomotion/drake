@@ -66,11 +66,11 @@
 
     <frame name="${prefix}_leg1_loop_a_c_bushing_frameA"
         link="${prefix}_bar_a"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="0 0 0.38" />
     <frame name="${prefix}_leg1_loop_a_c_bushing_frameC"
         link="${prefix}_leg1_bar_c"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="0 0 0.393" />
     <drake:linear_bushing_rpy>
       <drake:bushing_frameA name="${prefix}_leg1_loop_a_c_bushing_frameA" />
@@ -87,11 +87,11 @@
 
     <frame name="${prefix}_leg2_loop_a_c_bushing_frameA"
         link="${prefix}_bar_a"
-        rpy="-1.5707963267948966 0 ${pi}"
+        rpy="${-pi/2} 0 ${pi}"
         xyz="0 0 -0.38" />
     <frame name="${prefix}_leg2_loop_a_c_bushing_frameC"
         link="${prefix}_leg2_bar_c"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="0 0 0.393" />
     <drake:linear_bushing_rpy>
       <drake:bushing_frameA name="${prefix}_leg2_loop_a_c_bushing_frameA" />

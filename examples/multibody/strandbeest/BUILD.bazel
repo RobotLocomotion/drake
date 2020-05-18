@@ -25,6 +25,7 @@ drake_cc_binary(
     ],
     test_rule_timeout = "moderate",
     deps = [
+        "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//geometry:geometry_visualization",
         "//multibody/inverse_kinematics",
@@ -33,7 +34,6 @@ drake_cc_binary(
         "//multibody/plant:contact_results_to_lcm",
         "//multibody/tree",
         "//solvers",
-        "//solvers:snopt_solver",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",

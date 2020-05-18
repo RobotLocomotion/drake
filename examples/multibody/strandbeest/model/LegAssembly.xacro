@@ -155,11 +155,11 @@
 
     <frame name="${prefix}_loop_f_g_bushing_frameA"
         link="${prefix}_bar_f"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="0 0 0.394" />
     <frame name="${prefix}_loop_f_g_bushing_frameC"
         link="${prefix}_bar_g"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="0.3624 0 -0.0582" />
     <drake:linear_bushing_rpy>
       <drake:bushing_frameA name="${prefix}_loop_f_g_bushing_frameA" />
@@ -176,11 +176,11 @@
 
     <frame name="${prefix}_loop_b_c_bushing_frameA"
         link="${prefix}_bar_b"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="-0.2978 0 0.2892" />
     <frame name="${prefix}_loop_b_c_bushing_frameC"
         link="${prefix}_bar_c"
-        rpy="-1.5707963267948966 0 0"
+        rpy="${-pi/2} 0 0"
         xyz="0 0 0.393" />
     <drake:linear_bushing_rpy>
       <drake:bushing_frameA name="${prefix}_loop_b_c_bushing_frameA" />
