@@ -23,7 +23,7 @@ drake_cc_binary(
     test_rule_args = [
         "--simulation_time=0.1",
     ],
-    test_rule_timeout="moderate",
+    test_rule_timeout = "moderate",
     deps = [
         "//common:find_resource",
         "//geometry:geometry_visualization",
