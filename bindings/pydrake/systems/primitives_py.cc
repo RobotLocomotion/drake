@@ -154,7 +154,13 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<int, double>(), py::arg("num_inputs"),
             py::arg("time_step"), doc.DiscreteDerivative.ctor.doc)
         .def("time_step", &DiscreteDerivative<T>::time_step,
-            doc.DiscreteDerivative.time_step.doc);
+            doc.DiscreteDerivative.time_step.doc)
+        .def("set_input_history",
+            overload_cast_explicit<void, systems::Context<T>*,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &DiscreteDerivative<T>::set_input_history),
+            py::arg("context"), py::arg("u"),
+            doc.DiscreteDerivative.set_input_history.doc_2args);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //

@@ -1,5 +1,6 @@
 #include "drake/systems/primitives/discrete_derivative.h"
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -25,9 +26,9 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step)
   this->DeclareVectorOutputPort("dudt", systems::BasicVector<T>(n_),
                                 &DiscreteDerivative<T>::CalcOutput,
                                 {this->xd_ticket()});
-
-  // TODO(sherm): Prefer two state vectors of size n_ upon resolution of #9705.
-  this->DeclareDiscreteState(2 * n_);
+  this->DeclareDiscreteState(n_);  // u[n]
+  this->DeclareDiscreteState(n_);  // u[n-1]
+  this->DeclareDiscreteState(BasicVector<T>{2.0});  // countdown
   this->DeclarePeriodicDiscreteUpdate(time_step_);
 }
 
@@ -39,34 +40,56 @@ void DiscreteDerivative<T>::set_input_history(
   DRAKE_DEMAND(u_n.size() == n_);
   DRAKE_DEMAND(u_n_minus_1.size() == n_);
 
-  state->get_mutable_discrete_state().get_mutable_vector().get_mutable_value()
-      << u_n,
-      u_n_minus_1;
+  state->get_mutable_discrete_state(0).SetFromVector(u_n);
+  state->get_mutable_discrete_state(1).SetFromVector(u_n_minus_1);
+  state->get_mutable_discrete_state(2)[0] = 0.0;
 }
 
 template <typename T>
 void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* discrete_state) const {
+    drake::systems::DiscreteValues<T>* state) const {
   // x₀[n+1] = u[n].
-  discrete_state->get_mutable_vector().get_mutable_value().head(n_) =
-      get_input_port().Eval(context);
+  state->get_mutable_vector(0).SetFromVector(get_input_port().Eval(context));
 
   // x₁[n+1] = x₀[n].
-  discrete_state->get_mutable_vector().get_mutable_value().tail(n_) =
-      context.get_discrete_state(0).get_value().head(n_);
+  state->get_mutable_vector(1).SetFrom(context.get_discrete_state(0));
+
+  // x₂[n+i] = x₂[n] - 1; floor at zero.
+  using std::max;
+  const T context_x2 = context.get_discrete_state(2)[0];
+  state->get_mutable_vector(2)[0] = max(context_x2 - 1.0, T(0));
 }
+
+namespace {
+template <typename T>
+VectorX<T> if_then_else_vector(
+  const boolean<T>& f_cond,
+  const Eigen::Ref<const VectorX<T>>& v_then,
+  const Eigen::Ref<const VectorX<T>>& v_else) {
+  DRAKE_DEMAND(v_then.size() == v_else.size());
+  VectorX<T> result(v_then.size());
+  for (int i = 0; i < result.size(); ++i) {
+    result[i] = if_then_else(f_cond, v_then[i], v_else[i]);
+  }
+  return result;
+}
+}  // namespace
 
 template <typename T>
 void DiscreteDerivative<T>::CalcOutput(
     const drake::systems::Context<T>& context,
     drake::systems::BasicVector<T>* output_vector) const {
-  const auto x0 = context.get_discrete_state(0).get_value().head(n_);
-  const auto x1 = context.get_discrete_state(0).get_value().tail(n_);
+  const auto& x0 = context.get_discrete_state(0).get_value();
+  const auto& x1 = context.get_discrete_state(1).get_value();
+  const boolean<T> is_active = (context.get_discrete_state(2)[0] <= 0.0);
 
-  // y(t) = (x₀[n]-x₁[n])/h.
-  output_vector->SetFromVector((x0 - x1) / time_step_);
+  // y(t) = (x₀[n]-x₁[n])/h
+  output_vector->SetFromVector(if_then_else_vector<T>(
+      is_active,
+      (x0 - x1) / time_step_,
+      VectorX<T>::Zero(n_)));
 }
 
 template <typename T>
