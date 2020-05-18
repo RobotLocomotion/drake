@@ -4,7 +4,7 @@
 
 <robot xmlns="https://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="https://drake.mit.edu ../../../../pods/drake/doc/drakeURDF.xsd" name="quadrotor">
+ name="quadrotor">
 
   <!--
   Axes are standard vehicle coordinates:
