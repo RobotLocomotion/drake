@@ -101,6 +101,18 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   tester.mutable_state().AssignRole(source_id, geometry_id2,
                                     ProximityProperties());
   inspector.CollisionFiltered(geometry_id, geometry_id2);
+
+  std::unique_ptr<GeometryInstance> geometry_instance_clone =
+      inspector.CloneGeometryInstance(geometry_id);
+  EXPECT_NE(geometry_instance_clone->id(), geometry_id);
+  EXPECT_EQ(geometry_instance_clone->name(), "sphere");
+  const auto* shape_clone = dynamic_cast<const Sphere*>(
+      &geometry_instance_clone->shape());
+  EXPECT_NE(shape_clone, nullptr);
+  EXPECT_EQ(shape_clone->radius(), 1.0);
+  EXPECT_NE(geometry_instance_clone->proximity_properties(), nullptr);
+  EXPECT_EQ(geometry_instance_clone->perception_properties(), nullptr);
+  EXPECT_EQ(geometry_instance_clone->illustration_properties(), nullptr);
 }
 
 }  // namespace
