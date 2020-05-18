@@ -21,7 +21,6 @@ a way to model kinematic loops. It shows:
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
@@ -171,7 +170,8 @@ int do_main() {
   VectorXd lower = strandbeest.GetPositionLowerLimits();
   VectorXd upper = strandbeest.GetPositionUpperLimits();
 
-  // Fix the orientation of the floating body (crossbar) to the unit quaternion.
+  // Fix the orientation of the floating body (crossbar) to the unit
+  // quaternion.
   lower.head<4>() = Eigen::Vector4d(1, 0, 0, 0);
   upper.head<4>() = Eigen::Vector4d(1, 0, 0, 0);
 
@@ -204,9 +204,9 @@ int do_main() {
     const LinearBushingRollPitchYaw<double>& bushing =
         strandbeest.GetForceElement<LinearBushingRollPitchYaw>(bushing_index);
 
-    ik.AddPositionConstraint(bushing.frameA(), Eigen::Vector3d(),
-                             bushing.frameC(), Eigen::Vector3d(0, 0, 0),
-                             Eigen::Vector3d(0, 0, 0));
+    ik.AddPointToPointDistanceConstraint(bushing.frameA(), Eigen::Vector3d(),
+                                         bushing.frameC(), Eigen::Vector3d(), 0,
+                                         0);
   }
 
   // Solve the IK. The solved positions will be stored in the context passed
