@@ -52,8 +52,8 @@ and the materials are linear (i.e. are described by the Hookean law).
 In general, when two solids come into contact, they inevitably must undergo
 deformation in order to avoid the physical impossibility of interpenetration.
 This constraint is described by the Signorini boundary condition, which at each
-point in the contact surface imposes a complementarit constraint between normal
-stress and penetration (described by a gap function).
+point in the contact surface imposes a complementarity constraint between
+normal stress and penetration (described by a gap function).
 Stresses on the contact surface are the result of these deformations.
 
 Ultimately, contact forces are the result of integrating these contact
