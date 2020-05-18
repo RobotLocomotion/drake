@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/point_pair.h"

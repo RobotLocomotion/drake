@@ -7,6 +7,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
 #include "drake/multibody/shapes/drake_shapes.h"

@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "drake/attic/warning.h"
+#include "drake/attic_warning.h"
 #include "drake/common/autodiff.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"

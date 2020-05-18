@@ -35,6 +35,7 @@ drake_py_library(
 
 drake_pybind_library(
     name = "controllers_py",
+    cc_copts = ["-Wno-deprecated-declarations"],
     cc_deps = [
         "//bindings/pydrake/attic:documentation_pybind",
     ],
@@ -49,6 +50,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "sensors_py",
+    cc_copts = ["-Wno-deprecated-declarations"],
     cc_deps = ["//bindings/pydrake/attic:documentation_pybind"],
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,

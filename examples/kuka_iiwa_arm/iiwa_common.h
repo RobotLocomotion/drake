@@ -9,7 +9,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "drake/multibody/rigid_body_tree.h"
+#pragma GCC diagnostic pop
 
 namespace drake {
 namespace examples {

@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <tinyxml2.h>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/pose_map.h"
 
 template <typename Scalar>

@@ -1,4 +1,4 @@
-#include "drake/attic/warning.h"
+#include "drake/attic_warning.h"
 
 #include "drake/common/text_logging.h"
 
@@ -7,7 +7,7 @@ namespace internal {
 
 void WarnOnceAboutAtticCode() {
   static const logging::Warn log_once(
-      "All Drake code in the 'attic' is being deprecated and will be "
+      "All Drake code in the 'attic' is deprecated and will be "
       "removed from Drake on or after 2020-09-01. This includes "
       "RigidBodyTree and RigidBodyPlant and their visualization, "
       "sensors for RigidBodyPlant such as accelerometer, gyro, camera, etc., "

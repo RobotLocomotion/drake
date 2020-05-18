@@ -4,6 +4,7 @@
 #include <limits>
 #include <string>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {

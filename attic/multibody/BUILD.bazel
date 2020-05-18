@@ -252,7 +252,6 @@ _RBT_SHARD_COUNT = 2
             ":rigid_body_frame",
             ":rigid_body_loop",
             ":rigid_body_tree_datatypes",
-            "//attic:warning",
             "//attic/multibody/collision",
             "//attic/multibody/joints",
             "//attic/multibody/shapes",
