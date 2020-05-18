@@ -58,7 +58,7 @@ namespace multibody {
 namespace strandbeest {
 namespace {
 
-DEFINE_double(simulation_time, 100.0, "Duration of the simulation in seconds.");
+DEFINE_double(simulation_time, 5.0, "Duration of the simulation in seconds.");
 
 DEFINE_double(initial_velocity, 1.0,
               "Initial velocity of the crossbar_crank joint.");
