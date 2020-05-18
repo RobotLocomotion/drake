@@ -1,0 +1,14 @@
+# -*- python -*-
+
+licenses(["notice"])  # IJG
+
+cc_library(
+    name = "libjpeg",
+    hdrs = glob(["include/*.h"]),
+    includes = ["include"],
+    linkopts = [
+        "-L/usr/lib/x86_64-linux-gnu",
+        "-ljpeg",
+    ],
+    visibility = ["//visibility:public"],
+)
