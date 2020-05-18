@@ -108,6 +108,9 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(
             inspector.GetPerceptionProperties(geometry_id=global_geometry),
             mut.PerceptionProperties)
+        self.assertIsInstance(
+            inspector.CloneGeometryInstance(geometry_id=global_geometry),
+            mut.GeometryInstance)
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.

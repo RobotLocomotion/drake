@@ -177,7 +177,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.GetIllustrationProperties.doc)
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
             py_reference_internal, py::arg("geometry_id"),
-            cls_doc.GetPerceptionProperties.doc);
+            cls_doc.GetPerceptionProperties.doc)
+        .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
+            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc);
   }
 
   //  SceneGraph
