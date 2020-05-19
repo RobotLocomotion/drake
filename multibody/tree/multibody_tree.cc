@@ -1356,14 +1356,19 @@ SpatialAcceleration<T> MultibodyTree<T>::ShiftSpatialAccelerationBiasInWorld(
   const RotationMatrix<T>& R_WA = pc.get_R_WB(body_A.node_index());
   const Vector3<T>& w_WA_W = vc.get_V_WB(body_A.node_index()).rotational();
 
-  // Get transform from body_A to frame_B (frame_B is fixed/welded to body_A).
-  const RigidTransform<T> X_AB = frame_B.GetFixedPoseInBodyFrame();
-  const RotationMatrix<T> R_AB = X_AB.rotation();
-  const Vector3<T> p_AoBo_A = X_AB.translation();
+  // Optimize for the common case that body_A.body_frame() is frame_B.
+  Vector3<T> p_AoBp_A;
+  if (body_A.body_frame().index() == frame_B.index()) {
+    p_AoBp_A = p_BoBp_B;
+  } else {
+    // Get transform from body_A to frame_B (frame_B is fixed/welded to body_A).
+    const RigidTransform<T> X_AB = frame_B.GetFixedPoseInBodyFrame();
 
-  // Calculate p_AoBp_A (position from Ao to Bp expressed in body frame A).
+    // Calculate p_AoBp_A (position from Ao to Bp expressed in body frame A).
+    p_AoBp_A = X_AB * p_BoBp_B;
+  }
+
   // Calculate p_AoBp_W (position from Ao to Bp expressed in world frame W).
-  const Vector3<T> p_AoBp_A = p_AoBo_A + R_AB * p_BoBp_B;
   const Vector3<T> p_AoBp_W = R_WA * p_AoBp_A;
 
   // Shift spatial acceleration bias term from point Ao to point Bp.
@@ -1428,27 +1433,27 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
     const Eigen::Ref<const Vector3<T>>& p_BP,
     const Frame<T>& frame_A,
     const Frame<T>& frame_E,
-    EigenPtr<MatrixX<T>> Jw_V_ABp_E) const {
-  DRAKE_THROW_UNLESS(Jw_V_ABp_E != nullptr);
-  DRAKE_THROW_UNLESS(Jw_V_ABp_E->rows() == 6);
+    EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
+  DRAKE_THROW_UNLESS(Js_V_ABp_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_V_ABp_E->rows() == 6);
 
   const int num_columns = (with_respect_to == JacobianWrtVariable::kQDot) ?
                            num_positions() : num_velocities();
-  DRAKE_THROW_UNLESS(Jw_V_ABp_E->cols() == num_columns);
+  DRAKE_THROW_UNLESS(Js_V_ABp_E->cols() == num_columns);
 
   // The spatial velocity V_WBp can be obtained by composing the spatial
   // velocities V_WAp and V_ABp. Expressed in the world frame W this composition
   // is V_WBp_W = V_WAp_W + V_ABp_W
-  // Therefore, V_ABp_W = (Jw_WBp - Jw_WAp)⋅w.
+  // Therefore, V_ABp_W = (Js_V_WBp - Js_V_WAp) ⋅ s.
   //
-  // If with_respect_to = JacobianWrtVariable::kQDot, w = q̇ and
-  // Jw_W{Ap,Bp} = Jq_W{Ap,Bp},
-  // If with_respect_to == JacobianWrtVariable::kV,  w = v and
-  // Jw_W{Ap,Bp} = Jv_W{Ap,Bp}.
+  // If with_respect_to = JacobianWrtVariable::kQDot, s = q̇ and
+  // Js_V_W{Ap,Bp} = Jq_V_W{Ap,Bp},
+  // If with_respect_to == JacobianWrtVariable::kV,  s = v and
+  // Js_V_W{Ap,Bp} = Jv_V_W{Ap,Bp}.
   //
   // Expressed in frame E, this becomes
-  //   V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp)⋅w.
-  // Thus, Jw_V_ABp_E = R_EW⋅(Jw_WBp - Jw_WAp).
+  //   V_ABp_E = R_EW⋅(Js_V_WBp - Js_V_WAp) ⋅ s.
+  // Thus, Js_V_ABp_E = R_EW⋅(Js_V_WBp - Js_V_WAp).
 
   Vector3<T> p_WP;
   CalcPointsPositions(context, frame_B, p_BP, /* From frame B */
@@ -1457,31 +1462,31 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // TODO(amcastro-tri): When performance becomes an issue, implement this
   // method so that we only consider the kinematic path from A to B.
 
-  Matrix6X<T> Jw_WAp(6, num_columns);
-  auto Jr_WAp = Jw_WAp.template topRows<3>();     // rotational part.
-  auto Jt_WAp = Jw_WAp.template bottomRows<3>();  // translational part.
+  Matrix6X<T> Js_V_WAp(6, num_columns);
+  auto Js_w_WAp = Js_V_WAp.template topRows<3>();     // rotational part.
+  auto Js_v_WAp = Js_V_WAp.template bottomRows<3>();  // translational part.
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-      with_respect_to, frame_A,  p_WP,  &Jr_WAp, &Jt_WAp);
+      with_respect_to, frame_A,  p_WP,  &Js_w_WAp, &Js_v_WAp);
 
-  Matrix6X<T> Jw_WBp(6, num_columns);
-  auto Jr_WBp = Jw_WBp.template topRows<3>();     // rotational part.
-  auto Jt_WBp = Jw_WBp.template bottomRows<3>();  // translational part.
+  Matrix6X<T> Js_V_WBp(6, num_columns);
+  auto Js_w_WBp = Js_V_WBp.template topRows<3>();     // rotational part.
+  auto Js_v_WBp = Js_V_WBp.template bottomRows<3>();  // translational part.
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-      with_respect_to, frame_B,  p_WP,  &Jr_WBp, &Jt_WBp);
+      with_respect_to, frame_B,  p_WP,  &Js_w_WBp, &Js_v_WBp);
 
-  // Jacobian Jw_ABp_W when E is the world frame W.
-  Jw_V_ABp_E->template topRows<3>() = Jr_WBp - Jr_WAp;
-  Jw_V_ABp_E->template bottomRows<3>() = Jt_WBp - Jt_WAp;
+  // Jacobian Js_V_ABp_W when E is the world frame W.
+  Js_V_ABp_E->template topRows<3>() = Js_w_WBp - Js_w_WAp;
+  Js_V_ABp_E->template bottomRows<3>() = Js_v_WBp - Js_v_WAp;
 
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
   if (frame_E.index() != world_frame().index()) {
     const RotationMatrix<T> R_EW =
         CalcRelativeRotationMatrix(context, frame_E, world_frame());
-    Jw_V_ABp_E->template topRows<3>() =
-        R_EW * Jw_V_ABp_E->template topRows<3>();
-    Jw_V_ABp_E->template bottomRows<3>() =
-        R_EW * Jw_V_ABp_E->template bottomRows<3>();
+    Js_V_ABp_E->template topRows<3>() =
+        R_EW * Js_V_ABp_E->template topRows<3>();
+    Js_V_ABp_E->template bottomRows<3>() =
+        R_EW * Js_V_ABp_E->template bottomRows<3>();
   }
 }
 

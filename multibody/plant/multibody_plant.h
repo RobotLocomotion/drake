@@ -2500,6 +2500,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
     // TODO(Mitiguy) Allow frame_A to be a non-World frame.
+    // TODO(Mitiguy) Per issue #13354, add unit tests for this public method.
     return internal_tree().CalcBiasTranslationalAcceleration(
         context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
   }
@@ -2545,6 +2546,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Frame<T>& frame_E) const {
     // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
     // TODO(Mitiguy) Allow frame_A to be a non-World frame.
+    // TODO(Mitiguy) Per issue #13354, add unit tests for this public method.
     return internal_tree().CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
   }
@@ -2706,10 +2708,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                    const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
-                                   EigenPtr<MatrixX<T>> Jw_ABp_E) const {
+                                   EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
     internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
                                                 frame_B, p_BoBi_B, frame_A,
-                                                frame_E, Jw_ABp_E);
+                                                frame_E, Js_V_ABp_E);
   }
 
   /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
