@@ -7,6 +7,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
@@ -14,6 +15,8 @@ namespace geometry {
 namespace render {
 namespace internal {
 namespace {
+
+using Vector3f = Vector3<GLfloat>;
 
 GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
   {
@@ -145,7 +148,7 @@ GTEST_TEST(LoadMeshFromObjTest, NoMeshOptimization) {
 
 // Computes the normal to the indicated triangle whose magnitude is twice the
 // triangle's area. I.e., for triangle (A, B, C), computes: (B - A) X (C - A).
-Vector3<GLfloat> normal(const VertexBuffer& vertices, const IndexBuffer& tris,
+Vector3f normal(const VertexBuffer& vertices, const IndexBuffer& tris,
                         int tri_index) {
   const auto& a = vertices.block<1, 3>(tris(tri_index, 0), 0);
   const auto& b = vertices.block<1, 3>(tris(tri_index, 1), 0);
@@ -159,14 +162,24 @@ GLfloat area(const VertexBuffer& vertices, const IndexBuffer& tris,
   return normal(vertices, tris, tri_index).norm() * 0.5;
 }
 
+// Computes the total area of the given triangles.
+GLfloat total_area(const VertexBuffer& vertices, const IndexBuffer& tris) {
+  float total_area = 0;
+  for (int t = 0; t < tris.rows(); ++t) {
+    const auto a = area(vertices, tris, t);
+    total_area += a;
+  }
+  return total_area;
+}
+
 // Computes the normal for the triangle (implied by its winding).
-Vector3<GLfloat> unit_normal(const VertexBuffer& vertices,
+Vector3f unit_normal(const VertexBuffer& vertices,
                              const IndexBuffer& tris, int tri_index) {
   return normal(vertices, tris, tri_index).normalized();
 }
 
 // Computes the centroid of the indicated triangle.
-Vector3<GLfloat> centroid(const VertexBuffer& vertices, const IndexBuffer& tris,
+Vector3f centroid(const VertexBuffer& vertices, const IndexBuffer& tris,
                           int tri_index) {
   return (vertices.block<1, 3>(tris(tri_index, 0), 0) +
           vertices.block<1, 3>(tris(tri_index, 1), 0) +
@@ -190,10 +203,10 @@ GTEST_TEST(ShapeMeshesTest, ConfirmUtilities) {
   vertices.block<1, 3>(2, 0) << 0, 1.5, 0;
   IndexBuffer indices(1, 3);
   indices.block<1, 3>(0, 0) << 0, 1, 2;
-  EXPECT_EQ(normal(vertices, indices, 0), Vector3<GLfloat>(0, 0, 2.25));
-  EXPECT_EQ(unit_normal(vertices, indices, 0), Vector3<GLfloat>(0, 0, 1));
+  EXPECT_EQ(normal(vertices, indices, 0), Vector3f(0, 0, 2.25));
+  EXPECT_EQ(unit_normal(vertices, indices, 0), Vector3f(0, 0, 1));
   EXPECT_EQ(area(vertices, indices, 0), 1.125);
-  EXPECT_EQ(centroid(vertices, indices, 0), Vector3<GLfloat>(0.5f, 0.5f, 0));
+  EXPECT_EQ(centroid(vertices, indices, 0), Vector3f(0.5f, 0.5f, 0));
 }
 
 /* The tests for these tessellated primitives are merely suggestive; they don't
@@ -213,14 +226,10 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
     auto [vertices, indices] = MakeLongLatUnitSphere(resolution, resolution);
 
     // Confirm area converges towards (but not above) ideal area.
-    float total_area = 0;
-    for (int t = 0; t < indices.rows(); ++t) {
-      const auto a = area(vertices, indices, t);
-      total_area += a;
-    }
-    EXPECT_GT(total_area, prev_area) << "for resolution " << resolution;
-    EXPECT_LE(total_area, kIdealArea) << "for resolution " << resolution;
-    prev_area = total_area;
+    float curr_area = total_area(vertices, indices);
+    EXPECT_GT(curr_area, prev_area) << "for resolution " << resolution;
+    EXPECT_LE(curr_area, kIdealArea) << "for resolution " << resolution;
+    prev_area = curr_area;
 
     // All vertices lie on the unit sphere.
     for (int v_i = 0; v_i < vertices.rows(); ++v_i) {
@@ -231,8 +240,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
 
     // All face normals point outward
     for (int t = 0; t < indices.rows(); ++t) {
-      Vector3<GLfloat> c = centroid(vertices, indices, t);
-      Vector3<GLfloat> n = normal(vertices, indices, t);
+      Vector3f c = centroid(vertices, indices, t);
+      Vector3f n = normal(vertices, indices, t);
       // If the winding were backwards, this dot product would be negative.
       EXPECT_GT(n.dot(c), 0)
           << "for resolution: " << resolution << " and triangle " << t;
@@ -254,25 +263,21 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
     auto [vertices, indices] = MakeUnitCylinder(resolution, resolution);
 
     // Confirm area converges towards (but not above) ideal area.
-    float total_area = 0;
-    for (int t = 0; t < indices.rows(); ++t) {
-      const auto a = area(vertices, indices, t);
-      total_area += a;
-    }
-    EXPECT_GT(total_area, prev_area) << "for resolution " << resolution;
-    EXPECT_LE(total_area, kIdealArea) << "for resolution " << resolution;
-    prev_area = total_area;
+    float curr_area = total_area(vertices, indices);
+    EXPECT_GT(curr_area, prev_area) << "for resolution " << resolution;
+    EXPECT_LE(curr_area, kIdealArea) << "for resolution " << resolution;
+    prev_area = curr_area;
 
     // All vertices (except first and last) are 1 unit away from z-axis.
     for (int v_i = 1; v_i < vertices.rows() - 1; ++v_i) {
-      Vector3<GLfloat> v = vertices.block<1, 3>(v_i, 0);
+      Vector3f v = vertices.block<1, 3>(v_i, 0);
       v(2) = 0;
       EXPECT_NEAR(v.norm(), 1.f, kEps)
           << "for resolution: " << resolution << " and vertex " << v_i;
     }
     // First and last vertices are *on* the z axis.
     for (int v_i : {0, static_cast<int>(vertices.rows() - 1)}) {
-      Vector3<GLfloat> v = vertices.block<1, 3>(v_i, 0);
+      Vector3f v = vertices.block<1, 3>(v_i, 0);
       v(2) = 0;
       EXPECT_NEAR(v.norm(), 0.f, kEps)
           << "for resolution: " << resolution << " and vertex " << v_i;
@@ -290,13 +295,84 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
 
     // All face normals point outward
     for (int t = 0; t < indices.rows(); ++t) {
-      Vector3<GLfloat> c = centroid(vertices, indices, t);
-      Vector3<GLfloat> n = normal(vertices, indices, t);
+      Vector3f c = centroid(vertices, indices, t);
+      Vector3f n = normal(vertices, indices, t);
       // If the winding were backwards, this dot product would be negative.
       EXPECT_GT(n.dot(c), 0)
           << "for resolution: " << resolution << " and triangle " << t;
     }
   }
+}
+
+GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
+  const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
+  const GLfloat kMax = std::numeric_limits<GLfloat>::max();
+  const GLfloat kMeasure = 25;
+  const GLfloat kArea = kMeasure * kMeasure;
+
+  for (int resolution : {1, 4, 15}) {
+    auto [vertices, indices] = MakeSquarePatch(kMeasure, resolution);
+
+    // The tolerance we select is going to be a scaled machine epsilon. The
+    // first scale factor is the actual expected area; this makes our tolerance
+    // a _relative_ tolerance. There is a second contribution to error:
+    // the sum of many small real values each contribute round-off error. The
+    // more we sum, the more round off error we introduce. We scale by the
+    // number of triangles (representative of the number of small additions).
+    const GLfloat area_epsilon = kEps * kArea * resolution * resolution;
+    EXPECT_NEAR(total_area(vertices, indices), kArea, area_epsilon);
+    EXPECT_EQ(vertices.rows(), (resolution + 1) * (resolution + 1));
+    EXPECT_EQ(indices.rows(), 2 * resolution * resolution);
+    for (int t = 0; t < indices.rows(); ++t) {
+      EXPECT_TRUE(CompareMatrices(unit_normal(vertices, indices, t),
+                                  Vector3f(0, 0, 1), kEps));
+    }
+
+    // Confirm the bounding box is what we would expected.
+    Vector3f min_pt{kMax, kMax, kMax};
+    Vector3f max_pt = -min_pt;
+    for (int v = 0; v < vertices.rows(); ++v) {
+      Vector3f vertex = vertices.block<1, 3>(v, 0);
+      min_pt = min_pt.cwiseMin(vertex);
+      max_pt = max_pt.cwiseMax(vertex);
+    }
+    const Vector3f corner = Vector3f(0.5f, 0.5f, 0.0) * kMeasure;
+    EXPECT_TRUE(CompareMatrices(min_pt, -corner, kEps));
+    EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
+  }
+}
+
+GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
+  const GLfloat kEps = std::numeric_limits<GLfloat>::epsilon();
+  const GLfloat kMax = std::numeric_limits<GLfloat>::max();
+
+  auto [vertices, indices] = MakeUnitBox();
+
+  // In computing total area, we scale epsilon by the exepcted area and also
+  // the number of triangles, as per-triangle area gets magnified.
+  EXPECT_NEAR(total_area(vertices, indices), 6.f, kEps);
+  EXPECT_EQ(vertices.rows(), 8);
+  EXPECT_EQ(indices.rows(), 12);
+
+  // All face normals point outward
+  for (int t = 0; t < indices.rows(); ++t) {
+    Vector3f c = centroid(vertices, indices, t);
+    Vector3f n = normal(vertices, indices, t);
+    // If the winding were backwards, this dot product would be negative.
+    EXPECT_GT(n.dot(c), 0);
+  }
+
+  // Confirm the bounding box is what we would expected.
+  Vector3f min_pt{kMax, kMax, kMax};
+  Vector3f max_pt = -min_pt;
+  for (int v = 0; v < vertices.rows(); ++v) {
+    Vector3f vertex = vertices.block<1, 3>(v, 0);
+    min_pt = min_pt.cwiseMin(vertex);
+    max_pt = max_pt.cwiseMax(vertex);
+  }
+  const Vector3f corner{0.5f, 0.5f, 0.5};
+  EXPECT_TRUE(CompareMatrices(min_pt, -corner, kEps));
+  EXPECT_TRUE(CompareMatrices(max_pt, corner, kEps));
 }
 
 }  // namespace

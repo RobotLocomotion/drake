@@ -88,6 +88,7 @@ drake_cc_googletest_gl_ubuntu_only(
     deps = [
         ":shape_meshes",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

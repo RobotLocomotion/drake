@@ -66,8 +66,6 @@ std::pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(
 std::pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(
     int longitude_bands = 50, int latitude_bands = 50);
 
-// TODO(SeanCurtis): Box, Half space, capsule, ellipsoid.
-
 /* Creates an OpenGL-compatible mesh representation of a unit cylinder; its
  radius and height are equal to 1. It is centered on the origin of its canonical
  frame C and aligned with Frame C's z axis: Cz.
@@ -85,6 +83,31 @@ std::pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(
  @pre `num_bands` >= 1.  */
 std::pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips = 50,
                                                       int num_bands = 1);
+
+/* Creates an OpenGL-compaptible mesh reprepsenting a square patch. The patch
+ has edge length `measure` units long. The square patch is defined lying on the
+ z = 0 plane in its canonical frame C, centered on the origin Co. The faces are
+ wound such that the right-handed face normal points in the dirction of the
+ positive z-axis of Frame C.
+
+ The domain of the patch is divided into square sub regions based on the given
+ `resolution`. There will be `resolution^2` square patches (each defined by
+ two triangles).
+ @pre `measure` > 0
+ @pre `resolution >= 1`. */
+std::pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure = 200,
+                                                     int resolution = 1);
+
+/* Creates an OpenGL_compatible mesh representation of the unit box - all edges
+ are length 1. The box is centered on the origin of its canonical frame C with
+ its edges aligned to the frame's basis. Each face of the box is divided into a
+ single pair of triangles.
+
+<!-- TODO(SeanCurtis-TRI): consider offering subdivisions if per-vertex
+    properties yield undesirable artifacts for large boxes.  --> */
+std::pair<VertexBuffer, IndexBuffer> MakeUnitBox();
+
+// TODO(SeanCurtis): capsule, ellipsoid.
 
 }  // namespace internal
 }  // namespace render

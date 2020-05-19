@@ -405,23 +405,11 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
 
 OpenGlGeometry RenderEngineGl::GetHalfSpace() {
   if (!half_space_.is_defined()) {
-    //                 _  y
-    //                  /|
-    //                 /
-    //     3_________________________ 2
-    //     /         ^ z            /
-    //    /          |_            /  --> x
-    //   /           Go           /
-    //  /                        /
-    // /________________________/
-    // 0                         1
-    const GLfloat kHalfSize = 100.f;
-    VertexBuffer vertices{4, 3};
-    vertices << -kHalfSize, -kHalfSize, 0.f, kHalfSize, -kHalfSize, 0.f,
-        kHalfSize, kHalfSize, 0.f, -kHalfSize, kHalfSize, 0.f;
-
-    IndexBuffer indices{2, 3};
-    indices << 0, 1, 2, 0, 2, 3;
+    const GLfloat kMeasure = 200.f;
+    // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
+    //  lighting), this will render better with tighter resolution. Consider
+    //  making this configurable.
+    auto [vertices, indices] = MakeSquarePatch(kMeasure, 1);
     half_space_ = SetupVAO(vertices, indices);
   }
 
@@ -433,22 +421,7 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
 
 OpenGlGeometry RenderEngineGl::GetBox() {
   if (!box_.is_defined()) {
-    //     7      6
-    //     _____
-    //    /|    /|
-    //  2/_|__3/ |
-    //  |  |   | |
-    //  | 4|___|_| 5
-    //  | /    | /
-    //  |/_____|/
-    //  0      1
-    VertexBuffer vertices{8, 3};
-    vertices << -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f,
-        -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
-        0.5f, -0.5f, 0.5f, 0.5f;
-    IndexBuffer indices{12, 3};
-    indices << 0, 1, 2, 0, 2, 3, 1, 5, 6, 1, 6, 2, 2, 6, 7, 2, 7, 3, 3, 7, 4, 3,
-        4, 0, 7, 6, 5, 7, 5, 4, 1, 0, 4, 1, 4, 5;
+    auto [vertices, indices] = MakeUnitBox();
     box_ = SetupVAO(vertices, indices);
   }
 

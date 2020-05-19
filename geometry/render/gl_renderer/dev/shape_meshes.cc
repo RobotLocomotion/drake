@@ -428,6 +428,129 @@ pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
   return buffers;
 }
 
+pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure,
+                                                int resolution) {
+  DRAKE_DEMAND(measure > 0);
+  DRAKE_DEMAND(resolution >= 1);
+
+  const int vert_count = (resolution + 1) * (resolution + 1);
+  const int tri_count = 2 * resolution * resolution;
+
+  VertexBuffer vertices{vert_count, 3};
+  IndexBuffer indices{tri_count, 3};
+
+  // The size of each square sub-patch.
+  const GLfloat delta = measure / resolution;
+
+  /* Build the following grid. Where N = resolution.
+
+                                      +y
+                                      ↑
+                                      ┆
+                        ○───○───○───○─┆─○───○───○───○ <- v_index = (N + 1)^2 - 1
+                        │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │
+                        ○───○───○───○─┆─○───○───○───○
+                        │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │
+                        ○───○───○───○─┆─○───○───○───○
+                        │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │
+                        ○───○───○───○─┆─○───○───○───○
+                   ←┄┄┄┄┼┄╱┄┼┄╱┄┼┄╱┄┼┄┼┄┼┄╱┄┼┄╱┄┼┄╱┄┼┄┄┄┄┄→ +x
+                        ○───○───○───○─┆─○───○───○───○
+                        │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │
+                        ○───○───○───○─┆─○───○───○───○
+                        │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │
+                        ○───○───○───○─┆─○───○───○───○
+                        │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │ ╱ │
+        v_index = 0 ->  ○───○───○───○─┆─○───○───○───○ <- v_index = N
+                        ^             ┆
+                     (x0, y0)         ↓
+  */
+
+  // First add the vertices.
+  int v_index = 0;
+
+  GLfloat x0 = -measure / 2;
+  GLfloat y0 = -measure / 2;
+  for (int i = 0; i <= resolution; ++i) {
+    const GLfloat y = y0 + i * delta;
+    for (int j = 0; j <= resolution; ++j) {
+      const GLfloat x = x0 + j * delta;
+      vertices.block<1, 3>(v_index++, 0) << x, y, 0;
+    }
+  }
+
+  DRAKE_DEMAND(v_index == vert_count);
+
+  /* Build triangles in the same order we add vertices.
+
+     v_u = v_index + N  + 1        n_u = v_index + 1 + N + 1
+                      ╲ │       │╱
+                      ──○───────○──
+                        │     ╱ │
+                        │   ╱   │
+                        │ ╱     │
+                      ──○───────○──
+                      ╱ │       │ ╲
+           v = v_index             n = v_index + 1
+   */
+  int t_index = 0;
+  v_index = 0;
+  for (int i = 0; i < resolution; ++i) {
+    for (int j = 0; j < resolution; ++j) {
+      const int v = v_index++;
+      const int n = v + 1;
+      const int v_u = v + resolution + 1;
+      const int n_u = n + resolution + 1;
+      indices.block<1, 3>(t_index++, 0) << v, n, n_u;
+      indices.block<1, 3>(t_index++, 0) << v, n_u, v_u;
+    }
+    ++v_index;
+  }
+  DRAKE_DEMAND(t_index == tri_count);
+
+  return make_pair(vertices, indices);
+}
+
+std::pair<VertexBuffer, IndexBuffer> MakeUnitBox() {
+  /* The box is simply eight vertices and twelve faces, explicitly
+   enumerated.
+
+               7____ 6            z
+              /│    /│            │   y
+            3/_│__2/ │            │ /
+            │  │   │ │            │/____ x
+            │ 4│___│_│ 5
+            │ /    │ /
+            │/_____│/
+            0      1
+  */
+  VertexBuffer vertices{8, 3};
+  IndexBuffer indices{12, 3};
+  /* clang-format off */
+  vertices << -0.5f, -0.5f, -0.5f,
+               0.5f, -0.5f, -0.5f,
+               0.5f, -0.5f,  0.5f,
+              -0.5f, -0.5f,  0.5f,
+              -0.5f,  0.5f, -0.5f,
+               0.5f,  0.5f, -0.5f,
+               0.5f,  0.5f,  0.5f,
+              -0.5f,  0.5f,  0.5f;
+  indices << 0, 1, 2,
+             0, 2, 3,
+             1, 5, 6,
+             1, 6, 2,
+             2, 6, 7,
+             2, 7, 3,
+             3, 7, 4,
+             3, 4, 0,
+             7, 6, 5,
+             7, 5, 4,
+             1, 0, 4,
+             1, 4, 5;
+  /* clang-format on */
+  return make_pair(vertices, indices);
+}
+
 }  // namespace internal
 }  // namespace render
 }  // namespace geometry
