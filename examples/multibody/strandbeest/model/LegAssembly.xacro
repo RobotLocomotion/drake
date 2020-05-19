@@ -115,7 +115,7 @@
       <child link="${prefix}_bar_i" />
     </joint>
 
-    <joint name="${prefix}_joint_k_i" type="revolute">
+    <joint name="${prefix}_joint_k_g" type="revolute">
       <axis xyz="0 1 0" />
       <parent link="${prefix}_bar_k" />
       <child link="${prefix}_bar_g" />
@@ -135,7 +135,7 @@
       <child link="${prefix}_bar_e" />
     </joint>
 
-    <joint name="${prefix}_joint_j_e" type="revolute">
+    <joint name="${prefix}_joint_j_b" type="revolute">
       <axis xyz="0 1 0" />
       <parent link="${prefix}_bar_j" />
       <child link="${prefix}_bar_b" />
@@ -143,7 +143,7 @@
       <limit lower="-1.9" upper="-1.0" effort="0" velocity="1000" />
     </joint>
 
-    <joint name="${prefix}_joint_e_f" type="revolute">
+    <joint name="${prefix}_joint_b_f" type="revolute">
       <axis xyz="0 1 0" />
       <parent link="${prefix}_bar_b" />
       <child link="${prefix}_bar_f" />

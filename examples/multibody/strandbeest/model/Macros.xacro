@@ -28,7 +28,7 @@
   <!-- Macro to create the inertial properties modelling pvc pipe -->
 
   <xacro:macro name="strandbeest_cylinder_inertial"
-      params="xyz rpy length radius">
+      params="xyz rpy length">
     <inertial>
       <origin xyz="${xyz}" rpy="${rpy}" />
       <mass value="${pvc_kg_per_m * length}" />
@@ -66,7 +66,7 @@
   <xacro:macro name="strandbeest_cylinder"
       params="xyz rpy length radius material">
     <xacro:strandbeest_cylinder_inertial xyz="${xyz}" rpy="${rpy}"
-        length="${length}" radius="${radius}" />
+        length="${length}"/>
     <xacro:strandbeest_cylinder_visual xyz="${xyz}" rpy="${rpy}"
         length="${length}" radius="${radius}" material="${material}" />
   </xacro:macro>

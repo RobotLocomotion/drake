@@ -36,10 +36,8 @@ using Eigen::VectorXd;
 
 using multibody::BodyIndex;
 using multibody::ForceElementIndex;
-using multibody::Frame;
 using multibody::InverseKinematics;
 using multibody::Joint;
-using multibody::JointIndex;
 using multibody::LinearBushingRollPitchYaw;
 using multibody::MultibodyPlant;
 using multibody::Parser;
