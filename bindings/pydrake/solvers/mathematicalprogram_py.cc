@@ -486,6 +486,13 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           doc.MathematicalProgramResult.get_suboptimal_objective.doc)
       .def(
+          "GetDualSolution",
+          [](const MathematicalProgramResult& self,
+              const Binding<EvaluatorBase>& constraint) {
+            return self.GetDualSolution(constraint);
+          },
+          doc.MathematicalProgramResult.GetDualSolution.doc)
+      .def(
           "EvalBinding",
           [](const MathematicalProgramResult& self,
               const Binding<EvaluatorBase>& binding) {
