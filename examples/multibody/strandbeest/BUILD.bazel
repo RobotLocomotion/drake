@@ -20,6 +20,7 @@ drake_cc_binary(
     srcs = ["run_with_motor.cc"],
     add_test_rule = 1,
     data = [":Strandbeest.urdf"],
+    tags = ["snopt"],
     test_rule_args = [
         "--simulation_time=0.1",
     ],
