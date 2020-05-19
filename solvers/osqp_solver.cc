@@ -87,17 +87,19 @@ c_float ConvertInfinity(double val) {
 // Will call this function to parse both LinearConstraint and
 // LinearEqualityConstraint.
 template <typename C>
-void ParseLinearConstraints(const MathematicalProgram& prog,
-                            const std::vector<Binding<C>>& linear_constraints,
-                            std::vector<Eigen::Triplet<c_float>>* A_triplets,
-                            std::vector<c_float>* l, std::vector<c_float>* u,
-                            int* num_A_rows) {
+void ParseLinearConstraints(
+    const MathematicalProgram& prog,
+    const std::vector<Binding<C>>& linear_constraints,
+    std::vector<Eigen::Triplet<c_float>>* A_triplets, std::vector<c_float>* l,
+    std::vector<c_float>* u, int* num_A_rows,
+    std::unordered_map<const Binding<C>*, int>* constraint_start_row) {
   // Loop over the linear constraints, stack them to get l, u and A.
   for (const auto& constraint : linear_constraints) {
     const std::vector<int> x_indices =
         prog.FindDecisionVariableIndices(constraint.variables());
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(constraint.evaluator()->A());
+    constraint_start_row->emplace(&constraint, *num_A_rows);
     // Append constraint.A to osqp A.
     for (const auto& Ai_triplet : Ai_triplets) {
       A_triplets->emplace_back(*num_A_rows + Ai_triplet.row(),
@@ -118,9 +120,12 @@ void ParseLinearConstraints(const MathematicalProgram& prog,
 void ParseBoundingBoxConstraints(
     const MathematicalProgram& prog,
     std::vector<Eigen::Triplet<c_float>>* A_triplets, std::vector<c_float>* l,
-    std::vector<c_float>* u, int* num_A_rows) {
+    std::vector<c_float>* u, int* num_A_rows,
+    std::unordered_map<const Binding<BoundingBoxConstraint>*, int>*
+        constraint_start_row) {
   // Loop over the linear constraints, stack them to get l, u and A.
   for (const auto& constraint : prog.bounding_box_constraints()) {
+    constraint_start_row->emplace(&constraint, *num_A_rows);
     // Append constraint.A to osqp A.
     for (int i = 0; i < static_cast<int>(constraint.GetNumElements()); ++i) {
       A_triplets->emplace_back(
@@ -139,19 +144,25 @@ void ParseBoundingBoxConstraints(
   }
 }
 
-void ParseAllLinearConstraints(const MathematicalProgram& prog,
-                               Eigen::SparseMatrix<c_float>* A,
-                               std::vector<c_float>* l,
-                               std::vector<c_float>* u) {
+void ParseAllLinearConstraints(
+    const MathematicalProgram& prog, Eigen::SparseMatrix<c_float>* A,
+    std::vector<c_float>* l, std::vector<c_float>* u,
+    std::unordered_map<const Binding<LinearConstraint>*, int>*
+        linear_constraint_start_row,
+    std::unordered_map<const Binding<LinearEqualityConstraint>*, int>*
+        linear_eq_constraint_start_row,
+    std::unordered_map<const Binding<BoundingBoxConstraint>*, int>*
+        bb_constraint_start_row) {
   std::vector<Eigen::Triplet<c_float>> A_triplets;
   l->clear();
   u->clear();
   int num_A_rows = 0;
   ParseLinearConstraints(prog, prog.linear_constraints(), &A_triplets, l, u,
-                         &num_A_rows);
+                         &num_A_rows, linear_constraint_start_row);
   ParseLinearConstraints(prog, prog.linear_equality_constraints(), &A_triplets,
-                         l, u, &num_A_rows);
-  ParseBoundingBoxConstraints(prog, &A_triplets, l, u, &num_A_rows);
+                         l, u, &num_A_rows, linear_eq_constraint_start_row);
+  ParseBoundingBoxConstraints(prog, &A_triplets, l, u, &num_A_rows,
+                              bb_constraint_start_row);
   A->resize(num_A_rows, prog.num_vars());
   A->setFromTriplets(A_triplets.begin(), A_triplets.end());
 }
@@ -222,6 +233,20 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
   SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
                                        &(settings->polish), 1);
 }
+
+template <typename C>
+void SetDualSolution(
+    const std::vector<Binding<C>>& constraints,
+    const Eigen::VectorXd& all_dual_solution,
+    const std::unordered_map<const Binding<C>*, int>& constraint_start_row,
+    MathematicalProgramResult* result) {
+  for (const auto& constraint : constraints) {
+    result->set_dual_solution(
+        constraint,
+        all_dual_solution.segment(constraint_start_row.at(&constraint),
+                                  constraint.evaluator()->num_constraints()));
+  }
+}
 }  // namespace
 
 bool OsqpSolver::is_available() { return true; }
@@ -255,10 +280,25 @@ void OsqpSolver::DoSolve(
   ParseQuadraticCosts(prog, &P_sparse, &q, &constant_cost_term);
   ParseLinearCosts(prog, &q, &constant_cost_term);
 
+  // linear_constraint_start_row[binding] stores the starting row index in A
+  // corresponding to the linear constraint `binding`.
+  std::unordered_map<const Binding<LinearConstraint>*, int>
+      linear_constraint_start_row;
+  // linear_eq_constraint_start_row[binding] stores the starting row index in A
+  // corresponding to the linear equality constraint `binding`.
+  std::unordered_map<const Binding<LinearEqualityConstraint>*, int>
+      linear_eq_constraint_start_row;
+  // bb_constraint_start_row[binding] stores the starting row index in A
+  // corresponding to the bounding box constraint `binding`.
+  std::unordered_map<const Binding<BoundingBoxConstraint>*, int>
+      bb_constraint_start_row;
+
   // Parse the linear constraints.
   Eigen::SparseMatrix<c_float> A_sparse;
   std::vector<c_float> l, u;
-  ParseAllLinearConstraints(prog, &A_sparse, &l, &u);
+  ParseAllLinearConstraints(
+      prog, &A_sparse, &l, &u, &linear_constraint_start_row,
+      &linear_eq_constraint_start_row, &bb_constraint_start_row);
 
   // Now pass the constraint and cost to osqp data.
   OSQPData* data = nullptr;
@@ -326,6 +366,13 @@ void OsqpSolver::DoSolve(
         solver_details.y =
             Eigen::Map<Eigen::VectorXd>(work->solution->y, work->data->m);
         solution_result = SolutionResult::kSolutionFound;
+        SetDualSolution(prog.linear_constraints(), solver_details.y,
+                        linear_constraint_start_row, result);
+        SetDualSolution(prog.linear_equality_constraints(), solver_details.y,
+                        linear_eq_constraint_start_row, result);
+        SetDualSolution(prog.bounding_box_constraints(), solver_details.y,
+                        bb_constraint_start_row, result);
+
         break;
       }
       case OSQP_PRIMAL_INFEASIBLE:
