@@ -2,6 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("@drake//tools/workspace/ros_xacro:defs.bzl", "xacro_file")
 load("@drake//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -18,13 +19,7 @@ xacro_file(
 drake_cc_binary(
     name = "run_with_motor",
     srcs = ["run_with_motor.cc"],
-    add_test_rule = 1,
     data = [":Strandbeest.urdf"],
-    tags = ["snopt"],
-    test_rule_args = [
-        "--simulation_time=0.1",
-    ],
-    test_rule_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",
         "//common:find_resource",
@@ -41,6 +36,17 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "@fmt",
         "@gflags",
+    ],
+)
+
+drake_py_unittest(
+    name = "run_with_motor_test",
+    args = select({
+        "//tools/cc_toolchain:debug": ["TestEmpty"],
+        "//conditions:default": ["TestRunWithMotor"],
+    }),
+    data = [
+        ":run_with_motor",
     ],
 )
 
