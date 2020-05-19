@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -26,6 +27,9 @@ auto BindTypeSafeIndex(
       .def(
           "__eq__", [](const Type* self, int other) { return *self == other; },
           py::is_operator())
+      // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
+      // pending merge of: https://github.com/pybind/pybind11/pull/2217
+      .def(py::detail::hash(py::self))
       // TODO(eric.cousineau): Add more operators.
       .def("is_valid", &Type::is_valid,
           pydrake_doc.drake.TypeSafeIndex.is_valid.doc);

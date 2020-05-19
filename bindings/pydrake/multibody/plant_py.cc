@@ -280,6 +280,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetDefaultFreeBodyPose", &Class::SetDefaultFreeBodyPose,
             py::arg("body"), py::arg("X_WB"),
             cls_doc.SetDefaultFreeBodyPose.doc)
+        .def("GetDefaultFreeBodyPose", &Class::GetDefaultFreeBodyPose,
+            py::arg("body"), cls_doc.GetDefaultFreeBodyPose.doc)
         .def(
             "SetActuationInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
@@ -515,6 +517,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetModelInstanceName),
             py::arg("model_instance"), py_reference_internal,
             cls_doc.GetModelInstanceName.doc)
+        .def("HasModelInstanceNamed", &Class::HasModelInstanceNamed,
+            py::arg("name"), cls_doc.HasModelInstanceNamed.doc)
         .def("HasBodyNamed",
             overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
             py::arg("name"), cls_doc.HasBodyNamed.doc_1args)

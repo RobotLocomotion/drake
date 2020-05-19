@@ -1901,6 +1901,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_[body.index()] = X_WB;
   }
 
+  /// Gets the default pose of `body` as set by SetDefaultFreeBodyPose().
+  /// @param[in] body
+  ///   Body whose default pose will be retrieved.
+  const math::RigidTransform<double>& GetDefaultFreeBodyPose(
+      const Body<T>& body) const {
+    return X_WB_default_list_.at(body.index());
+  }
+
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
