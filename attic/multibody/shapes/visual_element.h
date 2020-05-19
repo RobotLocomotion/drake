@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 
 #include "drake/attic_warning.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/multibody/shapes/element.h"
 
@@ -12,6 +13,8 @@ namespace DrakeShapes {
 
 class VisualElement final : public Element {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VisualElement);
+
   explicit VisualElement(const Eigen::Isometry3d& T_element_to_local);
 
   /**
@@ -23,12 +26,6 @@ class VisualElement final : public Element {
                 const Eigen::Isometry3d& T_element_to_local,
                 const Eigen::Vector4d& material,
                 const std::string& name = "");
-
-  /** Copy constructor for use by, e.g., std::vector. */
-  VisualElement(const VisualElement&) = default;
-  void operator=(const VisualElement&) = delete;
-  VisualElement(VisualElement&&) = delete;
-  void operator=(VisualElement&&) = delete;
 
   ~VisualElement() override = default;
 
