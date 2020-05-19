@@ -274,10 +274,10 @@ template <typename T> class Body;
 /// @anchor ApproximateOverdampedSettlingTime
 /// ### Derivation: Approximate formula for overdamped settling time.
 /// Since a literature reference for this formula was not found, the derivation
-/// below was done at TRI (it has not been peer reviewed).
-/// This formula arises from the "dominant pole" in the solution to the
-/// prototypical linear constant-coefficient 2ⁿᵈ-order ODE.  For ẋ(0) = 0,
-/// mathematics shows poles p₁ = -ωₙ s₁,  p₂ = -ωₙ s₂, and <pre>
+/// below was done at TRI (it has not been peer reviewed). This formula results
+/// from the "dominant pole" solution in the prototypical constant-coefficient
+/// linear 2ⁿᵈ-order ODE.  For ẋ(0) = 0, mathematics shows poles p₁ = -ωₙ s₁,
+/// p₂ = -ωₙ s₂, where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz. and <pre>
 ///  x(t) / x(0) = p₂/(p₂-p₁) exp(p₁ t) - p₁/(p₂-p₁) exp(p₂ t)
 ///              = s₂/(s₂-s₁) exp(p₁ t) - s₁/(s₂-s₁) exp(p₂ t)
 ///              =  k/( k-1 ) exp(p₁ t) -  1/( k-1 ) exp(p₂ t) where k = s₂ / s₁
@@ -287,14 +287,14 @@ template <typename T> class Body;
 /// negative then p₂), so exp(p₁ t) decays to zero slower than exp(p₂ t) and
 /// exp(p₁ t) ≫ exp(p₂ t) for sufficiently large t.  Hence we assume
 /// exp(p₂ t) ≈ 0 (which is why p₁ is called the "dominant pole").  Next, <pre>
-///   k/(k - 1) = s₂ / s₁ / (s₂/s₁ -1) = s₂ / (s₂ - s₁) = s2 / (2 sz),  so
+///   k/(k - 1) = s₂ / s₁ / (s₂/s₁ -1) = s₂ / (s₂ - s₁) = s₂ / (2 sz),  so
 ///   x(t) / x(0)  ≈  s₂ / (2 sz) exp(-s₁ ωₙ t),                        hence
 ///   settling_ratio ≈ s₂ / (2 sz) exp(-s₁ ωₙ tₛ),                      finally
 ///   ωₙ ≈ -ln(settling_ratio 2 sz / s₂) / (s₁ tₛ)
 /// </pre>
 /// The table below shows that there is little error in this approximate formula
-/// for various settling ratios and ζ, particularly for ζ ≥ 1.1.  The previous
-/// critical damping ratio estimates of ωₙ work well for 1.0 ≤ ζ < 1.1.
+/// for various settling ratios and ζ, particularly for ζ ≥ 1.1.
+/// For 1.0 ≤ ζ < 1.1, the critical damping estimates of ωₙ work well.
 ///    Settling ratio | ζ = 1.01 | ζ = 1.1 | ζ = 1.2 | ζ = 1.3 | ζ = 1.5
 ///    -------------- | -------- | ------- | ------- | ------- | --------
 ///    0.01           | 1.98%    | 0.005%  | 2.9E-5% | 1.6E-7% | 2.4E-12%
