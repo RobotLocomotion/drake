@@ -848,9 +848,15 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
   // free bodies.
   MultibodyPlant<double> plant(0.0);
   const auto& body = plant.AddRigidBody("body", SpatialInertia<double>());
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
+      RigidTransformd::Identity().GetAsMatrix4()));
   const RigidTransformd X_WB_default(
       RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   plant.SetDefaultFreeBodyPose(body, X_WB_default);
+  EXPECT_TRUE(CompareMatrices(
+      plant.GetDefaultFreeBodyPose(body).GetAsMatrix4(),
+      X_WB_default.GetAsMatrix4()));
   plant.Finalize();
   EXPECT_GT(plant.num_positions(), 0);
   auto context = plant.CreateDefaultContext();

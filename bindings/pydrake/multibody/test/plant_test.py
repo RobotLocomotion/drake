@@ -600,7 +600,11 @@ class TestPlant(unittest.TestCase):
 
         # Test existence of default free body pose setting.
         body = plant.GetBodyByName("Link1")
-        plant.SetDefaultFreeBodyPose(body=body, X_WB=RigidTransform_[float]())
+        X_WB_default = RigidTransform_[float]()
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=X_WB_default)
+        numpy_compare.assert_float_equal(
+            plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
+            X_WB_default.GetAsMatrix4())
 
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
