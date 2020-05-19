@@ -236,15 +236,15 @@ template <typename T> class Body;
 ///    ωₙ ≈ -ln(settling_ratio) / (ζ tₛ) which for settling ratios 0.01 and 0.05
 ///    give ωₙ ≈ 4.6 / (ζ tₛ) and ωₙ ≈ 3 / (ζ tₛ).  Another commonly used
 ///    approximation is ωₙ ≈ -ln(settling_ratio √(1- ζ²)) / (ζ tₛ).
-///    See @ref https://en.wikipedia.org/wiki/Settling_time or the book
+///    See https://en.wikipedia.org/wiki/Settling_time or the book
 ///    Modern Control Engineering by Katsuhiko Ogata. Although these approximate
 ///    formulas for ωₙ are common, they are somewhat inaccurate.  Settling time
 ///    for underdamped systems is discontinuous and requires solving a nonlinear
 ///    algebraic equation (an iterative process).  For more information, see
-///    @ref http://www.scielo.org.co/pdf/rfiua/n66/n66a09.pdf
+///    http://www.scielo.org.co/pdf/rfiua/n66/n66a09.pdf
 ///    [Ramos-Paja, et. al 2012], "Accurate calculation of settling time in
 ///    second order systems: a photovoltaic application".  Another reference is
-///    @ref https://courses.grainger.illinois.edu/ece486/sp2020/laboratory/docs/lab2/estimates.html
+///    https://courses.grainger.illinois.edu/ece486/sp2020/laboratory/docs/lab2/estimates.html
 ///  - When ζ ≈ 1 (critically damped), ωₙ is determined by choosing a settling
 ///    ratio and then solving for (ωₙ tₛ) via the nonlinear algebraic equation
 ///    (1 + ωₙ tₛ)*exp(-ωₙ tₛ) = settling_ratio.
@@ -254,7 +254,7 @@ template <typename T> class Body;
 ///    0.02           | 5.83 / tₛ
 ///    0.05           | 4.74 / tₛ
 ///    0.10           | 3.89 / tₛ
-///    See @ref https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
+///    See https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 ///  - When ζ ≥ 1.01 (overdamped), ωₙ ≈ -ln(2 settling_ratio sz/s₂) / (s₁ tₛ)
 ///    where sz = √(ζ² - 1), s₁ = ζ - sz, s₂ = ζ + sz.
 ///    The derivation and approximation error estimates for this overdamped
@@ -269,7 +269,7 @@ template <typename T> class Body;
 /// logarithmic decrement δ = -ln(decay_ratio), calculate damping ratio
 /// ζ = √(δ² / (4π² + δ²)), then calculate d₀ using d₀ = 2 ζ √(I₀ k₀) or
 /// d₀ = 2 ζ k₀ / ωₙ. For more information, see
-/// @ref https://en.wikipedia.org/wiki/Damping_ratio#Logarithmic_decrement
+/// https://en.wikipedia.org/wiki/Damping_ratio#Logarithmic_decrement
 ///
 /// @anchor ApproximateOverdampedSettlingTime
 /// ### Derivation: Approximate formula for overdamped settling time.
@@ -303,7 +303,7 @@ template <typename T> class Body;
 ///    0.10           | 8.28%    | 0.258%  | 1.6E-2% | 1.0E-3% | 3.3E-6%
 /// Note: There is a related derivation in the reference below, however, it
 /// needlessly makes the oversimplified approximation k/(k - 1) ≈ 1.
-/// @ref https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
+/// https://electronics.stackexchange.com/questions/296567/over-and-critically-damped-systems-settling-time
 ///
 /// @note The complete theory for this bushing is documented in the source code.
 /// Please look there if you want more information.
