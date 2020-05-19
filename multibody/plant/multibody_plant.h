@@ -964,7 +964,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// <h4>Geometry registration with roles</h4>
   ///
-  /// Geometries can be associated with bodies via the `RegisterXXXGeometry`
+  /// Geometries can be associated with bodies via the `RegisterFooGeometry`
   /// family of methods. In SceneGraph, geometries have @ref geometry_roles
   /// "roles". The `RegisterCollisionGeometry()` methods register geometry with
   /// SceneGraph and assign it the proximity role. The
