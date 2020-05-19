@@ -68,6 +68,14 @@ GTEST_TEST(GeometryInstanceTest, CanonicalName) {
   DRAKE_EXPECT_THROWS_MESSAGE(make_instance(" "), std::logic_error,
                               "GeometryInstance given the name '.*' which is "
                               "an empty canonical string");
+
+  GeometryInstance to_rename = make_instance(canonical);
+  to_rename.set_name("renamed");
+  EXPECT_EQ(to_rename.name(), "renamed");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(to_rename.set_name(" "), std::logic_error,
+                              "GeometryInstance given the name '.*' which is "
+                              "an empty canonical string");
 }
 
 }  // namespace
