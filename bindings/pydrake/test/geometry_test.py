@@ -252,6 +252,14 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+        box_mesh_path = FindResourceOrThrow(
+            "drake/systems/sensors/test/models/meshes/box.obj")
+        mesh = mut.Mesh(absolute_filename=box_mesh_path, scale=1.0)
+        self.assertEqual(mesh.filename(), box_mesh_path)
+        self.assertEqual(mesh.scale(), 1.0)
+        convex = mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
+        self.assertEqual(convex.filename(), box_mesh_path)
+        self.assertEqual(convex.scale(), 1.0)
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")

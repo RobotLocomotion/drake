@@ -571,10 +571,14 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<>(), doc.HalfSpace.ctor.doc);
     py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
-            py::arg("scale") = 1.0, doc.Mesh.ctor.doc);
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
+        .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
+        .def("scale", &Mesh::scale, doc.Mesh.scale.doc);
     py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
         .def(py::init<std::string, double>(), py::arg("absolute_filename"),
-            py::arg("scale") = 1.0, doc.Convex.ctor.doc);
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc)
+        .def("filename", &Convex::filename, doc.Convex.filename.doc)
+        .def("scale", &Convex::scale, doc.Convex.scale.doc);
   }
 
   // GeometryFrame
