@@ -17,6 +17,7 @@ from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     GetIntegrationSchemes,
     IntegratorBase, IntegratorBase_,
+    PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
     RungeKutta2Integrator, RungeKutta3Integrator,
     SimulatorStatus, Simulator, Simulator_,
@@ -353,6 +354,9 @@ class TestGeneral(unittest.TestCase):
                             simulator.get_mutable_context())
             check_output(simulator.get_context())
             simulator.AdvanceTo(1)
+            simulator.ResetStatistics()
+            simulator.AdvanceTo(2)
+
             self.assertEqual(simulator.get_target_realtime_rate(), 0)
             self.assertTrue(simulator.get_actual_realtime_rate() > 0.)
 
@@ -456,6 +460,9 @@ class TestGeneral(unittest.TestCase):
             simulator.AdvanceTo(t)
             # Record snapshot of *entire* context.
             context_log.append(context.Clone())
+
+        # Test binding for PrintSimulatorStatistics
+        PrintSimulatorStatistics(simulator)
 
         xc_initial = np.array([0, 1, 2])
         xc_final = np.array([0.123, 1.234, 2.345])

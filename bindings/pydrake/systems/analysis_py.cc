@@ -13,6 +13,7 @@
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_flags.h"
+#include "drake/systems/analysis/simulator_print_stats.h"
 
 using std::unique_ptr;
 
@@ -134,7 +135,9 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.get_target_realtime_rate.doc)
         .def("get_actual_realtime_rate",
             &Simulator<T>::get_actual_realtime_rate,
-            doc.Simulator.get_actual_realtime_rate.doc);
+            doc.Simulator.get_actual_realtime_rate.doc)
+        .def("ResetStatistics", &Simulator<T>::ResetStatistics,
+            doc.Simulator.ResetStatistics.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const char* const reset_integrator_doc =
@@ -172,6 +175,10 @@ PYBIND11_MODULE(analysis, m) {
           pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)
       .def("GetIntegrationSchemes", &GetIntegrationSchemes,
           pydrake_doc.drake.systems.GetIntegrationSchemes.doc);
+  // Print Simulator Statistics
+  m  // BR
+      .def("PrintSimulatorStatistics", &PrintSimulatorStatistics,
+          pydrake_doc.drake.systems.PrintSimulatorStatistics.doc);
 
   // Monte Carlo Testing
   {
