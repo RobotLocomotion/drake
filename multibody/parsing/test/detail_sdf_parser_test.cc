@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <fstream>
 #include <memory>
 
 #include <gtest/gtest.h>

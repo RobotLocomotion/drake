@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
+#include <fstream>
 #include <limits>
 
 #include <gtest/gtest.h>

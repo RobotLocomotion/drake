@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_engine_ospray.h"
 
+#include <fstream>
 #include <limits>
 #include <optional>
 #include <stdexcept>
