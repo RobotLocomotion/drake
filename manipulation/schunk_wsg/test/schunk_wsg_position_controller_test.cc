@@ -47,7 +47,6 @@ void FixInputsAndHistory(const SchunkWsgPositionController& controller,
                                                         desired_position);
   controller.get_force_limit_input_port().FixValue(controller_context,
                                                    force_limit);
-  controller.set_initial_position(controller_context, desired_position);
 }
 
 /// Runs the controller for a brief period with the specified initial conditions
