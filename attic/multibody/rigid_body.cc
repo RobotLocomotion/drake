@@ -38,7 +38,7 @@ std::unique_ptr<RigidBody<T>> RigidBody<T>::Clone() const {
   body->set_mass(mass_);
   body->set_center_of_mass(center_of_mass_);
   body->set_spatial_inertia(spatial_inertia_);
-  return move(body);
+  return body;
 }
 
 template <typename T>
