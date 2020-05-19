@@ -7,7 +7,8 @@ class TestRunWithMotor(unittest.TestCase):
         """Test that run_with_motor doesn't crash."""
         # Test both an SDF and an URDF.
         subprocess.check_call(
-            ["examples/multibody/strandbeest/run_with_motor"])
+            ["examples/multibody/strandbeest/run_with_motor",
+             "--simulation_time=0.1"])
 
 
 class TestEmpty(unittest.TestCase):
