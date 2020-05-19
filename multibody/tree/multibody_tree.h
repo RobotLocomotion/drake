@@ -1402,7 +1402,7 @@ class MultibodyTree {
   /// compute kinematics, forward and inverse dynamics, and Jacobian matrices,
   /// among others.
   /// These methods follow Drake's naming scheme for methods performing a
-  /// computation and therefore are named `CalcXXX()`, where `XXX` corresponds
+  /// computation and therefore are named `CalcFoo()`, where `Foo` corresponds
   /// to the quantity or object of interest to be computed. They all take a
   /// `systems::Context` as an input argument storing the state of the multibody
   /// system.

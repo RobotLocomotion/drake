@@ -83,7 +83,7 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
     const Body<T>& body = model.get_body(body_index);
     internal::BodyNodeIndex node_index = body.node_index();
 
-    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
+    // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
@@ -110,7 +110,7 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
     const Body<T>& body = model.get_body(body_index);
 
-    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
+    // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
@@ -140,7 +140,7 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
     const Body<T>& body = model.get_body(body_index);
 
-    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
+    // TODO(amcastro-tri): Replace this CalcFoo() calls by GetFoo() calls once
     // caching is in place.
     const T mass = body.get_mass(context);
     const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
