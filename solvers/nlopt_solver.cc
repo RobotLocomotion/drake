@@ -497,16 +497,16 @@ void NloptSolver::DoSolve(
     result->set_solution_result(SolutionResult::kInvalidInput);
   } catch (std::bad_alloc&) {
     result->set_solution_result(SolutionResult::kUnknownError);
-  } catch (nlopt::roundoff_limited) {
+  } catch (nlopt::roundoff_limited&) {
     if (minf < kUnboundedTol) {
       result->set_solution_result(SolutionResult::kUnbounded);
       minf = MathematicalProgram::kUnboundedCost;
     } else {
       result->set_solution_result(SolutionResult::kUnknownError);
     }
-  } catch (nlopt::forced_stop) {
+  } catch (nlopt::forced_stop&) {
     result->set_solution_result(SolutionResult::kUnknownError);
-  } catch (std::runtime_error) {
+  } catch (std::runtime_error&) {
     result->set_solution_result(SolutionResult::kUnknownError);
   }
 
