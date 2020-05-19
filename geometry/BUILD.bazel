@@ -197,6 +197,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "scene_graph_inspector",
+    srcs = ["scene_graph_inspector.cc"],
     hdrs = ["scene_graph_inspector.h"],
     deps = [":geometry_state"],
 )
