@@ -96,6 +96,7 @@ drake_cc_library(
     hdrs = ["binding.h"],
     deps = [
         ":decision_variable",
+        ":evaluator_base",
     ],
 )
 
@@ -1014,6 +1015,7 @@ drake_cc_googletest(
         ":binding",
         ":constraint",
         ":cost",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
