@@ -87,7 +87,7 @@ TEST_F(TestBinding, TestPrinting) {
   EXPECT_EQ(linear_binding.to_string(), str_expected3);
 }
 
-TEST_F(TestBinding, TeshHash) {
+TEST_F(TestBinding, TestHash) {
   auto bb_con1 = std::make_shared<BoundingBoxConstraint>(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
 
@@ -119,7 +119,8 @@ TEST_F(TestBinding, TeshHash) {
   EXPECT_TRUE(CompareMatrices(bb_con2->upper_bound(), bb_con1->upper_bound()));
   Binding<BoundingBoxConstraint> binding4(
       bb_con2, VectorDecisionVariable<3>(x3_, x1_, x2_));
-  EXPECT_NE(binding3, binding4);
+  EXPECT_NE(binding4, binding1);
+  EXPECT_NE(binding4, binding2);
 
   // Test using Binding as unordered_map key.
   std::unordered_map<Binding<BoundingBoxConstraint>, int> map;
