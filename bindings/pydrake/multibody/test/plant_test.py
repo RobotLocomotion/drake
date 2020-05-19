@@ -277,6 +277,7 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             plant.GetFrameByName(name="Link1"),
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
         self.assertIsInstance(
@@ -337,14 +338,31 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint.velocity_start(), int)
 
         nq = joint.num_positions()
+
+        q_default = joint.default_positions()
+        self.assertEqual(len(q_default), nq)
+        joint.set_default_positions(default_positions=q_default)
+
+        q_lower = joint.position_lower_limits()
+        self.assertEqual(len(q_lower), nq)
+        q_upper = joint.position_upper_limits()
+        self.assertEqual(len(q_upper), nq)
+        joint.set_position_limits(lower_limits=q_lower, upper_limits=q_upper)
+
         nv = joint.num_velocities()
 
-        self.assertEqual(len(joint.position_upper_limits()), nq)
-        self.assertEqual(len(joint.position_lower_limits()), nq)
-        self.assertEqual(len(joint.velocity_upper_limits()), nv)
-        self.assertEqual(len(joint.velocity_lower_limits()), nv)
-        self.assertEqual(len(joint.acceleration_upper_limits()), nv)
-        self.assertEqual(len(joint.acceleration_lower_limits()), nv)
+        v_lower = joint.velocity_lower_limits()
+        self.assertEqual(len(v_lower), nv)
+        v_upper = joint.velocity_upper_limits()
+        self.assertEqual(len(v_upper), nv)
+        joint.set_velocity_limits(lower_limits=v_lower, upper_limits=v_upper)
+
+        a_lower = joint.acceleration_lower_limits()
+        self.assertEqual(len(a_lower), nv)
+        a_upper = joint.acceleration_upper_limits()
+        self.assertEqual(len(a_upper), nv)
+        joint.set_acceleration_limits(
+            lower_limits=a_lower, upper_limits=a_upper)
 
     def _test_joint_actuator_api(self, T, joint_actuator):
         JointActuator = JointActuator_[T]
@@ -353,6 +371,7 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, joint_actuator)
         self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
+        self.assertIsInstance(joint_actuator.effort_limit(), float)
 
     def check_old_spelling_exists(self, value):
         # Just to make it obvious when this is being tested.
@@ -1043,13 +1062,16 @@ class TestPlant(unittest.TestCase):
         Tests joint constructors, `AddJoint`, `AddJointActuator` and
         `HasJointActuatorNamed`.
         """
+        damping = 2.
+        x_axis = [1., 0., 0.]
+        X_PC = RigidTransform_[float](p=[1., 2., 3.])
 
         def make_ball_rpy_joint(plant, P, C):
             return BallRpyJoint_[T](
                 name="ball_rpy",
                 frame_on_parent=P,
                 frame_on_child=C,
-                damping=2.,
+                damping=damping,
             )
 
         def make_prismatic_joint(plant, P, C):
@@ -1057,8 +1079,8 @@ class TestPlant(unittest.TestCase):
                 name="prismatic",
                 frame_on_parent=P,
                 frame_on_child=C,
-                axis=[1., 0., 0.],
-                damping=2.,
+                axis=x_axis,
+                damping=damping,
             )
 
         def make_revolute_joint(plant, P, C):
@@ -1066,8 +1088,8 @@ class TestPlant(unittest.TestCase):
                 name="revolute",
                 frame_on_parent=P,
                 frame_on_child=C,
-                axis=[1., 0., 0.],
-                damping=2.,
+                axis=x_axis,
+                damping=damping,
             )
 
         def make_universal_joint(plant, P, C):
@@ -1075,7 +1097,7 @@ class TestPlant(unittest.TestCase):
                 name="universal",
                 frame_on_parent=P,
                 frame_on_child=C,
-                damping=2.,
+                damping=damping,
             )
 
         def make_weld_joint(plant, P, C):
@@ -1085,7 +1107,7 @@ class TestPlant(unittest.TestCase):
                 name="weld",
                 parent_frame_P=P,
                 child_frame_C=C,
-                X_PC=RigidTransform_[float](),
+                X_PC=X_PC,
             )
 
         make_joint_list = [
@@ -1125,6 +1147,8 @@ class TestPlant(unittest.TestCase):
                 self.assertEqual(
                     len(joint.get_angular_velocity(context=context)), 3)
             elif joint.name() == "prismatic":
+                self.assertEqual(joint.damping(), damping)
+                numpy_compare.assert_equal(joint.translation_axis(), x_axis)
                 set_point = 1.
                 joint.set_translation(context=context, translation=set_point)
                 self.assertIsInstance(
@@ -1134,10 +1158,13 @@ class TestPlant(unittest.TestCase):
                 self.assertIsInstance(
                     joint.get_translation_rate(context=context), T)
             elif joint.name() == "revolute":
+                numpy_compare.assert_equal(joint.revolute_axis(), x_axis)
+                self.assertEqual(joint.damping(), damping)
                 set_point = 1.
                 joint.set_angle(context=context, angle=set_point)
                 self.assertIsInstance(joint.get_angle(context=context), T)
             elif joint.name() == "universal":
+                self.assertEqual(joint.damping(), damping)
                 set_point = np.array([1., 2.])
                 joint.set_angles(context=context, angles=set_point)
                 self.assertEqual(len(joint.get_angles(context=context)), 2)
@@ -1145,8 +1172,9 @@ class TestPlant(unittest.TestCase):
                 self.assertEqual(
                     len(joint.get_angular_rates(context=context)), 2)
             elif joint.name() == "weld":
-                # No joint specifc methods to test
-                pass
+                numpy_compare.assert_float_equal(
+                    joint.X_PC().GetAsMatrix4(),
+                    X_PC.GetAsMatrix4())
             else:
                 raise TypeError(
                     "Joint type " + joint.name() + " not recognized.")

@@ -362,6 +362,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("FindCollisionCandidates",
             &QueryObject<T>::FindCollisionCandidates,
             doc.QueryObject.FindCollisionCandidates.doc)
+        .def("HasCollisions", &QueryObject<T>::HasCollisions,
+            doc.QueryObject.HasCollisions.doc)
         .def(
             "RenderColorImage",
             [](const Class* self, const render::CameraProperties& camera,

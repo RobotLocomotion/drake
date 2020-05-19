@@ -517,6 +517,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetModelInstanceName),
             py::arg("model_instance"), py_reference_internal,
             cls_doc.GetModelInstanceName.doc)
+        .def("HasModelInstanceNamed", &Class::HasModelInstanceNamed,
+            py::arg("name"), cls_doc.HasModelInstanceNamed.doc)
         .def("HasBodyNamed",
             overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
             py::arg("name"), cls_doc.HasBodyNamed.doc_1args)

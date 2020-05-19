@@ -380,6 +380,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(len(results), 0)
         results = query_object.FindCollisionCandidates()
         self.assertEqual(len(results), 0)
+        self.assertFalse(query_object.HasCollisions())
 
         # ComputeSignedDistancePairClosestPoints() requires two valid geometry
         # ids. There are none in this SceneGraph instance. Rather than
