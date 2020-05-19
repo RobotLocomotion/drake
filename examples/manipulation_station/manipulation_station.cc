@@ -731,13 +731,6 @@ void ManipulationStation<T>::SetIiwaPosition(
   auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
   plant_->SetPositions(plant_context, &plant_state, iiwa_model_.model_instance,
                        q);
-
-  // Set the position history in the state interpolator to match.
-  const auto& state_from_position = dynamic_cast<
-      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
-      this->GetSubsystemByName("desired_state_from_position"));
-  state_from_position.set_initial_position(
-      &this->GetMutableSubsystemState(state_from_position, state), q);
 }
 
 template <typename T>

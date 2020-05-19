@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
@@ -21,13 +22,17 @@ namespace kuka_iiwa {
 /// receive the message, the input of this system should be connected to a
 /// LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>().
 ///
-/// It has one input port, "lcmt_iiwa_command".
+/// It has one main input port, "lcmt_iiwa_command".
+///
+/// XXX The optional position_measured input is used when no messages have been
+/// received yet.  When not connected, uses zeros.
 ///
 /// It has two output ports: one for the commanded position for each joint, and
 /// one for commanded additional feedforward joint torque.
 ///
 /// @system { IiwaCommandReceiver,
 ///   @input_port{lcmt_iiwa_command}
+///   @input_port{position_measured}
 ///   @output_port{position}
 ///   @output_port{torque}
 /// }
@@ -41,15 +46,22 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   /// command messages being received.  If this function is not called, the
   /// starting position will be the zero configuration.  The initial commanded
   /// torque is always zero and cannot be set.
+  DRAKE_DEPRECATED("XXXX-XX-XX", "XXX")
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
   /// @name Named accessors for this System's input and output ports.
   //@{
-  const systems::InputPort<double>& get_input_port() const;
+  const systems::InputPort<double>& get_message_input_port() const;
+  const systems::InputPort<double>& get_position_measured_input_port() const;
   const systems::OutputPort<double>& get_commanded_position_output_port() const;
   const systems::OutputPort<double>& get_commanded_torque_output_port() const;
   //@}
+
+  DRAKE_DEPRECATED("XXXX-XX-XX", "XXX")
+  const systems::InputPort<double>& get_input_port() const {
+    return get_message_input_port();
+  }
 
  private:
   using MapVectorXd = Eigen::Map<const Eigen::VectorXd>;
