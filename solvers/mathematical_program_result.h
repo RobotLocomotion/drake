@@ -8,9 +8,12 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/symbolic.h"
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
 
@@ -110,6 +113,16 @@ class MathematicalProgramResult final {
 
   /** Sets the decision variable values. */
   void set_x_val(const Eigen::VectorXd& x_val);
+
+  /** Sets the dual solution associated with a given constraint. */
+  template <typename C>
+  void set_dual_solution(
+      const Binding<C>& constraint,
+      const Eigen::Ref<const Eigen::VectorXd>& dual_solution) {
+    const Binding<Constraint> constraint_cast =
+        internal::BindingDynamicCast<Constraint>(constraint);
+    dual_solutions_.emplace(constraint_cast, dual_solution);
+  }
 
   /** Gets the optimal cost. */
   double get_optimal_cost() const { return optimal_cost_; }
@@ -219,6 +232,36 @@ class MathematicalProgramResult final {
   }
 
   /**
+   * Get the dual solution associated with a constraint.
+   * The user should know that depending on the solver, the dual solution can
+   * have different meanings. For example, for a linear inequality constraint
+   * lower <= A * x <= upper with N rows in lower/upper, some solvers (like
+   * OSQP) return a dual solution also with N rows, with dual_solution(i) as
+   * the dual solution for either lower(i) <= A(i, :)*x or A(i, :) * x <=
+   * upper(i) if one of bound is active, or 0 if neither is active. On the other
+   * hand, some solvers (like SCS) will return 2N dual solutions, for both
+   * lower * <= A*x and A*x <= upper. The user can query the solver by
+   * MathematicalProgramResult::get_solver_id().name() to find the solver,
+   * and refer to the user manual of that solver, if he/she needs to interpret
+   * the dual solutions.
+   */
+  template <typename C>
+  Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
+    const Binding<Constraint> constraint_cast =
+        internal::BindingDynamicCast<Constraint>(constraint);
+    auto it = dual_solutions_.find(constraint_cast);
+    if (it == dual_solutions_.end()) {
+      throw std::invalid_argument(fmt::format(
+          "Either this constraint does not belong to the "
+          "mathematical program for which the result is obtained, or "
+          "{} does not currently support getting dual solution yet.",
+          solver_id_.name()));
+    } else {
+      return it->second;
+    }
+  }
+
+  /**
    * Evaluate a Binding at the solution.
    * @param binding A binding between a constraint/cost and the variables.
    * @pre The binding.variables() must be the within the decision variables in
@@ -323,6 +366,9 @@ class MathematicalProgramResult final {
   // suboptimal solution suboptimal_x_val_[i].
   std::vector<Eigen::VectorXd> suboptimal_x_val_{};
   std::vector<double> suboptimal_objectives_{};
+  // Stores the dual variable solutions for each linear constraint.
+  std::unordered_map<Binding<Constraint>, Eigen::VectorXd, drake::DefaultHash>
+      dual_solutions_{};
 };
 
 }  // namespace solvers
