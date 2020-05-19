@@ -1,3 +1,4 @@
+#include <chrono>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -11,28 +12,14 @@
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/simulator_gflags.h"
+#include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
-
-DEFINE_double(target_realtime_rate, 0.2,
-              "Desired rate relative to real time.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
-
-DEFINE_string(integration_scheme, "implicit_euler",
-              "Integration scheme to be used. Available options are: "
-              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
-              "'implicit_euler'.");
 
 // Integration parameters.
 DEFINE_double(simulation_time, 2.0,
               "Desired duration of the simulation in seconds.");
-DEFINE_double(accuracy, 1.0e-3, "The integration accuracy.");
-DEFINE_double(max_time_step, 1.0e-3,
-              "The maximum time step the integrator is allowed to take, [s].");
 
 // Contact model parameters.
 DEFINE_string(contact_model, "point",
@@ -57,6 +44,10 @@ DEFINE_bool(add_wall, false,
             "simulation to throw when the soft ball hits the wall with the "
             "'hydroelastic' model; use the 'hybrid' or 'point' contact model "
             "to simulate beyond this contact.");
+
+DEFINE_bool(visualize, true,
+            "If true, the simulation will publish messages for Drake "
+            "visualizer. Useful to turn off during profiling sessions.");
 
 // Sphere's spatial velocity.
 DEFINE_double(vx, 1.5,
@@ -96,20 +87,12 @@ using drake::multibody::ContactModel;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::SpatialVelocity;
-using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
-
-  // The target accuracy determines the size of the actual time steps taken
-  // whenever a variable time step integrator is used.
-  const double target_accuracy = FLAGS_accuracy;
 
   // Plant's parameters.
   const double radius = 0.05;   // m
@@ -172,8 +155,10 @@ int do_main() {
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
-  ConnectContactResultsToDrakeVisualizer(&builder, plant);
+  if (FLAGS_visualize) {
+    geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+    ConnectContactResultsToDrakeVisualizer(&builder, plant);
+  }
   auto diagram = builder.Build();
 
   // Create a context for this system:
@@ -194,65 +179,19 @@ int do_main() {
   plant.SetFreeBodySpatialVelocity(
       &plant_context, plant.GetBodyByName("Ball"), V_WB);
 
-  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  auto simulator =
+      systems::MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
 
-  systems::IntegratorBase<double>* integrator{nullptr};
-  if (FLAGS_integration_scheme == "implicit_euler") {
-    integrator =
-        &simulator.reset_integrator<ImplicitEulerIntegrator<double>>();
-  } else if (FLAGS_integration_scheme == "runge_kutta2") {
-    integrator = &simulator.reset_integrator<RungeKutta2Integrator<double>>(
-        FLAGS_max_time_step);
-  } else if (FLAGS_integration_scheme == "runge_kutta3") {
-    integrator =
-        &simulator.reset_integrator<RungeKutta3Integrator<double>>();
-  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
-    integrator =
-        &simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-            FLAGS_max_time_step);
-  } else {
-    throw std::runtime_error(
-        "Integration scheme '" + FLAGS_integration_scheme +
-        "' not supported for this example.");
-  }
-  integrator->set_maximum_step_size(FLAGS_max_time_step);
+  using clock = std::chrono::steady_clock;
+  const clock::time_point start = clock::now();
+  simulator->AdvanceTo(FLAGS_simulation_time);
+  const clock::time_point end = clock::now();
+  const double wall_clock_time =
+      std::chrono::duration<double>(end - start).count();
+  fmt::print("Simulator::AdvanceTo() wall clock time: {:.4g} seconds.\n",
+             wall_clock_time);
 
-  // Error control is only supported for variable time step integrators.
-  if (!integrator->get_fixed_step_mode())
-    integrator->set_target_accuracy(target_accuracy);
-
-  simulator.set_publish_every_time_step(false);
-  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.Initialize();
-  simulator.AdvanceTo(FLAGS_simulation_time);
-
-  // Some sanity checks:
-  if (FLAGS_integration_scheme == "semi_explicit_euler") {
-    DRAKE_DEMAND(integrator->get_fixed_step_mode() == true);
-  }
-
-  // Checks for variable time step integrators.
-  if (!integrator->get_fixed_step_mode()) {
-    // From IntegratorBase::set_maximum_step_size():
-    // "The integrator may stretch the maximum step size by as much as 1% to
-    // reach discrete event." Thus the 1.01 factor in this DRAKE_DEMAND.
-    DRAKE_DEMAND(integrator->get_largest_step_size_taken() <=
-                 1.01 * FLAGS_max_time_step);
-    DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
-                 integrator->get_largest_step_size_taken());
-    DRAKE_DEMAND(integrator->get_num_steps_taken() >=
-                 FLAGS_simulation_time / FLAGS_max_time_step);
-  }
-
-  // Checks for fixed time step integrators.
-  if (integrator->get_fixed_step_mode()) {
-    const int kNumEvaluationsPerStep =
-        FLAGS_integration_scheme == "runge_kutta2"? 2 : 1;
-    DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
-        integrator->get_num_steps_taken() * kNumEvaluationsPerStep);
-    DRAKE_DEMAND(
-        integrator->get_num_step_shrinkages_from_error_control() == 0);
-  }
+  systems::PrintSimulatorStatistics(*simulator);
 
   return 0;
 }
@@ -265,9 +204,17 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple acrobot demo using Drake's MultibodyPlant,"
-      "with SceneGraph visualization. "
+      "A rolling sphere demo using Drake's MultibodyPlant, "
+      "with SceneGraph visualization. This demo allows to switch between "
+      "different contact models and integrators to evaluate performance."
       "Launch drake-visualizer before running this example.");
+  // We slow down the default realtime rate to 0.2, so that we can appreciate
+  // the motion. Users can still change it on command-line, e.g.
+  // --simulator_target_realtime_rate=0.5.
+  FLAGS_simulator_target_realtime_rate = 0.2;
+  // Simulator default parameters for this demo.
+  FLAGS_simulator_accuracy = 1.0e-3;
+  FLAGS_simulator_max_time_step = 1.0e-3;
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::bouncing_ball::do_main();
 }
