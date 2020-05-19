@@ -278,6 +278,8 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(geometry.shape(), mut.Shape)
         self.assertIsInstance(geometry.release_shape(), mut.Shape)
         self.assertEqual(geometry.name(), "sphere")
+        geometry.set_name("funky")
+        self.assertEqual(geometry.name(), "funky")
         geometry.set_proximity_properties(mut.ProximityProperties())
         geometry.set_illustration_properties(mut.IllustrationProperties())
         geometry.set_perception_properties(mut.PerceptionProperties())

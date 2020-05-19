@@ -609,6 +609,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("shape", &Class::shape, py_reference_internal, cls_doc.shape.doc)
         .def("release_shape", &Class::release_shape, cls_doc.release_shape.doc)
         .def("name", &Class::name, cls_doc.name.doc)
+        .def("set_name", &Class::set_name, cls_doc.set_name.doc)
         .def("set_proximity_properties", &Class::set_proximity_properties,
             py::arg("properties"), cls_doc.set_proximity_properties.doc)
         .def("set_illustration_properties", &Class::set_illustration_properties,
