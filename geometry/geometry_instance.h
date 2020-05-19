@@ -115,6 +115,9 @@ class GeometryInstance {
   /** Returns the *canonicalized* name for the instance. */
   const std::string& name() const { return name_; }
 
+  /** Sets the *canonicalized* name for the instance. */
+  void set_name(const std::string& name);
+
   /** Sets the proximity properties for the given instance.  */
   void set_proximity_properties(ProximityProperties properties) {
     proximity_properties_ = std::move(properties);
