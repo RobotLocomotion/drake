@@ -1,4 +1,5 @@
 import pydrake.geometry as mut
+import pydrake.geometry._testing as mut_testing
 
 import sys
 import unittest
@@ -176,6 +177,7 @@ class TestGeometry(unittest.TestCase):
 
     def test_identifier_api(self):
         cls_list = [
+            mut_testing.FakeId,
             mut.SourceId,
             mut.FrameId,
             mut.GeometryId,
@@ -189,6 +191,11 @@ class TestGeometry(unittest.TestCase):
             self.assertFalse(a == b)
             # N.B. Creation order does not imply value.
             self.assertTrue(a < b or b > a)
+
+        fake_id_1 = mut_testing.get_fake_id_constant()
+        fake_id_2 = mut_testing.get_fake_id_constant()
+        self.assertIsNot(fake_id_1, fake_id_2)
+        self.assertEqual(hash(fake_id_1), hash(fake_id_2))
 
     @numpy_compare.check_nonsymbolic_types
     def test_penetration_as_point_pair_api(self, T):

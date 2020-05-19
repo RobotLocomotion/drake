@@ -44,6 +44,9 @@ void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def(py::self < py::self)
+      // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
+      // pending merge of: https://github.com/pybind/pybind11/pull/2217
+      .def(py::detail::hash(py::self))
       .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc);
 }
 
@@ -718,6 +721,17 @@ void def_geometry(py::module m) {
       NonSymbolicScalarPack{});
 }
 
+void def_geometry_testing(py::module m) {
+  class FakeTag;
+  using FakeId = Identifier<FakeTag>;
+
+  BindIdentifier<FakeId>(m, "FakeId", "Fake documentation.");
+  // Get a valid, constant FakeId to test hashing with new instances returned.
+  FakeId fake_id_constant{FakeId::get_new_id()};
+  m.def("get_fake_id_constant",
+      [fake_id_constant]() { return fake_id_constant; });
+}
+
 void def_geometry_all(py::module m) {
   py::dict vars = m.attr("__dict__");
   py::exec(
@@ -733,6 +747,7 @@ PYBIND11_MODULE(geometry, m) {
 
   def_geometry(m);
   def_geometry_render(m.def_submodule("render"));
+  def_geometry_testing(m.def_submodule("_testing"));
   def_geometry_all(m.def_submodule("all"));
 }
 
