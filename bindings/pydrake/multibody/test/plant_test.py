@@ -153,6 +153,7 @@ class TestPlant(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        self.assertEqual(plant.time_step(), 0.0)
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
