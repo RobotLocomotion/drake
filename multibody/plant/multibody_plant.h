@@ -81,7 +81,11 @@ enum class ContactModel {
   /// kPointContactOnly is used. See
   /// geometry::QueryObject:ComputeContactSurfacesWithFallback for more
   /// details.
-  kHydroelasticWithFallback
+  kHydroelasticWithFallback,
+
+  /// Contact modeling is disabled. Contact geometries are not used. No contact
+  /// queries are performed on the geometry_query input port.
+  kNoContact
 };
 
 /// @cond

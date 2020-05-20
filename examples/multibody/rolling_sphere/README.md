@@ -42,6 +42,20 @@ objects:
   - "hybrid": modeled as a contact surface where possible, and as a point.
     pair otherwise. More formally known as "hydroelastic callback with
     fallback".
+  - "analytic": In this case a system external to `MultibodyPlant`,
+    `AnalyticHydroelasticModel`, computes an analytic approximation of the
+    hydroelastic forces between the sphere and the half-space. Please refer to
+    the system `AnalyticHydroelasticModel` in the source file for further
+    details.
+    This mode is meant to serve several purposes:
+      1. To semi-analytically verify Drake's implementation of the hydroelastic
+         model.
+      2. To provide the lowest performance bar for Drake's implementation, given
+         both the contact query and force computation are considerably simpler
+         for the analytic case.
+      3. To asses the effect of mesh refinement. While hydroelastics uses a
+         tessellated approximation of the geometry, the analytic formulation
+         uses the true smooth geometry and pressure fields.
 
 The "hydroelastic" model doesn't support all combinations of geometries and
 compliance types. There are some types of geometries that cannot yet be given a
@@ -167,3 +181,40 @@ bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contac
 ```
 bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hybrid --add_wall=1 --rigid_ball=1
 ```
+
+## Comparing the performance against the "analytic" model
+
+Using `--contact_model=analytic` switches Drake's implementation of hydroelastic
+with a semi-analytical result for the sphere vs. half-space case.
+In the _analytic_ model, the normal force is integrated analytically exactly.
+Further, a number of approximations are made given analytical expressions are
+not available:
+1. Rolling friction due to dissipation is ignored, given this is a non-linear
+   function of state.
+2. The slip velocity in the contact patch is assumed to be uniform, which allow
+   us to compute the friction force as a function of the velocity at the
+   centroid only.
+3. Rolling friction is ignored. This will lead to differences only in the
+   presence of rotations about the z axis.
+
+Finally, notice that the analytical case uses the _true_ smooth geometry of the
+sphere. 
+
+Given this observations, in order to perform a fair comparison between
+`--contact_model=hydroelastic` and `--contact_model=analytic`, the following
+parameters are recommended:
+1. `--dissipation=0`, given that the _analytic_ model does not take rolling
+   friction into account.
+2. A low resolution hing, e.g. `--resolution_hint=0.05`, in order to approximate
+   better the _true_ smooth geometry of the case.
+
+### Performance timings and integrator statistics
+
+When performing performance comparisons in terms of simulation wall-clock time,
+it is recommended to disable the expensive visualization with `--visualize=0`.
+At the end of the simulation, the demo reports to standard output the simulation
+wall-clock time taken only by `Simulator::AdvanceTo()`.
+
+For the parameters documented above, i.e. `--dissipation=0` and
+`--resolution_hint=0.05`, we expect similar integration reports when using
+`--contact_model=hydroelastic` and `--contact_model=analytic`.

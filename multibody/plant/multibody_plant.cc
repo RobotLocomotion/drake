@@ -1149,7 +1149,9 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries() == 0 ||
+      contact_model_ == ContactModel::kNoContact)
+    return;
 
   switch (contact_model_) {
     case ContactModel::kPointContactOnly:
@@ -1174,6 +1176,8 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
       CalcContactResultsContinuousPointPair(context, contact_results);
       CalcContactResultsContinuousHydroelastic(context, contact_results);
       break;
+    case ContactModel::kNoContact:
+      break;  // no-op
   }
 }
 
@@ -2050,7 +2054,9 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
             SpatialForce<T>::Zero());
 
   // Early exit if there are no contact forces.
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries() == 0 ||
+      contact_model_ == ContactModel::kNoContact)
+    return;
 
   // Note: we don't need to know the applied forces here because we use a
   // regularized friction model whose forces depend only on the current state; a
@@ -2059,18 +2065,18 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
 
   // Compute the spatial forces on each body from contact.
   switch (contact_model_) {
-    case ContactModel::kPointContactOnly:
+    case ContactModel::kPointContactOnly: {
       // Note: consider caching the results from the following method (in which
       // case we would also want to introduce the Eval... naming convention for
       // the method).
       CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
       break;
-
-    case ContactModel::kHydroelasticsOnly:
+    }
+    case ContactModel::kHydroelasticsOnly: {
       *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
       break;
-
-    case ContactModel::kHydroelasticWithFallback:
+    }
+    case ContactModel::kHydroelasticWithFallback: {
       // Combine the point-penalty forces with the contact surface forces.
       CalcAndAddContactForcesByPenaltyMethod(context, &(*F_BBo_W_array));
       const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
@@ -2082,6 +2088,9 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
         (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
       }
       break;
+    }
+    case ContactModel::kNoContact:
+      break;  // no-op
   }
 }
 

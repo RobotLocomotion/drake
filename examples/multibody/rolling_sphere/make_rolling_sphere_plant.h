@@ -57,6 +57,7 @@ MakeBouncingBallPlant(
     double elastic_modulus, double dissipation,
     const drake::multibody::CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
+    double resolution_hint,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace bouncing_ball

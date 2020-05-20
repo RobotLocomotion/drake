@@ -50,7 +50,8 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     plant_ = builder.AddSystem(
         examples::multibody::bouncing_ball::MakeBouncingBallPlant(
             radius, mass, elastic_modulus, dissipation, friction, gravity_W,
-            false /* rigid_sphere */, false /* soft_ground */, &scene_graph));
+            false /* rigid_sphere */, false /* soft_ground */,
+            1.0 /* resolution_hint*/, &scene_graph));
     plant_->set_contact_model(ContactModel::kHydroelasticsOnly);
     plant_->Finalize();
 

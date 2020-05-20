@@ -28,6 +28,7 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     double radius, double mass, double elastic_modulus, double dissipation,
     const CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool soft_ground,
+    double resolution_hint,
     SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
 
@@ -65,7 +66,7 @@ std::unique_ptr<drake::multibody::MultibodyPlant<double>> MakeBouncingBallPlant(
     if (rigid_sphere) {
       AddRigidHydroelasticProperties(radius, &ball_props);
     } else {
-      AddSoftHydroelasticProperties(radius, &ball_props);
+      AddSoftHydroelasticProperties(resolution_hint * radius, &ball_props);
     }
     plant->RegisterCollisionGeometry(ball, X_BS, Sphere(radius), "collision",
                                      std::move(ball_props));
