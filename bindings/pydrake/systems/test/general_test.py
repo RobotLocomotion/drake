@@ -106,9 +106,11 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(u1.get_index(), 1)
         self.assertEqual(u1.size(), 10)
         self.assertIsNotNone(u1.ticket())
+        self.assertIs(u1.get_system(), system)
         y = system.GetOutputPort("sum")
         self.assertEqual(y.get_index(), 0)
         self.assertIsInstance(y.Allocate(), Value[BasicVector])
+        self.assertIs(y.get_system(), system)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
 
@@ -420,6 +422,9 @@ class TestGeneral(unittest.TestCase):
         diagram = builder.Build()
         self.assertEqual(adder0.get_name(), "adder0")
         self.assertEqual(diagram.GetSubsystemByName("adder0"), adder0)
+        self.assertEqual(
+            diagram.GetSystems(),
+            [adder0, adder1, integrator])
         # TODO(eric.cousineau): Figure out unicode handling if needed.
         # See //systems/framework/test/diagram_test.cc:349 (sha: bc84e73)
         # for an example name.

@@ -730,7 +730,21 @@ Note: The above is for the C++ documentation. For Python, use
             doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_reference_internal,
-            doc.Diagram.GetSubsystemByName.doc);
+            doc.Diagram.GetSubsystemByName.doc)
+        .def(
+            "GetSystems",
+            [](Diagram<T>* self) {
+              py::list out;
+              py::object self_py = py::cast(self, py_reference);
+              for (auto* system : self->GetSystems()) {
+                py::object system_py = py::cast(system, py_reference);
+                // Keep alive, ownership: `system` keeps `self` alive.
+                py_keep_alive(system_py, self_py);
+                out.append(system_py);
+              }
+              return out;
+            },
+            doc.Diagram.GetSystems.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to
     // override `LeafSystem` methods, disrespecting `final`-ity.
