@@ -869,6 +869,22 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
   EXPECT_TRUE(CompareMatrices(avBias_WEi_E, avBias_WEi_E_expected,
                               kTolerance, MatrixCompareType::relative));
 
+  // Ensure CalcBiasTranslationalAcceleration() works when it is passed a single
+  // generic position vector, which should returns a single bias acceleration.
+  const VectorX<double> p_EEp = p_EEi.col(0);
+  const Vector3<double> avBias_WEp_E = tree().CalcBiasTranslationalAcceleration(
+      *context_, JacobianWrtVariable::kV, frame_E, p_EEp, frame_W, frame_E);
+  EXPECT_TRUE(CompareMatrices(avBias_WEp_E, avBias_WEi_E_expected.col(0),
+                            kTolerance, MatrixCompareType::relative));
+
+  // Ensure CalcBiasTranslationalAcceleration() works when it is passed a
+  // MatrixX<double> instead of a Matrix3X<double> of position vectors.
+  const MatrixX<double> p_EEj = p_EEi;
+  const MatrixX<double> avBias_WEj_E = tree().CalcBiasTranslationalAcceleration(
+      *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_W, frame_E);
+  EXPECT_TRUE(CompareMatrices(avBias_WEj_E, avBias_WEi_E_expected,
+                              kTolerance, MatrixCompareType::relative));
+
   // Verify CalcBiasTranslationalAcceleration() throws an exception if
   // with_respect_to is JacobianWrtVariable::kQDot.
   // TODO(Mitiguy) Remove this test when CalcBiasTranslationalAcceleration() is
@@ -884,9 +900,6 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
   EXPECT_THROW(tree().CalcBiasTranslationalAcceleration(*context_,
       JacobianWrtVariable::kV, frame_E, p_EEi, frame_E, frame_W),
           std::exception);
-
-  // Note: CalcBiasTranslationalAcceleration() does not compile unless the
-  // position vector array has three rows -- so no need to test for exception.
 }
 
 

@@ -2488,7 +2488,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// @see CalcJacobianTranslationalVelocity() to compute J𝑠_v_ABi, point Bi's
   /// translational velocity Jacobian in frame A with respect to 𝑠.
-  /// @throws std::exception if p_BoBi_B does not have 3 rows.
+  /// @pre p_BoBi_B must have 3 rows.
   /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
   Matrix3X<T> CalcBiasTranslationalAcceleration(
@@ -2695,8 +2695,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Note: The returned `6 x n` matrix stores frame B's angular velocity
   /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
   /// Jacobian in A in rows 4-6, i.e., <pre>
-  ///     J𝑠_wAB_E = J𝑠_V_ABp_E.topRows<3>();
-  ///     J𝑠_vABp_E = J𝑠_V_ABp_E.bottomRows<3>();
+  ///     J𝑠_w_AB_E = J𝑠_V_ABp_E.topRows<3>();
+  ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
   /// </pre>
   /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
   /// affixed to frame B and consider CalcJacobianAngularVelocity() to calculate

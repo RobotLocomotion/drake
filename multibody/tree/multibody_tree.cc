@@ -1386,9 +1386,6 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
     const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
     const Frame<T>& frame_A,
     const Frame<T>& frame_E) const {
-  // There must be 3 rows in a position vector or array of positions vectors.
-  DRAKE_THROW_UNLESS(p_BoBi_B.rows() == 3);
-
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
