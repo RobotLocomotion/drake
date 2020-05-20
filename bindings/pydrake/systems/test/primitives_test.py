@@ -526,6 +526,8 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_derivative.get_input_port(0).size(), 5)
         self.assertEqual(discrete_derivative.get_output_port(0).size(), 5)
         self.assertEqual(discrete_derivative.time_step(), 0.5)
+        context = discrete_derivative.CreateDefaultContext()
+        discrete_derivative.set_input_history(context, np.array(5*[1.1]))
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
@@ -538,13 +540,19 @@ class TestGeneral(unittest.TestCase):
         state_interpolator.set_initial_position(
             context=context, position=5*[1.1])
         np.testing.assert_array_equal(
-            context.get_discrete_state_vector().CopyToVector(),
-            np.array(10*[1.1]))
+            context.get_discrete_state(0).CopyToVector(),
+            np.array(5*[1.1]))
+        np.testing.assert_array_equal(
+            context.get_discrete_state(1).CopyToVector(),
+            np.array(5*[1.1]))
 
         # test set_initial_position using state
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
             state=context.get_state(), position=5*[1.3])
         np.testing.assert_array_equal(
-            context.get_discrete_state_vector().CopyToVector(),
-            np.array(10*[1.3]))
+            context.get_discrete_state(0).CopyToVector(),
+            np.array(5*[1.3]))
+        np.testing.assert_array_equal(
+            context.get_discrete_state(1).CopyToVector(),
+            np.array(5*[1.3]))

@@ -18,8 +18,12 @@ namespace systems {
 ///   x₀[n+1] = u[n],
 ///   x₁[n+1] = x₀[n],
 ///   y(t) = (x₀[n]-x₁[n])/h.
-///   x₀[0] and x₁[0] are initialized in the Context (default is zeros).
 /// </pre>
+///
+/// By default, y(t) will remain zero until x₀[n] has been sampled from the
+/// input u[n] twice -- so that there is no transient.  To establish a value
+/// for y(t) prior to that moment, use `set_input_history` to provide initial
+/// values.  For example, set the history to all zeros to undo this guard.
 ///
 /// @note For dynamical systems, a derivative should not be computed in
 /// continuous-time, i.e. `y(t) = (u(t) - u[n])/(t-n*h)`. This is numerically
