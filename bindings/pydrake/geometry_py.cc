@@ -234,6 +234,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("ExcludeCollisionsBetween",
+            py::overload_cast<const GeometrySet&, const GeometrySet&>(
+                &Class::ExcludeCollisionsBetween),
+            py_reference_internal, py::arg("setA"), py::arg("setB"),
+            cls_doc.ExcludeCollisionsBetween.doc_2args)
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
