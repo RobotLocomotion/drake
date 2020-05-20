@@ -459,7 +459,9 @@ void DefineFrameworkPySemantics(py::module m) {
             "This method is only needed when the result will be passed "
             "into some other API that only accepts a BasicVector.",
             py_reference_internal)
-        .def("Allocate", &OutputPort<T>::Allocate, doc.OutputPort.Allocate.doc);
+        .def("Allocate", &OutputPort<T>::Allocate, doc.OutputPort.Allocate.doc)
+        .def("get_system", &OutputPort<T>::get_system, py_reference,
+            doc.OutputPort.get_system.doc);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
@@ -534,7 +536,9 @@ void DefineFrameworkPySemantics(py::module m) {
             },
             py::arg("context"), py::arg("value"), py_reference,
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc);
+            py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
+        .def("get_system", &InputPort<T>::get_system, py_reference,
+            doc.InputPort.get_system.doc);
 
     // TODO(russt): Bind relevant WitnessFunction methods.  This is the
     // minimal binding required to support DeclareWitnessFunction.
