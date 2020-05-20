@@ -112,84 +112,23 @@ GTEST_TEST(QPtest, TestInfeasible) {
 }
 
 GTEST_TEST(OsqpSolverTest, DualSolution1) {
-  // Test GetDualSolution()
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>();
-  auto constraint1 = prog.AddLinearConstraint(2 * x[0] + 3 * x[1], -2, 3);
-  auto constraint2 = prog.AddLinearEqualityConstraint(x[1] + 4 * x[2] == 3);
-  auto constraint3 = prog.AddBoundingBoxConstraint(0, 3, x);
-  prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1] + x[2] * x[2]);
-  OsqpSolver osqp_solver;
-  if (osqp_solver.is_available()) {
-    const MathematicalProgramResult result = osqp_solver.Solve(prog);
-    EXPECT_TRUE(result.is_success());
-    // At the optimal solution, the active constraints are
-    // x[0] >= 0
-    // x[1] + 4 * x[2] == 3
-    // Solving the KKT condition, we get the dual solution as
-    // dual solution for x[0] >= 0 is 0
-    // dual solution for x[1] + 4 * x[2] == 3 is -0.363636
-    EXPECT_TRUE(
-        CompareMatrices(result.GetDualSolution(constraint1), Vector1d(0.)));
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
-                                Vector1d(-0.36363636), 1e-6));
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
-                                Eigen::Vector3d::Zero()));
-  }
+  // Test GetDualSolution().
+  OsqpSolver solver;
+  TestQPDualSolution1(solver);
 }
 
 GTEST_TEST(OsqpSolverTest, DualSolution2) {
-  // Test GetDualSolution()
+  // Test GetDualSolution().
   // This QP has non-zero dual solution for linear inequality constraint.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<3>();
-  auto constraint1 = prog.AddLinearConstraint(2 * x[0] + 4 * x[1], 0, 3);
-  auto constraint2 = prog.AddLinearEqualityConstraint(x[1] - 4 * x[2] == -2);
-  auto constraint3 = prog.AddBoundingBoxConstraint(-1, 2, x);
-  prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1] + x[2] * x[2] +
-                        2 * x[1] * x[2] + 4 * x[2]);
-  OsqpSolver osqp_solver;
-  if (osqp_solver.is_available()) {
-    const MathematicalProgramResult result = osqp_solver.Solve(prog);
-    EXPECT_TRUE(result.is_success());
-    // At the optimal solution, the active constraints are
-    // 2 * x[0] + 4 * x[1] >= 0
-    // x[1] - 4 * x[2] == -2
-    // Solving the KKT condition, we get the dual solution as
-    // dual solution for 2 * x[0] + 4 * x[1] >= 0 is -0.34285714
-    // dual solution for x[1] - 4 * x[2] == -2 is 1.14285714
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
-                                Vector1d(-0.34285714), 1e-6));
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
-                                Vector1d(1.14285714), 1e-6));
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
-                                Eigen::Vector3d::Zero(), 1e-6));
-  }
+  OsqpSolver solver;
+  TestQPDualSolution2(solver);
 }
 
 GTEST_TEST(OsqpSolverTest, DualSolution3) {
-  // Test GetDualSolution()
+  // Test GetDualSolution().
   // This QP has non-zero dual solution for the bounding box constraint.
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<2>();
-  auto constraint = prog.AddBoundingBoxConstraint(-1, 2, x);
-  prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1] + 2 * x[0] * x[1] -
-                        8 * x[0] + 6 * x[1]);
-  OsqpSolver osqp_solver;
-  if (osqp_solver.is_available()) {
-    const MathematicalProgramResult result = osqp_solver.Solve(prog);
-    EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(
-        CompareMatrices(result.GetSolution(x), Eigen::Vector2d(2, -1), 1e-6));
-    // At the optimal solution, the active constraints are
-    // x[0] <= 2
-    // x[1] >= -1
-    // Solving the KKT condition, we get the dual solution as
-    // dual solution for x[0] <= 2 is 6
-    // dual solution for x[1] >= -1 is -6
-    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
-                                Eigen::Vector2d(6, -6), 1e-6));
-  }
+  OsqpSolver solver;
+  TestQPDualSolution3(solver);
 }
 
 GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {

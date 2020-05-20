@@ -232,18 +232,35 @@ class MathematicalProgramResult final {
   }
 
   /**
-   * Get the dual solution associated with a constraint.
-   * The user should know that depending on the solver, the dual solution can
-   * have different meanings. For example, for a linear inequality constraint
-   * lower <= A * x <= upper with N rows in lower/upper, some solvers (like
-   * OSQP) return a dual solution also with N rows, with dual_solution(i) as
-   * the dual solution for either lower(i) <= A(i, :)*x or A(i, :) * x <=
-   * upper(i) if one of bound is active, or 0 if neither is active. On the other
-   * hand, some solvers (like SCS) will return 2N dual solutions, for both
-   * lower * <= A*x and A*x <= upper. The user can query the solver by
-   * MathematicalProgramResult::get_solver_id().name() to find the solver,
-   * and refer to the user manual of that solver, if he/she needs to interpret
-   * the dual solutions.
+   * Gets the dual solution associated with a constraint.
+   *
+   * We interpret the dual variable value as the "shadow price" of the original
+   * problem. Namely if we change the constraint bound by one unit (each unit is
+   * infinitesimally small), the change of the optimal cost is the value of the
+   * dual solution times the unit. Mathematically dual_solution = ∂optimal_cost
+   * / ∂bound.
+   *
+   * For a linear equality constraint Ax = b where b ∈ ℝⁿ, the vector of dual
+   * variables has n rows, and dual_solution(i) is the value of the dual
+   * variable for the constraint A(i,:)*x = b(i).
+   *
+   * For a linear inequality constraint lower <= A*x <= upper where lower and
+   * upper ∈ ℝⁿ, dual_solution also has n rows. dual_solution(i) is the value of
+   * the dual variable for constraint lower(i) <= A(i,:)*x <= upper(i). If
+   * neither side of the constraint is active, then dual_solution(i) is 0. If
+   * the left hand-side lower(i) <= A(i, :)*x is active (meaning lower(i) = A(i,
+   * :)*x at the solution), then dual_solution(i) is non-negative (because the
+   * objective is to minimize a cost, increasing the lower bound means the
+   * constraint set is tighter, hence the optimal solution cannot decrease. Thus
+   * the shadow price is non-negative). If the right hand-side A(i,
+   * :)*x<=upper(i) is active (meaning A(i,:)*x=upper(i) at the solution), then
+   * dual_solution(i) is non-positive.
+   *
+   * For a bounding box constraint lower <= x <= upper, the interpretation of
+   * the dual solution is the same as the linear inequality constraint.
+   *
+   * TODO(hongkai.dai): add the interpretation for other type of constraints
+   * when we implement them.
    */
   template <typename C>
   Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
@@ -366,9 +383,8 @@ class MathematicalProgramResult final {
   // suboptimal solution suboptimal_x_val_[i].
   std::vector<Eigen::VectorXd> suboptimal_x_val_{};
   std::vector<double> suboptimal_objectives_{};
-  // Stores the dual variable solutions for each linear constraint.
-  std::unordered_map<Binding<Constraint>, Eigen::VectorXd, drake::DefaultHash>
-      dual_solutions_{};
+  // Stores the dual variable solutions for each constraint.
+  std::unordered_map<Binding<Constraint>, Eigen::VectorXd> dual_solutions_{};
 };
 
 }  // namespace solvers
