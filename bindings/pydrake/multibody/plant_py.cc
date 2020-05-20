@@ -11,6 +11,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -24,6 +25,11 @@
 
 PYBIND11_MAKE_OPAQUE(
     std::vector<drake::multibody::ExternallyAppliedSpatialForce<double>>);
+PYBIND11_MAKE_OPAQUE(std::vector<
+    drake::multibody::ExternallyAppliedSpatialForce<drake::AutoDiffXd>>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<drake::multibody::ExternallyAppliedSpatialForce<
+        drake::symbolic::Expression>>);
 
 namespace drake {
 namespace pydrake {
