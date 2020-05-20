@@ -714,10 +714,8 @@ class TestPlant(unittest.TestCase):
         return Impl
 
     def test_applied_force_input_ports(self):
-        # TODO(eric.cousineau): Figure out why `pybind11/stl_bind.h` does not
-        # like `VectorExternallyAppliedSpatialForced_` and throws
-        # `ValueError: vector::reserve` #11648.
         self.check_applied_force_input_ports(float)
+        self.check_applied_force_input_ports(AutoDiffXd)
 
     def check_applied_force_input_ports(self, T):
         # Create a MultibodyPlant, and ensure that a secondary system can
