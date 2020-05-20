@@ -239,7 +239,7 @@ TEST_F(ContinuousStateTest, Clone) {
 TEST_F(ContinuousStateTest, StringStream) {
   std::stringstream s;
   s << "hello " << continuous_state_->get_vector() << " world";
-  EXPECT_EQ(s.str(), "hello [1, 2, 3, 4] world");
+  EXPECT_EQ(s.str(), "hello 1  2  3  4 world");
 }
 
 // Tests for DiagramContinousState.

@@ -195,14 +195,14 @@ GTEST_TEST(BasicVectorTest, StringStream) {
   vec.get_mutable_value() << 1.0, 2.2, 3.3;
   std::stringstream s;
   s << "hello " << vec << " world";
-  EXPECT_EQ(s.str(), "hello [1, 2.2, 3.3] world");
+  EXPECT_EQ(s.str(), "hello 1  2.2  3.3 world");
 }
 
 // Tests ability to stream a BasicVector of size zero into a string.
 GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
   BasicVector<double> vec(0);
   std::stringstream s;
-  s << "foo " << vec << " bar";
+  s << "foo [" << vec << "] bar";
   EXPECT_EQ(s.str(), "foo [] bar");
 }
 
