@@ -442,7 +442,7 @@ std::unique_ptr<DiscreteValues<T>> LeafSystem<T>::AllocateDiscreteState()
 template <typename T>
 std::unique_ptr<AbstractValues> LeafSystem<T>::AllocateAbstractState() const {
   return std::make_unique<AbstractValues>(
-      std::move(model_abstract_states_.CloneAllModels()));
+      model_abstract_states_.CloneAllModels());
 }
 
 template <typename T>
