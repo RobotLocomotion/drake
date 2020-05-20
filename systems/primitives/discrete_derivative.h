@@ -18,7 +18,21 @@ namespace systems {
 ///   x₀[n+1] = u[n],
 ///   x₁[n+1] = x₀[n],
 ///   y(t) = (x₀[n]-x₁[n])/h.
-///   x₀[0] and x₁[0] are initialized in the Context (default is zeros).
+///   The initial values for x₀ and x₁ are zero in the Context.
+/// </pre>
+///
+/// Alternatively, when `suppress_initial_transient = true` is passed to the
+/// constructor, the output remains zero until u[n] has been sampled twice.
+///
+/// This is implemented as the non-linear system
+/// <pre>
+///   x₀[n+1] = u[n],
+///   x₁[n+1] = x₀[n],
+///   x₂[n+1] = x₂[n] + 1,
+///   y(t) = { 0.0              if x₂ <  1 }
+///          { (x₀[n]-x₁[n])/h  if x₂ >= 1 }
+///   The initial values for x₀ and x₁ are zero in the Context.
+///   The initial value for x₂ is -1 in the Context, so that x₂[0] is zero.
 /// </pre>
 ///
 /// @note For dynamical systems, a derivative should not be computed in
@@ -37,13 +51,15 @@ class DiscreteDerivative final : public LeafSystem<T> {
 
   /// Constructor taking @p num_inputs, the size of the vector to be
   /// differentiated, and @p time_step, the sampling interval.
-  DiscreteDerivative(int num_inputs, double time_step);
+  DiscreteDerivative(int num_inputs, double time_step,
+                     bool suppress_initial_transient = false);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit DiscreteDerivative(const DiscreteDerivative<U>& other)
       : DiscreteDerivative<T>(other.get_input_port().size(),
-                              other.time_step()) {}
+                              other.time_step(),
+                              other.suppress_initial_transient()) {}
 
   /// Set the input history so that the initial output is fully specified.
   /// This is useful during initialization to avoid large derivative outputs if
@@ -83,6 +99,9 @@ class DiscreteDerivative final : public LeafSystem<T> {
 
   double time_step() const { return time_step_; }
 
+  /// Returns the `suppress_initial_transient` passed to the constructor.
+  bool suppress_initial_transient() const;
+
  private:
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
@@ -94,6 +113,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 
   const int n_;  // The size of the input (and output) ports.
   const double time_step_;
+  const bool suppress_initial_transient_;
 };
 
 /// Supports the common pattern of combining a (feed-through) position with
@@ -125,7 +145,12 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
 
   /// Constructor taking @p num_positions, the size of the position vector
   /// to be differentiated, and @p time_step, the sampling interval.
-  StateInterpolatorWithDiscreteDerivative(int num_positions, double time_step);
+  StateInterpolatorWithDiscreteDerivative(
+      int num_positions, double time_step,
+      bool suppress_initial_transient = false);
+
+  /// Returns the `suppress_initial_transient` passed to the constructor.
+  bool suppress_initial_transient() const;
 
   const systems::InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(0);
@@ -175,7 +200,7 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
   }
 
  private:
-  DiscreteDerivative<T>* derivative_;
+  DiscreteDerivative<T>* derivative_{};
 };
 
 }  // namespace systems
