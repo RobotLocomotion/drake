@@ -703,6 +703,13 @@ void DoScalarIndependentDefinitions(py::module m) {
             "Returns formatted string.");
   }
 
+  // GeometrySet
+  {
+    using Class = GeometrySet;
+    constexpr auto& cls_doc = doc.GeometrySet;
+    py::class_<Class>(m, "GeometrySet", cls_doc.doc);
+  }
+
   py::class_<ProximityProperties, GeometryProperties>(
       m, "ProximityProperties", doc.ProximityProperties.doc)
       .def(py::init(), doc.ProximityProperties.ctor.doc);
