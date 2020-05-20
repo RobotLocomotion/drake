@@ -151,10 +151,20 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
         m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
-        .def(py::init<int, double>(), py::arg("num_inputs"),
-            py::arg("time_step"), doc.DiscreteDerivative.ctor.doc)
+        .def(py::init<int, double, bool>(), py::arg("num_inputs"),
+            py::arg("time_step"), py::arg("suppress_initial_transient") = false,
+            doc.DiscreteDerivative.ctor.doc)
         .def("time_step", &DiscreteDerivative<T>::time_step,
-            doc.DiscreteDerivative.time_step.doc);
+            doc.DiscreteDerivative.time_step.doc)
+        .def("suppress_initial_transient",
+            &DiscreteDerivative<T>::suppress_initial_transient,
+            doc.DiscreteDerivative.suppress_initial_transient.doc)
+        .def("set_input_history",
+            overload_cast_explicit<void, systems::Context<T>*,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &DiscreteDerivative<T>::set_input_history),
+            py::arg("context"), py::arg("u"),
+            doc.DiscreteDerivative.set_input_history.doc_2args);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //
@@ -250,9 +260,14 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
         GetPyParam<T>(), doc.StateInterpolatorWithDiscreteDerivative.doc)
-        .def(py::init<int, double>(), py::arg("num_positions"),
-            py::arg("time_step"),
+        .def(py::init<int, double, bool>(), py::arg("num_positions"),
+            py::arg("time_step"), py::arg("suppress_initial_transient") = false,
             doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
+        .def("suppress_initial_transient",
+            &StateInterpolatorWithDiscreteDerivative<
+                T>::suppress_initial_transient,
+            doc.StateInterpolatorWithDiscreteDerivative
+                .suppress_initial_transient.doc)
         .def(
             "set_initial_position",
             [](const StateInterpolatorWithDiscreteDerivative<T>* self,
