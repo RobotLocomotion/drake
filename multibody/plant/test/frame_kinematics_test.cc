@@ -85,6 +85,16 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       V_WH.get_coeffs(), V_WH_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
 
+  // Alternative, we can get the spatial velocity V_WE using the plant's output
+  // port for spatial velocities.
+  const auto& V_WB_all =
+      plant_->get_body_spatial_velocities_output_port()
+          .Eval<std::vector<SpatialVelocity<double>>>(*context_);
+  ASSERT_EQ(V_WB_all.size(), plant_->num_bodies());
+  const SpatialVelocity<double>& V_WE_from_port =
+      V_WB_all[end_effector_link_->index()];
+  EXPECT_EQ(V_WE.get_coeffs(), V_WE_from_port.get_coeffs());
+
   // Spatial velocity of link 3 measured in the H frame and expressed in the
   // end-effector frame E.
   const SpatialVelocity<double> V_HL3_E =
