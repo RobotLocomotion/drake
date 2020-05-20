@@ -155,6 +155,7 @@ GTEST_TEST(ManipulationStationTest, CheckDynamics) {
       station.GetMutableSubsystemContext(position_to_state, context.get());
   position_to_state.set_initial_state(&position_to_state_context, iiwa_position,
                                       iiwa_velocity);
+
   // Ensure that integral terms are zero.
   context->get_mutable_continuous_state_vector().SetZero();
 
