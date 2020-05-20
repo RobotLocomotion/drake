@@ -85,7 +85,9 @@ int do_main(int argc, char* argv[]) {
   auto iiwa_command =
       builder.AddSystem<manipulation::kuka_iiwa::IiwaCommandReceiver>();
   builder.Connect(iiwa_command_subscriber->get_output_port(),
-                  iiwa_command->get_input_port());
+                  iiwa_command->get_message_input_port());
+  builder.Connect(station->GetOutputPort("iiwa_position_measured"),
+                  iiwa_command->get_position_measured_input_port());
 
   // Pull the positions out of the state.
   builder.Connect(iiwa_command->get_commanded_position_output_port(),
@@ -144,15 +146,6 @@ int do_main(int argc, char* argv[]) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  auto& context = simulator.get_mutable_context();
-  auto& station_context =
-      diagram->GetMutableSubsystemContext(*station, &context);
-
-  // Get the initial Iiwa pose and initialize the iiwa_command to match.
-  VectorXd q0 = station->GetIiwaPosition(station_context);
-  iiwa_command->set_initial_position(
-      &diagram->GetMutableSubsystemContext(*iiwa_command, &context), q0);
-
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.AdvanceTo(FLAGS_duration);
