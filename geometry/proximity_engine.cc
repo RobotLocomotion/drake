@@ -579,7 +579,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   int TinyObjToFclFaces(const tinyobj::mesh_t& mesh,
                         std::vector<int>* faces) const {
     auto iter = mesh.indices.begin();
-    for (const int& num : mesh.num_face_vertices) {
+    for (int num : mesh.num_face_vertices) {
       faces->push_back(num);
       std::for_each(iter, iter + num, [faces](const tinyobj::index_t& index) {
         faces->push_back(index.vertex_index);

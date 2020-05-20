@@ -399,7 +399,7 @@ void ManipulationStation<T>::SetRandomState(
   std::shuffle(shuffled_object_ids.begin(), shuffled_object_ids.end(),
                *generator);
   double z_offset = 0.1;
-  for (const auto body_index : shuffled_object_ids) {
+  for (const auto& body_index : shuffled_object_ids) {
     math::RigidTransform<T> pose =
         plant_->GetFreeBodyPose(plant_context, plant_->get_body(body_index));
     pose.set_translation(pose.translation() + Vector3d{0, 0, z_offset});
@@ -481,7 +481,7 @@ void ManipulationStation<T>::Finalize(
       std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.65),
           y(-0.35, 0.35), z(0, 0.05);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-      for (const auto body_index : object_ids_) {
+      for (const auto& body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
@@ -496,7 +496,7 @@ void ManipulationStation<T>::Finalize(
       std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
           y(-0.8, -.55), z(0.3, 0.35);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-      for (const auto body_index : object_ids_) {
+      for (const auto& body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
@@ -511,7 +511,7 @@ void ManipulationStation<T>::Finalize(
       std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.8),
           y(0, 0), z(0, 0.05);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-      for (const auto body_index : object_ids_) {
+      for (const auto& body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
       }

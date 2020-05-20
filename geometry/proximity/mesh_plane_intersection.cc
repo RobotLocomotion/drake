@@ -161,7 +161,7 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
   std::unordered_map<SortedPair<VolumeVertexIndex>, SurfaceVertexIndex>
       cut_edges;
 
-  for (const auto tet_index : tet_indices) {
+  for (const auto& tet_index : tet_indices) {
     SliceTetWithPlane(tet_index, mesh_field_M, plane_M, X_WM, &faces,
                       &vertices_W, &surface_e, &cut_edges);
   }

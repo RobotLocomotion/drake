@@ -382,7 +382,7 @@ TEST_F(RotationConversionTest, RotmatQuat) {
 }
 
 TEST_F(RotationConversionTest, rotmat2rpyTest) {
-  for (const RotationMatrix<double> Ri : rotation_matrix_test_cases_) {
+  for (const RotationMatrix<double>& Ri : rotation_matrix_test_cases_) {
     const RollPitchYaw<double> rpy(Ri);
     const RotationMatrix<double> rotmat_expected(rpy);
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).

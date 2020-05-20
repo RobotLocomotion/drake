@@ -191,7 +191,10 @@ cc_binary(
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
     ] + private_headers + public_headers,
-    copts = ["-fvisibility-inlines-hidden"],
+    copts = [
+        "-fvisibility-inlines-hidden",
+        "-w",
+    ],
     includes = ["include"],
     linkopts = select({
         ":linux": ["-Wl,-soname,libdrake_ignition_math.so"],
