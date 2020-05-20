@@ -241,10 +241,13 @@ void SetDualSolution(
     const std::unordered_map<const Binding<C>*, int>& constraint_start_row,
     MathematicalProgramResult* result) {
   for (const auto& constraint : constraints) {
+    // OSQP uses the dual variable `y` as the negation of the shadow price, so
+    // we need to negate `all_dual_solution` as Drake interprets dual solution
+    // as the shadow price.
     result->set_dual_solution(
         constraint,
-        all_dual_solution.segment(constraint_start_row.at(&constraint),
-                                  constraint.evaluator()->num_constraints()));
+        -all_dual_solution.segment(constraint_start_row.at(&constraint),
+                                   constraint.evaluator()->num_constraints()));
   }
 }
 }  // namespace
