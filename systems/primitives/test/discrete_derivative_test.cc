@@ -6,6 +6,8 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/system_symbolic_inspector.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
@@ -25,11 +27,11 @@ GTEST_TEST(DiscreteDerivativeTest, Topology) {
   EXPECT_FALSE(deriv.HasAnyDirectFeedthrough());
 }
 
-GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
+void RunFirstOrderHold(const bool suppress_initial_transient) {
   DiagramBuilder<double> builder;
 
   const double kDuration = 1.0;
-  // Create an input system u(t) = [ 2*t, 3*t ].
+  // Create an input system u(t) = [ 4+2*t, 5+3*t ].
   Matrix2d knots;
   // clang-format off
   knots << 4, 4+2,
@@ -41,8 +43,10 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
 
   const int kNumInputs = 2;
   const double time_step = 0.1;
-  auto deriv =
-      builder.AddSystem<DiscreteDerivative<double>>(kNumInputs, time_step);
+  auto deriv = builder.AddSystem<DiscreteDerivative<double>>(
+      kNumInputs, time_step, suppress_initial_transient);
+  EXPECT_EQ(deriv->suppress_initial_transient(),
+            suppress_initial_transient);
 
   builder.Connect(ppsource->get_output_port(), deriv->get_input_port());
   auto log = LogOutput(deriv->get_output_port(), &builder);
@@ -61,15 +65,54 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
       // conditions).
       EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
     } else if (log->sample_times()(i) <= time_step) {
-      // The outputs should jump for one timestep because u(0) is non-zero.
-      EXPECT_TRUE(CompareMatrices(
-          log->data().col(i), Vector2d(4. / time_step, 5. / time_step), 1e-12));
+      if (!suppress_initial_transient) {
+        // The outputs should jump for one timestep because u(0) is non-zero.
+        EXPECT_TRUE(CompareMatrices(
+            log->data().col(i), Vector2d(4. / time_step, 5. / time_step),
+            1e-12));
+      } else {
+        // The outputs should remain zero until there two input samples.
+        EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(0., 0.)));
+      }
     } else {
       // Once time has advanced, outputs should have the steady-state
       // derivatives.
       EXPECT_TRUE(CompareMatrices(log->data().col(i), Vector2d(2, 3), 1e-12));
     }
   }
+}
+
+GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
+  const bool suppress_initial_transient = false;
+  RunFirstOrderHold(suppress_initial_transient);
+}
+
+GTEST_TEST(DiscreteDerivativeTest, FirstOrderHoldNoTransient) {
+  const bool suppress_initial_transient = true;
+  RunFirstOrderHold(suppress_initial_transient);
+}
+
+GTEST_TEST(DiscreteDerivativeTest, ToSymbolic) {
+  const DiscreteDerivative<double> dut1(2, 0.1, false);
+  EXPECT_TRUE(is_symbolic_convertible(dut1, [&](const auto& converted) {
+    EXPECT_EQ(converted.suppress_initial_transient(), false);
+  }));
+
+  const DiscreteDerivative<double> dut2(2, 0.1, true);
+  EXPECT_TRUE(is_symbolic_convertible(dut2, [&](const auto& converted) {
+    EXPECT_EQ(converted.suppress_initial_transient(), true);
+  }));
+}
+
+// The dynamics must be affine when the transient suppression is disabled.
+// This confirms that we've correctly conditioned the extra state for the
+// update counter to be declared only when strictly required.
+GTEST_TEST(DiscreteDerivativeTest, IsAffine) {
+  const DiscreteDerivative<double> dut(2, 0.1);
+  auto symbolic = dut.ToSymbolic();
+  SystemSymbolicInspector inspector(*symbolic);
+  EXPECT_TRUE(inspector.IsTimeInvariant());
+  EXPECT_TRUE(inspector.HasAffineDynamics());
 }
 
 GTEST_TEST(DiscreteDerivativeTest, SetState) {
