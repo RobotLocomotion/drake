@@ -615,8 +615,8 @@ TEST_F(MonomialTest, Evaluate) {
       {{var_x_, -1.0}, {var_y_, 2.0}, {var_z_, -3.0}},   // - + -
       {{var_x_, -1.0}, {var_y_, -2.0}, {var_z_, -3.0}},  // - - -
   };
-  for (const Monomial m : monomials_) {
-    for (const Environment env : environments) {
+  for (const Monomial& m : monomials_) {
+    for (const Environment& env : environments) {
       EXPECT_TRUE(CheckEvaluate(m, env));
     }
   }
@@ -638,8 +638,8 @@ TEST_F(MonomialTest, EvaluatePartial) {
       {{var_x_, -2.3}, {var_z_, 2.6}},
       {{var_x_, -1.0}, {var_y_, 2.0}, {var_z_, 3.0}},
   };
-  for (const Monomial m : monomials_) {
-    for (const Environment env : environments) {
+  for (const Monomial& m : monomials_) {
+    for (const Environment& env : environments) {
       EXPECT_TRUE(CheckEvaluatePartial(m, env));
     }
   }

@@ -322,7 +322,7 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   // conditions (i.e., different compliance) should lead to a single contact
   // surface.
   {
-    for (const auto [mesh_anchored, shape_anchored] : anchor_configurations) {
+    for (const auto& [mesh_anchored, shape_anchored] : anchor_configurations) {
       ProximityEngine<double> engine;
       const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, soft,
                                         mesh, mesh_anchored, !soft);
@@ -351,7 +351,7 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   //       combination that isn't possible in practice. We could only get a
   //       rigid mesh and an undefined mesh.
   {
-    for (const auto [mesh_anchored, shape_anchored] : anchor_configurations) {
+    for (const auto& [mesh_anchored, shape_anchored] : anchor_configurations) {
       ProximityEngine<double> engine;
       const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, !soft,
                                         mesh, mesh_anchored, !soft);
