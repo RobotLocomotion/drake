@@ -2279,6 +2279,16 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               {this->configuration_ticket()})
           .get_index();
 
+  // Declare the output port for the spatial velocities of all bodies in the
+  // world.
+  body_spatial_velocities_port_ =
+      this->DeclareAbstractOutputPort(
+              "spatial_velocities",
+              std::vector<SpatialVelocity<T>>(num_bodies()),
+              &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
+              {this->kinematics_ticket()})
+          .get_index();
+
   const auto& generalized_accelerations_cache_entry =
       this->get_cache_entry(cache_indexes_.generalized_accelerations);
 
@@ -2802,6 +2812,18 @@ void MultibodyPlant<T>::CalcBodyPosesOutput(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
+    const Context<T>& context,
+    std::vector<SpatialVelocity<T>>* V_WB_all) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  V_WB_all->resize(num_bodies());
+  for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    V_WB_all->at(body_index) = EvalBodySpatialVelocityInWorld(context, body);
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -2927,6 +2949,12 @@ template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_body_poses_output_port()
 const {
   return systems::System<T>::get_output_port(body_poses_port_);
+}
+
+template <typename T>
+const OutputPort<T>&
+MultibodyPlant<T>::get_body_spatial_velocities_output_port() const {
+  return systems::System<T>::get_output_port(body_spatial_velocities_port_);
 }
 
 template <typename T>
