@@ -551,7 +551,8 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   // Shape constructors
   {
-    py::class_<Shape>(m, "Shape", doc.Shape.doc);
+    py::class_<Shape> shape_cls(m, "Shape", doc.Shape.doc);
+    DefClone(&shape_cls);
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
         .def("radius", &Sphere::radius, doc.Sphere.radius.doc);

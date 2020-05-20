@@ -240,6 +240,10 @@ class TestGeometry(unittest.TestCase):
         ]
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
+            shape_cls = type(shape)
+            shape_copy = shape.Clone()
+            self.assertIsInstance(shape_copy, shape_cls)
+            self.assertIsNot(shape, shape_copy)
 
     def test_shapes(self):
         sphere = mut.Sphere(radius=1.0)
