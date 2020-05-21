@@ -2591,7 +2591,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
-  DRAKE_DEPRECATED("2020-08-01", "Use CalcBiasTranslationalAcceleration "
+  DRAKE_DEPRECATED("2020-09-01", "Use CalcBiasTranslationalAcceleration "
                  "instead of CalcBiasForJacobianTranslationalVelocity().")
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
@@ -2645,7 +2645,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Vector6, it is actually a SpatialAcceleration (having units of that type).
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
-  DRAKE_DEPRECATED("2020-08-01", "Use CalcBiasSpatialAcceleration() instead "
+  DRAKE_DEPRECATED("2020-09-01", "Use CalcBiasSpatialAcceleration() instead "
                                  "of CalcBiasForJacobianSpatialVelocity().")
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
       const systems::Context<T>& context,
@@ -2705,12 +2705,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
                                    const Frame<T>& frame_B,
-                                   const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
+                                   const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
                                    EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
     internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
-                                                frame_B, p_BoBi_B, frame_A,
+                                                frame_B, p_BoBp_B, frame_A,
                                                 frame_E, Js_V_ABp_E);
   }
 
