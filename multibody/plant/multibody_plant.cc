@@ -1118,8 +1118,9 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
   std::vector<CoulombFriction<double>> combined_frictions;
   combined_frictions.reserve(point_pairs.size());
 
-  auto& query_object = this->get_geometry_query_input_port()
-                           .template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const auto& pair : point_pairs) {
@@ -1462,8 +1463,9 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
-  auto& query_object = this->get_geometry_query_input_port()
-                           .template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const ContactSurface<T>& surface : all_surfaces) {
