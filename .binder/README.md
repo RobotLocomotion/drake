@@ -13,7 +13,7 @@ repository:
 
 ```bash
 docker build -f .binder/Dockerfile -t binder .
-docker run --name mybinder -p 8888:8888 binder
+docker run --rm -it --name mybinder -p 8888:8888 binder
 ```
 
 The `meshcat-visualizer` is NOT supported by Binder since port 7000 is not
@@ -21,14 +21,10 @@ exposed, but to allow its use locally, substitute the following `run` command
 for the above:
 
 ```bash
-docker run --name mybinder -p 7000:7000 -p 8888:8888 binder
+docker run --rm -it --name mybinder -p 7000:7000 -p 8888:8888 binder
 ```
 
 Copy and paste the URL (including the login token) that is displayed in the
 terminal into the web browser of your choice.
 
-To stop the running container, execute the following command in a new terminal:
-
-```bash
-docker stop mybinder
-```
+To stop the running container, simply exit it from the terminal with Ctrl+C.
