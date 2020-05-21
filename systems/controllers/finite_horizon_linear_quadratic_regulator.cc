@@ -404,11 +404,5 @@ std::unique_ptr<System<double>> MakeFiniteHorizonLinearQuadraticRegulator(
 
 }  // namespace controllers
 
-// Explicitly disable symbolic::Expression (pending resolution of #12253).
-namespace scalar_conversion {
-template <>
-struct Traits<controllers::Controller> : public NonSymbolicTraits {};
-}  // namespace scalar_conversion
-
 }  // namespace systems
 }  // namespace drake

@@ -1900,27 +1900,51 @@ GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
 template <typename T>
 class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
-  SymbolicSparsitySystem()
-      : SymbolicSparsitySystem(
-            SystemTypeTag<SymbolicSparsitySystem>{}) {}
+  explicit SymbolicSparsitySystem(bool use_default_prereqs = true)
+      : SymbolicSparsitySystem(SystemTypeTag<SymbolicSparsitySystem>{},
+                               use_default_prereqs) {}
 
   // Scalar-converting copy constructor.
   template <typename U>
-  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
-      : SymbolicSparsitySystem<T>() {}
+  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>& source)
+      : SymbolicSparsitySystem<T>(source.is_using_default_prereqs()) {
+    source.count_conversion();
+  }
+
+  // Note that this object was used as the source for a scalar conversion.
+  void count_conversion() const { ++num_conversions_; }
+
+  int num_conversions() const { return num_conversions_; }
+
+  bool is_using_default_prereqs() const { return use_default_prereqs_; }
 
  protected:
-  explicit SymbolicSparsitySystem(SystemScalarConverter converter)
-      : LeafSystem<T>(std::move(converter)) {
+  explicit SymbolicSparsitySystem(SystemScalarConverter converter,
+                                  bool use_default_prereqs = true)
+      : LeafSystem<T>(std::move(converter)),
+        use_default_prereqs_(use_default_prereqs) {
     const int kSize = 1;
 
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
-    this->DeclareVectorOutputPort(BasicVector<T>(kSize),
-                                  &SymbolicSparsitySystem::CalcY0);
-    this->DeclareVectorOutputPort(BasicVector<T>(kSize),
-                                  &SymbolicSparsitySystem::CalcY1);
+    if (is_using_default_prereqs()) {
+      // Don't specify prerequisites; we'll have to perform symbolic analysis
+      // to determine whether there is feedthrough.
+      this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+                                    &SymbolicSparsitySystem::CalcY0);
+      this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+                                    &SymbolicSparsitySystem::CalcY1);
+    } else {
+      // Explicitly specify the prerequisites for the code in CalcY0() and
+      // CalcY1() below. No need for further analysis to determine feedthrough.
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(kSize), &SymbolicSparsitySystem::CalcY0,
+          {this->input_port_ticket(InputPortIndex(1))});
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(kSize), &SymbolicSparsitySystem::CalcY1,
+          {this->input_port_ticket(InputPortIndex(0))});
+    }
   }
 
  private:
@@ -1935,6 +1959,12 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     const auto& u0 = this->get_input_port(0).Eval(context);
     y1->set_value(u0);
   }
+
+  const bool use_default_prereqs_;
+
+  // Count how many times this object was used as the _source_ for the
+  // conversion constructor.
+  mutable int num_conversions_{0};
 };
 
 // The sparsity reporting should be the same no matter which scalar type the
@@ -1949,7 +1979,7 @@ class FeedthroughTypedTest : public ::testing::Test {};
 TYPED_TEST_SUITE(FeedthroughTypedTest, FeedthroughTestScalars);
 
 // The sparsity of a System should be inferred from its symbolic form.
-TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsityDefaultPrereqs) {
   using T = TypeParam;
   const SymbolicSparsitySystem<T> system;
 
@@ -1967,6 +1997,42 @@ TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
   expected.emplace(1, 0);
   expected.emplace(0, 1);
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+
+  // Since we didn't provide prerequisites for the output ports, each of the 8
+  // calls above should have required a scalar conversion to symbolic unless
+  // T was already symbolic.
+  int expected_conversions = 8;
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    expected_conversions = 0;
+  }
+
+  EXPECT_EQ(system.num_conversions(), expected_conversions);
+}
+
+// Repeat the above test using explicitly-specified prerequisites to avoid
+// having to convert to symbolic form.
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsityExplicitPrereqs) {
+  using T = TypeParam;
+  const SymbolicSparsitySystem<T> system(false);  // Use explicit prereqs.
+
+  // Both the output ports have direct feedthrough from some input.
+  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(system.HasDirectFeedthrough(0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1));
+  // Check the entire matrix.
+  EXPECT_FALSE(system.HasDirectFeedthrough(0, 0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
+  EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+  // Confirm the exact set of desired pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+
+  // Shouldn't have been any conversions required above.
+  const int expected_conversions = 0;
+  EXPECT_EQ(system.num_conversions(), expected_conversions);
 }
 
 // This system only supports T = symbolic::Expression; it does not support
