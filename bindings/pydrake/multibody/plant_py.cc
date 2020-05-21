@@ -391,11 +391,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
                 const Eigen::Ref<const Vector3<T>>& p_BP,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
-              MatrixX<T> Jw_ABp_E(
+              MatrixX<T> Js_V_ABp_E(
                   6, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianSpatialVelocity(context, with_respect_to,
-                  frame_B, p_BP, frame_A, frame_E, &Jw_ABp_E);
-              return Jw_ABp_E;
+                  frame_B, p_BP, frame_A, frame_E, &Js_V_ABp_E);
+              return Js_V_ABp_E;
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),

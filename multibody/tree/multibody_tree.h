@@ -1311,7 +1311,23 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_FP_list,
       const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const;
+      const Frame<T>& frame_E) const {
+    const int num_points = p_FP_list.cols();
+    DRAKE_THROW_UNLESS(num_points > 0 && p_FP_list.rows() == 3);
+
+    const Matrix3X<T> asBias_AFp_E = CalcBiasTranslationalAcceleration(
+        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
+
+    // This deprecated method needs to return a VectorX<T>.
+    VectorX<T> asBias_AFp_E_as_VectorX(3 * num_points);
+    for (int i = 0;  i < num_points; ++i) {
+      const Vector3<T> acceleration_bias_i = asBias_AFp_E.col(i);
+      for (int j = 0; j < 3;  ++j)
+        asBias_AFp_E_as_VectorX(3*i + j) = acceleration_bias_i(j);
+    }
+
+    return asBias_AFp_E_as_VectorX;
+  }
 
   /// See MultibodyPlant method.
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
@@ -1320,7 +1336,11 @@ class MultibodyTree {
       const Frame<T>& frame_F,
       const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Frame<T>& frame_A,
-      const Frame<T>& frame_E) const;
+      const Frame<T>& frame_E) const {
+    const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
+        context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
+    return Abias_WFp.get_coeffs();
+  }
 
   /// See MultibodyPlant method.
   void CalcJacobianSpatialVelocity(
@@ -1328,7 +1348,7 @@ class MultibodyTree {
       JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Jw_ABp_E) const;
+      EigenPtr<MatrixX<T>> Js_V_ABp_E) const;
 
   /// See MultibodyPlant method.
   void CalcJacobianAngularVelocity(const systems::Context<T>& context,
@@ -1394,6 +1414,23 @@ class MultibodyTree {
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_A, const Frame<T>& frame_E) const;
 
+  /// See MultibodyPlant method.
+  Matrix3X<T> CalcBiasTranslationalAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
+
+  /// See MultibodyPlant method.
+  SpatialAcceleration<T> CalcBiasSpatialAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
   /// @}
   // End of multibody Jacobian methods section.
 
@@ -2484,29 +2521,37 @@ class MultibodyTree {
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // Helper method for CalcBiasForJacobianTranslationalVelocity() and
-  // CalcBiasForJacobianSpatialVelocity() which shifts the spatial acceleration
-  // bias term from point Fo (the origin of a frame F) to point Fp (fixed on F),
-  // where frame F is fixed to a body B.
-  // @param[in] context The state of the multibody system, which includes the
-  // generalized positions q and generalized velocities v.
-  // @param[in] frame_F The frame on which point Fp is fixed/welded.
-  // @param[in] X_BF rigid transform relating body B's frame to frame F.
-  // @param[in] p_FoFp_F position vector from Fo (frame F's origin) to Fp,
-  // expressed in frame F.
-  // @param[in] Abias_WBo_W spatial acceleration bias of Bo (body B's origin) in
-  // world W, expressed in W.
-  // expressed in frame F.
-  // @param[in] frame_E The frame in which `Abias_WFp` is expressed on output.
-  // @returns Abias_WFp_E  Fp's spatial acceleration bias in world frame W,
-  // expressed in frame_E.
-  SpatialAcceleration<T> CalcSpatialAccelerationBiasShift(
+  // Shift bias spatial acceleration from the origin Ao of body A to a
+  // point Bp of (fixed to) a frame B, where frame B is fixed/welded to body A.
+  // @param[in] context The state of the multibody system.
+  // @param[in] frame_B The frame on which point Bp is fixed/welded.
+  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to a point
+  // Bp (regarded as fixed to B), expressed in frame_B.
+  // @param[in] body_A The body on which frame_B is fixed/welded.
+  // @param[in] A𝑠Bias_WA_W Point Ao's spatial acceleration bias in frame W
+  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
+  // @returns  A𝑠Bias_WBp_W Point Bp's spatial acceleration bias in frame W
+  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
+  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
       const systems::Context<T>& context,
-      const Frame<T>& frame_F,
-      const math::RigidTransform<T>& X_BF,
-      const Vector3<T>& p_FoFp_F,
-      const SpatialAcceleration<T>& Abias_WBo_W,
-      const Frame<T>& frame_E) const;
+      const Body<T>& body_A,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const SpatialAcceleration<T>& AsBias_WA_W) const;
+
+  // Calculate a body_A's bias spatial acceleration in the world frame W.
+  // @param[in] context The state of the multibody system.
+  // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  // JacobianWrtVariable::kV, indicating whether the spatial acceleration bias
+  // is with respect to 𝑠 = q̇ or 𝑠 = v.
+  // @param[in] body_A The body whose bias spatial acceleration is calculated.
+  // @returns A𝑠Bias_WA_W body_A's spatial acceleration bias in frame W
+  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
+  // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  SpatialAcceleration<T> CalcBodyBiasSpatialAccelerationInWorld(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Body<T>& body_A) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the
