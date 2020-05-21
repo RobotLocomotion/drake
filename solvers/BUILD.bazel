@@ -338,6 +338,7 @@ drake_cc_library(
     hdrs = ["mathematical_program_result.h"],
     deps = [
         ":binding",
+        ":constraint",
         ":solution_result",
         ":solver_id",
         "//common:symbolic",

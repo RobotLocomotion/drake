@@ -8,9 +8,12 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/symbolic.h"
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
 
@@ -110,6 +113,16 @@ class MathematicalProgramResult final {
 
   /** Sets the decision variable values. */
   void set_x_val(const Eigen::VectorXd& x_val);
+
+  /** Sets the dual solution associated with a given constraint. */
+  template <typename C>
+  void set_dual_solution(
+      const Binding<C>& constraint,
+      const Eigen::Ref<const Eigen::VectorXd>& dual_solution) {
+    const Binding<Constraint> constraint_cast =
+        internal::BindingDynamicCast<Constraint>(constraint);
+    dual_solutions_.emplace(constraint_cast, dual_solution);
+  }
 
   /** Gets the optimal cost. */
   double get_optimal_cost() const { return optimal_cost_; }
@@ -219,6 +232,53 @@ class MathematicalProgramResult final {
   }
 
   /**
+   * Gets the dual solution associated with a constraint.
+   *
+   * We interpret the dual variable value as the "shadow price" of the original
+   * problem. Namely if we change the constraint bound by one unit (each unit is
+   * infinitesimally small), the change of the optimal cost is the value of the
+   * dual solution times the unit. Mathematically dual_solution = ∂optimal_cost
+   * / ∂bound.
+   *
+   * For a linear equality constraint Ax = b where b ∈ ℝⁿ, the vector of dual
+   * variables has n rows, and dual_solution(i) is the value of the dual
+   * variable for the constraint A(i,:)*x = b(i).
+   *
+   * For a linear inequality constraint lower <= A*x <= upper where lower and
+   * upper ∈ ℝⁿ, dual_solution also has n rows. dual_solution(i) is the value of
+   * the dual variable for constraint lower(i) <= A(i,:)*x <= upper(i). If
+   * neither side of the constraint is active, then dual_solution(i) is 0. If
+   * the left hand-side lower(i) <= A(i, :)*x is active (meaning lower(i) = A(i,
+   * :)*x at the solution), then dual_solution(i) is non-negative (because the
+   * objective is to minimize a cost, increasing the lower bound means the
+   * constraint set is tighter, hence the optimal solution cannot decrease. Thus
+   * the shadow price is non-negative). If the right hand-side A(i,
+   * :)*x<=upper(i) is active (meaning A(i,:)*x=upper(i) at the solution), then
+   * dual_solution(i) is non-positive.
+   *
+   * For a bounding box constraint lower <= x <= upper, the interpretation of
+   * the dual solution is the same as the linear inequality constraint.
+   *
+   * TODO(hongkai.dai): add the interpretation for other type of constraints
+   * when we implement them.
+   */
+  template <typename C>
+  Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
+    const Binding<Constraint> constraint_cast =
+        internal::BindingDynamicCast<Constraint>(constraint);
+    auto it = dual_solutions_.find(constraint_cast);
+    if (it == dual_solutions_.end()) {
+      throw std::invalid_argument(fmt::format(
+          "Either this constraint does not belong to the "
+          "mathematical program for which the result is obtained, or "
+          "{} does not currently support getting dual solution yet.",
+          solver_id_.name()));
+    } else {
+      return it->second;
+    }
+  }
+
+  /**
    * Evaluate a Binding at the solution.
    * @param binding A binding between a constraint/cost and the variables.
    * @pre The binding.variables() must be the within the decision variables in
@@ -323,6 +383,8 @@ class MathematicalProgramResult final {
   // suboptimal solution suboptimal_x_val_[i].
   std::vector<Eigen::VectorXd> suboptimal_x_val_{};
   std::vector<double> suboptimal_objectives_{};
+  // Stores the dual variable solutions for each constraint.
+  std::unordered_map<Binding<Constraint>, Eigen::VectorXd> dual_solutions_{};
 };
 
 }  // namespace solvers
