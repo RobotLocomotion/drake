@@ -584,6 +584,22 @@ void TestQPDualSolution3(const SolverInterface& solver) {
     EXPECT_NEAR(
         (result4.get_optimal_cost() - result.get_optimal_cost()) / delta, 6,
         2e-5);
+
+    // Now add more bounding box constraints (but with looser bounds than the -1
+    // <= x <= 2 bound already imposed). The dual solution for these bounds
+    // should be zero.
+    constraint.evaluator()->set_bounds(Eigen::Vector2d(-1, -1),
+                                       Eigen::Vector2d(2, 2));
+    auto constraint1 = prog.AddBoundingBoxConstraint(-2, 3, x[0]);
+    auto constraint2 = prog.AddBoundingBoxConstraint(-1.5, 3.5, x[1]);
+    MathematicalProgramResult result5;
+    solver.Solve(prog, {}, {}, &result5);
+    EXPECT_TRUE(CompareMatrices(result5.GetDualSolution(constraint),
+                                Eigen::Vector2d(-6, 6), 2e-5));
+    EXPECT_TRUE(
+        CompareMatrices(result5.GetDualSolution(constraint1), Vector1d(0)));
+    EXPECT_TRUE(
+        CompareMatrices(result5.GetDualSolution(constraint2), Vector1d(0)));
   }
 }
 

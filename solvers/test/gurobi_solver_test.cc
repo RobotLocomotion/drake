@@ -408,6 +408,11 @@ GTEST_TEST(GurobiTest, SolutionPool) {
   }
 }
 
+GTEST_TEST(GurobiTest, DualSolution3) {
+  GurobiSolver solver;
+  TestQPDualSolution3(solver);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

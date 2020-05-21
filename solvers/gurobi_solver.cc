@@ -71,6 +71,36 @@ void SetProgramSolutionVector(const std::vector<bool>& is_new_variable,
   }
 }
 
+/**
+ * @param reduced_cost Gurobi stores the dual variable for each of its decision
+ * variable bound in "reduced cost".
+ */
+void SetBoundingBoxDualSolution(
+    const MathematicalProgram& prog, const std::vector<double>& reduced_cost,
+    const std::unordered_map<Binding<BoundingBoxConstraint>,
+                             std::pair<std::vector<int>, std::vector<int>>>&
+        bb_con_dual_indices,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    Eigen::VectorXd dual_sol = Eigen::VectorXd::Zero(binding.evaluator()->num_vars());
+    std::vector<int> lower_dual_indices, upper_dual_indices;
+    std::tie(lower_dual_indices, upper_dual_indices) =
+        bb_con_dual_indices.at(binding);
+    for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
+      if (lower_dual_indices[i] != -1 &&
+          reduced_cost[lower_dual_indices[i]] >= 0) {
+        // This lower bound is active since the reduced cost is non-negative.
+        dual_sol(i) = reduced_cost[lower_dual_indices[i]];
+      } else if (upper_dual_indices[i] != -1 &&
+                 reduced_cost[upper_dual_indices[i]] <= 0) {
+        // This upper bound is active since the reduced cost is non-positive.
+        dual_sol(i) = reduced_cost[upper_dual_indices[i]];
+      }
+    }
+    result->set_dual_solution(binding, dual_sol);
+  }
+}
+
 // Utility to extract Gurobi solve status information into
 // a struct to communicate to user callbacks.
 GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
@@ -746,12 +776,50 @@ void GurobiSolver::DoSolve(
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
 
+    std::vector<int> upper_dual_indices(constraint->num_vars(), -1);
+    std::vector<int> lower_dual_indices(constraint->num_vars(), -1);
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       const int idx = prog.FindDecisionVariableIndex(binding.variables()(k));
       xlow[idx] = std::max(lower_bound(k), xlow[idx]);
       xupp[idx] = std::min(upper_bound(k), xupp[idx]);
     }
   }
+  // bb_con_dual_indices[constraint] returns the the pair (lower_dual_indices,
+  // upper_dual_indices), where lower_dual_indices are the indices of the dual
+  // variables associated with the lower bound side (x >= lower) of the bounding
+  // box constraint; upper_dual_indices are the indices of the dual variables
+  // associated with the upper bound side (x <= upper) of the bounding box
+  // constraint. If the index is -1, then it means there is not an associated
+  // dual variable.
+  std::unordered_map<Binding<BoundingBoxConstraint>,
+                     std::pair<std::vector<int>, std::vector<int>>>
+      bb_con_dual_indices;
+  // Now loop over all of the bounding box constraints again, if a bounding box
+  // constraint has its lower or upper bound equals to xlow or xupp, then that
+  // bounding box constraint has an associated dual variable.
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    const auto& constraint = binding.evaluator();
+    const Eigen::VectorXd& lower_bound = constraint->lower_bound();
+    const Eigen::VectorXd& upper_bound = constraint->upper_bound();
+
+    std::vector<int> upper_dual_indices(constraint->num_vars(), -1);
+    std::vector<int> lower_dual_indices(constraint->num_vars(), -1);
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const int idx = prog.FindDecisionVariableIndex(binding.variables()(k));
+      if (xlow[idx] == lower_bound(k)) {
+        lower_dual_indices[k] = idx;
+      }
+      if (xupp[idx] == upper_bound(k)) {
+        upper_dual_indices[k] = idx;
+      }
+    }
+    bb_con_dual_indices.emplace(
+        binding, std::make_pair(lower_dual_indices, upper_dual_indices));
+  }
+
+  // constraint_dual_start_row[constraint] returns the starting index of the
+  // dual variable corresponding to this constraint
+  std::unordered_map<Binding<Constraint>, int> constraint_dual_start_row;
 
   // Our second order cone constraints imposes A*x+b lies within the (rotated)
   // Lorentz cone. Unfortunately Gurobi only supports a vector z lying within
@@ -918,6 +986,10 @@ void GurobiSolver::DoSolve(
       SetProgramSolutionVector(is_new_variable, solver_sol_vector,
                                &prog_sol_vector);
       result->set_x_val(prog_sol_vector);
+
+      std::vector<double> reduced_cost(num_total_variables);
+      GRBgetdblattrarray(model, GRB_DBL_ATTR_RC, 0, num_total_variables, reduced_cost.data());
+      SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices, result);
 
       // Obtain optimal cost.
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();
