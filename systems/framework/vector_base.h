@@ -229,12 +229,7 @@ class VectorBase {
 // debugging purposes.
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const VectorBase<T>& vec) {
-  for (int i = 0; i < vec.size(); ++i) {
-    if (i > 0)
-      os << "  ";
-    os << vec[i];
-  }
-
+  os << vec.CopyToVector().transpose();
   return os;
 }
 
