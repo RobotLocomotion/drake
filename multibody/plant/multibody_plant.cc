@@ -740,14 +740,16 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     set_stiction_tolerance();
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
-    tamsi_solver_ =
+    
+    _ =
         std::make_unique<TamsiSolver<T>>(num_velocities());
     // Set the stiction tolerance according to the values set by users with
     // set_stiction_tolerance().
     TamsiSolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
         friction_model_.stiction_tolerance();
-    tamsi_solver_->set_solver_parameters(solver_parameters);
+    
+    _->set_solver_parameters(solver_parameters);
   }
   SetUpJointLimitsParameters();
   scene_graph_ = nullptr;  // must not be used after Finalize().
@@ -1126,6 +1128,10 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const std::vector<PenetrationAsPointPair<T>>& point_pairs) const {
   std::vector<CoulombFriction<double>> combined_frictions;
   combined_frictions.reserve(point_pairs.size());
+
+  if (point_pairs.size() == 0) {
+    return combined_frictions;
+  }
 
   const auto& query_object =
       this->get_geometry_query_input_port()
@@ -1721,23 +1727,27 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     VectorX<T> p_star_substep = M0 * v0_substep - dt_substep * minus_tau;
 
     // Update the data.
-    tamsi_solver_->SetTwoWayCoupledProblemData(
+    
+    _->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
         &p_star_substep, &phi0_substep,
         &stiffness, &damping, &mu);
 
-    info = tamsi_solver_->SolveWithGuess(dt_substep,
+    info = 
+    _->SolveWithGuess(dt_substep,
                                                      v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
     if (info != TamsiSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
-    v0_substep = tamsi_solver_->get_generalized_velocities();
+    v0_substep = 
+    _->get_generalized_velocities();
 
     // Update penetration distance consistently with the solver update.
     const auto vn_substep =
-        tamsi_solver_->get_normal_velocities();
+        
+        _->get_normal_velocities();
     phi0_substep = phi0_substep - dt_substep * vn_substep;
   }
 
@@ -1919,11 +1929,13 @@ void MultibodyPlant<T>::CalcTamsiResults(
       TamsiSolverResult::kMaxIterationsReached};
 
   TamsiSolverParameters params =
-      tamsi_solver_->get_solver_parameters();
+      
+      _->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
-  tamsi_solver_->set_solver_parameters(params);
+  
+  _->set_solver_parameters(params);
 
   // We attempt to compute the update during the time interval dt using a
   // progressively larger number of sub-steps (i.e each using a smaller time
@@ -1965,13 +1977,19 @@ void MultibodyPlant<T>::CalcTamsiResults(
   // file for analysis.
 
   // Update the results.
-  results->v_next = tamsi_solver_->get_generalized_velocities();
-  results->fn = tamsi_solver_->get_normal_forces();
-  results->ft = tamsi_solver_->get_friction_forces();
-  results->vn = tamsi_solver_->get_normal_velocities();
-  results->vt = tamsi_solver_->get_tangential_velocities();
+  results->v_next = 
+  _->get_generalized_velocities();
+  results->fn = 
+  _->get_normal_forces();
+  results->ft = 
+  _->get_friction_forces();
+  results->vn = 
+  _->get_normal_velocities();
+  results->vt = 
+  _->get_tangential_velocities();
   results->tau_contact =
-      tamsi_solver_->get_generalized_contact_forces();
+      
+      _->get_generalized_contact_forces();
 }
 
 template <typename T>
@@ -2371,8 +2389,10 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     const int instance_num_velocities = num_velocities(model_instance_index);
 
     if (is_discrete()) {
-      const auto& tamsi_solver_results_cache_entry =
-          this->get_cache_entry(cache_indexes_.tamsi_solver_results);
+      const auto& 
+      _results_cache_entry =
+          this->get_cache_entry(cache_indexes_.
+          _results);
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
@@ -2386,7 +2406,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
                   BasicVector<T>(instance_num_velocities), calc,
-                  {tamsi_solver_results_cache_entry.ticket()})
+                  {
+                    _results_cache_entry.ticket()})
               .get_index();
     } else {
       const auto& generalized_contact_forces_continuous_cache_entry =
@@ -2499,7 +2520,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       contact_jacobians_cache_entry.cache_index();
 
   // Cache TamsiSolver computations.
-  auto& tamsi_solver_cache_entry = this->DeclareCacheEntry(
+  auto& 
+  _cache_entry = this->DeclareCacheEntry(
       std::string("Implicit Stribeck solver computations."),
       []() {
         return AbstractValue::Make(
@@ -2508,10 +2530,12 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& tamsi_solver_cache = cache_value->get_mutable_value<
+        auto& 
+        _cache = cache_value->get_mutable_value<
             internal::TamsiSolverResults<T>>();
         this->CalcTamsiResults(context,
-                                          &tamsi_solver_cache);
+                                          &
+                                          _cache);
       },
       // The Correct Solution:
       // The Implicit Stribeck solver solution S is a function of state x,
@@ -2535,8 +2559,10 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // discrete update of these values as if zero-order held, which is what we
       // want.
       {this->xd_ticket()});
-  cache_indexes_.tamsi_solver_results =
-      tamsi_solver_cache_entry.cache_index();
+  cache_indexes_.
+  _results =
+      
+      _cache_entry.cache_index();
 
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
@@ -2578,7 +2604,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
     std::set<systems::DependencyTicket> tickets;
     if (is_discrete()) {
       tickets.insert(
-          this->cache_entry_ticket(cache_indexes_.tamsi_solver_results));
+          this->cache_entry_ticket(cache_indexes_.
+          _results));
     } else {
       tickets.insert(this->kinematics_ticket());
       if (use_hydroelastic) {
