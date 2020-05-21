@@ -33,6 +33,8 @@ parser.add_argument(
     help="Use the ManipulationStationHardwareInterface instead of an "
          "in-process simulation.")
 parser.add_argument(
+    "--num_iiwa_joints", type=int, default=7)
+parser.add_argument(
     "--test", action='store_true',
     help="Disable opening the gui window for testing.")
 parser.add_argument(
@@ -86,6 +88,9 @@ else:
             station.get_scene_graph()))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         pyplot_visualizer.get_input_port(0))
+    if station.num_iiwa_joints() != args.num_iiwa_joints:
+        raise RuntimeError("Station has {} != {} joints".format(
+            station.num_iiwa_joints(), args.num_iiwa_joints))
 
 teleop = builder.AddSystem(JointSliders(station.get_controller_plant(),
                                         length=800))
@@ -93,7 +98,7 @@ if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
 
 filter = builder.AddSystem(FirstOrderLowPassFilter(
-    time_constant=2.0, size=station.num_iiwa_joints()))
+    time_constant=2.0, size=args.num_iiwa_joints))
 builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
 builder.Connect(filter.get_output_port(0),
                 station.GetInputPort("iiwa_position"))
@@ -114,10 +119,17 @@ station_context = diagram.GetMutableSubsystemContext(
     station, simulator.get_mutable_context())
 
 station.GetInputPort("iiwa_feedforward_torque").FixValue(
-    station_context, np.zeros(station.num_iiwa_joints()))
+    station_context, np.zeros(args.num_iiwa_joints))
+
+# If the diagram is only the hardware interface, then we must advance it a
+# little bit so that first LCM messages get processed.  A simulated plant is
+# already publishing correct positions even without advancing, and indeed we
+# must not advance a simulated plant until the sliders are filters have been
+# initialized to match the plant.
+if args.hardware:
+    simulator.AdvanceTo(1e-6)
 
 # Eval the output port once to read the initial positions of the IIWA.
-simulator.AdvanceTo(1e-6)
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context)
 teleop.set_position(q0)
