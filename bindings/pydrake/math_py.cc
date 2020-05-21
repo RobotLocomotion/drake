@@ -4,6 +4,7 @@
 #include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "pybind11/stl_bind.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -13,6 +14,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/common/eigen_types.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 #include "drake/math/continuous_lyapunov_equation.h"
@@ -25,6 +27,12 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/math/wrap_to.h"
+
+PYBIND11_MAKE_OPAQUE(std::vector<drake::math::RigidTransform<double>>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<drake::math::RigidTransform<drake::AutoDiffXd>>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<drake::math::RigidTransform<drake::symbolic::Expression>>);
 
 namespace drake {
 namespace pydrake {
@@ -137,6 +145,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
     // .def("IsNearlyEqualTo", ...)
     // .def("IsExactlyEqualTo", ...)
     AddValueInstantiation<RigidTransform<T>>(m);
+  }
+
+  {
+    using Class = std::vector<RigidTransform<T>>;
+    // TODO(eric.cousineau): Try to make this specialization for
+    // `py::bind_vector` less boiler-platey, like
+    // `DefineTemplateClassWithDefault`.
+    const std::string default_name = "VectorRigidTransform";
+    const std::string template_name = default_name + "_";
+    auto cls = py::bind_vector<Class>(m, TemporaryClassName<Class>().c_str());
+    AddTemplateClass(m, template_name.c_str(), cls, param);
+    if (!py::hasattr(m, default_name.c_str())) {
+      m.attr(default_name.c_str()) = cls;
+    }
+    AddValueInstantiation<Class>(m);
   }
 
   {

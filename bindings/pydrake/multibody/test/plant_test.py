@@ -80,6 +80,7 @@ from pydrake.geometry import (
 from pydrake.math import (
     RigidTransform_,
     RollPitchYaw_,
+    VectorRigidTransform_
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
@@ -674,6 +675,12 @@ class TestPlant(unittest.TestCase):
                 model_instance=gripper_model),
             OutputPort)
         self.assertIsInstance(plant.get_body_poses_output_port(), OutputPort)
+
+        # Check type of body_poses port
+        plant_context = plant.CreateDefaultContext()
+        body_poses_port = plant.get_body_poses_output_port()
+        poses = body_poses_port.Eval(plant_context)
+        self.assertIsInstance(poses, VectorRigidTransform_[T])
 
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):
