@@ -1127,6 +1127,10 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
   std::vector<CoulombFriction<double>> combined_frictions;
   combined_frictions.reserve(point_pairs.size());
 
+  if (point_pairs.size() == 0) {
+    return combined_frictions;
+  }
+
   const auto& query_object =
       this->get_geometry_query_input_port()
           .template Eval<geometry::QueryObject<T>>(context);
