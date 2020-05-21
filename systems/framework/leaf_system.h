@@ -1272,16 +1272,25 @@ class LeafSystem : public System<T> {
 
   (1) When declaring output ports (e.g., DeclareVectorOutputPort()),
   provide a non-default value to the `prerequisites_of_calc` argument.
-  When `the prerequisites_of_calc` implies no dependency on some inputs,
-  the framework automatically infers that the output is not
-  direct-feedthrough for those inputs.  For example:
+  In that case the port is examined to see if it has a direct or indirect
+  dependence on each input port. For example:
   @code
   PendulumPlant<T>::PendulumPlant() {
-    // ...
+    // No feedthrough because the output port depends only on state,
+    // and state has no dependencies.
     this->DeclareVectorOutputPort(
         "state", &PendulumPlant::CopyStateOut,
         {this->all_state_ticket()});
-    // ...
+
+    // Has feedthrough from input port 0 but not from any others.
+    this->DeclareVectorOutputPort(
+        "tau", &PendulumPlant::CopyTauOut,
+        {this->input_port_ticket(InputPortIndex(0))});
+
+    // Doesn't specify prerequisites. We'll assume feedthrough from all
+    // inputs unless we can apply symbolic analysis (see below).
+    this->DeclareVectorOutputPort(
+        "result", &PendulumPlant::CalcResult);
   }
   @endcode
 
@@ -1292,7 +1301,8 @@ class LeafSystem : public System<T> {
   @ref system_scalar_conversion_how_to_write_a_system
   "How to write a System that supports scalar conversion".
   This allows the %LeafSystem to infer the sparsity from the symbolic
-  equations.
+  equations for any of the output ports that don't specify an explicit
+  list of prerequisites.
 
   Option 2 is a convenient default for simple systems that already support
   symbolic::Expression, but option 1 should be preferred as the most direct

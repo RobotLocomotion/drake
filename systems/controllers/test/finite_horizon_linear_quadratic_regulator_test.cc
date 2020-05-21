@@ -296,8 +296,8 @@ GTEST_TEST(FiniteHorizonLQRTest, ResultSystemIsScalarConvertible) {
     EXPECT_EQ(converted.num_output_ports(), 1);
     EXPECT_EQ(converted.num_total_outputs(), 1);
   }));
-  // TODO(russt): Re-enable symbolic pending resolution of #12253:
-  EXPECT_FALSE(is_symbolic_convertible(*regulator));
+
+  EXPECT_TRUE(is_symbolic_convertible(*regulator));
 }
 
 }  // namespace
