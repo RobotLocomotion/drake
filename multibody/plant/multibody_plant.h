@@ -4331,9 +4331,9 @@ MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
 template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
-    const drake::systems::Context<symbolic::Expression>& context,
-    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&
-        point_pairs) const;
+    const drake::systems::Context<symbolic::Expression>&,
+    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)
+    const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,

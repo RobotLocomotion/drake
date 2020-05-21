@@ -1110,11 +1110,11 @@ MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
                                       NiceTypeName::Get<T>()));
 }
 
-template<>
+template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
-    const drake::systems::Context<symbolic::Expression>& context,
-    const std::vector<PenetrationAsPointPair<symbolic::Expression>>& point_pairs) const {
+    const drake::systems::Context<symbolic::Expression>&,
+    const std::vector<PenetrationAsPointPair<symbolic::Expression>>&) const {
   throw std::logic_error(
       "This method doesn't support T = symbolic::Expression.");
 }
