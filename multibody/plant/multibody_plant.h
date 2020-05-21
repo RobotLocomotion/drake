@@ -3847,8 +3847,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The i-th entry in the returned std::vector corresponds to the combined
   // friction properties for the i-th point pair in `point_pairs`.
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const std::vector<geometry::PenetrationAsPointPair<T>>&
-      point_pairs) const;
+      const drake::systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs)
+      const;
 
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
