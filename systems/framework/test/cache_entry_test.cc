@@ -220,6 +220,40 @@ GTEST_TEST(CacheEntryAllocTest, EmptyPrerequisiteListForbidden) {
       ".*[Cc]annot create.*empty prerequisites.*nothing_ticket.*");
 }
 
+GTEST_TEST(CacheEntryAllocTest, DetectsDefaultPrerequisites) {
+  MySystemBase system;
+  const CacheEntry& default_prereqs =
+      system.DeclareCacheEntry("default prerequisites", Alloc3, Calc99);
+  EXPECT_TRUE(default_prereqs.has_default_prerequisites());
+
+  // TODO(sherm1) Currently we treat default prerequisites and explicit
+  // all_sources_ticket() the same. That's not desirable though, just a
+  // limitation. Ideally explicit specification of anything should be considered
+  // non-default. Replace this test when that's fixed.
+  const CacheEntry& explicit_default_prereqs =
+      system.DeclareCacheEntry("explicit default prerequisites", Alloc3, Calc99,
+                               {system.all_sources_ticket()});
+  EXPECT_TRUE(
+      explicit_default_prereqs.has_default_prerequisites());  // Not good.
+
+  // This specifies exactly the same dependencies as all_sources_ticket() but
+  // in a way that is clearly non-default.
+  const CacheEntry& long_form_all_sources_prereqs = system.DeclareCacheEntry(
+      "long form all sources prerequisites", Alloc3, Calc99,
+      {system.all_sources_except_input_ports_ticket(),
+       system.all_input_ports_ticket()});
+  EXPECT_FALSE(
+      long_form_all_sources_prereqs.has_default_prerequisites());  // Good!
+
+  const CacheEntry& no_prereqs = system.DeclareCacheEntry(
+      "no prerequisites", Alloc3, Calc99, {system.nothing_ticket()});
+  EXPECT_FALSE(no_prereqs.has_default_prerequisites());
+
+  const CacheEntry& time_only_prereq = system.DeclareCacheEntry(
+      "time only prerequisite", Alloc3, Calc99, {system.time_ticket()});
+  EXPECT_FALSE(time_only_prereq.has_default_prerequisites());
+}
+
 // Allocate a System and Context and provide some convenience methods.
 class CacheEntryTest : public ::testing::Test {
  protected:
