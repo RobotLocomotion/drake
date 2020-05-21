@@ -159,6 +159,7 @@ class TestManipulationStation(unittest.TestCase):
         # Don't actually call Connect here, since it would block.
         station.get_controller_plant()
         self.assertEqual(len(station.get_camera_names()), 2)
+        self.assertEqual(station.num_iiwa_joints(), 7)
 
     def test_ycb_object_creation(self):
         ycb_objects = CreateClutterClearingYcbObjectList()

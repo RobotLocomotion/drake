@@ -148,7 +148,10 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("get_camera_names",
           &ManipulationStationHardwareInterface::get_camera_names,
           py_reference_internal,
-          doc.ManipulationStationHardwareInterface.get_camera_names.doc);
+          doc.ManipulationStationHardwareInterface.get_camera_names.doc)
+      .def("num_iiwa_joints",
+          &ManipulationStationHardwareInterface::num_iiwa_joints,
+          doc.ManipulationStationHardwareInterface.num_iiwa_joints.doc);
 
   ExecuteExtraPythonCode(m);
 }

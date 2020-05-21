@@ -134,12 +134,12 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   const std::string iiwa_sdf_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
   Parser parser(owned_controller_plant_.get());
-  const auto controller_iiwa_model =
-      parser.AddModelFromFile(iiwa_sdf_path, "iiwa");
+  iiwa_model_instance_ = parser.AddModelFromFile(iiwa_sdf_path, "iiwa");
+
   // TODO(russt): Provide API for changing the base coordinates of the plant.
   owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),
                                       owned_controller_plant_->GetFrameByName(
-                                          "iiwa_link_0", controller_iiwa_model),
+                                          "iiwa_link_0", iiwa_model_instance_),
                                       math::RigidTransformd::Identity());
   owned_controller_plant_->Finalize();
 }
@@ -163,6 +163,11 @@ void ManipulationStationHardwareInterface::Connect(bool wait_for_cameras) {
       wait_for_new_message(*sub);
     }
   }
+}
+
+int ManipulationStationHardwareInterface::num_iiwa_joints() const {
+  DRAKE_DEMAND(iiwa_model_instance_.is_valid());
+  return owned_controller_plant_->num_positions(iiwa_model_instance_);
 }
 
 }  // namespace manipulation_station
