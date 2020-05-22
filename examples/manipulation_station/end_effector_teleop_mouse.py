@@ -20,13 +20,19 @@ from pydrake.systems.primitives import FirstOrderLowPassFilter
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
-try:
+# On macOS, our setup scripts do not provide pygame so we need to skip this
+# program and its tests.  On Ubuntu, we do expect to have pygame.
+if sys.platform == "darwin":
+    try:
+        import pygame
+        from pygame.locals import *
+    except ImportError:
+        print("ERROR: missing pygame.  "
+              "Please install pygame to use this example.")
+        sys.exit(0)
+else:
     import pygame
     from pygame.locals import *
-except ImportError:
-    print("ERROR: missing pygame.  Please install pygame to use this example.")
-    # Fail silently (until pygame is supported in python 3 on all platforms)
-    sys.exit(0)
 
 
 def print_instructions():
