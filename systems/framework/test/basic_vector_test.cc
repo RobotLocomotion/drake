@@ -189,34 +189,21 @@ GTEST_TEST(BasicVectorTest, PlusEqScaled) {
   EXPECT_EQ(ans5, ogvec.get_value());
 }
 
-template <typename T>
-class TypedBasicVectorTest : public ::testing::Test {};
-
-using DefaultScalars =
-    ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
-TYPED_TEST_SUITE(TypedBasicVectorTest, DefaultScalars);
-
 // Tests ability to stream a BasicVector into a string.
-TYPED_TEST(TypedBasicVectorTest, StringStream) {
-  using T = TypeParam;
-  BasicVector<T> vec(3);
+GTEST_TEST(BasicVectorTest, StringStream) {
+  BasicVector<double> vec(3);
   vec.get_mutable_value() << 1.0, 2.2, 3.3;
   std::stringstream s;
   s << "hello " << vec << " world";
-  std::stringstream s_expected;
-  s_expected << "hello " << vec.get_value().transpose() << " world";
-  EXPECT_EQ(s.str(), s_expected.str());
+  EXPECT_EQ(s.str(), "hello [1, 2.2, 3.3] world");
 }
 
 // Tests ability to stream a BasicVector of size zero into a string.
-TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
-  using T = TypeParam;
-  BasicVector<T> vec(0);
+GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
+  BasicVector<double> vec(0);
   std::stringstream s;
-  s << "foo [" << vec << "] bar";
-  std::stringstream s_expected;
-  s_expected << "foo [" << vec.get_value().transpose() << "] bar";
-  EXPECT_EQ(s.str(), s_expected.str());
+  s << "foo " << vec << " bar";
+  EXPECT_EQ(s.str(), "foo [] bar");
 }
 
 // Tests the default set of bounds (empty).

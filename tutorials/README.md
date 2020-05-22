@@ -1,5 +1,8 @@
 # Drake Tutorials
 
+This provdies more in-depth documentation on top of the
+[Drake Documentation's Tutorials](https://drake.mit.edu/#tutorials) section.
+
 ## Running the Tutorials Locally
 
 To run the tutorials locally, you should ensure that you have Drake available, [either via Bazel or via binary packages](https://drake.mit.edu/installation.html).
