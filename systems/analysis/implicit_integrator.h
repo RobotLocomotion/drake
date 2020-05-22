@@ -112,8 +112,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @note Discards any already-computed Jacobian matrices if the scheme
   ///       changes.
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
-    if (jacobian_scheme_ != scheme)
+    if (jacobian_scheme_ != scheme) {
       J_.resize(0, 0);
+      // Reset any matrices cached by child integrators.
+      DoResetCachedMatrices();
+    }
     jacobian_scheme_ = scheme;
   }
 
@@ -363,6 +366,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// collects its own statistics, you should re-implement this method and
   /// reset them there.
   virtual void DoResetImplicitIntegratorStatistics() {}
+
+
+  /// Resets any cached Jacobian or iteration matrices owned by child classes.
+  /// This is called when the user changes the Jacobian computation scheme;
+  /// the child class should use this to reset its cached matrices.
+  virtual void DoResetCachedMatrices() {}
 
   /// Checks to see whether a Jacobian matrix is "bad" (has any NaN or
   /// Inf values) and needs to be recomputed. A divergent Newton-Raphson
