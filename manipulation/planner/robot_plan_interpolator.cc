@@ -60,7 +60,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   }
 
   if (!parent_bodies.empty()) {
-    for (const BodyIndex child : child_bodies) {
+    for (const BodyIndex& child : child_bodies) {
       if (parent_bodies.count(child)) {
         parent_bodies.erase(child);
       }
@@ -68,7 +68,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
 
     // Weld all remaining parents to the world.  This probably isn't going to
     // work for all model types.
-    for (const BodyIndex index : parent_bodies) {
+    for (const BodyIndex& index : parent_bodies) {
       plant_.WeldFrames(plant_.world_frame(),
                         plant_.get_body(index).body_frame());
     }

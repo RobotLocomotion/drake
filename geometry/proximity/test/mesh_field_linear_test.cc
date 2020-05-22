@@ -229,7 +229,7 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateCartesianWithAndWithoutGradient) {
   };
 
   std::vector<double> values;
-  for (const VolumeVertex<double> v : mesh_M.vertices()) {
+  for (const VolumeVertex<double>& v : mesh_M.vertices()) {
     values.push_back(f(v.r_MV()));
   }
   std::vector<double> values_copy = values;

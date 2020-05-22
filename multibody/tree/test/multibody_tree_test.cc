@@ -97,28 +97,28 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   EXPECT_EQ(model.num_states(), 14);
 
   // Query if elements exist in the model.
-  for (const std::string link_name : kLinkNames) {
+  for (const std::string& link_name : kLinkNames) {
     EXPECT_TRUE(model.HasBodyNamed(link_name));
   }
   EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
 
-  for (const std::string frame_name : kFrameNames) {
+  for (const std::string& frame_name : kFrameNames) {
     EXPECT_TRUE(model.HasFrameNamed(frame_name));
   }
   EXPECT_FALSE(model.HasFrameNamed(kInvalidName));
 
-  for (const std::string joint_name : kJointNames) {
+  for (const std::string& joint_name : kJointNames) {
     EXPECT_TRUE(model.HasJointNamed(joint_name));
   }
   EXPECT_FALSE(model.HasJointNamed(kInvalidName));
 
-  for (const std::string actuator_name : kActuatorNames) {
+  for (const std::string& actuator_name : kActuatorNames) {
     EXPECT_TRUE(model.HasJointActuatorNamed(actuator_name));
   }
   EXPECT_FALSE(model.HasJointActuatorNamed(kInvalidName));
 
   // Get links by name.
-  for (const std::string link_name : kLinkNames) {
+  for (const std::string& link_name : kLinkNames) {
     const Body<T>& link = model.GetBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
@@ -127,7 +127,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no body named '.*' in the model.");
 
   // Test we can also retrieve links as RigidBody objects.
-  for (const std::string link_name : kLinkNames) {
+  for (const std::string& link_name : kLinkNames) {
     const RigidBody<T>& link = model.GetRigidBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
@@ -136,7 +136,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no body named '.*' in the model.");
 
   // Get frames by name.
-  for (const std::string frame_name : kFrameNames) {
+  for (const std::string& frame_name : kFrameNames) {
     const Frame<T>& frame = model.GetFrameByName(frame_name);
     EXPECT_EQ(frame.name(), frame_name);
     EXPECT_EQ(
@@ -147,7 +147,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no frame named '.*' in the model.");
 
   // Get joints by name.
-  for (const std::string joint_name : kJointNames) {
+  for (const std::string& joint_name : kJointNames) {
     const Joint<T>& joint = model.GetJointByName(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
   }
@@ -156,7 +156,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no joint named '.*' in the model.");
 
   // Templatized version to obtain retrieve a particular known type of joint.
-  for (const std::string joint_name : kJointNames) {
+  for (const std::string& joint_name : kJointNames) {
     const RevoluteJoint<T>& joint =
         model.template GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
@@ -166,7 +166,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       std::logic_error, "There is no joint named '.*' in the model.");
 
   // Get actuators by name.
-  for (const std::string actuator_name : kActuatorNames) {
+  for (const std::string& actuator_name : kActuatorNames) {
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
     EXPECT_EQ(actuator.name(), actuator_name);
@@ -177,7 +177,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Test we can retrieve joints from the actuators.
   int names_index = 0;
-  for (const std::string actuator_name : kActuatorNames) {
+  for (const std::string& actuator_name : kActuatorNames) {
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
     // We added actuators and joints in the same order. Assert this before
