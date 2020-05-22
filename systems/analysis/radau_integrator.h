@@ -125,6 +125,10 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   const VectorX<T>& ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
   void DoInitialize() final;
+  void DoResetCachedJacobianRelatedMatrices() final {
+      iteration_matrix_radau_ = {};
+      iteration_matrix_implicit_trapezoid_ = {};
+  }
   void DoResetImplicitIntegratorStatistics() final;
   bool DoImplicitIntegratorStep(const T& h) final;
   bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,

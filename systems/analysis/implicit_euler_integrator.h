@@ -110,6 +110,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  void DoResetCachedJacobianRelatedMatrices() final {
+      ie_iteration_matrix_ = {};
+      itr_iteration_matrix_ = {};
+  }
   void DoResetImplicitIntegratorStatistics() final;
   static void ComputeAndFactorImplicitEulerIterationMatrix(
       const MatrixX<T>& J, const T& h,
