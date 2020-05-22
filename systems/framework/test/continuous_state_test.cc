@@ -239,10 +239,7 @@ TEST_F(ContinuousStateTest, Clone) {
 TEST_F(ContinuousStateTest, StringStream) {
   std::stringstream s;
   s << "hello " << continuous_state_->get_vector() << " world";
-  std::stringstream s_expected;
-  VectorXd eigen_vector = continuous_state_->CopyToVector();
-  s_expected << "hello " << eigen_vector.transpose() << " world";
-  EXPECT_EQ(s.str(), s_expected.str());
+  EXPECT_EQ(s.str(), "hello [1, 2, 3, 4] world");
 }
 
 // Tests for DiagramContinousState.
