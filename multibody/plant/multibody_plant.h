@@ -109,6 +109,8 @@ enum class ContactModel {
 ///   @input_port{<span style="color:green">geometry_query</span>},
 ///   @output_port{continuous_state}
 ///   @output_port{body_poses}
+///   @output_port{body_spatial_velocities}
+///   @output_port{body_spatial_accelerations}
 ///   @output_port{generalized_acceleration}
 ///   @output_port{reaction_forces}
 ///   @output_port{contact_results}
@@ -424,7 +426,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// You can obtain the pose `X_WB` of a body B in the world frame W with:
   /// @code
   ///   const auto& X_WB_all = plant.get_body_poses_output_port().
-  ///       .Eval<std::vector<math::RigidTransform<double>>(plant_context);
+  ///       .Eval<std::vector<math::RigidTransform<double>>>(plant_context);
   ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
   ///   const math::RigidTransform<double>& X_WArm = X_WB_all[arm_body_index];
   /// @endcode
@@ -432,7 +434,42 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// is indexed by BodyIndex, and it has size num_bodies().
   /// BodyIndex "zero" (0) always corresponds to the world body, with pose
   /// equal to the identity at all times.
+  /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_body_poses_output_port() const;
+
+  /// Returns the output port of all body spatial velocities in the world frame.
+  /// You can obtain the spatial velocity `V_WB` of a body B in the world frame
+  /// W with:
+  /// @code
+  ///   const auto& V_WB_all = plant.get_body_spatial_velocities_output_port().
+  ///       .Eval<std::vector<SpatialVelocity<double>>>(plant_context);
+  ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
+  ///   const SpatialVelocity<double>& V_WArm = V_WB_all[arm_body_index];
+  /// @endcode
+  /// As shown in the example above, the resulting `std::vector` of body spatial
+  /// velocities is indexed by BodyIndex, and it has size num_bodies().
+  /// BodyIndex "zero" (0) always corresponds to the world body, with zero
+  /// spatial velocity at all times.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_body_spatial_velocities_output_port() const;
+
+  /// Returns the output port of all body spatial accelerations in the world
+  /// frame. You can obtain the spatial acceleration `A_WB` of a body B in the
+  /// world frame W with:
+  /// @code
+  ///   const auto& A_WB_all =
+  ///   plant.get_body_spatial_accelerations_output_port().
+  ///       .Eval<std::vector<SpatialAcceleration<double>>>(plant_context);
+  ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
+  ///   const SpatialVelocity<double>& A_WArm = A_WB_all[arm_body_index];
+  /// @endcode
+  /// As shown in the example above, the resulting `std::vector` of body spatial
+  /// accelerations is indexed by BodyIndex, and it has size num_bodies().
+  /// BodyIndex "zero" (0) always corresponds to the world body, with zero
+  /// spatial acceleration at all times.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
+      const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
@@ -3555,6 +3592,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcForwardDynamics(const systems::Context<T>& context,
                            internal::AccelerationKinematicsCache<T>* ac) const;
 
+  // Discrete system version of CalcForwardDynamics(). This method does not use
+  // O(n) forward dynamics but the discrete TAMSI solver, for further details
+  // please refer to @ref castro_etal_2019 "[Castro et al., 2019]"
+  void CalcForwardDynamicsDiscrete(
+      const drake::systems::Context<T>& context,
+      internal::AccelerationKinematicsCache<T>* ac) const;
+
   // Eval version of the method CalcForwardDynamics().
   const internal::AccelerationKinematicsCache<T>& EvalForwardDynamics(
       const systems::Context<T>& context) const {
@@ -3702,14 +3746,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcGeneralizedAccelerations(const drake::systems::Context<T>& context,
                                     VectorX<T>* vdot) const;
 
-  // Discrete system version of CalcGeneralizedAccelerations().
-  void CalcGeneralizedAccelerationsDiscrete(
-      const drake::systems::Context<T>& context, VectorX<T>* vdot) const;
-
-  // Continuous system version of CalcGeneralizedAccelerations().
-  void CalcGeneralizedAccelerationsContinuous(
-      const drake::systems::Context<T>& context, VectorX<T>* vdot) const;
-
   // Eval() version of the method CalcGeneralizedAccelerations().
   const VectorX<T>& EvalGeneralizedAccelerations(
       const systems::Context<T>& context) const {
@@ -3787,6 +3823,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcBodyPosesOutput(
       const systems::Context<T>& context,
       std::vector<math::RigidTransform<T>>* X_WB_all) const;
+
+  // Evaluates the spatial velocity V_WB of each body in the model and copies it
+  // into V_WB_all, indexed by BodyIndex.
+  void CalcBodySpatialVelocitiesOutput(
+      const systems::Context<T>& context,
+      std::vector<SpatialVelocity<T>>* V_WB_all) const;
+
+  // Evaluates the spatial acceleration A_WB of each body in the model and
+  // copies it into A_WB_all, indexed by BodyIndex.
+  void CalcBodySpatialAccelerationsOutput(
+      const systems::Context<T>& context,
+      std::vector<SpatialAcceleration<T>>* A_WB_all) const;
 
   // Method to compute spatial contact forces for continuous plants.
   void CalcSpatialContactForcesContinuous(
@@ -4140,8 +4188,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Port for externally applied spatial forces F.
   systems::InputPortIndex applied_spatial_force_input_port_;
 
-  // Port for the pose of all bodies in the model.
+  // Ports for spatial kinematics.
   systems::OutputPortIndex body_poses_port_;
+  systems::OutputPortIndex body_spatial_velocities_port_;
+  systems::OutputPortIndex body_spatial_accelerations_port_;
 
   // A port presenting state x=[q v] for the whole system, and a vector of
   // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,
