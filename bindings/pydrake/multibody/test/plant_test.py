@@ -69,6 +69,7 @@ from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
     GeometryId,
+    GeometrySet,
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
@@ -1347,6 +1348,23 @@ class TestPlant(unittest.TestCase):
 
         publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
         self.assertIsInstance(publisher, LcmPublisherSystem)
+
+    def test_collision_filter(self):
+        builder_f = DiagramBuilder_[float]()
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
+        plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
+        parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
+
+        parser.AddModelFromFile(
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
+        plant_f.Finalize()
+
+        # Build a set with geometries from bodies 1 and 2.
+        body_a = plant_f.GetBodyByName("body1")
+        body_b = plant_f.GetBodyByName("body2")
+        geometries = plant_f.CollectRegisteredGeometries([body_a, body_b])
+        self.assertIsInstance(geometries, GeometrySet)
 
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_queries(self, T):

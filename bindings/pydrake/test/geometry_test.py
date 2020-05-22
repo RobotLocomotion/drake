@@ -446,3 +446,13 @@ class TestGeometry(unittest.TestCase):
         ]
         for i, expected in enumerate(expected_vertices):
             self.assertListEqual(list(vertices[i].r_MV()), expected)
+
+    def test_collision_filtering(self):
+        sg = mut.SceneGraph()
+        sg_context = sg.CreateDefaultContext()
+        geometries = mut.GeometrySet()
+
+        sg.ExcludeCollisionsBetween(geometries, geometries)
+        sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
+        sg.ExcludeCollisionsWithin(geometries)
+        sg.ExcludeCollisionsWithin(sg_context, geometries)

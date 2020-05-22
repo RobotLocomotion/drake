@@ -234,6 +234,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("ExcludeCollisionsBetween",
+            py::overload_cast<const GeometrySet&, const GeometrySet&>(
+                &Class::ExcludeCollisionsBetween),
+            py_reference_internal, py::arg("setA"), py::arg("setB"),
+            cls_doc.ExcludeCollisionsBetween.doc_2args)
+        .def("ExcludeCollisionsBetween",
+            overload_cast_explicit<void, Context<T>*, const GeometrySet&,
+                const GeometrySet&>(&Class::ExcludeCollisionsBetween),
+            py_reference_internal, py::arg("context"), py::arg("setA"),
+            py::arg("setB"), cls_doc.ExcludeCollisionsBetween.doc_3args)
+        .def("ExcludeCollisionsWithin",
+            py::overload_cast<const GeometrySet&>(
+                &Class::ExcludeCollisionsWithin),
+            py_reference_internal, py::arg("set"),
+            cls_doc.ExcludeCollisionsWithin.doc_1args)
+        .def("ExcludeCollisionsWithin",
+            overload_cast_explicit<void, Context<T>*, const GeometrySet&>(
+                &Class::ExcludeCollisionsWithin),
+            py_reference_internal, py::arg("context"), py::arg("set"),
+            cls_doc.ExcludeCollisionsWithin.doc_2args)
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
@@ -703,6 +723,14 @@ void DoScalarIndependentDefinitions(py::module m) {
               return ss.str();
             },
             "Returns formatted string.");
+  }
+
+  // GeometrySet
+  {
+    using Class = GeometrySet;
+    constexpr auto& cls_doc = doc.GeometrySet;
+    py::class_<Class>(m, "GeometrySet", cls_doc.doc)
+        .def(py::init(), doc.GeometrySet.ctor.doc);
   }
 
   py::class_<ProximityProperties, GeometryProperties>(

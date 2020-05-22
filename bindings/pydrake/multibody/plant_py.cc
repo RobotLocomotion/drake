@@ -675,7 +675,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_collision_geometries.doc)
         .def("default_coulomb_friction", &Class::default_coulomb_friction,
             py::arg("geometry_id"), py_reference_internal,
-            cls_doc.default_coulomb_friction.doc);
+            cls_doc.default_coulomb_friction.doc)
+        .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
+            py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
