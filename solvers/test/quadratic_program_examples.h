@@ -156,7 +156,7 @@ void TestQPonUnitBallExample(const SolverInterface& solver);
  * Test getting the dual solution for a QP problem.
  * This QP problem has active linear equality constraints.
  */
-void TestQPDualSolution1(const SolverInterface& solver);
+void TestQPDualSolution1(const SolverInterface& solver, double tol = 1e-6);
 
 /**
  * Test getting the dual solution for a QP problem.
@@ -169,6 +169,16 @@ void TestQPDualSolution2(const SolverInterface& solver);
  * This QP problem has active bounding box constraints.
  */
 void TestQPDualSolution3(const SolverInterface& solver);
+
+/**
+ * Test getting the dual solution for an equality constrained QP.
+ */
+void TestEqualityConstrainedQPDualSolution1(const SolverInterface& solver);
+
+/**
+ * Test getting the dual solution for an equality constrained QP.
+ */
+void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

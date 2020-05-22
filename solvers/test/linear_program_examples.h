@@ -205,6 +205,13 @@ class UnboundedLinearProgramTest1 : public ::testing::Test {
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
 };
+
+/**
+ * Test getting dual solution for LP.
+ * This LP has inequality constraints.
+ */
+void TestLPDualSolution1(const SolverInterface& solver, double tol = 1e-6);
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

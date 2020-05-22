@@ -131,6 +131,16 @@ GTEST_TEST(OsqpSolverTest, DualSolution3) {
   TestQPDualSolution3(solver);
 }
 
+GTEST_TEST(OsqpSolverTest, EqualityConstrainedQPDualSolution1) {
+  OsqpSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(OsqpSolverTest, EqualityConstrainedQPDualSolution2) {
+  OsqpSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
 GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();

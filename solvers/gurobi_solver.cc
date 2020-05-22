@@ -4,6 +4,8 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -82,7 +84,8 @@ void SetBoundingBoxDualSolution(
         bb_con_dual_indices,
     MathematicalProgramResult* result) {
   for (const auto& binding : prog.bounding_box_constraints()) {
-    Eigen::VectorXd dual_sol = Eigen::VectorXd::Zero(binding.evaluator()->num_vars());
+    Eigen::VectorXd dual_sol =
+        Eigen::VectorXd::Zero(binding.evaluator()->num_vars());
     std::vector<int> lower_dual_indices, upper_dual_indices;
     std::tie(lower_dual_indices, upper_dual_indices) =
         bb_con_dual_indices.at(binding);
@@ -98,6 +101,57 @@ void SetBoundingBoxDualSolution(
       }
     }
     result->set_dual_solution(binding, dual_sol);
+  }
+}
+
+void SetLinearConstraintDualSolutions(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& gurobi_dual_solutions,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_row,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : prog.linear_equality_constraints()) {
+    result->set_dual_solution(
+        binding,
+        gurobi_dual_solutions.segment(constraint_dual_start_row.at(binding),
+                                      binding.evaluator()->num_constraints()));
+  }
+
+  for (const auto& binding : prog.linear_constraints()) {
+    Eigen::VectorXd dual_solution =
+        Eigen::VectorXd::Zero(binding.evaluator()->num_constraints());
+    int gurobi_constraint_index = constraint_dual_start_row.at(binding);
+    const auto& lb = binding.evaluator()->lower_bound();
+    const auto& ub = binding.evaluator()->upper_bound();
+    for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
+      if (!std::isinf(ub(i)) || !std::isinf(lb(i))) {
+        if (!std::isinf(lb(i)) && std::isinf(ub(i))) {
+          dual_solution(i) = gurobi_dual_solutions(gurobi_constraint_index);
+          gurobi_constraint_index++;
+        } else if (!std::isinf(ub(i)) && std::isinf(lb(i))) {
+          dual_solution(i) = gurobi_dual_solutions(gurobi_constraint_index);
+          gurobi_constraint_index++;
+        } else if (!std::isinf(ub(i)) && !std::isinf(lb(i))) {
+          // When the constraint has both lower and upper bound, we know that if
+          // the lower bound is active, then the dual solution >= 0. If the
+          // upper bound is active, then the dual solution <= 0.
+          const double lower_bound_dual =
+              gurobi_dual_solutions(gurobi_constraint_index);
+          const double upper_bound_dual =
+              gurobi_dual_solutions(gurobi_constraint_index + 1);
+          // Due to small numerical error, even if the bound is not active,
+          // gurobi still reports that the dual variable has non-zero value. So
+          // we compare the absolute value of the lower and upper bound, and
+          // choose the one with the larger absolute value.
+          dual_solution(i) =
+              std::abs(lower_bound_dual) > std::abs(upper_bound_dual)
+                  ? lower_bound_dual
+                  : upper_bound_dual;
+          gurobi_constraint_index += 2;
+        }
+      }
+    }
+    result->set_dual_solution(binding, dual_solution);
   }
 }
 
@@ -238,7 +292,8 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
                         const Eigen::MatrixBase<DerivedLB>& lb,
                         const Eigen::MatrixBase<DerivedUB>& ub,
                         const Eigen::Ref<const VectorXDecisionVariable>& vars,
-                        bool is_equality, double sparseness_threshold) {
+                        bool is_equality, double sparseness_threshold,
+                        int* num_gurobi_linear_constraints) {
   for (int i = 0; i < A.rows(); i++) {
     int nonzero_coeff_count = 0;
     std::vector<int> nonzero_var_index(A.cols(), 0);
@@ -257,6 +312,7 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
       // Adds equality constraint.
       error = GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],
                            &nonzero_coeff[0], GRB_EQUAL, lb(i), nullptr);
+      (*num_gurobi_linear_constraints)++;
       DRAKE_ASSERT(!error);
       if (error) return error;
     } else {
@@ -267,6 +323,7 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
                                &nonzero_var_index[0], &nonzero_coeff[0],
                                GRB_GREATER_EQUAL, lb(i), nullptr);
           DRAKE_ASSERT(!error);
+          (*num_gurobi_linear_constraints)++;
           if (error) return error;
         }
         if (!std::isinf(ub(i))) {
@@ -275,6 +332,7 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
               GRBaddconstr(model, nonzero_coeff_count, &nonzero_var_index[0],
                            &nonzero_coeff[0], GRB_LESS_EQUAL, ub(i), nullptr);
           DRAKE_ASSERT(!error);
+          (*num_gurobi_linear_constraints)++;
           if (error) return error;
         }
       }
@@ -309,7 +367,7 @@ int AddSecondOrderConeConstraints(
     const std::vector<Binding<C>>& second_order_cone_constraints,
     double sparseness_threshold,
     const std::vector<std::vector<int>>& second_order_cone_new_variable_indices,
-    GRBmodel* model) {
+    GRBmodel* model, int* num_gurobi_linear_constraints) {
   static_assert(
       std::is_same<C, LorentzConeConstraint>::value ||
           std::is_same<C, RotatedLorentzConeConstraint>::value,
@@ -381,6 +439,7 @@ int AddSecondOrderConeConstraints(
                               M_ind.data(), M_val.data(), sense.data(),
                               const_cast<double*>(b.data()), nullptr);
     DRAKE_ASSERT(!error);
+    *num_gurobi_linear_constraints += num_z;
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
@@ -558,16 +617,19 @@ int AddCosts(GRBmodel* model, double* pconstant_cost,
 
 // Add both LinearConstraints and LinearEqualityConstraints to gurobi
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-int ProcessLinearConstraints(GRBmodel* model, const MathematicalProgram& prog,
-                             double sparseness_threshold) {
-  // TODO(naveenoid) : needs test coverage.
+int ProcessLinearConstraints(
+    GRBmodel* model, const MathematicalProgram& prog,
+    double sparseness_threshold, int* num_gurobi_linear_constraints,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_row) {
   for (const auto& binding : prog.linear_equality_constraints()) {
     const auto& constraint = binding.evaluator();
+
+    constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
 
     const int error = AddLinearConstraint(
         prog, model, constraint->A(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), true,
-        sparseness_threshold);
+        sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
       return error;
     }
@@ -576,10 +638,12 @@ int ProcessLinearConstraints(GRBmodel* model, const MathematicalProgram& prog,
   for (const auto& binding : prog.linear_constraints()) {
     const auto& constraint = binding.evaluator();
 
+    constraint_dual_start_row->emplace(binding, *num_gurobi_linear_constraints);
+
     const int error = AddLinearConstraint(
         prog, model, constraint->A(), constraint->lower_bound(),
         constraint->upper_bound(), binding.variables(), false,
-        sparseness_threshold);
+        sparseness_threshold, num_gurobi_linear_constraints);
     if (error) {
       return error;
     }
@@ -776,8 +840,6 @@ void GurobiSolver::DoSolve(
     const Eigen::VectorXd& lower_bound = constraint->lower_bound();
     const Eigen::VectorXd& upper_bound = constraint->upper_bound();
 
-    std::vector<int> upper_dual_indices(constraint->num_vars(), -1);
-    std::vector<int> lower_dual_indices(constraint->num_vars(), -1);
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       const int idx = prog.FindDecisionVariableIndex(binding.variables()(k));
       xlow[idx] = std::max(lower_bound(k), xlow[idx]);
@@ -790,7 +852,9 @@ void GurobiSolver::DoSolve(
   // box constraint; upper_dual_indices are the indices of the dual variables
   // associated with the upper bound side (x <= upper) of the bounding box
   // constraint. If the index is -1, then it means there is not an associated
-  // dual variable.
+  // dual variable (because that row in the bounding box constraint can never
+  // be active, as there are other bounding box constraint that imposes tighter
+  // bounds on that variable).
   std::unordered_map<Binding<BoundingBoxConstraint>,
                      std::pair<std::vector<int>, std::vector<int>>>
       bb_con_dual_indices;
@@ -854,22 +918,27 @@ void GurobiSolver::DoSolve(
     error = AddCosts(model, &constant_cost, prog, sparseness_threshold);
   }
 
+  int num_gurobi_linear_constraints = 0;
   if (!error) {
-    error = ProcessLinearConstraints(model, prog, sparseness_threshold);
+    error = ProcessLinearConstraints(model, prog, sparseness_threshold,
+                                     &num_gurobi_linear_constraints,
+                                     &constraint_dual_start_row);
   }
 
   // Add Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
         prog, prog.lorentz_cone_constraints(), sparseness_threshold,
-        lorentz_cone_new_variable_indices, model);
+        lorentz_cone_new_variable_indices, model,
+        &num_gurobi_linear_constraints);
   }
 
   // Add rotated Lorentz cone constraints.
   if (!error) {
     error = AddSecondOrderConeConstraints(
         prog, prog.rotated_lorentz_cone_constraints(), sparseness_threshold,
-        rotated_lorentz_cone_new_variable_indices, model);
+        rotated_lorentz_cone_new_variable_indices, model,
+        &num_gurobi_linear_constraints);
   }
 
   DRAKE_ASSERT(HasCorrectNumberOfVariables(model, is_new_variable.size()));
@@ -907,6 +976,12 @@ void GurobiSolver::DoSolve(
   }
 
   GRBupdatemodel(model);
+
+  int num_gurobi_linear_constraints_expected;
+  GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS,
+                &num_gurobi_linear_constraints_expected);
+  DRAKE_DEMAND(num_gurobi_linear_constraints ==
+               num_gurobi_linear_constraints_expected);
 
   // If we have been supplied a callback,
   // register it with Gurobi.
@@ -987,9 +1062,24 @@ void GurobiSolver::DoSolve(
                                &prog_sol_vector);
       result->set_x_val(prog_sol_vector);
 
-      std::vector<double> reduced_cost(num_total_variables);
-      GRBgetdblattrarray(model, GRB_DBL_ATTR_RC, 0, num_total_variables, reduced_cost.data());
-      SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices, result);
+      // Set dual solutions.
+      if (!is_mip) {
+        // Gurobi only provides dual solution for continuous models.
+        // Gurobi stores its dual solution for each variable bounds in "reduced
+        // cost".
+        std::vector<double> reduced_cost(num_total_variables);
+        GRBgetdblattrarray(model, GRB_DBL_ATTR_RC, 0, num_total_variables,
+                           reduced_cost.data());
+        SetBoundingBoxDualSolution(prog, reduced_cost, bb_con_dual_indices,
+                                   result);
+      }
+
+      Eigen::VectorXd gurobi_dual_solutions(num_gurobi_linear_constraints);
+      GRBgetdblattrarray(model, GRB_DBL_ATTR_PI, 0,
+                         num_gurobi_linear_constraints,
+                         gurobi_dual_solutions.data());
+      SetLinearConstraintDualSolutions(prog, gurobi_dual_solutions,
+                                       constraint_dual_start_row, result);
 
       // Obtain optimal cost.
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();
