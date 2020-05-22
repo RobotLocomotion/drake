@@ -618,8 +618,9 @@ void ManipulationStation<T>::Finalize(
     // Approximate desired state command from a discrete derivative of the
     // position command input port.
     auto desired_state_from_position = builder.template AddSystem<
-        systems::StateInterpolatorWithDiscreteDerivative>(num_iiwa_positions,
-                                                          plant_->time_step());
+        systems::StateInterpolatorWithDiscreteDerivative>(
+            num_iiwa_positions, plant_->time_step(),
+            true /* suppress_initial_transient */);
     desired_state_from_position->set_name("desired_state_from_position");
     builder.Connect(desired_state_from_position->get_output_port(),
                     iiwa_controller->get_input_port_desired_state());
@@ -731,13 +732,6 @@ void ManipulationStation<T>::SetIiwaPosition(
   auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
   plant_->SetPositions(plant_context, &plant_state, iiwa_model_.model_instance,
                        q);
-
-  // Set the position history in the state interpolator to match.
-  const auto& state_from_position = dynamic_cast<
-      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
-      this->GetSubsystemByName("desired_state_from_position"));
-  state_from_position.set_initial_position(
-      &this->GetMutableSubsystemState(state_from_position, state), q);
 }
 
 template <typename T>
@@ -795,13 +789,6 @@ void ManipulationStation<T>::SetWsgPosition(
   const Vector2<T> positions(-q / 2, q / 2);
   plant_->SetPositions(plant_context, &plant_state, wsg_model_.model_instance,
                        positions);
-
-  // Set the position history in the state interpolator to match.
-  const auto& wsg_controller = dynamic_cast<
-      const manipulation::schunk_wsg::SchunkWsgPositionController&>(
-      this->GetSubsystemByName("wsg_controller"));
-  wsg_controller.set_initial_position(
-      &this->GetMutableSubsystemState(wsg_controller, state), q);
 }
 
 template <typename T>

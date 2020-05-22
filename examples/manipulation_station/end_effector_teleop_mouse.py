@@ -352,7 +352,14 @@ def main():
     station.GetInputPort("iiwa_feedforward_torque").FixValue(
         station_context, np.zeros(7))
 
-    simulator.AdvanceTo(1e-6)
+    # If the diagram is only the hardware interface, then we must advance it a
+    # little bit so that first LCM messages get processed. A simulated plant is
+    # already publishing correct positions even without advancing, and indeed
+    # we must not advance a simulated plant until the sliders and filters have
+    # been initialized to match the plant.
+    if args.hardware:
+        simulator.AdvanceTo(1e-6)
+
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
     differential_ik.parameters.set_nominal_joint_position(q0)
 
