@@ -672,12 +672,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
             py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
         .def("num_collision_geometries", &Class::num_collision_geometries,
-            cls_doc.num_collision_geometries.doc)
+            cls_doc.num_collision_geometries.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        .def("default_coulomb_friction", &Class::default_coulomb_friction,
-            py::arg("geometry_id"), py_reference_internal,
-            cls_doc.default_coulomb_friction.doc_deprecated);
+    cls.def("default_coulomb_friction", &Class::default_coulomb_friction,
+        py::arg("geometry_id"), py_reference_internal,
+        cls_doc.default_coulomb_friction.doc_deprecated);
 #pragma GCC diagnostic pop
     DeprecateAttribute(cls, "default_coulomb_friction",
         cls_doc.default_coulomb_friction.doc_deprecated);
