@@ -73,12 +73,14 @@ void SetProgramSolutionVector(const std::vector<bool>& is_new_variable,
   }
 }
 
-/**
- * @param reduced_cost Gurobi stores the dual variable for each of its decision
- * variable bound in "reduced cost".
- */
+//  @param gurobi_dual_solutions Gurobi stores the dual variable for each of its
+//  decision variable bound called "reduced cost". This vector stores all the
+//  reduced cost.
+//  @param bb_con_dual_indices Maps each bounding box constraint to the indices
+//  of its dual variables for both lower and upper bounds.
 void SetBoundingBoxDualSolution(
-    const MathematicalProgram& prog, const std::vector<double>& reduced_cost,
+    const MathematicalProgram& prog,
+    const std::vector<double>& gurobi_dual_solutions,
     const std::unordered_map<Binding<BoundingBoxConstraint>,
                              std::pair<std::vector<int>, std::vector<int>>>&
         bb_con_dual_indices,
@@ -91,13 +93,13 @@ void SetBoundingBoxDualSolution(
         bb_con_dual_indices.at(binding);
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
       if (lower_dual_indices[i] != -1 &&
-          reduced_cost[lower_dual_indices[i]] >= 0) {
+          gurobi_dual_solutions[lower_dual_indices[i]] >= 0) {
         // This lower bound is active since the reduced cost is non-negative.
-        dual_sol(i) = reduced_cost[lower_dual_indices[i]];
+        dual_sol(i) = gurobi_dual_solutions[lower_dual_indices[i]];
       } else if (upper_dual_indices[i] != -1 &&
-                 reduced_cost[upper_dual_indices[i]] <= 0) {
+                 gurobi_dual_solutions[upper_dual_indices[i]] <= 0) {
         // This upper bound is active since the reduced cost is non-positive.
-        dual_sol(i) = reduced_cost[upper_dual_indices[i]];
+        dual_sol(i) = gurobi_dual_solutions[upper_dual_indices[i]];
       }
     }
     result->set_dual_solution(binding, dual_sol);
