@@ -446,7 +446,7 @@ class TestGeneral(unittest.TestCase):
 
         # Test __str__ methods.
         self.assertRegex(str(context), "integrator")
-        self.assertEqual(str(input2), "0.003 0.004 0.005")
+        self.assertEqual(str(input2), "[0.003, 0.004, 0.005]")
 
         # Initialize integrator states.
         integrator_xc = (
