@@ -328,7 +328,7 @@ class SpinningRodTest : public ::testing::Test {
     const SpatialInertia<double> M_BBo_B(
         kMass, Vector3d::Zero(),
         UnitInertia<double>::ThinRod(kLength, Vector3d::UnitZ()));
-    const RigidBody<double>& rod = plant_->AddRigidBody("rod", M_BBo_B);
+    rod_ = &plant_->AddRigidBody("rod", M_BBo_B);
 
     // Notice that axis Bz is aligned with the rod. We want to define frame Jb
     // on body B at the attachment point to have its z axis aligned with the
@@ -337,7 +337,7 @@ class SpinningRodTest : public ::testing::Test {
     const RigidTransformd X_BJb(RollPitchYawd(M_PI_2, 0.0, 0.0),
                                 Vector3d(0.0, 0.0, -kLength / 2.0));
     pin_ = &plant_->AddJoint<RevoluteJoint>("pin", plant_->world_body(), {},
-                                            rod, X_BJb, Vector3d::UnitZ());
+                                            *rod_, X_BJb, Vector3d::UnitZ());
 
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
@@ -353,6 +353,29 @@ class SpinningRodTest : public ::testing::Test {
 
   void VerifyJointReactionForces() {
     const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+
+    // Evaluate the spatial acceleration of the rod.
+    const auto& A_WB_all =
+        plant_->get_body_spatial_accelerations_output_port()
+            .Eval<std::vector<SpatialAcceleration<double>>>(*context_);
+    const SpatialAcceleration<double>& A_WRod = A_WB_all[rod_->index()];
+
+    // Bz is the unit vector along the rod's length.
+    const Vector3d Bz_W =
+        rod_->EvalPoseInWorld(*context_).rotation().matrix().col(2);
+
+    // There is no damping, therefore we expect the angular acceleration to be
+    // zero.
+    const Vector3d alpha_WB = Vector3d::Zero();
+
+    // And the translational acceleration to contain the centrifugal
+    // acceleration.
+    const Vector3d a_WB = -Bz_W * kLength / 2.0 * kOmega * kOmega;
+
+    // Verify the result.
+    EXPECT_TRUE(CompareMatrices(A_WRod.rotational(), alpha_WB, kTolerance));
+    EXPECT_TRUE(CompareMatrices(A_WRod.translational(), a_WB, kTolerance));
+
     // Evaluate reaction force at the pin.
     const auto& reaction_forces =
         plant_->get_reaction_forces_output_port()
@@ -381,6 +404,7 @@ class SpinningRodTest : public ::testing::Test {
   const double kOmega{5.0};     // [rad/s]
 
   std::unique_ptr<MultibodyPlant<double>> plant_;
+  const RigidBody<double>* rod_{nullptr};
   const RevoluteJoint<double>* pin_{nullptr};
   std::unique_ptr<Context<double>> context_;
 };
