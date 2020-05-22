@@ -636,6 +636,8 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_model_instance_port_access(self, T):
+        # N.B. We actually test the values because some of the value bindings
+        # are somewhat special snowflakes.
         MultibodyPlant = MultibodyPlant_[T]
         InputPort = InputPort_[T]
         OutputPort = OutputPort_[T]
@@ -659,25 +661,51 @@ class TestPlant(unittest.TestCase):
             file_name=wsg50_sdf_path, model_name='gripper')
         plant_f.Finalize()
         plant = to_type(plant_f, T)
+        models = [iiwa_model, gripper_model]
 
-        # Test that we can get the input and output ports.
-        self.assertIsInstance(
-            plant.get_actuation_input_port(iiwa_model), InputPort)
-        self.assertIsInstance(
-            plant.get_state_output_port(gripper_model), OutputPort)
-        self.assertIsInstance(
-            plant.get_generalized_acceleration_output_port(
-                model_instance=gripper_model),
-            OutputPort)
-        self.assertIsInstance(
-            plant.get_generalized_contact_forces_output_port(
-                model_instance=gripper_model),
-            OutputPort)
-        self.assertIsInstance(plant.get_body_poses_output_port(), OutputPort)
-        self.assertIsInstance(
-            plant.get_body_spatial_velocities_output_port(), OutputPort)
-        self.assertIsInstance(
-            plant.get_body_spatial_accelerations_output_port(), OutputPort)
+        # Fix inputs.
+        context = plant.CreateDefaultContext()
+        for model in models:
+            nu = plant.num_actuated_dofs(model)
+            plant.get_actuation_input_port(model_instance=model).FixValue(
+                context, np.zeros(nu))
+
+        # Evaluate outputs.
+        for model in models:
+            self.assertIsInstance(
+                plant.get_state_output_port(
+                    model_instance=model).Eval(context),
+                np.ndarray)
+            if T == Expression:
+                continue
+            self.assertIsInstance(
+                plant.get_generalized_acceleration_output_port(
+                    model_instance=model).Eval(context),
+                np.ndarray)
+            self.assertIsInstance(
+                plant.get_generalized_contact_forces_output_port(
+                    model_instance=model).Eval(context),
+                np.ndarray)
+
+        def check_output_port_that_cannot_be_used_in_python(port):
+            self.assertIsInstance(port, OutputPort)
+            if T == Expression:
+                return
+            with self.assertRaises(RuntimeError) as cm:
+                port.Eval(context)
+            self.assertIn("`get_value` cannot be called", str(cm.exception))
+
+        # TODO(eric.cousineau): Make `Value[List[T]]` work so we can test Eval
+        # for these items (#13387). Currently, these ports cannot be used for
+        # Python systems.
+        check_output_port_that_cannot_be_used_in_python(
+            plant.get_body_poses_output_port())
+        check_output_port_that_cannot_be_used_in_python(
+            plant.get_body_spatial_velocities_output_port())
+        check_output_port_that_cannot_be_used_in_python(
+            plant.get_body_spatial_accelerations_output_port())
+        # TODO(eric.cousineau): Merge `check_applied_force_input_ports` into
+        # this test.
 
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):

@@ -686,7 +686,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<const systems::InputPort<T>&,
                 multibody::ModelInstanceIndex>(
                 &Class::get_actuation_input_port),
-            py_reference_internal, cls_doc.get_actuation_input_port.doc_1args)
+            py::arg("model_instance"), py_reference_internal,
+            cls_doc.get_actuation_input_port.doc_1args)
         .def("get_applied_generalized_force_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_applied_generalized_force_input_port),
@@ -718,7 +719,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 multibody::ModelInstanceIndex>(&Class::get_state_output_port),
-            py_reference_internal, cls_doc.get_state_output_port.doc_1args)
+            py::arg("model_instance"), py_reference_internal,
+            cls_doc.get_state_output_port.doc_1args)
         .def("get_generalized_acceleration_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_generalized_acceleration_output_port),
