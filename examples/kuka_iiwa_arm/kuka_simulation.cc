@@ -115,7 +115,8 @@ int DoMain() {
   plant_state_demux->set_name("plant_state_demux");
   auto desired_state_from_position = builder.AddSystem<
       StateInterpolatorWithDiscreteDerivative>(
-          num_joints, kIiwaLcmStatusPeriod);
+          num_joints, kIiwaLcmStatusPeriod,
+          true /* suppress_initial_transient */);
   desired_state_from_position->set_name("desired_state_from_position");
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
@@ -125,7 +126,9 @@ int DoMain() {
   status_sender->set_name("status_sender");
 
   builder.Connect(command_sub->get_output_port(),
-                  command_receiver->get_input_port());
+                  command_receiver->get_message_input_port());
+  builder.Connect(plant_state_demux->get_output_port(0),
+                  command_receiver->get_position_measured_input_port());
   builder.Connect(command_receiver->get_commanded_position_output_port(),
                   desired_state_from_position->get_input_port());
   builder.Connect(desired_state_from_position->get_output_port(),
@@ -169,11 +172,6 @@ int DoMain() {
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-
-  command_receiver->set_initial_position(
-      &sys->GetMutableSubsystemContext(*command_receiver,
-                                       &simulator.get_mutable_context()),
-      VectorX<double>::Zero(plant.num_positions()));
 
   // Simulate for a very long time.
   simulator.AdvanceTo(FLAGS_simulation_sec);
