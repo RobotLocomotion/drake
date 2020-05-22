@@ -674,6 +674,10 @@ class TestPlant(unittest.TestCase):
                 model_instance=gripper_model),
             OutputPort)
         self.assertIsInstance(plant.get_body_poses_output_port(), OutputPort)
+        self.assertIsInstance(
+            plant.get_body_spatial_velocities_output_port(), OutputPort)
+        self.assertIsInstance(
+            plant.get_body_spatial_accelerations_output_port(), OutputPort)
 
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):
