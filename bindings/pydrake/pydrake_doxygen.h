@@ -1,5 +1,6 @@
 /// @file
-/// Generic doxygen-only documentation.
+/// Doxygen-only documentation for the development of Python bindings.
+/// @sa @ref python_bindings
 
 /** @defgroup python_bindings Python Bindings
 @ingroup technical_notes
@@ -273,6 +274,27 @@ generated documentation.
 @c \@pydrake_mkdoc_identifier{foobar} to the Doxygen comment.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
+
+@anchor PydrakeDeprecation
+## Deprecation
+
+All deprecations in Drake should using the
+[Python `warnings` module](https://docs.python.org/3.6/library/warnings.html),
+and should use the
+[`DrakeDeprecationWarning`](https://drake.mit.edu/pydrake/pydrake.common.deprecation.html#pydrake.common.deprecation.DrakeDeprecationWarning)
+class.
+
+Decorators and utilites for deprecation in pure Python are available in
+[`pydrake.common.deprecation`](https://drake.mit.edu/pydrake/pydrake.common.deprecation.html).
+
+Deprecations in for Python bindings in C++ are available in
+[`drake/bindings/pydrake/common/deprecation_pybind.h`](https://drake.mit.edu/doxygen_cxx/deprecation__pybind_8h.html).
+
+For examples of how to use the deprecations and what side effects they will
+have, please see:
+
+- [`drake/bindings/.../deprecation_example/`](https://github.com/RobotLocomotion/drake/tree/master/bindings/pydrake/common/test/deprecation_example)
+- [`drake/bindings/.../deprecation_test.py`](https://github.com/RobotLocomotion/drake/blob/master/bindings/pydrake/common/test/deprecation_test.py)
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior
