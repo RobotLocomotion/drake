@@ -371,5 +371,5 @@ def main():
     simulator.AdvanceTo(args.duration)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
