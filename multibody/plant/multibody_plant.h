@@ -3364,7 +3364,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the model used for contact. See documentation for ContactModel.
   ContactModel get_contact_model() const;
 
-#ifndef DRAKE_DOXYGEN_CXX
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
   /// note that we mean user-supplied per-geometry default, not something more
@@ -3372,6 +3371,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
+  DRAKE_DEPRECATED(
+      "2020-09-01",
+      "default_coulomb_friction() will be removed. Please use SceneGraph which "
+      "now stores friction properties in ProximityProperties")
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
     // TODO(amcastro-tri): This API might change or disappear completely as GS
@@ -3380,7 +3383,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const int collision_index = geometry_id_to_collision_index_.at(id);
     return default_coulomb_friction_[collision_index];
   }
-#endif
 
   /// Returns the number of geometries registered for visualization.
   /// This method can be called at any time during the lifetime of `this` plant,
