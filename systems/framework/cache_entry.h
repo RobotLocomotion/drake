@@ -56,6 +56,8 @@ class CacheEntry {
   cache entry, given a place to put the value. */
   using CalcCallback = std::function<void(const ContextBase&, AbstractValue*)>;
 
+  // All the nontrivial parameters here are moved to the CacheEntry which is
+  // why they aren't references.
   /** (Advanced) Constructs a cache entry within a System and specifies the
   resources it needs.
 
@@ -83,8 +85,6 @@ class CacheEntry {
   @throws std::logic_error if the prerequisite list is empty.
 
   @see drake::systems::SystemBase::DeclareCacheEntry() */
-  // All the nontrivial parameters here are moved to the CacheEntry which is
-  // why they aren't references.
   CacheEntry(const internal::SystemMessageInterface* owning_system,
              CacheIndex index, DependencyTicket ticket, std::string description,
              AllocCallback alloc_function, CalcCallback calc_function,
@@ -283,6 +283,24 @@ class CacheEntry {
   that manages dependencies at runtime for the associated CacheEntryValue in
   a Context. */
   DependencyTicket ticket() const { return ticket_; }
+
+  /** (Advanced) Returns `true` if this cache entry was created without
+  specifying any prerequisites. This can be useful in determining whether
+  the apparent dependencies should be believed, or whether they may just be
+  due to some user's ignorance.
+  @note Currently we can't distinguish between "no prerequisites given"
+  (in which case we default to `all_sources_ticket()`) and "prerequisite
+  specified as `all_sources_ticket()`". Either of those cases makes this
+  method return `true` now, but we intend to change so that _explicit_
+  specification of `all_sources_ticket()` will be considered non-default. So
+  don't depend on the current behavior. */
+  bool has_default_prerequisites() const {
+    // TODO(sherm1) Make this bulletproof with a way to distinguish
+    // "took the default" from "specified the default value".
+    return prerequisites_of_calc_.size() == 1 &&
+           *prerequisites_of_calc_.begin() ==
+               DependencyTicket(internal::kAllSourcesTicket);
+  }
 
  private:
   // Unconditionally update the cache value, which has already been determined
