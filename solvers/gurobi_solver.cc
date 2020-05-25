@@ -73,9 +73,9 @@ void SetProgramSolutionVector(const std::vector<bool>& is_new_variable,
   }
 }
 
-//  @param gurobi_dual_solutions Gurobi stores the dual variable for each of its
-//  decision variable bound called "reduced cost". This vector stores all the
-//  reduced cost.
+//  @param gurobi_dual_solutions gurobi_dual_solutions(i) is the dual solution
+//  for the variable bound lower <= gurobi_var(i) <= upper. This is extracted
+//  from "RC" (stands for reduced cost) field from gurobi model.
 //  @param bb_con_dual_indices Maps each bounding box constraint to the indices
 //  of its dual variables for both lower and upper bounds.
 void SetBoundingBoxDualSolution(
@@ -106,6 +106,15 @@ void SetBoundingBoxDualSolution(
   }
 }
 
+/**
+ * Set the dual solution for each linear inequality and equality constraint.
+ * @param gurobi_dual_solutions The dual solutions for each linear
+ * inequality/equality constraint. This is extracted from "Pi" field from gurobi
+ * model.
+ * @param constraint_dual_start_row constraint_dual_start_row[constraint] maps
+ * the linear inequality/equality constraint to the starting index of the
+ * corresponding dual variable.
+ */
 void SetLinearConstraintDualSolutions(
     const MathematicalProgram& prog,
     const Eigen::VectorXd& gurobi_dual_solutions,
@@ -775,6 +784,8 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
   return GetScopedSingleton<GurobiSolver::License>();
 }
 
+// TODO(hongkai.dai@tri.global): break this large DoSolve function to smaller
+// ones.
 void GurobiSolver::DoSolve(
     const MathematicalProgram& prog,
     const Eigen::VectorXd& initial_guess,
