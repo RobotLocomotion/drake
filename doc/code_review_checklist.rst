@@ -26,6 +26,10 @@ Is the code the minimal set of what you want?
   - If you are modifying an API, consider deprecating the old interface instead
     of migrating all call sites immediately.
 
+    - For deprecation, please see
+      `DRAKE_DEPRECATED <https://drake.mit.edu/doxygen_cxx/drake__deprecated_8h.html>`_ for C++
+      and `pydrake deprecation <https://drake.mit.edu/doxygen_cxx/group__python__bindings.html#PydrakeDeprecation>`_ for Python.
+
   - If you are introducing a new feature, consider adding only test cases
     now, and deferring the first application use to a follow-up PR.
 
