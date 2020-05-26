@@ -382,6 +382,12 @@ ProximityProperties MakeProximityPropertiesForCollision(
 
   geometry::ProximityProperties properties;
   if (drake_element != nullptr) {
+#pragma GCC diagnostic push
+// Ignore false-positive -Wmaybe-uninitialized diagnostic related to
+// std::optional when compiling with GCC 8 and above.
+#if __GNUC__ > 7
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
       if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
@@ -390,6 +396,7 @@ ProximityProperties MakeProximityPropertiesForCollision(
       }
       return {};
     };
+#pragma GCC diagnostic pop
 
     const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
     const bool is_soft = drake_element->HasElement("drake:soft_hydroelastic");

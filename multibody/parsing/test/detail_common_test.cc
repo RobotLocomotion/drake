@@ -30,10 +30,17 @@ optional<double> empty_read_double(const char*) { return {}; }
 // expect for the given name (which returns the given value).
 ReadDoubleFunc param_read_double(
     const std::string& tag, double value) {
+#pragma GCC diagnostic push
+// Ignore false-positive -Wmaybe-uninitialized diagnostic related to
+// std::optional when compiling with GCC 8 and above.
+#if __GNUC__ > 7
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
   return [&tag, value](const char* name) -> optional<double> {
     if (tag == name) return value;
     return {};
   };
+#pragma GCC diagnostic pop
 }
 
 // Tests for a particular value in the given properties.
@@ -178,6 +185,12 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
   // covered in the NoProperties test.
   auto friction_read_double = [](optional<double> mu_d,
       optional<double> mu_s) -> ReadDoubleFunc {
+#pragma GCC diagnostic push
+// Ignore false-positive -Wmaybe-uninitialized diagnostic related to
+// std::optional when compiling with GCC 8 and above.
+#if __GNUC__ > 7
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     return [mu_d, mu_s](const char* name) -> optional<double> {
       if (mu_d.has_value() && std::string("drake:mu_dynamic") == name) {
         return *mu_d;
@@ -186,6 +199,7 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
       }
       return {};
     };
+#pragma GCC diagnostic pop
   };
 
   auto expect_friction =

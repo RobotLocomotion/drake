@@ -521,6 +521,12 @@ geometry::GeometryInstance ParseCollision(
   const XMLElement* drake_element =
       node->FirstChildElement("drake:proximity_properties");
   if (drake_element) {
+#pragma GCC diagnostic push
+// Ignore false-positive -Wmaybe-uninitialized diagnostic related to
+// std::optional when compiling with GCC 8 and above.
+#if __GNUC__ > 7
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
       const XMLElement* value_node =
@@ -538,6 +544,7 @@ geometry::GeometryInstance ParseCollision(
       }
       return {};
     };
+#pragma GCC diagnostic pop
 
     const XMLElement* const rigid_element =
         drake_element->FirstChildElement("drake:rigid_hydroelastic");
