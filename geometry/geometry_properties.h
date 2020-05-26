@@ -5,8 +5,8 @@
 #include <string>
 #include <unordered_map>
 
-#include <Eigen/Dense>
 #include "fmt/ostream.h"
+#include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
@@ -263,7 +263,7 @@ class GeometryProperties {
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    AddPropertyAbstract(group_name, name, Value(MaybeConvertInput(value)));
+    AddPropertyAbstract(group_name, name, AbstractValue::MakeDirect(value));
   }
 
   /** Adds a property with the given `name` and type-erased `value` to the the
@@ -406,58 +406,22 @@ class GeometryProperties {
       const std::string& group_name, const std::string& name,
       bool throw_for_bad_group) const;
 
-  // Simplify the Eigen type: discard all attributes, only keep dimension and
-  // scalar type, and ensure it's dynamically-sized.
-  template <typename Derived>
-  static auto SimplifyEigenType(const Derived& value) {
-    using Scalar = typename Derived::Scalar;
-    if constexpr (Derived::ColsAtCompileTime == 1) {
-      return VectorX<Scalar>(value);
-    } else {
-      return MatrixX<Scalar>(value);
-    }
-  }
-
-  // Ensure that all Eigen types are simplified for Python.
-  template <typename ValueType>
-  static auto MaybeConvertInput(ValueType value) {
-    if constexpr (is_eigen_type<ValueType>::value) {
-      return SimplifyEigenType(value);
-    } else {
-      return value;
-    }
-  }
-
-  template <typename ValueType>
-  using resolve_internal_type =
-      decltype(MaybeConvertInput(std::declval<ValueType>()));
-
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
   static const auto& GetValueOrThrow(
       const std::string& method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract) {
-    using InternalType = resolve_internal_type<ValueType>;
-    const InternalType* value = abstract.maybe_get_value<InternalType>();
+    using T = AbstractValue::resolve_value_type_t<ValueType>;
+    const T* value = abstract.maybe_get_value<T>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property '{}' in group '{}' exists, "
           "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, NiceTypeName::Get<InternalType>(),
+          method, name, group_name, NiceTypeName::Get<T>(),
           abstract.GetNiceTypeName()));
     }
-    if constexpr (!std::is_same<ValueType, InternalType>::value) {
-      // N.B. This only occurs with Eigen types.
-      // Normally, Eigen size checks are only performed for debug builds. We
-      // instead force these to happen in release mode too.
-      if constexpr (ValueType::ColsAtCompileTime != Eigen::Dynamic) {
-        DRAKE_THROW_UNLESS(value->cols() == ValueType::ColsAtCompileTime);
-      }
-      if constexpr (ValueType::RowsAtCompileTime != Eigen::Dynamic) {
-        DRAKE_THROW_UNLESS(value->rows() == ValueType::RowsAtCompileTime);
-      }
-    }
+    AbstractValue::AssertValueIsConvertible<ValueType>(*value);
     return *value;
   }
 

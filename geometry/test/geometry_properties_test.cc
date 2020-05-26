@@ -424,8 +424,8 @@ GTEST_TEST(GeometryProperties, EigenVector4d) {
 
   const auto& fixed_abstract =
       properties.GetPropertyAbstract(group_name, fixed_name);
-  EXPECT_EQ(fixed_abstract.maybe_get_value<Vector4d>(), nullptr);
   EXPECT_NE(fixed_abstract.maybe_get_value<VectorXd>(), nullptr);
+  // fixed_abstract.maybe_get_value<Vector4d>();  // Triggers static assertion.
 
   properties.AddProperty(group_name, real_name, real_value);
   EXPECT_EQ(
@@ -436,7 +436,6 @@ GTEST_TEST(GeometryProperties, EigenVector4d) {
       properties.GetProperty<VectorXd>(group_name, real_name));
   const auto& real_abstract =
       properties.GetPropertyAbstract(group_name, real_name);
-  EXPECT_EQ(real_abstract.maybe_get_value<Vector4d>(), nullptr);
   EXPECT_NE(real_abstract.maybe_get_value<VectorXd>(), nullptr);
 }
 
@@ -463,7 +462,7 @@ GTEST_TEST(GeometryProperties, EigenMatrix4d) {
 
   const auto& fixed_abstract =
       properties.GetPropertyAbstract(group_name, fixed_name);
-  EXPECT_EQ(fixed_abstract.maybe_get_value<Matrix4d>(), nullptr);
+  // fixed_abstract.maybe_get_value<Matrix4d>();  // Triggers static assertion.
   EXPECT_NE(fixed_abstract.maybe_get_value<MatrixXd>(), nullptr);
 
   properties.AddProperty(group_name, real_name, real_value);
@@ -475,7 +474,6 @@ GTEST_TEST(GeometryProperties, EigenMatrix4d) {
       properties.GetProperty<MatrixXd>(group_name, real_name));
   const auto& real_abstract =
       properties.GetPropertyAbstract(group_name, real_name);
-  EXPECT_EQ(real_abstract.maybe_get_value<Matrix4d>(), nullptr);
   EXPECT_NE(real_abstract.maybe_get_value<MatrixXd>(), nullptr);
 }
 
