@@ -11,17 +11,17 @@ load(
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
+package(default_visibility = ["//visibility:public"])
+
 exports_files(
     # To be consumed by `//tools:drake_visualizer_py`.
     ["drake_visualizer_bazel.py"],
-    visibility = ["//tools:__pkg__"],
 )
 
 # TODO(eric.cousineau): Merge this with `drake_visualizer_py` once it moves
 # from `//tools` to here.
 py_library(
     name = "builtin_scripts_py",
-    visibility = ["//tools:__pkg__"],
     deps = [
         "//tools/workspace/drake_visualizer/_drake_visualizer_builtin_scripts",
     ],
@@ -37,7 +37,6 @@ py_library(
 py_library(
     name = "stub_pydrake",
     srcs = ["stub/pydrake/__init__.py"],
-    visibility = ["//tools:__pkg__"],
 )
 
 # TODO(eric.cousineau): Use something simpler than cmake_configure_file to do
