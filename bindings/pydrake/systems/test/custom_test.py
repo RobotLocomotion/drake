@@ -179,6 +179,7 @@ class TestCustom(unittest.TestCase):
                 LeafSystem.accuracy_ticket,
                 LeafSystem.all_input_ports_ticket,
                 LeafSystem.all_parameters_ticket,
+                LeafSystem.all_sources_except_input_ports_ticket,
                 LeafSystem.all_sources_ticket,
                 LeafSystem.all_state_ticket,
                 LeafSystem.configuration_ticket,

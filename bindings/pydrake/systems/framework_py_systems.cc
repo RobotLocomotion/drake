@@ -703,10 +703,15 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
+    // TODO(eric.cousineau): Bind remaining methods.
     py::class_<Class>(m, "SystemBase", cls_doc.doc)
+        .def("GetSystemName", &Class::GetSystemName, cls_doc.GetSystemName.doc)
+        .def("GetSystemPathname", &Class::GetSystemPathname,
+            cls_doc.GetSystemPathname.doc)
         .def("GetSystemType", &Class::GetSystemType, cls_doc.GetSystemType.doc)
         .def("get_name", &Class::get_name, cls_doc.get_name.doc)
-        .def("set_name", &Class::set_name, cls_doc.set_name.doc)
+        .def(
+            "set_name", &Class::set_name, py::arg("name"), cls_doc.set_name.doc)
         // Topology.
         .def("num_input_ports", &Class::num_input_ports,
             cls_doc.num_input_ports.doc)
@@ -725,6 +730,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.all_input_ports_ticket.doc)
         .def_static("all_parameters_ticket", &Class::all_parameters_ticket,
             cls_doc.all_parameters_ticket.doc)
+        .def_static("all_sources_except_input_ports_ticket",
+            &Class::all_sources_except_input_ports_ticket,
+            cls_doc.all_sources_except_input_ports_ticket.doc)
         .def_static("all_sources_ticket", &Class::all_sources_ticket,
             cls_doc.all_sources_ticket.doc)
         .def_static("all_state_ticket", &Class::all_state_ticket,
