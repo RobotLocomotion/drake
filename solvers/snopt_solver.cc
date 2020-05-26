@@ -194,6 +194,11 @@ struct SnoptImpl<false> {
       Int* iw, int leniw, double* rw, int lenrw) {
     ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
   }
+  template <typename Int>
+  static void snset(const char* buffer, int len, int* errors,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    ::f_snset(buffer, &len, errors, iw, &leniw, rw, &lenrw);
+  }
 };
 
 // Choose the correct SnoptImpl specialization.
@@ -1022,7 +1027,6 @@ void SolveWithGivenOptions(
         option_string.c_str(), option_string.length(), &errors,
         storage.iw(), storage.leniw(),
         storage.rw(), storage.lenrw());
-    }
   }
 
   int Cold = 0;
