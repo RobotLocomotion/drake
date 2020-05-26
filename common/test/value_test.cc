@@ -350,6 +350,17 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
   EXPECT_EQ("5,6", printable_erased->print());
 }
 
+// Tests const, volatile, and reference types.
+GTEST_TEST(ValueTest, AllowedTypesMetaTest) {
+  using T = int;
+  Value<T>{};
+  // - cvref
+  // Value<const T>{};  // Triggers static assertion; fails without assertion.
+  // Value<volatile T>{};  // Trigger static assertion; works without assertion.
+  // Value<const T&>{};  // Triggers static assertion; fails without assertion.
+  // Value<T&&>{};  // Triggers static assertion; fails without assertion.
+}
+
 // Check that TypeHash is extracting exactly the right strings from
 // __PRETTY_FUNCTION__.
 template <typename T>

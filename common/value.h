@@ -44,6 +44,9 @@ using ValueForwardingCtorEnabled = typename std::enable_if_t<
   // Disambiguate our copy implementation from our clone implementation.
   (choose_copy == std::is_copy_constructible<T>::value)>;
 
+template <typename T>
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
 }  // namespace internal
 #endif
 
@@ -169,6 +172,10 @@ template <typename T>
 class Value : public AbstractValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Value)
+
+  static_assert(
+      std::is_same_v<T, internal::remove_cvref_t<T>>,
+      "T should not have const, volatile, or reference specifiers.");
 
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
