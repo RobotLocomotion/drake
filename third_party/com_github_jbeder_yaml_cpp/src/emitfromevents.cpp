@@ -1,14 +1,11 @@
+#include "third_party/com_github_jbeder_yaml_cpp/include/yaml-cpp/emitfromevents.h"
+
 #include <cassert>
 #include <sstream>
 
-#include "yaml-cpp/emitfromevents.h"
 #include "yaml-cpp/emitter.h"
 #include "yaml-cpp/emittermanip.h"
 #include "yaml-cpp/null.h"
-
-namespace YAML {
-struct Mark;
-}  // namespace YAML
 
 namespace {
 std::string ToString(YAML::anchor_t anchor) {

@@ -8,10 +8,7 @@ cc_library(
     includes = ["include"],
     linkopts = [
         "-L/usr/lib/x86_64-linux-gnu",
-        # Work around undefined reference to "vtable for YAML::EmitFromEvents"
-        # when linking to libyaml-cpp.so. Most likely due to
-        # "symbol-visibility.patch" applied by Debian.
-        "-l:libyaml-cpp.a",
+        "-lyaml-cpp",
     ],
     visibility = ["//visibility:public"],
 )
