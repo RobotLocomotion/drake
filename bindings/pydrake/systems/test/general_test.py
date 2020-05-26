@@ -31,6 +31,7 @@ from pydrake.systems.framework import (
     DiscreteUpdateEvent, DiscreteUpdateEvent_,
     DiscreteValues, DiscreteValues_,
     Event, Event_,
+    EventStatus,
     InputPort, InputPort_,
     kUseDefaultName,
     LeafContext, LeafContext_,
@@ -327,6 +328,7 @@ class TestGeneral(unittest.TestCase):
                 self.assertEqual(u[0].Evaluate(), 1.)
 
     def test_simulator_ctor(self):
+        # TODO(eric.cousineau): Move this to `analysis_test.py`.
         # Tests a simple simulation for supported scalar types.
         for T in [float, AutoDiffXd]:
             # Create simple system.
@@ -392,6 +394,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(context_copy is not context)
 
     def test_diagram_simulation(self):
+        # TODO(eric.cousineau): Move this to `analysis_test.py`.
         # Similar to: //systems/framework:diagram_test, ExampleDiagram
         size = 3
 
@@ -483,6 +486,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(np.allclose(xc, xc_expected))
 
     def test_simulator_context_manipulation(self):
+        # TODO(eric.cousineau): Move this to `analysis_test.py`.
         system = ConstantVectorSource([1])
         # Use default-constructed context.
         simulator = Simulator(system)
@@ -501,6 +505,7 @@ class TestGeneral(unittest.TestCase):
         self.assertFalse(simulator.has_context())
 
     def test_simulator_integrator_manipulation(self):
+        # TODO(eric.cousineau): Move this to `analysis_test.py`.
         system = ConstantVectorSource([1])
 
         # Create simulator with basic constructor.
@@ -556,6 +561,7 @@ class TestGeneral(unittest.TestCase):
             simulator.reset_integrator(rk3)
 
     def test_simulator_flags(self):
+        # TODO(eric.cousineau): Move this to `analysis_test.py`.
         system = ConstantVectorSource([1])
         simulator = Simulator(system)
 
@@ -758,3 +764,24 @@ class TestGeneral(unittest.TestCase):
             period_sec=dt, abstract_model_value=model_value.Clone())
         context_abstract = system_abstract.CreateDefaultContext()
         context_abstract.FixInputPort(index=0, value=model_value.Clone())
+
+    def test_event_status(self):
+        system = ZeroOrderHold(period_sec=0.1, vector_size=1)
+        # Existence check.
+        EventStatus.Severity.kDidNothing
+        EventStatus.Severity.kSucceeded
+        EventStatus.Severity.kReachedTermination
+        EventStatus.Severity.kFailed
+
+        self.assertIsInstance(EventStatus.DidNothing(), EventStatus)
+        self.assertIsInstance(EventStatus.Succeeded(), EventStatus)
+        status = EventStatus.ReachedTermination(system=system, message="done")
+        # Check API.
+        self.assertIsInstance(status, EventStatus)
+        self.assertEqual(
+            status.severity(), EventStatus.Severity.kReachedTermination)
+        self.assertIs(status.system(), system)
+        self.assertEqual(status.message(), "done")
+        self.assertIsInstance(status.KeepMoreSevere(status), EventStatus)
+        status = EventStatus.Failed(system=system, message="failed")
+        self.assertIsInstance(status, EventStatus)
