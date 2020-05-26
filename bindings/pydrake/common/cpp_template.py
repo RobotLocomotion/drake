@@ -252,7 +252,7 @@ class TemplateBase(object):
         return instantiation
 
     @classmethod
-    def define(cls, name, param_list, *args, **kwargs):
+    def define(cls, name, param_list, *args, scope=None, **kwargs):
         """Provides a decorator for functions that defines a template using
         `name`. The template instantiations are added using
         `add_instantiations`, where the instantiation function is the decorated
@@ -282,7 +282,9 @@ class TemplateBase(object):
                             self.T = T
                     return Impl
         """
-        template = cls(name, *args, **kwargs)
+        if scope is None:
+            scope = _get_module_from_stack()
+        template = cls(name, *args, scope=scope, **kwargs)
 
         def decorator(instantiation_func):
             template.add_instantiations(instantiation_func, param_list)
