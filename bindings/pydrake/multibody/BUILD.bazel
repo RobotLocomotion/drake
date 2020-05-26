@@ -55,12 +55,14 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:type_pack",
+        "//bindings/pydrake/common:value_pybind",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
         "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -106,6 +108,7 @@ drake_pybind_library(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
+    py_srcs = ["_plant_extra.py"],
 )
 
 drake_pybind_library(

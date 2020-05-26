@@ -11,6 +11,7 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 import copy
 import math
+from typing import List
 import unittest
 
 import numpy as np
@@ -363,4 +364,6 @@ class TestMath(unittest.TestCase):
     def test_value_instantiations(self, T):
         # Existence checks.
         Value[mut.RigidTransform_[T]]
+        Value[List[mut.RigidTransform_[T]]]
         Value[mut.RotationMatrix_[T]]
+        Value[List[mut.RotationMatrix_[T]]]
