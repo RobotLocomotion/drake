@@ -17,6 +17,26 @@
 namespace drake {
 namespace pydrake {
 
+namespace internal {
+
+py::object GetConstructor(py::object py_T) {
+  if (py_T.attr("__module__").cast<std::string>() == "typing") {
+    // It's a generic. Get corresponding type. This can be done by finding the
+    // first non-`typing` base class.
+    for (py::handle base : py::tuple(py_T.attr("__bases__"))) {
+      if (base.attr("__module__").cast<std::string>() != "typing") {
+        return py::reinterpret_borrow<py::object>(base);
+      }
+    }
+    throw py::cast_error(py::str("Cannot infer constructor: {}").format(py_T));
+  } else {
+    // Use nominal type.
+    return py_T;
+  }
+}
+
+}  // namespace internal
+
 /// Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
 /// meant to bind `Value<T>` (or specializations thereof).
 /// @prereq `T` must have already been exposed to `pybind11`.
@@ -32,20 +52,19 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
-  AddTemplateClass(py_common, "Value", py_class, GetPyParam<T>());
+  py::tuple param = GetPyParam<T>();
+  AddTemplateClass(py_common, "Value", py_class, param);
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
   // simplified by always copying.
   // See docstring for `set_value` for presently unavoidable caveats.
   py_class.def(py::init<const T&>());
   // Define emplace constructor.
-  // TODO(eric.cousineau): This presently requires that `T` be aliased or
-  // registered. For things like `std::vector`, this fails. Consider alternative
-  // to retrieve Python type from T?
-  py::object py_T = GetPyParam<T>()[0];
-  py_class.def(py::init([py_T](py::args args, py::kwargs kwargs) {
+  py::object py_T = param[0];
+  py::object py_T_constructor = internal::GetConstructor(py_T);
+  py_class.def(py::init([py_T_constructor](py::args args, py::kwargs kwargs) {
     // Use Python constructor for the bound type.
-    py::object py_v = py_T(*args, **kwargs);
+    py::object py_v = py_T_constructor(*args, **kwargs);
     // TODO(eric.cousineau): Use `unique_ptr` for custom types if it's ever a
     // performance concern.
     // Use `type_caster` so that we are not forced to copy T, which is not
@@ -60,7 +79,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   // If the type is registered via `py::class_`, or is of type `Object`
   // (`py::object`), then we can obtain a mutable view into the value.
   constexpr bool has_get_mutable_value =
-      internal::is_generic_pybind<T>::value || std::is_same_v<T, Object>;
+      internal::is_generic_pybind_v<T> || std::is_same_v<T, Object>;
   if constexpr (has_get_mutable_value) {
     py::return_value_policy return_policy = py_reference_internal;
     if (std::is_same_v<T, Object>) {
