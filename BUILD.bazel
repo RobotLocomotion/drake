@@ -50,6 +50,7 @@ install(
         "//manipulation/models:install_data",
         "//setup:install",
         "//third_party/com_github_finetjul_bender:install",
+        "//third_party/com_github_jbeder_yaml_cpp:install",
         "//tools/install/cmake:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",

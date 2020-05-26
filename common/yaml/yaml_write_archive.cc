@@ -4,15 +4,19 @@
 #include <utility>
 #include <vector>
 
+#include "third_party/com_github_jbeder_yaml_cpp/include/yaml-cpp/emitfromevents.h"  // NOLINT
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace yaml {
+namespace {
+
+constexpr const char* const kKeyOrder = "__key_order";
 
 // This function uses the same approach as YAML::NodeEvents::Emit.
 // https://github.com/jbeder/yaml-cpp/blob/release-0.5.2/src/nodeevents.cpp#L55
-void YamlWriteArchive::RecursiveEmit(
-    const YAML::Node& node, YAML::EmitFromEvents* sink) {
+void RecursiveEmit(const YAML::Node& node, YAML::EmitFromEvents* sink) {
   const YAML::Mark no_mark;
   const YAML::anchor_t no_anchor = YAML::NullAnchor;
   switch (node.Type()) {
@@ -51,7 +55,7 @@ void YamlWriteArchive::RecursiveEmit(
       // of the Accept() method in our header file), use it to specify output
       // order; otherwise, use alphabetical order.
       std::vector<std::string> key_order;
-      const YAML::Node key_order_node = node[kKeyOrderName];
+      const YAML::Node key_order_node = node[kKeyOrder];
       if (key_order_node) {
         // Use Accept()'s ordering.
         for (const auto& item : key_order_node) {
@@ -76,6 +80,10 @@ void YamlWriteArchive::RecursiveEmit(
   DRAKE_UNREACHABLE();
 }
 
+}  // namespace
+
+const char* const YamlWriteArchive::kKeyOrderName = kKeyOrder;
+
 // Convert the given document to a string ala YAML::Dump, but emit Map nodes
 // using a deterministic key ordering.  (By default, the ordering build in to
 // YAML::Dump is non-deterministic in < 0.6 and addition-order in >= 0.6.  Once
@@ -84,7 +92,7 @@ std::string YamlWriteArchive::YamlDumpWithSortedMaps(
     const YAML::Node& document) {
   YAML::Emitter emitter;
   YAML::EmitFromEvents sink(emitter);
-  YamlWriteArchive::RecursiveEmit(document, &sink);
+  RecursiveEmit(document, &sink);
   return emitter.c_str();
 }
 

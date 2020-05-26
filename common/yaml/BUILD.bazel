@@ -38,6 +38,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
+        "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
         "@yaml_cpp",
     ],
 )
