@@ -96,10 +96,14 @@ class TestGeneral(unittest.TestCase):
     def test_system_base_api(self):
         # Test a system with a different number of inputs from outputs.
         system = Adder(3, 10)
+        system.set_name("adder")
         self.assertIsInstance(system, SystemBase)
         self.assertEqual(
             system.GetSystemType(),
             "drake::systems::Adder<double>")
+        self.assertEqual(system.get_name(), "adder")
+        self.assertEqual(system.GetSystemName(), "adder")
+        self.assertEqual(system.GetSystemPathname(), "::adder")
         self.assertEqual(system.num_input_ports(), 3)
         self.assertEqual(system.num_output_ports(), 1)
         u1 = system.GetInputPort("u1")
