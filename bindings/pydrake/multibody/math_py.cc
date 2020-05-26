@@ -4,6 +4,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_acceleration.h"
@@ -62,6 +63,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("V"),
             cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
   {
     using Class = SpatialAcceleration<T>;
@@ -76,6 +80,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("A"),
             cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
   {
     using Class = multibody::SpatialForce<T>;
@@ -90,6 +97,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("tau"), py::arg("f"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("F"),
             cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
 }
 }  // namespace
