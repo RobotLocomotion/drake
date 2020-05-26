@@ -100,6 +100,7 @@ struct SnoptImpl<true> {
   static constexpr auto snmema = ::f_snmema;
   static constexpr auto snseti = ::f_snseti;
   static constexpr auto snsetr = ::f_snsetr;
+  static constexpr auto snset = ::f_snset;
 #pragma GCC diagnostic pop
 };
 
@@ -192,6 +193,11 @@ struct SnoptImpl<false> {
       const char* buffer, int len, double rvalue, int* errors,
       Int* iw, int leniw, double* rw, int lenrw) {
     ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
+  }
+  template <typename Int>
+  static void snset(const char* buffer, int len, int* errors,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    ::f_snset(buffer, &len, errors, iw, &leniw, rw, &lenrw);
   }
 };
 
@@ -1008,6 +1014,19 @@ void SolveWithGivenOptions(
         storage.iw(), storage.leniw(),
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+  }
+
+  for (const auto& it : snopt_options_string) {
+    int errors = 0;
+    auto option_string = it.first + " " + it.second;
+    if (it.first == "Print file") {
+      // Already handled during sninit, above
+      continue;
+    }
+    Snopt::snset(
+        option_string.c_str(), option_string.length(), &errors,
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
   }
 
   int Cold = 0;
