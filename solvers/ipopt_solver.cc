@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <IpIpoptApplication.hpp>
@@ -39,6 +40,97 @@ int GetConstraintBounds(const Constraint& c, Number* lb, Number* ub) {
   }
 
   return c.num_constraints();
+}
+
+template <typename C>
+void SetConstraintDualVariableIndex(
+    const Binding<C>& binding, int constraint_index,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_index) {
+  const Binding<Constraint> binding_cast =
+      internal::BindingDynamicCast<Constraint>(binding);
+  constraint_dual_start_index->emplace(binding_cast, constraint_index);
+}
+
+void SetBoundingBoxConstraintDualSolution(
+    const MathematicalProgram& prog, const Number* const z_L,
+    const Number* const z_U,
+    const std::unordered_map<Binding<BoundingBoxConstraint>,
+                             std::pair<std::vector<int>, std::vector<int>>>&
+        bb_con_dual_variable_indices,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    std::vector<int> lower_dual_indices, upper_dual_indices;
+    std::tie(lower_dual_indices, upper_dual_indices) =
+        bb_con_dual_variable_indices.at(binding);
+    Eigen::VectorXd dual_solution =
+        Eigen::VectorXd::Zero(binding.GetNumElements());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      if (lower_dual_indices[i] != -1) {
+        // Ipopt always returns a non-negative z_L. The definition of shadow
+        // price means the dual variable for the lower bound is also
+        // non-negative.
+        dual_solution(i) = z_L[lower_dual_indices[i]];
+      }
+      // Ipopt always returns a non-negative z_U. But the definition of shadow
+      // price means that the dual variable for the upper bound is negative, so
+      // we need to negate z_U to get the dual solution.
+      if (upper_dual_indices[i] != -1 &&
+          z_U[upper_dual_indices[i]] >= dual_solution(i)) {
+        // At most one side of the bounds can be active, so theoretically at
+        // most one of z_U[upper_dual_indices[i]] or z_L[lower_dual_indices[i]]
+        // can be non-zero. In practice, due to small numerical errors, both
+        // z_U[upper_dual_indices[i]] and z_L[lower_dual_indices[i]] can be
+        // non-zero, with one of them being very small number. We choose the
+        // side with larger dual variable value as the active side (by comparing
+        // z_U[upper_dual_indices[i] >= dual_solution(i)).
+        dual_solution(i) = -z_U[upper_dual_indices[i]];
+      }
+    }
+    result->set_dual_solution(binding, dual_solution);
+  }
+}
+
+template <typename C>
+void SetConstraintDualSolution(
+    const Binding<C>& binding, const Eigen::VectorXd& lambda,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    MathematicalProgramResult* result) {
+  const Binding<Constraint> binding_cast =
+      internal::BindingDynamicCast<Constraint>(binding);
+  // Ipopt defines multiplier as the negative of the shadow price, hence we have
+  // to negate lambda.
+  result->set_dual_solution(
+      binding_cast,
+      -lambda.segment(constraint_dual_start_index.at(binding_cast),
+                      binding.evaluator()->num_constraints()));
+}
+
+void SetAllConstraintDualSolution(
+    const MathematicalProgram& prog, const Eigen::VectorXd& lambda,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : prog.generic_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
+  for (const auto& binding : prog.lorentz_cone_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
+  for (const auto& binding : prog.rotated_lorentz_cone_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
+  for (const auto& binding : prog.linear_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
+  for (const auto& binding : prog.linear_equality_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
 }
 
 /// @param[out] num_grad number of gradients
@@ -180,7 +272,7 @@ struct ResultCache {
 };
 
 // The C++ interface for IPOPT is described here:
-// http://www.coin-or.org/Ipopt/documentation/node23.html
+// https://coin-or.github.io/Ipopt/INTERFACES.html#INTERFACE_CPP
 //
 // IPOPT provides a pure(-ish) virtual base class which you have to
 // implement a concrete version of as the solver interface.
@@ -260,25 +352,55 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         x_u[idx] = std::min(upper_bound(k), x_u[idx]);
       }
     }
+    // Set the indices of the dual variables corresponding to each bounding box
+    // constraint. Ipopt stores the dual variables in z_L and z_U.
+    for (const auto& binding : problem_->bounding_box_constraints()) {
+      std::vector<int> lower_dual_indices(
+          binding.evaluator()->num_constraints(), -1);
+      std::vector<int> upper_dual_indices(
+          binding.evaluator()->num_constraints(), -1);
+      for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+        const int idx =
+            problem_->FindDecisionVariableIndex(binding.variables()(k));
+        if (x_l[idx] == binding.evaluator()->lower_bound()(k)) {
+          lower_dual_indices[k] = idx;
+        }
+        if (x_u[idx] == binding.evaluator()->upper_bound()(k)) {
+          upper_dual_indices[k] = idx;
+        }
+      }
+      bb_con_dual_variable_indices_.emplace(
+          binding, std::make_pair(lower_dual_indices, upper_dual_indices));
+    }
 
     size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
           *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
     }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
           *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
     }
     for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
           *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
     }
     for (const auto& c : problem_->linear_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
           *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
           *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
     }
@@ -417,6 +539,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     solver_details.g = Eigen::Map<const Eigen::VectorXd>(g, m);
     solver_details.lambda = Eigen::Map<const Eigen::VectorXd>(lambda, m);
 
+    SetBoundingBoxConstraintDualSolution(
+        *problem_, z_L, z_U, bb_con_dual_variable_indices_, result_);
+    SetAllConstraintDualSolution(*problem_, solver_details.lambda,
+                                 constraint_dual_start_index_, result_);
+
     result_->set_solution_result(SolutionResult::kUnknownError);
     switch (status) {
       case Ipopt::SUCCESS: {
@@ -538,6 +665,17 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   std::unique_ptr<ResultCache> constraint_cache_;
   Eigen::VectorXd x_init_;
   MathematicalProgramResult* const result_;
+  // bb_con_dual_variable_indices_[constraint] maps the bounding box constraint
+  // to the indices of its dual variables (one for lower bound and one for upper
+  // bound). If this constraint doesn't have a dual variable (because the bound
+  // is looser than some other bounding box constraint, hence this constraint
+  // can never be active), then the index is set to -1.
+  std::unordered_map<Binding<BoundingBoxConstraint>,
+                     std::pair<std::vector<int>, std::vector<int>>>
+      bb_con_dual_variable_indices_;
+  // constraint_dual_start_index_[constraint] stores the starting index of the
+  // corresponding dual variables.
+  std::unordered_map<Binding<Constraint>, int> constraint_dual_start_index_;
 };
 
 template <typename T>

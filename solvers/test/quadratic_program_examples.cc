@@ -477,8 +477,8 @@ void TestQPDualSolution1(const SolverInterface& solver, double tol) {
     // Solving the KKT condition, we get the dual solution as
     // dual solution for x[0] >= 0 is 0
     // dual solution for x[1] + 4 * x[2] == 3 is 0.363636
-    EXPECT_TRUE(
-        CompareMatrices(result.GetDualSolution(constraint1), Vector1d(0.)));
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(0.), tol));
     const double dual_solution_expected = 0.363636;
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
                                 Vector1d(dual_solution_expected), tol));
