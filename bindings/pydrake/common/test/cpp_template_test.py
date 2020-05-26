@@ -152,6 +152,8 @@ class TestCppTemplate(unittest.TestCase):
 
             return Impl
 
+        self.assertEqual(
+            str(MyTemplate), f"<TemplateClass {_TEST_MODULE}.MyTemplate>")
         self.assertIsInstance(MyTemplate, m.TemplateClass)
         MyDefault = MyTemplate[None]
         MyInt = MyTemplate[int]

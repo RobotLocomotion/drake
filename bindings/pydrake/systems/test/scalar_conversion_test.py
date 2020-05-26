@@ -58,6 +58,8 @@ class TestScalarConversion(unittest.TestCase):
         """Tests the Example_ system."""
         # Test template.
         self.assertIsInstance(Example_, TemplateClass)
+        self.assertEqual(
+            str(Example_), f"<TemplateSystem {__name__}.Example_>")
         self.assertIs(Example_[float], Example)
 
         # Test parameters.
@@ -68,7 +70,7 @@ class TestScalarConversion(unittest.TestCase):
             system_T = Example_[T](0)
             self.assertEqual(
                 system_T.GetSystemType(),
-                f"pydrake.systems.scalar_conversion.Example_[{T.__name__}]")
+                f"{__name__}.Example_[{T.__name__}]")
 
         # Test private properties (do NOT use these in your code!).
         self.assertTupleEqual(

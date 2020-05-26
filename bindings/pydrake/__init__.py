@@ -53,6 +53,9 @@ def getDrakePath():
 def _execute_extra_python_code(m):
     # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
     # rationale.
+    if m.__name__ not in sys.modules:
+        # N.B. This is necessary for C++ extensions in Python 3.
+        sys.modules[m.__name__] = m
     module_path = m.__name__.split(".")
     if len(module_path) == 1:
         raise RuntimeError((
