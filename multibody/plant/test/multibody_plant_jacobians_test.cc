@@ -378,6 +378,81 @@ TEST_F(TwoDOFPlanarPendulumTest,
   EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
 }
 
+// This tests the method CalcBiasSpatialAcceleration() against an expected
+// solution that uses AutoDiffXd to compute Dt(J𝑠) ⋅ 𝑠, where Dt(J𝑠) is the time
+// derivative of the Jacobian with respect to "speeds" 𝑠, and 𝑠 is either
+// q̇ (time-derivatives of generalized positions) or v (generalized velocities).
+TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
+  // Set state to arbitrary non-planar values for the joint's angles and rates.
+  SetArbitraryConfiguration();
+  const VectorX<double> q = plant_->GetPositions(*context_);
+  const VectorX<double> v = plant_->GetVelocities(*context_);
+  const int num_positions = plant_->num_positions();
+  const int num_velocities = plant_->num_velocities();
+  const int num_states = plant_->num_multibody_states();
+
+  // Bias acceleration is not a function of vdot (it is a function of q and v).
+  // NaN values for generalized accelerations vdot are chosen to highlight the
+  // fact that bias acceleration is not a function of vdot.
+  const VectorX<double> vdot = VectorX<double>::Constant(
+      num_velocities, std::numeric_limits<double>::quiet_NaN());
+
+  // Enable q_autodiff and v_autodiff to differentiate with respect to time.
+  // Note: Pass MatrixXd() so the return gradient uses AutoDiffXd (for which we
+  // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
+  VectorX<double> qdot(num_positions);
+  plant_->MapVelocityToQDot(*context_, v, &qdot);
+  auto q_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(q, MatrixXd(qdot));
+  auto v_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(v, MatrixXd(vdot));
+
+  // Set the context for AutoDiffXd computations.
+  VectorX<AutoDiffXd> x_autodiff(num_states);
+  x_autodiff << q_autodiff, v_autodiff;
+  plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
+      x_autodiff;
+
+  // Point Ep is affixed/welded to the end-effector E.
+  const Vector3<double> p_EEp(0.1, -0.05, 0.02);
+  const Vector3<AutoDiffXd> p_EEp_autodiff = p_EEp;
+
+  // Get shortcuts to end-effector link frame E and world frame W.
+  const Frame<AutoDiffXd>& frame_E_autodiff =
+      plant_autodiff_->get_body(end_effector_link_->index()).body_frame();
+  const Frame<AutoDiffXd>& frame_W_autodiff = plant_autodiff_->world_frame();
+
+  // Compute point Ep's spatial velocity Jacobian with respect to generalized
+  // velocities v in world frame W, expressed in W, and its time derivative.
+  MatrixX<AutoDiffXd> Jv_V_WEp_autodiff(6, num_velocities);
+  plant_autodiff_->CalcJacobianSpatialVelocity(
+      *context_autodiff_, JacobianWrtVariable::kV, frame_E_autodiff,
+      p_EEp_autodiff, frame_W_autodiff, frame_W_autodiff, &Jv_V_WEp_autodiff);
+
+  // Use AutoDiffXd to extract Dt(Jv_V_WEp), the ordinary time-derivative of
+  // Ep's spatial Jacobian in world W, expressed in W.
+  auto Dt_Jv_V_WEp = math::autoDiffToGradientMatrix(Jv_V_WEp_autodiff);
+  Dt_Jv_V_WEp.resize(6, num_velocities);
+
+  // Form the expected bias spatial acceleration via AutoDiffXd results.
+  const VectorX<double> AvBias_WEp_expected = Dt_Jv_V_WEp * v;
+
+  // Compute Ep's bias spatial acceleration in world frame W.
+  const Frame<double>& frame_W = plant_->world_frame();
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+  const SpatialAcceleration<double> AvBias_WEp_W =
+      plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
+                                          frame_E, p_EEp, frame_W, frame_W);
+
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+
+  // Verify computed bias translational acceleration numerical values and ensure
+  // the results are stored in a matrix of size (6 x num_velocities).
+  EXPECT_TRUE(CompareMatrices(AvBias_WEp_W.get_coeffs(), AvBias_WEp_expected,
+                              kTolerance, MatrixCompareType::relative));
+}
+
 // This tests the method CalcBiasTranslationalAcceleration() against an expected
 // solution that uses AutoDiffXd to compute Dt(J𝑠) ⋅ 𝑠, where Dt(J𝑠) is the
 // time derivative of the Jacobian with respect to "speeds" 𝑠, and 𝑠 is either
