@@ -1,0 +1,10 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+# Provide a stub target only.  (See repository.bzl for details.)
+py_library(
+    name = "pygame_py",
+    srcs = [],
+    visibility = ["//visibility:public"],
+)

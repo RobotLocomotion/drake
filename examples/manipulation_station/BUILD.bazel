@@ -170,6 +170,7 @@ drake_py_binary(
     deps = [
         ":differential_ik",
         "//bindings/pydrake",
+        "@pygame_py",
     ],
 )
 
