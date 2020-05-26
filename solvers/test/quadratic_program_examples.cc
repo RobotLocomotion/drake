@@ -460,7 +460,7 @@ void TestQPonUnitBallExample(const SolverInterface& solver) {
   }
 }
 
-void TestQPDualSolution1(const SolverInterface& solver) {
+void TestQPDualSolution1(const SolverInterface& solver, double tol) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();
   auto constraint1 = prog.AddLinearConstraint(2 * x[0] + 3 * x[1], -2, 3);
@@ -481,9 +481,9 @@ void TestQPDualSolution1(const SolverInterface& solver) {
         CompareMatrices(result.GetDualSolution(constraint1), Vector1d(0.)));
     const double dual_solution_expected = 0.363636;
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
-                                Vector1d(dual_solution_expected), 1e-6));
+                                Vector1d(dual_solution_expected), tol));
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint3),
-                                Eigen::Vector3d::Zero()));
+                                Eigen::Vector3d::Zero(), tol));
 
     // Now update the equality constraint right-hand side with a small amount,
     // check the optimal cost of the updated QP. The change in the optimal cost
@@ -495,7 +495,7 @@ void TestQPDualSolution1(const SolverInterface& solver) {
     solver.Solve(prog, {}, {}, &result_updated);
     EXPECT_NEAR(
         (result_updated.get_optimal_cost() - result.get_optimal_cost()) / delta,
-        dual_solution_expected, 1e-5);
+        dual_solution_expected, tol);
   }
 }
 
@@ -584,6 +584,57 @@ void TestQPDualSolution3(const SolverInterface& solver) {
     EXPECT_NEAR(
         (result4.get_optimal_cost() - result.get_optimal_cost()) / delta, 6,
         2e-5);
+
+    // Now add more bounding box constraints (but with looser bounds than the -1
+    // <= x <= 2 bound already imposed). The dual solution for these bounds
+    // should be zero.
+    constraint.evaluator()->set_bounds(Eigen::Vector2d(-1, -1),
+                                       Eigen::Vector2d(2, 2));
+    auto constraint1 = prog.AddBoundingBoxConstraint(-2, 3, x[0]);
+    auto constraint2 = prog.AddBoundingBoxConstraint(-1.5, 3.5, x[1]);
+    MathematicalProgramResult result5;
+    solver.Solve(prog, {}, {}, &result5);
+    EXPECT_TRUE(CompareMatrices(result5.GetDualSolution(constraint),
+                                Eigen::Vector2d(-6, 6), 2e-5));
+    EXPECT_TRUE(
+        CompareMatrices(result5.GetDualSolution(constraint1), Vector1d(0)));
+    EXPECT_TRUE(
+        CompareMatrices(result5.GetDualSolution(constraint2), Vector1d(0)));
+  }
+}
+
+void TestEqualityConstrainedQPDualSolution1(const SolverInterface& solver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint = prog.AddLinearEqualityConstraint(x[0] + x[1] == 1);
+  prog.AddQuadraticCost(x[0] * x[0] + x[1] * x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result.GetDualSolution(constraint), Vector1d(1), 1e-5));
+  }
+}
+
+void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::Matrix<double, 2, 3> A;
+  A << 1, 0, 3, 0, 2, 1;
+  auto constraint =
+      prog.AddLinearEqualityConstraint(A, Eigen::Vector2d(1, 2), x);
+  prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1] + x[2] * x[2] + 4 * x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(
+        result.GetSolution(x),
+        Eigen::Vector3d(-0.42857143, 0.76190476, 0.47619048), 1e-5));
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                                Eigen::Vector2d(-0.85714286, 3.52380952),
+                                1e-5));
   }
 }
 

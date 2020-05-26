@@ -408,6 +408,36 @@ GTEST_TEST(GurobiTest, SolutionPool) {
   }
 }
 
+GTEST_TEST(GurobiTest, QPDualSolution1) {
+  GurobiSolver solver;
+  TestQPDualSolution1(solver, 1e-6);
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution2) {
+  GurobiSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution3) {
+  GurobiSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution1) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution2) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution1) {
+  GurobiSolver solver;
+  TestLPDualSolution1(solver);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
