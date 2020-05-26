@@ -43,6 +43,7 @@ from pydrake.systems.framework import (
     Subvector, Subvector_,
     Supervector, Supervector_,
     System, System_,
+    SystemBase,
     SystemOutput, SystemOutput_,
     VectorBase, VectorBase_,
     TriggerType,
@@ -95,6 +96,7 @@ class TestGeneral(unittest.TestCase):
     def test_system_base_api(self):
         # Test a system with a different number of inputs from outputs.
         system = Adder(3, 10)
+        self.assertIsInstance(system, SystemBase)
         self.assertEqual(
             system.GetSystemType(),
             "drake::systems::Adder<double>")
