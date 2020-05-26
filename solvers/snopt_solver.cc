@@ -1014,11 +1014,14 @@ void SolveWithGivenOptions(
   for (const auto& it : snopt_options_string) {
     int errors = 0;
     auto option_string = it.first + " " + it.second;
-    if (it.first.compare("Print file")) {
-      Snopt::snset(
-          option_string.c_str(), option_string.length(), &errors,
-          storage.iw(), storage.leniw(),
-          storage.rw(), storage.lenrw());
+    if (it.first == "Print file") {
+      // Already handled during sninit, above
+      continue;
+    }
+    Snopt::snset(
+        option_string.c_str(), option_string.length(), &errors,
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     }
   }
 
