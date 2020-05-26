@@ -131,8 +131,15 @@ def main():
     station.GetInputPort("iiwa_feedforward_torque").FixValue(
         station_context, np.zeros(num_iiwa_joints))
 
+    # If the diagram is only the hardware interface, then we must advance it a
+    # little bit so that first LCM messages get processed. A simulated plant is
+    # already publishing correct positions even without advancing, and indeed
+    # we must not advance a simulated plant until the sliders and filters have
+    # been initialized to match the plant.
+    if args.hardware:
+        simulator.AdvanceTo(1e-6)
+
     # Eval the output port once to read the initial positions of the IIWA.
-    simulator.AdvanceTo(1e-6)
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(
         station_context)
     teleop.set_position(q0)
@@ -149,7 +156,7 @@ def main():
                               iiwa_velocities.data().transpose()):
             # TODO(jwnimmer-tri) We should be able to do better than a 40
             # rad/sec limit, but that's the best we can enforce for now.
-            if qdot.max() > 40.0:
+            if qdot.max() > 0.1:
                 print(f"ERROR: large qdot {qdot} at time {time}")
                 sys.exit(1)
 
