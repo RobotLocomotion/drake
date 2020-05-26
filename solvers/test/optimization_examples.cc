@@ -729,6 +729,23 @@ EckhardtProblem::EckhardtConstraint::EckhardtConstraint(
   }
 }
 
+void TestEckhardtDualSolution(
+    const SolverInterface& solver,
+    const Eigen::Ref<const Eigen::VectorXd>& x_initial, double tol) {
+  if (solver.available()) {
+    EckhardtProblem problem{true};
+    MathematicalProgramResult result;
+    solver.Solve(problem.prog(), x_initial, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(
+        result.GetDualSolution(problem.prog().generic_constraints()[0]),
+        Eigen::Vector2d(1. / std::log(10.), 1. / (10 * std::log(10.))), tol));
+    EXPECT_TRUE(CompareMatrices(
+        result.GetDualSolution(problem.prog().bounding_box_constraints()[0]),
+        Eigen::Vector3d(0, 0, -1. / (10 * std::log(10.))), tol));
+  }
+}
+
 HeatExchangerDesignProblem::HeatExchangerDesignConstraint1::
     HeatExchangerDesignConstraint1()
     : Constraint(1, 6, Vector1d(0), Vector1d(kInf)) {

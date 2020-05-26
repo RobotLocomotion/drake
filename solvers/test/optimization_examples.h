@@ -771,6 +771,13 @@ class EckhardtProblem {
 };
 
 /**
+ * Test dual solution for Eckhardt problem.
+ */
+void TestEckhardtDualSolution(const SolverInterface& solver,
+                              const Eigen::Ref<const Eigen::VectorXd>& x_init,
+                              double tol = 1e-6);
+
+/**
  * This is problem 106 from  Test examples for Nonlinear Programming
  * Codes by Will Hock and Klaus Schittkowski, Springer. The constraint of this
  * problem has sparse gradient.
