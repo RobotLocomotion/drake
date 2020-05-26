@@ -5,6 +5,7 @@ import sys
 import types
 
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
+from pydrake.common.deprecation import _warn_deprecated
 
 
 def _get_module_from_stack(frame=2):
@@ -63,6 +64,7 @@ class TemplateBase(object):
             scope = _get_module_from_stack()
         self._scope = scope
         self._instantiation_func = None
+        self._deprecation_map = {}
         self.__doc__ = ""
 
     def __getitem__(self, *param):
@@ -149,6 +151,9 @@ class TemplateBase(object):
         elif instantiation is None and throw_error:
             raise RuntimeError("Invalid instantiation: {}".format(
                 self._instantiation_name(param)))
+        deprecation = self._deprecation_map.get(param)
+        if deprecation is not None:
+            _warn_deprecated(deprecation)
         return (instantiation, param)
 
     def add_instantiation(self, param, instantiation):
@@ -199,6 +204,27 @@ class TemplateBase(object):
         self._instantiation_func = instantiation_func
         for param in param_list:
             self.add_instantiation(param, TemplateBase._deferred)
+
+    def deprecate_instantiation(self, param, message):
+        """Deprecates an instantiation for the given set of parameters.
+
+        Note:
+            This method can only be called once for a given instantiation.
+
+        Args:
+            param: Parameters for an instantiation that is already registered.
+            message: Message to be shown when issuing a deprecation warning.
+        Returns:
+            (instantiation, param), where ``param`` is the resolved parameters.
+        """
+        param = get_param_canonical(self._param_resolve(param))
+        if param in self._deprecation_map:
+            raise RuntimeError(
+                f"Deprecation already registered: "
+                f"{self._instantiation_name(param)}")
+        instantiation, param = self.get_instantiation(param)
+        self._deprecation_map[param] = message
+        return (instantiation, param)
 
     def get_param_set(self, instantiation):
         """Returns all parameters for a given `instantiation`.
