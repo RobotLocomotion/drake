@@ -100,6 +100,7 @@ struct SnoptImpl<true> {
   static constexpr auto snmema = ::f_snmema;
   static constexpr auto snseti = ::f_snseti;
   static constexpr auto snsetr = ::f_snsetr;
+  static constexpr auto snset = ::f_snset;
 #pragma GCC diagnostic pop
 };
 
@@ -1008,6 +1009,17 @@ void SolveWithGivenOptions(
         storage.iw(), storage.leniw(),
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+  }
+
+  for (const auto& it : snopt_options_string) {
+    int errors = 0;
+    auto option_string = it.first + " " + it.second;
+    if (it.first.compare("Print file")) {
+      Snopt::snset(
+          option_string.c_str(), option_string.length(), &errors,
+          storage.iw(), storage.leniw(),
+          storage.rw(), storage.lenrw());
+    }
   }
 
   int Cold = 0;
