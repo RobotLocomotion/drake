@@ -1,8 +1,10 @@
 import unittest
 
 import numpy as np
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.cpp_param import List
+from pydrake.common.value import Value
+import pydrake.common.test_utilities.numpy_compare as numpy_compare
 from pydrake.symbolic import Expression
 from pydrake.multibody.math import (
     SpatialAcceleration_,
@@ -47,3 +49,13 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.check_spatial_vector(
                 SpatialAcceleration_[T], "A", "alpha", "a")
         self.check_spatial_vector(SpatialForce_[T], "F", "tau", "f")
+
+    @numpy_compare.check_all_types
+    def test_value_instantiations(self, T):
+        # Existence checks.
+        Value[SpatialVelocity_[T]]
+        Value[List[SpatialVelocity_[T]]]
+        Value[SpatialAcceleration_[T]]
+        Value[List[SpatialAcceleration_[T]]]
+        Value[SpatialForce_[T]]
+        Value[List[SpatialForce_[T]]]
