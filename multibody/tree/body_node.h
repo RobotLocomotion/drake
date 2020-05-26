@@ -869,6 +869,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     DRAKE_DEMAND(static_cast<int>(H_array.size()) ==
         this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
+    DRAKE_DEMAND(start_index_in_v < this->get_parent_tree().num_velocities());
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's hinge matrix H_PB_W:
     const Vector6<T>& H_col0 = H_array[start_index_in_v];
@@ -879,7 +880,10 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /// Mutable version of GetJacobianFromArray().
   Eigen::Map<MatrixUpTo6<T>> GetMutableJacobianFromArray(
       std::vector<Vector6<T>>* H_array) const {
+    DRAKE_DEMAND(static_cast<int>(H_array->size()) ==
+                 this->get_parent_tree().num_velocities());
     const int start_index_in_v = get_topology().mobilizer_velocities_start_in_v;
+    DRAKE_DEMAND(start_index_in_v < this->get_parent_tree().num_velocities());
     const int num_velocities = get_topology().num_mobilizer_velocities;
     // The first column of this node's hinge matrix H_PB_W:
     Vector6<T>& H_col0 = (*H_array)[start_index_in_v];
