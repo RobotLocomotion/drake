@@ -1,9 +1,11 @@
-import ctypes
-import numpy as np
-
-"""Defines a mapping between Python and alias types, and provides canonical
+"""
+Defines a mapping between Python and alias types, and provides canonical
 Python types as they relate to C++.
 """
+
+import ctypes
+
+import numpy as np
 
 
 def _get_type_name(t, verbose):
@@ -13,6 +15,43 @@ def _get_type_name(t, verbose):
         return t.__module__ + "." + t.__name__
     else:
         return t.__name__
+
+
+def _is_typing_type(t):
+    # N.B. This hack is used because I (Eric) cannot find an easy check for
+    # types that comes from `typing`, which also works in Python 3.6, 3.7, and
+    # 3.8.
+    return hasattr(t, "__args__") and getattr(t, "__module__", "") == "typing"
+
+
+def _get_typing_type_name(t):
+    # Returns a name consistent with how cpp_template produces a name, e.g.
+    # `name1[name2, name3]`, rather than
+    # `module1.name1[module2.name2, module3.name3]`.
+    # TODO(eric.cousineau): Use `typing.get_args` once we support only
+    # Python >= 3.8.
+    template_name = repr(t)
+    assert template_name.startswith("typing.")
+    name = template_name.split('[')[0].split('.')[1]
+    param_names = get_param_names(t.__args__)
+    return f"{name}[{', '.join(param_names)}]"
+
+
+def _get_constructor(t):
+    # Used by `AddValueInstantiation` in C++. This is done solely due to the
+    # use of `typing`.
+    if not _is_typing_type(t):
+        return t
+    else:
+        if isinstance(t, type):
+            # Python 3.6.
+            for base in t.__bases__:
+                if not _is_typing_type(base):
+                    return base
+            else:
+                raise RuntimeError(f"Cannot infer constructor: {t}")
+        else:
+            return t.__origin__
 
 
 class _StrictMap(object):
@@ -62,7 +101,9 @@ class _ParamAliases(object):
     def get_name(self, alias):
         # Gets string for an alias.
         canonical = self.get_canonical(alias)
-        if isinstance(canonical, type):
+        if _is_typing_type(canonical):
+            return _get_typing_type_name(canonical)
+        elif isinstance(canonical, type):
             return _get_type_name(canonical, False)
         else:
             # For literals.
