@@ -7,10 +7,11 @@ N.B. The C++ types are not registered in this test. They are registered and
 tested in `cpp_param_pybind_test`.
 """
 
-import unittest
 import ctypes
-import numpy as np
+from typing import Dict, List
+import unittest
 
+import numpy as np
 
 from pydrake.common.cpp_param import get_param_canonical, get_param_names
 
@@ -67,3 +68,7 @@ class TestCppParam(unittest.TestCase):
         self._check_names("int", [int, np.int32, ctypes.c_int32])
         self._check_names("CustomPyType", [CustomPyType])
         self._check_names("1", [1])
+        self._check_names("List[CustomPyType]", [List[CustomPyType]])
+        self._check_names(
+            "List[List[CustomPyType]]", [List[List[CustomPyType]]])
+        self._check_names("Dict[str, CustomPyType]", [Dict[str, CustomPyType]])

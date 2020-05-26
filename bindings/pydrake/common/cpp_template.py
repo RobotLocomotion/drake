@@ -3,6 +3,7 @@
 import inspect
 import sys
 import types
+import typing
 
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
 from pydrake.common.deprecation import _warn_deprecated
@@ -329,7 +330,7 @@ class TemplateClass(TemplateBase):
 
     def _on_add(self, param, cls):
         # Update class name for easier debugging.
-        if self._override_meta:
+        if self._override_meta and not isinstance(cls, typing.GenericMeta):
             cls._original_name = cls.__name__
             cls._original_qualname = getattr(cls, "__qualname__", cls.__name__)
             cls.__name__ = self._instantiation_name(param)

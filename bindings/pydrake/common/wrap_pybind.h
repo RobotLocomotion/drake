@@ -20,9 +20,6 @@ namespace pydrake {
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
 
-template <typename T, typename = void>
-struct wrap_ref_ptr : public wrap_arg_default<T> {};
-
 // Determines if a type will go through pybind11's generic caster. This
 // implies that the type has been declared using `py::class_`, and can have
 // a reference passed through. Otherwise, the type uses type-conversion:
@@ -32,7 +29,13 @@ using is_generic_pybind = std::is_base_of<py::detail::type_caster_generic,
     py::detail::make_caster<T>>;
 
 template <typename T>
-struct wrap_ref_ptr<T&, std::enable_if_t<is_generic_pybind<T>::value>> {
+inline constexpr bool is_generic_pybind_v = is_generic_pybind<T>::value;
+
+template <typename T, typename = void>
+struct wrap_ref_ptr : public wrap_arg_default<T> {};
+
+template <typename T>
+struct wrap_ref_ptr<T&, std::enable_if_t<is_generic_pybind_v<T>>> {
   // NOLINTNEXTLINE[runtime/references]: Intentional.
   static T* wrap(T& arg) { return &arg; }
   static T& unwrap(T* arg_wrapped) { return *arg_wrapped; }
