@@ -69,25 +69,8 @@ PYBIND11_MODULE(value, m) {
   // Add value instantiations for nominal data types.
   AddPrimitiveValueInstantiations(m);
 
-  py::object py_type_func = py::eval("type");
-  py::object py_object_type = py::eval("object");
-  // `Value` was defined by the first call to `AddValueInstantiation`.
-  py::object py_value_template = m.attr("Value");
-  abstract_value.def_static(
-      "Make",
-      [py_type_func, py_value_template, py_object_type](py::object value) {
-        // Try to infer type from the object. If that does not work, just return
-        // `Value[object]`.
-        py::object py_type = py_type_func(value);
-        py::tuple py_result =
-            py_value_template.attr("get_instantiation")(py_type, false);
-        py::object py_value_class = py_result[0];
-        if (py_value_class.is_none()) {
-          py_value_class = py_value_template[py_object_type];
-        }
-        return py_value_class(value);
-      },
-      doc.AbstractValue.Make.doc);
+  // This adds Pythonic AbstractValue.Make.
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

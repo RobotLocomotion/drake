@@ -1,9 +1,12 @@
-import ctypes
-import numpy as np
-
-"""Defines a mapping between Python and alias types, and provides canonical
+"""
+Defines a mapping between Python and alias types, and provides canonical
 Python types as they relate to C++.
 """
+
+import ctypes
+import typing
+
+import numpy as np
 
 
 def _get_type_name(t, verbose):
@@ -13,6 +16,20 @@ def _get_type_name(t, verbose):
         return t.__module__ + "." + t.__name__
     else:
         return t.__name__
+
+
+def _is_typing_type(t):
+    # N.B. This hack is used because I (Eric) cannot find an easy check for
+    # types that comes from `typing`, which also works in Python 3.6, 3.7, and
+    # 3.8.
+    return isinstance(t, type) and t.__module__ == "typing"
+
+
+def _get_typing_type_name(t):
+    # TODO(eric.cousineau): Use `typing.get_args` once we support only
+    # Python >= 3.8.
+    param_names = get_param_names(t.__args__)
+    return f"{t.__name__}[{', '.join(param_names)}]"
 
 
 class _StrictMap(object):
@@ -62,7 +79,9 @@ class _ParamAliases(object):
     def get_name(self, alias):
         # Gets string for an alias.
         canonical = self.get_canonical(alias)
-        if isinstance(canonical, type):
+        if _is_typing_type(canonical):
+            return _get_typing_type_name(canonical)
+        elif isinstance(canonical, type):
             return _get_type_name(canonical, False)
         else:
             # For literals.
