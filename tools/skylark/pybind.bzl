@@ -246,6 +246,7 @@ def drake_pybind_cc_googletest(
         name,
         cc_srcs = [],
         cc_deps = [],
+        cc_copts = [],
         py_srcs = [],
         py_deps = [],
         args = [],
@@ -265,6 +266,7 @@ def drake_pybind_cc_googletest(
             "@pybind11",
             "@python//:python_direct_link",
         ],
+        copts = cc_copts,
         use_default_main = False,
         # Add 'manual', because we only want to run it with Python present.
         tags = ["manual"] + tags,
