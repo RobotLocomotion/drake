@@ -447,7 +447,7 @@ void TestLPDualSolution1(const SolverInterface& solver, double tol) {
     // This dual solution is computed by first finding the active constraint at
     // the optimal solution, denoted as Aeq * x = beq, then the dual solution
     // equals to cᵀAeq⁻¹.
-    dual_solution_expected << 0, 0.8, -0.2, 0, 0, 0;
+    dual_solution_expected << 0, 0.8, -0.2, 0, 0;
     EXPECT_TRUE(CompareMatrices(result1.GetDualSolution(constraint),
                                 dual_solution_expected, tol));
 
