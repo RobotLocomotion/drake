@@ -90,6 +90,8 @@ drake_cc_googletest(
         "no_memcheck",
         "no_tsan",
     ],
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
     deps = [
         ":global_inverse_kinematics_test_util",
     ],
