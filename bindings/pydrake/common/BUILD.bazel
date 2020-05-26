@@ -152,6 +152,7 @@ drake_pybind_library(
         ":module_py",
         ":cpp_template_py",
     ],
+    py_srcs = ["_value_extra.py"],
 )
 
 # N.B. Any C++ libraries that include this must include `cpp_template_py` when

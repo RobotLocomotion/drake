@@ -1,4 +1,6 @@
 import ctypes
+import typing
+
 import numpy as np
 
 """Defines a mapping between Python and alias types, and provides canonical
@@ -13,6 +15,11 @@ def _get_type_name(t, verbose):
         return t.__module__ + "." + t.__name__
     else:
         return t.__name__
+
+
+def _get_generic_meta_name(t):
+    param_names = get_param_names(t.__args__)
+    return f"{t.__name__}[{', '.join(param_names)}]"
 
 
 class _StrictMap(object):
@@ -62,7 +69,9 @@ class _ParamAliases(object):
     def get_name(self, alias):
         # Gets string for an alias.
         canonical = self.get_canonical(alias)
-        if isinstance(canonical, type):
+        if isinstance(canonical, typing.GenericMeta):
+            return _get_generic_meta_name(canonical)
+        elif isinstance(canonical, type):
             return _get_type_name(canonical, False)
         else:
             # For literals.
