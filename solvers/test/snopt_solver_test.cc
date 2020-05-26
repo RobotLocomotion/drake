@@ -160,7 +160,7 @@ GTEST_TEST(SnoptTest, TestStringOption) {
 
   prog_minimize.SetSolverOption(SnoptSolver::id(), "Minimize", "");
   auto result_minimize = solver.Solve(prog_minimize, {}, {});
-  EXPECT_TRUE(result_minimize.get_optimal_cost() == -1);
+  EXPECT_EQ(result_minimize.get_optimal_cost(), -1);
 
   MathematicalProgram prog_maximize;
   const auto x_maximize = prog_maximize.NewContinuousVariables<1>();
@@ -171,7 +171,7 @@ GTEST_TEST(SnoptTest, TestStringOption) {
 
   prog_maximize.SetSolverOption(SnoptSolver::id(), "Maximize", "");
   auto result_maximize = solver.Solve(prog_maximize, {}, {});
-  EXPECT_TRUE(result_maximize.get_optimal_cost() == 1);  
+  EXPECT_EQ(result_maximize.get_optimal_cost(), 1);
 }
 
 GTEST_TEST(SnoptTest, TestSparseCost) {
