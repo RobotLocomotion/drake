@@ -20,6 +20,9 @@ namespace pydrake {
 
 // Compare two Python objects directly.
 bool PyEquals(py::object lhs, py::object rhs) {
+  // TODO(eric.cousineau): Consider using `py::eval` as calling __eq__ may not
+  // be robust. Types from `typing` may raise a NotImplemented error when
+  // attempting to compare.
   return lhs.attr("__eq__")(rhs).cast<bool>();
 }
 
@@ -77,14 +80,21 @@ GTEST_TEST(CppParamTest, Packs) {
   ASSERT_TRUE((CheckPyParam<bool, constant<bool, false>>("bool, False")));
 }
 
+GTEST_TEST(CppParamTest, Typing) {
+  ASSERT_TRUE(CheckPyParam<std::vector<int>>("List[int],"));
+  ASSERT_TRUE(CheckPyParam<std::vector<std::vector<int>>>("List[List[int]],"));
+  ASSERT_TRUE(CheckPyParam<std::vector<CustomCppType>>("List[CustomCppType],"));
+}
+
 int main(int argc, char** argv) {
   // Reconstructing `scoped_interpreter` multiple times (e.g. via `SetUp()`)
   // while *also* importing `numpy` wreaks havoc.
   py::scoped_interpreter guard;
 
-  // Define common scope, import numpy for use in `eval`.
+  // Define common scope, import numpy and List for use in `eval`.
   py::module m("__main__");
   py::globals()["np"] = py::module::import("numpy");
+  py::globals()["List"] = py::module::import("typing").attr("List");
 
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
