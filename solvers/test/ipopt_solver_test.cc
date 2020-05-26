@@ -152,6 +152,41 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
     }
   }
 }
+
+GTEST_TEST(IpoptSolverTest, QPDualSolution1) {
+  IpoptSolver solver;
+  TestQPDualSolution1(solver, 1e-5);
+}
+
+GTEST_TEST(IpoptSolverTest, QPDualSolution2) {
+  IpoptSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(IpoptSolverTest, QPDualSolution3) {
+  IpoptSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(IpoptSolverTest, EqualityConstrainedQPDualSolution1) {
+  IpoptSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(IpoptSolverTest, EqualityConstrainedQPDualSolution2) {
+  IpoptSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
+GTEST_TEST(IpoptSolverTest, LPDualSolution1) {
+  IpoptSolver solver;
+  TestLPDualSolution1(solver);
+}
+
+GTEST_TEST(IpoptSolverTest, EckhardtDualSolution) {
+  IpoptSolver solver;
+  TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
