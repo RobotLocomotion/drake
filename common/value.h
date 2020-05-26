@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -9,6 +10,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/is_cloneable.h"
 #include "drake/common/nice_type_name.h"
@@ -44,6 +46,43 @@ using ValueForwardingCtorEnabled = typename std::enable_if_t<
   // Disambiguate our copy implementation from our clone implementation.
   (choose_copy == std::is_copy_constructible<T>::value)>;
 
+// N.B. Using type tag because trying to convert via value directly breaks for
+// classes with deleted move or copy constructors.
+template <typename T>
+struct type_tag { using type = T; };
+
+// Simplify the Eigen type: discard all attributes, only keep dimension and
+// scalar type, and ensure it's dynamically-sized.
+template <typename Derived>
+auto SimplifyEigenType(type_tag<Derived> = {}) {
+  using Scalar = typename Derived::Scalar;
+  if constexpr (Derived::ColsAtCompileTime == 1) {
+    return type_tag<VectorX<Scalar>>{};
+  } else {
+    return type_tag<MatrixX<Scalar>>{};
+  }
+}
+
+// Ensure that all Eigen types are simplified for Python.
+template <typename U>
+auto ResolveValueType(type_tag<U> tag = {}) {
+  if constexpr (is_eigen_type<U>::value) {
+    return SimplifyEigenType(tag);
+  } else {
+    return tag;
+  }
+}
+
+template <typename T>
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+template <typename U>
+using resolve_value_type_t = typename decltype(ResolveValueType<U>())::type;
+
+template <typename T>
+inline constexpr bool value_type_requires_conversion_v =
+    !std::is_same_v<T, resolve_value_type_t<T>>;
+
 }  // namespace internal
 #endif
 
@@ -67,9 +106,15 @@ class AbstractValue {
 
   virtual ~AbstractValue();
 
-  /// Returns an AbstractValue containing the given @p value.
-  template <typename T>
-  static std::unique_ptr<AbstractValue> Make(const T& value);
+  /// Returns Value<T> containing the given @p value. The type U may be
+  /// converted.
+  template <typename U>
+  static auto MakeDirect(const U& value);
+
+  /// Returns unique_ptr<AbstractValue> containing the given @p value. The type
+  /// U may be converted.
+  template <typename U>
+  static std::unique_ptr<AbstractValue> Make(const U& value);
 
   /// Returns the value wrapped in this AbstractValue as a const reference.
   /// The reference remains valid only until this object is set or destroyed.
@@ -101,6 +146,32 @@ class AbstractValue {
   /// returns nullptr.
   template <typename T>
   const T* maybe_get_value() const;
+
+  template <typename U>
+  using resolve_value_type_t = internal::resolve_value_type_t<U>;
+
+  /// Asserts that given value v of requested type U is compatible with
+  /// resolved type T.
+  template <typename U, typename T>
+  static void AssertValueIsConvertible(const T& v);
+
+  /// Gets an abstract value, possibly translating type U and (implicitly)
+  /// converting the value.
+  template <typename U>
+  resolve_value_type_t<U> GetValue() const;
+
+  /// Gets an abstract value, possibly translating type U and (implicitly)
+  /// converting the value. If the underlying type T is not used, will return
+  /// nullopt.
+  /// @throws std::runtime_error if the stored value is incompatible with the
+  ///   requested type U.
+  template <typename U>
+  std::optional<U> MaybeGetValue() const;
+
+  /// Sets an abstract value, possibly translating type U and implicitly
+  /// converting the value.
+  template <typename U>
+  void SetValue(const U& v);
 
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
@@ -164,11 +235,26 @@ class AbstractValue {
 /// (Advanced.) User-defined classes with additional features may subclass
 /// Value, but should take care to override Clone().
 ///
-/// @tparam T Must be copy-constructible or cloneable.
+/// (Advanced.) Certain types require conversion. Specifically, all fixed-size
+/// Eigen types are simplified to either Eigen::VectorXd or Eigen::MatrixXd. If
+/// you wish to use AbstractValue directly in your public API, please use
+/// AbstractValue::{Make, MakeDirect, GetValue, MaybeGetValue, SetValue}.
+///
+/// @tparam T Must be copy-constructible or cloneable, may not have (const,
+/// volatile, reference) specifiers, and must not require conversion.
 template <typename T>
 class Value : public AbstractValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Value)
+
+  static_assert(
+      std::is_same_v<T, internal::remove_cvref_t<T>>,
+      "T should not have const, volatile, or reference specifiers.");
+
+  static_assert(
+      !internal::value_type_requires_conversion_v<T>,
+      "T requires conversion and is not allowed in Value<T>. Instead, use "
+      "AbstractValue::{Make, MakeDirect, GetValue, MaybeGetValue, SetValue}.");
 
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
@@ -609,9 +695,16 @@ struct ValueTraitsImpl<T, false> {
 
 }  // namespace internal
 
-template <typename T>
-std::unique_ptr<AbstractValue> AbstractValue::Make(const T& value) {
+template <typename U>
+std::unique_ptr<AbstractValue> AbstractValue::Make(const U& value) {
+  using T = internal::resolve_value_type_t<U>;
   return std::unique_ptr<AbstractValue>(new Value<T>(value));
+}
+
+template <typename U>
+auto AbstractValue::MakeDirect(const U& value) {
+  using T = internal::resolve_value_type_t<U>;
+  return Value<T>(value);
 }
 
 template <typename T>
@@ -619,6 +712,51 @@ const T* AbstractValue::maybe_get_value() const {
   if (!is_maybe_matched<T>()) { return nullptr; }
   auto& self = static_cast<const Value<T>&>(*this);
   return &self.get_value();
+}
+
+template <typename U, typename T>
+void AbstractValue::AssertValueIsConvertible(const T& v) {
+  if constexpr (is_eigen_type<T>::value) {
+    static_assert(std::is_same_v<T, resolve_value_type_t<U>>, "Must be same");
+    // N.B. This only occurs with Eigen types.
+    // Normally, Eigen size checks are only performed for debug builds. We
+    // instead force these to happen in release mode too.
+    if constexpr (U::ColsAtCompileTime != Eigen::Dynamic) {
+      DRAKE_THROW_UNLESS(v.cols() == U::ColsAtCompileTime);
+    }
+    if constexpr (U::RowsAtCompileTime != Eigen::Dynamic) {
+      DRAKE_THROW_UNLESS(v.rows() == U::RowsAtCompileTime);
+    }
+  }
+}
+
+template <typename U>
+AbstractValue::resolve_value_type_t<U> AbstractValue::GetValue() const {
+  using T = resolve_value_type_t<U>;
+  const T& v = get_value<T>();
+  AssertValueIsConvertible<U>(v);
+  return v;
+}
+
+template <typename U>
+std::optional<U> AbstractValue::MaybeGetValue() const {
+  using T = resolve_value_type_t<U>;
+  if (const T* v = maybe_get_value<T>()) {
+    // TODO(eric.cousineau): This should check sizes instead, and return
+    // nullopt if it can't convert?
+    AssertValueIsConvertible<U>(*v);
+    return *v;
+  } else {
+    return std::nullopt;
+  }
+}
+
+/// Sets an abstract value, possibly translating type U and implicitly
+/// converting the value.
+template <typename U>
+void AbstractValue::SetValue(const U& v) {
+  using T = internal::resolve_value_type_t<U>;
+  return set_value<T>(v);
 }
 
 // In Debug mode, returns true iff `this` is-a `Value<T>`.  In Release mode, a

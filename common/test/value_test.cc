@@ -10,8 +10,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
+
+using Eigen::Matrix2d;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace test {
@@ -348,6 +354,95 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
       dynamic_cast<PrintInterface*>(cloned.get());
   ASSERT_NE(nullptr, printable_erased);
   EXPECT_EQ("5,6", printable_erased->print());
+}
+
+// Tests const, volatile, and reference types.
+GTEST_TEST(ValueTest, AllowedTypesMetaTest) {
+  using T = int;
+  Value<T>{};
+  // Value<const T>{};  // Should trigger static assertion.
+  // Value<volatile T>{};  // Should trigger static assertion.
+  // Value<const T&>{};  // Should trigger static assertion.
+  // Value<T&&>{};  // Should trigger static assertion.
+}
+
+// Tests eigen types.
+GTEST_TEST(ValueTest, EigenTypeMetaTest) {
+  static_assert(
+      std::is_same_v<AbstractValue::resolve_value_type_t<VectorXd>, VectorXd>,
+      "Should not be converted");
+  static_assert(
+      std::is_same_v<AbstractValue::resolve_value_type_t<Vector2d>, VectorXd>,
+      "Should be converted");
+  static_assert(
+      std::is_same_v<AbstractValue::resolve_value_type_t<MatrixXd>, MatrixXd>,
+      "Should not be converted");
+  static_assert(
+      std::is_same_v<AbstractValue::resolve_value_type_t<Matrix2d>, MatrixXd>,
+      "Should be converted");
+  Value<VectorXd>{};
+  // Value<Vector2d>{};  // Should trigger static assertion.
+  Value<MatrixXd>{};
+  // Value<Matrix2d>{};    // Should trigger static assertion.
+}
+
+GTEST_TEST(ValueTest, EigenTypeTest) {
+  // Dynamic vector. Also tests edge cases for conversion.
+  {
+    VectorXd vector(2);
+    vector << 1, 2;
+    auto value = AbstractValue::Make(vector);
+    value->set_value(vector);
+    EXPECT_EQ(value->get_value<VectorXd>(), vector);
+    EXPECT_EQ(value->GetValue<Vector2d>(), vector);
+    EXPECT_EQ(value->MaybeGetValue<Vector2d>(), vector);
+    EXPECT_EQ(value->MaybeGetValue<Matrix2d>(), std::nullopt);
+    EXPECT_THROW(
+        value->GetValue<Eigen::Vector3d>(),
+        std::runtime_error);
+    vector *= 2;
+    value->SetValue(vector);
+    EXPECT_EQ(value->get_value<VectorXd>(), vector);
+  }
+  // Fixed vector.
+  {
+    Vector2d vector_fixed(1, 2);
+    auto value = AbstractValue::Make(vector_fixed);
+    value->set_value<VectorXd>(vector_fixed);
+    EXPECT_EQ(value->get_value<VectorXd>(), vector_fixed);
+    EXPECT_EQ(value->GetValue<Vector2d>(), vector_fixed);
+    vector_fixed *= 2;
+    value->SetValue(vector_fixed);
+    EXPECT_EQ(value->get_value<VectorXd>(), vector_fixed);
+  }
+  // Dynamic matrix.
+  {
+    MatrixXd matrix(2, 2);
+    matrix << 1, 2, 3, 4;
+    auto value = AbstractValue::Make(matrix);
+    value->set_value(matrix);
+    EXPECT_EQ(value->get_value<MatrixXd>(), matrix);
+    EXPECT_THROW(
+        value->GetValue<Eigen::Matrix3d>(),
+        std::runtime_error);
+    matrix *= 2;
+    value->SetValue(matrix);
+    EXPECT_EQ(value->get_value<MatrixXd>(), matrix);
+  }
+  // Fixed matrix.
+  {
+    Matrix2d matrix_fixed;
+    matrix_fixed << 1, 2, 3, 4;
+    auto value = AbstractValue::Make(matrix_fixed);
+    value->set_value<MatrixXd>(matrix_fixed);
+    EXPECT_EQ(value->get_value<MatrixXd>(), matrix_fixed);
+    EXPECT_THROW(
+        value->GetValue<Eigen::Matrix3d>(),
+        std::runtime_error);
+    matrix_fixed *= 2;
+    value->SetValue(matrix_fixed);
+    EXPECT_EQ(value->get_value<MatrixXd>(), matrix_fixed);
+  }
 }
 
 // Check that TypeHash is extracting exactly the right strings from

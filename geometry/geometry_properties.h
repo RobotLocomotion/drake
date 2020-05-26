@@ -257,7 +257,7 @@ class GeometryProperties {
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    AddPropertyAbstract(group_name, name, Value(value));
+    AddPropertyAbstract(group_name, name, AbstractValue::MakeDirect(value));
   }
 
   /** Adds a property with the given `name` and type-erased `value` to the the
@@ -291,8 +291,8 @@ class GeometryProperties {
                             c) the property type is not that specified.
    @tparam ValueType  The expected type of the desired property.  */
   template <typename ValueType>
-  const ValueType& GetProperty(const std::string& group_name,
-                               const std::string& name) const {
+  const auto& GetProperty(const std::string& group_name,
+                          const std::string& name) const {
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
     return GetValueOrThrow<ValueType>(
         "GetProperty", group_name, name, abstract);
@@ -398,17 +398,19 @@ class GeometryProperties {
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
-  static const ValueType& GetValueOrThrow(
+  static const auto& GetValueOrThrow(
       const std::string& method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract) {
-    const ValueType* value = abstract.maybe_get_value<ValueType>();
+    using T = AbstractValue::resolve_value_type_t<ValueType>;
+    const T* value = abstract.maybe_get_value<T>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property '{}' in group '{}' exists, "
           "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, NiceTypeName::Get<ValueType>(),
+          method, name, group_name, NiceTypeName::Get<T>(),
           abstract.GetNiceTypeName()));
     }
+    AbstractValue::AssertValueIsConvertible<ValueType>(*value);
     return *value;
   }
 
