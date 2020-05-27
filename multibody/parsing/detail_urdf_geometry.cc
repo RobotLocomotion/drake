@@ -523,12 +523,13 @@ geometry::GeometryInstance ParseCollision(
   if (drake_element) {
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
+      std::optional<double> result;
       const XMLElement* value_node =
           drake_element->FirstChildElement(element_name);
       if (value_node != nullptr) {
         double value{};
         if (ParseScalarAttribute(value_node, "value", &value)) {
-          return value;
+          result = value;
         } else {
           throw std::runtime_error(
               fmt::format("Unable to read the 'value' attribute for the <{}> "
@@ -536,7 +537,7 @@ geometry::GeometryInstance ParseCollision(
                           element_name, value_node->GetLineNum()));
         }
       }
-      return {};
+      return result;
     };
 
     const XMLElement* const rigid_element =

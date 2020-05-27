@@ -384,11 +384,11 @@ ProximityProperties MakeProximityPropertiesForCollision(
   if (drake_element != nullptr) {
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
+      std::optional<double> result;
       if (MaybeGetChildElement(*drake_element, element_name) != nullptr) {
-        return GetChildElementValue<double>(*drake_element,
-                                                   element_name);
+        result = GetChildElementValue<double>(*drake_element, element_name);
       }
-      return {};
+      return result;
     };
 
     const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
