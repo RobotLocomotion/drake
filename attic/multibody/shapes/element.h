@@ -51,10 +51,10 @@ class Element {
 
  protected:
   // Provide a copy constructor for use by our subclasses' clone().
-  // Delete all of the other operations.
   Element(const Element&);
+  Element(Element&&) = default;
+
   void operator=(const Element&) = delete;
-  Element(Element&&) = delete;
   void operator=(Element&&) = delete;
 
   void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
