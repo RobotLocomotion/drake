@@ -392,6 +392,11 @@ constexpr bool kClang = true;
 #else
 constexpr bool kClang = false;
 #endif
+#if __GNUC__ >= 8
+constexpr bool kGcc8 = true;
+#else
+constexpr bool kGcc8 = false;
+#endif
 
 GTEST_TEST(TypeHashTest, WellKnownValues) {
   // Simple primitives, structs, and classes.
@@ -462,11 +467,12 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
 
   // Templated on a value, but with the 'using NonTypeTemplateParameter'
   // decoration so that the hash works.
+  const std::string anonymous = kGcc8 ? "<unnamed>" : "{anonymous}";
   const std::string kfoo =
-      kClang ? "drake::test::{anonymous}::AnonEnum::kFoo" : "0";
+      kClang || kGcc8 ? "drake::test::" + anonymous + "::AnonEnum::kFoo" : "0";
   CheckHash<NiceAnonEnumTemplate<AnonEnum::kFoo>>(
-      "drake::test::{anonymous}::NiceAnonEnumTemplate<"
-        "drake::test::{anonymous}::AnonEnum=" + kfoo + ">");
+      "drake::test::" + anonymous + "::NiceAnonEnumTemplate<"
+        "drake::test::" + anonymous + "::AnonEnum=" + kfoo + ">");
 }
 
 // Tests that a type mismatched is detected for a mismatched non-type template
