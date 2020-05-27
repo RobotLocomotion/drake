@@ -29,6 +29,7 @@ from pydrake.multibody.tree import (
     PrismaticJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
+    RotationalInertia_,
     RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
@@ -381,13 +382,28 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_inertia_api(self, T):
+        RotationalInertia = RotationalInertia_[T]
         UnitInertia = UnitInertia_[T]
         SpatialInertia = SpatialInertia_[T]
+        # Test unit inertia construction.
         UnitInertia()
         unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
+        self.assertIsInstance(unit_inertia, RotationalInertia)
+        self.assertIsInstance(unit_inertia.CopyToFullMatrix3(), np.ndarray)
+        # Test spatial inertia construction.
         SpatialInertia()
-        SpatialInertia(mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
-                       G_SP_E=unit_inertia)
+        spatial_inertia = SpatialInertia(
+            mass=2.5, p_PScm_E=[0.1, -0.2, 0.3], G_SP_E=unit_inertia)
+        numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
+        self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
+        self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
+        self.assertIsInstance(
+            spatial_inertia.CalcRotationalInertia(), RotationalInertia)
+        # N.B. `numpy_compare.assert_equal(IsPhysicallyValid(), True)` does not
+        # work.
+        if T != Expression:
+            self.assertTrue(spatial_inertia.IsPhysicallyValid())
+        self.assertIsInstance(spatial_inertia.CopyToFullMatrix6(), np.ndarray)
 
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
