@@ -1,8 +1,8 @@
 import numpy as np
 import unittest
 
-from anzu.common.runfiles import Rlocation
-from anzu.sim.acrobot.acrobot_io import (
+from pydrake.common import FindResourceOrThrow
+from drake.examples.acrobot.dev.acrobot_io import (
     load_scenario, save_scenario,
     load_output, save_output)
 
@@ -11,7 +11,8 @@ class TestIo(unittest.TestCase):
 
     def setUp(self):
         self.maxDiff = None
-        self.sample = Rlocation("anzu/sim/acrobot/test/sample_scenario.yaml")
+        self.sample = FindResourceOrThrow(
+            "drake/examples/acrobot/dev/test/sample_scenario.yaml")
         # When saving, everything comes out as floats (not `int`, etc.).
         self.expected_save = """sample:
   controller_params: [5.0, 50.0, 5.0, 1000.0]
@@ -85,7 +86,3 @@ class TestIo(unittest.TestCase):
         self.assertEqual(actual, expected)
         readback = load_output(data=expected)
         self.assertEqual(x_tape.tolist(), values)
-
-
-if __name__ == "__main__":
-    unittest.main()

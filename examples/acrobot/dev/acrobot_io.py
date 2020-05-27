@@ -2,15 +2,21 @@ import yaml
 
 import numpy as np
 
-from anzu.common.schema import yaml_load
-
 
 def load_scenario(*, filename=None, data=None, scenario_name=None):
     """Given a scenario `filename` xor `data`, and optionally `scenario_name`,
     loads and returns one acrobot scenario from the file.  The `scenario_name`
     may only be omitted when the file contains a single scenario.
     """
-    data = yaml_load(filename=filename, data=data)
+    # TODO(ggould-tri) This originally used a schema parser that was aware of
+    # the stochastic schema types (eg "!Gaussian" object tags).  That is not
+    # currently ported here as the python version of spong_sim does not
+    # support stochastic schemas.
+    if data:
+        data = yaml.safe_load(data)
+    else:
+        with open(filename, "r") as data:
+            data = yaml.safe_load(data)
     if scenario_name:
         result = data[scenario_name]
     else:
@@ -41,10 +47,7 @@ def save_scenario(*, scenario, scenario_name):
 
 def load_output(*, filename=None, data=None):
     """Given an acrobot output `filename` xor `data`, loads and returns the
-    np.ndarray. NOTE: We re-implement this here (rather than using
-    `yaml_load`) in order to use `yaml.CLoader`, which greatly improves
-    performance, but cannot be used for all the cases supported by
-    yaml_load."""
+    np.ndarray."""
     if sum(bool(x) for x in [data, filename]) != 1:
         raise RuntimeError("Must specify exactly one of data= and filename=")
     if data:

@@ -5,6 +5,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "drake/common/name_value.h"
+#include "drake/common/schema/dev/stochastic.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/common/yaml/yaml_write_archive.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
@@ -12,7 +13,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/signal_logger.h"
-#include "common/schema/stochastic.h"
 
 using drake::examples::acrobot::AcrobotParams;
 using drake::examples::acrobot::AcrobotPlant;
@@ -20,8 +20,8 @@ using drake::examples::acrobot::AcrobotSpongController;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace examples {
 namespace acrobot {
 namespace {
 
@@ -34,9 +34,9 @@ DEFINE_int32(random_seed, drake::RandomGenerator::default_seed,
 // The YAML format for --scenario.
 struct Scenario {
   // TODO(jeremy.nimmer) Maybe use AcrobotParams class for this one?
-  common::schema::DistributionVectorVariant<4> controller_params =
+  drake::schema::DistributionVectorVariant<4> controller_params =
       Eigen::Vector4d::Constant(NAN);
-  common::schema::DistributionVectorVariant<4> initial_state =
+  drake::schema::DistributionVectorVariant<4> initial_state =
       Eigen::Vector4d::Constant(NAN);
   double t_final = NAN;
   double tape_period = NAN;
@@ -67,10 +67,10 @@ Scenario SampleScenario(const Scenario& input) {
   drake::RandomGenerator random(FLAGS_random_seed);
   Scenario result = input;
   result.controller_params =
-      common::schema::ToDistributionVector(input.controller_params)->
+      drake::schema::ToDistributionVector(input.controller_params)->
       Sample(&random);
   result.initial_state =
-      common::schema::ToDistributionVector(input.initial_state)->
+      drake::schema::ToDistributionVector(input.initial_state)->
       Sample(&random);
   return result;
 }
@@ -106,15 +106,16 @@ std::string Simulate(const YAML::Node& scenario_node) {
 
   auto& plant_context = diagram->GetMutableSubsystemContext(
       *plant, &context);
-  DRAKE_DEMAND(common::schema::IsDeterministic(scenario.initial_state));
+  DRAKE_DEMAND(drake::schema::IsDeterministic(scenario.initial_state));
   plant_context.SetContinuousState(
-      common::schema::GetDeterministicValue(scenario.initial_state));
+      drake::schema::GetDeterministicValue(scenario.initial_state));
 
   auto& controller_context = diagram->GetMutableSubsystemContext(
       *controller, &context);
-  DRAKE_DEMAND(common::schema::IsDeterministic(scenario.controller_params));
+  DRAKE_DEMAND(drake::schema::IsDeterministic(
+      scenario.controller_params));
   controller_context.get_mutable_numeric_parameter(0).SetFromVector(
-      common::schema::GetDeterministicValue(scenario.controller_params));
+      drake::schema::GetDeterministicValue(scenario.controller_params));
 
   simulator.AdvanceTo(scenario.t_final);
 
@@ -169,12 +170,12 @@ int Main() {
 
 }  // namespace
 }  // namespace acrobot
-}  // namespace sim
-}  // namespace anzu
+}  // namespace examples
+}  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A main() program simulates a spong-controlled acrobot.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return anzu::sim::acrobot::Main();
+  return drake::examples::acrobot::Main();
 }
