@@ -505,9 +505,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
   // Inertias
   {
+    using Class = RotationalInertia<T>;
+    constexpr auto& cls_doc = doc.RotationalInertia;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "RotationalInertia", param, cls_doc.doc);
+    cls  // BR
+        .def("CopyToFullMatrix3", &Class::CopyToFullMatrix3,
+            cls_doc.CopyToFullMatrix3.doc);
+  }
+  {
     using Class = UnitInertia<T>;
     constexpr auto& cls_doc = doc.UnitInertia;
-    auto cls = DefineTemplateClassWithDefault<Class>(
+    auto cls = DefineTemplateClassWithDefault<Class, RotationalInertia<T>>(
         m, "UnitInertia", param, cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
@@ -526,7 +535,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
-            cls_doc.ctor.doc_3args);
+            cls_doc.ctor.doc_3args)
+        .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
+        .def("get_com", &Class::get_com, cls_doc.get_com.doc)
+        .def("get_unit_inertia", &Class::get_unit_inertia,
+            cls_doc.get_unit_inertia.doc)
+        .def("CalcRotationalInertia", &Class::CalcRotationalInertia,
+            cls_doc.CalcRotationalInertia.doc)
+        .def("IsPhysicallyValid", &Class::IsPhysicallyValid,
+            cls_doc.IsPhysicallyValid.doc)
+        .def("CopyToFullMatrix6", &Class::CopyToFullMatrix6,
+            cls_doc.CopyToFullMatrix6.doc);
   }
 }
 }  // namespace
