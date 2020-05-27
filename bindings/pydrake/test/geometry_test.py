@@ -246,6 +246,7 @@ class TestGeometry(unittest.TestCase):
             self.assertIsNot(shape, shape_copy)
 
     def test_shapes(self):
+        RigidTransform = RigidTransform_[float]
         sphere = mut.Sphere(radius=1.0)
         self.assertEqual(sphere.radius(), 1.0)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
@@ -256,6 +257,8 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+        X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
+        self.assertIsInstance(X_FH, RigidTransform)
         box_mesh_path = FindResourceOrThrow(
             "drake/systems/sensors/test/models/meshes/box.obj")
         mesh = mut.Mesh(absolute_filename=box_mesh_path, scale=1.0)
