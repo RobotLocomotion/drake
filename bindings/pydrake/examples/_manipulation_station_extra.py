@@ -1,5 +1,6 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
+
 import numpy as np
 
 from pydrake.math import RigidTransform, RollPitchYaw
