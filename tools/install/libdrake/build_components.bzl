@@ -101,7 +101,8 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //attic:warning (indirectly)
+    # //attic:attic_warning (indirectly)
     # //common:filesystem (indirectly)
     # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
+    # //third_party/com_github_jbeder_yaml_cpp:emitfromevents (indirectly)
 ]
