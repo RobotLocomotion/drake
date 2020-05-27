@@ -1,6 +1,6 @@
-# A sample scenario for acrobot, with randomness.
+# An example scenario for acrobot, with randomness.
 
-sample:
+example:
   controller_params: !UniformVector
     min: [4, 40, 4, 0.9e3]
     max: [6, 60, 6, 1.1e3]

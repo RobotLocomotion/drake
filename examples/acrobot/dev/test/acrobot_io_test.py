@@ -1,8 +1,8 @@
 import numpy as np
 import unittest
 
-from anzu.common.runfiles import Rlocation
-from anzu.sim.acrobot.acrobot_io import (
+from pydrake.common import FindResourceOrThrow
+from drake.examples.acrobot.dev.acrobot_io import (
     load_scenario, save_scenario,
     load_output, save_output)
 
@@ -11,9 +11,10 @@ class TestIo(unittest.TestCase):
 
     def setUp(self):
         self.maxDiff = None
-        self.sample = Rlocation("anzu/sim/acrobot/test/sample_scenario.yaml")
+        self.example = FindResourceOrThrow(
+            "drake/examples/acrobot/dev/test/example_scenario.yaml")
         # When saving, everything comes out as floats (not `int`, etc.).
-        self.expected_save = """sample:
+        self.expected_save = """example:
   controller_params: [5.0, 50.0, 5.0, 1000.0]
   initial_state: [1.2, 0.0, 0.0, 0.0]
   t_final: 30.0
@@ -21,8 +22,8 @@ class TestIo(unittest.TestCase):
 """
 
     def test_load_scenario(self):
-        a = load_scenario(filename=self.sample)
-        b = load_scenario(filename=self.sample, scenario_name="sample")
+        a = load_scenario(filename=self.example)
+        b = load_scenario(filename=self.example, scenario_name="example")
         expected = ", ".join([
             "{'controller_params': [5, 50, 5, '1e3']",
             "'initial_state': [1.2, 0, 0, 0]",
@@ -33,8 +34,8 @@ class TestIo(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_save_scenario(self):
-        scenario = load_scenario(filename=self.sample)
-        actual = save_scenario(scenario_name="sample", scenario=scenario)
+        scenario = load_scenario(filename=self.example)
+        actual = save_scenario(scenario_name="example", scenario=scenario)
         self.assertEqual(actual, self.expected_save)
 
     def test_save_scenario_numpy(self):
@@ -44,7 +45,7 @@ class TestIo(unittest.TestCase):
             "t_final": 30.0,
             "tape_period": 0.05,
         }
-        actual = save_scenario(scenario_name="sample", scenario=scenario)
+        actual = save_scenario(scenario_name="example", scenario=scenario)
         self.assertEqual(actual, self.expected_save)
 
     def test_save_scenario_stochastic(self):
@@ -57,8 +58,8 @@ class TestIo(unittest.TestCase):
             "t_final": 30.0,
             "tape_period": 0.05,
         }
-        actual = save_scenario(scenario_name="sample", scenario=scenario)
-        self.assertEqual(actual, """sample:
+        actual = save_scenario(scenario_name="example", scenario=scenario)
+        self.assertEqual(actual, """example:
   controller_params:
     max: [5.0, 50.0, 5.0, 1000.0]
     min: [1.0, 10.0, 1.0, 100.0]
@@ -85,7 +86,3 @@ class TestIo(unittest.TestCase):
         self.assertEqual(actual, expected)
         readback = load_output(data=expected)
         self.assertEqual(x_tape.tolist(), values)
-
-
-if __name__ == "__main__":
-    unittest.main()
