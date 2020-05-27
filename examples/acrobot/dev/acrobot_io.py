@@ -2,23 +2,29 @@ import yaml
 
 import numpy as np
 
-from anzu.common.schema import yaml_load
-
 
 def load_scenario(*, filename=None, data=None, scenario_name=None):
     """Given a scenario `filename` xor `data`, and optionally `scenario_name`,
     loads and returns one acrobot scenario from the file.  The `scenario_name`
     may only be omitted when the file contains a single scenario.
     """
-    data = yaml_load(filename=filename, data=data)
-    if scenario_name:
-        result = data[scenario_name]
+    # TODO(ggould-tri) This originally used a schema parser that was aware of
+    # the stochastic schema types (eg "!Gaussian" object tags).  That is not
+    # currently ported here as the python version of spong_sim does not
+    # support stochastic schemas.
+    if data:
+        scenarios = yaml.safe_load(data)
     else:
-        if len(data) != 1:
+        with open(filename, "r") as data_file:
+            scenarios = yaml.safe_load(data_file)
+    if scenario_name:
+        result = scenarios[scenario_name]
+    else:
+        if len(scenarios) != 1:
             raise RuntimeError(
                 "A scenario_name is required because the scenario file "
                 "contains more than one scenario.")
-        (_, result), = data.items()
+        (_, result), = scenarios.items()
     return result
 
 
@@ -41,10 +47,12 @@ def save_scenario(*, scenario, scenario_name):
 
 def load_output(*, filename=None, data=None):
     """Given an acrobot output `filename` xor `data`, loads and returns the
-    np.ndarray. NOTE: We re-implement this here (rather than using
-    `yaml_load`) in order to use `yaml.CLoader`, which greatly improves
-    performance, but cannot be used for all the cases supported by
-    yaml_load."""
+    np.ndarray.
+
+    NOTE: We re-implement this here (rather than using `yaml_load`) in order
+    to use `yaml.CLoader`, which greatly improves performance, but cannot be
+    used for all the cases supported by yaml_load.
+    """
     if sum(bool(x) for x in [data, filename]) != 1:
         raise RuntimeError("Must specify exactly one of data= and filename=")
     if data:
