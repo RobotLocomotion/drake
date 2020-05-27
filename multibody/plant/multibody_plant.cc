@@ -1992,10 +1992,7 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerations(
     const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
   DRAKE_DEMAND(vdot != nullptr);
   DRAKE_DEMAND(vdot->size() == num_velocities());
-  if (is_discrete())
-    CalcGeneralizedAccelerationsDiscrete(context, vdot);
-  else
-    *vdot = EvalForwardDynamics(context).get_vdot();
+  *vdot = EvalForwardDynamics(context).get_vdot();
 }
 
 template <typename T>
@@ -2086,62 +2083,10 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcGeneralizedAccelerationsContinuous(
-    const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
-  DRAKE_DEMAND(vdot != nullptr);
-  DRAKE_DEMAND(vdot->size() == num_velocities());
-  DRAKE_DEMAND(!is_discrete());
-  const int nv = this->num_velocities();
-
-  // Allocate workspace. We might want to cache these to avoid allocations.
-  // Mass matrix.
-  MatrixX<T> M(nv, nv);
-  // Forces.
-  MultibodyForces<T> forces(internal_tree());
-  // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
-  // Generalized accelerations.
-  VectorX<T> zero_vdot = VectorX<T>::Zero(nv);
-
-  CalcAppliedForces(context, &forces);
-
-  internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
-
-  // WARNING: to reduce memory foot-print, we use the input applied arrays also
-  // as output arrays. This means that both the array of applied body forces and
-  // the array of applied generalized forces get overwritten on output. This is
-  // not important in this case since we don't need their values anymore.
-  // Please see the documentation for CalcInverseDynamics() for details.
-
-  // Compute all applied forces.
-  std::vector<SpatialForce<T>>& Fapp_BBo_W_array = forces.mutable_body_forces();
-  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
-      EvalSpatialContactForcesContinuous(context);
-  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
-    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
-  VectorX<T>& tau_app = forces.mutable_generalized_forces();
-
-  // Aliases for memory foot-print reduction.
-  VectorX<T>& tau = tau_app;
-  std::vector<SpatialForce<T>>& F_BBo_W_array = Fapp_BBo_W_array;
-
-  // Compute all applied forces as a generalized force. With vdot = 0, this
-  // computes:
-  //   tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_BBo_W.
-
-  internal_tree().CalcInverseDynamics(
-      context, zero_vdot, Fapp_BBo_W_array, tau_app, &A_WB_array,
-      &F_BBo_W_array, /* Notice "applied" arrays get overwritten on output. */
-      &tau);
-
-  *vdot = M.ldlt().solve(-tau);
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcGeneralizedAccelerationsDiscrete(
-    const drake::systems::Context<T>& context0, VectorX<T>* vdot) const {
-  DRAKE_DEMAND(vdot != nullptr);
-  DRAKE_DEMAND(vdot->size() == num_velocities());
+void MultibodyPlant<T>::CalcForwardDynamicsDiscrete(
+    const drake::systems::Context<T>& context0,
+    AccelerationKinematicsCache<T>* ac) const {
+  DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(is_discrete());
 
   // Evaluate contact results.
@@ -2154,7 +2099,13 @@ void MultibodyPlant<T>::CalcGeneralizedAccelerationsDiscrete(
   auto x0 = context0.get_discrete_state(0).get_value();
   const VectorX<T> v0 = x0.bottomRows(this->num_velocities());
 
-  *vdot = (v_next - v0) / time_step();
+  ac->get_mutable_vdot() = (v_next - v0) / time_step();
+
+  // N.B. Pool of spatial accelerations indexed by BodyNodeIndex.
+  internal_tree().CalcSpatialAccelerationsFromVdot(
+      context0, EvalPositionKinematics(context0),
+      EvalVelocityKinematics(context0), ac->get_vdot(),
+      &ac->get_mutable_A_WB_pool());
 }
 
 template<typename T>
@@ -2277,6 +2228,29 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               "body_poses", std::vector<math::RigidTransform<T>>(num_bodies()),
               &MultibodyPlant<T>::CalcBodyPosesOutput,
               {this->configuration_ticket()})
+          .get_index();
+
+  // Declare the output port for the spatial velocities of all bodies in the
+  // world.
+  body_spatial_velocities_port_ =
+      this->DeclareAbstractOutputPort(
+              "spatial_velocities",
+              std::vector<SpatialVelocity<T>>(num_bodies()),
+              &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
+              {this->kinematics_ticket()})
+          .get_index();
+
+  // Declare the output port for the spatial accelerations of all bodies in the
+  // world.
+  body_spatial_accelerations_port_ =
+      this->DeclareAbstractOutputPort(
+              "spatial_accelerations",
+              std::vector<SpatialAcceleration<T>>(num_bodies()),
+              &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput,
+              // Accelerations depend on both state and inputs.
+              // All sources include: time, accuracy, state, input ports, and
+              // parameters.
+              {this->all_sources_ticket()})
           .get_index();
 
   const auto& generalized_accelerations_cache_entry =
@@ -2595,9 +2569,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Last pass of the ABA for forward dynamics.
   auto& aba_accelerations_cache_entry = this->DeclareCacheEntry(
-      std::string("ABA accelerations."),
-      AccelerationKinematicsCache<T>(internal_tree().get_topology()),
-      &MultibodyPlant<T>::CalcForwardDynamics,
+      std::string("Accelerations."),
+      [this]() {
+        return AbstractValue::Make(
+            AccelerationKinematicsCache<T>(internal_tree().get_topology()));
+      },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& ac =
+            cache_value->get_mutable_value<AccelerationKinematicsCache<T>>();
+        if (this->is_discrete()) {
+          this->CalcForwardDynamicsDiscrete(context, &ac);
+        } else {
+          this->CalcForwardDynamics(context, &ac);
+        }
+      },
       // Accelerations depend on both state and inputs.
       // All sources include: time, accuracy, state, input ports, and
       // parameters.
@@ -2802,6 +2789,31 @@ void MultibodyPlant<T>::CalcBodyPosesOutput(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput(
+    const Context<T>& context,
+    std::vector<SpatialVelocity<T>>* V_WB_all) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  V_WB_all->resize(num_bodies());
+  for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    V_WB_all->at(body_index) = EvalBodySpatialVelocityInWorld(context, body);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
+    const Context<T>& context,
+    std::vector<SpatialAcceleration<T>>* A_WB_all) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  A_WB_all->resize(num_bodies());
+  const AccelerationKinematicsCache<T>& ac = EvalForwardDynamics(context);
+  for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    A_WB_all->at(body_index) = ac.get_A_WB(body.node_index());
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -2926,7 +2938,22 @@ void MultibodyPlant<T>::CalcReactionForces(
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_body_poses_output_port()
 const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(body_poses_port_);
+}
+
+template <typename T>
+const OutputPort<T>&
+MultibodyPlant<T>::get_body_spatial_velocities_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_output_port(body_spatial_velocities_port_);
+}
+
+template <typename T>
+const OutputPort<T>&
+MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_output_port(body_spatial_accelerations_port_);
 }
 
 template <typename T>
