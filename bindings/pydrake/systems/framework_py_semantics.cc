@@ -138,6 +138,36 @@ void DefineFrameworkPySemantics(py::module m) {
       .def("offset_sec", &PeriodicEventData::offset_sec,
           doc.PeriodicEventData.offset_sec.doc);
 
+  {
+    using Class = EventStatus;
+    constexpr auto& cls_doc = doc.EventStatus;
+    py::class_<Class> cls(m, "EventStatus", cls_doc.doc);
+
+    using Enum = Class::Severity;
+    constexpr auto& enum_doc = cls_doc.Severity;
+    py::enum_<Enum>(cls, "Severity", enum_doc.doc)
+        .value("kDidNothing", Enum::kDidNothing, enum_doc.kDidNothing.doc)
+        .value("kSucceeded", Enum::kSucceeded, enum_doc.kSucceeded.doc)
+        .value("kReachedTermination", Enum::kReachedTermination,
+            enum_doc.kReachedTermination.doc)
+        .value("kFailed", Enum::kFailed, enum_doc.kFailed.doc);
+
+    DefCopyAndDeepCopy(&cls);
+    cls  // BR
+        .def_static("DidNothing", &Class::DidNothing, cls_doc.DidNothing.doc)
+        .def_static("Succeeded", &Class::Succeeded, cls_doc.Succeeded.doc)
+        .def_static("ReachedTermination", &Class::ReachedTermination,
+            py::arg("system"), py::arg("message"),
+            cls_doc.ReachedTermination.doc)
+        .def_static("Failed", &Class::Failed, py::arg("system"),
+            py::arg("message"), cls_doc.Failed.doc)
+        .def("severity", &Class::severity, cls_doc.severity.doc)
+        .def("system", &Class::system, py_reference, cls_doc.system.doc)
+        .def("message", &Class::message, cls_doc.message.doc)
+        .def("KeepMoreSevere", &Class::KeepMoreSevere, py::arg("candidate"),
+            cls_doc.KeepMoreSevere.doc);
+  }
+
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
