@@ -1,3 +1,6 @@
+# See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
+# rationale.
+
 import copy
 
 
