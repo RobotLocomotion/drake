@@ -35,16 +35,9 @@ GTEST_TEST(AddFrictionConeConstraintTest, Test) {
     EXPECT_EQ(is_satisfied, is_in_cone);
   };
 
-  const auto& plant = gripper_brick.plant();
-  const multibody::CoulombFriction<double>& brick_friction =
-      plant.default_coulomb_friction(plant.GetCollisionGeometriesForBody(
-          gripper_brick.brick_frame().body())[0]);
-  const multibody::CoulombFriction<double>& finger_tip_friction =
-      plant.default_coulomb_friction(
-          gripper_brick.finger_tip_sphere_geometry_id(Finger::kFinger2));
   const multibody::CoulombFriction<double> combined_friction =
-      multibody::CalcContactFrictionFromSurfaceProperties(brick_friction,
-                                                          finger_tip_friction);
+      gripper_brick.GetFingerTipBrickCoulombFriction(Finger::kFinger2);
+
   const double mu = combined_friction.static_friction();
   // Test a force that points in the neg Y direction. This force is not in the
   // friction cone.

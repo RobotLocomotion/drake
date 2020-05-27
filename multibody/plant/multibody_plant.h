@@ -3466,6 +3466,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
+  DRAKE_DEPRECATED(
+      "2020-09-01",
+      "default_coulomb_friction() will be removed. Please use SceneGraph which "
+      "now stores friction properties in ProximityProperties")
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
     // TODO(amcastro-tri): This API might change or disappear completely as GS
@@ -3941,8 +3945,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The i-th entry in the returned std::vector corresponds to the combined
   // friction properties for the i-th point pair in `point_pairs`.
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const std::vector<geometry::PenetrationAsPointPair<T>>&
-      point_pairs) const;
+      const drake::systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs)
+      const;
 
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
@@ -4421,6 +4426,12 @@ template <>
 std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>&) const;
+template <>
+std::vector<CoulombFriction<double>>
+MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
+    const drake::systems::Context<symbolic::Expression>&,
+    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)
+    const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,

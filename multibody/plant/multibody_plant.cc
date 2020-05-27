@@ -1110,24 +1110,49 @@ MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
                                       NiceTypeName::Get<T>()));
 }
 
+template <>
+std::vector<CoulombFriction<double>>
+MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
+    const drake::systems::Context<symbolic::Expression>&,
+    const std::vector<PenetrationAsPointPair<symbolic::Expression>>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
 template<typename T>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
+    const drake::systems::Context<T>& context,
     const std::vector<PenetrationAsPointPair<T>>& point_pairs) const {
   std::vector<CoulombFriction<double>> combined_frictions;
   combined_frictions.reserve(point_pairs.size());
+
+  if (point_pairs.size() == 0) {
+    return combined_frictions;
+  }
+
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+
   for (const auto& pair : point_pairs) {
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    const int collision_indexA =
-        geometry_id_to_collision_index_.at(geometryA_id);
-    const int collision_indexB =
-        geometry_id_to_collision_index_.at(geometryB_id);
+    const ProximityProperties* propA =
+        inspector.GetProximityProperties(geometryA_id);
+    const ProximityProperties* propB =
+        inspector.GetProximityProperties(geometryB_id);
+    DRAKE_DEMAND(propA != nullptr);
+    DRAKE_DEMAND(propB != nullptr);
+
     const CoulombFriction<double>& geometryA_friction =
-        default_coulomb_friction_[collision_indexA];
+        propA->GetProperty<CoulombFriction<double>>("material",
+                                                    "coulomb_friction");
     const CoulombFriction<double>& geometryB_friction =
-        default_coulomb_friction_[collision_indexB];
+        propB->GetProperty<CoulombFriction<double>>("material",
+                                                    "coulomb_friction");
 
     combined_frictions.push_back(CalcContactFrictionFromSurfaceProperties(
         geometryA_friction, geometryB_friction));
@@ -1210,7 +1235,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
       EvalPointPairPenetrations(context);
 
   const std::vector<CoulombFriction<double>> combined_friction_pairs =
-      CalcCombinedFrictionCoefficients(point_pairs);
+      CalcCombinedFrictionCoefficients(context, point_pairs);
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
@@ -1453,17 +1478,28 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
+  const auto& query_object =
+      this->get_geometry_query_input_port()
+          .template Eval<geometry::QueryObject<T>>(context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+
   for (const ContactSurface<T>& surface : all_surfaces) {
     const GeometryId geometryM_id = surface.id_M();
     const GeometryId geometryN_id = surface.id_N();
-    const int collision_indexM =
-        geometry_id_to_collision_index_.at(geometryM_id);
-    const int collision_indexN =
-        geometry_id_to_collision_index_.at(geometryN_id);
+
+    const ProximityProperties* propM =
+        inspector.GetProximityProperties(geometryM_id);
+    const ProximityProperties* propN =
+        inspector.GetProximityProperties(geometryM_id);
+    DRAKE_DEMAND(propM != nullptr);
+    DRAKE_DEMAND(propN != nullptr);
+
     const CoulombFriction<double>& geometryM_friction =
-        default_coulomb_friction_[collision_indexM];
+        propM->GetProperty<CoulombFriction<double>>("material",
+                                                    "coulomb_friction");
     const CoulombFriction<double>& geometryN_friction =
-        default_coulomb_friction_[collision_indexN];
+        propN->GetProperty<CoulombFriction<double>>("material",
+                                                    "coulomb_friction");
 
     // Compute combined friction coefficient.
     const CoulombFriction<double> combined_friction =
@@ -1489,10 +1525,8 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         X_WA, X_WB, V_WA, V_WB, &surface);
 
     // Combined Hunt & Crossley dissipation.
-    const auto& query_object = get_geometry_query_input_port().
-        template Eval<geometry::QueryObject<T>>(context);
     const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
-        geometryM_id, geometryN_id, query_object.inspector());
+        geometryM_id, geometryN_id, inspector);
 
     // Integrate the hydroelastic traction field over the contact surface.
     std::vector<HydroelasticQuadraturePointData<T>> traction_output;
@@ -1863,7 +1897,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   // Get friction coefficient into a single vector. Static friction is ignored
   // by the time stepping scheme.
   std::vector<CoulombFriction<double>> combined_friction_pairs =
-      CalcCombinedFrictionCoefficients(point_pairs0);
+      CalcCombinedFrictionCoefficients(context0, point_pairs0);
   VectorX<T> mu(num_contacts);
   std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
                  mu.data(),
