@@ -17,6 +17,7 @@
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -181,7 +182,8 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
 double ParseJointDamping(const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC ||
-      joint_spec.Type() == sdf::JointType::UNIVERSAL);
+      joint_spec.Type() == sdf::JointType:: UNIVERSAL ||
+      joint_spec.Type() == sdf::JointType::BALL);
 
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
@@ -393,6 +395,14 @@ void AddJointFromSpecification(
     case sdf::JointType::UNIVERSAL: {
       const double damping = ParseJointDamping(joint_spec);
       plant->AddJoint<UniversalJoint>(
+        joint_spec.Name(),
+        parent_body, X_PJ,
+        child_body, X_CJ, damping);
+      break;
+    }
+    case sdf::JointType::BALL: {
+      const double damping = ParseJointDamping(joint_spec);
+      plant->AddJoint<BallRpyJoint>(
         joint_spec.Name(),
         parent_body, X_PJ,
         child_body, X_CJ, damping);
