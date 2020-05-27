@@ -189,7 +189,8 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
 void PackageMap::CrawlForPackages(const string& path) {
   DRAKE_DEMAND(!path.empty());
   std::error_code ec;
-  filesystem::directory_iterator iter(filesystem::path(path), ec);
+  filesystem::directory_iterator iter(
+      filesystem::path(path).lexically_normal(), ec);
   if (ec) {
     log()->warn("Unable to open directory: {}", path);
     return;
