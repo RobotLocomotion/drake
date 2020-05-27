@@ -116,6 +116,7 @@ py_library(
     # Tell our mirroring scripts what we downloaded.
     generate_repository_metadata(
         repository_ctx,
+        repository_rule_type = "pypi_wheel",
         package = package,
         version = version,
         pypi_tag = pypi_tag,

@@ -57,6 +57,8 @@ DEFAULT_MIRRORS = {
     ],
     "pypi_wheel": [
         "https://files.pythonhosted.org/packages/{blake2_256_01}/{blake2_256_23}/{blake2_256_4p}/{package}-{version}-{tag}.whl",  # noqa
+        "https://drake-mirror.csail.mit.edu/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
+        "https://s3.amazonaws.com/drake-mirror/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
     ],
     "vtk": [
         "https://drake-packages.csail.mit.edu/vtk/{archive}",

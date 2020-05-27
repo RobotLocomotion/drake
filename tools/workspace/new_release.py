@@ -119,7 +119,7 @@ def run(gh, args, metadata):
         key = data["repository_rule_type"]
         if key == "github":
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
-        elif key == "pypi":
+        elif key in ["pypi", "pypi_wheel"]:
             # TODO(jwnimmer-tri) Implement for real.
             print("{} version {} needs manual inspection".format(
                 workspace_name, data["version"]))
