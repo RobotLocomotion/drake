@@ -267,27 +267,17 @@ struct Impl {
     // TODO(eric.cousineau): Resolve `str_py` workaround.
     auto str_py = py::eval("str");
 
-    // TODO(eric.cousineau): Separate bindings for `SystemBase` into a separate
-    // class.
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
-    auto system_cls = DefineTemplateClassWithDefault<System<T>, PySystem>(
-        m, "System", GetPyParam<T>(), doc.SystemBase.doc);
+    auto system_cls =
+        DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
+            m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls  // BR
-        .def("GetSystemType", &System<T>::GetSystemType,
-            doc.SystemBase.GetSystemType.doc)
-        .def("get_name", &System<T>::get_name, doc.SystemBase.get_name.doc)
-        .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
-        // Topology.
-        .def("num_input_ports", &System<T>::num_input_ports,
-            doc.SystemBase.num_input_ports.doc)
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
         .def("GetInputPort", &System<T>::GetInputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetInputPort.doc)
-        .def("num_output_ports", &System<T>::num_output_ports,
-            doc.SystemBase.num_output_ports.doc)
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)
@@ -318,12 +308,6 @@ struct Impl {
                 &System<T>::HasDirectFeedthrough),
             py::arg("input_port"), py::arg("output_port"),
             doc.System.HasDirectFeedthrough.doc_2args)
-        // - Parameters
-        .def("num_abstract_parameters", &System<T>::num_abstract_parameters,
-            doc.SystemBase.num_abstract_parameters.doc)
-        .def("num_numeric_parameter_groups",
-            &System<T>::num_numeric_parameter_groups,
-            doc.SystemBase.num_numeric_parameter_groups.doc)
         // Context.
         .def("AllocateContext", &System<T>::AllocateContext,
             doc.System.AllocateContext.doc)
@@ -655,68 +639,7 @@ Note: The above is for the C++ documentation. For Python, use
         // Abstract state.
         .def("DeclareAbstractState", &LeafSystemPublic::DeclareAbstractState,
             // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc)
-        // Dependency tickets that do not have an index argument.
-        .def_static("accuracy_ticket", &SystemBase::accuracy_ticket,
-            doc.SystemBase.accuracy_ticket.doc)
-        .def_static("all_input_ports_ticket",
-            &SystemBase::all_input_ports_ticket,
-            doc.SystemBase.all_input_ports_ticket.doc)
-        .def_static("all_parameters_ticket", &SystemBase::all_parameters_ticket,
-            doc.SystemBase.all_parameters_ticket.doc)
-        .def_static("all_sources_ticket", &SystemBase::all_sources_ticket,
-            doc.SystemBase.all_sources_ticket.doc)
-        .def_static("all_state_ticket", &SystemBase::all_state_ticket,
-            doc.SystemBase.all_state_ticket.doc)
-        .def_static("configuration_ticket", &SystemBase::configuration_ticket,
-            doc.SystemBase.configuration_ticket.doc)
-        .def_static(
-            "ke_ticket", &SystemBase::ke_ticket, doc.SystemBase.ke_ticket.doc)
-        .def_static("kinematics_ticket", &SystemBase::kinematics_ticket,
-            doc.SystemBase.kinematics_ticket.doc)
-        .def_static("nothing_ticket", &SystemBase::nothing_ticket,
-            doc.SystemBase.nothing_ticket.doc)
-        .def_static(
-            "pa_ticket", &SystemBase::pa_ticket, doc.SystemBase.pa_ticket.doc)
-        .def_static(
-            "pc_ticket", &SystemBase::pc_ticket, doc.SystemBase.pc_ticket.doc)
-        .def_static(
-            "pe_ticket", &SystemBase::pe_ticket, doc.SystemBase.pe_ticket.doc)
-        .def_static(
-            "pn_ticket", &SystemBase::pn_ticket, doc.SystemBase.pn_ticket.doc)
-        .def_static("pnc_ticket", &SystemBase::pnc_ticket,
-            doc.SystemBase.pnc_ticket.doc)
-        .def_static(
-            "q_ticket", &SystemBase::q_ticket, doc.SystemBase.q_ticket.doc)
-        .def_static("time_ticket", &SystemBase::time_ticket,
-            doc.SystemBase.time_ticket.doc)
-        .def_static(
-            "v_ticket", &SystemBase::v_ticket, doc.SystemBase.v_ticket.doc)
-        .def_static(
-            "xa_ticket", &SystemBase::xa_ticket, doc.SystemBase.xa_ticket.doc)
-        .def_static(
-            "xc_ticket", &SystemBase::xc_ticket, doc.SystemBase.xc_ticket.doc)
-        .def_static("xcdot_ticket", &SystemBase::xcdot_ticket,
-            doc.SystemBase.xcdot_ticket.doc)
-        .def_static(
-            "xd_ticket", &SystemBase::xd_ticket, doc.SystemBase.xd_ticket.doc)
-        .def_static(
-            "z_ticket", &SystemBase::z_ticket, doc.SystemBase.z_ticket.doc)
-        // Dependency tickets that do have an index argument.
-        // (We do not bind output_port_ticket because it's marked "internal".)
-        .def("abstract_parameter_ticket",
-            &SystemBase::abstract_parameter_ticket, py::arg("index"),
-            doc.SystemBase.abstract_parameter_ticket.doc)
-        .def("abstract_state_ticket", &SystemBase::abstract_state_ticket,
-            py::arg("index"), doc.SystemBase.abstract_state_ticket.doc)
-        .def("cache_entry_ticket", &SystemBase::cache_entry_ticket,
-            py::arg("index"), doc.SystemBase.cache_entry_ticket.doc)
-        .def("discrete_state_ticket", &SystemBase::discrete_state_ticket,
-            py::arg("index"), doc.SystemBase.discrete_state_ticket.doc)
-        .def("input_port_ticket", &SystemBase::input_port_ticket,
-            py::arg("index"), doc.SystemBase.input_port_ticket.doc)
-        .def("numeric_parameter_ticket", &SystemBase::numeric_parameter_ticket,
-            py::arg("index"), doc.SystemBase.numeric_parameter_ticket.doc);
+            py::keep_alive<2, 1>(), doc.LeafSystem.DeclareAbstractState.doc);
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
@@ -772,43 +695,127 @@ py::tuple GetPyParamList(type_pack<Packs...> = {}) {
   return py::make_tuple(GetPyParam(Packs{})...);
 }
 
+void DoScalarIndependentDefinitions(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::systems;
+  constexpr auto& doc = pydrake_doc.drake.systems;
+
+  {
+    using Class = SystemBase;
+    constexpr auto& cls_doc = doc.SystemBase;
+    // TODO(eric.cousineau): Bind remaining methods.
+    py::class_<Class>(m, "SystemBase", cls_doc.doc)
+        .def("GetSystemName", &Class::GetSystemName, cls_doc.GetSystemName.doc)
+        .def("GetSystemPathname", &Class::GetSystemPathname,
+            cls_doc.GetSystemPathname.doc)
+        .def("GetSystemType", &Class::GetSystemType, cls_doc.GetSystemType.doc)
+        .def("get_name", &Class::get_name, cls_doc.get_name.doc)
+        .def(
+            "set_name", &Class::set_name, py::arg("name"), cls_doc.set_name.doc)
+        // Topology.
+        .def("num_input_ports", &Class::num_input_ports,
+            cls_doc.num_input_ports.doc)
+        .def("num_output_ports", &Class::num_output_ports,
+            cls_doc.num_output_ports.doc)
+        // Parameters.
+        .def("num_abstract_parameters", &Class::num_abstract_parameters,
+            cls_doc.num_abstract_parameters.doc)
+        .def("num_numeric_parameter_groups",
+            &Class::num_numeric_parameter_groups,
+            cls_doc.num_numeric_parameter_groups.doc)
+        // Dependency tickets that do not have an index argument.
+        .def_static("accuracy_ticket", &Class::accuracy_ticket,
+            cls_doc.accuracy_ticket.doc)
+        .def_static("all_input_ports_ticket", &Class::all_input_ports_ticket,
+            cls_doc.all_input_ports_ticket.doc)
+        .def_static("all_parameters_ticket", &Class::all_parameters_ticket,
+            cls_doc.all_parameters_ticket.doc)
+        .def_static("all_sources_except_input_ports_ticket",
+            &Class::all_sources_except_input_ports_ticket,
+            cls_doc.all_sources_except_input_ports_ticket.doc)
+        .def_static("all_sources_ticket", &Class::all_sources_ticket,
+            cls_doc.all_sources_ticket.doc)
+        .def_static("all_state_ticket", &Class::all_state_ticket,
+            cls_doc.all_state_ticket.doc)
+        .def_static("configuration_ticket", &Class::configuration_ticket,
+            cls_doc.configuration_ticket.doc)
+        .def_static("ke_ticket", &Class::ke_ticket, cls_doc.ke_ticket.doc)
+        .def_static("kinematics_ticket", &Class::kinematics_ticket,
+            cls_doc.kinematics_ticket.doc)
+        .def_static("nothing_ticket", &Class::nothing_ticket,
+            cls_doc.nothing_ticket.doc)
+        .def_static("pa_ticket", &Class::pa_ticket, cls_doc.pa_ticket.doc)
+        .def_static("pc_ticket", &Class::pc_ticket, cls_doc.pc_ticket.doc)
+        .def_static("pe_ticket", &Class::pe_ticket, cls_doc.pe_ticket.doc)
+        .def_static("pn_ticket", &Class::pn_ticket, cls_doc.pn_ticket.doc)
+        .def_static("pnc_ticket", &Class::pnc_ticket, cls_doc.pnc_ticket.doc)
+        .def_static("q_ticket", &Class::q_ticket, cls_doc.q_ticket.doc)
+        .def_static("time_ticket", &Class::time_ticket, cls_doc.time_ticket.doc)
+        .def_static("v_ticket", &Class::v_ticket, cls_doc.v_ticket.doc)
+        .def_static("xa_ticket", &Class::xa_ticket, cls_doc.xa_ticket.doc)
+        .def_static("xc_ticket", &Class::xc_ticket, cls_doc.xc_ticket.doc)
+        .def_static(
+            "xcdot_ticket", &Class::xcdot_ticket, cls_doc.xcdot_ticket.doc)
+        .def_static("xd_ticket", &Class::xd_ticket, cls_doc.xd_ticket.doc)
+        .def_static("z_ticket", &Class::z_ticket, cls_doc.z_ticket.doc)
+        // Dependency tickets that do have an index argument.
+        // (We do not bind output_port_ticket because it's marked "internal".)
+        .def("abstract_parameter_ticket", &Class::abstract_parameter_ticket,
+            py::arg("index"), cls_doc.abstract_parameter_ticket.doc)
+        .def("abstract_state_ticket", &Class::abstract_state_ticket,
+            py::arg("index"), cls_doc.abstract_state_ticket.doc)
+        .def("cache_entry_ticket", &Class::cache_entry_ticket, py::arg("index"),
+            cls_doc.cache_entry_ticket.doc)
+        .def("discrete_state_ticket", &Class::discrete_state_ticket,
+            py::arg("index"), cls_doc.discrete_state_ticket.doc)
+        .def("input_port_ticket", &Class::input_port_ticket, py::arg("index"),
+            cls_doc.input_port_ticket.doc)
+        .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
+            py::arg("index"), cls_doc.numeric_parameter_ticket.doc);
+  }
+
+  {
+    // System scalar conversion.
+    py::class_<SystemScalarConverter> converter(m, "SystemScalarConverter");
+    converter  // BR
+        .def(py::init())
+        .def("__copy__",
+            [](const SystemScalarConverter& in) -> SystemScalarConverter {
+              return in;
+            });
+    // Bind templated instantiations.
+    auto converter_methods = [converter](auto pack) {
+      using Pack = decltype(pack);
+      using T = typename Pack::template type_at<0>;
+      using U = typename Pack::template type_at<1>;
+      AddTemplateMethod(converter, "Add",
+          WrapCallbacks(&SystemScalarConverter::Add<T, U>), GetPyParam<T, U>());
+      AddTemplateMethod(converter, "IsConvertible",
+          &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>());
+    };
+    // N.B. When changing the pairs of supported types below, ensure that these
+    // reflect the stanzas for the advanced constructor of
+    // `SystemScalarConverter`.
+    using ConversionPairs = type_pack<      // BR
+        type_pack<AutoDiffXd, double>,      //
+        type_pack<Expression, double>,      //
+        type_pack<double, AutoDiffXd>,      //
+        type_pack<Expression, AutoDiffXd>,  //
+        type_pack<double, Expression>,      //
+        type_pack<AutoDiffXd, Expression>>;
+    type_visit(converter_methods, ConversionPairs{});
+    // Add mention of what scalars are supported via `SystemScalarConverter`
+    // through Python.
+    converter.attr("SupportedScalars") = GetPyParam(CommonScalarPack{});
+    converter.attr("SupportedConversionPairs") =
+        GetPyParamList(ConversionPairs{});
+  }
+}
+
 }  // namespace
 
 void DefineFrameworkPySystems(py::module m) {
-  // System scalar conversion.
-  py::class_<SystemScalarConverter> converter(m, "SystemScalarConverter");
-  converter  // BR
-      .def(py::init())
-      .def("__copy__",
-          [](const SystemScalarConverter& in) -> SystemScalarConverter {
-            return in;
-          });
-  // Bind templated instantiations.
-  auto converter_methods = [converter](auto pack) {
-    using Pack = decltype(pack);
-    using T = typename Pack::template type_at<0>;
-    using U = typename Pack::template type_at<1>;
-    AddTemplateMethod(converter, "Add",
-        WrapCallbacks(&SystemScalarConverter::Add<T, U>), GetPyParam<T, U>());
-    AddTemplateMethod(converter, "IsConvertible",
-        &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>());
-  };
-  // N.B. When changing the pairs of supported types below, ensure that these
-  // reflect the stanzas for the advanced constructor of
-  // `SystemScalarConverter`.
-  using ConversionPairs = type_pack<      // BR
-      type_pack<AutoDiffXd, double>,      //
-      type_pack<Expression, double>,      //
-      type_pack<double, AutoDiffXd>,      //
-      type_pack<Expression, AutoDiffXd>,  //
-      type_pack<double, Expression>,      //
-      type_pack<AutoDiffXd, Expression>>;
-  type_visit(converter_methods, ConversionPairs{});
-  // Add mention of what scalars are supported via `SystemScalarConverter`
-  // through Python.
-  converter.attr("SupportedScalars") = GetPyParam(CommonScalarPack{});
-  converter.attr("SupportedConversionPairs") =
-      GetPyParamList(ConversionPairs{});
+  DoScalarIndependentDefinitions(m);
 
   // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {
