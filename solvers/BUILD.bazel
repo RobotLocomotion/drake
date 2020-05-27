@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":equality_constrained_qp_solver",
         ":evaluator_base",
         ":function",
+        ":get_infeasible_constraints",
         ":gurobi_qp",
         ":gurobi_solver",
         ":indeterminate",
@@ -236,6 +237,16 @@ drake_cc_library(
     hdrs = ["function.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "get_infeasible_constraints",
+    srcs = ["get_infeasible_constraints.cc"],
+    hdrs = ["get_infeasible_constraints.h"],
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
     ],
 )
 
@@ -1184,6 +1195,14 @@ drake_cc_googletest(
         ":generic_trivial_constraint",
         ":generic_trivial_cost",
         ":mathematical_program",
+    ],
+)
+
+drake_cc_googletest(
+    name = "get_infeasible_constraints_test",
+    deps = [
+        ":get_infeasible_constraints",
+        ":snopt_solver",
     ],
 )
 

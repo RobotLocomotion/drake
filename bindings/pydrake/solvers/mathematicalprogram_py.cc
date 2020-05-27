@@ -12,6 +12,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/get_infeasible_constraints.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -1275,7 +1276,11 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
       .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
           py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
-          doc.GetInfeasibleConstraints.doc);
+          doc.GetInfeasibleConstraints.doc)
+      .def("GetInfeasibleConstraintBindings",
+          &solvers::GetInfeasibleConstraintBindings, py::arg("prog"),
+          py::arg("result"), py::arg("tol") = std::nullopt,
+          doc.GetInfeasibleConstraintBindings.doc);
 
   ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
