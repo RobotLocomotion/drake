@@ -527,6 +527,13 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
   // corresponding to flexible bodies.
 
+  // If the model has zero dofs we simply set all spatial velocities to zero and
+  // return since there is no work to be done.
+  if (num_velocities() == 0) {
+    vc->InitializeToZero();
+    return;
+  }
+
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
@@ -1259,6 +1266,9 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
     std::vector<Vector6<T>>* H_PB_W_cache) const {
   DRAKE_DEMAND(H_PB_W_cache != nullptr);
   DRAKE_DEMAND(static_cast<int>(H_PB_W_cache->size()) == num_velocities());
+
+  // Quick return on nv = 0. Nothing to compute.
+  if (num_velocities() == 0) return;
 
   for (BodyNodeIndex node_index(1);
        node_index < num_bodies(); ++node_index) {
