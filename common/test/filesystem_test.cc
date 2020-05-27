@@ -24,7 +24,7 @@ GTEST_TEST(NamespaceAliasSmokeTest, ExistTest) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       filesystem::read_symlink({"/no_such_readlink"}), std::exception,
-      "Invalid argument: '/no_such_readlink'");
+      ".*(No such file or directory|Invalid argument).+/no_such_readlink.+");
 }
 
 }  // namespace
