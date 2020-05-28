@@ -32,7 +32,12 @@ template <typename T, typename InvariantPred = std::equal_to<T>>
   auto moved_storage = std::make_unique<
       typename std::aligned_storage<sizeof(T), alignof(T)>::type>();
   T* const ptr_to_moved{reinterpret_cast<T* const>(moved_storage.get())};
+#pragma GCC diagnostic push
+#if __GNUC__ > 7
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
   memcpy(ptr_to_moved, ptr_to_original, sizeof(T));
+#pragma GCC diagnostic pop
 
   // 3. Free original_storage.
   original_storage.reset();
