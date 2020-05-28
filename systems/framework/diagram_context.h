@@ -460,10 +460,13 @@ class DiagramContext final : public Context<T> {
   }
 
   // Recursively sets the time on all subcontexts.
-  void DoPropagateTimeChange(const T& time_sec, int64_t change_event) final {
+  void DoPropagateTimeChange(const T& time_sec,
+                             const std::optional<T>& true_time,
+                             int64_t change_event) final {
     for (auto& subcontext : contexts_) {
       DRAKE_ASSERT(subcontext != nullptr);
-      Context<T>::PropagateTimeChange(&*subcontext, time_sec, change_event);
+      Context<T>::PropagateTimeChange(&*subcontext, time_sec, true_time,
+                                      change_event);
     }
   }
 

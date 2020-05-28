@@ -97,9 +97,9 @@ SimulatorStatus Simulator<T>::Initialize() {
 
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
-  const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
-      current_time);
-  context_->SetTime(slightly_before_current_time);
+  const T slightly_before_current_time =
+      internal::GetPreviousNormalizedValue(current_time);
+  context_->PerturbTime(slightly_before_current_time, current_time);
 
   // Get the next timed event.
   next_timed_event_time_ =

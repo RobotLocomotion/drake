@@ -953,6 +953,19 @@ TEST_F(LeafContextTest, TestStateSettingSugar) {
       ".*cast to.*std::string.*failed.*actual type.*int.*");
 }
 
+// Check that hidden internal functionality needed by Simulator::Initialize()
+// and CalcNextUpdateTime() is functional in the Context.
+TEST_F(LeafContextTest, PerturbTime) {
+  // This is a hidden method. Should set time to 1.5 but true time to 2.
+  context_.PerturbTime(1.5, 2.);
+  EXPECT_EQ(context_.get_time(), 1.5);
+  EXPECT_EQ(*context_.get_true_time(), 2.);  // This is an std::optional.
+
+  // Setting time normally clears the "true time".
+  context_.SetTime(1.);
+  EXPECT_FALSE(context_.get_true_time());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
