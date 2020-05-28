@@ -23,6 +23,15 @@ class TestAll(unittest.TestCase):
             warnings.filterwarnings(
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
+            # TODO(SeanCurtis-TRI): Meshcat modified itself from a conditional
+            # import of IPython to an unconditional import. IPython eventually
+            # depends on imp. If the dependency becomes conditional or the
+            # ultimate dependency upgrades from imp to importlib, this can be
+            # removed.
+            warnings.filterwarnings(
+                "ignore", message="the imp module is deprecated",
+                category=DeprecationWarning
+            )
             import pydrake.all
 
     def test_usage_no_all(self):
