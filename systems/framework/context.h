@@ -16,17 +16,6 @@
 namespace drake {
 namespace systems {
 
-// TODO(sherm1) Add step information.
-/// Contains information about the independent variable including time and
-/// step number.
-template <typename T>
-struct StepInfo {
-  // TODO(sherm1): Consider whether this is sufficiently robust.
-  /// The time, in seconds. For typical T implementations based on
-  /// doubles, time resolution will gradually degrade as time increases.
-  T time_sec{0.0};
-};
-
 /// %Context is an abstract class template that represents all the typed values
 /// that are used in a System's computations: time, numeric-valued input ports,
 /// numerical state, and numerical parameters. There are also type-erased
@@ -71,7 +60,7 @@ class Context : public ContextBase {
 
   /// Returns the current time in seconds.
   /// @see SetTime()
-  const T& get_time() const { return get_step_info().time_sec; }
+  const T& get_time() const { return time_; }
 
   /// Returns a const reference to the whole State.
   const State<T>& get_state() const {
@@ -344,7 +333,7 @@ class Context : public ContextBase {
   void SetTime(const T& time_sec) {
     ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
+    PropagateTimeChange(this, time_sec, {}, change_event);
   }
 
   // TODO(sherm1) Add more-specific state "set" methods for smaller
@@ -435,7 +424,7 @@ class Context : public ContextBase {
 
     // These two both set the value and perform notifications.
     const scalar_conversion::ValueConverter<T, U> converter;
-    PropagateTimeChange(this, converter(source.get_time()), change_event);
+    PropagateTimeChange(this, converter(source.get_time()), {}, change_event);
     PropagateAccuracyChange(this, source.get_accuracy(), change_event);
 
     // Notification is separate from the actual value change for bulk changes.
@@ -712,7 +701,7 @@ class Context : public ContextBase {
   VectorBase<T>& SetTimeAndGetMutableQVector(const T& time_sec) {
     ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
+    PropagateTimeChange(this, time_sec, {}, change_event);
     PropagateBulkChange(change_event, &Context<T>::NoteAllQChanged);
     return do_access_mutable_state()  // No invalidation here.
         .get_mutable_continuous_state()
@@ -785,6 +774,31 @@ class Context : public ContextBase {
   }
   //@}
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // See Drake issue #13296 for why these two methods are needed.
+
+  // (Advanced) Sets the Context time to `time` but notes that this is not the
+  // true current time but some small perturbation away from it. The true
+  // current time is recorded and propagated. This is used by
+  // Simulator::Initialize() to ensure that initialize-time periodic and
+  // scheduled events are not missed due to "right now" events.
+  void PerturbTime(const T& time, const T& true_time) {
+    ThrowIfNotRootContext(__func__, "Time");
+    const int64_t change_event = this->start_new_change_event();
+    PropagateTimeChange(this, time, std::optional<T>(true_time), change_event);
+  }
+
+  // TODO(sherm1) Consider whether get_true_time() ought to be visible (though
+  // certainly marked (Advanced)). It may be needed for some obscure overloads
+  // of DoCalcNextUpdateTime().
+
+  // (Advanced) If time was set with PerturbTime(), returns the true time. If '
+  // this is empty then the true time is just get_time(). This is used for
+  // processing of CalcNextUpdateTime() to ensure that overloads which want
+  // events to occur "right now" work properly during initialization.
+  const std::optional<T>& get_true_time() const { return true_time_; }
+#endif
+
  protected:
   Context() = default;
 
@@ -800,12 +814,14 @@ class Context : public ContextBase {
 
   /// (Internal use only) Sets a new time and notifies time-dependent
   /// quantities that they are now invalid, as part of a given change event.
-  static void PropagateTimeChange(Context<T>* context, const T& time_sec,
+  static void PropagateTimeChange(Context<T>* context, const T& time,
+                                  const std::optional<T>& true_time,
                                   int64_t change_event) {
     DRAKE_ASSERT(context != nullptr);
     context->NoteTimeChanged(change_event);
-    context->step_info_.time_sec = time_sec;
-    context->DoPropagateTimeChange(time_sec, change_event);
+    context->time_ = time;
+    context->true_time_ = true_time;
+    context->DoPropagateTimeChange(time, true_time, change_event);
   }
 
   /// (Internal use only) Sets a new accuracy and notifies accuracy-dependent
@@ -865,8 +881,9 @@ class Context : public ContextBase {
   /// Invokes PropagateTimeChange() on all subcontexts of this Context. The
   /// default implementation does nothing, which is suitable for leaf contexts.
   /// Diagram contexts must override.
-  virtual void DoPropagateTimeChange(const T& time_sec, int64_t change_event) {
-    unused(time_sec, change_event);
+  virtual void DoPropagateTimeChange(const T& time_sec,
+      const std::optional<T>& true_time, int64_t change_event) {
+    unused(time_sec, true_time, change_event);
   }
 
   /// Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
@@ -876,9 +893,6 @@ class Context : public ContextBase {
                                          int64_t change_event) {
     unused(accuracy, change_event);
   }
-
-  /// Returns a const reference to current time and step information.
-  const StepInfo<T>& get_step_info() const { return step_info_; }
 
   /// (Internal use only) Sets the continuous state to @p xc, deleting whatever
   /// was there before.
@@ -927,7 +941,7 @@ class Context : public ContextBase {
       const T& time_sec) {
     ThrowIfNotRootContext(func_name, "Time");
     const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
+    PropagateTimeChange(this, time_sec, {}, change_event);
     PropagateBulkChange(change_event,
                         &Context<T>::NoteAllContinuousStateChanged);
   }
@@ -938,8 +952,15 @@ class Context : public ContextBase {
     return do_access_mutable_state().get_mutable_continuous_state();
   }
 
-  // Current time and step information.
-  StepInfo<T> step_info_;
+  // Current time in seconds. Must be the same for a Diagram root context and
+  // all its subcontexts so we only allow setting this in the root.
+  T time_{0.};
+
+  // For ugly reasons, it is sometimes necessary to set time_ to a slight
+  // difference from the actual time. That is done using the internal
+  // PerturbTime() method which records the actual time here, where it
+  // can be retrieved during CalcNextUpdateTime() processing.
+  std::optional<T> true_time_;
 
   // Accuracy setting.
   std::optional<double> accuracy_;
@@ -957,9 +978,6 @@ std::ostream& operator<<(std::ostream& os, const Context<T>& context) {
 
 }  // namespace systems
 }  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::systems::StepInfo)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Context)

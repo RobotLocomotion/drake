@@ -333,6 +333,14 @@ T System<T>::CalcNextUpdateTime(const Context<T>& context,
   DoCalcNextUpdateTime(context, events, &time);
   using std::isnan;
   DRAKE_ASSERT(!isnan(time));
+
+  // If the context contains a perturbed current time, and
+  // DoCalcNextUpdateTime() returned "right now" (which would be the
+  // perturbed time here), we need to adjust the returned time to the actual
+  // time. (Simulator::Initialize() perturbs time in that way.)
+  if (context.get_true_time() && time == context.get_time())
+    time = *context.get_true_time();
+
   return time;
 }
 
