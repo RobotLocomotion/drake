@@ -3523,7 +3523,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   DRAKE_DEPRECATED(
       "2020-09-01",
       "default_coulomb_friction() will be removed. Please use SceneGraph which "
-      "now stores friction properties in ProximityProperties")
+      "now stores friction properties in ProximityProperties. See the section "
+      "\"Accessing point contact parameters\" in the documentation for "
+      "MultibodyPlant.h.")
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
     // TODO(amcastro-tri): This API might change or disappear completely as GS
