@@ -1,9 +1,11 @@
-import ctypes
-import numpy as np
-
-"""Defines a mapping between Python and alias types, and provides canonical
+"""
+Defines a mapping between Python and alias types, and provides canonical
 Python types as they relate to C++.
 """
+
+import ctypes
+
+import numpy as np
 
 
 def _get_type_name(t, verbose):
@@ -85,3 +87,62 @@ def get_param_names(param):
     in how they relate to C++ types.
     """
     return tuple(map(_param_aliases.get_name, param))
+
+
+class _Generic:
+    """
+    Provides a way to denote unique "classes" for C++ generics that do not
+    normally convert to unique types in Python (via pybind11).
+
+    As an example, pybind11 casts ``std::vector<T>`` to ``list()``, but we may
+    still want to associate a unique type with it for registration in
+    templates. We can do this by creating a unique class (or object),
+    ``List[T]``.
+
+    The ``typing`` module in Python provides generics like this; however, the
+    API does not admit easy inspection, at least in Python 3.6 and 3.8, thus we
+    reinvent a smaller wheel.
+    """
+    def __init__(self, name, factory, num_param):
+        self._name = name
+        self._factory = factory
+        self._num_param = num_param
+        # TODO(eric.cousineau): Rather than caching, consider allowing this to
+        # `hash` the same as `typing`. As an example, both `typing.List` and
+        # this `List` implementation could be used to retrieve an
+        # implementation. However, that would also may need to be handled in
+        # `get_canonical`.
+        self._instantiations = {}
+
+    class _Instantiation:
+        # TODO(eric.cousineau): Return a class if it messes up downstream APIs.
+        def __init__(self, generic, param):
+            param_str = ', '.join(get_param_names(param))
+            self._full_name = f"{generic._name}[{param_str}]"
+            self._factory = generic._factory
+
+        def __call__(self, *args, **kwargs):
+            return self._factory(*args, **kwargs)
+
+        def __repr__(self):
+            return self._full_name
+
+    def __getitem__(self, param):
+        if not isinstance(param, tuple):
+            param = (param,)
+        if len(param) != self._num_param:
+            raise RuntimeError(
+                f"{self} can only accept {self._num_param} parameter(s)")
+        param = get_param_canonical(param)
+        # Rather than implement hashing, simply cache instantiations.
+        instantiation = self._instantiations.get(param)
+        if instantiation is None:
+            instantiation = self._Instantiation(self, param)
+            self._instantiations[param] = instantiation
+        return instantiation
+
+    def __repr__(self):
+        return f"<Generic {self._name}>"
+
+
+List = _Generic("List", factory=list, num_param=1)

@@ -32,17 +32,15 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
-  AddTemplateClass(py_common, "Value", py_class, GetPyParam<T>());
+  py::tuple param = GetPyParam<T>();
+  AddTemplateClass(py_common, "Value", py_class, param);
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
   // simplified by always copying.
   // See docstring for `set_value` for presently unavoidable caveats.
   py_class.def(py::init<const T&>());
   // Define emplace constructor.
-  // TODO(eric.cousineau): This presently requires that `T` be aliased or
-  // registered. For things like `std::vector`, this fails. Consider alternative
-  // to retrieve Python type from T?
-  py::object py_T = GetPyParam<T>()[0];
+  py::object py_T = param[0];
   py_class.def(py::init([py_T](py::args args, py::kwargs kwargs) {
     // Use Python constructor for the bound type.
     py::object py_v = py_T(*args, **kwargs);
@@ -60,7 +58,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   // If the type is registered via `py::class_`, or is of type `Object`
   // (`py::object`), then we can obtain a mutable view into the value.
   constexpr bool has_get_mutable_value =
-      internal::is_generic_pybind<T>::value || std::is_same_v<T, Object>;
+      internal::is_generic_pybind_v<T> || std::is_same_v<T, Object>;
   if constexpr (has_get_mutable_value) {
     py::return_value_policy return_policy = py_reference_internal;
     if (std::is_same_v<T, Object>) {
