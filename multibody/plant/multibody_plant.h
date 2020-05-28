@@ -339,21 +339,23 @@ enum class ContactModel {
  <!-- TODO(joemasterjohn) update this table when other contact parameters
       are moved into ProximityProperties -->
  Parameters relating to contact modeling are stored on a per-geometry basis
- within a SceneGraph.
+ within a geometry::SceneGraph.
 
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
  | :--------: | :--------------: | :------: | :----------------: | :------------------- |
  |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
 
- ¹ Collision geometry is required to be registered with a ProximityProperties
-   object that contains the ("material", "coulomb_friction") property
+ ¹ Collision geometry is required to be registered with a
+   geometry::ProximityProperties object that contains the
+   ("material", "coulomb_friction") property.
 
  Accessing and modifying contact properties requires interfacing with
- SceneGraph's model inspector. For instance, here is an example of accessing
- the coulomb_friction properties for a given body.
+ geometry::SceneGraph's model inspector. For instance, here is an example
+ of accessing the coulomb_friction properties for a given body.
 
- When a Context is not available, the model inspector from a SceneGraph
- instance can provide contact parameters for the given model.
+ When a systems::Context is not available, the model inspector from a 
+ geometry::SceneGraph instance can provide contact parameters for the given
+ model.
  @code
  // For a body with GeometryId called geometry_id and a SceneGraph instance
  // called scene_graph.
@@ -365,16 +367,17 @@ enum class ContactModel {
                                                  "coulomb_friction");
  @endcode
 
- When a Context has been allocated and possibly modified, the proper way to
- access contact parameters is through a QueryObject. You can obtain a
- QueryObject by evaluating the geometry_query_input_port of MultibodyPlant.
+ When a systems::Context has been allocated and possibly modified, the proper
+ way to access contact parameters is through a geometry::QueryObject.
+ You can obtain a geometry::QueryObject by evaluating the
+ geometry_query_input_port of MultibodyPlant.
  @code
- // For a body with GeometryId called geometry_id and a MultibodyPlant
+ // For a body with GeometryId called geometry_id and a MultibodyPlant<double>
  // instance called mbp.
- const QueryObject<T>& query_object =
+ const QueryObject<double>& query_object =
      mbp.get_geometry_query_input_port()
-         .template Eval<QueryObject<T>>(context);
- const SceneGraphInspector<T>& inspector = query_object.inspector();
+         .template Eval<QueryObject<double>>(context);
+ const SceneGraphInspector<double>& inspector = query_object.inspector();
  const ProximityProperties* props =
      inspector.GetProximityProperties(geometry_id);
  const CoulombFriction<double>& geometry_friction =
