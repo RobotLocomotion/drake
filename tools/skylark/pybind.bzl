@@ -246,6 +246,7 @@ def drake_pybind_cc_googletest(
         name,
         cc_srcs = [],
         cc_deps = [],
+        cc_copts = [],
         py_srcs = [],
         py_deps = [],
         args = [],
@@ -265,6 +266,7 @@ def drake_pybind_cc_googletest(
             "@pybind11",
             "@python//:python_direct_link",
         ],
+        copts = cc_copts,
         use_default_main = False,
         # Add 'manual', because we only want to run it with Python present.
         tags = ["manual"] + tags,
@@ -428,6 +430,9 @@ def add_pybind_coverage_data(
             subpackage + ":pybind_coverage_data"
             for subpackage in subpackages
         ],
+        # N.B. Without this, we will duplicate error messages between
+        # *cc_libraries and this rule.
+        tags = ["nolint"],
         visibility = ["//bindings/pydrake:__pkg__"],
     )
 

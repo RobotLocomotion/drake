@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
 
 namespace drake {
@@ -32,7 +33,11 @@ class DummyIntegrator : public IntegratorBase<T> {
  private:
   // We want the Step function to fail whenever the step size is greater than
   // or equal to unity (see FixedStepFailureIndicatesSubstepFailure).
-  bool DoStep(const T& step_size) override { return (step_size < 1.0); }
+  bool DoStep(const T& step_size) override {
+      Context<T>* context = this->get_mutable_context();
+      context->SetTime(context->get_time() + step_size);
+      return (step_size < 1.0);
+  }
 };
 
 // Tests that IntegratorBase::IntegrateNoFurtherThanTime(.) records a substep
@@ -225,6 +230,40 @@ GTEST_TEST(IntegratorBaseTest, AutoDiffXdStateChangeNormPropagatesNaN) {
       std::numeric_limits<double>::quiet_NaN();
   EXPECT_TRUE(
       isnan(integrator.CalcStateChangeNorm(context->get_continuous_state())));
+}
+
+// Check that dense integration handles repeated evaluations, as seen in the
+// witness isolation use case in Simulator.
+GTEST_TEST(IntegratorBaseTest, DenseOutputTest) {
+  SpringMassSystem<double> spring_mass(10.0, 1.0, false);
+  std::unique_ptr<Context<double>> context = spring_mass.CreateDefaultContext();
+  DummyIntegrator<double> integrator(spring_mass, context.get());
+  integrator.set_fixed_step_mode(true);
+  integrator.Initialize();
+
+  EXPECT_EQ(integrator.get_dense_output(), nullptr);
+  integrator.StartDenseIntegration();
+  const trajectories::PiecewisePolynomial<double>* dense_output =
+      integrator.get_dense_output();
+  EXPECT_EQ(dense_output->get_number_of_segments(), 0);
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(0.1));
+  EXPECT_EQ(dense_output->get_number_of_segments(), 1);
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(0.2));
+  EXPECT_EQ(dense_output->get_number_of_segments(), 2);
+
+  // Now repeat a step, and make sure that I replace rather than append the new
+  // segment.
+  context->SetTime(0.1);
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(0.15));
+  EXPECT_EQ(dense_output->get_number_of_segments(), 2);
+
+  EXPECT_EQ(dense_output->start_time(), 0.0);
+  EXPECT_EQ(dense_output->end_time(), 0.15);
+
+  context->SetTime(0.2);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      static_cast<void>(integrator.IntegrateWithSingleFixedStepToTime(0.3)),
+      std::runtime_error, ".*ConcatenateInTime.*time_offset.*");
 }
 
 }  // namespace

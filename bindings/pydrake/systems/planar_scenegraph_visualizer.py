@@ -17,10 +17,10 @@ with warnings.catch_warnings():  # noqa
 
 from drake import lcmt_viewer_load_robot
 from pydrake.common.eigen_geometry import Quaternion
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh
-from pydrake.lcm import DrakeMockLcm, Subscriber
+from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import AbstractValue
 from pydrake.systems.pyplot_visualizer import PyPlotVisualizer
 from pydrake.systems.rendering import PoseBundle
 
@@ -169,16 +169,16 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._patch_Blist = {}
         self._patch_Blist_colors = {}
 
-        mock_lcm = DrakeMockLcm()
-        mock_lcm_subscriber = Subscriber(lcm=mock_lcm,
+        memq_lcm = DrakeLcm("memq://")
+        memq_lcm_subscriber = Subscriber(lcm=memq_lcm,
                                          channel="DRAKE_VIEWER_LOAD_ROBOT",
                                          lcm_type=lcmt_viewer_load_robot)
         # TODO(SeanCurtis-TRI): Use SceneGraph inspection instead of mocking
         # LCM and inspecting the generated message.
-        DispatchLoadMessage(self._scene_graph, mock_lcm)
-        mock_lcm.HandleSubscriptions(0)
-        assert mock_lcm_subscriber.count > 0
-        load_robot_msg = mock_lcm_subscriber.message
+        DispatchLoadMessage(self._scene_graph, memq_lcm)
+        memq_lcm.HandleSubscriptions(0)
+        assert memq_lcm_subscriber.count > 0
+        load_robot_msg = memq_lcm_subscriber.message
 
         # Spawn a random color generator, in case we need to pick random colors
         # for some bodies. Each body will be given a unique color when using
@@ -252,8 +252,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                 elif geom.type == geom.MESH:
                     filename = geom.string_data
                     base, ext = os.path.splitext(filename)
-                    if (ext.lower() is not ".obj") and \
-                       substitute_collocated_mesh_files:
+                    if (ext.lower() != ".obj"
+                            and substitute_collocated_mesh_files):
                         # Check for a co-located .obj file (case insensitive).
                         for f in glob.glob(base + '.*'):
                             if f[-4:].lower() == '.obj':
@@ -261,8 +261,8 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                                 break
                         if filename[-4:].lower() != '.obj':
                             raise RuntimeError(
-                                "The given file " + filename + " is not "
-                                "supported and no alternate " + base +
+                                f"The given file {filename} is not "
+                                f"supported and no alternate {base}"
                                 ".obj could be found.")
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
@@ -352,7 +352,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
             full_name = pose_bundle.get_name(frame_i)
             model_id = pose_bundle.get_model_instance_id(frame_i)
 
-            X_WB = RigidTransform(pose_bundle.get_pose(frame_i))
+            X_WB = pose_bundle.get_transform(frame_i)
             patch_Wlist, _ = self._get_view_patches(full_name, X_WB)
             for i, patch_W in enumerate(patch_Wlist):
                 # Project the object vertices from 3d in world frame W to 2d in

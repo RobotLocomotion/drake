@@ -44,7 +44,7 @@ namespace geometry {
    1. Optionally test to see if the property exists by confirming the group
       `some_group` is in the set via HasGroup() and that the property
       `some_property` is in `some_group` via HasProperty(). Attempting to access
-      a property with a non-existant (group, property) pair may lead to an
+      a property with a non-existent (group, property) pair may lead to an
       exception (see API documentation below).
    2. Acquire a property value via the GetProperty() or GetPropertyOrDefault()
       methods.

@@ -24,6 +24,6 @@ valgrind \
     --suppressions=/usr/lib/valgrind/python.supp \
     --tool=drd \
     --trace-children=yes \
-    --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-6.0,/usr/bin/clang-format-6.0,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/patchelf,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
+    --trace-children-skip=/bin/cat,/bin/cp,/bin/ln,/bin/ls,/bin/mkdir,/bin/mv,/bin/sed,/lib/ld-linux.so.\*,/lib64/ld-linux-x86-64.so.\*,/usr/bin/clang,/usr/bin/clang-6.0,/usr/bin/clang-format-9,/usr/bin/diff,/usr/bin/dot,/usr/bin/fc-list,/usr/bin/file,/usr/bin/find,/usr/bin/gcc,/usr/bin/ldd,/usr/bin/patchelf,/usr/bin/strip,/usr/bin/uname,\*/external/buildifier/buildifier \
     --trace-children-skip-by-arg=meshcat.servers.zmqserver,uname \
     "$@"

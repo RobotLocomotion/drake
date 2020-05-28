@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+"""
+Runs Drake Visualizer with builtin scripts under an install tree.
+
+Note that it is not entirely important that this script's Python interpreter
+match that of the real `drake-visualizer` binary.
+"""
+
+from os.path import isdir, join, dirname, realpath
+import sys
+
+# Ensure that we can import the necessary scripts, accommodating symlinks.
+PREFIX_DIR = dirname(dirname(realpath(__file__)))
+assert isdir(join(PREFIX_DIR, "bin")), f"Bad location: {PREFIX_DIR}"
+# Add the necessary Python site-packages path that is congruent with this
+# binary.
+# N.B. We do not need to modify the PYTHONPATH environment variable, as the
+# real drake-visualizer handles this on its own.
+site_dir = join(PREFIX_DIR, "@PYTHON_SITE_PACKAGES_RELPATH@")
+sys.path.insert(0, site_dir)
+
+from _drake_visualizer_builtin_scripts import (  # noqa
+    _exec_drake_visualizer_with_plugins,
+)
+
+
+def main():
+    # Execute wrapper.
+    _exec_drake_visualizer_with_plugins(
+        drake_visualizer_real=join(PREFIX_DIR, "bin/.drake-visualizer-real"),
+        # Ensure the wrapped binary shows 'drake-visualizer' in its usage.
+        arg0=__file__,
+    )
+
+
+assert __name__ == "__main__"
+main()

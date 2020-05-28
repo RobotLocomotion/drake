@@ -58,7 +58,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasible_Or_Unbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
@@ -68,7 +68,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
@@ -269,7 +269,7 @@ GTEST_TEST(TestSOCP, MaximizeGeometricMeanTrivialProblem2) {
   GurobiSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(prob.prog(), {}, {});
-    // Gurobi 8.0.0 returns a solution that is accurate up to 1.4E-6 for this
+    // Gurobi 9.0.0 returns a solution that is accurate up to 1.4E-6 for this
     // specific problem. Might need to change the tolerance when we upgrade
     // Gurobi.
     prob.CheckSolution(result, 1.4E-6);
@@ -359,7 +359,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     solver_options.SetOption(solver.solver_id(), "Foo", 1);
     auto result = solver.Solve(prog, {}, solver_options);
     // The error code is listed in
-    // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/error_codes.html
     const int UNKNOWN_PARAMETER{10007};
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
               UNKNOWN_PARAMETER);
@@ -368,7 +368,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
     result = solver.Solve(prog, {}, {});
     // The error code is listed in
-    // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+    // https://www.gurobi.com/documentation/9.0/refman/error_codes.html
     const int Q_NOT_PSD{10020};
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
               Q_NOT_PSD);
@@ -406,6 +406,36 @@ GTEST_TEST(GurobiTest, SolutionPool) {
     EXPECT_NEAR(result.get_suboptimal_objective(0), 0, tol);
     EXPECT_NEAR(result.get_suboptimal_objective(1), 1, tol);
   }
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution1) {
+  GurobiSolver solver;
+  TestQPDualSolution1(solver, 1e-6);
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution2) {
+  GurobiSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, QPDualSolution3) {
+  GurobiSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution1) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution2) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
+GTEST_TEST(GurobiTest, LPDualSolution1) {
+  GurobiSolver solver;
+  TestLPDualSolution1(solver);
 }
 
 }  // namespace test

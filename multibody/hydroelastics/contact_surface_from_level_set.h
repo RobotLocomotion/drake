@@ -307,7 +307,7 @@ std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     }
     // IntersectTetWithLevelSet() uses a different convention than
     // geometry::VolumeMesh to index the vertices of a tetrahedra and therefore
-    // we swap vertexes 1 and 2.
+    // we swap vertices 1 and 2.
     // TODO(amcastro-tri): re-write IntersectTetWithLevelSet() to use the
     // convention in geometry::VolumeMesh.
     std::swap(tet_vertices_N[1], tet_vertices_N[2]);

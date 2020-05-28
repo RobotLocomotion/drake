@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
 #include <vtkInformation.h>
@@ -14,7 +15,6 @@
 #include <vtkPolyData.h>
 #include <vtkPolyDataAlgorithm.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
-#include "third_party/com_github_finetjul_bender/vtkCapsuleSource.h"
 
 #include "drake/common/scope_exit.h"
 
@@ -182,7 +182,7 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
                                                          {-1, 1}};  // v3.
       // The index of the first vertex we're about to add.
       const vtkIdType first = newPoints->GetNumberOfPoints();
-      for (const auto [x, y] : vertices) {
+      for (const auto& [x, y] : vertices) {
         const Vector3d p_FV = p_FPc + (x * sx) * Fx + (y * sy) * Fy;
         newPoints->InsertNextPoint(p_FV[0], p_FV[1], p_FV[2]);
         newNormals->InsertNextTuple(normal_F);

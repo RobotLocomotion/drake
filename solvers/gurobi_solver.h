@@ -17,20 +17,20 @@ namespace solvers {
 /// details.
 struct GurobiSolverDetails {
   /// The gurobi optimization time. Please refer to
-  /// https://www.gurobi.com/documentation/8.0/refman/runtime.html
+  /// https://www.gurobi.com/documentation/9.0/refman/runtime.html
   double optimizer_time{};
 
   /// The error message returned from Gurobi call. Please refer to
-  /// https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+  /// https://www.gurobi.com/documentation/9.0/refman/error_codes.html
   int error_code{};
 
   /// The status code when the optimize call has returned. Please refer to
-  /// https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+  /// https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
   int optimization_status{};
 
   /// The best known bound on the optimal objective. This is used in mixed
   /// integer optimization. Please refer to
-  /// https://www.gurobi.com/documentation/8.0/refman/objbound.html
+  /// https://www.gurobi.com/documentation/9.0/refman/objbound.html
   double objective_bound{NAN};
 };
 
@@ -66,7 +66,7 @@ class GurobiSolver final : public SolverBase {
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds an intermediate solution node, which may not be feasible.
   /// See Gurobi reference manual for more detail on callbacks:
-  /// https://www.gurobi.com/documentation/8.0/refman/callback_codes.html.
+  /// https://www.gurobi.com/documentation/9.0/refman/callback_codes.html.
   /// The user may supply a partial solution in the VectorXd and
   /// VectorXDecisionVariable arguments that will be passed to Gurobi
   /// as a candidate feasible solution.
@@ -101,7 +101,7 @@ class GurobiSolver final : public SolverBase {
   /// Users can supply a callback to be called when the Gurobi solver
   /// finds a feasible solution.
   /// See Gurobi reference manual for more detail on callbacks:
-  /// https://www.gurobi.com/documentation/8.0/refman/callback_codes.html.
+  /// https://www.gurobi.com/documentation/9.0/refman/callback_codes.html.
   /// See gurobi_solver_test.cc for an example of using std::bind
   /// to create a callback of this signature, while allowing
   /// additional data to be passed through.
@@ -151,6 +151,9 @@ class GurobiSolver final : public SolverBase {
   //@{
   static SolverId id();
   static bool is_available();
+  /// Returns true iff the environment variable GRB_LICENSE_FILE has been set
+  /// to a non-empty value.
+  static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   //@}
 

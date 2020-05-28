@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/common/unused.h"
 
 namespace DrakeShapes {

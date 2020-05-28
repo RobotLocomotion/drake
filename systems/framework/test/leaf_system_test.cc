@@ -24,6 +24,11 @@
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+
 namespace drake {
 namespace systems {
 namespace {
@@ -1094,9 +1099,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
   dut.reset();
 
   // The first port should only accept a 1d vector.
-  context->FixInputPort(0, Eigen::VectorXd::Constant(1, 0.0));
+  context->FixInputPort(0, VectorXd::Constant(1, 0.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context->FixInputPort(0, Eigen::VectorXd::Constant(2, 0.0)),
+      context->FixInputPort(0, VectorXd::Constant(2, 0.0)),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
@@ -1263,7 +1268,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   EXPECT_EQ(vec0->get_value(), dut.expected_basic().get_value());
   EXPECT_EQ(vec1->get_value(), dut.expected_myvector().get_value());
   EXPECT_EQ(*str2, "concrete string");
-  EXPECT_EQ(vec3->get_value(), Eigen::Vector2d(10., 20.));
+  EXPECT_EQ(vec3->get_value(), Vector2d(10., 20.));
 }
 
 // Tests that the leaf system reserved the declared parameters of interesting
@@ -1289,9 +1294,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
     DeclaredModelDiscreteStateSystem() {
       // Takes a BasicVector.
       indexes_.push_back(
-          DeclareDiscreteState(MyVector2d(Eigen::Vector2d(1., 2.))));
+          DeclareDiscreteState(MyVector2d(Vector2d(1., 2.))));
       // Takes an Eigen vector.
-      indexes_.push_back(DeclareDiscreteState(Eigen::Vector3d(3., 4., 5.)));
+      indexes_.push_back(DeclareDiscreteState(Vector3d(3., 4., 5.)));
       // Four state variables, initialized to zero.
       indexes_.push_back(DeclareDiscreteState(4));
     }
@@ -1310,33 +1315,33 @@ GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
   // Concrete type and value should have been preserved.
   BasicVector<double>& xd0 = xd.get_mutable_vector(0);
   EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
-  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+  EXPECT_EQ(xd0.get_value(), Vector2d(1., 2.));
 
   // Eigen vector should have been stored in a BasicVector-type object.
   BasicVector<double>& xd1 = xd.get_mutable_vector(1);
   EXPECT_EQ(typeid(xd1), typeid(BasicVector<double>));
-  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+  EXPECT_EQ(xd1.get_value(), Vector3d(3., 4., 5.));
 
   // Discrete state with no model should act as though it were given an
   // all-zero Eigen vector model.
   BasicVector<double>& xd2 = xd.get_mutable_vector(2);
   EXPECT_EQ(typeid(xd2), typeid(BasicVector<double>));
-  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
+  EXPECT_EQ(xd2.get_value(), Vector4d(0., 0., 0., 0.));
 
   // Now make changes, then see if SetDefaultContext() puts them back.
-  xd0.SetFromVector(Eigen::Vector2d(9., 10.));
-  xd1.SetFromVector(Eigen::Vector3d(11., 12., 13.));
-  xd2.SetFromVector(Eigen::Vector4d(1., 2., 3., 4.));
+  xd0.SetFromVector(Vector2d(9., 10.));
+  xd1.SetFromVector(Vector3d(11., 12., 13.));
+  xd2.SetFromVector(Vector4d(1., 2., 3., 4.));
 
   // Of course that had to work, but let's just prove it ...
-  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(9., 10.));
-  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(11., 12., 13.));
-  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(1., 2., 3., 4.));
+  EXPECT_EQ(xd0.get_value(), Vector2d(9., 10.));
+  EXPECT_EQ(xd1.get_value(), Vector3d(11., 12., 13.));
+  EXPECT_EQ(xd2.get_value(), Vector4d(1., 2., 3., 4.));
 
   dut.SetDefaultContext(&*context);
-  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
-  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
-  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
+  EXPECT_EQ(xd0.get_value(), Vector2d(1., 2.));
+  EXPECT_EQ(xd1.get_value(), Vector3d(3., 4., 5.));
+  EXPECT_EQ(xd2.get_value(), Vector4d(0., 0., 0., 0.));
 }
 
 // Tests that DeclareAbstractState works expectedly.
@@ -1456,7 +1461,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     ++count_calc_dummy_vec2_;
     ASSERT_NE(out, nullptr);
     EXPECT_EQ(out->size(), 2);
-    out->get_mutable_value() = Eigen::Vector2d(-100., -200);
+    out->get_mutable_value() = Vector2d(-100., -200);
   }
 
   // Explicit allocator method.
@@ -1523,9 +1528,9 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(output0->size(), 2);
   auto out0_dummy = dynamic_cast<DummyVec2*>(output0);
   EXPECT_NE(out0_dummy, nullptr);
-  EXPECT_EQ(out0_dummy->get_value(), Eigen::Vector2d(100., 200.));
+  EXPECT_EQ(out0_dummy->get_value(), Vector2d(100., 200.));
   out0.Calc(*context, system_output->GetMutableData(0));
-  EXPECT_EQ(out0_dummy->get_value(), Eigen::Vector2d(-100., -200.));
+  EXPECT_EQ(out0_dummy->get_value(), Vector2d(-100., -200.));
 
   EXPECT_EQ(dut.calc_dummy_vec2_calls(), 1);
   EXPECT_EQ(out0.Eval<BasicVector<double>>(*context).get_value(),
@@ -1895,27 +1900,51 @@ GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
 template <typename T>
 class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
-  SymbolicSparsitySystem()
-      : SymbolicSparsitySystem(
-            SystemTypeTag<SymbolicSparsitySystem>{}) {}
+  explicit SymbolicSparsitySystem(bool use_default_prereqs = true)
+      : SymbolicSparsitySystem(SystemTypeTag<SymbolicSparsitySystem>{},
+                               use_default_prereqs) {}
 
   // Scalar-converting copy constructor.
   template <typename U>
-  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
-      : SymbolicSparsitySystem<T>() {}
+  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>& source)
+      : SymbolicSparsitySystem<T>(source.is_using_default_prereqs()) {
+    source.count_conversion();
+  }
+
+  // Note that this object was used as the source for a scalar conversion.
+  void count_conversion() const { ++num_conversions_; }
+
+  int num_conversions() const { return num_conversions_; }
+
+  bool is_using_default_prereqs() const { return use_default_prereqs_; }
 
  protected:
-  explicit SymbolicSparsitySystem(SystemScalarConverter converter)
-      : LeafSystem<T>(std::move(converter)) {
+  explicit SymbolicSparsitySystem(SystemScalarConverter converter,
+                                  bool use_default_prereqs = true)
+      : LeafSystem<T>(std::move(converter)),
+        use_default_prereqs_(use_default_prereqs) {
     const int kSize = 1;
 
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
-    this->DeclareVectorOutputPort(BasicVector<T>(kSize),
-                                  &SymbolicSparsitySystem::CalcY0);
-    this->DeclareVectorOutputPort(BasicVector<T>(kSize),
-                                  &SymbolicSparsitySystem::CalcY1);
+    if (is_using_default_prereqs()) {
+      // Don't specify prerequisites; we'll have to perform symbolic analysis
+      // to determine whether there is feedthrough.
+      this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+                                    &SymbolicSparsitySystem::CalcY0);
+      this->DeclareVectorOutputPort(BasicVector<T>(kSize),
+                                    &SymbolicSparsitySystem::CalcY1);
+    } else {
+      // Explicitly specify the prerequisites for the code in CalcY0() and
+      // CalcY1() below. No need for further analysis to determine feedthrough.
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(kSize), &SymbolicSparsitySystem::CalcY0,
+          {this->input_port_ticket(InputPortIndex(1))});
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(kSize), &SymbolicSparsitySystem::CalcY1,
+          {this->input_port_ticket(InputPortIndex(0))});
+    }
   }
 
  private:
@@ -1930,6 +1959,12 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
     const auto& u0 = this->get_input_port(0).Eval(context);
     y1->set_value(u0);
   }
+
+  const bool use_default_prereqs_;
+
+  // Count how many times this object was used as the _source_ for the
+  // conversion constructor.
+  mutable int num_conversions_{0};
 };
 
 // The sparsity reporting should be the same no matter which scalar type the
@@ -1944,7 +1979,7 @@ class FeedthroughTypedTest : public ::testing::Test {};
 TYPED_TEST_SUITE(FeedthroughTypedTest, FeedthroughTestScalars);
 
 // The sparsity of a System should be inferred from its symbolic form.
-TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsityDefaultPrereqs) {
   using T = TypeParam;
   const SymbolicSparsitySystem<T> system;
 
@@ -1962,6 +1997,42 @@ TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
   expected.emplace(1, 0);
   expected.emplace(0, 1);
   EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+
+  // Since we didn't provide prerequisites for the output ports, each of the 8
+  // calls above should have required a scalar conversion to symbolic unless
+  // T was already symbolic.
+  int expected_conversions = 8;
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    expected_conversions = 0;
+  }
+
+  EXPECT_EQ(system.num_conversions(), expected_conversions);
+}
+
+// Repeat the above test using explicitly-specified prerequisites to avoid
+// having to convert to symbolic form.
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsityExplicitPrereqs) {
+  using T = TypeParam;
+  const SymbolicSparsitySystem<T> system(false);  // Use explicit prereqs.
+
+  // Both the output ports have direct feedthrough from some input.
+  EXPECT_TRUE(system.HasAnyDirectFeedthrough());
+  EXPECT_TRUE(system.HasDirectFeedthrough(0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1));
+  // Check the entire matrix.
+  EXPECT_FALSE(system.HasDirectFeedthrough(0, 0));
+  EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
+  EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
+  EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
+  // Confirm the exact set of desired pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+
+  // Shouldn't have been any conversions required above.
+  const int expected_conversions = 0;
+  EXPECT_EQ(system.num_conversions(), expected_conversions);
 }
 
 // This system only supports T = symbolic::Expression; it does not support
@@ -2231,11 +2302,11 @@ class ConstraintBasicVector final : public BasicVector<T> {
   ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
   BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
 
-  void GetElementBounds(Eigen::VectorXd* lower,
-                        Eigen::VectorXd* upper) const override {
+  void GetElementBounds(VectorXd* lower,
+                        VectorXd* upper) const override {
     const double kInf = std::numeric_limits<double>::infinity();
-    *lower = Eigen::Vector3d(bias, -kInf, -kInf);
-    *upper = Eigen::Vector3d::Constant(kInf);
+    *lower = Vector3d(bias, -kInf, -kInf);
+    *upper = Vector3d::Constant(kInf);
   }
 };
 
@@ -2253,18 +2324,18 @@ class ConstraintTestSystem : public LeafSystem<double> {
   using LeafSystem<double>::DeclareVectorOutputPort;
 
   void CalcState0Constraint(const Context<double>& context,
-                            Eigen::VectorXd* value) const {
+                            VectorXd* value) const {
     *value = Vector1d(context.get_continuous_state_vector()[0]);
   }
   void CalcStateConstraint(const Context<double>& context,
-                           Eigen::VectorXd* value) const {
+                           VectorXd* value) const {
     *value = context.get_continuous_state_vector().CopyToVector();
   }
 
   void CalcOutput(
       const Context<double>& context,
       ConstraintBasicVector<double, 44>* output) const {
-    output->SetFromVector(Eigen::VectorXd::Constant(output->size(), 4.0));
+    output->SetFromVector(VectorXd::Constant(output->size(), 4.0));
   }
 
  private:
@@ -2291,19 +2362,19 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
           &ConstraintTestSystem::CalcStateConstraint,
-          { Eigen::Vector2d::Zero(), std::nullopt },
+          { Vector2d::Zero(), std::nullopt },
           "x"),
       1);
   EXPECT_EQ(dut.num_constraints(), 2);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(
-      Eigen::Vector2d(5.0, 7.0));
+      Vector2d(5.0, 7.0));
 
   EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(0)).size(), 1);
   EXPECT_EQ(dut.get_constraint(SystemConstraintIndex(1)).size(), 2);
 
-  Eigen::VectorXd value;
+  VectorXd value;
   dut.get_constraint(SystemConstraintIndex(0)).Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 5.0);
@@ -2328,7 +2399,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(dut.num_constraints(), 0);
 
   ContextConstraintCalc<double> calc0 = [](
-      const Context<double>& context, Eigen::VectorXd* value) {
+      const Context<double>& context, VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
@@ -2338,19 +2409,19 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(dut.num_constraints(), 1);
 
   ContextConstraintCalc<double> calc1 = [](
-      const Context<double>& context, Eigen::VectorXd* value) {
+      const Context<double>& context, VectorXd* value) {
     *value =
-        Eigen::Vector2d(context.get_continuous_state_vector()[1],
+        Vector2d(context.get_continuous_state_vector()[1],
                         context.get_continuous_state_vector()[0]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
-      { std::nullopt, Eigen::Vector2d(2, 3) }, "x_upper"), 1);
+      { std::nullopt, Vector2d(2, 3) }, "x_upper"), 1);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(
-      Eigen::Vector2d(5.0, 7.0));
+      Vector2d(5.0, 7.0));
 
-  Eigen::VectorXd value;
+  VectorXd value;
   const SystemConstraint<double>& inequality_constraint0 =
       dut.get_constraint(SystemConstraintIndex(0));
   inequality_constraint0.Calc(*context, &value);
@@ -2452,13 +2523,13 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
 
   // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `1.0 >= 11.0`.
   context->get_mutable_numeric_parameter(0)[0] = 1.0;
-  Eigen::VectorXd value0;
+  VectorXd value0;
   constraint0.Calc(*context, &value0);
   EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(1.0)));
 
   // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `2.0 >= 22.0`.
   context->get_mutable_continuous_state_vector()[0] = 2.0;
-  Eigen::VectorXd value1;
+  VectorXd value1;
   constraint1.Calc(*context, &value1);
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(2.0)));
 
@@ -2466,12 +2537,12 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   InputVector input;
   input[0] = 3.0;
   dut.get_input_port(0).FixValue(&*context, input);
-  Eigen::VectorXd value2;
+  VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(3.0)));
 
   // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `4.0 >= 44.0`.
-  Eigen::VectorXd value3;
+  VectorXd value3;
   constraint3.Calc(*context, &value3);
   EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(4.0)));
 }
@@ -2481,9 +2552,9 @@ class RandomContextTestSystem : public LeafSystem<double> {
  public:
   RandomContextTestSystem() {
     this->DeclareContinuousState(
-        BasicVector<double>(Eigen::Vector2d(-1.0, -2.0)));
+        BasicVector<double>(Vector2d(-1.0, -2.0)));
     this->DeclareNumericParameter(
-        BasicVector<double>(Eigen::Vector3d(1.0, 2.0, 3.0)));
+        BasicVector<double>(Vector3d(1.0, 2.0, 3.0)));
   }
 
   void SetRandomState(const Context<double>& context, State<double>* state,
@@ -2511,8 +2582,8 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
   auto context = system.CreateDefaultContext();
 
   // Back-up the numeric context values.
-  Eigen::Vector2d state = context->get_continuous_state_vector().CopyToVector();
-  Eigen::Vector3d params = context->get_numeric_parameter(0).CopyToVector();
+  Vector2d state = context->get_continuous_state_vector().CopyToVector();
+  Vector3d params = context->get_numeric_parameter(0).CopyToVector();
 
   // Should return the (same) original values.
   system.SetDefaultContext(context.get());
@@ -2801,6 +2872,159 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   EXPECT_EQ(dut.num_second_discrete_update(), 1);
   EXPECT_EQ(dut.num_unrestricted_update(), 5);
   EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
+}
+
+// A System that does not override the default implicit time derivatives
+// implementation.
+class DefaultExplicitSystem : public LeafSystem<double> {
+ public:
+  DefaultExplicitSystem() { DeclareContinuousState(3); }
+
+  void RedeclareResidualSize(int n) {
+    DeclareImplicitTimeDerivativesResidualSize(n);
+  }
+
+  static Vector3d fixed_derivative() { return {1., 2., 3.}; }
+
+ private:
+  void DoCalcTimeDerivatives(const Context<double>& context,
+                             ContinuousState<double>* derivatives) const final {
+    derivatives->SetFromVector(fixed_derivative());
+  }
+
+  // No override for the implicit derivatives method.
+};
+
+// A System that _does_ override the default implicit time derivatives
+// implementation, and also changes the residual size from its default.
+class OverrideImplicitSystem : public DefaultExplicitSystem {
+ public:
+  OverrideImplicitSystem() {
+    DeclareImplicitTimeDerivativesResidualSize(1);
+  }
+
+  void RedeclareResidualSize(int n) {
+    DeclareImplicitTimeDerivativesResidualSize(n);
+  }
+
+ private:
+  void DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<double>& context,
+    const systems::ContinuousState<double>& proposed_derivatives,
+    EigenPtr<VectorX<double>> residual) const final {
+    EXPECT_EQ(residual->size(), 1);
+    (*residual)[0] = proposed_derivatives.CopyToVector().sum();
+  }
+};
+
+GTEST_TEST(ImplicitTimeDerivatives, DefaultImplementation) {
+  const Vector3d derivs = DefaultExplicitSystem::fixed_derivative();
+
+  DefaultExplicitSystem dut;
+  auto context = dut.CreateDefaultContext();
+  auto xdot = dut.AllocateTimeDerivatives();
+
+  // Check that SystemBase method returns the default size.
+  EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 3);
+
+  // Proposing the actual derivative should yield a zero residual.
+  xdot->SetFromVector(derivs);
+
+  // Make sure the vector type returned by the allocator works.
+  VectorXd residual = dut.AllocateImplicitTimeDerivativesResidual();
+  EXPECT_EQ(residual.size(), 3);
+  dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual);
+  EXPECT_EQ(residual, Vector3d::Zero());  // Yes, exactly.
+
+  // To make sure the method isn't just returning zero, try the reverse
+  // case which should have the actual derivative as a residual.
+  xdot->SetFromVector(Vector3d::Zero());
+  dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual);
+  EXPECT_EQ(residual, -derivs);  // Exact.
+
+  // The residual should be acceptable as long as it is some mutable
+  // Eigen object of the right shape.
+
+  // A fixed-size residual should work.
+  Vector3d residual3;
+  dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual3);
+  EXPECT_EQ(residual3, -derivs);
+
+  // Some complicated Eigen mutable object should also work.
+  VectorXd buffer(VectorXd::Zero(5));
+  auto segment = buffer.segment(1, 3);  // Some kind of block object.
+  VectorXd expected_residual(VectorXd::Zero(5));
+  expected_residual.segment(1, 3) = -derivs;
+  dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &segment);
+  EXPECT_EQ(buffer, expected_residual);
+
+  // Let's change the declared residual size, pass in a matching vector,
+  // and verify that the default implementation complains properly.
+  dut.RedeclareResidualSize(4);
+  Vector4d residual4;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual4),
+      std::logic_error,
+      "System::DoCalcImplicitTimeDerivativesResidual.*"
+      "default implementation requires.*residual size.*4.*"
+      "matches.*state variables.*3.*must override.*");
+
+  // And if the residual matches the state size but not the declared size,
+  // we should get stopped by the NVI public method.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual3),
+      std::logic_error,
+      ".*CalcImplicitTimeDerivativesResidual.*"
+      "expected residual.*size 4 but got.*size 3.*\n"
+      "Use AllocateImplicitTimeDerivativesResidual.*");
+}
+
+GTEST_TEST(ImplicitTimeDerivatives, OverrideImplementation) {
+  OverrideImplicitSystem dut;
+  auto context = dut.CreateDefaultContext();
+  auto xdot = dut.AllocateTimeDerivatives();
+  EXPECT_EQ(xdot->size(), 3);
+
+  // Check that SystemBase method returns the adjusted size.
+  EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 1);
+
+  // Make sure the vector size returned by the allocator reflects the change.
+  VectorXd residual = dut.AllocateImplicitTimeDerivativesResidual();
+  EXPECT_EQ(residual.size(), 1);
+  residual[0] = 99.;  // So we can make sure it gets changed.
+
+  // "Residual" just sums the proposed derivative xdot.
+  xdot->SetFromVector(Vector3d(10., 20., 30.));
+  dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &residual);
+  EXPECT_EQ(residual[0], 60.);
+
+  // (No need to re-test the acceptable Eigen output types as we did in
+  // the previous test since both go through the same public NVI method.)
+
+  // Check that a wrong-sized residual gets a nice message.
+  Vector3d bad_residual;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.CalcImplicitTimeDerivativesResidual(*context, *xdot, &bad_residual),
+      std::logic_error,
+      ".*CalcImplicitTimeDerivativesResidual.*"
+      "expected residual.*size 1 but got.*size 3.*\n"
+      "Use AllocateImplicitTimeDerivativesResidual.*");
+}
+
+// Check that declaring an illegal residual size just resets size back to the
+// default (that is, the same size as the time derivatives).
+GTEST_TEST(ImplicitTimeDerivatives, ResetToDefaultResidualSize) {
+  OverrideImplicitSystem dut;
+  EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 1);
+
+  dut.RedeclareResidualSize(0);
+  EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 3);
+
+  dut.RedeclareResidualSize(1);  // Non-default.
+  EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 1);
+
+  dut.RedeclareResidualSize(-29);
+  EXPECT_EQ(dut.implicit_time_derivatives_residual_size(), 3);
 }
 
 }  // namespace

@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_engine_vtk.h"
 
+#include <fstream>
 #include <limits>
 #include <optional>
 #include <stdexcept>
@@ -341,18 +342,22 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       vtkActor& source = *source_actors[i];
       vtkActor& clone = *clone_actors[i];
 
+      // NOTE: The clone renderer and original renderer *share* polygon data
+      // (via the shared mapper) and all textures. If the meshes or textures get
+      // modified _in place_ in a clone, the change would be visible to all
+      // copies of the renderer. If that proves to be problematic we'll have to
+      // make the copy "deeper" as appropriate.
       if (source.GetTexture() == nullptr) {
         clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
         clone.GetProperty()->SetOpacity(source.GetProperty()->GetOpacity());
       } else {
         clone.SetTexture(source.GetTexture());
       }
+      const auto& source_textures = source.GetProperty()->GetAllTextures();
+      for (auto& [name, texture] : source_textures) {
+        clone.GetProperty()->SetTexture(name.c_str(), texture);
+      }
 
-      // NOTE: The clone renderer and original renderer *share* polygon
-      // data. If the meshes were *deformable* this would be invalid.
-      // Furthermore, even if dynamic adding/removing of geometry were
-      // valid, VTK's reference counting preserves the underlying geometry
-      // in the copy that still references it.
       clone.SetMapper(source.GetMapper());
       clone.SetUserTransform(source.GetUserTransform());
       // This is necessary because *terrain* has its lighting turned off. To

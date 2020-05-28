@@ -5,6 +5,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace geometry {
@@ -137,7 +138,7 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
       "exists, but is of a different type. Requested 'std::string', but found "
       "'double'");
 
-  // Using r-values as defaults; this tests both compilability and correctness.
+  // Using r-values as defaults; this tests both compatibility and correctness.
   properties.AddProperty("strings", "valid_string", "valid_string");
   std::string valid_value = properties.GetPropertyOrDefault(
       "strings", "valid_string", "missing");
@@ -155,7 +156,7 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   const std::string prop_name("some_property");
 
   // Getter errors
-  // Case: Asking for property from non-existant group.
+  // Case: Asking for property from non-existent group.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
       ".*Trying to read property .* from group .*. But the group does not "
@@ -184,7 +185,7 @@ GTEST_TEST(GeometryProperties, PropertyIteration) {
     properties.AddProperty(default_group, pair.first, pair.second);
   }
 
-  // Get exception for non-existant group.
+  // Get exception for non-existent group.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetPropertiesInGroup("bad group"), std::logic_error,
       ".*Can't retrieve properties for a group that doesn't exist.*");
@@ -288,6 +289,110 @@ GTEST_TEST(GeometryProperties, CopyMoveSemantics) {
   move_assign = std::move(move_construct);
   EXPECT_FALSE(properties_equal(reference, move_construct));
   EXPECT_TRUE(properties_equal(reference, move_assign));
+}
+
+// Counts the number of instances constructed. Ignores destruction.
+// TODO(eric.cousineau): Hoist this to more general testing code (e.g. for
+// value_test.cc).
+class GloballyCounted {
+ public:
+  struct Stats {
+    int num_copies{};
+    int num_moves{};
+
+    ::testing::AssertionResult Equal(Stats other) {
+      if (num_copies != other.num_copies || num_moves != other.num_moves) {
+        return ::testing::AssertionFailure() <<
+            fmt::format(
+                "(num_copies, num_moves): ({}, {}) != ({}, {})",
+                num_copies, num_moves, other.num_copies, other.num_moves);
+      }
+      return ::testing::AssertionSuccess();
+    }
+  };
+
+  static Stats get_stats_and_reset() {
+    Stats out = stats;
+    stats = {0, 0};
+    return out;
+  }
+
+  GloballyCounted() {}
+
+  GloballyCounted(GloballyCounted&&) { stats.num_moves++; }
+  GloballyCounted& operator=(GloballyCounted&&) {
+    stats.num_moves++;
+    return *this;
+  }
+
+  GloballyCounted(const GloballyCounted&) { stats.num_copies++; }
+  GloballyCounted& operator=(const GloballyCounted&) {
+    stats.num_copies++;
+    return *this;
+  }
+
+ private:
+  static Stats stats;
+};
+
+GloballyCounted::Stats GloballyCounted::stats;
+
+GTEST_TEST(GeometryProperties, GloballyCounted) {
+  // Unittest basic utility.
+  const GloballyCounted value;
+  EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({0, 0}));
+
+  // Copy construction.
+  {
+    const GloballyCounted copy = value;
+    unused(copy);
+    EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({1, 0}));
+  }
+
+  // Copy assignment.
+  {
+    GloballyCounted copy;
+    copy = value;
+    EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({1, 0}));
+  }
+
+  // Move construction.
+  {
+    GloballyCounted moved_from;
+    GloballyCounted moved_to = std::move(moved_from);
+    unused(moved_to);
+    EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({0, 1}));
+  }
+
+  // Move assigment.
+  {
+    GloballyCounted moved_from;
+    GloballyCounted moved_to;
+    moved_to = std::move(moved_from);
+    EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({0, 1}));
+  }
+}
+
+// Confirms the amount of copying that occurs.
+GTEST_TEST(GeometryProperties, CopyCountCheck) {
+  TestProperties properties;
+  const std::string& group_name{"some_group"};
+  const std::string name_1("name_1");
+  const std::string name_2("name_2");
+
+  // When adding a property, 2 copies should occur: once when constructing a
+  // value, then another when cloning it.
+  const GloballyCounted value;
+  properties.AddPropertyAbstract(group_name, name_1, Value(value));
+  EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({2, 0}));
+
+  // Same as above.
+  properties.AddProperty(group_name, name_2, value);
+  EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({2, 0}));
+
+  // No copies upon retrieving the type.
+  properties.GetProperty<GloballyCounted>(group_name, name_1);
+  EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({0, 0}));
 }
 
 }  // namespace

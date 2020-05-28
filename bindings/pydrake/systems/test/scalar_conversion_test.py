@@ -58,11 +58,19 @@ class TestScalarConversion(unittest.TestCase):
         """Tests the Example_ system."""
         # Test template.
         self.assertIsInstance(Example_, TemplateClass)
+        self.assertEqual(
+            str(Example_), f"<TemplateSystem {__name__}.Example_>")
         self.assertIs(Example_[float], Example)
 
         # Test parameters.
         param_list = [(T,) for T in SystemScalarConverter.SupportedScalars]
         self.assertListEqual(Example_.param_list, param_list)
+
+        for T in SystemScalarConverter.SupportedScalars:
+            system_T = Example_[T](0)
+            self.assertEqual(
+                system_T.GetSystemType(),
+                f"{__name__}.Example_[{T.__name__}]")
 
         # Test private properties (do NOT use these in your code!).
         self.assertTupleEqual(

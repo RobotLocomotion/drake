@@ -2,6 +2,8 @@
 
 #include <Eigen/Core>
 
+#include "drake/attic_warning.h"
+
 struct ForceTorqueMeasurement {
   int frame_idx;
   Eigen::Matrix<double, 6, 1> wrench;  // [torque; force], expressed in frame

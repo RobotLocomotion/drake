@@ -96,6 +96,7 @@ drake_cc_library(
     hdrs = ["binding.h"],
     deps = [
         ":decision_variable",
+        ":evaluator_base",
     ],
 )
 
@@ -337,6 +338,7 @@ drake_cc_library(
     hdrs = ["mathematical_program_result.h"],
     deps = [
         ":binding",
+        ":constraint",
         ":solution_result",
         ":solver_id",
         "//common:symbolic",
@@ -787,12 +789,6 @@ drake_cc_library(
         ],
     }),
     hdrs = ["snopt_solver.h"],
-    copts = select({
-        "//tools:with_snopt_fortran": [
-            "-DWITH_SNOPT_FORTRAN=1",
-        ],
-        "//conditions:default": [],
-    }),
     deps = select({
         "//tools:with_snopt": [
             ":mathematical_program",
@@ -1020,6 +1016,7 @@ drake_cc_googletest(
         ":binding",
         ":constraint",
         ":cost",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1163,6 +1160,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":quadratic_program_examples",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -1526,6 +1524,17 @@ drake_cc_googletest(
         ":mathematical_program",
         ":solver_base",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+# TODO(jwnimmer-tri) Remove this test on 2020-09-01 when the deprecated
+# SolverBase constructor is also removed.
+drake_cc_googletest(
+    name = "solver_base_deprecated_test",
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":mathematical_program",
+        ":solver_base",
     ],
 )
 

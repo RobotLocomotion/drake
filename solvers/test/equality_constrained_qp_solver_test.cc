@@ -7,6 +7,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
+#include "drake/solvers/test/quadratic_program_examples.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -81,7 +82,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
   prog.AddCost(pow(x(0) - 1, 2) + pow(x(1) - 1, 2));
 
   // x1 + x2 = 1
-  prog.AddLinearConstraint(x(0) + x(1) == 1);
+  auto constraint1 = prog.AddLinearConstraint(x(0) + x(1) == 1);
 
   prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
 
@@ -94,6 +95,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
                               MatrixCompareType::absolute));
 
   EXPECT_NEAR(0.5, result.get_optimal_cost(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1), Vector1d(-1),
+                              1e-14));
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
@@ -101,10 +104,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   // Add one more variable and constrain it in a different way
   auto y = prog.NewContinuousVariables(1);
-  Vector2d constraint2(2);
-  // 2*x1 - x3 = 0, so x3 should wind up as 1.0
-
-  prog.AddLinearConstraint(2 * x(0) - y(0) == 0);
+  // 2*x1 - y = 0, so y should wind up as 1.0
+  auto constraint2 = prog.AddLinearConstraint(2 * x(0) - y(0) == 0);
   prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
   result = Solve(prog, Eigen::Vector3d::Zero());
   expected_answer.resize(3);
@@ -118,6 +119,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
   EXPECT_NEAR(0.5, result.get_optimal_cost(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1), Vector1d(-1),
+                              1e-14));
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2), Vector1d(0.),
+                              1e-14));
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver,
@@ -201,13 +206,15 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessian) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) - x(1) * x(1));
-  prog.AddLinearConstraint(x(1) == 1);
+  auto constraint = prog.AddLinearConstraint(x(1) == 1);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector2d(0, 1),
                               1E-12, MatrixCompareType::absolute));
   EXPECT_NEAR(result.get_optimal_cost(), -1, 1E-12);
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(constraint), Vector1d(-2), 1E-12));
 }
 
 // Test a QP with positive semidefinite Hessian, but unbounded objective.
@@ -232,13 +239,18 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(-x(0) * x(0) - x(1) * x(1));
-  prog.AddLinearConstraint(x(0) + x(1) == 2 && x(0) - x(1) == 3);
+  Eigen::Matrix2d Aeq;
+  Aeq << 1, 1, 1, -1;
+  auto constraint =
+      prog.AddLinearEqualityConstraint(Aeq, Eigen::Vector2d(2, 3), x);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector2d(2.5, -0.5),
                               1E-12, MatrixCompareType::absolute));
   EXPECT_NEAR(result.get_optimal_cost(), -6.5, 1E-12);
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                              Eigen::Vector2d(-2, -3), 1e-12));
 }
 
 // Test a QP with negative definite Hessian, and an unbounded objective.
@@ -263,7 +275,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDHessianUniqueOptimal) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) + 2 * x(0) + 3 * x(1));
-  prog.AddLinearConstraint(x(0) + 2 * x(1) == 1);
+  auto constraint = prog.AddLinearConstraint(x(0) + 2 * x(1) == 1);
   EqualityConstrainedQPSolver solver;
   auto result = solver.Solve(prog, {}, {});
   EXPECT_TRUE(result.is_success());
@@ -271,6 +283,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDHessianUniqueOptimal) {
                               Eigen::Vector2d(-1.0 / 4, 5.0 / 8), 1E-12,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(result.get_optimal_cost(), 23.0 / 16.0, 1E-12);
+  EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint), Vector1d(1.5),
+                              1e-12));
 }
 
 // Test a QP with indefinite Hessian and infeasible constraints
@@ -343,8 +357,6 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
 }
 
 // min x'*x + x0 + x1 + 1
-// s.t. x0 = x1.
-// (aka min 2x^2 + 2x + 1)
 // The solution is x0 = x1 = -.5, with optimal value .5.
 GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
   MathematicalProgram prog;
@@ -395,6 +407,16 @@ TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions2) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_.Solve(prog_, {}, solver_options_, &result_),
       std::invalid_argument, "FeasibilityTol should be a non-negative number.");
+}
+
+GTEST_TEST(EqualityConstrainedQPSolverDualSolutionTest, DualSolution1) {
+  EqualityConstrainedQPSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(EqualityConstrainedQPSolverDualSolutionTest, DualSolution2) {
+  EqualityConstrainedQPSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
 }
 
 }  // namespace test

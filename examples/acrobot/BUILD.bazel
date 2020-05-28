@@ -198,17 +198,18 @@ drake_cc_binary(
 drake_cc_binary(
     name = "run_swing_up_traj_optimization",
     srcs = ["test/run_swing_up_traj_optimization.cc"],
-    add_test_rule = 1,
+    # TODO(ggould) Temporarily turned off due to mac test failures, see #10276.
+    add_test_rule = 0,
+    tags = ["snopt"],
     test_rule_args = ["-realtime_factor=0.0"],
-    # Non-deterministic IPOPT-related failures on macOS, see #10276.
-    test_rule_flaky = 1,
     deps = [
         ":acrobot_geometry",
         ":acrobot_plant",
+        "//common:is_approx_equal_abstol",
         "//geometry:geometry_visualization",
         "//solvers:solve",
         "//systems/analysis:simulator",
-        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/controllers:finite_horizon_linear_quadratic_regulator",
         "//systems/primitives:trajectory_source",
         "//systems/trajectory_optimization:direct_collocation",
         "@gflags",
@@ -252,6 +253,14 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "@gflags",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acrobot_plant_test",
+    deps = [
+        ":acrobot_plant",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "trajectories",
     deps = [
         ":bspline_trajectory",
+        ":discrete_time_trajectory",
         ":piecewise_polynomial",
         ":piecewise_quaternion",
         ":piecewise_trajectory",
@@ -23,8 +24,23 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "trajectory",
+    srcs = ["trajectory.cc"],
     hdrs = ["trajectory.h"],
     deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_trajectory",
+    srcs = ["discrete_time_trajectory.cc"],
+    hdrs = ["discrete_time_trajectory.h"],
+    deps = [
+        ":piecewise_polynomial",
+        ":trajectory",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -97,6 +113,23 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "trajectory_test",
+    deps = [
+        ":trajectory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_trajectory_test",
+    deps = [
+        ":discrete_time_trajectory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "piecewise_trajectory_test",
     deps = [
         ":piecewise_trajectory",
@@ -104,7 +137,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "piecewise_generation_test",
+    name = "piecewise_polynomial_generation_test",
     # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
     srcs = ["test/piecewise_polynomial_generation_test.cc"],
@@ -122,6 +155,7 @@ drake_cc_googletest(
         ":random_piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
     ],
 )
 
@@ -151,6 +185,7 @@ drake_cc_googletest(
         "//common/proto:call_python",
         "//common/test_utilities",
         "//math:compute_numerical_gradient",
+        "//math:gradient",
     ],
 )
 

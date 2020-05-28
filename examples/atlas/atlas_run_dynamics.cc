@@ -81,7 +81,7 @@ int do_main() {
   const drake::multibody::Body<double>& pelvis = plant.GetBodyByName("pelvis");
   DRAKE_DEMAND(pelvis.is_floating());
   DRAKE_DEMAND(pelvis.has_quaternion_dofs());
-  // Since there is a single floating body, we know that the postions for it
+  // Since there is a single floating body, we know that the positions for it
   // lie first in the state vector.
   DRAKE_DEMAND(pelvis.floating_positions_start() == 0);
   // Similarly for velocities. The velocities for this floating pelvis are the

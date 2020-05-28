@@ -1,7 +1,7 @@
 #include "drake/systems/analysis/test_utilities/controlled_spring_mass_system.h"
 
-#include <Eigen/Dense>
 #include "gtest/gtest.h"
+#include <Eigen/Dense>
 
 using std::make_unique;
 

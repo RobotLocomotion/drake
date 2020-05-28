@@ -13,6 +13,7 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
@@ -543,6 +544,64 @@ void ParseFrame(ModelInstanceIndex model_instance,
       name, body.body_frame(), X_BF));
 }
 
+void ParseBushing(XMLElement* node, MultibodyPlant<double>* plant) {
+  // Functor to read a child element with a vector valued `value` attribute
+  // Throws an error if unable to find the tag or if the value attribute is
+  // improperly formed.
+  auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node != nullptr) {
+      Eigen::Vector3d value;
+      if (ParseVectorAttribute(value_node, "value", &value)) {
+        return value;
+      } else {
+        throw std::runtime_error(
+            fmt::format("Unable to read the 'value' attribute for the <{}> "
+                        "tag on line {}",
+                        element_name, value_node->GetLineNum()));
+      }
+    } else {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> "
+                      "tag on line {}",
+                      element_name, node->GetLineNum()));
+    }
+  };
+
+  // Functor to read a child element with a string valued `name` attribute.
+  // Throws an error if unable to find the tag of if the name attribute is
+  // improperly formed.
+  auto read_frame = [node,
+                     plant](const char* element_name) -> const Frame<double>& {
+    XMLElement* value_node = node->FirstChildElement(element_name);
+
+    if (value_node != nullptr) {
+      std::string frame_name;
+      if (ParseStringAttribute(value_node, "name", &frame_name)) {
+        if (!plant->HasFrameNamed(frame_name)) {
+          throw std::runtime_error(fmt::format(
+              "Frame: {} specified for <{}> does not exist in the model.",
+              frame_name, element_name));
+        }
+        return plant->GetFrameByName(frame_name);
+
+      } else {
+        throw std::runtime_error(
+            fmt::format("Unable to read the 'name' attribute for the <{}> "
+                        "tag on line {}",
+                        element_name, value_node->GetLineNum()));
+      }
+
+    } else {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> tag on line {}", element_name,
+                      node->GetLineNum()));
+    }
+  };
+
+  ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+}
+
 ModelInstanceIndex ParseUrdf(
     const std::string& model_name_in,
     const multibody::PackageMap& package_map,
@@ -617,6 +676,14 @@ ModelInstanceIndex ParseUrdf(
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame")) {
     ParseFrame(model_instance, frame_node, plant);
+  }
+
+  // Parses the model's custom Drake bushing tags.
+  for (XMLElement* bushing_node =
+           node->FirstChildElement("drake:linear_bushing_rpy");
+       bushing_node; bushing_node = bushing_node->NextSiblingElement(
+                         "drake:linear_bushing_rpy")) {
+    ParseBushing(bushing_node, plant);
   }
 
   return model_instance;

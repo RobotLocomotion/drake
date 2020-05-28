@@ -156,6 +156,24 @@ struct ResultCache {
     return !std::memcmp(x.data(), x_in, x.size() * sizeof(Number));
   }
 
+  // Sugar to copy an IPOPT bare array into `x`.
+  void SetX(const Index n, const Number* x_arg) {
+    DRAKE_ASSERT(static_cast<Index>(x.size()) == n);
+    if (n == 0) { return; }
+    DRAKE_ASSERT(x_arg != nullptr);
+    std::memcpy(x.data(), x_arg, n * sizeof(Number));
+  }
+
+  // Sugar to copy one of our member fields into an IPOPT bare array.
+  static void Extract(
+      const std::vector<Number>& cache_data,
+      const Index dest_size, Number* dest) {
+    DRAKE_ASSERT(static_cast<Index>(cache_data.size()) == dest_size);
+    if (dest_size == 0) { return; }
+    DRAKE_ASSERT(dest != nullptr);
+    std::memcpy(dest, cache_data.data(), dest_size * sizeof(Number));
+  }
+
   std::vector<Number> x;
   std::vector<Number> result;
   std::vector<Number> grad;
@@ -308,8 +326,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateCosts(n, x);
     }
 
-    DRAKE_ASSERT(static_cast<Index>(cost_cache_->grad.size()) == n);
-    std::memcpy(grad_f, cost_cache_->grad.data(), n * sizeof(Number));
+    ResultCache::Extract(cost_cache_->grad, n, grad_f);
     return true;
   }
 
@@ -319,8 +336,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateConstraints(n, x);
     }
 
-    DRAKE_ASSERT(static_cast<Index>(constraint_cache_->result.size()) == m);
-    std::memcpy(g, constraint_cache_->result.data(), m * sizeof(Number));
+    ResultCache::Extract(constraint_cache_->result, m, g);
     return true;
   }
 
@@ -382,10 +398,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       EvaluateConstraints(n, x);
     }
 
-    DRAKE_ASSERT(static_cast<Index>(constraint_cache_->grad.size()) ==
-                 nele_jac);
-    std::memcpy(values, constraint_cache_->grad.data(),
-                nele_jac * sizeof(Number));
+    ResultCache::Extract(constraint_cache_->grad, nele_jac, values);
     return true;
   }
 
@@ -458,7 +471,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     AutoDiffVecXd ty(1);
     Eigen::VectorXd this_x;
 
-    memcpy(cost_cache_->x.data(), x, n * sizeof(Number));
+    cost_cache_->SetX(n, x);
     cost_cache_->result[0] = 0;
     cost_cache_->grad.assign(n, 0);
 
@@ -489,7 +502,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateConstraints(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
-    memcpy(constraint_cache_->x.data(), x, n * sizeof(Number));
+    constraint_cache_->SetX(n, x);
     Number* result = constraint_cache_->result.data();
     Number* grad = constraint_cache_->grad.data();
 

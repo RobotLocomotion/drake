@@ -6,10 +6,10 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector,
     DiagramBuilder,
     VectorBase,
@@ -526,25 +526,41 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_derivative.get_input_port(0).size(), 5)
         self.assertEqual(discrete_derivative.get_output_port(0).size(), 5)
         self.assertEqual(discrete_derivative.time_step(), 0.5)
+        self.assertFalse(discrete_derivative.suppress_initial_transient())
+
+        discrete_derivative = DiscreteDerivative(
+            num_inputs=5, time_step=0.5, suppress_initial_transient=True)
+        self.assertTrue(discrete_derivative.suppress_initial_transient())
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
             num_positions=5, time_step=0.4)
         self.assertEqual(state_interpolator.get_input_port(0).size(), 5)
         self.assertEqual(state_interpolator.get_output_port(0).size(), 10)
+        self.assertFalse(state_interpolator.suppress_initial_transient())
 
         # test set_initial_position using context
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
             context=context, position=5*[1.1])
         np.testing.assert_array_equal(
-            context.get_discrete_state_vector().CopyToVector(),
-            np.array(10*[1.1]))
+            context.get_discrete_state(0).CopyToVector(),
+            np.array(5*[1.1]))
+        np.testing.assert_array_equal(
+            context.get_discrete_state(1).CopyToVector(),
+            np.array(5*[1.1]))
 
         # test set_initial_position using state
         context = state_interpolator.CreateDefaultContext()
         state_interpolator.set_initial_position(
             state=context.get_state(), position=5*[1.3])
         np.testing.assert_array_equal(
-            context.get_discrete_state_vector().CopyToVector(),
-            np.array(10*[1.3]))
+            context.get_discrete_state(0).CopyToVector(),
+            np.array(5*[1.3]))
+        np.testing.assert_array_equal(
+            context.get_discrete_state(1).CopyToVector(),
+            np.array(5*[1.3]))
+
+        state_interpolator = StateInterpolatorWithDiscreteDerivative(
+            num_positions=5, time_step=0.4, suppress_initial_transient=True)
+        self.assertTrue(state_interpolator.suppress_initial_transient())

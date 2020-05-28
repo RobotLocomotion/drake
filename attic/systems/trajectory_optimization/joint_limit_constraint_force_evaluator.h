@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/attic_warning.h"
 #include "drake/systems/trajectory_optimization/generalized_constraint_force_evaluator.h"
 
 namespace drake {

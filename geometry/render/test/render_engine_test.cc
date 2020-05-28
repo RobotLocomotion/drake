@@ -247,6 +247,58 @@ GTEST_TEST(RenderEngine, DefaultRenderLabel) {
   }
 }
 
+// An absolute barebones RenderEngine implementation; however it is cloneable.
+class CloneableEngine : public render::RenderEngine {
+ public:
+  CloneableEngine(const CloneableEngine&) = default;
+  CloneableEngine& operator=(const CloneableEngine&) = delete;
+  CloneableEngine(CloneableEngine&&) = delete;
+  CloneableEngine& operator=(CloneableEngine&&) = delete;
+
+  CloneableEngine() = default;
+  void UpdateViewpoint(const math::RigidTransformd&) override {}
+  void RenderColorImage(const render::CameraProperties&, bool,
+                        systems::sensors::ImageRgba8U*) const override {}
+  void RenderDepthImage(const render::DepthCameraProperties&,
+                        systems::sensors::ImageDepth32F*) const override {}
+  void RenderLabelImage(const render::CameraProperties&, bool,
+                        systems::sensors::ImageLabel16I*) const override {}
+  using ShapeReifier::ImplementGeometry;
+
+ protected:
+  bool DoRegisterVisual(GeometryId id, const Shape&,
+                        const PerceptionProperties&,
+                        const math::RigidTransformd&) override {
+    return false;
+  }
+  void DoUpdateVisualPose(GeometryId, const math::RigidTransformd&) override {}
+  bool DoRemoveGeometry(GeometryId) override { return false; }
+  std::unique_ptr<render::RenderEngine> DoClone() const override {
+    return std::make_unique<CloneableEngine>(*this);
+  }
+};
+
+// A derivative of CloneableEngine that has forgotten to implement DoClone().
+// That should produce an error.
+class NoDoCloneEngine : public CloneableEngine {
+ public:
+  NoDoCloneEngine() = default;
+};
+
+// Confirms that the guard to detect a derived RenderEngine that forgot to
+// implement DoClone().
+GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
+  CloneableEngine cloneable;
+  EXPECT_NO_THROW(cloneable.Clone());
+
+  NoDoCloneEngine not_cloneable;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      not_cloneable.Clone(), std::logic_error,
+      "Error in cloning RenderEngine class of type .+NoDoCloneEngine; the "
+      "clone returns type .+CloneableEngine. .+NoDoCloneEngine::DoClone.. was "
+      "probably not implemented");
+}
+
 }  // namespace
 }  // namespace render
 }  // namespace geometry

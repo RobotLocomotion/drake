@@ -40,6 +40,10 @@ def _impl(repo_ctx):
                 result.error,
             ))
         return
+    if os_result.ubuntu_release not in ["18.04", "20.04"]:
+        fail("Operating system is NOT supported", attr = os_result)
+    if os_result.ubuntu_release == "20.04":
+        print("Using Ubuntu 18.04 (Bionic) package on Ubuntu 20.04 (Focal)")
     result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
         fail("Unable to complete setup for @{} repository: {}".format(

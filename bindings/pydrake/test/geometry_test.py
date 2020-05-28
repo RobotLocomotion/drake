@@ -1,4 +1,5 @@
 import pydrake.geometry as mut
+import pydrake.geometry._testing as mut_testing
 
 import sys
 import unittest
@@ -11,14 +12,14 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.lcm import DrakeMockLcm, Subscriber
+from pydrake.common.value import AbstractValue
+from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     Simulator_,
 )
 from pydrake.systems.framework import (
-    AbstractValue,
     DiagramBuilder_,
     InputPort_,
     OutputPort_,
@@ -28,13 +29,9 @@ from pydrake.systems.sensors import (
     ImageDepth32F,
     ImageLabel16I
     )
-from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 class TestGeometry(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter('error', DrakeDeprecationWarning)
-
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
@@ -112,16 +109,17 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(
             inspector.GetPerceptionProperties(geometry_id=global_geometry),
             mut.PerceptionProperties)
+        self.assertIsInstance(
+            inspector.CloneGeometryInstance(geometry_id=global_geometry),
+            mut.GeometryInstance)
 
     def test_connect_drake_visualizer(self):
         # Test visualization API.
-        # Use a mockable so that we can make a smoke test without side
-        # effects.
         T = float
         SceneGraph = mut.SceneGraph_[T]
         DiagramBuilder = DiagramBuilder_[T]
         Simulator = Simulator_[T]
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         role = mut.Role.kIllustration
         test_prefix = "TEST_PREFIX_"
 
@@ -180,23 +178,15 @@ class TestGeometry(unittest.TestCase):
         obj.clear()
         self.assertEqual(obj.size(), 0)
 
-    def test_query_object_api(self):
-        # TODO(eric.cousineau): Create self-contained unittests (#9899).
-        # Pending that, the relevant API is exercised via
-        # `test_scene_graph_queries` in `plant_test.py`.
-        pass
-
     def test_identifier_api(self):
         cls_list = [
+            mut_testing.FakeId,
             mut.SourceId,
             mut.FrameId,
             mut.GeometryId,
         ]
 
         for cls in cls_list:
-            with self.assertRaises(DrakeDeprecationWarning) as exc:
-                cls()
-            self.assertIn(cls.__name__, str(exc.exception))
             a = cls.get_new_id()
             self.assertTrue(a.is_valid())
             b = cls.get_new_id()
@@ -204,6 +194,11 @@ class TestGeometry(unittest.TestCase):
             self.assertFalse(a == b)
             # N.B. Creation order does not imply value.
             self.assertTrue(a < b or b > a)
+
+        fake_id_1 = mut_testing.get_fake_id_constant()
+        fake_id_2 = mut_testing.get_fake_id_constant()
+        self.assertIsNot(fake_id_1, fake_id_2)
+        self.assertEqual(hash(fake_id_1), hash(fake_id_2))
 
     @numpy_compare.check_nonsymbolic_types
     def test_penetration_as_point_pair_api(self, T):
@@ -245,8 +240,13 @@ class TestGeometry(unittest.TestCase):
         ]
         for shape in shapes:
             self.assertIsInstance(shape, mut.Shape)
+            shape_cls = type(shape)
+            shape_copy = shape.Clone()
+            self.assertIsInstance(shape_copy, shape_cls)
+            self.assertIsNot(shape, shape_copy)
 
     def test_shapes(self):
+        RigidTransform = RigidTransform_[float]
         sphere = mut.Sphere(radius=1.0)
         self.assertEqual(sphere.radius(), 1.0)
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
@@ -257,6 +257,16 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+        X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
+        self.assertIsInstance(X_FH, RigidTransform)
+        box_mesh_path = FindResourceOrThrow(
+            "drake/systems/sensors/test/models/meshes/box.obj")
+        mesh = mut.Mesh(absolute_filename=box_mesh_path, scale=1.0)
+        self.assertEqual(mesh.filename(), box_mesh_path)
+        self.assertEqual(mesh.scale(), 1.0)
+        convex = mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
+        self.assertEqual(convex.filename(), box_mesh_path)
+        self.assertEqual(convex.scale(), 1.0)
 
     def test_geometry_frame_api(self):
         frame = mut.GeometryFrame(frame_name="test_frame")
@@ -275,6 +285,8 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(geometry.shape(), mut.Shape)
         self.assertIsInstance(geometry.release_shape(), mut.Shape)
         self.assertEqual(geometry.name(), "sphere")
+        geometry.set_name("funky")
+        self.assertEqual(geometry.name(), "funky")
         geometry.set_proximity_properties(mut.ProximityProperties())
         geometry.set_illustration_properties(mut.IllustrationProperties())
         geometry.set_perception_properties(mut.PerceptionProperties())
@@ -364,6 +376,10 @@ class TestGeometry(unittest.TestCase):
         QueryObject = mut.QueryObject_[T]
         SceneGraphInspector = mut.SceneGraphInspector_[T]
 
+        # First, ensure we can default-construct it.
+        model = QueryObject()
+        self.assertIsInstance(model, QueryObject)
+
         scene_graph = SceneGraph()
         render_params = mut.render.RenderEngineVtkParams()
         renderer_name = "test_renderer"
@@ -384,6 +400,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(len(results), 0)
         results = query_object.FindCollisionCandidates()
         self.assertEqual(len(results), 0)
+        self.assertFalse(query_object.HasCollisions())
 
         # ComputeSignedDistancePairClosestPoints() requires two valid geometry
         # ids. There are none in this SceneGraph instance. Rather than
@@ -391,8 +408,8 @@ class TestGeometry(unittest.TestCase):
         # response to invalid ids as evidence of correct binding.
         self.assertRaisesRegex(
             RuntimeError,
-            "The geometry given by id \\d+ does not reference a geometry" +
-            " that can be used in a signed distance query",
+            "The geometry given by id \\d+ does not reference a geometry"
+            + " that can be used in a signed distance query",
             query_object.ComputeSignedDistancePairClosestPoints,
             mut.GeometryId.get_new_id(), mut.GeometryId.get_new_id())
 
@@ -432,3 +449,13 @@ class TestGeometry(unittest.TestCase):
         ]
         for i, expected in enumerate(expected_vertices):
             self.assertListEqual(list(vertices[i].r_MV()), expected)
+
+    def test_collision_filtering(self):
+        sg = mut.SceneGraph()
+        sg_context = sg.CreateDefaultContext()
+        geometries = mut.GeometrySet()
+
+        sg.ExcludeCollisionsBetween(geometries, geometries)
+        sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
+        sg.ExcludeCollisionsWithin(geometries)
+        sg.ExcludeCollisionsWithin(sg_context, geometries)

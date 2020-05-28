@@ -1,0 +1,27 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load(":defs.bzl", "xacro_filegroup")
+
+xacro_filegroup(
+    name = "samples",
+    srcs = [
+        "test/sample1.xml.xacro",
+        "test/sample2.xml.xacro",
+    ],
+    data = [
+        "test/box.xml",
+    ],
+)
+
+drake_py_unittest(
+    name = "xacro_smoke_test",
+    data = [
+        "test/sample1.xml.expected",
+        "test/sample2.xml.expected",
+        ":samples",
+    ],
+)
+
+add_lint_tests()

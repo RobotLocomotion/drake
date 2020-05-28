@@ -111,6 +111,36 @@ GTEST_TEST(QPtest, TestInfeasible) {
   }
 }
 
+GTEST_TEST(OsqpSolverTest, DualSolution1) {
+  // Test GetDualSolution().
+  OsqpSolver solver;
+  TestQPDualSolution1(solver);
+}
+
+GTEST_TEST(OsqpSolverTest, DualSolution2) {
+  // Test GetDualSolution().
+  // This QP has non-zero dual solution for linear inequality constraint.
+  OsqpSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(OsqpSolverTest, DualSolution3) {
+  // Test GetDualSolution().
+  // This QP has non-zero dual solution for the bounding box constraint.
+  OsqpSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(OsqpSolverTest, EqualityConstrainedQPDualSolution1) {
+  OsqpSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(OsqpSolverTest, EqualityConstrainedQPDualSolution2) {
+  OsqpSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
 GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>();

@@ -7,6 +7,7 @@
 
 #include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/surface_mesh.h"
+#include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -32,7 +33,7 @@ namespace internal {
  change the output mesh. This algorithm will not produce a tetrahedral mesh with
  more than approximately 100 million tetrahedra. Similarly, for arbitrarily
  large values of `resolution_hint`, the coarsest possible mesh is a tessellated
- octohedron.
+ octahedron.
 
  @param ellipsoid           The ellipsoid for which a mesh is created.
  @param resolution_hint     The positive characteristic edge length for the
@@ -40,13 +41,16 @@ namespace internal {
                             octahedron) is guaranteed for any value of
                             `resolution_hint` greater than or equal to the
                             `ellipsoid`'s major axis.
+ @param strategy            The strategy to use to tessellate the sphere. See
+                            TesselationStrategy for details.
  @return The volume mesh for the given ellipsoid.
  @tparam T The Eigen-compatible scalar for representing the mesh vertex
            positions.
 */
 template <typename T>
 VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
-                                      double resolution_hint) {
+                                      double resolution_hint,
+                                      TessellationStrategy strategy) {
   DRAKE_DEMAND(resolution_hint > 0.0);
   const double a = ellipsoid.a();
   const double b = ellipsoid.b();
@@ -55,7 +59,7 @@ VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
 
   const double unit_sphere_resolution = resolution_hint / r;
   auto unit_sphere_mesh =
-      MakeSphereVolumeMesh<T>(Sphere(1.0), unit_sphere_resolution);
+      MakeSphereVolumeMesh<T>(Sphere(1.0), unit_sphere_resolution, strategy);
 
   const Vector3<T> scale{a, b, c};
   std::vector<VolumeVertex<T>> vertices;
@@ -86,8 +90,8 @@ template <typename T>
 SurfaceMesh<T> MakeEllipsoidSurfaceMesh(const Ellipsoid& ellipsoid,
                                         double resolution_hint) {
   DRAKE_DEMAND(resolution_hint > 0.0);
-  return ConvertVolumeToSurfaceMesh<T>(
-      MakeEllipsoidVolumeMesh<T>(ellipsoid, resolution_hint));
+  return ConvertVolumeToSurfaceMesh<T>(MakeEllipsoidVolumeMesh<T>(
+      ellipsoid, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
 }
 
 }  // namespace internal

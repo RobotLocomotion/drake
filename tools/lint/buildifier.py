@@ -56,15 +56,15 @@ def _find_buildifier_sources(workspace_name):
     return workspace, [
         os.path.join(workspace, relpath)
         for relpath in sources_relpath
-        if os.path.splitext(relpath)[1][1:] in extensions or
-        os.path.basename(relpath) in exact_filenames
+        if os.path.splitext(relpath)[1][1:] in extensions
+        or os.path.basename(relpath) in exact_filenames
     ]
 
 
 def _passes_check_mode(args):
-    """The `args` list should be as per subprocess.check_call.  Returns True iff
-    builfidier runs with exitcode 0 and no output, or else returns False iff
-    reformat is needed, or else raises an exception.
+    """The `args` list should be as per subprocess.check_call.  Returns True
+    iff builfidier runs with exitcode 0 and no output, or else returns False
+    iff reformat is needed, or else raises an exception.
     """
     try:
         output = subprocess.check_output(args)
@@ -127,8 +127,8 @@ def main(workspace_name="drake"):
                     one_file, "the required formatting is incorrect"))
                 print("ERROR: %s:1: note: fix via %s %s" % (
                     one_file, "bazel-bin/tools/lint/buildifier", one_file))
-                print(("ERROR: %s:1: note: if that program does not exist, " +
-                       "you might need to compile it first: " +
+                print(("ERROR: %s:1: note: if that program does not exist, "
+                       "you might need to compile it first: "
                        "bazel build //tools/lint/...") %
                       one_file)
         print("NOTE: see https://drake.mit.edu/bazel.html#buildifier")

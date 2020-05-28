@@ -20,12 +20,18 @@ import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import Box, SceneGraph
+from pydrake.common.value import AbstractValue
+from pydrake.geometry import (
+    Box,
+    GeometryInstance,
+    IllustrationProperties,
+    SceneGraph
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import AbstractValue, DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
     MeshcatVisualizer,
     MeshcatContactVisualizer,
@@ -156,6 +162,33 @@ class TestMeshcat(unittest.TestCase):
         simulator = Simulator(diagram)
         simulator.set_publish_every_time_step(False)
         simulator.AdvanceTo(.1)
+
+    def test_custom_geometry_name_parsing(self):
+        """
+        Ensure that name parsing does not fail on programmatically added
+        anchored geometries.
+        """
+        # Make a minimal example to ensure MeshcatVisualizer loads anchored
+        # geometry.
+        builder = DiagramBuilder()
+        scene_graph = builder.AddSystem(SceneGraph())
+        meshcat = builder.AddSystem(
+            MeshcatVisualizer(scene_graph,
+                              zmq_url=ZMQ_URL,
+                              open_browser=False))
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            meshcat.get_input_port(0))
+
+        source_id = scene_graph.RegisterSource()
+        geom_inst = GeometryInstance(RigidTransform(), Box(1., 1., 1.), "box")
+        geom_id = scene_graph.RegisterAnchoredGeometry(source_id, geom_inst)
+        # Illustration properties required to ensure geometry is parsed
+        scene_graph.AssignRole(source_id, geom_id, IllustrationProperties())
+
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+        simulator.Initialize()
 
     def test_contact_force(self):
         """A block sitting on a table."""

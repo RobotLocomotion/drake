@@ -59,18 +59,51 @@ Core Library
         </tr>
     </table>
 
-**********************
-Tutorials and Examples
-**********************
+.. N.B. Leave URL for backwards-compatibility.
+
+.. _tutorials-and-examples:
+
+.. _tutorials:
+
+*********
+Tutorials
+*********
+
+We have Python tutorials that can be previewed and executed as Jupyter
+notebooks online with no need for local installation. You can use Binder to
+preview and execute the notebooks (but startup time may be long), or you can
+use nbviewer to only preview the notebook (where startup time is fast):
+
+.. raw:: html
+
+    <a target="_doc" href="https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials">
+      <img src="https://mybinder.org/badge_logo.svg"/>
+    </a>
+    <a target="_doc" href="https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/">
+      <img src="https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg"/>
+    </a>
+
+If you are browsing on nbviewer, you may click on the Binder button
+|nbviewer-binder-button| at the top-right of the page.
+
+.. |nbviewer-binder-button| raw:: html
+
+    <img width="15px" height="15px"
+        src="https://nbviewer.jupyter.org/static/img/icon-binder-color.png"/>
+
+You may find more information about how to run these locally with Jupyter,
+the branch the tutorials use, how they are published to Binder, etc., in
+`drake/tutorials/README.md <https://github.com/RobotLocomotion/drake/tree/master/tutorials/README.md>`_.
+
+.. _examples:
+
+********
+Examples
+********
 
 .. TODO(russt): make this a table with different algorithms, too.
 
-We have Python tutorials implemented as Jupyter Notebooks in `the tutorials
-directory of the source tree
-<https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials/>`_,
-with text explaining the high-level concepts and each of the main steps.
-
-We have a number of use cases demonstrated in `the examples directory of
+We have a number of use cases demonstrated under `drake/examples in the
 the source tree
 <https://github.com/RobotLocomotion/drake/tree/master/examples>`_, and
 more available through our :doc:`gallery` (contributions welcome!).
@@ -107,12 +140,18 @@ The Drake developers would like to acknowledge significant support from the `Toy
 Next steps
 **********
 
+.. N.B. The #:// is meant to force Sphinx to use a relative HTML URL.
+   Unfortunately, it is hard to tell it to link to a section (not a page):
+   https://github.com/sphinx-doc/sphinx/issues/701
+.. TODO(eric): Replace "Tutorials" with binder badge and direct link, or
+   replace with actual relative link.
+
 .. toctree::
    :maxdepth: 1
 
    gallery
    installation
-   Tutorials <https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials>
+   Tutorials <https://drake.mit.edu/#tutorials-and-examples>
    API Documentation (C++) <doxygen_cxx/index.html#://>
    API Documentation (Python) <pydrake/index.html#://>
    getting_help

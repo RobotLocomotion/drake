@@ -2,6 +2,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
+
 template <typename T>
 class RigidBodyTree;
 

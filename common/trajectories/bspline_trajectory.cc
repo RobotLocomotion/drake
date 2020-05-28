@@ -21,7 +21,7 @@ namespace trajectories {
 using math::BsplineBasis;
 
 template <typename T>
-BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<double> basis,
+BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<T> basis,
                                         std::vector<MatrixX<T>> control_points)
     : basis_(std::move(basis)), control_points_(std::move(control_points)) {
   DRAKE_DEMAND(static_cast<int>(control_points_.size()) ==
@@ -37,20 +37,19 @@ template <typename T>
 MatrixX<T> BsplineTrajectory<T>::value(const T& time) const {
   using std::max;
   using std::min;
-  return basis().EvaluateCurve(
-      control_points(),
-      drake::ExtractDoubleOrThrow(min(max(time, start_time()), end_time())));
+  return basis().EvaluateCurve(control_points(),
+                               min(max(time, start_time()), end_time()));
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
+std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
     int derivative_order) const {
   if (derivative_order == 0) {
     return this->Clone();
   } else if (derivative_order > 1) {
-    return MakeDerivative(1)->MakeDerivative(derivative_order - 1);
+    return this->MakeDerivative(1)->MakeDerivative(derivative_order - 1);
   } else if (derivative_order == 1) {
-    std::vector<double> derivative_knots;
+    std::vector<T> derivative_knots;
     const int num_derivative_knots = basis_.knots().size() - 2;
     derivative_knots.reserve(num_derivative_knots);
     for (int i = 1; i <= num_derivative_knots; ++i) {
@@ -65,7 +64,7 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::MakeDerivative(
           (control_points()[i + 1] - control_points()[i]));
     }
     return std::make_unique<BsplineTrajectory<T>>(
-        BsplineBasis<double>(basis_.order() - 1, derivative_knots),
+        BsplineBasis<T>(basis_.order() - 1, derivative_knots),
         derivative_control_points);
   } else {
     throw std::invalid_argument(
@@ -86,11 +85,10 @@ MatrixX<T> BsplineTrajectory<T>::FinalValue() const {
 }
 
 template <typename T>
-void BsplineTrajectory<T>::InsertKnots(
-    const std::vector<double>& additional_knots) {
+void BsplineTrajectory<T>::InsertKnots(const std::vector<T>& additional_knots) {
   if (additional_knots.size() != 1) {
     for (const auto& time : additional_knots) {
-      InsertKnots(std::vector<double>{time});
+      InsertKnots(std::vector<T>{time});
     }
   } else {
     // Implements Boehm's Algorithm for knot insertion as described in by
@@ -99,19 +97,19 @@ void BsplineTrajectory<T>::InsertKnots(
     // [1] http://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node18.html
 
     // Define short-hand references to match Patrikalakis et al.:
-    const std::vector<double>& t = basis_.knots();
-    const double t_bar = additional_knots.front();
+    const std::vector<T>& t = basis_.knots();
+    const T& t_bar = additional_knots.front();
     const int k = basis_.order();
     DRAKE_DEMAND(start_time() <= t_bar && t_bar <= end_time());
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than end_time(). */
     const int ell = basis().FindContainingInterval(t_bar);
-    std::vector<double> new_knots = t;
+    std::vector<T> new_knots = t;
     new_knots.insert(std::next(new_knots.begin(), ell + 1), t_bar);
     std::vector<MatrixX<T>> new_control_points{this->control_points().front()};
     for (int i = 1; i < this->num_control_points(); ++i) {
-      double a{0};
+      T a{0};
       if (i < ell - k + 2) {
         a = 1;
       } else if (i <= ell) {
@@ -134,7 +132,7 @@ void BsplineTrajectory<T>::InsertKnots(
     // new_control_points. Do that now.
     new_control_points.push_back(this->control_points().back());
     control_points_.swap(new_control_points);
-    basis_ = BsplineBasis<double>(basis_.order(), new_knots);
+    basis_ = BsplineBasis<T>(basis_.order(), new_knots);
   }
 }
 

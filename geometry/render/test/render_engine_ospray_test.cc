@@ -945,7 +945,7 @@ TEST_F(RenderEngineOsprayTest, UnsupportedLabelAndDepth) {
 }
 
 // TODO(SeanCurtis-TRI): When we have a denoiser available, test this against
-//  the pathtracer configuraiton and samples value.
+//  the pathtracer configuration and samples value.
 
 }  // namespace
 }  // namespace render

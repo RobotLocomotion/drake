@@ -203,8 +203,8 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/bin)
-  set(SUPPORTED_PYTHON_VERSIONS 3.7)
+  set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/opt/python@3.8/bin)
+  set(SUPPORTED_PYTHON_VERSIONS 3.8)
 else()
   set(FIND_PROGRAM_PYTHON3_PATHS /usr/bin)
   set(SUPPORTED_PYTHON_VERSIONS 3.6)
@@ -359,13 +359,13 @@ set(BAZEL_CONFIGS)
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 8.0.1 EXACT MODULE REQUIRED)
+  find_package(Gurobi 9.0.2 EXACT MODULE REQUIRED)
 
   list(APPEND BAZEL_CONFIGS --config=gurobi)
 
   if(NOT APPLE)
-    get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
-    list(APPEND BAZEL_ENV "GUROBI_PATH=${GUROBI_PATH}")
+    get_filename_component(GUROBI_HOME "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
+    list(APPEND BAZEL_ENV "GUROBI_HOME=${GUROBI_HOME}")
   endif()
 endif()
 

@@ -6,11 +6,11 @@
 
 #include <string>
 
-#include <gtest/gtest.h>
 #include "pybind11/embed.h"
 #include "pybind11/eval.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
+#include <gtest/gtest.h>
 
 #include "drake/bindings/pydrake/test/test_util_pybind.h"
 #include "drake/common/drake_copyable.h"
@@ -19,7 +19,7 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-// Expects that a given Python expression `expr` evalulates to true, using
+// Expects that a given Python expression `expr` evaluates to true, using
 // globals and the variables available in `m`.
 void PyExpectTrue(py::module m, const char* expr) {
   const bool value =

@@ -1,3 +1,6 @@
+"""
+Test bindings of LCM integration with the Systems framework.
+"""
 import pydrake.systems.lcm as mut
 
 import collections
@@ -10,10 +13,10 @@ import numpy as np
 from robotlocomotion import header_t, quaternion_t
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.lcm import DrakeLcm, DrakeMockLcm, Subscriber
+from pydrake.common.value import AbstractValue
+from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (
-    AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
+from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
 from pydrake.systems.primitives import ConstantVectorSource, LogOutput
 
 
@@ -88,7 +91,7 @@ class TestSystemsLcm(unittest.TestCase):
         return simulator.get_context().Clone()
 
     def test_subscriber(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
         model_message = self._model_message()
@@ -99,7 +102,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(actual_message, model_message)
 
     def test_subscriber_cpp(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
@@ -113,7 +116,7 @@ class TestSystemsLcm(unittest.TestCase):
 
     def test_subscriber_wait_for_message(self):
         """Checks how `WaitForMessage` works without Python threads."""
-        lcm = DrakeLcm("memq://")
+        lcm = DrakeLcm()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         value = AbstractValue.Make(header_t())
         for old_message_count in range(3):
@@ -134,7 +137,7 @@ class TestSystemsLcm(unittest.TestCase):
         dut.Publish(context)
 
     def test_publisher(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
@@ -145,7 +148,7 @@ class TestSystemsLcm(unittest.TestCase):
         self.assert_lcm_equal(subscriber.message, model_message)
 
     def test_publisher_cpp(self):
-        lcm = DrakeMockLcm()
+        lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
@@ -162,4 +165,32 @@ class TestSystemsLcm(unittest.TestCase):
         mut.ConnectLcmScope(src=source.get_output_port(0),
                             channel="TEST_CHANNEL",
                             builder=builder,
-                            lcm=DrakeMockLcm())
+                            lcm=DrakeLcm())
+
+    def test_lcm_interface_system_diagram(self):
+        # First, check the class doc.
+        self.assertIn(
+            "only inherits from LeafSystem", mut.LcmInterfaceSystem.__doc__)
+        # Next, construct a diagram and add both the interface system and
+        # a subscriber.
+        builder = DiagramBuilder()
+        lcm = DrakeLcm()
+        lcm_system = builder.AddSystem(mut.LcmInterfaceSystem(lcm=lcm))
+        # Create subscriber in the diagram.
+        subscriber = builder.AddSystem(mut.LcmSubscriberSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm))
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+        simulator.Initialize()
+        # Publish test message.
+        model_message = self._model_message()
+        lcm.Publish("TEST_CHANNEL", model_message.encode())
+        # Simulate to a non-zero time to ensure the subscriber picks up the
+        # message.
+        eps = np.finfo(float).eps
+        simulator.AdvanceTo(eps)
+        # Ensure that we have what we want.
+        context = subscriber.GetMyContextFromRoot(
+            simulator.get_mutable_context())
+        actual_message = subscriber.get_output_port(0).Eval(context)
+        self.assert_lcm_equal(actual_message, model_message)

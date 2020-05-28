@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 
 // forward declaration

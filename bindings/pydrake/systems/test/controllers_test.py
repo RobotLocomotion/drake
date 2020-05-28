@@ -10,14 +10,24 @@ from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
-    DiscreteTimeLinearQuadraticRegulator, DynamicProgrammingOptions,
+    DiscreteTimeLinearQuadraticRegulator,
+    DynamicProgrammingOptions,
+    FiniteHorizonLinearQuadraticRegulator,
+    FiniteHorizonLinearQuadraticRegulatorOptions,
+    FiniteHorizonLinearQuadraticRegulatorResult,
     FittedValueIteration,
-    InverseDynamicsController, InverseDynamics,
+    InverseDynamicsController,
+    InverseDynamics,
     LinearQuadraticRegulator,
     LinearProgrammingApproximateDynamicProgramming,
-    PeriodicBoundaryCondition, PidControlledSystem, PidController
+    MakeFiniteHorizonLinearQuadraticRegulator,
+    PeriodicBoundaryCondition,
+    PidControlledSystem,
+    PidController,
 )
+from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import Integrator, LinearSystem
+from pydrake.trajectories import Trajectory
 
 
 class TestControllers(unittest.TestCase):
@@ -52,6 +62,8 @@ class TestControllers(unittest.TestCase):
             PeriodicBoundaryCondition(0, 0., 2.*math.pi)
         ]
         options.visualization_callback = callback
+        options.input_port_index = InputPortSelection.kUseFirstInputIfItExists
+        options.assume_non_continuous_states_are_fixed = False
 
         policy, cost_to_go = FittedValueIteration(simulator,
                                                   quadratic_regulator_cost,
@@ -90,7 +102,7 @@ class TestControllers(unittest.TestCase):
 
     def test_inverse_dynamics(self):
         sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
@@ -106,7 +118,7 @@ class TestControllers(unittest.TestCase):
 
     def test_inverse_dynamics_controller(self):
         sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
@@ -257,3 +269,64 @@ class TestControllers(unittest.TestCase):
         (K, S) = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R)
         self.assertEqual(K.shape, (1, 2))
         self.assertEqual(S.shape, (2, 2))
+
+    def test_finite_horizon_linear_quadratic_regulator(self):
+        A = np.array([[0, 1], [0, 0]])
+        B = np.array([[0], [1]])
+        C = np.identity(2)
+        D = np.array([[0], [0]])
+        double_integrator = LinearSystem(A, B, C, D)
+
+        Q = np.identity(2)
+        R = np.identity(1)
+
+        options = FiniteHorizonLinearQuadraticRegulatorOptions()
+        options.Qf = Q
+        self.assertIsNone(options.N)
+        self.assertIsNone(options.x0)
+        self.assertIsNone(options.u0)
+        self.assertIsNone(options.xd)
+        self.assertIsNone(options.ud)
+        self.assertEqual(options.input_port_index,
+                         InputPortSelection.kUseFirstInputIfItExists)
+
+        context = double_integrator.CreateDefaultContext()
+        context.FixInputPort(0, [0.0])
+
+        result = FiniteHorizonLinearQuadraticRegulator(
+            system=double_integrator,
+            context=context,
+            t0=0,
+            tf=0.1,
+            Q=Q,
+            R=R,
+            options=options)
+
+        self.assertIsInstance(result,
+                              FiniteHorizonLinearQuadraticRegulatorResult)
+
+        self.assertIsInstance(result.x0, Trajectory)
+        self.assertEqual(result.x0.value(0).shape, (2, 1))
+        self.assertIsInstance(result.u0, Trajectory)
+        self.assertEqual(result.u0.value(0).shape, (1, 1))
+        self.assertIsInstance(result.K, Trajectory)
+        self.assertEqual(result.K.value(0).shape, (1, 2))
+        self.assertIsInstance(result.S, Trajectory)
+        self.assertEqual(result.S.value(0).shape, (2, 2))
+        self.assertIsInstance(result.k0, Trajectory)
+        self.assertEqual(result.k0.value(0).shape, (1, 1))
+        self.assertIsInstance(result.sx, Trajectory)
+        self.assertEqual(result.sx.value(0).shape, (2, 1))
+        self.assertIsInstance(result.s0, Trajectory)
+        self.assertEqual(result.s0.value(0).shape, (1, 1))
+
+        regulator = MakeFiniteHorizonLinearQuadraticRegulator(
+            system=double_integrator,
+            context=context,
+            t0=0,
+            tf=0.1,
+            Q=Q,
+            R=R,
+            options=options)
+        self.assertEqual(regulator.get_input_port(0).size(), 2)
+        self.assertEqual(regulator.get_output_port(0).size(), 1)

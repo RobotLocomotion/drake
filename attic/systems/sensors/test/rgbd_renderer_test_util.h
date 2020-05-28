@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/attic_warning.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/sensors/image.h"

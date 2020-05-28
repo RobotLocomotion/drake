@@ -59,7 +59,7 @@ install Drake's required version of ``clang-format``, depending on the platform
 To run clang-format::
 
     # For development on macOS:
-    /usr/local/opt/llvm@6/bin/clang-format -i -style=file [file name]
+    /usr/local/opt/llvm@9/bin/clang-format -i -style=file [file name]
 
     # For development on Ubuntu:
-    clang-format-6.0 -i -style=file [file name]
+    clang-format-9 -i -style=file [file name]

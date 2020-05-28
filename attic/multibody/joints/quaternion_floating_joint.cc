@@ -78,6 +78,6 @@ VectorXd QuaternionFloatingJoint::randomConfiguration(
 std::unique_ptr<DrakeJoint> QuaternionFloatingJoint::DoClone() const {
   auto joint = std::make_unique<QuaternionFloatingJoint>(get_name(),
       get_transform_to_parent_body());
-  return std::move(joint);
+  return joint;
 }
 

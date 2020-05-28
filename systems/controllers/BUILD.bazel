@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "controllers",
     deps = [
         ":dynamic_programming",
+        ":finite_horizon_linear_quadratic_regulator",
         ":inverse_dynamics",
         ":inverse_dynamics_controller",
         ":linear_model_predictive_controller",
@@ -46,6 +47,20 @@ drake_cc_library(
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/primitives:barycentric_system",
+    ],
+)
+
+drake_cc_library(
+    name = "finite_horizon_linear_quadratic_regulator",
+    srcs = ["finite_horizon_linear_quadratic_regulator.cc"],
+    hdrs = ["finite_horizon_linear_quadratic_regulator.h"],
+    deps = [
+        "//common/trajectories",
+        "//math:autodiff",
+        "//math:gradient",
+        "//math:matrix_util",
+        "//systems/analysis:simulator",
+        "//systems/framework",
     ],
 )
 
@@ -161,13 +176,32 @@ drake_cc_googletest(
     name = "dynamic_programming_test",
     # Test timeout increased to not timeout when run with Valgrind.
     timeout = "long",
+    data = [
+        "//examples/pendulum:models",
+    ],
     deps = [
         ":dynamic_programming",
         ":linear_quadratic_regulator",
         "//common/proto:call_python",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
         "//systems/primitives:integrator",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "finite_horizon_linear_quadratic_regulator_test",
+    deps = [
+        ":finite_horizon_linear_quadratic_regulator",
+        ":linear_quadratic_regulator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//systems/framework/test_utilities:scalar_conversion",
+        "//systems/primitives:linear_system",
+        "//systems/primitives:symbolic_vector_system",
     ],
 )
 

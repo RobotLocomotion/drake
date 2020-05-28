@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <fstream>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -18,6 +19,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -60,6 +62,21 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   plant.Finalize();
 
   // Verify the number of model instances.
+  EXPECT_EQ(plant.num_model_instances(), 3);
+}
+
+// Acceptance test that libsdformat can upgrade very old files.  This ensures
+// the upgrade machinery keeps working (in particular our re-implementation of
+// the embedSdf.rb tool within tools/workspace/sdformat).
+GTEST_TEST(MultibodyPlantSdfParserTest, VeryOldVersion) {
+  MultibodyPlant<double> plant(0.0);
+  PackageMap package_map;
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/very_old_version.sdf");
+
+  EXPECT_EQ(plant.num_model_instances(), 2);
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, nullptr);
+  plant.Finalize();
   EXPECT_EQ(plant.num_model_instances(), 3);
 }
 
@@ -215,7 +232,7 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
   file.close();
   PlantAndSceneGraph pair;
-  pair.plant = std::make_unique<MultibodyPlant<double>>();
+  pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);
   pair.scene_graph = std::make_unique<SceneGraph<double>>();
   PackageMap package_map;
   pair.plant->RegisterAsSourceForSceneGraph(pair.scene_graph.get());
@@ -519,6 +536,55 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointActuatorParsingTest) {
       std::logic_error, "There is no joint actuator named '.*' in the model.");
 }
 
+// Verifies that the SDF parser parses the revolute spring parameters correctly.
+GTEST_TEST(MultibodyPlantSdfParserTest, RevoluteSpringParsingTest) {
+  MultibodyPlant<double> plant(0.0);
+
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "revolute_spring_parsing_test.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
+  // Reads in the SDF file.
+  AddModelFromSdfFile(full_name, "", package_map, &plant, nullptr);
+  plant.Finalize();
+
+  // Plant should have a UniformGravityFieldElement by default.
+  // Our test contains two joints that have nonzero stiffness
+  // and two joints that have zero stiffness. We only add a
+  // spring for nonzero stiffness, so only two spring forces
+  // should have been added.
+  constexpr int kNumSpringForces = 2;
+  DRAKE_DEMAND(plant.num_force_elements() == kNumSpringForces + 1);
+
+  // In these two tests, we verify that the generalized forces are
+  // correct for both springs. The first spring has a nonzero reference
+  // of 1.0 radians so should have nonzero torque. The second spring
+  // has a zero reference, so it should have no applied torque.
+  MultibodyForces<double> forces(plant);
+  auto context = plant.CreateDefaultContext();
+  constexpr int kGeneralizedForcesSize = 10;
+  Matrix2X<double> expected_generalized_forces(kNumSpringForces,
+                                               kGeneralizedForcesSize);
+  expected_generalized_forces << 0, 0, 0, 0, 0, 0, 5, 0, 0, 0,
+                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  for (int i = 0; i < kNumSpringForces; ++i) {
+    // The ForceElement at index zero is gravity, so we skip that index.
+    const ForceElementIndex force_index(i + 1);
+    const auto& nonzero_reference = plant.GetForceElement(force_index);
+    forces.SetZero();
+    nonzero_reference.CalcAndAddForceContribution(
+        *context, plant.EvalPositionKinematics(*context),
+        plant.EvalVelocityKinematics(*context), &forces);
+
+    const VectorX<double>& generalized_forces = forces.generalized_forces();
+    EXPECT_TRUE(CompareMatrices(generalized_forces,
+                                expected_generalized_forces.row(i).transpose(),
+                                kEps, MatrixCompareType::relative));
+  }
+}
+
 GTEST_TEST(SdfParser, TestSupportedFrames) {
   // Test `//link/pose[@relative_to]`.
   ParseTestString(R"(
@@ -589,7 +655,7 @@ void FailWithReservedName(const std::string& inner) {
 }
 
 GTEST_TEST(SdfParser, TestUnsupportedFrames) {
-  // Model frames cannnot attach to / nor be relative to the world frame.
+  // Model frames cannot attach to / nor be relative to the world frame.
   FailWithInvalidWorld(R"(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
@@ -711,6 +777,100 @@ GTEST_TEST(SdfParser, VisualGeometryParsing) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "all_geometries_as_visual.sdf",
       geometry::Role::kPerception);
+}
+
+GTEST_TEST(SdfParser, BushingParsing) {
+  // Test successful parsing
+  auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <drake:bushing_frameC>frameC</drake:bushing_frameC>
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)");
+
+  // MBP will always create a UniformGravityField, so the only other
+  // ForceElement should be the LinearBushingRollPitchYaw element parsed.
+  EXPECT_EQ(plant->num_force_elements(), 2);
+
+  const LinearBushingRollPitchYaw<double>& bushing =
+      plant->GetForceElement<LinearBushingRollPitchYaw>(ForceElementIndex(1));
+
+  EXPECT_STREQ(bushing.frameA().name().c_str(), "frameA");
+  EXPECT_STREQ(bushing.frameC().name().c_str(), "frameC");
+  EXPECT_EQ(bushing.torque_stiffness_constants(), Eigen::Vector3d(1, 2, 3));
+  EXPECT_EQ(bushing.torque_damping_constants(), Eigen::Vector3d(4, 5, 6));
+  EXPECT_EQ(bushing.force_stiffness_constants(), Eigen::Vector3d(7, 8, 9));
+  EXPECT_EQ(bushing.force_damping_constants(), Eigen::Vector3d(10, 11, 12));
+
+  // Test missing frame tag
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <!-- missing the drake:bushing_frameC tag -->
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)"),
+      std::runtime_error,
+      "Unable to find the <drake:bushing_frameC> tag.");
+
+  // Test non-existent frame
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <drake:bushing_frameC>frameZ</drake:bushing_frameC>
+        <!-- frameZ does not exist in the model -->
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <drake:bushing_torque_damping>4 5 6</drake:bushing_torque_damping>
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)"),
+      std::runtime_error,
+      "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
+      "the model.");
+
+  // Test missing constants tag
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ParseTestString(R"(
+    <model name='BushingModel'>
+      <link name='A'/>
+      <link name='C'/>
+      <frame name='frameA' attached_to='A'/>
+      <frame name='frameC' attached_to='C'/>
+      <drake:linear_bushing_rpy>
+        <drake:bushing_frameA>frameA</drake:bushing_frameA>
+        <drake:bushing_frameC>frameC</drake:bushing_frameC>
+        <drake:bushing_torque_stiffness>1 2 3</drake:bushing_torque_stiffness>
+        <!-- missing the drake:bushing_torque_damping tag -->
+        <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
+        <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
+      </drake:linear_bushing_rpy>
+    </model>)"),
+      std::runtime_error,
+      "Unable to find the <drake:bushing_torque_damping> tag.");
 }
 
 }  // namespace

@@ -4,8 +4,8 @@
 #include <memory>
 #include <utility>
 
-#include <gtest/gtest.h>
 #include "bot_core/pointcloud_t.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/depth_sensor_output.h"

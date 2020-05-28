@@ -13,14 +13,16 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import SceneGraph
+from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.math import (
     SpatialVelocity,
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector,
     PortDataType,
 )
@@ -42,31 +44,48 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(isinstance(value.Clone(), PoseVector))
         self.assertEqual(value.size(), PoseVector.kSize)
         # - Accessors.
-        self.assertTrue(isinstance(
-            value.get_isometry(), Isometry3))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(isinstance(value.get_isometry(), Isometry3))
+        self.assertTrue(isinstance(value.get_transform(), RigidTransform))
         self.assertTrue(isinstance(
             value.get_rotation(), Quaternion))
         self.assertTrue(isinstance(
             value.get_translation(), np.ndarray))
         # - Value.
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(np.allclose(
+                value.get_isometry().matrix(), np.eye(4, 4)))
         self.assertTrue(np.allclose(
-            value.get_isometry().matrix(), np.eye(4, 4)))
+            value.get_transform().GetAsMatrix4(), np.eye(4, 4)))
         # - Mutators.
         p = [0, 1, 2]
         q = Quaternion(wxyz=normalized([0.1, 0.3, 0.7, 0.9]))
-        X_expected = Isometry3(q, p)
+        X_expected = RigidTransform(quaternion=q, p=p)
         value.set_translation(p)
         value.set_rotation(q)
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(np.allclose(
+                value.get_isometry().matrix(), X_expected.GetAsMatrix4()))
         self.assertTrue(np.allclose(
-            value.get_isometry().matrix(), X_expected.matrix()))
+            value.get_transform().GetAsMatrix4(), X_expected.GetAsMatrix4()))
         # - Ensure ordering is ((px, py, pz), (qw, qx, qy, qz))
         vector_expected = np.hstack((p, q.wxyz()))
         vector_actual = value.get_value()
         self.assertTrue(np.allclose(vector_actual, vector_expected))
         # - Fully-parameterized constructor.
         value1 = PoseVector(rotation=q, translation=p)
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(np.allclose(
+                value1.get_isometry().matrix(), X_expected.GetAsMatrix4()))
         self.assertTrue(np.allclose(
-            value1.get_isometry().matrix(), X_expected.matrix()))
+            value1.get_transform().GetAsMatrix4(), X_expected.GetAsMatrix4()))
+        # Test mutation via RigidTransform
+        p2 = [10, 20, 30]
+        q2 = Quaternion(wxyz=normalized([0.2, 0.3, 0.5, 0.8]))
+        X2_expected = RigidTransform(quaternion=q2, p=p2)
+        value.set_transform(X2_expected)
+        self.assertTrue(np.allclose(
+            value.get_transform().GetAsMatrix4(), X2_expected.GetAsMatrix4()))
 
     def test_frame_velocity(self):
         frame_velocity = FrameVelocity()
@@ -106,19 +125,26 @@ class TestRendering(unittest.TestCase):
         bundle = PoseBundle(num_poses)
         # - Accessors.
         self.assertEqual(bundle.get_num_poses(), num_poses)
-        self.assertTrue(isinstance(bundle.get_pose(0), Isometry3))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(isinstance(bundle.get_pose(0), Isometry3))
+        self.assertTrue(isinstance(bundle.get_transform(0), RigidTransform))
         self.assertTrue(isinstance(bundle.get_velocity(0), FrameVelocity))
         # - Mutators.
         kIndex = 5
         p = [0, 1, 2]
         q = Quaternion(wxyz=normalized([0.1, 0.3, 0.7, 0.9]))
-        bundle.set_pose(kIndex, Isometry3(q, p))
+        with catch_drake_warnings(expected_count=2):
+            bundle.set_pose(kIndex, Isometry3(q, p))
+            self.assertTrue((bundle.get_pose(kIndex).matrix()
+                             == Isometry3(q, p).matrix()).all())
+        pose = RigidTransform(quaternion=q, p=p)
+        bundle.set_transform(kIndex, pose)
+        self.assertTrue((bundle.get_transform(kIndex).GetAsMatrix34()
+                         == pose.GetAsMatrix34()).all())
         w = [0.1, 0.3, 0.5]
         v = [0., 1., 2.]
         frame_velocity = FrameVelocity(SpatialVelocity(w=w, v=v))
         bundle.set_velocity(kIndex, frame_velocity)
-        self.assertTrue((bundle.get_pose(kIndex).matrix() ==
-                         Isometry3(q, p).matrix()).all())
         vel_actual = bundle.get_velocity(kIndex).get_velocity()
         self.assertTrue(np.allclose(vel_actual.rotational(), w))
         self.assertTrue(np.allclose(vel_actual.translational(), v))
@@ -169,7 +195,7 @@ class TestRendering(unittest.TestCase):
         p3 = [50, 70, 90]
         q3 = Quaternion(wxyz=normalized([0.1, 0.3, 0.7, 0.9]))
         bundle = PoseBundle(num_poses)
-        bundle.set_pose(0, Isometry3(q3, p3))
+        bundle.set_transform(0, RigidTransform(quaternion=q3, p=p3))
         bundle_value = AbstractValue.Make(bundle)
 
         aggregator.get_input_port(0).FixValue(context, pose1)
@@ -181,19 +207,18 @@ class TestRendering(unittest.TestCase):
 
         value = output.get_data(0).get_value()
         self.assertEqual(value.get_num_poses(), 3)
-        isom1_actual = Isometry3()
-        isom1_actual.set_translation(p1)
-        self.assertTrue(
-            (value.get_pose(0).matrix() == isom1_actual.matrix()).all())
-        isom2_actual = Isometry3()
-        isom2_actual.set_translation(p2)
-        self.assertTrue(
-            (value.get_pose(1).matrix() == isom2_actual.matrix()).all())
+        pose1_actual = RigidTransform(p=p1)
+        self.assertTrue((value.get_transform(0).GetAsMatrix34()
+                         == pose1_actual.GetAsMatrix34()).all())
+        pose2_actual = RigidTransform(p=p2)
+        self.assertTrue((value.get_transform(1).GetAsMatrix34()
+                         == pose2_actual.GetAsMatrix34()).all())
         vel_actual = value.get_velocity(1).get_velocity()
         self.assertTrue(np.allclose(vel_actual.rotational(), w))
         self.assertTrue(np.allclose(vel_actual.translational(), v))
-        self.assertTrue(
-            (value.get_pose(2).matrix() == Isometry3(q3, p3).matrix()).all())
+        pose3_actual = RigidTransform(quaternion=q3, p=p3)
+        self.assertTrue((value.get_transform(2).GetAsMatrix34()
+                         == pose3_actual.GetAsMatrix34()).all())
 
     def testMultibodyPositionToGeometryPose(self):
         file_name = FindResourceOrThrow(

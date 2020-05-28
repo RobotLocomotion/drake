@@ -37,7 +37,9 @@ PYBIND11_MODULE(rimless_wheel, m) {
       .def("get_floating_base_state_output_port",
           &RimlessWheel<T>::get_floating_base_state_output_port,
           py_reference_internal,
-          doc.RimlessWheel.get_floating_base_state_output_port.doc);
+          doc.RimlessWheel.get_floating_base_state_output_port.doc)
+      .def_static("calc_alpha", &RimlessWheel<T>::calc_alpha, py::arg("params"),
+          doc.RimlessWheel.calc_alpha.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(

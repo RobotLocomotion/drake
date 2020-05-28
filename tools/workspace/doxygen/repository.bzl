@@ -17,31 +17,32 @@ def _impl(repo_ctx):
         "BUILD.bazel",
     )
 
-    # On macOS, just symlink homebrew Doxygen.
     if os_result.is_macos:
+        # On macOS, just symlink Doxygen from Homebrew.
         repo_ctx.symlink("/usr/local/bin/doxygen", "doxygen")
-        return
-
-    # On Ubuntu, download Drake's pre-compiled Doxygen binary.
-    version = "1.8.15"
-    archive = "doxygen-{version}-{codename}-x86_64.tar.gz".format(
-        version = version,
-        codename = {
-            "18.04": "bionic",
-        }[os_result.ubuntu_release],
-    )
-    url = [
-        pattern.format(archive = archive)
-        for pattern in repo_ctx.attr.mirrors.get("doxygen")
-    ]
-    sha256 = {
-        "18.04": "16b4ce1fcee27495c0de23dc4a2ab9bd24ee218800a2fb0db17a9c5bf8955e4e",  # noqa
-    }[os_result.ubuntu_release]
-    repo_ctx.download_and_extract(
-        url = url,
-        sha256 = sha256,
-        type = "tar.gz",
-    )
+    elif os_result.is_ubuntu:
+        # On Ubuntu, download and extract Drake's pre-compiled Doxygen binary.
+        archive = "doxygen-1.8.15-{codename}-x86_64.tar.gz".format(
+            codename = {
+                "18.04": "bionic",
+                "20.04": "focal",
+            }[os_result.ubuntu_release],
+        )
+        url = [
+            pattern.format(archive = archive)
+            for pattern in repo_ctx.attr.mirrors.get("doxygen")
+        ]
+        sha256 = {
+            "18.04": "16b4ce1fcee27495c0de23dc4a2ab9bd24ee218800a2fb0db17a9c5bf8955e4e",  # noqa
+            "20.04": "3c4886763ec27e1797b0fd5bfe576602f5e408649c0e282936e17bde5c7ed7e6",  # noqa
+        }[os_result.ubuntu_release]
+        repo_ctx.download_and_extract(
+            url = url,
+            sha256 = sha256,
+            type = "tar.gz",
+        )
+    else:
+        fail("Operating system is NOT supported", attr = os_result)
 
 doxygen_repository = repository_rule(
     attrs = {

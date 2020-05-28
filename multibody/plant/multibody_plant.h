@@ -108,6 +108,9 @@ enum class ContactModel {
 ///     model_instance_name[i]</em>_actuation}
 ///   @input_port{<span style="color:green">geometry_query</span>},
 ///   @output_port{continuous_state}
+///   @output_port{body_poses}
+///   @output_port{body_spatial_velocities}
+///   @output_port{body_spatial_accelerations}
 ///   @output_port{generalized_acceleration}
 ///   @output_port{reaction_forces}
 ///   @output_port{contact_results}
@@ -272,7 +275,7 @@ enum class ContactModel {
 /// @endcode
 /// or taking advantage of C++17's structured binding
 /// @code
-///   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder);
+///   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
 ///   ...
 ///   plant.DoFoo(...);
 ///   scene_graph.DoBar(...);
@@ -419,6 +422,55 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// or its individual model instances.
   /// @{
 
+  /// Returns the output port of all body poses in the world frame.
+  /// You can obtain the pose `X_WB` of a body B in the world frame W with:
+  /// @code
+  ///   const auto& X_WB_all = plant.get_body_poses_output_port().
+  ///       .Eval<std::vector<math::RigidTransform<double>>>(plant_context);
+  ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
+  ///   const math::RigidTransform<double>& X_WArm = X_WB_all[arm_body_index];
+  /// @endcode
+  /// As shown in the example above, the resulting `std::vector` of body poses
+  /// is indexed by BodyIndex, and it has size num_bodies().
+  /// BodyIndex "zero" (0) always corresponds to the world body, with pose
+  /// equal to the identity at all times.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_body_poses_output_port() const;
+
+  /// Returns the output port of all body spatial velocities in the world frame.
+  /// You can obtain the spatial velocity `V_WB` of a body B in the world frame
+  /// W with:
+  /// @code
+  ///   const auto& V_WB_all = plant.get_body_spatial_velocities_output_port().
+  ///       .Eval<std::vector<SpatialVelocity<double>>>(plant_context);
+  ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
+  ///   const SpatialVelocity<double>& V_WArm = V_WB_all[arm_body_index];
+  /// @endcode
+  /// As shown in the example above, the resulting `std::vector` of body spatial
+  /// velocities is indexed by BodyIndex, and it has size num_bodies().
+  /// BodyIndex "zero" (0) always corresponds to the world body, with zero
+  /// spatial velocity at all times.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_body_spatial_velocities_output_port() const;
+
+  /// Returns the output port of all body spatial accelerations in the world
+  /// frame. You can obtain the spatial acceleration `A_WB` of a body B in the
+  /// world frame W with:
+  /// @code
+  ///   const auto& A_WB_all =
+  ///   plant.get_body_spatial_accelerations_output_port().
+  ///       .Eval<std::vector<SpatialAcceleration<double>>>(plant_context);
+  ///   const BodyIndex arm_body_index = plant.GetBodyByName("arm").index();
+  ///   const SpatialVelocity<double>& A_WArm = A_WB_all[arm_body_index];
+  /// @endcode
+  /// As shown in the example above, the resulting `std::vector` of body spatial
+  /// accelerations is indexed by BodyIndex, and it has size num_bodies().
+  /// BodyIndex "zero" (0) always corresponds to the world body, with zero
+  /// spatial acceleration at all times.
+  /// @throws std::exception if called pre-finalize.
+  const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
+      const;
+
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
   /// can be set with JointActuator::set_actuation_vector().
@@ -544,17 +596,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// methods that perform computations. See Finalize() for details.
   /// @{
 
-  /// Default constructor creates a plant modeled as a continuous system.
-  /// Please refer to MultibodyPlant(double) for details.
-  DRAKE_DEPRECATED("2020-05-01",
-                   "Use MultibodyPlant(double) with time_step = 0.")
-  MultibodyPlant() : MultibodyPlant(0.0) {}
-
   /// This constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
   ///
-  /// %MultibodyPlant offers two different modalities to model mechanical sytems
-  /// in time. These are:
+  /// %MultibodyPlant offers two different modalities to model mechanical
+  /// systems in time. These are:
   ///  1. As a discrete system with periodic updates, `time_step` is strictly
   ///     greater than zero.
   ///  2. As a continuous system, `time_step` equals exactly zero.
@@ -791,7 +837,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   const RigidBody<double>& body_2 =
   ///     plant.AddRigidBody("Body2", SpatialInertia<double>(...));
   ///   // Body 1 serves as parent, Body 2 serves as child.
-  ///   // Define the pose X_BM of a frame M rigidly atached to child body B.
+  ///   // Define the pose X_BM of a frame M rigidly attached to child body B.
   ///   const RevoluteJoint<double>& elbow =
   ///     plant.AddJoint<RevoluteJoint>(
   ///       "Elbow",                /* joint name */
@@ -955,7 +1001,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// <h4>Geometry registration with roles</h4>
   ///
-  /// Geometries can be associated with bodies via the `RegisterXXXGeometry`
+  /// Geometries can be associated with bodies via the `RegisterFooGeometry`
   /// family of methods. In SceneGraph, geometries have @ref geometry_roles
   /// "roles". The `RegisterCollisionGeometry()` methods register geometry with
   /// SceneGraph and assign it the proximity role. The
@@ -1322,7 +1368,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
   /// reasonable penalty method coefficients as a function of the input
   /// penetration allowance. Users will want to run their simulation a number of
-  /// times and asses they are satisfied with the level of inter-penetration
+  /// times and assess they are satisfied with the level of inter-penetration
   /// actually observed in the simulation; if the observed penetration is too
   /// large, the user will want to set a smaller penetration allowance. If the
   /// system is too stiff and the time integration requires very small time
@@ -1892,6 +1938,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_[body.index()] = X_WB;
   }
 
+  /// Gets the default pose of `body` as set by SetDefaultFreeBodyPose().
+  /// @param[in] body
+  ///   Body whose default pose will be retrieved.
+  const math::RigidTransform<double>& GetDefaultFreeBodyPose(
+      const Body<T>& body) const {
+    return X_WB_default_list_.at(body.index());
+  }
+
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
   /// the world frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -2438,6 +2492,102 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcBiasTerm(context, Cv);
   }
 
+  /// For each point Bi affixed/welded to a frame B, calculates a𝑠Bias_ABi, Bi's
+  /// translational acceleration bias in frame A with respect to "speeds" 𝑠,
+  /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
+  /// (generalized velocities).  a𝑠Bias_ABi is the term in a_ABi (Bi's
+  /// translational acceleration in A) that does not include 𝑠̇, i.e.,
+  /// a𝑠Bias_ABi is Bi's translational acceleration in A when 𝑠̇ = 0. <pre>
+  ///   a_ABi =  J𝑠_v_ABi ⋅ 𝑠̇  +  J̇𝑠_v_ABi ⋅ 𝑠  (𝑠 = q̇ or 𝑠 = v), hence
+  ///   a𝑠Bias_ABi = J̇𝑠_v_ABi ⋅ 𝑠
+  /// </pre>
+  /// where J𝑠_v_ABi is Bi's translational velocity Jacobian in frame A for s
+  /// (see CalcJacobianTranslationalVelocity() for details on J𝑠_v_ABi).
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the translational
+  /// accceleration bias is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// @param[in] frame_B The frame on which points Bi are affixed/welded.
+  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
+  /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
+  /// position vector is expressed in frame_B.  Each column in the `3 x p`
+  /// matrix p_BoBi_B corresponds to a position vector.
+  /// @param[in] frame_A The frame that measures a𝑠Bias_ABi.
+  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_E The frame in which a𝑠Bias_ABi is expressed on output.
+  /// @returns a𝑠Bias_ABi_E Point Bi's translational acceleration bias in
+  /// frame A with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// a𝑠Bias_ABi_E is a `3 x p` matrix, where p is the number of points Bi.
+  /// @note Shown below, a𝑠Bias_ABi_E = J̇𝑠_v_ABp ⋅ 𝑠  is quadratic in 𝑠.<pre>
+  ///  v_ABi =  J𝑠_v_ABi ⋅ 𝑠        which upon vector differentiation in A gives
+  ///  a_ABi =  J𝑠_v_ABi ⋅ 𝑠̇ + J̇𝑠_v_ABi ⋅ 𝑠     Since J̇𝑠_v_ABi is linear in 𝑠,
+  ///  a𝑠Bias_ABi = J̇𝑠_v_ABi ⋅ 𝑠                             is quadratic in 𝑠.
+  /// </pre>
+  /// @see CalcJacobianTranslationalVelocity() to compute J𝑠_v_ABi, point Bi's
+  /// translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @pre p_BoBi_B must have 3 rows.
+  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if frame_A is not the world frame.
+  Matrix3X<T> CalcBiasTranslationalAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    // TODO(Mitiguy) Allow frame_A to be a non-World frame.
+    // TODO(Mitiguy) Per issue #13354, add unit tests for this public method.
+    return internal_tree().CalcBiasTranslationalAcceleration(
+        context, with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
+  }
+
+  /// For one point Bp affixed/welded to a frame B, calculates A𝑠Bias_ABp, Bp's
+  /// spatial acceleration bias in frame A with respect to "speeds" 𝑠,
+  /// where 𝑠 is either q̇ (time-derivatives of generalized positions) or v
+  /// (generalized velocities).  A𝑠Bias_ABp is the term in A_ABp (Bp's
+  /// spatial acceleration in A) that does not include 𝑠̇, i.e.,
+  /// A𝑠Bias_ABp is Bi's translational acceleration in A when 𝑠̇ = 0. <pre>
+  ///   A_ABp =  J𝑠_V_ABp ⋅ 𝑠̇  +  J̇𝑠_V_ABp ⋅ 𝑠   (𝑠 = q̇ or 𝑠 = v), hence
+  ///   A𝑠Bias_ABp = J̇𝑠_V_ABp ⋅ 𝑠
+  /// </pre>
+  /// where J𝑠_V_ABp is Bp's spatial velocity Jacobian in frame A for speeds s
+  /// (see CalcJacobianSpatialVelocity() for details on J𝑠_V_ABp).
+  /// @param[in] context The state of the multibody system.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
+  /// JacobianWrtVariable::kV, indicating whether the spatial accceleration bias
+  /// is with respect to 𝑠 = q̇ or 𝑠 = v.
+  /// @param[in] frame_B The frame on which point Bp is affixed/welded.
+  /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
+  /// (regarded as affixed/welded to B), expressed in frame_B.
+  /// @param[in] frame_A The frame that measures A𝑠Bias_ABp.
+  /// Currently, an exception is thrown if frame_A is not the World frame.
+  /// @param[in] frame_E The frame in which A𝑠Bias_ABp is expressed on output.
+  /// @returns A𝑠Bias_ABp_E Point Bp's spatial acceleration bias in frame A
+  /// with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
+  /// @note Shown below, A𝑠Bias_ABp_E = J̇𝑠_V_ABp ⋅ 𝑠  is quadratic in 𝑠. <pre>
+  ///  V_ABp =  J𝑠_V_ABp ⋅ 𝑠        which upon vector differentiation in A gives
+  ///  A_ABp =  J𝑠_V_ABp ⋅ 𝑠̇  +  J̇𝑠_V_ABp ⋅ 𝑠   Since J̇𝑠_V_ABp is linear in 𝑠,
+  ///  A𝑠Bias_ABp = J̇𝑠_V_ABp ⋅ 𝑠                             is quadratic in 𝑠.
+  /// </pre>
+  /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
+  /// translational velocity Jacobian in frame A with respect to 𝑠.
+  /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
+  /// @throws std::exception if frame_A is not the world frame.
+  SpatialAcceleration<T> CalcBiasSpatialAcceleration(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const {
+    // TODO(Mitiguy) Allow with_respect_to to be JacobianWrtVariable::kQDot.
+    // TODO(Mitiguy) Allow frame_A to be a non-World frame.
+    // TODO(Mitiguy) Per issue #13354, add unit tests for this public method.
+    return internal_tree().CalcBiasSpatialAcceleration(
+        context, with_respect_to, frame_B, p_BoBp_B, frame_A, frame_E);
+  }
+
   /// For a point Fp that is fixed to a frame F, calculates Fp's translational
   /// acceleration "bias" term `abias_AFp = J̇s_v_AFp(q, s) * s` in frame A with
   /// respect to "speeds" 𝑠.
@@ -2478,6 +2628,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `p_FP_list` does not have 3 rows.
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
+  DRAKE_DEPRECATED("2020-09-01", "Use CalcBiasTranslationalAcceleration "
+                 "instead of CalcBiasForJacobianTranslationalVelocity().")
   VectorX<T> CalcBiasForJacobianTranslationalVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2488,8 +2640,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // TODO(Mitiguy) Issue #12140: Rename to CalcBiasTranslationalAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
-    return internal_tree().CalcBiasForJacobianTranslationalVelocity(
-        context, with_respect_to, frame_F, p_FP_list, frame_A, frame_E);
+    return CalcBiasTranslationalAcceleration(context, with_respect_to,
+        frame_F, p_FP_list, frame_A, frame_E);
   }
 
   /// For a point Fp that is fixed to a frame F, calculates Fp's spatial
@@ -2530,6 +2682,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Vector6, it is actually a SpatialAcceleration (having units of that type).
   /// @throws std::exception if `with_respect_to` is not JacobianWrtVariable::kV
   /// @throws std::exception if frame_A is not the world frame.
+  DRAKE_DEPRECATED("2020-09-01", "Use CalcBiasSpatialAcceleration() instead "
+                                 "of CalcBiasForJacobianSpatialVelocity().")
   Vector6<T> CalcBiasForJacobianSpatialVelocity(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
@@ -2540,77 +2694,72 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // TODO(Mitiguy) Issue #12140: Rename to CalcBiasSpatialAcceleration.
     // TODO(Mitiguy) Allow `with_respect_to` to be JacobianWrtVariable::kQDot
     // and/or allow frame_A to be a non-world frame.
-    return internal_tree().CalcBiasForJacobianSpatialVelocity(
+    const SpatialAcceleration<T> Abias_WFp = CalcBiasSpatialAcceleration(
         context, with_respect_to, frame_F, p_FoFp_F, frame_A, frame_E);
+    return Abias_WFp.get_coeffs();
   }
 
-  /// For each point Bi of (fixed to) a frame B, calculates J𝑠_V_ABi, Bi's
+  /// For one point Bp affixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_V_ABi = [ ∂(V_ABi)/∂𝑠₁,  ...  ∂(V_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
+  ///      V_ABp = J𝑠_V_ABp ⋅ 𝑠          V_ABp is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
-  /// `V_ABi` is Bi's spatial velocity in frame A and "speeds" 𝑠 is either
+  /// `V_ABp` is Bp's spatial velocity in frame A and "speeds" 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  /// Note: `V_ABi = J𝑠_V_ABi ⋅ 𝑠`  which is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABi` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABp` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
-  /// @param[in] p_BoBi_B A position vector or list of p position vectors from
-  /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
-  /// position vector is expressed in frame_B.
-  /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
-  /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
-  /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
-  /// because Bi's velocity in A is defined as the derivative in frame A of
-  /// Bi's position vector from _any_ point fixed on A.
-  /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
-  /// the frame in which the Jacobian `J𝑠_V_ABi` is expressed on output.
-  /// @param[out] J𝑠_V_ABi_E Point Bi's spatial velocity Jacobian in frame A
+  /// @param[in] frame_B The frame on which point Bp is affixed/welded.
+  /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
+  /// Bp (regarded as affixed/welded to B), expressed in frame_B.
+  /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
+  /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
+  /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
+  /// because Bp's velocity in A is defined as the derivative in frame A of
+  /// Bp's position vector from _any_ point affixed to A.
+  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
+  /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
+  /// @param[out] J𝑠_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
   /// with respect to speeds 𝑠 (which is either q̇ or v), expressed in frame E.
-  /// `J𝑠_V_ABi_E` is a `6*p x n` matrix, where p is the number of points Bi and
-  /// n is the number of elements in 𝑠.  The Jacobian is a function of only
-  /// generalized positions q (which are pulled from the context).
-  /// Note: If p = 1 (one point), a `6 x n` matrix is returned with the first
-  /// three rows storing frame B's angular velocity Jacobian in A and rows 4-6
-  /// storing point Bi's translational velocity Jacobian in A, i.e.,
-  ///   ```
-  ///     J𝑠_wAB_E = J𝑠_V_ABi_E.topRows<3>();
-  ///     J𝑠_vAB1_E = J𝑠_V_ABi_E.bottomRows<3>();
-  ///   ```
-  /// If p = 2 (two points), a `12 x n` matrix is returned.  Rows 1-3 and 7-9
-  /// store exactly identical information (B's angular velocity Jacobian in A).
-  /// Rows 4-6 store point B1's translational velocity Jacobian which differs
-  /// from rows 10-12 which store point B2's translational velocity Jacobian.
-  /// If p is large and storage efficiency is a concern, calculate frame B's
-  /// angular velocity Jacobian using CalcJacobianAngularVelocity() and then use
-  /// CalcJacobianTranslationalVelocity().
+  /// `J𝑠_V_ABp_E` is a `6 x n` matrix, where n is the number of elements in 𝑠.
+  /// The Jacobian is a function of only generalized positions q (which are
+  /// pulled from the context).
+  /// Note: The returned `6 x n` matrix stores frame B's angular velocity
+  /// Jacobian in A in rows 1-3 and stores point Bp's translational velocity
+  /// Jacobian in A in rows 4-6, i.e., <pre>
+  ///     J𝑠_w_AB_E = J𝑠_V_ABp_E.topRows<3>();
+  ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
+  /// </pre>
+  /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
+  /// affixed to frame B and consider CalcJacobianAngularVelocity() to calculate
+  /// frame B's angular velocity Jacobian.
   /// @throws std::exception if `J𝑠_V_ABi_E` is nullptr or not sized `3*p x n`.
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
                                    const Frame<T>& frame_B,
-                                   const Eigen::Ref<const Vector3<T>>& p_BoBi_B,
+                                   const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
                                    const Frame<T>& frame_A,
                                    const Frame<T>& frame_E,
-                                   EigenPtr<MatrixX<T>> Jw_ABp_E) const {
+                                   EigenPtr<MatrixX<T>> Js_V_ABp_E) const {
     internal_tree().CalcJacobianSpatialVelocity(context, with_respect_to,
-                                                frame_B, p_BoBi_B, frame_A,
-                                                frame_E, Jw_ABp_E);
+                                                frame_B, p_BoBp_B, frame_A,
+                                                frame_E, Js_V_ABp_E);
   }
 
   /// Calculates J𝑠_w_AB, a frame B's angular velocity Jacobian in a frame A
   /// with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_w_AB = [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_w_AB ≜ [ ∂(w_AB)/∂𝑠₁,  ...  ∂(w_AB)/∂𝑠ₙ ]    (n is j or k)
+  ///      w_AB = J𝑠_w_AB ⋅ 𝑠          w_AB is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `w_AB` is B's angular velocity in frame A and "speeds" 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  /// Note: `w_AB = J𝑠_w_AB * 𝑠`  which is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
@@ -2637,30 +2786,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, with_respect_to, frame_B, frame_A, frame_E, Js_w_AB_E);
   }
 
-  /// For each point Bi of (fixed to) a frame B, calculates J𝑠_v_ABi, Bi's
+  /// For each point Bi affixed/welded to a frame B, calculates J𝑠_v_ABi, Bi's
   /// translational velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
-  ///      J𝑠_v_ABi = [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      J𝑠_v_ABi ≜ [ ∂(v_ABi)/∂𝑠₁,  ...  ∂(v_ABi)/∂𝑠ₙ ]    (n is j or k)
+  ///      v_ABi = J𝑠_v_ABi ⋅ 𝑠          v_ABi is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ
   /// </pre>
   /// `v_ABi` is Bi's translational velocity in frame A and "speeds" 𝑠 is either
   /// q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of j generalized positions) or
   /// v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
-  /// Note: `v_ABi = J𝑠_v_ABi ⋅ 𝑠`  which is linear in 𝑠 ≜ [𝑠₁ ... 𝑠ₙ]ᵀ.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_v_ABi` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bi is fixed (e.g., welded).
+  /// @param[in] frame_B The frame on which point Bi is affixed/welded.
   /// @param[in] p_BoBi_B A position vector or list of p position vectors from
-  /// Bo (frame_B's origin) to points Bi (regarded as fixed to B), where each
+  /// Bo (frame_B's origin) to points Bi (regarded as affixed to B), where each
   /// position vector is expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABi` (Bi's velocity in A).
   /// Note: It is natural to wonder why there is no parameter p_AoAi_A (similar
   /// to the parameter p_BoBi_B for frame_B).  There is no need for p_AoAi_A
   /// because Bi's velocity in A is defined as the derivative in frame A of
-  /// Bi's position vector from _any_ point fixed on A.
+  /// Bi's position vector from _any_ point affixed to A.
   /// @param[in] frame_E The frame in which `v_ABi` is expressed on input and
   /// the frame in which the Jacobian `J𝑠_v_ABi` is expressed on output.
   /// @param[out] J𝑠_v_ABi_E Point Bi's velocity Jacobian in frame A with
@@ -3538,6 +3687,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcForwardDynamics(const systems::Context<T>& context,
                            internal::AccelerationKinematicsCache<T>* ac) const;
 
+  // Discrete system version of CalcForwardDynamics(). This method does not use
+  // O(n) forward dynamics but the discrete TAMSI solver, for further details
+  // please refer to @ref castro_etal_2019 "[Castro et al., 2019]"
+  void CalcForwardDynamicsDiscrete(
+      const drake::systems::Context<T>& context,
+      internal::AccelerationKinematicsCache<T>* ac) const;
+
   // Eval version of the method CalcForwardDynamics().
   const internal::AccelerationKinematicsCache<T>& EvalForwardDynamics(
       const systems::Context<T>& context) const {
@@ -3685,14 +3841,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcGeneralizedAccelerations(const drake::systems::Context<T>& context,
                                     VectorX<T>* vdot) const;
 
-  // Discrete system version of CalcGeneralizedAccelerations().
-  void CalcGeneralizedAccelerationsDiscrete(
-      const drake::systems::Context<T>& context, VectorX<T>* vdot) const;
-
-  // Continuous system version of CalcGeneralizedAccelerations().
-  void CalcGeneralizedAccelerationsContinuous(
-      const drake::systems::Context<T>& context, VectorX<T>* vdot) const;
-
   // Eval() version of the method CalcGeneralizedAccelerations().
   const VectorX<T>& EvalGeneralizedAccelerations(
       const systems::Context<T>& context) const {
@@ -3725,10 +3873,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
-  // 1. Register a frame for this body if not already done so. The body gets
-  //    associated with a FrameId.
-  // 2. Register geometry for the corresponding FrameId. This associates a
-  //    GeometryId with the body FrameId.
+  // 1. Register geometry for the corresponding FrameId associated with `body`.
+  // 2. Update the geometry_id_to_body_index_ map associating the new GeometryId
+  //    to the BodyIndex of `body`.
   // This assumes:
   // 1. Finalize() was not called on `this` plant.
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
@@ -3764,6 +3911,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CopyMultibodyStateOut(
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
+
+  // Evaluates the pose X_WB of each body in the model and copies it into
+  // X_WB_all, indexed by BodyIndex.
+  void CalcBodyPosesOutput(
+      const systems::Context<T>& context,
+      std::vector<math::RigidTransform<T>>* X_WB_all) const;
+
+  // Evaluates the spatial velocity V_WB of each body in the model and copies it
+  // into V_WB_all, indexed by BodyIndex.
+  void CalcBodySpatialVelocitiesOutput(
+      const systems::Context<T>& context,
+      std::vector<SpatialVelocity<T>>* V_WB_all) const;
+
+  // Evaluates the spatial acceleration A_WB of each body in the model and
+  // copies it into A_WB_all, indexed by BodyIndex.
+  void CalcBodySpatialAccelerationsOutput(
+      const systems::Context<T>& context,
+      std::vector<SpatialAcceleration<T>>* A_WB_all) const;
 
   // Method to compute spatial contact forces for continuous plants.
   void CalcSpatialContactForcesContinuous(
@@ -4117,6 +4282,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Port for externally applied spatial forces F.
   systems::InputPortIndex applied_spatial_force_input_port_;
 
+  // Ports for spatial kinematics.
+  systems::OutputPortIndex body_poses_port_;
+  systems::OutputPortIndex body_spatial_velocities_port_;
+  systems::OutputPortIndex body_spatial_accelerations_port_;
+
   // A port presenting state x=[q v] for the whole system, and a vector of
   // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,
   // indexed by ModelInstanceIndex. Every model instance has a corresponding
@@ -4228,13 +4398,6 @@ AddMultibodyPlantSceneGraph(
     systems::DiagramBuilder<T>* builder,
     std::unique_ptr<MultibodyPlant<T>> plant,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
-
-/// Adds a new continuous MultibodyPlant to `builder`.
-template <typename T>
-DRAKE_DEPRECATED("2020-05-01", "Use alternative overloads explicitly providing a continuous or discrete MultibodyPlant modality. To retain the prior behavior of using a continuous-time plant, pass time_step = 0.0.")  // NOLINT(whitespace/line_length)
-AddMultibodyPlantSceneGraphResult<T>
-AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<T>* builder);
 
 /// Temporary result from `AddMultibodyPlantSceneGraph`. This cannot be
 /// constructed outside of this method.

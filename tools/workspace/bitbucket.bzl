@@ -6,10 +6,6 @@ load(
     "generate_repository_metadata",
 )
 
-# The github.bzl and bitbucket.bzl implementations are very similar.  Try to
-# keep the two files relatively well-synchronized -- or even better, rework
-# them to share code where doing so is an improvement.
-
 def bitbucket_archive(
         name,
         repository = None,
@@ -19,6 +15,9 @@ def bitbucket_archive(
         build_file = None,
         mirrors = None,
         **kwargs):
+    print("The bitbucket.bzl macros are deprecated and will be removed " +
+          "from Drake on or after 2020-08-01; if you still need them, " +
+          "then you may copy them to your own project.")
     """A macro to be called in the WORKSPACE that adds an external from
     bitbucket using a workspace rule.
 

@@ -10,8 +10,7 @@ namespace multibody {
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Joint<ToScalar>>
-RevoluteJoint<T>::TemplatedDoCloneToScalar(
+std::unique_ptr<Joint<ToScalar>> RevoluteJoint<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& frame_on_parent_body_clone =
       tree_clone.get_variant(this->frame_on_parent());
@@ -28,7 +27,7 @@ RevoluteJoint<T>::TemplatedDoCloneToScalar(
   joint_clone->set_acceleration_limits(this->acceleration_lower_limits(),
                                        this->acceleration_upper_limits());
 
-  return std::move(joint_clone);
+  return joint_clone;
 }
 
 template <typename T>
@@ -56,10 +55,11 @@ template <typename T>
 std::unique_ptr<typename Joint<T>::BluePrint>
 RevoluteJoint<T>::MakeImplementationBlueprint() const {
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
-  blue_print->mobilizers_.push_back(
-      std::make_unique<internal::RevoluteMobilizer<T>>(
-          this->frame_on_parent(), this->frame_on_child(), axis_));
-  return std::move(blue_print);
+  auto revolute_mobilizer = std::make_unique<internal::RevoluteMobilizer<T>>(
+      this->frame_on_parent(), this->frame_on_child(), axis_);
+  revolute_mobilizer->set_default_position(this->default_positions());
+  blue_print->mobilizers_.push_back(std::move(revolute_mobilizer));
+  return blue_print;
 }
 
 }  // namespace multibody

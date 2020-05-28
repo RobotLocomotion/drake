@@ -143,7 +143,7 @@ class SliceTetWithPlaneTest : public ::testing::Test {
    trivially reports success.
 
    @param plane_F       The slicing plane (measured and expressed in Frame F).
-   @param X_FM          The relative pose between the trivial meshes's canoncial
+   @param X_FM          The relative pose between the trivial mesh's canonical
                         frame M and the query frame F.
    @param do_analysis   If `true`, evaluate the resulting intersection mesh for
                         consistency and return the result.
@@ -711,7 +711,8 @@ TEST_F(SliceTetWithPlaneTest, QuadIntersections) {
     // iterate through all six permutations. For example, we don't list the pair
     // (1, 2) because it is the "complement" of (0, 3). Same argument applies
     // to every other unique pair being a complement of one of those three.
-    for (const auto [v0, v1] : vector<pair<int, int>>{{0, 1}, {0, 2}, {0, 3}}) {
+    for (const auto& [v0, v1] :
+         vector<pair<int, int>>{{0, 1}, {0, 2}, {0, 3}}) {
       const Vector3d& p_FV0 = mesh_F.vertex(tet.vertex(v0)).r_MV();
       const Vector3d& p_FV1 = mesh_F.vertex(tet.vertex(v1)).r_MV();
       // Position on edge E nearest the centroid.
@@ -1119,7 +1120,7 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
   // the normals are correct, regardless of relationship between ids.
   vector<pair<GeometryId, GeometryId>> ids{{mesh_id_, plane_id_},
                                            {plane_id_, mesh_id_}};
-  for (const auto [id_A, id_B] : ids) {
+  for (const auto& [id_A, id_B] : ids) {
     unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
         id_A, *field_F_, id_B, plane_F, both_tets_, X_WF_);
 

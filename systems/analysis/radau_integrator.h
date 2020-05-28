@@ -53,6 +53,8 @@ namespace systems {
  *
  * @see ImplicitIntegrator class documentation for information about implicit
  *      integration methods in general.
+ * @see Radau3Integrator and Radau1Integrator alises for third- and first-order
+ *      templates with num_stages already specified.
  * @note This integrator uses the integrator accuracy setting, even when run
  *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
  *       process. See IntegratorBase::set_target_accuracy() for more info.
@@ -215,6 +217,18 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_function_evaluations_{0};
   int64_t num_err_est_nr_iterations_{0};
 };
+
+/** A third-order fully implicit integrator with error estimation.
+See RadauIntegrator with `num_stages == 2` for details.
+@tparam_nonsymbolic_scalar */
+template <typename T>
+using Radau3Integrator = RadauIntegrator<T, 2>;
+
+/** A first-order fully implicit integrator with error estimation.
+See RadauIntegrator with `num_stages == 1` for details.
+@tparam_nonsymbolic_scalar */
+template <typename T>
+using Radau1Integrator = RadauIntegrator<T, 1>;
 
 }  // namespace systems
 }  // namespace drake

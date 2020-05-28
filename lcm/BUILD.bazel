@@ -17,8 +17,19 @@ drake_cc_package_library(
         ":drake_lcm",
         ":interface",
         ":lcm_log",
+        ":lcm_messages",
         ":mock",
         ":real",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_messages",
+    srcs = ["lcm_messages.cc"],
+    hdrs = ["lcm_messages.h"],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 
@@ -27,6 +38,7 @@ drake_cc_library(
     srcs = ["drake_lcm_interface.cc"],
     hdrs = ["drake_lcm_interface.h"],
     deps = [
+        ":lcm_messages",
         "//common:essential",
     ],
 )
@@ -36,7 +48,7 @@ drake_cc_library(
     srcs = ["drake_mock_lcm.cc"],
     hdrs = ["drake_mock_lcm.h"],
     deps = [
-        ":interface",
+        ":real",
     ],
 )
 
@@ -86,10 +98,20 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "lcm_messages_test",
+    deps = [
+        ":lcm_messages",
+        ":lcmt_drake_signal_utils",
+        "//common/test_utilities",
+        "//lcmtypes:drake_signal",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_lcm_interface_test",
     deps = [
         ":lcmt_drake_signal_utils",
-        ":mock",
+        ":real",
         "//common/test_utilities",
     ],
 )

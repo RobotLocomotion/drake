@@ -22,8 +22,22 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Constructs a B-spline trajectory with the given `basis` and
   `control_points`.
   @pre control_points.size() == basis.num_basis_functions() */
+  BsplineTrajectory(math::BsplineBasis<T> basis,
+                    std::vector<MatrixX<T>> control_points);
+
+#ifdef DRAKE_DOXYGEN_CXX
+  /** Constructs a T-valued B-spline trajectory from a double-valued `basis` and
+  T-valued `control_points`.
+  @pre control_points.size() == basis.num_basis_functions() */
   BsplineTrajectory(math::BsplineBasis<double> basis,
                     std::vector<MatrixX<T>> control_points);
+#else
+  template <typename U = T>
+  BsplineTrajectory(math::BsplineBasis<double> basis,
+                    std::vector<MatrixX<T>> control_points,
+                    typename std::enable_if_t<!std::is_same_v<U, double>>* = {})
+      : BsplineTrajectory(math::BsplineBasis<T>(basis), control_points) {}
+#endif
 
   virtual ~BsplineTrajectory() = default;
 
@@ -31,19 +45,14 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   std::unique_ptr<trajectories::Trajectory<T>> Clone() const override;
 
   /** Evaluates the BsplineTrajectory at the given time t.
-  @param t The time at which to evaluate the %PiecewisePolynomial.
+  @param t The time at which to evaluate the %BsplineTrajectory.
   @return The matrix of evaluated values.
+  @pre If T == symbolic::Expression, `t.is_constant()` must be true.
   @warning If t does not lie in the range [start_time(), end_time()], the
            trajectory will silently be evaluated at the closest
            valid value of time to t. For example, `value(-1)` will return
            `value(0)` for a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
-
-  // TODO(avalenzu): The default parameter here violates the GSG, but is
-  // included to match the parent class. It should be removed along with the
-  // corresponding one in trajectories::Trajectory.
-  std::unique_ptr<trajectories::Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override;
 
   Eigen::Index rows() const override { return control_points()[0].rows(); }
 
@@ -69,7 +78,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   MatrixX<T> FinalValue() const;
 
   /** Returns the basis of this curve. */
-  const math::BsplineBasis<double>& basis() const { return basis_; }
+  const math::BsplineBasis<T>& basis() const { return basis_; }
 
   /** Adds new knots at the specified `additional_knots` without changing the
   behavior of the trajectory. The basis and control points of the trajectory are
@@ -78,7 +87,7 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   the same level of continuity as the original, even if knot values are
   duplicated. Note that `additional_knots` need not be sorted.
   @pre start_time() <= t <= end_time() for all t in `additional_knots` */
-  void InsertKnots(const std::vector<double>& additional_knots);
+  void InsertKnots(const std::vector<T>& additional_knots);
 
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `select(point)` on each `point`
@@ -103,7 +112,10 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   boolean<T> operator==(const BsplineTrajectory<T>& other) const;
 
  private:
-  math::BsplineBasis<double> basis_;
+  std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override;
+
+  math::BsplineBasis<T> basis_;
   std::vector<MatrixX<T>> control_points_;
 };
 }  // namespace trajectories

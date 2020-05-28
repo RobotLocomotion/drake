@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_constraint.h"
 #include "drake/multibody/rigid_body_tree.h"

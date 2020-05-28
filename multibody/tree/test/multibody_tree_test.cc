@@ -97,28 +97,28 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   EXPECT_EQ(model.num_states(), 14);
 
   // Query if elements exist in the model.
-  for (const std::string link_name : kLinkNames) {
+  for (const std::string& link_name : kLinkNames) {
     EXPECT_TRUE(model.HasBodyNamed(link_name));
   }
   EXPECT_FALSE(model.HasBodyNamed(kInvalidName));
 
-  for (const std::string frame_name : kFrameNames) {
+  for (const std::string& frame_name : kFrameNames) {
     EXPECT_TRUE(model.HasFrameNamed(frame_name));
   }
   EXPECT_FALSE(model.HasFrameNamed(kInvalidName));
 
-  for (const std::string joint_name : kJointNames) {
+  for (const std::string& joint_name : kJointNames) {
     EXPECT_TRUE(model.HasJointNamed(joint_name));
   }
   EXPECT_FALSE(model.HasJointNamed(kInvalidName));
 
-  for (const std::string actuator_name : kActuatorNames) {
+  for (const std::string& actuator_name : kActuatorNames) {
     EXPECT_TRUE(model.HasJointActuatorNamed(actuator_name));
   }
   EXPECT_FALSE(model.HasJointActuatorNamed(kInvalidName));
 
   // Get links by name.
-  for (const std::string link_name : kLinkNames) {
+  for (const std::string& link_name : kLinkNames) {
     const Body<T>& link = model.GetBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
@@ -127,7 +127,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no body named '.*' in the model.");
 
   // Test we can also retrieve links as RigidBody objects.
-  for (const std::string link_name : kLinkNames) {
+  for (const std::string& link_name : kLinkNames) {
     const RigidBody<T>& link = model.GetRigidBodyByName(link_name);
     EXPECT_EQ(link.name(), link_name);
   }
@@ -136,7 +136,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no body named '.*' in the model.");
 
   // Get frames by name.
-  for (const std::string frame_name : kFrameNames) {
+  for (const std::string& frame_name : kFrameNames) {
     const Frame<T>& frame = model.GetFrameByName(frame_name);
     EXPECT_EQ(frame.name(), frame_name);
     EXPECT_EQ(
@@ -147,7 +147,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no frame named '.*' in the model.");
 
   // Get joints by name.
-  for (const std::string joint_name : kJointNames) {
+  for (const std::string& joint_name : kJointNames) {
     const Joint<T>& joint = model.GetJointByName(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
   }
@@ -156,7 +156,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       "There is no joint named '.*' in the model.");
 
   // Templatized version to obtain retrieve a particular known type of joint.
-  for (const std::string joint_name : kJointNames) {
+  for (const std::string& joint_name : kJointNames) {
     const RevoluteJoint<T>& joint =
         model.template GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_EQ(joint.name(), joint_name);
@@ -166,7 +166,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       std::logic_error, "There is no joint named '.*' in the model.");
 
   // Get actuators by name.
-  for (const std::string actuator_name : kActuatorNames) {
+  for (const std::string& actuator_name : kActuatorNames) {
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
     EXPECT_EQ(actuator.name(), actuator_name);
@@ -177,7 +177,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
 
   // Test we can retrieve joints from the actuators.
   int names_index = 0;
-  for (const std::string actuator_name : kActuatorNames) {
+  for (const std::string& actuator_name : kActuatorNames) {
     const JointActuator<T>& actuator =
         model.GetJointActuatorByName(actuator_name);
     // We added actuators and joints in the same order. Assert this before
@@ -763,9 +763,12 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
                               MatrixCompareType::relative));
 }
 
+
 // Unit tests MBT::CalcBiasForJacobianTranslationalVelocity() using
 // AutoDiffXd to compute time derivatives of a Jacobian to obtain a
 // reference solution.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
@@ -892,6 +895,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
                    *frame_H_, world_frame),
                std::exception);
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Given a set of points Pi attached to the end effector frame G, this test
 // calculates Jq̇_v_WPi (Pi's translational velocity Jacobian with respect to q̇)
@@ -1080,8 +1084,11 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityA) {
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
+
 // Unit tests MBT::CalcBiasForJacobianSpatialVelocity() use AutoDiffXd to time-
 // differentiate a spatial velocity Jacobian to form a reference solution.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   // The number of generalized velocities in the Kuka iiwa robot arm model.
   const int kNumVelocities = tree().num_velocities();
@@ -1164,6 +1171,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(Abias_WHp, Abias_WHp_expected,
                               kTolerance, MatrixCompareType::relative));
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Verify that even when the input set of points and/or the Jacobian might
 // contain garbage on input, a query for the world body Jacobian will always
@@ -1330,7 +1338,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), nullptr),
-      std::exception, ".*'Jw_V_ABp_E != nullptr'.*");
+      std::exception, ".*'Js_V_ABp_E != nullptr'.*");
 
   // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of rows.
@@ -1340,7 +1348,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
-      std::exception, ".*'Jw_V_ABp_E->rows\\(\\) == 6'.*");
+      std::exception, ".*'Js_V_ABp_E->rows\\(\\) == 6'.*");
 
   // Unit test that CalcJacobianSpatialVelocity throws an exception when
   // the input Jacobian has the wrong number of columns.
@@ -1349,7 +1357,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocityC) {
       tree().CalcJacobianSpatialVelocity(
           *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
-      std::exception, ".*'Jw_V_ABp_E->cols\\(\\) == num_columns'.*");
+      std::exception, ".*'Js_V_ABp_E->cols\\(\\) == num_columns'.*");
 }
 
 // Fixture to setup a simple MBT model with weld mobilizers. The model is in

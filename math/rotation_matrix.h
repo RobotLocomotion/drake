@@ -135,7 +135,7 @@ class RotationMatrix {
   /// Vice-versa, there are high-accuracy RollPitchYaw constructor/methods that
   /// form a RollPitchYaw from a rotation matrix.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
-    // TODO(@mitiguy) Add publically viewable documentation on how Sherm and
+    // TODO(@mitiguy) Add publicly viewable documentation on how Sherm and
     // Goldstein like to visualize/conceptualize rotation sequences.
     const T& r = rpy.roll_angle();
     const T& p = rpy.pitch_angle();

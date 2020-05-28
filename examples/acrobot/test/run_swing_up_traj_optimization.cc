@@ -8,18 +8,19 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/solvers/solve.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 using drake::solvers::SolutionResult;
-
 
 namespace drake {
 namespace examples {
@@ -33,15 +34,20 @@ DEFINE_double(realtime_factor, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 
 int do_main() {
+  if (!solvers::SnoptSolver::is_available()) {
+    std::cout << "This test was flaky with IPOPT, so currently requires SNOPT."
+              << std::endl;
+    return 0;
+  }
+
   AcrobotPlant<double> acrobot;
   auto context = acrobot.CreateDefaultContext();
 
   const int kNumTimeSamples = 21;
-  const double kMinimumTimeStep = 0.2;
-  const double kMaximumTimeStep = 0.5;
+  const double kMinimumTimeStep = 0.05;
+  const double kMaximumTimeStep = 0.2;
   systems::trajectory_optimization::DirectCollocation dircol(
-      &acrobot, *context, kNumTimeSamples, kMinimumTimeStep,
-      kMaximumTimeStep);
+      &acrobot, *context, kNumTimeSamples, kMinimumTimeStep, kMaximumTimeStep);
 
   dircol.AddEqualTimeIntervalsConstraints();
 
@@ -60,29 +66,44 @@ int do_main() {
   dircol.AddRunningCost((R * u) * u);
 
   const double timespan_init = 4;
-  // Certain solvers (SNOPT) are very sensitive when the initial guess starts
-  // exactly in the straight-down configuration. This term nudges the initial
-  // guess away from that configuration.
-  const Eigen::Vector4d x0_perturbation{std::numeric_limits<double>::epsilon(),
-                                        0, 0, 0};
   auto traj_init_x = PiecewisePolynomialType::FirstOrderHold(
-      {0, timespan_init}, {x0 + x0_perturbation, xG});
+      {0, timespan_init}, {x0, xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
-  const auto result = solvers::Solve(dircol);
+
+  solvers::SnoptSolver solver;
+  const auto result = solver.Solve(dircol);
   if (!result.is_success()) {
     std::cerr << "No solution found.\n";
     return 1;
   }
 
-  // Now construct a diagram to visualize the results.
+  // Stabilize the trajectory with LQR and simulate.
   systems::DiagramBuilder<double> builder;
-  const trajectories::PiecewisePolynomial<double> pp_xtraj =
+
+  auto plant = builder.AddSystem<AcrobotPlant>();
+  auto plant_context = plant->CreateDefaultContext();
+
+  systems::controllers::FiniteHorizonLinearQuadraticRegulatorOptions options;
+  const trajectories::PiecewisePolynomial<double> xtraj =
       dircol.ReconstructStateTrajectory(result);
-  auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
+  const trajectories::PiecewisePolynomial<double> utraj =
+      dircol.ReconstructInputTrajectory(result);
+  options.x0 = &xtraj;
+  options.u0 = &utraj;
+
+  const Eigen::Matrix4d Q = Eigen::Vector4d(10.0, 10.0, 1.0, 1.0).asDiagonal();
+  options.Qf = Q;
+  auto regulator = builder.AddSystem(
+      systems::controllers::MakeFiniteHorizonLinearQuadraticRegulator(
+          *plant, *plant_context, options.u0->start_time(),
+          options.u0->end_time(), Q, Vector1d::Constant(1), options));
+
+  builder.Connect(regulator->get_output_port(0), plant->get_input_port(0));
+  builder.Connect(plant->get_output_port(0), regulator->get_input_port(0));
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  AcrobotGeometry::AddToBuilder(
-      &builder, state_source->get_output_port(), scene_graph);
+  AcrobotGeometry::AddToBuilder(&builder, plant->get_output_port(0),
+                                scene_graph);
   ConnectDrakeVisualizer(&builder, *scene_graph);
 
   auto diagram = builder.Build();
@@ -91,7 +112,13 @@ int do_main() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.AdvanceTo(pp_xtraj.end_time());
+  simulator.get_mutable_context().SetTime(options.u0->start_time());
+  simulator.AdvanceTo(options.u0->end_time());
+
+  // Confirm that the stabilized system is in the vicinity of the upright.
+  DRAKE_DEMAND(is_approx_equal_abstol(
+      simulator.get_context().get_continuous_state_vector().CopyToVector(), xG,
+      0.1));
   return 0;
 }
 

@@ -6,12 +6,12 @@ tap 'homebrew/cask-versions' unless system '/usr/libexec/java_home --version 1.8
 tap 'robotlocomotion/director'
 
 cask 'adoptopenjdk8' unless system '/usr/libexec/java_home --version 1.8 --failfast &> /dev/null'
-cask 'font-dejavu-sans' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
+cask 'font-dejavu' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
 
 brew 'bazel'
+brew 'robotlocomotion/director/clang-format@9'
 brew 'diffstat'
 brew 'doxygen'
 brew 'freetype'
 brew 'kcov'
-brew 'llvm@6'
 brew 'patchutils'

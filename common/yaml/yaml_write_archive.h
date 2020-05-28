@@ -10,10 +10,9 @@
 #include <variant>
 #include <vector>
 
+#include "yaml-cpp/yaml.h"
 #include <Eigen/Core>
 #include <fmt/format.h>
-#include "yaml-cpp/emitfromevents.h"
-#include "yaml-cpp/yaml.h"
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
@@ -118,11 +117,10 @@ class YamlWriteArchive final {
   }
 
  private:
-  static constexpr const char* const kKeyOrderName = "__key_order";
+  static const char* const kKeyOrderName;
 
-  // Helpers for EmitString.
+  // Helper for EmitString.
   static std::string YamlDumpWithSortedMaps(const YAML::Node&);
-  static void RecursiveEmit(const YAML::Node&, YAML::EmitFromEvents*);
 
   // N.B. In the private details below, we use "NVP" to abbreviate the
   // "NameValuePair" template concept.

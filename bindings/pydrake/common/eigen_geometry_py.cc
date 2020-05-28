@@ -5,9 +5,9 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_throw.h"
@@ -166,15 +166,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             })
         .def("__str__",
             [](py::object self) { return py::str(self.attr("matrix")()); })
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class& self, const Class& other) { return self * other; },
             py::arg("other"), "RigidTransform multiplication")
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
             py::arg("position"), "Position vector multiplication")
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class& self, const Matrix3X<T>& position) {
               return self * position;
             },
@@ -186,6 +189,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
+    // TODO(eric): Consider deprecating / removing `Value[Isometry3]` pending
+    // resolution of #9865.
+    AddValueInstantiation<Isometry3<T>>(m);
   }
 
   // Quaternion.
@@ -234,7 +240,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               wxyz << self->w(), self->vec();
               return wxyz;
             })
-        .def("set_wxyz",
+        .def(
+            "set_wxyz",
             [](Class* self, const Vector4<T>& wxyz) {
               Class update;
               update.w() = wxyz(0);
@@ -243,7 +250,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               *self = update;
             },
             py::arg("wxyz"))
-        .def("set_wxyz",
+        .def(
+            "set_wxyz",
             [](Class* self, T w, T x, T y, T z) {
               Class update(w, x, y, z);
               CheckQuaternion(update);
@@ -264,7 +272,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   .format(py_class_obj.attr("__name__"), self->w(), self->x(),
                       self->y(), self->z());
             })
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class& self, const Class& other) { return self * other; },
             "Quaternion multiplication");
     auto multiply_vector = [](const Class& self, const Vector3<T>& vector) {
@@ -330,14 +339,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("other"))
         .def("angle", [](const Class* self) { return self->angle(); })
         .def("axis", [](const Class* self) { return self->axis(); })
-        .def("set_angle",
+        .def(
+            "set_angle",
             [](Class* self, const T& angle) {
               // N.B. Since `axis` should already be valid, do not need to
               // check.
               self->angle() = angle;
             },
             py::arg("angle"))
-        .def("set_axis",
+        .def(
+            "set_axis",
             [](Class* self, const Vector3<T>& axis) {
               Class update(self->angle(), axis);
               CheckAngleAxis(update);
@@ -346,7 +357,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("axis"))
         .def("rotation",
             [](const Class* self) { return self->toRotationMatrix(); })
-        .def("set_rotation",
+        .def(
+            "set_rotation",
             [](Class* self, const Matrix3<T>& rotation) {
               Class update(rotation);
               CheckAngleAxis(update);
@@ -355,7 +367,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("rotation"))
         .def("quaternion",
             [](const Class* self) { return Eigen::Quaternion<T>(*self); })
-        .def("set_quaternion",
+        .def(
+            "set_quaternion",
             [](Class* self, const Eigen::Quaternion<T>& q) {
               CheckQuaternion(q);
               Class update(q);
@@ -369,7 +382,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   .format(py_class_obj.attr("__name__"), self->angle(),
                       self->axis());
             })
-        .def("multiply",
+        .def(
+            "multiply",
             [](const Class& self, const Class& other) { return self * other; },
             py::arg("other"))
         .def("inverse", [](const Class* self) { return self->inverse(); })

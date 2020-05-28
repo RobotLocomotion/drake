@@ -10,6 +10,7 @@ labels.  Each label uses the format ``group: value``, where ``group`` is one
 of the following:
 
 * ``team``: Indicates the engineering team that owns the issue.
+* ``component``: Indicates the primary affected feature area.
 * ``type``: Indicates the nature of the issue.
 * ``priority``: Indicates the urgency of resolution.
 * ``configuration``: The supported configurations affected, if applicable.
@@ -56,6 +57,106 @@ their responsibilities are:
   lead: RussTedrake
 
   responsibilities: examples/requests from MIT projects / MIT courses
+
+.. _issues-component:
+
+Component
+=========
+
+Every issue must have at most one ``component`` label. The components are:
+
+- ``build system``
+
+  Bazel, CMake, dependencies, memory checkers, linters, etc.
+
+  typical team: kitware
+
+- ``continuous integration``
+
+  Jenkins, CDash, mirroring of externals, Drake website, etc.
+
+  typical team: kitware
+
+- ``distribution``
+
+  Nightly binaries, monthly releases, docker, installation
+  via apt or brew, etc.
+
+  typical team: kitware
+
+- ``geometry externals``
+
+  VTK, FCL, drake_visualizer (core behavior), etc.
+
+  typical team: kitware
+
+- ``geometry general``
+
+  Geometry infrastructure or topics that defy categorization into other geometry
+  components.
+
+  typical team: dynamics
+
+- ``geometry illustration``
+
+  What and how geometry gets communicated to external visualizers.
+
+  typical team: dynamics
+
+- ``geometry perception``
+
+  How geometry appears in color, depth, and label images (via the RenderEngine API).
+
+  typical team: dynamics
+
+- ``geometry proximity``
+
+  Contact, distance, signed distance queries and related properties.
+
+  typical team: dynamics
+
+- ``jupyter``
+
+  Jupyter notebook infrastructure, Binder integration, etc.
+
+  *Note*: This label does not imply content authoring for tutorials.
+
+  typical team: kitware
+
+- ``mathematical program``
+
+  Formulating and solving mathematical programs through numerical optimization,
+  usually in ``drake/solvers``.
+
+  typical team: manipulation
+
+- ``multibody plant``
+
+  MultibodyPlant and related code and documentation
+  usually in ``drake/multibody``.
+
+  typical team: dynamics
+
+- ``pydrake``
+
+  Python API and documentation under ``//bindings/pydrake`` (and
+  its supporting Starlark macros), the ``RobotLocomotion/pybind11`` fork, etc.
+
+  typical team: kitware
+
+- ``simulator``
+
+  Simulator, integrators, and related code and documentation,
+  usually in ``drake/systems/analysis``.
+
+  typical team: dynamics
+
+- ``system framework``
+
+  System, Context, and related code and documentation,
+  usually in ``drake/systems/framework``.
+
+  typical team: dynamics
 
 .. _issues-priority:
 

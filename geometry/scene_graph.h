@@ -601,6 +601,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
                   RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the perception role to the geometry indicated by `geometry_id`.
+
+   By default, a geometry with a perception role will be reified by all
+   render::RenderEngine instances. This behavior can be changed. Renderers can
+   be explicitly whitelisted via the ('renderer', 'accepting') perception
+   property. Its type is std::set<std::string> and it contains the names of
+   all the renderers that _may_ reify it. If no property is defined (or an
+   empty set is given), then the default behavior of all renderers attempting
+   to reify it will be restored.
    @pydrake_mkdoc_identifier{perception_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -705,21 +713,33 @@ class SceneGraph final : public systems::LeafSystem<T> {
    These filter methods essentially create new sets of pairs and then subtract
    them from the candidate set C. See each method for details.
 
-   Modifications to C _must_ be performed before context allocation.  */
+   Modifications to C _must_ be performed before context allocation.
+
+   @warning All collision filtering is done based on geometry state at the time
+   of the collision filtering calls. More concretely:
+    - For a FrameId in the set, only those geometries attached to the
+      identified frame with the proximity role assigned at the time of the call
+      will be included in the filter. If geometries are subsequently added or
+      assigned the proximity role, they will not be retroactively added to the
+      filter.
+    - If the set includes geometries which have _not_ been assigned a proximity
+      role, those geometries will be ignored. If a proximity role is
+      subsequently assigned, those geometries will _still_ not be part of any
+      collision filters.
+    - In general, adding collisions and assinging proximity roles should
+      happen prior to collision filter configuration.
+   */
   //@{
 
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
    `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
 
-   If the set includes geometries which have _not_ been assigned a proximity
-   role, those geometries will be ignored. If a proximity role is subsequently
-   assigned, those geometries will _still_ not be part of any collision filters.
-   Proximity roles should _generally_ be assigned prior to collision filter
-   configuration.
-
    This method modifies the underlying model and requires a new Context to be
    allocated.
+
+   @sa @ref scene_graph_collision_filtering for requirements and how collision
+   filtering works.
 
    @throws std::logic_error if the set includes ids that don't exist in the
                             scene graph.  */
@@ -737,17 +757,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    geometries `setA` and `setB`, respectively. This does _not_ preclude
    collisions between members of the _same_ set.
 
-   If the sets include geometries which have _not_ been assigned a proximity
-   role, those geometries will be ignored. If a proximity role is subsequently
-   assigned, those geometries will _still_ not be part of any collision filters.
-   Proximity roles should _generally_ be assigned prior to collision filter
-   configuration.
-
-   This method modifies the underlying model and requires a new Context to be
-   allocated.
+   @sa @ref scene_graph_collision_filtering for requirements and how collision
+   filtering works.
 
    @throws std::logic_error if the groups include ids that don't exist in the
-                            scene graph.   */
+                            scene graph.  */
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 

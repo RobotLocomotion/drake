@@ -1,6 +1,6 @@
 /// @file
 ///
-/// kuka_plan_runner is designed to wait for LCM messages contraining
+/// kuka_plan_runner is designed to wait for LCM messages constraining
 /// a robot_plan_t message, and then execute the plan on an iiwa arm
 /// (also communicating via LCM using the
 /// lcmt_iiwa_command/lcmt_iiwa_status messages).

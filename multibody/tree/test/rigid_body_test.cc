@@ -45,7 +45,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
 // Test rigid body constructor passing a string name.
 GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
   const std::string kLinkName = "LinkName";
-  // For this test the numerical values of the spatial intertia are not
+  // For this test the numerical values of the spatial inertia are not
   // important and therefore it is left uninitialized.
   const SpatialInertia<double> M_Bo_B;
   const RigidBody<double> B("LinkName", M_Bo_B);

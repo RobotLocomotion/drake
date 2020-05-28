@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/attic_warning.h"
 #include "drake/common/autodiff.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
@@ -138,6 +139,9 @@ template <typename T>
 RigidBodyTree<T>::RigidBodyTree()
     : collision_model_(drake::multibody::collision::newModel()) {
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+  drake::internal::WarnOnceAboutAtticCode();
+
   // Sets the gravity vector.
   a_grav << 0, 0, 0, 0, 0, -9.81;
 

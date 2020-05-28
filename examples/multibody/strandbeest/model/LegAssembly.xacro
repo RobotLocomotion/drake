@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<!-- @author: Joseph Masterjohn (github: @joemasterjohn)
+     @author: Robin Deits (github: @rdeits)
+
+     These files are an adaptation of the original Strandbeest example in
+     Drake, written by Robin Deits:
+       
+     https://github.com/RobotLocomotion/drake/blob/last_sha_with_original_matlab/drake/examples/Strandbeest/
+-->
+<robot xmlns:drake="http://drake.mit.edu"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
+    xmlns:xacro="http://ros.org/wiki/xacro" name="LegAssembly">
+
+  <xacro:include filename="Macros.xacro" />
+
+  <xacro:macro name="strandbeest_leg" params="prefix">
+
+    <!-- Links -->
+
+    <link name="${prefix}_bar_j">
+      <xacro:strandbeest_cylinder xyz="0 0 0.25" rpy="0 0 0" length="0.50"
+          radius="0.01" material="tri_grey" />
+    </link>
+
+    <link name="${prefix}_bar_k">
+      <xacro:strandbeest_cylinder xyz="0 0 0.3095" rpy="0 0 0" length="0.619"
+          radius="0.01" material="tri_grey" />
+    </link>
+
+    <link name="${prefix}_bar_c">
+      <xacro:strandbeest_cylinder xyz="0 0 0.1965" rpy="0 0 0" length="0.393"
+          radius="0.01" material="tri_grey" />
+    </link>
+
+    <link name="${prefix}_bar_g">
+      <xacro:strandbeest_cylinder xyz="0 0 0.245" rpy="0 0 0" length="0.49"
+          radius="0.01" material="tri_black" />
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0.49" />
+        <geometry>
+          <sphere radius="0.02" />
+        </geometry>
+        <drake_compliance>
+          <static_friction>1</static_friction>
+          <dynamic_friction>0.6</dynamic_friction>
+        </drake_compliance>
+      </collision>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0.49" />
+        <geometry>
+          <sphere radius="0.02" />
+        </geometry>
+        <material name="tri_red" />
+      </visual>
+    </link>
+
+    <link name="${prefix}_bar_h">
+      <xacro:strandbeest_cylinder xyz="0.1812 0 -0.0291" rpy="0 1.73 0"
+          length="0.367" radius="0.01" material="tri_black" />
+    </link>
+
+    <link name="${prefix}_bar_i">
+      <xacro:strandbeest_cylinder xyz="0.1811 0 0.2159" rpy="0 2.5576 0"
+          length="0.657" radius="0.01" material="tri_black" />
+    </link>
+
+    <link name="${prefix}_bar_b">
+      <xacro:strandbeest_cylinder xyz="0 0 0.279" rpy="0 0 0" length="0.558"
+          radius="0.01" material="tri_black" />
+    </link>
+
+    <link name="${prefix}_bar_d">
+      <xacro:strandbeest_cylinder xyz="-0.1488 0 0.4236" rpy="0 -2.3056 0"
+          length="0.401" radius="0.01" material="tri_black" />
+    </link>
+
+    <link name="${prefix}_bar_e">
+      <xacro:strandbeest_cylinder xyz="-0.1489 0 0.1446" rpy="0 -0.8 0"
+          length="0.415" radius="0.01" material="tri_black" />
+    </link>
+
+    <link name="${prefix}_bar_f">
+      <xacro:strandbeest_cylinder xyz="0 0 0.197" rpy="0 0 0" length="0.394"
+          radius="0.01" material="tri_grey" />
+    </link>
+
+    <!-- Joints -->
+
+    <joint name="${prefix}_joint_j_k" type="revolute">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_bar_j" />
+      <child link="${prefix}_bar_k" />
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <limit lower="-1.8" upper="-1.1" effort="0" velocity="1000" />
+    </joint>
+
+    <joint name="${prefix}_joint_k_c" type="revolute">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_bar_k" />
+      <child link="${prefix}_bar_c" />
+      <origin rpy="0 0 0" xyz="0 0 0.619" />
+      <limit lower="${pi/2}" upper="${pi}" effort="0" velocity="1000" />
+    </joint>
+
+    <joint name="${prefix}_joint_g_h" type="fixed">
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <parent link="${prefix}_bar_g" />
+      <child link="${prefix}_bar_h" />
+    </joint>
+
+    <joint name="${prefix}_joint_g_i" type="fixed">
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <parent link="${prefix}_bar_g" />
+      <child link="${prefix}_bar_i" />
+    </joint>
+
+    <joint name="${prefix}_joint_k_g" type="revolute">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_bar_k" />
+      <child link="${prefix}_bar_g" />
+      <origin rpy="0 0 0" xyz="0 0 0.619" />
+      <limit lower="-2" upper="-0.05" effort="0" velocity="1000" />
+    </joint>
+
+    <joint name="${prefix}_joint_b_d" type="fixed">
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <parent link="${prefix}_bar_b" />
+      <child link="${prefix}_bar_d" />
+    </joint>
+
+    <joint name="${prefix}_joint_b_e" type="fixed">
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <parent link="${prefix}_bar_b" />
+      <child link="${prefix}_bar_e" />
+    </joint>
+
+    <joint name="${prefix}_joint_j_b" type="revolute">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_bar_j" />
+      <child link="${prefix}_bar_b" />
+      <origin rpy="0 0 0" xyz="0 0 0.50" />
+      <limit lower="-1.9" upper="-1.0" effort="0" velocity="1000" />
+    </joint>
+
+    <joint name="${prefix}_joint_b_f" type="revolute">
+      <axis xyz="0 1 0" />
+      <parent link="${prefix}_bar_b" />
+      <child link="${prefix}_bar_f" />
+      <origin rpy="0 0 0" xyz="0 0 0.558" />
+      <limit lower="-1.7" upper="0.4" effort="0" velocity="1000" />
+    </joint>
+
+    <!-- Custom Bushing Elements -->
+
+    <frame name="${prefix}_loop_f_g_bushing_frameA"
+        link="${prefix}_bar_f"
+        rpy="${-pi/2} 0 0"
+        xyz="0 0 0.394" />
+    <frame name="${prefix}_loop_f_g_bushing_frameC"
+        link="${prefix}_bar_g"
+        rpy="${-pi/2} 0 0"
+        xyz="0.3624 0 -0.0582" />
+    <drake:linear_bushing_rpy>
+      <drake:bushing_frameA name="${prefix}_loop_f_g_bushing_frameA" />
+      <drake:bushing_frameC name="${prefix}_loop_f_g_bushing_frameC" />
+      <drake:bushing_torque_stiffness
+          value="${torque_stiffness} ${torque_stiffness} 0" />
+      <drake:bushing_torque_damping
+          value="${torque_damping} ${torque_damping} 0" />
+      <drake:bushing_force_stiffness
+          value="${force_stiffness} ${force_stiffness} ${force_stiffness}" />
+      <drake:bushing_force_damping
+          value="${force_damping} ${force_damping} ${force_damping}" />
+    </drake:linear_bushing_rpy>
+
+    <frame name="${prefix}_loop_b_c_bushing_frameA"
+        link="${prefix}_bar_b"
+        rpy="${-pi/2} 0 0"
+        xyz="-0.2978 0 0.2892" />
+    <frame name="${prefix}_loop_b_c_bushing_frameC"
+        link="${prefix}_bar_c"
+        rpy="${-pi/2} 0 0"
+        xyz="0 0 0.393" />
+    <drake:linear_bushing_rpy>
+      <drake:bushing_frameA name="${prefix}_loop_b_c_bushing_frameA" />
+      <drake:bushing_frameC name="${prefix}_loop_b_c_bushing_frameC" />
+      <drake:bushing_torque_stiffness
+          value="${torque_stiffness} ${torque_stiffness} 0" />
+      <drake:bushing_torque_damping
+          value="${torque_damping} ${torque_damping} 0" />
+      <drake:bushing_force_stiffness
+          value="${force_stiffness} ${force_stiffness} ${force_stiffness}" />
+      <drake:bushing_force_damping
+          value="${force_damping} ${force_damping} ${force_damping}" />
+    </drake:linear_bushing_rpy>
+  </xacro:macro>
+</robot>
+

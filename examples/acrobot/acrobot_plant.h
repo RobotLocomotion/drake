@@ -87,17 +87,22 @@ class AcrobotPlant : public systems::LeafSystem<T> {
     return this->template GetNumericParameter<AcrobotParams>(context, 0);
   }
 
- protected:
-  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
-  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
-
  private:
   void CopyStateOut(const systems::Context<T>& context,
                     AcrobotState<T>* output) const;
 
+  T DoCalcKineticEnergy(const systems::Context<T>& context) const override;
+
+  T DoCalcPotentialEnergy(const systems::Context<T>& context) const override;
+
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void DoCalcImplicitTimeDerivativesResidual(
+    const systems::Context<T>& context,
+    const systems::ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const override;
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.

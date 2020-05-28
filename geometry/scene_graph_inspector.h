@@ -1,12 +1,13 @@
 #pragma once
 
+#include <memory>
 #include <set>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/shape_specification.h"
@@ -124,22 +125,12 @@ class SceneGraphInspector {
     return state_->NumDynamicGeometries();
   }
 
-  DRAKE_DEPRECATED("2020-05-01", "Use NumDynamicGeometries() instead.")
-  int GetNumDynamicGeometries() const {
-    return NumDynamicGeometries();
-  }
-
   /** Reports the total number of _anchored_ geometries. This should provide
    the same answer as calling NumGeometriesForFrame() with the world frame id.
    */
   int NumAnchoredGeometries() const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->NumAnchoredGeometries();
-  }
-
-  DRAKE_DEPRECATED("2020-05-01", "Use NumAnchoredGeometries() instead.")
-  int GetNumAnchoredGeometries() const {
-    return NumAnchoredGeometries();
   }
 
   /** Returns all pairs of geometries that are candidates for collision (in no
@@ -396,6 +387,15 @@ class SceneGraphInspector {
     DRAKE_DEMAND(state_ != nullptr);
     state_->GetShape(id).Reify(reifier);
   }
+
+  /** Obtains a new GeometryInstance that copies the geometry indicated by the
+   given `id`.
+   @return A new GeometryInstance that is ready to be added as a new geometry.
+           All roles/properties will be copied, the shape will be cloned based
+           off of the original, but the returned id() will completely unique.
+   @throws std::logic_error if the `id` does not refer to a valid geometry.  */
+  std::unique_ptr<GeometryInstance>
+  CloneGeometryInstance(GeometryId id) const;
 
   //@}
 

@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 try:
     import tkinter as tk
@@ -19,7 +20,7 @@ from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
-from pydrake.systems.primitives import FirstOrderLowPassFilter
+from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.systems.planar_scenegraph_visualizer import \
     PlanarSceneGraphVisualizer
@@ -168,170 +169,208 @@ class EndEffectorTeleop(LeafSystem):
         output.SetAtIndex(5, self.z.get())
 
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument(
-    "--target_realtime_rate", type=float, default=1.0,
-    help="Desired rate relative to real time.  See documentation for "
-         "Simulator::set_target_realtime_rate() for details.")
-parser.add_argument(
-    "--duration", type=float, default=np.inf,
-    help="Desired duration of the simulation in seconds.")
-parser.add_argument(
-    "--hardware", action='store_true',
-    help="Use the ManipulationStationHardwareInterface instead of an "
-         "in-process simulation.")
-parser.add_argument(
-    "--test", action='store_true',
-    help="Disable opening the gui window for testing.")
-parser.add_argument(
-    "--filter_time_const", type=float, default=0.1,
-    help="Time constant for the first order low pass filter applied to"
-         "the teleop commands")
-parser.add_argument(
-    "--velocity_limit_factor", type=float, default=1.0,
-    help="This value, typically between 0 and 1, further limits the iiwa14 "
-         "joint velocities. It multiplies each of the seven pre-defined "
-         "joint velocity limits. "
-         "Note: The pre-defined velocity limits are specified by "
-         "iiwa14_velocity_limits, found in this python file.")
-parser.add_argument(
-    '--setup', type=str, default='manipulation_class',
-    help="The manipulation station setup to simulate. ",
-    choices=['manipulation_class', 'clutter_clearing', 'planar'])
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--target_realtime_rate", type=float, default=1.0,
+        help="Desired rate relative to real time.  See documentation for "
+             "Simulator::set_target_realtime_rate() for details.")
+    parser.add_argument(
+        "--duration", type=float, default=np.inf,
+        help="Desired duration of the simulation in seconds.")
+    parser.add_argument(
+        "--hardware", action='store_true',
+        help="Use the ManipulationStationHardwareInterface instead of an "
+             "in-process simulation.")
+    parser.add_argument(
+        "--test", action='store_true',
+        help="Disable opening the gui window for testing.")
+    parser.add_argument(
+        "--filter_time_const", type=float, default=0.1,
+        help="Time constant for the first order low pass filter applied to"
+             "the teleop commands")
+    parser.add_argument(
+        "--velocity_limit_factor", type=float, default=1.0,
+        help="This value, typically between 0 and 1, further limits the "
+             "iiwa14 joint velocities. It multiplies each of the seven "
+             "pre-defined joint velocity limits. "
+             "Note: The pre-defined velocity limits are specified by "
+             "iiwa14_velocity_limits, found in this python file.")
+    parser.add_argument(
+        '--setup', type=str, default='manipulation_class',
+        help="The manipulation station setup to simulate. ",
+        choices=['manipulation_class', 'clutter_clearing', 'planar'])
 
-MeshcatVisualizer.add_argparse_argument(parser)
-args = parser.parse_args()
+    MeshcatVisualizer.add_argparse_argument(parser)
+    args = parser.parse_args()
 
-builder = DiagramBuilder()
+    builder = DiagramBuilder()
 
-if args.hardware:
-    station = builder.AddSystem(ManipulationStationHardwareInterface())
-    station.Connect(wait_for_cameras=False)
-else:
-    station = builder.AddSystem(ManipulationStation())
-
-    # Initializes the chosen station type.
-    if args.setup == 'manipulation_class':
-        station.SetupManipulationClassStation()
-        station.AddManipulandFromFile(
-            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
-            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
-    elif args.setup == 'clutter_clearing':
-        station.SetupClutterClearingStation()
-        ycb_objects = CreateClutterClearingYcbObjectList()
-        for model_file, X_WObject in ycb_objects:
-            station.AddManipulandFromFile(model_file, X_WObject)
-    elif args.setup == 'planar':
-        station.SetupPlanarIiwaStation()
-        station.AddManipulandFromFile(
-            "drake/examples/manipulation_station/models/061_foam_brick.sdf",
-            RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
-
-    station.Finalize()
-
-    # If using meshcat, don't render the cameras, since RgbdCamera rendering
-    # only works with drake-visualizer. Without this check, running this code
-    # in a docker container produces libGL errors.
-    if args.meshcat:
-        meshcat = builder.AddSystem(MeshcatVisualizer(
-            station.get_scene_graph(), zmq_url=args.meshcat,
-            open_browser=args.open_browser))
-        builder.Connect(station.GetOutputPort("pose_bundle"),
-                        meshcat.get_input_port(0))
-    elif args.setup == 'planar':
-        pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
-            station.get_scene_graph()))
-        builder.Connect(station.GetOutputPort("pose_bundle"),
-                        pyplot_visualizer.get_input_port(0))
+    if args.hardware:
+        station = builder.AddSystem(ManipulationStationHardwareInterface())
+        station.Connect(wait_for_cameras=False)
     else:
-        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                               station.GetOutputPort("pose_bundle"))
-        image_to_lcm_image_array = builder.AddSystem(ImageToLcmImageArrayT())
-        image_to_lcm_image_array.set_name("converter")
-        for name in station.get_camera_names():
-            cam_port = (
-                image_to_lcm_image_array
-                .DeclareImageInputPort[PixelType.kRgba8U]("camera_" + name))
+        station = builder.AddSystem(ManipulationStation())
+
+        # Initializes the chosen station type.
+        if args.setup == 'manipulation_class':
+            station.SetupManipulationClassStation()
+            station.AddManipulandFromFile(
+                "drake/examples/manipulation_station/models/"
+                + "061_foam_brick.sdf",
+                RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
+        elif args.setup == 'clutter_clearing':
+            station.SetupClutterClearingStation()
+            ycb_objects = CreateClutterClearingYcbObjectList()
+            for model_file, X_WObject in ycb_objects:
+                station.AddManipulandFromFile(model_file, X_WObject)
+        elif args.setup == 'planar':
+            station.SetupPlanarIiwaStation()
+            station.AddManipulandFromFile(
+                "drake/examples/manipulation_station/models/"
+                + "061_foam_brick.sdf",
+                RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
+
+        station.Finalize()
+
+        # If using meshcat, don't render the cameras, since RgbdCamera
+        # rendering only works with drake-visualizer. Without this check,
+        # running this code in a docker container produces libGL errors.
+        if args.meshcat:
+            meshcat = builder.AddSystem(MeshcatVisualizer(
+                station.get_scene_graph(), zmq_url=args.meshcat,
+                open_browser=args.open_browser))
+            builder.Connect(station.GetOutputPort("pose_bundle"),
+                            meshcat.get_input_port(0))
+        elif args.setup == 'planar':
+            pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
+                station.get_scene_graph()))
+            builder.Connect(station.GetOutputPort("pose_bundle"),
+                            pyplot_visualizer.get_input_port(0))
+        else:
+            ConnectDrakeVisualizer(builder, station.get_scene_graph(),
+                                   station.GetOutputPort("pose_bundle"))
+            image_to_lcm_image_array = builder.AddSystem(
+                ImageToLcmImageArrayT())
+            image_to_lcm_image_array.set_name("converter")
+            for name in station.get_camera_names():
+                cam_port = (
+                    image_to_lcm_image_array
+                    .DeclareImageInputPort[PixelType.kRgba8U](
+                        "camera_" + name))
+                builder.Connect(
+                    station.GetOutputPort("camera_" + name + "_rgb_image"),
+                    cam_port)
+
+            image_array_lcm_publisher = builder.AddSystem(
+                LcmPublisherSystem.Make(
+                    channel="DRAKE_RGBD_CAMERA_IMAGES",
+                    lcm_type=image_array_t,
+                    lcm=None,
+                    publish_period=0.1,
+                    use_cpp_serializer=True))
+            image_array_lcm_publisher.set_name("rgbd_publisher")
             builder.Connect(
-                station.GetOutputPort("camera_" + name + "_rgb_image"),
-                cam_port)
+                image_to_lcm_image_array.image_array_t_msg_output_port(),
+                image_array_lcm_publisher.get_input_port(0))
 
-        image_array_lcm_publisher = builder.AddSystem(
-            LcmPublisherSystem.Make(
-                channel="DRAKE_RGBD_CAMERA_IMAGES",
-                lcm_type=image_array_t,
-                lcm=None,
-                publish_period=0.1,
-                use_cpp_serializer=True))
-        image_array_lcm_publisher.set_name("rgbd_publisher")
-        builder.Connect(
-            image_to_lcm_image_array.image_array_t_msg_output_port(),
-            image_array_lcm_publisher.get_input_port(0))
+    robot = station.get_controller_plant()
+    params = DifferentialInverseKinematicsParameters(robot.num_positions(),
+                                                     robot.num_velocities())
 
-robot = station.get_controller_plant()
-params = DifferentialInverseKinematicsParameters(robot.num_positions(),
-                                                 robot.num_velocities())
+    time_step = 0.005
+    params.set_timestep(time_step)
+    # True velocity limits for the IIWA14 (in rad, rounded down to the first
+    # decimal)
+    iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
+    if args.setup == 'planar':
+        # Extract the 3 joints that are not welded in the planar version.
+        iiwa14_velocity_limits = iiwa14_velocity_limits[1:6:2]
+        # The below constant is in body frame.
+        params.set_end_effector_velocity_gain([1, 0, 0, 0, 1, 1])
+    # Stay within a small fraction of those limits for this teleop demo.
+    factor = args.velocity_limit_factor
+    params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
+                                      factor*iiwa14_velocity_limits))
+    differential_ik = builder.AddSystem(DifferentialIK(
+        robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
 
-time_step = 0.005
-params.set_timestep(time_step)
-# True velocity limits for the IIWA14 (in rad, rounded down to the first
-# decimal)
-iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
-if args.setup == 'planar':
-    # Extract the 3 joints that are not welded in the planar version.
-    iiwa14_velocity_limits = iiwa14_velocity_limits[1:6:2]
-    params.set_end_effector_velocity_gain([1, 0, 0, 0, 1, 1])  # in body frame.
-# Stay within a small fraction of those limits for this teleop demo.
-factor = args.velocity_limit_factor
-params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
-                                  factor*iiwa14_velocity_limits))
-differential_ik = builder.AddSystem(DifferentialIK(
-    robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
+    builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
+                    station.GetInputPort("iiwa_position"))
 
-builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
-                station.GetInputPort("iiwa_position"))
+    teleop = builder.AddSystem(EndEffectorTeleop(args.setup == 'planar'))
+    if args.test:
+        teleop.window.withdraw()  # Don't display the window when testing.
+    filter = builder.AddSystem(
+        FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
-teleop = builder.AddSystem(EndEffectorTeleop(args.setup == 'planar'))
-if args.test:
-    teleop.window.withdraw()  # Don't display the window when testing.
-filter = builder.AddSystem(
-    FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
+    builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
+    builder.Connect(filter.get_output_port(0),
+                    differential_ik.GetInputPort("rpy_xyz_desired"))
 
-builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
-builder.Connect(filter.get_output_port(0),
-                differential_ik.GetInputPort("rpy_xyz_desired"))
+    wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
+    builder.Connect(wsg_buttons.GetOutputPort("position"),
+                    station.GetInputPort("wsg_position"))
+    builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
+                    station.GetInputPort("wsg_force_limit"))
 
-wsg_buttons = builder.AddSystem(SchunkWsgButtons(teleop.window))
-builder.Connect(wsg_buttons.GetOutputPort("position"), station.GetInputPort(
-    "wsg_position"))
-builder.Connect(wsg_buttons.GetOutputPort("force_limit"),
-                station.GetInputPort("wsg_force_limit"))
+    # When in regression test mode, log our joint velocities to later check
+    # that they were sufficiently quiet.
+    num_iiwa_joints = station.num_iiwa_joints()
+    if args.test:
+        iiwa_velocities = builder.AddSystem(SignalLogger(num_iiwa_joints))
+        builder.Connect(station.GetOutputPort("iiwa_velocity_estimated"),
+                        iiwa_velocities.get_input_port(0))
+    else:
+        iiwa_velocities = None
 
-diagram = builder.Build()
-simulator = Simulator(diagram)
+    diagram = builder.Build()
+    simulator = Simulator(diagram)
 
-# This is important to avoid duplicate publishes to the hardware interface:
-simulator.set_publish_every_time_step(False)
+    # This is important to avoid duplicate publishes to the hardware interface:
+    simulator.set_publish_every_time_step(False)
 
-station_context = diagram.GetMutableSubsystemContext(
-    station, simulator.get_mutable_context())
+    station_context = diagram.GetMutableSubsystemContext(
+        station, simulator.get_mutable_context())
 
-station.GetInputPort("iiwa_feedforward_torque").FixValue(
-    station_context, np.zeros(station.num_iiwa_joints()))
+    station.GetInputPort("iiwa_feedforward_torque").FixValue(
+        station_context, np.zeros(num_iiwa_joints))
 
-simulator.AdvanceTo(1e-6)
-q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-    station_context)
-differential_ik.parameters.set_nominal_joint_position(q0)
+    # If the diagram is only the hardware interface, then we must advance it a
+    # little bit so that first LCM messages get processed. A simulated plant is
+    # already publishing correct positions even without advancing, and indeed
+    # we must not advance a simulated plant until the sliders and filters have
+    # been initialized to match the plant.
+    if args.hardware:
+        simulator.AdvanceTo(1e-6)
 
-teleop.SetPose(differential_ik.ForwardKinematics(q0))
-filter.set_initial_output_value(
-    diagram.GetMutableSubsystemContext(
-        filter, simulator.get_mutable_context()),
-    teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
-        teleop, simulator.get_mutable_context())))
-differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
-    differential_ik, simulator.get_mutable_context()), q0)
+    q0 = station.GetOutputPort("iiwa_position_measured").Eval(
+        station_context)
+    differential_ik.parameters.set_nominal_joint_position(q0)
 
-simulator.set_target_realtime_rate(args.target_realtime_rate)
-simulator.AdvanceTo(args.duration)
+    teleop.SetPose(differential_ik.ForwardKinematics(q0))
+    filter.set_initial_output_value(
+        diagram.GetMutableSubsystemContext(
+            filter, simulator.get_mutable_context()),
+        teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
+            teleop, simulator.get_mutable_context())))
+    differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
+        differential_ik, simulator.get_mutable_context()), q0)
+
+    simulator.set_target_realtime_rate(args.target_realtime_rate)
+    simulator.AdvanceTo(args.duration)
+
+    # Ensure that our initialization logic was correct, by inspecting our
+    # logged joint velocities.
+    if args.test:
+        for time, qdot in zip(iiwa_velocities.sample_times(),
+                              iiwa_velocities.data().transpose()):
+            # TODO(jwnimmer-tri) We should be able to do better than a 40
+            # rad/sec limit, but that's the best we can enforce for now.
+            if qdot.max() > 0.1:
+                print(f"ERROR: large qdot {qdot} at time {time}")
+                sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

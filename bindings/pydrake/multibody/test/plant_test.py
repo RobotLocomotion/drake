@@ -8,6 +8,7 @@ import warnings
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.multibody.tree import (
+    BallRpyJoint_,
     Body_,
     BodyIndex,
     DoorHinge_,
@@ -25,12 +26,15 @@ from pydrake.multibody.tree import (
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
+    PrismaticJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
+    RotationalInertia_,
     RigidBody_,
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
+    UniversalJoint_,
     WeldJoint_,
     world_index,
     world_model_instance,
@@ -50,6 +54,8 @@ from pydrake.multibody.plant import (
     ExternallyAppliedSpatialForce_,
     MultibodyPlant_,
     PointPairContactInfo_,
+    PropellerInfo,
+    Propeller_,
     VectorExternallyAppliedSpatialForced_,
 )
 from pydrake.multibody.parsing import Parser
@@ -59,11 +65,12 @@ from pydrake.multibody.benchmarks.acrobot import (
 )
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
     Box,
     GeometryId,
+    GeometrySet,
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
@@ -78,7 +85,6 @@ from pydrake.math import (
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
-    AbstractValue,
     BasicVector_,
     DiagramBuilder_,
     System_,
@@ -139,15 +145,6 @@ class TestPlant(unittest.TestCase):
         if nonzero:
             numpy_compare.assert_float_not_equal(x, 0.)
 
-    def test_deprecated_zero_argument_constructor(self):
-        with catch_drake_warnings(expected_count=1):
-            MultibodyPlant_[float]()
-
-    def test_deprecated_construction_api(self):
-        builder = DiagramBuilder_[float]()
-        with catch_drake_warnings(expected_count=1):
-            AddMultibodyPlantSceneGraph(builder)
-
     @numpy_compare.check_nonsymbolic_types
     def test_multibody_plant_construction_api(self, T):
         # SceneGraph does not support `Expression` type.
@@ -158,6 +155,7 @@ class TestPlant(unittest.TestCase):
 
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        self.assertEqual(plant.time_step(), 0.0)
         spatial_inertia = SpatialInertia()
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
@@ -282,6 +280,7 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             plant.GetFrameByName(name="Link1"),
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(
             model_instance, plant.GetModelInstanceByName(name="acrobot"))
         self.assertIsInstance(
@@ -342,14 +341,31 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint.velocity_start(), int)
 
         nq = joint.num_positions()
+
+        q_default = joint.default_positions()
+        self.assertEqual(len(q_default), nq)
+        joint.set_default_positions(default_positions=q_default)
+
+        q_lower = joint.position_lower_limits()
+        self.assertEqual(len(q_lower), nq)
+        q_upper = joint.position_upper_limits()
+        self.assertEqual(len(q_upper), nq)
+        joint.set_position_limits(lower_limits=q_lower, upper_limits=q_upper)
+
         nv = joint.num_velocities()
 
-        self.assertEqual(len(joint.position_upper_limits()), nq)
-        self.assertEqual(len(joint.position_lower_limits()), nq)
-        self.assertEqual(len(joint.velocity_upper_limits()), nv)
-        self.assertEqual(len(joint.velocity_lower_limits()), nv)
-        self.assertEqual(len(joint.acceleration_upper_limits()), nv)
-        self.assertEqual(len(joint.acceleration_lower_limits()), nv)
+        v_lower = joint.velocity_lower_limits()
+        self.assertEqual(len(v_lower), nv)
+        v_upper = joint.velocity_upper_limits()
+        self.assertEqual(len(v_upper), nv)
+        joint.set_velocity_limits(lower_limits=v_lower, upper_limits=v_upper)
+
+        a_lower = joint.acceleration_lower_limits()
+        self.assertEqual(len(a_lower), nv)
+        a_upper = joint.acceleration_upper_limits()
+        self.assertEqual(len(a_upper), nv)
+        joint.set_acceleration_limits(
+            lower_limits=a_lower, upper_limits=a_upper)
 
     def _test_joint_actuator_api(self, T, joint_actuator):
         JointActuator = JointActuator_[T]
@@ -358,6 +374,7 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, joint_actuator)
         self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
+        self.assertIsInstance(joint_actuator.effort_limit(), float)
 
     def check_old_spelling_exists(self, value):
         # Just to make it obvious when this is being tested.
@@ -365,13 +382,28 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_inertia_api(self, T):
+        RotationalInertia = RotationalInertia_[T]
         UnitInertia = UnitInertia_[T]
         SpatialInertia = SpatialInertia_[T]
+        # Test unit inertia construction.
         UnitInertia()
         unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
+        self.assertIsInstance(unit_inertia, RotationalInertia)
+        self.assertIsInstance(unit_inertia.CopyToFullMatrix3(), np.ndarray)
+        # Test spatial inertia construction.
         SpatialInertia()
-        SpatialInertia(mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
-                       G_SP_E=unit_inertia)
+        spatial_inertia = SpatialInertia(
+            mass=2.5, p_PScm_E=[0.1, -0.2, 0.3], G_SP_E=unit_inertia)
+        numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
+        self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
+        self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
+        self.assertIsInstance(
+            spatial_inertia.CalcRotationalInertia(), RotationalInertia)
+        # N.B. `numpy_compare.assert_equal(IsPhysicallyValid(), True)` does not
+        # work.
+        if T != Expression:
+            self.assertTrue(spatial_inertia.IsPhysicallyValid())
+        self.assertIsInstance(spatial_inertia.CopyToFullMatrix6(), np.ndarray)
 
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
@@ -482,22 +514,22 @@ class TestPlant(unittest.TestCase):
             (JacobianWrtVariable.kV, nv),
         ]
         for wrt, nw in wrt_list:
-            Jw_ABp_E = plant.CalcJacobianSpatialVelocity(
+            Js_V_ABp_E = plant.CalcJacobianSpatialVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BP=np.zeros(3), frame_A=world_frame,
                 frame_E=world_frame)
-            self.assert_sane(Jw_ABp_E)
-            self.assertEqual(Jw_ABp_E.shape, (6, nw))
-            Jw_w_AB_E = plant.CalcJacobianAngularVelocity(
+            self.assert_sane(Js_V_ABp_E)
+            self.assertEqual(Js_V_ABp_E.shape, (6, nw))
+            Js_w_AB_E = plant.CalcJacobianAngularVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 frame_A=world_frame, frame_E=world_frame)
-            self.assert_sane(Jw_w_AB_E)
-            self.assertEqual(Jw_w_AB_E.shape, (3, nw))
-            Jw_v_AB_E = plant.CalcJacobianTranslationalVelocity(
+            self.assert_sane(Js_w_AB_E)
+            self.assertEqual(Js_w_AB_E.shape, (3, nw))
+            Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BoBi_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
-            self.assert_sane(Jw_v_AB_E)
-            self.assertEqual(Jw_v_AB_E.shape, (3, nw))
+            self.assert_sane(Js_v_AB_E)
+            self.assertEqual(Js_v_AB_E.shape, (3, nw))
 
         # Compute body pose.
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
@@ -605,7 +637,11 @@ class TestPlant(unittest.TestCase):
 
         # Test existence of default free body pose setting.
         body = plant.GetBodyByName("Link1")
-        plant.SetDefaultFreeBodyPose(body=body, X_WB=RigidTransform_[float]())
+        X_WB_default = RigidTransform_[float]()
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=X_WB_default)
+        numpy_compare.assert_float_equal(
+            plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
+            X_WB_default.GetAsMatrix4())
 
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
@@ -617,6 +653,8 @@ class TestPlant(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_model_instance_port_access(self, T):
+        # N.B. We actually test the values because some of the value bindings
+        # are somewhat special snowflakes.
         MultibodyPlant = MultibodyPlant_[T]
         InputPort = InputPort_[T]
         OutputPort = OutputPort_[T]
@@ -625,10 +663,10 @@ class TestPlant(unittest.TestCase):
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
@@ -640,21 +678,51 @@ class TestPlant(unittest.TestCase):
             file_name=wsg50_sdf_path, model_name='gripper')
         plant_f.Finalize()
         plant = to_type(plant_f, T)
+        models = [iiwa_model, gripper_model]
 
-        # Test that we can get an actuation input port and a continuous state
-        # output port.
-        self.assertIsInstance(
-            plant.get_actuation_input_port(iiwa_model), InputPort)
-        self.assertIsInstance(
-            plant.get_state_output_port(gripper_model), OutputPort)
-        self.assertIsInstance(
-            plant.get_generalized_acceleration_output_port(
-                model_instance=gripper_model),
-            OutputPort)
-        self.assertIsInstance(
-            plant.get_generalized_contact_forces_output_port(
-                model_instance=gripper_model),
-            OutputPort)
+        # Fix inputs.
+        context = plant.CreateDefaultContext()
+        for model in models:
+            nu = plant.num_actuated_dofs(model)
+            plant.get_actuation_input_port(model_instance=model).FixValue(
+                context, np.zeros(nu))
+
+        # Evaluate outputs.
+        for model in models:
+            self.assertIsInstance(
+                plant.get_state_output_port(
+                    model_instance=model).Eval(context),
+                np.ndarray)
+            if T == Expression:
+                continue
+            self.assertIsInstance(
+                plant.get_generalized_acceleration_output_port(
+                    model_instance=model).Eval(context),
+                np.ndarray)
+            self.assertIsInstance(
+                plant.get_generalized_contact_forces_output_port(
+                    model_instance=model).Eval(context),
+                np.ndarray)
+
+        def check_output_port_that_cannot_be_used_in_python(port):
+            self.assertIsInstance(port, OutputPort)
+            if T == Expression:
+                return
+            with self.assertRaises(RuntimeError) as cm:
+                port.Eval(context)
+            self.assertIn("`get_value` cannot be called", str(cm.exception))
+
+        # TODO(eric.cousineau): Make `Value[List[T]]` work so we can test Eval
+        # for these items (#13387). Currently, these ports cannot be used for
+        # Python systems.
+        check_output_port_that_cannot_be_used_in_python(
+            plant.get_body_poses_output_port())
+        check_output_port_that_cannot_be_used_in_python(
+            plant.get_body_spatial_velocities_output_port())
+        check_output_port_that_cannot_be_used_in_python(
+            plant.get_body_spatial_accelerations_output_port())
+        # TODO(eric.cousineau): Merge `check_applied_force_input_ports` into
+        # this test.
 
     @TemplateSystem.define("AppliedForceTestSystem_")
     def AppliedForceTestSystem_(T):
@@ -695,10 +763,8 @@ class TestPlant(unittest.TestCase):
         return Impl
 
     def test_applied_force_input_ports(self):
-        # TODO(eric.cousineau): Figure out why `pybind11/stl_bind.h` does not
-        # like `VectorExternallyAppliedSpatialForced_` and throws
-        # `ValueError: vector::reserve` #11648.
         self.check_applied_force_input_ports(float)
+        self.check_applied_force_input_ports(AutoDiffXd)
 
     def check_applied_force_input_ports(self, T):
         # Create a MultibodyPlant, and ensure that a secondary system can
@@ -752,10 +818,10 @@ class TestPlant(unittest.TestCase):
         RollPitchYaw = RollPitchYaw_[T]
 
         wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
@@ -897,10 +963,10 @@ class TestPlant(unittest.TestCase):
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
         iiwa_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/" +
+            "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         timestep = 0.0002
@@ -1041,58 +1107,125 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_multibody_add_joint(self, T):
         """
-        Tests joint constructors and `AddJoint`.
+        Tests joint constructors, `AddJoint`, `AddJointActuator` and
+        `HasJointActuatorNamed`.
         """
-        MultibodyPlant = MultibodyPlant_[T]
-        RigidTransform = RigidTransform_[T]
-        RollPitchYaw = RollPitchYaw_[T]
+        damping = 2.
+        x_axis = [1., 0., 0.]
+        X_PC = RigidTransform_[float](p=[1., 2., 3.])
 
-        instance_file = FindResourceOrThrow(
-            "drake/bindings/pydrake/multibody/test/double_pendulum.sdf")
-        # Add different joints between multiple model instances.
-        # TODO(eric.cousineau): Remove the multiple instances and use
-        # programmatically constructed bodies once this API is exposed in
-        # Python.
-        num_joints = 2
-        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float](0.0)
-        parser = Parser(plant_f)
-        instances = []
-        for i in range(num_joints + 1):
-            instance = parser.AddModelFromFile(
-                instance_file, "instance_{}".format(i))
-            instances.append(instance)
-        proximal_frame = "base"
-        distal_frame = "lower_link"
-        joints_f = [
-            RevoluteJoint_[float](
-                name="revolve_things",
-                frame_on_parent=plant_f.GetBodyByName(
-                    distal_frame, instances[1]).body_frame(),
-                frame_on_child=plant_f.GetBodyByName(
-                    proximal_frame, instances[2]).body_frame(),
-                axis=[0, 0, 1],
-                damping=0.),
-            WeldJoint_[float](
-                name="weld_things",
-                parent_frame_P=plant_f.GetBodyByName(
-                    distal_frame, instances[0]).body_frame(),
-                child_frame_C=plant_f.GetBodyByName(
-                    proximal_frame, instances[1]).body_frame(),
-                X_PC=RigidTransform_[float].Identity()),
+        def make_ball_rpy_joint(plant, P, C):
+            return BallRpyJoint_[T](
+                name="ball_rpy",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=damping,
+            )
+
+        def make_prismatic_joint(plant, P, C):
+            return PrismaticJoint_[T](
+                name="prismatic",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=x_axis,
+                damping=damping,
+            )
+
+        def make_revolute_joint(plant, P, C):
+            return RevoluteJoint_[T](
+                name="revolute",
+                frame_on_parent=P,
+                frame_on_child=C,
+                axis=x_axis,
+                damping=damping,
+            )
+
+        def make_universal_joint(plant, P, C):
+            return UniversalJoint_[T](
+                name="universal",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=damping,
+            )
+
+        def make_weld_joint(plant, P, C):
+            # TODO(eric.cousineau): Update WeldJoint arg names to be consistent
+            # with other joints.
+            return WeldJoint_[T](
+                name="weld",
+                parent_frame_P=P,
+                child_frame_C=C,
+                X_PC=X_PC,
+            )
+
+        make_joint_list = [
+            make_ball_rpy_joint,
+            make_prismatic_joint,
+            make_revolute_joint,
+            make_universal_joint,
+            make_weld_joint,
         ]
-        for joint_f in joints_f:
-            joint_out = plant_f.AddJoint(joint_f)
-            self.assertIs(joint_f, joint_out)
 
-        # The model is now complete.
-        plant_f.Finalize()
-        plant = to_type(plant_f, T)
-
-        for joint_f in joints_f:
-            # Not using `joint` because we converted the `plant_f` to `plant`
-            joint = plant.get_joint(joint_index=joint_f.index())
+        for make_joint in make_joint_list:
+            plant = MultibodyPlant_[T](0.0)
+            child = plant.AddRigidBody("Child", SpatialInertia_[float]())
+            joint = make_joint(
+                plant=plant, P=plant.world_frame(), C=child.body_frame())
+            joint_out = plant.AddJoint(joint)
+            self.assertIs(joint, joint_out)
+            if joint.num_velocities() == 1:
+                self.assertFalse(plant.HasJointActuatorNamed("tau"))
+                self.assertFalse(plant.HasJointActuatorNamed(
+                    "tau", default_model_instance()))
+                actuator = plant.AddJointActuator(
+                    name="tau", joint=joint, effort_limit=1.0)
+                self.assertTrue(plant.HasJointActuatorNamed("tau"))
+                self.assertTrue(plant.HasJointActuatorNamed(
+                    "tau", default_model_instance()))
+                self.assertIsInstance(actuator, JointActuator_[T])
+            plant.Finalize()
             self._test_joint_api(T, joint)
+
+            context = plant.CreateDefaultContext()
+            if joint.name() == "ball_rpy":
+                set_point = np.array([1., 2., 3.])
+                joint.set_angles(context=context, angles=set_point)
+                self.assertEqual(len(joint.get_angles(context=context)), 3)
+                joint.set_angular_velocity(context=context, w_FM=set_point)
+                self.assertEqual(
+                    len(joint.get_angular_velocity(context=context)), 3)
+            elif joint.name() == "prismatic":
+                self.assertEqual(joint.damping(), damping)
+                numpy_compare.assert_equal(joint.translation_axis(), x_axis)
+                set_point = 1.
+                joint.set_translation(context=context, translation=set_point)
+                self.assertIsInstance(
+                    joint.get_translation(context=context), T)
+                joint.set_translation_rate(context=context,
+                                           translation_dot=set_point)
+                self.assertIsInstance(
+                    joint.get_translation_rate(context=context), T)
+            elif joint.name() == "revolute":
+                numpy_compare.assert_equal(joint.revolute_axis(), x_axis)
+                self.assertEqual(joint.damping(), damping)
+                set_point = 1.
+                joint.set_angle(context=context, angle=set_point)
+                self.assertIsInstance(joint.get_angle(context=context), T)
+            elif joint.name() == "universal":
+                self.assertEqual(joint.damping(), damping)
+                set_point = np.array([1., 2.])
+                joint.set_angles(context=context, angles=set_point)
+                self.assertEqual(len(joint.get_angles(context=context)), 2)
+                joint.set_angular_rates(context=context, theta_dot=set_point)
+                self.assertEqual(
+                    len(joint.get_angular_rates(context=context)), 2)
+            elif joint.name() == "weld":
+                numpy_compare.assert_float_equal(
+                    joint.X_PC().GetAsMatrix4(),
+                    X_PC.GetAsMatrix4())
+            else:
+                raise TypeError(
+                    "Joint type " + joint.name() + " not recognized.")
 
     @numpy_compare.check_all_types
     def test_multibody_add_frame(self, T):
@@ -1156,6 +1289,9 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=True)
 
+        # Gravity is the only force element
+        self.assertEqual(plant.num_force_elements(), 1)
+
         B = plant.MakeActuationMatrix()
         numpy_compare.assert_float_equal(B, np.array([[0.], [1.]]))
 
@@ -1175,6 +1311,7 @@ class TestPlant(unittest.TestCase):
         link2 = plant.GetBodyByName("Link2")
         self.assertIsInstance(
             link2.GetForceInWorld(context, forces), SpatialForce)
+        self.assertFalse(link2.is_floating())
         forces.SetZero()
         F_expected = np.array([1., 2., 3., 4., 5., 6.])
         link2.AddInForceInWorld(
@@ -1233,6 +1370,10 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant_[float](0.0)
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
+        plant.set_penetration_allowance(penetration_allowance=0.0001)
+        plant.set_stiction_tolerance(v_stiction=0.001)
+        self.assertIsInstance(
+            plant.get_contact_penalty_method_time_scale(), float)
         contact_results_to_lcm = ContactResultsToLcmSystem(plant)
         context = contact_results_to_lcm.CreateDefaultContext()
         contact_results_to_lcm.get_input_port(0).FixValue(
@@ -1255,6 +1396,23 @@ class TestPlant(unittest.TestCase):
 
         publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
         self.assertIsInstance(publisher, LcmPublisherSystem)
+
+    def test_collision_filter(self):
+        builder_f = DiagramBuilder_[float]()
+        # N.B. `Parser` only supports `MultibodyPlant_[float]`.
+        plant_f, scene_graph_f = AddMultibodyPlantSceneGraph(builder_f, 0.0)
+        parser = Parser(plant=plant_f, scene_graph=scene_graph_f)
+
+        parser.AddModelFromFile(
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
+        plant_f.Finalize()
+
+        # Build a set with geometries from bodies 1 and 2.
+        body_a = plant_f.GetBodyByName("body1")
+        body_b = plant_f.GetBodyByName("body2")
+        geometries = plant_f.CollectRegisteredGeometries([body_a, body_b])
+        self.assertIsInstance(geometries, GeometrySet)
 
     @numpy_compare.check_nonsymbolic_types
     def test_scene_graph_queries(self, T):
@@ -1329,3 +1487,31 @@ class TestPlant(unittest.TestCase):
         id_, = plant.GetCollisionGeometriesForBody(
             body=plant.GetBodyByName("body1"))
         self.assertIsInstance(id_, GeometryId)
+
+    def test_propeller(self):
+        plant = MultibodyPlant_[float](time_step=0.0)
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        info = PropellerInfo(body_index=BodyIndex(1),
+                             X_BP=RigidTransform_[float](),
+                             thrust_ratio=1.0,
+                             moment_ratio=0.1)
+        self.assertEqual(info.thrust_ratio, 1.0)
+        self.assertEqual(info.moment_ratio, 0.1)
+
+        prop = Propeller_[float](body_index=BodyIndex(1),
+                                 X_BP=RigidTransform_[float](),
+                                 thrust_ratio=1.0,
+                                 moment_ratio=0.1)
+        self.assertEqual(prop.num_propellers(), 1)
+        self.assertIsInstance(prop.get_command_input_port(), InputPort_[float])
+        self.assertIsInstance(prop.get_body_poses_input_port(),
+                              InputPort_[float])
+        self.assertIsInstance(prop.get_spatial_forces_output_port(),
+                              OutputPort_[float])
+
+        prop2 = Propeller_[float]([info, info])
+        self.assertEqual(prop2.num_propellers(), 2)

@@ -2435,7 +2435,7 @@ GTEST_TEST(TestMathematicalProgram, TestL2NormCost) {
 symbolic::Monomial transform(const symbolic::Monomial& monomial,
                              const map<Variable::Id, Variable>& var_id_to_var) {
   // var_id_to_var should be chain-free.
-  for (const pair<Variable::Id, Variable>& p : var_id_to_var) {
+  for (const pair<const Variable::Id, Variable>& p : var_id_to_var) {
     const Variable& var{p.second};
     DRAKE_DEMAND(var_id_to_var.find(var.get_id()) == var_id_to_var.end());
   }
@@ -2470,7 +2470,7 @@ symbolic::Polynomial transform(
     const symbolic::Polynomial& poly,
     const map<Variable::Id, Variable>& var_id_to_var) {
   symbolic::Polynomial::MapType new_map;
-  for (const pair<symbolic::Monomial, symbolic::Expression>& p :
+  for (const pair<const symbolic::Monomial, symbolic::Expression>& p :
        poly.monomial_to_coefficient_map()) {
     new_map.emplace(transform(p.first, var_id_to_var), p.second);
   }

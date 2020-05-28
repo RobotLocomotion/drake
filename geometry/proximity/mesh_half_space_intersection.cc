@@ -314,7 +314,7 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
   std::unordered_map<SortedPair<SurfaceVertexIndex>, SurfaceVertexIndex>
       edges_to_newly_created_vertices;
 
-  for (const auto tri_index : tri_indices) {
+  for (const auto& tri_index : tri_indices) {
     ConstructTriangleHalfspaceIntersectionPolygon(
         input_mesh_F, tri_index, half_space_F, X_WF, &new_vertices_W,
         &new_faces, &vertices_to_newly_created_vertices,

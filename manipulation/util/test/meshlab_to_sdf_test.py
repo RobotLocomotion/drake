@@ -85,7 +85,7 @@ LOG: 2     | 0.000000  0.000000  0.000000 |
 """[1:]  # Remove leading newline.
         scale = 1.0
         mass_kg = 1.0
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 RuntimeError,
                 "inertia matrix elements are too small"):
             mut.convert(

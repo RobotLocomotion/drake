@@ -98,7 +98,7 @@ SchunkWsgPositionController::SchunkWsgPositionController(double time_step,
       kp_command, kd_command, kp_constraint, kd_constraint);
   state_interpolator_ =
       builder.AddSystem<systems::StateInterpolatorWithDiscreteDerivative>(
-          1, time_step);
+          1, time_step, true /* suppress_initial_transient */);
 
   builder.Connect(state_interpolator_->get_output_port(),
                   pd_controller->get_desired_state_input_port());

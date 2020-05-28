@@ -13,13 +13,14 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 
 #pragma GCC diagnostic push
-// Apple LLVM version 10.0.1 (clang-1001.0.46.3) adds `-Wself-assign-overloaded`
-// to `-Wall`, which generates warnings on Pybind11's operator-overloading idiom
-// that is using py::self (example: `def(py::self + py::self)`).
-// Here, we suppress the warning using `#pragma diagnostic`.
-#if (__APPLE__) && (__clang__) && (__clang_major__ >= 10) && \
-    !((__clang_major__ == 10) && (__clang_minor__ == 0) &&   \
-        (__clang_patchlevel__ == 0))
+// Apple LLVM version 10.0.1 (clang-1001.0.46.3) and Clang version 10.0.0 add
+// `-Wself-assign-overloaded` to `-Wall`, which generates warnings on
+// Pybind11's operator-overloading idiom that is using py::self (example:
+// `def(py::self + py::self)`). Here, we suppress the warning using
+// `#pragma diagnostic`.
+#if (__clang__) && (__clang_major__ >= 10) &&                 \
+    !((__apple_build_version__) && (__clang_major__ == 10) && \
+        (__clang_minor__ == 0) && (__clang_patchlevel__ == 0))
 #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
 #endif
 
@@ -95,15 +96,18 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self / double())
       .def(double() / py::self)
       // Pow.
-      .def("__pow__",
+      .def(
+          "__pow__",
           [](const Variable& self, double other) { return pow(self, other); },
           py::is_operator())
-      .def("__pow__",
+      .def(
+          "__pow__",
           [](const Variable& self, const Variable& other) {
             return pow(self, other);
           },
           py::is_operator())
-      .def("__pow__",
+      .def(
+          "__pow__",
           [](const Variable& self, const Expression& other) {
             return pow(self, other);
           },
@@ -160,16 +164,20 @@ PYBIND11_MODULE(symbolic, m) {
       .def("to_string", &Variables::to_string, doc.Variables.to_string.doc)
       .def("__hash__",
           [](const Variables& self) { return std::hash<Variables>{}(self); })
-      .def("insert",
+      .def(
+          "insert",
           [](Variables& self, const Variable& var) { self.insert(var); },
           doc.Variables.insert.doc_1args_var)
-      .def("insert",
+      .def(
+          "insert",
           [](Variables& self, const Variables& vars) { self.insert(vars); },
           doc.Variables.insert.doc_1args_vars)
-      .def("erase",
+      .def(
+          "erase",
           [](Variables& self, const Variable& key) { return self.erase(key); },
           doc.Variables.erase.doc_1args_key)
-      .def("erase",
+      .def(
+          "erase",
           [](Variables& self, const Variables& vars) {
             return self.erase(vars);
           },
@@ -185,7 +193,8 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Variables.IsStrictSupersetOf.doc)
       .def("EqualTo", [](const Variables& self,
                           const Variables& vars) { return self == vars; })
-      .def("__iter__",
+      .def(
+          "__iter__",
           [](const Variables& vars) {
             return py::make_iterator(vars.begin(), vars.end());
           },
@@ -218,31 +227,36 @@ PYBIND11_MODULE(symbolic, m) {
           "__copy__", [](const Expression& self) -> Expression { return self; })
       .def("to_string", &Expression::to_string, doc.Expression.to_string.doc)
       .def("Expand", &Expression::Expand, doc.Expression.Expand.doc)
-      .def("Evaluate",
+      .def(
+          "Evaluate",
           [](const Expression& self, const Environment::map& env,
               RandomGenerator* generator) {
             return self.Evaluate(Environment{env}, generator);
           },
           py::arg("env") = Environment::map{}, py::arg("generator") = nullptr,
           doc.Expression.Evaluate.doc_2args)
-      .def("Evaluate",
+      .def(
+          "Evaluate",
           [](const Expression& self, RandomGenerator* generator) {
             return self.Evaluate(generator);
           },
           py::arg("generator"), doc.Expression.Evaluate.doc_1args)
-      .def("EvaluatePartial",
+      .def(
+          "EvaluatePartial",
           [](const Expression& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
           },
           doc.Expression.EvaluatePartial.doc)
       .def("GetVariables", &Expression::GetVariables,
           doc.Expression.GetVariables.doc)
-      .def("Substitute",
+      .def(
+          "Substitute",
           [](const Expression& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
           },
           doc.Expression.Substitute.doc_2args)
-      .def("Substitute",
+      .def(
+          "Substitute",
           [](const Expression& self, const Substitution& s) {
             return self.Substitute(s);
           },
@@ -358,25 +372,29 @@ PYBIND11_MODULE(symbolic, m) {
 
   m.def("if_then_else", &symbolic::if_then_else);
 
-  m.def("Jacobian",
+  m.def(
+      "Jacobian",
       [](const Eigen::Ref<const VectorX<Expression>>& f,
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);
       },
       doc.Jacobian.doc);
 
-  m.def("IsAffine",
+  m.def(
+      "IsAffine",
       [](const Eigen::Ref<const MatrixX<Expression>>& M,
           const Variables& vars) { return IsAffine(M, vars); },
       doc.IsAffine.doc_2args);
 
-  m.def("IsAffine",
+  m.def(
+      "IsAffine",
       [](const Eigen::Ref<const MatrixX<Expression>>& M) {
         return IsAffine(M);
       },
       doc.IsAffine.doc_1args);
 
-  m.def("Evaluate",
+  m.def(
+      "Evaluate",
       [](const MatrixX<Expression>& M, const Environment::map& env,
           RandomGenerator* random_generator) {
         return Evaluate(M, Environment{env}, random_generator);
@@ -384,13 +402,15 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc_expression);
 
-  m.def("Substitute",
+  m.def(
+      "Substitute",
       [](const MatrixX<Expression>& M, const Substitution& subst) {
         return Substitute(M, subst);
       },
       py::arg("m"), py::arg("subst"), doc.Substitute.doc_2args);
 
-  m.def("Substitute",
+  m.def(
+      "Substitute",
       [](const MatrixX<Expression>& M, const Variable& var,
           const Expression& e) { return Substitute(M, var, e); },
       py::arg("m"), py::arg("var"), py::arg("e"), doc.Substitute.doc_3args);
@@ -400,27 +420,32 @@ PYBIND11_MODULE(symbolic, m) {
       .def("GetFreeVariables", &Formula::GetFreeVariables,
           doc.Formula.GetFreeVariables.doc)
       .def("EqualTo", &Formula::EqualTo, doc.Formula.EqualTo.doc)
-      .def("Evaluate",
+      .def(
+          "Evaluate",
           [](const Formula& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
           doc.Formula.Evaluate.doc_2args)
-      .def("Substitute",
+      .def(
+          "Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);
           },
           doc.Formula.Substitute.doc_2args)
-      .def("Substitute",
+      .def(
+          "Substitute",
           [](const Formula& self, const Variable& var1, const Variable& var2) {
             return self.Substitute(var1, var2);
           },
           doc.Formula.Substitute.doc_2args)
-      .def("Substitute",
+      .def(
+          "Substitute",
           [](const Formula& self, const Variable& var, const double c) {
             return self.Substitute(var, c);
           },
           doc.Formula.Substitute.doc_2args)
-      .def("Substitute",
+      .def(
+          "Substitute",
           [](const Formula& self, const Substitution& s) {
             return self.Substitute(s);
           },
@@ -498,7 +523,8 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Monomial.get_powers.doc)
       .def("ToExpression", &Monomial::ToExpression,
           doc.Monomial.ToExpression.doc)
-      .def("Evaluate",
+      .def(
+          "Evaluate",
           [](const Monomial& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
@@ -509,13 +535,15 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Monomial& self, const int p) { return pow(self, p); });
 
   m  // BR
-      .def("MonomialBasis",
+      .def(
+          "MonomialBasis",
           [](const Eigen::Ref<const VectorX<Variable>>& vars,
               const int degree) {
             return MonomialBasis(Variables{vars}, degree);
           },
           doc.MonomialBasis.doc_2args)
-      .def("MonomialBasis",
+      .def(
+          "MonomialBasis",
           [](const Variables& vars, const int degree) {
             return MonomialBasis(vars, degree);
           },
@@ -596,37 +624,43 @@ PYBIND11_MODULE(symbolic, m) {
           })
       .def("__pow__",
           [](const Polynomial& self, const int n) { return pow(self, n); })
-      .def("Evaluate",
+      .def(
+          "Evaluate",
           [](const Polynomial& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
           doc.Polynomial.Evaluate.doc)
       // TODO(Eric.Cousineau): add python binding for symbolic::Environment.
-      .def("EvaluatePartial",
+      .def(
+          "EvaluatePartial",
           [](const Polynomial& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
           },
           py::arg("env"), doc.Polynomial.EvaluatePartial.doc_1args)
-      .def("EvaluatePartial",
+      .def(
+          "EvaluatePartial",
           [](const Polynomial& self, const Variable& var, double c) {
             return self.EvaluatePartial(var, c);
           },
           py::arg("var"), py::arg("c"),
           doc.Polynomial.EvaluatePartial.doc_2args)
-      .def("Jacobian",
+      .def(
+          "Jacobian",
           [](const Polynomial& p,
               const Eigen::Ref<const VectorX<Variable>>& vars) {
             return p.Jacobian(vars);
           },
           doc.Polynomial.Jacobian.doc);
 
-  m.def("Evaluate",
+  m.def(
+      "Evaluate",
       [](const MatrixX<Polynomial>& M, const Environment::map& env) {
         return Evaluate(M, Environment{env});
       },
       py::arg("m"), py::arg("env"), doc.Evaluate.doc_polynomial);
 
-  m.def("Jacobian",
+  m.def(
+      "Jacobian",
       [](const Eigen::Ref<const VectorX<Polynomial>>& f,
           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return Jacobian(f, vars);

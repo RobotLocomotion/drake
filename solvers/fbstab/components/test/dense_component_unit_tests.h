@@ -219,7 +219,7 @@ class DenseComponentUnitTests {
    * identifies certificates of primal infeasibility.
    * The QP used in this example has no solution
    * and the vector [1 0 0 1 1] is a certificate of
-   * infeasibility, i.e., it seperates Range(A) and b.
+   * infeasibility, i.e., it separates Range(A) and b.
    * The example is from https://arxiv.org/pdf/1901.04046.pdf
    */
   void PrimalInfeasibilityDetection() {

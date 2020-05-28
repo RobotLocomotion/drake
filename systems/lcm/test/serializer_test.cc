@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -15,10 +14,8 @@ namespace lcm {
 namespace {
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
-using drake::lcm::DrakeMockLcm;
 
 GTEST_TEST(SerializerTest, BasicTest) {
-  lcm::DrakeMockLcm lcm;
   const std::string channel_name{"channel_name"};
 
   // The device under test.

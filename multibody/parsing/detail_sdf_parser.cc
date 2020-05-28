@@ -13,12 +13,14 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
 
@@ -227,6 +229,36 @@ void AddJointActuatorFromSpecification(
   }
 }
 
+// Extracts the spring stiffness and the spring reference from a joint
+// specification and adds a revolute spring force element with the
+// corresponding spring reference if the spring stiffness is nonzero.
+// Only available for "revolute" joints. The units for spring
+// reference is radians and the units for spring stiffness is N⋅m/rad.
+void AddRevoluteSpringFromSpecification(
+    const sdf::Joint &joint_spec, const RevoluteJoint<double>& joint,
+    MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+      "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+
+  const double spring_reference = axis->SpringReference();
+  const double spring_stiffness = axis->SpringStiffness();
+
+  // We don't add a force element if stiffness is zero.
+  // If a negative value is passed in, RevoluteSpring will
+  // throw an error.
+  if (spring_stiffness != 0) {
+    plant->AddForceElement<RevoluteSpring>(
+      joint, spring_reference, spring_stiffness);
+  }
+}
+
 // Returns joint limits as the tuple (lower_limit, upper_limit,
 // velocity_limit).  The units of the limits depend on the particular joint
 // type.  For prismatic joints, units are meters for the position limits and
@@ -353,6 +385,7 @@ void AddJointFromSpecification(
       plant->get_mutable_joint(joint.index()).set_velocity_limits(
           Vector1d(-velocity_limit), Vector1d(velocity_limit));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
       break;
     }
     default: {
@@ -667,6 +700,60 @@ const Frame<double>& AddFrameFromSpecification(
   return frame;
 }
 
+const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
+    const sdf::ElementPtr node, MultibodyPlant<double>* plant) {
+  // Functor to read a vector valued child tag with tag name: `element_name`
+  // e.g. <element_name>0 0 0</element_name>
+  // Throws an error if the tag does not exist or if the value is not properly
+  // formatted.
+  auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
+    if (!node->HasElement(element_name)) {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> tag.", element_name));
+    }
+
+    auto [value, successful] = node->Get<ignition::math::Vector3d>(
+        element_name, ignition::math::Vector3d() /* default value. not used */);
+
+    if (!successful) {
+      throw std::runtime_error(fmt::format(
+          "Unable to read the value of the <{}> tag.", element_name));
+    }
+
+    return ToVector3(value);
+  };
+
+  // Functor to read a child tag with tag name: `element_name` that specifies a
+  // frame name, e.g. <element_name>frame_name</element_name>
+  // Throws an error if the tag does not exist or if the value
+  // is not properly formatted.
+  auto read_frame = [node,
+                     plant](const char* element_name) -> const Frame<double>& {
+    if (!node->HasElement(element_name)) {
+      throw std::runtime_error(
+          fmt::format("Unable to find the <{}> tag.", element_name));
+    }
+
+    auto [frame_name, successful] = node->Get<std::string>(
+        element_name, std::string() /* default value. not used */);
+
+    if (!successful) {
+      throw std::runtime_error(fmt::format(
+          "Unable to read the value of the <{}> tag.", element_name));
+    }
+
+    if (!plant->HasFrameNamed(frame_name)) {
+      throw std::runtime_error(fmt::format(
+          "Frame: {} specified for <{}> does not exist in the model.",
+          frame_name, element_name));
+    }
+
+    return plant->GetFrameByName(frame_name);
+  };
+
+  return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
+}
+
 // Helper to determine if two links are welded together.
 bool AreWelded(
     const MultibodyPlant<double>& plant, const Body<double>& a,
@@ -767,6 +854,16 @@ ModelInstanceIndex AddModelFromSpecification(
        ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+  }
+
+  drake::log()->trace("sdf_parser: Add linear_bushing_rpy");
+  if (model.Element()->HasElement("drake:linear_bushing_rpy")) {
+    for (sdf::ElementPtr bushing_node =
+             model.Element()->GetElement("drake:linear_bushing_rpy");
+         bushing_node; bushing_node = bushing_node->GetNextElement(
+                           "drake:linear_bushing_rpy")) {
+      AddBushingFromSpecification(bushing_node, plant);
+    }
   }
 
   // Finalize connections for nested model posturing, etc.

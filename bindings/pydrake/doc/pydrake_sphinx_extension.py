@@ -227,9 +227,9 @@ def patch_class_add_directive_header(original, self, sig):
         bases = getattr(self.object, '__bases__', None)
         if not bases:
             return
-        bases = [b.__module__ in ('__builtin__', 'builtins') and
-                 u':class:`%s`' % b.__name__ or
-                 u':class:`%s.%s`' % (b.__module__, b.__name__)
+        bases = [b.__module__ in ('__builtin__', 'builtins')
+                 and u':class:`%s`' % b.__name__
+                 or u':class:`%s.%s`' % (b.__module__, b.__name__)
                  for b in bases
                  if b.__name__ != "pybind11_object"]
         if not bases:
@@ -279,7 +279,7 @@ def patch_document_members(original, self, all_members=False):
     members_check_module, members = self.get_object_members(want_all)
 
     # This method changed after version 1.6.7.
-    # We accomodate the changes till version 2.4.4.
+    # We accommodate the changes till version 2.4.4.
     # https://github.com/sphinx-doc/sphinx/commit/6e1e35c98ac29397d4552caf72710ccf4bf98bea
     if sphinx_version[:3] >= (1, 8, 0):
         exclude_members_all = self.options.exclude_members is autodoc.ALL
@@ -290,8 +290,8 @@ def patch_document_members(original, self, all_members=False):
         members = [
             (membername, member) for (membername, member) in members
             if (
-                exclude_members_all or
-                membername not in self.options.exclude_members
+                exclude_members_all
+                or membername not in self.options.exclude_members
                 )
             ]
 
@@ -299,7 +299,7 @@ def patch_document_members(original, self, all_members=False):
     memberdocumenters = []  # type: List[Tuple[Documenter, bool]]
     for (mname, member, isattr) in self.filter_members(members, want_all):
         # This method changed after version 1.6.7.
-        # We accomodate the changes till version 2.4.4.
+        # We accommodate the changes till version 2.4.4.
         # https://github.com/sphinx-doc/sphinx/commit/5d6413b7120cfc6d3d0cc9367cfe8b6f7ee87523
         if sphinx_version[:3] >= (1, 7, 0):
             documenters = self.documenters
@@ -366,7 +366,10 @@ def autodoc_member_order_function(app, documenter):
 def setup(app):
     """Installs Drake-specific extensions and patches.
     """
-    app.add_stylesheet('css/custom.css')
+    if sphinx_version[:3] >= (1, 8, 0):
+        app.add_css_file('css/custom.css')
+    else:
+        app.add_stylesheet('css/custom.css')
     # Do not warn on Drake deprecations.
     # TODO(eric.cousineau): See if there is a way to intercept this.
     warnings.simplefilter('ignore', DrakeDeprecationWarning)

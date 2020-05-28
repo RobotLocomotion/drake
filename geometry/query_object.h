@@ -174,7 +174,8 @@ class QueryObject {
 
    @returns A vector populated with all detected penetrations characterized as
             point pairs.
-   @note    Silently ignore Mesh geometries. */
+   @warning This silently ignores Mesh geometries (but Convex mesh geometries
+            are included). */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
@@ -257,12 +258,14 @@ class QueryObject {
    the remaining, unculled geometry pairs are *actually* in collision.
 
    @returns A vector populated with collision pair candidates.
-   @note    Silently ignore Mesh geometries. */
+   @warning This silently ignores Mesh geometries (but Convex mesh geometries
+            are included). */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
   /** Reports true if there are _any_ collisions between unfiltered pairs in the
    world.
-   @note Silently ignore Mesh geometries. */
+   @warning This silently ignores Mesh geometries (but Convex mesh geometries
+            are included). */
   bool HasCollisions() const;
 
   //@}
@@ -507,13 +510,19 @@ class QueryObject {
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
+
+  /** Returns the named render engine, if it exists. The RenderEngine is
+   guaranteed to be up to date w.r.t. the poses and data in the context. */
+  const render::RenderEngine* GetRenderEngineByName(
+      const std::string& name) const;
+
   //@}
 
  private:
   // SceneGraph is the only class that may call set().
   friend class SceneGraph<T>;
   // Convenience class for testing.
-  friend class QueryObjectTester;
+  friend class QueryObjectTest;
 
   // Access the GeometryState associated with this QueryObject.
   // @pre ThrowIfNotCallable() has been invoked prior to this.

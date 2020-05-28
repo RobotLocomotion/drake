@@ -84,6 +84,8 @@ drake_cc_googletest(
     name = "global_inverse_kinematics_feasible_posture_test",
     timeout = "long",
     srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
+    # This test is prohibitively slow with --compilation_mode=dbg.
+    disable_in_compilation_mode_dbg = True,
     tags = gurobi_test_tags() + [
         "no_asan",
         # Takes too long to run with Valgrind.

@@ -151,6 +151,34 @@ class QuadraticProgram4 : public OptimizationProgram {
 // constrained to lie inside the L1 ball.  Implemented in 2D, so that the
 // active set moves along 4 faces of the L1 ball.
 void TestQPonUnitBallExample(const SolverInterface& solver);
+
+/**
+ * Test getting the dual solution for a QP problem.
+ * This QP problem has active linear equality constraints.
+ */
+void TestQPDualSolution1(const SolverInterface& solver, double tol = 1e-6);
+
+/**
+ * Test getting the dual solution for a QP problem.
+ * This QP problem has active linear inequality constraints.
+ */
+void TestQPDualSolution2(const SolverInterface& solver);
+
+/**
+ * Test getting the dual solution for a QP problem.
+ * This QP problem has active bounding box constraints.
+ */
+void TestQPDualSolution3(const SolverInterface& solver);
+
+/**
+ * Test getting the dual solution for an equality constrained QP.
+ */
+void TestEqualityConstrainedQPDualSolution1(const SolverInterface& solver);
+
+/**
+ * Test getting the dual solution for an equality constrained QP.
+ */
+void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

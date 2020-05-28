@@ -79,7 +79,8 @@ void init_perception(py::module m) {
             cls_doc.ctor.doc_copy)
         .def("fields", &Class::fields, cls_doc.fields.doc)
         .def("size", &Class::size, cls_doc.size.doc)
-        .def("resize",
+        .def(
+            "resize",
             [](PointCloud* self, int new_size) { self->resize(new_size); },
             py::arg("new_size"), cls_doc.resize.doc)
         // XYZs
@@ -108,7 +109,8 @@ void init_perception(py::module m) {
         .def("mutable_rgb", &Class::mutable_rgb, py::arg("i"),
             py_reference_internal, cls_doc.mutable_rgb.doc)
         // Mutators.
-        .def("SetFrom",
+        .def(
+            "SetFrom",
             [](PointCloud* self, const PointCloud& other) {
               self->SetFrom(other);
             },

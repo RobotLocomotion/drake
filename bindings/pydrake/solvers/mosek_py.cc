@@ -1,6 +1,7 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_pybind.h"
@@ -17,6 +18,7 @@ PYBIND11_MODULE(mosek, m) {
   m.doc() = "Mosek solver bindings for MathematicalProgram";
 
   py::module::import("pydrake.solvers.mathematicalprogram");
+  py::module::import("pydrake.systems.framework");
 
   py::class_<MosekSolver, SolverInterface> cls(
       m, "MosekSolver", doc.MosekSolver.doc);
@@ -25,6 +27,16 @@ PYBIND11_MODULE(mosek, m) {
           py::arg("flag"), py::arg("log_file"),
           doc.MosekSolver.set_stream_logging.doc);
   pysolvers::BindAcquireLicense(&cls, doc.MosekSolver);
+
+  py::class_<MosekSolverDetails>(
+      m, "MosekSolverDetails", doc.MosekSolverDetails.doc)
+      .def_readonly("optimizer_time", &MosekSolverDetails::optimizer_time,
+          doc.MosekSolverDetails.optimizer_time.doc)
+      .def_readonly("rescode", &MosekSolverDetails::rescode,
+          doc.MosekSolverDetails.rescode.doc)
+      .def_readonly("solution_status", &MosekSolverDetails::solution_status,
+          doc.MosekSolverDetails.solution_status.doc);
+  AddValueInstantiation<MosekSolverDetails>(m);
 }
 
 }  // namespace pydrake

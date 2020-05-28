@@ -48,6 +48,28 @@ class BsplineBasis final {
                const T& initial_parameter_value = 0,
                const T& final_parameter_value = 1);
 
+#ifdef DRAKE_DOXYGEN_CXX
+  /** Conversion constructor. Constructs an instance of BsplineBasis<T> from a
+  double-valued basis. */
+  explicit BsplineBasis(const BsplineBasis<double>& other);
+#else
+  template <typename U = T>
+  explicit BsplineBasis(const BsplineBasis<double>& other,
+               /* Prevents ambiguous declarations between default copy
+               constructor on double and conversion constructor on T = double.
+               The conversion constructor for T = double will fail to be
+               instantiated because the second, "hidden" parameter will fail to
+               be defined for U = double. */
+               typename std::enable_if_t<!std::is_same_v<U, double>>* = {})
+      : order_(other.order()),
+        num_basis_functions_(other.num_basis_functions()) {
+    knots_.reserve(other.knots().size());
+    for (const auto& knot : other.knots()) {
+      knots_.push_back(T(knot));
+    }
+  }
+#endif
+
   /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
 
@@ -127,7 +149,7 @@ class BsplineBasis final {
 
     // Define short names to match notation in [1].
     const std::vector<T>& t = knots();
-    const T t_bar = parameter_value;
+    const T& t_bar = parameter_value;
     const int k = order();
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
@@ -158,9 +180,9 @@ class BsplineBasis final {
   `parameter_value`. */
   T EvaluateBasisFunctionI(int i, const T& parameter_value) const;
 
-  bool operator==(const BsplineBasis& other) const;
+  boolean<T> operator==(const BsplineBasis& other) const;
 
-  bool operator!=(const BsplineBasis& other) const;
+  boolean<T> operator!=(const BsplineBasis& other) const;
 
  private:
   int order_{};

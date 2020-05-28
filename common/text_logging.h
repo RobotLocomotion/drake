@@ -23,7 +23,7 @@ not be compiled if debugging is turned off (-DNDEBUG is set):
   DRAKE_LOGGER_DEBUG("message: {}", something_conditionally_compiled);
 </pre>
 
-The format string syntax is fmtlib; see https://fmt.dev/6.1.2/syntax.html.
+The format string syntax is fmtlib; see https://fmt.dev/6.2.1/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
 printed without any special handling.
 */

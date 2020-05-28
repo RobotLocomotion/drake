@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 
+#include "drake/attic_warning.h"
 #include "drake/common/constants.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"

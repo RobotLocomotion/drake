@@ -104,8 +104,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-3.6.8-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
-            sha256 = "42e0661004d089a93202c15e49b36167c02f92e40f9c62a412580ebc434f50ff"  # noqa
+            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
+            sha256 = "8c9d0cef96a7d377a588f58b2a3d63f617c55df8f493208971791a8ea207789d"  # noqa
+        elif os_result.ubuntu_release == "20.04":
+            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.8.2-qt-5.12.8-focal-x86_64.tar.gz"  # noqa
+            sha256 = "868e0ffbb85e8620d9653e55a60080cde900d508794247bc6181b8a8013cb6fb"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 

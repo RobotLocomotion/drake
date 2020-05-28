@@ -1,7 +1,7 @@
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
 
-#include <gtest/gtest.h>
 #include "robotlocomotion/robot_plan_t.hpp"
+#include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 
@@ -84,13 +84,24 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   const bot_core::robot_state_t default_robot_state{};
   plan.plan.resize(num_time_steps, default_robot_state);
   plan.plan_info.resize(num_time_steps, 0);
+
+  std::vector<std::string> joint_names;
+  for (int i = 0; i < dut.plant().num_joints(); ++i) {
+    const multibody::Joint<double>& joint =
+        dut.plant().get_joint(multibody::JointIndex(i));
+    if (joint.num_positions() != 1) {
+      continue;
+    }
+    joint_names.push_back(joint.name());
+  }
+  ASSERT_EQ(joint_names.size(), kNumJoints);
+
   for (int i = 0; i < num_time_steps; i++) {
     bot_core::robot_state_t& step = plan.plan[i];
     step.utime = t[i] * 1e6;
     step.num_joints = q.rows();
+    step.joint_name = joint_names;
     for (int j = 0; j < step.num_joints; j++) {
-      step.joint_name.push_back(dut.plant().get_joint(
-          multibody::JointIndex(j)).name());
       step.joint_position.push_back(q(j, i));
       step.joint_velocity.push_back(0);
       step.joint_effort.push_back(0);

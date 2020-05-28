@@ -399,7 +399,7 @@ class BoundingVolumeHierarchy {
       const typename std::vector<CentroidPair>::iterator& start,
       const typename std::vector<CentroidPair>::iterator& end);
 
-  // TODO(tehbelinda): Move this funtion into SurfaceMesh/VolumeMesh directly
+  // TODO(tehbelinda): Move this function into SurfaceMesh/VolumeMesh directly
   // and rename to CalcElementCentroid(ElementIndex).
   static Vector3<double> ComputeCentroid(const MeshType& mesh,
                                          IndexType i);

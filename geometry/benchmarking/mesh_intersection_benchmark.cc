@@ -1,5 +1,5 @@
-#include <benchmark/benchmark.h>
 #include "fmt/format.h"
+#include <benchmark/benchmark.h>
 
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
@@ -204,7 +204,8 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
       : ellipsoid_{kEllipsoidDimension[0], kEllipsoidDimension[1],
                    kEllipsoidDimension[2]},
         sphere_{kSphereDimension},
-        mesh_S_(MakeEllipsoidVolumeMesh<double>(ellipsoid_, 1)),
+        mesh_S_(MakeEllipsoidVolumeMesh<double>(
+            ellipsoid_, 1, TessellationStrategy::kDenseInteriorVertices)),
         field_S_(MakeEllipsoidPressureField<double>(ellipsoid_, &mesh_S_,
                                                     kElasticModulus)),
         mesh_R_(MakeEllipsoidSurfaceMesh<double>(ellipsoid_, 1)) {}
@@ -222,7 +223,9 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
     const auto [resolution, contact_overlap, rotation_factor] =
         ReadState(state);
     const double resolution_hint = kResolutionHint[resolution];
-    mesh_S_ = MakeEllipsoidVolumeMesh<double>(ellipsoid_, resolution_hint);
+    mesh_S_ = MakeEllipsoidVolumeMesh<double>(
+        ellipsoid_, resolution_hint,
+        TessellationStrategy::kDenseInteriorVertices);
     field_S_ = MakeEllipsoidPressureField<double>(ellipsoid_, &mesh_S_,
                                                   kElasticModulus);
     mesh_R_ = MakeSphereSurfaceMesh<double>(sphere_, resolution_hint);
@@ -277,7 +280,8 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, WithoutBVH)
   std::unique_ptr<SurfaceMesh<double>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
   for (auto _ : state) {
-    SampleVolumeFieldOnSurface(field_S_, mesh_R_, X_SR_, &surface_SR, &e_SR);
+    SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
+        field_S_, mesh_R_, X_SR_, &surface_SR, &e_SR);
   }
   RecordContactSurfaceResult(surface_SR.get(), "WithoutBVH", state);
 }
@@ -310,8 +314,8 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, ___WithBVH)
   std::unique_ptr<SurfaceMesh<double>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
   for (auto _ : state) {
-    SampleVolumeFieldOnSurface(field_S_, bvh_S, mesh_R_, bvh_R, X_SR_,
-                               &surface_SR, &e_SR);
+    SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
+        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR);
   }
   RecordContactSurfaceResult(surface_SR.get(), "___WithBVH", state);
 }

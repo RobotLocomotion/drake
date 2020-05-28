@@ -9,17 +9,29 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
+    "drake_py_library",
     "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__pkg__"],
+    deps = [
+        "//manipulation:module_py",
+    ],
+)
+
 drake_cc_package_library(
     name = "util",
     deps = [
         ":bot_core_lcm_encode_decode",
+        ":move_ik_demo_base",
         ":moving_average_filter",
+        ":robot_plan_utils",
         ":trajectory_utils",
     ],
 )
@@ -39,6 +51,7 @@ drake_py_binary(
     name = "geometry_inspector",
     srcs = ["geometry_inspector.py"],
     deps = [
+        ":show_model",
         "//bindings/pydrake",
     ],
 )
@@ -48,6 +61,37 @@ drake_py_unittest(
     data = [
         ":geometry_inspector",
         "//multibody/benchmarks/acrobot:models",
+    ],
+)
+
+drake_cc_library(
+    name = "move_ik_demo_base",
+    srcs = [
+        "move_ik_demo_base.cc",
+    ],
+    hdrs = [
+        "move_ik_demo_base.h",
+    ],
+    deps = [
+        ":robot_plan_utils",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_utils",
+    srcs = [
+        "robot_plan_utils.cc",
+    ],
+    hdrs = [
+        "robot_plan_utils.h",
+    ],
+    deps = [
+        "//multibody/plant",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -77,7 +121,10 @@ drake_cc_library(
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
-    deps = ["//bindings/pydrake"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake",
+    ],
 )
 
 drake_py_binary(
@@ -92,6 +139,28 @@ drake_cc_googletest(
     deps = [
         ":bot_core_lcm_encode_decode",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "move_ik_demo_base_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":move_ik_demo_base",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_plan_utils_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":robot_plan_utils",
+        "//multibody/parsing",
     ],
 )
 

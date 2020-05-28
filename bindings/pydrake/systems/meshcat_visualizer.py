@@ -12,13 +12,12 @@ import webbrowser
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
+from pydrake.common.value import AbstractValue
 from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
-from pydrake.lcm import DrakeMockLcm, Subscriber
+from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import (
-    AbstractValue, LeafSystem, PublishEvent, TriggerType
-)
+from pydrake.systems.framework import LeafSystem, PublishEvent, TriggerType
 from pydrake.systems.rendering import PoseBundle
 from pydrake.multibody.plant import ContactResults
 import pydrake.perception as mut
@@ -282,11 +281,15 @@ class MeshcatVisualizer(LeafSystem):
         self.axis_radius = axis_radius
 
     def _parse_name(self, name):
-        # Parse name, split on the first (required) occurrence of `::` to get
-        # the source name, and let the rest be the frame name.
-        # TODO(eric.cousineau): Remove name parsing once #9128 is resolved.
+        # Parse name, split on the first occurrence of `::` to get the source
+        # name, and let the rest be the frame name. If `::` is not in name,
+        # source name is "unnamed" and the frame name is `name`.
+        # TODO(eric.cousineau): Remove name parsing once this is reimplemented
+        # to use Shape introspection.
         delim = "::"
-        assert delim in name
+        if delim not in name:
+            default_source = "unnamed"
+            return default_source, name
         pos = name.index(delim)
         source_name = name[:pos]
         frame_name = name[pos + len(delim):]
@@ -302,16 +305,16 @@ class MeshcatVisualizer(LeafSystem):
         """
         self.vis[self.prefix].delete()
 
-        # Intercept load message via mock LCM.
-        mock_lcm = DrakeMockLcm()
-        mock_lcm_subscriber = Subscriber(
-            lcm=mock_lcm,
+        # Intercept load message via memq LCM.
+        memq_lcm = DrakeLcm("memq://")
+        memq_lcm_subscriber = Subscriber(
+            lcm=memq_lcm,
             channel="DRAKE_VIEWER_LOAD_ROBOT",
             lcm_type=lcmt_viewer_load_robot)
-        DispatchLoadMessage(self._scene_graph, mock_lcm)
-        mock_lcm.HandleSubscriptions(0)
-        assert mock_lcm_subscriber.count > 0
-        load_robot_msg = mock_lcm_subscriber.message
+        DispatchLoadMessage(self._scene_graph, memq_lcm)
+        memq_lcm.HandleSubscriptions(0)
+        assert memq_lcm_subscriber.count > 0
+        load_robot_msg = memq_lcm_subscriber.message
 
         # Translate elements to `meshcat`.
         for i in range(load_robot_msg.num_links):
@@ -339,10 +342,10 @@ class MeshcatVisualizer(LeafSystem):
                 else:
                     robot_name = "world"
                     link_name = frame_name
-                if (robot_name in self.frames_to_draw.keys() and
-                        link_name in self.frames_to_draw[robot_name]):
-                    prefix = (self.prefix + '/' + source_name + '/' +
-                              str(link.robot_num) + '/' + frame_name)
+                if (robot_name in self.frames_to_draw.keys()
+                        and link_name in self.frames_to_draw[robot_name]):
+                    prefix = (self.prefix + '/' + source_name + '/'
+                              + str(link.robot_num) + '/' + frame_name)
                     AddTriad(
                         self.vis,
                         name="frame",
@@ -366,9 +369,9 @@ class MeshcatVisualizer(LeafSystem):
             model_id = pose_bundle.get_model_instance_id(frame_i)
             # The MBP parsers only register the plant as a nameless source.
             # TODO(russt): Use a more textual naming convention here?
-            pose_matrix = pose_bundle.get_pose(frame_i)
+            pose_matrix = pose_bundle.get_transform(frame_i)
             self.vis[self.prefix][source_name][str(model_id)][frame_name]\
-                .set_transform(pose_matrix.matrix())
+                .set_transform(pose_matrix.GetAsMatrix4())
 
 
 class MeshcatContactVisualizer(LeafSystem):
@@ -450,7 +453,7 @@ class MeshcatContactVisualizer(LeafSystem):
             (source_name, frame_name) = self._meshcat_viz._parse_name(
                 pose_bundle.get_name(frame_i))
             model_instance = pose_bundle.get_model_instance_id(frame_i)
-            pose_matrix = pose_bundle.get_pose(frame_i)
+            pose_matrix = pose_bundle.get_transform(frame_i)
             _, frame_name = frame_name.split("::")
             key = (model_instance, frame_name)
             X_WB_map[key] = pose_matrix
@@ -469,8 +472,8 @@ class MeshcatContactVisualizer(LeafSystem):
             if old_bodies == new_bodies:
                 # Reaching here means that `old` and `new`
                 # describe contact between the same pair of bodies.
-                v = np.sqrt(old.info.separation_speed()**2 +
-                            old.info.slip_speed()**2)
+                v = np.sqrt(old.info.separation_speed()**2
+                            + old.info.slip_speed()**2)
                 if np.linalg.norm(new.p_BC - old.p_BC) < v * dt:
                     old.info = new.info
                     old.p_BC = new.p_BC
@@ -581,7 +584,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     MeshcatPointCloudVisualizer is a System block that visualizes a
     PointCloud in meshcat. The PointCloud:
 
-    * Must have XYZ values. Assumed to be in point cloud frmae, ``P``.
+    * Must have XYZ values. Assumed to be in point cloud frame, ``P``.
     * RGB values are optional; if provided, they must be on the range [0..255].
 
     An example using a pydrake MeshcatVisualizer::

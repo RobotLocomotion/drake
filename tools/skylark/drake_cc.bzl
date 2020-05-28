@@ -290,10 +290,10 @@ def _raw_drake_cc_library(
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
         **kwargs):
-    """Creates a rule to declare a C++ library.  Uses Drake's include_prefix and
-    checks the deps blacklist.  If declare_installed_headers is true, also adds
-    a drake_installed_headers() target.  (This should be set if and only if the
-    caller is drake_cc_library.)
+    """Creates a rule to declare a C++ library.  Uses Drake's include_prefix
+    and checks the deps blacklist.  If declare_installed_headers is true, also
+    adds a drake_installed_headers() target.  (This should be set if and only
+    if the caller is drake_cc_library.)
     """
     _check_library_deps_blacklist(name, deps)
     _, private_hdrs = _prune_private_hdrs(srcs)

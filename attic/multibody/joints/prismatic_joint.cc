@@ -17,5 +17,5 @@ std::unique_ptr<DrakeJoint> PrismaticJoint::DoClone() const {
   auto joint = std::make_unique<PrismaticJoint>(get_name(),
                                                 get_transform_to_parent_body(),
                                                 translation_axis_);
-  return std::move(joint);
+  return joint;
 }

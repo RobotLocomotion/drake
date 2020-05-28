@@ -6,6 +6,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <Eigen/Core>
@@ -36,12 +37,14 @@ namespace drake {
  *
  * Polynomials can be added, subtracted, and multiplied.  They may only be
  * divided by scalars (of T) because Polynomials are not closed under division.
- * 
+ *
  * @tparam_default_scalar
  */
 template <typename T = double>
 class Polynomial {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polynomial);
+
   typedef unsigned int VarType;
   /// This should be 'unsigned int' but MSVC considers a call to std::pow(...,
   /// unsigned int) ambiguous because it won't cast unsigned int to int.
@@ -94,19 +97,12 @@ class Polynomial {
     int GetDegree() const;
     int GetDegreeOf(VarType var) const;
     bool HasSameExponents(const Monomial& other) const;
+    bool HasVariable(const VarType& var) const;
 
     /// Factors this by other; returns 0 iff other does not divide this.
     Monomial Factor(const Monomial& divisor) const;
   };
 
- private:
-  /// The Monomial atoms of the Polynomial.
-  std::vector<Monomial> monomials_;
-
-  /// True iff only 0 or 1 distinct variables appear in the Polynomial.
-  bool is_univariate_;
-
- public:
   /// Construct the vacuous polynomial, "0".
   Polynomial(void) : is_univariate_(true) {}
 
@@ -123,9 +119,27 @@ class Polynomial {
   Polynomial(typename std::vector<Monomial>::const_iterator start,
              typename std::vector<Monomial>::const_iterator finish);
 
+  /// Constructs a polynomial consisting of a single Monomial of the variable
+  /// named `varname1`.
+  ///
+  /// @note: This constructor is only provided for T = double. For the other
+  /// cases, a user should use the constructor with two arguments below (taking
+  /// std::string and unsigned int). If we provided this constructor for T =
+  /// AutoDiffXd and T = symbolic::Expression, there would be compiler errors
+  /// for `Polynomial<T>(0)` as the following candidates are ambiguous:
+  ///  - Polynomial(const T& scalar)
+  ///  - Polynomial(const std::string& varname, const unsigned int num = 1)
+  template <typename U = T>
+  explicit Polynomial(
+      const std::enable_if_t<std::is_same_v<U, double>, std::string>& varname)
+      : Polynomial<T>(varname, 1) {
+    // TODO(soonho-tri): Consider deprecating this constructor to make the API
+    // consistent for different scalar types.
+  }
+
   /// Construct a polynomial consisting of a single Monomial of the variable
   /// named varname + num.
-  explicit Polynomial(const std::string varname, const unsigned int num = 1);
+  Polynomial(const std::string& varname, unsigned int num);
 
   /// Construct a single Monomial of the given coefficient and variable.
   Polynomial(const T& coeff, const VarType& v);
@@ -267,6 +281,10 @@ class Polynomial {
   /// Replaces all instances of variable orig with replacement.
   void Subs(const VarType& orig, const VarType& replacement);
 
+  /// Replaces all instances of variable orig with replacement.
+  Polynomial Substitute(const VarType& orig,
+                        const Polynomial& replacement) const;
+
   /** Takes the derivative of this (univariate) Polynomial.
    *
    * Returns a new Polynomial that is the derivative of this one in its sole
@@ -372,13 +390,26 @@ class Polynomial {
    */
   RootsType Roots() const;
 
-  /** Checks if a (univariate) Polynomial is approximately equal to this one.
+  /** Checks if a Polynomial is approximately equal to this one.
    *
-   * Checks that every coefficient of other is within tol of the
+   * Checks that every coefficient of `other` is within `tol` of the
    * corresponding coefficient of this Polynomial.
-   * @throws std::exception if either Polynomial is not univariate.
+   *
+   * Note: When `tol_type` is kRelative, if any monomials appear in `this` or
+   * `other` but not both, then the method returns false (since the comparison
+   * is relative to a missing zero coefficient).  Use kAbsolute if you want to
+   * ignore non-matching monomials with coefficients less than `tol`.
    */
-  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const;
+  boolean<T> CoefficientsAlmostEqual(
+      const Polynomial<T>& other, const RealScalar& tol = 0.0,
+      const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
+
+  DRAKE_DEPRECATED("2020-08-01",
+                   "Use CoefficientsAlmostEqual with tol_type=kRelative "
+                   "instead of IsApprox.")
+  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const {
+    return CoefficientsAlmostEqual(other, tol, ToleranceType::kRelative);
+  }
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
    * Note that the ID of a variable is preserved in this translation.
@@ -434,7 +465,7 @@ class Polynomial {
   static bool IsValidVariableName(const std::string name);
 
   static VarType VariableNameToId(const std::string name,
-                                  const unsigned int m = 1);
+                                  unsigned int m = 1);
 
   static std::string IdToVariableName(const VarType id);
   //@}
@@ -444,6 +475,12 @@ class Polynomial {
                            typename Polynomial<U>::PowerType n);
 
  private:
+  /// The Monomial atoms of the Polynomial.
+  std::vector<Monomial> monomials_;
+
+  /// True iff only 0 or 1 distinct variables appear in the Polynomial.
+  bool is_univariate_;
+
   /// Sorts through Monomial list and merges any that have the same powers.
   void MakeMonomialsUnique(void);
 };
@@ -479,11 +516,6 @@ std::ostream& operator<<(
   }
   return os;
 }
-
-template <>
-boolean<symbolic::Expression> Polynomial<symbolic::Expression>::IsApprox(
-    const Polynomial<symbolic::Expression>& other,
-    const Polynomial<symbolic::Expression>::RealScalar& tol) const;
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace symbolic {

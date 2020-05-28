@@ -34,10 +34,31 @@ drake_cc_package_library(
         ":scalar_view_dense_output",
         ":semi_explicit_euler_integrator",
         ":simulator",
+        ":simulator_flags",
         ":simulator_print_stats",
         ":simulator_status",
         ":stepwise_dense_output",
         ":velocity_implicit_euler_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "simulator_flags",
+    srcs = ["simulator_flags.cc"],
+    hdrs = ["simulator_flags.h"],
+    deps = [
+        ":bogacki_shampine3_integrator",
+        ":explicit_euler_integrator",
+        ":implicit_euler_integrator",
+        ":radau_integrator",
+        ":runge_kutta2_integrator",
+        ":runge_kutta3_integrator",
+        ":runge_kutta5_integrator",
+        ":semi_explicit_euler_integrator",
+        ":simulator",
+        ":velocity_implicit_euler_integrator",
+        "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 
@@ -55,17 +76,7 @@ drake_cc_library(
     ],
     visibility = ["//:__subpackages__"],
     deps = [
-        ":bogacki_shampine3_integrator",
-        ":explicit_euler_integrator",
-        ":implicit_euler_integrator",
-        ":radau_integrator",
-        ":runge_kutta2_integrator",
-        ":runge_kutta3_integrator",
-        ":runge_kutta5_integrator",
-        ":semi_explicit_euler_integrator",
-        ":simulator",
-        ":velocity_implicit_euler_integrator",
-        "//common:essential",
+        ":simulator_flags",
         "@gflags",
     ],
 )
@@ -383,6 +394,16 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "simulator_flags_test",
+    deps = [
+        ":simulator",
+        ":simulator_flags",
+        "//common:nice_type_name",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
     name = "simulator_status_test",
     deps = [
         ":simulator_status",
@@ -450,7 +471,8 @@ drake_cc_googletest(
     deps = [
         ":implicit_euler_integrator",
         "//common/test_utilities:expect_throws_message",
-        "//systems/analysis/test_utilities",
+        "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -468,6 +490,7 @@ drake_cc_googletest(
     name = "integrator_base_test",
     deps = [
         ":integrator_base",
+        "//common/test_utilities:expect_throws_message",
         "//systems/plants/spring_mass_system",
     ],
 )
@@ -575,6 +598,7 @@ drake_cc_googletest(
     deps = [
         ":velocity_implicit_euler_integrator",
         "//systems/analysis/test_utilities:implicit_integrator_test",
+        "//systems/analysis/test_utilities:quadratic_scalar_system",
     ],
 )
 

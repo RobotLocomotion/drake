@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/rigid_body_frame.h"
 
 /// Defines a "loop joint" that models a kinematic loop formed by a chain of

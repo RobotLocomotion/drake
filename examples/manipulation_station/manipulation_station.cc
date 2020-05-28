@@ -399,7 +399,7 @@ void ManipulationStation<T>::SetRandomState(
   std::shuffle(shuffled_object_ids.begin(), shuffled_object_ids.end(),
                *generator);
   double z_offset = 0.1;
-  for (const auto body_index : shuffled_object_ids) {
+  for (const auto& body_index : shuffled_object_ids) {
     math::RigidTransform<T> pose =
         plant_->GetFreeBodyPose(plant_context, plant_->get_body(body_index));
     pose.set_translation(pose.translation() + Vector3d{0, 0, z_offset});
@@ -481,7 +481,7 @@ void ManipulationStation<T>::Finalize(
       std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.65),
           y(-0.35, 0.35), z(0, 0.05);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-      for (const auto body_index : object_ids_) {
+      for (const auto& body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
@@ -496,7 +496,7 @@ void ManipulationStation<T>::Finalize(
       std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
           y(-0.8, -.55), z(0.3, 0.35);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-      for (const auto body_index : object_ids_) {
+      for (const auto& body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
@@ -511,7 +511,7 @@ void ManipulationStation<T>::Finalize(
       std::uniform_real_distribution<symbolic::Expression> x(0.4, 0.8),
           y(0, 0), z(0, 0.05);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-      for (const auto body_index : object_ids_) {
+      for (const auto& body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
       }
@@ -618,8 +618,9 @@ void ManipulationStation<T>::Finalize(
     // Approximate desired state command from a discrete derivative of the
     // position command input port.
     auto desired_state_from_position = builder.template AddSystem<
-        systems::StateInterpolatorWithDiscreteDerivative>(num_iiwa_positions,
-                                                          plant_->time_step());
+        systems::StateInterpolatorWithDiscreteDerivative>(
+            num_iiwa_positions, plant_->time_step(),
+            true /* suppress_initial_transient */);
     desired_state_from_position->set_name("desired_state_from_position");
     builder.Connect(desired_state_from_position->get_output_port(),
                     iiwa_controller->get_input_port_desired_state());
@@ -731,13 +732,6 @@ void ManipulationStation<T>::SetIiwaPosition(
   auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
   plant_->SetPositions(plant_context, &plant_state, iiwa_model_.model_instance,
                        q);
-
-  // Set the position history in the state interpolator to match.
-  const auto& state_from_position = dynamic_cast<
-      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
-      this->GetSubsystemByName("desired_state_from_position"));
-  state_from_position.set_initial_position(
-      &this->GetMutableSubsystemState(state_from_position, state), q);
 }
 
 template <typename T>
@@ -795,13 +789,6 @@ void ManipulationStation<T>::SetWsgPosition(
   const Vector2<T> positions(-q / 2, q / 2);
   plant_->SetPositions(plant_context, &plant_state, wsg_model_.model_instance,
                        positions);
-
-  // Set the position history in the state interpolator to match.
-  const auto& wsg_controller = dynamic_cast<
-      const manipulation::schunk_wsg::SchunkWsgPositionController&>(
-      this->GetSubsystemByName("wsg_controller"));
-  wsg_controller.set_initial_position(
-      &this->GetMutableSubsystemState(wsg_controller, state), q);
 }
 
 template <typename T>

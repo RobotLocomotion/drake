@@ -26,9 +26,6 @@ class PiecewiseTrajectoryTester : public PiecewiseTrajectory<T> {
   std::unique_ptr<Trajectory<T>> Clone() const override {
     return nullptr;
   }
-  std::unique_ptr<Trajectory<T>> MakeDerivative(int) const override {
-    return nullptr;
-  }
 };
 
 void TestPiecewiseTrajectoryTimeRelatedGetters(

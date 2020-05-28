@@ -62,14 +62,14 @@ class TestFormatterBase(unittest.TestCase):
         original_lines = [
             '#include "line0"\r\n',
         ]
-        with self.assertRaisesRegexp(Exception, "DOS newline"):
+        with self.assertRaisesRegex(Exception, "DOS newline"):
             FormatterBase("filename.cc", readlines=original_lines)
 
     def test_missing_eof(self):
         original_lines = [
             '#include "line0"',
         ]
-        with self.assertRaisesRegexp(Exception, "newline.*end of file"):
+        with self.assertRaisesRegex(Exception, "newline.*end of file"):
             FormatterBase("filename.cc", readlines=original_lines)
 
 
@@ -183,27 +183,6 @@ namespace { }
 """
         self._check("dut.cc", original, original, None)
 
-    def test_cc_uses_single_inl(self):
-        # Only a single "-inl.h" include.
-        original = """
-#include "drake/dummy/dut-inl.h"
-
-namespace { }
-"""
-        self._check("dut.cc", original, original, None)
-
-    def test_cc_uses_inl_and_more(self):
-        # Presence of "-inl.h" pattern and other things.
-        original = """
-#include "drake/dummy/dut-inl.h"
-
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
-
-namespace { }
-"""
-        self._check("xxx.cc", original, original, None)
-
     def test_target_is_header(self):
         # A header file.
         original = """
@@ -220,17 +199,6 @@ namespace { }
 namespace { }
 """
         self._check("dut.h", original, expected, 0)
-
-    def test_target_is_inl(self):
-        # An *-inl.h file.
-        original = """
-#include "drake/dummy/dut.h"
-
-#include <vector>
-
-namespace { }
-"""
-        self._check("dut-inl.h", original, original, None)
 
     def test_associated_comment(self):
         # A comment prior to a line.
@@ -307,5 +275,5 @@ namespace { }
         original_lines = ['#include  "nontrivial.h"\n']
         dut = IncludeFormatter("nontrivial.cc", readlines=original_lines)
         dut.format_includes()
-        with self.assertRaisesRegexp(Exception, 'not just a shuffle'):
+        with self.assertRaisesRegex(Exception, 'not just a shuffle'):
             dut.rewrite_file()

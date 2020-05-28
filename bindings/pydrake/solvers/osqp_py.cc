@@ -17,30 +17,30 @@ PYBIND11_MODULE(osqp, m) {
   m.doc() = "OSQP solver bindings for MathematicalProgram";
 
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework").attr("AbstractValue");
+  py::module::import("pydrake.systems.framework");
 
   py::class_<OsqpSolver, SolverInterface>(m, "OsqpSolver", doc.OsqpSolver.doc)
       .def(py::init<>(), doc.OsqpSolver.ctor.doc);
 
   py::class_<OsqpSolverDetails>(
       m, "OsqpSolverDetails", doc.OsqpSolverDetails.doc)
-      .def_readwrite(
+      .def_readonly(
           "iter", &OsqpSolverDetails::iter, doc.OsqpSolverDetails.iter.doc)
-      .def_readwrite("status_val", &OsqpSolverDetails::status_val,
+      .def_readonly("status_val", &OsqpSolverDetails::status_val,
           doc.OsqpSolverDetails.status_val.doc)
-      .def_readwrite("primal_res", &OsqpSolverDetails::primal_res,
+      .def_readonly("primal_res", &OsqpSolverDetails::primal_res,
           doc.OsqpSolverDetails.primal_res.doc)
-      .def_readwrite("dual_res", &OsqpSolverDetails::dual_res,
+      .def_readonly("dual_res", &OsqpSolverDetails::dual_res,
           doc.OsqpSolverDetails.dual_res.doc)
-      .def_readwrite("setup_time", &OsqpSolverDetails::setup_time,
+      .def_readonly("setup_time", &OsqpSolverDetails::setup_time,
           doc.OsqpSolverDetails.setup_time.doc)
-      .def_readwrite("solve_time", &OsqpSolverDetails::solve_time,
+      .def_readonly("solve_time", &OsqpSolverDetails::solve_time,
           doc.OsqpSolverDetails.solve_time.doc)
-      .def_readwrite("polish_time", &OsqpSolverDetails::polish_time,
+      .def_readonly("polish_time", &OsqpSolverDetails::polish_time,
           doc.OsqpSolverDetails.polish_time.doc)
-      .def_readwrite("run_time", &OsqpSolverDetails::run_time,
+      .def_readonly("run_time", &OsqpSolverDetails::run_time,
           doc.OsqpSolverDetails.run_time.doc)
-      .def_readwrite("y", &OsqpSolverDetails::y, doc.OsqpSolverDetails.y.doc);
+      .def_readonly("y", &OsqpSolverDetails::y, doc.OsqpSolverDetails.y.doc);
   AddValueInstantiation<OsqpSolverDetails>(m);
 }
 

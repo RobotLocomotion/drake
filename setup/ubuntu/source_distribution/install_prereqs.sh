@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 18.04 (Bionic).
+# Ubuntu 18.04 (Bionic) or 20.04 (Focal).
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -23,13 +23,26 @@ EOF
 
 codename=$(lsb_release -sc)
 
-wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+if [[ "${codename}" == 'bionic' ]]; then
+  # We only need this apt site for kcov-35 on Bionic.
+  wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
+  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+fi
 
 apt-get update
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
 
 locale-gen en_US.UTF-8
+
+if [[ "${codename}" == 'focal' ]]; then
+  # We need a working /usr/bin/python (of any version).  On Bionic it's there
+  # by default, but on Focal we have to ask for it.
+  if [[ ! -e /usr/bin/python ]]; then
+    apt-get install --no-install-recommends python-is-python3
+  else
+    echo "/usr/bin/python is already installed"
+  fi
+fi
 
 dpkg_install_from_wget() {
   package="$1"
@@ -71,6 +84,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 2.1.0 \
-  https://releases.bazel.build/2.1.0/release/bazel_2.1.0-linux-x86_64.deb \
-  bf12c4c0bb853266676295351da20d13075b26bf23f28c4ffdfefc1b35062ccb
+  bazel 3.0.0 \
+  https://releases.bazel.build/3.0.0/release/bazel_3.0.0-linux-x86_64.deb \
+  dfa79c10bbfa39cd778e1813a273fd3236beb495497baa046f26d393c58bdc35

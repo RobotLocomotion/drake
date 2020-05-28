@@ -1,0 +1,110 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+load(
+    "@drake//geometry/render/gl_renderer:defs.bzl",
+    "drake_cc_googletest_gl_ubuntu_only",
+    "drake_cc_library_gl_ubuntu_only",
+    "drake_cc_package_library_gl_per_os",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_package_library_gl_per_os(
+    name = "dev",
+    ubuntu_deps = [
+        ":shape_meshes",
+        ":opengl_geometry",
+        ":render_engine_gl",
+        ":shader_program",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "shape_meshes",
+    srcs = ["shape_meshes.cc"],
+    hdrs = ["shape_meshes.h"],
+    # NOTE: Required for compatibility with tinyobjloader.
+    linkstatic = 1,
+    deps = [
+        "//common:essential",
+        "//geometry/render/gl_renderer:opengl_context",
+        "@tinyobjloader",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "opengl_geometry",
+    hdrs = ["opengl_geometry.h"],
+    deps = [
+        "//geometry/render/gl_renderer:opengl_context",
+        "//math:geometric_transform",
+    ],
+)
+
+# The pure OpenGL-based render engine implementation.
+drake_cc_library_gl_ubuntu_only(
+    name = "render_engine_gl",
+    srcs = ["render_engine_gl.cc"],
+    hdrs = [
+        "buffer_dim.h",
+        "render_engine_gl.h",
+    ],
+    deps = [
+        ":opengl_geometry",
+        ":shader_program",
+        ":shape_meshes",
+        "//common:essential",
+        "//geometry/render:render_engine",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "shader_program",
+    srcs = ["shader_program.cc"],
+    hdrs = ["shader_program.h"],
+    deps = [
+        "//common:essential",
+        "//geometry/render/gl_renderer:opengl_context",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "buffer_dim_test",
+    tags = vtk_test_tags(),
+    deps = [
+        ":render_engine_gl",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "shape_meshes_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    deps = [
+        ":shape_meshes",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "render_engine_gl_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":render_engine_gl",
+        "//common:find_resource",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
+    ],
+)
+
+add_lint_tests()

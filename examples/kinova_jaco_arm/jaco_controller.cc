@@ -4,16 +4,18 @@
 
 #include <memory>
 
-#include <gflags/gflags.h>
 #include "robotlocomotion/robot_plan_t.hpp"
+#include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
-#include "drake/examples/kinova_jaco_arm/jaco_lcm.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_jaco_command.hpp"
 #include "drake/lcmt_jaco_status.hpp"
+#include "drake/manipulation/kinova_jaco/jaco_command_sender.h"
+#include "drake/manipulation/kinova_jaco/jaco_constants.h"
+#include "drake/manipulation/kinova_jaco/jaco_status_receiver.h"
 #include "drake/manipulation/planner/robot_plan_interpolator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
@@ -30,16 +32,18 @@ using robotlocomotion::robot_plan_t;
 
 DEFINE_string(urdf, "", "Name of urdf to load");
 DEFINE_int32(num_joints,
-             drake::examples::kinova_jaco_arm::kJacoDefaultArmNumJoints,
+             drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints,
              "Number of joints in the arm (not including fingers)");
 DEFINE_int32(num_fingers,
-             drake::examples::kinova_jaco_arm::kJacoDefaultArmNumFingers,
+             drake::manipulation::kinova_jaco::kJacoDefaultArmNumFingers,
              "Number of fingers on the arm");
 
 namespace drake {
 namespace examples {
 namespace kinova_jaco_arm {
 namespace {
+using manipulation::kinova_jaco::JacoCommandSender;
+using manipulation::kinova_jaco::JacoStatusReceiver;
 using manipulation::planner::RobotPlanInterpolator;
 
 const char* const kJacoUrdf =
@@ -101,7 +105,7 @@ int DoMain() {
   auto status_receiver = builder.AddSystem<JacoStatusReceiver>(
       num_joints, num_fingers);
 
-  builder.Connect(status_receiver->get_output_port(0),
+  builder.Connect(status_receiver->get_state_output_port(),
                   pid_controller->get_input_port_estimated_state());
   builder.Connect(plan_source->get_output_port(0),
                   pid_controller->get_input_port_desired_state());
@@ -135,8 +139,8 @@ int DoMain() {
           kLcmCommandChannel, &lcm));
   auto command_sender = builder.AddSystem<JacoCommandSender>(num_joints);
   builder.Connect(command_mux->get_output_port(0),
-                  command_sender->get_input_port(0));
-  builder.Connect(command_sender->get_output_port(0),
+                  command_sender->get_input_port());
+  builder.Connect(command_sender->get_output_port(),
                   command_pub->get_input_port());
 
   auto owned_diagram = builder.Build();
@@ -174,7 +178,7 @@ int DoMain() {
 
   systems::Context<double>& status_context =
       diagram->GetMutableSubsystemContext(*status_receiver, &diagram_context);
-  auto& status_value = status_receiver->get_input_port(0).FixValue(
+  auto& status_value = status_receiver->get_input_port().FixValue(
       &status_context, first_status);
 
   // Run forever, using the lcmt_jaco_status message to dictate when simulation

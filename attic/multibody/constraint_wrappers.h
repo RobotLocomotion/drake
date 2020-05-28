@@ -5,6 +5,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/attic_warning.h"
 #include "drake/common/autodiff.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"

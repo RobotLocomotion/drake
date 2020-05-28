@@ -223,78 +223,82 @@ std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector(
 template <typename T>
 std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   // The input -> output feedthrough result we'll return to the user.
-  std::multimap<int, int> result;
+  std::multimap<int, int> feedthrough;
 
-  // The list of pairs where we don't know an answer yet.
-  std::multimap<InputPortIndex, OutputPortIndex> unknown;
+  // The set of pairs for which we don't know an answer yet; currently all.
+  std::set<std::pair<InputPortIndex, OutputPortIndex>> unknown;
   for (InputPortIndex u{0}; u < this->num_input_ports(); ++u) {
     for (OutputPortIndex v{0}; v < this->num_output_ports(); ++v) {
-      unknown.emplace(u, v);
+      unknown.emplace(std::make_pair(u, v));
     }
   }
 
-  // A helper function to remove an item from `unknown`.
-  auto remove_unknown = [&unknown](const auto& in_out_pair) {
-    for (auto iter = unknown.lower_bound(in_out_pair.first); ; ++iter) {
-      DRAKE_DEMAND(iter != unknown.end());
-      DRAKE_DEMAND(iter->first == in_out_pair.first);
-      if (*iter == in_out_pair) {
-        unknown.erase(iter);
-        break;
-      }
-    }
+  // A System with no input ports or no output ports has no feedthrough!
+  if (unknown.empty())
+    return feedthrough;  // Also empty.
+
+  // A helper function that removes an item from `unknown`.
+  const auto remove_unknown = [&unknown](const auto& in_out_pair) {
+    const auto num_erased = unknown.erase(in_out_pair);
+    DRAKE_DEMAND(num_erased == 1);
   };
 
-  // Ask the dependency graph if we can exclude any pairs.
-  if (!unknown.empty()) {
-    auto context = this->AllocateContext();
-    const auto orig_unknown = unknown;
-    for (const auto& input_output : orig_unknown) {
-      const auto& input = this->get_input_port(input_output.first);
-      const auto& input_tracker = context->get_tracker(input.ticket());
-      const auto& output = this->get_output_port(input_output.second);
-      DRAKE_ASSERT(typeid(output) == typeid(LeafOutputPort<T>));
-      const auto& leaf_output = static_cast<const LeafOutputPort<T>&>(output);
-      const auto& cache_entry = leaf_output.cache_entry();
-      auto& value = cache_entry.get_mutable_cache_entry_value(*context);
-      value.mark_up_to_date();
-      const int64_t change_event = context->start_new_change_event();
-      input_tracker.NoteValueChange(change_event);
-      if (!value.is_out_of_date()) {
-        // We've proved there is no dependency, so we don't need to add it to
-        // result and we can remove it from unknown.  (Or maybe the System's
-        // stated dependencies were inaccurate, but we can't really repair
-        // that here.)
-        remove_unknown(input_output);
-      }
-      // Undo the mark_up_to_date() we just did a few lines up.  It shouldn't
-      // matter at all on this throwaway context, but perhaps it's best not
-      // to leave garbage values marked valid for longer than required.
-      value.mark_out_of_date();
-    }
+  // A helper function that adds this in/out pair to the feedthrough result.
+  const auto add_to_feedthrough = [&feedthrough](const auto& in_out_pair) {
+    feedthrough.emplace(in_out_pair.first, in_out_pair.second);
+  };
+
+  // Ask the dependency graph if it can provide definitive information about
+  // the input/output pairs. If so remove those pairs from the `unknown` set.
+  auto context = this->AllocateContext();
+  const auto orig_unknown = unknown;
+  for (const auto& input_output : orig_unknown) {
+    // Get the CacheEntry associated with the output port in this pair.
+    const auto& output = this->get_output_port(input_output.second);
+    DRAKE_ASSERT(typeid(output) == typeid(LeafOutputPort<T>));
+    const auto& leaf_output = static_cast<const LeafOutputPort<T>&>(output);
+    const auto& cache_entry = leaf_output.cache_entry();
+
+    // If the user left the output prerequisites unspecified, then the cache
+    // entry tells us nothing useful about feedthrough for this pair.
+    if (cache_entry.has_default_prerequisites())
+      continue;  // Leave this one "unknown".
+
+    // Probe the dependency path and believe the result.
+    const auto& input = this->get_input_port(input_output.first);
+    const auto& input_tracker = context->get_tracker(input.ticket());
+    auto& value = cache_entry.get_mutable_cache_entry_value(*context);
+    value.mark_up_to_date();
+    const int64_t change_event = context->start_new_change_event();
+    input_tracker.NoteValueChange(change_event);
+
+    if (value.is_out_of_date())
+      add_to_feedthrough(input_output);
+
+    // Regardless of the result we have all we need to know now.
+    remove_unknown(input_output);
+
+    // Undo the mark_up_to_date() we just did a few lines up.  It shouldn't
+    // matter at all on this throwaway context, but perhaps it's best not
+    // to leave garbage values marked valid for longer than required.
+    value.mark_out_of_date();
   }
 
-  // If unknown pairs remain, ask symbolic inspector if we can exclude them.
-  if (!unknown.empty()) {
-    if (auto inspector = MakeSystemSymbolicInspector(*this)) {
-      const auto orig_unknown = unknown;
-      for (const auto& input_output : orig_unknown) {
-        if (!inspector->IsConnectedInputToOutput(
-                input_output.first, input_output.second)) {
-          // We've proved there is no dependency, so we don't need to add it
-          // to result and we can remove it from unknown.
-          remove_unknown(input_output);
-        }
-      }
-    }
-  }
+  // If the dependency graph resolved all pairs, no need for symbolic analysis.
+  if (unknown.empty())
+    return feedthrough;
 
-  // If unknown pairs remain, conservatively assume they are feedthrough.
+  // Otherwise, see if we can get a symbolic inspector to analyze them.
+  // If not, we have to assume they are feedthrough.
+  auto inspector = MakeSystemSymbolicInspector(*this);
   for (const auto& input_output : unknown) {
-    result.emplace(input_output.first, input_output.second);
+    if (!inspector || inspector->IsConnectedInputToOutput(
+                          input_output.first, input_output.second)) {
+      add_to_feedthrough(input_output);
+    }
+    // No need to clean up the `unknown` set here.
   }
-
-  return result;
+  return feedthrough;
 }
 
 template <typename T>
@@ -442,7 +446,7 @@ std::unique_ptr<DiscreteValues<T>> LeafSystem<T>::AllocateDiscreteState()
 template <typename T>
 std::unique_ptr<AbstractValues> LeafSystem<T>::AllocateAbstractState() const {
   return std::make_unique<AbstractValues>(
-      std::move(model_abstract_states_.CloneAllModels()));
+      model_abstract_states_.CloneAllModels());
 }
 
 template <typename T>

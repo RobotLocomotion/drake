@@ -110,12 +110,13 @@ class TemplateSystem(TemplateClass):
         self._converter = self._make_converter()
 
     @classmethod
-    def define(cls, name, T_list=None, T_pairs=None, *args, **kwargs):
+    def define(
+            cls, name, T_list=None, T_pairs=None, *args, scope=None, **kwargs):
         """Provides a decorator which can be used define a scalar-type
         convertible System as a template.
 
         The decorated function must be of the form ``f(T)``, which returns a
-        class which will be the instantation for type ``T`` of the given
+        class which will be the instantiation for type ``T`` of the given
         template.
 
         Args:
@@ -126,7 +127,9 @@ class TemplateSystem(TemplateClass):
             args, kwargs: These are passed to the constructor of
                 ``TemplateSystem``.
         """
-        template = cls(name, T_list, T_pairs, *args, **kwargs)
+        if scope is None:
+            scope = _get_module_from_stack()
+        template = cls(name, T_list, T_pairs, *args, scope=scope, **kwargs)
         param_list = [(T,) for T in template._T_list]
 
         def decorator(instantiation_func):

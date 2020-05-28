@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <memory>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
@@ -376,6 +377,29 @@ geometry::GeometryInstance ParseVisual(const std::string& parent_element_name,
     }
   }
 
+  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
+  //  a bit misleading; it isn't used by illustration, but we're not currently
+  //  parsing illustration and perception properties separately. So, we stash
+  //  them in the illustration properties relying on it to be ignored by
+  //  illustration consumers but copied over to the perception properties.
+  const char* kAcceptingTag = "drake:accepting_renderer";
+  const XMLElement* accepting_node = node->FirstChildElement(kAcceptingTag);
+  if (accepting_node) {
+    std::set<std::string> accepting_names;
+    while (accepting_node) {
+      std::string name;
+      if (!ParseStringAttribute(accepting_node, "name", &name)) {
+        throw std::runtime_error(
+            fmt::format("<{}}> tag given on line {} without any name",
+                        kAcceptingTag, accepting_node->GetLineNum()));
+      }
+      accepting_names.insert(name);
+      accepting_node = accepting_node->NextSiblingElement(kAcceptingTag);
+    }
+    DRAKE_DEMAND(accepting_names.size() > 0);
+    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
+  }
+
   std::string geometry_name;
   if (!ParseStringAttribute(node, "name", &geometry_name)) {
     geometry_name = MakeGeometryName(parent_element_name + "_Visual", node);
@@ -499,12 +523,13 @@ geometry::GeometryInstance ParseCollision(
   if (drake_element) {
     auto read_double =
         [drake_element](const char* element_name) -> std::optional<double> {
+      std::optional<double> result;
       const XMLElement* value_node =
           drake_element->FirstChildElement(element_name);
       if (value_node != nullptr) {
         double value{};
         if (ParseScalarAttribute(value_node, "value", &value)) {
-          return value;
+          result = value;
         } else {
           throw std::runtime_error(
               fmt::format("Unable to read the 'value' attribute for the <{}> "
@@ -512,7 +537,7 @@ geometry::GeometryInstance ParseCollision(
                           element_name, value_node->GetLineNum()));
         }
       }
-      return {};
+      return result;
     };
 
     const XMLElement* const rigid_element =

@@ -72,6 +72,10 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
     return camera_names_;
   }
 
+  /// Gets the number of joints in the IIWA (only -- does not include the
+  /// gripper).
+  int num_iiwa_joints() const;
+
  private:
   std::unique_ptr<multibody::MultibodyPlant<double>> owned_controller_plant_;
   std::unique_ptr<lcm::DrakeLcm> owned_lcm_;
@@ -80,6 +84,7 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
   std::vector<systems::lcm::LcmSubscriberSystem*> camera_subscribers_;
 
   const std::vector<std::string> camera_names_;
+  multibody::ModelInstanceIndex iiwa_model_instance_{};
 };
 
 }  // namespace manipulation_station

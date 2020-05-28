@@ -7,7 +7,6 @@
 
 #include "drake/bindings/pydrake/attic/documentation_pybind.h"
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/joints/prismatic_joint.h"
@@ -114,7 +113,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyTree.compile.doc)
       .def("initialized", &RigidBodyTree<double>::initialized,
           doc.RigidBodyTree.initialized.doc)
-      .def("get_bodies",
+      .def(
+          "get_bodies",
           [](const RigidBodyTree<double>& tree) {
             auto& body_unique_ptrs = tree.get_bodies();
             py::list py_bodies;
@@ -133,7 +133,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyTree.get_frames.doc)
       .def("drawKinematicTree", &RigidBodyTree<double>::drawKinematicTree,
           doc.RigidBodyTree.drawKinematicTree.doc)
-      .def("getRandomConfiguration",
+      .def(
+          "getRandomConfiguration",
           [](const RigidBodyTree<double>& tree) {
             std::random_device device;
             std::default_random_engine generator(device());
@@ -142,7 +143,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyTree.getRandomConfiguration.doc)
       .def("getZeroConfiguration", &RigidBodyTree<double>::getZeroConfiguration,
           doc.RigidBodyTree.getZeroConfiguration.doc)
-      .def("CalcBodyPoseInWorldFrame",
+      .def(
+          "CalcBodyPoseInWorldFrame",
           [](const RigidBodyTree<double>& tree,
               const KinematicsCache<double>& cache,
               const RigidBody<double>& body) {
@@ -183,7 +185,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("DefineCollisionFilterGroup",
           &RigidBodyTree<double>::DefineCollisionFilterGroup, py::arg("name"),
           doc.RigidBodyTree.DefineCollisionFilterGroup.doc)
-      .def("collisionDetectFromPoints",
+      .def(
+          "collisionDetectFromPoints",
           [](RigidBodyTree<double>& tree, const KinematicsCache<double>& cache,
               const Eigen::Matrix3Xd& points, bool use_margins) {
             Eigen::VectorXd phi;
@@ -204,7 +207,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           doc.RigidBodyTree.FindCollisionElement.doc)
       .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"),
           doc.RigidBodyTree.addFrame.doc)
-      .def("FindBody",
+      .def(
+          "FindBody",
           [](const RigidBodyTree<double>& self, const std::string& body_name,
               const std::string& model_name = "", int model_id = -1) {
             return self.FindBody(body_name, model_name, model_id);
@@ -215,7 +219,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("FindBodyIndex", &RigidBodyTree<double>::FindBodyIndex,
           py::arg("body_name"), py::arg("model_id") = -1,
           doc.RigidBodyTree.FindBodyIndex.doc)
-      .def("FindChildBodyOfJoint",
+      .def(
+          "FindChildBodyOfJoint",
           [](const RigidBodyTree<double>& self, const std::string& joint_name,
               int model_id) {
             return self.FindChildBodyOfJoint(joint_name, model_id);
@@ -235,7 +240,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("findFrame", &RigidBodyTree<double>::findFrame,
           py::arg("frame_name"), py::arg("model_id") = -1,
           doc.RigidBodyTree.findFrame.doc)
-      .def("getTerrainContactPoints",
+      .def(
+          "getTerrainContactPoints",
           [](const RigidBodyTree<double>& self, const RigidBody<double>& body,
               const std::string& group_name = "") {
             auto pts = Eigen::Matrix3Xd(3, 0);
@@ -293,25 +299,29 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::arg("model_instance_id_set") =
                 RigidBodyTreeConstants::default_model_instance_id_set,
             doc.RigidBodyTree.centerOfMass.doc)
-        .def("transformVelocityToQDot",
+        .def(
+            "transformVelocityToQDot",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const VectorX<T>& v) {
               return tree.transformVelocityToQDot(cache, v);
             },
             doc.RigidBodyTree.transformVelocityToQDot.doc)
-        .def("transformQDotToVelocity",
+        .def(
+            "transformQDotToVelocity",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const VectorX<T>& qdot) {
               return tree.transformQDotToVelocity(cache, qdot);
             },
             doc.RigidBodyTree.transformQDotToVelocity.doc)
-        .def("GetVelocityToQDotMapping",
+        .def(
+            "GetVelocityToQDotMapping",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache) {
               return tree.GetVelocityToQDotMapping(cache);
             },
             doc.RigidBodyTree.GetVelocityToQDotMapping.doc)
-        .def("GetQDotToVelocityMapping",
+        .def(
+            "GetQDotToVelocityMapping",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache) {
               return tree.GetQDotToVelocityMapping(cache);
@@ -321,7 +331,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::arg("cache"), py::arg("external_wrenches"),
             py::arg("include_velocity_terms") = true,
             doc.RigidBodyTree.dynamicsBiasTerm.doc)
-        .def("geometricJacobian",
+        .def(
+            "geometricJacobian",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, int base_body_or_frame_ind,
                 int end_effector_body_or_frame_ind,
@@ -337,7 +348,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::arg("expressed_in_body_or_frame_ind"),
             py::arg("in_terms_of_qdot") = false,
             doc.RigidBodyTree.geometricJacobian.doc)
-        .def("relativeTransform",
+        .def(
+            "relativeTransform",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, int base_or_frame_ind,
                 int body_or_frame_ind) {
@@ -401,7 +413,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         // worldMomentumMatrix
         // worldMomentumMatrixDotTimesV
         // transformSpatialAcceleration
-        .def("frictionTorques",
+        .def(
+            "frictionTorques",
             [](const RigidBodyTree<double>* self, const VectorX<T>& v) {
               return self->frictionTorques(v);
             },
@@ -411,13 +424,15 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::arg("include_velocity_terms") = true,
             doc.RigidBodyTree.inverseDynamics.doc)
         // resolveCenterOfPressure
-        .def("transformVelocityMappingToQDotMapping",
+        .def(
+            "transformVelocityMappingToQDotMapping",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const MatrixX<T>& Av) {
               return tree.transformVelocityMappingToQDotMapping(cache, Av);
             },
             doc.RigidBodyTree.transformVelocityMappingToQDotMapping.doc)
-        .def("transformQDotMappingToVelocityMapping",
+        .def(
+            "transformQDotMappingToVelocityMapping",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const MatrixX<T>& Ap) {
               return tree.transformQDotMappingToVelocityMapping(cache, Ap);
@@ -428,12 +443,14 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         // relativeRollPitchYawJacobianDotTimesV
         // relativeQuaternionJacobianDotTimesV
         // CheckCacheValidity
-        .def("doKinematics",
+        .def(
+            "doKinematics",
             [](const RigidBodyTree<double>& tree, const VectorX<T>& q) {
               return tree.doKinematics(q);
             },
             doc.RigidBodyTree.doKinematics.doc_1args)
-        .def("doKinematics",
+        .def(
+            "doKinematics",
             [](const RigidBodyTree<double>& tree, const VectorX<T>& q,
                 const VectorX<T>& v) { return tree.doKinematics(q, v); },
             doc.RigidBodyTree.doKinematics.doc_3args)
@@ -445,7 +462,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             doc.RigidBodyTree.ComputeMaximumDepthCollisionPoints.doc);
     // Type (b) methods:
     tree_cls
-        .def("transformPoints",
+        .def(
+            "transformPoints",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache,
                 const Eigen::Matrix<double, 3, Eigen::Dynamic>& points,
@@ -454,7 +472,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                   cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
             },
             doc.RigidBodyTree.transformPoints.doc)
-        .def("relativeRollPitchYaw",
+        .def(
+            "relativeRollPitchYaw",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, int from_body_or_frame_ind,
                 int to_body_or_frame_ind) {
@@ -464,7 +483,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::arg("cache"), py::arg("from_body_or_frame_ind"),
             py::arg("to_body_or_frame_ind"),
             doc.RigidBodyTree.relativeRollPitchYaw.doc)
-        .def("transformPointsJacobian",
+        .def(
+            "transformPointsJacobian",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const Matrix3X<double>& points,
                 int from_body_or_frame_ind, int to_body_or_frame_ind,
@@ -477,7 +497,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::arg("from_body_or_frame_ind"), py::arg("to_body_or_frame_ind"),
             py::arg("in_terms_of_qdot"),
             doc.RigidBodyTree.transformPointsJacobian.doc)
-        .def("transformPointsJacobianDotTimesV",
+        .def(
+            "transformPointsJacobianDotTimesV",
             [](const RigidBodyTree<double>& tree,
                 const KinematicsCache<T>& cache, const Matrix3X<double>& points,
                 int from_body_or_frame_ind, int to_body_or_frame_ind) {
@@ -518,7 +539,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           &RigidBodyFrame<double>::get_transform_to_body,
           doc.RigidBodyFrame.get_transform_to_body.doc);
 
-  m.def("AddModelInstanceFromUrdfFile",
+  m.def(
+      "AddModelInstanceFromUrdfFile",
       [](const std::string& urdf_filename,
           const FloatingBaseType floating_base_type,
           shared_ptr<RigidBodyFrame<double>> weld_to_frame,
@@ -539,7 +561,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
           AddModelInstanceFromUrdfStringSearchingInRosPackages),
       doc.drake.parsers.urdf
           .AddModelInstanceFromUrdfStringSearchingInRosPackages.doc);
-  m.def("AddModelInstancesFromSdfFile",
+  m.def(
+      "AddModelInstancesFromSdfFile",
       [](const std::string& sdf_filename,
           const FloatingBaseType floating_base_type,
           std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,

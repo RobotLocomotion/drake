@@ -33,6 +33,9 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
     const System<T>& system, const T& t, const VectorX<T>& xt,
     const Context<T>& context, MatrixX<T>* J) {
   DRAKE_LOGGER_DEBUG("  ImplicitIntegrator Compute Autodiff Jacobian t={}", t);
+  // TODO(antequ): Investigate how to refactor this method to use
+  // math::jacobian(), if possible.
+
   // Create AutoDiff versions of the state vector.
   VectorX<AutoDiffXd> a_xt = xt;
 
@@ -63,6 +66,15 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
       this->EvalTimeDerivatives(*adiff_system, *adiff_context).CopyToVector();
 
   *J = math::autoDiffToGradientMatrix(result);
+
+  // Sometimes the system's derivatives f(t, x) do not depend on its states, for
+  // example, when f(t, x) = constant or when f(t, x) depends only on t. In this
+  // case, make sure that the Jacobian isn't a n ✕ 0 matrix (this will cause a
+  // segfault when forming Newton iteration matrices); if it is, we set it equal
+  // to an n x n zero matrix.
+  if (J->cols() == 0) {
+    *J = MatrixX<T>::Zero(n_state_dim, n_state_dim);
+  }
 }
 
 // Computes the Jacobian of the ordinary differential equations around time

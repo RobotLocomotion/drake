@@ -225,7 +225,7 @@ GTEST_TEST(DiscreteTimeDelayTest, DiscreteSimulation) {
   simulator.AdvanceTo(0.49);
   EXPECT_EQ(0, eval());
 
-  // Should start outputing delayed input.
+  // Should start outputting delayed input.
   simulator.AdvanceTo(0.5);
   simulator.AdvancePendingEvents();
   EXPECT_NEAR(count_eval(0), eval(), kMachineTol);
@@ -288,7 +288,7 @@ GTEST_TEST(DiscreteTimeDelayTest, ContinuousSimulation) {
   simulator.AdvanceTo(0.49);
   EXPECT_EQ(0, eval());
 
-  // Should start outputing delayed input.
+  // Should start outputting delayed input.
   simulator.AdvanceTo(0.5);
   simulator.AdvancePendingEvents();
   EXPECT_NEAR(sine_eval(0), eval(), kMachineTol);

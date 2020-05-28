@@ -298,7 +298,7 @@ TEST_F(ProximityEngineMeshes, MeshComputeContactSurfacesOnly) {
 //     - anchored - anchored: should be a no-op; no throw, no collision
 //       regardless of compatible or incompatible compliance type, or if only
 //       one is a mesh, or both (or, in fact, neither).
-//     - For all permuations involving a dynamic geometry:
+//     - For all permutations involving a dynamic geometry:
 //       (dynamic shape - dynamic mesh), (dynamic shape - anchored mesh), and
 //       (anchored shape - dynamic mesh):
 //       - If it satisfies the strict hydroelastic functions's conditions
@@ -322,7 +322,7 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   // conditions (i.e., different compliance) should lead to a single contact
   // surface.
   {
-    for (const auto [mesh_anchored, shape_anchored] : anchor_configurations) {
+    for (const auto& [mesh_anchored, shape_anchored] : anchor_configurations) {
       ProximityEngine<double> engine;
       const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, soft,
                                         mesh, mesh_anchored, !soft);
@@ -351,7 +351,7 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   //       combination that isn't possible in practice. We could only get a
   //       rigid mesh and an undefined mesh.
   {
-    for (const auto [mesh_anchored, shape_anchored] : anchor_configurations) {
+    for (const auto& [mesh_anchored, shape_anchored] : anchor_configurations) {
       ProximityEngine<double> engine;
       const auto X_WGs = PopulateEngine(&engine, sphere, shape_anchored, !soft,
                                         mesh, mesh_anchored, !soft);
@@ -3432,11 +3432,11 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
 //  testing in proximity engine. They should only test the following:
 //  Successful evaluation between two dynamic shapes and between a dynamic
 //  and anchored shape. Those simple tests confirm ProximityEngine handles its
-//  responsibilty correctly; it calls the appropriate broadphase methods on FCL.
-//  Unit tests on ProximityEngine for the FCL-based query methods should *not*
-//  be concerned with the correctness of the results' values -- that lies in the
-//  responsibility of the callback and underlying geometric algorithms. They
-//  were originally created here because FCL wasn't completely trusted. So,
+//  responsibility correctly; it calls the appropriate broadphase methods on
+//  FCL. Unit tests on ProximityEngine for the FCL-based query methods should
+//  *not* be concerned with the correctness of the results' values -- that lies
+//  in the responsibility of the callback and underlying geometric algorithms.
+//  They were originally created here because FCL wasn't completely trusted. So,
 //  create a set of tests that can be evaluated on each of the FCL-based queries
 //  that performs those two tests.
 

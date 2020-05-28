@@ -73,7 +73,6 @@ drake_cc_library(
         "drake_assertion_error.h",
         "drake_copyable.h",
         "drake_deprecated.h",
-        "drake_nodiscard.h",
         "drake_throw.h",
         "eigen_stl_types.h",
         "eigen_types.h",
@@ -398,12 +397,30 @@ drake_cc_library(
     ],
 )
 
+# N.B. This library does not have all of its dependencies declared. Instead,
+# it defines only the headers such that it can be used by `pydrake` without
+# installing the file. (If we just used `install_hdrs_exclude`, the header
+# would not make it into `//:drake_shared_library`.)
+drake_cc_library(
+    name = "nice_type_name_override_header",
+    hdrs = ["nice_type_name_override.h"],
+    install_hdrs_exclude = ["nice_type_name_override.h"],
+    tags = ["exclude_from_package"],
+    visibility = ["//bindings/pydrake/common:__pkg__"],
+)
+
 drake_cc_library(
     name = "nice_type_name",
-    srcs = ["nice_type_name.cc"],
-    hdrs = ["nice_type_name.h"],
+    srcs = [
+        "nice_type_name.cc",
+        "nice_type_name_override.cc",
+    ],
+    hdrs = [
+        "nice_type_name.h",
+    ],
     deps = [
         ":essential",
+        ":nice_type_name_override_header",
     ],
 )
 
@@ -767,17 +784,6 @@ drake_cc_googletest(
     copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":essential",
-    ],
-)
-
-drake_cc_googletest(
-    name = "drake_nodiscard_test",
-    copts = [
-        "-Wno-cpp",
-    ],
-    deps = [
-        ":essential",
-        ":unused",
     ],
 )
 

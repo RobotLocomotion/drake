@@ -76,14 +76,6 @@ class TestAll(unittest.TestCase):
         expected_symbols = (
             # __init__
             "getDrakePath",
-            # attic
-            # - solvers
-            "RigidBodyConstraint",
-            # - systems
-            # - - controllers
-            "RbtInverseDynamics",
-            # - - sensors
-            "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
             # common
@@ -125,23 +117,15 @@ class TestAll(unittest.TestCase):
             "PackageMap",
             # - plant
             "MultibodyPlant",
-            # - rigid_body_plant
-            "RigidBodyPlant",
-            # - rigid_body_tree
-            "RigidBodyTree",
-            # - shapes
-            # TODO(eric.cousineau): Avoid collision with `collision.Element`.
-            # Import modules, since these names are generic.
-            "Element",
             # - tree
             "MultibodyForces",
             # perception
             "PointCloud",
             # solvers
+            # - mixed_integer_optimization_util
+            "AddLogarithmicSos2Constraint",
             # - gurobi
             "GurobiSolver",
-            # - ik
-            "IKResults",
             # - ipopt
             "IpoptSolver",
             # - branch_and_bound

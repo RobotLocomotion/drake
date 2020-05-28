@@ -1,7 +1,8 @@
-#include <Eigen/Dense>
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
+#include <Eigen/Dense>
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -35,9 +36,19 @@ PYBIND11_MODULE(rendering, m) {
       .def(py::init<const Eigen::Quaternion<T>&,
                const Eigen::Translation<T, 3>&>(),
           py::arg("rotation"), py::arg("translation"),
-          doc.PoseVector.ctor.doc_2args)
-      .def("get_isometry", &PoseVector<T>::get_isometry,
-          doc.PoseVector.get_isometry.doc)
+          doc.PoseVector.ctor.doc_2args);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  pose_vector.def("get_isometry",
+      WrapDeprecated(doc.PoseVector.get_isometry.doc_deprecated,
+          &PoseVector<T>::get_isometry),
+      doc.PoseVector.get_isometry.doc_deprecated);
+#pragma GCC diagnostic pop
+  pose_vector
+      .def("get_transform", &PoseVector<T>::get_transform,
+          doc.PoseVector.get_transform.doc)
+      .def("set_transform", &PoseVector<T>::set_transform,
+          doc.PoseVector.set_transform.doc)
       .def("get_translation", &PoseVector<T>::get_translation,
           doc.PoseVector.get_translation.doc)
       .def("set_translation", &PoseVector<T>::set_translation,
@@ -62,12 +73,28 @@ PYBIND11_MODULE(rendering, m) {
 
   frame_velocity.attr("kSize") = int{FrameVelocity<T>::kSize};
 
-  py::class_<PoseBundle<T>>(m, "PoseBundle", doc.PoseBundle.doc)
+  py::class_<PoseBundle<T>> pose_bundle(m, "PoseBundle", doc.PoseBundle.doc);
+  pose_bundle
       .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc)
       .def("get_num_poses", &PoseBundle<T>::get_num_poses,
-          doc.PoseBundle.get_num_poses.doc)
-      .def("get_pose", &PoseBundle<T>::get_pose, doc.PoseBundle.get_pose.doc)
-      .def("set_pose", &PoseBundle<T>::set_pose, doc.PoseBundle.set_pose.doc)
+          doc.PoseBundle.get_num_poses.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  pose_bundle
+      .def("get_pose",
+          WrapDeprecated(
+              doc.PoseBundle.get_pose.doc_deprecated, &PoseBundle<T>::get_pose),
+          doc.PoseBundle.get_pose.doc_deprecated)
+      .def("set_pose",
+          WrapDeprecated(
+              doc.PoseBundle.set_pose.doc_deprecated, &PoseBundle<T>::set_pose),
+          doc.PoseBundle.set_pose.doc_deprecated);
+#pragma GCC diagnostic pop
+  pose_bundle
+      .def("get_transform", &PoseBundle<T>::get_transform,
+          doc.PoseBundle.get_transform.doc)
+      .def("set_transform", &PoseBundle<T>::set_transform,
+          doc.PoseBundle.set_transform.doc)
       .def("get_velocity", &PoseBundle<T>::get_velocity,
           doc.PoseBundle.get_velocity.doc)
       .def("set_velocity", &PoseBundle<T>::set_velocity,
@@ -84,12 +111,14 @@ PYBIND11_MODULE(rendering, m) {
       m, "PoseVelocityInputPorts", doc.PoseVelocityInputPorts.doc)
       // N.B. We use lambdas below since we cannot use `def_readonly` with
       // reference members.
-      .def_property_readonly("pose_input_port",
+      .def_property_readonly(
+          "pose_input_port",
           [](PoseVelocityInputPorts<T>* self) -> const InputPort<T>& {
             return self->pose_input_port;
           },
           doc.PoseVelocityInputPorts.pose_input_port.doc)
-      .def_property_readonly("velocity_input_port",
+      .def_property_readonly(
+          "velocity_input_port",
           [](PoseVelocityInputPorts<T>* self) -> const InputPort<T>& {
             return self->velocity_input_port;
           },

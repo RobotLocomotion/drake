@@ -12,31 +12,17 @@ package(
     default_visibility = [":__subpackages__"],
 )
 
-drake_cc_library(
-    name = "jaco_lcm",
-    srcs = ["jaco_lcm.cc"],
-    hdrs = ["jaco_lcm.h"],
-    deps = [
-        "//lcmtypes:jaco",
-        "//systems/framework:leaf_system",
-    ],
-)
-
 drake_cc_binary(
     name = "jaco_controller",
     srcs = ["jaco_controller.cc"],
-    copts = [
-        # TODO(sammy-tri) Remove this once ported away from lcm_driven_loop.
-        "-Wno-deprecated-declarations",
-    ],
     data = [
         "//manipulation/models/jaco_description:models",
     ],
     deps = [
-        ":jaco_lcm",
         "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//lcm",
+        "//manipulation/kinova_jaco",
         "//manipulation/planner:robot_plan_interpolator",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controller",
@@ -59,11 +45,11 @@ drake_cc_binary(
     ],
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
-        ":jaco_lcm",
         "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
+        "//manipulation/kinova_jaco",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -79,26 +65,14 @@ drake_cc_binary(
         "//manipulation/models/jaco_description:models",
     ],
     deps = [
-        ":jaco_lcm",
         "//common:add_text_logging_gflags",
         "//common:find_resource",
         "//lcmtypes:jaco",
-        "//manipulation/planner:differential_inverse_kinematics",
+        "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
-        "//multibody/parsing",
-        "//multibody/plant",
         "@lcm",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "jaco_lcm_test",
-    deps = [
-        ":jaco_lcm",
-        "//systems/framework:diagram",
-        "//systems/framework:diagram_builder",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 

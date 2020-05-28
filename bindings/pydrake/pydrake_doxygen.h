@@ -1,5 +1,6 @@
 /// @file
-/// Generic doxygen-only documentation.
+/// Doxygen-only documentation for the development of Python bindings.
+/// @sa @ref python_bindings
 
 /** @defgroup python_bindings Python Bindings
 @ingroup technical_notes
@@ -156,7 +157,7 @@ Drake uses a modified version of `mkdoc.py` from `pybind11`, where `libclang`
 Python bindings are used to generate C++ docstrings accessible to the C++
 binding code.
 
-These docstrings are avaialable within `constexpr struct ... pydrake_doc`
+These docstrings are available within `constexpr struct ... pydrake_doc`
 as `const char*` values . When these are not available or not suitable for
 Python documentation, provide custom strings. If this custom string is long,
 consider placing them in a heredoc string.
@@ -274,6 +275,27 @@ generated documentation.
 - The docstring for a method that is marked as deprecated in C++ Doxygen will
 be named `.doc_deprecated...` instead of just `.doc...`.
 
+@anchor PydrakeDeprecation
+## Deprecation
+
+Decorators and utilites for deprecation in pure Python are available in
+[`pydrake.common.deprecation`](https://drake.mit.edu/pydrake/pydrake.common.deprecation.html).
+
+Deprecations for Python bindings in C++ are available in
+[`drake/bindings/pydrake/common/deprecation_pybind.h`](https://drake.mit.edu/doxygen_cxx/deprecation__pybind_8h.html).
+
+For examples of how to use the deprecations and what side effects they will
+have, please see:
+
+- [`drake/bindings/.../deprecation_example/`](https://github.com/RobotLocomotion/drake/tree/master/bindings/pydrake/common/test/deprecation_example)
+- [`drake/bindings/.../deprecation_test.py`](https://github.com/RobotLocomotion/drake/blob/master/bindings/pydrake/common/test/deprecation_test.py)
+
+@note All deprecations in Drake should ultimately use the
+[Python `warnings` module](https://docs.python.org/3.6/library/warnings.html),
+and the
+[`DrakeDeprecationWarning`](https://drake.mit.edu/pydrake/pydrake.common.deprecation.html#pydrake.common.deprecation.DrakeDeprecationWarning)
+class. The utilities mentioned above use them.
+
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior
 
@@ -314,6 +336,64 @@ This works about 80% of the time.
 - Lambdas, e.g. `[](Args... args) -> auto&& { return func(args...); }`
 (using perfect forwarding when appropriate).
 
+### Public C++ API Considerations for Function and Method Templates
+
+The motivation behind this section can be found under the
+"C++ Function and Method Template Instantiations in Python" section in
+`doc/python_bindings.rst`.
+
+In general, Drake uses techniques like parameter packs and type erasure to
+create sugar functions. These functions map their inputs to parameters of some
+concrete, under-the-hood method that actually does the work, and is devoid of
+such tricks. To facilitate python bindings, this underlying function should
+also be exposed in the public API.
+
+As an example for parameter packs,
+`MultibodyPlant<T>::AddJoint<JointType, Args...>(...)`
+([code permalink](https://git.io/JfqhI))
+is a C++ sugar method
+that uses parameter packs and ultimately passes the result to
+`MultibodyPlant<T>::AddJoint<JointType>(unique_ptr<JointType>)`
+([code permalink](https://git.io/JfqhU)), and only the
+`unique_ptr` function is bound ([code permalink](https://git.io/Jfqie)):
+
+```
+using Class = MultibodyPlant<T>;
+...
+    .def("AddJoint",
+        [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
+          return self->AddJoint(std::move(joint));
+        },
+        py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
+...
+```
+
+As an example for parameter packs,
+`GeometryProperties::AddProperty<ValueType>`
+([code permalink](https://git.io/JfqhL)) is a C++ sugar method that uses
+type erasure and ultimately passes the result to
+`GeometryProperties::AddPropertyAbstract`
+([code permalink](https://git.io/Jfqhm)), and only the `AddPropertyAbstract`
+flavor is used in the bindings, but in such a way that it is similar to the C++
+API for `AddProperty` ([code permalink](https://git.io/JfqiT)):
+
+```
+using Class = GeometryProperties;
+py::handle abstract_value_cls =
+    py::module::import("pydrake.systems.framework").attr("AbstractValue");
+...
+    .def("AddProperty",
+        [abstract_value_cls](Class* self, const std::string& group_name,
+            const std::string& name, py::object value) {
+          py::object abstract = abstract_value_cls.attr("Make")(value);
+          self->AddPropertyAbstract(
+              group_name, name, abstract.cast<const AbstractValue&>());
+        },
+        py::arg("group_name"), py::arg("name"), py::arg("value"),
+        cls_doc.AddProperty.doc)
+...
+```
+
 ## Python Subclassing of C++ Classes
 
 In general, minimize the amount in which users may subclass C++ classes in
@@ -328,8 +408,9 @@ Some aliases are provided; prefer these to the full spellings.
 
 `namespace py` is a shorthand alias to `pybind11` for consistency.
 
-@see py_reference, py_reference_internal for dealing with %common ownership
-     issues.
+@see @ref drake::pydrake::py_reference "py_reference",
+@ref drake::pydrake::py_reference_internal "py_reference_internal" for dealing
+with %common ownership issues.
 
 @note Downstream users should avoid `using namespace drake::pydrake`, as
 this may create ambiguous aliases (especially for GCC). Instead, consider

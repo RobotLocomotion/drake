@@ -45,11 +45,14 @@ FittedValueIteration(
   const int num_state_indices = state_mesh.get_num_interpolants();
 
   // TODO(russt): handle discrete state.
-  DRAKE_DEMAND(context.has_only_continuous_state());
+  DRAKE_DEMAND(context.has_only_continuous_state() ||
+               options.assume_non_continuous_states_are_fixed);
   DRAKE_DEMAND(context.num_continuous_states() == state_size);
 
-  DRAKE_DEMAND(context.num_input_ports() == 1);
-  DRAKE_DEMAND(system.num_total_inputs() == input_size);
+  const InputPort<double>* input_port =
+      system.get_input_port_selection(options.input_port_index);
+  DRAKE_DEMAND(input_port != nullptr);
+  DRAKE_DEMAND(input_port->size() == input_size);
 
   DRAKE_DEMAND(timestep > 0.);
 
@@ -86,7 +89,7 @@ FittedValueIteration(
     cost[input].resize(num_states);
 
     input_mesh.get_mesh_point(input, &input_vec);
-    system.get_input_port(0).FixValue(&context, input_vec);
+    input_port->FixValue(&context, input_vec);
 
     for (int state = 0; state < num_states; state++) {
       context.SetTime(0.0);

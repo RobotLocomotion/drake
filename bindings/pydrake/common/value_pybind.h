@@ -1,12 +1,15 @@
 #pragma once
 
 /// @file
-/// Helpers for defining scalars and values.
+/// Helpers for defining instantiations of drake::Value<>.
 
 #include <string>
 
+#include <fmt/format.h>
+
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/value.h"
@@ -14,8 +17,8 @@
 namespace drake {
 namespace pydrake {
 
-/// Defines an instantiation of `pydrake.systems.framework.Value[...]`. This is
-/// only meant to bind `Value<T>` (or specializations thereof).
+/// Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
+/// meant to bind `Value<T>` (or specializations thereof).
 /// @prereq `T` must have already been exposed to `pybind11`.
 /// @param scope Parent scope.
 /// @tparam T Inner parameter of `Value<T>`.
@@ -24,21 +27,20 @@ namespace pydrake {
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     py::module scope) {
+  static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
+  py::module py_common = py::module::import("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
-  py::module py_framework = py::module::import("pydrake.systems.framework");
-  AddTemplateClass(py_framework, "Value", py_class, GetPyParam<T>());
+  py::tuple param = GetPyParam<T>();
+  AddTemplateClass(py_common, "Value", py_class, param);
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
   // simplified by always copying.
   // See docstring for `set_value` for presently unavoidable caveats.
   py_class.def(py::init<const T&>());
   // Define emplace constructor.
-  // TODO(eric.cousineau): This presently requires that `T` be aliased or
-  // registered. For things like `std::vector`, this fails. Consider alternative
-  // to retrieve Python type from T?
-  py::object py_T = GetPyParam<T>()[0];
+  py::object py_T = param[0];
   py_class.def(py::init([py_T](py::args args, py::kwargs kwargs) {
     // Use Python constructor for the bound type.
     py::object py_v = py_T(*args, **kwargs);
@@ -53,24 +55,44 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     const T& v = caster;  // Use implicit conversion from `type_caster<>`.
     return new Class(v);
   }));
-  // N.B. `reference_internal` for pybind POD types (int, str, etc.) does not
-  // really do anything meaningful.
-  // TODO(eric.cousineau): Add check to warn about this.
-  py_class  // BR
-      .def("get_value", &Class::get_value, py_reference_internal)
-      .def("get_mutable_value", &Class::get_mutable_value,
-          py_reference_internal);
-  std::string set_value_docstring = "Replaces stored value with a new one.";
-  if (!std::is_copy_constructible<T>::value) {
-    set_value_docstring += R"""(
+  // If the type is registered via `py::class_`, or is of type `Object`
+  // (`py::object`), then we can obtain a mutable view into the value.
+  constexpr bool has_get_mutable_value =
+      internal::is_generic_pybind_v<T> || std::is_same_v<T, Object>;
+  if constexpr (has_get_mutable_value) {
+    py::return_value_policy return_policy = py_reference_internal;
+    if (std::is_same_v<T, Object>) {
+      // N.B. This implies that `Object` will be copied by value; however, it
+      // is only a shallow copy of the pointer, not a deep copy of the object.
+      return_policy = py::return_value_policy::copy;
+    }
+    std::string set_value_docstring = "Replaces stored value with a new one.";
+    if (!std::is_copy_constructible<T>::value) {
+      set_value_docstring += R"""(
 
 @note The value type for this class is non-copyable.
 You should ensure that you do not have any dangling references to previous
-values returned by `get_value` or `get_mutable_value`, because this memory will
+values returned by `get_value` or `get_mutable_value`, because this memory
+will
 be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
-)""";
+  )""";
+    }
+    py_class  // BR
+        .def("get_value", &Class::get_value, return_policy)
+        .def("get_mutable_value", &Class::get_mutable_value, return_policy)
+        .def("set_value", &Class::set_value, set_value_docstring.c_str());
+  } else {
+    py_class  // BR
+        .def("get_value", &Class::get_value)
+        .def("get_mutable_value",
+            [py_T](const Class&) {
+              throw std::logic_error(
+                  fmt::format("Cannot get mutable value (or reference) for a "
+                              "type-conversion type: {}",
+                      py::str(py_T).cast<std::string>()));
+            })
+        .def("set_value", &Class::set_value);
   }
-  py_class.def("set_value", &Class::set_value, set_value_docstring.c_str());
   return py_class;
 }
 

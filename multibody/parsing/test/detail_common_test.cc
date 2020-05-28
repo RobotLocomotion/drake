@@ -31,8 +31,7 @@ optional<double> empty_read_double(const char*) { return {}; }
 ReadDoubleFunc param_read_double(
     const std::string& tag, double value) {
   return [&tag, value](const char* name) -> optional<double> {
-    if (tag == name) return value;
-    return {};
+    return (tag == name) ? optional<double>(value) : std::nullopt;
   };
 }
 
@@ -179,12 +178,13 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
   auto friction_read_double = [](optional<double> mu_d,
       optional<double> mu_s) -> ReadDoubleFunc {
     return [mu_d, mu_s](const char* name) -> optional<double> {
+      optional<double> result;
       if (mu_d.has_value() && std::string("drake:mu_dynamic") == name) {
-        return *mu_d;
+        result = *mu_d;
       } else if (mu_s.has_value() && std::string("drake:mu_static") == name) {
-        return *mu_s;
+        result = *mu_s;
       }
-      return {};
+      return result;
     };
   };
 

@@ -1,12 +1,13 @@
 import numpy as np
 
+from pydrake.common.value import AbstractValue
 from pydrake.math import RigidTransform
 from pydrake.perception import BaseField, Fields, PointCloud
-from pydrake.systems.framework import AbstractValue, LeafSystem
+from pydrake.systems.framework import LeafSystem
 
 
 def _TransformPoints(points_Ci, X_CiSi):
-    # Make homogenous copy of points.
+    # Make homogeneous copy of points.
     points_h_Ci = np.vstack((points_Ci,
                              np.ones((1, points_Ci.shape[1]))))
 

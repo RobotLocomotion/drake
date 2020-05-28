@@ -33,8 +33,8 @@ def main(workspace_name="drake"):
         filenames = [
             os.path.join(workspace_dir, relpath)
             for relpath in relpaths
-            if os.path.splitext(relpath)[1][1:] in extensions and
-            not relpath.startswith("third_party")
+            if os.path.splitext(relpath)[1][1:] in extensions
+            and not relpath.startswith("third_party")
         ]
         print(f"This will reformat {len(filenames)} files "
               f"within {workspace_dir}")

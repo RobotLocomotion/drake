@@ -3,10 +3,11 @@
 import unittest
 import numpy as np
 
+from pydrake.common.value import AbstractValue
 from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import AbstractValue, DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.perception import (
     PointCloudConcatenation, _ConcatenatePointClouds, _TileColors,
     _TransformPoints)
@@ -134,7 +135,7 @@ class TestPointCloudConcatenation(unittest.TestCase):
         self.assertEqual(fused_pc.size(), 2 * self.num_points)
 
         # The first point cloud should be from [-0.1 to 0.1].
-        # Tthe second point cloud should be from [0.9 to 1.1].
+        # The second point cloud should be from [0.9 to 1.1].
         self.assertTrue(np.max(fused_pc.xyzs()[0, :]) >= 1.0)
         self.assertTrue(np.min(fused_pc.xyzs()[0, :]) <= 0.0)
 

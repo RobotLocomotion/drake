@@ -1,3 +1,4 @@
+import numpy as np
 import unittest
 
 from pydrake.examples.rimless_wheel import (
@@ -28,6 +29,9 @@ class TestRimlessWheel(unittest.TestCase):
         self.assertEqual(params.gravity(), 4.)
         self.assertEqual(params.number_of_spokes(), 7)
         self.assertEqual(params.slope(), .15)
+        self.assertEqual(
+            RimlessWheel.calc_alpha(params=params),
+            np.pi / params.number_of_spokes())
 
     def test_state(self):
         state = RimlessWheelContinuousState()

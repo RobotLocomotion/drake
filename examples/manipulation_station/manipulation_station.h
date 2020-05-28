@@ -319,7 +319,7 @@ class ManipulationStation : public systems::Diagram<T> {
     return *owned_controller_plant_;
   }
 
-  /// Get the number of joints in the IIWA (only -- does not include the
+  /// Gets the number of joints in the IIWA (only -- does not include the
   /// gripper).
   /// @pre must call one of the "setup" methods first to register an IIWA
   /// model.

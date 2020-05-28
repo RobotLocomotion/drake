@@ -1,5 +1,7 @@
+/* clang-format: off */
 // NOLINTNEXTLINE(build/include) False positive on inl file.
 #include "drake/multibody/kinematics_cache-inl.h"
+/* clang-format: on */
 
 #include "drake/common/autodiff.h"
 

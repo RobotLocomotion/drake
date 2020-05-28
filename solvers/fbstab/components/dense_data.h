@@ -9,7 +9,7 @@ namespace solvers {
 namespace fbstab {
 
 /**
- * Represents data for quadratic programing problems of the following type (1):
+ * Represents data for quadratic programming problems of the following type (1):
  *
  * min.    1/2  z'Hz + f'z
  * s.t.         Az <= b

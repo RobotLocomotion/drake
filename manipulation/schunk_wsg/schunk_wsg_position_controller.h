@@ -137,14 +137,21 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
 
   // The controller stores the last commanded desired position as state.
   // This is a helper method to reset that state.
+  DRAKE_DEPRECATED("2020-09-01",
+      "There's no need anymore to zero the velocity estimate via this method.")
   void set_initial_position(systems::State<double>* state,
                             double desired_position) const;
 
   // The controller stores the last commanded desired position as state.
   // This is a helper method to reset that state.
+  DRAKE_DEPRECATED("2020-09-01",
+      "There's no need anymore to zero the velocity estimate via this method.")
   void set_initial_position(systems::Context<double>* context,
                             double desired_position) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     set_initial_position(&context->get_mutable_state(), desired_position);
+#pragma GCC diagnostic pop
   }
 
   const systems::InputPort<double>& get_desired_position_input_port() const {

@@ -20,7 +20,7 @@ namespace kuka_iiwa {
 ///
 /// This system has one abstract-valued input port of type lcmt_iiwa_status.
 ///
-/// This system has many vector-valued ouput ports, each of which has exactly
+/// This system has many vector-valued output ports, each of which has exactly
 /// num_joints elements.  The ports will output zeros until an input message is
 /// received.
 //

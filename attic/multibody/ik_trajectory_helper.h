@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/ik_options.h"
 
 namespace drake {

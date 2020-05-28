@@ -22,7 +22,7 @@ WeldJoint<T>::TemplatedDoCloneToScalar(
       this->name(),
       frame_on_parent_body_clone, frame_on_child_body_clone, X_PC());
 
-  return std::move(joint_clone);
+  return joint_clone;
 }
 
 template <typename T>
@@ -53,7 +53,7 @@ WeldJoint<T>::MakeImplementationBlueprint() const {
   blue_print->mobilizers_.push_back(
       std::make_unique<internal::WeldMobilizer<T>>(
           this->frame_on_parent(), this->frame_on_child(), X_PC_));
-  return std::move(blue_print);
+  return blue_print;
 }
 
 }  // namespace multibody

@@ -55,6 +55,8 @@ class DrakeLcm : public DrakeLcmInterface {
   int HandleSubscriptions(int) override;
 
  private:
+  void OnHandleSubscriptionsError(const std::string&) override;
+
   class Impl;
   std::unique_ptr<Impl> impl_;
 };

@@ -102,11 +102,17 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
                                     ProximityProperties());
   inspector.CollisionFiltered(geometry_id, geometry_id2);
 
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  inspector.GetNumDynamicGeometries();
-  inspector.GetNumAnchoredGeometries();
-  #pragma GCC diagnostic pop
+  std::unique_ptr<GeometryInstance> geometry_instance_clone =
+      inspector.CloneGeometryInstance(geometry_id);
+  EXPECT_NE(geometry_instance_clone->id(), geometry_id);
+  EXPECT_EQ(geometry_instance_clone->name(), "sphere");
+  const auto* shape_clone = dynamic_cast<const Sphere*>(
+      &geometry_instance_clone->shape());
+  EXPECT_NE(shape_clone, nullptr);
+  EXPECT_EQ(shape_clone->radius(), 1.0);
+  EXPECT_NE(geometry_instance_clone->proximity_properties(), nullptr);
+  EXPECT_EQ(geometry_instance_clone->perception_properties(), nullptr);
+  EXPECT_EQ(geometry_instance_clone->illustration_properties(), nullptr);
 }
 
 }  // namespace

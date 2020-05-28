@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/attic_warning.h"
+
 // TODO(#2274) NOTE This file has so many cpplint errors that we have
 // whitelisted it in its entirety.  When the file is next rewritten or updates,
 // we should re-enable cpplint accordingly.
@@ -327,7 +329,7 @@ class SingleTimeLinearPostureConstraint : public RigidBodyConstraint {
 
 /*
  * Constrain the kinematics of the robot at individual time. Need to call
- * doKinematics first for the robot and then evaulate this constraint.
+ * doKinematics first for the robot and then evaluate this constraint.
  */
 class SingleTimeKinematicConstraint : public RigidBodyConstraint {
  public:

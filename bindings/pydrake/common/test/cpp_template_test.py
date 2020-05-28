@@ -1,8 +1,10 @@
-import unittest
+import sys
 from types import ModuleType
+import unittest
 
 import pydrake.common.cpp_template as m
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 _TEST_MODULE = "cpp_template_test"
 
@@ -88,7 +90,30 @@ class TestCppTemplate(unittest.TestCase):
 
         with self.assertRaises(TypeError) as cm:
             assert_pickle(self, template)
-        self.assertIn("can't pickle module objects", str(cm.exception))
+        if sys.version_info[:2] >= (3, 8):
+            pickle_error = "cannot pickle 'module' object"
+        else:
+            pickle_error = "can't pickle module objects"
+        self.assertIn(pickle_error, str(cm.exception))
+
+    def test_deprecation(self):
+        template = m.TemplateBase("BaseTpl")
+        template.add_instantiation(int, 1)
+        template.add_instantiation(float, 2)
+        instantiation, param = template.deprecate_instantiation(
+            int, "Example deprecation")
+        self.assertEqual(instantiation, 1)
+        self.assertEqual(param, (int,))
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertEqual(template[int], 1)
+        self.assertEqual(str(w[0].message), "Example deprecation")
+        # There should be no deprecations for other types.
+        self.assertEqual(template[float], 2)
+        # Double-deprecating should raise an error.
+        with self.assertRaises(RuntimeError) as cm:
+            template.deprecate_instantiation(int, "Double-deprecate")
+        self.assertEqual(
+            str(cm.exception), "Deprecation already registered: BaseTpl[int]")
 
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
@@ -127,6 +152,8 @@ class TestCppTemplate(unittest.TestCase):
 
             return Impl
 
+        self.assertEqual(
+            str(MyTemplate), f"<TemplateClass {_TEST_MODULE}.MyTemplate>")
         self.assertIsInstance(MyTemplate, m.TemplateClass)
         MyDefault = MyTemplate[None]
         MyInt = MyTemplate[int]

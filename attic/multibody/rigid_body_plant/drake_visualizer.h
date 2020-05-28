@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/trajectory.h"
 #include "drake/lcm/drake_lcm_interface.h"

@@ -20,13 +20,19 @@ from pydrake.systems.primitives import FirstOrderLowPassFilter
 
 from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
-try:
+# On macOS, our setup scripts do not provide pygame so we need to skip this
+# program and its tests.  On Ubuntu, we do expect to have pygame.
+if sys.platform == "darwin":
+    try:
+        import pygame
+        from pygame.locals import *
+    except ImportError:
+        print("ERROR: missing pygame.  "
+              "Please install pygame to use this example.")
+        sys.exit(0)
+else:
     import pygame
     from pygame.locals import *
-except ImportError:
-    print("ERROR: missing pygame.  Please install pygame to use this example.")
-    # Fail silently (until pygame is supported in python 3 on all platforms)
-    sys.exit(0)
 
 
 def print_instructions():
@@ -352,7 +358,14 @@ def main():
     station.GetInputPort("iiwa_feedforward_torque").FixValue(
         station_context, np.zeros(7))
 
-    simulator.AdvanceTo(1e-6)
+    # If the diagram is only the hardware interface, then we must advance it a
+    # little bit so that first LCM messages get processed. A simulated plant is
+    # already publishing correct positions even without advancing, and indeed
+    # we must not advance a simulated plant until the sliders and filters have
+    # been initialized to match the plant.
+    if args.hardware:
+        simulator.AdvanceTo(1e-6)
+
     q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
     differential_ik.parameters.set_nominal_joint_position(q0)
 
@@ -371,5 +384,5 @@ def main():
     simulator.AdvanceTo(args.duration)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

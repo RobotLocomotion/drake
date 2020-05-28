@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/attic_warning.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"

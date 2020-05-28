@@ -2,6 +2,7 @@
 
 #include "bot_core/pointcloud_t.hpp"
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/depth_sensor_specification.h"

@@ -87,6 +87,47 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   EXPECT_TRUE(msol[1].EqualTo(x_val(1) * x_extra));
 }
 
+TEST_F(MathematicalProgramResultTest, DualSolution) {
+  MathematicalProgramResult result;
+  auto bb_con = std::make_shared<BoundingBoxConstraint>(Eigen::Vector2d(0, 1),
+                                                        Eigen::Vector2d(2, 4));
+  Binding<BoundingBoxConstraint> binding1(
+      bb_con, Vector2<symbolic::Variable>(x0_, x1_));
+  const Eigen::Vector2d dual_solution1(5, 6);
+  result.set_dual_solution(binding1, dual_solution1);
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(binding1), dual_solution1));
+
+  auto lin_con = std::make_shared<LinearConstraint>(Eigen::Matrix2d::Identity(),
+                                                    Eigen::Vector2d(-1, -3),
+                                                    Eigen::Vector2d(2, 4));
+  Binding<LinearConstraint> binding2(lin_con,
+                                     Vector2<symbolic::Variable>(x0_, x1_));
+  const Eigen::Vector2d dual_solution2(3, -2);
+  result.set_dual_solution(binding2, dual_solution2);
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(binding2), dual_solution2));
+
+  auto lin_eq_con = std::make_shared<LinearEqualityConstraint>(
+      Eigen::Matrix2d::Identity(), Eigen::Vector2d(2, 4));
+  Binding<LinearEqualityConstraint> binding3(
+      lin_eq_con, Vector2<symbolic::Variable>(x0_, x1_));
+  const Eigen::Vector2d dual_solution3(4, -1);
+  result.set_dual_solution(binding3, dual_solution3);
+  EXPECT_TRUE(
+      CompareMatrices(result.GetDualSolution(binding3), dual_solution3));
+
+  // GetDualSolution for a binding whose dual solution has not been set yet.
+  Binding<LinearEqualityConstraint> binding4(
+      lin_eq_con, Vector2<symbolic::Variable>(x1_, x0_));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      result.GetDualSolution(binding4), std::invalid_argument,
+      fmt::format("Either this constraint does not belong to the "
+                  "mathematical program for which the result is obtained, or "
+                  "{} does not currently support getting dual solution yet.",
+                  result.get_solver_id()));
+}
+
 struct DummySolverDetails {
   int data{0};
 };

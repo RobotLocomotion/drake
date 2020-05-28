@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/attic_warning.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -14,7 +15,7 @@ namespace manipulation {
 namespace util {
 
 template <typename T>
-struct DRAKE_DEPRECATED("2020-05-01",
+struct DRAKE_DEPRECATED("2020-06-01",
     "The attic/manipulation/util package is being removed.")
 ModelInstanceInfo {
   std::string absolute_model_path;
@@ -33,7 +34,7 @@ ModelInstanceInfo {
 /// - double
 ///
 template <typename T>
-class DRAKE_DEPRECATED("2020-05-01",
+class DRAKE_DEPRECATED("2020-06-01",
     "The attic/manipulation/util package is being removed.")
 WorldSimTreeBuilder {
  public:

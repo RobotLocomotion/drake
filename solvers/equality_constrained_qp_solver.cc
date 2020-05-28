@@ -89,10 +89,22 @@ void GetEqualityConstrainedQPSolverOptions(
   }
 }
 
+void SetDualSolutions(const MathematicalProgram& prog,
+                      const Eigen::VectorXd& dual_solutions,
+                      MathematicalProgramResult* result) {
+  int num_constraints = 0;
+  for (const auto& binding : prog.linear_equality_constraints()) {
+    result->set_dual_solution(
+        binding, dual_solutions.segment(
+                     num_constraints, binding.evaluator()->num_constraints()));
+    num_constraints += binding.evaluator()->num_constraints();
+  }
+}
 }  // namespace
 
 EqualityConstrainedQPSolver::EqualityConstrainedQPSolver()
-    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+    : SolverBase(&id, &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
 
 EqualityConstrainedQPSolver::~EqualityConstrainedQPSolver() = default;
 
@@ -178,6 +190,8 @@ void EqualityConstrainedQPSolver::DoSolve(
 
   Eigen::VectorXd x{};
   SolutionResult solution_result{SolutionResult::kUnknownError};
+  // lambda stores the dual variable solutions.
+  Eigen::VectorXd lambda(num_constraints);
   if (num_constraints > 0) {
     // Setup the linear constraints.
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
@@ -213,7 +227,7 @@ void EqualityConstrainedQPSolver::DoSolve(
 
       // Solve using least-squares A*inv(G)*A'y = A*inv(G)*c + b for `y`.
       const Eigen::VectorXd rhs = AiG_T.transpose() * c + b;
-      Eigen::VectorXd lambda = qr.solve(rhs);
+      lambda = qr.solve(rhs);
 
       solution_result =
           rhs.isApprox(A_iG_A_T * lambda, solver_options_struct.feasibility_tol)
@@ -236,11 +250,15 @@ void EqualityConstrainedQPSolver::DoSolve(
       if (!b.isApprox(A * x0, solver_options_struct.feasibility_tol)) {
         solution_result = SolutionResult::kInfeasibleConstraints;
         x = x0;
+        Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_A(A.transpose());
+        lambda = qr_A.solve(G * x + c);
       } else {
         if (svd_A_thin.rank() == A.cols()) {
           // The kernel is empty, the solution is unique.
           solution_result = SolutionResult::kSolutionFound;
           x = x0;
+          Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr_A(A.transpose());
+          lambda = qr_A.solve(G * x + c);
         } else {
           // N is the null space of A
           // Using QR decomposition
@@ -262,6 +280,7 @@ void EqualityConstrainedQPSolver::DoSolve(
               N.transpose() * G * N, x0.transpose() * G * N + c.transpose() * N,
               solver_options_struct.feasibility_tol, &y);
           x = x0 + N * y;
+          lambda = qr_A.solve(G * x + c);
         }
       }
     }
@@ -273,6 +292,7 @@ void EqualityConstrainedQPSolver::DoSolve(
 
   result->set_x_val(x);
   result->set_solution_result(solution_result);
+  SetDualSolutions(prog, lambda, result);
   double optimal_cost{};
   switch (solution_result) {
     case SolutionResult::kSolutionFound: {
@@ -304,6 +324,8 @@ SolverId EqualityConstrainedQPSolver::id() {
 }
 
 bool EqualityConstrainedQPSolver::is_available() { return true; }
+
+bool EqualityConstrainedQPSolver::is_enabled() { return true; }
 
 bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
     const MathematicalProgram& prog) {
