@@ -16,6 +16,7 @@ kcov
 libblas-dev
 libbz2-dev
 libclang-6.0-dev
+libclang-9-dev
 libexpat1-dev
 libfreetype-dev
 libgflags-dev
