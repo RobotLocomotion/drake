@@ -662,8 +662,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     collision_geometries_ = other.collision_geometries_;
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
-    if (geometry_source_is_registered())
-      DeclareSceneGraphPorts();
+    penetration_allowance_ = other.penetration_allowance_;
+    if (geometry_source_is_registered()) DeclareSceneGraphPorts();
 
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
@@ -3667,6 +3667,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Declare the system-level cache entries specific to MultibodyPlant.
   void DeclareCacheEntries();
 
+  // Estimates a global set of point contact parameters given a
+  // `penetration_allowance`. See set_penetration_allowance()` for details.
+  // TODO(amcastro-tri): Once #13064 is resolved, make this a method outside MBP
+  // with signature:
+  // EstimatePointContactParameters(double penetration_allowance,
+  //                                MultibodyPlant<double>* plant)
+  // We will document the heuristics used by this method thoroughly so that we
+  // have a place we can refer users to for details.
+  void EstimatePointContactParameters(double penetration_allowance);
+
   // Helper method to assemble actuation input vector from the appropriate
   // ports.
   VectorX<T> AssembleActuationInput(
@@ -4146,6 +4156,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     std::optional<double> gravity;
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+
+  // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
+  // See set_penetration_allowance() for details.
+  double penetration_allowance_{1.0e-3};
 
   // Stribeck model of friction.
   class StribeckModel {
