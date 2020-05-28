@@ -56,8 +56,8 @@ def _check_licenses_for_label(label):
 def _check_licenses_impl(ctx):
     # Iterate over labels, collecting ones that are missing licenses.
     labels_missing_licenses = []
-    for l in ctx.attr.install_labels:
-        labels_missing_licenses += _check_licenses_for_label(l)
+    for label in ctx.attr.install_labels:
+        labels_missing_licenses += _check_licenses_for_label(label)
 
     # Report collected failures.
     if labels_missing_licenses:
