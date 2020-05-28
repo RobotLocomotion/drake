@@ -248,8 +248,11 @@ enum class ContactModel {
 /// each `<model>` tag found in the file. Please refer to each of these
 /// methods' documentation for further details.
 ///
+/// @anchor working_with_scenegraph
+///                   ### Working with %SceneGraph
+///
 /// @anchor add_multibody_plant_scene_graph
-///   ### Adding a %MultibodyPlant connected to a %SceneGraph to your %Diagram
+///   #### Adding a %MultibodyPlant connected to a %SceneGraph to your %Diagram
 ///
 /// Probably the simplest way to add and wire up a MultibodyPlant with
 /// a SceneGraph in your Diagram is using AddMultibodyPlantSceneGraph().
@@ -292,23 +295,8 @@ enum class ContactModel {
 /// This flavor is most useful when the pointers are class member fields
 /// (and so perhaps cannot be references).
 ///
-/// @anchor mbp_adding_elements
-///                    ### Adding modeling elements
-///
-/// <!-- TODO(amcastro-tri): Update this section to add force elements and
-///      constraints. -->
-///
-/// Add multibody elements to a %MultibodyPlant with methods like:
-///
-/// - Bodies: AddRigidBody()
-/// - Joints: AddJoint()
-/// - see @ref mbp_construction "Construction" for more.
-///
-/// All modeling elements **must** be added before Finalize() is called.
-/// See @ref mbp_finalize_stage "Finalize stage" for a discussion.
-///
 /// @anchor mbp_geometry_registration
-///               ### Registering geometry with a SceneGraph
+///               #### Registering geometry with a SceneGraph
 ///
 /// %MultibodyPlant users can register geometry with a SceneGraph for
 /// essentially two purposes; a) visualization and, b) contact modeling.
@@ -342,6 +330,69 @@ enum class ContactModel {
 ///
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
+///
+/// @anchor accessing_contact_properties
+///               #### Accessing point contact parameters
+/// <!-- TODO(joemasterjohn) update this table when other contact parameters 
+///      are moved into ProximityProperties -->
+/// Parameters relating to contact modeling are stored on a per-geometry basis
+/// within a SceneGraph. 
+///
+/// | Group name |   Property Name  | Required |    Property Type   | Property Description |
+/// | :--------: | :--------------: | :------: | :----------------: | :------------------- |
+/// |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
+///
+/// ¹ Collision geometry is required to be registered with a ProximityProperties
+///   object that contains the ("material", "coulomb_friction") property
+/// 
+/// Accessing and modifying contact properties requires interfacing with 
+/// SceneGraph's model inspector. For instance, here is an example of accessing
+/// the coulomb_friction properties for a given body. 
+///
+/// When a Context is not available, the model inspector from a SceneGraph 
+/// instance can provide contact parameters for the given model.
+/// @code
+/// // For a body with GeometryId called geometry_id and a SceneGraph instance
+/// // called scene_graph.
+/// const ProximityProperties* props =
+///     scene_graph.model_inspector().GetProximityProperties(geometry_id);
+///
+/// const CoulombFriction<double>& geometry_friction =
+///     props->GetProperty<CoulombFriction<double>>("material",
+///                                                 "coulomb_friction"); 
+/// @endcode
+///
+/// When a Context has been allocated and possibly modified, the proper way to
+/// access contact parameters is through a QueryObject. You can obtain a 
+/// QueryObject by evaluating the geometry_query_input_port of MultibodyPlant.
+/// @code
+/// // For a body with GeometryId called geometry_id and a MultibodyPlant 
+/// // instance called mbp.
+/// const QueryObject<T>& query_object =
+///     mbp.get_geometry_query_input_port()
+///         .template Eval<QueryObject<T>>(context);
+/// const SceneGraphInspector<T>& inspector = query_object.inspector();
+/// const ProximityProperties* props =
+///     inspector.GetProximityProperties(geometry_id);
+/// const CoulombFriction<double>& geometry_friction =
+///     props->GetProperty<CoulombFriction<double>>("material",
+///                                                 "coulomb_friction");
+/// @endcode
+///
+/// @anchor mbp_adding_elements
+///                    ### Adding modeling elements
+///
+/// <!-- TODO(amcastro-tri): Update this section to add force elements and
+///      constraints. -->
+///
+/// Add multibody elements to a %MultibodyPlant with methods like:
+///
+/// - Bodies: AddRigidBody()
+/// - Joints: AddJoint()
+/// - see @ref mbp_construction "Construction" for more.
+///
+/// All modeling elements **must** be added before Finalize() is called.
+/// See @ref mbp_finalize_stage "Finalize stage" for a discussion.
 ///
 /// @anchor mbp_modeling_contact
 ///                           ### Modeling contact
