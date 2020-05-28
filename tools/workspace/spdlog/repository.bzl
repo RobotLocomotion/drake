@@ -8,8 +8,8 @@ def spdlog_repository(
     github_archive(
         name = name,
         repository = "gabime/spdlog",
-        commit = "v1.5.0",
-        sha256 = "b38e0bbef7faac2b82fed550a0c19b0d4e7f6737d5321d4fd8f216b80f8aee8a",  # noqa
+        commit = "v1.6.1",
+        sha256 = "378a040d91f787aec96d269b0c39189f58a6b852e4cbf9150ccfacbe85ebbbfc",  # noqa
         build_file = "@drake//tools/workspace/spdlog:package.BUILD.bazel",
         mirrors = mirrors,
     )
