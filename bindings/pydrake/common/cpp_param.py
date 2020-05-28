@@ -145,4 +145,24 @@ class _Generic:
         return f"<Generic {self._name}>"
 
 
+class _Token:
+    def __init__(self, name, factory):
+        self._name = name
+        self._factory = factory
+
+    def __call__(self, *args, **kwargs):
+        return self._factory(*args, **kwargs)
+
+    def __repr__(self):
+        return self._name
+
+
+def _vector4d(x):
+    x = np.asarray(x)
+    if x.size != 4:
+        raise RuntimeError(f"Must be size 4: {x}")
+    return x
+
+
 List = _Generic("List", factory=list, num_param=1)
+Vector4d = _Token("Vector4d", factory=_vector4d)

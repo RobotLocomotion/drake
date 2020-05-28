@@ -1,7 +1,9 @@
 import copy
 import unittest
 
-from pydrake.common.cpp_param import List
+import numpy as np
+
+from pydrake.common.cpp_param import List, Vector4d
 from pydrake.common.value import AbstractValue, Value
 
 from pydrake.common.test.value_test_util import (
@@ -117,8 +119,32 @@ class TestValue(unittest.TestCase):
                 "AddValueInstantiation",
             ]), cm.exception)
 
+    def test_vector4d(self):
+        # Test construction.
+        zeros = np.zeros(4)
+        ones = np.ones(4)
+        value = Value[Vector4d](zeros)
+        np.testing.assert_array_equal(value.get_value(), zeros)
+        value.set_value(ones)
+        np.testing.assert_array_equal(value.get_value(), ones)
+        with self.assertRaises(RuntimeError) as cm:
+            Value[Vector4d](np.zeros(3))
+        self.assertIn("Must be size 4: ", str(cm.exception))
+        # Test inference via `AbstractValue.Make`.
+        self.assertIsInstance(
+            AbstractValue.Make([1., 0, 0, 1]), Value[Vector4d])
+        self.assertIsInstance(
+            AbstractValue.Make(np.array([1., 0, 0, 1])), Value[Vector4d])
+        # List of integers implies Value[object]
+        self.assertIsInstance(
+            AbstractValue.Make([1, 0, 0, 1]), Value[object])
+        # A vector of floats, but of size != 4, also implies Vector[object].
+        self.assertIsInstance(
+            AbstractValue.Make([1., 0, 0, 1, 0]), Value[object])
+
     def test_value_registration(self):
         # Existence check.
         Value[object]
         Value[str]
         Value[bool]
+        Value[Vector4d]

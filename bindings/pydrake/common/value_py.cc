@@ -1,7 +1,9 @@
 #include <string>
 
+#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
+#include <Eigen/Dense>
 
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -10,7 +12,6 @@
 
 namespace drake {
 namespace pydrake {
-
 namespace {
 
 // Local specialization of C++ implementation for `Value[object]`
@@ -33,6 +34,10 @@ void AddPrimitiveValueInstantiations(py::module m) {
   AddValueInstantiation<std::string>(m);            // Value[str]
   AddValueInstantiation<bool>(m);                   // Value[bool]
   AddValueInstantiation<Object, PyObjectValue>(m);  // Value[object]
+
+  // For current definition of `color`.
+  AddValueInstantiation<Eigen::Vector4d>(
+      m, py::module::import("pydrake.common.cpp_param").attr("Vector4d"));
 }
 
 }  // namespace

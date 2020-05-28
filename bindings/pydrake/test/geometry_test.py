@@ -304,9 +304,19 @@ class TestGeometry(unittest.TestCase):
                               mut.PerceptionProperties)
 
     def test_geometry_properties_api(self):
-        self.assertIsInstance(
-            mut.MakePhongIllustrationProperties([0, 0, 1, 1]),
-            mut.IllustrationProperties)
+        test_color = [0., 0, 1, 1]
+        phong_props = mut.MakePhongIllustrationProperties(test_color)
+        self.assertIsInstance(phong_props, mut.IllustrationProperties)
+        actual_color = phong_props.GetProperty("phong", "diffuse")
+        self.assertIsInstance(actual_color, np.ndarray)
+        np.testing.assert_equal(actual_color, test_color)
+        # Ensure that we can create it manually.
+        phong_props = mut.IllustrationProperties()
+        phong_props.AddProperty("phong", "diffuse", test_color)
+        actual_color = phong_props.GetProperty("phong", "diffuse")
+        self.assertIsInstance(actual_color, np.ndarray)
+        np.testing.assert_equal(actual_color, test_color)
+
         prop = mut.ProximityProperties()
         self.assertEqual(str(prop), "[__default__]")
         default_group = prop.default_group_name()

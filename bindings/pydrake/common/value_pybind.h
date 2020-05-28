@@ -26,13 +26,19 @@ namespace pydrake {
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
-    py::module scope) {
+    py::module scope, py::object py_T = {}) {
   static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
   py::module py_common = py::module::import("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
-  py::tuple param = GetPyParam<T>();
+  py::tuple param;
+  if (py_T) {
+    param = py::make_tuple(py_T);
+  } else {
+    param = GetPyParam<T>();
+    py_T = param[0];
+  }
   AddTemplateClass(py_common, "Value", py_class, param);
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
@@ -40,7 +46,6 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   // See docstring for `set_value` for presently unavoidable caveats.
   py_class.def(py::init<const T&>());
   // Define emplace constructor.
-  py::object py_T = param[0];
   py_class.def(py::init([py_T](py::args args, py::kwargs kwargs) {
     // Use Python constructor for the bound type.
     py::object py_v = py_T(*args, **kwargs);
