@@ -11,7 +11,7 @@ namespace sensors {
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
 /**
- Simple struct for characterizing the Drake camera model. The camera model is
+ Simple class for characterizing the Drake camera model. The camera model is
  based on the
  [pinhole _model_](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html)
  , which is related to but distinct from an actual
@@ -61,8 +61,8 @@ namespace sensors {
  - (c_x, c_y) defines the principal point.
  - (f_x, f_y) defines the model focal length.
 
- In other words, for point Q in the world frame, its texture coordinates
- `(u_Q, v_Q)` are calculated as:
+ In other words, for point Q in the world frame, its projected position in the
+ 2D image `(u_Q, v_Q)` is calculated as:
 
       │ u_Q │
      s│ v_Q │ = K ⋅ X_CW ⋅ p_WQ
@@ -125,9 +125,10 @@ namespace sensors {
  When looking at the resulting image and reasoning about the camera that
  produced it, one can say that Cz points into the image, Cx is parallel with the
  image rows, pointing to the right, and Cy is parallel with the image columns,
- pointing down leading to language such as: "X-right", "Y-down", and "Z-forward".
+ pointing down leading to language such as: "X-right", "Y-down", and
+ "Z-forward".
 */
-class CameraInfo final {
+class CameraInfo {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CameraInfo)
 
@@ -175,6 +176,12 @@ class CameraInfo final {
   /** Returns the focal length y in pixels. */
   double focal_y() const { return intrinsic_matrix_(1, 1); }
 
+  /** Returns the field of view in the x-direction (in radians).  */
+  double fov_x() const { return 2 * std::atan(width_ / (2 * focal_x())); }
+
+  /** Returns the field of view in the y-direction (in radians).  */
+  double fov_y() const { return 2 * std::atan(height_ / (2 * focal_y())); }
+
   // TODO(eric.cousineau): Deprecate "center_{x,y}" and use
   // "principal_point_{x,y}" or "pp{x,y}".
 
@@ -196,6 +203,55 @@ class CameraInfo final {
   // http://docs.opencv.org/2.4/modules/calib3d/doc/
   // camera_calibration_and_3d_reconstruction.html
   Eigen::Matrix3d intrinsic_matrix_;
+};
+
+/** Characterizes the Drake _depth_ camera model. The %DepthCameraInfo is a
+ CameraInfo -- the definition of a camera's intrinsic matrix -- plus the
+ specification of the depth camera's sensing range.  */
+class DepthCameraInfo final : public CameraInfo {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthCameraInfo)
+
+  /** Constructs a %DepthCameraInfo with all of the intrinsic parameters (as
+   documented in CameraInfo) plus the viable depth range. The depth camera
+   this characterizes can only register depth values in the range
+   [`min_depth`, `max_depth`].
+
+   @pre `min_depth > 0`.
+   @pre `min_depth < max_depth`.  */
+  DepthCameraInfo(int width, int height, double focal_x, double focal_y,
+                  double center_x, double center_y, double min_depth,
+                  double max_depth)
+      : CameraInfo(width, height, focal_x, focal_y, center_x, center_y),
+        min_depth_(min_depth),
+        max_depth_(max_depth) {}
+
+  /** Constructs a simplified %DepthCameraInfo from image size and vertical
+   field of view. See @ref CameraInfo::CameraInfo(double, double, double)
+   "corresponding CameraInfo constructor".  */
+  DepthCameraInfo(int width, int height, double fov_y, double min_depth,
+                  double max_depth)
+      : CameraInfo(width, height, fov_y),
+        min_depth_(min_depth),
+        max_depth_(max_depth) {}
+
+  /** Constructs a %DepthCameraInfo copying all of the given `intrinsics` with
+   the given depth range `[min_depth, max_depth]`.  */
+  DepthCameraInfo(const CameraInfo& intrinsics, double min_depth,
+                  double max_depth)
+      : CameraInfo(intrinsics),
+        min_depth_(min_depth),
+        max_depth_(max_depth) {}
+
+  /** The minimum distance an object must be to register a depth reading.  */
+  double min_depth() const { return min_depth_; }
+
+  /** The maximum distance an object can be to register a depth reading.  */
+  double max_depth() const { return max_depth_; }
+
+ private:
+  double min_depth_{};
+  double max_depth_{};
 };
 
 }  // namespace sensors

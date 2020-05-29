@@ -2,9 +2,12 @@
 
 #include <functional>
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_state.h"
@@ -45,14 +48,18 @@ class GeometryStateTester {
 namespace systems {
 namespace sensors {
 
-std::ostream& operator<<(std::ostream& out, const CameraInfo& info) {
-  out << "CameraInfo:"
-      << "\n  width: " << info.width()
-      << "\n  height: " << info.height()
-      << "\n  focal_x: " << info.focal_x()
+template <typename Intrinsics>
+std::enable_if_t<std::is_base_of<CameraInfo, Intrinsics>::value, std::ostream&>
+operator<<(std::ostream& out, const Intrinsics& info) {
+  out << NiceTypeName::Get(info) << "\n  width: " << info.width()
+      << "\n  height: " << info.height() << "\n  focal_x: " << info.focal_x()
       << "\n  focal_y: " << info.focal_y()
       << "\n  center_x: " << info.center_x()
       << "\n  center_y: " << info.center_y();
+  if constexpr (std::is_same<Intrinsics, DepthCameraInfo>::value) {
+    out << "\n  min_depth: " << info.min_depth()
+        << "\n  max_depth: " << info.max_depth();
+  }
   return out;
 }
 
@@ -73,15 +80,16 @@ using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryStateTester;
-using geometry::internal::DummyRenderEngine;
 using geometry::QueryObject;
+using geometry::SceneGraph;
+using geometry::SourceId;
+using geometry::internal::DummyRenderEngine;
 using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
 using geometry::render::RenderEngine;
-using geometry::SceneGraph;
-using geometry::SourceId;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using std::make_pair;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
@@ -90,8 +98,9 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 
-::testing::AssertionResult CompareCameraInfo(const CameraInfo& test,
-                                             const CameraInfo& expected) {
+template <typename Intrinsics>
+::testing::AssertionResult CompareCameraInfo(const Intrinsics& test,
+                                             const Intrinsics& expected) {
   if (test.width() != expected.width() || test.height() != expected.height() ||
       test.focal_x() != expected.focal_x() ||
       test.focal_y() != expected.focal_y() ||
@@ -99,6 +108,13 @@ using systems::DiagramBuilder;
       test.center_y() != expected.center_y()) {
     return ::testing::AssertionFailure()
            << "Expected " << expected << "\n got: " << test;
+  }
+  if constexpr (std::is_same<Intrinsics, DepthCameraInfo>::value) {
+    if (test.min_depth() != expected.min_depth() ||
+        test.max_depth() != expected.max_depth()) {
+      return ::testing::AssertionFailure()
+             << "Expected " << expected << "\n got: " << test;
+    }
   }
   return ::testing::AssertionSuccess();
 }
@@ -157,9 +173,10 @@ class RgbdSensorTest : public ::testing::Test {
     result = CompareCameraInfo(
         sensor_->color_camera_info(), expected_color_info);
     if (!result) return result;
-    const CameraInfo expected_depth_info(
+    const DepthCameraInfo expected_depth_info(
         depth_properties_.width, depth_properties_.height,
-        depth_properties_.fov_y);
+        depth_properties_.fov_y, depth_properties_.z_near,
+        depth_properties_.z_far);
     result = CompareCameraInfo(
         sensor_->depth_camera_info(), expected_depth_info);
     if (!result) return result;
@@ -212,6 +229,35 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.depth_image_16U_output_port().get_name(), "depth_image_16u");
   EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
   EXPECT_EQ(sensor.X_WB_output_port().get_name(), "X_WB");
+}
+
+// Confirms that simple intrinsics (CameraProperties) gets translated to full
+// intrinsics (CameraInfo) correctly.
+TEST_F(RgbdSensorTest, ConstructFullySpecifiedCameraIntrinsics) {
+  CameraInfo color_intrinsics{2, 2, M_PI};
+  DepthCameraInfo depth_intrinsics{2, 2, M_PI, 1, 10};
+  geometry::render::RenderCameraProperties render_cam{"name", 0.01, 5.0};
+  const FrameId parent_id = FrameId::get_new_id();
+  const RigidTransformd X_PB;
+
+  {
+    // Case: Declare color and depth intrinsics separately.
+    RgbdSensor sensor{parent_id, X_PB, make_pair(render_cam, color_intrinsics),
+                      make_pair(render_cam, depth_intrinsics)};
+    EXPECT_TRUE(
+        CompareCameraInfo(sensor.color_camera_info(), color_intrinsics));
+    EXPECT_TRUE(
+        CompareCameraInfo(sensor.depth_camera_info(), depth_intrinsics));
+  }
+
+  {
+    // Case: Declare color and depth intrinsics with a single specification.
+    RgbdSensor sensor{parent_id, X_PB, make_pair(render_cam, depth_intrinsics)};
+    EXPECT_TRUE(
+        CompareCameraInfo(sensor.color_camera_info(), color_intrinsics));
+    EXPECT_TRUE(
+        CompareCameraInfo(sensor.depth_camera_info(), depth_intrinsics));
+  }
 }
 
 // Tests that the anchored camera reports the correct parent frame and has the

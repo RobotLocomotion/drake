@@ -292,6 +292,7 @@ drake_cc_googletest(
     tags = vtk_test_tags(),
     deps = [
         ":rgbd_sensor",
+        "//common:nice_type_name",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/test_utilities:dummy_render_engine",
     ],
