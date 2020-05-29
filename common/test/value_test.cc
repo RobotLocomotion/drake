@@ -359,6 +359,9 @@ GTEST_TEST(ValueTest, AllowedTypesMetaTest) {
   // Value<volatile T>{};  // Trigger static assertion; works without assertion.
   // Value<const T&>{};  // Triggers static assertion; fails without assertion.
   // Value<T&&>{};  // Triggers static assertion; fails without assertion.
+  // - array / pointer
+  // Value<T*>{};  // Triggers static assertion; works without assertion.
+  // Value<T[2]>{};  // Triggers static assertion; fails without assertion.
 }
 
 // Check that TypeHash is extracting exactly the right strings from

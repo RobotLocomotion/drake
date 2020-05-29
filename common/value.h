@@ -177,6 +177,10 @@ class Value : public AbstractValue {
       std::is_same_v<T, internal::remove_cvref_t<T>>,
       "T should not have const, volatile, or reference specifiers.");
 
+  static_assert(
+      !std::is_pointer_v<T> && !std::is_array_v<T>,
+      "T cannot be a pointer or array.");
+
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
 #if !defined(DRAKE_DOXYGEN_CXX)
