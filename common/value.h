@@ -148,9 +148,9 @@ class AbstractValue {
   const size_t type_hash_;
 };
 
-/// A container class for an arbitrary type T.  This class inherits from
-/// AbstractValue and therefore at runtime can be passed between functions
-/// without mentioning T.
+/// A container class for an arbitrary type T (with some restrictions).  This
+/// class inherits from AbstractValue and therefore at runtime can be passed
+/// between functions without mentioning T.
 ///
 /// Example:
 /// @code
@@ -167,7 +167,8 @@ class AbstractValue {
 /// (Advanced.) User-defined classes with additional features may subclass
 /// Value, but should take care to override Clone().
 ///
-/// @tparam T Must be copy-constructible or cloneable.
+/// @tparam T Must be copy-constructible or cloneable. Must not be a pointer,
+/// array, nor have const, volatile, or reference qualifiers.
 template <typename T>
 class Value : public AbstractValue {
  public:
@@ -175,7 +176,11 @@ class Value : public AbstractValue {
 
   static_assert(
       std::is_same_v<T, internal::remove_cvref_t<T>>,
-      "T should not have const, volatile, or reference specifiers.");
+      "T should not have const, volatile, or reference qualifiers.");
+
+  static_assert(
+      !std::is_pointer_v<T> && !std::is_array_v<T>,
+      "T cannot be a pointer or array.");
 
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
