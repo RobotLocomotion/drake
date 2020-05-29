@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":internal_geometry",
         ":proximity_engine",
         ":proximity_properties",
+        ":rgba",
         ":scene_graph",
         ":scene_graph_inspector",
         ":shape_specification",
@@ -275,6 +276,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "rgba",
+    srcs = ["rgba.cc"],
+    hdrs = ["rgba.h"],
+    deps = [
+        "//common",
+        "@eigen",
+    ],
+)
+
 # -----------------------------------------------------
 
 filegroup(
@@ -431,6 +442,11 @@ drake_cc_googletest(
         "utilities",
         "//common/test_utilities",
     ],
+)
+
+drake_cc_googletest(
+    name = "rgba_test",
+    deps = [":rgba"],
 )
 
 add_lint_tests()
