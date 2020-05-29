@@ -971,12 +971,12 @@ void GurobiSolver::DoSolve(
     error = GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
   }
 
-  for (const auto it : merged_options.GetOptionsDouble(id())) {
+  for (const auto& it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
       error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
     }
   }
-  for (const auto it : merged_options.GetOptionsInt(id())) {
+  for (const auto& it : merged_options.GetOptionsInt(id())) {
     if (!error) {
       error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     }
