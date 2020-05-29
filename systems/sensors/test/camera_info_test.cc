@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/camera_info.h"
 
+#include <limits>
+
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
@@ -19,7 +21,8 @@ const double kFy = 579.41125496954282;  // In pixels.
 const double kCx = kWidth * 0.5 - 0.5;
 const double kCy = kHeight * 0.5 - 0.5;
 const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees.
-
+const double kMinDepth = 0.25;
+const double kMaxDepth = 10;
 
 void Verify(const Eigen::Matrix3d& expected, const CameraInfo& dut) {
   EXPECT_EQ(kWidth, dut.width());
@@ -32,7 +35,7 @@ void Verify(const Eigen::Matrix3d& expected, const CameraInfo& dut) {
                               kTolerance));
 }
 
-GTEST_TEST(TestCameraInfo, ConstructionTest) {
+GTEST_TEST(TestCameraInfo, CameraInfoConstructionTest) {
   const Eigen::Matrix3d expected(
       (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
 
@@ -47,6 +50,41 @@ GTEST_TEST(TestCameraInfo, ConstructionWithFovTest) {
 
   CameraInfo dut(kWidth, kHeight, kVerticalFov);
   Verify(expected, dut);
+}
+
+// Confirm that the reported field of view (in radians) is the same as is given.
+GTEST_TEST(TestCameraInfo, FieldOfView) {
+  // Pick some arbitrary angle that isn't a "nice" angle.
+  const double fov_y = M_PI / 7;
+
+  {
+    // Square camera: fields of view are equal in x- and y-directions.
+    CameraInfo camera(100, 100, fov_y);
+    EXPECT_EQ(camera.fov_y(), fov_y);
+    EXPECT_EQ(camera.fov_x(), fov_y);
+  }
+
+  {
+    // Rectangular camera: has an identical *focal lengths* in the x- and y-
+    // directions. But the rectangular image leads to different fields of view.
+    const int w = 100;
+    const int h = 200;
+    CameraInfo camera{w, h, fov_y};
+    const double fov_x = 2 * atan(w * tan(fov_y / 2) / h);
+    EXPECT_EQ(camera.fov_y(), fov_y);
+    EXPECT_NEAR(camera.fov_x(), fov_x, std::numeric_limits<double>::epsilon());
+  }
+}
+
+GTEST_TEST(TestCameraInfo, DepthCameraInfoConstructionTest) {
+  const Eigen::Matrix3d expected(
+      (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
+
+  DepthCameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy, kMinDepth,
+                      kMaxDepth);
+  Verify(expected, dut);
+  EXPECT_EQ(dut.min_depth(), kMinDepth);
+  EXPECT_EQ(dut.max_depth(), kMaxDepth);
 }
 
 }  // namespace
