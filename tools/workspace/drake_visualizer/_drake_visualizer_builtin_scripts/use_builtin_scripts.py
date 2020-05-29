@@ -1,12 +1,13 @@
 """Amalgam of visualizer scripts."""
 
-
 from collections import OrderedDict
+from functools import partial
 import os
 import sys
 
 from _drake_visualizer_builtin_scripts import (
     AVAILABLE_SCRIPTS,
+    limit_clipping_range,
     show_frame,
     show_hydroelastic_contact,
     show_image,
@@ -24,6 +25,12 @@ def init_visualizer():
         ("image", show_image.init_visualizer),
         ("point_pair_contact", show_point_pair_contact.init_visualizer),
         ("time", show_time.init_visualizer),
+        # N.B. `view` is defined globally for scripts executed directly by
+        # `director`.
+        (
+            "limit_clipping_range",
+            partial(limit_clipping_range.activate, view=view),
+        ),
     ))
     available_scripts = list(available.keys())
     # N.B. Keep these in sync.
