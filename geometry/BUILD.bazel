@@ -122,6 +122,7 @@ drake_cc_library(
     srcs = ["geometry_properties.cc"],
     hdrs = ["geometry_properties.h"],
     deps = [
+        ":rgba",
         "//common:essential",
         "//common:value",
         "@fmt",

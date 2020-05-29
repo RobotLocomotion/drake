@@ -829,10 +829,12 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
   }
 
   // Case: Values out of range:
-  //  Alpha simply gets clamped to the range [0, 1]
-  //  Negative R, G, B get set to zero.
-  //  R, G, B > 1 get divided by 255.
-  // These rules don't guarantee valid values.
+  //  A (alpha) simply gets clamped to the range [0, 1]
+  //  For each individual element in R, G, B:
+  //    Negative values are set to zero.
+  //    Values > 1 are divided by 255
+  // This test *must* show that these rules (from libsdformat) do not
+  // guarantee valid values.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         "<visual name='some_link_visual'>"
@@ -846,10 +848,11 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
         "    <diffuse>-0.1 255 65025 2</diffuse>"
         "  </material>"
         "</visual>");
-    IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 1, 255, 1};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename),
+        std::runtime_error,
+        "All values must be within the range \\[0, 1\\]. Values provided: "
+        "\\(r=0.0, g=1.0, b=255.0, a=1.0\\)");
   }
 }
 

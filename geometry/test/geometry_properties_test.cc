@@ -1,15 +1,19 @@
 #include "drake/geometry/geometry_properties.h"
 
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace geometry {
 namespace {
+
+using Eigen::Vector4d;
 
 // A constructible sub-class of GeometryProperties.
 class TestProperties : public GeometryProperties {
@@ -393,6 +397,35 @@ GTEST_TEST(GeometryProperties, CopyCountCheck) {
   // No copies upon retrieving the type.
   properties.GetProperty<GloballyCounted>(group_name, name_1);
   EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({0, 0}));
+}
+
+GTEST_TEST(GeometryProperties, RgbaAndVector4) {
+  const Rgba color(0.75, 0.5, 0.25, 1.);
+  const Vector4d vector(0.75, 0.5, 0.25, 1.);
+
+  TestProperties properties;
+  const std::string& group_name{"some_group"};
+  const std::string color_name("color_name");
+  const std::string fake_name("fake_name");
+
+  // Add<Rgba>.
+  properties.AddProperty(group_name, color_name, color);
+  // - Get<Rgba>.
+  EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, color_name));
+  // - Get<Vector4d>.
+  EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, color_name));
+  EXPECT_EQ(
+      vector,
+      properties.GetPropertyOrDefault<Vector4d>(
+          group_name, fake_name, vector));
+
+  // Add<Vector4d>.
+  const std::string vector_name("vector_name");
+  properties.AddProperty(group_name, vector_name, vector);
+  // - Get<Rgba>.
+  EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, vector_name));
+  // - Get<Vector4d>.
+  EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, vector_name));
 }
 
 }  // namespace

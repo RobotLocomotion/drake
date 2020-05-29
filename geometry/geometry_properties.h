@@ -6,10 +6,12 @@
 #include <unordered_map>
 
 #include "fmt/ostream.h"
+#include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
+#include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace geometry {
@@ -150,25 +152,25 @@ namespace geometry {
  both approaches.
 
  ```
- const ProximityProperties& properties = FunctionThatReturnsProperties();
- // Looking for a Vector3d of rgb colors named "rgb" - send generic error that
+ const IllustrationProperties& properties = FunctionThatReturnsProperties();
+ // Looking for a Rgba of rgba colors named "rgba" - send generic error that
  // the property set is missing the required property.
- const Eigen::Vector3d rgb =
-     properties.GetProperty<Eigen::Vector3d>("MyGroup", "rgb");
+ const Rgba rgba =
+     properties.GetProperty<Rgba>("MyGroup", "rgba");
 
  // Explicitly detect missing property and throw exception with custom message.
- if (!properties.HasProperty("MyGroup", "rgb")) {
+ if (!properties.HasProperty("MyGroup", "rgba")) {
    throw std::logic_error(
-       "ThisClass: Missing the necessary 'rgb' property; the object cannot be "
+       "ThisClass: Missing the necessary 'rgba' property; the object cannot be "
        "rendered");
  }
  // Otherwise acquire value, confident that no exception will be thrown.
- const Eigen::Vector3d rgb =
-     properties.GetProperty<Eigen::Vector3d>("MyGroup", "rgb");
+ const Rgba rgba =
+     properties.GetProperty<Rgba>("MyGroup", "rgba");
  ```
 
  @note calls to `GetProperty()` always require the return type template value
- (e.g., `Eigen::Vector3d`) to be specified in the call.
+ (e.g., `Rgba`) to be specified in the call.
 
  <h4>Look up specific properties with default property values</h4>
 
@@ -179,19 +181,19 @@ namespace geometry {
  will be the same as the default value.
 
  ```
- const ProximityProperties& properties = FunctionThatReturnsProperties();
- // Looking for a Vector3d of rgb colors named "rgb".
- const Eigen::Vector3d default_color{0.9, 0.9, 0.9};
- const Eigen::Vector3d rgb =
-     properties.GetPropertyOrDefault("MyGroup", "rgb", default_color);
+ const IllustrationProperties& properties = FunctionThatReturnsProperties();
+ // Looking for a Rgba of rgba colors named "rgba".
+ const Rgba default_color{0.9, 0.9, 0.9};
+ const Rgba rgba =
+     properties.GetPropertyOrDefault("MyGroup", "rgba", default_color);
  ```
 
  Alternatively, the default value can be provided in one of the following forms:
 
  ```
- properties.GetPropertyOrDefault("MyGroup", "rgb",
-     Eigen::Vector3d{0.9, 0.9, 0.9});
- properties.GetPropertyOrDefault<Eigen::Vector3d>("MyGroup", "rgb",
+ properties.GetPropertyOrDefault("MyGroup", "rgba",
+     Rgba{0.9, 0.9, 0.9});
+ properties.GetPropertyOrDefault<Rgba>("MyGroup", "rgba",
      {0.9, 0.9, 0.9});
  ```
 
@@ -210,13 +212,13 @@ namespace geometry {
  AbstractValue.
 
  ```
- const ProximityProperties& properties = FunctionThatReturnsProperties();
+ const IllustrationProperties& properties = FunctionThatReturnsProperties();
  for (const auto& pair : properties.GetGroupProperties("MyGroup") {
    const std::string& name = pair.first;
-   if (name == "rgb") {
+   if (name == "rgba") {
      // Throws an exception if the named parameter is of the wrong type.
-     const Eigen::Vector3d& rgb =
-         pair.second->GetValueOrThrow<Eigen::Vector3d>();
+     const Rgba& rgba =
+         pair.second->GetValueOrThrow<Rgba>();
    }
  }
  ```
@@ -257,7 +259,11 @@ class GeometryProperties {
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    AddPropertyAbstract(group_name, name, Value(value));
+    if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
+      AddPropertyAbstract(group_name, name, Value(ToRgba(value)));
+    } else {
+      AddPropertyAbstract(group_name, name, Value(value));
+    }
   }
 
   /** Adds a property with the given `name` and type-erased `value` to the the
@@ -289,13 +295,24 @@ class GeometryProperties {
    @throws std::logic_error if a) the group name is invalid,
                             b) the property name is invalid, or
                             c) the property type is not that specified.
-   @tparam ValueType  The expected type of the desired property.  */
+   @tparam ValueType  The expected type of the desired property.
+   @returns const ValueType& of stored value.
+            If ValueType is Eigen::Vector4d, the return type will be a copy
+            translated from Rgba.
+   */
   template <typename ValueType>
-  const ValueType& GetProperty(const std::string& group_name,
-                               const std::string& name) const {
+  decltype(auto)
+  GetProperty(const std::string& group_name, const std::string& name) const {
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
-    return GetValueOrThrow<ValueType>(
-        "GetProperty", group_name, name, abstract);
+    if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
+      const Rgba color = GetValueOrThrow<Rgba>(
+          "GetProperty", group_name, name, abstract,
+          NiceTypeName::Get<Eigen::Vector4d>());
+      return ToVector4d(color);
+    } else {
+      return GetValueOrThrow<ValueType>(
+          "GetProperty", group_name, name, abstract);
+    }
   }
 
   /** Retrieves that type-erased value from this set of properties.
@@ -340,9 +357,16 @@ class GeometryProperties {
     if (!abstract) {
       return default_value;
     } else {
-      // This incurs the cost of copying a stored value.
-      return GetValueOrThrow<ValueType>(
-          "GetPropertyOrDefault", group_name, name, *abstract);
+      if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
+        const Rgba color = GetValueOrThrow<Rgba>(
+            "GetPropertyOrDefault", group_name, name, *abstract,
+            NiceTypeName::Get<Eigen::Vector4d>());
+        return ToVector4d(color);
+      } else {
+        // This incurs the cost of copying a stored value.
+        return GetValueOrThrow<ValueType>(
+            "GetPropertyOrDefault", group_name, name, *abstract);
+      }
     }
   }
 
@@ -398,18 +422,34 @@ class GeometryProperties {
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
-  static const ValueType& GetValueOrThrow(
+  static const ValueType&
+  GetValueOrThrow(
       const std::string& method, const std::string& group_name,
-      const std::string& name, const AbstractValue& abstract) {
+      const std::string& name, const AbstractValue& abstract,
+      const std::string& nice_type_name = NiceTypeName::Get<ValueType>()) {
     const ValueType* value = abstract.maybe_get_value<ValueType>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property '{}' in group '{}' exists, "
           "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, NiceTypeName::Get<ValueType>(),
+          method, name, group_name, nice_type_name,
           abstract.GetNiceTypeName()));
     }
     return *value;
+  }
+
+  // TODO(eric.cousineau): Enable this.
+  // DRAKE_DEPRECATED(
+  //     "2020-10-01", "Use Rgba instead of Vector4d to define diffuse color.")
+  static Eigen::Vector4d ToVector4d(const Rgba& color) {
+    return Eigen::Vector4d(color.r(), color.g(), color.b(), color.a());
+  }
+
+  // TODO(eric.cousineau): Enable this.
+  // DRAKE_DEPRECATED(
+  //     "2020-10-01", "Use Rgba instead of Vector4d to define diffuse color.")
+  static Rgba ToRgba(const Eigen::Vector4d& value) {
+    return Rgba(value(0), value(1), value(2), value(3));
   }
 
   friend std::ostream& operator<<(std::ostream& out,
