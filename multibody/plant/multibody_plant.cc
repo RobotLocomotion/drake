@@ -734,7 +734,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateCacheAndPorts();
   if (num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
-    set_penetration_allowance();
+    EstimatePointContactParameters(penetration_allowance_);
   if (num_collision_geometries() > 0 &&
       friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
@@ -998,10 +998,19 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   }
 }
 
-template<typename T>
+template <typename T>
 void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  penetration_allowance_ = penetration_allowance;
+  // We update the point contact parameters when this method is called
+  // post-finalize.
+  if (this->is_finalized())
+    EstimatePointContactParameters(penetration_allowance);
+}
+
+template <typename T>
+void MultibodyPlant<T>::EstimatePointContactParameters(
+    double penetration_allowance) {
   // Default to Earth's gravity for this estimation.
   const UniformGravityFieldElement<T>& gravity = gravity_field();
   const double g = (!gravity.gravity_vector().isZero())

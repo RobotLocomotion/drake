@@ -94,8 +94,11 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
       coefficient_friction_inclined_plane, coefficient_friction_sphere,
       mass, radius, &plant);
 
-  plant.Finalize();
+  // We should be able to set the penetration allowance pre- and post-finalize.
+  // For this test we decide to set it pre-finalize.
   plant.set_penetration_allowance(penetration_allowance_);  // (in meters)
+
+  plant.Finalize();
   plant.set_stiction_tolerance(stiction_tolerance_);
   const RigidBody<double>& ball = plant.GetRigidBodyByName("BodyB");
 
