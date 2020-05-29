@@ -208,13 +208,15 @@ PYBIND11_MODULE(sensors, m) {
           py::arg("parent_id"), py::arg("X_PB"), py::arg("color_properties"),
           py::arg("depth_properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_6args)
+          py::arg("show_window") = false,
+          doc.RgbdSensor.ctor.doc_legacy_individual_intrinsics)
       .def(py::init<FrameId, const RigidTransformd&,
                const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
                bool>(),
           py::arg("parent_id"), py::arg("X_PB"), py::arg("properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_5args)
+          py::arg("show_window") = false,
+          doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics)
       .def("color_camera_info", &RgbdSensor::color_camera_info,
           py_reference_internal, doc.RgbdSensor.color_camera_info.doc)
       .def("depth_camera_info", &RgbdSensor::depth_camera_info,

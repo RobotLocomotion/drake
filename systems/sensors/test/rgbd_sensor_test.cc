@@ -2,6 +2,8 @@
 
 #include <functional>
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -45,14 +47,55 @@ class GeometryStateTester {
 namespace systems {
 namespace sensors {
 
+using Eigen::AngleAxisd;
+using Eigen::Vector3d;
+using geometry::FrameId;
+using geometry::FramePoseVector;
+using geometry::GeometryFrame;
+using geometry::GeometryStateTester;
+using geometry::QueryObject;
+using geometry::SceneGraph;
+using geometry::SourceId;
+using geometry::internal::DummyRenderEngine;
+using geometry::render::CameraProperties;
+using geometry::render::ClippingRange;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthCameraProperties;
+using geometry::render::DepthRange;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using geometry::render::RenderEngine;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using std::make_pair;
+using std::make_unique;
+using std::move;
+using std::unique_ptr;
+using std::vector;
+using systems::Context;
+using systems::Diagram;
+using systems::DiagramBuilder;
+
 std::ostream& operator<<(std::ostream& out, const CameraInfo& info) {
-  out << "CameraInfo:"
-      << "\n  width: " << info.width()
+  out << "\n  width: " << info.width()
       << "\n  height: " << info.height()
       << "\n  focal_x: " << info.focal_x()
       << "\n  focal_y: " << info.focal_y()
       << "\n  center_x: " << info.center_x()
       << "\n  center_y: " << info.center_y();
+  return out;
+}
+std::ostream& operator<<(std::ostream& out, const ColorRenderCamera& camera) {
+  out << "ColorRenderCamera\n"
+      << camera.core().intrinsics()
+      << "\n  show_window: " << camera.show_window();
+  return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const DepthRenderCamera& camera) {
+  out << "DepthRenderCamera\n" << camera.core().intrinsics()
+      << "\n  min_depth: " << camera.depth_range().min_depth()
+      << "\n  max_depth: " << camera.depth_range().max_depth();
   return out;
 }
 
@@ -67,29 +110,6 @@ class RgbdSensorTester {
 
 namespace {
 
-using Eigen::AngleAxisd;
-using Eigen::Vector3d;
-using geometry::FrameId;
-using geometry::FramePoseVector;
-using geometry::GeometryFrame;
-using geometry::GeometryStateTester;
-using geometry::internal::DummyRenderEngine;
-using geometry::QueryObject;
-using geometry::render::CameraProperties;
-using geometry::render::DepthCameraProperties;
-using geometry::render::RenderEngine;
-using geometry::SceneGraph;
-using geometry::SourceId;
-using math::RigidTransformd;
-using math::RollPitchYawd;
-using std::make_unique;
-using std::move;
-using std::unique_ptr;
-using std::vector;
-using systems::Context;
-using systems::Diagram;
-using systems::DiagramBuilder;
-
 ::testing::AssertionResult CompareCameraInfo(const CameraInfo& test,
                                              const CameraInfo& expected) {
   if (test.width() != expected.width() || test.height() != expected.height() ||
@@ -98,9 +118,78 @@ using systems::DiagramBuilder;
       test.center_x() != expected.center_x() ||
       test.center_y() != expected.center_y()) {
     return ::testing::AssertionFailure()
-           << "Expected " << expected << "\n got: " << test;
+           << "Intrinsic values don't match.\n Expected " << expected
+           << "\n got: " << test;
   }
   return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult CompareClipping(const ClippingRange& test,
+                                           const ClippingRange& expected) {
+  if (test.near() != expected.near()) {
+    return ::testing::AssertionFailure()
+           << "Near clipping planes don't match.\n Expected " << expected.near()
+           << "\n got " << test.near();
+  }
+  if (test.far() != expected.far()) {
+    return ::testing::AssertionFailure()
+           << "Far clipping planes don't match.\n Expected " << expected.far()
+           << "\n got " << test.far();
+  }
+  return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult CompareDepthRange(const DepthRange& test,
+                                             const DepthRange& expected) {
+  if (test.min_depth() != expected.min_depth()) {
+    return ::testing::AssertionFailure()
+           << "Minimum depth doesn't match.\n Expected " << expected.min_depth()
+           << "\n got " << test.min_depth();
+  }
+  if (test.max_depth() != expected.max_depth()) {
+    return ::testing::AssertionFailure()
+           << "Maximum depth doesn't match.\n Expected " << expected.max_depth()
+           << "\n got " << test.max_depth();
+  }
+  return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult CompareCameraCore(const RenderCameraCore& test,
+                                             const RenderCameraCore& expected) {
+  ::testing::AssertionResult result{true};
+
+  result = CompareCameraInfo(test.intrinsics(), expected.intrinsics());
+  if (!result) return result;
+
+  if (test.renderer_name() != expected.renderer_name()) {
+    return ::testing::AssertionFailure()
+           << "Renderer name doesn't match.\n Expected "
+           << expected.renderer_name() << "\n got " << test.renderer_name();
+  }
+
+  result = CompareClipping(test.clipping(), expected.clipping());
+  if (!result) return result;
+
+  return CompareMatrices(test.sensor_pose_in_camera_body().GetAsMatrix4(),
+                         expected.sensor_pose_in_camera_body().GetAsMatrix4());
+}
+
+::testing::AssertionResult Compare(const ColorRenderCamera& test,
+                                   const ColorRenderCamera& expected) {
+  if (test.show_window() != expected.show_window()) {
+    return ::testing::AssertionFailure()
+           << "'show_window' doesn't match.\n Expected "
+           << expected.show_window() << "\n got " << test.show_window();
+  }
+  return CompareCameraCore(test.core(), expected.core());
+}
+
+::testing::AssertionResult Compare(const DepthRenderCamera& test,
+                                   const DepthRenderCamera& expected) {
+  auto result = CompareCameraCore(test.core(), expected.core());
+  if (!result) return result;
+
+  return CompareDepthRange(test.depth_range(), expected.depth_range());
 }
 
 class RgbdSensorTest : public ::testing::Test {
@@ -157,12 +246,35 @@ class RgbdSensorTest : public ::testing::Test {
     result = CompareCameraInfo(
         sensor_->color_camera_info(), expected_color_info);
     if (!result) return result;
-    const CameraInfo expected_depth_info(
-        depth_properties_.width, depth_properties_.height,
-        depth_properties_.fov_y);
+
+    constexpr double kNear = 0.01;
+    constexpr double kFar = 10.0;
+    const ColorRenderCamera expected_color_camera(
+        {
+            color_properties_.renderer_name,
+            expected_color_info,
+            {kNear, kFar},
+            RigidTransformd{},
+        },
+        false);
+    result = Compare(sensor_->color_render_camera(), expected_color_camera);
+    if (!result) return result;
+
+    const CameraInfo expected_depth_info(depth_properties_.width,
+                                         depth_properties_.height,
+                                         depth_properties_.fov_y);
     result = CompareCameraInfo(
         sensor_->depth_camera_info(), expected_depth_info);
     if (!result) return result;
+    const DepthRenderCamera expected_depth_camera(
+        {
+            depth_properties_.renderer_name,
+            expected_depth_info,
+            {kNear, kFar},
+            RigidTransformd{},
+        },
+        {depth_properties_.z_near, depth_properties_.z_far});
+    result = Compare(sensor_->depth_render_camera(), expected_depth_camera);
 
     // By default, frames B, C, and D are aligned and coincident.
     EXPECT_TRUE(CompareMatrices(sensor_->X_BC().GetAsMatrix4(),
@@ -213,6 +325,32 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.depth_image_16U_output_port().get_name(), "depth_image_16u");
   EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
   EXPECT_EQ(sensor.X_WB_output_port().get_name(), "X_WB");
+}
+
+// Confirms that simple intrinsics (CameraProperties) gets translated to full
+// intrinsics (CameraInfo) correctly.
+TEST_F(RgbdSensorTest, ConstructFullySpecifiedCameraIntrinsics) {
+  const CameraInfo color_intrinsics{2, 2, M_PI};
+  const ColorRenderCamera color_camera(
+      {"name", color_intrinsics, {0.1, 10.0}, RigidTransformd{}}, true);
+  const CameraInfo depth_intrinsics{3, 3, M_PI * 0.9};
+  const DepthRenderCamera depth_camera(
+      {"name", depth_intrinsics, {0.1, 10.0}, RigidTransformd{}}, {1, 10});
+
+  const FrameId parent_id = FrameId::get_new_id();
+  const RigidTransformd X_PB;
+
+  {
+    // Case: Declare color and depth intrinsics separately.
+    RgbdSensor sensor{parent_id, X_PB, color_camera, depth_camera};
+
+    EXPECT_TRUE(
+        CompareCameraInfo(sensor.color_camera_info(), color_intrinsics));
+    EXPECT_TRUE(
+        CompareCameraInfo(sensor.depth_camera_info(), depth_intrinsics));
+    EXPECT_TRUE(Compare(sensor.color_render_camera(), color_camera));
+    EXPECT_TRUE(Compare(sensor.depth_render_camera(), depth_camera));
+  }
 }
 
 // Tests that the anchored camera reports the correct parent frame and has the
