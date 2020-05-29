@@ -151,24 +151,24 @@ namespace geometry {
 
  ```
  const ProximityProperties& properties = FunctionThatReturnsProperties();
- // Looking for a Vector3d of rgb colors named "rgb" - send generic error that
+ // Looking for a Rgba of rgba colors named "rgba" - send generic error that
  // the property set is missing the required property.
- const Eigen::Vector3d rgb =
-     properties.GetProperty<Eigen::Vector3d>("MyGroup", "rgb");
+ const Rgba rgba =
+     properties.GetProperty<Rgba>("MyGroup", "rgba");
 
  // Explicitly detect missing property and throw exception with custom message.
- if (!properties.HasProperty("MyGroup", "rgb")) {
+ if (!properties.HasProperty("MyGroup", "rgba")) {
    throw std::logic_error(
-       "ThisClass: Missing the necessary 'rgb' property; the object cannot be "
+       "ThisClass: Missing the necessary 'rgba' property; the object cannot be "
        "rendered");
  }
  // Otherwise acquire value, confident that no exception will be thrown.
- const Eigen::Vector3d rgb =
-     properties.GetProperty<Eigen::Vector3d>("MyGroup", "rgb");
+ const Rgba rgbaa =
+     properties.GetProperty<Rgba>("MyGroup", "rgbaa");
  ```
 
  @note calls to `GetProperty()` always require the return type template value
- (e.g., `Eigen::Vector3d`) to be specified in the call.
+ (e.g., `Rgba`) to be specified in the call.
 
  <h4>Look up specific properties with default property values</h4>
 
@@ -180,18 +180,18 @@ namespace geometry {
 
  ```
  const ProximityProperties& properties = FunctionThatReturnsProperties();
- // Looking for a Vector3d of rgb colors named "rgb".
- const Eigen::Vector3d default_color{0.9, 0.9, 0.9};
- const Eigen::Vector3d rgb =
-     properties.GetPropertyOrDefault("MyGroup", "rgb", default_color);
+ // Looking for a Rgba of rgba colors named "rgbaa".
+ const Rgba default_color{0.9, 0.9, 0.9};
+ const Rgba rgba =
+     properties.GetPropertyOrDefault("MyGroup", "rgbaa", default_color);
  ```
 
  Alternatively, the default value can be provided in one of the following forms:
 
  ```
- properties.GetPropertyOrDefault("MyGroup", "rgb",
-     Eigen::Vector3d{0.9, 0.9, 0.9});
- properties.GetPropertyOrDefault<Eigen::Vector3d>("MyGroup", "rgb",
+ properties.GetPropertyOrDefault("MyGroup", "rgbaa",
+     Rgba{0.9, 0.9, 0.9});
+ properties.GetPropertyOrDefault<Rgba>("MyGroup", "rgbaa",
      {0.9, 0.9, 0.9});
  ```
 
@@ -213,10 +213,10 @@ namespace geometry {
  const ProximityProperties& properties = FunctionThatReturnsProperties();
  for (const auto& pair : properties.GetGroupProperties("MyGroup") {
    const std::string& name = pair.first;
-   if (name == "rgb") {
+   if (name == "rgba") {
      // Throws an exception if the named parameter is of the wrong type.
-     const Eigen::Vector3d& rgb =
-         pair.second->GetValueOrThrow<Eigen::Vector3d>();
+     const Rgba& rgbaa =
+         pair.second->GetValueOrThrow<Rgba>();
    }
  }
  ```
@@ -387,6 +387,8 @@ class GeometryProperties {
  private:
   // The collection of property groups.
   std::unordered_map<std::string, Group> values_;
+
+  
 
   // Return value or nullptr if it does not exist.
   // If `throw_for_bad_group` is true, an error will be thrown if `group_name`
