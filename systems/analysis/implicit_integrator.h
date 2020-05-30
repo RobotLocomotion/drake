@@ -396,7 +396,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void DoResetStatistics() override;
   void DoReset() final;
-  const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
+  const MatrixX<T>& CalcJacobian(const T& t, const VectorX<T>& xtplus);
   void ComputeForwardDiffJacobian(const System<T>&, const T& t,
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
   void ComputeCentralDiffJacobian(const System<T>&, const T& t,
@@ -421,20 +421,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     ++num_jacobian_evaluations_;
   }
 
-  bool get_jacobian_is_fresh() {
-    return jacobian_is_fresh_;
-  }
-
   void set_jacobian_is_fresh(bool flag) {
     jacobian_is_fresh_ = flag;
-  }
-
-  bool get_failed_jacobian_is_from_second_small_step() {
-    return failed_jacobian_is_from_second_small_step_;
-  }
-
-  void set_failed_jacobian_is_from_second_small_step(bool flag) {
-    failed_jacobian_is_from_second_small_step_ = flag;
   }
 
  private:
@@ -443,13 +431,15 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     // If the implicit step is successful (result is true), we need a new
     // Jacobian (fresh is false). Otherwise, a failed step (result is false)
     // means we can keep the Jacobian (fresh is true). Therefore fresh =
-    // !result, always.
-
-    // The exception is when the implicit step fails during a second half-
-    // step, in which case the Jacobian is not from the beginning of the step.
-    jacobian_is_fresh_ =
-        !failed_jacobian_is_from_second_small_step_ && !result;
-    failed_jacobian_is_from_second_small_step_ = false;
+    // !result, almost always.
+    //
+    // The exception is when the implicit step fails during the second half-
+    // step of ImplicitEulerIntegrator, in which case the Jacobian is not from
+    // the beginning of the step, and so fresh should be false. We leave it
+    // untouched here to keep the design of ImplicitIntegrator<T> simple, and
+    // let ImplicitEulerIntegrator<T> handle this flag on its own at the
+    // beginning of ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep().
+    jacobian_is_fresh_ = !result;
 
     return result;
   }
@@ -462,13 +452,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // The last computed Jacobian matrix.
   MatrixX<T> J_;
 
-  // Whether the Jacobian matrix is fresh.
+  // Indicates whether the Jacobian matrix is fresh. We say the Jacobian is
+  // "fresh" if it was last computed at a state (t, x) from the beginning of
+  /// the current step. This indicates to MaybeFreshenMatrices that it should
+  // not recompute the Jacobian, but rather it should fail immediately. This
+  // is only used when use_full_newton_ and reuse_ are set to false.
   bool jacobian_is_fresh_{false};
-
-  // Flag to indicate that the failed Jacobian is not from the beginning of the
-  // time step, but rather from the second small step. This indicates that the
-  // Jacobian is still not fresh.
-  bool failed_jacobian_is_from_second_small_step_{false};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
   // will not be reused.
