@@ -112,8 +112,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @note Discards any already-computed Jacobian matrices if the scheme
   ///       changes.
   void set_jacobian_computation_scheme(JacobianComputationScheme scheme) {
-    if (jacobian_scheme_ != scheme)
+    if (jacobian_scheme_ != scheme) {
       J_.resize(0, 0);
+      // Reset the Jacobian and any matrices cached by child integrators.
+      DoResetCachedJacobianRelatedMatrices();
+    }
     jacobian_scheme_ = scheme;
   }
 
@@ -364,6 +367,15 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// reset them there.
   virtual void DoResetImplicitIntegratorStatistics() {}
 
+
+  /// @copydoc IntegratorBase::DoReset()
+  virtual void DoImplicitIntegratorReset() {}
+
+  /// Resets any cached Jacobian or iteration matrices owned by child classes.
+  /// This is called when the user changes the Jacobian computation scheme;
+  /// the child class should use this to reset its cached matrices.
+  virtual void DoResetCachedJacobianRelatedMatrices() {}
+
   /// Checks to see whether a Jacobian matrix is "bad" (has any NaN or
   /// Inf values) and needs to be recomputed. A divergent Newton-Raphson
   /// iteration can cause the state to overflow, which is how the Jacobian can
@@ -383,6 +395,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const = 0;
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void DoResetStatistics() override;
+  void DoReset() final;
   const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   void ComputeForwardDiffJacobian(const System<T>&, const T& t,
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);

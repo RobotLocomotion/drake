@@ -19,6 +19,14 @@ void ImplicitIntegrator<T>::DoResetStatistics() {
   DoResetImplicitIntegratorStatistics();
 }
 
+template <class T>
+void ImplicitIntegrator<T>::DoReset() {
+  J_.resize(0, 0);
+  DoResetCachedJacobianRelatedMatrices();
+  // Call any Reset() provided by child integrator classes.
+  DoImplicitIntegratorReset();
+}
+
 // Computes the Jacobian of the ordinary differential equations around time
 // and continuous state `(t, xt)` using automatic differentiation.
 // @param system The dynamical system.

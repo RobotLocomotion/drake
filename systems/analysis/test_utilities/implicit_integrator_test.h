@@ -223,16 +223,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
                                       initial_velocity);
 
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
-
     // Integrate for t_final seconds again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
     x_final = xc_final.GetAtIndex(0);
@@ -254,16 +244,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
                                       initial_position);
     spring_mass_damper_->set_velocity(spring_mass_damper_context_.get(),
                                       initial_velocity);
-
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
 
     // Integrate for t_final seconds again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -354,16 +334,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     mod_spring_mass_damper_->set_velocity(
         mod_spring_mass_damper_context_.get(), initial_velocity);
 
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
-
     // Integrate again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
 
@@ -389,16 +359,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
         mod_spring_mass_damper_context_.get(), initial_position);
     mod_spring_mass_damper_->set_velocity(
         mod_spring_mass_damper_context_.get(), initial_velocity);
-
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
 
     // Integrate again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -482,16 +442,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     spring_mass.set_position(context.get(), initial_position);
     spring_mass.set_velocity(context.get(), initial_velocity);
 
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
-
     // Integrate for t_final seconds again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
 
@@ -511,16 +461,6 @@ class ImplicitIntegratorTest : public ::testing::Test {
     context->SetTime(0.0);
     spring_mass.set_position(context.get(), initial_position);
     spring_mass.set_velocity(context.get(), initial_velocity);
-
-    // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-    // some problems, the Jacobian may not be computed again because the
-    // previous one was good enough for Newton-Raphson to converge.
-    // TODO(antequ): This issue only exists for velocity-implicit Euler
-    // integrator; other implicit integrators reset their Jacobians in
-    // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-    // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-    // and remove this call. See issue #13069.
-    integrator.Initialize();
 
     // Integrate for t_final seconds again.
     integrator.IntegrateWithMultipleStepsToTime(t_final);
@@ -950,16 +890,6 @@ TYPED_TEST_P(ImplicitIntegratorTest, Stationary) {
     integrator.set_target_accuracy(1e-3);
     integrator.request_initial_step_size_target(1e-3);
   }
-
-  // Initialize to reset cached Jacobians. This is necessary; otherwise, for
-  // some problems, the Jacobian may not be computed again because the
-  // previous one was good enough for Newton-Raphson to converge.
-  // TODO(antequ): This issue only exists for velocity-implicit Euler
-  // integrator; other implicit integrators reset their Jacobians in
-  // set_jacobian_computation_scheme(). Clear the velocity-implicit Euler
-  // integrator's Jacobian cache too in set_jacobian_computation_scheme(),
-  // and remove this call. See issue #13069.
-  integrator.Initialize();
 
   // Integrate the system
   integrator.IntegrateWithMultipleStepsToTime(1.0);
