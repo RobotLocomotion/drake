@@ -43,6 +43,7 @@ from pydrake.multibody.tree import (
 from pydrake.multibody.math import (
     SpatialForce_,
     SpatialVelocity_,
+    SpatialAcceleration_,
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
@@ -56,6 +57,7 @@ from pydrake.multibody.plant import (
     PointPairContactInfo_,
     PropellerInfo,
     Propeller_,
+    VectorExternallyAppliedSpatialForced,
     VectorExternallyAppliedSpatialForced_,
 )
 from pydrake.multibody.parsing import Parser
@@ -63,10 +65,12 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
+from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.value import AbstractValue
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
     GeometryId,
@@ -652,7 +656,36 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetAccelerationUpperLimits().shape, (nv,))
 
     @numpy_compare.check_all_types
-    def test_model_instance_port_access(self, T):
+    def test_deprecated_vector_externally_applied_spatial_forced(self, T):
+        # Deprecated custom template instantiation.
+        with catch_drake_warnings(expected_count=1) as w:
+            cls = VectorExternallyAppliedSpatialForced_[T]
+        self.assertIn(
+            "Value[List[ExternallyAppliedSpatialForce]]",
+            str(w[0].message))
+        message_expected = str(w[0].message)
+
+        if T == float:
+            # Check alias.
+            self.assertIs(cls, VectorExternallyAppliedSpatialForced)
+
+        # Deprecated Value[] instantiation which aliases to correct
+        # instantiation.
+        with catch_drake_warnings(expected_count=1) as w:
+            value_cls = Value[cls]
+        self.assertEqual(str(w[0].message), message_expected)
+        self.assertIs(
+            value_cls, Value[List[ExternallyAppliedSpatialForce_[T]]])
+
+        # Deprecated constructor which simply creates a list (not a derived
+        # class).
+        with catch_drake_warnings(expected_count=1) as w:
+            x = cls()
+        self.assertEqual(type(x), list)
+        self.assertEqual(str(w[0].message), message_expected)
+
+    @numpy_compare.check_all_types
+    def test_port_access(self, T):
         # N.B. We actually test the values because some of the value bindings
         # are somewhat special snowflakes.
         MultibodyPlant = MultibodyPlant_[T]
@@ -704,23 +737,25 @@ class TestPlant(unittest.TestCase):
                     model_instance=model).Eval(context),
                 np.ndarray)
 
-        def check_output_port_that_cannot_be_used_in_python(port):
+        def extract_list_value(port):
             self.assertIsInstance(port, OutputPort)
-            if T == Expression:
-                return
-            with self.assertRaises(RuntimeError) as cm:
-                port.Eval(context)
-            self.assertIn("`get_value` cannot be called", str(cm.exception))
+            value = port.Eval(context)
+            self.assertIsInstance(value, list)
+            self.assertGreater(len(value), 0)
+            return value[0]
 
-        # TODO(eric.cousineau): Make `Value[List[T]]` work so we can test Eval
-        # for these items (#13387). Currently, these ports cannot be used for
-        # Python systems.
-        check_output_port_that_cannot_be_used_in_python(
-            plant.get_body_poses_output_port())
-        check_output_port_that_cannot_be_used_in_python(
-            plant.get_body_spatial_velocities_output_port())
-        check_output_port_that_cannot_be_used_in_python(
-            plant.get_body_spatial_accelerations_output_port())
+        self.assertIsInstance(
+            extract_list_value(plant.get_body_poses_output_port()),
+            RigidTransform_[T])
+        self.assertIsInstance(
+            extract_list_value(
+                plant.get_body_spatial_velocities_output_port()),
+            SpatialVelocity_[T])
+        if T != Expression:
+            self.assertIsInstance(
+                extract_list_value(
+                    plant.get_body_spatial_accelerations_output_port()),
+                SpatialAcceleration_[T])
         # TODO(eric.cousineau): Merge `check_applied_force_input_ports` into
         # this test.
 
@@ -733,10 +768,10 @@ class TestPlant(unittest.TestCase):
                 self.set_name("applied_force_test_system")
                 self.nv = nv
                 self.target_body_index = target_body_index
+                forces_cls = Value[List[ExternallyAppliedSpatialForce_[T]]]
                 self.DeclareAbstractOutputPort(
                     "spatial_forces_vector",
-                    lambda: AbstractValue.Make(
-                        VectorExternallyAppliedSpatialForced_[T]()),
+                    lambda: forces_cls(),
                     self.DoCalcAbstractOutput)
                 self.DeclareVectorOutputPort(
                     "generalized_forces",
@@ -748,17 +783,16 @@ class TestPlant(unittest.TestCase):
                     self, other.nv, other.target_body_index,
                     converter=converter)
 
-            def DoCalcAbstractOutput(self, context, y_data):
+            def DoCalcAbstractOutput(self, context, spatial_forces_vector):
                 test_force = ExternallyAppliedSpatialForce_[T]()
                 test_force.body_index = self.target_body_index
                 test_force.p_BoBq_B = np.zeros(3)
                 test_force.F_Bq_W = SpatialForce_[T](
                     tau=[0., 0., 0.], f=[0., 0., 1.])
-                y_data.set_value(VectorExternallyAppliedSpatialForced_[T]([
-                    test_force]))
+                spatial_forces_vector.set_value([test_force])
 
-            def DoCalcVectorOutput(self, context, y_data):
-                y_data.SetFromVector(np.zeros(self.nv))
+            def DoCalcVectorOutput(self, context, generalized_forces):
+                generalized_forces.SetFromVector(np.zeros(self.nv))
 
         return Impl
 
