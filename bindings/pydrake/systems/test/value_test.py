@@ -7,6 +7,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.value import AbstractValue, Value
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
@@ -74,9 +75,28 @@ class TestValue(unittest.TestCase):
         value.SetAtIndex(1, 5.)
         self.assertEqual(value.GetAtIndex(1), 5.)
 
-    def test_value_registration(self):
-        for T in [float, AutoDiffXd, Expression]:
-            Value[BasicVector_[T]]
+    def test_str_and_repr(self):
+        # T=float
+        vector_f = [1.]
+        value_f = BasicVector_[float](vector_f)
+        self.assertEqual(str(value_f), "[1.0]")
+        self.assertEqual(repr(value_f), "BasicVector_[float]([1.0])")
+        # T=AutoDiffXd
+        value_ad = BasicVector_[AutoDiffXd](vector_f)
+        self.assertEqual(str(value_ad), "[<AutoDiffXd 1.0 nderiv=0>]")
+        self.assertEqual(
+            repr(value_ad),
+            "BasicVector_[AutoDiffXd]([<AutoDiffXd 1.0 nderiv=0>])")
+        # T=Expression
+        value_sym = BasicVector_[Expression](vector_f)
+        self.assertEqual(str(value_sym), "[<Expression \"1\">]")
+        self.assertEqual(
+            repr(value_sym),
+            "BasicVector_[Expression]([<Expression \"1\">])")
+
+    @numpy_compare.check_all_types
+    def test_value_registration(self, T):
+        Value[BasicVector_[T]]
 
     def test_parameters_api(self):
 
