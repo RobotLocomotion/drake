@@ -16,10 +16,7 @@ def eigen_repository(
         atleast_version = "3.3.4",
         extra_defines = ["EIGEN_MPL2_ONLY"],
         pkg_config_paths = ["/usr/local/opt/eigen/share/pkgconfig"],
-        mirrors = None,
         **kwargs):
-    if mirrors != None:
-        print("DRAKE DEPRECATED: The @eigen external no longer accepts a mirrors= parameter, because Drake no longer downloads Eigen; this warning will turn into an error or after 2020-06-01.")  # noqa
     pkg_config_repository(
         name = name,
         licenses = licenses,
