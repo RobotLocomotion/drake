@@ -310,6 +310,8 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
 // respect to the state variables for a given x(t).
 // @post the context's time and continuous state will be temporarily set during
 //       this call (and then reset to their original values) on return.
+//       Furthermore, the jacobian_is_fresh_ flag is set to "true", indicating
+//       that the Jacobian was computed from the most recent time t.
 template <class T>
 const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
     const VectorX<T>& x) {
@@ -356,6 +358,10 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
   // Reset the time and state.
   context->SetTimeAndContinuousState(t_current, x_current);
 
+  // Mark the Jacobian as fresh, so that we don't recompute it unnecessarily
+  // during the step.
+  jacobian_is_fresh_ = true;
+
   return J_;
 }
 
@@ -390,8 +396,6 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
   MatrixX<T>& J = get_mutable_jacobian();
   if (!get_reuse() || J.rows() == 0 || IsBadJacobian(J)) {
     J = CalcJacobian(t, xt);
-    // Mark the Jacobian as fresh so that we don't recompute it.
-    jacobian_is_fresh_ = true;
     ++num_iter_factorizations_;
     compute_and_factor_iteration_matrix(J, h, iteration_matrix);
     return true;  // Indicate success.
@@ -409,28 +413,36 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
     case 1:
       // For the first trial, we do nothing: this will cause the Newton-Raphson
       // process to use the last computed (and already factored) iteration
-      // matrix.
+      // matrix. This matrix may be from a previous time-step or a previously-
+      // attempted step size.
       return true;  // Indicate success.
 
     case 2: {
-      // For the second trial, we perform the (likely) next least expensive
-      // operation, re-constructing and factoring the iteration matrix.
+      // For the second trial, we know the first trial, which uses the last
+      // computed iteration matrix, has already failed. We perform the (likely)
+      // next least expensive operation, which is re-constructing and factoring
+      // the iteration matrix, using the last computed Jacobian. The last
+      // computed Jacobian may be from a previous time-step or a previously-
+      // attempted step size.
       ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;
     }
 
     case 3: {
-      // For the third trial, the Jacobian matrix may already be "fresh",
-      // meaning that there is nothing more that can be tried (Jacobian and
-      // iteration matrix are both fresh) and we need to indicate failure.
+      // For the third trial, we know that the first two trials, which
+      // exhausted all our options short of recomputing the Jacobian, have
+      // failed.
+      
+      // The Jacobian matrix may already be "fresh", meaning that there is
+      // nothing more that can be tried (Jacobian and iteration matrix are both
+      // fresh), and we need to indicate failure.
       if (jacobian_is_fresh_)
         return false;
 
-      // Reform the Jacobian matrix and refactor the iteration matrix.
+      // Otherwise, we can reform the Jacobian matrix and refactor the
+      // iteration matrix.
       J = CalcJacobian(t, xt);
-      // Mark the Jacobian as fresh so that we don't recompute it.
-      jacobian_is_fresh_ = true;
       ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;

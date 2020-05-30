@@ -18,6 +18,11 @@
 namespace drake {
 namespace systems {
 
+// Forward declare VelocityImplicitEulerIntegrator for the Reuse test
+// because the VIE integrator has slightly different logic.
+template <class T>
+class VelocityImplicitEulerIntegrator;
+
 namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
@@ -829,14 +834,16 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   // VelocityImplicitEulerIntegrator, which will recompute on trial 3
   // because it does not reuse Jacobians for different step sizes; hence
   // it will have 3 factorizations and 2 Jacobian evaluations.
-  // TODO(antequ): change GE to EQ (and delete LE) after the
-  // VelocityImplicitEulerIntegrator gains similar Jacobian freshness logic.
   integrator.Initialize();
   ASSERT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(1e-2));
-  EXPECT_GE(integrator.get_num_iteration_matrix_factorizations(), 2);
-  EXPECT_LE(integrator.get_num_iteration_matrix_factorizations(), 3);
-  EXPECT_GE(integrator.get_num_jacobian_evaluations(), 1);
-  EXPECT_LE(integrator.get_num_jacobian_evaluations(), 2);
+  if (!std::is_same<Integrator,
+      VelocityImplicitEulerIntegrator<double>>::value) {
+    EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 2);
+    EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 1);
+  } else {
+    EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 3);
+    EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 2);
+  }
 
   // Now integrate again but with a smaller size. Again, past experience
   // that this step size should be sufficiently small for the integrator to

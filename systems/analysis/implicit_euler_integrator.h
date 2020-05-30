@@ -285,6 +285,16 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   }
 
  private:
+  // These are statistics that the base class, ImplicitIntegrator<T>, require
+  // this child class to keep track of.
+  struct Statistics {
+    int64_t num_jacobian_reforms{0};
+    int64_t num_iter_factorizations{0};
+    int64_t num_function_evaluations{0};
+    int64_t num_jacobian_function_evaluations{0};
+    int64_t num_nr_iterations{0};
+  };
+
   int64_t do_get_num_newton_raphson_iterations() const final {
     return num_nr_iterations_;
   }
@@ -296,9 +306,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     // estimator, so we report error estimator stats by subtracting those of
     // the small half-sized steps from the total statistics.
     return use_implicit_trapezoid_error_estimation_
-               ? num_itr_or_half_ie_function_evaluations_
+               ? itr_statistics_.num_function_evaluations
                : (this->get_num_derivative_evaluations() -
-                  num_itr_or_half_ie_function_evaluations_);
+                  hie_statistics_.num_function_evaluations);
   }
 
   int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
@@ -309,9 +319,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     // estimator, so we report error estimator stats by subtracting those of
     // the small half-sized steps from the total statistics.
     return use_implicit_trapezoid_error_estimation_
-               ? num_itr_or_half_ie_jacobian_function_evaluations_
+               ? itr_statistics_.num_jacobian_function_evaluations
                : (this->get_num_derivative_evaluations_for_jacobian() -
-                  num_itr_or_half_ie_jacobian_function_evaluations_);
+                  hie_statistics_.num_jacobian_function_evaluations);
   }
 
   int64_t do_get_num_error_estimator_newton_raphson_iterations()
@@ -322,9 +332,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     // estimator, so we report error estimator stats by subtracting those of
     // the small half-sized steps from the total statistics.
     return use_implicit_trapezoid_error_estimation_
-               ? num_itr_or_half_ie_nr_iterations_
+               ? itr_statistics_.num_nr_iterations
                : (this->get_num_newton_raphson_iterations() -
-                  num_itr_or_half_ie_nr_iterations_);
+                  hie_statistics_.num_nr_iterations);
   }
 
   int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
@@ -334,9 +344,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     // estimator, so we report error estimator stats by subtracting those of
     // the small half-sized steps from the total statistics.
     return use_implicit_trapezoid_error_estimation_
-               ? num_itr_or_half_ie_jacobian_reforms_
+               ? itr_statistics_.num_jacobian_reforms
                : (this->get_num_jacobian_evaluations() -
-                  num_itr_or_half_ie_jacobian_reforms_);
+                  hie_statistics_.num_jacobian_reforms);
   }
 
   int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
@@ -347,9 +357,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     // estimator, so we report error estimator stats by subtracting those of
     // the small half-sized steps from the total statistics.
     return use_implicit_trapezoid_error_estimation_
-               ? num_itr_or_half_ie_iter_factorizations_
+               ? itr_statistics_.num_iter_factorizations
                : (this->get_num_iteration_matrix_factorizations() -
-                  num_itr_or_half_ie_iter_factorizations_);
+                  hie_statistics_.num_iter_factorizations);
   }
 
   void DoResetImplicitIntegratorStatistics() final;
@@ -398,19 +408,27 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Variables to avoid heap allocations.
   VectorX<T> xt0_, xdot_, xtplus_ie_, xtplus_hie_;
 
-  // Various statistics.
-  int64_t num_nr_iterations_{0};
-
   // Second order Runge-Kutta method for estimating the integration error when
   // the requested step size lies below the working step size.
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
+  // Various statistics.
+  int64_t num_nr_iterations_{0};
+
   // Statistics specific to implicit trapezoid or the two half-sized steps.
-  int64_t num_itr_or_half_ie_jacobian_reforms_{0};
-  int64_t num_itr_or_half_ie_iter_factorizations_{0};
-  int64_t num_itr_or_half_ie_function_evaluations_{0};
-  int64_t num_itr_or_half_ie_jacobian_function_evaluations_{0};
-  int64_t num_itr_or_half_ie_nr_iterations_{0};
+  Statistics itr_statistics_;
+  Statistics hie_statistics_;
+
+  // Since this integrator computes two small steps for its solution and
+  // simultaneously computes a large step to estimate the error, this is a
+  // flag to indicate that the failed Jacobian is not computed from the
+  // beginning of the time step, but rather from the second small step. Usually,
+  // the Jacobian after a failed step was computed from (t,x), so
+  // ImplicitIntegrator<T> marks it as "fresh" so that the next attempt
+  // will not attempt to compute a Jacobian. This flag tells the next step that
+  // the Jacobian is still not "fresh", or computed from (t,x) at the beginning
+  // of the step, even after the step has failed.
+  bool failed_jacobian_is_from_second_small_step_{false};
 
   // If set to true, the integrator uses implicit trapezoid instead of two
   // half-sized steps for error estimation.
