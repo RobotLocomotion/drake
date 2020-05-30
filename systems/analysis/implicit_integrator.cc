@@ -433,7 +433,7 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
       // For the third trial, we know that the first two trials, which
       // exhausted all our options short of recomputing the Jacobian, have
       // failed.
-      
+
       // The Jacobian matrix may already be "fresh", meaning that there is
       // nothing more that can be tried (Jacobian and iteration matrix are both
       // fresh), and we need to indicate failure.

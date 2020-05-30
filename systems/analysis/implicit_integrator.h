@@ -419,7 +419,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     // Jacobian (fresh is false). Otherwise, a failed step (result is false)
     // means we can keep the Jacobian (fresh is true). Therefore fresh =
     // !result, almost always.
-    //
+
     // The exception is when the implicit step fails during the second half-
     // step of ImplicitEulerIntegrator, in which case the Jacobian is not from
     // the beginning of the step, and so fresh should be false. We leave it

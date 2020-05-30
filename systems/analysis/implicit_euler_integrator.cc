@@ -16,16 +16,8 @@ namespace systems {
 template <class T>
 void ImplicitEulerIntegrator<T>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
-  hie_statistics_.num_nr_iterations = 0;
-  hie_statistics_.num_function_evaluations = 0;
-  hie_statistics_.num_jacobian_function_evaluations = 0;
-  hie_statistics_.num_jacobian_reforms = 0;
-  hie_statistics_.num_iter_factorizations = 0;
-  itr_statistics_.num_nr_iterations = 0;
-  itr_statistics_.num_function_evaluations = 0;
-  itr_statistics_.num_jacobian_function_evaluations = 0;
-  itr_statistics_.num_jacobian_reforms = 0;
-  itr_statistics_.num_iter_factorizations = 0;
+  hie_statistics_ = {};
+  itr_statistics_ = {};
 }
 
 template <class T>
