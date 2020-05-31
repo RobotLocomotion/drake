@@ -1329,6 +1329,11 @@ class TestPlant(unittest.TestCase):
         B = plant.MakeActuationMatrix()
         numpy_compare.assert_float_equal(B, np.array([[0.], [1.]]))
 
+        # N.B. Simple existence check for `CalcAppliedForces`.
+        forces = MultibodyForces(plant=plant)
+        plant.CalcAppliedForces(context=context, forces=forces)
+
+        # More in-depth check for `CalcForceElementsContribution`.
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
 

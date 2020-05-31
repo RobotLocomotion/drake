@@ -435,6 +435,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcInverseDynamics", &Class::CalcInverseDynamics,
             py::arg("context"), py::arg("known_vdot"),
             py::arg("external_forces"), cls_doc.CalcInverseDynamics.doc)
+        .def("CalcAppliedForces", &Class::CalcAppliedForces, py::arg("context"),
+            py::arg("forces"), cls_doc.CalcAppliedForces.doc)
         .def("CalcForceElementsContribution",
             &Class::CalcForceElementsContribution, py::arg("context"),
             py::arg("forces"), cls_doc.CalcForceElementsContribution.doc)
