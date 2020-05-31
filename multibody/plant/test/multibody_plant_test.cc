@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/symbolic.h"
@@ -520,17 +521,18 @@ class AcrobotPlantTests : public ::testing::Test {
     ASSERT_EQ(discrete_plant_->GetVelocities(*discrete_context_).size(), 2);
   }
 
-  // Computes the vector of generalized forces due to gravity.
+  // Computes all applied forces (including gravity).
   // This test is mostly to verify MultibodyPlant provides the proper APIs to
   // perform this computations.
-  void VerifyCalcGravityGeneralizedForces(double theta1, double theta2) {
+  void VerifyForceCalculation(double theta1, double theta2) {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
     shoulder_->set_angle(plant_context_, theta1);
     elbow_->set_angle(plant_context_, theta2);
 
-    // Set arbitrary non-zero velocities to test they do not affect the results.
+    // Set arbitrary non-zero velocities to test they do not affect the results
+    // for gravity.
     shoulder_->set_angular_rate(plant_context_, 10.0);
     elbow_->set_angular_rate(plant_context_, 10.0);
 
@@ -544,6 +546,22 @@ class AcrobotPlantTests : public ::testing::Test {
 
     EXPECT_TRUE(CompareMatrices(
         tau_g, tau_g_expected, kTolerance, MatrixCompareType::relative));
+
+    // Calculate all applied forces.
+    const double kGravity =
+        UniformGravityFieldElement<double>::kDefaultStrength;
+    // N.B. I (Eric) just did a brief heuristic check on this interface. It is
+    // mainly for testing the API.
+    MultibodyForces<double> forces(*plant_);
+    plant_->CalcAppliedForces(*plant_context_, &forces);
+    EXPECT_EQ(forces.num_velocities(), 2);
+    EXPECT_EQ(forces.num_bodies(), 3);
+    EXPECT_TRUE(CompareMatrices(
+        forces.generalized_forces(), Vector2d(-1, -1)));
+    EXPECT_TRUE(CompareMatrices(
+        forces.body_forces()[0].get_coeffs(), Vector6<double>::Zero()));
+    EXPECT_EQ(forces.body_forces()[1].translational()[2], -kGravity);
+    EXPECT_EQ(forces.body_forces()[2].translational()[2], -kGravity);
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
@@ -691,15 +709,15 @@ class AcrobotPlantTests : public ::testing::Test {
 
 // Verifies we can compute the vector of generalized forces due to gravity on a
 // model of an acrobot.
-TEST_F(AcrobotPlantTests, VerifyCalcGravityGeneralizedForces) {
+TEST_F(AcrobotPlantTests, VerifyForceCalculation) {
   // Some arbitrary values of non-zero state:
-  VerifyCalcGravityGeneralizedForces(
+  VerifyForceCalculation(
       -M_PI / 5.0, M_PI / 2.0  /* joint's angles */);
-  VerifyCalcGravityGeneralizedForces(
+  VerifyForceCalculation(
       M_PI / 3.0, -M_PI / 5.0  /* joint's angles */);
-  VerifyCalcGravityGeneralizedForces(
+  VerifyForceCalculation(
       M_PI / 4.0, -M_PI / 3.0  /* joint's angles */);
-  VerifyCalcGravityGeneralizedForces(
+  VerifyForceCalculation(
       -M_PI, -M_PI / 2.0       /* joint's angles */);
 }
 

@@ -2292,6 +2292,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         context, known_vdot, external_forces);
   }
 
+  /// Computes all externally applied forces including:
+  ///  - Force elements.
+  ///  - Joint actuation.
+  ///  - Externally applied spatial forces.
+  ///  - Joint limits.
+  ///
+  /// @param[in] context
+  ///    The context containing the state of this model.
+  /// @param[out] forces
+  ///   A pointer to a valid, non nullptr, multibody forces object. The output
+  ///   `forces` will store the forces exerted by all the ForceElement
+  ///   objects in the model.
+  /// @throws std::exception if `forces` is null or not compatible with this
+  ///   model, per MultibodyForces::CheckInvariants().
+  void CalcAppliedForces(const drake::systems::Context<T>& context,
+                         MultibodyForces<T>* forces) const;
+
   /// Computes the combined force contribution of ForceElement objects in the
   /// model. A ForceElement can apply forces as a spatial force per body or as
   /// generalized forces, depending on the ForceElement model.
@@ -2303,7 +2320,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] context
   ///   The context containing the state of this model.
   /// @param[out] forces
-  ///   A pointer to a valid, non nullptr, multibody forces object. On output
+  ///   A pointer to a valid, non nullptr, multibody forces object. The output
   ///   `forces` will store the forces exerted by all the ForceElement
   ///   objects in the model.
   /// @throws std::exception if `forces` is null or not compatible with this
@@ -3684,14 +3701,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // ports.
   VectorX<T> AssembleActuationInput(
       const systems::Context<T>& context) const;
-
-  // Computes all externally applied forces including:
-  //  - Force elements.
-  //  - Joint actuation.
-  //  - Externally applied spatial forces.
-  //  - Joint limits.
-  void CalcAppliedForces(const drake::systems::Context<T>& context,
-                         MultibodyForces<T>* forces) const;
 
   // Given the state x and inputs u in `context`, this method uses the `O(n)`
   // Articulated Body Algorithm (ABA) to compute accelerations.

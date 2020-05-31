@@ -1787,8 +1787,8 @@ template <typename T>
 void MultibodyPlant<T>::CalcAppliedForces(
     const drake::systems::Context<T>& context,
     MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(forces != nullptr);
-  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
+  DRAKE_THROW_UNLESS(forces != nullptr);
+  DRAKE_THROW_UNLESS(forces->CheckHasRightSizeForModel(*this));
 
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
