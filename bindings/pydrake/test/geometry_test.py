@@ -12,7 +12,7 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
@@ -459,3 +459,9 @@ class TestGeometry(unittest.TestCase):
         sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
         sg.ExcludeCollisionsWithin(geometries)
         sg.ExcludeCollisionsWithin(sg_context, geometries)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_value_instantiations(self, T):
+        Value[mut.FramePoseVector_[T]]
+        Value[mut.QueryObject_[T]]
+        Value[mut.render.RenderLabel]
