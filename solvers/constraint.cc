@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -14,6 +15,8 @@ using std::abs;
 
 namespace drake {
 namespace solvers {
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 namespace {
 // Returns `True` if lb is -∞. Otherwise returns a symbolic formula `lb <= e`.
@@ -113,6 +116,47 @@ std::ostream& QuadraticConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "QuadraticConstraint", vars, false);
 }
 
+LorentzConeConstraint::LorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b, EvalType eval_type)
+    : Constraint(
+          eval_type == LorentzConeConstraint::EvalType::kNonconvex ? 2 : 1,
+          A.cols(),
+          eval_type == LorentzConeConstraint::EvalType::kNonconvex
+              ? Eigen::VectorXd::Zero(2)
+              : Eigen::VectorXd::Zero(1),
+          eval_type == LorentzConeConstraint::EvalType::kNonconvex
+              ? Eigen::VectorXd::Constant(2, kInf)
+              : Eigen::VectorXd::Constant(1, kInf)),
+      A_(A.sparseView()),
+      A_dense_(A),
+      b_(b),
+      eval_type_{eval_type} {
+  DRAKE_DEMAND(A_.rows() >= 2);
+  DRAKE_ASSERT(A_.rows() == b_.rows());
+}
+
+namespace {
+template <typename DerivedX>
+void LorentzConeConstraintEvalConvex2Autodiff(
+    const Eigen::MatrixXd& A_dense, const Eigen::VectorXd& b,
+    const Eigen::MatrixBase<DerivedX>& x, VectorX<AutoDiffXd>* y) {
+  const Eigen::VectorXd x_val = math::autoDiffToValueMatrix(x);
+  const Eigen::VectorXd z_val = A_dense * x_val + b;
+  const double z_tail_squared_norm = z_val.tail(z_val.rows() - 1).squaredNorm();
+  Vector1d y_val(z_val(0) - std::sqrt(z_tail_squared_norm));
+  Eigen::RowVectorXd dy_dz(z_val.rows());
+  dy_dz(0) = 1;
+  // We use a small value epsilon to approximate the gradient of sqrt(z) as
+  // ∂sqrt(zᵀz) / ∂z ≈ z(i) / sqrt(zᵀz + eps)
+  const double eps = 1E-12;
+  dy_dz.tail(z_val.rows() - 1) =
+      -z_val.tail(z_val.rows() - 1) / std::sqrt(z_tail_squared_norm + eps);
+  Eigen::RowVectorXd dy = dy_dz * A_dense * math::autoDiffToGradientMatrix(x);
+  (*y) = math::initializeAutoDiffGivenGradientMatrix(y_val, dy);
+}
+}  // namespace
+
 template <typename DerivedX, typename ScalarY>
 void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                           VectorX<ScalarY>* y) const {
@@ -120,8 +164,25 @@ void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
 
   const VectorX<ScalarY> z = A_dense_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
-  (*y)(0) = z(0);
-  (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
+  switch (eval_type_) {
+    case EvalType::kConvex1: {
+      (*y)(0) = z(0) - z.tail(z.rows() - 1).norm();
+      break;
+    }
+    case EvalType::kConvex2: {
+      if constexpr (std::is_same<ScalarY, AutoDiffXd>::value) {
+        LorentzConeConstraintEvalConvex2Autodiff(A_dense_, b_, x, y);
+      } else {
+        (*y)(0) = z(0) - z.tail(z.rows() - 1).norm();
+      }
+      break;
+    }
+    case EvalType::kNonconvex: {
+      (*y)(0) = z(0);
+      (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
+      break;
+    }
+  }
 }
 
 void LorentzConeConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
