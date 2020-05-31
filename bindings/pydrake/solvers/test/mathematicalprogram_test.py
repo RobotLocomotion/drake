@@ -792,7 +792,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
 
         # Test result
-        result = mp.Solve(prog)
+        result = mp.Solve(prog, [0.5, 0.5, 0.5])
         self.assertTrue(result.is_success())
 
         # Check answer
