@@ -302,7 +302,7 @@ constexpr bool hash_template_argument_from_pretty_func(
     ++p;                         // Advance to the typename we want.
   }
 
-  // For enums, GCC's pretty says "(MyEnum)0" not "MyEnum::kFoo".  We'll strip
+  // For enums, GCC 7's pretty says "(MyEnum)0" not "MyEnum::kFoo".  We'll strip
   // off the useless parenthetical.
   if (discard_cast && (*p == '(')) {
     for (; (*p != ')'); ++p) {}  // Advance to the ')'.
@@ -324,6 +324,26 @@ constexpr bool hash_template_argument_from_pretty_func(
     if (*clang_iter == 0) {
       const char* const gcc_spelling = "{anonymous}";
       for (const char* c = gcc_spelling; *c; ++c) {
+        result->add_byte(*c);
+      }
+      p = pretty_iter;
+      continue;
+    }
+    // GCC distinguishes between "<unnamed>" and "{anonymous}", while Clang does
+    // not. Map "<unamed>" to "{anonymous}" for consistency and to avoid
+    // confusion with nested types ("<>") below.
+    const char* const unnamed_spelling = "<unnamed>";
+    const char* unnamed_iter = unnamed_spelling;
+    pretty_iter = p;
+    for (; *unnamed_iter != 0 && *pretty_iter != 0;
+         ++unnamed_iter, ++pretty_iter) {
+      if (*unnamed_iter != *pretty_iter) {
+        break;
+      }
+    }
+    if (*unnamed_iter == 0) {
+      const char* const anonymous_spelling = "{anonymous}";
+      for (const char* c = anonymous_spelling; *c; ++c) {
         result->add_byte(*c);
       }
       p = pretty_iter;
