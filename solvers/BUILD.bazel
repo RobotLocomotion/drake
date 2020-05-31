@@ -149,6 +149,7 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//math:gradient",
         "//math:matrix_util",
     ],
 )
