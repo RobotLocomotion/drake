@@ -792,7 +792,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
 
         # Test result
-        result = mp.Solve(prog)
+        # The default initial guess is [0, 0, 0]. This initial guess is bad
+        # because LorentzConeConstraint with eval_type=kConvex is not
+        # differentiable at [0, 0, 0]. Use initial guess [0.5, 0.5, 0.5]
+        # instead.
+        result = mp.Solve(prog, [0.5, 0.5, 0.5])
         self.assertTrue(result.is_success())
 
         # Check answer
