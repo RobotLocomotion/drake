@@ -407,6 +407,8 @@ class TestGeneral(unittest.TestCase):
         integrator = Integrator(3)
         integrator.set_name("integrator")
         context = integrator.CreateDefaultContext()
+        # N.B. This is only to show behavior of C++ string formatting in
+        # Python. It is OK to update this when the upstream C++ code changes.
         self.assertEqual(
             str(context),
             dedent("""\
@@ -415,7 +417,7 @@ class TestGeneral(unittest.TestCase):
             Time: 0
             States:
               3 continuous states
-                [0, 0, 0]
+                0 0 0
 
             """),
         )
