@@ -83,11 +83,11 @@ void SolveSDPwithSecondOrderConeExample2(const SolverInterface& solver,
 
 /** Solve an SDP with two PSD constraint, each of the PSD constraint has
  * duplicated entries, and the two PSD matrix share a common variables.
-
+ *
  * min 2 * x0 + x2
  * s.t [x0 x1] is psd
  *     [x1 x0]
-
+ *
  *     [x0 x2] is psd
  *     [x2 x0]
  *     x1 == 1

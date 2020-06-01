@@ -153,7 +153,7 @@ class DoorHinge final : public ForceElement<T> {
    @name Advanced Functions
     Convenience functions for evaluating %DoorHinge operations without worrying
     about context-related issues.
-  @{
+   @{
   */
 
   /// Calculates the total frictional torque with the given @p angular_rate
