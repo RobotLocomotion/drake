@@ -1,6 +1,7 @@
 from os.path import isfile
 import unittest
 from subprocess import run
+import sys
 
 
 class TestCreatePlot(unittest.TestCase):
@@ -9,9 +10,10 @@ class TestCreatePlot(unittest.TestCase):
 
     def test_sripts(self):
         # Must be run directly via Bazel.
-        run(["python3", "multibody/plant/images/ideal_stiction.py"],
+        python_bin = sys.executable
+        run([python_bin, "multibody/plant/images/ideal_stiction.py"],
             check=True)
         self.assert_isfile("./ideal_stiction.png")
-        run(["python3", "multibody/plant/images/stiction.py"],
+        run([python_bin, "multibody/plant/images/stiction.py"],
             check=True)
         self.assert_isfile("./stribeck.png")
