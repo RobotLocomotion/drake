@@ -266,6 +266,9 @@ kcov
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debuggging symbols, and produce nicely formatted browse-able coverage reports.
 
+To use kcov, you must first run Drake's ``install_prereqs`` setup script using
+the ``--with-kcov`` option.
+
 To analyze test coverage, run the tests under ``kcov``::
 
   bazel test --config kcov //...
