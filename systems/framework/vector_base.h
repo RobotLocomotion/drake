@@ -225,19 +225,11 @@ class VectorBase {
   }
 };
 
-// Allows a VectorBase<T> to be streamed into a string. This is useful for
-// debugging purposes.
+/// Allows a VectorBase<T> to be streamed into a string as though it were a
+/// RowVectorX<T>. This is useful for debugging purposes.
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const VectorBase<T>& vec) {
-  os << "[";
-
-  for (int i = 0; i < vec.size(); ++i) {
-    if (i > 0)
-      os << ", ";
-    os << vec[i];
-  }
-
-  os << "]";
+  os << vec.CopyToVector().transpose();
   return os;
 }
 
