@@ -9,7 +9,9 @@ package(default_visibility = ["//visibility:public"])
 # downstream projects.
 exports_files([
     "ubuntu/source_distribution/packages-bionic.txt",
+    "ubuntu/source_distribution/packages-focal.txt",
     "ubuntu/binary_distribution/packages-bionic.txt",
+    "ubuntu/binary_distribution/packages-focal.txt",
     "mac/source_distribution/requirements.txt",
     "mac/source_distribution/Brewfile",
     "mac/binary_distribution/requirements.txt",
@@ -28,6 +30,7 @@ install_files(
         "//tools/cc_toolchain:linux": [
             "ubuntu/binary_distribution/install_prereqs.sh",
             "ubuntu/binary_distribution/packages-bionic.txt",
+            "ubuntu/binary_distribution/packages-focal.txt",
         ],
         "//conditions:default": [],
     }),
