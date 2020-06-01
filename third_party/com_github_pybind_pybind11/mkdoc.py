@@ -1188,6 +1188,19 @@ def main():
         translation_unit = index.parse(
             glue_filename, parameters,
             options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
+        if not translation_unit:
+            raise RuntimeError(
+                "Parsing headers using the clang library failed")
+        severities = [
+            diagnostic.severity for diagnostic in translation_unit.diagnostics
+            if diagnostic.severity >= cindex.Diagnostic.Error
+        ]
+        if severities:
+            raise RuntimeError(
+                ("Parsing headers using the clang library failed with {} "
+                 "error(s) and {} fatal error(s)").format(
+                     severities.count(cindex.Diagnostic.Error),
+                     severities.count(cindex.Diagnostic.Fatal)))
     shutil.rmtree(tmpdir)
     # Extract symbols.
     if not quiet:
