@@ -28,6 +28,15 @@ with warnings.catch_warnings():
     warnings.filterwarnings(
         "ignore", category=ImportWarning,
         message="can't resolve package from __spec__")
+    # TODO(SeanCurtis-TRI): Meshcat modified itself from a conditional
+    # import of IPython to an unconditional import. IPython eventually
+    # depends on imp. If the dependency becomes conditional or the
+    # ultimate dependency upgrades from imp to importlib, this can be
+    # removed.
+    warnings.filterwarnings(
+        "ignore", message="the imp module is deprecated",
+        category=DeprecationWarning
+    )
     import meshcat
 import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
