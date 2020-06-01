@@ -12,7 +12,6 @@ gdb
 gfortran
 git
 jupyter
-kcov-35
 libblas-dev
 libbz2-dev
 libclang-6.0-dev
