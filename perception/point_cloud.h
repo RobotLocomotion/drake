@@ -160,7 +160,7 @@ class PointCloud final {
     return mutable_xyzs().col(i);
   }
 
-  /// @}  // Geometric Descriptors - XYZs
+  /// @}
 
   /// @name Geometric Descriptors - Normals
   /// @{
@@ -186,7 +186,7 @@ class PointCloud final {
     return mutable_normals().col(i);
   }
 
-  /// @}  // Geometric Descriptors - Normals
+  /// @}
 
   /// @name Geometric Descriptors - RGBs
   /// @{
@@ -212,7 +212,7 @@ class PointCloud final {
     return mutable_rgbs().col(i);
   }
 
-  /// @}  // Geometric Descriptors - RGBs
+  /// @}
 
   /// @name Run-Time Descriptors
   /// @{
