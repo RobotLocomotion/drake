@@ -27,7 +27,11 @@ source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
 # The following additional dependencies are only needed when developing with
 # source distributions.
 
-source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh"
+if [[ "$#" -eq 1 ]] && [[ "$1" == "--with-kcov" ]]; then
+  source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" --with-kcov
+else
+  source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh"
+fi
 
 # Configure user environment, executing as user if we're under `sudo`.
 user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
