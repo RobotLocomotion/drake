@@ -98,6 +98,12 @@ drake_py_binary(
     srcs = ["library_lint_reporter.py"],
 )
 
+drake_py_binary(
+    name = "cpp_docstring_lint",
+    srcs = ["cpp_docstring_lint.py"],
+    deps = [":util"],
+)
+
 # === test ===
 
 drake_py_unittest(
@@ -128,6 +134,11 @@ drake_py_unittest(
 drake_py_unittest(
     name = "formatter_test",
     deps = [":formatter"],
+)
+
+drake_py_unittest(
+    name = "cpp_docstring_lint_test",
+    deps = ["cpp_docstring_lint"],
 )
 
 sh_test(
