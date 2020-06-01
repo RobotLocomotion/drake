@@ -14,16 +14,13 @@ class TestAll(unittest.TestCase):
         self.assertTrue("pydrake.all" not in sys.modules)
         # - While this may be redundant, let's do it for good measure.
         self.assertTrue("pydrake.all" not in sys.modules)
-        # Enable *all* warnings, and ensure that we don't trigger them.
-        with warnings.catch_warnings():
-            # TODO(eric.cousineau): Figure out a more conservative filter to
-            # avoid issues on different machines, but still catch meaningful
-            # warnings.
-            warnings.simplefilter("error", Warning)
+        # Catch all warnings using their normal specification.
+        with warnings.catch_warnings(record=True) as w:
             warnings.filterwarnings(
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
             import pydrake.all
+            self.assertEqual(len(w), 0, w)
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
