@@ -84,7 +84,6 @@ ibex_repository = repository_rule(
         # documented in the new_deb_archive rule.
         "mirrors": attr.string_list(
             default = [
-                "https://drake-apt.csail.mit.edu/bionic/pool/main",
                 "https://s3.amazonaws.com/drake-apt/bionic/pool/main",
             ],
         ),

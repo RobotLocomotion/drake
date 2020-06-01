@@ -28,8 +28,8 @@ codename=$(lsb_release -sc)
 if [[ "${codename}" == 'bionic' ]] &&
     [[ "$#" -eq 1 ]] &&
     [[ "$1" == "--with-kcov" ]]; then
-  wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+  wget -O - https://drake-apt.s3.amazonaws.com/drake.pub.gpg | apt-key add
+  echo "deb [arch=amd64] https://drake-apt.s3.amazonaws.com/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
   apt-get update
   apt-get install --no-install-recommends kcov-35
 fi
