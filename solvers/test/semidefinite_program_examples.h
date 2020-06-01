@@ -86,6 +86,7 @@ void SolveSDPwithSecondOrderConeExample2(const SolverInterface& solver,
  * min 2 * x0 + x2
  * s.t [x0 x1] is psd
  *     [x1 x0]
+ *
  *     [x0 x2] is psd
  *     [x2 x0]
  *     x1 == 1
