@@ -26,10 +26,8 @@ drake_cc_library(
     hdrs = [
         "iiwa_common.h",
     ],
-    copts = ["-Wno-deprecated-declarations"],
     visibility = ["//visibility:public"],
     deps = [
-        "//attic/multibody:rigid_body_tree",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//manipulation/kuka_iiwa:iiwa_constants",
@@ -45,15 +43,7 @@ drake_cc_library(
     hdrs = ["iiwa_lcm.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":iiwa_common",
-        "//attic/multibody:inverse_kinematics",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/rigid_body_plant:contact_results",
-        "//common/trajectories:piecewise_polynomial",
-        "//lcmtypes:iiwa",
         "//manipulation/kuka_iiwa",
-        "//systems/framework:leaf_system",
-        "//systems/lcm:lcm_pubsub_system",
     ],
 )
 
@@ -188,21 +178,7 @@ alias(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "iiwa_lcm_test",
-    copts = ["-Wno-deprecated-declarations"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":iiwa_lcm",
-        "//attic/manipulation/util:world_sim_tree_builder",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_googletest(
     name = "kuka_torque_controller_test",
-    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],

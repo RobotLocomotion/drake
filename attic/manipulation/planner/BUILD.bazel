@@ -15,20 +15,7 @@ package(
 drake_cc_package_library(
     name = "planner",
     deps = [
-        ":constraint_relaxing_ik_rbt",
         ":rbt_differential_inverse_kinematics",
-    ],
-)
-
-drake_cc_library(
-    name = "constraint_relaxing_ik_rbt",
-    srcs = ["constraint_relaxing_ik_rbt.cc"],
-    hdrs = ["constraint_relaxing_ik_rbt.h"],
-    deps = [
-        "//attic/multibody:inverse_kinematics",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody/parsers",
-        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -44,25 +31,6 @@ drake_cc_library(
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "constraint_relaxing_ik_rbt_test",
-    timeout = "moderate",
-    srcs = ["test/constraint_relaxing_ik_rbt_test.cc"],
-    copts = ["-Wno-deprecated-declarations"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    # TODO(sam.creasey) This test currently times out on Mac with
-    # IPOPT.  Once IPOPT is tuned to provide better/faster IK results
-    # (see https://github.com/RobotLocomotion/drake/issues/3128 ) we
-    # should enable this test.
-    tags = ["snopt"],
-    deps = [
-        ":constraint_relaxing_ik_rbt",
-        "//common:find_resource",
-    ],
-)
 
 drake_cc_googletest(
     name = "rbt_differential_inverse_kinematics_test",
