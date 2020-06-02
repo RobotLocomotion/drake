@@ -18,9 +18,11 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
@@ -422,10 +424,13 @@ void ParseJoint(ModelInstanceIndex model_instance,
                        "supported by MultibodyPlant.  Leaving {} as a "
                        "free body.", name, child_name);
   } else if (type.compare("ball") == 0) {
-    drake::log()->warn(
-        "Warning: ball joint is not an official part of the URDF standard.");
-    throw std::runtime_error("Joint " + name + " specified as type ball which "
-                             "is not supported by MultibodyPlant.");
+    ParseJointDynamics(name, node, &damping);
+    plant->AddJoint<BallRpyJoint>(name, parent_body, X_PJ,
+                                  child_body, std::nullopt, damping);
+  } else if (type.compare("universal") == 0) {
+    ParseJointDynamics(name, node, &damping);
+    plant->AddJoint<UniversalJoint>(name, parent_body, X_PJ,
+                                    child_body, std::nullopt, damping);
   } else {
     throw std::runtime_error(
         "ERROR: Joint " + name + " has unrecognized type: " + type);
