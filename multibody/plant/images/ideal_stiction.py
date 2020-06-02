@@ -17,8 +17,8 @@ def main():
     plt.text((f_p[-2] + f_p[-1])*0.5, f_t[-1] + 0.01,
              'Dynamic Friction',
              horizontalalignment='center')
-    plt.title('Tangent Force vs. Pushing Force')
-    plt.xlabel('Pushing Force (N)')
+    plt.title('Tangent Force vs. Sliding Velocity (m/s)')
+    plt.xlabel('Sliding Velocity (m/s)')
     plt.ylabel('Tangent Force (N)')
 
     f = plt.gca()
