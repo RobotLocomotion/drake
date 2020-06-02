@@ -42,6 +42,7 @@ from pydrake.multibody.tree import (
 )
 from pydrake.multibody.math import (
     SpatialForce_,
+    SpatialMomentum_,
     SpatialVelocity_,
     SpatialAcceleration_,
 )
@@ -86,6 +87,7 @@ from pydrake.geometry import (
 from pydrake.math import (
     RigidTransform_,
     RollPitchYaw_,
+    RotationMatrix_,
 )
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
@@ -389,6 +391,11 @@ class TestPlant(unittest.TestCase):
         RotationalInertia = RotationalInertia_[T]
         UnitInertia = UnitInertia_[T]
         SpatialInertia = SpatialInertia_[T]
+        RotationMatrix = RotationMatrix_[T]
+        SpatialAcceleration = SpatialAcceleration_[T]
+        SpatialForce = SpatialForce_[T]
+        SpatialVelocity = SpatialVelocity_[T]
+        SpatialMomentum = SpatialMomentum_[T]
         # Test unit inertia construction.
         UnitInertia()
         unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
@@ -400,6 +407,7 @@ class TestPlant(unittest.TestCase):
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3], G_SP_E=unit_inertia)
         numpy_compare.assert_float_equal(spatial_inertia.get_mass(), 2.5)
         self.assertIsInstance(spatial_inertia.get_com(), np.ndarray)
+        self.assertIsInstance(spatial_inertia.CalcComMoment(), np.ndarray)
         self.assertIsInstance(spatial_inertia.get_unit_inertia(), UnitInertia)
         self.assertIsInstance(
             spatial_inertia.CalcRotationalInertia(), RotationalInertia)
@@ -408,6 +416,19 @@ class TestPlant(unittest.TestCase):
         if T != Expression:
             self.assertTrue(spatial_inertia.IsPhysicallyValid())
         self.assertIsInstance(spatial_inertia.CopyToFullMatrix6(), np.ndarray)
+        self.assertIsInstance(
+            spatial_inertia.ReExpress(RotationMatrix()), SpatialInertia)
+        self.assertIsInstance(
+            spatial_inertia.Shift([1, 2, 3]), SpatialInertia)
+        spatial_inertia += spatial_inertia
+        self.assertIsInstance(
+            spatial_inertia * SpatialAcceleration(), SpatialForce)
+        self.assertIsInstance(
+            spatial_inertia * SpatialVelocity(), SpatialMomentum)
+        spatial_inertia.SetNaN()
+        # N.B. `numpy_compare.assert_equal(IsNaN(), True)` does not work.
+        if T != Expression:
+            self.assertTrue(spatial_inertia.IsNaN())
 
     @numpy_compare.check_all_types
     def test_friction_api(self, T):
