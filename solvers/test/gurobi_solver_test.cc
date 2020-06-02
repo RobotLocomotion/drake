@@ -438,6 +438,55 @@ GTEST_TEST(GurobiTest, LPDualSolution1) {
   TestLPDualSolution1(solver);
 }
 
+GTEST_TEST(GurobiTest, SOCPDualSolution1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., 2 * x(0), 3 * x(1) + 1));
+  GurobiSolver solver;
+  prog.AddLinearCost(x(1));
+  if (solver.is_available()) {
+    // By default the dual solution for second order cone is not computed.
+    MathematicalProgramResult result = solver.Solve(prog);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        result.GetDualSolution(constraint1), std::invalid_argument,
+        "You used Gurobi to solve this optimization problem.*");
+    SolverOptions options;
+    options.SetOption(solver.id(), "QCPDual", 1);
+    result = solver.Solve(prog, std::nullopt, options);
+    // The shadow price can be computed analytically, since the optimal cost
+    // is (-sqrt(4 + eps) - 1)/3, when the Lorentz cone constraint is perturbed
+    // by eps as 2*x(0)² + (3*x(1)+1)² <= 4 + eps. The gradient of the optimal
+    // cost (-sqrt(4 + eps) - 1)/3 w.r.t eps is -1/12.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(-1. / 12), 1e-7));
+  }
+}
+
+GTEST_TEST(GurobiTest, SOCPDualSolution2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto constraint1 = prog.AddRotatedLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., x + 1.5, x));
+  auto constraint2 =
+      prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(1, x + 1));
+  prog.AddLinearCost(x);
+  GurobiSolver solver;
+  if (solver.is_available()) {
+    SolverOptions options;
+    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
+    const auto result = solver.Solve(prog, {}, options);
+    // By pertubing the constraint1 as x^2 <= 2x + 3 + eps, the optimal cost
+    // becomes -1 - sqrt(4+eps). The gradient of the cost w.r.t eps is -1/4.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(-1.0 / 4), 1e-8));
+    // constraint 2 is not active at the optimal solution, hence the shadow
+    // price is 0.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
+                                Vector1d(0), 1e-8));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
