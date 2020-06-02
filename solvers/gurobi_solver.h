@@ -160,6 +160,15 @@ class GurobiSolver final : public SolverBase {
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;
 
+  /**
+   * Set whether to compute the dual variables for QCP models or not. According
+   * to gurobi documentation
+   * https://www.gurobi.com/documentation/9.0/refman/qcpdual.html, computing the
+   * dual for QCP model can add significant time to the optimization, so only
+   * set this to true if you really need it.
+   */
+  void set_compute_qcp_dual(bool flag) { compute_qcp_dual_ = flag; }
+
  private:
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                const SolverOptions&, MathematicalProgramResult*) const final;
@@ -172,6 +181,10 @@ class GurobiSolver final : public SolverBase {
   // or NULL if no callback has been supplied.
   MipNodeCallbackFunction mip_node_callback_;
   MipSolCallbackFunction mip_sol_callback_;
+
+  // The flag to compute dual solution for QCP models (include second order
+  // conic constraints).
+  bool compute_qcp_dual_{false};
 };
 
 }  // end namespace solvers

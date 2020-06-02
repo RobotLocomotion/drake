@@ -259,9 +259,27 @@ class MathematicalProgramResult final {
    * For a bounding box constraint lower <= x <= upper, the interpretation of
    * the dual solution is the same as the linear inequality constraint.
    *
-   * TODO(hongkai.dai): add the interpretation for other type of constraints
-   * when we implement them.
+   * For a Lorentz cone or rotated Lorentz cone constraint that Ax + b is in the
+   * cone, depending on the solver, the dual solution has different meanings:
+   * 1. If the solver is Gurobi, then the user can only obtain the dual solution
+   *    by calling GurobiSolver explicitly as follows:
+   *    @code
+   *    auto constraint = prog.AddLorentzConeConstraint(...);
+   *    GurobiSolver solver;
+   *    // Explicitly tell the solver to compute the dual solution for Lorentz
+   *    // cone or rotated Lorentz cone constraint.
+   *    solver.set_compute_qcp_dual(true);
+   *    MathematicalProgramResult result = solver.Solve(prog);
+   *    Eigen::VectorXd dual_solution = result.GetDualSolution(constraint);
+   *    @endcode
+   *    The dual solution has size 1, dual_solution(0) is the shadow price for
+   *    the constraint z₁² + ... +zₙ² ≤ z₀² for Lorentz cone constraint, and
+   *    the shadow price for the constraint z₂² + ... +zₙ² ≤ z₀z₁ for rotated
+   *    Lorentz cone constraint, where z is the slack variable representing z =
+   *    A*x+b and z in the Lorentz cone/rotated Lorentz cone.
    */
+  // TODO(hongkai.dai): add the interpretation for other type of constraints
+  // when we implement them.
   template <typename C>
   Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
     const Binding<Constraint> constraint_cast =

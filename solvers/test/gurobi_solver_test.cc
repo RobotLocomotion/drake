@@ -438,6 +438,43 @@ GTEST_TEST(GurobiTest, LPDualSolution1) {
   TestLPDualSolution1(solver);
 }
 
+GTEST_TEST(GurobiTest, SOCPDualSolution1) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint1 = prog.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., 2 * x(0), 3 * x(1) + 1));
+  GurobiSolver solver;
+  prog.AddLinearCost(x(1));
+  if (solver.is_available()) {
+    solver.set_compute_qcp_dual(true);
+    const MathematicalProgramResult result = solver.Solve(prog);
+    // The shadow price can be computed analytically, since the optimal cost
+    // is (-sqrt(4 + eps) - 1)/3, when the Lorentz cone constraint is perturbed
+    // by eps as 2*x(0)² + (3*x(1)+1)² <= 4 + eps.
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(-1. / 12), 1e-7));
+  }
+}
+
+GTEST_TEST(GurobiTest, SOCPDualSolution2) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto constraint1 = prog.AddRotatedLorentzConeConstraint(
+      Vector3<symbolic::Expression>(2., x + 1.5, x));
+  auto constraint2 =
+      prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(1, x + 1));
+  prog.AddLinearCost(x);
+  GurobiSolver solver;
+  if (solver.is_available()) {
+    solver.set_compute_qcp_dual(true);
+    const auto result = solver.Solve(prog);
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
+                                Vector1d(-1.0 / 4), 1e-8));
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
+                                Vector1d(0), 1e-8));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

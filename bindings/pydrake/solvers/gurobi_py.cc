@@ -22,7 +22,9 @@ PYBIND11_MODULE(gurobi, m) {
 
   py::class_<GurobiSolver, SolverInterface> cls(
       m, "GurobiSolver", doc.GurobiSolver.doc);
-  cls.def(py::init<>(), doc.GurobiSolver.ctor.doc);
+  cls.def(py::init<>(), doc.GurobiSolver.ctor.doc)
+      .def("set_compute_qcp_dual", &GurobiSolver::set_compute_qcp_dual,
+          py::arg("flag"), doc.GurobiSolver.set_compute_qcp_dual.doc);
   pysolvers::BindAcquireLicense(&cls, doc.GurobiSolver);
 
   py::class_<GurobiSolverDetails>(
