@@ -503,6 +503,67 @@ GTEST_TEST(IntegralComparisons, CompareSizeT) {
       AIndex junk(big_overflow_value), std::runtime_error,
       "Explicitly constructing an invalid index. Type .* has an invalid "
           "value; it must lie in the range .*");
+
+  // Now we test right out at the limit of the *smaller* type -- the int.
+  const AIndex biggest_index{std::numeric_limits<int>::max()};
+  const size_t equal(static_cast<int>(biggest_index));
+  const size_t bigger = equal + 1;
+  const size_t smaller = equal - 1;
+
+  EXPECT_FALSE(biggest_index == smaller);
+  EXPECT_TRUE(biggest_index != smaller);
+  EXPECT_FALSE(biggest_index < smaller);
+  EXPECT_FALSE(biggest_index <= smaller);
+  EXPECT_TRUE(biggest_index > smaller);
+  EXPECT_TRUE(biggest_index >= smaller);
+
+  EXPECT_TRUE(biggest_index == equal);
+  EXPECT_FALSE(biggest_index != equal);
+  EXPECT_FALSE(biggest_index < equal);
+  EXPECT_TRUE(biggest_index <= equal);
+  EXPECT_FALSE(biggest_index > equal);
+  EXPECT_TRUE(biggest_index >= equal);
+
+  EXPECT_FALSE(biggest_index == bigger);
+  EXPECT_TRUE(biggest_index != bigger);
+  EXPECT_TRUE(biggest_index < bigger);
+  EXPECT_TRUE(biggest_index <= bigger);
+  EXPECT_FALSE(biggest_index > bigger);
+  EXPECT_FALSE(biggest_index >= bigger);
+}
+
+// Confirms that comparisons with unsigned types that have fewer bits than
+// TypeSafeIndex's underlying int report propertly.
+GTEST_TEST(TypeSafeIndex, CompareUnsignedShort) {
+  TestScalarComparisons<uint16_t>();
+  TestScalarIncrement<uint16_t>();
+
+  // Test right out at the limit of the *smaller* type -- the uint16_t.
+  const uint16_t big_unsigned = std::numeric_limits<uint16_t>::max();
+  const AIndex bigger_index{static_cast<int>(big_unsigned) + 1};
+  const AIndex smaller_index{static_cast<int>(big_unsigned) - 1};
+  const AIndex equal_index(static_cast<int>(big_unsigned));
+
+  EXPECT_FALSE(bigger_index == big_unsigned);
+  EXPECT_TRUE(bigger_index != big_unsigned);
+  EXPECT_FALSE(bigger_index < big_unsigned);
+  EXPECT_FALSE(bigger_index <= big_unsigned);
+  EXPECT_TRUE(bigger_index > big_unsigned);
+  EXPECT_TRUE(bigger_index >= big_unsigned);
+
+  EXPECT_TRUE(equal_index == big_unsigned);
+  EXPECT_FALSE(equal_index != big_unsigned);
+  EXPECT_FALSE(equal_index < big_unsigned);
+  EXPECT_TRUE(equal_index <= big_unsigned);
+  EXPECT_FALSE(equal_index > big_unsigned);
+  EXPECT_TRUE(equal_index >= big_unsigned);
+
+  EXPECT_FALSE(smaller_index == big_unsigned);
+  EXPECT_TRUE(smaller_index != big_unsigned);
+  EXPECT_TRUE(smaller_index < big_unsigned);
+  EXPECT_TRUE(smaller_index <= big_unsigned);
+  EXPECT_FALSE(smaller_index > big_unsigned);
+  EXPECT_FALSE(smaller_index >= big_unsigned);
 }
 
 // This tests that one index cannot be *constructed* from another index type,
