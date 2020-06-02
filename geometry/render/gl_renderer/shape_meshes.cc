@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/shape_meshes.h"
+#include "drake/geometry/render/gl_renderer/shape_meshes.h"
 
 #include <algorithm>
 #include <cmath>
@@ -45,13 +45,12 @@ pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(std::istream* input_stream) {
   // ever returned, CI will inform us so we can update the error messages.
   DRAKE_DEMAND(ret == true);
 
-  if (shapes.size() == 0) {
+  if (shapes.empty()) {
     throw std::runtime_error(
         "The OBJ data appears to have no faces; it could be missing faces or "
         "might not be an OBJ file");
   }
 
-  DRAKE_DEMAND(shapes.size() > 0);
   // Accumulate vertices.
   const vector<tinyobj::real_t>& verts = attrib.vertices;
   const int v_count = static_cast<int>(verts.size()) / 3;

@@ -14,25 +14,11 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_package_library_gl_per_os(
     name = "dev",
     ubuntu_deps = [
-        ":shape_meshes",
         ":opengl_geometry",
         ":render_engine_gl",
         ":shader_program",
     ],
     visibility = ["//visibility:private"],
-)
-
-drake_cc_library_gl_ubuntu_only(
-    name = "shape_meshes",
-    srcs = ["shape_meshes.cc"],
-    hdrs = ["shape_meshes.h"],
-    # NOTE: Required for compatibility with tinyobjloader.
-    linkstatic = 1,
-    deps = [
-        "//common:essential",
-        "//geometry/render/gl_renderer:opengl_context",
-        "@tinyobjloader",
-    ],
 )
 
 drake_cc_library_gl_ubuntu_only(
@@ -55,9 +41,9 @@ drake_cc_library_gl_ubuntu_only(
     deps = [
         ":opengl_geometry",
         ":shader_program",
-        ":shape_meshes",
         "//common:essential",
         "//geometry/render:render_engine",
+        "//geometry/render/gl_renderer:shape_meshes",
         "//systems/sensors:image",
     ],
 )
@@ -77,19 +63,6 @@ drake_cc_googletest_gl_ubuntu_only(
     tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
-    ],
-)
-
-drake_cc_googletest_gl_ubuntu_only(
-    name = "shape_meshes_test",
-    data = [
-        "//systems/sensors:test_models",
-    ],
-    deps = [
-        ":shape_meshes",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 

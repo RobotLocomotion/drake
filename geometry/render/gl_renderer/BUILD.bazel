@@ -24,6 +24,7 @@ drake_cc_package_library_gl_per_os(
     ubuntu_deps = [
         ":opengl_context",
         ":render_engine_gl",
+        ":shape_meshes",
     ],
 )
 
@@ -68,6 +69,17 @@ drake_cc_library(
     }),
 )
 
+drake_cc_library_gl_ubuntu_only(
+    name = "shape_meshes",
+    srcs = ["shape_meshes.cc"],
+    hdrs = ["shape_meshes.h"],
+    deps = [
+        "//common:essential",
+        "//geometry/render/gl_renderer:opengl_context",
+        "@tinyobjloader",
+    ],
+)
+
 drake_cc_googletest_gl_ubuntu_only(
     name = "opengl_context_test",
     tags = [
@@ -101,6 +113,19 @@ drake_cc_googletest(
     }),
     deps = [
         ":render_engine_gl",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "shape_meshes_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    deps = [
+        ":shape_meshes",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

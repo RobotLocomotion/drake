@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/shape_meshes.h"
+#include "drake/geometry/render/gl_renderer/shape_meshes.h"
 
 #include <limits>
 #include <sstream>
@@ -148,8 +148,8 @@ GTEST_TEST(LoadMeshFromObjTest, NoMeshOptimization) {
 
 // Computes the normal to the indicated triangle whose magnitude is twice the
 // triangle's area. I.e., for triangle (A, B, C), computes: (B - A) X (C - A).
-Vector3f normal(const VertexBuffer& vertices, const IndexBuffer& tris,
-                        int tri_index) {
+Vector3f CalcTriNormal(const VertexBuffer& vertices, const IndexBuffer& tris,
+                       int tri_index) {
   const auto& a = vertices.block<1, 3>(tris(tri_index, 0), 0);
   const auto& b = vertices.block<1, 3>(tris(tri_index, 1), 0);
   const auto& c = vertices.block<1, 3>(tris(tri_index, 2), 0);
@@ -157,30 +157,30 @@ Vector3f normal(const VertexBuffer& vertices, const IndexBuffer& tris,
 }
 
 // Computes the area of the indicated triangle.
-GLfloat area(const VertexBuffer& vertices, const IndexBuffer& tris,
-             int tri_index) {
-  return normal(vertices, tris, tri_index).norm() * 0.5;
+GLfloat CalcTriArea(const VertexBuffer& vertices, const IndexBuffer& tris,
+                    int tri_index) {
+  return CalcTriNormal(vertices, tris, tri_index).norm() * 0.5;
 }
 
 // Computes the total area of the given triangles.
-GLfloat total_area(const VertexBuffer& vertices, const IndexBuffer& tris) {
+GLfloat CalcTotalArea(const VertexBuffer& vertices, const IndexBuffer& tris) {
   float total_area = 0;
   for (int t = 0; t < tris.rows(); ++t) {
-    const auto a = area(vertices, tris, t);
+    const auto a = CalcTriArea(vertices, tris, t);
     total_area += a;
   }
   return total_area;
 }
 
 // Computes the normal for the triangle (implied by its winding).
-Vector3f unit_normal(const VertexBuffer& vertices,
-                             const IndexBuffer& tris, int tri_index) {
-  return normal(vertices, tris, tri_index).normalized();
+Vector3f CalcTriUnitNormal(const VertexBuffer& vertices,
+                           const IndexBuffer& tris, int tri_index) {
+  return CalcTriNormal(vertices, tris, tri_index).normalized();
 }
 
 // Computes the centroid of the indicated triangle.
-Vector3f centroid(const VertexBuffer& vertices, const IndexBuffer& tris,
-                          int tri_index) {
+Vector3f CalcTriCentroid(const VertexBuffer& vertices, const IndexBuffer& tris,
+                         int tri_index) {
   return (vertices.block<1, 3>(tris(tri_index, 0), 0) +
           vertices.block<1, 3>(tris(tri_index, 1), 0) +
           vertices.block<1, 3>(tris(tri_index, 2), 0)) /
@@ -191,7 +191,7 @@ Vector3f centroid(const VertexBuffer& vertices, const IndexBuffer& tris,
 GTEST_TEST(ShapeMeshesTest, ConfirmUtilities) {
   VertexBuffer vertices(3, 3);
   /*
-            │╲ (0, 1.5, 0)        Right isoceles triangle with legs of length
+            │╲ (0, 1.5, 0)        Right isosceles triangle with legs of length
             │ ╲                   1.5, lying on the z = 0 plane.
             │  ╲                     area = 1.5 * 1.5 / 2 = 2.25 / 2 = 1.125
             │   ╲                    unit normal = <0, 0, 1>
@@ -203,10 +203,10 @@ GTEST_TEST(ShapeMeshesTest, ConfirmUtilities) {
   vertices.block<1, 3>(2, 0) << 0, 1.5, 0;
   IndexBuffer indices(1, 3);
   indices.block<1, 3>(0, 0) << 0, 1, 2;
-  EXPECT_EQ(normal(vertices, indices, 0), Vector3f(0, 0, 2.25));
-  EXPECT_EQ(unit_normal(vertices, indices, 0), Vector3f(0, 0, 1));
-  EXPECT_EQ(area(vertices, indices, 0), 1.125);
-  EXPECT_EQ(centroid(vertices, indices, 0), Vector3f(0.5f, 0.5f, 0));
+  EXPECT_EQ(CalcTriNormal(vertices, indices, 0), Vector3f(0, 0, 2.25));
+  EXPECT_EQ(CalcTriUnitNormal(vertices, indices, 0), Vector3f(0, 0, 1));
+  EXPECT_EQ(CalcTriArea(vertices, indices, 0), 1.125);
+  EXPECT_EQ(CalcTriCentroid(vertices, indices, 0), Vector3f(0.5f, 0.5f, 0));
 }
 
 /* The tests for these tessellated primitives are merely suggestive; they don't
@@ -226,7 +226,7 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
     auto [vertices, indices] = MakeLongLatUnitSphere(resolution, resolution);
 
     // Confirm area converges towards (but not above) ideal area.
-    float curr_area = total_area(vertices, indices);
+    float curr_area = CalcTotalArea(vertices, indices);
     EXPECT_GT(curr_area, prev_area) << "for resolution " << resolution;
     EXPECT_LE(curr_area, kIdealArea) << "for resolution " << resolution;
     prev_area = curr_area;
@@ -240,8 +240,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
 
     // All face normals point outward
     for (int t = 0; t < indices.rows(); ++t) {
-      Vector3f c = centroid(vertices, indices, t);
-      Vector3f n = normal(vertices, indices, t);
+      Vector3f c = CalcTriCentroid(vertices, indices, t);
+      Vector3f n = CalcTriNormal(vertices, indices, t);
       // If the winding were backwards, this dot product would be negative.
       EXPECT_GT(n.dot(c), 0)
           << "for resolution: " << resolution << " and triangle " << t;
@@ -254,7 +254,7 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
 
   // Closed form solution for surface area of unit cylinder: H = 1, R = 1.
   //  Total cap area: 2 * πR² = 2π
-  //  Bareal area: 2πRH = 2π
+  //  Barrel area: 2πRH = 2π
   //  Total area = 2π + 2π = 4π
   const GLfloat kIdealArea = static_cast<GLfloat>(4 * M_PI);
 
@@ -263,7 +263,7 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
     auto [vertices, indices] = MakeUnitCylinder(resolution, resolution);
 
     // Confirm area converges towards (but not above) ideal area.
-    float curr_area = total_area(vertices, indices);
+    float curr_area = CalcTotalArea(vertices, indices);
     EXPECT_GT(curr_area, prev_area) << "for resolution " << resolution;
     EXPECT_LE(curr_area, kIdealArea) << "for resolution " << resolution;
     prev_area = curr_area;
@@ -295,8 +295,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
 
     // All face normals point outward
     for (int t = 0; t < indices.rows(); ++t) {
-      Vector3f c = centroid(vertices, indices, t);
-      Vector3f n = normal(vertices, indices, t);
+      Vector3f c = CalcTriCentroid(vertices, indices, t);
+      Vector3f n = CalcTriNormal(vertices, indices, t);
       // If the winding were backwards, this dot product would be negative.
       EXPECT_GT(n.dot(c), 0)
           << "for resolution: " << resolution << " and triangle " << t;
@@ -320,11 +320,11 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     // more we sum, the more round off error we introduce. We scale by the
     // number of triangles (representative of the number of small additions).
     const GLfloat area_epsilon = kEps * kArea * resolution * resolution;
-    EXPECT_NEAR(total_area(vertices, indices), kArea, area_epsilon);
+    EXPECT_NEAR(CalcTotalArea(vertices, indices), kArea, area_epsilon);
     EXPECT_EQ(vertices.rows(), (resolution + 1) * (resolution + 1));
     EXPECT_EQ(indices.rows(), 2 * resolution * resolution);
     for (int t = 0; t < indices.rows(); ++t) {
-      EXPECT_TRUE(CompareMatrices(unit_normal(vertices, indices, t),
+      EXPECT_TRUE(CompareMatrices(CalcTriUnitNormal(vertices, indices, t),
                                   Vector3f(0, 0, 1), kEps));
     }
 
@@ -348,16 +348,16 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
 
   auto [vertices, indices] = MakeUnitBox();
 
-  // In computing total area, we scale epsilon by the exepcted area and also
+  // In computing total area, we scale epsilon by the expected area and also
   // the number of triangles, as per-triangle area gets magnified.
-  EXPECT_NEAR(total_area(vertices, indices), 6.f, kEps);
+  EXPECT_NEAR(CalcTotalArea(vertices, indices), 6.f, kEps);
   EXPECT_EQ(vertices.rows(), 8);
   EXPECT_EQ(indices.rows(), 12);
 
   // All face normals point outward
   for (int t = 0; t < indices.rows(); ++t) {
-    Vector3f c = centroid(vertices, indices, t);
-    Vector3f n = normal(vertices, indices, t);
+    Vector3f c = CalcTriCentroid(vertices, indices, t);
+    Vector3f n = CalcTriNormal(vertices, indices, t);
     // If the winding were backwards, this dot product would be negative.
     EXPECT_GT(n.dot(c), 0);
   }
