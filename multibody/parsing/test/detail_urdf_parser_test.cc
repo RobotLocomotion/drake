@@ -10,16 +10,22 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/universal_joint.h"
 
 namespace drake {
 namespace multibody {
 namespace internal {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
@@ -165,7 +171,17 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
-  const Joint<double>& revolute_joint = plant.GetJointByName("revolute_joint");
+  // Revolute joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<RevoluteJoint>("revolute_joint"));
+  const RevoluteJoint<double>& revolute_joint =
+      plant.GetJointByName<RevoluteJoint>("revolute_joint");
+  EXPECT_EQ(revolute_joint.name(), "revolute_joint");
+  EXPECT_EQ(revolute_joint.type_name(), "revolute");
+  EXPECT_EQ(revolute_joint.parent_body().name(), "link1");
+  EXPECT_EQ(revolute_joint.child_body().name(), "link2");
+  EXPECT_EQ(revolute_joint.revolute_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(revolute_joint.damping(), 0.1);
   EXPECT_TRUE(
       CompareMatrices(revolute_joint.position_lower_limits(), Vector1d(-1)));
   EXPECT_TRUE(
@@ -175,12 +191,22 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(
       CompareMatrices(revolute_joint.velocity_upper_limits(), Vector1d(100)));
 
+  // Revolute actuator
   const JointActuator<double>& revolute_actuator =
       plant.GetJointActuatorByName("revolute_actuator");
   EXPECT_EQ(revolute_actuator.effort_limit(), 100);
 
-  const Joint<double>& prismatic_joint =
-      plant.GetJointByName("prismatic_joint");
+  // Prismatic joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<PrismaticJoint>("prismatic_joint"));
+  const PrismaticJoint<double>& prismatic_joint =
+      plant.GetJointByName<PrismaticJoint>("prismatic_joint");
+  EXPECT_EQ(prismatic_joint.name(), "prismatic_joint");
+  EXPECT_EQ(prismatic_joint.type_name(), "prismatic");
+  EXPECT_EQ(prismatic_joint.parent_body().name(), "link2");
+  EXPECT_EQ(prismatic_joint.child_body().name(), "link3");
+  EXPECT_EQ(prismatic_joint.translation_axis(), Vector3d::UnitZ());
+  EXPECT_EQ(prismatic_joint.damping(), 0.1);
   EXPECT_TRUE(
       CompareMatrices(prismatic_joint.position_lower_limits(), Vector1d(-2)));
   EXPECT_TRUE(
@@ -191,6 +217,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
       CompareMatrices(prismatic_joint.velocity_upper_limits(), Vector1d(5)));
   EXPECT_FALSE(plant.HasJointActuatorNamed("prismatic_actuator"));
 
+  // Limitless revolute joint
   const Joint<double>& no_limit_joint =
       plant.GetJointByName("revolute_joint_no_limits");
   const Vector1d inf(std::numeric_limits<double>::infinity());
@@ -201,9 +228,52 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
   EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
 
+  // Limitless revolute actuator
   const JointActuator<double>& revolute_actuator_no_limits =
       plant.GetJointActuatorByName("revolute_actuator_no_limits");
   EXPECT_EQ(revolute_actuator_no_limits.effort_limit(), inf(0));
+
+  // Ball joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<BallRpyJoint>("ball_joint"));
+  const BallRpyJoint<double>& ball_joint =
+      plant.GetJointByName<BallRpyJoint>("ball_joint");
+  EXPECT_EQ(ball_joint.name(), "ball_joint");
+  EXPECT_EQ(ball_joint.type_name(), "ball_rpy");
+  EXPECT_EQ(ball_joint.parent_body().name(), "link4");
+  EXPECT_EQ(ball_joint.child_body().name(), "link5");
+  EXPECT_EQ(ball_joint.damping(), 0.1);
+  const Vector3d inf3(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity());
+  const Vector3d neg_inf3(-std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(CompareMatrices(ball_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(ball_joint.velocity_upper_limits(), inf3));
+
+  // Universal joint
+  DRAKE_EXPECT_NO_THROW(
+      plant.GetJointByName<UniversalJoint>("universal_joint"));
+  const UniversalJoint<double>& universal_joint =
+      plant.GetJointByName<UniversalJoint>("universal_joint");
+  EXPECT_EQ(universal_joint.name(), "universal_joint");
+  EXPECT_EQ(universal_joint.type_name(), "universal");
+  EXPECT_EQ(universal_joint.parent_body().name(), "link5");
+  EXPECT_EQ(universal_joint.child_body().name(), "link6");
+  EXPECT_EQ(universal_joint.damping(), 0.1);
+  const Vector2d inf2(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity());
+  const Vector2d neg_inf2(-std::numeric_limits<double>::infinity(),
+                          -std::numeric_limits<double>::infinity());
+  EXPECT_TRUE(CompareMatrices(universal_joint.position_lower_limits(),
+                              neg_inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.position_upper_limits(), inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
+                              neg_inf2));
+  EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
