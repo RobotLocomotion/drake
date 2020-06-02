@@ -827,32 +827,6 @@ GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterial) {
     Vector4<double> expected_diffuse{0, 1, 0, 1};
     EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
   }
-
-  // Case: Values out of range:
-  //  Alpha simply gets clamped to the range [0, 1]
-  //  For each individual element in R, G, B:
-  //    Negative values are set to zero.
-  //    Values > 1 are divided by 255.
-  // These rules don't guarantee valid values. However, Rgba() will complain if
-  // it receives invalid colors.
-  {
-    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
-        "<visual name='some_link_visual'>"
-        "  <pose>0 0 0 0 0 0</pose>"
-        "  <geometry>"
-        "    <sphere>"
-        "      <radius>1</radius>"
-        "    </sphere>"
-        "  </geometry>"
-        "  <material>"
-        "    <diffuse>-0.1 0.5 255 2</diffuse>"
-        "  </material>"
-        "</visual>");
-    IllustrationProperties material =
-        MakeVisualPropertiesFromSdfVisual(*sdf_visual, NoopResolveFilename);
-    Vector4<double> expected_diffuse{0, 0.5, 1., 1};
-    EXPECT_TRUE(expect_phong(material, true, expected_diffuse, {}, {}, {}, {}));
-  }
 }
 
 // Confirms that the <drake:accepting_renderer> tag gets properly parsed.
