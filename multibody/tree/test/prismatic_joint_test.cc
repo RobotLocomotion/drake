@@ -198,7 +198,7 @@ TEST_F(PrismaticJointTest, DefaultTranslation) {
   // Constructor should set the default tranlation to 0.0
   EXPECT_EQ(joint1_->get_default_translation(), default_translation);
 
-  // Setting a new default translation should propogate so that
+  // Setting a new default translation should propagate so that
   // `get_default_translation()` remains correct.
   mutable_joint1_->set_default_translation(new_default_translation);
   EXPECT_EQ(joint1_->get_default_translation(), new_default_translation);

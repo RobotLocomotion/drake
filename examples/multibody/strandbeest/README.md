@@ -4,7 +4,7 @@ This example runs a simulation of Theo Jansen's
 
 ## Change the model
 Modify any relevant values in `model/Macros.xacro`. The Strandbeest model is 
-a dependancy of the executable, and `xacro` will be run automatically.
+a dependency of the executable, and `xacro` will be run automatically.
 
 ## Run the example
 Run the example with the default available solver:
