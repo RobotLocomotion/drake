@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/shape_meshes.h"
+#include "drake/geometry/render/gl_renderer/shape_meshes.h"
 
 #include <algorithm>
 #include <cmath>
@@ -45,13 +45,12 @@ pair<VertexBuffer, IndexBuffer> LoadMeshFromObj(std::istream* input_stream) {
   // ever returned, CI will inform us so we can update the error messages.
   DRAKE_DEMAND(ret == true);
 
-  if (shapes.size() == 0) {
+  if (shapes.empty()) {
     throw std::runtime_error(
         "The OBJ data appears to have no faces; it could be missing faces or "
         "might not be an OBJ file");
   }
 
-  DRAKE_DEMAND(shapes.size() > 0);
   // Accumulate vertices.
   const vector<tinyobj::real_t>& verts = attrib.vertices;
   const int v_count = static_cast<int>(verts.size()) / 3;
@@ -182,8 +181,8 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
   int p = v_index + rotate_sample_count - 1;
   for (int v_j = 0; v_j < rotate_sample_count; ++v_j) {
     const GLfloat theta = v_j * delta_theta;
-    const GLfloat v_x = r_i * cosf(theta);
-    const GLfloat v_y = r_i * sinf(theta);
+    const GLfloat v_x = r_i * ::cosf(theta);
+    const GLfloat v_y = r_i * ::sinf(theta);
     vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
     indices.block<1, 3>(t_index++, 0) << 0, p, v_index;
     p = v_index++;
@@ -217,8 +216,8 @@ pair<VertexBuffer, IndexBuffer> MakeRevoluteShape(
     p = v_index + rotate_sample_count - 1;
     for (int v_j = 0; v_j < rotate_sample_count; ++v_j) {
       const GLfloat theta = v_j * delta_theta;
-      const GLfloat v_x = r_i * cosf(theta);
-      const GLfloat v_y = r_i * sinf(theta);
+      const GLfloat v_x = r_i * ::cosf(theta);
+      const GLfloat v_y = r_i * ::sinf(theta);
       vertices.block<1, 3>(v_index, 0) << v_x, v_y, z_i;
       const int b = v_index - rotate_sample_count;
       const int c = p - rotate_sample_count;
@@ -312,7 +311,7 @@ pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(int longitude_bands,
   const GLfloat delta_phi = static_cast<GLfloat>(M_PI / latitude_bands);
   auto calc_z_i = [delta_phi, latitude_bands](int ring_i) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
-    return cosf(ring_i * delta_phi); };
+    return ::cosf(ring_i * delta_phi); };
   auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
     if (ring_i == 0 || ring_i == latitude_bands) return 0.f;
