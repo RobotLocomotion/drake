@@ -231,6 +231,8 @@ class MathematicalProgramResult final {
     return value;
   }
 
+  // TODO(hongkai.dai): add the interpretation for other type of constraints
+  // when we implement them.
   /**
    * Gets the dual solution associated with a constraint.
    *
@@ -259,8 +261,30 @@ class MathematicalProgramResult final {
    * For a bounding box constraint lower <= x <= upper, the interpretation of
    * the dual solution is the same as the linear inequality constraint.
    *
-   * TODO(hongkai.dai): add the interpretation for other type of constraints
-   * when we implement them.
+   * For a Lorentz cone or rotated Lorentz cone constraint that Ax + b is in the
+   * cone, depending on the solver, the dual solution has different meanings:
+   * 1. If the solver is Gurobi, then the user can only obtain the dual solution
+   *    by explicitly setting the options for computing dual solution.
+   *    @code
+   *    auto constraint = prog.AddLorentzConeConstraint(...);
+   *    GurobiSolver solver;
+   *    // Explicitly tell the solver to compute the dual solution for Lorentz
+   *    // cone or rotated Lorentz cone constraint, check
+   *    // https://www.gurobi.com/documentation/9.0/refman/qcpdual.html for
+   *    // more information.
+   *    SolverOptions options;
+   *    options.SetOption(GurobiSolver::id(), "QCPDual", 1);
+   *    MathematicalProgramResult result = solver.Solve(prog, {}, options);
+   *    Eigen::VectorXd dual_solution = result.GetDualSolution(constraint);
+   *    @endcode
+   *    The dual solution has size 1, dual_solution(0) is the shadow price for
+   *    the constraint z₁² + ... +zₙ² ≤ z₀² for Lorentz cone constraint, and
+   *    the shadow price for the constraint z₂² + ... +zₙ² ≤ z₀z₁ for rotated
+   *    Lorentz cone constraint, where z is the slack variable representing z =
+   *    A*x+b and z in the Lorentz cone/rotated Lorentz cone.
+   * 2. For nonlinear solvers like IPOPT, the dual solution for Lorentz cone
+   *    constraint (with EvalType::kConvex) is the shadow price for
+   *    z₀ - sqrt(z₁² + ... +zₙ²) ≥ 0, where z = Ax+b.
    */
   template <typename C>
   Eigen::VectorXd GetDualSolution(const Binding<C>& constraint) const {
@@ -268,6 +292,21 @@ class MathematicalProgramResult final {
         internal::BindingDynamicCast<Constraint>(constraint);
     auto it = dual_solutions_.find(constraint_cast);
     if (it == dual_solutions_.end()) {
+      // Throws a more meaningful error message when the user wants to retrieve
+      // dual solution for second order cone constraint from Gurobi result, but
+      // forgot to explicitly turn on the flag to compute gurobi qcp dual.
+      if constexpr (std::is_same<C, LorentzConeConstraint>::value ||
+                    std::is_same<C, RotatedLorentzConeConstraint>::value) {
+        throw std::invalid_argument(fmt::format(
+            "You used {} to solve this optimization problem. If the solver is "
+            "Gurobi, you have to explicitly tell Gurobi solver to compute the "
+            "dual solution for the second order cone constraints by setting "
+            "the solver options. One example is as follows: "
+            "SolverOptions options; "
+            "options.SetOption(GurobiSolver::id(), \"QCPDual\", 1); "
+            "auto result=Solve(prog, std::nullopt, options);",
+            solver_id_.name()));
+      }
       throw std::invalid_argument(fmt::format(
           "Either this constraint does not belong to the "
           "mathematical program for which the result is obtained, or "
