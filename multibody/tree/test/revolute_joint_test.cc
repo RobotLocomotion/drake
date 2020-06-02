@@ -223,7 +223,7 @@ TEST_F(RevoluteJointTest, DefaultAngle) {
   // Constructor should set the default angle to 0.0
   EXPECT_EQ(joint1_->get_default_angle(), default_angle);
 
-  // Setting a new default angle should propogate so that `get_default_angle()`
+  // Setting a new default angle should propagate so that `get_default_angle()`
   // remains correct.
   mutable_joint1_->set_default_angle(new_default_angle);
   EXPECT_EQ(joint1_->get_default_angle(), new_default_angle);

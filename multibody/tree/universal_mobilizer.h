@@ -15,7 +15,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This mobilizer models a univeral joint between an inboard frame F and an
+/// This mobilizer models a universal joint between an inboard frame F and an
 /// outboard frame M that enables rotation about F's x-axis followed by rotation
 /// about M's y-axis. No translational motion of M in F is allowed and the
 /// inboard frame origin `Fo` and the outboard frame origin `Mo` are coincident

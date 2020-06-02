@@ -402,7 +402,7 @@ pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips,
   const GLfloat band_height = 1.f / num_bands;
 
   // As illustrated above, circle 0 & 1 have a z-value of 0.5, circles
-  // C-2 and C-1 are at -0.5, and all other circles are distributed bewteen.
+  // C-2 and C-1 are at -0.5, and all other circles are distributed between.
   // Because C = B + 3, C-2 = B + 1 and C-1 = B + 2.
   auto calc_z_i = [band_height, num_bands](int ring_i) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= num_bands + 2);

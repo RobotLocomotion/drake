@@ -102,7 +102,7 @@ def main():
         "--nostdout_to_stderr", action="store_true",
         help="Do not reexec to get unbuffered output. When running from the "
              "Bazel client (non-batch), stdout and stderr ordering may not "
-             "flush at convienient times, making errors less readable. Having "
+             "flush at convenient times, making errors less readable. Having "
              "the output be unbuffered makes it more readable.")
     parser.add_argument(
         "--deprecation_action", type=str, default="once",
