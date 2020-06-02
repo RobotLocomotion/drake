@@ -348,7 +348,7 @@ class TypeSafeIndex {
       std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
   operator==(const U& value) const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Testing == with invalid index."));
-    return value <= std::numeric_limits<int>::max() &&
+    return value <= static_cast<U>(kMaxIndex) &&
         index_ == static_cast<int>(value);
   }
 
@@ -370,7 +370,7 @@ class TypeSafeIndex {
       std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
   operator!=(const U& value) const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Testing != with invalid index."));
-    return value > std::numeric_limits<int>::max() ||
+    return value > static_cast<U>(kMaxIndex) ||
         index_ != static_cast<int>(value);
   }
 
@@ -392,7 +392,7 @@ class TypeSafeIndex {
       std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
   operator<(const U& value) const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Testing < with invalid index."));
-    return value > std::numeric_limits<int>::max() ||
+    return value > static_cast<U>(kMaxIndex) ||
         index_ < static_cast<int>(value);
   }
 
@@ -414,7 +414,7 @@ class TypeSafeIndex {
       std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
   operator<=(const U& value) const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Testing <= with invalid index."));
-    return value > std::numeric_limits<int>::max() ||
+    return value > static_cast<U>(kMaxIndex) ||
         index_ <= static_cast<int>(value);
   }
 
@@ -436,8 +436,8 @@ class TypeSafeIndex {
       std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
   operator>(const U& value) const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Testing > with invalid index."));
-    return value < std::numeric_limits<int>::max() &&
-        index_ > static_cast<int>(value);
+    return value <= static_cast<U>(kMaxIndex) &&
+           index_ > static_cast<int>(value);
   }
 
   /// Blacklist greater than test with indices of other tags.
@@ -458,8 +458,8 @@ class TypeSafeIndex {
       std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
   operator>=(const U& value) const {
     DRAKE_ASSERT_VOID(AssertValid(index_, "Testing >= with invalid index."));
-    return value <= std::numeric_limits<int>::max() &&
-        index_ >= static_cast<int>(value);
+    return value <= static_cast<U>(kMaxIndex) &&
+           index_ >= static_cast<int>(value);
   }
 
   /// Blacklist greater than or equals test with indices of other tags.
@@ -509,6 +509,9 @@ class TypeSafeIndex {
   };
 
   int index_{kDefaultInvalid};
+
+  // The largest representable index.
+  static constexpr int kMaxIndex = std::numeric_limits<int>::max();
 };
 
 template <typename Tag, typename U>
