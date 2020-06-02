@@ -35,6 +35,8 @@ namespace pydrake {
 using std::string;
 
 using math::RigidTransform;
+using multibody::SpatialAcceleration;
+using multibody::SpatialVelocity;
 
 constexpr char doc_iso3_deprecation[] = R"""(
 This API using Isometry3 is / will be deprecated soon with the resolution of
@@ -538,6 +540,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_3args)
         .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
         .def("get_com", &Class::get_com, cls_doc.get_com.doc)
+        .def("CalcComMoment", &Class::CalcComMoment, cls_doc.CalcComMoment.doc)
         .def("get_unit_inertia", &Class::get_unit_inertia,
             cls_doc.get_unit_inertia.doc)
         .def("CalcRotationalInertia", &Class::CalcRotationalInertia,
@@ -545,7 +548,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsPhysicallyValid", &Class::IsPhysicallyValid,
             cls_doc.IsPhysicallyValid.doc)
         .def("CopyToFullMatrix6", &Class::CopyToFullMatrix6,
-            cls_doc.CopyToFullMatrix6.doc);
+            cls_doc.CopyToFullMatrix6.doc)
+        .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
+        .def("SetNaN", &Class::SetNaN, cls_doc.SetNaN.doc)
+        .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
+            cls_doc.ReExpress.doc)
+        .def("Shift", &Class::Shift, py::arg("p_PQ_E"), cls_doc.Shift.doc)
+        .def(py::self += py::self)
+        .def(py::self * SpatialAcceleration<T>())
+        .def(py::self * SpatialVelocity<T>());
   }
 }
 }  // namespace

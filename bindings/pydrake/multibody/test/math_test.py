@@ -9,6 +9,7 @@ from pydrake.symbolic import Expression
 from pydrake.multibody.math import (
     SpatialAcceleration_,
     SpatialForce_,
+    SpatialMomentum_,
     SpatialVelocity_,
 )
 
@@ -46,6 +47,7 @@ class TestMultibodyTreeMath(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_spatial_vector_types(self, T):
         self.check_spatial_vector(SpatialVelocity_[T], "V", "w", "v")
+        self.check_spatial_vector(SpatialMomentum_[T], "L", "h", "l")
         self.check_spatial_vector(
                 SpatialAcceleration_[T], "A", "alpha", "a")
         self.check_spatial_vector(SpatialForce_[T], "F", "tau", "f")
@@ -55,6 +57,8 @@ class TestMultibodyTreeMath(unittest.TestCase):
         # Existence checks.
         Value[SpatialVelocity_[T]]
         Value[List[SpatialVelocity_[T]]]
+        Value[SpatialMomentum_[T]]
+        Value[List[SpatialMomentum_[T]]]
         Value[SpatialAcceleration_[T]]
         Value[List[SpatialAcceleration_[T]]]
         Value[SpatialForce_[T]]
