@@ -17,61 +17,6 @@
 namespace drake {
 namespace geometry {
 
-namespace internal {
-
-// To facilitate simple metaprogramming. Supports `MaybeConvertOutput` below.
-// This enables the use of direct overloads rather than SFINAE
-// (std::enable_if).
-template <typename T>
-struct type_tag { using type = T; };
-
-// Pass through on const T&.
-template <typename ValueType>
-const ValueType& MaybeConvertInput(const ValueType& value) { return value; }
-
-// Pass through on const T&.
-template <typename ValueType>
-const ValueType&
-MaybeConvertOutput(const ValueType& value, type_tag<ValueType>) {
-  return value;
-}
-
-// Convert Vector4d to Rgba.
-// TODO(eric.cousineau): Enable this.
-// DRAKE_DEPRECATED(
-//     "2020-09-01", "Use Rgba instead of Vector4d to define diffuse color.")
-inline Rgba MaybeConvertInput(const Eigen::Vector4d& value) {
-  return Rgba(value(0), value(1), value(2), value(3));
-}
-
-// Convert Rgba to Vector4d.
-// TODO(eric.cousineau): Enable this.
-// DRAKE_DEPRECATED(
-//     "2020-09-01", "Use Rgba instead of Vector4d to define diffuse color.")
-inline Eigen::Vector4d MaybeConvertOutput(
-    const Rgba& value, type_tag<Eigen::Vector4d>) {
-  return {value.r(), value.g(), value.b(), value.a()};
-}
-
-// Convert to type for adding; this may have cv-ref qualifiers.
-template <typename ValueType>
-using to_add_type_maybe_cvref_t =
-    decltype(MaybeConvertInput(std::declval<ValueType>()));
-
-// Convert to type for adding; this will not have cv-ref qualifiers.
-template <typename ValueType>
-using to_add_type_t =
-    drake::internal::remove_cvref_t<to_add_type_maybe_cvref_t<ValueType>>;
-
-// Convert to type for getting; this may have cv-ref qualifiers.
-template <typename ValueType>
-using to_get_type_maybe_cvref_t =
-    decltype(MaybeConvertOutput(
-        std::declval<to_add_type_t<ValueType>>(),
-        type_tag<ValueType>{}));
-
-}  // namespace internal
-
 /** The base class for defining a set of geometry properties.
 
  Each property consists of a `(group, property)` name-pair and a typed value.
@@ -208,7 +153,7 @@ using to_get_type_maybe_cvref_t =
  both approaches.
 
  ```
- const ProximityProperties& properties = FunctionThatReturnsProperties();
+ const IllustrationProperties& properties = FunctionThatReturnsProperties();
  // Looking for a Rgba of rgba colors named "rgba" - send generic error that
  // the property set is missing the required property.
  const Rgba rgba =
@@ -237,7 +182,7 @@ using to_get_type_maybe_cvref_t =
  will be the same as the default value.
 
  ```
- const ProximityProperties& properties = FunctionThatReturnsProperties();
+ const IllustrationProperties& properties = FunctionThatReturnsProperties();
  // Looking for a Rgba of rgba colors named "rgba".
  const Rgba default_color{0.9, 0.9, 0.9};
  const Rgba rgba =
@@ -268,7 +213,7 @@ using to_get_type_maybe_cvref_t =
  AbstractValue.
 
  ```
- const ProximityProperties& properties = FunctionThatReturnsProperties();
+ const IllustrationProperties& properties = FunctionThatReturnsProperties();
  for (const auto& pair : properties.GetGroupProperties("MyGroup") {
    const std::string& name = pair.first;
    if (name == "rgba") {
@@ -315,8 +260,11 @@ class GeometryProperties {
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
-    AddPropertyAbstract(
-        group_name, name, Value(internal::MaybeConvertInput(value)));
+    if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
+      AddPropertyAbstract(group_name, name, Value(ToRgba(value)));
+    } else {
+      AddPropertyAbstract(group_name, name, Value(value));
+    }
   }
 
   /** Adds a property with the given `name` and type-erased `value` to the the
@@ -348,13 +296,24 @@ class GeometryProperties {
    @throws std::logic_error if a) the group name is invalid,
                             b) the property name is invalid, or
                             c) the property type is not that specified.
-   @tparam ValueType  The expected type of the desired property.  */
+   @tparam ValueType  The expected type of the desired property.
+   @returns const ValueType& of stored value.
+            If ValueType is Eigen::Vector4d, the return type will be a copy
+            translated from Rgba.
+   */
   template <typename ValueType>
-  internal::to_get_type_maybe_cvref_t<ValueType>
+  decltype(auto)
   GetProperty(const std::string& group_name, const std::string& name) const {
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
-    return GetValueOrThrow<ValueType>(
-        "GetProperty", group_name, name, abstract);
+    if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
+      const Rgba color = GetValueOrThrow<Rgba>(
+          "GetProperty", group_name, name, abstract,
+          NiceTypeName::Get<Eigen::Vector4d>());
+      return ToVector4d(color);
+    } else {
+      return GetValueOrThrow<ValueType>(
+          "GetProperty", group_name, name, abstract);
+    }
   }
 
   /** Retrieves that type-erased value from this set of properties.
@@ -399,9 +358,16 @@ class GeometryProperties {
     if (!abstract) {
       return default_value;
     } else {
-      // This incurs the cost of copying a stored value.
-      return GetValueOrThrow<ValueType>(
-          "GetPropertyOrDefault", group_name, name, *abstract);
+      if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
+        const Rgba color = GetValueOrThrow<Rgba>(
+            "GetPropertyOrDefault", group_name, name, *abstract,
+            NiceTypeName::Get<Eigen::Vector4d>());
+        return ToVector4d(color);
+      } else {
+        // This incurs the cost of copying a stored value.
+        return GetValueOrThrow<ValueType>(
+            "GetPropertyOrDefault", group_name, name, *abstract);
+      }
     }
   }
 
@@ -457,21 +423,34 @@ class GeometryProperties {
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
-  static internal::to_get_type_maybe_cvref_t<ValueType>
+  static const ValueType&
   GetValueOrThrow(
       const std::string& method, const std::string& group_name,
-      const std::string& name, const AbstractValue& abstract) {
-    using AddType = internal::to_add_type_t<ValueType>;
-    const AddType* stored = abstract.maybe_get_value<AddType>();
-    if (stored == nullptr) {
+      const std::string& name, const AbstractValue& abstract,
+      const std::string& nice_type_name = NiceTypeName::Get<ValueType>()) {
+    const ValueType* value = abstract.maybe_get_value<ValueType>();
+    if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "{}(): The property '{}' in group '{}' exists, "
           "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, NiceTypeName::Get<AddType>(),
+          method, name, group_name, nice_type_name,
           abstract.GetNiceTypeName()));
     }
-    return internal::MaybeConvertOutput(
-        *stored, internal::type_tag<ValueType>{});
+    return *value;
+  }
+
+  // TODO(eric.cousineau): Enable this.
+  // DRAKE_DEPRECATED(
+  //     "2020-10-01", "Use Rgba instead of Vector4d to define diffuse color.")
+  static Eigen::Vector4d ToVector4d(const Rgba& color) {
+    return Eigen::Vector4d(color.r(), color.g(), color.b(), color.a());
+  }
+
+  // TODO(eric.cousineau): Enable this.
+  // DRAKE_DEPRECATED(
+  //     "2020-10-01", "Use Rgba instead of Vector4d to define diffuse color.")
+  static Rgba ToRgba(const Eigen::Vector4d& value) {
+    return Rgba(value(0), value(1), value(2), value(3));
   }
 
   friend std::ostream& operator<<(std::ostream& out,

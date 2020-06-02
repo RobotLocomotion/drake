@@ -406,21 +406,6 @@ struct type_equals {
   static_assert(std::is_same_v<A, B>, "Mismatch!");
 };
 
-GTEST_TEST(GeometryProperties, RgbaAndVector4TypeTest) {
-  using internal::to_add_type_maybe_cvref_t;
-  using internal::to_get_type_maybe_cvref_t;
-  // Add<T>: Vector4d should map to Rgba.
-  type_equals<to_add_type_maybe_cvref_t<Vector4d>, Rgba>{};
-  // Add<T>: T (for all other types) should map to const T&.
-  type_equals<to_add_type_maybe_cvref_t<Rgba>, const Rgba&>{};
-  type_equals<to_add_type_maybe_cvref_t<int>, const int&>{};
-  // Get<T>: Vector4d should map to Vector4d.
-  type_equals<to_get_type_maybe_cvref_t<Vector4d>, Vector4d>{};
-  // Get<T>: T (for all other types) should map to const T&.
-  type_equals<to_get_type_maybe_cvref_t<Rgba>, const Rgba&>{};
-  type_equals<to_get_type_maybe_cvref_t<int>, const int&>{};
-}
-
 GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   const Rgba color(0.75, 0.5, 0.25, 1.);
   const Vector4d vector(0.75, 0.5, 0.25, 1.);
@@ -428,6 +413,7 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   TestProperties properties;
   const std::string& group_name{"some_group"};
   const std::string color_name("color_name");
+  const std::string fake_name("fake_name");
 
   // Add<Rgba>.
   properties.AddProperty(group_name, color_name, color);
@@ -435,6 +421,10 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, color_name));
   // - Get<Vector4d>.
   EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, color_name));
+  EXPECT_EQ(
+      vector,
+      properties.GetPropertyOrDefault<Vector4d>(
+          group_name, fake_name, vector));
 
   // Add<Vector4d>.
   const std::string vector_name("vector_name");
