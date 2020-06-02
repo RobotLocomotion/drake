@@ -155,6 +155,7 @@ void ParseBody(const multibody::PackageMap& package_map,
 // groups and a set of pairs between which the collisions will be excluded.
 // @pre plant.geometry_source_is_registered() is `true`.
 void RegisterCollisionFilterGroup(
+    ModelInstanceIndex model_instance,
     const MultibodyPlant<double>& plant, XMLElement* node,
     std::map<std::string, geometry::GeometrySet>* collision_filter_groups,
     std::set<SortedPair<std::string>>* collision_filter_pairs) {
@@ -181,7 +182,7 @@ void RegisterCollisionFilterGroup(
                       "member tag without specifying the \"link\" attribute.",
                       __FILE__, __func__, node->GetLineNum(), group_name));
     }
-    const auto& body = plant.GetBodyByName(body_name);
+    const auto& body = plant.GetBodyByName(body_name, model_instance);
     collision_filter_geometry_set.Add(
         plant.GetBodyFrameIdOrThrow(body.index()));
   }
@@ -206,7 +207,8 @@ void RegisterCollisionFilterGroup(
 }
 
 // @pre plant->geometry_source_is_registered() is `true`.
-void ParseCollisionFilterGroup(XMLElement* node,
+void ParseCollisionFilterGroup(ModelInstanceIndex model_instance,
+                               XMLElement* node,
                                MultibodyPlant<double>* plant) {
   DRAKE_DEMAND(plant->geometry_source_is_registered());
   std::map<std::string, geometry::GeometrySet> collision_filter_groups;
@@ -215,7 +217,8 @@ void ParseCollisionFilterGroup(XMLElement* node,
            node->FirstChildElement("drake:collision_filter_group");
        group_node; group_node = group_node->NextSiblingElement(
                        "drake:collision_filter_group")) {
-    RegisterCollisionFilterGroup(*plant, group_node, &collision_filter_groups,
+    RegisterCollisionFilterGroup(model_instance, *plant, group_node,
+                                 &collision_filter_groups,
                                  &collision_filter_pairs);
   }
   for (const auto& collision_filter_pair : collision_filter_pairs) {
@@ -645,7 +648,7 @@ ModelInstanceIndex ParseUrdf(
 
   // Parses the collision filter groups only if the scene graph is registered.
   if (plant->geometry_source_is_registered()) {
-    ParseCollisionFilterGroup(node, plant);
+    ParseCollisionFilterGroup(model_instance, node, plant);
   }
 
   // Joint effort limits are stored with joints, but used when creating the
