@@ -793,13 +793,13 @@ void Diagram<T>::DoMapQDotToVelocity(
 template <typename T>
 void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
                                       CompositeEventCollection<T>* event_info,
-                                      T* time) const {
+                                      T* next_update_time) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
   DRAKE_DEMAND(diagram_context != nullptr);
   DRAKE_DEMAND(info != nullptr);
 
-  *time = std::numeric_limits<double>::infinity();
+  *next_update_time = std::numeric_limits<double>::infinity();
 
   // Iterate over the subsystems, and harvest the most imminent updates.
   std::vector<T> times(num_subsystems());
@@ -807,19 +807,20 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
     const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
     CompositeEventCollection<T>& subinfo =
         info->get_mutable_subevent_collection(i);
+
     const T sub_time =
         registered_systems_[i]->CalcNextUpdateTime(subcontext, &subinfo);
     times[i] = sub_time;
 
-    if (sub_time < *time) {
-      *time = sub_time;
+    if (sub_time < *next_update_time) {
+      *next_update_time = sub_time;
     }
   }
 
-  // For all the subsystems whose next update time is bigger than *time,
-  // clear their event collections.
+  // For all the subsystems whose next update time is bigger than
+  // next_update_time, clear their event collections.
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-    if (times[i] > *time)
+    if (times[i] > *next_update_time)
       info->get_mutable_subevent_collection(i).Clear();
   }
 }
