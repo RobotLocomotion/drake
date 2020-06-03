@@ -69,6 +69,15 @@ void BindMultibodyElementMixin(PyClass* pcls) {
   cls  // BR
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance)
+      .def("__lt__",
+          [](const Class& self, const Class& other) {
+            // N.B. `py::self < py::self` does not work here since there is
+            // currently not a MultibodyElement<>::operator<() defined. This
+            // is still useful in Python in ensuring that a homogeneous group
+            // of elements (from the same tree) can be used for stricter
+            // ordering, e.g. for `sorted()`.
+            return self.index() < other.index();
+          })
       .def("__repr__", [](const Class& self) {
         py::str cls_name = py::cast(&self).get_type().attr("__name__");
         const int index = self.index();
