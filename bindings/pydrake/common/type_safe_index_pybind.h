@@ -13,26 +13,25 @@ namespace drake {
 namespace pydrake {
 
 /// Binds a TypeSafeIndex instantiation.
-template <typename Type>
+template <typename Class>
 auto BindTypeSafeIndex(
     py::module m, const std::string& name, const std::string& class_doc = "") {
-  py::class_<Type> cls(m, name.c_str(), class_doc.c_str());
+  py::class_<Class> cls(m, name.c_str(), class_doc.c_str());
   cls  // BR
       .def(py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_0args)
-      .def("__int__", &Type::operator int)
-      .def(
-          "__eq__",
-          [](const Type* self, const Type* other) { return *self == *other; },
-          py::is_operator())
-      .def(
-          "__eq__", [](const Type* self, int other) { return *self == other; },
-          py::is_operator())
+      .def("__int__", &Class::operator int)
+      .def(py::self == py::self)
+      .def(py::self == int{})
+      .def(py::self < py::self)
       // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
       // pending merge of: https://github.com/pybind/pybind11/pull/2217
       .def(py::detail::hash(py::self))
       // TODO(eric.cousineau): Add more operators.
-      .def("is_valid", &Type::is_valid,
-          pydrake_doc.drake.TypeSafeIndex.is_valid.doc);
+      .def("is_valid", &Class::is_valid,
+          pydrake_doc.drake.TypeSafeIndex.is_valid.doc)
+      .def("__repr__", [name](const Class& self) {
+        return py::str("{}({})").format(name, static_cast<int>(self));
+      });
   return cls;
 }
 

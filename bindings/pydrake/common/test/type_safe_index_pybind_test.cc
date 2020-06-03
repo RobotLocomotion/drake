@@ -24,7 +24,7 @@ using test::SynchronizeGlobalsForPython3;
 
 template <typename T>
 void CheckValue(const string& expr, const T& expected) {
-  SCOPED_TRACE(expr);
+  SCOPED_TRACE("Python expression:\n  " + expr);
   EXPECT_EQ(py::eval(expr).cast<T>(), expected);
 }
 
@@ -68,9 +68,13 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
   py::object py_index = py::eval("Index(10)");
   ASSERT_THROW(py_index.cast<OtherIndex>(), std::runtime_error);
 
+  // Check basic comparison.
   CheckValue("Index(10) == Index(10)", true);
   CheckValue("Index(10) == 10", true);
   CheckValue("10 == Index(10)", true);
+  CheckValue("Index(9) < Index(10)", true);
+  CheckValue("Index(11) < Index(10)", false);
+
   // Store values for hash computation so that their id()s cannot be recycled
   // by the GC; otherwise, if the correct `__hash__` implementation were
   // missing and it used the default implementation (using `id()`), we'd get a
@@ -78,6 +82,9 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
   py::exec("a = Index(10); b = Index(10); c = Index(9)");
   CheckValue("hash(a) == hash(b)", true);
   CheckValue("hash(a) == hash(c)", false);
+
+  // Check string representation.
+  CheckValue("repr(Index(10)) == 'Index(10)'", true);
 }
 
 int main(int argc, char** argv) {

@@ -45,6 +45,16 @@ This API using Isometry3 is / will be deprecated soon with the resolution of
 
 namespace {
 
+// Negative case for checking T::name().
+// https://stackoverflow.com/a/16000226/7829525
+template <typename T, typename = void>
+struct has_name_func : std::false_type {};
+
+// Positive case for checking T::name().
+template <typename T>
+struct has_name_func<T, decltype(std::declval<T>().name(), void())>
+    : std::true_type {};
+
 // Binds `MultibodyElement` methods.
 // N.B. We do this rather than inheritance because this template is more of a
 // mixin than it is a parent class (since it is not used for its dynamic
@@ -58,7 +68,19 @@ void BindMultibodyElementMixin(PyClass* pcls) {
   auto& cls = *pcls;
   cls  // BR
       .def("index", &Class::index)
-      .def("model_instance", &Class::model_instance);
+      .def("model_instance", &Class::model_instance)
+      .def("__repr__", [](const Class& self) {
+        py::str cls_name = py::cast(&self).get_type().attr("__name__");
+        const int index = self.index();
+        const int model_instance = self.model_instance();
+        if constexpr (has_name_func<Class>::value) {
+          return py::str("<{} name='{}' index={} model_instance={}>")
+              .format(cls_name, self.name(), index, model_instance);
+        } else {
+          return py::str("<{} index={} model_instance={}>")
+              .format(cls_name, index, model_instance);
+        }
+      });
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
