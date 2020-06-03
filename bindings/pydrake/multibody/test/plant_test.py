@@ -147,6 +147,7 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(world_model_instance(), ModelInstanceIndex(0))
         self.assertEqual(repr(world_model_instance()), "ModelInstanceIndex(0)")
         self.assertEqual(default_model_instance(), ModelInstanceIndex(1))
+        self.assertTrue(ModelInstanceIndex(0) < ModelInstanceIndex(1))
 
     def assert_sane(self, x, nonzero=True):
         self.assertTrue(np.all(np.isfinite(numpy_compare.to_float(x))))
