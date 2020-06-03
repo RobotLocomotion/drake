@@ -22,6 +22,7 @@ auto BindTypeSafeIndex(
       .def("__int__", &Class::operator int)
       .def(py::self == py::self)
       .def(py::self == int{})
+      .def(py::self < py::self)
       // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
       // pending merge of: https://github.com/pybind/pybind11/pull/2217
       .def(py::detail::hash(py::self))

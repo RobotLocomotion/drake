@@ -147,6 +147,7 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(world_model_instance(), ModelInstanceIndex(0))
         self.assertEqual(repr(world_model_instance()), "ModelInstanceIndex(0)")
         self.assertEqual(default_model_instance(), ModelInstanceIndex(1))
+        self.assertTrue(ModelInstanceIndex(0) < ModelInstanceIndex(1))
 
     def assert_sane(self, x, nonzero=True):
         self.assertTrue(np.all(np.isfinite(numpy_compare.to_float(x))))
@@ -287,7 +288,13 @@ class TestPlant(unittest.TestCase):
             name="ShoulderJoint", model_instance=model_instance))
         self._test_joint_actuator_api(
             T, plant.GetJointActuatorByName(name="ElbowJoint"))
+
+        # Purposely get links out of order to ensure the Python wrapper classes
+        # are constructed differently.
+        link2 = plant.GetBodyByName(name="Link2")
         link1 = plant.GetBodyByName(name="Link1")
+        self.assertTrue(link1 < link2)
+
         self._test_body_api(T, link1)
         self.assertIs(
             link1,
