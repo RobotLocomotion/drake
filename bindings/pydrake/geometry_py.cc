@@ -47,7 +47,10 @@ void BindIdentifier(py::module m, const std::string& name, const char* id_doc) {
       // TODO(eric.cousineau): Use `py::hash()` instead of `py::detail::hash()`
       // pending merge of: https://github.com/pybind/pybind11/pull/2217
       .def(py::detail::hash(py::self))
-      .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc);
+      .def_static("get_new_id", &Class::get_new_id, cls_doc.get_new_id.doc)
+      .def("__repr__", [name](const Class& self) {
+        return py::str("<{} value={}>").format(name, self.get_value());
+      });
 }
 
 void def_geometry_render(py::module m) {

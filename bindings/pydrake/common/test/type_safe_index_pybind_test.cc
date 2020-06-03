@@ -24,7 +24,7 @@ using test::SynchronizeGlobalsForPython3;
 
 template <typename T>
 void CheckValue(const string& expr, const T& expected) {
-  SCOPED_TRACE(expr);
+  SCOPED_TRACE("Python expression:\n  " + expr);
   EXPECT_EQ(py::eval(expr).cast<T>(), expected);
 }
 
@@ -78,6 +78,9 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
   py::exec("a = Index(10); b = Index(10); c = Index(9)");
   CheckValue("hash(a) == hash(b)", true);
   CheckValue("hash(a) == hash(c)", false);
+
+  // Check string representation.
+  CheckValue("repr(Index(10)) == 'Index(10)'", true);
 }
 
 int main(int argc, char** argv) {

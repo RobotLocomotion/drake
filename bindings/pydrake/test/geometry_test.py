@@ -200,6 +200,10 @@ class TestGeometry(unittest.TestCase):
         self.assertIsNot(fake_id_1, fake_id_2)
         self.assertEqual(hash(fake_id_1), hash(fake_id_2))
 
+        self.assertEqual(
+            repr(fake_id_1),
+            f"<FakeId value={fake_id_1.get_value()}>")
+
     @numpy_compare.check_nonsymbolic_types
     def test_penetration_as_point_pair_api(self, T):
         obj = mut.PenetrationAsPointPair_[T]()
