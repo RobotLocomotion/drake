@@ -60,7 +60,10 @@ drake_py_binary(
 drake_py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
-    deps = [":formatter"],
+    deps = [
+        ":cpp_docstring_lint",
+        ":formatter",
+    ],
 )
 
 drake_py_binary(

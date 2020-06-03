@@ -2,6 +2,7 @@ import os
 import sys
 
 from drake.tools.lint.formatter import IncludeFormatter
+from drake.tools.lint import cpp_docstring_lint
 
 
 def _check_invalid_line_endings(filename):
@@ -45,6 +46,38 @@ def _check_includes(filename):
         print("note: if that program does not exist, "
               "you might need to compile it first: "
               "bazel build //tools/lint/...")
+        return 1
+    return 0
+
+
+def _check_cpp_docstrings(filename):
+    if cpp_docstring_lint.is_ignored_file(filename):
+        return 0
+    errors = cpp_docstring_lint.check_or_apply_lint_on_file(
+        filename, check_lint=True)
+    if errors:
+        print()
+        # Chokes on solvers/minimum_value_constraint.h ?
+        for error in errors:
+            try:
+                print(error)
+            except UnicodeEncodeError as e:
+                # TODO(eric.cousineau): This is only triggered under
+                # `bazel test` due to redirection.
+                # Exaple:
+                # With drake@7ae3c238b:
+                # bazel test //solvers:py/minimum_value_constraint_drakelint
+                if error.error_lines:
+                    print(error.text)
+                    line = error.error_lines[0]
+                    print(
+                        f"WARNING: 'bazel test' encoding error for "
+                        f"{line.filename}:{line.num}:\n"
+                        f"  {e}\n")
+        print("note: if that program does not exist, "
+              "you might need to compile it first: "
+              "bazel build //tools/lint/...")
+        print()
         return 1
     return 0
 
@@ -106,7 +139,8 @@ def main():
             total_errors += _check_shebang(filename, disallow_executable)
         if not filename.endswith(".py"):
             total_errors += _check_includes(filename)
-
+        if filename.endswith(".h"):
+            total_errors += _check_cpp_docstrings(filename)
     if total_errors == 0:
         sys.exit(0)
     else:
