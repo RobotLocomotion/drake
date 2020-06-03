@@ -1,5 +1,6 @@
 bash-completion
 clang
+clang-9
 clang-format-9
 coinor-libclp-dev
 coinor-libipopt-dev
