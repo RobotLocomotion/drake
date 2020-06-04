@@ -195,6 +195,8 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
+* drake::manipulation::kuka_iiwa::IiwaCommandReceiver::set_initial_position (`#13340`_)
+* drake::manipulation::schunk_wsg::SchunkWsgPositionController::set_initial_position (`#13340`_)
 * drake::multibody::MultibodyPlant::CalcBiasForJacobianSpatialVelocity (`#13063`_)
 * drake::multibody::MultibodyPlant::CalcBiasForJacobianTranslationalVelocity (`#13063`_)
 * drake::systems::rendering::PoseBundle::get_pose (`#13327`_)
@@ -203,6 +205,9 @@ Newly-deprecated APIs
 * pydrake.systems.rendering.PoseBundle.get_pose (`#13327`_)
 * pydrake.systems.rendering.PoseBundle.set_pose (`#13327`_)
 * pydrake.systems.rendering.PoseVector.get_isometry (`#13327`_)
+* TBD (`#13407`_)
+* TBD (`#13307`_)
+* TBD (`#13279`_)
 * All Python modules under pydrake.attic.* (`#13315`_)
 * All C++ headers in the attic (`#13315`_):
 
