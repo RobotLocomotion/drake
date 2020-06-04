@@ -57,6 +57,14 @@ Mathematical Program
 New features
 
 * TBD
+* solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
+* solvers: Allow using Binding<C> as key in unordered_map (`#13322`_)  # Allow using Binding<C> as key in unordered_map. Add operator==, operator!= and hash function for Binding<C>
+* solvers: Get dual solution for OSQP solver (`#13347`_)
+* solvers: Add parsing of string options to SNOPT (`#13397`_)
+* solvers: Gurobi gets dual solution for QP and LP (`#13377`_)  # Gurobi returns dual solution for linear inequality/equality and bounding box constraints.
+* solvers: Fix the CI failure for LPDualSolution1 (`#13404`_)
+* solvers: Get dual solution for EqualityConstrainedQPSolver (`#13394`_)
+* solvers: Add dual solution for IpoptSolver (`#13402`_)
 
 Fixes
 
@@ -191,7 +199,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * geometry: [geometry] Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)  # * Support greater RenderEngineVtk and ShapeReifier customizations 1. GeometryState can provide pointers to RenderEngine implementations - It is generally accessed via QueryObject. 2. RenderEngineVtk is changed to be sub-classable - Copy constructor moved from private to protected. - Final designation has been removed. - It gives derived classes access to the actors. - Fixes a bug that previously went unnoticed; `SetDefaultLightPosition` didn't declare override of the virtual RenderEngine method. 3. Allow for customization of unsupported geometry messages in ShapeReifier.
 * manipulation: manipulation: De-duplicate model preview functionality (`#13148`_)  # Add explicit --find_runfiles
 * geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
-* solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
 * multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
 * lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
 * lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
@@ -204,7 +211,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
 * manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
 * multibody: mbp: Add GetDefaultFreeBodyPose (`#13342`_)
-* solvers: Allow using Binding<C> as key in unordered_map (`#13322`_)  # Allow using Binding<C> as key in unordered_map. Add operator==, operator!= and hash function for Binding<C>
 * geometry: geometry: Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * geometry: [dev] Add HalfSpace and Box generation to shape_meshes.* (`#13334`_)  # - Modify RenderEngineGl to make use of the shapes.
 * multibody: Guidance for picking bushing stiffness/damping constants (`#13106`_)  # Provide suggestions for how to pick stiffness/damping constants for the bushing element.
@@ -212,7 +218,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples,systems: primitives: Offer DiscreteDerivative option to disable transient (`#13336`_)
 * examples: Updates rolling sphere demo configurability (`#13349`_)  # Use MakeSimulatorFromGflags() and PrintSimulatorStatistics()
 * multibody: Updates the developer notes of MBP::RegisterGeometry() (`#13014`_)  # * Updates the developer notes of MBP::RegisterGeometry() to reflect the fact that all bodies have a FrameId.
-* solvers: Get dual solution for OSQP solver (`#13347`_)
 * examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
 * systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
 * tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)  # Add a tutorial on updating costs/constraints in mathematical program.
@@ -224,16 +229,12 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
 * multibody: Revert "Implements spatial velocity and acceleration ports" (`#13399`_)  # This reverts commit 546c40294430b1e2b3e1ce5e9b398853008e5f8c.
 * examples,manipulation: manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)  # This changes the iiwa- and wsg-related classes; similar classes such as jaco are unchanged.
-* solvers: Add parsing of string options to SNOPT (`#13397`_)
-* solvers: Gurobi gets dual solution for QP and LP (`#13377`_)  # Gurobi returns dual solution for linear inequality/equality and bounding box constraints.
 * multibody: Migrating Jacobian tests (`#13390`_)  # Migrates MBT::CalcBiasTranslationalAcceleration() tests from MBTree to MBPlant tests.
-* solvers: Fix the CI failure for LPDualSolution1 (`#13404`_)
 * attic: Disable global_inverse_kinematics_feasible_posture_test in debug (`#13412`_)  # This test consistently times out for everything-debug builds. As it is "attic + dev" code, switch off the test for debug builds.
 * multibody: Enable kinematics computations on models with zero dofs (`#13405`_)  # * Enables kinematics for models with zero dofs.
 * multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
 * multibody: Implements spatial velocity and acceleration ports (`#13423`_)
 * multibody: Move CalcBiasSpatialAcceleration() test from multibody_tree_test.cc to multibody_plant_jacobians_test.cc (`#13411`_)  # * Move test from multibody_tree_test.cc to multibody_plant_jacobians_test.cc
-* solvers: Get dual solution for EqualityConstrainedQPSolver (`#13394`_)
 * tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
 * common: value: Disallow cv/ref/array/pointer types (`#13444`_)
 * multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
@@ -241,7 +242,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
 * systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13464`_)  # This restores PR #13365 This reverts commit fca17492ebb64e1d634d3422e376769e99238a0d (#13384) Co-authored-by: Andres Valenzuela <andres.valenzuela@tri.global>
 * geometry: geometry: Add basic Rgba class (`#13441`_)
-* solvers: Add dual solution for IpoptSolver (`#13402`_)
 * multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)  # Fixes #13471
 * systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
 * multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
