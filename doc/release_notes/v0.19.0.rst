@@ -35,6 +35,9 @@ These are breaking changes that did not undergo a deprecation period:
 
 * Removes dead code IntegratorBase::InitializeAccuracy() (`#12624`_)
 
+* Remove attic symbols from pydrake.all; users must import pydrake.attic.all to
+  use them now (`#13315`_).
+
 Changes since v0.18.0:
 ----------------------
 
@@ -192,10 +195,122 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
-* attic,examples: attic: Add deprecation warnings (`#13315`_)  # Remove attic symbols from pydrake.all; users must import pydrake.attic.all to use them now.
-* attic,geometry,systems: Deprecate the Isometry3 in systems/rendering (`#13327`_)  # - PoseBundle::{set|get)_pose deprecated; replaced with (set_)transform() - get_pose() no longer returns a reference to an Isometry3. - PoseVector::get_isometry deprecated; replaced with transform() - Also added set_transform() based on old TODO. - Multiple downstream consumers (and their tests) updated to use new API.
-* multibody: Update/enhance API, notation, and documentation for CalcBiasSpatialAcceleration() and CalcBiasTranslationalAcceleration() (`#13063`_)  # Deprecate CalcBiasForSpatialJacobian() and CalcBiasForTranslationalJacobian().
+* drake::multibody::MultibodyPlant::CalcBiasForJacobianSpatialVelocity (`#13063`_)
+* drake::multibody::MultibodyPlant::CalcBiasForJacobianTranslationalVelocity (`#13063`_)
+* drake::systems::rendering::PoseBundle::get_pose (`#13327`_)
+* drake::systems::rendering::PoseBundle::set_pose (`#13327`_)
+* drake::systems::rendering::PoseVector::get_isometry (`#13327`_)
+* pydrake.systems.rendering.PoseBundle.get_pose (`#13327`_)
+* pydrake.systems.rendering.PoseBundle.set_pose (`#13327`_)
+* pydrake.systems.rendering.PoseVector.get_isometry (`#13327`_)
+* All Python modules under pydrake.attic.* (`#13315`_)
+* All C++ headers in the attic (`#13315`_):
+
+  * drake/manipulation/planner/rbt_differential_inverse_kinematics.h
+  * drake/multibody/collision/bullet_model.h
+  * drake/multibody/collision/collision_filter.h
+  * drake/multibody/collision/drake_collision.h
+  * drake/multibody/collision/element.h
+  * drake/multibody/collision/fcl_model.h
+  * drake/multibody/collision/model.h
+  * drake/multibody/collision/point_pair.h
+  * drake/multibody/collision/unusable_model.h
+  * drake/multibody/constraint_wrappers.h
+  * drake/multibody/force_torque_measurement.h
+  * drake/multibody/global_inverse_kinematics.h
+  * drake/multibody/ik_options.h
+  * drake/multibody/ik_trajectory_helper.h
+  * drake/multibody/inverse_kinematics_backend.h
+  * drake/multibody/joints/drake_joint.h
+  * drake/multibody/joints/drake_joint_impl.h
+  * drake/multibody/joints/drake_joints.h
+  * drake/multibody/joints/fixed_axis_one_dof_joint.h
+  * drake/multibody/joints/fixed_joint.h
+  * drake/multibody/joints/floating_base_types.h
+  * drake/multibody/joints/helical_joint.h
+  * drake/multibody/joints/prismatic_joint.h
+  * drake/multibody/joints/quaternion_ball_joint.h
+  * drake/multibody/joints/quaternion_floating_joint.h
+  * drake/multibody/joints/revolute_joint.h
+  * drake/multibody/joints/roll_pitch_yaw_floating_joint.h
+  * drake/multibody/joints/test/joint_compare_to_clone.h
+  * drake/multibody/kinematic_path.h
+  * drake/multibody/kinematics_cache.h
+  * drake/multibody/kinematics_cache_helper.h
+  * drake/multibody/kinematics_cache-inl.h
+  * drake/multibody/material_map.h
+  * drake/multibody/parsers/model_instance_id_table.h
+  * drake/multibody/parsers/package_map.h
+  * drake/multibody/parsers/parser_common.h
+  * drake/multibody/parsers/sdf_parser.h
+  * drake/multibody/parsers/urdf_parser.h
+  * drake/multibody/parsers/xml_util.h
+  * drake/multibody/pose_map.h
+  * drake/multibody/resolve_center_of_pressure.h
+  * drake/multibody/rigid_body_actuator.h
+  * drake/multibody/rigid_body_constraint.h
+  * drake/multibody/rigid_body_distance_constraint.h
+  * drake/multibody/rigid_body_frame.h
+  * drake/multibody/rigid_body.h
+  * drake/multibody/rigid_body_ik.h
+  * drake/multibody/rigid_body_loop.h
+  * drake/multibody/rigid_body_plant/compliant_contact_model.h
+  * drake/multibody/rigid_body_plant/compliant_material.h
+  * drake/multibody/rigid_body_plant/contact_detail.h
+  * drake/multibody/rigid_body_plant/contact_force.h
+  * drake/multibody/rigid_body_plant/contact_info.h
+  * drake/multibody/rigid_body_plant/contact_resultant_force_calculator.h
+  * drake/multibody/rigid_body_plant/contact_results.h
+  * drake/multibody/rigid_body_plant/contact_results_to_lcm.h
+  * drake/multibody/rigid_body_plant/create_load_robot_message.h
+  * drake/multibody/rigid_body_plant/drake_visualizer.h
+  * drake/multibody/rigid_body_plant/frame_visualizer.h
+  * drake/multibody/rigid_body_plant/kinematics_results.h
+  * drake/multibody/rigid_body_plant/point_contact_detail.h
+  * drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h
+  * drake/multibody/rigid_body_plant/rigid_body_plant.h
+  * drake/multibody/rigid_body_plant/test/contact_result_test_common.h
+  * drake/multibody/rigid_body_plant/viewer_draw_translator.h
+  * drake/multibody/rigid_body_tree_alias_groups.h
+  * drake/multibody/rigid_body_tree.cc
+  * drake/multibody/rigid_body_tree_construction.h
+  * drake/multibody/rigid_body_tree.h
+  * drake/multibody/shapes/drake_shapes.h
+  * drake/multibody/shapes/element.h
+  * drake/multibody/shapes/geometry.h
+  * drake/multibody/shapes/visual_element.h
+  * drake/multibody/test/rigid_body_actuator_compare_to_clone.h
+  * drake/multibody/test/rigid_body_compare_to_clone.h
+  * drake/multibody/test/rigid_body_frame_compare_to_clone.h
+  * drake/multibody/test/rigid_body_loop_compare_to_clone.h
+  * drake/multibody/test/rigid_body_tree/rigid_body_tree_compare_to_clone.h
+  * drake/systems/controllers/rbt_inverse_dynamics_controller.h
+  * drake/systems/controllers/rbt_inverse_dynamics.h
+  * drake/systems/controllers/test/rbt_compute_torque.h
+  * drake/systems/estimators/dev/rotation.h
+  * drake/systems/rendering/drake_visualizer_client.h
+  * drake/systems/sensors/accelerometer.h
+  * drake/systems/sensors/accelerometer_output.h
+  * drake/systems/sensors/depth_sensor.h
+  * drake/systems/sensors/depth_sensor_output.h
+  * drake/systems/sensors/depth_sensor_specification.h
+  * drake/systems/sensors/depth_sensor_to_lcm_point_cloud_message.h
+  * drake/systems/sensors/depth_shaders.h
+  * drake/systems/sensors/gyroscope.h
+  * drake/systems/sensors/gyroscope_output.h
+  * drake/systems/sensors/rgbd_camera.h
+  * drake/systems/sensors/rgbd_renderer.h
+  * drake/systems/sensors/rgbd_renderer_ospray.h
+  * drake/systems/sensors/rgbd_renderer_vtk.h
+  * drake/systems/sensors/test/accelerometer_test/accelerometer_example_diagram.h
+  * drake/systems/sensors/test/accelerometer_test/accelerometer_test_logger.h
+  * drake/systems/sensors/test/rgbd_renderer_test_util.h
+  * drake/systems/trajectory_optimization/generalized_constraint_force_evaluator.h
+  * drake/systems/trajectory_optimization/joint_limit_constraint_force_evaluator.h
+  * drake/systems/trajectory_optimization/position_constraint_force_evaluator.h
+  * drake/systems/trajectory_optimization/test/generalized_constraint_force_evaluator_test_util.h
+  * drake/util/drakeGeometryUtil.h
+  * drake/util/drakeUtil.h
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -224,3 +339,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 324f5746358be0f78bda73b722ba7ae749ea1557 (inclusive).
+
