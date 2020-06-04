@@ -222,8 +222,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
 * tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)  # Add a tutorial on updating costs/constraints in mathematical program.
 * examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
-* systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_)
-* systems: Revert "systems: Use Eigen's formatting in VectorBase::operator<<() output (#13365)" (`#13384`_)  # This reverts commit ac9316f3c8addd0bd692f669b6d4ff07347ef8c0.
 * examples: manipulation_station: Add initialization regression tests (`#13380`_)
 * multibody: Implements spatial velocity and acceleration ports (`#13364`_)
 * systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
@@ -240,9 +238,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
 * systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
 * tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
-* systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13464`_)  # This restores PR #13365 This reverts commit fca17492ebb64e1d634d3422e376769e99238a0d (#13384) Co-authored-by: Andres Valenzuela <andres.valenzuela@tri.global>
+* systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_, `#13384`_, `#13464`_)
 * geometry: geometry: Add basic Rgba class (`#13441`_)
-* multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)  # Fixes #13471
+* multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)
 * systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
 * multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
 * geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
