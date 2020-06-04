@@ -100,12 +100,28 @@ Fixes
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* Add new Ubuntu dependency on pygame for use in examples (`#13381`_, `#13422`_)
+* Add new Ubuntu dependency on libclang-9-dev (`#13432`_, `#13437`_)
+* Add new Ubuntu dependency on clang-9 (`#13477`_)
+* Use clang-format@9 on macOS (`#13323`_)
+* Upgrade bazel_skylib to latest release 1.0.2 (`#13429`_)
+* Upgrade fmt to latest release 6.2.1 (`#13431`_)
+* Upgrade libsdformat to latest release 9.2.0 (`#13201`_)
+* Upgrade meshcat to latest commit (`#13433`_)
+* Upgrade pycodestyle to latest release 2.6.0 (`#13430`_)
+* Upgrade rules_python to latest release 0.0.2 (`#13429`_)
+* Upgrade spdlog to latest release 1.6.1 (`#13431`_)
+* Upgrade vtk's embedded embree to 3.5.2 (`#13283`_)
+* Upgrade vtk's embedded ospray to 1.8.5 (`#13283`_)
+* Rebuild drake-visualizer binaries (`#13283`_)
+* Do not use pkg-config to find libjpeg and yaml-cpp (`#13335`_)
+* On Ubuntu, the Drake APT site is no longer added by default (`#13462`_)
+* On Ubuntu, kcov-35 is no longer installed by default (`#13462`_)
 * Continue Ubuntu 20.04 (Focal Fossa) accomodations; full support is not yet
   complete (`#13266`_, `#13283`_, `#13306`_, `#13335`_, `#13339`_, `#13345`_,
-  `#13346`_, `#13348`_, `#13353`_, `#13357`_, `#13360`_, `#13383`_, `#13385`_,
-  `#13425`_, `#13432`_, `#13436`_, `#13437`_, `#13449`_, `#13450`_, `#13469`_,
-  `#13477`_, `#13486`_)
+  `#13346`_, `#13348`_, `#13353`_, `#13357`_, `#13360`_, `#13366`_, `#13383`_,
+  `#13385`_, `#13400`_, `#13425`_, `#13432`_, `#13436`_, `#13437`_, `#13449`_,
+  `#13450`_, `#13469`_, `#13477`_, `#13486`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -144,22 +160,18 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
 * solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
 * bindings: py mathematical_program: Add friendlier-er errors for dtype mismatch (`#13234`_)
-* tools: tools: Add xacro helper macros (`#13304`_)
+* tools: tools: Add xacro helper macros (`#13304`_, `#13319`_)
 * multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
 * bindings: autodiffutils_test: Use numpy version check for error message (`#13318`_)
 * lcm: lcm: Add lcm_messages target (`#13311`_)
 * lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
-* tools: tools: Remove stray xacro console output (`#13319`_)
-* tools: workspace: Upgrade libsdformat to latest release 9.2.0 (`#13201`_)  # Improve traceability comments on Converter cherry-pick patch.
 * geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
-* setup,tools: setup: use clang-format@9 and other cleanup (`#13323`_)
 * systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
 * attic,examples: attic: Add deprecation warnings (`#13315`_)  # Remove attic symbols from pydrake.all; users must import pydrake.attic.all to use them now.
 * attic,doc,examples,multibody: [doc] Remove the incorrect drakeURDF.[xpr|xsd] (`#13326`_)  # The schema defined in drakeURDF.xsd is significantly out of date. We don't have the time or resources to bring it up to date. For now, we'll just remove it so as to avoid the suggestion that it is reliable. It can always be resurrected from git when it becomes a priority. This also removes references to the file.
 * attic,geometry,systems: Deprecate the Isometry3 in systems/rendering (`#13327`_)  # - PoseBundle::{set|get)_pose deprecated; replaced with (set_)transform() - get_pose() no longer returns a reference to an Isometry3. - PoseVector::get_isometry deprecated; replaced with transform() - Also added set_transform() based on old TODO. - Multiple downstream consumers (and their tests) updated to use new API. - Bindings updated (with deprecations) and test - pose_bundle_to_draw_message_test
 * geometry: query_object: Update doc to warn about ignoring Mesh shapes (`#13331`_)  # Clarify that this does not apply to the Convex shape class
 * manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)  # I suspect this has been present since the initial converstion from RBT->MBP.
-* tools: Add binaries for drake-visualizer and vtk for focal and update binaries on bionic (`#13283`_)
 * examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
 * examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
 * manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
@@ -168,7 +180,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: py geometry, mbp: Ensure index wrappers use `std::hash<>` (`#13342`_)
 * bindings: py geom, mbp: Bind miscellaneous missing methods (`#13342`_)
 * solvers: Allow using Binding<C> as key in unordered_map (`#13322`_)  # Allow using Binding<C> as key in unordered_map. Add operator==, operator!= and hash function for Binding<C>
-* tools: Do not use pkg-config to find libjpeg and yaml-cpp (`#13335`_)
 * geometry: geometry: Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * bindings: py geometry: Bind SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * bindings: py geometry: Bind Mesh and Convex accessors (`#13352`_)
@@ -188,7 +199,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * solvers: Get dual solution for OSQP solver (`#13347`_)
 * .binder: binder: Update local instructions to use `--rm -it` (`#13373`_)  # This is easier to stop
 * examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
-* tools: Use static library for yaml-cpp on Focal due to hidden visibility patch (`#13366`_)
 * systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
 * tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)  # Add a tutorial on updating costs/constraints in mathematical program.
 * examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
@@ -203,16 +213,13 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * solvers: Add parsing of string options to SNOPT (`#13397`_)
 * solvers: Gurobi gets dual solution for QP and LP (`#13377`_)  # Gurobi returns dual solution for linear inequality/equality and bounding box constraints.
 * multibody: Migrating Jacobian tests (`#13390`_)  # Migrates MBT::CalcBiasTranslationalAcceleration() tests from MBTree to MBPlant tests.
-* tools: Fix python_direct_link target on Focal (`#13400`_)
 * solvers: Fix the CI failure for LPDualSolution1 (`#13404`_)
 * tools: pybind: Allow specifying copts (`#13419`_)  # Useful for passing `copts = ["-g", "-UNDEBUG"]`
 * bindings: py cpp_template: Enable deprecating instantiations (`#13410`_)
-* examples,setup,tools: workspace: Add dependency on pygame (`#13381`_)  # Co-authored-by: Josh Pieper <josh.pieper@tri.global>
 * bindings: py mbp: Bind accessors for inertias (`#13415`_)
 * attic: Disable global_inverse_kinematics_feasible_posture_test in debug (`#13412`_)  # This test consistently times out for everything-debug builds. As it is "attic + dev" code, switch off the test for debug builds.
 * multibody: Enable kinematics computations on models with zero dofs (`#13405`_)  # * Enables kinematics for models with zero dofs.
 * bindings: pydrake/*_extra.py: Ensure all files have consistent boilerplate comment (`#13420`_)
-* tools: workspace: Fix pypi_wheel support in release tooling (`#13422`_)  # This is a follow-up from 2b70de6f5114f74dde94f387f3e6591d1f687cb2.
 * bindings: py geometry: Bind HalfSpace.MakePose (`#13414`_)
 * multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
 * multibody: Implements spatial velocity and acceleration ports (`#13423`_)
@@ -225,10 +232,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: py systems: Bind Simulator.set_monitor (`#13413`_)
 * tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
 * bindings: py value: Allow binding Value<vector<T>> to Value[List[T]] (`#13408`_)
-* tools: workspace: Upgrade pycodestyle to latest release 2.6.0 (`#13430`_)  # Fix new style nits that it now flags.
-* common,tools: workspace: Upgrade fmt and spdlog to latest release (`#13431`_)  # Upgrade fmt to latest release 6.2.1 Upgrade spdlog to latest release 1.6.1
-* tools: workspace: Upgrade imported bazel rules to latest (`#13429`_)  # Upgrade bazel_skylib to latest release 1.0.2. Upgrade rules_python to latest release 0.0.2.
-* setup: Add libclang-9-dev to prerequisites (`#13432`_)
 * common: value: Disallow cv/ref/array/pointer types (`#13444`_)
 * multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
 * systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
@@ -237,11 +240,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: py common: Use `py::object_api::get_type()`, not indirect Python C++ API (`#13455`_)
 * third_party: Ensure build fails if parsing headers with libclang fails (`#13451`_)
 * attic,common,examples,manipulation,tools: Remove deprecated code 2020-06-01 (`#13452`_)
-* doc,setup: setup: On Bionic, the kcov dependency is now opt-in (`#13462`_)  # This resolves the immediate problem of drake-apt.csail.mit.edu certificate "expiry" (for buggy clients). However, it is also a useful improvement towards optional prerequisites. While the mechanism of this may change (--with-kcov spelling), the idea that extra developer tools should be opt-in is one that should remain.
 * bindings: py systems: Make BasicVector use Pythonic string formatting (`#13454`_)
 * multibody: multibody: Put plotting scripts under test (`#13463`_)
 * multibody: multibody: Regenerate images (`#13463`_)
-* setup,tools: mkdoc: switch to libclang-9-dev on Ubuntu (`#13437`_)
 * multibody: mbp images: Use sys.executable for macOS (`#13468`_)
 * bindings: pydrake: Make all_test catch warnings rather than promote to errors (`#13467`_)
 * systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13464`_)  # This restores PR #13365 This reverts commit fca17492ebb64e1d634d3422e376769e99238a0d (#13384) Co-authored-by: Andres Valenzuela <andres.valenzuela@tri.global>
@@ -249,12 +250,10 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
 * solvers: Add dual solution for IpoptSolver (`#13402`_)
 * multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)  # Fixes #13471
-* tools: Upgrade meshcat to latest commit (`#13433`_)
 * systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
 * bindings: Add bindings for SpatialInertia methods (`#13478`_)
 * multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
 * geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
-* setup,tools: Add clang-9 compiler to prerequisites (`#13477`_)
 * .editorconfig: Fix .editorconfig for Markdown, Bazel, and Python (`#13483`_)
 * geometry: [render] Move support functionality from dev into gl_renderer (`#13481`_)  # - Move shape meshes out of dev - Update build for the moved files.
 * bindings: py mbp, geometry: Bind __repr__ for indices + elements (`#13489`_)
