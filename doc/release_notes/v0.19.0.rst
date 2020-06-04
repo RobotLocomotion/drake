@@ -321,8 +321,14 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
-* attic,common,examples,manipulation,tools: Remove deprecated code 2020-06-01 (`#13452`_)
+* DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN (`#13452`_)
+* DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T (`#13452`_)
+* drake::examples::kuka_iiwa_arm::EncodeKeyFrames (`#13452`_)
+* drake::examples::kuka_iiwa_arm::IiwaContactResultsToExternalTorque (`#13452`_)
+* drake::examples::kuka_iiwa_arm::VerifyIiwaTree (`#13452`_)
+* drake::manipulation::planner::ConstraintRelaxingIkRbt (`#13452`_)
+* drake::manipulation::util::ModelInstanceInfo (`#13452`_)
+* drake::manipulation::util::WorldSimTreeBuilder (`#13452`_)
 
 Notes
 -----
