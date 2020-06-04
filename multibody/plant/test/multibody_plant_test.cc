@@ -1424,13 +1424,20 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                                 kTolerance, MatrixCompareType::relative));
   }
 
-  // Verify we can retrieve friction coefficients.
-  EXPECT_TRUE(
-      plant.default_coulomb_friction(ground_id) == ground_friction);
-  EXPECT_TRUE(
-      plant.default_coulomb_friction(sphere1_id) == sphere1_friction);
-  EXPECT_TRUE(
-      plant.default_coulomb_friction(sphere2_id) == sphere2_friction);
+  // Verify we can retrieve friction coefficients, propagated through to SG.
+  const geometry::ProximityProperties& ground_props =
+      *scene_graph.model_inspector().GetProximityProperties(ground_id);
+  const geometry::ProximityProperties& sphere1_props =
+      *scene_graph.model_inspector().GetProximityProperties(sphere1_id);
+  const geometry::ProximityProperties& sphere2_props =
+      *scene_graph.model_inspector().GetProximityProperties(sphere2_id);
+
+  EXPECT_TRUE(ground_props.GetProperty<CoulombFriction<double>>(
+                  "material", "coulomb_friction") == ground_friction);
+  EXPECT_TRUE(sphere1_props.GetProperty<CoulombFriction<double>>(
+                  "material", "coulomb_friction") == sphere1_friction);
+  EXPECT_TRUE(sphere2_props.GetProperty<CoulombFriction<double>>(
+                  "material", "coulomb_friction") == sphere2_friction);
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph.
@@ -1900,14 +1907,6 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
-  for (const auto& link_name : {"link1", "link2", "link3"}) {
-    auto collision_geometries = plant_autodiff.GetCollisionGeometriesForBody(
-        plant_autodiff.GetBodyByName(link_name));
-    for (const auto& geometry : collision_geometries) {
-      EXPECT_EQ(plant_autodiff.default_coulomb_friction(geometry),
-                plant.default_coulomb_friction(geometry));
-    }
-  }
 
   // Make sure the geometry ports were included in the autodiffed plant.
   DRAKE_EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
