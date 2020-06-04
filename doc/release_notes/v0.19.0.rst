@@ -134,13 +134,10 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 324f5746358be0f78bda73b722ba7ae749ea1557 (inclusive).
 
-* doc: Add mathematicalprogram component to issues.rst (`#13305`_)
 * attic,geometry,multibody,systems: Remove redundant and pessimizing return std::moves (`#13306`_)
 * geometry: [geometry] Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)  # * Support greater RenderEngineVtk and ShapeReifier customizations 1. GeometryState can provide pointers to RenderEngine implementations - It is generally accessed via QueryObject. 2. RenderEngineVtk is changed to be sub-classable - Copy constructor moved from private to protected. - Final designation has been removed. - It gives derived classes access to the actors. - Fixes a bug that previously went unnoticed; `SetDefaultLightPosition` didn't declare override of the virtual RenderEngine method. 3. Allow for customization of unsupported geometry messages in ShapeReifier. TODO: Consider python bindings
 * manipulation: manipulation: De-duplicate model preview functionality (`#13148`_)  # Add explicit --find_runfiles
-* doc: doc: Add release notes v0.18.0 (`#13261`_)
 * geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
-* doc: doc issues: Add pydrake and jupyter components (`#13208`_)
 * solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
 * bindings: py mathematical_program: Add friendlier-er errors for dtype mismatch (`#13234`_)
 * tools: tools: Add xacro helper macros (`#13304`_)
@@ -148,7 +145,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: autodiffutils_test: Use numpy version check for error message (`#13318`_)
 * lcm: lcm: Add lcm_messages target (`#13311`_)
 * lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
-* common,doc: doc python: Update debugging tips (`#13238`_)  # Update drake_py_unittest_main to reflect these tips
 * tools: tools: Remove stray xacro console output (`#13319`_)
 * tools: workspace: Upgrade libsdformat to latest release 9.2.0 (`#13201`_)  # Improve traceability comments on Converter cherry-pick patch.
 * geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
@@ -163,7 +159,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * tools: Add binaries for drake-visualizer and vtk for focal and update binaries on bionic (`#13283`_)
 * examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
 * examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
-* multibody: doc: Fix typo in Contact Modeling section (`#13329`_)
 * manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
 * multibody,tutorials: Remove use of XXX in comments (`#13341`_)  # Programmers conventionally use "Foo" as the stand-in name.
 * attic: Fix pessimizing-move warning (`#13346`_)
@@ -186,9 +181,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: pydrake: Added some simulator bindings (`#13343`_)
 * examples: Strandbeest example (`#13302`_)  # Adds strandbeest example.
 * bindings: py mbp: Bind MultibodyPlant.time_step() (`#13355`_)
-* doc: doc: Minor fix to Python debugging tips (`#13356`_)
 * bindings: Added make opaque call for ExternallyAppliedSpatialForce (`#13359`_)
-* geometry: geometry: Add GeometryInstance::set_name (`#13351`_)  # doc: Add xref to canonicalized_geometry_names
 * bindings: py geometry: Bind GeometryInstance.set_name (`#13351`_)
 * bindings: Ignore self-assign-overloaded warning (`#13357`_)
 * common,examples,geometry,manipulation,math,multibody,solvers,tools: Fix range-loop-construct warnings (`#13357`_)
@@ -208,12 +201,10 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
 * systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_)
 * systems: Revert "systems: Use Eigen's formatting in VectorBase::operator<<() output (#13365)" (`#13384`_)  # This reverts commit ac9316f3c8addd0bd692f669b6d4ff07347ef8c0.
-* doc,tutorials: doc: Update tutorials section to mention nbviewer (`#13386`_)  # Use source tree directory names more explicitly README: Cross-reference docs
 * examples: manipulation_station: Add initialization regression tests (`#13380`_)
 * bindings: pydrake: Collision filtering bindings (`#13358`_)  # Add pydrake bindings for GeometrySet, CollectRegisteredGeometries, collision filtering API.
 * multibody: Implements spatial velocity and acceleration ports (`#13364`_)
 * systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
-* doc: pydrake doc: Add pointers to deprecation code (`#13389`_)  # doc: For deprecation, add concrete pointers to C++ and Python code
 * multibody: Revert "Implements spatial velocity and acceleration ports" (`#13399`_)  # This reverts commit 546c40294430b1e2b3e1ce5e9b398853008e5f8c.
 * examples,manipulation: manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)  # This changes the iiwa- and wsg-related classes; similar classes such as jaco are unchanged.
 * solvers: Add parsing of string options to SNOPT (`#13397`_)
