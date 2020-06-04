@@ -68,6 +68,7 @@ Multibody Dynamics
 New features
 
 * TBD
+* attic,geometry,systems: Deprecate the Isometry3 in systems/rendering (`#13327`_)  # - PoseBundle::{set|get)_pose deprecated; replaced with (set_)transform() - get_pose() no longer returns a reference to an Isometry3. - PoseVector::get_isometry deprecated; replaced with transform() - Also added set_transform() based on old TODO. - Multiple downstream consumers (and their tests) updated to use new API. - Bindings updated (with deprecations) and test - pose_bundle_to_draw_message_test
 
 * New hydroelastic contact model in progress
 
@@ -107,7 +108,7 @@ Build system and dependencies
 * Upgrade bazel_skylib to latest release 1.0.2 (`#13429`_)
 * Upgrade fmt to latest release 6.2.1 (`#13431`_)
 * Upgrade libsdformat to latest release 9.2.0 (`#13201`_)
-* Upgrade meshcat to latest commit (`#13433`_)
+* Upgrade meshcat to latest commit (`#13433`_, `#13467`_)
 * Upgrade pycodestyle to latest release 2.6.0 (`#13430`_)
 * Upgrade rules_python to latest release 0.0.2 (`#13429`_)
 * Upgrade spdlog to latest release 1.6.1 (`#13431`_)
@@ -127,11 +128,15 @@ Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 * TBD
+* attic,examples: attic: Add deprecation warnings (`#13315`_)  # Remove attic symbols from pydrake.all; users must import pydrake.attic.all to use them now.
+* attic,geometry,systems: Deprecate the Isometry3 in systems/rendering (`#13327`_)  # - PoseBundle::{set|get)_pose deprecated; replaced with (set_)transform() - get_pose() no longer returns a reference to an Isometry3. - PoseVector::get_isometry deprecated; replaced with transform() - Also added set_transform() based on old TODO. - Multiple downstream consumers (and their tests) updated to use new API. - Bindings updated (with deprecations) and test - pose_bundle_to_draw_message_test
+* multibody: Update/enhance API, notation, and documentation for CalcBiasSpatialAcceleration() and CalcBiasTranslationalAcceleration() (`#13063`_)  # Deprecate CalcBiasForSpatialJacobian() and CalcBiasForTranslationalJacobian().
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * TBD
+* attic,common,examples,manipulation,tools: Remove deprecated code 2020-06-01 (`#13452`_)
 
 Notes
 -----
@@ -166,9 +171,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
 * geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
 * systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
-* attic,examples: attic: Add deprecation warnings (`#13315`_)  # Remove attic symbols from pydrake.all; users must import pydrake.attic.all to use them now.
 * attic,doc,examples,multibody: [doc] Remove the incorrect drakeURDF.[xpr|xsd] (`#13326`_)  # The schema defined in drakeURDF.xsd is significantly out of date. We don't have the time or resources to bring it up to date. For now, we'll just remove it so as to avoid the suggestion that it is reliable. It can always be resurrected from git when it becomes a priority. This also removes references to the file.
-* attic,geometry,systems: Deprecate the Isometry3 in systems/rendering (`#13327`_)  # - PoseBundle::{set|get)_pose deprecated; replaced with (set_)transform() - get_pose() no longer returns a reference to an Isometry3. - PoseVector::get_isometry deprecated; replaced with transform() - Also added set_transform() based on old TODO. - Multiple downstream consumers (and their tests) updated to use new API. - Bindings updated (with deprecations) and test - pose_bundle_to_draw_message_test
 * geometry: query_object: Update doc to warn about ignoring Mesh shapes (`#13331`_)  # Clarify that this does not apply to the Convex shape class
 * manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)  # I suspect this has been present since the initial converstion from RBT->MBP.
 * examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
@@ -194,7 +197,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples,systems: primitives: Offer DiscreteDerivative option to disable transient (`#13336`_)
 * examples: Updates rolling sphere demo configurability (`#13349`_)  # Use MakeSimulatorFromGflags() and PrintSimulatorStatistics()
 * multibody: Updates the developer notes of MBP::RegisterGeometry() (`#13014`_)  # * Updates the developer notes of MBP::RegisterGeometry() to reflect the fact that all bodies have a FrameId.
-* multibody: Update/enhance API, notation, and documentation for CalcBiasSpatialAcceleration() and CalcBiasTranslationalAcceleration() (`#13063`_)  # Deprecate CalcBiasForSpatialJacobian() and CalcBiasForTranslationalJacobian().
 * solvers: Get dual solution for OSQP solver (`#13347`_)
 * .binder: binder: Update local instructions to use `--rm -it` (`#13373`_)  # This is easier to stop
 * examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
@@ -236,12 +238,8 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
 * bindings: py common: Use `py::object_api::get_type()`, not indirect Python C++ API (`#13455`_)
 * third_party: Ensure build fails if parsing headers with libclang fails (`#13451`_)
-* attic,common,examples,manipulation,tools: Remove deprecated code 2020-06-01 (`#13452`_)
 * bindings: py systems: Make BasicVector use Pythonic string formatting (`#13454`_)
-* multibody: multibody: Put plotting scripts under test (`#13463`_)
-* multibody: multibody: Regenerate images (`#13463`_)
-* multibody: mbp images: Use sys.executable for macOS (`#13468`_)
-* bindings: pydrake: Make all_test catch warnings rather than promote to errors (`#13467`_)
+* multibody: multibody: Put plotting scripts under test (`#13463`_, `#13468`_)
 * systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13464`_)  # This restores PR #13365 This reverts commit fca17492ebb64e1d634d3422e376769e99238a0d (#13384) Co-authored-by: Andres Valenzuela <andres.valenzuela@tri.global>
 * geometry: geometry: Add basic Rgba class (`#13441`_)
 * bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
