@@ -12,7 +12,7 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
@@ -307,10 +307,35 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(geometry.perception_properties(),
                               mut.PerceptionProperties)
 
+    def test_rgba_api(self):
+        r, g, b, a = 0.75, 0.5, 0.25, 1.
+        color = mut.Rgba(r=r, g=g, b=b)
+        self.assertEqual(color.r(), r)
+        self.assertEqual(color.g(), g)
+        self.assertEqual(color.b(), b)
+        self.assertEqual(color.a(), a)
+        self.assertEqual(color, mut.Rgba(r, g, b, a))
+        self.assertNotEqual(color, mut.Rgba(r, g, b, 0.))
+        self.assertEqual(
+            repr(color),
+            "Rgba(r=0.75, g=0.5, b=0.25, a=1.0)")
+        color.set(r=1., g=1., b=1., a=0.)
+        self.assertEqual(color, mut.Rgba(1., 1., 1., 0.))
+
     def test_geometry_properties_api(self):
-        self.assertIsInstance(
-            mut.MakePhongIllustrationProperties([0, 0, 1, 1]),
-            mut.IllustrationProperties)
+        # Test perception/ illustration properties (specifically Rgba).
+        test_vector = [0., 0., 1., 1.]
+        test_color = mut.Rgba(0., 0., 1., 1.)
+        phong_props = mut.MakePhongIllustrationProperties(test_vector)
+        self.assertIsInstance(phong_props, mut.IllustrationProperties)
+        actual_color = phong_props.GetProperty("phong", "diffuse")
+        self.assertEqual(actual_color, test_color)
+        # Ensure that we can create it manually.
+        phong_props = mut.IllustrationProperties()
+        phong_props.AddProperty("phong", "diffuse", test_color)
+        actual_color = phong_props.GetProperty("phong", "diffuse")
+        self.assertEqual(actual_color, test_color)
+        # Test proximity properties.
         prop = mut.ProximityProperties()
         self.assertEqual(str(prop), "[__default__]")
         default_group = prop.default_group_name()
@@ -463,3 +488,10 @@ class TestGeometry(unittest.TestCase):
         sg.ExcludeCollisionsBetween(sg_context, geometries, geometries)
         sg.ExcludeCollisionsWithin(geometries)
         sg.ExcludeCollisionsWithin(sg_context, geometries)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_value_instantiations(self, T):
+        Value[mut.FramePoseVector_[T]]
+        Value[mut.QueryObject_[T]]
+        Value[mut.Rgba]
+        Value[mut.render.RenderLabel]

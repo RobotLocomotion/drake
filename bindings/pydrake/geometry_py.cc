@@ -524,8 +524,29 @@ void DoScalarDependentDefinitions(py::module m, T) {
 void DoScalarIndependentDefinitions(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::geometry;
-
   constexpr auto& doc = pydrake_doc.drake.geometry;
+
+  {
+    using Class = Rgba;
+    constexpr auto& cls_doc = doc.Rgba;
+    py::class_<Class>(m, "Rgba", cls_doc.doc)
+        .def(py::init<double, double, double, double>(), py::arg("r"),
+            py::arg("g"), py::arg("b"), py::arg("a") = 1., cls_doc.ctor.doc)
+        .def("r", &Class::r, cls_doc.r.doc)
+        .def("g", &Class::g, cls_doc.g.doc)
+        .def("b", &Class::b, cls_doc.b.doc)
+        .def("a", &Class::a, cls_doc.a.doc)
+        .def("set", &Class::set, py::arg("r"), py::arg("g"), py::arg("b"),
+            py::arg("a") = 1., cls_doc.set.doc)
+        .def(py::self == py::self)
+        .def(py::self != py::self)
+        .def("__repr__", [](const Class& self) {
+          return py::str("Rgba(r={}, g={}, b={}, a={})")
+              .format(self.r(), self.g(), self.b(), self.a());
+        });
+    AddValueInstantiation<Rgba>(m);
+  }
+
   BindIdentifier<SourceId>(m, "SourceId", doc.SourceId.doc);
   BindIdentifier<FrameId>(m, "FrameId", doc.FrameId.doc);
   BindIdentifier<GeometryId>(m, "GeometryId", doc.GeometryId.doc);
