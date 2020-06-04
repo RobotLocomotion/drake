@@ -130,7 +130,7 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Add new Ubuntu dependency on pygame for use in examples (`#13381`_, `#13422`_)
-* Add new Ubuntu dependency on libclang-9-dev (`#13432`_, `#13437`_)
+* Add new Ubuntu dependency on libclang-9-dev (`#13432`_, `#13437`_, `#13451`_)
 * Add new Ubuntu dependency on clang-9 (`#13477`_)
 * Use clang-format@9 on macOS (`#13323`_)
 * Upgrade bazel_skylib to latest release 1.0.2 (`#13429`_)
@@ -193,7 +193,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
 * solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
 * multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
-* lcm: lcm: Add lcm_messages target (`#13311`_)
+* lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
 * lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
 * geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
 * systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
@@ -203,8 +203,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
 * examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
 * manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
-* multibody,tutorials: Remove use of XXX in comments (`#13341`_)  # Programmers conventionally use "Foo" as the stand-in name.
-* multibody: mbp: Add (and bind) GetDefaultFreeBodyPose (`#13342`_)
+* multibody: mbp: Add GetDefaultFreeBodyPose (`#13342`_)
 * solvers: Allow using Binding<C> as key in unordered_map (`#13322`_)  # Allow using Binding<C> as key in unordered_map. Add operator==, operator!= and hash function for Binding<C>
 * geometry: geometry: Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * geometry: [dev] Add HalfSpace and Box generation to shape_meshes.* (`#13334`_)  # - Modify RenderEngineGl to make use of the shapes.
@@ -214,7 +213,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples: Updates rolling sphere demo configurability (`#13349`_)  # Use MakeSimulatorFromGflags() and PrintSimulatorStatistics()
 * multibody: Updates the developer notes of MBP::RegisterGeometry() (`#13014`_)  # * Updates the developer notes of MBP::RegisterGeometry() to reflect the fact that all bodies have a FrameId.
 * solvers: Get dual solution for OSQP solver (`#13347`_)
-* .binder: binder: Update local instructions to use `--rm -it` (`#13373`_)  # This is easier to stop
 * examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
 * systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
 * tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)  # Add a tutorial on updating costs/constraints in mathematical program.
@@ -241,8 +239,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
 * systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
 * tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
-* third_party: Ensure build fails if parsing headers with libclang fails (`#13451`_)
-* multibody: multibody: Put plotting scripts under test (`#13463`_, `#13468`_)
 * systems: systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13464`_)  # This restores PR #13365 This reverts commit fca17492ebb64e1d634d3422e376769e99238a0d (#13384) Co-authored-by: Andres Valenzuela <andres.valenzuela@tri.global>
 * geometry: geometry: Add basic Rgba class (`#13441`_)
 * solvers: Add dual solution for IpoptSolver (`#13402`_)
@@ -250,5 +246,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
 * multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
 * geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
-* .editorconfig: Fix .editorconfig for Markdown, Bazel, and Python (`#13483`_)
 * geometry: [render] Move support functionality from dev into gl_renderer (`#13481`_)  # - Move shape meshes out of dev - Update build for the moved files.
