@@ -520,7 +520,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       plant->SetDefaultPose(*link X_WLdesired);
     }
     for (auto* frame : GetModelFrames(plant, model)) {
-      interface_model->AddFrame(sdf::InterfaceLink(frame->name()));
+      interface_model->AddFrame(sdf::InterfaceFrame(
+          frame->name(), attached_to_frame, X_PF));
     }
     if (model == main_model_instance) {
       main_interface_model = interface_model;
