@@ -195,19 +195,20 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
+* drake::manipulation::kuka_iiwa::IiwaCommandReceiver::get_input_port (`#13340`_)
 * drake::manipulation::kuka_iiwa::IiwaCommandReceiver::set_initial_position (`#13340`_)
 * drake::manipulation::schunk_wsg::SchunkWsgPositionController::set_initial_position (`#13340`_)
 * drake::multibody::MultibodyPlant::CalcBiasForJacobianSpatialVelocity (`#13063`_)
 * drake::multibody::MultibodyPlant::CalcBiasForJacobianTranslationalVelocity (`#13063`_)
+* drake::solvers::SolverBase one constructor (`#13279`_)
+* drake::systems::estimators::LuenbergerObserver one constructor (`#13307`_)
 * drake::systems::rendering::PoseBundle::get_pose (`#13327`_)
 * drake::systems::rendering::PoseBundle::set_pose (`#13327`_)
 * drake::systems::rendering::PoseVector::get_isometry (`#13327`_)
+* pydrake.multibody.VectorExternallyAppliedSpatialForced (`#13407`_)
 * pydrake.systems.rendering.PoseBundle.get_pose (`#13327`_)
 * pydrake.systems.rendering.PoseBundle.set_pose (`#13327`_)
 * pydrake.systems.rendering.PoseVector.get_isometry (`#13327`_)
-* TBD (`#13407`_)
-* TBD (`#13307`_)
-* TBD (`#13279`_)
 * All Python modules under pydrake.attic.* (`#13315`_)
 * All C++ headers in the attic (`#13315`_):
 
