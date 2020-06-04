@@ -20,8 +20,8 @@ Announcements
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
 
-* A new tutorial on updating costs/constraints in mathematical program is
-  available (`#13328`_).
+* A new tutorial on updating costs/constraints in mathematical program is available (`#13328`_).
+* A Strandbeest example is available (`#13302`_).
 
 Breaking changes since v0.18.0
 ------------------------------
@@ -45,6 +45,7 @@ New features
 
 * Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)
 * Use Eigen's formatting in VectorBase::operator<<() (`#13365`_, `#13384`_, `#13464`_)
+* TBD Offer DiscreteDerivative option to disable transient (`#13336`_)
 
 Fixes
 
@@ -110,23 +111,14 @@ d PrintSimulatorStatistics()
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
-* common: value: Disallow cv/ref/array/pointer types (`#13444`_)
-* tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
-* tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
+* common: Disallow Value<T> cv/ref/array/pointer types (`#13444`_)
+* drake_visualizer: Trim clipping range to avoid rendering artifacts (`#13447`_)
+* drake_visualizer: Do not prevent pydrake from appearing on the import path (`#13428`_)
 * lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
-* lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
-* examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
 * examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
-* examples: Strandbeest example (`#13302`_)  # Adds strandbeest example.
-* examples,systems: primitives: Offer DiscreteDerivative option to disable transient (`#13336`_)
-* examples: Updates rolling sphere demo configurability (`#13349`_)  # Use MakeSimulatorFromGflags() an* examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
-* examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
-* examples: manipulation_station: Add initialization regression tests (`#13380`_)
-* examples,manipulation: manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)  # This changes the iiwa- and wsg-related classes; similar classes such as jaco are unchanged.
-* manipulation: manipulation: De-duplicate model preview functionality (`#13148`_)  # Add explicit --find_runfiles
-* manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)  # I suspect this has been present since the initial converstion from RBT->MBP.
-* manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
+* manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)
+* manipulation: Check for whole default message, not just utime==0 (`#13311`_)
+* manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
