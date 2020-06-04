@@ -223,16 +223,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)  # Add a tutorial on updating costs/constraints in mathematical program.
 * examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
 * examples: manipulation_station: Add initialization regression tests (`#13380`_)
-* multibody: Implements spatial velocity and acceleration ports (`#13364`_)
 * systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
-* multibody: Revert "Implements spatial velocity and acceleration ports" (`#13399`_)  # This reverts commit 546c40294430b1e2b3e1ce5e9b398853008e5f8c.
 * examples,manipulation: manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)  # This changes the iiwa- and wsg-related classes; similar classes such as jaco are unchanged.
-* multibody: Migrating Jacobian tests (`#13390`_)  # Migrates MBT::CalcBiasTranslationalAcceleration() tests from MBTree to MBPlant tests.
-* attic: Disable global_inverse_kinematics_feasible_posture_test in debug (`#13412`_)  # This test consistently times out for everything-debug builds. As it is "attic + dev" code, switch off the test for debug builds.
-* multibody: Enable kinematics computations on models with zero dofs (`#13405`_)  # * Enables kinematics for models with zero dofs.
+* multibody: Enable kinematics computations on models with zero dofs (`#13405`_)
 * multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
-* multibody: Implements spatial velocity and acceleration ports (`#13423`_)
-* multibody: Move CalcBiasSpatialAcceleration() test from multibody_tree_test.cc to multibody_plant_jacobians_test.cc (`#13411`_)  # * Move test from multibody_tree_test.cc to multibody_plant_jacobians_test.cc
+* multibody: Implements spatial velocity and acceleration ports (`#13364`_, `#13399`_, `#13423`_)
 * tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
 * common: value: Disallow cv/ref/array/pointer types (`#13444`_)
 * multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
