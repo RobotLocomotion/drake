@@ -436,8 +436,8 @@ install(
     name = "install",
     install_tests = [":test/drake-lcm-spy_install_test.py"],
     targets = [
-        ":drake-lcm-spy-launcher",
         ":drake-lcm-spy",
+        ":drake-lcm-spy-launcher",
         ":lcmtypes_drake_java",
         ":lcmtypes_drake_py",
     ],
