@@ -365,29 +365,29 @@ enum class ContactModel {
  Before context creation an inspector can be retrieved directly from SceneGraph
  as:
  @code
- // For a body with GeometryId called geometry_id and a SceneGraph instance
- // called scene_graph.
- const geometry::SceneGraphInspector<double>& inspector =
+ // For a SceneGraph<T> instance called scene_graph.
+ const geometry::SceneGraphInspector<T>& inspector =
      scene_graph.model_inspector();
  @endcode
  After context creation, an inspector can be retrieved from the state
  stored in the context by the plant's geometry query input port:
  @code
- // For a body with GeometryId called geometry_id and a MultibodyPlant<double>
- // instance called mbp.
- const geometry::QueryObject<double>& query_object =
+ // For a MultibodyPlant<T> instance called mbp and a 
+ // Context<T> called context.
+ const geometry::QueryObject<T>& query_object =
      mbp.get_geometry_query_input_port()
-         .template Eval<geometry::QueryObject<double>>(context);
- const geometry::SceneGraphInspector<double>& inspector =
+         .template Eval<geometry::QueryObject<T>>(context);
+ const geometry::SceneGraphInspector<T>& inspector =
      query_object.inspector();
  @endcode
  Once an inspector is available, proximity properties can be retrieved as:
  @code
+ // For a body with GeometryId called geometry_id
  const geometry::ProximityProperties* props =
      inspector.GetProximityProperties(geometry_id);
- const CoulombFriction<double>& geometry_friction =
-     props->GetProperty<CoulombFriction<double>>("material",
-                                                 "coulomb_friction");
+ const CoulombFriction<T>& geometry_friction =
+     props->GetProperty<CoulombFriction<T>>("material",
+                                            "coulomb_friction");
  @endcode
 */
 /// @anchor mbp_adding_elements
@@ -3533,7 +3533,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       "default_coulomb_friction() will be removed. Please use SceneGraph which "
       "now stores friction properties in ProximityProperties. See the section "
       "\"Accessing point contact parameters\" in the documentation for "
-      "MultibodyPlant.h.")
+      "MultibodyPlant.")
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
     // TODO(amcastro-tri): This API might change or disappear completely as GS
