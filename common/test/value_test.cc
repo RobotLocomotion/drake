@@ -350,6 +350,21 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
   EXPECT_EQ("5,6", printable_erased->print());
 }
 
+// Tests an allowed type, and shows (by commented out examples) that pointers,
+// arrays, const, volatile, and reference types should be forbidden.
+GTEST_TEST(ValueTest, AllowedTypesMetaTest) {
+  using T = int;
+  Value<T>{};
+  // - cvref
+  // Value<const T>{};  // Triggers static assertion; fails without assertion.
+  // Value<volatile T>{};  // Trigger static assertion; works without assertion.
+  // Value<const T&>{};  // Triggers static assertion; fails without assertion.
+  // Value<T&&>{};  // Triggers static assertion; fails without assertion.
+  // - array / pointer
+  // Value<T*>{};  // Triggers static assertion; works without assertion.
+  // Value<T[2]>{};  // Triggers static assertion; fails without assertion.
+}
+
 // Check that TypeHash is extracting exactly the right strings from
 // __PRETTY_FUNCTION__.
 template <typename T>
@@ -391,6 +406,11 @@ constexpr bool kApple = false;
 constexpr bool kClang = true;
 #else
 constexpr bool kClang = false;
+#endif
+#if __GNUC__ >= 9
+constexpr bool kGcc9 = true;
+#else
+constexpr bool kGcc9 = false;
 #endif
 
 GTEST_TEST(TypeHashTest, WellKnownValues) {
@@ -463,7 +483,7 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
   // Templated on a value, but with the 'using NonTypeTemplateParameter'
   // decoration so that the hash works.
   const std::string kfoo =
-      kClang ? "drake::test::{anonymous}::AnonEnum::kFoo" : "0";
+      kClang || kGcc9 ? "drake::test::{anonymous}::AnonEnum::kFoo" : "0";
   CheckHash<NiceAnonEnumTemplate<AnonEnum::kFoo>>(
       "drake::test::{anonymous}::NiceAnonEnumTemplate<"
         "drake::test::{anonymous}::AnonEnum=" + kfoo + ">");

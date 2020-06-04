@@ -2,6 +2,11 @@
 # vi: set ft=cmake :
 
 cmake_minimum_required(VERSION 3.10)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  cmake_policy(VERSION 3.16)
+endif()
+
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
   LANGUAGES C CXX
@@ -76,10 +81,10 @@ else()
 
   # The supported releases should match those listed in both doc/developers.rst
   # and tools/workspace/os.bzl.
-  if(NOT UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
+  if(NOT UNIX_DISTRIBUTION_CODENAME MATCHES "^(bionic|focal)$")
     message(FATAL_ERROR
       "Release ${UNIX_DISTRIBUTION_CODENAME} is NOT supported. Please use "
-      "Ubuntu 18.04 (Bionic)."
+      "Ubuntu 18.04 (Bionic) or 20.04 (Focal)."
     )
   endif()
 endif()
@@ -204,10 +209,13 @@ set(CMAKE_CXX_STANDARD 17)
 # doc/developers.rst and tools/workspace/python/repository.bzl.
 if(APPLE)
   set(FIND_PROGRAM_PYTHON3_PATHS /usr/local/opt/python@3.8/bin)
-  set(SUPPORTED_PYTHON_VERSIONS 3.8)
 else()
   set(FIND_PROGRAM_PYTHON3_PATHS /usr/bin)
+endif()
+if(UNIX_DISTRIBUTION_CODENAME STREQUAL bionic)
   set(SUPPORTED_PYTHON_VERSIONS 3.6)
+else()
+  set(SUPPORTED_PYTHON_VERSIONS 3.8)
 endif()
 
 if(CMAKE_VERSION VERSION_LESS 3.12)

@@ -46,14 +46,6 @@ class ConstraintRelaxingIk {
   ConstraintRelaxingIk(const std::string& model_path,
                        const std::string& end_effector_link_name);
 
-
-  DRAKE_DEPRECATED("2020-06-01",
-                   "Use the two-argument constructor or "
-                   "ConstraintRelaxingIkRbt (which is also deprecated)")
-  ConstraintRelaxingIk(const std::string& model_path,
-                       const std::string& end_effector_link_name,
-                       const Isometry3<double>& base_to_world);
-
   /**
    * Sets end effector to @p link_name.
    */

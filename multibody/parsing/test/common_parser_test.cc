@@ -124,12 +124,16 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
       plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link1"));
   ASSERT_EQ(link1_collision_geometry_ids.size(), 2);
 
-  EXPECT_TRUE(
-      plant_.default_coulomb_friction(link1_collision_geometry_ids[0]) ==
-          CoulombFriction<double>(0.8, 0.3));
-  EXPECT_TRUE(
-      plant_.default_coulomb_friction(link1_collision_geometry_ids[1]) ==
-          CoulombFriction<double>(1.5, 0.6));
+  EXPECT_TRUE(scene_graph_.model_inspector()
+                  .GetProximityProperties(link1_collision_geometry_ids[0])
+                  ->GetProperty<CoulombFriction<double>>("material",
+                                                         "coulomb_friction") ==
+              CoulombFriction<double>(0.8, 0.3));
+  EXPECT_TRUE(scene_graph_.model_inspector()
+                  .GetProximityProperties(link1_collision_geometry_ids[1])
+                  ->GetProperty<CoulombFriction<double>>("material",
+                                                         "coulomb_friction") ==
+              CoulombFriction<double>(1.5, 0.6));
 
   const std::vector<GeometryId>& link2_collision_geometry_ids =
       plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link2"));
@@ -140,9 +144,11 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
   ASSERT_EQ(link3_collision_geometry_ids.size(), 1);
   // Verifies the default value of the friction coefficients when the user does
   // not specify them in the SDF file.
-  EXPECT_TRUE(
-      plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
-      default_friction());
+  EXPECT_EQ(scene_graph_.model_inspector()
+                .GetProximityProperties(link3_collision_geometry_ids[0])
+                ->GetProperty<CoulombFriction<double>>("material",
+                                                       "coulomb_friction"),
+            default_friction());
 }
 
 

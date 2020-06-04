@@ -23,10 +23,15 @@ EOF
 
 codename=$(lsb_release -sc)
 
-if [[ "${codename}" == 'bionic' ]]; then
-  # We only need this apt site for kcov-35 on Bionic.
+# On Bionic, developers must opt-in to kcov support; it comes in with the
+# non-standard package name kcov-35 via a Drake-specific PPA.
+if [[ "${codename}" == 'bionic' ]] &&
+    [[ "$#" -eq 1 ]] &&
+    [[ "$1" == "--with-kcov" ]]; then
   wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
   echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+  apt-get update
+  apt-get install --no-install-recommends kcov-35
 fi
 
 apt-get update

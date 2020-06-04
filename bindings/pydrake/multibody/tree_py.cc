@@ -35,6 +35,8 @@ namespace pydrake {
 using std::string;
 
 using math::RigidTransform;
+using multibody::SpatialAcceleration;
+using multibody::SpatialVelocity;
 
 constexpr char doc_iso3_deprecation[] = R"""(
 This API using Isometry3 is / will be deprecated soon with the resolution of
@@ -42,6 +44,16 @@ This API using Isometry3 is / will be deprecated soon with the resolution of
 )""";
 
 namespace {
+
+// Negative case for checking T::name().
+// https://stackoverflow.com/a/16000226/7829525
+template <typename T, typename = void>
+struct has_name_func : std::false_type {};
+
+// Positive case for checking T::name().
+template <typename T>
+struct has_name_func<T, decltype(std::declval<T>().name(), void())>
+    : std::true_type {};
 
 // Binds `MultibodyElement` methods.
 // N.B. We do this rather than inheritance because this template is more of a
@@ -56,7 +68,19 @@ void BindMultibodyElementMixin(PyClass* pcls) {
   auto& cls = *pcls;
   cls  // BR
       .def("index", &Class::index)
-      .def("model_instance", &Class::model_instance);
+      .def("model_instance", &Class::model_instance)
+      .def("__repr__", [](const Class& self) {
+        py::str cls_name = py::cast(&self).get_type().attr("__name__");
+        const int index = self.index();
+        const int model_instance = self.model_instance();
+        if constexpr (has_name_func<Class>::value) {
+          return py::str("<{} name='{}' index={} model_instance={}>")
+              .format(cls_name, self.name(), index, model_instance);
+        } else {
+          return py::str("<{} index={} model_instance={}>")
+              .format(cls_name, index, model_instance);
+        }
+      });
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -538,6 +562,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.ctor.doc_3args)
         .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
         .def("get_com", &Class::get_com, cls_doc.get_com.doc)
+        .def("CalcComMoment", &Class::CalcComMoment, cls_doc.CalcComMoment.doc)
         .def("get_unit_inertia", &Class::get_unit_inertia,
             cls_doc.get_unit_inertia.doc)
         .def("CalcRotationalInertia", &Class::CalcRotationalInertia,
@@ -545,7 +570,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("IsPhysicallyValid", &Class::IsPhysicallyValid,
             cls_doc.IsPhysicallyValid.doc)
         .def("CopyToFullMatrix6", &Class::CopyToFullMatrix6,
-            cls_doc.CopyToFullMatrix6.doc);
+            cls_doc.CopyToFullMatrix6.doc)
+        .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
+        .def("SetNaN", &Class::SetNaN, cls_doc.SetNaN.doc)
+        .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
+            cls_doc.ReExpress.doc)
+        .def("Shift", &Class::Shift, py::arg("p_PQ_E"), cls_doc.Shift.doc)
+        .def(py::self += py::self)
+        .def(py::self * SpatialAcceleration<T>())
+        .def(py::self * SpatialVelocity<T>());
   }
 }
 }  // namespace

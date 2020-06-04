@@ -32,10 +32,15 @@ void DefineFrameworkPyValues(py::module m) {
     DefineTemplateClassWithDefault<VectorBase<T>>(
         m, "VectorBase", GetPyParam<T>(), doc.VectorBase.doc)
         .def("__str__",
-            [](const VectorBase<T>& vec) {
-              std::ostringstream oss;
-              oss << vec;
-              return oss.str();
+            [](const VectorBase<T>& self) {
+              // Print out list directly.
+              return py::str(py::cast(self.CopyToVector()).attr("tolist")());
+            })
+        .def("__repr__",
+            [](const VectorBase<T>& self) {
+              py::handle cls = py::cast(&self, py_reference).get_type();
+              return py::str("{}({})").format(cls.attr("__name__"),
+                  py::cast(self.CopyToVector()).attr("tolist")());
             })
         .def("CopyToVector", &VectorBase<T>::CopyToVector,
             doc.VectorBase.CopyToVector.doc)

@@ -325,6 +325,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
            num_half_vie_iter_factorizations_;
   }
 
+  void DoResetCachedJacobianRelatedMatrices() final {
+      Jy_vie_.resize(0, 0);
+      iteration_matrix_vie_ = {};
+  }
+
   void DoResetImplicitIntegratorStatistics() final;
 
   static void ComputeAndFactorImplicitEulerIterationMatrix(

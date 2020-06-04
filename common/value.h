@@ -44,6 +44,9 @@ using ValueForwardingCtorEnabled = typename std::enable_if_t<
   // Disambiguate our copy implementation from our clone implementation.
   (choose_copy == std::is_copy_constructible<T>::value)>;
 
+template <typename T>
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
 }  // namespace internal
 #endif
 
@@ -145,9 +148,9 @@ class AbstractValue {
   const size_t type_hash_;
 };
 
-/// A container class for an arbitrary type T.  This class inherits from
-/// AbstractValue and therefore at runtime can be passed between functions
-/// without mentioning T.
+/// A container class for an arbitrary type T (with some restrictions).  This
+/// class inherits from AbstractValue and therefore at runtime can be passed
+/// between functions without mentioning T.
 ///
 /// Example:
 /// @code
@@ -164,11 +167,20 @@ class AbstractValue {
 /// (Advanced.) User-defined classes with additional features may subclass
 /// Value, but should take care to override Clone().
 ///
-/// @tparam T Must be copy-constructible or cloneable.
+/// @tparam T Must be copy-constructible or cloneable. Must not be a pointer,
+/// array, nor have const, volatile, or reference qualifiers.
 template <typename T>
 class Value : public AbstractValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Value)
+
+  static_assert(
+      std::is_same_v<T, internal::remove_cvref_t<T>>,
+      "T should not have const, volatile, or reference qualifiers.");
+
+  static_assert(
+      !std::is_pointer_v<T> && !std::is_array_v<T>,
+      "T cannot be a pointer or array.");
 
   /// Constructs a Value<T> using T's default constructor, if available.
   /// This is only available for T's that support default construction.
@@ -290,7 +302,7 @@ constexpr bool hash_template_argument_from_pretty_func(
     ++p;                         // Advance to the typename we want.
   }
 
-  // For enums, GCC's pretty says "(MyEnum)0" not "MyEnum::kFoo".  We'll strip
+  // For enums, GCC 7's pretty says "(MyEnum)0" not "MyEnum::kFoo".  We'll strip
   // off the useless parenthetical.
   if (discard_cast && (*p == '(')) {
     for (; (*p != ')'); ++p) {}  // Advance to the ')'.
@@ -312,6 +324,26 @@ constexpr bool hash_template_argument_from_pretty_func(
     if (*clang_iter == 0) {
       const char* const gcc_spelling = "{anonymous}";
       for (const char* c = gcc_spelling; *c; ++c) {
+        result->add_byte(*c);
+      }
+      p = pretty_iter;
+      continue;
+    }
+    // GCC distinguishes between "<unnamed>" and "{anonymous}", while Clang does
+    // not. Map "<unamed>" to "{anonymous}" for consistency and to avoid
+    // confusion with nested types ("<>") below.
+    const char* const unnamed_spelling = "<unnamed>";
+    const char* unnamed_iter = unnamed_spelling;
+    pretty_iter = p;
+    for (; *unnamed_iter != 0 && *pretty_iter != 0;
+         ++unnamed_iter, ++pretty_iter) {
+      if (*unnamed_iter != *pretty_iter) {
+        break;
+      }
+    }
+    if (*unnamed_iter == 0) {
+      const char* const anonymous_spelling = "{anonymous}";
+      for (const char* c = anonymous_spelling; *c; ++c) {
         result->add_byte(*c);
       }
       p = pretty_iter;

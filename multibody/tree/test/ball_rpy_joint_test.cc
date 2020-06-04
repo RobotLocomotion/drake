@@ -217,7 +217,7 @@ TEST_F(BallRpyJointTest, DefaultAngles) {
   // Constructor should set the default angle to Vector3d::Zero()
   EXPECT_EQ(joint_->get_default_angles(), default_angles);
 
-  // Setting a new default angle should propogate so that `get_default_angle()`
+  // Setting a new default angle should propagate so that `get_default_angle()`
   // remains correct.
   mutable_joint_->set_default_angles(new_default_angles);
   EXPECT_EQ(joint_->get_default_angles(), new_default_angles);

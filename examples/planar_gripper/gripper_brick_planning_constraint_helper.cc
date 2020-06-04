@@ -16,16 +16,8 @@ void AddFrictionConeConstraint(
     const BrickFace brick_face,
     const Eigen::Ref<const Vector2<symbolic::Variable>>& f_Cb_B,
     double friction_cone_shrink_factor, solvers::MathematicalProgram* prog) {
-  const auto& plant = gripper_brick_system.plant();
-  const multibody::CoulombFriction<double>& brick_friction =
-      plant.default_coulomb_friction(plant.GetCollisionGeometriesForBody(
-          gripper_brick_system.brick_frame().body())[0]);
-  const multibody::CoulombFriction<double>& finger_tip_friction =
-      plant.default_coulomb_friction(
-          gripper_brick_system.finger_tip_sphere_geometry_id(finger));
   const multibody::CoulombFriction<double> combined_friction =
-      multibody::CalcContactFrictionFromSurfaceProperties(brick_friction,
-                                                          finger_tip_friction);
+      gripper_brick_system.GetFingerTipBrickCoulombFriction(finger);
   const double mu =
       combined_friction.static_friction() * friction_cone_shrink_factor;
   switch (brick_face) {

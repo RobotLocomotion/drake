@@ -1,6 +1,7 @@
 import pydrake.math as mut
 import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
+from pydrake.common.cpp_param import List
 from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
 from pydrake.common.value import Value
 from pydrake.autodiffutils import AutoDiffXd
@@ -363,4 +364,6 @@ class TestMath(unittest.TestCase):
     def test_value_instantiations(self, T):
         # Existence checks.
         Value[mut.RigidTransform_[T]]
+        Value[List[mut.RigidTransform_[T]]]
         Value[mut.RotationMatrix_[T]]
+        Value[List[mut.RotationMatrix_[T]]]

@@ -3,6 +3,7 @@
 import pydrake.systems.framework as mut
 
 import copy
+from textwrap import dedent
 import warnings
 
 import unittest
@@ -397,6 +398,31 @@ class TestGeneral(unittest.TestCase):
         for context_copy in context_copies:
             self.assertTrue(context_copy is not context)
 
+    def test_str(self):
+        """
+        Tests str() methods. See ./value_test.py for testing str() and
+        repr() specific to BasicVector.
+        """
+        # Context.
+        integrator = Integrator(3)
+        integrator.set_name("integrator")
+        context = integrator.CreateDefaultContext()
+        # N.B. This is only to show behavior of C++ string formatting in
+        # Python. It is OK to update this when the upstream C++ code changes.
+        self.assertEqual(
+            str(context),
+            dedent("""\
+            ::integrator Context
+            ---------------------
+            Time: 0
+            States:
+              3 continuous states
+                0 0 0
+
+            """),
+        )
+        # TODO(eric.cousineau): Add more.
+
     def test_diagram_simulation(self):
         # TODO(eric.cousineau): Move this to `analysis_test.py`.
         # Similar to: //systems/framework:diagram_test, ExampleDiagram
@@ -452,10 +478,6 @@ class TestGeneral(unittest.TestCase):
         # Test the BasicVector overload.
         input2 = BasicVector([0.003, 0.004, 0.005])
         diagram.get_input_port(2).FixValue(context, input2)
-
-        # Test __str__ methods.
-        self.assertRegex(str(context), "integrator")
-        self.assertEqual(str(input2), "[0.003, 0.004, 0.005]")
 
         # Initialize integrator states.
         integrator_xc = (

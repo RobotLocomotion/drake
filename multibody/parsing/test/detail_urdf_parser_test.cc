@@ -263,7 +263,11 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, CollisionFilterGroupParsingTest) {
       inspector.CollisionFiltered(geometry_id_link2, geometry_id_link4));
   EXPECT_TRUE(
       inspector.CollisionFiltered(geometry_id_link3, geometry_id_link4));
+
+  // Make sure we can add the model a second time.
+  AddModelFromUrdfFile(full_name, "model2", package_map, &plant, &scene_graph);
 }
+
 // Reports if the frame with the given id has a geometry with the given role
 // whose name is the same as what ShapeName(ShapeType{}) would produce.
 template <typename ShapeType>

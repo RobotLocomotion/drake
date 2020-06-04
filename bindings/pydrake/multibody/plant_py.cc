@@ -1,7 +1,6 @@
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-#include "pybind11/stl_bind.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -22,14 +21,6 @@
 #include "drake/multibody/plant/point_pair_contact_info.h"
 #include "drake/multibody/plant/propeller.h"
 #include "drake/multibody/tree/spatial_inertia.h"
-
-PYBIND11_MAKE_OPAQUE(
-    std::vector<drake::multibody::ExternallyAppliedSpatialForce<double>>);
-PYBIND11_MAKE_OPAQUE(std::vector<
-    drake::multibody::ExternallyAppliedSpatialForce<drake::AutoDiffXd>>);
-PYBIND11_MAKE_OPAQUE(
-    std::vector<drake::multibody::ExternallyAppliedSpatialForce<
-        drake::symbolic::Expression>>);
 
 namespace drake {
 namespace pydrake {
@@ -673,11 +664,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
         .def("num_collision_geometries", &Class::num_collision_geometries,
             cls_doc.num_collision_geometries.doc)
-        .def("default_coulomb_friction", &Class::default_coulomb_friction,
-            py::arg("geometry_id"), py_reference_internal,
-            cls_doc.default_coulomb_friction.doc)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
             py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("default_coulomb_friction", &Class::default_coulomb_friction,
+        py::arg("geometry_id"), py_reference_internal,
+        cls_doc.default_coulomb_friction.doc_deprecated);
+#pragma GCC diagnostic pop
+    DeprecateAttribute(cls, "default_coulomb_friction",
+        cls_doc.default_coulomb_friction.doc_deprecated);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
@@ -947,24 +943,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_readwrite("p_BoBq_B", &Class::p_BoBq_B, cls_doc.p_BoBq_B.doc)
         .def_readwrite("F_Bq_W", &Class::F_Bq_W, cls_doc.F_Bq_W.doc);
     AddValueInstantiation<Class>(m);
-  }
-
-  // Opaquely bind std::vector<ExternallyAppliedSpatialForce> to enable
-  // Python systems to construct AbstractValues of this type with the type
-  // being legible for port connections.
-  {
-    using Class = std::vector<multibody::ExternallyAppliedSpatialForce<T>>;
-    // TODO(eric.cousineau): Try to make this specialization for
-    // `py::bind_vector` less boiler-platey, like
-    // `DefineTemplateClassWithDefault`.
-    const std::string default_name = "VectorExternallyAppliedSpatialForced";
-    const std::string template_name = default_name + "_";
-    auto cls = py::bind_vector<Class>(m, TemporaryClassName<Class>().c_str());
-    AddTemplateClass(m, template_name.c_str(), cls, param);
-    if (!py::hasattr(m, default_name.c_str())) {
-      m.attr(default_name.c_str()) = cls;
-    }
-    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
 
   // Propeller
@@ -1061,6 +1041,8 @@ PYBIND11_MODULE(plant, m) {
           doc.PropellerInfo.thrust_ratio.doc)
       .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
           doc.PropellerInfo.moment_ratio.doc);
+
+  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

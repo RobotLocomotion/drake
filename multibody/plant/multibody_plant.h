@@ -250,8 +250,11 @@ enum class ContactModel {
 /// each `<model>` tag found in the file. Please refer to each of these
 /// methods' documentation for further details.
 ///
+/// @anchor working_with_scenegraph
+///                   ### Working with %SceneGraph
+///
 /// @anchor add_multibody_plant_scene_graph
-///   ### Adding a %MultibodyPlant connected to a %SceneGraph to your %Diagram
+///   #### Adding a %MultibodyPlant connected to a %SceneGraph to your %Diagram
 ///
 /// Probably the simplest way to add and wire up a MultibodyPlant with
 /// a SceneGraph in your Diagram is using AddMultibodyPlantSceneGraph().
@@ -294,23 +297,8 @@ enum class ContactModel {
 /// This flavor is most useful when the pointers are class member fields
 /// (and so perhaps cannot be references).
 ///
-/// @anchor mbp_adding_elements
-///                    ### Adding modeling elements
-///
-/// <!-- TODO(amcastro-tri): Update this section to add force elements and
-///      constraints. -->
-///
-/// Add multibody elements to a %MultibodyPlant with methods like:
-///
-/// - Bodies: AddRigidBody()
-/// - Joints: AddJoint()
-/// - see @ref mbp_construction "Construction" for more.
-///
-/// All modeling elements **must** be added before Finalize() is called.
-/// See @ref mbp_finalize_stage "Finalize stage" for a discussion.
-///
 /// @anchor mbp_geometry_registration
-///               ### Registering geometry with a SceneGraph
+///               #### Registering geometry with a SceneGraph
 ///
 /// %MultibodyPlant users can register geometry with a SceneGraph for
 /// essentially two purposes; a) visualization and, b) contact modeling.
@@ -344,6 +332,80 @@ enum class ContactModel {
 ///
 /// Refer to the documentation provided in each of the methods above for further
 /// details.
+/**
+ <!-- TODO(joemasterjohn) Clean up the doc for MBP to consistently use javadoc
+      style. Using triple slashes, linter will complain about line length in
+      the table below. -->
+ @anchor accessing_contact_properties
+               #### Accessing point contact parameters
+ <!-- TODO(joemasterjohn) update this table when other contact parameters
+      are moved into ProximityProperties -->
+ %MultibodyPlant's point contact model looks for model parameters stored as
+ geometry::ProximityProperties by geometry::SceneGraph. These properties can
+ be obtained before or after context creation through
+ geometry::SceneGraphInspector APIs as outlined below. %MultibodyPlant expects
+ the following properties for point contact modeling:
+
+ | Group name |   Property Name  | Required |    Property Type   | Property Description |
+ | :--------: | :--------------: | :------: | :----------------: | :------------------- |
+ |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
+
+ ¹ Collision geometry is required to be registered with a
+   geometry::ProximityProperties object that contains the
+   ("material", "coulomb_friction") property. If the parameter
+   is not registered, %MultibodyPlant will throw an exeception.
+
+ Accessing and modifying contact properties requires interfacing with
+ geometry::SceneGraph's model inspector. Interfacing with a model inspector
+ obtained from geometry::SceneGraph will provide the default registered
+ values for a given parameter. These are the values that will
+ initially appear in a systems::Context created by CreateDefaultContext().
+ Subsequently, true system paramters can be accessed and changed through a
+ systems::Context once available. For both of the above cases, proximity
+ properties are accessed through geometry::SceneGraphInspector APIs.
+
+ Before context creation an inspector can be retrieved directly from SceneGraph
+ as:
+ @code
+ // For a SceneGraph<T> instance called scene_graph.
+ const geometry::SceneGraphInspector<T>& inspector =
+     scene_graph.model_inspector();
+ @endcode
+ After context creation, an inspector can be retrieved from the state
+ stored in the context by the plant's geometry query input port:
+ @code
+ // For a MultibodyPlant<T> instance called mbp and a
+ // Context<T> called context.
+ const geometry::QueryObject<T>& query_object =
+     mbp.get_geometry_query_input_port()
+         .template Eval<geometry::QueryObject<T>>(context);
+ const geometry::SceneGraphInspector<T>& inspector =
+     query_object.inspector();
+ @endcode
+ Once an inspector is available, proximity properties can be retrieved as:
+ @code
+ // For a body with GeometryId called geometry_id
+ const geometry::ProximityProperties* props =
+     inspector.GetProximityProperties(geometry_id);
+ const CoulombFriction<T>& geometry_friction =
+     props->GetProperty<CoulombFriction<T>>("material",
+                                            "coulomb_friction");
+ @endcode
+*/
+/// @anchor mbp_adding_elements
+///                    ### Adding modeling elements
+///
+/// <!-- TODO(amcastro-tri): Update this section to add force elements and
+///      constraints. -->
+///
+/// Add multibody elements to a %MultibodyPlant with methods like:
+///
+/// - Bodies: AddRigidBody()
+/// - Joints: AddJoint()
+/// - see @ref mbp_construction "Construction" for more.
+///
+/// All modeling elements **must** be added before Finalize() is called.
+/// See @ref mbp_finalize_stage "Finalize stage" for a discussion.
 ///
 /// @anchor mbp_modeling_contact
 ///                           ### Modeling contact
@@ -662,8 +724,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     collision_geometries_ = other.collision_geometries_;
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
-    if (geometry_source_is_registered())
-      DeclareSceneGraphPorts();
+    penetration_allowance_ = other.penetration_allowance_;
+    if (geometry_source_is_registered()) DeclareSceneGraphPorts();
 
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
@@ -1404,6 +1466,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
 
+  // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
+  // deprecate/remove this method alltogether or at least promote to proper
+  // camel case per GSG.
   /// Sets the penetration allowance used to estimate the coefficients in the
   /// penalty method used to impose non-penetration among bodies. Refer to the
   /// section @ref mbp_penalty_method "Contact by penalty method" for further
@@ -3503,6 +3568,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
+  DRAKE_DEPRECATED(
+      "2020-09-01",
+      "default_coulomb_friction() will be removed. Please use SceneGraph which "
+      "now stores friction properties in ProximityProperties. See the section "
+      "\"Accessing point contact parameters\" in the documentation for "
+      "MultibodyPlant.")
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
     // TODO(amcastro-tri): This API might change or disappear completely as GS
@@ -3666,6 +3737,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Declare the system-level cache entries specific to MultibodyPlant.
   void DeclareCacheEntries();
+
+  // Estimates a global set of point contact parameters given a
+  // `penetration_allowance`. See set_penetration_allowance()` for details.
+  // TODO(amcastro-tri): Once #13064 is resolved, make this a method outside MBP
+  // with signature:
+  // EstimatePointContactParameters(double penetration_allowance,
+  //                                MultibodyPlant<double>* plant)
+  // We will document the heuristics used by this method thoroughly so that we
+  // have a place we can refer users to for details.
+  void EstimatePointContactParameters(double penetration_allowance);
 
   // Helper method to assemble actuation input vector from the appropriate
   // ports.
@@ -3989,8 +4070,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The i-th entry in the returned std::vector corresponds to the combined
   // friction properties for the i-th point pair in `point_pairs`.
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const std::vector<geometry::PenetrationAsPointPair<T>>&
-      point_pairs) const;
+      const drake::systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs)
+      const;
 
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
@@ -4146,6 +4228,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     std::optional<double> gravity;
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+
+  // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
+  // See set_penetration_allowance() for details.
+  double penetration_allowance_{1.0e-3};
 
   // Stribeck model of friction.
   class StribeckModel {
@@ -4471,6 +4557,12 @@ template <>
 std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>&) const;
+template <>
+std::vector<CoulombFriction<double>>
+MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
+    const drake::systems::Context<symbolic::Expression>&,
+    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)
+    const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,

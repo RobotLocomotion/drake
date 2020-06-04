@@ -17,26 +17,6 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-void VerifyIiwaTree(const RigidBodyTree<double>& tree) {
-  std::map<std::string, int> name_to_idx = tree.computePositionNameToIndexMap();
-
-  int joint_idx = 0;
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_1"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_1"] == joint_idx++);
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_2"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_2"] == joint_idx++);
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_3"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_3"] == joint_idx++);
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_4"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_4"] == joint_idx++);
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_5"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_5"] == joint_idx++);
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_6"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_6"] == joint_idx++);
-  DRAKE_DEMAND(name_to_idx.count("iiwa_joint_7"));
-  DRAKE_DEMAND(name_to_idx["iiwa_joint_7"] == joint_idx++);
-}
-
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd) {
@@ -110,21 +90,6 @@ void ApplyJointVelocityLimits(const MatrixX<double>& keyframes,
       (*time)[j] *= max_velocity_ratio;
     }
   }
-}
-
-robotlocomotion::robot_plan_t EncodeKeyFrames(
-    const RigidBodyTree<double>& robot,
-    const std::vector<double>& time,
-    const std::vector<int>& info,
-    const MatrixX<double>& keyframes) {
-  const int num_positions = robot.get_num_positions();
-  DRAKE_DEMAND(keyframes.rows() == num_positions);
-  std::vector<std::string> joint_names(num_positions);
-  for (int i = 0; i < num_positions; ++i) {
-    joint_names[i] = robot.get_position_name(i);
-  }
-
-  return EncodeKeyFrames(joint_names, time, info, keyframes);
 }
 
 robotlocomotion::robot_plan_t EncodeKeyFrames(

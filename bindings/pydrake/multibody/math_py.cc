@@ -4,10 +4,12 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_momentum.h"
 #include "drake/multibody/math/spatial_velocity.h"
 
 namespace drake {
@@ -62,6 +64,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("V"),
             cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
+  }
+  {
+    using Class = SpatialMomentum<T>;
+    constexpr auto& cls_doc = doc.SpatialMomentum;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "SpatialMomentum", param, cls_doc.doc);
+    BindSpatialVectorMixin<T>(&cls);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Vector3<T>>&,
+                 const Eigen::Ref<const Vector3<T>>&>(),
+            py::arg("h"), py::arg("l"), cls_doc.ctor.doc_2args)
+        .def(py::init<const Vector6<T>&>(), py::arg("L"),
+            cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
   {
     using Class = SpatialAcceleration<T>;
@@ -76,6 +98,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("A"),
             cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
   {
     using Class = multibody::SpatialForce<T>;
@@ -90,6 +115,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("tau"), py::arg("f"), cls_doc.ctor.doc_2args)
         .def(py::init<const Vector6<T>&>(), py::arg("F"),
             cls_doc.ctor.doc_1args);
+    AddValueInstantiation<Class>(m);
+    // Some ports need `Value<std::vector<Class>>`.
+    AddValueInstantiation<std::vector<Class>>(m);
   }
 }
 }  // namespace
