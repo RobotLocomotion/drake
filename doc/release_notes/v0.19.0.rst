@@ -30,6 +30,7 @@ These are breaking changes that did not undergo a deprecation period:
 
 * TBD
 * attic,doc,examples,multibody: [doc] Remove the incorrect drakeURDF.[xpr|xsd] (`#13326`_)  # The schema defined in drakeURDF.xsd is significantly out of date. We don't have the time or resources to bring it up to date. For now, we'll just remove it so as to avoid the suggestion that it is reliable. It can always be resurrected from git when it becomes a priority. This also removes references to the file.
+* systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
 
 Changes since v0.18.0:
 ----------------------
@@ -54,6 +55,11 @@ New features
 Fixes
 
 * TBD
+* systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
+* systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
+* systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
+* systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_, `#13384`_, `#13464`_)
+* systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -89,6 +95,26 @@ New features
 Fixes
 
 * TBD
+* geometry: [geometry] Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)  # * Support greater RenderEngineVtk and ShapeReifier customizations 1. GeometryState can provide pointers to RenderEngine implementations - It is generally accessed via QueryObject. 2. RenderEngineVtk is changed to be sub-classable - Copy constructor moved from private to protected. - Final designation has been removed. - It gives derived classes access to the actors. - Fixes a bug that previously went unnoticed; `SetDefaultLightPosition` didn't declare override of the virtual RenderEngine method. 3. Allow for customization of unsupported geometry messages in ShapeReifier.
+* geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
+* multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
+* geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
+* geometry: query_object: Update doc to warn about ignoring Mesh shapes (`#13331`_)  # Clarify that this does not apply to the Convex shape class
+* multibody: mbp: Add GetDefaultFreeBodyPose (`#13342`_)
+* geometry: geometry: Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
+* geometry: [dev] Add HalfSpace and Box generation to shape_meshes.* (`#13334`_)  # - Modify RenderEngineGl to make use of the shapes.
+* multibody: Guidance for picking bushing stiffness/damping constants (`#13106`_)  # Provide suggestions for how to pick stiffness/damping constants for the bushing element.
+d PrintSimulatorStatistics()
+* multibody: Updates the developer notes of MBP::RegisterGeometry() (`#13014`_)  # * Updates the developer notes of MBP::RegisterGeometry() to reflect the fact that all bodies have a FrameId.
+* multibody: Enable kinematics computations on models with zero dofs (`#13405`_)
+* multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
+* multibody: Implements spatial velocity and acceleration ports (`#13364`_, `#13399`_, `#13423`_)
+* multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
+* geometry: geometry: Add basic Rgba class (`#13441`_)
+* multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)
+* multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
+* geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
+* geometry: [render] Move support functionality from dev into gl_renderer (`#13481`_)  # - Move shape meshes out of dev - Update build for the moved files.
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,6 +122,7 @@ Miscellaneous features and fixes
 * TBD
 * common: value: Disallow cv/ref/array/pointer types (`#13444`_)
 * tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
+* tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
 * lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
 * lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
 * examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
@@ -214,31 +241,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 324f5746358be0f78bda73b722ba7ae749ea1557 (inclusive).
-
-* geometry: [geometry] Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)  # * Support greater RenderEngineVtk and ShapeReifier customizations 1. GeometryState can provide pointers to RenderEngine implementations - It is generally accessed via QueryObject. 2. RenderEngineVtk is changed to be sub-classable - Copy constructor moved from private to protected. - Final designation has been removed. - It gives derived classes access to the actors. - Fixes a bug that previously went unnoticed; `SetDefaultLightPosition` didn't declare override of the virtual RenderEngine method. 3. Allow for customization of unsupported geometry messages in ShapeReifier.
-* geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
-* multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
-* geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
-* systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
-* geometry: query_object: Update doc to warn about ignoring Mesh shapes (`#13331`_)  # Clarify that this does not apply to the Convex shape class
-* multibody: mbp: Add GetDefaultFreeBodyPose (`#13342`_)
-* geometry: geometry: Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
-* geometry: [dev] Add HalfSpace and Box generation to shape_meshes.* (`#13334`_)  # - Modify RenderEngineGl to make use of the shapes.
-* multibody: Guidance for picking bushing stiffness/damping constants (`#13106`_)  # Provide suggestions for how to pick stiffness/damping constants for the bushing element.
-d PrintSimulatorStatistics()
-* multibody: Updates the developer notes of MBP::RegisterGeometry() (`#13014`_)  # * Updates the developer notes of MBP::RegisterGeometry() to reflect the fact that all bodies have a FrameId.
-* systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
-* systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
-* multibody: Enable kinematics computations on models with zero dofs (`#13405`_)
-* multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
-* multibody: Implements spatial velocity and acceleration ports (`#13364`_, `#13399`_, `#13423`_)
-* tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
-* multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
-* systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
-* systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_, `#13384`_, `#13464`_)
-* geometry: geometry: Add basic Rgba class (`#13441`_)
-* multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)
-* systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
-* multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
-* geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
-* geometry: [render] Move support functionality from dev into gl_renderer (`#13481`_)  # - Move shape meshes out of dev - Update build for the moved files.
