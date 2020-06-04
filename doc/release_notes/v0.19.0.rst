@@ -20,17 +20,20 @@ Announcements
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
 
-* TBD
-* tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)
+* A new tutorial on updating costs/constraints in mathematical program is
+  available (`#13328`_).
 
 Breaking changes since v0.18.0
 ------------------------------
 
 These are breaking changes that did not undergo a deprecation period:
 
-* TBD
-* attic,doc,examples,multibody: [doc] Remove the incorrect drakeURDF.[xpr|xsd] (`#13326`_)  # The schema defined in drakeURDF.xsd is significantly out of date. We don't have the time or resources to bring it up to date. For now, we'll just remove it so as to avoid the suggestion that it is reliable. It can always be resurrected from git when it becomes a priority. This also removes references to the file.
-* systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
+* Remove the incorrect drakeURDF.[xpr|xsd] files (`#13326`_)
+
+  * The schema defined in drakeURDF.xsd is significantly out of date. For now,
+    we remove it so as to avoid the suggestion that it is reliable.
+
+* Removes dead code IntegratorBase::InitializeAccuracy() (`#12624`_)
 
 Changes since v0.18.0:
 ----------------------
@@ -40,26 +43,14 @@ Dynamical Systems
 
 New features
 
-* Trajectories
-
-  * TBD
-
-* System
-
-  * TBD
-
-* Controllers
-
-  * TBD
+* Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)
+* Use Eigen's formatting in VectorBase::operator<<() (`#13365`_, `#13384`_, `#13464`_)
 
 Fixes
 
-* TBD
-* systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
-* systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
-* systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
-* systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_, `#13384`_, `#13464`_)
-* systems: Make CalcNextUpdateTime() "right now" returns work during initialization (`#13438`_)
+* During simulator initialization, trigger concurrent periodic and "right now" events (`#13438`_)
+* VelocityImplicitEulerIntegrator resets cached matrices when user changes Jacobian scheme (`#13392`_)
+* Luenberger observer uses cache entries instead of mutable member variables (`#13307`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
