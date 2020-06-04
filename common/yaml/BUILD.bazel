@@ -61,7 +61,8 @@ drake_cc_googletest(
     deps = [
         ":yaml_read_archive",
         "//common:name_value",
-        "//common/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
