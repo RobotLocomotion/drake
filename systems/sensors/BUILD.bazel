@@ -23,6 +23,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "sensors",
     deps = [
+        ":accelerometer",
         ":beam_model",
         ":beam_model_params",
         ":camera_info",
@@ -38,6 +39,20 @@ drake_cc_package_library(
         ":vtk_util",
     ],
 )
+
+drake_cc_library(
+    name = "accelerometer",
+    srcs = ["accelerometer.cc"],
+    hdrs = ["accelerometer.h"],
+    deps = [
+        "//multibody/tree:multibody_tree_indexes",
+        "//math:geometric_transform",
+        "//multibody/math",
+        "//systems/framework",
+    ],
+    data = ["//examples/pendulum:prod_models"],
+)
+
 
 drake_cc_vector_gen_library(
     name = "beam_model_params",
@@ -230,6 +245,16 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "accelerometer_test",
+    deps = [
+        ":accelerometer",
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
 
 drake_cc_googletest(
     name = "beam_model_test",
