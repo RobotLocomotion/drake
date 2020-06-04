@@ -57,15 +57,15 @@ Mathematical Program
 
 New features
 
-* TBD
-* solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
-* solvers: Allow using Binding<C> as key in unordered_map (`#13322`_)  # Allow using Binding<C> as key in unordered_map. Add operator==, operator!= and hash function for Binding<C>
-* solvers: Get dual solution for OSQP solver (`#13347`_)
-* solvers: Add parsing of string options to SNOPT (`#13397`_)
-* solvers: Gurobi gets dual solution for QP and LP (`#13377`_)  # Gurobi returns dual solution for linear inequality/equality and bounding box constraints.
-* solvers: Fix the CI failure for LPDualSolution1 (`#13404`_)
-* solvers: Get dual solution for EqualityConstrainedQPSolver (`#13394`_)
-* solvers: Add dual solution for IpoptSolver (`#13402`_)
+* Add the ability to return the dual solution from some solvers:
+
+  * EqualityConstrainedQP (`#13394`_)
+  * Gurobi (`#13377`_, `#13404`_)
+  * IPOPT (`#13402`_)
+  * OSQP (`#13347`_)
+
+* In Solve and ChooseBestSolver, skip unconfigured commercial solvers (`#13279`_)
+* Obey SNOPT string options (`#13397`_)
 
 Fixes
 
