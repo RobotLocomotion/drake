@@ -21,6 +21,20 @@ class IiwaCommandReceiverTest : public testing::Test {
         context_(*context_ptr_),
         fixed_input_(FixInput()) {}
 
+  void UpdateFallbackValue() {
+    auto events = dut_.AllocateCompositeEventCollection();
+    double next_event_time = dut_.CalcNextUpdateTime(context_, events.get());
+    if (next_event_time == context_.get_time()) {
+      const auto& discrete_events = events->get_discrete_update_events();
+      DRAKE_THROW_UNLESS(discrete_events.HasEvents());
+      auto discrete_vars = dut_.AllocateDiscreteVariables();
+      dut_.CalcDiscreteVariableUpdates(context_, discrete_events,
+                                       discrete_vars.get());
+      dut_.ApplyDiscreteVariableUpdate(discrete_events, discrete_vars.get(),
+                                       &context_);
+    }
+  }
+
   // For use only by our constructor.
   systems::FixedInputPortValue& FixInput() {
     return dut_.get_message_input_port().FixValue(
@@ -51,17 +65,22 @@ class IiwaCommandReceiverTest : public testing::Test {
   systems::FixedInputPortValue& fixed_input_;
 };
 
-TEST_F(IiwaCommandReceiverTest, AcceptanceTest) {
+TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithoutMeasuredPositionInput) {
   // When no message has been received and *no* position measurement is
   // connected, the command is all zeros.
   const VectorXd zero = VectorXd::Zero(N);
+  UpdateFallbackValue();
   EXPECT_TRUE(CompareMatrices(position(), zero));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
+}
 
+TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithMeasuredPositionInput) {
+  const VectorXd zero = VectorXd::Zero(N);
   // When no message has been received and a measurement *is* connected, the
   // command is to hold at the current position.
   const VectorXd q0 = VectorXd::LinSpaced(N, 0.2, 0.3);
   dut_.get_position_measured_input_port().FixValue(&context_, q0);
+  UpdateFallbackValue();
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
 
@@ -87,15 +106,22 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTest) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(IiwaCommandReceiverTest, DeprecatedAcceptanceTest) {
+TEST_F(IiwaCommandReceiverTest,
+       DeprecatedAcceptanceTestWithoutMeasuredPositionInput) {
   // Check that the commanded pose starts out at zero
   const VectorXd zero = VectorXd::Zero(N);
+  UpdateFallbackValue();
   EXPECT_TRUE(CompareMatrices(position(), zero));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
+}
 
+TEST_F(IiwaCommandReceiverTest,
+       DeprecatedAcceptanceTestWithMeasuredPositionInput) {
+  const VectorXd zero = VectorXd::Zero(N);
   // Check that we can set a different initial position.
   const VectorXd q0 = VectorXd::LinSpaced(N, 0.1, 0.2);
   dut_.set_initial_position(&context_, q0);
+  UpdateFallbackValue();
   EXPECT_TRUE(CompareMatrices(position(), q0));
   EXPECT_TRUE(CompareMatrices(torque(), zero));
 

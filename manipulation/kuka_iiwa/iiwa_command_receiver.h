@@ -24,10 +24,14 @@ namespace kuka_iiwa {
 ///
 /// It has one required input port, "lcmt_iiwa_command".
 ///
-/// It offers an optional "position_measured" input, which (when connected)
-/// will be used to set the output position when no command messages have been
-/// received yet.  When this port is not connected, the default position will
-/// be all zeros.
+/// Before receiving a valid lcmt_iiwa_command message, the "position" output
+/// will be set to a fallback value, and the "torque" output will always be a
+/// vector of zeros. The fallback value can be set by connecting the
+/// "position_measured" input port. This system uses DiscreteUpdate
+/// to initialize the fallback value with the "position_measured" input port at
+/// the first tick. When used with a Simulator, this is handled automatically
+/// by the framework. When "position_measured" is not connected, the fallback
+/// value will be initialized to zeros.
 ///
 /// It has two output ports: one for the commanded position for each joint, and
 /// one for commanded additional feedforward joint torque.
@@ -68,6 +72,10 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   }
 
  private:
+  void DoCalcNextUpdateTime(const systems::Context<double>& context,
+                            systems::CompositeEventCollection<double>* events,
+                            double* time) const override;
+
   using MapVectorXd = Eigen::Map<const Eigen::VectorXd>;
   MapVectorXd input_position(const systems::Context<double>&) const;
   MapVectorXd input_torque(const systems::Context<double>&) const;
