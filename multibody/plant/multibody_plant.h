@@ -372,7 +372,7 @@ enum class ContactModel {
  After context creation, an inspector can be retrieved from the state
  stored in the context by the plant's geometry query input port:
  @code
- // For a MultibodyPlant<T> instance called mbp and a 
+ // For a MultibodyPlant<T> instance called mbp and a
  // Context<T> called context.
  const geometry::QueryObject<T>& query_object =
      mbp.get_geometry_query_input_port()
