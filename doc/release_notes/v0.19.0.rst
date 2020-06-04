@@ -20,12 +20,16 @@ Announcements
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
 
+* TBD
+* tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)
+
 Breaking changes since v0.18.0
 ------------------------------
 
 These are breaking changes that did not undergo a deprecation period:
 
 * TBD
+* attic,doc,examples,multibody: [doc] Remove the incorrect drakeURDF.[xpr|xsd] (`#13326`_)  # The schema defined in drakeURDF.xsd is significantly out of date. We don't have the time or resources to bring it up to date. For now, we'll just remove it so as to avoid the suggestion that it is reliable. It can always be resurrected from git when it becomes a priority. This also removes references to the file.
 
 Changes since v0.18.0:
 ----------------------
@@ -90,6 +94,21 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * TBD
+* common: value: Disallow cv/ref/array/pointer types (`#13444`_)
+* tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
+* lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
+* lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
+* examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
+* examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
+* examples: Strandbeest example (`#13302`_)  # Adds strandbeest example.
+* examples,systems: primitives: Offer DiscreteDerivative option to disable transient (`#13336`_)
+* examples: Updates rolling sphere demo configurability (`#13349`_)  # Use MakeSimulatorFromGflags() an* examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
+* examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
+* examples: manipulation_station: Add initialization regression tests (`#13380`_)
+* examples,manipulation: manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)  # This changes the iiwa- and wsg-related classes; similar classes such as jaco are unchanged.
+* manipulation: manipulation: De-duplicate model preview functionality (`#13148`_)  # Add explicit --find_runfiles
+* manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)  # I suspect this has been present since the initial converstion from RBT->MBP.
+* manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -197,42 +216,25 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current newest_commit 324f5746358be0f78bda73b722ba7ae749ea1557 (inclusive).
 
 * geometry: [geometry] Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)  # * Support greater RenderEngineVtk and ShapeReifier customizations 1. GeometryState can provide pointers to RenderEngine implementations - It is generally accessed via QueryObject. 2. RenderEngineVtk is changed to be sub-classable - Copy constructor moved from private to protected. - Final designation has been removed. - It gives derived classes access to the actors. - Fixes a bug that previously went unnoticed; `SetDefaultLightPosition` didn't declare override of the virtual RenderEngine method. 3. Allow for customization of unsupported geometry messages in ShapeReifier.
-* manipulation: manipulation: De-duplicate model preview functionality (`#13148`_)  # Add explicit --find_runfiles
 * geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
 * multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
-* lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
-* lcm,manipulation: manipulation: Check for whole default message, not just utime==0 (`#13311`_)
 * geometry: [geometry/dev] Add Unit Cylinder to shape_meshes (`#13293`_)  # - Refactors Sphere tessellation into a "revolute" shape function. - Express sphere in terms of revolute. - Express cylinder in terms of revolute.
 * systems: Removes dead code; IntegratorBase::InitializeAccuracy() (`#12624`_)
-* attic,doc,examples,multibody: [doc] Remove the incorrect drakeURDF.[xpr|xsd] (`#13326`_)  # The schema defined in drakeURDF.xsd is significantly out of date. We don't have the time or resources to bring it up to date. For now, we'll just remove it so as to avoid the suggestion that it is reliable. It can always be resurrected from git when it becomes a priority. This also removes references to the file.
 * geometry: query_object: Update doc to warn about ignoring Mesh shapes (`#13331`_)  # Clarify that this does not apply to the Convex shape class
-* manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)  # I suspect this has been present since the initial converstion from RBT->MBP.
-* examples,manipulation: Make most of the move_iiwa_ee demo reusable (`#13325`_)
-* examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
-* manipulation: Disable move_ik_demo_test case which causes timeouts (`#13344`_)
 * multibody: mbp: Add GetDefaultFreeBodyPose (`#13342`_)
 * geometry: geometry: Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * geometry: [dev] Add HalfSpace and Box generation to shape_meshes.* (`#13334`_)  # - Modify RenderEngineGl to make use of the shapes.
 * multibody: Guidance for picking bushing stiffness/damping constants (`#13106`_)  # Provide suggestions for how to pick stiffness/damping constants for the bushing element.
-* examples: Strandbeest example (`#13302`_)  # Adds strandbeest example.
-* examples,systems: primitives: Offer DiscreteDerivative option to disable transient (`#13336`_)
-* examples: Updates rolling sphere demo configurability (`#13349`_)  # Use MakeSimulatorFromGflags() and PrintSimulatorStatistics()
+d PrintSimulatorStatistics()
 * multibody: Updates the developer notes of MBP::RegisterGeometry() (`#13014`_)  # * Updates the developer notes of MBP::RegisterGeometry() to reflect the fact that all bodies have a FrameId.
-* examples: Fix missing member in ManipulationStationHardwareInterface (`#13372`_)  # The teleop scripts in examples/manipulation_station work over LCM again.
 * systems: systems: Luenberger observer uses cache entries (`#13307`_)  # instead of mutable member variables. related to #13131
-* tutorials: Add a tutorial on updating costs/constraints in mathematical program (`#13328`_)  # Add a tutorial on updating costs/constraints in mathematical program.
-* examples: manipulation_station: Put code into main() functions (`#13378`_)  # This makes all three demo teleop programs share a coding style, which will make it easier to start to de-duplicate their copied code and add tests. (It's also un-pythonic to write main code outside of functions.)
-* examples: manipulation_station: Add initialization regression tests (`#13380`_)
 * systems: Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)  # * Suppress symbolic feedthrough check if non-default output prereqs. Also re-enables symbolic for the finite horizon linear quadratic regulator.
-* examples,manipulation: manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)  # This changes the iiwa- and wsg-related classes; similar classes such as jaco are unchanged.
 * multibody: Enable kinematics computations on models with zero dofs (`#13405`_)
 * multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
 * multibody: Implements spatial velocity and acceleration ports (`#13364`_, `#13399`_, `#13423`_)
 * tools: Do not add pydrake stub if pydrake already on path (`#13428`_)
-* common: value: Disallow cv/ref/array/pointer types (`#13444`_)
 * multibody: Allows calling MBP::set_penetration_allowance() pre-finalize (`#13435`_)
 * systems: VIE Integrator should reset cached matrices when user changes Jacobian scheme (`#13392`_)  # * VelocityImplicitEulerIntegrator should reset cached matrices when user changes the Jacobian scheme. 1) This commit fixes issue #13069, where the VelocityImplicitEulerIntegrator still keeps an old Jacobian after the computation scheme changes. 2) This change also adds a line to simulator print stats to print the number of derivative evaluations for explicit integrators; otherwise, there is no metric on how much work explicit integrators are performing.
-* tools: drake_visualizer: Add `limit_clipping_range` script (`#13447`_)
 * systems: Use Eigen's formatting in VectorBase::operator<<() output (`#13365`_, `#13384`_, `#13464`_)
 * geometry: geometry: Add basic Rgba class (`#13441`_)
 * multibody: Fix loading multiple model instances with collision filter groups (`#13472`_)
