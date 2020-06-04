@@ -332,14 +332,17 @@ enum class ContactModel {
 /// details.
 /**
  <!-- TODO(joemasterjohn) Clean up the doc for MBP to consistently use javadoc
-      style. Using triple slashes, linter will complain about line length in 
+      style. Using triple slashes, linter will complain about line length in
       the table below. -->
  @anchor accessing_contact_properties
                #### Accessing point contact parameters
  <!-- TODO(joemasterjohn) update this table when other contact parameters
       are moved into ProximityProperties -->
- Parameters relating to contact modeling are stored on a per-geometry basis
- within a geometry::SceneGraph.
+ %MultibodyPlant's point contact model looks for model parameters stored as
+ geometry::ProximityProperties by geometry::SceneGraph. These properties can
+ be obtained before or after context creation through
+ geometry::SceneGraphInspector APIs as outlined below. %MultibodyPlant expects
+ the following properties for point contact modeling:
 
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
  | :--------: | :--------------: | :------: | :----------------: | :------------------- |
@@ -347,38 +350,40 @@ enum class ContactModel {
 
  ¹ Collision geometry is required to be registered with a
    geometry::ProximityProperties object that contains the
-   ("material", "coulomb_friction") property.
+   ("material", "coulomb_friction") property. If the parameter
+   is not registered, %MultibodyPlant will throw an exeception.
 
  Accessing and modifying contact properties requires interfacing with
- geometry::SceneGraph's model inspector. For instance, here is an example
- of accessing the coulomb_friction properties for a given body.
+ geometry::SceneGraph's model inspector. Interfacing with a model inspector
+ obtained from geometry::SceneGraph will provide the default registered
+ values for a given parameter. These are the values that will
+ initially appear in a systems::Context created by CreateDefaultContext().
+ Subsequently, true system paramters can be accessed and changed through a
+ systems::Context once available. For both of the above cases, proximity
+ properties are accessed through geometry::SceneGraphInspector APIs.
 
- When a systems::Context is not available, the model inspector from a 
- geometry::SceneGraph instance can provide contact parameters for the given
- model.
+ Before context creation an inspector can be retrieved directly from SceneGraph
+ as:
  @code
  // For a body with GeometryId called geometry_id and a SceneGraph instance
  // called scene_graph.
- const ProximityProperties* props =
-     scene_graph.model_inspector().GetProximityProperties(geometry_id);
-
- const CoulombFriction<double>& geometry_friction =
-     props->GetProperty<CoulombFriction<double>>("material",
-                                                 "coulomb_friction");
+ const geometry::SceneGraphInspector<double>& inspector =
+     scene_graph.model_inspector();
  @endcode
-
- When a systems::Context has been allocated and possibly modified, the proper
- way to access contact parameters is through a geometry::QueryObject.
- You can obtain a geometry::QueryObject by evaluating the
- geometry_query_input_port of MultibodyPlant.
+ After context creation, an inspector can be retrieved from the state
+ stored in the context by the plant's geometry query input port:
  @code
  // For a body with GeometryId called geometry_id and a MultibodyPlant<double>
  // instance called mbp.
- const QueryObject<double>& query_object =
+ const geometry::QueryObject<double>& query_object =
      mbp.get_geometry_query_input_port()
-         .template Eval<QueryObject<double>>(context);
- const SceneGraphInspector<double>& inspector = query_object.inspector();
- const ProximityProperties* props =
+         .template Eval<geometry::QueryObject<double>>(context);
+ const geometry::SceneGraphInspector<double>& inspector =
+     query_object.inspector();
+ @endcode
+ Once an inspector is available, proximity properties can be retrieved as:
+ @code
+ const geometry::ProximityProperties* props =
      inspector.GetProximityProperties(geometry_id);
  const CoulombFriction<double>& geometry_friction =
      props->GetProperty<CoulombFriction<double>>("material",
