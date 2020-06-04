@@ -160,7 +160,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * geometry: scene_graph: Mention adding geometry in the context of collision filters (`#13292`_)
 * solvers: solvers: Skip compiled-but-unconfigured commercial solvers by default (`#13279`_)  # For Gurobi and Mosek, when their license key environment variable is unset, do not use them during ChooseBestSolver nor Solve. Previously, we would choose them only to immediately fail with a license server error message. It had been useful to fail-fast, but was increasingly difficult to manage. Given that the build-time choice must be project-wide, it forced projects to put the license server in their critical path even for real-time control queries that could as easily be solved with something fast and free like OSQP. By deferring the solver selection to runtime (checking the solver- specific license key environment variables already required by the third-party libraries), it still uses the solver when the license is configured but otherwise behaves as-if the solver was omitted. To retain the prior fail-fast behavior, users should set the env variable to either their default (server) value, or a non-empty invalid string literal.
 * bindings: py mathematical_program: Add friendlier-er errors for dtype mismatch (`#13234`_)
-* tools: tools: Add xacro helper macros (`#13304`_, `#13319`_)
 * multibody: detail_scene_graph: Do not throw on missing sub-elements of //surface (`#13206`_)
 * bindings: autodiffutils_test: Use numpy version check for error message (`#13318`_)
 * lcm: lcm: Add lcm_messages target (`#13311`_)
@@ -214,7 +213,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * solvers: Gurobi gets dual solution for QP and LP (`#13377`_)  # Gurobi returns dual solution for linear inequality/equality and bounding box constraints.
 * multibody: Migrating Jacobian tests (`#13390`_)  # Migrates MBT::CalcBiasTranslationalAcceleration() tests from MBTree to MBPlant tests.
 * solvers: Fix the CI failure for LPDualSolution1 (`#13404`_)
-* tools: pybind: Allow specifying copts (`#13419`_)  # Useful for passing `copts = ["-g", "-UNDEBUG"]`
 * bindings: py cpp_template: Enable deprecating instantiations (`#13410`_)
 * bindings: py mbp: Bind accessors for inertias (`#13415`_)
 * attic: Disable global_inverse_kinematics_feasible_posture_test in debug (`#13412`_)  # This test consistently times out for everything-debug builds. As it is "attic + dev" code, switch off the test for debug builds.
@@ -224,7 +222,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * multibody: parsing: Work around some GCC 8 maybe-uninitialized warnings (`#13418`_)
 * multibody: Implements spatial velocity and acceleration ports (`#13423`_)
 * multibody: Move CalcBiasSpatialAcceleration() test from multibody_tree_test.cc to multibody_plant_jacobians_test.cc (`#13411`_)  # * Move test from multibody_tree_test.cc to multibody_plant_jacobians_test.cc
-* tools: Improve robustness and diagnostic messages of S3 mirroring script (`#13424`_)
 * bindings: py cpp_template: Fix badly scoped name overrides (`#13409`_)
 * solvers: Get dual solution for EqualityConstrainedQPSolver (`#13394`_)
 * bindings: py systems: Bind SystemBase, take methods from System_[T] (`#13413`_)
