@@ -279,10 +279,6 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
   return !J.allFinite();
 }
 
-// Compute the partial derivative of the ordinary differential equations with
-// respect to the state variables for a given x(t).
-// @post the context's time and continuous state will be temporarily set during
-//       this call (and then reset to their original values) on return.
 template <class T>
 const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
     const VectorX<T>& x) {
