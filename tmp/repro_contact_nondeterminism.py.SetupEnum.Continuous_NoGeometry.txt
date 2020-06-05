@@ -1,0 +1,46 @@
+
+
+[ meta_trial = 0, num_sim_trials = 4, setup = SetupEnum.Continuous_NoGeometry ]
+
+resimulate_mode: reuse
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+resimulate_mode: recreate
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+
+[ meta_trial = 1, num_sim_trials = 4, setup = SetupEnum.Continuous_NoGeometry ]
+
+resimulate_mode: reuse
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+resimulate_mode: recreate
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)

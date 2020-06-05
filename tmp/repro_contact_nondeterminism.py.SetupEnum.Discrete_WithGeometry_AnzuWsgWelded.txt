@@ -1,0 +1,2239 @@
+
+
+[ meta_trial = 0, num_sim_trials = 4, setup = SetupEnum.Discrete_WithGeometry_AnzuWsgWelded ]
+
+resimulate_mode: reuse
+  index: 0
+    good (first)
+  index: 1
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        ?                         -     ^   ^^^
+        +     contact_force: [73.57 193.8 48.98]
+        ?                        +      ^  ++ ^
+              contact_point: [0.0337 0.08084 0.6568]
+        -     slip_speed: [1.827e-06]
+        ?                  ^ -     ^
+        +     slip_speed: [9.257e-07]
+        ?                  ^  +    ^
+        -     separation_speed: [-1.196e-18]
+        ?                          ----   ^
+        +     separation_speed: [-2.231e-19]
+        ?                         ++++    ^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        +     contact_force: [-0.1327 -13.15 1.668]
+        -     contact_point: [0.03416 0.07761 0.6584]
+        ?                        - ^^     ^^^     ^^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^^^     ^^^    + ^
+        -     slip_speed: [8.062e-07]
+        ?                  ^ ^^^   ^
+        +     slip_speed: [5.175e-08]
+        ?                  ^ ^^^   ^
+        -     separation_speed: [1.844e-18]
+        ?                        ^  ^^  ^^
+        +     separation_speed: [-5.688e-20]
+        ?                        ^^ + ^  ^^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        ?                        ^^    ^^^^^^  --
+        +     contact_force: [-0.632 -61.8 7.834]
+        ?                        ^    ^   ++++++
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                       ^^ --    ^ --   ^^^
+        +     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^^^     ^^^    ^^^^
+        -     slip_speed: [1.029e-07]
+        ?                  ^ ^ -
+        +     slip_speed: [2.432e-07]
+        ?                  ^ ^^
+        -     separation_speed: [2.109e-19]
+        ?                        ^ ^^^  ^^
+        +     separation_speed: [4.887e-20]
+        ?                        ^ ^^^  ^^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        ?                        ^   -  ^^^^^^^
+        +     contact_force: [25.71 93.38 13.63]
+        ?                     +++ +++  ^     ^^
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^^^
+        +     contact_point: [0.03416 0.07761 0.6585]
+        ?                        + ^^     ^^^    ^^^
+        -     slip_speed: [1.827e-06]
+        ?                  ^ ^^^   ^
+        +     slip_speed: [4.069e-07]
+        ?                  ^ ^^^   ^
+        -     separation_speed: [-2.893e-19]
+        ?                          ^^^^
+        +     separation_speed: [-1.124e-19]
+        ?                         +++ ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-26.63 197.8 -54.51]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^ -     ^^^     ^^
+        +     contact_point: [0.04582 0.07575 0.6448]
+        ?                         ^^      ^^^     ^^
+        -     slip_speed: [1.029e-07]
+        ?                  ^ - ^
+        +     slip_speed: [8.252e-07]
+        ?                  ^  ^^
+        -     separation_speed: [-4.292e-19]
+        ?                          ^^^^   ^
+        +     separation_speed: [-1.643e-18]
+        ?                         +++ ^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-23.81 87.57 -36.49]
+        ?                     ^^ ------    ^ -
+        +     contact_force: [73.57 193.8 48.98]
+        ?                     ^     ^^  ++ ++ +
+        -     contact_point: [0.0342 0.08111 0.658]
+        ?                        ^^      ^^^    ^
+        +     contact_point: [0.05298 0.07826 0.6381]
+        ?                        ^ ++    + ^^    ^ +
+        -     slip_speed: [8.012e-07]
+        ?                  ^ --
+        +     slip_speed: [9.257e-07]
+        ?                  ^  ++
+        -     separation_speed: [-9.823e-19]
+        ?                          ----   ^
+        +     separation_speed: [-1.089e-18]
+        ?                         ++++    ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [-23.83 87.55 -36.53]
+        -     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^ --     ^^^   ^^^^
+        +     contact_point: [0.0342 0.08111 0.658]
+        ?                       ^^^      ^^^   ^^^
+        -     slip_speed: [4.836e-07]
+        ?                     --
+        +     slip_speed: [4.08e-07]
+        ?                    +
+        -     separation_speed: [-7.43e-19]
+        ?                          ---
+        +     separation_speed: [-1.637e-19]
+        ?                         ++++
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [-0.1327 -13.15 1.668]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                        ^^^^     ^^^     ^^
+        +     contact_point: [0.03573 0.07984 0.659]
+        ?                        ^^^^     ^^^     ^
+        -     slip_speed: [1.632e-06]
+        ?                   ^^^^   ^
+        +     slip_speed: [5.175e-08]
+        ?                  ++ ^^   ^
+        -     separation_speed: [2.007e-18]
+        ?                        ^  ^^  ^^
+        +     separation_speed: [-4.033e-20]
+        ?                        ^^  ^^  ^^
+
+      diff[-1], t: 1
+        - q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+        ?         ^      --       ^                -        ^
+        + q: [0.3547 -0.2495 -0.4349 2.146 0.6404 0.135 -0.1298]
+        ?         ^^     ++        ^           ++             ^
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [50.1 212.6 118.8]
+        ?                     ^^ ^     ^     ^
+        +     contact_force: [49.99 212.7 118.6]
+        ?                     ^^ ^^     ^     ^
+        -     contact_point: [-0.009362 0.0718 0.2903]
+        ?                          ^^^^      ^    ^^^
+        +     contact_point: [-0.004101 0.0711 0.2841]
+        ?                          ^^^^      ^    ^^^
+        -     slip_speed: [0.002428]
+        ?                        ^^
+        +     slip_speed: [0.002417]
+        ?                        ^^
+        -     separation_speed: [-1.571e-17]
+        ?                         ^ ^^^
+        +     separation_speed: [-2.646e-17]
+        ?                         ^ ^^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-25.17 -56.72 -27.92]
+        ?                          -      ^     ^^
+        +     contact_force: [-25.1 -56.76 -27.85]
+        ?                                ^     ^^
+        -     contact_point: [0.06512 0.05319 0.3647]
+        ?                          ^^      ^^      ^
+        +     contact_point: [0.06535 0.05323 0.3648]
+        ?                          ^^      ^^      ^
+        -     slip_speed: [0.0006523]
+        ?                        ^^^
+        +     slip_speed: [0.0006494]
+        ?                        ^^^
+        -     separation_speed: [-1.389e-17]
+        ?                        ^^   -
+        +     separation_speed: [4.348e-17]
+        ?                        ^  +
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [2.555 107.8 46.75]
+        ?                        ^^     ^     -
+        +     contact_force: [2.517 107.9 46.67]
+        ?                        ^^     ^    +
+        -     contact_point: [0.003858 0.07342 0.2776]
+        ?                         ^^^^      ^^
+        +     contact_point: [0.004144 0.07338 0.2776]
+        ?                         ^^^^      ^^
+        -     slip_speed: [0.00127]
+        ?                        ^
+        +     slip_speed: [0.001264]
+        ?                        ^^
+        -     separation_speed: [-6.033e-17]
+        ?                          ^^^^
+        +     separation_speed: [-1.867e-17]
+        ?                         +++ ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [90.51 46.62 58.55]
+        ?                        ^^    ^^    ^^
+        +     contact_force: [90.39 46.71 58.63]
+        ?                        ^^    ^^    ^^
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                          ---    ^^^     ^^^
+        +     contact_point: [-0.01403 0.07226 0.2991]
+        ?                     +   ++      ^^^     ^^^
+        -     slip_speed: [0.0009469]
+        ?                         ^^
+        +     slip_speed: [0.0009424]
+        ?                         ^^
+        -     separation_speed: [2.816e-18]
+        ?                        ^ --    ^
+        +     separation_speed: [7.655e-17]
+        ?                        ^  ++   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        ?                         ^    ^^   ^^^
+        +     contact_force: [217.3 71.47 115]
+        ?                         ^    ^^   ^
+        -     contact_point: [0.002603 0.07357 0.2772]
+        ?                          - ^     ^^^    ^^^
+        +     contact_point: [-0.002095 0.0742 0.2834]
+        ?                     +      ^^     ^^    ^^^
+        -     slip_speed: [0.002138]
+        ?                        ^^
+        +     slip_speed: [0.002127]
+        ?                        ^^
+        -     separation_speed: [-1.448e-17]
+        ?                        ^^ ^^^
+        +     separation_speed: [3.7e-17]
+        ?                        ^ ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        ?                        ^^^      ^     ^^
+        +     contact_force: [-3.499 -12.69 -2.304]
+        ?                        ^^^      ^     ^^
+        -     contact_point: [0.004541 0.07178 0.2789]
+        ?                          ^^^       ^
+        +     contact_point: [0.004827 0.07174 0.2789]
+        ?                          ^^^       ^
+        -     slip_speed: [0.0001388]
+        ?                          ^
+        +     slip_speed: [0.0001381]
+        ?                          ^
+        -     separation_speed: [2.56e-17]
+        ?                        ^ ^^
+        +     separation_speed: [3.007e-17]
+        ?                        ^ ^^^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        ?                         ^    ^^   ^^^
+        +     contact_force: [217.3 71.47 115]
+        ?                         ^    ^^   ^
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                         ^ --       ^^
+        +     contact_point: [-0.01393 0.07579 0.2982]
+        ?                         ^^        ^^     +
+        -     slip_speed: [0.002138]
+        ?                        ^^
+        +     slip_speed: [0.002127]
+        ?                        ^^
+        -     separation_speed: [4.76e-18]
+        ?                         ^^^   ^
+        +     separation_speed: [5.481e-17]
+        ?                        ++ ^^   ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        ?                        ^^^      ^     ^^
+        +     contact_force: [-3.499 -12.69 -2.304]
+        ?                        ^^^      ^     ^^
+        -     contact_point: [-0.007284 0.07336 0.2937]
+        ?                           ^^^       ^
+        +     contact_point: [-0.00701 0.07333 0.2937]
+        ?                           ^^       ^
+        -     slip_speed: [0.0001388]
+        ?                          ^
+        +     slip_speed: [0.0001381]
+        ?                          ^
+        -     separation_speed: [-1.727e-17]
+        ?                         ^ ^ -
+        +     separation_speed: [-2.32e-17]
+        ?                         ^ ^
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+        -     contact_force: [-38.73 6.337 -58.86]
+        ?                          ^    ^^      ^
+        +     contact_force: [-38.72 6.316 -58.85]
+        ?                          ^    ^^      ^
+        -     contact_point: [-0.006185 0.08389 0.2695]
+        ?                          ^^         ^
+        +     contact_point: [-0.005895 0.08384 0.2695]
+        ?                          ^ +        ^
+        -     slip_speed: [0.2938]
+        ?                       ^
+        +     slip_speed: [0.2935]
+        ?                       ^
+        -     separation_speed: [-0.0006057]
+        ?                                ^^
+        +     separation_speed: [-0.0006304]
+        ?                               + ^
+
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+resimulate_mode: recreate
+  index: 0
+    good (first)
+  index: 1
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^ ^^     ^ -   ^^^^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                       ^^^ ^    + ^    ^^^^
+        -     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [1.029e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [-7.43e-19]
+        ?                         ^ ^^
+        +     separation_speed: [-4.292e-19]
+        ?                         ^ ^^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                        ^^        ^^    ^^
+        +     contact_point: [0.04727 0.07903 0.6436]
+        ?                        ^  +      ^^    ^^^
+        -     slip_speed: [1.029e-07]
+        ?                    ^ ^   ^
+        +     slip_speed: [1.827e-06]
+        ?                    ^ ^   ^
+        -     separation_speed: [2.109e-19]
+        ?                          ^^
+        +     separation_speed: [-2.893e-19]
+        ?                        +  ^ +
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-26.5 197.9 -54.34]
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^ -
+        +     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^    ^^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ -
+        +     slip_speed: [1.632e-06]
+        ?                    ^^
+        -     separation_speed: [-2.893e-19]
+        ?                        -  ^^^   ^
+        +     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        +     contact_force: [-0.6427 -61.8 7.824]
+        -     contact_point: [0.03416 0.07761 0.6584]
+        +     contact_point: [0.1275 0.08539 0.7131]
+        -     slip_speed: [8.062e-07]
+        ?                   ^^ -
+        +     slip_speed: [4.836e-07]
+        ?                  ++ ^
+        -     separation_speed: [1.844e-18]
+        ?                        ^ - ^   ^
+        +     separation_speed: [-7.43e-19]
+        ?                        ^^  ^   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [25.76 93.36 13.65]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^^^     ^^^     --
+        +     contact_point: [0.03416 0.07761 0.6584]
+        ?                        + ^^     ^^^    ++
+        -     slip_speed: [1.029e-07]
+        ?                  ^   -
+        +     slip_speed: [8.062e-07]
+        ?                  ^  +
+        -     separation_speed: [-4.292e-19]
+        ?                        ^ ^^^^   ^
+        +     separation_speed: [1.844e-18]
+        ?                        ^^^ ^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-23.81 87.57 -36.49]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.0342 0.08111 0.658]
+        ?                         ^      ^^^     ^
+        +     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^^     ++ ^     ^
+        -     slip_speed: [8.012e-07]
+        ?                  ^  -
+        +     slip_speed: [1.029e-07]
+        ?                  ^   +
+        -     separation_speed: [-9.823e-19]
+        ?                        ^ ----
+        +     separation_speed: [2.109e-19]
+        ?                        ^^^^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [-23.81 87.57 -36.49]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                               --  ^^^^^^^^
+        +     contact_point: [0.0342 0.08111 0.658]
+        ?                        + ++ ++++       ^
+        -     slip_speed: [1.632e-06]
+        ?                   ---    ^
+        +     slip_speed: [8.012e-07]
+        ?                  +++     ^
+        -     separation_speed: [2.007e-18]
+        ?                         ^^^^   ^
+        +     separation_speed: [-9.823e-19]
+        ?                        ++++ ^   ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [73.78 193.7 49.07]
+              contact_point: [0.0337 0.08084 0.6568]
+              slip_speed: [1.827e-06]
+              separation_speed: [-1.196e-18]
+
+      diff[-1], t: 1
+          q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [50.1 212.6 118.8]
+        +     contact_force: [-25.17 -56.72 -27.92]
+        -     contact_point: [-0.009362 0.0718 0.2903]
+        ?                     -   ^^^^     ^^      --
+        +     contact_point: [0.08254 0.05086 0.3429]
+        ?                        ^ ++    ^^ +   ++
+        -     slip_speed: [0.002428]
+        ?                       ^^^
+        +     slip_speed: [0.0006523]
+        ?                      +++ ^
+        -     separation_speed: [-1.534e-17]
+        ?                         ^ ^ -   ^
+        +     separation_speed: [-9.63e-18]
+        ?                         ^ ^    ^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [2.555 107.8 46.75]
+        ?                        ^   ^^^^^ -  -
+        +     contact_force: [217.5 71.35 114.7]
+        ?                      ++  ^^^^^   ^
+        -     contact_point: [0.003858 0.07342 0.2776]
+        ?                        ^^^^^     ^^     ^^^
+        +     contact_point: [-0.0142 0.07582 0.2982]
+        ?                     +   ^^^     ^^     ^^^
+        -     slip_speed: [0.00127]
+        ?                       ^^
+        +     slip_speed: [0.002138]
+        ?                      + ^^
+        -     separation_speed: [-2.9e-17]
+        ?                         ^ ^
+        +     separation_speed: [-7.476e-17]
+        ?                         ^ ^^^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-25.17 -56.72 -27.92]
+        +     contact_force: [2.555 107.8 46.75]
+        -     contact_point: [0.08254 0.05086 0.3429]
+        ?                         - ^    ^^^^   -- ^
+        +     contact_point: [0.003858 0.07342 0.2776]
+        ?                        ++  ^    ^^^^    ^^^
+        -     slip_speed: [0.0006523]
+        ?                      ^^^ ^
+        +     slip_speed: [0.00127]
+        ?                      ^ ^
+        -     separation_speed: [-2.693e-17]
+        ?                         ^  ^^
+        +     separation_speed: [-7.367e-17]
+        ?                         ^ + ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-3.507 -12.68 -2.317]
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                         ^^  ^     ^^^     ^
+        +     contact_point: [-0.01226 0.07402 0.2999]
+        ?                         ^  ^     ^^^     ^^
+        -     slip_speed: [0.002138]
+        ?                      ^
+        +     slip_speed: [0.0001388]
+        ?                      ^   +
+        -     separation_speed: [-4.373e-17]
+        ?                         ^ - ^
+        +     separation_speed: [-1.708e-17]
+        ?                         ^  ^^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        ?                     ---  ^ ^     --- ^^^
+        +     contact_force: [50.1 212.6 118.8]
+        ?                       ^^ ^    +++  ^
+        -     contact_point: [-0.01226 0.07402 0.2999]
+        ?                         ^^^^      --    ^^^
+        +     contact_point: [-0.004383 0.07114 0.2841]
+        ?                         ^^^^^     ++     ^^^
+        -     slip_speed: [0.0001388]
+        ?                      ^^^^
+        +     slip_speed: [0.002428]
+        ?                      ^^^
+        -     separation_speed: [4.571e-17]
+        ?                         - -
+        +     separation_speed: [1.451e-17]
+        ?                        ++
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [90.51 46.62 58.55]
+              contact_point: [0.003127 0.06996 0.2774]
+              slip_speed: [0.0009469]
+        -     separation_speed: [6.549e-18]
+        ?                        ^ ^^^   ^
+        +     separation_speed: [-3.783e-17]
+        ?                        ^^ ^^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-3.507 -12.68 -2.317]
+        -     contact_point: [0.002603 0.07357 0.2772]
+        ?                         --       ^^^    ^^
+        +     contact_point: [-0.0004379 0.07244 0.2852]
+        ?                     +     + ++     ^^^    ^^
+        -     slip_speed: [0.002138]
+        ?                      ^
+        +     slip_speed: [0.0001388]
+        ?                      ^   +
+        -     separation_speed: [6.397e-18]
+        ?                        ^  ^^   ^
+        +     separation_speed: [4.932e-17]
+        ?                        ^ + ^   ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        +     contact_force: [217.5 71.35 114.7]
+        -     contact_point: [-0.0004379 0.07244 0.2852]
+        ?                          ^^  ^      -      ^^
+        +     contact_point: [-0.002376 0.07424 0.2834]
+        ?                          ^  ^     +       ^^
+        -     slip_speed: [0.0001388]
+        ?                      ^   -
+        +     slip_speed: [0.002138]
+        ?                      ^
+        -     separation_speed: [-1.241e-18]
+        ?                        -  ^ ^   ^
+        +     separation_speed: [1.347e-17]
+        ?                          ^ ^   ^
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+              contact_force: [-38.73 6.337 -58.86]
+              contact_point: [-0.006185 0.08389 0.2695]
+              slip_speed: [0.2938]
+              separation_speed: [-0.0006057]
+
+  index: 2
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [-23.81 87.57 -36.49]
+        -     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^ --     ^^^   ^^^^
+        +     contact_point: [0.0342 0.08111 0.658]
+        ?                       ^^^      ^^^   ^^^
+        -     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [8.012e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [-7.43e-19]
+        ?                         ^ ^
+        +     separation_speed: [-9.823e-19]
+        ?                         ^ ^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-0.6427 -61.8 7.824]
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                       ^^ --    ^ --   ^^^
+        +     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^^^     ^^^    ^^^^
+        -     slip_speed: [1.029e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [2.109e-19]
+        ?                        ^ ^^^
+        +     separation_speed: [-7.43e-19]
+        ?                        ^^ ^^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-26.5 197.9 -54.34]
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^ -
+        +     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^    ^^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ -
+        +     slip_speed: [1.632e-06]
+        ?                    ^^
+        -     separation_speed: [-2.893e-19]
+        ?                        -  ^^^   ^
+        +     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        ?                     ^^  ^    ^^ ^^ ^^
+        +     contact_force: [73.78 193.7 49.07]
+        ?                     ^^  ^ +   ^ ^^ ^^
+        -     contact_point: [0.03416 0.07761 0.6584]
+        ?                        - ^^     ^^^    --
+        +     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^     ++
+        -     slip_speed: [8.062e-07]
+        ?                   ---    ^
+        +     slip_speed: [1.827e-06]
+        ?                  ++  +   ^
+        -     separation_speed: [1.844e-18]
+        ?                        ^  ^^   ^
+        +     separation_speed: [-2.893e-19]
+        ?                        ^^  ^^   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                        ^^^^    -  ^    - ^
+        +     contact_point: [0.0337 0.08084 0.6568]
+        ?                        ^^^      ^^     ^^
+        -     slip_speed: [1.029e-07]
+        ?                    ^ ^   ^
+        +     slip_speed: [1.827e-06]
+        ?                    ^ ^   ^
+        -     separation_speed: [-4.292e-19]
+        ?                         ^ ^ ^   ^
+        +     separation_speed: [-1.196e-18]
+        ?                         ^ ^ ^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-23.81 87.57 -36.49]
+        +     contact_force: [25.76 93.36 13.65]
+        -     contact_point: [0.0342 0.08111 0.658]
+        ?                          ^    ^^^
+        +     contact_point: [0.03416 0.07761 0.6584]
+        ?                          ^^    ^^^       +
+        -     slip_speed: [8.012e-07]
+        ?                     ^
+        +     slip_speed: [8.062e-07]
+        ?                     ^
+        -     separation_speed: [-9.823e-19]
+        ?                        ^^  ^^   ^
+        +     separation_speed: [1.844e-18]
+        ?                        ^  ^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^     ^^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^^^     ^^^    + ^
+        -     slip_speed: [1.632e-06]
+        ?                    ^^    ^
+        +     slip_speed: [1.029e-07]
+        ?                    ^ +   ^
+        -     separation_speed: [2.007e-18]
+        ?                         ^^^^   ^
+        +     separation_speed: [-4.292e-19]
+        ?                        +++ ^^   ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.0337 0.08084 0.6568]
+        ?                         ^     ^^       ^^
+        +     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^ +    ^^       ^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ ^   ^
+        +     slip_speed: [1.029e-07]
+        ?                    ^ ^   ^
+        -     separation_speed: [-1.196e-18]
+        ?                        ^^   -   ^
+        +     separation_speed: [2.109e-19]
+        ?                        ^  +    ^
+
+      diff[-1], t: 1
+          q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [50.1 212.6 118.8]
+        -     contact_point: [-0.009362 0.0718 0.2903]
+        ?                          ^ ^^      ^    ^^^
+        +     contact_point: [-0.004383 0.07114 0.2841]
+        ?                          ^ ^^      ^^    ^^^
+              slip_speed: [0.002428]
+        -     separation_speed: [-1.534e-17]
+        ?                        ^^ ^^^
+        +     separation_speed: [5.727e-17]
+        ?                        ^ ^^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [2.555 107.8 46.75]
+              contact_point: [0.003858 0.07342 0.2776]
+              slip_speed: [0.00127]
+        -     separation_speed: [-2.9e-17]
+        ?                          --
+        +     separation_speed: [-1.42e-17]
+        ?                         +++
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-25.17 -56.72 -27.92]
+              contact_point: [0.08254 0.05086 0.3429]
+              slip_speed: [0.0006523]
+        -     separation_speed: [-2.693e-17]
+        ?                         ^ ^^^
+        +     separation_speed: [-6.175e-17]
+        ?                         ^ ^^^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [217.5 71.35 114.7]
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                         ^^ --      ^^
+        +     contact_point: [-0.0142 0.07582 0.2982]
+        ?                         ^^       ^^     +
+              slip_speed: [0.002138]
+        -     separation_speed: [-4.373e-17]
+        ?                        ^ ^^^^
+        +     separation_speed: [9.492e-17]
+        ?                        ^^ ^^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-3.507 -12.68 -2.317]
+              contact_point: [-0.01226 0.07402 0.2999]
+              slip_speed: [0.0001388]
+        -     separation_speed: [4.571e-17]
+        ?                         ^^^^
+        +     separation_speed: [5.44e-17]
+        ?                        ++ ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [90.51 46.62 58.55]
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                        ^ ---    ^ --    ^^^
+        +     contact_point: [-0.0143 0.07229 0.2991]
+        ?                     +   ^^     ^^^     ^^^
+              slip_speed: [0.0009469]
+        -     separation_speed: [6.549e-18]
+        ?                         ----   ^
+        +     separation_speed: [3.76e-17]
+        ?                        +++    ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [217.5 71.35 114.7]
+        -     contact_point: [0.002603 0.07357 0.2772]
+        ?                           --     ^^^    ^^^
+        +     contact_point: [-0.002376 0.07424 0.2834]
+        ?                     +     ++      ^^^    ^^^
+              slip_speed: [0.002138]
+        -     separation_speed: [6.397e-18]
+        ?                          ^^    ^
+        +     separation_speed: [6.507e-17]
+        ?                          ^^    ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-3.507 -12.68 -2.317]
+              contact_point: [-0.0004379 0.07244 0.2852]
+              slip_speed: [0.0001388]
+        -     separation_speed: [-1.241e-18]
+        ?                        ^^ ^^^   ^
+        +     separation_speed: [3.937e-17]
+        ?                        ^ ^^^   ^
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+              contact_force: [-38.73 6.337 -58.86]
+              contact_point: [-0.006185 0.08389 0.2695]
+              slip_speed: [0.2938]
+              separation_speed: [-0.0006057]
+
+  index: 3
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^ --     ^^^   ^^^^
+        +     contact_point: [0.03572 0.07984 0.659]
+        ?                       ^^^^     ++ ^   ^^^
+        -     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [1.029e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [-7.43e-19]
+        ?                        ^^ ^^
+        +     separation_speed: [2.109e-19]
+        ?                        ^ ^^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^ -    ^^       ^
+        +     contact_point: [0.0337 0.08084 0.6568]
+        ?                         ^     ^^       ^^
+        -     slip_speed: [1.029e-07]
+        ?                    ^ ^   ^
+        +     slip_speed: [1.827e-06]
+        ?                    ^ ^   ^
+        -     separation_speed: [2.109e-19]
+        ?                        ^  -    ^
+        +     separation_speed: [-1.196e-18]
+        ?                        ^^   +   ^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        ?                     ^^  ^ -   ^ ^^ ^^
+        +     contact_force: [25.76 93.36 13.65]
+        ?                     ^^  ^    ^^ ^^ ^^
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^     --
+        +     contact_point: [0.03416 0.07761 0.6584]
+        ?                        + ^^     ^^^    ++
+        -     slip_speed: [1.827e-06]
+        ?                  ^ ^ -   ^
+        +     slip_speed: [8.062e-07]
+        ?                  ^ ^^    ^
+        -     separation_speed: [-2.893e-19]
+        ?                        ^^  ^^   ^
+        +     separation_speed: [1.844e-18]
+        ?                        ^  ^^   ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        +     contact_force: [-0.6427 -61.8 7.824]
+        -     contact_point: [0.03416 0.07761 0.6584]
+        +     contact_point: [0.1275 0.08539 0.7131]
+        -     slip_speed: [8.062e-07]
+        ?                   ^^ -
+        +     slip_speed: [4.836e-07]
+        ?                  ++ ^
+        -     separation_speed: [1.844e-18]
+        ?                        ^ - ^   ^
+        +     separation_speed: [-7.43e-19]
+        ?                        ^^  ^   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-23.81 87.57 -36.49]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                         - -    - ^^    - ^
+        +     contact_point: [0.0342 0.08111 0.658]
+        ?                        +       ^^^     ^
+        -     slip_speed: [1.029e-07]
+        ?                  ^   -
+        +     slip_speed: [8.012e-07]
+        ?                  ^  +
+        -     separation_speed: [-4.292e-19]
+        ?                         ^  ^^
+        +     separation_speed: [-9.823e-19]
+        ?                         ^ + ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-23.81 87.57 -36.49]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.0342 0.08111 0.658]
+        ?                        -       ^^^     ^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                         + +    + ^^    + ^
+        -     slip_speed: [8.012e-07]
+        ?                  ^  -
+        +     slip_speed: [1.029e-07]
+        ?                  ^   +
+        -     separation_speed: [-9.823e-19]
+        ?                          -- -
+        +     separation_speed: [-4.292e-19]
+        ?                         +++
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^    ^^
+        +     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^ +
+        -     slip_speed: [1.632e-06]
+        ?                    ^^
+        +     slip_speed: [1.827e-06]
+        ?                    ^ +
+        -     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+        +     separation_speed: [-2.893e-19]
+        ?                        +  ^^^   ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-26.5 197.9 -54.34]
+        -     contact_point: [0.0337 0.08084 0.6568]
+        ?                        ^^^    ^^^^     ^^
+        +     contact_point: [0.04011 0.07652 0.6503]
+        ?                        ^^^^    ^^^^     ^^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ -
+        +     slip_speed: [1.632e-06]
+        ?                    ^^
+        -     separation_speed: [-1.196e-18]
+        ?                        ^^ ^^^
+        +     separation_speed: [2.007e-18]
+        ?                        ^ ^^^
+
+      diff[-1], t: 1
+          q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [50.1 212.6 118.8]
+              contact_point: [-0.009362 0.0718 0.2903]
+              slip_speed: [0.002428]
+        -     separation_speed: [-1.534e-17]
+        ?                        ^ ^^ -
+        +     separation_speed: [3.163e-17]
+        ?                        ^^ ^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [2.555 107.8 46.75]
+        ?                        ^   ^^^^^ -  -
+        +     contact_force: [217.5 71.35 114.7]
+        ?                      ++  ^^^^^   ^
+        -     contact_point: [0.003858 0.07342 0.2776]
+        ?                          ---     ^^^    ^^^
+        +     contact_point: [-0.009223 0.07515 0.292]
+        ?                     +    +++      ^^^    ^^
+        -     slip_speed: [0.00127]
+        ?                       ^^
+        +     slip_speed: [0.002138]
+        ?                      + ^^
+        -     separation_speed: [-2.9e-17]
+        ?                        ^^
+        +     separation_speed: [5.59e-17]
+        ?                        ^ +
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-25.17 -56.72 -27.92]
+              contact_point: [0.08254 0.05086 0.3429]
+              slip_speed: [0.0006523]
+        -     separation_speed: [-2.693e-17]
+        ?                        ^^ ^^
+        +     separation_speed: [1.333e-17]
+        ?                        ^ ^^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        ?                      --  ^^^^^   ^
+        +     contact_force: [2.555 107.8 46.75]
+        ?                        ^   ^^^^^ +  +
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                     -    ---      ^^^    ^^
+        +     contact_point: [0.003858 0.07342 0.2776]
+        ?                          +++     ^^^    ^^^
+        -     slip_speed: [0.002138]
+        ?                       ^^^
+        +     slip_speed: [0.00127]
+        ?                      + ^
+        -     separation_speed: [-4.373e-17]
+        ?                        ^ ^^^^   ^
+        +     separation_speed: [9.41e-18]
+        ?                        ^^ ^   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-3.507 -12.68 -2.317]
+              contact_point: [-0.01226 0.07402 0.2999]
+              slip_speed: [0.0001388]
+        -     separation_speed: [4.571e-17]
+        ?                          ^ ^   ^
+        +     separation_speed: [-4.177e-19]
+        ?                        +  ^ ^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [90.51 46.62 58.55]
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                        ^ ---    ^ --    ^^^
+        +     contact_point: [-0.0143 0.07229 0.2991]
+        ?                     +   ^^     ^^^     ^^^
+              slip_speed: [0.0009469]
+        -     separation_speed: [6.549e-18]
+        ?                        ^ - ^   ^
+        +     separation_speed: [1.431e-17]
+        ?                        ^  ^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [217.5 71.35 114.7]
+              contact_point: [0.002603 0.07357 0.2772]
+              slip_speed: [0.002138]
+        -     separation_speed: [6.397e-18]
+        ?                        ^ ^^    ^
+        +     separation_speed: [2.527e-17]
+        ?                        ^ ^^    ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-3.507 -12.68 -2.317]
+              contact_point: [-0.0004379 0.07244 0.2852]
+              slip_speed: [0.0001388]
+        -     separation_speed: [-1.241e-18]
+        ?                         ^  --   ^
+        +     separation_speed: [-2.2e-17]
+        ?                         ^     ^
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+              contact_force: [-38.73 6.337 -58.86]
+              contact_point: [-0.006185 0.08389 0.2695]
+              slip_speed: [0.2938]
+              separation_speed: [-0.0006057]
+
+
+
+[ meta_trial = 1, num_sim_trials = 4, setup = SetupEnum.Discrete_WithGeometry_AnzuWsgWelded ]
+
+resimulate_mode: reuse
+  index: 0
+    good (first)
+  index: 1
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        ?                          -
+        +     contact_force: [-0.1327 -13.15 1.668]
+        ?                           +
+              contact_point: [0.04929 0.07803 0.6459]
+        -     slip_speed: [1.029e-07]
+        ?                   ^^^^   ^
+        +     slip_speed: [5.175e-08]
+        ?                  ++ ^^   ^
+        -     separation_speed: [-4.292e-19]
+        ?                         ^ ^^^  ^^
+        +     separation_speed: [-5.688e-20]
+        ?                         ^ ^^^  ^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        ?                         -     ^   ^^^
+        +     contact_force: [73.57 193.8 48.98]
+        ?                        +      ^  ++ ^
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                        ^^ ^     ^^^    - ^
+        +     contact_point: [0.05298 0.07826 0.6381]
+        ?                        ^ ^^     ^^^     ^^
+        -     slip_speed: [1.827e-06]
+        ?                  ^ -     ^
+        +     slip_speed: [9.257e-07]
+        ?                  ^  +    ^
+        -     separation_speed: [-2.893e-19]
+        ?                         ^   -   ^
+        +     separation_speed: [-1.089e-18]
+        ?                         ^ +     ^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        ?                          -
+        +     contact_force: [-0.1327 -13.15 1.668]
+        ?                           +
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                           ^
+        +     contact_point: [0.03573 0.07984 0.659]
+        ?                           ^
+        -     slip_speed: [1.029e-07]
+        ?                   ^^^^   ^
+        +     slip_speed: [5.175e-08]
+        ?                  ++ ^^   ^
+        -     separation_speed: [2.109e-19]
+        ?                        ^ - ^  ^^
+        +     separation_speed: [-4.033e-20]
+        ?                        ^^  ^^  ^^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        ?                         -     ^   ^^^
+        +     contact_force: [73.57 193.8 48.98]
+        ?                        +      ^  ++ ^
+              contact_point: [0.0337 0.08084 0.6568]
+        -     slip_speed: [1.827e-06]
+        ?                  ^ -     ^
+        +     slip_speed: [9.257e-07]
+        ?                  ^  +    ^
+        -     separation_speed: [-1.196e-18]
+        ?                          ----   ^
+        +     separation_speed: [-2.231e-19]
+        ?                         ++++    ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        ?                         ^ --  ^^^^^^
+        +     contact_force: [-0.632 -61.8 7.834]
+        ?                      ++++ ++ + ^   ^
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                        ^^^^     ^^^     ^^
+        +     contact_point: [0.03398 0.07934 0.658]
+        ?                        ^^^^     ^^^     ^
+        -     slip_speed: [1.632e-06]
+        ?                  ^ ^     ^
+        +     slip_speed: [2.432e-07]
+        ?                  ^ ^     ^
+        -     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+        +     separation_speed: [-2.325e-19]
+        ?                        +  ^^^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        +     contact_force: [-23.83 87.55 -36.53]
+        -     contact_point: [0.03416 0.07761 0.6584]
+        ?                          ^^    ^^^       -
+        +     contact_point: [0.0342 0.08111 0.658]
+        ?                          ^    ^^^
+        -     slip_speed: [8.062e-07]
+        ?                  ^  ^^
+        +     slip_speed: [4.08e-07]
+        ?                  ^  ^
+        -     separation_speed: [1.844e-18]
+        ?                          ^^^   ^
+        +     separation_speed: [-1.637e-19]
+        ?                        +  ^^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [-26.63 197.8 -54.51]
+        -     contact_point: [0.1275 0.08539 0.7131]
+        +     contact_point: [0.04582 0.07575 0.6448]
+        -     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [8.252e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [-7.43e-19]
+        ?                         ^      ^
+        +     separation_speed: [-1.643e-18]
+        ?                         ^ +     ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-23.81 87.57 -36.49]
+        +     contact_force: [25.71 93.38 13.63]
+        -     contact_point: [0.0342 0.08111 0.658]
+        ?                          ^    ^^^
+        +     contact_point: [0.03416 0.07761 0.6585]
+        ?                          ^^    ^^^       +
+        -     slip_speed: [8.012e-07]
+        ?                  ^  ^^
+        +     slip_speed: [4.069e-07]
+        ?                  ^  ^^
+        -     separation_speed: [-9.823e-19]
+        ?                         ^ ^ ^
+        +     separation_speed: [-1.124e-19]
+        ?                         ^ ^ ^
+
+      diff[-1], t: 1
+        - q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+        ?         ^      --       ^                -        ^
+        + q: [0.3547 -0.2495 -0.4349 2.146 0.6404 0.135 -0.1298]
+        ?         ^^     ++        ^           ++             ^
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [2.555 107.8 46.75]
+        ?                        ^^     ^     -
+        +     contact_force: [2.517 107.9 46.67]
+        ?                        ^^     ^    +
+        -     contact_point: [0.003858 0.07342 0.2776]
+        ?                         ^^^^      ^^
+        +     contact_point: [0.004144 0.07338 0.2776]
+        ?                         ^^^^      ^^
+        -     slip_speed: [0.00127]
+        ?                        ^
+        +     slip_speed: [0.001264]
+        ?                        ^^
+        -     separation_speed: [1.39e-19]
+        ?                        ^      ^
+        +     separation_speed: [5.439e-17]
+        ?                        ^ +     ^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-25.17 -56.72 -27.92]
+        ?                          -      ^     ^^
+        +     contact_force: [-25.1 -56.76 -27.85]
+        ?                                ^     ^^
+        -     contact_point: [-0.01415 0.07407 0.2991]
+        +     contact_point: [0.06535 0.05323 0.3648]
+        -     slip_speed: [0.0006523]
+        ?                        ^^^
+        +     slip_speed: [0.0006494]
+        ?                        ^^^
+        -     separation_speed: [-7.671e-17]
+        ?                         ^ ^^^
+        +     separation_speed: [-3.883e-17]
+        ?                         ^ ^^^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        ?                        ^^^      ^     ^^
+        +     contact_force: [-3.499 -12.69 -2.304]
+        ?                        ^^^      ^     ^^
+        -     contact_point: [-0.01226 0.07402 0.2999]
+        ?                          ^^^      --
+        +     contact_point: [-0.01199 0.074 0.2999]
+        ?                          ^^^
+        -     slip_speed: [0.0001388]
+        ?                          ^
+        +     slip_speed: [0.0001381]
+        ?                          ^
+        -     separation_speed: [4.643e-17]
+        ?                          --
+        +     separation_speed: [4.355e-17]
+        ?                           ++
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        +     contact_force: [90.39 46.71 58.63]
+        -     contact_point: [-0.0004379 0.07244 0.2852]
+        ?                          -- --      ^^    ^^^
+        +     contact_point: [-0.01403 0.07226 0.2991]
+        ?                         ++        ^^    ^^^
+        -     slip_speed: [0.0001388]
+        ?                       ^^^^
+        +     slip_speed: [0.0009424]
+        ?                       ^^^^
+        -     separation_speed: [4.314e-17]
+        ?                        ^ ^ ^
+        +     separation_speed: [6.215e-17]
+        ?                        ^ ^ ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [90.51 46.62 58.55]
+        +     contact_force: [217.3 71.47 115]
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                        ^ ^^^    ^ --    ^^^
+        +     contact_point: [-0.01393 0.07579 0.2982]
+        ?                     +   ^ ^^    ^^^     ^^^
+        -     slip_speed: [0.0009469]
+        ?                      ^^^^^
+        +     slip_speed: [0.002127]
+        ?                      ^^^^
+        -     separation_speed: [-1.491e-17]
+        ?                        ^^ ^^^
+        +     separation_speed: [7.25e-17]
+        ?                        ^ ^^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [49.99 212.7 118.6]
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                          ^^^^     - ^    ^^
+        +     contact_point: [-0.004101 0.0711 0.2841]
+        ?                          ^^^^      ^    ^^^
+        -     slip_speed: [0.002138]
+        ?                        ^^
+        +     slip_speed: [0.002417]
+        ?                       + ^
+        -     separation_speed: [2.694e-17]
+        ?                         ---    ^
+        +     separation_speed: [8.248e-18]
+        ?                        ++  +   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-3.499 -12.69 -2.304]
+        -     contact_point: [-0.002376 0.07424 0.2834]
+        ?                          ^^^      -       ^^
+        +     contact_point: [-0.0001569 0.07241 0.2852]
+        ?                          ^^^ +       +     ^^
+        -     slip_speed: [0.002138]
+        ?                      ^
+        +     slip_speed: [0.0001381]
+        ?                      ^   +
+        -     separation_speed: [3.026e-17]
+        ?                        ^ ^ -
+        +     separation_speed: [1.752e-17]
+        ?                        ^ ^^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [50.1 212.6 118.8]
+        +     contact_force: [217.3 71.47 115]
+        -     contact_point: [-0.009362 0.0718 0.2903]
+        ?                     -     ---     ^^    ^^^
+        +     contact_point: [0.002889 0.07353 0.2772]
+        ?                         +++      ^^^    ^^^
+        -     slip_speed: [0.002428]
+        ?                       ^ ^
+        +     slip_speed: [0.002127]
+        ?                       ^ ^
+        -     separation_speed: [1.144e-17]
+        ?                        ^ ^^^   ^
+        +     separation_speed: [-7.859e-18]
+        ?                        ^^ ^^^   ^
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+        -     contact_force: [-38.73 6.337 -58.86]
+        ?                          ^    ^^      ^
+        +     contact_force: [-38.72 6.316 -58.85]
+        ?                          ^    ^^      ^
+        -     contact_point: [-0.006185 0.08389 0.2695]
+        ?                          ^^         ^
+        +     contact_point: [-0.005895 0.08384 0.2695]
+        ?                          ^ +        ^
+        -     slip_speed: [0.2938]
+        ?                       ^
+        +     slip_speed: [0.2935]
+        ?                       ^
+        -     separation_speed: [-0.0006057]
+        ?                                ^^
+        +     separation_speed: [-0.0006304]
+        ?                               + ^
+
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+resimulate_mode: recreate
+  index: 0
+    good (first)
+  index: 1
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-23.81 87.57 -36.49]
+              contact_point: [0.0342 0.08111 0.658]
+              slip_speed: [8.012e-07]
+              separation_speed: [-9.823e-19]
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.03398 0.07934 0.658]
+        ?                        ^^^^       -    ^^
+        +     contact_point: [0.04727 0.07903 0.6436]
+        ?                        ^^^^      +     ^^^
+        -     slip_speed: [4.836e-07]
+        ?                  ^  ^^   ^
+        +     slip_speed: [1.827e-06]
+        ?                  ^  ^^   ^
+        -     separation_speed: [-9.597e-19]
+        ?                          ^^^^
+        +     separation_speed: [-2.893e-19]
+        ?                         +++ ^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                        ^^^     ^^ ^    ^^
+        +     contact_point: [0.0337 0.08084 0.6568]
+        ?                        ^^     ^ ^^    ^ +
+              slip_speed: [1.827e-06]
+        -     separation_speed: [-2.893e-19]
+        ?                         ^ ^ ^   ^
+        +     separation_speed: [-1.196e-18]
+        ?                         ^ ^ ^   ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [25.76 93.36 13.65]
+              contact_point: [0.03416 0.07761 0.6584]
+              slip_speed: [8.062e-07]
+              separation_speed: [1.844e-18]
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-26.5 197.9 -54.34]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^^^     ^^^    - ^
+        +     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^     ^^
+        -     slip_speed: [1.029e-07]
+        ?                    ^ -   ^
+        +     slip_speed: [1.632e-06]
+        ?                    ^^    ^
+        -     separation_speed: [-4.292e-19]
+        ?                        ^^ ^^^   ^
+        +     separation_speed: [2.007e-18]
+        ?                        ^ ^^^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^     ^^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^^^     ^^^    + ^
+        -     slip_speed: [1.632e-06]
+        ?                    ^^    ^
+        +     slip_speed: [1.029e-07]
+        ?                    ^ +   ^
+        -     separation_speed: [2.007e-18]
+        ?                         ^^^^   ^
+        +     separation_speed: [-4.292e-19]
+        ?                        +++ ^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.0337 0.08084 0.6568]
+        ?                         ^     ^^       ^^
+        +     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^ +    ^^       ^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ ^   ^
+        +     slip_speed: [1.029e-07]
+        ?                    ^ ^   ^
+        -     separation_speed: [-1.196e-18]
+        ?                        ^^   -   ^
+        +     separation_speed: [2.109e-19]
+        ?                        ^  +    ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-0.6427 -61.8 7.824]
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^^^      ^      ^
+        +     contact_point: [0.03398 0.07934 0.658]
+        ?                         ^^^      ^      ^
+        -     slip_speed: [1.029e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [2.109e-19]
+        ?                        ^ ^^
+        +     separation_speed: [-9.597e-19]
+        ?                        ^^ ^ +
+
+      diff[-1], t: 1
+          q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-25.17 -56.72 -27.92]
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                     -   ^^ ^^    - ^^     -
+        +     contact_point: [0.08254 0.05086 0.3429]
+        ?                        ^ ^^     ^^^   ++
+        -     slip_speed: [0.002138]
+        ?                       - -
+        +     slip_speed: [0.0006523]
+        ?                      +++
+        -     separation_speed: [-5.178e-17]
+        ?                          ----
+        +     separation_speed: [-1.315e-17]
+        ?                         ++++
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-3.507 -12.68 -2.317]
+        -     contact_point: [0.002603 0.07357 0.2772]
+        ?                        ^  --     ^^^    ^^^
+        +     contact_point: [-0.01226 0.07402 0.2999]
+        ?                     +   ^^       ^^^    ^^^
+        -     slip_speed: [0.002138]
+        ?                      ^
+        +     slip_speed: [0.0001388]
+        ?                      ^   +
+        -     separation_speed: [4.224e-17]
+        ?                        ^   -
+        +     separation_speed: [3.622e-17]
+        ?                        ^ +
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-25.17 -56.72 -27.92]
+        +     contact_force: [50.1 212.6 118.8]
+        -     contact_point: [-0.01415 0.07407 0.2991]
+        ?                         ^ ^^      --    ^^
+        +     contact_point: [-0.004383 0.07114 0.2841]
+        ?                         ^ ^^^     ++     ^^
+        -     slip_speed: [0.0006523]
+        ?                      --- ^
+        +     slip_speed: [0.002428]
+        ?                       ^^^
+        -     separation_speed: [-2.29e-17]
+        ?                         ^  ^
+        +     separation_speed: [-4.264e-17]
+        ?                         ^  ^^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [90.51 46.62 58.55]
+        +     contact_force: [217.5 71.35 114.7]
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                          ---    ^^^^      ^
+        +     contact_point: [0.002603 0.07357 0.2772]
+        ?                         +++     ^^^^      ^
+        -     slip_speed: [0.0009469]
+        ?                      ^^^^^
+        +     slip_speed: [0.002138]
+        ?                      ^^^^
+        -     separation_speed: [3.75e-17]
+        ?                        ^ ^    ^
+        +     separation_speed: [-6.654e-18]
+        ?                        ^^ ^ +   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [2.555 107.8 46.75]
+        -     contact_point: [-0.01357 0.07574 0.2994]
+        ?                     -   ^  ^     ^^     ^^^
+        +     contact_point: [0.003858 0.07342 0.2776]
+        ?                        ^ + ^     ^ +    ^^^
+              slip_speed: [0.00127]
+        -     separation_speed: [2.096e-17]
+        ?                        ^ ^^
+        +     separation_speed: [-6.561e-17]
+        ?                        ^^ ^ +
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        +     contact_force: [217.5 71.35 114.7]
+        -     contact_point: [-0.007284 0.07336 0.2937]
+        ?                         ^^ --     ^^^     ^^
+        +     contact_point: [-0.0142 0.07582 0.2982]
+        ?                         ^^      ^^^     ^^
+        -     slip_speed: [0.0001388]
+        ?                      ^   -
+        +     slip_speed: [0.002138]
+        ?                      ^
+        -     separation_speed: [5.612e-17]
+        ?                         ---
+        +     separation_speed: [-7.528e-17]
+        ?                        +++  +
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [50.1 212.6 118.8]
+        ?                     ^    ^^^   ^^  ^
+        +     contact_force: [90.51 46.62 58.55]
+        ?                     ^  +  ^^  + ^  ^^
+        -     contact_point: [-0.004383 0.07114 0.2841]
+        ?                         ^ --      ^^^    ^^
+        +     contact_point: [-0.0143 0.07229 0.2991]
+        ?                         ^       ^^^    ^^
+        -     slip_speed: [0.002428]
+        ?                      ^ ^^
+        +     slip_speed: [0.0009469]
+        ?                      ^^ ^^
+        -     separation_speed: [3.893e-17]
+        ?                        ^  --
+        +     separation_speed: [-4.418e-17]
+        ?                        ^^ ++
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-3.507 -12.68 -2.317]
+        -     contact_point: [0.004541 0.07178 0.2789]
+        ?                          ^^^     ^^^    - ^
+        +     contact_point: [-0.0004379 0.07244 0.2852]
+        ?                     +    + ^^^     ^^^     ^^
+              slip_speed: [0.0001388]
+        -     separation_speed: [3.107e-17]
+        ?                         ^^^^
+        +     separation_speed: [1.362e-17]
+        ?                        ++ ^^
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+              contact_force: [-38.73 6.337 -58.86]
+              contact_point: [-0.006185 0.08389 0.2695]
+              slip_speed: [0.2938]
+              separation_speed: [-0.0006057]
+
+  index: 2
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-23.81 87.57 -36.49]
+              contact_point: [0.0342 0.08111 0.658]
+              slip_speed: [8.012e-07]
+              separation_speed: [-9.823e-19]
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-0.6427 -61.8 7.824]
+              contact_point: [0.03398 0.07934 0.658]
+              slip_speed: [4.836e-07]
+              separation_speed: [-9.597e-19]
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-26.5 197.9 -54.34]
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^ -
+        +     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^    ^^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ -
+        +     slip_speed: [1.632e-06]
+        ?                    ^^
+        -     separation_speed: [-2.893e-19]
+        ?                        -  ^^^   ^
+        +     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        ?                     ^^  ^    ^^ ^^ ^^
+        +     contact_force: [73.78 193.7 49.07]
+        ?                     ^^  ^ +   ^ ^^ ^^
+        -     contact_point: [0.03416 0.07761 0.6584]
+        ?                         ^^^    ^^^^      -
+        +     contact_point: [0.0337 0.08084 0.6568]
+        ?                         ^^    ^^^^     +
+        -     slip_speed: [8.062e-07]
+        ?                   ---    ^
+        +     slip_speed: [1.827e-06]
+        ?                  ++  +   ^
+        -     separation_speed: [1.844e-18]
+        ?                          ^^^
+        +     separation_speed: [-1.196e-18]
+        ?                        +  ^^^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                        ^^ -      ^^    -
+        +     contact_point: [0.03572 0.07984 0.659]
+        ?                        ^^^      + ^
+              slip_speed: [1.029e-07]
+        -     separation_speed: [-4.292e-19]
+        ?                        ^^ ^ -
+        +     separation_speed: [2.109e-19]
+        ?                        ^ ^^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^    ^^
+        +     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^ +
+        -     slip_speed: [1.632e-06]
+        ?                    ^^
+        +     slip_speed: [1.827e-06]
+        ?                    ^ +
+        -     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+        +     separation_speed: [-2.893e-19]
+        ?                        +  ^^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.0337 0.08084 0.6568]
+        ?                        ^^^      ^^     ^^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                        ^^^^    +  ^    + ^
+        -     slip_speed: [1.827e-06]
+        ?                    ^ ^   ^
+        +     slip_speed: [1.029e-07]
+        ?                    ^ ^   ^
+        -     separation_speed: [-1.196e-18]
+        ?                         ^ ^ ^   ^
+        +     separation_speed: [-4.292e-19]
+        ?                         ^ ^ ^   ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [25.76 93.36 13.65]
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^^^     ^^^     ^
+        +     contact_point: [0.03416 0.07761 0.6584]
+        ?                         ^^^     ^^^     ^^
+        -     slip_speed: [1.029e-07]
+        ?                  ^   -
+        +     slip_speed: [8.062e-07]
+        ?                  ^  +
+        -     separation_speed: [2.109e-19]
+        ?                        ^ ^^^   ^
+        +     separation_speed: [1.844e-18]
+        ?                        ^ ^^^   ^
+
+      diff[-1], t: 1
+          q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-25.17 -56.72 -27.92]
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                     -   ^^ --    -  ^   ^^^
+        +     contact_point: [0.06512 0.05319 0.3647]
+        ?                        ^^^      + ^   ^^^^
+        -     slip_speed: [0.002138]
+        ?                       - -
+        +     slip_speed: [0.0006523]
+        ?                      +++
+        -     separation_speed: [-5.178e-17]
+        ?                           ^ -
+        +     separation_speed: [-5.427e-17]
+        ?                           ^^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [217.5 71.35 114.7]
+        -     contact_point: [0.002603 0.07357 0.2772]
+        ?                        ^ ---     - ^    ^^
+        +     contact_point: [-0.0142 0.07582 0.2982]
+        ?                     +   ^^       ^^    ^^
+              slip_speed: [0.002138]
+        -     separation_speed: [4.224e-17]
+        ?                        ^ ^^^
+        +     separation_speed: [1.333e-17]
+        ?                        ^ ^^^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-25.17 -56.72 -27.92]
+        +     contact_force: [2.555 107.8 46.75]
+        -     contact_point: [-0.01415 0.07407 0.2991]
+        ?                          ^^       --      ^
+        +     contact_point: [-0.01357 0.07574 0.2994]
+        ?                          ^ +     ++       ^
+        -     slip_speed: [0.0006523]
+        ?                      ^^^ ^
+        +     slip_speed: [0.00127]
+        ?                      ^ ^
+        -     separation_speed: [-2.29e-17]
+        ?                        ^^ -
+        +     separation_speed: [4.93e-17]
+        ?                        ^  +
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [90.51 46.62 58.55]
+        +     contact_force: [-3.507 -12.68 -2.317]
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                        --  ^    ^^^^    ^^^
+        +     contact_point: [-0.01226 0.07402 0.2999]
+        ?                     +     ^^    ^^^^    ^^^
+        -     slip_speed: [0.0009469]
+        ?                       ^^^^
+        +     slip_speed: [0.0001388]
+        ?                       ^^^^
+        -     separation_speed: [3.75e-17]
+        ?                        ^  ^
+        +     separation_speed: [8.778e-17]
+        ?                        ^  ^^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [2.555 107.8 46.75]
+        +     contact_force: [50.1 212.6 118.8]
+        -     contact_point: [-0.01357 0.07574 0.2994]
+        ?                         ^ ^^     ^^^     ^^
+        +     contact_point: [-0.009362 0.0718 0.2903]
+        ?                         ^^ ^^     ^^     ^^
+        -     slip_speed: [0.00127]
+        ?                      - ^
+        +     slip_speed: [0.002428]
+        ?                       ^^^
+        -     separation_speed: [2.096e-17]
+        ?                          ^ ^   ^
+        +     separation_speed: [-2.495e-18]
+        ?                        +  ^ ^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        +     contact_force: [90.51 46.62 58.55]
+        -     contact_point: [-0.007284 0.07336 0.2937]
+        ?                     -     ---    ^^^     --
+        +     contact_point: [0.003127 0.06996 0.2774]
+        ?                         +++     ^^^      ++
+        -     slip_speed: [0.0001388]
+        ?                       ^^^^
+        +     slip_speed: [0.0009469]
+        ?                       ^^^^
+        -     separation_speed: [5.612e-17]
+        ?                        ^ --
+        +     separation_speed: [6.288e-17]
+        ?                        ^  ++
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [50.1 212.6 118.8]
+        ?                       ^^ ^      ^^^^
+        +     contact_force: [-3.507 -12.68 -2.317]
+        ?                     +++  ^ ^    + ++++ ^
+        -     contact_point: [-0.004383 0.07114 0.2841]
+        ?                            ^^     ^^      ^^
+        +     contact_point: [-0.0004379 0.07244 0.2852]
+        ?                          +  ^^     ^^      ^^
+        -     slip_speed: [0.002428]
+        ?                      ^^^
+        +     slip_speed: [0.0001388]
+        ?                      ^^^^
+        -     separation_speed: [3.893e-17]
+        ?                        ^  ^
+        +     separation_speed: [5.883e-17]
+        ?                        ^  ^
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        +     contact_force: [217.5 71.35 114.7]
+        -     contact_point: [0.004541 0.07178 0.2789]
+        ?                         ^^^^     ^ -     ^^
+        +     contact_point: [0.002603 0.07357 0.2772]
+        ?                         ^^^^     ^^      ^^
+        -     slip_speed: [0.0001388]
+        ?                      ^   -
+        +     slip_speed: [0.002138]
+        ?                      ^
+        -     separation_speed: [3.107e-17]
+        ?                          --
+        +     separation_speed: [-3.762e-17]
+        ?                        +   ++
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+              contact_force: [-38.73 6.337 -58.86]
+              contact_point: [-0.006185 0.08389 0.2695]
+              slip_speed: [0.2938]
+              separation_speed: [-0.0006057]
+
+  index: 3
+    BAD
+      diff[0], t: 0.001
+          q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-23.81 87.57 -36.49]
+        +     contact_force: [-0.6427 -61.8 7.824]
+        -     contact_point: [0.0342 0.08111 0.658]
+        ?                       ^^^      ^^^   ^^^
+        +     contact_point: [0.1275 0.08539 0.7131]
+        ?                       ^ ++     ^^^   ^^^^
+        -     slip_speed: [8.012e-07]
+        ?                   ^^^^
+        +     slip_speed: [4.836e-07]
+        ?                  ++ ^^
+        -     separation_speed: [-9.823e-19]
+        ?                         ^ ^^
+        +     separation_speed: [-7.43e-19]
+        ?                         ^ ^
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.6427 -61.8 7.824]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.03398 0.07934 0.658]
+        ?                        ^^ ^     ^ -     ^
+        +     contact_point: [0.04929 0.07803 0.6459]
+        ?                        ^ ^^     ^^     + ^
+        -     slip_speed: [4.836e-07]
+        ?                  ^ ^^^
+        +     slip_speed: [1.029e-07]
+        ?                  ^ ^^^
+        -     separation_speed: [-9.597e-19]
+        ?                          ^^^^
+        +     separation_speed: [-4.292e-19]
+        ?                         +++ ^
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [73.78 193.7 49.07]
+        ?                     ^^  ^ -   ^ ^^ ^^
+        +     contact_force: [25.76 93.36 13.65]
+        ?                     ^^  ^    ^^ ^^ ^^
+        -     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^     --
+        +     contact_point: [0.03416 0.07761 0.6584]
+        ?                        + ^^     ^^^    ++
+        -     slip_speed: [1.827e-06]
+        ?                  ^ ^ -   ^
+        +     slip_speed: [8.062e-07]
+        ?                  ^ ^^    ^
+        -     separation_speed: [-2.893e-19]
+        ?                        ^^  ^^   ^
+        +     separation_speed: [1.844e-18]
+        ?                        ^  ^^   ^
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [25.76 93.36 13.65]
+        +     contact_force: [-0.1332 -13.15 1.668]
+        -     contact_point: [0.03416 0.07761 0.6584]
+        ?                         ^^^     ^^^     ^^
+        +     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^^^     ^^^     ^
+        -     slip_speed: [8.062e-07]
+        ?                  ^  -
+        +     slip_speed: [1.029e-07]
+        ?                  ^   +
+        -     separation_speed: [1.844e-18]
+        ?                         ^^^^   ^
+        +     separation_speed: [2.109e-19]
+        ?                        ++ ^^   ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-26.5 197.9 -54.34]
+        -     contact_point: [0.04929 0.07803 0.6459]
+        ?                         ^^^     ^^^    - ^
+        +     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^     ^^
+        -     slip_speed: [1.029e-07]
+        ?                    ^ -   ^
+        +     slip_speed: [1.632e-06]
+        ?                    ^^    ^
+        -     separation_speed: [-4.292e-19]
+        ?                        ^^ ^^^   ^
+        +     separation_speed: [2.007e-18]
+        ?                        ^ ^^^   ^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-26.5 197.9 -54.34]
+        +     contact_force: [73.78 193.7 49.07]
+        -     contact_point: [0.04011 0.07652 0.6503]
+        ?                         ^^^     ^^^    ^^
+        +     contact_point: [0.04727 0.07903 0.6436]
+        ?                         ^^^     ^^^    ^ +
+        -     slip_speed: [1.632e-06]
+        ?                    ^^
+        +     slip_speed: [1.827e-06]
+        ?                    ^ +
+        -     separation_speed: [2.007e-18]
+        ?                          ^^^   ^
+        +     separation_speed: [-2.893e-19]
+        ?                        +  ^^^   ^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+              contact_force: [73.78 193.7 49.07]
+              contact_point: [0.0337 0.08084 0.6568]
+              slip_speed: [1.827e-06]
+              separation_speed: [-1.196e-18]
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-0.1332 -13.15 1.668]
+        +     contact_force: [-23.81 87.57 -36.49]
+        -     contact_point: [0.03572 0.07984 0.659]
+        ?                         ^^     -- ^     ^
+        +     contact_point: [0.0342 0.08111 0.658]
+        ?                         ^      ^^^     ^
+        -     slip_speed: [1.029e-07]
+        ?                  ^   -
+        +     slip_speed: [8.012e-07]
+        ?                  ^  +
+        -     separation_speed: [2.109e-19]
+        ?                         ^^^^
+        +     separation_speed: [-9.823e-19]
+        ?                        ++++ ^
+
+      diff[-1], t: 1
+          q: [0.355 -0.2503 -0.4348 2.146 0.64 0.1365 -0.1292]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        ?                      --  ^^^^^   ^
+        +     contact_force: [2.555 107.8 46.75]
+        ?                        ^   ^^^^^ +  +
+        -     contact_point: [-0.009223 0.07515 0.292]
+        ?                     -    ---      ^^^    ^^
+        +     contact_point: [0.003858 0.07342 0.2776]
+        ?                          +++     ^^^    ^^^
+        -     slip_speed: [0.002138]
+        ?                       ^^^
+        +     slip_speed: [0.00127]
+        ?                      + ^
+        -     separation_speed: [-5.178e-17]
+        ?                        ^^   -
+        +     separation_speed: [1.127e-17]
+        ?                        ^  +
+            point_pair_contact_info(1):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [217.5 71.35 114.7]
+        +     contact_force: [-25.17 -56.72 -27.92]
+        -     contact_point: [0.002603 0.07357 0.2772]
+        ?                        ^^^^^     ^^     ^^^
+        +     contact_point: [-0.01415 0.07407 0.2991]
+        ?                     +   ^^^^     ^^     ^^^
+        -     slip_speed: [0.002138]
+        ?                       - -
+        +     slip_speed: [0.0006523]
+        ?                      +++
+        -     separation_speed: [4.224e-17]
+        ?                        ^  --
+        +     separation_speed: [-5.592e-17]
+        ?                        ^^ ++
+            point_pair_contact_info(2):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-25.17 -56.72 -27.92]
+        ?                      ^ ^^   ^ ^^^    ---
+        +     contact_force: [-3.507 -12.68 -2.317]
+        ?                      ^^ ^   ^^^ ^   +++
+        -     contact_point: [-0.01415 0.07407 0.2991]
+        ?                         ^ --     ^^^     ^^
+        +     contact_point: [-0.007284 0.07336 0.2937]
+        ?                         ^^^^      ^^^     ^^
+        -     slip_speed: [0.0006523]
+        ?                       ^^^
+        +     slip_speed: [0.0001388]
+        ?                       ^ ++
+        -     separation_speed: [-2.29e-17]
+        ?                        -   -
+        +     separation_speed: [2.342e-17]
+        ?                          ++
+            point_pair_contact_info(3):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [90.51 46.62 58.55]
+        +     contact_force: [-3.507 -12.68 -2.317]
+        -     contact_point: [0.003127 0.06996 0.2774]
+        ?                         ^ --    ^^^^     ^^
+        +     contact_point: [0.004541 0.07178 0.2789]
+        ?                         ^^^     ^^^^     ^^
+        -     slip_speed: [0.0009469]
+        ?                       ^^^^
+        +     slip_speed: [0.0001388]
+        ?                       ^^^^
+        -     separation_speed: [3.75e-17]
+        ?                        ^ ^    ^
+        +     separation_speed: [-7.025e-18]
+        ?                        ^^ ^^    ^
+            point_pair_contact_info(4):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [2.555 107.8 46.75]
+        ?                     ^  --- ----    ^
+        +     contact_force: [90.51 46.62 58.55]
+        ?                     ^^       ^^^^^^^
+        -     contact_point: [-0.01357 0.07574 0.2994]
+        ?                           --     ^^^      ^
+        +     contact_point: [-0.0143 0.07229 0.2991]
+        ?                          +      ^^^      ^
+        -     slip_speed: [0.00127]
+        ?                      ^^^
+        +     slip_speed: [0.0009469]
+        ?                      ^^^^^
+        -     separation_speed: [2.096e-17]
+        ?                        ^ ^^^
+        +     separation_speed: [4.411e-17]
+        ?                        ^ ^^^
+            point_pair_contact_info(5):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        +     contact_force: [217.5 71.35 114.7]
+        -     contact_point: [-0.007284 0.07336 0.2937]
+        ?                          ^ ^^     ^^^     ^^
+        +     contact_point: [-0.009223 0.07515 0.292]
+        ?                          ^ ^^     ^^^     ^
+        -     slip_speed: [0.0001388]
+        ?                      ^   -
+        +     slip_speed: [0.002138]
+        ?                      ^
+        -     separation_speed: [5.612e-17]
+        ?                        ^ - ^
+        +     separation_speed: [-1.101e-17]
+        ?                        ^^  ^^
+            point_pair_contact_info(6):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [50.1 212.6 118.8]
+        ?                     -----  ^ ^   ^ ^
+        +     contact_force: [217.5 71.35 114.7]
+        ?                       ^ ^^^^^^^   ^ ^
+        -     contact_point: [-0.004383 0.07114 0.2841]
+        ?                     -    ^^^      ^^^    ^^^
+        +     contact_point: [0.002603 0.07357 0.2772]
+        ?                         ^^^      ^^^    ^^^
+        -     slip_speed: [0.002428]
+        ?                       ^^
+        +     slip_speed: [0.002138]
+        ?                       ^^
+        -     separation_speed: [3.893e-17]
+        ?                        ^  -
+        +     separation_speed: [-5.834e-17]
+        ?                        ^^   +
+            point_pair_contact_info(7):
+              bodyA: left_finger
+              bodyB: right_finger
+        -     contact_force: [-3.507 -12.68 -2.317]
+        ?                     ---  ^ ^     --- ^^^
+        +     contact_force: [50.1 212.6 118.8]
+        ?                       ^^ ^    +++  ^
+        -     contact_point: [0.004541 0.07178 0.2789]
+        ?                          ^^^      ^^    - ^
+        +     contact_point: [-0.004383 0.07114 0.2841]
+        ?                     +     ^^^      ^^     ^^
+        -     slip_speed: [0.0001388]
+        ?                      ^^^^
+        +     slip_speed: [0.002428]
+        ?                      ^^^
+        -     separation_speed: [3.107e-17]
+        ?                        ^ -
+        +     separation_speed: [5.097e-17]
+        ?                        ^  +
+            point_pair_contact_info(8):
+              bodyA: left_finger
+              bodyB: fake_table
+              contact_force: [-38.73 6.337 -58.86]
+              contact_point: [-0.006185 0.08389 0.2695]
+              slip_speed: [0.2938]
+              separation_speed: [-0.0006057]
+
