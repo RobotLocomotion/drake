@@ -780,6 +780,9 @@ struct MultibodyPlant<T>::SceneGraphStub {
         GeometryId) const {
       return nullptr;
     }
+    int NumGeometriesWithRole(geometry::Role) const {
+      return 0;
+    }
   };
 
   static void Throw(const char* operation_name) {
@@ -1074,7 +1077,7 @@ template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
-  if (num_collision_geometries() > 0) {
+  if (num_collision_geometries(context) > 0) {
     if (!geometry_query_port_.is_valid()) {
       throw std::logic_error(
           "This MultibodyPlant registered geometry for contact handling. "
@@ -1095,7 +1098,7 @@ template <>
 std::vector<PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>& context) const {
-  if (num_collision_geometries() > 0) {
+  if (num_collision_geometries(context) > 0) {
     const auto &query_object = get_geometry_query_input_port().
         Eval<geometry::QueryObject<AutoDiffXd>>(context);
     auto results = query_object.ComputePointPairPenetration();
@@ -1189,7 +1192,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries(context) == 0) return;
 
   switch (contact_model_) {
     case ContactModel::kPointContactOnly:
@@ -1348,7 +1351,7 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries(context) == 0) return;
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1404,7 +1407,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries(context) == 0) return;
 
   const ContactResults<T>& contact_results = EvalContactResults(context);
 
@@ -1480,7 +1483,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
   // Initialize the body forces to zero.
   F_BBo_W_array.assign(num_bodies(), SpatialForce<T>::Zero());
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries(context) == 0) return;
 
   const std::vector<ContactSurface<T>>& all_surfaces =
       EvalContactSurfaces(context);
@@ -1798,7 +1801,7 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     internal::HydroelasticFallbackCacheData<double>* data) const {
   DRAKE_DEMAND(data != nullptr);
 
-  if (num_collision_geometries() > 0) {
+  if (num_collision_geometries(context) > 0) {
     if (!geometry_query_port_.is_valid()) {
       throw std::logic_error(
           "This MultibodyPlant registered geometry for contact handling. "
@@ -2058,7 +2061,7 @@ void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
 
   // Early exit if there are no contact forces.
   tau_contact->setZero();
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries(context) == 0) return;
 
   // We will alias this zero vector to serve both as zero-valued generalized
   // accelerations and zero-valued externally applied generalized forces.
@@ -2100,7 +2103,7 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
             SpatialForce<T>::Zero());
 
   // Early exit if there are no contact forces.
-  if (num_collision_geometries() == 0) return;
+  if (num_collision_geometries(context) == 0) return;
 
   // Note: we don't need to know the applied forces here because we use a
   // regularized friction model whose forces depend only on the current state; a

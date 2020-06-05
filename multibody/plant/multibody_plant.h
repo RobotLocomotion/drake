@@ -3592,11 +3592,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns the number of geometries registered for contact modeling.
-  /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, see Finalize().
-  /// Post-finalize calls will always return the same value.
+  /// This method can only be called pre-finalize in the lifetime of `this`
+  /// plant, see Finalize(). For post-finalize queries, see
+  /// num_collision_geometries(const systems::Context<T>&).
   int num_collision_geometries() const {
-    return geometry_id_to_collision_index_.size();
+    // The model must NOT be finalized.
+    DRAKE_DEMAND(!this->is_finalized());
+    return const_cast<MultibodyPlant<T>*>(this)
+        ->member_scene_graph()
+        .model_inspector()
+        .NumGeometriesWithRole(geometry::Role::kProximity);
+  }
+
+  /// Returns the number of geometries registered for contact modeling.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, so long as a systems::Context is available
+  /// and `this` plant has been registered as a source for geometry::SceneGraph,
+  /// see RegisterAsSourceForSceneGraph().
+  int num_collision_geometries(const systems::Context<T>& context) const {
+    return get_geometry_query_input_port()
+        .template Eval<geometry::QueryObject<T>>(context)
+        .inspector()
+        .NumGeometriesWithRole(geometry::Role::kProximity);
   }
 
   /// Returns the unique id identifying `this` plant as a source for a
