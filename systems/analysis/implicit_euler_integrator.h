@@ -91,7 +91,7 @@ namespace systems {
  * solution, the large full-sized step is the error estimator, and the error
  * estimation statistics track the effort during the large full-sized step. If
  * the integrator is not in full-Newton mode (see
- * ImplicitIntegrator<T>::set_use_full_newton()), most of the work incurred by
+ * ImplicitIntegrator::set_use_full_newton()), most of the work incurred by
  * constructing and factorizing matrices and by failing Newton-Raphson
  * iterations will be counted toward the error estimation statistics, because
  * the large step is performed first.
@@ -135,12 +135,12 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * ### Derivation of the asymptotic order
    * 
    * This derivation is based on the same derivation for
-   * VelocityImplicitEulerIntegrator<T>, and so the equation numbers are from
+   * VelocityImplicitEulerIntegrator, and so the equation numbers are from
    * there.
    *
-   * To derive the second-order error estimate, let us first define the vector-
-   * valued function `e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ − xⁿ⁺¹`, the local truncation error
-   * for a single, full-sized implicit Euler integration step, with
+   * To derive the second-order error estimate, let us first define the
+   * vector-valued function `e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ − xⁿ⁺¹`, the local truncation
+   * error for a single, full-sized implicit Euler integration step, with
    * initial conditions `(tⁿ, xⁿ)`, and a step size of `h`. Furthermore, use
    * `ẍ` to denote `df/dt`, and `∇f` and `∇ẍ` to denote the Jacobians `df/dx`
    * and `dẍ/dx` of the ODE system `ẋ = f(t, x)`. Note that `ẍ` uses a total
@@ -170,29 +170,32 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *            xⁿ ───────  x*   ─────── xⁿ⁺¹  <─── true solution
    *
    * We will use superscripts to denote evaluating an expression with `x` at
-   * that subscript and `t` at the corresponding time, e.g. `ẍⁿ` denotes
+   * that superscript and `t` at the corresponding time, e.g. `ẍⁿ` denotes
    * `ẍ(tⁿ, xⁿ)`, and `f*` denotes `f(tⁿ+½h, x*)`. We first present a shortened
    * derivation, followed by the longer, detailed version.
    *
    * We know the local truncation error for the implicit Euler method is:
    *
-   *     e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ − xⁿ⁺¹ = ½ h²ẍⁿ + O(h³).    (10)
+   *     e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ − xⁿ⁺¹ = ½ h²ẍⁿ + O(h³).                  (10)
    *
    * The local truncation error ε from taking two half steps is composed of
    * these two terms:
    *
-   *     e₁ = xⁿ*¹ − xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³),          (15)
-   *     e₂ = x̃ⁿ⁺¹ − xⁿ*¹ = (1/8) h²ẍⁿ + O(h³).          (20)
+   *     e₁ = xⁿ*¹ − xⁿ⁺¹ = (1/8) h²ẍⁿ + O₁(h³),                       (15)
+   *     e₂ = x̃ⁿ⁺¹ − xⁿ*¹ = (1/8) h²ẍ* + O₂(h³) = (1/8) h²ẍⁿ + O₃(h³). (20)
+   *
+   * In the long derivation, we will show that these second derivatives
+   * differ by at most O(h³).
    *
    * Taking the sum,
    *
-   *     ε = x̃ⁿ⁺¹ − xⁿ⁺¹ = e₁ + e₂ = (1/4) h²ẍⁿ + O(h³). (21)
+   *     ε = x̃ⁿ⁺¹ − xⁿ⁺¹ = e₁ + e₂ = (1/4) h²ẍⁿ + O(h³).               (21)
    *
    * These two estimations allow us to obtain an estimation of the local error
    * from the difference between the available quantities x̅ⁿ⁺¹ and x̃ⁿ⁺¹:
    *
    *     ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹ = e(tⁿ, h, xⁿ) − ε,
-   *                      = (1/4) h²ẍⁿ + O(h³),          (22)
+   *                      = (1/4) h²ẍⁿ + O(h³),                        (22)
    *
    * and therefore our error estimate is second order.
    *
@@ -203,7 +206,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * convergence, the truncation error for implicit Euler is
    *
    *     e(tⁿ, h, xⁿ) = ½ h²ẍⁿ⁺¹ + O(h³)
-   *                  = ½ h²ẍⁿ + O(h³).                  (10)
+   *                  = ½ h²ẍⁿ + O(h³).                                (10)
    *
    * To see why the two are equivalent, we can Taylor expand about `(tⁿ, xⁿ)`,
    *
@@ -216,18 +219,18 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    *     x̃* = x* + e(tⁿ, ½h, xⁿ)
    *        = x* + (1/8) h²ẍⁿ + O(h³),
-   *     x̃* − x* = (1/8) h²ẍⁿ + O(h³).                   (11)
+   *     x̃* − x* = (1/8) h²ẍⁿ + O(h³).                                 (11)
    *
    * Taylor expanding about `t = tⁿ+½h` in this `x = x̃*` alternate reality,
    *
-   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²).            (12)
+   *     xⁿ*¹ = x̃* + ½h f(tⁿ+½h, x̃*) + O(h²).                          (12)
    *
    * Similarly, Taylor expansions about `t = tⁿ+½h` and the true solution
    * `x = x*` also give us
    *
-   *     xⁿ⁺¹ = x* + ½h f* + O(h²),                      (13)
+   *     xⁿ⁺¹ = x* + ½h f* + O(h²),                                    (13)
    *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* − x*) + O(‖x̃* − x*‖²)
-   *                  = f* + O(h²),                      (14)
+   *                  = f* + O(h²),                                    (14)
    * where in the last line we substituted Eq. (11).
    *
    * Eq. (12) minus Eq. (13) gives us,
@@ -236,40 +239,40 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *                 = x̃* − x* + O(h³),
    * where we just substituted in Eq. (14). Finally, substituting in Eq. (11),
    *
-   *     e₁ = xⁿ*¹ − xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).          (15)
+   *     e₁ = xⁿ*¹ − xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).                        (15)
    *
    * After the second small step, the solution `x̃ⁿ⁺¹` is
    *
    *     x̃ⁿ⁺¹ = xⁿ*¹ + e(tⁿ+½h, ½h, x̃*),
-   *          = xⁿ*¹ + (1/8)h² ẍ(tⁿ+½h, x̃*) + O(h³).     (16)
+   *          = xⁿ*¹ + (1/8)h² ẍ(tⁿ+½h, x̃*) + O(h³).                   (16)
    *
    * Taking Taylor expansions about `(tⁿ, xⁿ)`,
    *
-   *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).            (17)
-   *     x̃* − xⁿ = (x̃* − x*) + (x* − xⁿ) = O(h),         (18)
+   *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).                          (17)
+   *     x̃* − xⁿ = (x̃* − x*) + (x* − xⁿ) = O(h),                       (18)
    * where we substituted in Eqs. (11) and (17), and
    *
    *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* − xⁿ) + O(h ‖x̃* − xⁿ‖)
-   *                  = ẍⁿ + O(h),                       (19)
+   *                  = ẍⁿ + O(h),                                     (19)
    * where we substituted in Eq. (18).
    *
    * Substituting Eqs. (19) and (15) into Eq. (16),
    *
-   *     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h²ẍⁿ + O(h³)                (20)
+   *     x̃ⁿ⁺¹ = xⁿ*¹ + (1/8) h²ẍⁿ + O(h³)                              (20)
    *          = xⁿ⁺¹ + (1/4) h²ẍⁿ + O(h³),
    * therefore
    *
-   *     ε = x̃ⁿ⁺¹ − xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).          (21)
+   *     ε = x̃ⁿ⁺¹ − xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).                        (21)
    *
    * Subtracting Eq. (21) from Eq. (10),
    *
    *     e(tⁿ, h, xⁿ) − ε = (½ − 1/4) h²ẍⁿ + O(h³);
-   *     ⇒ ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹ = (1/4) h²ẍⁿ + O(h³).        (22)
+   *     ⇒ ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹ = (1/4) h²ẍⁿ + O(h³).                      (22)
    *
    * Eq. (22) shows that our error estimate is second-order. Since the first
    * term on the RHS matches `ε` (Eq. (21)),
    *
-   *     ε* = ε + O(h³).                                 (23)
+   *     ε* = ε + O(h³).                                               (23)
    */
   int get_error_estimate_order() const final { return 2; }
 
@@ -292,35 +295,35 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   }
 
  private:
-  // These are statistics that the base class, ImplicitIntegrator<T>, require
+  // These are statistics that the base class, ImplicitIntegrator, require
   // this child class to keep track of.
   struct Statistics {
-    // See ImplicitIntegrator<T>::get_num_jacobian_evaluations() or
-    // ImplicitIntegrator<T>::get_num_error_estimator_jacobian_evaluations()
+    // See ImplicitIntegrator::get_num_jacobian_evaluations() or
+    // ImplicitIntegrator::get_num_error_estimator_jacobian_evaluations()
     // for the definition of this statistic.
     int64_t num_jacobian_reforms{0};
 
-    // See ImplicitIntegrator<T>::get_num_iteration_matrix_factorizations() or
-    // ImplicitIntegrator<T>::
+    // See ImplicitIntegrator::get_num_iteration_matrix_factorizations() or
+    // ImplicitIntegrator::
     // get_num_error_estimator_iteration_matrix_factorizations() for the
     // definition of this statistic.
     int64_t num_iter_factorizations{0};
 
-    // See IntegratorBase<T>::get_num_derivative_evaluations() or
-    // ImplicitIntegrator<T>::get_num_error_estimator_derivative_evaluations()
+    // See IntegratorBase::get_num_derivative_evaluations() or
+    // ImplicitIntegrator::get_num_error_estimator_derivative_evaluations()
     // for the definition of this statistic. Note that, as the definitions
     // state, this count also includes all the function evaluations counted in
     // the statistic, num_jacobian_function_evaluations.
     int64_t num_function_evaluations{0};
 
-    // See ImplicitIntegrator<T>::get_num_derivative_evaluations_for_jacobian()
-    // or ImplicitIntegrator<T>::
+    // See ImplicitIntegrator::get_num_derivative_evaluations_for_jacobian()
+    // or ImplicitIntegrator::
     // get_num_error_estimator_derivative_evaluations_for_jacobian()
     // for the definition of this statistic.
     int64_t num_jacobian_function_evaluations{0};
 
-    // See ImplicitIntegrator<T>::get_num_newton_raphson_iterations()
-    // or ImplicitIntegrator<T>::
+    // See ImplicitIntegrator::get_num_newton_raphson_iterations()
+    // or ImplicitIntegrator::
     // get_num_error_estimator_newton_raphson_iterations() for the definition
     // of this statistic.
     int64_t num_nr_iterations{0};
@@ -541,9 +544,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Various statistics.
   // This statistic tracks the number of Newton-Raphson iterations total,
   // combining the base implicit Euler and either the implicit Trapezoid
-  // or the half-sized implicit Eulers. This is used in ImplicitIntegrator<T>::
+  // or the half-sized implicit Eulers. This is used in ImplicitIntegrator::
   // get_num_newton_raphson_iterations(). Other statistics integers for the
-  // total are defined in ImplicitIntegrator<T>.
+  // total are defined in ImplicitIntegrator.
   int64_t num_nr_iterations_{0};
 
   // These track statistics specific to implicit trapezoid or the two half-
@@ -558,7 +561,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // flag to indicate that the failed Jacobian is not computed from the
   // beginning of the time step, but rather from the second small step. Usually,
   // the Jacobian after a failed step was computed from (t0,x0), so
-  // ImplicitIntegrator<T> marks it as "fresh" so that the next attempt
+  // ImplicitIntegrator marks it as "fresh" so that the next attempt
   // will not attempt to compute a Jacobian. This flag tells the next step that
   // the Jacobian is still not "fresh", or computed from (t0,x0) at the
   // beginning of the step, even after the step has failed.
