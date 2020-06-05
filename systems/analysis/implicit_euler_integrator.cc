@@ -309,9 +309,7 @@ bool ImplicitEulerIntegrator<T>::StepHalfSizedImplicitEulers(
       // when the step fails, ImplicitIntegrator<T>::DoStep() will incorrectly
       // mark the Jacobian as fresh, and we will need to fix this in
       // DoImplicitIntegratorStep() for the next step.)
-      if (!this->get_use_full_newton() && this->get_reuse()) {
-        failed_jacobian_is_from_second_small_step_ = true;
-      }
+      failed_jacobian_is_from_second_small_step_ = true;
     }
   }
   // Move statistics to half-sized-implicit-Euler-specific statistics.
@@ -411,10 +409,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 
   if (!use_implicit_trapezoid_error_estimation_) {
     // In this case, step two half-sized implicit Euler steps along
-    // with the full step for error estimation. (To the reviewer: ) For now,
-    // see the documentation of Velocity-Implicit Euler Integrator; the error
-    // estimation described there is the exact same scheme as the error
-    // estimation here. We propagate the small half-sized steps in the end.
+    // with the full step for error estimation.
     if (StepHalfSizedImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie)) {
       Context<T>* context = this->get_mutable_context();
       context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
