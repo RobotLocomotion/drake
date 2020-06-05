@@ -217,7 +217,14 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// the implementer of these kinds of details.
   class IterationMatrix {
    public:
+    /// Factors a dense matrix (the iteration matrix) using LU factorization,
+    /// which should be faster than the QR factorization used in the specialized
+    /// template method for AutoDiffXd below.
     void SetAndFactorIterationMatrix(const MatrixX<T>& iteration_matrix);
+
+    /// Solves a linear system Ax = b for x using the iteration matrix (A)
+    /// factored using LU decomposition.
+    /// @see Factor()
     VectorX<T> Solve(const VectorX<T>& b) const;
 
     /// Returns whether the iteration matrix has been set and factored.
@@ -397,10 +404,42 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   void DoResetStatistics() override;
   void DoReset() final;
   const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
+
+  // Computes the Jacobian of the ordinary differential equations around time
+  // and continuous state `(t, xt)` using a first-order forward difference
+  // (i.e., numerical differentiation).
+  // @param system The dynamical system.
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param xt the continuous state around which to compute the Jacobian matrix.
+  // @param context the Context of the system, at time and continuous state
+  //        unknown.
+  // @param [out] the Jacobian matrix around time and state `(t, xt)`.
+  // @note The continuous state will be indeterminate on return.
   void ComputeForwardDiffJacobian(const System<T>&, const T& t,
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
+
+  // Computes the Jacobian of the ordinary differential equations around time
+  // and continuous state `(t, xt)` using a second-order central difference
+  // (i.e., numerical differentiation).
+  // @param system The dynamical system.
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param xt the continuous state around which to compute the Jacobian matrix.
+  // @param context the Context of the system, at time and continuous state
+  //        unknown.
+  // @param [out] the Jacobian matrix around time and state `(t, xt)`.
+  // @note The continuous state will be indeterminate on return.
   void ComputeCentralDiffJacobian(const System<T>&, const T& t,
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
+
+  // Computes the Jacobian of the ordinary differential equations around time
+  // and continuous state `(t, xt)` using automatic differentiation.
+  // @param system The dynamical system.
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param xt the continuous state around which to compute the Jacobian matrix.
+  // @param context the Context of the system, at time and continuous state
+  //        unknown.
+  // @param [out] the Jacobian matrix around time and state `(t, xt)`.
+  // @note The continuous state will be indeterminate on return.
   void ComputeAutoDiffJacobian(const System<T>& system, const T& t,
       const VectorX<T>& xc, const Context<T>& context, MatrixX<T>* J);
 
