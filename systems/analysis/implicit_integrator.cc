@@ -315,14 +315,30 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
 }
 
 // Compute the partial derivative of the ordinary differential equations with
-// respect to the state variables for a given x(t).
+// respect to the state variables for a given x(t0), at time t0 from the
+// beginning of the step. After this computation, jacobian_is_fresh_ will be
+// set to true.
 // @post the context's time and continuous state will be temporarily set during
 //       this call (and then reset to their original values) on return.
 //       Furthermore, the jacobian_is_fresh_ flag is set to "true", indicating
-//       that the Jacobian was computed from the most recent time t.
+//       that the Jacobian was computed from the most recent time t0.
 template <class T>
-const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
-    const VectorX<T>& x) {
+const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobianAtBeginningOfStep(
+    const T& t0, const VectorX<T>& x0) {
+  this->CalcJacobian(t0, x0, &J_);
+  // Mark the Jacobian as fresh, so that we don't recompute it unnecessarily
+  // during the step.
+  jacobian_is_fresh_ = true;
+  return J_;
+}
+
+// Compute the partial derivative of the ordinary differential equations with
+// respect to the state variables for a given x(t), and stores the result in J.
+// @post the context's time and continuous state will be temporarily set during
+//       this call (and then reset to their original values) on return.
+template <class T>
+void ImplicitIntegrator<T>::CalcJacobian(const T& t, const VectorX<T>& x,
+                                         MatrixX<T>* J) {
   // We change the context but will change it back.
   Context<T>* context = this->get_mutable_context();
 
@@ -342,18 +358,18 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
   const System<T>& system = this->get_system();
 
   // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
-  [this, context, &system, &t, &x]() {
+  [this, context, &system, &t, &x, J]() {
     switch (jacobian_scheme_) {
       case JacobianComputationScheme::kForwardDifference:
-        ComputeForwardDiffJacobian(system, t, x, &*context, &J_);
+        ComputeForwardDiffJacobian(system, t, x, &*context, J);
         break;
 
       case JacobianComputationScheme::kCentralDifference:
-        ComputeCentralDiffJacobian(system, t, x, &*context, &J_);
+        ComputeCentralDiffJacobian(system, t, x, &*context, J);
         break;
 
       case JacobianComputationScheme::kAutomatic:
-        ComputeAutoDiffJacobian(system, t, x, *context, &J_);
+        ComputeAutoDiffJacobian(system, t, x, *context, J);
         break;
     }
   }();
@@ -365,12 +381,6 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
 
   // Reset the time and state.
   context->SetTimeAndContinuousState(t_current, x_current);
-
-  // Mark the Jacobian as fresh, so that we don't recompute it unnecessarily
-  // during the step.
-  jacobian_is_fresh_ = true;
-
-  return J_;
 }
 
 template <class T>
@@ -387,7 +397,7 @@ void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
 
   // Compute the initial Jacobian and iteration matrices and factor them.
   MatrixX<T>& J = get_mutable_jacobian();
-  J = CalcJacobian(t, xt);
+  CalcJacobian(t, xt, &J);
   ++num_iter_factorizations_;
   compute_and_factor_iteration_matrix(J, h, iteration_matrix);
 }
@@ -403,7 +413,7 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
   // necessary.
   MatrixX<T>& J = get_mutable_jacobian();
   if (!get_reuse() || J.rows() == 0 || IsBadJacobian(J)) {
-    J = CalcJacobian(t, xt);
+    J = CalcJacobianAtBeginningOfStep(t, xt);
     ++num_iter_factorizations_;
     compute_and_factor_iteration_matrix(J, h, iteration_matrix);
     return true;  // Indicate success.
@@ -411,6 +421,16 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
 
   // Reuse is activated, Jacobian is fully sized, and Jacobian is not "bad".
   // If the iteration matrix has not been set and factored, do only that.
+  // In most cases, the iteration matrix is already factorized if the Jacobian
+  // has been properly computed. However, one example where this code block
+  // might be triggered would be if the child integrator uses the same Jacobian,
+  // but two different iteration matrices, for two methods, such as implicit
+  // Euler with implicit Trapezoid error estimation. During the first implicit
+  // Euler step, the Jacobian is computed and the implicit Euler matrix is
+  // factorized. Afterwards, during the first implicit Trapezoid step,
+  // the Jacobian (which it shares with implicit Euler) is fresh, but the
+  // implicit Trapezoid iteration matrix is not factorized, and so this block
+  // of code will factorize it.
   if (!iteration_matrix->matrix_factored()) {
     ++num_iter_factorizations_;
     compute_and_factor_iteration_matrix(J, h, iteration_matrix);
@@ -427,11 +447,26 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
 
     case 2: {
       // For the second trial, we know the first trial, which uses the last
-      // computed iteration matrix, has already failed. We perform the (likely)
-      // next least expensive operation, which is re-constructing and factoring
-      // the iteration matrix, using the last computed Jacobian. The last
-      // computed Jacobian may be from a previous time-step or a previously-
+      // computed iteration matrix, has already failed. The last computed
+      // iteration matrix may be from many time steps ago, or it may be from a
+      // different step size. We perform the (likely) next least expensive
+      // operation, which is re-constructing and factoring the iteration
+      // matrix, using the last computed Jacobian. The last computed Jacobian
+      // may also be from many time steps ago, or it may be from a previously-
       // attempted step size.
+      // TODO(antequ): In two particular cases, this may compute the same
+      // iteration matrix twice. Currently they are rare and unimportant, but
+      // in the future, it may be worth it to investigate optimizing these two
+      // cases if they make a performance difference:
+      // 1. During the first time step of the simulation, trial 1 will compute
+      // the initial iteration matrix, and trial 2 will compute the same
+      // iteration matrix again if trial 1 fails.
+      // 2. For implicit Euler with step doubling, it is possible that trial 3
+      // gets triggered on the first small step, which then fails, and after the
+      // step size is halved, trial 2 is triggered on the first large step,
+      // which requires the same iteration matrix (so the matrix is correct
+      // and does not actually need recomputation).
+      // In both cases, the right thing to do would be to skip to trial 3.
       ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;
@@ -450,7 +485,7 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
 
       // Otherwise, we can reform the Jacobian matrix and refactor the
       // iteration matrix.
-      J = CalcJacobian(t, xt);
+      J = CalcJacobianAtBeginningOfStep(t, xt);
       ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;

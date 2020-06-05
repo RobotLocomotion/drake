@@ -396,7 +396,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void DoResetStatistics() override;
   void DoReset() final;
-  const MatrixX<T>& CalcJacobian(const T& t, const VectorX<T>& xtplus);
+  const MatrixX<T>& CalcJacobianAtBeginningOfStep(const T& t0,
+                                                  const VectorX<T>& x0);
+  void CalcJacobian(const T& t, const VectorX<T>& xtplus, MatrixX<T>* J);
   void ComputeForwardDiffJacobian(const System<T>&, const T& t,
       const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
   void ComputeCentralDiffJacobian(const System<T>&, const T& t,

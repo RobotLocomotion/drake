@@ -771,9 +771,24 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   // also be two iteration matrix factorizations: once at trial 1, and another
   // at trial 2. Trial 3 should be skipped because the first Jacobian matrix
   // computation makes the Jacobian "fresh". The exception is the
-  // VelocityImplicitEulerIntegrator, which will recompute on trial 3
+  // VelocityImplicitEulerIntegrator, which will recompute both on trial 3
   // because it does not reuse Jacobians for different step sizes; hence
   // it will have 3 factorizations and 2 Jacobian evaluations.
+  // TODO(antequ): In two particular cases, it may compute the same
+  // iteration matrix twice. Currently they are rare and unimportant, but
+  // in the future, it may be worth it to investigate optimizing these two
+  // cases if they make a performance difference:
+  // 1. During the first time step of the simulation, trial 1 will compute
+  // the initial iteration matrix, and trial 2 will compute the same
+  // iteration matrix again if trial 1 fails.
+  // 2. For implicit Euler with step doubling, it is possible that trial 3
+  // gets triggered on the first small step, which then fails, and after the
+  // step size is halved, trial 2 is triggered on the first large step,
+  // which requires the same iteration matrix (so the matrix is correct
+  // and does not actually need recomputation).
+  // In both cases, the right thing to do would be to skip to trial 3.
+  // This is the same TODO as the TODO in
+  // ImplicitIntegrator<T>::MaybeFreshenMatrices()
   integrator.Initialize();
   ASSERT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(1e-2));
   if (!std::is_same<Integrator,

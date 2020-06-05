@@ -417,9 +417,16 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Various statistics.
+  // This statistic tracks the number of Newton-Raphson iterations total,
+  // combining the base implicit Euler and either the implicit Trapezoid
+  // or the half-sized implicit Eulers. Other statistics for the total
+  // are defined in ImplicitIntegrator<T>.
   int64_t num_nr_iterations_{0};
 
-  // Statistics specific to implicit trapezoid or the two half-sized steps.
+  // These track statistics specific to implicit trapezoid or the two half-
+  // sized steps. Only one of the following two will be used at a time, the
+  // other one will remain at 0 as long as
+  // use_implicit_trapezoid_error_estimation_ does not change.
   Statistics itr_statistics_;
   Statistics hie_statistics_;
 
