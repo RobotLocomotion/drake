@@ -1,0 +1,97 @@
+
+
+[ meta_trial = 0, num_sim_trials = 4, setup = SetupEnum.Discrete_WithGeometry_DrakeWsgWelded ]
+
+resimulate_mode: reuse
+  index: 0
+    good (first)
+  index: 1
+    BAD
+      diff[0], t: 0.002
+        - q: [0.02 0.08501 -0.285 1.43 0.284 -1.07 0.13]
+        ?               --
+        + q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   <no contacts>
+
+      diff[-1], t: 1
+        - q: [0.4062 -0.1209 -0.6201 2.168 0.5479 -0.2466 -0.0394]
+        ?         ^^             --            ^^       ^      --
+        + q: [0.4058 -0.1209 -0.6199 2.168 0.5484 -0.2468 -0.04013]
+        ?         ^^              ++           ^^       ^     +++
+          contact_results:   point_pair_contact_info(0):
+              bodyA: right_finger
+              bodyB: fake_table
+        -     contact_force: [-41.13 7.41 -59.85]
+        ?                          -    ^      ^
+        +     contact_force: [-41.1 7.408 -59.81]
+        ?                              ^^      ^
+              contact_point: [0.08321 0.08649 0.2695]
+              slip_speed: [0.0004507]
+        -     separation_speed: [-0.0007473]
+        ?                               ^^^
+        +     separation_speed: [-0.000751]
+        ?                               ^^
+
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+resimulate_mode: recreate
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+
+[ meta_trial = 1, num_sim_trials = 4, setup = SetupEnum.Discrete_WithGeometry_DrakeWsgWelded ]
+
+resimulate_mode: reuse
+  index: 0
+    good (first)
+  index: 1
+    BAD
+      diff[0], t: 0.002
+        - q: [0.02 0.08501 -0.285 1.43 0.284 -1.07 0.13]
+        ?               --
+        + q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
+          contact_results:   <no contacts>
+
+      diff[-1], t: 1
+        - q: [0.4062 -0.1209 -0.6201 2.168 0.5479 -0.2466 -0.0394]
+        ?         ^^             --            ^^       ^      --
+        + q: [0.4058 -0.1209 -0.6199 2.168 0.5484 -0.2468 -0.04013]
+        ?         ^^              ++           ^^       ^     +++
+          contact_results:   point_pair_contact_info(0):
+              bodyA: right_finger
+              bodyB: fake_table
+        -     contact_force: [-41.13 7.41 -59.85]
+        ?                          -    ^      ^
+        +     contact_force: [-41.1 7.408 -59.81]
+        ?                              ^^      ^
+              contact_point: [0.08321 0.08649 0.2695]
+              slip_speed: [0.0004507]
+        -     separation_speed: [-0.0007473]
+        ?                               ^^^
+        +     separation_speed: [-0.000751]
+        ?                               ^^
+
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
+resimulate_mode: recreate
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+
