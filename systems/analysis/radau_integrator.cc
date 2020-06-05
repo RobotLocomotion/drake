@@ -124,14 +124,6 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
   // Note: RK2 only operates in fixed step mode.
 }
 
-// Computes F(Z) used in [Hairer, 1996], (IV.8.4). This method evaluates
-// the time derivatives of the system given the current iterate Z.
-// @param t0 the initial time.
-// @param h the integration step size to attempt.
-// @param xt0 the continuous state at time t0.
-// @param Z the current iterate, of dimension state_dim * num_stages.
-// @post the state of the internal context will be set to (t0, xt0) on return.
-// @return a (state_dim * num_stages)-dimensional vector.
 template <typename T, int num_stages>
 const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
@@ -149,8 +141,6 @@ const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
   return F_of_Z_;
 }
 
-// Computes the solution xtplus (i.e., the continuous state at t0 + h) from the
-// continuous state at t0 and the current Newton-Raphson iterate (Z).
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
     const VectorX<T>& xt0, const VectorX<T>& Z, VectorX<T>* xtplus) const {
@@ -165,18 +155,6 @@ void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
   *xtplus += xt0;
 }
 
-// Computes the next continuous state (at t0 + h) using the Radau method,
-// assuming that the method is able to converge at that step size.
-// @param t0 the initial time.
-// @param h the integration step size to attempt.
-// @param xt0 the continuous state at time t0.
-// @param[out] xtplus the value for x(t+h) on return.
-// @param trial the attempt for this approach (1-4). StepRadau() uses more
-//        computationally expensive methods as the trial numbers increase.
-// @post the internal context will be in an indeterminate state on returning
-//       `false`.
-// @returns `true` if the method was successfully able to take an integration
-//           step of size `h`.
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
@@ -315,17 +293,6 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   return StepRadau(t0, h, xt0, xtplus, trial+1);
 }
 
-// Computes the next continuous state (at t0 + h) using the implicit trapezoid
-// method, assuming that the method is able to converge at that step size.
-// @param t0 the initial time.
-// @param h the integration step size to attempt.
-// @param xt0 the continuous state at time t0.
-// @param radau_xtplus the Radau solution for x(t+h).
-// @param[out] xtplus the value for x(t+h) on return.
-// @param trial the attempt for this approach (1-4). The method uses more
-//        computationally expensive methods as the trial numbers increase.
-// @returns `true` if the method was successfully able to take an integration
-//           step of size `h` (or `false` otherwise).
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
     const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
@@ -378,7 +345,6 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   return success;
 }
 
-// Does all of the real work for the implicit trapezoid method.
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     const T& t0, const T& h,
@@ -486,19 +452,6 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
       t0, h, xt0, g, radau_xtplus, xtplus, trial + 1);
 }
 
-// Steps Radau forward by h, if possible.
-// @param t0 the initial time.
-// @param h the integration step size to attempt.
-// @param xt0 the continuous state at time t0.
-// @param[out] xtplus_radau contains the Radau integrator solution on return.
-// @param[out] xtplus_itr contains the implicit trapezoid solution on return.
-// @returns `true` if the integration was successful at the requested step size.
-// @pre The time and state in the system's context (stored by the integrator)
-//      are set to (t0, xt0) on entry.
-// @post The time and state of the system's context (stored by the integrator)
-//       will be set to t0+h and `xtplus_radau` on successful exit (indicated
-//       by this function returning `true`) and will be indeterminate on
-//       unsuccessful exit (indicated by this function returning `false`).
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr) {
@@ -573,8 +526,6 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   return true;
 }
 
-// Updates the error estimate from the propagated solution and the embedded
-// solution.
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
     const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed) {
@@ -587,11 +538,6 @@ void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
       SetFromVector(err_est_vec_);
 }
 
-// Takes a given step of the requested size, if possible.
-// @returns `true` if successful.
-// @post the time and continuous state will be advanced only if `true` is
-//       returned (if `false` is returned, the time and state will be reset
-//       to their values on entry).
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   Context<T>* context = this->get_mutable_context();
@@ -665,8 +611,6 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
   return true;
 }
 
-// Function for computing the iteration matrix for the Implicit Trapezoid
-// method.
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeImplicitTrapezoidIterationMatrix(
     const MatrixX<T>& J,
@@ -678,8 +622,6 @@ void RadauIntegrator<T, num_stages>::ComputeImplicitTrapezoidIterationMatrix(
       MatrixX<T>::Identity(n, n));
 }
 
-// Function for computing the iteration matrix for the Radau method. This
-// is the matrix in [Hairer, 1996] (IV.8.4) on p.119.
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeRadauIterationMatrix(
     const MatrixX<T>& J,
@@ -693,14 +635,6 @@ void RadauIntegrator<T, num_stages>::ComputeRadauIterationMatrix(
       CalcTensorProduct(A * -h, J) + MatrixX<T>::Identity(n , n));
 }
 
-// Computes the tensor product between two matrices. Given
-// A = | a11 ... a1m |
-//     | ...     ... |
-//     | an1 ... anm |
-// and some matrix B, the tensor product is:
-// A ⊗ B = | a11B ... a1mB |
-//         | ...      ...  |
-//         | an1B ... anmB |
 template <typename T, int num_stages>
 MatrixX<T> RadauIntegrator<T, num_stages>::CalcTensorProduct(
     const MatrixX<T>& A, const MatrixX<T>& B) {

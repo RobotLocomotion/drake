@@ -116,12 +116,42 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
+  // Computes the solution xtplus (i.e., the continuous state at t0 + h) from
+  // the continuous state at t0 (xt0) and the current Newton-Raphson
+  // iterate (Z).
   void ComputeSolutionFromIterate(
       const VectorX<T>& xt0, const VectorX<T>& Z, VectorX<T>* xtplus) const;
+
+  // Updates the error estimate from the propagated solution and the embedded
+  // solution.
   void ComputeAndSetErrorEstimate(
       const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed);
-  bool AttemptStepPaired(const T& t0, const T& h,
-      const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_tr);
+
+  // Steps Radau forward by h, if possible.
+  // @param t0 the initial time.
+  // @param h the integration step size to attempt.
+  // @param xt0 the continuous state at time t0.
+  // @param[out] xtplus_radau contains the Radau integrator solution on return.
+  // @param[out] xtplus_itr contains the implicit trapezoid solution on return.
+  // @returns `true` if the integration was successful at the requested step
+  // size.
+  // @pre The time and state in the system's context (stored by the integrator)
+  //      are set to (t0, xt0) on entry.
+  // @post The time and state of the system's context (stored by the integrator)
+  //       will be set to t0+h and `xtplus_radau` on successful exit (indicated
+  //       by this function returning `true`) and will be indeterminate on
+  //       unsuccessful exit (indicated by this function returning `false`).
+  bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
+      VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr);
+
+  // Computes F(Z) used in [Hairer, 1996], (IV.8.4). This method evaluates
+  // the time derivatives of the system given the current iterate Z.
+  // @param t0 the initial time.
+  // @param h the integration step size to attempt.
+  // @param xt0 the continuous state at time t0.
+  // @param Z the current iterate, of dimension state_dim * num_stages.
+  // @post the state of the internal context will be set to (t0, xt0) on return.
+  // @return a (state_dim * num_stages)-dimensional vector.
   const VectorX<T>& ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
   void DoInitialize() final;
@@ -129,20 +159,67 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
       iteration_matrix_radau_ = {};
       iteration_matrix_implicit_trapezoid_ = {};
   }
+
   void DoResetImplicitIntegratorStatistics() final;
+
+  // Takes a given step of the requested size, if possible.
+  // @param h the integration step size to attempt.
+  // @returns `true` if successful.
+  // @post the time and continuous state will be advanced only if `true` is
+  //       returned (if `false` is returned, the time and state will be reset
+  //       to their values on entry).
   bool DoImplicitIntegratorStep(const T& h) final;
+
+  // Computes the next continuous state (at t0 + h) using the Radau method,
+  // assuming that the method is able to converge at that step size.
+  // @param t0 the initial time.
+  // @param h the integration step size to attempt.
+  // @param xt0 the continuous state at time t0.
+  // @param[out] xtplus the value for x(t+h) on return.
+  // @param trial the attempt for this approach (1-4). StepRadau() uses more
+  //        computationally expensive methods as the trial numbers increase.
+  // @post the internal context will be in an indeterminate state on returning
+  //       `false`.
+  // @returns `true` if the method was successfully able to take an integration
+  //           step of size `h`.
   bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus, int trial = 1);
+
+  // Computes the next continuous state (at t0 + h) using the implicit trapezoid
+  // method, assuming that the method is able to converge at that step size.
+  // @param t0 the initial time.
+  // @param h the integration step size to attempt.
+  // @param xt0 the continuous state at time t0.
+  // @param dx0 the time derivatives computed at time and state (t0, xt0).
+  // @param xtplus_radau the Radau solution for x(t+h).
+  // @param[out] xtplus the value for x(t+h) on return.
+  // @returns `true` if the method was successfully able to take an integration
+  //           step of size `h`.
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
       const VectorX<T>& dx0, const VectorX<T>& xtplus_radau,
       VectorX<T>* xtplus);
+
+  // Computes the tensor product between two matrices. Given
+  // A = | a11 ... a1m |
+  //     | ...     ... |
+  //     | an1 ... anm |
+  // and some matrix B, the tensor product is:
+  // A ⊗ B = | a11B ... a1mB |
+  //         | ...      ...  |
+  //         | an1B ... anmB |
   static MatrixX<T> CalcTensorProduct(const MatrixX<T>& A, const MatrixX<T>& B);
+
   static void ComputeImplicitTrapezoidIterationMatrix(const MatrixX<T>& J,
       const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
+  // Function for computing the iteration matrix for the Radau method. This
+  // is the matrix in [Hairer, 1996] (IV.8.4) on p.119.
   static void ComputeRadauIterationMatrix(const MatrixX<T>& J, const T& h,
       const MatrixX<double>& A,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
+  // Does all of the real work for the implicit trapezoid method.
   bool StepImplicitTrapezoidDetail(const T& t0, const T& h,
       const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
       const VectorX<T>& xtplus_radau, VectorX<T>* xtplus, int trial = 1);
