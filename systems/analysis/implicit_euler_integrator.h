@@ -126,7 +126,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    */
   bool supports_error_estimation() const final { return true; }
 
-/**
+  /**
    * Returns the asymptotic order of the difference between the large and small
    * steps (from which the error estimate is computed), which is 2. That is, the
    * error estimate, `ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
@@ -273,7 +273,8 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    */
   int get_error_estimate_order() const final { return 2; }
 
-  /* Set this to true to use implicit trapezoid, for error estimation;
+  /**
+   * Set this to true to use implicit trapezoid, for error estimation;
    * otherwise this integrator will use step doubling, for error estimation.
    * By default, this integrator will use step doubling.
    */
@@ -281,7 +282,8 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     use_implicit_trapezoid_error_estimation_ = flag;
   }
 
-  /* Returns true if the integrator will use implicit trapezoid for error
+  /**
+   * Returns true if the integrator will use implicit trapezoid for error
    * estimation; otherwise it indicates the integrator will use step doubling
    * for error estimation.
    */
