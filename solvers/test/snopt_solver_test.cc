@@ -455,6 +455,46 @@ GTEST_TEST(SnoptTest, VariableScaling2) {
   }
 }
 
+GTEST_TEST(SnoptSolverTest, QPDualSolution1) {
+  SnoptSolver solver;
+  TestQPDualSolution1(solver, 1e-5);
+}
+
+GTEST_TEST(SnoptSolverTest, QPDualSolution2) {
+  SnoptSolver solver;
+  TestQPDualSolution2(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, QPDualSolution3) {
+  SnoptSolver solver;
+  TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, EqualityConstrainedQPDualSolution1) {
+  SnoptSolver solver;
+  TestEqualityConstrainedQPDualSolution1(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, EqualityConstrainedQPDualSolution2) {
+  SnoptSolver solver;
+  TestEqualityConstrainedQPDualSolution2(solver);
+}
+
+GTEST_TEST(SnoptTest, TestLPDualSolution2) {
+  SnoptSolver solver;
+  TestLPDualSolution2(solver);
+}
+
+GTEST_TEST(SnoptTest, TestLPDualSolution2Scaled) {
+  SnoptSolver solver;
+  TestLPDualSolution2Scaled(solver);
+}
+
+GTEST_TEST(SnoptSolverTest, EckhardtDualSolution) {
+  SnoptSolver solver;
+  TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
