@@ -320,6 +320,24 @@ TEST_F(SymbolicExpansionTest, RepeatedExpandShouldBeNoop) {
   }
 }
 
+TEST_F(SymbolicExpansionTest, ExpandMultiplicationsWithDivisions) {
+  const Expression e1{((x_ + 1) / y_) * (x_ + 3)};
+  const Expression e2{(x_ + 3) * ((x_ + 1) / z_)};
+  const Expression e3{((x_ + 1) / (y_ + 6)) * ((x_ + 3) / (z_ + 7))};
+  const Expression e4{(x_ + y_ / ((z_ + x_) * (y_ + x_))) * (x_ - y_ / z_) *
+                      (x_ * y_ / z_)};
+
+  EXPECT_TRUE(CheckExpandIsFixpoint(e1));
+  EXPECT_TRUE(CheckExpandIsFixpoint(e2));
+  EXPECT_TRUE(CheckExpandIsFixpoint(e3));
+  EXPECT_TRUE(CheckExpandIsFixpoint(e4));
+
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e1, 1e-8));
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e2, 1e-8));
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e3, 1e-8));
+  EXPECT_TRUE(CheckExpandPreserveEvaluation(e4, 1e-8));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake
