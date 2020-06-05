@@ -22,7 +22,7 @@ namespace sensors {
 /// There are three inputs to this sensor (nominally from a MultibodyPlant):
 ///   1) A vector of body poses (e.g. plant.get_body_poses_output_port)
 ///   2) A vector of spatial velocities
-  ///    (e.g. plant.get_body_spatial_velocities_output_port)
+///    (e.g. plant.get_body_spatial_velocities_output_port)
 ///   3) A vector of spatial accelerations
 ///      (e.g. plant.get_body_spatial_accelerations_output_port)
 /// This class is therefore defined by:
@@ -39,8 +39,9 @@ class Accelerometer : public LeafSystem<T> {
   /// @param X_BS the transform from body B to the accelerometer frame S
   /// @param gravitational_acceleration the acceleration due to gravity
   ///    expressed in world coordinates
-  Accelerometer(multibody::BodyIndex body_index, math::RigidTransform<T> X_BS,
-    Eigen::Vector3d gravitational_acceleration = Eigen::Vector3d::Zero());
+  Accelerometer(
+      multibody::BodyIndex body_index, math::RigidTransform<T> X_BS,
+      Eigen::Vector3d gravitational_acceleration = Eigen::Vector3d::Zero());
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -60,13 +61,15 @@ class Accelerometer : public LeafSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename> friend class Accelerometer;
+  template <typename>
+  friend class Accelerometer;
 
   // Outputs the transformed signal.
  private:
   void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
-  const multibody::BodyIndex body_index_;  // Index into the input body velocities/accelerations
+  const multibody::BodyIndex
+      body_index_;  // Index into the input body velocities/accelerations
   const math::RigidTransform<T> X_BS_;
   const Eigen::Vector3d gravitational_acceleration_;
   const InputPort<T>* body_poses_input_port_{nullptr};
