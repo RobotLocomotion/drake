@@ -1,0 +1,18 @@
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
+
+filegroup(
+    name = "models",
+    srcs = glob(["*.sdf", "*.urdf"]),
+)
+
+drake_py_binary(
+    name = "repro_contact_nondeterminism",
+    srcs = ["repro_contact_nondeterminism.py"],
+    data = [":models"],
+    deps = [
+        "@drake//bindings/pydrake",
+    ],
+)

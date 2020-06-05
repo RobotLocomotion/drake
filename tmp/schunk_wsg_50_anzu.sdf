@@ -1,0 +1,287 @@
+<?xml version='1.0'?>
+
+<sdf version='1.6'>
+  <model name='Schunk_Gripper'>
+    <!--
+    Axes:
+      +Z - Pointing away from the fingertips.
+      +X - Pointing towards the camera.
+    Origin:
+      (0, 0, 0) at the bottom center of the gripper body.
+    -->
+    <link name='gripper'>
+      <pose frame=''>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.988882</mass>
+        <inertia>
+          <ixx>0.162992</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.162992</iyy>
+          <iyz>0</iyz>
+          <izz>0.164814</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+      </inertial>
+      <self_collide>0</self_collide>
+      <kinematic>0</kinematic>
+      <collision name='body_collision'>
+        <pose frame=''>0 0 -0.03625 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.049521 0.146 0.0725</size>
+          </box>
+        </geometry>
+      </collision>
+      <!-- <visual name='gripper_mesh'>
+        <pose frame=''>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>schunk_base.obj</uri>
+            <scale>.001 .001 .001</scale>
+          </mesh>
+        </geometry>
+      </visual> -->
+    </link>
+    <frame name='body_frame'>
+      <pose frame='gripper'>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='grasp_frame'>
+      <pose frame='gripper'>0 0 -0.1725 0 0 0</pose>
+    </frame>
+    <link name='left_finger'>
+      <pose frame=''>0 0 -0.1365 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 0 0</pose>
+      </inertial>
+      <self_collide>0</self_collide>
+      <kinematic>0</kinematic>
+
+      <!-- The left fingernails -->
+      <collision name='left_fingernail_1_collision'>
+        <pose frame=''>0.0095 0.0045 -.0435 0.5 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.008 0.0015 0.019</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.5</mu>
+              <mu2>0.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <collision name='left_fingernail_2_collision'>
+        <pose frame=''>-0.0095 0.0045 -.0435 0.5 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.008 0.0015 0.019</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.5</mu>
+              <mu2>0.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <!-- The left finger contact face. -->
+      <collision name='left_finger_collision_1'>
+        <pose frame=''>0 0 0.015 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.028 0.003 0.105</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.5</mu>
+              <mu2>0.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+       <!--The left finger outside face. -->
+      <collision name='left_finger_collision_2'>
+        <pose frame=''>0 -0.017 -0.0025 0.37 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.028 0.003 0.08</size>
+          </box>
+        </geometry>
+      </collision>
+       <!--For mesh visualization only-->
+      <!-- <visual name='left_finger_visual_mesh'>
+        <pose frame=''>0 0.055 0.1365 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>finger_L.obj</uri>
+            <scale>.001 .001 .001</scale>
+          </mesh>
+        </geometry>
+      </visual> -->
+    </link>
+    <link name='right_finger'>
+      <pose frame=''>0 0 -0.1365 0 0 0</pose>
+      <inertial>
+        <mass>0.05</mass>
+        <inertia>
+          <ixx>0.16</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.16</iyy>
+          <iyz>0</iyz>
+          <izz>0.16</izz>
+        </inertia>
+        <pose frame=''>0 0 0 0 0 0</pose>
+      </inertial>
+      <self_collide>0</self_collide>
+      <kinematic>0</kinematic>
+      <!--The right fingernail.-->
+      <collision name='right_fingernail_1_collision'>
+        <pose frame=''>0 -0.0045 -.0429 -.2 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.008 0.0015 0.02</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.5</mu>
+              <mu2>0.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <!--The right finger contact face.-->
+      <collision name='right_finger_collision_1'>
+        <pose frame=''>0 -0.002 0.015 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.028 0.003 0.105</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.5</mu>
+              <mu2>0.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+       <!--The right finger outside face.-->
+      <collision name='right_finger_collision_2'>
+        <pose frame=''>0 0.015 -0.0025 -0.37 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.028 0.003 0.08</size>
+          </box>
+        </geometry>
+      </collision>
+      <!-- For mesh visualization only -->
+      <!-- <visual name='right_finger_visual_mesh'>
+        <pose frame=''>0 -0.055 0.1365 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>finger_R.obj</uri>
+            <scale>.001 .001 .001</scale>
+          </mesh>
+        </geometry>
+      </visual> -->
+    </link>
+    <!-- Collision filter groups-->
+    <collision_filter_group name="finger_filter">
+      <member link="left_finger"/>
+      <member link="right_finger"/>
+      <ignored_collision_filter_group collision_filter_group="finger_filter"/>
+    </collision_filter_group>
+
+    <joint name='left_finger_sliding_joint' type='prismatic'>
+      <parent>gripper</parent>
+      <child>left_finger</child>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
+        <!-- Drake attaches an actuator to all and only joints with a nonzero
+             effort limit. -->
+        <limit>
+          <lower>-0.055</lower>
+          <upper>0</upper>
+          <effort>80</effort>
+          <stiffness>15000</stiffness>
+          <dissipation>50</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+      <physics>
+        <ode>
+          <limit>
+            <cfm>0</cfm>
+            <erp>0.2</erp>
+          </limit>
+          <suspension>
+            <cfm>0</cfm>
+            <erp>0.2</erp>
+          </suspension>
+        </ode>
+      </physics>
+    </joint>
+    <joint name='right_finger_sliding_joint' type='prismatic'>
+      <parent>gripper</parent>
+      <child>right_finger</child>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
+        <limit>
+          <lower>0</lower>
+          <upper>0.055</upper>
+          <effort>80</effort>
+          <stiffness>15000</stiffness>
+          <dissipation>50</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+      <physics>
+        <ode>
+          <limit>
+            <cfm>0</cfm>
+            <erp>0.2</erp>
+          </limit>
+          <suspension>
+            <cfm>0</cfm>
+            <erp>0.2</erp>
+          </suspension>
+        </ode>
+      </physics>
+    </joint>
+  </model>
+</sdf>

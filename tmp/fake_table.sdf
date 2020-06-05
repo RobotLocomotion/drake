@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sdf version="1.6">
+  <!--
+  Fake table.
+  Coordinates:
+      +X - Forward
+      +Y - Right
+      +Z - Up.
+  (0, 0, 0) at bottom center of the table (flush with the "ground").
+  -->
+  <model name="fake_table">
+    <link name="fake_table">
+      <visual name="top_visual">
+        <pose>0 0 0.7425  0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.77 0.715 0.055</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="top_collision">
+        <pose>0 0 0.7425  0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.77 0.715 0.055</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="front_left_visual">
+        <pose>0.36  0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="front_left_collision">
+        <pose>0.36  0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="front_right_visual">
+        <pose>0.36  -0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="front_right_collision">
+        <pose>0.36  -0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="back_left_visual">
+        <pose>-0.36  0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="back_left_collision">
+        <pose>-0.36  0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="back_right_visual">
+        <pose>-0.36  -0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9297 0.7930 0.6758 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="back_right_collision">
+        <pose>-0.36  -0.3325  0.3575</pose>
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.715</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <frame name="bin_attachment">
+      <pose frame="fake_table">-0.225 0 0.77  0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
