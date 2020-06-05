@@ -25,7 +25,7 @@ namespace systems {
  * equations to determine *both* the state at t+h and the time derivatives
  * of that state at that time. Cast as a nonlinear system of equations,
  * we seek the solution to:<pre>
- * x(t+h) - x(t) - h f(t+h,x(t+h)) = 0
+ * x(t+h) − x(t) − h f(t+h,x(t+h)) = 0
  * </pre>
  * given unknowns x(t+h).
  *
@@ -42,7 +42,7 @@ namespace systems {
  *
  * This implementation uses Newton-Raphson (NR) and relies upon the obvious
  * convergence to a solution for `g = 0` where
- * `g(x(t+h)) ≡ x(t+h) - x(t) - h f(t+h,x(t+h))` as `h` becomes sufficiently
+ * `g(x(t+h)) ≡ x(t+h) − x(t) − h f(t+h,x(t+h))` as `h` becomes sufficiently
  * small. General implementational details for the Newton method were gleaned
  * from Section IV.8 in [Hairer, 1996].
  *
@@ -57,22 +57,21 @@ namespace systems {
  * To be precise, let `x̅ⁿ⁺¹` be the computed solution from a large step,
  * `x̃ⁿ⁺¹` be the computed solution from two small steps, and `xⁿ⁺¹` be the true
  * solution. Since the integrator propagates `x̃ⁿ⁺¹` as its solution, we denote
- * the true error vector as `ε = x̃ⁿ⁺¹ - xⁿ⁺¹`.ImplicitEulerIntegrator uses
- * `ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹`, the difference between the two solutions, as the
+ * the true error vector as `ε = x̃ⁿ⁺¹ − xⁿ⁺¹`. %ImplicitEulerIntegrator uses
+ * `ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹`, the difference between the two solutions, as the
  * second-order error estimate, because for a smooth system, `‖ε*‖ = O(h²)`,
- * and `‖ε - ε*‖ = O(h³)`. See the notes in
- * ImplicitEulerIntegrator<T>::get_error_estimate_order() for a detailed
- * derivation of the error estimate's truncation error.
+ * and `‖ε − ε*‖ = O(h³)`. See the notes in get_error_estimate_order() for a
+ * detailed derivation of the error estimate's truncation error.
  *
- * In this implementation, ImplicitEulerIntegrator<T> attempts the large
+ * In this implementation, %ImplicitEulerIntegrator attempts the large
  * full-sized step before attempting the two small half-sized steps, because
  * the large step is more likely to fail to converge, and if it is performed
  * first, convergence failures are detected early, avoiding the unnecessary
  * effort of computing potentially-successful small steps.
  *
- * If the user desires, ImplicitEulerIntegrator<T> can also use the implicit
- * trapezoid method for error estimation: it will feed the result from implicit
- * Euler for (hopefully) faster convergence- to compute the error estimate.
+ * Optionally, %ImplicitEulerIntegrator can instead use the implicit trapezoid
+ * method for error estimation. However, in our testing the step doubling method
+ * substantially outperforms the implicit trapezoid method.
  *
  * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
  *                    Equations II (Stiff and Differential-Algebraic Problems).
@@ -96,6 +95,7 @@ namespace systems {
  * constructing and factorizing matrices and by failing Newton-Raphson
  * iterations will be counted toward the error estimation statistics, because
  * the large step is performed first.
+ * 
  * @note This integrator uses the integrator accuracy setting, even when run
  *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
  *       process. See IntegratorBase::set_target_accuracy() for more info.
@@ -105,6 +105,11 @@ namespace systems {
  * @tparam_nonsymbolic_scalar
  * @ingroup integrators
  */
+
+// TODO(antequ): Investigate revamping the error estimation and normal
+// statistics so that the effort spent recomputing Jacobians and iteration
+// matrices near stiff steps is not overwhelmingly allocated into the error
+// estimator's statistics for Jacobian computations.
 template <class T>
 class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
  public:
@@ -124,8 +129,8 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 /**
    * Returns the asymptotic order of the difference between the large and small
    * steps (from which the error estimate is computed), which is 2. That is, the
-   * error estimate, `ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
-   * and it deviates from the true error, `ε`, by `‖ε - ε*‖ = O(h³)`. 
+   * error estimate, `ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
+   * and it deviates from the true error, `ε`, by `‖ε − ε*‖ = O(h³)`. 
    *
    * ### Derivation of the asymptotic order
    * 
@@ -134,7 +139,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * there.
    *
    * To derive the second-order error estimate, let us first define the vector-
-   * valued function `e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ - xⁿ⁺¹`, the local truncation error
+   * valued function `e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ − xⁿ⁺¹`, the local truncation error
    * for a single, full-sized implicit Euler integration step, with
    * initial conditions `(tⁿ, xⁿ)`, and a step size of `h`. Furthermore, use
    * `ẍ` to denote `df/dt`, and `∇f` and `∇ẍ` to denote the Jacobians `df/dx`
@@ -171,28 +176,28 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    * We know the local truncation error for the implicit Euler method is:
    *
-   *     e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ - xⁿ⁺¹ = ½ h²ẍⁿ + O(h³).    (10)
+   *     e(tⁿ, h, xⁿ) = x̅ⁿ⁺¹ − xⁿ⁺¹ = ½ h²ẍⁿ + O(h³).    (10)
    *
    * The local truncation error ε from taking two half steps is composed of
    * these two terms:
    *
-   *     e₁ = xⁿ*¹ - xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³),          (15)
-   *     e₂ = x̃ⁿ⁺¹ - xⁿ*¹ = (1/8) h²ẍⁿ + O(h³).          (20)
+   *     e₁ = xⁿ*¹ − xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³),          (15)
+   *     e₂ = x̃ⁿ⁺¹ − xⁿ*¹ = (1/8) h²ẍⁿ + O(h³).          (20)
    *
    * Taking the sum,
    *
-   *     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = e₁ + e₂ = (1/4) h²ẍⁿ + O(h³). (21)
+   *     ε = x̃ⁿ⁺¹ − xⁿ⁺¹ = e₁ + e₂ = (1/4) h²ẍⁿ + O(h³). (21)
    *
    * These two estimations allow us to obtain an estimation of the local error
    * from the difference between the available quantities x̅ⁿ⁺¹ and x̃ⁿ⁺¹:
    *
-   *     ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = e(tⁿ, h, xⁿ) - ε,
+   *     ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹ = e(tⁿ, h, xⁿ) − ε,
    *                      = (1/4) h²ẍⁿ + O(h³),          (22)
    *
    * and therefore our error estimate is second order.
    *
    * Below we will show this derivation in detail along with the proof that
-   * `‖ε - ε*‖ = O(h³)`:
+   * `‖ε − ε*‖ = O(h³)`:
    *
    * Let us look at a single implicit Euler step. Upon Newton-Raphson
    * convergence, the truncation error for implicit Euler is
@@ -211,7 +216,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *
    *     x̃* = x* + e(tⁿ, ½h, xⁿ)
    *        = x* + (1/8) h²ẍⁿ + O(h³),
-   *     x̃* - x* = (1/8) h²ẍⁿ + O(h³).                   (11)
+   *     x̃* − x* = (1/8) h²ẍⁿ + O(h³).                   (11)
    *
    * Taylor expanding about `t = tⁿ+½h` in this `x = x̃*` alternate reality,
    *
@@ -221,17 +226,17 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * `x = x*` also give us
    *
    *     xⁿ⁺¹ = x* + ½h f* + O(h²),                      (13)
-   *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* - x*) + O(‖x̃* - x*‖²)
+   *     f(tⁿ+½h, x̃*) = f* + (∇f*) (x̃* − x*) + O(‖x̃* − x*‖²)
    *                  = f* + O(h²),                      (14)
    * where in the last line we substituted Eq. (11).
    *
    * Eq. (12) minus Eq. (13) gives us,
    *
-   *     xⁿ*¹ - xⁿ⁺¹ = x̃* - x* + ½h(f(tⁿ+½h, x̃*) - f*) + O(h³),
-   *                 = x̃* - x* + O(h³),
+   *     xⁿ*¹ − xⁿ⁺¹ = x̃* − x* + ½h(f(tⁿ+½h, x̃*) − f*) + O(h³),
+   *                 = x̃* − x* + O(h³),
    * where we just substituted in Eq. (14). Finally, substituting in Eq. (11),
    *
-   *     e₁ = xⁿ*¹ - xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).          (15)
+   *     e₁ = xⁿ*¹ − xⁿ⁺¹ = (1/8) h²ẍⁿ + O(h³).          (15)
    *
    * After the second small step, the solution `x̃ⁿ⁺¹` is
    *
@@ -241,10 +246,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * Taking Taylor expansions about `(tⁿ, xⁿ)`,
    *
    *     x* = xⁿ + ½h fⁿ + O(h²) = xⁿ + O(h).            (17)
-   *     x̃* - xⁿ = (x̃* - x*) + (x* - xⁿ) = O(h),         (18)
+   *     x̃* − xⁿ = (x̃* − x*) + (x* − xⁿ) = O(h),         (18)
    * where we substituted in Eqs. (11) and (17), and
    *
-   *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* - xⁿ) + O(h ‖x̃* - xⁿ‖)
+   *     ẍ(tⁿ+½h, x̃*) = ẍⁿ + ½h ∂ẍ/∂tⁿ + ∇ẍⁿ (x̃* − xⁿ) + O(h ‖x̃* − xⁿ‖)
    *                  = ẍⁿ + O(h),                       (19)
    * where we substituted in Eq. (18).
    *
@@ -254,12 +259,12 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    *          = xⁿ⁺¹ + (1/4) h²ẍⁿ + O(h³),
    * therefore
    *
-   *     ε = x̃ⁿ⁺¹ - xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).          (21)
+   *     ε = x̃ⁿ⁺¹ − xⁿ⁺¹ = (1/4) h² ẍⁿ + O(h³).          (21)
    *
    * Subtracting Eq. (21) from Eq. (10),
    *
-   *     e(tⁿ, h, xⁿ) - ε = (½ - 1/4) h²ẍⁿ + O(h³);
-   *     ⇒ ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹ = (1/4) h²ẍⁿ + O(h³).        (22)
+   *     e(tⁿ, h, xⁿ) − ε = (½ − 1/4) h²ẍⁿ + O(h³);
+   *     ⇒ ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹ = (1/4) h²ẍⁿ + O(h³).        (22)
    *
    * Eq. (22) shows that our error estimate is second-order. Since the first
    * term on the RHS matches `ε` (Eq. (21)),
