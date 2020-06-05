@@ -406,8 +406,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
   // Compute the partial derivative of the ordinary differential equations with
   // respect to the state variables for a given x(t).
-  // @post the context's time and continuous state will be temporarily set during
-  //       this call (and then reset to their original values) on return.
+  // @post the context's time and continuous state will be temporarily set
+  //       during this call (and then reset to their original values) on return.
   const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
 
   // Computes the Jacobian of the ordinary differential equations around time
