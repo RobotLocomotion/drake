@@ -288,10 +288,34 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // These are statistics that the base class, ImplicitIntegrator<T>, require
   // this child class to keep track of.
   struct Statistics {
+    // See ImplicitIntegrator<T>::get_num_jacobian_evaluations() or
+    // ImplicitIntegrator<T>::get_num_error_estimator_jacobian_evaluations()
+    // for the definition of this statistic.
     int64_t num_jacobian_reforms{0};
+
+    // See ImplicitIntegrator<T>::get_num_iteration_matrix_factorizations() or
+    // ImplicitIntegrator<T>::
+    // get_num_error_estimator_iteration_matrix_factorizations() for the
+    // definition of this statistic.
     int64_t num_iter_factorizations{0};
+
+    // See IntegratorBase<T>::get_num_derivative_evaluations() or
+    // ImplicitIntegrator<T>::get_num_error_estimator_derivative_evaluations()
+    // for the definition of this statistic. Note that, as the definitions
+    // state, this count also includes all the function evaluations counted in
+    // the statistic, num_jacobian_function_evaluations.
     int64_t num_function_evaluations{0};
+
+    // See ImplicitIntegrator<T>::get_num_derivative_evaluations_for_jacobian()
+    // or ImplicitIntegrator<T>::
+    // get_num_error_estimator_derivative_evaluations_for_jacobian()
+    // for the definition of this statistic.
     int64_t num_jacobian_function_evaluations{0};
+
+    // See ImplicitIntegrator<T>::get_num_newton_raphson_iterations()
+    // or ImplicitIntegrator<T>::
+    // get_num_error_estimator_newton_raphson_iterations() for the definition
+    // of this statistic.
     int64_t num_nr_iterations{0};
   };
 
@@ -510,8 +534,9 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // Various statistics.
   // This statistic tracks the number of Newton-Raphson iterations total,
   // combining the base implicit Euler and either the implicit Trapezoid
-  // or the half-sized implicit Eulers. Other statistics for the total
-  // are defined in ImplicitIntegrator<T>.
+  // or the half-sized implicit Eulers. This is used in ImplicitIntegrator<T>::
+  // get_num_newton_raphson_iterations(). Other statistics integers for the
+  // total are defined in ImplicitIntegrator<T>.
   int64_t num_nr_iterations_{0};
 
   // These track statistics specific to implicit trapezoid or the two half-
@@ -525,11 +550,11 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // simultaneously computes a large step to estimate the error, this is a
   // flag to indicate that the failed Jacobian is not computed from the
   // beginning of the time step, but rather from the second small step. Usually,
-  // the Jacobian after a failed step was computed from (t,x), so
+  // the Jacobian after a failed step was computed from (t0,x0), so
   // ImplicitIntegrator<T> marks it as "fresh" so that the next attempt
   // will not attempt to compute a Jacobian. This flag tells the next step that
-  // the Jacobian is still not "fresh", or computed from (t,x) at the beginning
-  // of the step, even after the step has failed.
+  // the Jacobian is still not "fresh", or computed from (t0,x0) at the
+  // beginning of the step, even after the step has failed.
   bool failed_jacobian_is_from_second_small_step_{false};
 
   // If set to true, the integrator uses implicit trapezoid instead of two
