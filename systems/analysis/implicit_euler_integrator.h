@@ -110,20 +110,58 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
     return num_err_est_iter_factorizations_;
   }
 
-  void DoResetCachedJacobianRelatedMatrices() final {
-      ie_iteration_matrix_ = {};
-      itr_iteration_matrix_ = {};
-  }
+  void DoResetCachedJacobianRelatedMatrices() final;
+
   void DoResetImplicitIntegratorStatistics() final;
+
   static void ComputeAndFactorImplicitEulerIterationMatrix(
       const MatrixX<T>& J, const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
   static void ComputeAndFactorImplicitTrapezoidIterationMatrix(
       const MatrixX<T>& J, const T& h,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
   void DoInitialize() final;
+
+  // Steps both implicit Euler and implicit trapezoid forward by h, if possible.
+  // @param t0 the time at the left end of the integration interval.
+  // @param h the integration step size to attempt.
+  // @param xt0 the continuous state at t0.
+  // @param [out] xtplus_euler contains the Euler integrator solution (i.e.,
+  //              `x(t0+h)`) on return.
+  // @param [out] xtplus_trap contains the implicit trapezoid solution (i.e.,
+  //              `x(t0+h)`) on return.
+  // @returns `true` if the step of size `h` was successful.
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus_euler, VectorX<T>* xtplus_trap);
+
+  // Performs the bulk of the stepping computation for both implicit Euler and
+  // implicit trapezoid method; all those methods need to do is provide a
+  // residual function (`g`) and an iteration matrix computation and
+  // factorization function (`compute_and_factor_iteration_matrix`) specific to
+  // the particular integrator scheme and this method does the rest.
+  // @param t0 the time at the left end of the integration interval.
+  // @param h the integration step size (> 0) to attempt.
+  // @param xt0 the continuous state at t0.
+  // @param g the particular implicit function to compute the root of.
+  // @param compute_and_factor_iteration_matrix the function for computing and
+  //        factorizing the iteration matrix.
+  // @param xtplus_guess the starting guess for x(t0+h) -- implicit Euler passes
+  //        x(t0) since it has no better guess; implicit trapezoid passes
+  //        implicit Euler's result for x(t0+h).
+  // @param[out] iteration_matrix the iteration matrix to be used for the
+  //             particular integration scheme (implicit Euler, implicit
+  //             trapezoid), which will be computed and factored, if necessary.
+  // @param[out] xtplus the value for x(t0+h) on return.
+  // @param trial the attempt for this approach (1-4). StepAbstract() uses more
+  //        computationally expensive methods as the trial numbers increase.
+  // @returns `true` if the method was successfully able to take an integration
+  //           step of size h.
+  // @note The time and continuous state in the context are indeterminate upon
+  //       exit.
+  // TODO(edrumwri) Explicitly test this method's fallback logic (i.e., how it
+  //                calls MaybeFreshenMatrices()) in a unit test).
   bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
                     const std::function<VectorX<T>()>& g,
                     const std::function<
@@ -131,11 +169,40 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                              typename ImplicitIntegrator<T>::IterationMatrix*)>&
                         compute_and_factor_iteration_matrix,
                     const VectorX<T>& xtplus_guess,
-                    typename ImplicitIntegrator<T>::IterationMatrix*,
-                    VectorX<T>* xtplus, int trial = 1);
+                    typename ImplicitIntegrator<T>::IterationMatrix*
+                    iteration_matrix, VectorX<T>* xtplus, int trial = 1);
+
+  // Takes a given step of the requested size, if possible.
+  // @returns `true` if successful; on `true`, the time and continuous state
+  //          will be advanced in the context (e.g., from t0 to t0 + h). On a
+  //          `false` return, the time and continuous state in the context will
+  //          be restored to its original value (at t0).
   bool DoImplicitIntegratorStep(const T& h) final;
+
+  // Steps the system forward by a single step of at most h using the implicit
+  // Euler method.
+  // @param t0 the time at the left end of the integration interval.
+  // @param h the maximum time increment to step forward.
+  // @param xt0 the continuous state at t0.
+  // @param[out] xtplus the computed value for `x(t0+h)` on successful return.
+  // @returns `true` if the step of size `h` was successful.
+  // @note The time and continuous state in the context are indeterminate upon
+  //       exit.
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
       VectorX<T>* xtplus);
+
+  // Steps forward by a single step of `h` using the implicit trapezoid
+  // method, if possible.
+  // @param t0 the time at the left end of the integration interval.
+  // @param h the maximum time increment to step forward.
+  // @param xt0 the continuous state at t0.
+  // @param dx0 the time derivatives computed at time and state (t0, xt0).
+  // @param xtplus_ie x(t0+h) computed by the implicit Euler method.
+  // @param[out] xtplus x(t0+h) computed by the implicit trapezoid method on
+  //             successful return.
+  // @returns `true` if the step was successful.
+  // @note The time and continuous state in the context are indeterminate upon
+  //       exit.
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
       const VectorX<T>& dx0, const VectorX<T>& xtplus_ie, VectorX<T>* xtplus);
 

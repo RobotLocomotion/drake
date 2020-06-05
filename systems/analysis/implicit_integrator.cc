@@ -27,15 +27,6 @@ void ImplicitIntegrator<T>::DoReset() {
   DoImplicitIntegratorReset();
 }
 
-// Computes the Jacobian of the ordinary differential equations around time
-// and continuous state `(t, xt)` using automatic differentiation.
-// @param system The dynamical system.
-// @param t the time around which to compute the Jacobian matrix.
-// @param xt the continuous state around which to compute the Jacobian matrix.
-// @param context the Context of the system, at time and continuous state
-//        unknown.
-// @param [out] the Jacobian matrix around time and state `(t, xt)`.
-// @note The continuous state will be indeterminate on return.
 template <class T>
 void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
     const System<T>& system, const T& t, const VectorX<T>& xt,
@@ -85,16 +76,6 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   }
 }
 
-// Computes the Jacobian of the ordinary differential equations around time
-// and continuous state `(t, xt)` using a first-order forward difference (i.e.,
-// numerical differentiation).
-// @param system The dynamical system.
-// @param t the time around which to compute the Jacobian matrix.
-// @param xt the continuous state around which to compute the Jacobian matrix.
-// @param context the Context of the system, at time and continuous state
-//        unknown.
-// @param [out] the Jacobian matrix around time and state `(t, xt)`.
-// @note The continuous state will be indeterminate on return.
 template <class T>
 void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
     const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
@@ -155,16 +136,6 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
   }
 }
 
-// Computes the Jacobian of the ordinary differential equations around time
-// and continuous state `(t, xt)` using a second-order central difference (i.e.,
-// numerical differentiation).
-// @param system The dynamical system.
-// @param t the time around which to compute the Jacobian matrix.
-// @param xt the continuous state around which to compute the Jacobian matrix.
-// @param context the Context of the system, at time and continuous state
-//        unknown.
-// @param [out] the Jacobian matrix around time and state `(t, xt)`.
-// @note The continuous state will be indeterminate on return.
 template <class T>
 void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
     const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
@@ -236,9 +207,6 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
   }
 }
 
-// Factors a dense matrix (the iteration matrix) using LU factorization,
-// which should be faster than the QR factorization used in the specialized
-// template method immediately below.
 template <class T>
 void ImplicitIntegrator<T>::IterationMatrix::SetAndFactorIterationMatrix(
     const MatrixX<T>& iteration_matrix) {
@@ -246,9 +214,6 @@ void ImplicitIntegrator<T>::IterationMatrix::SetAndFactorIterationMatrix(
   matrix_factored_ = true;
 }
 
-// Solves a linear system Ax = b for x using the iteration matrix (A)
-// factored using LU decomposition.
-// @see Factor()
 template <class T>
 VectorX<T> ImplicitIntegrator<T>::IterationMatrix::Solve(
     const VectorX<T>& b) const {
@@ -314,10 +279,6 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
   return !J.allFinite();
 }
 
-// Compute the partial derivative of the ordinary differential equations with
-// respect to the state variables for a given x(t).
-// @post the context's time and continuous state will be temporarily set during
-//       this call (and then reset to their original values) on return.
 template <class T>
 const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
     const VectorX<T>& x) {
