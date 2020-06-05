@@ -118,7 +118,7 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
   LoadMultibodyPlantAndSceneGraph();
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant_.num_collision_geometries(), 3);
+  EXPECT_EQ(plant_.num_collision_geometries(*plant_.CreateDefaultContext()), 3);
 
   const std::vector<GeometryId>& link1_collision_geometry_ids =
       plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link1"));

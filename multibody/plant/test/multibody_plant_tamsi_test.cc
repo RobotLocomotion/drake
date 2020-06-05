@@ -52,10 +52,10 @@ GTEST_TEST(MbpWithTamsiSolver, FixedWorld) {
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
 
-  // However it is not empty, it has all anchored geometry.
-  EXPECT_EQ(plant.num_collision_geometries(), 3);
-
   auto context = diagram->CreateDefaultContext();
+
+  // However it is not empty, it has all anchored geometry.
+  EXPECT_EQ(plant.num_collision_geometries(*context), 3);
 
   auto& discrete_state_vector = context->get_discrete_state_vector();
   EXPECT_EQ(discrete_state_vector.size(), 0);
