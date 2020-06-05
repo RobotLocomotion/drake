@@ -183,6 +183,11 @@ GTEST_TEST(IpoptSolverTest, LPDualSolution1) {
   TestLPDualSolution1(solver);
 }
 
+GTEST_TEST(IpoptSolverTest, LPDualSolution2) {
+  IpoptSolver solver;
+  TestLPDualSolution2(solver);
+}
+
 GTEST_TEST(IpoptSolverTest, EckhardtDualSolution) {
   IpoptSolver solver;
   TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
