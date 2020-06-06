@@ -14,10 +14,13 @@ namespace sensors {
 
 /// Sensor to represent an ideal accelerometer sensor. Currently does not
 /// represent noise or bias, but this could and should be added at a later
-/// date. This sensor measures the acceleration of a point on a given body, plus
-/// the acceleration due to gravity. Measurement is taken with respect to the
-/// world frame, but is expressed in local body coordinates.
-/// In monogram notation, the measurement is a_WS_S + g_S
+/// date. This sensor measures the acceleration of a point on a given body,
+/// minus the acceleration due to gravity. Measurement is taken with respect to 
+/// the world frame, but expressed in the coordinates of the local sensor frame 
+/// S. In monogram notation, the measurement is a_WS_S - g_S.
+/// Note that S is rigidly fixed to the given body B. Note, also, the sign
+/// of the gravity component. For typical settings, "-g_S" is in the "up"
+/// direction.
 ///
 /// There are three inputs to this sensor (nominally from a MultibodyPlant):
 ///   1) A vector of body poses (e.g. plant.get_body_poses_output_port)
@@ -26,9 +29,8 @@ namespace sensors {
 ///   3) A vector of spatial accelerations
 ///      (e.g. plant.get_body_spatial_accelerations_output_port)
 /// This class is therefore defined by:
-///   1) An integer body index into the two vector inputs above. The sensor is
-///      fixed to this body.
-///   2) A rigid transform from the body frame to the sensor frame
+///   1) The BodyIndex of the body to which this sensor is rigidly affixed.
+///   2) A rigid transform from the body frame to the sensor frame.
 /// @ingroup sensor_systems
 template <typename T>
 class Accelerometer : public LeafSystem<T> {
@@ -37,11 +39,11 @@ class Accelerometer : public LeafSystem<T> {
 
   /// @param body_index The index of body B
   /// @param X_BS the transform from body B to the accelerometer frame S
-  /// @param gravitational_acceleration the acceleration due to gravity
+  /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
   Accelerometer(
-      multibody::BodyIndex body_index, math::RigidTransform<T> X_BS,
-      Eigen::Vector3d gravitational_acceleration = Eigen::Vector3d::Zero());
+      multibody::BodyIndex body_index, const math::RigidTransform<T>& X_BS,
+      const Eigen::Vector3d& gravity_vector = Eigen::Vector3d::Zero());
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -71,7 +73,7 @@ class Accelerometer : public LeafSystem<T> {
   const multibody::BodyIndex
       body_index_;  // Index into the input body velocities/accelerations
   const math::RigidTransform<T> X_BS_;
-  const Eigen::Vector3d gravitational_acceleration_;
+  const Eigen::Vector3d gravity_vector_;
   const InputPort<T>* body_poses_input_port_{nullptr};
   const InputPort<T>* body_velocities_input_port_{nullptr};
   const InputPort<T>* body_accelerations_input_port_{nullptr};
