@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
@@ -15,11 +16,8 @@ namespace systems {
 template <class T>
 void ImplicitEulerIntegrator<T>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
-  num_err_est_nr_iterations_ = 0;
-  num_err_est_function_evaluations_ = 0;
-  num_err_est_jacobian_function_evaluations_ = 0;
-  num_err_est_jacobian_reforms_ = 0;
-  num_err_est_iter_factorizations_ = 0;
+  hie_statistics_ = {};
+  itr_statistics_ = {};
 }
 
 template <class T>
@@ -210,9 +208,22 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
     const VectorX<T>& xt0, VectorX<T>* xtplus) {
+  DRAKE_LOGGER_DEBUG("StepImplicitEuler(h={}) t={}", h, t0);
+
+  // Use the current state as the candidate value for the next state.
+  // [Hairer 1996] validates this choice (p. 120).
+  const VectorX<T>& xtplus_guess = xt0;
+
+  return this->StepImplicitEulerWithGuess(t0, h, xt0, xtplus_guess, xtplus);
+}
+
+template <class T>
+bool ImplicitEulerIntegrator<T>::StepImplicitEulerWithGuess(
+    const T& t0, const T& h, const VectorX<T>& xt0,
+    const VectorX<T>& xtplus_guess, VectorX<T>* xtplus) {
   using std::abs;
 
-  DRAKE_LOGGER_DEBUG("StepImplicitEuler(h={}) t={}", h, t0);
+  DRAKE_LOGGER_DEBUG("StepImplicitEulerWithGuess(h={}) t={}", h, t0);
 
   // Set g for the implicit Euler method.
   Context<T>* context = this->get_mutable_context();
@@ -222,14 +233,101 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
             h * this->EvalTimeDerivatives(*context).CopyToVector()).eval();
       };
 
-  // Use the current state as the candidate value for the next state.
-  // [Hairer 1996] validates this choice (p. 120).
-  const VectorX<T>& xtplus_guess = xt0;
-
   // Attempt the step.
   return StepAbstract(t0, h, xt0, g,
                       ComputeAndFactorImplicitEulerIterationMatrix,
                       xtplus_guess, &ie_iteration_matrix_, &*xtplus);
+}
+
+template <class T>
+bool ImplicitEulerIntegrator<T>::StepHalfSizedImplicitEulers(
+    const T& t0, const T& h, const VectorX<T>& xt0,
+    const VectorX<T>& xtplus_ie, VectorX<T>* xtplus) {
+  using std::abs;
+
+  DRAKE_LOGGER_DEBUG("StepHalfSizedImplicitEulers(h={}) t={}", h, t0);
+
+
+  // Store statistics before calling StepAbstract(). The difference between
+  // the modified statistics and the stored statistics will be used to compute
+  // the half-sized-implicit-Euler-specific statistics.
+  const int stored_num_jacobian_evaluations =
+      this->get_num_jacobian_evaluations();
+  const int stored_num_iter_factorizations =
+      this->get_num_iteration_matrix_factorizations();
+  const int64_t stored_num_function_evaluations =
+      this->get_num_derivative_evaluations();
+  const int64_t stored_num_jacobian_function_evaluations =
+      this->get_num_derivative_evaluations_for_jacobian();
+  const int stored_num_nr_iterations =
+      this->get_num_newton_raphson_iterations();
+
+  // We set our guess for the state after a half-step to the average of the
+  // guess for the final state, xtplus_ie, and the initial state, xt0.
+  VectorX<T> xtmp = 0.5 * (xt0 + xtplus_ie);
+  // Attempt to step.
+  bool success = StepImplicitEulerWithGuess(t0, 0.5 * h, xt0, xtmp, xtplus);
+  if (!success) {
+    DRAKE_LOGGER_DEBUG("First Half IE convergence failed.");
+  } else {
+    // Swap the current output, xtplus, into xthalf, which functions as the new
+    // xⁿ.
+    std::swap(xtmp, *xtplus);
+    const VectorX<T>& xthalf = xtmp;
+
+    // Since the first half-step succeeded, either we recomputed a Jacobian at
+    // (t0, x0), or we reused an older Jacobian. Therefore, as far as the next
+    // half-sized step is concerned, the Jacobian is not at state
+    // (t+h/2, x(t+h/2)). Since jacobian_is_fresh_ means that the Jacobian is
+    // computed at the (t0,x0) of the beginning of the step we want to take, we
+    // mark it as not-fresh.
+    this->set_jacobian_is_fresh(false);
+
+    // TODO(antequ): One possible optimization is, if the Jacobian is fresh at
+    // this point, we can set a flag to cache the Jacobian if it gets
+    // recomputed, so that if the second substep fails, we simply restore the
+    // cached Jacobian instead of marking it stale. Since the second substep
+    // very rarely fails if the large step and the first substep succeeded,
+    // our tests indicates that this optimization saves only about 2% of the
+    // effort (0-5% in most cases), on a stiff 3-body pile of objects example.
+    // Therefore we omitted this optimization for code simplicity. See
+    // Revision 1 of PR 13224 for an implementation of this optimization.
+
+    success = StepImplicitEulerWithGuess(t0 + 0.5 * h, 0.5 * h, xthalf,
+        xtplus_ie, xtplus);
+    if (!success) {
+      DRAKE_LOGGER_DEBUG("Second Half IE convergence failed.");
+      // After a failure, the Jacobians were updated, so we have to mark that
+      // the current Jacobian is not fresh by setting
+      // failed_jacobian_is_from_second_small_step_ to true, so that at the
+      // beginning of the next step, we know to set jacobian_is_fresh_ to
+      // false, in DoImplicitIntegratorStep(). (Note that here we were slightly
+      // abusing the jacobian_is_fresh_ flag --- for the second half-sized step,
+      // we called MaybeFreshenMatrices() at t = t0 + h/2, meaning that
+      // jacobian_is_fresh_ now marks whether the Jacobian was last computed at
+      // t = t0 + h/2 instead of its usual definition of t = t0. This is why
+      // when the step fails, ImplicitIntegrator<T>::DoStep() will incorrectly
+      // mark the Jacobian as fresh, and we will need to fix this in
+      // DoImplicitIntegratorStep() for the next step.)
+      failed_jacobian_is_from_second_small_step_ = true;
+    }
+  }
+  // Move statistics to half-sized-implicit-Euler-specific statistics.
+  // Notice that we log the statistics even if either step fails.
+  hie_statistics_.num_jacobian_reforms +=
+      this->get_num_jacobian_evaluations() - stored_num_jacobian_evaluations;
+  hie_statistics_.num_iter_factorizations +=
+      this->get_num_iteration_matrix_factorizations() -
+      stored_num_iter_factorizations;
+  hie_statistics_.num_function_evaluations +=
+      this->get_num_derivative_evaluations() - stored_num_function_evaluations;
+  hie_statistics_.num_jacobian_function_evaluations +=
+      this->get_num_derivative_evaluations_for_jacobian() -
+      stored_num_jacobian_function_evaluations;
+  hie_statistics_.num_nr_iterations +=
+      this->get_num_newton_raphson_iterations() - stored_num_nr_iterations;
+
+  return success;
 }
 
 template <class T>
@@ -254,14 +352,16 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
   // Store statistics before calling StepAbstract(). The difference between
   // the modified statistics and the stored statistics will be used to compute
   // the trapezoid method-specific statistics.
-  int stored_num_jacobian_evaluations = this->get_num_jacobian_evaluations();
-  int stored_num_iter_factorizations =
+  const int stored_num_jacobian_evaluations =
+      this->get_num_jacobian_evaluations();
+  const int stored_num_iter_factorizations =
       this->get_num_iteration_matrix_factorizations();
-  int64_t stored_num_function_evaluations =
+  const int64_t stored_num_function_evaluations =
       this->get_num_derivative_evaluations();
-  int64_t stored_num_jacobian_function_evaluations =
+  const int64_t stored_num_jacobian_function_evaluations =
       this->get_num_derivative_evaluations_for_jacobian();
-  int stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
+  const int stored_num_nr_iterations =
+      this->get_num_newton_raphson_iterations();
 
   // Attempt to step.
   bool success = StepAbstract(t0, h, xt0, g,
@@ -269,28 +369,29 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
                               xtplus_ie, &itr_iteration_matrix_, xtplus);
 
   // Move statistics to implicit trapezoid-specific.
-  num_err_est_jacobian_reforms_ +=
+  // Notice that we log the statistics even if the step fails.
+  itr_statistics_.num_jacobian_reforms +=
       this->get_num_jacobian_evaluations() - stored_num_jacobian_evaluations;
-  num_err_est_iter_factorizations_ +=
+  itr_statistics_.num_iter_factorizations +=
       this->get_num_iteration_matrix_factorizations() -
       stored_num_iter_factorizations;
-  num_err_est_function_evaluations_ +=
+  itr_statistics_.num_function_evaluations +=
       this->get_num_derivative_evaluations() - stored_num_function_evaluations;
-  num_err_est_jacobian_function_evaluations_ +=
+  itr_statistics_.num_jacobian_function_evaluations +=
       this->get_num_derivative_evaluations_for_jacobian() -
       stored_num_jacobian_function_evaluations;
-  num_err_est_nr_iterations_ += this->get_num_newton_raphson_iterations() -
-      stored_num_nr_iterations;
+  itr_statistics_.num_nr_iterations +=
+      this->get_num_newton_raphson_iterations() - stored_num_nr_iterations;
 
   return success;
 }
 
 template <class T>
 bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus_ie, VectorX<T>* xtplus_itr) {
+    const VectorX<T>& xt0, VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie) {
   using std::abs;
   DRAKE_ASSERT(xtplus_ie);
-  DRAKE_ASSERT(xtplus_itr);
+  DRAKE_ASSERT(xtplus_hie);
 
   // Compute the derivative at time and state (t0, x(t0)). NOTE: the derivative
   // is calculated at this point (early on in the integration process) in order
@@ -306,33 +407,47 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     return false;
   }
 
-  // The error estimation process uses the implicit trapezoid method, which
-  // is defined as:
-  // x(t0+h) = x(t0) + h/2 (f(t0, x(t0) + f(t0+h, x(t0+h))
-  // x(t0+h) from the implicit Euler method is presumably a good starting point.
-
-  // The error estimate is derived as follows (thanks to Michael Sherman):
-  // x*(t0+h) = xᵢₑ(t0+h) + O(h²)      [implicit Euler]
-  //          = xₜᵣ(t0+h) + O(h³)      [implicit trapezoid]
-  // where x*(t0+h) is the true (generally unknown) answer that we seek.
-  // This implies:
-  // xᵢₑ(t0+h) + O(h²) = xₜᵣ(t0+h) + O(h³).
-  // Given that the second order term subsumes the third order one, we have:
-  // xᵢₑ(t0+h) - xₜᵣ(t0+h) = O(h²).
-
-  // Attempt to compute the implicit trapezoid solution.
-  if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_ie, xtplus_itr)) {
-    // Reset the state to that computed by implicit Euler.
-    // TODO(edrumwri): Explore using the implicit trapezoid method solution
-    //                 instead as *the* solution, rather than the implicit
-    //                 Euler. Refer to [Lambert, 1991], Ch 6.
-    Context<T>* context = this->get_mutable_context();
-    context->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
-    return true;
+  if (!use_implicit_trapezoid_error_estimation_) {
+    // In this case, step two half-sized implicit Euler steps along
+    // with the full step for error estimation.
+    if (StepHalfSizedImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie)) {
+      Context<T>* context = this->get_mutable_context();
+      context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
+      return true;
+    } else {
+      DRAKE_LOGGER_DEBUG("Implicit Euler half-step approach FAILED with a step"
+          "size that succeeded on full-sized implicit Euler.");
+      return false;
+    }
   } else {
-    DRAKE_LOGGER_DEBUG("Implicit trapezoid approach FAILED with a step"
-        "size that succeeded on implicit Euler.");
-    return false;
+    // In this case, use the implicit trapezoid method, which is defined as:
+    // x(t0+h) = x(t0) + h/2 (f(t0, x(t0) + f(t0+h, x(t0+h))
+    // x(t0+h) from the implicit Euler method is presumably a good starting
+    // point.
+
+    // The error estimate is derived as follows (thanks to Michael Sherman):
+    // x*(t0+h) = xᵢₑ(t0+h) + O(h²)      [implicit Euler]
+    //          = xₜᵣ(t0+h) + O(h³)      [implicit trapezoid]
+    // where x*(t0+h) is the true (generally unknown) answer that we seek.
+    // This implies:
+    // xᵢₑ(t0+h) + O(h²) = xₜᵣ(t0+h) + O(h³).
+    // Given that the second order term subsumes the third order one, we have:
+    // xᵢₑ(t0+h) - xₜᵣ(t0+h) = O(h²).
+
+    // Attempt to compute the implicit trapezoid solution.
+    if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_ie, xtplus_hie)) {
+      // Reset the state to that computed by implicit Euler.
+      // TODO(edrumwri): Explore using the implicit trapezoid method solution
+      //                 instead as *the* solution, rather than the implicit
+      //                 Euler. Refer to [Lambert, 1991], Ch 6.
+      Context<T>* context = this->get_mutable_context();
+      context->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
+      return true;
+    } else {
+      DRAKE_LOGGER_DEBUG("Implicit trapezoid approach FAILED with a step"
+          "size that succeeded on implicit Euler.");
+      return false;
+    }
   }
 }
 
@@ -345,7 +460,26 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
 
   xt0_ = context->get_continuous_state().CopyToVector();
   xtplus_ie_.resize(xt0_.size());
-  xtplus_tr_.resize(xt0_.size());
+  xtplus_hie_.resize(xt0_.size());
+
+  // If the most recent step failed only after the second small step, this
+  // indicates that the Jacobian was computed from the second small step, and
+  // not at (t0, xt0). ImplicitIntegrator<T>::DoStep() would have incorrectly
+  // marked the Jacobian as fresh, and so we must correct it by marking
+  // jacobian_is_fresh_ as false. (Note that this occurs because we were
+  // slightly abusing the jacobian_is_fresh_ flag --- for the second half-sized
+  // step, we called MaybeFreshenMatrices() at t = t0 + h/2, meaning that
+  // jacobian_is_fresh_ marked whether the Jacobian was last computed at
+  // t = t0 + h/2 instead of its usual definition of t = t0. This is why when
+  // the step failed, ImplicitIntegrator<T>::DoStep() would have incorrectly
+  // marked the Jacobian as fresh.)
+  if (failed_jacobian_is_from_second_small_step_) {
+    this->set_jacobian_is_fresh(false);
+
+    // Now that we've correctly set the jacobian_is_fresh_ flag, make sure that
+    // the failed_jacobian_is_from_second_small_step_ is reset back to false.
+    failed_jacobian_is_from_second_small_step_ = false;
+  }
 
   // If the requested h is less than the minimum step size, we'll advance time
   // using an explicit Euler step.
@@ -368,24 +502,40 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
     xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
     xtplus_ie_ = xt0_ + h * xdot_;
 
-    // Compute the RK2 step.
-    const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
-    if (!rk2_->IntegrateWithSingleFixedStepToTime(t0 + h)) {
-      throw std::runtime_error("Embedded RK2 integrator failed to take a single"
-          "fixed step to the requested time.");
+    // Compute the RK2 or two half-sized Euler steps.
+    if (use_implicit_trapezoid_error_estimation_) {
+      // Compute the RK2 step
+      const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
+      if (!rk2_->IntegrateWithSingleFixedStepToTime(t0 + h)) {
+        throw std::runtime_error("Embedded RK2 integrator failed to take a"
+            "single fixed step to the requested time.");
+      }
+
+      const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
+      xtplus_hie_ = context->get_continuous_state().CopyToVector();
+
+      // Update the implicit Trapezoid ODE counts.
+      itr_statistics_.num_function_evaluations +=
+          (evals_after_rk2 - evals_before_rk2);
+
+      // Revert the state to that computed by explicit Euler.
+      context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
+    } else {
+      // complete two half-sized explicit Euler steps.
+      xtplus_hie_ = xt0_ + 0.5 * h * xdot_;
+      context->SetTimeAndContinuousState(t0 + 0.5 * h, xtplus_hie_);
+      xtplus_hie_ +=
+          0.5 * h * this->EvalTimeDerivatives(*context).CopyToVector();
+
+      // Update the half-sized step ODE counts.
+      ++(hie_statistics_.num_function_evaluations);
+
+      context->SetTimeAndContinuousState(t0 + h, xtplus_hie_);
     }
 
-    const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
-    xtplus_tr_ = context->get_continuous_state().CopyToVector();
-
-    // Update the error estimation ODE counts.
-    num_err_est_function_evaluations_ += (evals_after_rk2 - evals_before_rk2);
-
-    // Revert the state to that computed by explicit Euler.
-    context->SetTimeAndContinuousState(t0 + h, xtplus_ie_);
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_tr_);
+    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_hie_);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
@@ -395,7 +545,7 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   }
 
   // Compute and update the error estimate.
-  err_est_vec_ = xtplus_ie_ - xtplus_tr_;
+  err_est_vec_ = xtplus_ie_ - xtplus_hie_;
 
   // Update the caller-accessible error estimate.
   this->get_mutable_error_estimate()->get_mutable_vector().
