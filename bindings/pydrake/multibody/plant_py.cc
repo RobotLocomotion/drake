@@ -664,11 +664,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
         .def("num_collision_geometries", &Class::num_collision_geometries,
             cls_doc.num_collision_geometries.doc)
-        .def("default_coulomb_friction", &Class::default_coulomb_friction,
-            py::arg("geometry_id"), py_reference_internal,
-            cls_doc.default_coulomb_friction.doc)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
             py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("default_coulomb_friction", &Class::default_coulomb_friction,
+        py::arg("geometry_id"), py_reference_internal,
+        cls_doc.default_coulomb_friction.doc_deprecated);
+#pragma GCC diagnostic pop
+    DeprecateAttribute(cls, "default_coulomb_friction",
+        cls_doc.default_coulomb_friction.doc_deprecated);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",

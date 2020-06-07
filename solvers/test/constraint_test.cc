@@ -28,6 +28,7 @@ using symbolic::Formula;
 using symbolic::Variable;
 
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
 
 // Given a list of variables [x₀, ..., xₙ] and a list of values [v₀, ..., vₙ],
 // returns an environment {x₀ ↦ v₀, ..., xₙ ↦ vₙ}.
@@ -134,11 +135,58 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   EXPECT_TRUE(CompareMatrices(constraint2.b(), b));
 }
 
-// Tests if the Lorentz Cone constraint is imposed correctly.
-void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
-                         const Eigen::Ref<const Eigen::VectorXd> b,
-                         const VectorXd& x_test, bool is_in_cone) {
-  LorentzConeConstraint cnstr(A, b);
+void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                               const Eigen::Ref<const Eigen::VectorXd>& b,
+                               const VectorXd& x_test) {
+  LorentzConeConstraint cnstr1(A, b, LorentzConeConstraint::EvalType::kConvex);
+  LorentzConeConstraint cnstr2(A, b,
+                               LorentzConeConstraint::EvalType::kConvexSmooth);
+  EXPECT_EQ(cnstr1.num_constraints(), 1);
+  EXPECT_EQ(cnstr2.num_constraints(), 1);
+  EXPECT_TRUE(CompareMatrices(cnstr1.lower_bound(), Vector1d(0)));
+  EXPECT_TRUE(CompareMatrices(cnstr2.lower_bound(), Vector1d(0)));
+  EXPECT_TRUE(CompareMatrices(cnstr1.upper_bound(), Vector1d(kInf)));
+  EXPECT_TRUE(CompareMatrices(cnstr2.upper_bound(), Vector1d(kInf)));
+  VectorXd y1, y2;
+  cnstr1.Eval(x_test, &y1);
+  cnstr2.Eval(x_test, &y2);
+  VectorXd z = A * x_test + b;
+  Vector1d y_expected(z(0) - z.tail(z.rows() - 1).norm());
+  EXPECT_TRUE(CompareMatrices(y1, y_expected, 1e-12));
+  EXPECT_TRUE(CompareMatrices(y2, y_expected, 1e-12));
+
+  Eigen::MatrixXd dx_test(x_test.rows(), 2);
+  dx_test.col(0) = Eigen::VectorXd::LinSpaced(x_test.rows(), 0, 1);
+  dx_test.col(1) = Eigen::VectorXd::LinSpaced(x_test.rows(), 1, 2);
+
+  const AutoDiffVecXd x_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(x_test, dx_test);
+
+  AutoDiffVecXd y_autodiff1, y_autodiff2;
+  cnstr1.Eval(x_autodiff, &y_autodiff1);
+  cnstr2.Eval(x_autodiff, &y_autodiff2);
+  EXPECT_TRUE(CompareMatrices(y_expected,
+                              math::autoDiffToValueMatrix(y_autodiff1), 1e-12));
+  EXPECT_TRUE(CompareMatrices(y_expected,
+                              math::autoDiffToValueMatrix(y_autodiff2), 1e-12));
+  // With eval_type = kConvexSmooth, we approximate the gradient with some
+  // smooth function, which introduces larger error (2e-12).
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff1),
+                              math::autoDiffToGradientMatrix(y_autodiff2),
+                              2e-12));
+}
+
+// Tests if the Lorentz Cone constraint (with non-convex eval) is imposed
+// correctly.
+void TestLorentzConeEvalNonconvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                                  const Eigen::Ref<const Eigen::VectorXd>& b,
+                                  const VectorXd& x_test, bool is_in_cone) {
+  LorentzConeConstraint cnstr(A, b,
+                              LorentzConeConstraint::EvalType::kNonconvex);
+  EXPECT_EQ(cnstr.num_constraints(), 2);
+  EXPECT_TRUE(CompareMatrices(cnstr.lower_bound(), Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(
+      CompareMatrices(cnstr.upper_bound(), Eigen::Vector2d::Constant(kInf)));
   VectorXd y;
   // Test Eval with VectorXd.
   cnstr.Eval(x_test, &y);
@@ -215,8 +263,10 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
   // [3;1;1] is in the interior of the Lorentz cone.
   Eigen::Vector3d x1(3.0, 1.0, 1.0);
-  TestLorentzConeEval(Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero(), x1,
-                      true);
+  TestLorentzConeEvalConvex(Eigen::Matrix3d::Identity(),
+                            Eigen::Vector3d::Zero(), x1);
+  TestLorentzConeEvalNonconvex(Eigen::Matrix3d::Identity(),
+                               Eigen::Vector3d::Zero(), x1, true);
 
   // [3;2;2;1] is on the boundary of the Lorentz cone.
   Eigen::Vector2d x2(1, 3);
@@ -228,7 +278,8 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
        1, -2;
   // clang-format on
   Eigen::Vector4d b2(2, -2, 0, 6);
-  TestLorentzConeEval(A2, b2, x2, true);
+  TestLorentzConeEvalConvex(A2, b2, x2);
+  TestLorentzConeEvalNonconvex(A2, b2, x2, true);
 
   // [3; 3; 1] is outside of the Lorentz cone.
   Eigen::Vector4d x3(1, -1, 2, 3);
@@ -239,13 +290,34 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
         0, -2, 3, 1;
   // clang-format on
   Eigen::Vector3d b3 = Eigen::Vector3d(3, 3, 1) - A3 * x3;
-  TestLorentzConeEval(A3, b3, x3, false);
+  TestLorentzConeEvalConvex(A3, b3, x3);
+  TestLorentzConeEvalNonconvex(A3, b3, x3, false);
 
   // [-3; 1; 1] is outside of the Lorentz cone.
   Vector1d x4 = Vector1d::Constant(4);
   Eigen::Vector3d A4(-1, 3, 2);
   Eigen::Vector3d b4 = Eigen::Vector3d(-3, 1, 1) - A4 * x4;
-  TestLorentzConeEval(A4, b4, x4, false);
+  TestLorentzConeEvalConvex(A4, b4, x4);
+  TestLorentzConeEvalNonconvex(A4, b4, x4, false);
+}
+
+GTEST_TEST(testConstraint, testLorentzConeConstraintAtZeroZ) {
+  // Test LorentzConeConstraint with smoothed approximated gradient  evaluated
+  // at z = 0
+  Vector2d x(1, 2);
+  Eigen::Matrix<double, 3, 2> A;
+  A << 1, 2, -2, -1, 2, 3;
+  Eigen::Vector3d b = -A * x;
+  LorentzConeConstraint cnstr(A, b,
+                              LorentzConeConstraint::EvalType::kConvexSmooth);
+  AutoDiffVecXd y_autodiff;
+  cnstr.Eval(math::initializeAutoDiff(x), &y_autodiff);
+  EXPECT_TRUE(
+      CompareMatrices(math::autoDiffToValueMatrix(y_autodiff), Vector1d(0)));
+  const Eigen::MatrixXd y_gradient = math::autoDiffToGradientMatrix(y_autodiff);
+  // The gradient of dy/dz is [1, 0, 0], so the dy/dx = dy/dz * dz/dx = dy/dz *
+  // A = A.row(0).
+  EXPECT_TRUE(CompareMatrices(y_gradient, A.row(0)));
 }
 
 GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {

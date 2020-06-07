@@ -195,25 +195,25 @@ class TestPlant(unittest.TestCase):
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
             self.assertGreater(plant.num_collision_geometries(), 0)
-            self.assertEqual(plant.default_coulomb_friction(
-                plant.GetCollisionGeometriesForBody(body)[0]
-            ).static_friction(), 0.6)
-            self.assertEqual(plant.default_coulomb_friction(
-                plant.GetCollisionGeometriesForBody(body)[0]
-            ).dynamic_friction(), 0.5)
+            body0_props = scene_graph.model_inspector().GetProximityProperties(
+                plant.GetCollisionGeometriesForBody(body)[0])
+            body0_friction = body0_props.GetProperty(
+                "material", "coulomb_friction")
+            self.assertEqual(body0_friction.static_friction(), 0.6)
+            self.assertEqual(body0_friction.dynamic_friction(), 0.5)
             explicit_props = ProximityProperties()
             explicit_props.AddProperty("material", "coulomb_friction",
                                        CoulombFriction(1.1, 0.8))
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision2", properties=explicit_props)
+            body1_props = scene_graph.model_inspector().GetProximityProperties(
+                plant.GetCollisionGeometriesForBody(body)[1])
+            body1_friction = body1_props.GetProperty(
+                "material", "coulomb_friction")
             self.assertGreater(plant.num_collision_geometries(), 1)
-            self.assertEqual(plant.default_coulomb_friction(
-                plant.GetCollisionGeometriesForBody(body)[1]
-            ).static_friction(), 1.1)
-            self.assertEqual(plant.default_coulomb_friction(
-                plant.GetCollisionGeometriesForBody(body)[1]
-            ).dynamic_friction(), 0.8)
+            self.assertEqual(body1_friction.static_friction(), 1.1)
+            self.assertEqual(body1_friction.dynamic_friction(), 0.8)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):

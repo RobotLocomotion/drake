@@ -18,6 +18,12 @@
 namespace drake {
 namespace systems {
 
+// Forward declare VelocityImplicitEulerIntegrator for the Reuse test
+// so that we can check the integrator type, because the test needs to be
+// different for the VIE integrator, since it uses slightly different logic.
+template <class T>
+class VelocityImplicitEulerIntegrator;
+
 namespace analysis_test {
 
 enum ReuseType { kNoReuse, kReuse };
@@ -762,13 +768,25 @@ TYPED_TEST_P(ImplicitIntegratorTest, Reuse) {
   // Attempt to integrate the system. Our past experience indicates that this
   // system fails to converge from the initial state for this large step size.
   // This tests the case where the Jacobian matrix has yet to be formed. There
-  // should be two Jacobian matrix evaluations- once at trial 1 and another
-  // at trial 3. There should be three iteration matrix factorizations: once
-  // at trial 1, another at trial 2, and the third at trial 3.
+  // should be one Jacobian matrix evaluation - once at trial 1. There should
+  // also be two iteration matrix factorizations: once at trial 1, and another
+  // at trial 2. Trial 3 should be skipped because the first Jacobian matrix
+  // computation makes the Jacobian "fresh". The exception is the
+  // VelocityImplicitEulerIntegrator, which will recompute both on trial 3
+  // because it does not reuse Jacobians for different step sizes; hence
+  // it will have 3 factorizations and 2 Jacobian evaluations.
+  // TODO(antequ): see TODO in ImplicitIntegrator::MaybeFreshenMatrices()
+  // for potential improvements that will require changes here.
   integrator.Initialize();
   ASSERT_FALSE(integrator.IntegrateWithSingleFixedStepToTime(1e-2));
-  EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 3);
-  EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 2);
+  if (!std::is_same<Integrator,
+      VelocityImplicitEulerIntegrator<double>>::value) {
+    EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 2);
+    EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 1);
+  } else {
+    EXPECT_EQ(integrator.get_num_iteration_matrix_factorizations(), 3);
+    EXPECT_EQ(integrator.get_num_jacobian_evaluations(), 2);
+  }
 
   // Now integrate again but with a smaller size. Again, past experience
   // that this step size should be sufficiently small for the integrator to

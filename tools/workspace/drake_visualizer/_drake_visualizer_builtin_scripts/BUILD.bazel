@@ -32,8 +32,8 @@ py_library(
 install(
     name = "install",
     targets = [
-        ":module_py",
         ":_drake_visualizer_builtin_scripts",
+        ":module_py",
     ],
     py_dest = "@PYTHON_SITE_PACKAGES@/_drake_visualizer_builtin_scripts",  # noqa
     visibility = ["//tools/workspace/drake_visualizer:__pkg__"],

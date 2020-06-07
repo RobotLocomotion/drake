@@ -217,7 +217,14 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// the implementer of these kinds of details.
   class IterationMatrix {
    public:
+    /// Factors a dense matrix (the iteration matrix) using LU factorization,
+    /// which should be faster than the QR factorization used in the specialized
+    /// template method for AutoDiffXd below.
     void SetAndFactorIterationMatrix(const MatrixX<T>& iteration_matrix);
+
+    /// Solves a linear system Ax = b for x using the iteration matrix (A)
+    /// factored using LU decomposition.
+    /// @see Factor()
     VectorX<T> Solve(const VectorX<T>& b) const;
 
     /// Returns whether the iteration matrix has been set and factored.
@@ -396,13 +403,54 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   MatrixX<T>& get_mutable_jacobian() { return J_; }
   void DoResetStatistics() override;
   void DoReset() final;
-  const MatrixX<T>& CalcJacobian(const T& tf, const VectorX<T>& xtplus);
-  void ComputeForwardDiffJacobian(const System<T>&, const T& t,
-      const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
-  void ComputeCentralDiffJacobian(const System<T>&, const T& t,
-      const VectorX<T>& xc, Context<T>*, MatrixX<T>* J);
+
+  // Compute the partial derivative of the ordinary differential equations with
+  // respect to the state variables for a given x(t).
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param x the continuous state around which to compute the Jacobian matrix.
+  // @post the context's time and continuous state will be temporarily set
+  //       during this call (and then reset to their original values) on return.
+  //       Furthermore, the jacobian_is_fresh_ flag is set to "true", indicating
+  //       that the Jacobian was computed from the most recent time t.
+  const MatrixX<T>& CalcJacobian(const T& t, const VectorX<T>& x);
+
+  // Computes the Jacobian of the ordinary differential equations around time
+  // and continuous state `(t, xt)` using a first-order forward difference
+  // (i.e., numerical differentiation).
+  // @param system The dynamical system.
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param xt the continuous state around which to compute the Jacobian matrix.
+  // @param context the Context of the system, at time and continuous state
+  //        unknown.
+  // @param[out] J the Jacobian matrix around time and state `(t, xt)`.
+  // @post The continuous state will be indeterminate on return.
+  void ComputeForwardDiffJacobian(const System<T>& system, const T& t,
+      const VectorX<T>& xt, Context<T>* context, MatrixX<T>* J);
+
+  // Computes the Jacobian of the ordinary differential equations around time
+  // and continuous state `(t, xt)` using a second-order central difference
+  // (i.e., numerical differentiation).
+  // @param system The dynamical system.
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param xt the continuous state around which to compute the Jacobian matrix.
+  // @param context the Context of the system, at time and continuous state
+  //        unknown.
+  // @param[out] J the Jacobian matrix around time and state `(t, xt)`.
+  // @post The continuous state will be indeterminate on return.
+  void ComputeCentralDiffJacobian(const System<T>& system, const T& t,
+      const VectorX<T>& xt, Context<T>* context, MatrixX<T>* J);
+
+  // Computes the Jacobian of the ordinary differential equations around time
+  // and continuous state `(t, xt)` using automatic differentiation.
+  // @param system The dynamical system.
+  // @param t the time around which to compute the Jacobian matrix.
+  // @param xt the continuous state around which to compute the Jacobian matrix.
+  // @param context the Context of the system, at time and continuous state
+  //        unknown.
+  // @param[out] J the Jacobian matrix around time and state `(t, xt)`.
+  // @post The continuous state will be indeterminate on return.
   void ComputeAutoDiffJacobian(const System<T>& system, const T& t,
-      const VectorX<T>& xc, const Context<T>& context, MatrixX<T>* J);
+      const VectorX<T>& xt, const Context<T>& context, MatrixX<T>* J);
 
   /// @copydoc IntegratorBase::DoStep()
   virtual bool DoImplicitIntegratorStep(const T& h) = 0;
@@ -421,13 +469,24 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     ++num_jacobian_evaluations_;
   }
 
+  void set_jacobian_is_fresh(bool flag) {
+    jacobian_is_fresh_ = flag;
+  }
+
  private:
   bool DoStep(const T& h) final {
     bool result = DoImplicitIntegratorStep(h);
     // If the implicit step is successful (result is true), we need a new
     // Jacobian (fresh is false). Otherwise, a failed step (result is false)
     // means we can keep the Jacobian (fresh is true). Therefore fresh =
-    // !result, always.
+    // !result, almost always.
+
+    // The exception is when the implicit step fails during the second half-
+    // step of ImplicitEulerIntegrator, in which case the Jacobian is not from
+    // the beginning of the step, and so fresh should be false. We leave it
+    // untouched here to keep the design of ImplicitIntegrator<T> simple, and
+    // let ImplicitEulerIntegrator<T> handle this flag on its own at the
+    // beginning of ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep().
     jacobian_is_fresh_ = !result;
 
     return result;
@@ -441,7 +500,11 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // The last computed Jacobian matrix.
   MatrixX<T> J_;
 
-  // Whether the Jacobian matrix is fresh.
+  // Indicates whether the Jacobian matrix is fresh. We say the Jacobian is
+  // "fresh" if it was last computed at a state (t0, x0) from the beginning of
+  // the current step. This indicates to MaybeFreshenMatrices that it should
+  // not recompute the Jacobian, but rather it should fail immediately. This
+  // is only used when use_full_newton_ and reuse_ are set to false.
   bool jacobian_is_fresh_{false};
 
   // If set to `false`, Jacobian matrices and iteration matrix factorizations
