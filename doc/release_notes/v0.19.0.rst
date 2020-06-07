@@ -14,12 +14,6 @@ Announcements
 
       ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
 
-* RigidBodyPlant and all of the drake "attic" is scheduled for removal on
-  2020-09-01 (`#12158`_, `#13030`_).
-
-  * Please see `#12158`_ for details of the timeline, and let us know if this
-    will cause a problem.
-
 Breaking changes since v0.18.0
 ------------------------------
 
@@ -216,6 +210,13 @@ Newly-deprecated APIs
 * pydrake.systems.rendering.PoseBundle.get_pose (`#13327`_)
 * pydrake.systems.rendering.PoseBundle.set_pose (`#13327`_)
 * pydrake.systems.rendering.PoseVector.get_isometry (`#13327`_)
+
+* RigidBodyPlant and all of the drake "attic" is scheduled for removal on
+  2020-09-01 (`#12158`_, `#13030`_).
+
+  * Please see `#12158`_ for details of the timeline, and let us know if this
+    will cause a problem.
+
 * All Python modules under pydrake.attic.* (`#13315`_)
 * All C++ headers in the attic (`#13315`_):
 
