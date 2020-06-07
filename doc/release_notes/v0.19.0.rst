@@ -113,45 +113,37 @@ Miscellaneous features and fixes
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
-Newly bound
-
-* TBD
-
 New features
 
-* TBD
+* Bind C++ Value<vector<T>> to Python Value[List[T]] (`#13407`_, `#13408`_)
 
-Fixes
+Newly bound
 
+* std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::AutoDiffXd>> (`#13359`_)
+* std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::symbolic::Expression>> (`#13359`_)
 * TBD
-* bindings: py systems: Make BasicVector use Pythonic string formatting (`#13454`_)
-* bindings: py mathematical_program: Add friendlier-er errors for dtype mismatch (`#13234`_)
-* bindings: autodiffutils_test: Use numpy version check for error message (`#13318`_)
-* bindings: py geometry, mbp: Ensure index wrappers use `std::hash<>` (`#13342`_)
 * bindings: py geom, mbp: Bind miscellaneous missing methods (`#13342`_)
 * bindings: py geometry: Bind SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * bindings: py geometry: Bind Mesh and Convex accessors (`#13352`_)
 * bindings: pydrake: Added some simulator bindings (`#13343`_)
 * bindings: py mbp: Bind MultibodyPlant.time_step() (`#13355`_)
-* bindings: Added make opaque call for ExternallyAppliedSpatialForce (`#13359`_)
 * bindings: py geometry: Bind GeometryInstance.set_name (`#13351`_)
 * bindings: py geometry: Bind Shape.Clone() (`#13361`_)
 * bindings: py systems: Bind system accessors (`#13363`_)  # - Diagram.GetSystems() - InputPort.get_system() - OutputPort.get_system()
 * bindings: pydrake: Collision filtering bindings (`#13358`_)  # Add pydrake bindings for GeometrySet, CollectRegisteredGeometries, collision filtering API.
 * bindings: py mbp: Bind accessors for inertias (`#13415`_)
-* bindings: pydrake/*_extra.py: Ensure all files have consistent boilerplate comment (`#13420`_)
 * bindings: py geometry: Bind HalfSpace.MakePose (`#13414`_)
-* bindings: py cpp_template: Fix badly scoped name overrides (`#13409`_)
 * bindings: py systems: Bind SystemBase, take methods from System_[T] (`#13413`_)
 * bindings: py systems: Bind additional SystemBase methods (`#13413`_)
 * bindings: py systems: Bind Simulator.set_monitor (`#13413`_)
-* bindings: py value: Allow binding Value<vector<T>> to Value[List[T]] (`#13408`_)
-* bindings: py math, multibody: Bind Value[List[T]] for needed types (`#13407`_)
-* bindings: py common: Use `py::object_api::get_type()`, not indirect Python C++ API (`#13455`_)
-* bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
 * bindings: Add bindings for SpatialInertia methods (`#13478`_)
+* bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
 * bindings: py mbp, geometry: Bind __repr__ for indices + elements (`#13489`_)
-* bindings: py geometry: Bind Rgba, test with GeometryProperties (`#13443`_)  # Explicitly test Value[] instantiations
+
+Fixes
+
+* Make BasicVector use Pythonic string formatting (`#13454`_)
+* Add friendlier errors for MathematicalProgram dtype mismatch (`#13234`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
