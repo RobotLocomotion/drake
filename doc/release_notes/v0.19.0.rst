@@ -1,4 +1,4 @@
-*************
+s*************
 Drake v0.19.0
 *************
 
@@ -19,9 +19,6 @@ Announcements
 
   * Please see `#12158`_ for details of the timeline, and let us know if this
     will cause a problem.
-
-* A new tutorial on updating costs/constraints in mathematical program is available (`#13328`_).
-* A Strandbeest example is available (`#13302`_).
 
 Breaking changes since v0.18.0
 ------------------------------
@@ -113,6 +110,12 @@ d PrintSimulatorStatistics()
 * geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
 * geometry: [render] Move support functionality from dev into gl_renderer (`#13481`_)  # - Move shape meshes out of dev - Update build for the moved files.
 * Remove default_coulomb_friction from MBP (`#13371`_)  # removes default coulomb friction
+
+Tutorials and examples
+~~~~~~~~~~~~~~~~~~~~~~
+
+* Add tutorial on updating costs/constraints in mathematical program (`#13328`_)
+* Add Strandbeest example (`#13302`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
