@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
 
@@ -378,15 +380,15 @@ class MathematicalProgramResult final {
    * for debugging. Note that this feature is available only when the
    * optimization problem is solved through certain solvers (like SNOPT, IPOPT)
    * which provide a "best-effort solution". Some solvers (like Gurobi) don't
-   * return the "best-effor solution" when the problem is infeasible, and this
+   * return the "best-effort solution" when the problem is infeasible, and this
    * feature is hence unavailable.
    */
   //@{
 
   /**
    * See @ref get_infeasible_constraints for more information.
-   * @param prog A MathematicalProgram
-   * @param result A MathematicalProgramResult obtained by solving @p prog.
+   * @param prog The MathematicalProgram that was solved to obtain `this`
+   * MathematicalProgramResult.
    * @param tolerance A positive tolerance to check the constraint violation.
    * If no tolerance is provided, this method will attempt to obtain the
    * constraint tolerance from the solver, or insert a conservative default
@@ -397,14 +399,14 @@ class MathematicalProgramResult final {
    * e.g.
    * `prog.AddConstraint(x == 1).evaluator().set_description(str)`
    * to make this method more specific/useful. */
-  std::vector<std::string> GetInfeasibleConstraints(
-      const MathematicalProgram& prog, const MathematicalProgramResult& result,
-      std::optional<double> tolerance = std::nullopt);
+  std::vector<std::string> GetInfeasibleConstraintNames(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
 
   /**
    * See @ref get_infeasible_constraints for more information.
-   * @param prog A MathematicalProgram
-   * @param result A MathematicalProgramResult obtained by solving @p prog.
+   * @param prog The MathematicalProgram that was solved to obtain `this`
+   * MathematicalProgramResult.
    * @param tolerance A positive tolerance to check the constraint violation.
    * If no tolerance is provided, this method will attempt to obtain the
    * constraint tolerance from the solver, or insert a conservative default
@@ -413,9 +415,9 @@ class MathematicalProgramResult final {
    * (constraints together with the associated variables) at the best-effort
    * solution.
    */
-  std::vector<Binding<Constraint>> GetInfeasibleConstraintBindings(
-      const MathematicalProgram& prog, const MathematicalProgramResult& result,
-      std::optional<double> tolerance = std::nullopt);
+  std::vector<Binding<Constraint>> GetInfeasibleConstraints(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
   // @}
 
  private:

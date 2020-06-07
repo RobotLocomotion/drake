@@ -29,5 +29,11 @@ MathematicalProgramResult Solve(
 MathematicalProgramResult Solve(const MathematicalProgram& prog) {
   return Solve(prog, {}, {});
 }
+
+std::vector<std::string> GetInfeasibleConstraints(
+    const MathematicalProgram& prog, const MathematicalProgramResult& result,
+    std::optional<double> tolerance) {
+  return result.GetInfeasibleConstraintNames(prog, tolerance);
+}
 }  // namespace solvers
 }  // namespace drake
