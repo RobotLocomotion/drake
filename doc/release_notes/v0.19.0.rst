@@ -49,6 +49,7 @@ New features
 * Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)
 * Use Eigen's formatting in VectorBase::operator<<() (`#13365`_, `#13384`_, `#13464`_)
 * TBD Offer DiscreteDerivative option to disable transient (`#13336`_)
+* TBD Step doubling for Implicit Euler Error Estimation (`#13224`_)  # * Step Doubling for Implicit Euler Error Estimation This PR implements Implicit Euler with step doubling for error estimation, similar to how VelocityImplicitEulerIntegrator implements it. The major change from VIE's implementation is that Implicit Euler takes advantage of marking a Jacobian as "fresh" after a failed step, and never recomputing the Jacobian as it shrinks step sizes. The problem is, now, after it succeeds on the large step and the first small step, there is a rare (but nonzero) probability that it fails on the second small step, computing the Jacobian at a state that is not xt0. (In a stiff simulation of about 2000 steps with about 2000-4000 convergence-based failures, this scenario will occur maybe about ~20 times.) Based on some thought (and confirmed by experimentation), I've proposed a set of small changes that captures the performance gains of marking the Jacobian as "fresh" without triggering too much extra overhead. Note that this is much simpler than the first revision of the PR (I've removed a lot of caching logic which only improves performance by 2%, and replaced it with a TODO, as Sherm suggested): 1.    After the Jacobian is computed, it is immediately marked as "fresh" (set_jacobian_is_fresh()). 2.    Before starting the second step, we mark the Jacobian as "not fresh" (set_jacobian_is_fresh(false)). This way MaybeFreshenMatrices will recompute the Jacobian if the second small step is needed. 3.    If the second small step actually fails, then we set a flag (failed_jacobian_is_from_second_small_step_) to indicate that at the beginning of the next step, the Jacobian should not be marked "fresh", even though ImplicitIntegrator<T>::DoStep() marks it as fresh. This set of changes incurs minimal expenses during successful steps (only setting booleans), and it only forces the Jacobian to be recomputed again if the second small step actually fails.
 
 Fixes
 
@@ -70,10 +71,11 @@ New features
 
 * In Solve and ChooseBestSolver, skip unconfigured commercial solvers (`#13279`_)
 * Obey SNOPT string options (`#13397`_)
+* Add alternative convex Eval functions to LorentzConeConstraint (`#13458`_)
 
 Fixes
 
-* TBD
+* Fix symbolic::Expression::Expand() (`#13503`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -110,6 +112,7 @@ d PrintSimulatorStatistics()
 * multibody: plant/images: Update Coulomb friction plot label (`#13485`_)
 * geometry,multibody: geometry_properties: Store diffuse color using Rgba, not Vector4d (`#13456`_)
 * geometry: [render] Move support functionality from dev into gl_renderer (`#13481`_)  # - Move shape meshes out of dev - Update build for the moved files.
+* Remove default_coulomb_friction from MBP (`#13371`_)  # removes default coulomb friction
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,6 +177,7 @@ Build system and dependencies
 * Add new Ubuntu dependency on clang-9 (`#13477`_)
 * Use clang-format@9 on macOS (`#13323`_)
 * Upgrade bazel_skylib to latest release 1.0.2 (`#13429`_)
+* Upgrade buildifier to latest release 3.2.0 (`#13484`_)
 * Upgrade fmt to latest release 6.2.1 (`#13431`_)
 * Upgrade libsdformat to latest release 9.2.0 (`#13201`_)
 * Upgrade meshcat to latest commit (`#13433`_, `#13467`_)
@@ -190,7 +194,7 @@ Build system and dependencies
   complete (`#13266`_, `#13283`_, `#13306`_, `#13335`_, `#13339`_, `#13345`_,
   `#13346`_, `#13348`_, `#13353`_, `#13357`_, `#13360`_, `#13366`_, `#13383`_,
   `#13385`_, `#13400`_, `#13425`_, `#13432`_, `#13436`_, `#13437`_, `#13449`_,
-  `#13450`_, `#13469`_, `#13477`_, `#13486`_)
+  `#13450`_, `#13469`_, `#13477`_, `#13486`_, `#13502`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -351,10 +355,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 97cb756fd02471c20261adfad77fcf26c433cd40 (inclusive).
-
-* workspace: Update buildifier to latest release 3.2.0 (`#13484`_)
-* Remove default_coulomb_friction from MBP (`#13371`_)  # removes default coulomb friction
-* Add alternative convex Eval functions to LorentzConeConstraint (`#13458`_)  # So as to improve the convergence of solving nonlinear gradient based optimization with Lorentz cone constraint.
-* Fix clang versions for which -Wself-assign-overloaded should be ignored (`#13502`_)
-* Fix symbolic::Expression::Expand() (`#13503`_)  # In `ExpandMultiplication(e1, e2)`, it returns `e1 * e2` if both `e1` and `e2` are non-additive expressions. However, if at least one of them is a division expression, it is possible that `e1 * e2` is not an expanded expression. For example, let `e1 = (x + 1) / y` and `e2 = (x + 3) / z`, `e1 * e2` becomes `(x + 1) * (x + 3) / yz` whose numerator is not expanded yet. This commit fixes this problem by handling those cases.
-* Step doubling for Implicit Euler Error Estimation (`#13224`_)  # * Step Doubling for Implicit Euler Error Estimation This PR implements Implicit Euler with step doubling for error estimation, similar to how VelocityImplicitEulerIntegrator implements it. The major change from VIE's implementation is that Implicit Euler takes advantage of marking a Jacobian as "fresh" after a failed step, and never recomputing the Jacobian as it shrinks step sizes. The problem is, now, after it succeeds on the large step and the first small step, there is a rare (but nonzero) probability that it fails on the second small step, computing the Jacobian at a state that is not xt0. (In a stiff simulation of about 2000 steps with about 2000-4000 convergence-based failures, this scenario will occur maybe about ~20 times.) Based on some thought (and confirmed by experimentation), I've proposed a set of small changes that captures the performance gains of marking the Jacobian as "fresh" without triggering too much extra overhead. Note that this is much simpler than the first revision of the PR (I've removed a lot of caching logic which only improves performance by 2%, and replaced it with a TODO, as Sherm suggested): 1.    After the Jacobian is computed, it is immediately marked as "fresh" (set_jacobian_is_fresh()). 2.    Before starting the second step, we mark the Jacobian as "not fresh" (set_jacobian_is_fresh(false)). This way MaybeFreshenMatrices will recompute the Jacobian if the second small step is needed. 3.    If the second small step actually fails, then we set a flag (failed_jacobian_is_from_second_small_step_) to indicate that at the beginning of the next step, the Jacobian should not be marked "fresh", even though ImplicitIntegrator<T>::DoStep() marks it as fresh. This set of changes incurs minimal expenses during successful steps (only setting booleans), and it only forces the Jacobian to be recomputed again if the second small step actually fails.
