@@ -34,7 +34,6 @@ drake_cc_package_library(
         ":equality_constrained_qp_solver",
         ":evaluator_base",
         ":function",
-        ":get_infeasible_constraints",
         ":gurobi_qp",
         ":gurobi_solver",
         ":indeterminate",
@@ -241,16 +240,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "get_infeasible_constraints",
-    srcs = ["get_infeasible_constraints.cc"],
-    hdrs = ["get_infeasible_constraints.h"],
-    deps = [
-        ":mathematical_program",
-        ":mathematical_program_result",
-    ],
-)
-
-drake_cc_library(
     name = "solver_type",
     hdrs = ["solver_type.h"],
 )
@@ -349,6 +338,7 @@ drake_cc_library(
     deps = [
         ":binding",
         ":constraint",
+        ":mathematical_program",
         ":solution_result",
         ":solver_id",
         "//common:symbolic",
@@ -1197,14 +1187,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "get_infeasible_constraints_test",
-    deps = [
-        ":get_infeasible_constraints",
-        ":snopt_solver",
-    ],
-)
-
-drake_cc_googletest(
     name = "gurobi_solver_test",
     tags = gurobi_test_tags(),
     use_default_main = False,
@@ -1665,6 +1647,7 @@ drake_cc_googletest(
         ":cost",
         ":mathematical_program_result",
         ":osqp_solver",
+        ":snopt_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
