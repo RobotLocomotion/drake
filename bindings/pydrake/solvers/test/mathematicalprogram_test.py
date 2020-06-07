@@ -838,9 +838,15 @@ class TestMathematicalProgram(unittest.TestCase):
                                                  tol=1e-4)
         self.assertEqual(len(infeasible), 0)
 
-        infeasible_bindings = mp.GetInfeasibleConstraintBindings(
-                prog=prog, result=result, tol=1e-4)
-        self.assertEqual(len(infeasible_bindings), 0)
+        infeasible = result.GetInfeasibleConstraints(prog)
+        self.assertEqual(len(infeasible), 0)
+
+        infeasible = result.GetInfeasibleConstraints(prog, tol=1e-4)
+        self.assertEqual(len(infeasible), 0)
+
+        infeasible_names = result.GetInfeasibleConstraintNames(
+                prog=prog, tol=1e-4)
+        self.assertEqual(len(infeasible_names), 0)
 
     def test_add_indeterminates_and_decision_variables(self):
         prog = mp.MathematicalProgram()
