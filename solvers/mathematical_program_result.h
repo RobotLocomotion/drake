@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
 
@@ -397,9 +399,9 @@ class MathematicalProgramResult final {
    * e.g.
    * `prog.AddConstraint(x == 1).evaluator().set_description(str)`
    * to make this method more specific/useful. */
-  std::vector<std::string> GetInfeasibleConstraints(
-      const MathematicalProgram& prog, const MathematicalProgramResult& result,
-      std::optional<double> tolerance = std::nullopt);
+  std::vector<std::string> GetInfeasibleConstraintNames(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
 
   /**
    * See @ref get_infeasible_constraints for more information.
@@ -413,9 +415,9 @@ class MathematicalProgramResult final {
    * (constraints together with the associated variables) at the best-effort
    * solution.
    */
-  std::vector<Binding<Constraint>> GetInfeasibleConstraintBindings(
-      const MathematicalProgram& prog, const MathematicalProgramResult& result,
-      std::optional<double> tolerance = std::nullopt);
+  std::vector<Binding<Constraint>> GetInfeasibleConstraints(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
   // @}
 
  private:
