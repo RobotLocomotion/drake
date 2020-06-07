@@ -19,15 +19,15 @@ Breaking changes since v0.18.0
 
 These are breaking changes that did not undergo a deprecation period:
 
+* Remove attic symbols from pydrake.all; users must import pydrake.attic.all to
+  use them now (`#13315`_).
+
 * Remove the incorrect drakeURDF.[xpr|xsd] files (`#13326`_)
 
   * The schema defined in drakeURDF.xsd is significantly out of date. For now,
     we remove it so as to avoid the suggestion that it is reliable.
 
 * Removes dead code IntegratorBase::InitializeAccuracy() (`#12624`_)
-
-* Remove attic symbols from pydrake.all; users must import pydrake.attic.all to
-  use them now (`#13315`_).
 
 Changes since v0.18.0:
 ----------------------
