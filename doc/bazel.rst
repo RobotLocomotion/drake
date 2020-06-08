@@ -37,10 +37,10 @@ typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 7.5 on Bionic. On macOS, the default compiler is the Apple
-LLVM compiler. To use Clang 6.0 on Ubuntu, set the ``CC`` and ``CXX``
-environment variables before running **bazel build**, **bazel test**, or any
-other **bazel** commands.
+``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
+compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu 18.04 (Bionic),
+set the ``CC`` and ``CXX`` environment variables before running **bazel build**,
+**bazel test** or any other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
@@ -179,7 +179,7 @@ Install on Ubuntu
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
 4. Download ``gurobi9.0.2_linux64.tar.gz``
 5. Unzip it.  We suggest that you use ``/opt/gurobi902`` to simplify working with Drake installations.
-6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder. 
+6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
