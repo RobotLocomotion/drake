@@ -89,7 +89,7 @@ Drake requires a compiler running in C++17 mode.
 |                                  |       |       | | (Xcode 11.3)      | | (HotSpot JVM)   |        |
 +----------------------------------+       |       +---------------------+                   |        |
 | macOS Catalina (10.15)           |       |       | | Apple LLVM 11.0.3 |                   |        |
-|                                  |       |       | | (Xcode 11.4)      |                   |        |
+|                                  |       |       | | (Xcode 11.5)      |                   |        |
 +----------------------------------+-------+-------+---------------------+-------------------+--------+
 
 CPython is the only Python implementation supported. On Ubuntu, amd64
@@ -123,7 +123,7 @@ Binary Packages
 ---------------
 
 The binary releases of Drake are built with GCC 7.5 on Ubuntu 18.04 (Bionic),
-GCC 9.3 on Ubuntu 20.04 (Focal), and Apple LLVM 11.0.0 on macOS Mojave.
+GCC 9.3 on Ubuntu 20.04 (Focal), and Apple LLVM 11.0.3 on macOS Mojave.
 
 The links for these packages are listed in :ref:`binary-installation`.
 
