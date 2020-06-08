@@ -1604,12 +1604,31 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
+  std::unique_ptr<Context<double>> context = diagram->CreateDefaultContext();
+
+  const MultibodyPlant<double>* pendulum_ptr =
+      dynamic_cast<const MultibodyPlant<double>*>(diagram->GetSystems()[0]);
+
+  const Context<double>& pendulum_context =
+      diagram->GetSubsystemContext(*pendulum_ptr, *context);
+
+  DRAKE_EXPECT_NO_THROW(
+      pendulum_ptr->EvalPointPairPenetrations(pendulum_context));
+
+  // AutoDiffXd version of the same thing
+
   std::unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
       systems::System<double>::ToAutoDiffXd<Diagram>(*diagram.get());
 
   const MultibodyPlant<AutoDiffXd>* autodiff_pendulum =
       dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
           autodiff_diagram->GetSystems()[0]);
+
+  const SceneGraph<AutoDiffXd>* autodiff_scene_graph =
+      dynamic_cast<const SceneGraph<AutoDiffXd>*>(
+          autodiff_diagram->GetSystems()[1]);
+
+  DRAKE_DEMAND(autodiff_scene_graph != nullptr);
 
   std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
       autodiff_diagram->CreateDefaultContext();
