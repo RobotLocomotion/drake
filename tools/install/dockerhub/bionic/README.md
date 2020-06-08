@@ -1,13 +1,13 @@
-# Docker Image for Docker Hub
+# Docker Image for Docker Hub (Bionic)
 
-To create a Docker image similar to that hosted on
+To create a Docker image similar to those hosted on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake), download the
 latest [binary package](https://drake.mit.edu/from_binary.html)
 `drake-latest-bionic.tar.gz` to this directory, and then run the following
 command:
 
 ```bash
-docker build -t robotlocomotion/drake:latest .
+docker build -t robotlocomotion/drake:bionic -t robotlocomotion/drake:latest .
 ```
 
 To start a Docker container with an interactive pseudo-terminal, run the
