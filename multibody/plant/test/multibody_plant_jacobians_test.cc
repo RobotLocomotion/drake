@@ -322,6 +322,10 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   }
 
  protected:
+  // Since the acceleration values produced by this test have a maximum absolute
+  // value of approximately ω² * (2 * link_length) ≈ 72 , and since calculations
+  // involve summing real numbers, it is hoped that less than 3 bits (2^3 = 8)
+  // of absolute error is introduced into the calculations.
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   const double mass_link_ = 5.0;    // kg
   const double link_length_ = 4.0;  // meters
@@ -334,6 +338,16 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RigidBody<double>* bodyB_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
+  // The constructor for the rigid transform X_AW_ below specifies the relative
+  // orientation and position between link A and world W so that the:
+  // * orientation between link A and world W is a 3x3 identity rotation matrix,
+  // * position vector from Ao (origin of link A) to Wo (origin of world W) is
+  //   -0.5 * link_length * Ax.
+  // Similarly, for the rigid transform constructor X_AF_, where frame F is
+  // affixed/welded to A and colocated with joint1.  The orientation between
+  // link A and frame F is a 3x3 identity rotation matrix.  The position vector
+  // from Ao to Fo (origin of frame F) is  0.5 * link_length * Ax.
+  // For X_BM_, frame M is affixed/welded to B and colocated with joint1.
   math::RigidTransformd X_AW_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
   math::RigidTransformd X_AF_{Vector3d(0.5 * link_length_, 0.0, 0.0)};
   math::RigidTransformd X_BM_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
