@@ -3597,7 +3597,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// num_collision_geometries(const systems::Context<T>&).
   int num_collision_geometries() const {
     // The model must NOT be finalized.
-    DRAKE_DEMAND(!this->is_finalized());
+    DRAKE_MBP_THROW_IF_FINALIZED();
     return const_cast<MultibodyPlant<T>*>(this)
         ->member_scene_graph()
         .model_inspector()
@@ -3609,12 +3609,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// either pre- or post-finalize, so long as a systems::Context is available
   /// and `this` plant has been registered as a source for geometry::SceneGraph,
   /// see RegisterAsSourceForSceneGraph().
-  int num_collision_geometries(const systems::Context<T>& context) const {
-    return get_geometry_query_input_port()
-        .template Eval<geometry::QueryObject<T>>(context)
-        .inspector()
-        .NumGeometriesWithRole(geometry::Role::kProximity);
-  }
+  int num_collision_geometries(const systems::Context<T>& context) const;
 
   /// Returns the unique id identifying `this` plant as a source for a
   /// SceneGraph.
@@ -4566,6 +4561,9 @@ struct AddMultibodyPlantSceneGraphResult final {
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
+template <>
+int MultibodyPlant<symbolic::Expression>::num_collision_geometries(
+    const systems::Context<symbolic::Expression>&) const;
 template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(

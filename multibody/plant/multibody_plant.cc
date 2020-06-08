@@ -734,11 +734,9 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
 template<typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateCacheAndPorts();
-  if (num_collision_geometries() > 0 &&
-      penalty_method_contact_parameters_.time_scale < 0)
+  if (penalty_method_contact_parameters_.time_scale < 0)
     EstimatePointContactParameters(penetration_allowance_);
-  if (num_collision_geometries() > 0 &&
-      friction_model_.stiction_tolerance() < 0)
+  if (friction_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
@@ -826,6 +824,24 @@ typename MultibodyPlant<symbolic::Expression>::MemberSceneGraph&
 MultibodyPlant<symbolic::Expression>::member_scene_graph() {
   static never_destroyed<SceneGraphStub> stub_;
   return stub_.access();
+}
+
+template <typename T>
+int MultibodyPlant<T>::num_collision_geometries(
+    const systems::Context<T>& context) const {
+  return get_geometry_query_input_port()
+      .template Eval<geometry::QueryObject<T>>(context)
+      .inspector()
+      .NumGeometriesWithRole(geometry::Role::kProximity);
+}
+
+// This does *not* support symbolic::Expression because SceneGraph does *not*
+// support symbolic::Expression.
+template <>
+int MultibodyPlant<symbolic::Expression>::num_collision_geometries(
+    const systems::Context<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
 }
 
 template <typename T>

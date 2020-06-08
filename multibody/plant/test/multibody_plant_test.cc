@@ -1337,9 +1337,8 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const double radius = 0.5;
   const double x_offset = 0.6;
 
-  SceneGraph<double> scene_graph;
-  MultibodyPlant<double> plant(0.0);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
   // A half-space for the ground geometry.
   CoulombFriction<double> ground_friction(0.5, 0.3);
@@ -1378,27 +1377,30 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   // We are done defining the model.
   plant.Finalize();
+  auto diagram = builder.Build();
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  Context<double>& context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   // Only accelerations and joint reaction forces feedthrough, even with the
   // new ports related to SceneGraph interaction.
   EXPECT_TRUE(OnlyAccelerationAndReactionPortsFeedthrough(plant));
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
-  EXPECT_EQ(plant.num_collision_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(context), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
-
-  unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Test the API taking a RigidTransform.
   auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));
 
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.SetFreeBodyPose(
-      context.get(), sphere1, X_WS1);
+      &context, sphere1, X_WS1);
   // Place sphere 2 on top of the ground, with offset x = x_offset.
   plant.SetFreeBodyPose(
-      context.get(), sphere2,
+      &context, sphere2,
       RigidTransformd(Vector3d(x_offset, radius, 0.0)));
 
   unique_ptr<AbstractValue> poses_value =
@@ -1408,7 +1410,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       poses_value->get_value<FramePoseVector<double>>();
 
   // Compute the poses for each geometry in the model.
-  plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  plant.get_geometry_poses_output_port().Calc(context, poses_value.get());
   EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
@@ -1418,7 +1420,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
     const Isometry3<double>& X_WB_isometry = pose_data.value(frame_id);
     const RigidTransform<double> X_WB(X_WB_isometry);
     const RigidTransform<double>& X_WB_expected =
-        plant.EvalBodyPoseInWorld(*context, plant.get_body(body_index));
+        plant.EvalBodyPoseInWorld(context, plant.get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
                                 X_WB_expected.GetAsMatrix34(),
                                 kTolerance, MatrixCompareType::relative));
@@ -1447,7 +1449,8 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   // Parameters of the setup.
   const double radius = 0.5;
 
-  SceneGraph<double> scene_graph;
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
 
   // Add a render engine so we can confirm that the current default behavior of
   // assigning perception roles to visual geometries is happening.
@@ -1460,8 +1463,6 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   temp_engine->set_force_accept(true);
   const DummyRenderEngine& render_engine = *temp_engine;
   scene_graph.AddRenderer("dummy", move(temp_engine));
-  MultibodyPlant<double> plant(0.0);
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
   EXPECT_EQ(render_engine.num_registered(), 0);
 
   // A half-space for the ground geometry -- uses default visual material
@@ -1497,9 +1498,14 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
 
   // We are done defining the model.
   plant.Finalize();
+  auto diagram = builder.Build();
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
 
   EXPECT_EQ(plant.num_visual_geometries(), 3);
-  EXPECT_EQ(plant.num_collision_geometries(), 0);
+  EXPECT_EQ(plant.num_collision_geometries(plant_context), 0);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
 
@@ -1546,24 +1552,75 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   }
 }
 
+// GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
+//   PendulumParameters parameters;
+//   unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
+
+//   // We connect a SceneGraph to the pendulum plant in order to enforce the
+//   // creation of geometry input/output ports. This ensures the call to
+//   // CalcPointPairPenetrations evaluates appropriately.
+//   const SceneGraph<double> scene_graph;
+
+//   // Scalar convert the systems
+//   std::unique_ptr<MultibodyPlant<AutoDiffXd>> autodiff_plant = systems::System<double>::ToAutoDiffXd<MultibodyPlant>(*pendulum);
+
+//   std::unique_ptr<SceneGraph<AutoDiffXd>> autodiff_scene_graph = systems::System<double>::ToAutoDiffXd<SceneGraph>(scene_graph);
+
+//   // Build the AutoDiffXd version of the diagram
+//   systems::DiagramBuilder<AutoDiffXd> autodiff_builder;
+//   auto [autodiff_plant, autodiff_scene_graph] = AddMultibodyPlantSceneGraph(
+//       &autodiff_builder, std::move(autodiff_plant),
+//       std::move(autodiff_scene_graph));
+
+//   std::unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
+//       autodiff_builder.Build();
+
+//   const MultibodyPlant<AutoDiffXd>* autodiff_pendulum =
+//       dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+//           autodiff_diagram->GetSystems()[0]);
+
+//   std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
+//       autodiff_diagram->CreateDefaultContext();
+
+//   const Context<AutoDiffXd>& autodiff_pendulum_context =
+//       autodiff_diagram->GetSubsystemContext(*autodiff_pendulum,
+//                                             *autodiff_context);
+
+//   // This test case contains no collisions, and hence we should not throw.
+//   DRAKE_EXPECT_NO_THROW(
+//       autodiff_pendulum->EvalPointPairPenetrations(autodiff_pendulum_context));
+// }
+
 GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   PendulumParameters parameters;
   unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
-  unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
+
+  systems::DiagramBuilder<double> builder;
 
   // We connect a SceneGraph to the pendulum plant in order to enforce the
   // creation of geometry input/output ports. This ensures the call to
   // CalcPointPairPenetrations evaluates appropriately.
-  geometry::SceneGraph<double> scene_graph;
-  pendulum->RegisterAsSourceForSceneGraph(&scene_graph);
+  AddMultibodyPlantSceneGraph(&builder, std::move(pendulum));
 
-  auto autodiff_pendulum =
-      drake::systems::System<double>::ToAutoDiffXd(*pendulum.get());
-  auto autodiff_context = autodiff_pendulum->CreateDefaultContext();
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  std::unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
+      systems::System<double>::ToAutoDiffXd<Diagram>(*diagram.get());
+
+  const MultibodyPlant<AutoDiffXd>* autodiff_pendulum =
+      dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+          autodiff_diagram->GetSystems()[0]);
+
+  std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
+      autodiff_diagram->CreateDefaultContext();
+
+  const Context<AutoDiffXd>& autodiff_pendulum_context =
+      autodiff_diagram->GetSubsystemContext(*autodiff_pendulum,
+                                            *autodiff_context);
 
   // This test case contains no collisions, and hence we should not throw.
   DRAKE_EXPECT_NO_THROW(
-      autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
+      autodiff_pendulum->EvalPointPairPenetrations(autodiff_pendulum_context));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -1868,7 +1925,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_EQ(plant.num_visual_geometries(), 5);
-  EXPECT_EQ(plant.num_collision_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(*plant.CreateDefaultContext()), 3);
 
   const int link1_num_collisions =
       plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link1")).size();
@@ -1893,8 +1950,9 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   // Scalar convert the plant and verify invariants.
   MultibodyPlant<AutoDiffXd> plant_autodiff(plant);
   EXPECT_TRUE(plant_autodiff.geometry_source_is_registered());
-  EXPECT_EQ(plant_autodiff.num_collision_geometries(),
-            plant.num_collision_geometries());
+  EXPECT_EQ(plant_autodiff.num_collision_geometries(
+                *plant_autodiff.CreateDefaultContext()),
+            plant.num_collision_geometries(*plant.CreateDefaultContext()));
   EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
       plant_autodiff.GetBodyByName("link1")).size(), link1_num_collisions);
   EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
@@ -1952,13 +2010,15 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     // We are done defining the model.
     plant_.Finalize();
 
+    // Create the plant's context
+    context_ = plant_.CreateDefaultContext();
+
     // Some sanity checks before proceeding.
-    ASSERT_EQ(plant_.num_collision_geometries(), 2);
+    ASSERT_EQ(plant_.num_collision_geometries(*context_), 2);
     ASSERT_TRUE(plant_.geometry_source_is_registered());
     ASSERT_TRUE(plant_.get_source_id());
 
-    // Create the plant's context and set its state.
-    context_ = plant_.CreateDefaultContext();
+    // Set the plant's state.
     SetBoxesOnSlantedConfiguration(context_.get());
 
     // Set the penetrations pairs consistent with the plant's state.
