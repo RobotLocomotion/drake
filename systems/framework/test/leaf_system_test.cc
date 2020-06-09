@@ -21,6 +21,7 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
+#include "drake/systems/framework/test/public_leaf_system.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
@@ -118,7 +119,7 @@ GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
 
 // A shell System to test the default implementations.
 template <typename T>
-class TestSystem : public LeafSystem<T> {
+class TestSystem : public test::PublicLeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
@@ -131,15 +132,6 @@ class TestSystem : public LeafSystem<T> {
         AbstractValue::Make<std::string>("second abstract state"));
   }
   ~TestSystem() override {}
-
-  using LeafSystem<T>::DeclareContinuousState;
-  using LeafSystem<T>::DeclareDiscreteState;
-  using LeafSystem<T>::DeclareNumericParameter;
-  using LeafSystem<T>::DeclareVectorInputPort;
-  using LeafSystem<T>::DeclareAbstractInputPort;
-  using LeafSystem<T>::DeclareVectorOutputPort;
-  using LeafSystem<T>::DeclareAbstractOutputPort;
-  using LeafSystem<T>::DeclarePerStepEvent;
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
