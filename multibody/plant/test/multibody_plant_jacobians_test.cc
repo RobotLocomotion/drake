@@ -286,7 +286,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
 // Hence links A and B only move in the world's x-y plane (perpendicular to Wz).
 // The long axis of link A is parallel to A's unit vector Ax and
 // the long axis of link B is parallel to B's unit vector Bx.
-// Points Wo Ao Fo Mo Bo are sequential along a line parallel to Wx.
+// In the baseline configuration, points Wo Ao Fo Mo Bo are sequential along
+// a line parallel to Wx.
 class TwoDOFPlanarPendulumTest : public ::testing::Test {
  public:
   // Setup the MBP.
@@ -303,10 +304,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     bodyA_ = &plant_->AddRigidBody("BodyA", M_Bcm);
     bodyB_ = &plant_->AddRigidBody("BodyB", M_Bcm);
 
-    // The constructor for a generic revolute joint J uses something like:
-    // joint = plant->AddJoint<RevoluteJoint>(joint_name, parent_body, X_PJ,
-    //                                        child_body, X_CJ, axis_J );
-    // The identity transform from world frame W to joint1 uses std::nullopt.
+    // Create revolute joints connecting world to link A and link A to link B.
     joint1_ = &plant_->AddJoint<RevoluteJoint>("PinJoint1",
         plant_->world_body(), std::nullopt, *bodyA_, X_AW_, Vector3d::UnitZ());
     joint2_ = &plant_->AddJoint<RevoluteJoint>("PinJoint2",
