@@ -58,6 +58,9 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
+  /// XXX
+  void LatchInitialPosition(systems::Context<double>* context) const;
+
   /// @name Named accessors for this System's input and output ports.
   //@{
   const systems::InputPort<double>& get_message_input_port() const;
@@ -72,17 +75,9 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   }
 
  private:
-  void DoCalcNextUpdateTime(const systems::Context<double>& context,
-                            systems::CompositeEventCollection<double>* events,
-                            double* time) const override;
-
-  using MapVectorXd = Eigen::Map<const Eigen::VectorXd>;
-  MapVectorXd input_position(const systems::Context<double>&) const;
-  MapVectorXd input_torque(const systems::Context<double>&) const;
-  void CalcInput(const systems::Context<double>&, lcmt_iiwa_command*) const;
-
-  const int num_joints_;
-  const systems::CacheEntry* groomed_input_{};
+  void DoCalcNextUpdateTime(
+      const systems::Context<double>&,
+      systems::CompositeEventCollection<double>*, double*) const override;
 };
 
 }  // namespace kuka_iiwa
