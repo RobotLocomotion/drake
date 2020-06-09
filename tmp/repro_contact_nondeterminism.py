@@ -15,9 +15,11 @@ Tests the following:
 - W/ and w/o SceneGraph (geometry)
 - W/ and w/o Anzu WSG or Drake WSG
 - Different re-simulation styles:
-  - reuse: Clone initial context, then use Context.SetTimeStateAndParametersFrom
-    to restore initial conditions.
-  - recreate: Recreate everything from scratch (but in same order)
+  - Reuse: Construct diagram once.
+      Then Clone initial context, and use Context.SetTimeStateAndParametersFrom
+      to restore initial conditions at the start of each run.
+  - ReuseNewContext: Same as `Reuse`, but a new context is created each time.
+  - Recreate: Recreate everything from scratch (but in same order)
 - In a given setup, will resimulate for M meta-trials x S sim-trials.
   - Each sim is run for 1s, with an output recorded every 1ms.
     - Geometry:
@@ -35,6 +37,9 @@ Tests the following:
       - If the trial frames are unique, that's BAD. Non-deterministic.
   - After the sim trials are done, results are aggregated, and included in
     summary.
+  - "Meta-trials" are intended to show that this test setup itself is not
+    deterministic; e.g. running this binary twice in a row may produce
+    different results.
 """
 
 from collections import namedtuple
@@ -115,6 +120,16 @@ Setup = namedtuple(
         "gripper",
     ),
 )
+
+
+class ResimulateStyle(Enum):
+    """See overview docstring."""
+    Reuse = 0
+    ReuseNewContext = 1
+    Recreate = 2
+
+    def __repr__(self):
+        return self.name
 
 
 class SetupEnum(Enum):
@@ -365,31 +380,54 @@ class SimulationChecker:
             return f"BAD  (num_unique = {count})"
 
 
-def run_simulations(num_sim_trials, with_wsg):
-    print("resimulate_mode: reuse")
-    simulator, calc_output = make_simulator(with_wsg)
-    simulator.Initialize()
-    d_context = simulator.get_mutable_context()
-    d_context_initial = d_context.Clone()
-    reuse = SimulationChecker()
-    for index in range(num_sim_trials):
-        # Run multiple simulations, resetting the context.
-        print(f"  index: {index}")
-        d_context.SetTimeStateAndParametersFrom(d_context_initial)
-        reuse.run(simulator, calc_output)
+def simulate_trials(resimulate_style, num_sim_trials, setup):
+    print(f"{resimulate_style}")
 
-    print()
-    print("resimulate_mode: recreate")
-    recreate = SimulationChecker()
-    for index in range(num_sim_trials):
-        # Run multiple simulations, recreating from scratch each time.
-        print(f"  index: {index}")
-        simulator, calc_output = make_simulator(with_wsg)
-        recreate.run(simulator, calc_output)
+    checker = SimulationChecker()
 
+    if resimulate_style == ResimulateStyle.Reuse:
+
+        simulator, calc_output = make_simulator(setup)
+        d_context = simulator.get_mutable_context()
+        simulator.Initialize()
+        d_context_initial = d_context.Clone()
+        for index in range(num_sim_trials):
+            # Run multiple simulations, resetting the context.
+            print(f"  index: {index}")
+            d_context.SetTimeStateAndParametersFrom(d_context_initial)
+            checker.run(simulator, calc_output)
+
+    elif resimulate_style == ResimulateStyle.ReuseNewContext:
+
+        simulator, calc_output = make_simulator(setup)
+        for index in range(num_sim_trials):
+            # Run multiple simulations, resetting the context.
+            print(f"  index: {index}")
+            simulator.reset_context(simulator.get_system().CreateDefaultContext())
+            checker.run(simulator, calc_output)
+
+    elif resimulate_style == ResimulateStyle.Recreate:
+
+        for index in range(num_sim_trials):
+            # Run multiple simulations, recreating from scratch each time.
+            print(f"  index: {index}")
+            simulator, calc_output = make_simulator(setup)
+            checker.run(simulator, calc_output)
+
+    else:
+        assert False
+
+    return resimulate_style, checker.summary()
+
+def run_simulations(num_sim_trials, setup):
+    summaries = [
+        simulate_trials(ResimulateStyle.Reuse, num_sim_trials, setup),
+        simulate_trials(ResimulateStyle.ReuseNewContext, num_sim_trials, setup),
+        simulate_trials(ResimulateStyle.Recreate, num_sim_trials, setup),
+    ]
+    max_len = max([len(str(x)) for x in ResimulateStyle])
     return "\n".join([
-        f"reuse:    {reuse.summary()}",
-        f"recreate: {recreate.summary()}",
+        f"{style:<{max_len}}: {summary}" for style, summary in summaries
     ])
 
 

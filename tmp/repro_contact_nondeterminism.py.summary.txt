@@ -1,63 +1,79 @@
 * setup = SetupEnum.Continuous_NoGeometry
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    good (num_unique = 1)
-      recreate: good (num_unique = 1)
+      ResimulateStyle.Reuse          : good (num_unique = 1)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : good (num_unique = 1)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    good (num_unique = 1)
-      recreate: good (num_unique = 1)
+      ResimulateStyle.Reuse          : good (num_unique = 1)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : good (num_unique = 1)
 
 * setup = SetupEnum.Discrete_NoGeometry
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: good (num_unique = 1)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : good (num_unique = 1)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: good (num_unique = 1)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : good (num_unique = 1)
 
 * setup = SetupEnum.Continuous_WithGeometry_NoGripper
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    good (num_unique = 1)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : good (num_unique = 1)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    good (num_unique = 1)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : good (num_unique = 1)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
 
 * setup = SetupEnum.Discrete_WithGeometry_NoGripper
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 3)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: BAD  (num_unique = 3)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 3)
 
 * setup = SetupEnum.Discrete_WithGeometry_AnzuWsg
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    good (num_unique = 1)
-      recreate: BAD  (num_unique = 3)
+      ResimulateStyle.Reuse          : good (num_unique = 1)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    good (num_unique = 1)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : good (num_unique = 1)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
 
 * setup = SetupEnum.Discrete_WithGeometry_AnzuWsgWelded
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: BAD  (num_unique = 4)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: BAD  (num_unique = 4)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
 
 * setup = SetupEnum.Discrete_WithGeometry_DrakeWsg
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: BAD  (num_unique = 4)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: BAD  (num_unique = 3)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
 
 * setup = SetupEnum.Discrete_WithGeometry_DrakeWsgWelded
   * meta_trial = 0, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: good (num_unique = 1)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : good (num_unique = 1)
   * meta_trial = 1, num_sim_trials = 4
-      reuse:    BAD  (num_unique = 2)
-      recreate: good (num_unique = 1)
+      ResimulateStyle.Reuse          : BAD  (num_unique = 2)
+      ResimulateStyle.ReuseNewContext: good (num_unique = 1)
+      ResimulateStyle.Recreate       : good (num_unique = 1)

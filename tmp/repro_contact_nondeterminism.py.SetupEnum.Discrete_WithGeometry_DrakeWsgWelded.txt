@@ -2,7 +2,7 @@
 
 [ meta_trial = 0, num_sim_trials = 4, setup = SetupEnum.Discrete_WithGeometry_DrakeWsgWelded ]
 
-resimulate_mode: reuse
+ResimulateStyle.Reuse
   index: 0
     good (first)
   index: 1
@@ -36,8 +36,16 @@ resimulate_mode: reuse
     good (not unique)
   index: 3
     good (not unique)
-
-resimulate_mode: recreate
+ResimulateStyle.ReuseNewContext
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+ResimulateStyle.Recreate
   index: 0
     good (first)
   index: 1
@@ -50,7 +58,7 @@ resimulate_mode: recreate
 
 [ meta_trial = 1, num_sim_trials = 4, setup = SetupEnum.Discrete_WithGeometry_DrakeWsgWelded ]
 
-resimulate_mode: reuse
+ResimulateStyle.Reuse
   index: 0
     good (first)
   index: 1
@@ -84,8 +92,16 @@ resimulate_mode: reuse
     good (not unique)
   index: 3
     good (not unique)
-
-resimulate_mode: recreate
+ResimulateStyle.ReuseNewContext
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+ResimulateStyle.Recreate
   index: 0
     good (first)
   index: 1
