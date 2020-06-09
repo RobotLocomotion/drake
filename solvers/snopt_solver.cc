@@ -591,7 +591,8 @@ void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
 template <typename C>
 void UpdateNumNonlinearConstraintsAndGradients(
     const std::vector<Binding<C>>& constraint_list,
-    int* num_nonlinear_constraints, int* max_num_gradients) {
+    int* num_nonlinear_constraints, int* max_num_gradients,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_index) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
     int n = c->num_constraints();
@@ -601,6 +602,10 @@ void UpdateNumNonlinearConstraintsAndGradients(
     } else {
       *max_num_gradients += n * binding.GetNumElements();
     }
+    const Binding<Constraint> binding_cast =
+        internal::BindingDynamicCast<Constraint>(binding);
+    constraint_dual_start_index->emplace(binding_cast,
+                                         1 + *num_nonlinear_constraints);
     *num_nonlinear_constraints += n;
   }
 }
@@ -614,8 +619,9 @@ template <>
 void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
-    int* num_nonlinear_constraints, int* max_num_gradients) {
-  *num_nonlinear_constraints += constraint_list.size();
+    int* num_nonlinear_constraints, int* max_num_gradients,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_index) {
+  *num_nonlinear_constraints += static_cast<int>(constraint_list.size());
   for (const auto& binding : constraint_list) {
     *max_num_gradients += binding.evaluator()->M().rows();
   }
@@ -797,15 +803,226 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
   }
 }
 
+using BoundingBoxDualIndices = std::pair<std::vector<int>, std::vector<int>>;
+
+void SetVariableBounds(
+    const MathematicalProgram& prog, std::vector<double>* xlow,
+    std::vector<double>* xupp,
+    std::unordered_map<Binding<BoundingBoxConstraint>, BoundingBoxDualIndices>*
+        bb_con_dual_variable_indices) {
+  // Set up the lower and upper bounds.
+  for (auto const& binding : prog.bounding_box_constraints()) {
+    const auto& c = binding.evaluator();
+    const auto& lb = c->lower_bound();
+    const auto& ub = c->upper_bound();
+
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const size_t vk_index =
+          prog.FindDecisionVariableIndex(binding.variables()(k));
+      (*xlow)[vk_index] = std::max(lb(k), (*xlow)[vk_index]);
+      (*xupp)[vk_index] = std::min(ub(k), (*xupp)[vk_index]);
+    }
+  }
+  // For linear complementary condition
+  // 0 <= x ⊥ Mx + q >= 0
+  // we add the bounding box constraint x >= 0
+  for (const auto& binding : prog.linear_complementarity_constraints()) {
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const size_t vk_index =
+          prog.FindDecisionVariableIndex(binding.variables()(k));
+      (*xlow)[vk_index] = std::max((*xlow)[vk_index], 0.0);
+    }
+  }
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    std::vector<int> lower_dual_indices(binding.evaluator()->num_constraints(),
+                                        -1);
+    std::vector<int> upper_dual_indices(binding.evaluator()->num_constraints(),
+                                        -1);
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const int idx = prog.FindDecisionVariableIndex(binding.variables()(k));
+      if ((*xlow)[idx] == binding.evaluator()->lower_bound()(k)) {
+        lower_dual_indices[k] = idx;
+      }
+      if ((*xupp)[idx] == binding.evaluator()->upper_bound()(k)) {
+        upper_dual_indices[k] = idx;
+      }
+    }
+    bb_con_dual_variable_indices->emplace(
+        binding, std::make_pair(lower_dual_indices, upper_dual_indices));
+  }
+  const auto& scale_map = prog.GetVariableScaling();
+  // Scale lower and upper bounds
+  for (const auto& member : scale_map) {
+    (*xlow)[member.first] /= member.second;
+    (*xupp)[member.first] /= member.second;
+  }
+}
+
+void SetBoundingBoxConstraintDualSolution(
+    const MathematicalProgram& prog, const Eigen::VectorXd& xmul,
+    const std::unordered_map<Binding<BoundingBoxConstraint>,
+                             BoundingBoxDualIndices>&
+        bb_con_dual_variable_indices,
+    MathematicalProgramResult* result) {
+  const auto& scale_map = prog.GetVariableScaling();
+  // If the variable x(i) is scaled by s, then its bounding box constraint
+  // becoms lower / s <= x(i) <= upper / s. Perturbing the bounds of the
+  // scaled constraint by eps is equivalent to pertubing the original bounds
+  // by s * eps. Hence the shadow cost of the original constraint should be
+  // divided by s.
+  Eigen::VectorXd xmul_scaled_back = xmul;
+  for (const auto& member : scale_map) {
+    xmul_scaled_back(member.first) /= member.second;
+  }
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    std::vector<int> lower_dual_indices, upper_dual_indices;
+    std::tie(lower_dual_indices, upper_dual_indices) =
+        bb_con_dual_variable_indices.at(binding);
+    Eigen::VectorXd dual_solution =
+        Eigen::VectorXd::Zero(binding.GetNumElements());
+    for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
+      if (lower_dual_indices[i] != -1 && xmul(lower_dual_indices[i]) >= 0) {
+        // When xmul >= 0, Snopt thinks the lower bound is active.
+        dual_solution(i) = xmul_scaled_back(lower_dual_indices[i]);
+      } else if (upper_dual_indices[i] != -1 &&
+                 xmul(upper_dual_indices[i]) <= 0) {
+        // When xmul <= 0, Snopt thinks the upper bound is active.
+        dual_solution(i) = xmul_scaled_back(upper_dual_indices[i]);
+      }
+    }
+    result->set_dual_solution(binding, dual_solution);
+  }
+}
+
+template <typename C>
+void SetConstraintDualSolution(
+    const std::vector<Binding<C>>& bindings, const Eigen::VectorXd& Fmul,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    MathematicalProgramResult* result) {
+  for (const auto& binding : bindings) {
+    const Binding<Constraint> binding_cast =
+        internal::BindingDynamicCast<Constraint>(binding);
+
+    result->set_dual_solution(
+        binding, Fmul.segment(constraint_dual_start_index.at(binding),
+                              binding.evaluator()->num_constraints()));
+  }
+}
+
+void SetConstraintDualSolutions(
+    const MathematicalProgram& prog, const Eigen::VectorXd& Fmul,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    MathematicalProgramResult* result) {
+  SetConstraintDualSolution(prog.generic_constraints(), Fmul,
+                            constraint_dual_start_index, result);
+  SetConstraintDualSolution(prog.lorentz_cone_constraints(), Fmul,
+                            constraint_dual_start_index, result);
+  SetConstraintDualSolution(prog.rotated_lorentz_cone_constraints(), Fmul,
+                            constraint_dual_start_index, result);
+  SetConstraintDualSolution(prog.rotated_lorentz_cone_constraints(), Fmul,
+                            constraint_dual_start_index, result);
+  SetConstraintDualSolution(prog.linear_constraints(), Fmul,
+                            constraint_dual_start_index, result);
+  SetConstraintDualSolution(prog.linear_equality_constraints(), Fmul,
+                            constraint_dual_start_index, result);
+}
+
+SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
+  SolutionResult solution_result{SolutionResult::kUnknownError};
+  // Please refer to User's Guide for SNOPT Verions 7, section 8.6 on the
+  // meaning of these snopt_info.
+  if (snopt_info >= 1 && snopt_info <= 6) {
+    solution_result = SolutionResult::kSolutionFound;
+  } else {
+    log()->debug("Snopt returns code {}\n", snopt_info);
+    if (snopt_info >= 11 && snopt_info <= 16) {
+      solution_result = SolutionResult::kInfeasibleConstraints;
+    } else if (snopt_info >= 20 && snopt_info <= 22) {
+      solution_result = SolutionResult::kUnbounded;
+    } else if (snopt_info >= 30 && snopt_info <= 32) {
+      solution_result = SolutionResult::kIterationLimit;
+    } else if (snopt_info == 91) {
+      solution_result = SolutionResult::kInvalidInput;
+    }
+  }
+  return solution_result;
+}
+
+void SetMathematicalProgramResult(
+    const MathematicalProgram& prog, int snopt_status,
+    const Eigen::VectorXd& x_val,
+    const std::unordered_map<Binding<BoundingBoxConstraint>,
+                             BoundingBoxDualIndices>&
+        bb_con_dual_variable_indices,
+    const std::unordered_map<Binding<Constraint>, int>&
+        constraint_dual_start_index,
+    MathematicalProgramResult* result) {
+  SnoptSolverDetails& solver_details =
+      result->SetSolverDetailsType<SnoptSolverDetails>();
+  // Populate our results structure.
+  const SolutionResult solution_result =
+      MapSnoptInfoToSolutionResult(snopt_status);
+  result->set_solution_result(solution_result);
+  result->set_x_val(x_val);
+  SetBoundingBoxConstraintDualSolution(prog, solver_details.xmul,
+                                       bb_con_dual_variable_indices, result);
+  SetConstraintDualSolutions(prog, solver_details.Fmul,
+                             constraint_dual_start_index, result);
+  if (solution_result == SolutionResult::kUnbounded) {
+    result->set_optimal_cost(MathematicalProgram::kUnboundedCost);
+  } else {
+    result->set_optimal_cost(solver_details.F(0));
+  }
+}
+
+void UpdateNumConstraintsAndGradients(
+    const MathematicalProgram& prog,
+    const std::vector<Binding<LinearConstraint>>& linear_constraints,
+    int* num_nonlinear_constraints, int* num_linear_constraints,
+    int* max_num_gradients,
+    std::unordered_map<Binding<Constraint>, int>* constraint_dual_start_index) {
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.generic_constraints(), num_nonlinear_constraints, max_num_gradients,
+      constraint_dual_start_index);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.lorentz_cone_constraints(), num_nonlinear_constraints,
+      max_num_gradients, constraint_dual_start_index);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.rotated_lorentz_cone_constraints(), num_nonlinear_constraints,
+      max_num_gradients, constraint_dual_start_index);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.linear_complementarity_constraints(), num_nonlinear_constraints,
+      max_num_gradients, constraint_dual_start_index);
+
+  // Update linear constraints.
+  for (auto const& binding : linear_constraints) {
+    const Binding<Constraint> binding_cast =
+        internal::BindingDynamicCast<Constraint>(binding);
+    constraint_dual_start_index->emplace(
+        binding_cast, 1 + *num_nonlinear_constraints + *num_linear_constraints);
+    *num_linear_constraints += binding.evaluator()->num_constraints();
+  }
+
+  // For linear complementary condition
+  // 0 <= x ⊥ Mx + q >= 0
+  // The linear constraint we add is Mx + q >= 0, so we will append
+  // M.rows() rows to the linear constraints.
+  for (const auto& binding : prog.linear_complementarity_constraints()) {
+    *num_linear_constraints += binding.evaluator()->M().rows();
+  }
+}
+
 void SolveWithGivenOptions(
     const MathematicalProgram& prog,
     const Eigen::Ref<const Eigen::VectorXd>& x_init,
     const std::unordered_map<std::string, std::string>& snopt_options_string,
     const std::unordered_map<std::string, int>& snopt_options_int,
     const std::unordered_map<std::string, double>& snopt_options_double,
-    int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val,
-    SnoptSolverDetails* solver_details) {
-  DRAKE_ASSERT(x_val->rows() == prog.num_vars());
+    MathematicalProgramResult* result) {
+  SnoptSolverDetails& solver_details =
+      result->SetSolverDetailsType<SnoptSolverDetails>();
 
   SnoptUserFunInfo user_info(&prog);
   WorkspaceStorage storage(&user_info);
@@ -830,8 +1047,8 @@ void SolveWithGivenOptions(
   std::vector<double> x(nx, 0.0);
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
-  solver_details->xmul.resize(nx);
-  solver_details->xmul.setZero();
+  solver_details.xmul.resize(nx);
+  solver_details.xmul.setZero();
   std::vector<int> xstate(nx, 0);
 
   // Initialize the guess for x.
@@ -846,78 +1063,40 @@ void SolveWithGivenOptions(
   for (const auto & member : scale_map) {
     x[member.first] /= member.second;
   }
+  // bb_con_dual_variable_indices[constraint] maps the bounding box constraint
+  // to the indices of its dual variables (one for lower bound and one for upper
+  // bound). If this constraint doesn't have a dual variable (because the bound
+  // is looser than some other bounding box constraint, hence this constraint
+  // can never be active), then the index is set to -1.
+  std::unordered_map<Binding<BoundingBoxConstraint>, BoundingBoxDualIndices>
+      bb_con_dual_variable_indices;
 
-  // Set up the lower and upper bounds.
-  for (auto const& binding : prog.bounding_box_constraints()) {
-    const auto& c = binding.evaluator();
-    const auto& lb = c->lower_bound();
-    const auto& ub = c->upper_bound();
+  SetVariableBounds(prog, &xlow, &xupp, &bb_con_dual_variable_indices);
 
-    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      const size_t vk_index =
-          prog.FindDecisionVariableIndex(binding.variables()(k));
-      xlow[vk_index] = std::max(lb(k), xlow[vk_index]);
-      xupp[vk_index] = std::min(ub(k), xupp[vk_index]);
-    }
-  }
-  // Scale lower and upper bounds
-  for (const auto & member : scale_map) {
-    xlow[member.first] /= member.second;
-    xupp[member.first] /= member.second;
-  }
-
-  // For linear complementary condition
-  // 0 <= x ⊥ Mx + q >= 0
-  // we add the bounding box constraint x >= 0
-  for (const auto& binding : prog.linear_complementarity_constraints()) {
-    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
-      const size_t vk_index =
-          prog.FindDecisionVariableIndex(binding.variables()(k));
-      xlow[vk_index] = std::max(xlow[vk_index], 0.0);
-    }
-  }
+  // constraint_dual_start_index[constraint] stores the starting index of
+  // the dual variables in Fmul.
+  std::unordered_map<Binding<Constraint>, int> constraint_dual_start_index;
 
   // Update nonlinear constraints.
   user_info.nonlinear_cost_gradient_indices() =
       GetAllNonlinearCostNonzeroGradientIndices(prog);
   int num_nonlinear_constraints = 0;
   int max_num_gradients = user_info.nonlinear_cost_gradient_indices().size();
-  UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
-                                            &num_nonlinear_constraints,
-                                            &max_num_gradients);
-  UpdateNumNonlinearConstraintsAndGradients(prog.lorentz_cone_constraints(),
-                                            &num_nonlinear_constraints,
-                                            &max_num_gradients);
-  UpdateNumNonlinearConstraintsAndGradients(
-      prog.rotated_lorentz_cone_constraints(), &num_nonlinear_constraints,
-      &max_num_gradients);
-  UpdateNumNonlinearConstraintsAndGradients(
-      prog.linear_complementarity_constraints(), &num_nonlinear_constraints,
-      &max_num_gradients);
-
-  // Update linear constraints.
   int num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
-  for (auto const& binding : linear_constraints) {
-    num_linear_constraints += binding.evaluator()->num_constraints();
-  }
-
-  // For linear complementary condition
-  // 0 <= x ⊥ Mx + q >= 0
-  // The linear constraint we add is Mx + q >= 0, so we will append
-  // M.rows() rows to the linear constraints.
-  for (const auto& binding : prog.linear_complementarity_constraints()) {
-    num_linear_constraints += binding.evaluator()->M().rows();
-  }
+  UpdateNumConstraintsAndGradients(prog, linear_constraints,
+                                   &num_nonlinear_constraints,
+                                   &num_linear_constraints, &max_num_gradients,
+                                   &constraint_dual_start_index);
 
   // Update the bound of the constraint.
   int nF = 1 + num_nonlinear_constraints + num_linear_constraints;
-  solver_details->F.resize(nF);
-  solver_details->F.setZero();
+  solver_details.F.resize(nF);
+  solver_details.F.setZero();
   std::vector<double> Flow(nF, -std::numeric_limits<double>::infinity());
   std::vector<double> Fupp(nF, std::numeric_limits<double>::infinity());
-  solver_details->Fmul.resize(nF);
-  solver_details->Fmul.setZero();
+  solver_details.Fmul.resize(nF);
+  solver_details.Fmul.setZero();
   std::vector<int> Fstate(nF, 0);
 
   // Set up the gradient sparsity pattern.
@@ -1038,10 +1217,9 @@ void SolveWithGivenOptions(
 
   // Reallocate int and real workspace.
   int miniw, minrw;
-  Snopt::snmema(
-      snopt_status, nF, nx, lenA, lenG, &miniw, &minrw,
-      storage.iw(), storage.leniw(),
-      storage.rw(), storage.lenrw());
+  int snopt_status{0};
+  Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &miniw, &minrw, storage.iw(),
+                storage.leniw(), storage.rw(), storage.lenrw());
   // TODO(jwnimmer-tri) Check snopt_status for errors.
   if (miniw > storage.leniw()) {
     storage.resize_iw(miniw);
@@ -1073,42 +1251,26 @@ void SolveWithGivenOptions(
                 iGfun.data(), jGvar.data(), lenG,
                 xlow.data(), xupp.data(),
                 Flow.data(), Fupp.data(),
-                x.data(), xstate.data(), solver_details->xmul.data(),
-                solver_details->F.data(), Fstate.data(),
-                solver_details->Fmul.data(),
-                snopt_status, &nS, &nInf, &sInf, &miniw, &minrw,
+                x.data(), xstate.data(), solver_details.xmul.data(),
+                solver_details.F.data(), Fstate.data(),
+                solver_details.Fmul.data(),
+                &snopt_status, &nS, &nInf, &sInf, &miniw, &minrw,
                 storage.iu(), storage.leniu(),
                 storage.ru(), storage.lenru(),
                 storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw());
   // clang-format on
 
-  *x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
+  Eigen::VectorXd x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
   // Scale solution back
   for (const auto & member : scale_map) {
-    (*x_val)(member.first) *= member.second;
+    x_val(member.first) *= member.second;
   }
-  *objective = solver_details->F(0);
-  solver_details->info = *snopt_status;
-}
+  solver_details.info = snopt_status;
 
-SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
-  SolutionResult solution_result{SolutionResult::kUnknownError};
-  if (snopt_info >= 1 && snopt_info <= 6) {
-    solution_result = SolutionResult::kSolutionFound;
-  } else {
-    log()->debug("Snopt returns code {}\n", snopt_info);
-    if (snopt_info >= 11 && snopt_info <= 16) {
-      solution_result = SolutionResult::kInfeasibleConstraints;
-    } else if (snopt_info >= 20 && snopt_info <= 22) {
-      solution_result = SolutionResult::kUnbounded;
-    } else if (snopt_info >= 30 && snopt_info <= 32) {
-      solution_result = SolutionResult::kIterationLimit;
-    } else if (snopt_info == 91) {
-      solution_result = SolutionResult::kInvalidInput;
-    }
-  }
-  return solution_result;
+  SetMathematicalProgramResult(prog, snopt_status, x_val,
+                               bb_con_dual_variable_indices,
+                               constraint_dual_start_index, result);
 }
 
 }  // namespace
@@ -1121,11 +1283,6 @@ void SnoptSolver::DoSolve(
     const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
   // Call SNOPT.
-  int snopt_status{0};
-  double objective{0};
-  Eigen::VectorXd x_val(prog.num_vars());
-  SnoptSolverDetails& solver_details =
-      result->SetSolverDetailsType<SnoptSolverDetails>();
   std::unordered_map<std::string, int> int_options =
       merged_options.GetOptionsInt(id());
 
@@ -1146,20 +1303,8 @@ void SnoptSolver::DoSolve(
   }
 
   SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
-                        int_options,
-                        merged_options.GetOptionsDouble(id()), &snopt_status,
-                        &objective, &x_val, &solver_details);
-
-  // Populate our results structure.
-  const SolutionResult solution_result =
-      MapSnoptInfoToSolutionResult(snopt_status);
-  result->set_solution_result(solution_result);
-  result->set_x_val(x_val);
-  if (solution_result == SolutionResult::kUnbounded) {
-    result->set_optimal_cost(MathematicalProgram::kUnboundedCost);
-  } else {
-    result->set_optimal_cost(objective);
-  }
+                        int_options, merged_options.GetOptionsDouble(id()),
+                        result);
 }
 
 bool SnoptSolver::is_bounded_lp_broken() { return true; }
