@@ -50,6 +50,13 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(pp.end_time(), 1.0)
         self.assertIsNone(integrator.get_dense_output())
 
+    def test_simulator_api(self):
+        """Tests basic Simulator API."""
+        # TODO(eric.cousineau): Migrate tests from `general_test.py` to here.
+        system = ConstantVectorSource([1.])
+        simulator = Simulator(system)
+        self.assertIs(simulator.get_system(), system)
+
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime
         SimulatorStatus.ReturnReason.kReachedTerminationCondition
