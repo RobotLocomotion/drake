@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -18,9 +19,11 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
@@ -396,8 +399,22 @@ void ParseJoint(ModelInstanceIndex model_instance,
   // later if/when an actuator is created.
   double effort = std::numeric_limits<double>::infinity();
 
+  auto throw_on_custom_joint = [node, name, type](bool want_custom_joint) {
+    const std::string node_name(node->Name());
+    const bool is_custom_joint = node_name == "drake:joint";
+    if (want_custom_joint && !is_custom_joint) {
+      throw std::runtime_error(
+          "ERROR: Joint " + name + " of type " + type +
+          " is a custom joint type, and should be a <drake:joint>");
+    } else if (!want_custom_joint && is_custom_joint) {
+      throw std::runtime_error(
+          "ERROR: Joint " + name + " of type " + type +
+          " is a standard joint type, and should be a <joint>");
+    }
+  };
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
+    throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &effort);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<RevoluteJoint>(
@@ -406,10 +423,12 @@ void ParseJoint(ModelInstanceIndex model_instance,
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
   } else if (type.compare("fixed") == 0) {
+    throw_on_custom_joint(false);
     plant->AddJoint<WeldJoint>(name, parent_body, X_PJ,
                                child_body, std::nullopt,
                                RigidTransformd::Identity());
   } else if (type.compare("prismatic") == 0) {
+    throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &effort);
     ParseJointDynamics(name, node, &damping);
     const JointIndex index = plant->AddJoint<PrismaticJoint>(
@@ -418,14 +437,20 @@ void ParseJoint(ModelInstanceIndex model_instance,
     Joint<double>& joint = plant->get_mutable_joint(index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
   } else if (type.compare("floating") == 0) {
+    throw_on_custom_joint(false);
     drake::log()->warn("Joint {} specified as type floating which is not "
                        "supported by MultibodyPlant.  Leaving {} as a "
                        "free body.", name, child_name);
   } else if (type.compare("ball") == 0) {
-    drake::log()->warn(
-        "Warning: ball joint is not an official part of the URDF standard.");
-    throw std::runtime_error("Joint " + name + " specified as type ball which "
-                             "is not supported by MultibodyPlant.");
+    throw_on_custom_joint(true);
+    ParseJointDynamics(name, node, &damping);
+    plant->AddJoint<BallRpyJoint>(name, parent_body, X_PJ,
+                                  child_body, std::nullopt, damping);
+  } else if (type.compare("universal") == 0) {
+    throw_on_custom_joint(true);
+    ParseJointDynamics(name, node, &damping);
+    plant->AddJoint<UniversalJoint>(name, parent_body, X_PJ,
+                                    child_body, std::nullopt, damping);
   } else {
     throw std::runtime_error(
         "ERROR: Joint " + name + " has unrecognized type: " + type);
@@ -655,10 +680,18 @@ ModelInstanceIndex ParseUrdf(
   // actuator (which is done when parsing the transmission).
   std::map<std::string, double> joint_effort_limits;
 
-  // Parses the model's joint elements.
-  for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
-       joint_node = joint_node->NextSiblingElement("joint")) {
-    ParseJoint(model_instance, &joint_effort_limits, joint_node, plant);
+  // Parses the model's joint elements.  While it may not be strictly required
+  // to be true in MultibodyPlant, generally the JointIndex for any given
+  // joint follows the declaration order in the model (and users probably
+  // should avoid caring about the ordering of JointIndex), we still parse the
+  // joints in model order regardless of the element type so that the results
+  // are consistent with an SDF version of the same model.
+  for (XMLElement* joint_node = node->FirstChildElement(); joint_node;
+       joint_node = joint_node->NextSiblingElement()) {
+    const std::string node_name(joint_node->Name());
+    if (node_name == "joint" || node_name == "drake:joint") {
+      ParseJoint(model_instance, &joint_effort_limits, joint_node, plant);
+    }
   }
 
   // Parses the model's transmission elements.
