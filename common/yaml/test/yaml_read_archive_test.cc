@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/name_value.h"
@@ -171,9 +172,7 @@ namespace {
 
 // A test fixture with common helpers.
 class YamlReadArchiveTest
-    // TODO(jwnimmer-tri) This int parameter is currently unused; replace it
-    // with test case variants.
-    : public ::testing::TestWithParam<int> {
+    : public ::testing::TestWithParam<YamlReadArchive::Options> {
  public:
   static YAML::Node Load(const std::string& contents) {
     const YAML::Node loaded = YAML::Load(contents);
@@ -198,7 +197,7 @@ class YamlReadArchiveTest
     bool raised = false;
     std::string what;
     try {
-      YamlReadArchive(root).Accept(&result);
+      YamlReadArchive(root, GetParam()).Accept(&result);
     } catch (const std::exception& e) {
       raised = true;
       what = e.what();
@@ -211,7 +210,31 @@ class YamlReadArchiveTest
   template <typename Serializable>
   static void AcceptIntoDummy(const YAML::Node& root) {
     Serializable dummy{};
-    YamlReadArchive(root).Accept(&dummy);
+    YamlReadArchive(root, GetParam()).Accept(&dummy);
+  }
+
+  template <typename Serializable>
+  static Serializable AcceptEmptyDoc() {
+    SCOPED_TRACE("for type " + NiceTypeName::Get<Serializable>());
+    const YAML::Node root = Load("doc: {}");
+    Serializable result{};
+    bool raised = false;
+    std::string what;
+    try {
+      YamlReadArchive(root, GetParam()).Accept(&result);
+    } catch (const std::exception& e) {
+      raised = true;
+      what = e.what();
+    }
+    if (GetParam().allow_cpp_with_no_yaml) {
+      EXPECT_FALSE(raised);
+      EXPECT_EQ(what, "");
+    } else {
+      EXPECT_TRUE(raised);
+      EXPECT_THAT(what, testing::MatchesRegex(
+          ".*missing entry for [^ ]* value.*"));
+    }
+    return result;
   }
 };
 
@@ -244,6 +267,11 @@ TEST_P(YamlReadArchiveTest, Double) {
   test("-5.6E-7", -5.6e-7);
 }
 
+TEST_P(YamlReadArchiveTest, DoubleMissing) {
+  const auto& x = AcceptEmptyDoc<DoubleStruct>();
+  EXPECT_THAT(x.value, testing::NanSensitiveDoubleEq(NAN));
+}
+
 TEST_P(YamlReadArchiveTest, StdArray) {
   const auto test = [](const std::string& value,
                        const std::array<double, 3>& expected) {
@@ -252,6 +280,13 @@ TEST_P(YamlReadArchiveTest, StdArray) {
   };
 
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
+}
+
+TEST_P(YamlReadArchiveTest, StdArrayMissing) {
+  const auto& x = AcceptEmptyDoc<ArrayStruct>();
+  EXPECT_THAT(x.value[0], testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_THAT(x.value[1], testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_THAT(x.value[2], testing::NanSensitiveDoubleEq(NAN));
 }
 
 TEST_P(YamlReadArchiveTest, StdVector) {
@@ -264,6 +299,12 @@ TEST_P(YamlReadArchiveTest, StdVector) {
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
 }
 
+TEST_P(YamlReadArchiveTest, StdVectorMissing) {
+  const auto& x = AcceptEmptyDoc<VectorStruct>();
+  ASSERT_EQ(x.value.size(), 1);
+  EXPECT_THAT(x.value[0], testing::NanSensitiveDoubleEq(NAN));
+}
+
 TEST_P(YamlReadArchiveTest, StdMap) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
@@ -273,6 +314,12 @@ TEST_P(YamlReadArchiveTest, StdMap) {
 
   test("doc:\n  value:\n    foo: 0.0\n    bar: 1.0\n",
        {{"foo", 0.0}, {"bar", 1.0}});
+}
+
+TEST_P(YamlReadArchiveTest, StdMapMissing) {
+  const auto& x = AcceptEmptyDoc<MapStruct>();
+  ASSERT_EQ(x.value.size(), 1);
+  EXPECT_THAT(x.value.at("NAN"), testing::NanSensitiveDoubleEq(NAN));
 }
 
 TEST_P(YamlReadArchiveTest, StdMapWithMergeKeys) {
@@ -377,6 +424,11 @@ TEST_P(YamlReadArchiveTest, Variant) {
   test("doc:\n  value: !DoubleStruct { value: 1.0 }", DoubleStruct{1.0});
 }
 
+TEST_P(YamlReadArchiveTest, VariantMissing) {
+  const auto& x = AcceptEmptyDoc<VariantStruct>();
+  EXPECT_THAT(std::get<double>(x.value), testing::NanSensitiveDoubleEq(NAN));
+}
+
 TEST_P(YamlReadArchiveTest, EigenVector) {
   const auto test = [](const std::string& value,
                        const Eigen::VectorXd& expected) {
@@ -417,6 +469,18 @@ doc:
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 10.0, 11.0]
 )R", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+}
+
+TEST_P(YamlReadArchiveTest, EigenMissing) {
+  const auto& vx = AcceptEmptyDoc<EigenVecStruct>();
+  const auto& vn = AcceptEmptyDoc<EigenVec3Struct>();
+  const auto& mx = AcceptEmptyDoc<EigenMatrixStruct>();
+  const auto& mn = AcceptEmptyDoc<EigenMatrix34Struct>();
+  ASSERT_EQ(vx.value.size(), 1);
+  ASSERT_EQ(mx.value.size(), 1);
+  // XXX check for all the nans.
+  (void)(vn);
+  (void)(mn);
 }
 
 TEST_P(YamlReadArchiveTest, Nested) {
@@ -542,19 +606,28 @@ doc:
 // This finds nothing when a scalar was wanted, because the name had a typo.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundNothing) {
   // This has a "_TYPO" in a field name.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+  const YAML::Node node = Load(R"R(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value_TYPO: 2.0
-)R")),
-      std::runtime_error,
-      "YAML node of type Map \\(with size 1 and keys \\{inner_value_TYPO\\}\\)"
-      " is missing entry for double inner_value"
-      " while accepting YAML node of type Map"
-      " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
-      " while visiting [^ ]*InnerStruct inner_struct\\.");
+)R");
+  if (GetParam().allow_cpp_with_no_yaml &&
+      GetParam().allow_yaml_with_no_cpp) {
+    const auto& x = AcceptNoThrow<OuterStruct>(node);
+    EXPECT_EQ(x.outer_value, 1.0);
+    EXPECT_THAT(x.inner_struct.inner_value, testing::NanSensitiveDoubleEq(NAN));
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<OuterStruct>(node),
+        std::runtime_error,
+        "YAML node of type Map"
+        " \\(with size 1 and keys \\{inner_value_TYPO\\}\\)"
+        " is missing entry for double inner_value"
+        " while accepting YAML node of type Map"
+        " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
+        " while visiting [^ ]*InnerStruct inner_struct\\.");
+  }
 }
 
 // This finds an array when a scalar was wanted.
@@ -593,7 +666,7 @@ doc:
 }
 
 // This finds nothing when a std::array was wanted.
-TEST_F(YamlReadArchiveTest, VisitArrayFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitArrayFoundNothing) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<ArrayStruct>(LoadSingleValue("")),
       std::runtime_error,
@@ -624,7 +697,7 @@ doc:
 }
 
 // This finds nothing when a std::vector was wanted.
-TEST_F(YamlReadArchiveTest, VisitVectorFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitVectorFoundNothing) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VectorStruct>(LoadSingleValue("")),
       std::runtime_error,
@@ -799,15 +872,22 @@ doc:
 }
 
 // This finds nothing when a sub-structure was wanted.
-TEST_F(YamlReadArchiveTest, VisitStructFoundNothing) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
-doc:
-  outer_value: 1.0
-)R")),
-      std::runtime_error,
-      "YAML node of type Map \\(with size 1 and keys \\{outer_value\\}\\)"
-      " is missing entry for [^ ]*InnerStruct inner_struct\\.");
+TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
+  const YAML::Node node = Load(R"R(
+  doc:
+    outer_value: 1.0
+  )R");
+  if (GetParam().allow_cpp_with_no_yaml) {
+    const auto& x = AcceptNoThrow<OuterStruct>(node);
+    EXPECT_EQ(x.outer_value, 1.0);
+    EXPECT_THAT(x.inner_struct.inner_value, testing::NanSensitiveDoubleEq(NAN));
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<OuterStruct>(node),
+        std::runtime_error,
+        "YAML node of type Map \\(with size 1 and keys \\{outer_value\\}\\)"
+        " is missing entry for [^ ]*InnerStruct inner_struct\\.");
+  }
 }
 
 // This finds a scalar when a sub-structure was wanted.
@@ -840,9 +920,15 @@ doc:
 
 INSTANTIATE_TEST_SUITE_P(
     AllOptions, YamlReadArchiveTest,
-    // TODO(jwnimmer-tri) This int parameter is currently unused; replace it
-    // with test case variants.
-    ::testing::Values(0));
+    ::testing::Values(
+        // {allow_yaml_with_no_cpp, allow_cpp_with_no_yaml}
+        YamlReadArchive::Options(false, false),
+        YamlReadArchive::Options(false, true)
+#if 0
+        YamlReadArchive::Options(true, false),
+        YamlReadArchive::Options(true, true)
+#endif
+        ));  // NOLINT(whitespace/parens)
 
 }  // namespace
 }  // namespace yaml
