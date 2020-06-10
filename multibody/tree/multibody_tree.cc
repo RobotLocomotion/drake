@@ -1328,37 +1328,36 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // TODO(mitiguy) Allow frame_A to be something other than world frame W.
-  DRAKE_THROW_UNLESS(&frame_A == &world_frame());
-
-  // One way to calculate A_ABp (point Bp's spatial acceleration in frame A) is
-  // by considering formulas for the angular acceleration and translational
-  // acceleration parts of Bp's spatial acceleration in the world frame W.
+  // For a point Bp that is affixed/welded to a frame B, one way to calculate
+  // A_ABp (point Bp's spatial acceleration in frame A) is by rearranging
+  // formulas for the angular acceleration and translational acceleration parts
+  // of Bp's spatial acceleration in the world frame W.
   //
   // The angular acceleration part of A_ABp is denoted alpha_AB and can be
-  // calculated by rearranging the "angular acceleration addition theorem" (from
-  // Chapter 8, Angular velocity/acceleration [Mitiguy 2019], reference below).
-  //     alpha_WB = alpha_WA + alpha_AB + w_WA x w_AB   is rearranged to
-  //     alpha_AB = alpha_WB - alpha_WA - w_WA x w_AB,  where
-  // alpha_AB is B's angular acceleration in A,
-  // alpha_WB is B's angular acceleration in W,
-  // w_WA is A's angular velocity in W, and
-  // w_AB is B's angular velocity in A.
+  // calculated by rearranging the "angular acceleration addition theorem"
+  // (Chapter 8, Angular velocity/acceleration [Mitiguy 2019], reference below).
+  //   (1)  alpha_WB = alpha_WA + alpha_AB + w_WA x w_AB   is rearranged to
+  //   (2)  alpha_AB = alpha_WB - alpha_WA - w_WA x w_AB,  where
+  // alpha_AB is frame B's angular acceleration in frame A,
+  // alpha_WB is frame B's angular acceleration in frame W,
+  // alpha_WA is frame A's angular acceleration in frame W,
+  // w_WA is frame A's angular velocity in frame W, and
+  // w_AB is frame B's angular velocity in frame A.
   //
   // The translational acceleration part of A_ABp is denoted a_ABp and can be
   // calculated by rearranging the "one point moving on a rigid frame formula"
   // (from Chapter 10, Points: Velocity and acceleration [Mitiguy 2019] and/or
-  // equation 2.12.1, page 39 [Kane & Levinson 1985]).
-  //     a_WBp = a_WAp + a_ABp + 2 w_WA x v_ABp    is rearranged to
-  //     a_ABp  = a_WBp - a_WAp - 2 w_WA x v_ABp,  where
-  // point Ap is the point affixed to A that is coincident with Bp;
-  // a_ABp is point Bp's acceleration in frame A;
-  // w_WA is A's angular velocity in W;
-  // v_ABp is point Bp's velocity in A.
-  // a_WAp is Ap's acceleration in world frame W which can be calculated as
-  //     a_WAp = a_WAo + alpha_WA x p_AoAp + w_WA x (w_WA x p_AoAp)
-  // The previous equations also apply to bias acceleration, e.g.,
-  //     aBias_ABp  = aBias_WBp - aBias_WAp - 2 w_WA x v_ABp
+  // section 2.8, page 39 [Kane & Levinson 1985], references below).
+  //   (3)  a_WBp = a_WAp + a_ABp + 2 w_WA x v_ABp    is rearranged to
+  //   (4)  a_ABp = a_WBp - a_WAp - 2 w_WA x v_ABp,  where
+  // point Ap is the point affixed to A that is coincident with Bp,
+  // a_ABp is point Bp's acceleration in frame A,
+  // a_WBp is point Bp's acceleration in frame W,
+  // a_WAp is point Ap's acceleration in frame W (calculated as shown below),
+  // w_WA is frame A's angular velocity in frame W,
+  // v_ABp is point Bp's velocity in frame A.
+  // The previous equations also apply to bias acceleration, so eqn (4) gives,
+  //   (5)  aBias_ABp = aBias_WBp - aBias_WAp - 2 w_WA x v_ABp
   //
   // - [Mitiguy, 2019]: "Advanced Dynamics and Motion Simulation,
   //   For professional engineers and scientists," Prodigy Press, Sunnyvale CA,
@@ -1369,13 +1368,13 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // Frame_B is regarded as fixed/welded to a body, herein named body_B.
   // Calculate body_B's bias spatial acceleration in world frame W.
   const Body<T>& body_B = frame_B.body();
-  const SpatialAcceleration<T> AsBias_WC_W =
+  const SpatialAcceleration<T> AsBias_WB_W =
       CalcBodyBiasSpatialAccelerationInWorld(context, with_respect_to, body_B);
 
   // Shift bias spatial acceleration from body_B to point Bp of frame_B.
   const SpatialAcceleration<T> AsBias_WBp_W =
       ShiftSpatialAccelerationBiasInWorld(context, body_B, frame_B,
-                                          p_BoBp_B, AsBias_WC_W);
+                                          p_BoBp_B, AsBias_WB_W);
 
   // Calculations are simpler if frame_A (the "measured-in" frame) is the world
   // frame W.  Otherwise, extra calculations are needed.
@@ -1384,14 +1383,14 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   if (frame_A.index() == frame_W.index()) {
     AsBias_ABp_W = AsBias_WBp_W;
   } else  {
-    // Frame_A is regarded as fixed/welded to a body, herein named body_A.
+    // Frame_A is regarded as fixed/welded to a body herein named body_A.
     // Calculate body_A's bias spatial acceleration in world frame W.
     const Body<T>& body_A = frame_A.body();
     const SpatialAcceleration<T> AsBias_WA_W =
       CalcBodyBiasSpatialAccelerationInWorld(context, with_respect_to, body_A);
 
-    // Point Ap is the point of frame_A that is coincident with point Bp.
-    // Calculate the position vector from Ao (origin of frame_A) to Ap.
+    // Point Ap is the point of (affixed to) frame_A that is coincident with
+    // point Bp. Calculate the position vector from Ao (frame_A's origin) to Ap.
     const RigidTransform<T> X_AB = frame_B.CalcPose(context, frame_A);
     const Vector3<T>& p_AoBo_A = X_AB.translation();
     const RotationMatrix<T>& R_AB = X_AB.rotation();
@@ -1399,14 +1398,20 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
     const Vector3<T> p_AoAp_A = p_AoBo_A + p_BoBp_A;  // Note: p_AoAp = p_AoBp
 
     // Shift bias spatial acceleration from body_A to point Ap of frame_A.
+    // Note: Since Ap is regarded as affixed to frame A, Ap's translational
+    // acceleration in the world frame W is calculated as
+    //   a_WAp = a_WAo + alpha_WA x p_AoAp + w_WA x (w_WA x p_AoAp)
+    // Reminder: p_AoAp is an "instantaneous" position vector, so differentation
+    // of p_AoAp or a_WAp may produce a result different than you might expect.
     const SpatialAcceleration<T> AsBias_WAp_W =
       ShiftSpatialAccelerationBiasInWorld(context, body_A, frame_A,
                                           p_AoAp_A, AsBias_WA_W);
-    // Implement the formulas provided above.
+
+    // Implement part of the formula from equations (2) and (5) above.
     AsBias_ABp_W = AsBias_WBp_W - AsBias_WAp_W;
 
-    // Calculate A's angular velocity in W and B's angular velocity in A.
-    // Implement the formula alpha_AB = alpha_WB - alpha_WA - w_WA x w_AB.
+    // Equation (2) is  alpha_AB = alpha_WB - alpha_WA - w_WA x w_AB,
+    // hence calculate A's angular velocity in W and B's angular velocity in A.
     const Vector3<T> w_WA_W =
         frame_A.CalcSpatialVelocityInWorld(context).rotational();
     SpatialVelocity<T> V_ABp_W =
@@ -1414,12 +1419,14 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
     const Vector3<T> w_AB_W = V_ABp_W.rotational();
     AsBias_ABp_W.rotational() -= w_WA_W.cross(w_AB_W);
 
-    // Implement the formula a_ABp  = a_WBp - a_WAp - 2 w_WA x v_ABp.
-    const RotationMatrix<T> R_WA = frame_A.CalcRotationMatrixInWorld(context);
-    const Vector3<T> p_AoBp_W = R_WA *  p_AoAp_A;  // Reminder p_AoAp = p_AoBp.
-    V_ABp_W.ShiftInPlace(p_AoBp_W);
+    // Equation (5) is  a_ABp = a_WBp - a_WAp - 2 w_WA x v_ABp, hence calculate
+    // Bp's velocity in A for the "Coriolis acceleration" 2 w_WA x v_ABp.
+    const RotationMatrix<T> R_WB = frame_B.CalcRotationMatrixInWorld(context);
+    const Vector3<T> p_BoBp_W = R_WB * p_BoBp_B;
+    V_ABp_W.ShiftInPlace(p_BoBp_W);
     const Vector3<T> v_ABp_W = V_ABp_W.translational();
-    AsBias_ABp_W.translational() -= 2 * w_WA_W.cross(v_ABp_W);
+    const Vector3<T> coriolis_acceleration = 2 * w_WA_W.cross(v_ABp_W);
+    AsBias_ABp_W.translational() -= coriolis_acceleration;
   }
 
   // If necessary, re-express the results in frame_E.
