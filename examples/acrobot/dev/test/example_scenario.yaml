@@ -1,0 +1,7 @@
+# An example scenario for acrobot.
+
+example:
+  controller_params: [5, 50, 5, 1e3]
+  initial_state: [1.2, 0, 0, 0]
+  t_final: 30.0
+  tape_period: 0.05
