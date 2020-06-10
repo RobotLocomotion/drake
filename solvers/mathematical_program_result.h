@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "drake/common/value.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
 
@@ -407,6 +409,55 @@ class MathematicalProgramResult final {
   void AddSuboptimalSolution(double suboptimal_objective,
                              const Eigen::VectorXd& suboptimal_x);
   //@}
+
+  /** @anchor get_infeasible_constraints
+   * @name Get infeasible constraints
+   * Some solvers (e.g. SNOPT) provide a "best-effort solution" even when they
+   * determine that a problem is infeasible.  This method will return the
+   * descriptions corresponding to the constraints for which `CheckSatisfied`
+   * evaluates to false given the reported solution.  This can be very useful
+   * for debugging. Note that this feature is available only when the
+   * optimization problem is solved through certain solvers (like SNOPT, IPOPT)
+   * which provide a "best-effort solution". Some solvers (like Gurobi) don't
+   * return the "best-effort solution" when the problem is infeasible, and this
+   * feature is hence unavailable.
+   */
+  //@{
+
+  /**
+   * See @ref get_infeasible_constraints for more information.
+   * @param prog The MathematicalProgram that was solved to obtain `this`
+   * MathematicalProgramResult.
+   * @param tolerance A positive tolerance to check the constraint violation.
+   * If no tolerance is provided, this method will attempt to obtain the
+   * constraint tolerance from the solver, or insert a conservative default
+   * tolerance.
+   *
+   * Note: Currently most constraints have the empty string as the
+   * description, so the NiceTypeName of the Constraint is used instead.  Use
+   * e.g.
+   * `prog.AddConstraint(x == 1).evaluator().set_description(str)`
+   * to make this method more specific/useful. */
+  std::vector<std::string> GetInfeasibleConstraintNames(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
+
+  /**
+   * See @ref get_infeasible_constraints for more information.
+   * @param prog The MathematicalProgram that was solved to obtain `this`
+   * MathematicalProgramResult.
+   * @param tolerance A positive tolerance to check the constraint violation.
+   * If no tolerance is provided, this method will attempt to obtain the
+   * constraint tolerance from the solver, or insert a conservative default
+   * tolerance.
+   * @return infeasible_bindings A vector of all infeasible bindings
+   * (constraints together with the associated variables) at the best-effort
+   * solution.
+   */
+  std::vector<Binding<Constraint>> GetInfeasibleConstraints(
+      const MathematicalProgram& prog,
+      std::optional<double> tolerance = std::nullopt) const;
+  // @}
 
  private:
   std::optional<std::unordered_map<symbolic::Variable::Id, int>>
