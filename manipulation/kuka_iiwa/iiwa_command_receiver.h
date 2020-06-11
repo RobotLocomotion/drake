@@ -24,15 +24,6 @@ namespace kuka_iiwa {
 ///
 /// It has one required input port, "lcmt_iiwa_command".
 ///
-/// Before receiving a valid lcmt_iiwa_command message, the "position" output
-/// will be set to a fallback value, and the "torque" output will always be a
-/// vector of zeros. The fallback value can be set by connecting the
-/// "position_measured" input port. This system uses DiscreteUpdate
-/// to initialize the fallback value with the "position_measured" input port at
-/// the first tick. When used with a Simulator, this is handled automatically
-/// by the framework. When "position_measured" is not connected, the fallback
-/// value will be initialized to zeros.
-///
 /// It has two output ports: one for the commanded position for each joint, and
 /// one for commanded additional feedforward joint torque.
 ///
@@ -42,6 +33,17 @@ namespace kuka_iiwa {
 ///   @output_port{position}
 ///   @output_port{torque}
 /// }
+///
+/// @par Output prior to receiving a valid lcmt_iiwa_command message:
+/// The "position" output initially feeds through from the "position_measured"
+/// input port -- or if not connected, outputs zero.  When discrete updates
+/// events are enabled (e.g., during a simulation), the system latches the
+/// "position_measured" input into state during the first event, and the
+/// "position" output comes from the latched state, no longer fed through from
+/// the "position" input.  Alternatively, the LatchInitialPosition() method is
+/// available to achieve the same effect without using events.
+/// @par
+/// The "torque" output will always be a vector of zeros.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
@@ -58,7 +60,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
-  /// XXX
+  /// (Advanced.) Copies the current "position_measured" input (or zero if not
+  /// connected) into Context state, and changes the behavior of the "position"
+  /// output to produce the latched state if no message has been received yet.
+  /// The latching already happens automatically during the first discrete
+  /// update event (e.g., when using a Simulator); this method exists for use
+  /// when not already using a Simulator or other special cases.
   void LatchInitialPosition(systems::Context<double>* context) const;
 
   /// @name Named accessors for this System's input and output ports.
