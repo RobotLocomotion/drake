@@ -2539,19 +2539,19 @@ class MultibodyTree {
       const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
       const SpatialAcceleration<T>& AsBias_WA_W) const;
 
-  // Calculate a body_A's bias spatial acceleration in the world frame W.
+  // For all bodies, calculate bias spatial acceleration in the world frame W.
   // @param[in] context The state of the multibody system.
   // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   // JacobianWrtVariable::kV, indicating whether the spatial acceleration bias
   // is with respect to 𝑠 = q̇ or 𝑠 = v.
-  // @param[in] body_A The body whose bias spatial acceleration is calculated.
-  // @returns A𝑠Bias_WA_W body_A's spatial acceleration bias in frame W
+  // @param[out] AsBias_WBodies Each body's spatial acceleration bias in frame W
   // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
   // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  SpatialAcceleration<T> CalcBodyBiasSpatialAccelerationInWorld(
+  // @throws std::exception if AsBias_WBodies.size() is not num_bodies().
+  void CalcAllBodyBiasSpatialAccelerationsInWorld(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
-      const Body<T>& body_A) const;
+      std::vector<SpatialAcceleration<T>>* AsBias_WBodies) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the

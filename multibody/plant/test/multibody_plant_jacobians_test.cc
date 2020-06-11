@@ -310,6 +310,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
 
     // Create a revolute joint that connects point Wo of the world frame to a
     // unnamed point of link A that is link_length/2 from point Ao of link A.
+    // Note: Point Ao is link A's geometric center.
     const Vector3d p_AoWo_A(-0.5 * link_length_, 0.0, 0.0);
     joint1_ = &plant_->AddJoint<RevoluteJoint>("PinJoint1",
         plant_->world_body(), std::nullopt,
@@ -318,6 +319,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Create a revolute joint that connects point Fo (frame F's origin) to
     // point Mo (frame M's origin), where frame F is affixed/welded to link A
     // and frame M is affixed/welded to link B.
+    // Note: Point Bo is link B's geometric center.
     const Vector3d p_AoFo_A(0.5 * link_length_, 0.0, 0.0);
     const Vector3d p_BoMo_B(-0.5 * link_length_, 0.0, 0.0);
     joint2_ = &plant_->AddJoint<RevoluteJoint>("PinJoint2",
@@ -400,7 +402,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
                                           frame_A, p_AoAp_A, frame_A, frame_A);
   EXPECT_TRUE(CompareMatrices(aBias_AAp_A.translational(), Vector3d::Zero(),
       kTolerance));
-  EXPECT_TRUE(CompareMatrices(aBias_WAp_W.rotational(), Vector3d::Zero(),
+  EXPECT_TRUE(CompareMatrices(aBias_AAp_A.rotational(), Vector3d::Zero(),
       kTolerance));
 
   // For point Bp of B, calculate Bp's bias spatial acceleration in frame A.
@@ -408,7 +410,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
       plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
                                           frame_B, p_BoBp_B, frame_A, frame_A);
 
-  // By-hand analysis gives aBias_ABp_W = -L wBz_² Wx
+  // By-hand analysis gives aBias_ABp_A = -L wBz_² Ax.
   const Vector3<double> aBias_ABp_A_expected =
       -link_length_ * wBz_ * wBz_ * Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(aBias_ABp_A.translational(), aBias_ABp_A_expected,
