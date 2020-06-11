@@ -2,6 +2,12 @@ import yaml
 
 import numpy as np
 
+# This is a magic tribool value described at
+#   https://github.com/yaml/pyyaml/pull/256
+# and must be set this way for post- and pre- pyyaml#256 yaml dumpers to give
+# the same output.
+_FLOW_STYLE = None
+
 
 def load_scenario(*, filename=None, data=None, scenario_name=None):
     """Given a scenario `filename` xor `data`, and optionally `scenario_name`,
@@ -42,7 +48,9 @@ def save_scenario(*, scenario, scenario_name):
                 ]
         else:
             scrubbed[key] = [float(x) for x in scenario[key]]
-    return yaml.dump({scenario_name: scrubbed}, Dumper=yaml.CDumper)
+    return yaml.dump({scenario_name: scrubbed},
+                     Dumper=yaml.CDumper,
+                     default_flow_style=_FLOW_STYLE)
 
 
 def load_output(*, filename=None, data=None):
@@ -68,4 +76,5 @@ def load_output(*, filename=None, data=None):
 def save_output(*, x_tape):
     """Given an acrobot output `x_tape`, returns a yaml-formatter str for it.
     """
-    return yaml.dump({"x_tape": x_tape.tolist()})
+    return yaml.dump({"x_tape": x_tape.tolist()},
+                     default_flow_style=_FLOW_STYLE)
