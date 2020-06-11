@@ -121,6 +121,11 @@ New features
 
 * Bind C++ Value<vector<T>> to Python Value[List[T]] (`#13407`_, `#13408`_)
 
+Fixes
+
+* Make BasicVector use Pythonic string formatting (`#13454`_)
+* Add friendlier errors for MathematicalProgram dtype mismatch (`#13234`_)
+
 Newly bound
 
 * pydrake.geometry.Convex.filename (`#13352`_)
@@ -133,6 +138,14 @@ Newly bound
 * pydrake.geometry.SceneGraph.ExcludeCollisionsBetween (`#13358`_)
 * pydrake.geometry.SceneGraph.ExcludeCollisionsWithin (`#13358`_)
 * pydrake.geometry.Shape.Clone (`#13361`_)
+* pydrake.manipulation.schunk_wsg.GetSchunkWsgOpenPosition (`#13470`_)
+* pydrake.manipulation.schunk_wsg.MakeMultibodyStateToWsgStateSystem (`#13470`_)
+* pydrake.manipulation.schunk_wsg.SchunkWsgCommandReceiver (`#13470`_)
+* pydrake.manipulation.schunk_wsg.SchunkWsgCommandSender (`#13470`_)
+* pydrake.manipulation.schunk_wsg.SchunkWsgPositionController (`#13470`_)
+* pydrake.manipulation.schunk_wsg.SchunkWsgStatusReceiver (`#13470`_)
+* pydrake.manipulation.schunk_wsg.SchunkWsgStatusSender (`#13470`_)
+* pydrake.multibody.math.SpatialMomentum (`#13478`_)
 * pydrake.multibody.plant.MultibodyPlant.CollectRegisteredGeometries (`#13358`_)
 * pydrake.multibody.plant.MultibodyPlant.HasModelInstanceNamed (`#13342`_)
 * pydrake.multibody.plant.MultibodyPlant.time_step (`#13355`_)
@@ -142,9 +155,16 @@ Newly bound
 * pydrake.multibody.tree.Joint.set_position_limits (`#13342`_)
 * pydrake.multibody.tree.Joint.set_velocity_limits (`#13342`_)
 * pydrake.multibody.tree.RotationalInertia (`#13415`_)
+* pydrake.multibody.tree.SpatialInertia.CalcComMoment (`#13478`_)
 * pydrake.multibody.tree.SpatialInertia.CalcRotationalInertia (`#13415`_)
 * pydrake.multibody.tree.SpatialInertia.CopyToFullMatrix6 (`#13415`_)
+* pydrake.multibody.tree.SpatialInertia.IsNaN (`#13478`_)
 * pydrake.multibody.tree.SpatialInertia.IsPhysicallyValid (`#13415`_)
+* pydrake.multibody.tree.SpatialInertia.ReExpress (`#13478`_)
+* pydrake.multibody.tree.SpatialInertia.SetNaN (`#13478`_)
+* pydrake.multibody.tree.SpatialInertia.Shift (`#13478`_)
+* pydrake.multibody.tree.SpatialInertia.__add__ (`#13478`_)
+* pydrake.multibody.tree.SpatialInertia.__mul__ (`#13478`_)
 * pydrake.multibody.tree.SpatialInertia.get_com (`#13415`_)
 * pydrake.multibody.tree.SpatialInertia.get_mass (`#13415`_)
 * pydrake.multibody.tree.SpatialInertia.get_unit_inertia (`#13415`_)
@@ -155,6 +175,12 @@ Newly bound
 * pydrake.systems.analysis.Simulator.get_system (`#13525`_)
 * pydrake.systems.analysis.Simulator.set_monitor (`#13413`_)
 * pydrake.systems.analysis.SimulatorStatus.ReturnReason (`#13413`_)
+* pydrake.systems.framework.Context.DisableCaching (`#13528`_)
+* pydrake.systems.framework.Context.EnableCaching (`#13528`_)
+* pydrake.systems.framework.Context.FreezeCache (`#13528`_)
+* pydrake.systems.framework.Context.SetAllCacheEntriesOutOfDate (`#13528`_)
+* pydrake.systems.framework.Context.UnfreezeCache (`#13528`_)
+* pydrake.systems.framework.Context.is_cache_frozen (`#13528`_)
 * pydrake.systems.framework.Diagram.GetSystems (`#13363`_)
 * pydrake.systems.framework.EventStatus (`#13413`_)
 * pydrake.systems.framework.EventStatus.Severity (`#13413`_)
@@ -166,18 +192,6 @@ Newly bound
 * pydrake.systems.framework.SystemBase (`#13413`_)
 * std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::AutoDiffXd>> (`#13359`_)
 * std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::symbolic::Expression>> (`#13359`_)
-
-TBD below
-
-* bindings: Add bindings for SpatialInertia methods (`#13478`_)
-* bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
-* bindings: py mbp, geometry: Bind __repr__ for indices + elements (`#13489`_)
-* Bind ContextBase cache control methods (`#13528`_)
-
-Fixes
-
-* Make BasicVector use Pythonic string formatting (`#13454`_)
-* Add friendlier errors for MathematicalProgram dtype mismatch (`#13234`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
