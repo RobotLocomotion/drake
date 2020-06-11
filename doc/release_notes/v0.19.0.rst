@@ -98,6 +98,7 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 * Add tutorial on updating costs/constraints in mathematical program (`#13328`_)
+* Add meshcat animation (and binder tutorial) (`#13513`_)
 * Add Strandbeest example (`#13302`_)
 * Add guidance for picking bushing stiffness/damping constants (`#13106`_)
 
@@ -449,5 +450,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
 
-* Add meshcat animation (and binder tutorial) (`#13513`_)  # Relates to #12645.  This is our current best solution given the discussion with @rdeits.
-* Simple planar two degree-of-freedom test for CalcBiasAcceleration() (`#13406`_)
