@@ -56,16 +56,18 @@ New features
 * Add the ability to return the dual solution from some solvers:
 
   * EqualityConstrainedQP (`#13394`_)
-  * Gurobi (`#13377`_, `#13404`_)
+  * Gurobi (`#13377`_, `#13404`_, `#13490`_)
   * IPOPT (`#13402`_)
   * OSQP (`#13347`_)
+  * SNOPT (`#13511`_)
 
-* In Solve and ChooseBestSolver, skip unconfigured commercial solvers (`#13279`_)
-* Obey SNOPT string options (`#13397`_)
+* Add GetInfeasibleConstraints to MathematicalProgramResult (`#13417`_)
 * Add alternative convex Eval functions to LorentzConeConstraint (`#13458`_)
 
 Fixes
 
+* Obey SNOPT string options (`#13397`_)
+* In Solve and ChooseBestSolver, skip unconfigured commercial solvers (`#13279`_)
 * Fix symbolic::Expression::Expand() (`#13503`_)
 
 Multibody Dynamics
@@ -445,12 +447,8 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
 
 * parsing: Added ball and universal joints to sdf parser (`#13427`_)  # Also expanded tests for all joint types
-* add dual solution for Gurobi QCP (`#13490`_)
 * Add meshcat animation (and binder tutorial) (`#13513`_)  # Relates to #12645.  This is our current best solution given the discussion with @rdeits.
 * Simple planar two degree-of-freedom test for CalcBiasAcceleration() (`#13406`_)
 * parsing: Added ball and universal joints to urdf parser (`#13516`_)  # Also made parsing tests more complete Fixes #13515 Co-authored-by: Michelle Tan <mtan123456789@gmail.com>
 * py analysis: Bind Simulator.get_system (`#13525`_)
-* Retrive dual solutions for SnoptSolver (`#13511`_)
 * Bind ContextBase cache control methods (`#13528`_)  # .
-* Add GetInfeasibleConstraints (`#13417`_)  # Add GetInfeasibleConstraints which returns a vector of Binding objects for the infeasible constraints, useful when debugging infeasible mathematical optimization problems.
-
