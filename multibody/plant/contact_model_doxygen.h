@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref drake_contacts.  */
+
 /** @defgroup drake_contacts   Contact Modeling in Drake
     @ingroup multibody
 

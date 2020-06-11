@@ -1,3 +1,7 @@
+/** @file
+ Doxygen-only documentation for @ref multibody_notation, 
+ @ref multibody_spatial_inertia.  */
+
 // Developers: the subsections here can be linkably referenced from your Doxygen
 // comments using
 //    @ref group_name.
