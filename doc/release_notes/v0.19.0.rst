@@ -80,6 +80,7 @@ New features
 * Add PoseBundle::get_transform and set_transform (`#13327`_) 
 * Add PoseVector::get_transform and set_transform (`#13327`_) 
 * MultibodyPlant::set_penetration_allowance can be called pre-Finalize (`#13435`_)
+* Add ball and universal joints to URDF and SDFormat parsers (`#13427`_, `#13516`_)
 * Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)
 * Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
 * Store GeometryProoperties diffuse color using Rgba, not Vector4d (`#13441`_, `#13456`_)
@@ -448,7 +449,5 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
 
-* parsing: Added ball and universal joints to sdf parser (`#13427`_)  # Also expanded tests for all joint types
 * Add meshcat animation (and binder tutorial) (`#13513`_)  # Relates to #12645.  This is our current best solution given the discussion with @rdeits.
 * Simple planar two degree-of-freedom test for CalcBiasAcceleration() (`#13406`_)
-* parsing: Added ball and universal joints to urdf parser (`#13516`_)  # Also made parsing tests more complete Fixes #13515 Co-authored-by: Michelle Tan <mtan123456789@gmail.com>
