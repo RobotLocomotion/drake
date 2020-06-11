@@ -21,20 +21,6 @@ class IiwaCommandReceiverTest : public testing::Test {
         context_(*context_ptr_),
         fixed_input_(FixInput()) {}
 
-  void UpdateFallbackValue() {
-    auto events = dut_.AllocateCompositeEventCollection();
-    double next_event_time = dut_.CalcNextUpdateTime(context_, events.get());
-    if (next_event_time == context_.get_time()) {
-      const auto& discrete_events = events->get_discrete_update_events();
-      DRAKE_THROW_UNLESS(discrete_events.HasEvents());
-      auto discrete_vars = dut_.AllocateDiscreteVariables();
-      dut_.CalcDiscreteVariableUpdates(context_, discrete_events,
-                                       discrete_vars.get());
-      dut_.ApplyDiscreteVariableUpdate(discrete_events, discrete_vars.get(),
-                                       &context_);
-    }
-  }
-
   // For use only by our constructor.
   systems::FixedInputPortValue& FixInput() {
     return dut_.get_message_input_port().FixValue(
@@ -121,7 +107,7 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithLatching) {
 
   // Once an update event occurs, further changes to position_measured have no
   // effect.
-  UpdateFallbackValue();
+  dut_.LatchInitialPosition(&context_);
   const VectorXd q2 = VectorXd::LinSpaced(N, 0.3, 0.4);
   dut_.get_position_measured_input_port().FixValue(&context_, q2);
   EXPECT_TRUE(CompareMatrices(position(), q1));
