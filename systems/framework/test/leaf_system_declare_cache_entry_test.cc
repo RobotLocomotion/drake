@@ -9,7 +9,8 @@ namespace {
 GTEST_TEST(LeafSystemDeclareCacheEntryTest, AcceptanceTest) {
   test::PublicLeafSystem<double> dut;
   dut.DeclareCacheEntry<std::string>(
-      "foo", [](const Context<double>&, std::string* value) {
+      "foo_port", std::string(),
+      [](const Context<double>&, std::string* value) {
         *value = "foo";
       });
 }
