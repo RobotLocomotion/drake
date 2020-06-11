@@ -39,7 +39,7 @@ New features
 
 * Suppress symbolic feedthrough check if non-default output prerequisites were specified (`#13370`_)
 * Use Eigen's formatting in VectorBase::operator<<() (`#13365`_, `#13384`_, `#13464`_)
-* Offer DiscreteDerivative option to disable transient (`#13336`_)
+* Offer DiscreteDerivative option to disable output transient (`#13336`_)
 * Add step doubling for implicit Euler error estimation (`#13224`_)
 
 Fixes
