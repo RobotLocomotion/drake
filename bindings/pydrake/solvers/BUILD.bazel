@@ -199,6 +199,18 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "sdpa_free_format_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["sdpa_free_format_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+    ],
+)
+
+drake_pybind_library(
     name = "snopt_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -224,6 +236,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":nlopt_py",
     ":osqp_py",
     ":scs_py",
+    ":sdpa_free_format_py",
     ":snopt_py",
 ]
 
@@ -344,6 +357,14 @@ drake_py_unittest(
     deps = [
         ":mixed_integer_optimization_util_py",
         "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "sdpa_free_format_test",
+    deps = [
+        ":sdpa_free_format_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
