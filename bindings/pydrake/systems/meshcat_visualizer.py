@@ -40,6 +40,7 @@ with warnings.catch_warnings():
     import meshcat
 import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
+from meshcat.animation import Animation
 
 _DEFAULT_PUBLISH_PERIOD = 1 / 30.
 
@@ -250,6 +251,10 @@ class MeshcatVisualizer(LeafSystem):
         self.DeclarePeriodicPublish(draw_period, 0.0)
         self.draw_period = draw_period
 
+        # Recording.
+        self._is_recording = False
+        self.reset_recording()
+
         # Pose bundle (from SceneGraph) input port.
         # TODO(tehbelinda): Rename the `lcm_visualization` port to match
         # SceneGraph once its output port has been updated. See #12214.
@@ -379,8 +384,45 @@ class MeshcatVisualizer(LeafSystem):
             # The MBP parsers only register the plant as a nameless source.
             # TODO(russt): Use a more textual naming convention here?
             pose_matrix = pose_bundle.get_transform(frame_i)
-            self.vis[self.prefix][source_name][str(model_id)][frame_name]\
-                .set_transform(pose_matrix.GetAsMatrix4())
+            cur_vis = (
+                self.vis[self.prefix][source_name][str(model_id)][frame_name])
+            cur_vis.set_transform(pose_matrix.GetAsMatrix4())
+            if self._is_recording:
+                with self._animation.at_frame(
+                        cur_vis, self._recording_frame_num) as cur_vis_frame:
+                    cur_vis_frame.set_transform(pose_matrix.GetAsMatrix4())
+
+        if self._is_recording:
+            self._recording_frame_num += 1
+
+    def start_recording(self):
+        """
+        Sets a flag to record future publish events as animation frames.
+        """
+        # Note: This syntax was chosen to match PyPlotVisualizer.
+        self._is_recording = True
+
+    def stop_recording(self):
+        """
+        Disables the recording of future publish events.
+        """
+        # Note: This syntax was chosen to match PyPlotVisualizer.
+        self._is_recording = False
+
+    def publish_recording(self):
+        """
+        Publish any recorded animation to Meshcat.  Use the controls dialog
+        in the browser to review it.
+        """
+        self.vis.set_animation(self._animation)
+
+    def reset_recording(self):
+        """
+        Resets all recorded data.
+        """
+        # Note: This syntax was chosen to match PyPlotVisualizer.
+        self._animation = Animation(default_framerate=1./self.draw_period)
+        self._recording_frame_num = 0
 
 
 class MeshcatContactVisualizer(LeafSystem):

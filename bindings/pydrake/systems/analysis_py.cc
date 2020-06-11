@@ -170,7 +170,9 @@ PYBIND11_MODULE(analysis, m) {
             &Simulator<T>::get_actual_realtime_rate,
             doc.Simulator.get_actual_realtime_rate.doc)
         .def("ResetStatistics", &Simulator<T>::ResetStatistics,
-            doc.Simulator.ResetStatistics.doc);
+            doc.Simulator.ResetStatistics.doc)
+        .def("get_system", &Simulator<T>::get_system, py_reference,
+            doc.Simulator.get_system.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const char* const reset_integrator_doc =

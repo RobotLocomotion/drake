@@ -1,6 +1,7 @@
 boto3
 jupyter
 pandas
-# Excluded due to https://github.com/sphinx-doc/sphinx/issues/6225
-Sphinx != 2.0.0
+# 2.0.0 excluded due to https://github.com/sphinx-doc/sphinx/issues/6225
+# TODO(jamiesnape): Fix pydrake_sphinx_extension for Sphinx 3.1.0 and above.
+Sphinx != 2.0.0,<3.1.0
 sphinx_rtd_theme

@@ -266,12 +266,15 @@ kcov
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debuggging symbols, and produce nicely formatted browse-able coverage reports.
 
+Drake's ``kcov`` build system integration is only supported on Ubuntu, not
+macOS.
+
 To use kcov, you must first run Drake's ``install_prereqs`` setup script using
 the ``--with-kcov`` option.
 
-To analyze test coverage, run the tests under ``kcov``::
+To analyze test coverage, run one (or more) tests under ``kcov``::
 
-  bazel test --config kcov //...
+  bazel test --config=kcov common:polynomial_test
 
 Note that it disables compiler-optimization (``-O0``) to have a better and more
 precise coverage report.  If you have trouble with kcov and unoptimized programs,
@@ -279,12 +282,3 @@ you can turn it back on by also supplying ``--copt -O2``.
 
 The coverage report is written to the ``drake/bazel-kcov`` directory.  To
 view it, browse to ``drake/bazel-kcov/index.html``.
-
-kcov on macOS
-~~~~~~~~~~~~~
-
-Be sure that your account has developer mode enabled, which gives you the
-privileges necessary to run debuggers and similar tools. If you are an
-administrator, use this command::
-
-  sudo /usr/sbin/DevToolsSecurity --enable

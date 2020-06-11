@@ -83,7 +83,17 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
+        visualizer.start_recording()
         simulator.AdvanceTo(.1)
+        visualizer.stop_recording()
+        # Should have animation "clips" for both bodies.
+        # See https://github.com/rdeits/meshcat-python/blob/c4ef22c84336d6a8eaab682f73bb47cfca5d5779/src/meshcat/animation.py#L100  # noqa
+        self.assertEqual(len(visualizer._animation.clips), 2)
+        # After .1 seconds, we should have had 4 publish events.
+        self.assertEqual(visualizer._recording_frame_num, 4)
+        visualizer.publish_recording()
+        visualizer.reset_recording()
+        self.assertEqual(len(visualizer._animation.clips), 0)
 
     def test_kuka(self):
         """Kuka IIWA with mesh geometry."""
