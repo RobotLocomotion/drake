@@ -827,8 +827,36 @@ MultibodyPlant<symbolic::Expression>::member_scene_graph() {
 }
 
 template <typename T>
+int MultibodyPlant<T>::num_collision_geometries() const {
+  // The model must NOT be finalized.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!geometry_source_is_registered()) return 0;
+
+  return const_cast<MultibodyPlant<T>*>(this)
+      ->member_scene_graph()
+      .model_inspector()
+      .NumGeometriesWithRole(geometry::Role::kProximity);
+}
+
+// This does *not* support symbolic::Expression because SceneGraph does *not*
+// support symbolic::Expression.
+template <>
+int MultibodyPlant<symbolic::Expression>::num_collision_geometries() const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+template <typename T>
 int MultibodyPlant<T>::num_collision_geometries(
     const systems::Context<T>& context) const {
+  if(!geometry_source_is_registered()) return 0;
+
+  if(!get_geometry_query_input_port().HasValue(context)) {
+    throw std::runtime_error("MultibodyPlant is registered as a source for"
+    " SceneGraph, but the `geometry_query` input port is not connected.");
+  }
+
   return get_geometry_query_input_port()
       .template Eval<geometry::QueryObject<T>>(context)
       .inspector()

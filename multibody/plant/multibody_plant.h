@@ -3595,20 +3595,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This method can only be called pre-finalize in the lifetime of `this`
   /// plant, see Finalize(). For post-finalize queries, see
   /// num_collision_geometries(const systems::Context<T>&).
-  int num_collision_geometries() const {
-    // The model must NOT be finalized.
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    return const_cast<MultibodyPlant<T>*>(this)
-        ->member_scene_graph()
-        .model_inspector()
-        .NumGeometriesWithRole(geometry::Role::kProximity);
-  }
+  /// If `this` MultibodyPlant has not registered as a source for
+  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
+  /// will return 0.
+  int num_collision_geometries() const;
 
   /// Returns the number of geometries registered for contact modeling.
   /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, so long as a systems::Context is available
-  /// and `this` plant has been registered as a source for geometry::SceneGraph,
-  /// see RegisterAsSourceForSceneGraph().
+  /// either pre- or post-finalize, so long as a systems::Context is available.
+  /// If `this` MultibodyPlant has not registered as a source for
+  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
+  /// will return 0. If `this` plant *has* been registered as a source for
+  /// geometry::SceneGraph, this method will report the number of geometries
+  /// registered with the role geometry::Role::kProximity.
+  /// @throws std::runtime_error if `this` plant is registered as a source for
+  /// geometry::SceneGraph, but its `geometry_query` InputPort is not connected.
   int num_collision_geometries(const systems::Context<T>& context) const;
 
   /// Returns the unique id identifying `this` plant as a source for a
@@ -4561,6 +4562,8 @@ struct AddMultibodyPlantSceneGraphResult final {
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
+template <>
+int MultibodyPlant<symbolic::Expression>::num_collision_geometries() const;
 template <>
 int MultibodyPlant<symbolic::Expression>::num_collision_geometries(
     const systems::Context<symbolic::Expression>&) const;

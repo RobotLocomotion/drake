@@ -662,8 +662,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetCollisionGeometriesForBody",
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
             py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
-        .def("num_collision_geometries", &Class::num_collision_geometries,
-            cls_doc.num_collision_geometries.doc)
+        .def("num_collision_geometries",
+            overload_cast_explicit<int>(&Class::num_collision_geometries),
+            py_reference_internal, cls_doc.num_collision_geometries.doc_0args)
+        .def("num_collision_geometries",
+            overload_cast_explicit<int, const systems::Context<T>&>(
+                &Class::num_collision_geometries),
+            py::arg("context"), py_reference_internal,
+            cls_doc.num_collision_geometries.doc_1args)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
             py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
 #pragma GCC diagnostic push
