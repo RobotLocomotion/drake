@@ -141,6 +141,8 @@ Newly bound
 * bindings: Add bindings for SpatialInertia methods (`#13478`_)
 * bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
 * bindings: py mbp, geometry: Bind __repr__ for indices + elements (`#13489`_)
+* Bind Simulator.get_system (`#13525`_)
+* Bind ContextBase cache control methods (`#13528`_)
 
 Fixes
 
@@ -450,5 +452,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * Add meshcat animation (and binder tutorial) (`#13513`_)  # Relates to #12645.  This is our current best solution given the discussion with @rdeits.
 * Simple planar two degree-of-freedom test for CalcBiasAcceleration() (`#13406`_)
 * parsing: Added ball and universal joints to urdf parser (`#13516`_)  # Also made parsing tests more complete Fixes #13515 Co-authored-by: Michelle Tan <mtan123456789@gmail.com>
-* py analysis: Bind Simulator.get_system (`#13525`_)
-* Bind ContextBase cache control methods (`#13528`_)  # .
