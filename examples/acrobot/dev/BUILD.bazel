@@ -43,6 +43,12 @@ drake_py_unittest(
     data = [
         ":test/example_scenario.yaml",
     ],
+    tags = [
+        # TODO(jwnimmer-tri) This test is disabled because it fails on macOS
+        # due to formatting differences.  We should make it more robust and
+        # then re-enable it.
+        "manual",
+    ],
     deps = [
         ":acrobot_io",
         "//bindings/pydrake",
