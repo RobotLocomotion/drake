@@ -850,11 +850,12 @@ int MultibodyPlant<symbolic::Expression>::num_collision_geometries() const {
 template <typename T>
 int MultibodyPlant<T>::num_collision_geometries(
     const systems::Context<T>& context) const {
-  if(!geometry_source_is_registered()) return 0;
+  if (!geometry_source_is_registered()) return 0;
 
-  if(!get_geometry_query_input_port().HasValue(context)) {
-    throw std::runtime_error("MultibodyPlant is registered as a source for"
-    " SceneGraph, but the `geometry_query` input port is not connected.");
+  if (!get_geometry_query_input_port().HasValue(context)) {
+    throw std::runtime_error(
+        "MultibodyPlant is registered as a source for"
+        " SceneGraph, but the `geometry_query` input port is not connected.");
   }
 
   return get_geometry_query_input_port()

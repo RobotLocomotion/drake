@@ -1930,7 +1930,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       std::make_unique<MultibodyPlant<AutoDiffXd>>(plant);
 
   std::unique_ptr<SceneGraph<AutoDiffXd>> scene_graph_autodiff_unique_ptr =
-      std::make_unique<SceneGraph<AutoDiffXd>>(scene_graph);
+      systems::System<double>::ToAutoDiffXd<SceneGraph>(scene_graph);
 
   systems::DiagramBuilder<AutoDiffXd> builder_autodiff;
   MultibodyPlant<AutoDiffXd>* plant_autodiff_ptr =
