@@ -99,7 +99,7 @@ Tutorials and examples
 
 * Add tutorial on updating costs/constraints in mathematical program (`#13328`_)
 * Add meshcat animation (and binder tutorial) (`#13513`_)
-* Add Strandbeest example (`#13302`_)
+* Add Strandbeest example (to illustrate parsing LinearBushingRollPitchYaw) (`#13302`_)
 * Add guidance for picking bushing stiffness/damping constants (`#13106`_)
 
 Miscellaneous features and fixes
