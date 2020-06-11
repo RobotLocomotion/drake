@@ -36,13 +36,13 @@ namespace kuka_iiwa {
 /// This system is presently only used in simulation. The robot hardware drivers
 /// publish directly to LCM and do not make use of this system.
 ///
-/// @system { IiwaStatusSender,
+/// @system{IiwaStatusSender,
 ///   @input_port{position_commanded}
 ///   @input_port{position_measured}
 ///   @input_port{velocity_estimated (optional)}
 ///   @input_port{torque_commanded}
 ///   @input_port{torque_measured (optional)}
-///   @input_port{torque_external (optional)}
+///   @input_port{torque_external (optional)},
 ///   @output_port{lcmt_iiwa_status}
 /// }
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.

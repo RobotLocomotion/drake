@@ -27,9 +27,9 @@ namespace kuka_iiwa {
 /// It has two output ports: one for the commanded position for each joint, and
 /// one for commanded additional feedforward joint torque.
 ///
-/// @system { IiwaCommandReceiver,
+/// @system{IiwaCommandReceiver,
 ///   @input_port{lcmt_iiwa_command}
-///   @input_port{position_measured}
+///   @input_port{position_measured (optional)},
 ///   @output_port{position}
 ///   @output_port{torque}
 /// }
