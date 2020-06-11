@@ -441,4 +441,21 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
-  Current newest_commit 97cb756fd02471c20261adfad77fcf26c433cd40 (inclusive).
+  Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
+
+* parsing: Added ball and universal joints to sdf parser (`#13427`_)  # Also expanded tests for all joint types
+* Add GCC 9.3 on Focal to the support matrix (`#13487`_)
+* Update supported Xcode version (`#13487`_)
+* Add Focal-based Dockerfile for Docker Hub (`#13508`_)
+* add dual solution for Gurobi QCP (`#13490`_)
+* Add meshcat animation (and binder tutorial) (`#13513`_)  # Relates to #12645.  This is our current best solution given the discussion with @rdeits.
+* Simple planar two degree-of-freedom test for CalcBiasAcceleration() (`#13406`_)
+* parsing: Added ball and universal joints to urdf parser (`#13516`_)  # Also made parsing tests more complete Fixes #13515 Co-authored-by: Michelle Tan <mtan123456789@gmail.com>
+* doc: Clarify that kcov is not supported on macOS (`#13521`_)  # Change the example invocation to run one test -- running the whole source tree takes 10+ hours.
+* py analysis: Bind Simulator.get_system (`#13525`_)
+* setup: Remove kcov prereq on macOS (`#13522`_)  # Drake does not support kcov build system integration on macOS.
+* Retrive dual solutions for SnoptSolver (`#13511`_)
+* Bind ContextBase cache control methods (`#13528`_)  # .
+* Add GetInfeasibleConstraints (`#13417`_)  # Add GetInfeasibleConstraints which returns a vector of Binding objects for the infeasible constraints, useful when debugging infeasible mathematical optimization problems.
+* yaml: Convert read_archive_test to be value-parameterized (`#13533`_)  # This paves the way for dealing with parser options in a future commit. While we're here, also add a few clean-ups: - EigenStruct and MapStruct have a non-empty default values, to prove that it gets overwritten in empty-yaml cases. - More SCOPED_TRACE for better debugging. - Small comment tidying.
+* Port TRI monte carlo acrobot demo into drake example (`#13375`_)  # * Monte carlo acrobot demo from TRI Co-authored-by: Grant Gould <ggould@tri.global> Co-authored-by: Sam Creasey <sam.creasey@tri.global> Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global> Co-authored-by: Andrés K. Valenzuela <andres.valenzuela@tri.global> This removes the python implementation pending #13494
