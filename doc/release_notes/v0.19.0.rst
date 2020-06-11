@@ -123,17 +123,28 @@ New features
 
 Newly bound
 
+* pydrake.geometry.Convex.filename (`#13352`_)
+* pydrake.geometry.Convex.scale (`#13352`_)
+* pydrake.geometry.Mesh.filename (`#13352`_)
+* pydrake.geometry.Mesh.scale (`#13352`_)
+* pydrake.geometry.QueryObject.HasCollisions (`#13342`_)
+* pydrake.geometry.Shape.Clone (`#13361`_)
+* pydrake.multibody.plant.MultibodyPlant.HasModelInstanceNamed (`#13342`_)
+* pydrake.multibody.plantMultibodyPlant.time_step (`#13355`_)
+* pydrake.multibody.tree.Joint.default_positions (`#13342`_)
+* pydrake.multibody.tree.Joint.set_acceleration_limits (`#13342`_)
+* pydrake.multibody.tree.Joint.set_default_positions (`#13342`_)
+* pydrake.multibody.tree.Joint.set_position_limits (`#13342`_)
+* pydrake.multibody.tree.Joint.set_velocity_limits (`#13342`_)
+* pydrake.systems.analysis.PrintSimulatorStatistics (`#13343`_)
+* pydrake.systems.analysis.Simulator.ResetStatistics (`#13343`_)
+* pydrake.systems.analysis.Simulator.get_system (`#13525`_)
+* pydrake.systems.framework.Diagram.GetSystems (`#13363`_)
+* pydrake.systems.framework.InputPort.get_system (`#13363`_)
+* pydrake.systems.framework.OutputPort.get_system (`#13363`_)
 * std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::AutoDiffXd>> (`#13359`_)
 * std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::symbolic::Expression>> (`#13359`_)
-* TBD
-* bindings: py geom, mbp: Bind miscellaneous missing methods (`#13342`_)
-* bindings: py geometry: Bind SceneGraphInspector::CloneGeometryInstance (`#13338`_)
-* bindings: py geometry: Bind Mesh and Convex accessors (`#13352`_)
-* bindings: pydrake: Added some simulator bindings (`#13343`_)
-* bindings: py mbp: Bind MultibodyPlant.time_step() (`#13355`_)
-* bindings: py geometry: Bind GeometryInstance.set_name (`#13351`_)
-* bindings: py geometry: Bind Shape.Clone() (`#13361`_)
-* bindings: py systems: Bind system accessors (`#13363`_)  # - Diagram.GetSystems() - InputPort.get_system() - OutputPort.get_system()
+* TBD below
 * bindings: pydrake: Collision filtering bindings (`#13358`_)  # Add pydrake bindings for GeometrySet, CollectRegisteredGeometries, collision filtering API.
 * bindings: py mbp: Bind accessors for inertias (`#13415`_)
 * bindings: py geometry: Bind HalfSpace.MakePose (`#13414`_)
@@ -143,7 +154,6 @@ Newly bound
 * bindings: Add bindings for SpatialInertia methods (`#13478`_)
 * bindings: pydrake manipulation: Add bindings for schunk wsg systems (`#13470`_)
 * bindings: py mbp, geometry: Bind __repr__ for indices + elements (`#13489`_)
-* Bind Simulator.get_system (`#13525`_)
 * Bind ContextBase cache control methods (`#13528`_)
 
 Fixes
