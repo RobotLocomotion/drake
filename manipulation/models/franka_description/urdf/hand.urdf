@@ -17,7 +17,7 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 -0.06 0.0"/>
+      <origin rpy="0 0 0" xyz="0 -0.06 0.015"/>
       <geometry>
         <sphere radius="0.05"/>
       </geometry>
