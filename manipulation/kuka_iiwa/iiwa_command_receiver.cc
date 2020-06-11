@@ -21,11 +21,14 @@ using systems::DiscreteUpdateEvent;
 using systems::InputPortIndex;
 using systems::NumericParameterIndex;
 
+using InPort = systems::InputPort<double>;
+using OutPort = systems::OutputPort<double>;
+
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
   DRAKE_THROW_UNLESS(num_joints > 0);
-  const auto* const message_port = &DeclareAbstractInputPort(
+  const InPort* const message_port = &DeclareAbstractInputPort(
       "lcmt_iiwa_command", Value<lcmt_iiwa_command>());
-  const auto* const position_measured_port = &DeclareInputPort(
+  const InPort* const position_measured_port = &DeclareInputPort(
       "position_measured", systems::kVectorValued, num_joints);
 
   // This (deprecated) parameter stores a value to use for the initial position
@@ -33,7 +36,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
   //
   // On 2020-09-01 when we remove the set_initial_position method, we should
   // also remove this cache entry and parameter and just use the input port
-  // directly (or use zero when the port is not connected).
+  // directly (and use zero when the port is not connected).
   const NumericParameterIndex initial_state_param{
       DeclareNumericParameter(BasicVector<double>(VectorXd::Zero(num_joints)))};
   const CacheEntry* const position_measured_or_param =
@@ -138,14 +141,12 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
       {fused_input_and_state->ticket()});
 }
 
-using InPort = systems::InputPort<double>;
 const InPort& IiwaCommandReceiver::get_message_input_port() const {
   return LeafSystem<double>::get_input_port(0);
 }
 const InPort& IiwaCommandReceiver::get_position_measured_input_port() const {
   return LeafSystem<double>::get_input_port(1);
 }
-using OutPort = systems::OutputPort<double>;
 const OutPort& IiwaCommandReceiver::get_commanded_position_output_port() const {
   return LeafSystem<double>::get_output_port(0);
 }
@@ -162,13 +163,13 @@ namespace {
 void DoLatchInitialPosition(
     const InPort& position_measured,
     const systems::Context<double>& context,
-    DiscreteValues<double>* new_discrete_values) {
+    DiscreteValues<double>* next_values) {
   const VectorXd positions =
       position_measured.HasValue(context)
       ? position_measured.Eval(context)
       : context.get_numeric_parameter(0).get_value();
-  new_discrete_values->get_mutable_vector(0).get_mutable_value()[0] = 1.0;
-  new_discrete_values->get_mutable_vector(1).get_mutable_value() = positions;
+  next_values->get_mutable_vector(0).get_mutable_value()[0] = 1.0;
+  next_values->get_mutable_vector(1).get_mutable_value() = positions;
 }
 }  // namespace
 
@@ -193,16 +194,16 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
     return;
   }
 
-  // Schedule a discrete update event at now to set the position command.
+  // Schedule a discrete update event at now to latch the current position.
   *time = context.get_time();
   auto& discrete_events = events->get_mutable_discrete_update_events();
+  const InPort* const position_measured = &get_position_measured_input_port();
   discrete_events.add_event(std::make_unique<DiscreteUpdateEvent<double>>(
-      [this](
+      [position_measured](
           const Context<double>& event_context,
           const DiscreteUpdateEvent<double>&,
-          DiscreteValues<double>* new_discrete_values) {
-        DoLatchInitialPosition(this->get_position_measured_input_port(),
-            event_context, new_discrete_values);
+          DiscreteValues<double>* next_values) {
+        DoLatchInitialPosition(*position_measured, event_context, next_values);
       }));
 }
 
