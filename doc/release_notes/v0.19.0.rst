@@ -407,10 +407,12 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13413: https://github.com/RobotLocomotion/drake/pull/13413
 .. _#13414: https://github.com/RobotLocomotion/drake/pull/13414
 .. _#13415: https://github.com/RobotLocomotion/drake/pull/13415
+.. _#13417: https://github.com/RobotLocomotion/drake/pull/13417
 .. _#13418: https://github.com/RobotLocomotion/drake/pull/13418
 .. _#13422: https://github.com/RobotLocomotion/drake/pull/13422
 .. _#13423: https://github.com/RobotLocomotion/drake/pull/13423
 .. _#13425: https://github.com/RobotLocomotion/drake/pull/13425
+.. _#13427: https://github.com/RobotLocomotion/drake/pull/13427
 .. _#13428: https://github.com/RobotLocomotion/drake/pull/13428
 .. _#13429: https://github.com/RobotLocomotion/drake/pull/13429
 .. _#13430: https://github.com/RobotLocomotion/drake/pull/13430
@@ -442,11 +444,20 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13481: https://github.com/RobotLocomotion/drake/pull/13481
 .. _#13484: https://github.com/RobotLocomotion/drake/pull/13484
 .. _#13486: https://github.com/RobotLocomotion/drake/pull/13486
+.. _#13487: https://github.com/RobotLocomotion/drake/pull/13487
 .. _#13489: https://github.com/RobotLocomotion/drake/pull/13489
+.. _#13490: https://github.com/RobotLocomotion/drake/pull/13490
 .. _#13502: https://github.com/RobotLocomotion/drake/pull/13502
 .. _#13503: https://github.com/RobotLocomotion/drake/pull/13503
+.. _#13508: https://github.com/RobotLocomotion/drake/pull/13508
+.. _#13511: https://github.com/RobotLocomotion/drake/pull/13511
+.. _#13513: https://github.com/RobotLocomotion/drake/pull/13513
+.. _#13516: https://github.com/RobotLocomotion/drake/pull/13516
+.. _#13521: https://github.com/RobotLocomotion/drake/pull/13521
+.. _#13522: https://github.com/RobotLocomotion/drake/pull/13522
+.. _#13525: https://github.com/RobotLocomotion/drake/pull/13525
+.. _#13528: https://github.com/RobotLocomotion/drake/pull/13528
 
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
-
