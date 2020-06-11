@@ -14,6 +14,11 @@ Announcements
 
       ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
 
+* This release adds support for Ubuntu 20.04 ("Focal Fossa").
+
+  * Drake binary packages are available for 20.04, but Docker images are not.
+  * Our recommended Ubuntu platform is still Ubuntu 18.04 ("Bionic Beaver").
+
 Breaking changes since v0.18.0
 ------------------------------
 
