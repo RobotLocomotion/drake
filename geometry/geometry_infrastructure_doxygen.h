@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref geometry_infrastructure.  */
+
 namespace drake {
 namespace geometry {
 

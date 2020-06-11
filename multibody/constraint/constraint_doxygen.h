@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref constraint_overview */
+
 /** @addtogroup constraint_overview
 
 This documentation describes the types of multibody constraints supported in

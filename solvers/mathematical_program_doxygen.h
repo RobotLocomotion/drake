@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref solvers.  */
+
 /** @addtogroup solvers
  * @{
  * Drake's MathematicalProgram class is used to solve the mathematical
