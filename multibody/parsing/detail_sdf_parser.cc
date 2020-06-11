@@ -472,24 +472,28 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // If this ever happens (see #12703), this logic will be *greatly*
   // simplified.
 
-  // Record all model instances beforehand.
-  // N.B. This could be done by iterating by indices, but that seems
-  // rather leaky.
-  auto old_model_instances = GetModelInstanceSet(*plant);
-
-  ModelInstanceIndex main_model_instance;
+  std::vector<ModelInstanceIndex> new_model_instances;
   if (is_urdf) {
     // N.B. Errors will just happen via thrown exceptions.
-    main_model_instance = LoadUrdfFromFile(
+    new_model_instances = AddModelsFromUrdfFile(
         plant, include.file_path, include.absolute_model_name);
   } else {
     // N.B. Errors will just happen via thrown exceptions.
     DRAKE_DEMAND(is_forced_nesting);
-    main_model_instance = LoadSdfFromFile(
+    new_model_instances = AddModelsFromSdfFile(
         plant, include.file_path, include.absolute_model_name);
   }
-  auto new_model_instances = GetModelInstanceSet(*plant) - old_model_instances;
-  DRAKE_DEMAND(new_model_instances.count(main_model_instance) > 0);
+  DRAKE_DEMAND(new_model_instances.size() > 0);
+  const ModelInstanceIndex main_model_instance = new_model_instances[0];
+
+  auto& get_model_frame = [&](ModelInstanceIndex model) {
+    if (plant->HasFrameNamed("__model__", model)) {
+      return plant->GetFrameByName("__model__", model);
+    } else {
+      auto* link = GetModelLinks(plant, model)[0];
+      return link->body_frame();
+    }
+  };
 
   // And because we don't have great composition, I need to go through and do
   // hacks to override default initial poses.
@@ -498,11 +502,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   //  * Measure delta between that and the overriding pose.
   //  * Apply delta to each individual body's default pose :(
   RigidTransformd X_WMdesired = ResolvePose(include.pose);
-  const Framed& main_model_frame = plant->GetFrameByName(
-      "__model__", main_model_instance);
+  const Frame<double>& main_model_frame = get_model_frame(main_model_instance);
   RigidTransformd X_WMparsed =
-      plant->GetDefaultPose(main_model_frame.link()) *
-      main_model_frame.GetParentTransform();
+      plant->GetDefaultFreeBodyPose(main_model_frame.body()) *
+      main_model_frame.GetFixedPoseInBodyFrame();
   RigidTransformd X_ParsedDesired = X_WMparsed.inverse() * X_WMdesired;
 
   // This will be populated for the first model instance.
@@ -541,10 +544,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     const std::string absolute_name = plant->GetModelInstanceName(model);
     const auto [absolute_parent_name, local_name] = SplitName(absolute_name);
 
-    auto links = GetModelLinks(plant, model);
-    DRAKE_DEMAND(links.size() > 0);
-    auto& canonical_link = *links[0];
-    auto& model_frame = canonical_link->body_frame();
+    auto& model_frame = get_model_frame(model);
+    auto& canonical_link = model_frame.body();
 
     auto interface_model = std::make_shared<sdf::InterfaceModel>(
         local_name,
@@ -554,7 +555,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         frame_to_interface_frame(model_frame, "__model__"));
 
     // Record all frames.
-    for (auto* link : links) {
+    for (auto* link : GetModelLinks(plant, model)) {
       if (link == &canonical_link) {
         // Already added.
         continue;
@@ -581,9 +582,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     return interface_model;
   };
 
-  // This assumes it will parse in order?
+  // N.B. For hierarchy, this assumes that "parent" models are defined before
+  // their "child" models.
   for (auto model : new_model_instances) {
-    sdf::InterfaceModel interface_model = add_model(model);
+    add_model(model);
   }
 
   return main_interface_model;
@@ -598,11 +600,12 @@ std::string LoadSdf(
 
   const std::string full_path = GetFullPath(file_name);
   // Load the SDF file.
-  // WARNING: This means that failed parsing should invalidate the plant
-  // forever?
-  root->RegisterNestedModelParser(
-    [plant](sdf::NestedInclude include) {
-      return ParseNestedInterfaceModel(plant, include);
+  // WARNING: This will "invalidate" a plant if there is attempted recovery
+  // after an exception is thrown. However, this is probably the case for
+  // normal URDF and SDFormat parsing.
+  root->registerCustomModelParser(
+    [plant](sdf::NestedInclude include, sdf::Errors& errors) {
+      return ParseNestedInterfaceModel(plant, include, errors);
     });
   ThrowAnyErrors(root->Load(full_path));
 
