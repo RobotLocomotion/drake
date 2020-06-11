@@ -75,8 +75,7 @@ class LeafSystem : public System<T> {
     copyable_unique_ptr<AbstractValue> owned_model(
         std::make_unique<Value<ValueType>>(model_value));
     auto alloc_callback = [owned_model = std::move(owned_model)]() {
-      // Note that value initialization {} is required here.
-      return std::make_unique<Value<ValueType>>(ValueType{});
+      return owned_model->Clone();
     };
     auto calc_callback = [calc = std::move(calc)](
         const ContextBase& context, AbstractValue* result) {
