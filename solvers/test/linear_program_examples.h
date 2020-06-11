@@ -212,6 +212,13 @@ class UnboundedLinearProgramTest1 : public ::testing::Test {
  */
 void TestLPDualSolution1(const SolverInterface& solver, double tol = 1e-6);
 
+/** This LP has only bounding box constraints. */
+void TestLPDualSolution2(const SolverInterface& solver, double tol = 1e-6);
+
+/** This LP has only bounding box constraints. The decision variable is
+ * scaled.*/
+void TestLPDualSolution2Scaled(const SolverInterface& solver,
+                               double tol = 1e-6);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

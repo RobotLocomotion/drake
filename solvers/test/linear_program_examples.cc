@@ -463,6 +463,38 @@ void TestLPDualSolution1(const SolverInterface& solver, double tol) {
                                 dual_solution_expected, tol));
   }
 }
+
+void TestLPDualSolution2(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint = prog.AddBoundingBoxConstraint(Eigen::Vector2d(-1, 2),
+                                                  Eigen::Vector2d(3, 5), x);
+  prog.AddLinearCost(x[0] - x[1]);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                                Eigen::Vector2d(1, -1), tol));
+  }
+}
+
+void TestLPDualSolution2Scaled(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto constraint = prog.AddBoundingBoxConstraint(Eigen::Vector2d(-1, 2),
+                                                  Eigen::Vector2d(3, 5), x);
+  prog.AddLinearCost(x[0] - x[1]);
+  prog.SetVariableScaling(x[0], 10);
+  prog.SetVariableScaling(x[1], 0.1);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, {}, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint),
+                                Eigen::Vector2d(1, -1), tol));
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

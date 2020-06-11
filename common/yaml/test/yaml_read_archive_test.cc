@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/name_value.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -63,6 +64,10 @@ struct MapStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
+  }
+
+  MapStruct() {
+    value["NAN"] = NAN;
   }
 
   std::map<std::string, double> value;
@@ -124,6 +129,9 @@ struct EigenStruct {
   }
 
   EigenStruct() {
+    if (value.size() == 0) {
+      value.resize(1, 1);
+    }
     value.setConstant(NAN);
   }
 
@@ -162,7 +170,10 @@ namespace yaml {
 namespace {
 
 // A test fixture with common helpers.
-class YamlReadArchiveTest : public ::testing::Test {
+class YamlReadArchiveTest
+    // TODO(jwnimmer-tri) This int parameter is currently unused; replace it
+    // with test case variants.
+    : public ::testing::TestWithParam<int> {
  public:
   static YAML::Node Load(const std::string& contents) {
     const YAML::Node loaded = YAML::Load(contents);
@@ -182,6 +193,7 @@ class YamlReadArchiveTest : public ::testing::Test {
 
   template <typename Serializable>
   static Serializable AcceptNoThrow(const YAML::Node& root) {
+    SCOPED_TRACE("for type " + NiceTypeName::Get<Serializable>());
     Serializable result{};
     bool raised = false;
     std::string what;
@@ -203,7 +215,7 @@ class YamlReadArchiveTest : public ::testing::Test {
   }
 };
 
-TEST_F(YamlReadArchiveTest, Double) {
+TEST_P(YamlReadArchiveTest, Double) {
   const auto test = [](const std::string& value, double expected) {
     const auto& x = AcceptNoThrow<DoubleStruct>(LoadSingleValue(value));
     EXPECT_EQ(x.value, expected);
@@ -232,7 +244,7 @@ TEST_F(YamlReadArchiveTest, Double) {
   test("-5.6E-7", -5.6e-7);
 }
 
-TEST_F(YamlReadArchiveTest, StdArray) {
+TEST_P(YamlReadArchiveTest, StdArray) {
   const auto test = [](const std::string& value,
                        const std::array<double, 3>& expected) {
     const auto& x = AcceptNoThrow<ArrayStruct>(LoadSingleValue(value));
@@ -242,7 +254,7 @@ TEST_F(YamlReadArchiveTest, StdArray) {
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
 }
 
-TEST_F(YamlReadArchiveTest, StdVector) {
+TEST_P(YamlReadArchiveTest, StdVector) {
   const auto test = [](const std::string& value,
                        const std::vector<double>& expected) {
     const auto& x = AcceptNoThrow<VectorStruct>(LoadSingleValue(value));
@@ -252,7 +264,7 @@ TEST_F(YamlReadArchiveTest, StdVector) {
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
 }
 
-TEST_F(YamlReadArchiveTest, StdMap) {
+TEST_P(YamlReadArchiveTest, StdMap) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
     const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
@@ -263,7 +275,7 @@ TEST_F(YamlReadArchiveTest, StdMap) {
        {{"foo", 0.0}, {"bar", 1.0}});
 }
 
-TEST_F(YamlReadArchiveTest, StdMapWithMergeKeys) {
+TEST_P(YamlReadArchiveTest, StdMapWithMergeKeys) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
     const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
@@ -306,7 +318,7 @@ doc:
 )R", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
 }
 
-TEST_F(YamlReadArchiveTest, StdMapWithBadMergeKey) {
+TEST_P(YamlReadArchiveTest, StdMapWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<MapStruct>(Load(R"R(
 _template: &template 99.0
@@ -336,7 +348,7 @@ doc:
       " for std::map<[^ ]*> value\\.");
 }
 
-TEST_F(YamlReadArchiveTest, Optional) {
+TEST_P(YamlReadArchiveTest, Optional) {
   const auto test = [](const std::string& doc,
                        const std::optional<double>& expected) {
     const auto& x = AcceptNoThrow<OptionalStruct>(Load(doc));
@@ -353,7 +365,7 @@ TEST_F(YamlReadArchiveTest, Optional) {
   test("doc:\n  value: 1.0", 1.0);
 }
 
-TEST_F(YamlReadArchiveTest, Variant) {
+TEST_P(YamlReadArchiveTest, Variant) {
   const auto test = [](const std::string& doc,
                        const Variant3& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));
@@ -365,7 +377,7 @@ TEST_F(YamlReadArchiveTest, Variant) {
   test("doc:\n  value: !DoubleStruct { value: 1.0 }", DoubleStruct{1.0});
 }
 
-TEST_F(YamlReadArchiveTest, EigenVector) {
+TEST_P(YamlReadArchiveTest, EigenVector) {
   const auto test = [](const std::string& value,
                        const Eigen::VectorXd& expected) {
     const auto& vec = AcceptNoThrow<EigenVecStruct>(LoadSingleValue(value));
@@ -377,7 +389,7 @@ TEST_F(YamlReadArchiveTest, EigenVector) {
   test("[1.0, 2.0, 3.0]", Eigen::Vector3d(1.0, 2.0, 3.0));
 }
 
-TEST_F(YamlReadArchiveTest, EigenVectorX) {
+TEST_P(YamlReadArchiveTest, EigenVectorX) {
   const auto test = [](const std::string& value,
                        const Eigen::VectorXd& expected) {
     const auto& x = AcceptNoThrow<EigenVecStruct>(LoadSingleValue(value));
@@ -388,7 +400,7 @@ TEST_F(YamlReadArchiveTest, EigenVectorX) {
   test("[1.0]", Eigen::Matrix<double, 1, 1>(1.0));
 }
 
-TEST_F(YamlReadArchiveTest, EigenMatrix) {
+TEST_P(YamlReadArchiveTest, EigenMatrix) {
   using Matrix34d = Eigen::Matrix<double, 3, 4>;
   const auto test = [](const std::string& doc,
                        const Eigen::MatrixXd& expected) {
@@ -407,7 +419,7 @@ doc:
 )R", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
-TEST_F(YamlReadArchiveTest, Nested) {
+TEST_P(YamlReadArchiveTest, Nested) {
   const auto& x = AcceptNoThrow<OuterStruct>(Load(R"R(
 doc:
   outer_value: 1.0
@@ -418,7 +430,7 @@ doc:
   EXPECT_EQ(x.inner_struct.inner_value, 2.0);
 }
 
-TEST_F(YamlReadArchiveTest, NestedWithMergeKeys) {
+TEST_P(YamlReadArchiveTest, NestedWithMergeKeys) {
   const auto test = [](const std::string& doc) {
     SCOPED_TRACE("With doc = " + doc);
     const auto& x = AcceptNoThrow<OuterStruct>(Load(doc));
@@ -480,7 +492,7 @@ doc:
 )R");
 }
 
-TEST_F(YamlReadArchiveTest, NestedWithBadMergeKey) {
+TEST_P(YamlReadArchiveTest, NestedWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"R(
 _template: &template 99.0
@@ -528,7 +540,7 @@ doc:
 }
 
 // This finds nothing when a scalar was wanted, because the name had a typo.
-TEST_F(YamlReadArchiveTest, VisitScalarFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitScalarFoundNothing) {
   // This has a "_TYPO" in a field name.
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"R(
@@ -546,7 +558,7 @@ doc:
 }
 
 // This finds an array when a scalar was wanted.
-TEST_F(YamlReadArchiveTest, VisitScalarFoundArray) {
+TEST_P(YamlReadArchiveTest, VisitScalarFoundArray) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"R(
 doc:
@@ -563,7 +575,7 @@ doc:
 }
 
 // This finds a struct when a scalar was wanted.
-TEST_F(YamlReadArchiveTest, VisitScalarFoundStruct) {
+TEST_P(YamlReadArchiveTest, VisitScalarFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"R(
 doc:
@@ -590,7 +602,7 @@ TEST_F(YamlReadArchiveTest, VisitArrayFoundNothing) {
 }
 
 // This finds a scalar when a std::array was wanted.
-TEST_F(YamlReadArchiveTest, VisitArrayFoundScalar) {
+TEST_P(YamlReadArchiveTest, VisitArrayFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<ArrayStruct>(LoadSingleValue("1.0")),
       std::runtime_error,
@@ -599,7 +611,7 @@ TEST_F(YamlReadArchiveTest, VisitArrayFoundScalar) {
 }
 
 // This finds a sub-structure when a std::array was wanted.
-TEST_F(YamlReadArchiveTest, VisitArrayFoundStruct) {
+TEST_P(YamlReadArchiveTest, VisitArrayFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<ArrayStruct>(Load(R"R(
 doc:
@@ -621,7 +633,7 @@ TEST_F(YamlReadArchiveTest, VisitVectorFoundNothing) {
 }
 
 // This finds a scalar when a std::vector was wanted.
-TEST_F(YamlReadArchiveTest, VisitVectorFoundScalar) {
+TEST_P(YamlReadArchiveTest, VisitVectorFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VectorStruct>(LoadSingleValue("1.0")),
       std::runtime_error,
@@ -630,7 +642,7 @@ TEST_F(YamlReadArchiveTest, VisitVectorFoundScalar) {
 }
 
 // This finds a sub-structure when a std::vector was wanted.
-TEST_F(YamlReadArchiveTest, VisitVectorFoundStruct) {
+TEST_P(YamlReadArchiveTest, VisitVectorFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VectorStruct>(Load(R"R(
 doc:
@@ -643,7 +655,7 @@ doc:
 }
 
 // This finds a sequence when an optional<double> was wanted.
-TEST_F(YamlReadArchiveTest, VisitOptionalScalarFoundSequence) {
+TEST_P(YamlReadArchiveTest, VisitOptionalScalarFoundSequence) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OptionalStruct>(LoadSingleValue("[1.0]")),
       std::runtime_error,
@@ -652,8 +664,8 @@ TEST_F(YamlReadArchiveTest, VisitOptionalScalarFoundSequence) {
       " value\\.");
 }
 
-// This finds something untagged tag when a variant was wanted.
-TEST_F(YamlReadArchiveTest, VisitVariantFoundNoTag) {
+// This finds various untagged things when a variant was wanted.
+TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
           Load("doc:\n  inner:\n    value:")),
@@ -688,7 +700,7 @@ TEST_F(YamlReadArchiveTest, VisitVariantFoundNoTag) {
 }
 
 // This finds an unknown tag when a variant was wanted.
-TEST_F(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
+TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantStruct>(Load("doc:\n  value: !UnknownTag foo")),
       std::runtime_error,
@@ -699,7 +711,7 @@ TEST_F(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.
-TEST_F(YamlReadArchiveTest, VisitEigenFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitEigenFoundNothing) {
   const std::string value;
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenVecStruct>(LoadSingleValue(value)),
@@ -724,7 +736,7 @@ TEST_F(YamlReadArchiveTest, VisitEigenFoundNothing) {
 }
 
 // This finds a scalar when an Eigen::Vector or Eigen::Matrix was wanted.
-TEST_F(YamlReadArchiveTest, VisitEigenFoundScalar) {
+TEST_P(YamlReadArchiveTest, VisitEigenFoundScalar) {
   const std::string value{"1.0"};
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenVecStruct>(LoadSingleValue(value)),
@@ -749,7 +761,7 @@ TEST_F(YamlReadArchiveTest, VisitEigenFoundScalar) {
 }
 
 // This finds a one-dimensional Sequence when a 2-d Eigen::Matrix was wanted.
-TEST_F(YamlReadArchiveTest, VisitEigenMatrixFoundOneDimensional) {
+TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundOneDimensional) {
   const std::string value{"[1.0, 2.0, 3.0, 4.0]"};
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(LoadSingleValue(value)),
@@ -766,7 +778,7 @@ TEST_F(YamlReadArchiveTest, VisitEigenMatrixFoundOneDimensional) {
 }
 
 // This finds a non-square (4+4+3) matrix, when an Eigen::Matrix was wanted.
-TEST_F(YamlReadArchiveTest, VisitEigenMatrixFoundNonSquare) {
+TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundNonSquare) {
   const std::string doc(R"R(
 doc:
   value:
@@ -799,7 +811,7 @@ doc:
 }
 
 // This finds a scalar when a sub-structure was wanted.
-TEST_F(YamlReadArchiveTest, VisitStructFoundScalar) {
+TEST_P(YamlReadArchiveTest, VisitStructFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"R(
 doc:
@@ -813,7 +825,7 @@ doc:
 }
 
 // This finds an array when a sub-structure was wanted.
-TEST_F(YamlReadArchiveTest, VisitStructFoundArray) {
+TEST_P(YamlReadArchiveTest, VisitStructFoundArray) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OuterStruct>(Load(R"R(
 doc:
@@ -825,6 +837,12 @@ doc:
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
       " has non-Map \\(Sequence\\) entry for [^ ]*InnerStruct inner_struct\\.");
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    AllOptions, YamlReadArchiveTest,
+    // TODO(jwnimmer-tri) This int parameter is currently unused; replace it
+    // with test case variants.
+    ::testing::Values(0));
 
 }  // namespace
 }  // namespace yaml
