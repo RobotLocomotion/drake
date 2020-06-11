@@ -636,17 +636,6 @@ drake_cc_library(
 
 # === test/ ===
 
-drake_cc_library(
-    name = "public_leaf_system",
-    testonly = True,
-    hdrs = [
-        "test/public_leaf_system.h",
-    ],
-    deps = [
-        ":leaf_system",
-    ],
-)
-
 drake_cc_googletest(
     name = "basic_vector_test",
     deps = [
@@ -799,7 +788,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":leaf_system",
-        ":public_leaf_system",
         "//common:essential",
         "//common/test_utilities",
         "//systems/framework/test_utilities",
