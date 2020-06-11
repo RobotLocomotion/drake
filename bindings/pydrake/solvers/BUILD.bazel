@@ -101,6 +101,20 @@ drake_cc_library(
 )
 
 drake_pybind_library(
+    name = "csdp_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
+    cc_srcs = ["csdp_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+        "//bindings/pydrake/common:value_py",
+    ],
+)
+
+drake_pybind_library(
     name = "gurobi_py",
     cc_deps = [
         ":solvers_pybind",
@@ -111,9 +125,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -127,9 +139,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -143,9 +153,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -160,9 +168,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -176,9 +182,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -192,9 +196,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
@@ -220,14 +222,13 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":mathematicalprogram_py",
-        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
-        # depend on on pydrake/common once the Value bindings have moved there.
-        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/common:value_py",
     ],
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":branch_and_bound_py",
+    ":csdp_py",
     ":gurobi_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
@@ -262,6 +263,18 @@ install(
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "csdp_solver_test",
+    args = select({
+        "//tools:no_csdp": ["TestCsdptSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":csdp_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 drake_py_unittest(
