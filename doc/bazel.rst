@@ -37,10 +37,10 @@ typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
-``PATH``, usually GCC 7.5 on Bionic. On macOS, the default compiler is the Apple
-LLVM compiler. To use Clang 6.0 on Ubuntu, set the ``CC`` and ``CXX``
-environment variables before running **bazel build**, **bazel test**, or any
-other **bazel** commands.
+``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
+compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu 18.04 (Bionic),
+set the ``CC`` and ``CXX`` environment variables before running **bazel build**,
+**bazel test** or any other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
@@ -179,7 +179,7 @@ Install on Ubuntu
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
 4. Download ``gurobi9.0.2_linux64.tar.gz``
 5. Unzip it.  We suggest that you use ``/opt/gurobi902`` to simplify working with Drake installations.
-6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder. 
+6. If you unzipped into a location other than ``/opt/gurobi902``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
@@ -266,12 +266,15 @@ kcov
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debuggging symbols, and produce nicely formatted browse-able coverage reports.
 
+Drake's ``kcov`` build system integration is only supported on Ubuntu, not
+macOS.
+
 To use kcov, you must first run Drake's ``install_prereqs`` setup script using
 the ``--with-kcov`` option.
 
-To analyze test coverage, run the tests under ``kcov``::
+To analyze test coverage, run one (or more) tests under ``kcov``::
 
-  bazel test --config kcov //...
+  bazel test --config=kcov common:polynomial_test
 
 Note that it disables compiler-optimization (``-O0``) to have a better and more
 precise coverage report.  If you have trouble with kcov and unoptimized programs,
@@ -279,12 +282,3 @@ you can turn it back on by also supplying ``--copt -O2``.
 
 The coverage report is written to the ``drake/bazel-kcov`` directory.  To
 view it, browse to ``drake/bazel-kcov/index.html``.
-
-kcov on macOS
-~~~~~~~~~~~~~
-
-Be sure that your account has developer mode enabled, which gives you the
-privileges necessary to run debuggers and similar tools. If you are an
-administrator, use this command::
-
-  sudo /usr/sbin/DevToolsSecurity --enable

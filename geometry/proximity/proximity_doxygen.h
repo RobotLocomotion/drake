@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref proximity_queries.  */
+
 namespace drake {
 namespace geometry {
 namespace proximity {

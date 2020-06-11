@@ -8,6 +8,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -473,17 +474,12 @@ top-level documentation for :py:mod:`pydrake.math`.
           },
           doc.MathematicalProgramResult.GetSuboptimalSolution
               .doc_2args_constEigenMatrixBase_int)
-      .def(
-          "num_suboptimal_solution()",
-          [](const MathematicalProgramResult& self) {
-            return self.num_suboptimal_solution();
-          },
+      .def("num_suboptimal_solution()",
+          &MathematicalProgramResult::num_suboptimal_solution,
           doc.MathematicalProgramResult.num_suboptimal_solution.doc)
-      .def(
-          "get_suboptimal_objective",
-          [](const MathematicalProgramResult& self, int solution_number) {
-            return self.get_suboptimal_objective(solution_number);
-          },
+      .def("get_suboptimal_objective",
+          &MathematicalProgramResult::get_suboptimal_objective,
+          py::arg("solution_number"),
           doc.MathematicalProgramResult.get_suboptimal_objective.doc)
       .def(
           "GetDualSolution",
@@ -498,7 +494,15 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Binding<EvaluatorBase>& binding) {
             return self.EvalBinding(binding);
           },
-          doc.MathematicalProgramResult.EvalBinding.doc);
+          doc.MathematicalProgramResult.EvalBinding.doc)
+      .def("GetInfeasibleConstraints",
+          &MathematicalProgramResult::GetInfeasibleConstraints, py::arg("prog"),
+          py::arg("tol") = std::nullopt,
+          doc.MathematicalProgramResult.GetInfeasibleConstraints.doc)
+      .def("GetInfeasibleConstraintNames",
+          &MathematicalProgramResult::GetInfeasibleConstraintNames,
+          py::arg("prog"), py::arg("tol") = std::nullopt,
+          doc.MathematicalProgramResult.GetInfeasibleConstraintNames.doc);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
@@ -1272,10 +1276,15 @@ top-level documentation for :py:mod:`pydrake.math`.
               const std::optional<Eigen::VectorXd>&,
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
-          py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
-      .def("GetInfeasibleConstraints", &solvers::GetInfeasibleConstraints,
-          py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
-          doc.GetInfeasibleConstraints.doc);
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("GetInfeasibleConstraints",
+      WrapDeprecated(doc.GetInfeasibleConstraints.doc_deprecated,
+          &solvers::GetInfeasibleConstraints),
+      py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
+      doc.GetInfeasibleConstraints.doc_deprecated);
+#pragma GCC diagnostic pop
 
   ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)

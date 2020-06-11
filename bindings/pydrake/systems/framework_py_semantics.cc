@@ -175,10 +175,23 @@ void DefineFrameworkPySemantics(py::module m) {
         m, "Context", GetPyParam<T>(), doc.Context.doc);
     context_cls
         // Bindings for Context methods inherited from ContextBase.
-        .def("num_input_ports", &Context<T>::num_input_ports,
+        .def("num_input_ports", &ContextBase::num_input_ports,
             doc.ContextBase.num_input_ports.doc)
-        .def("num_output_ports", &Context<T>::num_output_ports,
+        .def("num_output_ports", &ContextBase::num_output_ports,
             doc.ContextBase.num_output_ports.doc)
+        .def("DisableCaching", &ContextBase::DisableCaching,
+            doc.ContextBase.DisableCaching.doc)
+        .def("EnableCaching", &ContextBase::EnableCaching,
+            doc.ContextBase.EnableCaching.doc)
+        .def("SetAllCacheEntriesOutOfDate",
+            &ContextBase::SetAllCacheEntriesOutOfDate,
+            doc.ContextBase.SetAllCacheEntriesOutOfDate.doc)
+        .def("FreezeCache", &ContextBase::FreezeCache,
+            doc.ContextBase.FreezeCache.doc)
+        .def("UnfreezeCache", &ContextBase::UnfreezeCache,
+            doc.ContextBase.UnfreezeCache.doc)
+        .def("is_cache_frozen", &ContextBase::is_cache_frozen,
+            doc.ContextBase.is_cache_frozen.doc)
         // TODO(russt): Add remaining methods from ContextBase here.
         // Bindings for the Context methods in the Doxygen group titled
         // "Accessors for locally-stored values", placed in the same order

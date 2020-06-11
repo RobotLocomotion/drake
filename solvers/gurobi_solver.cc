@@ -166,6 +166,34 @@ void SetLinearConstraintDualSolutions(
   }
 }
 
+template <typename C>
+void SetSecondOrderConeDualSolution(
+    const std::vector<Binding<C>>& constraints,
+    const Eigen::VectorXd& gurobi_qcp_dual_solutions,
+    MathematicalProgramResult* result, int* soc_count) {
+  for (const auto& binding : constraints) {
+    const Vector1d dual_solution(gurobi_qcp_dual_solutions(*soc_count));
+    (*soc_count)++;
+    result->set_dual_solution(binding, dual_solution);
+  }
+}
+
+void SetAllSecondOrderConeDualSolution(
+    const MathematicalProgram& prog, GRBmodel* model,
+    MathematicalProgramResult* result) {
+  const int num_soc = prog.lorentz_cone_constraints().size() +
+                      prog.rotated_lorentz_cone_constraints().size();
+  Eigen::VectorXd gurobi_qcp_dual_solutions(num_soc);
+  GRBgetdblattrarray(model, GRB_DBL_ATTR_QCPI, 0, num_soc,
+                     gurobi_qcp_dual_solutions.data());
+
+  int soc_count = 0;
+  SetSecondOrderConeDualSolution(prog.lorentz_cone_constraints(),
+                                 gurobi_qcp_dual_solutions, result, &soc_count);
+  SetSecondOrderConeDualSolution(prog.rotated_lorentz_cone_constraints(),
+                                 gurobi_qcp_dual_solutions, result, &soc_count);
+}
+
 // Utility to extract Gurobi solve status information into
 // a struct to communicate to user callbacks.
 GurobiSolver::SolveStatusInfo GetGurobiSolveStatus(void* cbdata, int where) {
@@ -371,6 +399,8 @@ int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
  * @param second_order_cone_new_variable_indices. The indices of variable z in
  * the Gurobi model.
  * @param model The Gurobi model.
+ * @param[in, out] num_gurobi_linear_constraints The number of linear
+ * constraints stored in the gurobi model.
  */
 template <typename C>
 int AddSecondOrderConeConstraints(
@@ -1093,6 +1123,12 @@ void GurobiSolver::DoSolve(
                          gurobi_dual_solutions.data());
       SetLinearConstraintDualSolutions(prog, gurobi_dual_solutions,
                                        constraint_dual_start_row, result);
+
+      int compute_qcp_dual;
+      error = GRBgetintparam(model_env, "QCPDual", &compute_qcp_dual);
+      if (compute_qcp_dual) {
+        SetAllSecondOrderConeDualSolution(prog, model, result);
+      }
 
       // Obtain optimal cost.
       double optimal_cost = std::numeric_limits<double>::quiet_NaN();

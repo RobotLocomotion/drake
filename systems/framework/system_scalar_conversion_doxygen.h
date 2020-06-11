@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref system_scalar_conversion.  */
+
 //------------------------------------------------------------------------------
 /** @defgroup system_scalar_conversion System Scalar Conversion
     @ingroup technical_notes

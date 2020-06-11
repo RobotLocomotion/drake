@@ -149,6 +149,7 @@ drake_cc_library(
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
+        "//math:gradient",
         "//math:matrix_util",
     ],
 )
@@ -318,9 +319,7 @@ drake_cc_library(
         ":decision_variable",
         ":function",
         ":indeterminate",
-        ":mathematical_program_result",
         ":program_attribute",
-        ":solution_result",
         ":solver_id",
         ":solver_options",
         ":sos_basis_generator",
@@ -339,6 +338,7 @@ drake_cc_library(
     deps = [
         ":binding",
         ":constraint",
+        ":mathematical_program",
         ":solution_result",
         ":solver_id",
         "//common:symbolic",
@@ -1647,6 +1647,7 @@ drake_cc_googletest(
         ":cost",
         ":mathematical_program_result",
         ":osqp_solver",
+        ":snopt_solver",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

@@ -8,10 +8,11 @@ from Docker Hub instead.*
 
 To create a Docker image and run a Docker container similar to those used by
 [Binder](https://mybinder.org) for local debugging purposes, execute the
-following `build` and `run` commands from the top level of the Drake Git
-repository:
+following `pull`, `build`, and `run` commands from the top level of the Drake
+Git repository:
 
 ```bash
+docker pull robotlocomotion/drake:latest
 docker build -f .binder/Dockerfile -t binder .
 docker run --rm -it --name mybinder -p 8888:8888 binder
 ```

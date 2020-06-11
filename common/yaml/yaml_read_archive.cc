@@ -44,7 +44,7 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
       // Merge each Map in `merge_key` Sequence-of-Maps into the `node` Map.
       for (const YAML::Node& merge_key_item : merge_key) {
         if (merge_key_item.Type() != YAML::NodeType::Map) {
-          ReportMissingYaml(
+          ReportError(
               "has invalid merge key type (Sequence-of-non-Map) within");
         }
         CopyMergeKeys(merge_key_item, node);
@@ -52,11 +52,11 @@ void YamlReadArchive::RewriteMergeKeys(YAML::Node* node) const {
       return;
     }
     case YAML::NodeType::Scalar: {
-      ReportMissingYaml("has invalid merge key type (Scalar) within");
+      ReportError("has invalid merge key type (Scalar) within");
       return;
     }
     case YAML::NodeType::Null: {
-      ReportMissingYaml("has invalid merge key type (Null) within");
+      ReportError("has invalid merge key type (Null) within");
       return;
     }
     case YAML::NodeType::Undefined: {
@@ -92,12 +92,12 @@ YAML::Node YamlReadArchive::GetSubNode(
     const char* name, YAML::NodeType::value expected_type) const {
   YAML::Node result = MaybeGetSubNode(name);
   if (!result) {
-    ReportMissingYaml("is missing");
+    ReportError("is missing");
     return {};
   }
   const auto& actual_type = result.Type();
   if (actual_type != expected_type) {
-    ReportMissingYaml(fmt::format(
+    ReportError(fmt::format(
         "has non-{} ({})", to_string(expected_type), to_string(actual_type)));
     return {};
   }
@@ -107,7 +107,7 @@ YAML::Node YamlReadArchive::GetSubNode(
   return result;
 }
 
-void YamlReadArchive::ReportMissingYaml(const std::string& note) const {
+void YamlReadArchive::ReportError(const std::string& note) const {
   std::ostringstream e;  // A buffer for the error message text.
   this->PrintNodeSummary(e);
   fmt::print(e, " {} entry for ", note);
@@ -187,6 +187,10 @@ const char* YamlReadArchive::to_string(YAML::NodeType::value x) {
     case YAML::NodeType::Map: return "Map";
   }
   return "UNKNOWN";
+}
+
+std::ostream& operator<<(std::ostream& os, const YamlReadArchive::Options&) {
+  return os << "{}";
 }
 
 }  // namespace yaml

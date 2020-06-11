@@ -280,36 +280,38 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-// Fixture to setup a simple 2-link pendulum MBP model with z-axis pin
-// joints. The model is in the x-y plane and is configured
-// to have both links parallel to the x-axis.
-// Points Wo B1o Fo Mo B2o are sequentially along a line parallel to 𝐖𝐱.
-//
+// Fixture for a two degree-of-freedom pendulum having two links A and B.
+// Link A is connected to world (frame W) with a z-axis pin joint.
+// Link B is connected to link A with another z-axis pin joint.
+// Hence links A and B only move in the world's x-y plane (perpendicular to Wz).
+// The long axis of link A is parallel to A's unit vector Ax and
+// the long axis of link B is parallel to B's unit vector Bx.
+// In the baseline configuration, points Wo Ao Fo Mo Bo are sequential along
+// a line parallel to Wx.
 class TwoDOFPlanarPendulumTest : public ::testing::Test {
  public:
   // Setup the MBP.
   void SetUp() override {
-    // Spatial inertia for each body. The inertia values are not important
-    // because these are only testing CenterOfMass Jacobian methods.
-    const SpatialInertia<double> M_B =
-        SpatialInertia<double>::MakeFromCentralInertia(
-            mass_, Vector3<double>::Zero(),
-            0.0 * UnitInertia<double>::SolidBox(1.0, 1.0, 1.0));
+    // Set a spatial inertia for each link.  For now, these are unimportant
+    // because this fixture is only used for kinematic tests (e.g., Jacobians).
+    const UnitInertia<double> G_Bcm =
+        UnitInertia<double>::SolidBox(link_length_, 1, 1);
+    const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
+    const SpatialInertia<double> M_Bcm(mass_link_, p_BoBcm_B, G_Bcm);
 
-    // Create an empty MultibodyPlant.
+    // Create an empty MultibodyPlant and then add the two links.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
+    bodyA_ = &plant_->AddRigidBody("BodyA", M_Bcm);
+    bodyB_ = &plant_->AddRigidBody("BodyB", M_Bcm);
 
-    body1_ = &plant_->AddRigidBody("Body1", M_B);
-    body2_ = &plant_->AddRigidBody("Body2", M_B);
+    // Create revolute joints connecting world to link A and link A to link B.
+    joint1_ = &plant_->AddJoint<RevoluteJoint>("PinJoint1",
+        plant_->world_body(), std::nullopt, *bodyA_, X_AW_, Vector3d::UnitZ());
+    joint2_ = &plant_->AddJoint<RevoluteJoint>("PinJoint2",
+        *bodyA_, X_AF_, *bodyB_, X_BM_, Vector3d::UnitZ());
 
-    joint1_ = &plant_->AddJoint<RevoluteJoint>(
-        "PinJoint1", plant_->world_body(), std::nullopt, *body1_, X_B1W_,
-        Vector3d::UnitZ());
-    joint2_ = &plant_->AddJoint<RevoluteJoint>(
-        "PinJoint2", *body1_, X_B1F_, *body2_, X_B2M_, Vector3d::UnitZ());
-
+    // Finalize the plant and create a context to store this plant's state.
     plant_->Finalize();
-    // Create a context to store the state for this tree:
     context_ = plant_->CreateDefaultContext();
   }
 
@@ -318,26 +320,76 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   }
 
  protected:
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  const double mass_ = 5.0;         // kg
+  // Since the maximum absolute value of acceleration in this test is
+  // approximately ω² * (2 * link_length) ≈ 72 , we test that the errors in
+  // acceleration calculations is less than 3 bits (2^3 = 8).
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const double mass_link_ = 5.0;    // kg
   const double link_length_ = 4.0;  // meters
-  const double wz1_ = 3.0;          // rad/sec
-  const double wz2_ = 1.2;          // rad/sec
+  const double wAz_ = 3.0;          // rad/sec
+  const double wBz_ = 1.2;          // rad/sec
 
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<Context<double>> context_;
-  const RigidBody<double>* body1_{nullptr};
-  const RigidBody<double>* body2_{nullptr};
+  const RigidBody<double>* bodyA_{nullptr};
+  const RigidBody<double>* bodyB_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
-  math::RigidTransformd X_B1W_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
-  math::RigidTransformd X_B1F_{Vector3d(0.5 * link_length_, 0.0, 0.0)};
-  math::RigidTransformd X_B2M_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
+  // The rigid transform constructor X_AW_ below specifies that the position
+  // from Ao (A's origin) to Wo (world origin) is  -0.5 * link_length * Ax.
+  // For X_AF_, frame F is affixed/welded to A and colocated with joint1 and
+  // the position from Ao to Fo (F's origin) is  0.5 * link_length * Ax.
+  // For X_BM_, frame M is affixed/welded to B and colocated with joint1 and
+  // the position from Bo to Mo (M's origin) is 0.5 * link_length * (Ax = Bx).
+  math::RigidTransformd X_AW_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
+  math::RigidTransformd X_AF_{Vector3d(0.5 * link_length_, 0.0, 0.0)};
+  math::RigidTransformd X_BM_{Vector3d(-0.5 * link_length_, 0.0, 0.0)};
 };
+
+TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
+  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
+  joint1_->set_angle(context_.get(), state[0]);
+  joint2_->set_angle(context_.get(), state[1]);
+  joint1_->set_angular_rate(context_.get(), state[2]);
+  joint2_->set_angular_rate(context_.get(), state[3]);
+
+  // For point Ap of A, calculate Ap's bias spatial acceleration in world W.
+  const Frame<double>& frame_A = bodyA_->body_frame();
+  const Frame<double>& frame_W = plant_->world_frame();
+  const Vector3<double> p_AoAp_A(0.5 * link_length_, 0.0, 0.0);
+  const SpatialAcceleration<double> aBias_WAp_W =
+      plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
+          frame_A, p_AoAp_A, frame_W, frame_W);
+
+  // Simple by-hand analysis gives aBias_WAp_W = -L wAz_² Wx.
+  const double wA_squared = wAz_ * wAz_;
+  const Vector3<double> aBias_WAp_W_expected = -link_length_ *
+      wA_squared * Vector3d::UnitX();
+  EXPECT_TRUE(CompareMatrices(aBias_WAp_W.translational(), aBias_WAp_W_expected,
+                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(aBias_WAp_W.rotational(), Vector3d::Zero(),
+                              kTolerance));
+
+  // For point Bp of B, calculate Bp's bias spatial acceleration in world W.
+  const Frame<double>& frame_B = bodyB_->body_frame();
+  const Vector3<double> p_BoBp_B(0.5 * link_length_, 0.0, 0.0);
+  const SpatialAcceleration<double> aBias_WBp_W =
+      plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
+                                          frame_B, p_BoBp_B, frame_W, frame_W);
+
+  // By-hand analysis gives aBias_WBp_W = -L wAz_² Wx - L (wAz_ + wBz_)² Wx
+  const double wB_squared = (wAz_ + wBz_) * (wAz_ + wBz_);
+  const Vector3<double> aBias_WBp_W_expected = (-link_length_ * wA_squared +
+      -link_length_ * wB_squared) * Vector3d::UnitX();
+  EXPECT_TRUE(CompareMatrices(aBias_WBp_W.translational(), aBias_WBp_W_expected,
+                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(aBias_WBp_W.rotational(), Vector3d::Zero(),
+                              kTolerance));
+}
 
 TEST_F(TwoDOFPlanarPendulumTest,
        CalcJacobianVelocityAndBiasAccelerationOfSystemCenterOfMass) {
-  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wz1_, wz2_);
+  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
@@ -350,14 +402,14 @@ TEST_F(TwoDOFPlanarPendulumTest,
       plant_->world_frame(), &Js_v_WCcm_W);
 
   Eigen::MatrixXd Js_v_WCcm_W_expected(3, plant_->num_velocities());
-  // CCm's velocity in world W is expected to be (L wz1_ + 0.25 L wz2_) 𝐖𝐲,
-  // hence the CCm's translational Jacobian with respect to {wz1_ , wz2_} is
+  // CCm's velocity in world W is expected to be (L wAz_ + 0.25 L wBz_) 𝐖𝐲,
+  // hence the CCm's translational Jacobian with respect to {wAz_ , wBz_} is
   // { L 𝐖𝐲, 0.25 L 𝐖𝐲 } = { [0, L, 0] [0, 0.25 L, 0] }
   Js_v_WCcm_W_expected << 0.0, 0.0,
                           link_length_, 0.25 * link_length_,
                           0.0, 0.0;
   Vector3d v_WCcm_W_expected =
-      (wz1_ * link_length_ + wz2_ * 0.25 * link_length_) * Vector3d::UnitY();
+      (wAz_ * link_length_ + wBz_ * 0.25 * link_length_) * Vector3d::UnitY();
 
   EXPECT_TRUE(CompareMatrices(Js_v_WCcm_W, Js_v_WCcm_W_expected, kTolerance));
   EXPECT_TRUE(
@@ -371,9 +423,9 @@ TEST_F(TwoDOFPlanarPendulumTest,
           plant_->world_frame());
 
   // CCm's bias translational in world W is expected to be
-  // abias_WCcm = -L (wz1_² + 0.5 wz1_ wz2_ + 0.25 wz2_²) 𝐖𝐱
+  // abias_WCcm = -L (wAz_² + 0.5 wAz_ wBz_ + 0.25 wBz_²) 𝐖𝐱
   Vector3d abias_WCcm_W_expected =
-      -link_length_ * (wz1_ * wz1_ + 0.5 * wz1_ * wz2_ + 0.25 * wz2_ * wz2_) *
+      -link_length_ * (wAz_ * wAz_ + 0.5 * wAz_ * wBz_ + 0.25 * wBz_ * wBz_) *
       Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
 }
