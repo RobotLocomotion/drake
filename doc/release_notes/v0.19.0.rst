@@ -88,7 +88,7 @@ New features
 * Add ball and universal joints to URDF and SDFormat parsers (`#13427`_, `#13516`_)
 * Support more RenderEngineVtk and ShapeReifier customizations (`#13288`_)
 * Add SceneGraphInspector::CloneGeometryInstance (`#13338`_)
-* Store GeometryProoperties diffuse color using Rgba, not Vector4d (`#13441`_, `#13456`_)
+* Store GeometryProperties diffuse color using Rgba, not Vector4d (`#13441`_, `#13456`_)
 * OpenGL camera renderer in progress  (`#13293`_, `#13334`_, `#13481`_)
 
   * Still only experimental
