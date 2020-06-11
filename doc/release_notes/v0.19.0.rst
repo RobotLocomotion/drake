@@ -148,6 +148,11 @@ Fixes
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Add support for Ubuntu 20.04 Focal Fossa (`#13266`_, `#13283`_, `#13306`_,
+  `#13335`_, `#13339`_, `#13345`_, `#13346`_, `#13348`_, `#13353`_, `#13357`_,
+  `#13360`_, `#13366`_, `#13383`_, `#13385`_, `#13400`_, `#13418`_, `#13425`_,
+  `#13432`_, `#13436`_, `#13437`_, `#13449`_, `#13450`_, `#13469`_, `#13477`_,
+  `#13486`_, `#13487`_, `#13502`_, `#13508`_)
 * Add new Ubuntu dependency on pygame for use in examples (`#13381`_, `#13422`_)
 * Add new Ubuntu dependency on libclang-9-dev (`#13432`_, `#13437`_, `#13451`_)
 * Add new Ubuntu dependency on clang-9 (`#13477`_)
@@ -166,11 +171,7 @@ Build system and dependencies
 * Do not use pkg-config to find libjpeg and yaml-cpp (`#13335`_)
 * On Ubuntu, the Drake APT site is no longer added by default (`#13462`_)
 * On Ubuntu, kcov-35 is no longer installed by default (`#13462`_)
-* Continue Ubuntu 20.04 (Focal Fossa) accomodations; full support is not yet
-  complete (`#13266`_, `#13283`_, `#13306`_, `#13335`_, `#13339`_, `#13345`_,
-  `#13346`_, `#13348`_, `#13353`_, `#13357`_, `#13360`_, `#13366`_, `#13383`_,
-  `#13385`_, `#13400`_, `#13418`_, `#13425`_, `#13432`_, `#13436`_, `#13437`_,
-  `#13449`_, `#13450`_, `#13469`_, `#13477`_, `#13486`_, `#13502`_)
+* On macOS, kcov is no longer required (`#13521`_, `#13522`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -444,16 +445,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
 
 * parsing: Added ball and universal joints to sdf parser (`#13427`_)  # Also expanded tests for all joint types
-* Add GCC 9.3 on Focal to the support matrix (`#13487`_)
-* Update supported Xcode version (`#13487`_)
-* Add Focal-based Dockerfile for Docker Hub (`#13508`_)
 * add dual solution for Gurobi QCP (`#13490`_)
 * Add meshcat animation (and binder tutorial) (`#13513`_)  # Relates to #12645.  This is our current best solution given the discussion with @rdeits.
 * Simple planar two degree-of-freedom test for CalcBiasAcceleration() (`#13406`_)
 * parsing: Added ball and universal joints to urdf parser (`#13516`_)  # Also made parsing tests more complete Fixes #13515 Co-authored-by: Michelle Tan <mtan123456789@gmail.com>
-* doc: Clarify that kcov is not supported on macOS (`#13521`_)  # Change the example invocation to run one test -- running the whole source tree takes 10+ hours.
 * py analysis: Bind Simulator.get_system (`#13525`_)
-* setup: Remove kcov prereq on macOS (`#13522`_)  # Drake does not support kcov build system integration on macOS.
 * Retrive dual solutions for SnoptSolver (`#13511`_)
 * Bind ContextBase cache control methods (`#13528`_)  # .
 * Add GetInfeasibleConstraints (`#13417`_)  # Add GetInfeasibleConstraints which returns a vector of Binding objects for the infeasible constraints, useful when debugging infeasible mathematical optimization problems.
