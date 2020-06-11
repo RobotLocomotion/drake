@@ -171,10 +171,11 @@ namespace {
 
 // A test fixture with common helpers.
 class YamlReadArchiveTest
-    // TODO(jwnimmer-tri) This int parameter is currently unused; replace it
-    // with test case variants.
-    : public ::testing::TestWithParam<int> {
+    : public ::testing::TestWithParam<YamlReadArchive::Options> {
  public:
+  // Loads a single "doc: { ... }" map from `contents` and returns the nested
+  // map (i.e., just the "{ ... }" part, not the "doc" part).  It is an error
+  // for the "{ ... }" part not to be a map node.
   static YAML::Node Load(const std::string& contents) {
     const YAML::Node loaded = YAML::Load(contents);
     if (loaded.Type() != YAML::NodeType::Map) {
@@ -187,10 +188,15 @@ class YamlReadArchiveTest
     return doc;
   }
 
+  // Loads a single "{ value: something }" map node.  If the argument is the
+  // empty string, the result is a map from "value" to Null (not an empty map,
+  // nor Null itself, etc.)
   static YAML::Node LoadSingleValue(const std::string& value) {
     return Load("doc:\n  value: " + value + "\n");
   }
 
+  // Parses root into a Serializable and returns the result of the parse.
+  // Any exceptions raised are reported as errors.
   template <typename Serializable>
   static Serializable AcceptNoThrow(const YAML::Node& root) {
     SCOPED_TRACE("for type " + NiceTypeName::Get<Serializable>());
@@ -198,7 +204,7 @@ class YamlReadArchiveTest
     bool raised = false;
     std::string what;
     try {
-      YamlReadArchive(root).Accept(&result);
+      YamlReadArchive(root, GetParam()).Accept(&result);
     } catch (const std::exception& e) {
       raised = true;
       what = e.what();
@@ -208,10 +214,12 @@ class YamlReadArchiveTest
     return result;
   }
 
+  // Parses root into a Serializable and discards the result.
+  // This is usually used to check that an exception is raised.
   template <typename Serializable>
   static void AcceptIntoDummy(const YAML::Node& root) {
     Serializable dummy{};
-    YamlReadArchive(root).Accept(&dummy);
+    YamlReadArchive(root, GetParam()).Accept(&dummy);
   }
 };
 
@@ -542,15 +550,17 @@ doc:
 // This finds nothing when a scalar was wanted, because the name had a typo.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundNothing) {
   // This has a "_TYPO" in a field name.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+  const YAML::Node node = Load(R"R(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value_TYPO: 2.0
-)R")),
+)R");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<OuterStruct>(node),
       std::runtime_error,
-      "YAML node of type Map \\(with size 1 and keys \\{inner_value_TYPO\\}\\)"
+      "YAML node of type Map"
+      " \\(with size 1 and keys \\{inner_value_TYPO\\}\\)"
       " is missing entry for double inner_value"
       " while accepting YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -593,7 +603,7 @@ doc:
 }
 
 // This finds nothing when a std::array was wanted.
-TEST_F(YamlReadArchiveTest, VisitArrayFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitArrayFoundNothing) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<ArrayStruct>(LoadSingleValue("")),
       std::runtime_error,
@@ -624,7 +634,7 @@ doc:
 }
 
 // This finds nothing when a std::vector was wanted.
-TEST_F(YamlReadArchiveTest, VisitVectorFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitVectorFoundNothing) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VectorStruct>(LoadSingleValue("")),
       std::runtime_error,
@@ -799,12 +809,13 @@ doc:
 }
 
 // This finds nothing when a sub-structure was wanted.
-TEST_F(YamlReadArchiveTest, VisitStructFoundNothing) {
+TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
+  const YAML::Node node = Load(R"R(
+  doc:
+    outer_value: 1.0
+  )R");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
-doc:
-  outer_value: 1.0
-)R")),
+      AcceptIntoDummy<OuterStruct>(node),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{outer_value\\}\\)"
       " is missing entry for [^ ]*InnerStruct inner_struct\\.");
@@ -840,9 +851,9 @@ doc:
 
 INSTANTIATE_TEST_SUITE_P(
     AllOptions, YamlReadArchiveTest,
-    // TODO(jwnimmer-tri) This int parameter is currently unused; replace it
-    // with test case variants.
-    ::testing::Values(0));
+    // TODO(jwnimmer-tri) Replace this with every possible Options permutation,
+    // once we have any.
+    ::testing::Values(YamlReadArchive::Options{}));
 
 }  // namespace
 }  // namespace yaml
