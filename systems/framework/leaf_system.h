@@ -53,13 +53,14 @@ class LeafSystem : public System<T> {
   type LeafContext<T>. */
   std::unique_ptr<LeafContext<T>> AllocateContext() const;
 
-  /** Declares a cache entry by specifying a calculator function with
-  signature:
+  /** Declares a cache entry by specifying a (non-member) calculator function
+  with signature:
   @code
     void CalcCacheValue(const Context<T>&, ValueType*) const;
   @endcode
-  where `ValueType` must be explicitly specified and be default constructible.
-  See XXX for more information about the parameters and behavior. */
+  This is one overload of many additional overloads; see
+  @ref DeclareCacheEntry_documentation "SystemBase::DeclareCacheEntry" for a
+  full list and complete information about the parameters and behavior. */
   template <typename ValueType>
   CacheEntry& DeclareCacheEntry(
       std::string description,
@@ -67,10 +68,6 @@ class LeafSystem : public System<T> {
       std::function<void(const Context<T>&, ValueType*)> calc,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    static_assert(
-        std::is_default_constructible<ValueType>::value,
-        "LeafSystem::DeclareCacheEntry(calc): the calc-only overloads of "
-        "this method require that the output type has a default constructor");
     DRAKE_THROW_UNLESS(bool{calc});
     copyable_unique_ptr<AbstractValue> owned_model(
         std::make_unique<Value<ValueType>>(model_value));
