@@ -443,49 +443,32 @@ std::pair<std::string, std::string> SplitName(std::string full) {
   return {first, second};
 }
 
-
-// Preview of libsdformat structures
-struct sdf::NestedInclude {
-  // Resolved or not resolved?
-  // ERIC: My money is on unresolved.
-  std::string file_path;
-
-  // Name of the model in absolute hierarhcy.
-  // N.B. Should be unnecesssary if downstream consumer has composition. Not
-  // the case for Drake :(
-  std::string absolute_model_name;
-
-  // Name relative to immediate parent.
-  std::string local_model_name;
-
-  // Er... Something like this?
-  sdf::SemanticPose pose;
-};
-// END: Preview of libsdformat structures
-
+// For the libsdformat API, see:
+// http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&branch=feature-composition-interface-api&repo=https%3A%2F%2Fgithub.com%2FEricCousineau-TRI%2Fsdf_tutorials-1#1-5-minimal-libsdformat-interface-types-for-non-sdformat-models
 
 constexpr char kExtUrdf[] = ".urdf";
 // To test re-parsing an SDFormat document, but in complete isolation. Tests
 // out separate model formats.
-constexpr char kExtForcedNesting[] = ".forced_nesting.sdf";
+constexpr char kExtForcedNesting[] = ".forced_nesting_sdf";
 
 // This assumes that parent models will have their parsing start before child
 // models!
 sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     MultibodyPlant<double>* plant,
-    sdf::NestedInclude include) {
+    sdf::NestedInclude include,
+    sdf::Error& errors) {
   // Do not attempt to parse anything other than URDF or forced nesting files.
-  const bool is_urdf = EndsWith(include.file_path, kExtUrdf);
+  const bool is_urdf = EndsWith(include.resolved_file_name, kExtUrdf);
   const bool is_forced_nesting =
-      EndsWith(include.file_path, kExtForcedNesting);
+      EndsWith(include.resolved_file_name, kExtForcedNesting);
   if (!is_urdf && !is_forced_nesting) {
     return nullptr;
   }
 
   // WARNING: Most of these hacks (remembering model instances, getting silly
   // name hierarchy) come about since MultibodyPlant does not have any
-  // mechanism for easy composition by itself (e.g. merging subtrees, or
-  // getting a subtree, etc.).
+  // mechanism for easy composition by itself (e.g. copying subgraphs, or
+  // getting a subgraph, etc.).
   // If this ever happens (see #12703), this logic will be *greatly*
   // simplified.
 
@@ -496,9 +479,11 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   ModelInstanceIndex main_model_instance;
   if (is_urdf) {
+    // N.B. Errors will just happen via thrown exceptions.
     main_model_instance = LoadUrdfFromFile(
         plant, include.file_path, include.absolute_model_name);
   } else {
+    // N.B. Errors will just happen via thrown exceptions.
     DRAKE_DEMAND(is_forced_nesting);
     main_model_instance = LoadSdfFromFile(
         plant, include.file_path, include.absolute_model_name);
@@ -520,36 +505,77 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       main_model_frame.GetParentTransform();
   RigidTransformd X_ParsedDesired = X_WMparsed.inverse() * X_WMdesired;
 
-  sdf::InterfaceModelPtr main_interface_model(
-      new sdf::InterfaceModel(include.local_model_name));
+  // This will be populated for the first model instance.
+  sdf::InterfaceModelPtr main_interface_model;
   // Record by name to remember local hierarchy.
   // Related this comment:
   // https://github.com/RobotLocomotion/drake/issues/12270#issuecomment-606757766
   std::map<std::string, sdf::InterfaceModelPtr> interface_model_hierarchy;
 
+  auto body_to_interface_frame = [&](const Body<double>& link) {
+    // Pre-transform default pose, if specified.
+    RigidTransform X_WLparsed = plant->GetDefaultPose(*link);
+    RigidTransform X_WLdesired = X_WLparsed * X_ParsedDesired;
+    plant->SetDefaultPose(*link, X_WLdesired);
+    // Register link as grounding frame.
+    sdf::SemanticPose pose("", X_ML);
+    return make_shared<sdf::InterfaceFrame>(link->name(), pose);
+  };
+
+  auto frame_to_interface_frame = [&](
+      const Frame<double>& frame, std::string name = "") {
+    const std::string body_name = frame->body().name();
+    sdf::SemanticPose pose(
+        body_name, frame->GetFixedPoseInBodyFrame());
+    if (name == "") {
+      name = frame->name();
+    }
+    if (name == "" || name == body_name) {
+      // Do not register un-named frames or body frames.
+      return nullptr;
+    }
+    return make_shared<sdf::InterfaceFrame>(name, pose);
+  };
+
   auto add_model = [&](ModelInstanceIndex model) {
     const std::string absolute_name = plant->GetModelInstanceName(model);
-    const auto [parent_name, local_name] = SplitName(name);
-    auto interface_model = std::make_shared<sdf::InterfaceModel>(local_name);
-    // Record all frames and associated links.
-    for (auto* link : GetModelLinks(plant, model)) {
-      interface_model->AddLink(sdf::InterfaceLink(link->name()));
-      // Also pre-transform default pose, if specified.
-      RigidTransform X_WLparsed = plant->GetDefaultPose(*link);
-      RigidTransform X_WLdesired = X_WLparsed * X_ParsedDesired;
-      plant->SetDefaultPose(*link X_WLdesired);
+    const auto [absolute_parent_name, local_name] = SplitName(absolute_name);
+
+    auto links = GetModelLinks(plant, model);
+    DRAKE_DEMAND(links.size() > 0);
+    auto& canonical_link = *links[0];
+    auto& model_frame = canonical_link->body_frame();
+
+    auto interface_model = std::make_shared<sdf::InterfaceModel>(
+        local_name,
+        body_to_interface_frame(canonical_link),
+        // TODO(eric.cousineau): What if the model already has a __model__
+        // frame?
+        frame_to_interface_frame(model_frame, "__model__"));
+
+    // Record all frames.
+    for (auto* link : links) {
+      if (link == &canonical_link) {
+        // Already added.
+        continue;
+      }
+      interface_model->AddFrame(body_to_interface_frame(*body));
     }
     for (auto* frame : GetModelFrames(plant, model)) {
-      interface_model->AddFrame(sdf::InterfaceFrame(
-          frame->name(), attached_to_frame, X_PF));
+      if (frame == model_frame) {
+        // Already added.
+        continue;
+      }
+      interface_model->AddFrame(frame_to_interface_frame(*frame));
     }
-    if (model == main_model_instance) {
+
+    if (!main_interface_model) {
       main_interface_model = interface_model;
+      interface_model_hierarchy[absolute_name] = main_interface_model;
     } else {
       // Register with its parent model.
       sdf::InterfaceModelPtr parent_interface_model =
-          interface_model_hierarchy[parent_name];
-      DRAKE_DEMAND(parent != nullptr);
+          interface_model_hierarchy.at(absolute_parent_name);
       parent_interface_model->AddNestedModel(interface_model);
     }
     return interface_model;
