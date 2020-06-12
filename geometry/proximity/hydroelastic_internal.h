@@ -6,6 +6,7 @@
 #include <utility>
 #include <variant>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
@@ -42,6 +43,11 @@ struct SoftMesh {
             *mesh)) {
     DRAKE_ASSERT(mesh.get() == &pressure->mesh());
   }
+
+  SoftMesh(const SoftMesh& s) { *this = s; }
+  SoftMesh& operator=(const SoftMesh& s);
+  SoftMesh(SoftMesh&&) = default;
+  SoftMesh& operator=(SoftMesh&&) = default;
 };
 
 /** Defines a soft half space. The half space is defined such that the half
@@ -91,10 +97,7 @@ class SoftGeometry {
   explicit SoftGeometry(SoftMesh&& soft_mesh)
       : geometry_(std::move(soft_mesh)) {}
 
-  SoftGeometry(const SoftGeometry& g) { *this = g; }
-  SoftGeometry& operator=(const SoftGeometry& g);
-  SoftGeometry(SoftGeometry&&) = default;
-  SoftGeometry& operator=(SoftGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry)
 
   /** @name  Distinguishing compliant representations
 
@@ -111,6 +114,10 @@ class SoftGeometry {
   bool is_half_space() const {
     return std::holds_alternative<SoftHalfSpace>(geometry_);
   }
+
+  // TODO(DamrongGuoy): Guard against null mesh(), null pressure_field(), and
+  //  null bvh() below. It is possible that the move semantics can cause the
+  //  source SoftGeometry to have the null SoftMesh content.
 
   /** Returns a reference to the volume mesh -- calling this will throw if
    is_half_space() returns `true`.  */
@@ -162,8 +169,8 @@ class SoftGeometry {
  This struct retains ownership of the mesh, with the bounding volume hierarchy
  just referencing it.  */
 struct RigidMesh {
-  std::unique_ptr<SurfaceMesh<double>> mesh;
-  std::unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
+  copyable_unique_ptr<SurfaceMesh<double>> mesh;
+  copyable_unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
 
   RigidMesh() = default;
 
@@ -171,6 +178,8 @@ struct RigidMesh {
       : mesh(std::move(mesh_in)),
         bvh(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
             *mesh)) {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
 };
 
 /** The base representation of rigid geometries. Generally, a rigid geometry
@@ -188,13 +197,14 @@ class RigidGeometry {
   explicit RigidGeometry(RigidMesh&& rigid_mesh)
       : geometry_(RigidMesh(std::move(rigid_mesh))) {}
 
-  RigidGeometry(const RigidGeometry& g) { *this = g; }
-  RigidGeometry& operator=(const RigidGeometry& g);
-  RigidGeometry(RigidGeometry&&) = default;
-  RigidGeometry& operator=(RigidGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
 
   /** Returns true if this RigidGeometry is a half space.  */
   bool is_half_space() const { return !geometry_.has_value(); }
+
+  // TODO(DamrongGuoy): Guard against null mesh() and null bvh() below. It is
+  //  possible that the move semantics can cause the source RigidGeometry to
+  //  have the null RigidMesh content.
 
   /** Returns a reference to the surface mesh -- calling this will throw unless
    is_half_space() returns false.  */
