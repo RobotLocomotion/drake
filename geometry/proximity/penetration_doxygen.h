@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref module_penetration_queries.  */
+
 namespace drake {
 namespace geometry {
 namespace proximity {
