@@ -82,7 +82,7 @@ YAML::Node YamlReadArchive::MaybeGetSubNode(const char* name) const {
     if (std::strcmp(mapish_item_key_, name) == 0) {
       return *mapish_item_value_;
     }
-    return {};
+    return YAML::Node(YAML::NodeType::Undefined);
   }
   DRAKE_DEMAND(root_ != nullptr);
   return (*root_)[name];
@@ -92,19 +92,37 @@ YAML::Node YamlReadArchive::GetSubNode(
     const char* name, YAML::NodeType::value expected_type) const {
   YAML::Node result = MaybeGetSubNode(name);
   if (!result) {
-    ReportError("is missing");
-    return {};
+    if (!options_.allow_cpp_with_no_yaml) {
+      ReportError("is missing");
+    }
+    return result;
   }
   const auto& actual_type = result.Type();
   if (actual_type != expected_type) {
     ReportError(fmt::format(
         "has non-{} ({})", to_string(expected_type), to_string(actual_type)));
-    return {};
+    result = YAML::Node(YAML::NodeType::Undefined);
+    return result;
   }
   if (expected_type == YAML::NodeType::Map) {
     RewriteMergeKeys(&result);
   }
   return result;
+}
+
+void YamlReadArchive::CheckAllAccepted() const {
+  DRAKE_DEMAND(mapish_item_key_ == nullptr);
+  DRAKE_DEMAND(root_->Type() == YAML::NodeType::Map);
+  if (options_.allow_yaml_with_no_cpp) {
+    return;
+  }
+  for (const auto& map_pair : *root_) {
+    const std::string& name = map_pair.first.as<std::string>();
+    if (visited_names_.count(name) == 0) {
+      ReportError(fmt::format(
+          "key {} did not match any visited value", name));
+    }
+  }
 }
 
 void YamlReadArchive::ReportError(const std::string& note) const {
@@ -189,8 +207,11 @@ const char* YamlReadArchive::to_string(YAML::NodeType::value x) {
   return "UNKNOWN";
 }
 
-std::ostream& operator<<(std::ostream& os, const YamlReadArchive::Options&) {
-  return os << "{}";
+std::ostream& operator<<(std::ostream& os, const YamlReadArchive::Options& x) {
+  return os << "{.allow_yaml_with_no_cpp = "
+            << x.allow_yaml_with_no_cpp
+            << ", .allow_cpp_with_no_yaml = "
+            << x.allow_cpp_with_no_yaml << "}";
 }
 
 }  // namespace yaml

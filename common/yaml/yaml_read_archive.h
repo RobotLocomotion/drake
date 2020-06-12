@@ -7,6 +7,7 @@
 #include <ostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -72,12 +73,29 @@ class YamlReadArchive final {
   struct Options {
     friend std::ostream& operator<<(std::ostream& os, const Options& x);
 
-    // TODO(jwnimmer-tri) Add some configuration settings here.
+    /// Allows yaml Maps to have extra key-value pairs that are not Visited by
+    /// the Serializable being parsed into.  In other words, the Serializable
+    /// types provide an incomplete schema for the YAML data.  This allows for
+    /// parsing only a subset of the YAML data.
+    bool allow_yaml_with_no_cpp{false};
+
+    /// Allows Serializables to provide more key-value pairs than are present
+    /// in the YAML data.  In other words, the structs have default values that
+    /// are left intact unless the YAML data provides a value.
+    bool allow_cpp_with_no_yaml{false};
   };
 
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
   /// class overview for details.
-  explicit YamlReadArchive(const YAML::Node& root, const Options& options = {})
+  ///
+  /// When the `options` are not provided by the caller, this currently sets
+  /// `allow_yaml_with_no_cpp = true` for backwards compatibility reasons.
+  /// This default will change in a future Drake release to be `false`,
+  /// instead.  Callers that wish to avoid disruption should set the options
+  /// explicitly.
+  explicit YamlReadArchive(const YAML::Node& root, const Options& options = {
+                             .allow_yaml_with_no_cpp = true,
+                             .allow_cpp_with_no_yaml = false})
       : owned_root_(root),
         root_(&owned_root_),
         mapish_item_key_(nullptr),
@@ -98,6 +116,7 @@ class YamlReadArchive final {
       return;
     }
     DoAccept(this, serializable, static_cast<int32_t>(0));
+    CheckAllAccepted();
   }
 
   /// (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
@@ -151,6 +170,7 @@ class YamlReadArchive final {
     if (trace == VisitShouldMemorizeType::kYes) {
       debug_visit_name_ = nvp.name();
       debug_visit_type_ = &typeid(*nvp.value());
+      visited_names_.insert(nvp.name());
     }
     // Use int32_t for the final argument to prefer the specialized overload.
     this->DoVisit(nvp, *nvp.value(), static_cast<int32_t>(0));
@@ -296,7 +316,9 @@ class YamlReadArchive final {
   void VisitVariant(const NVP& nvp) {
     const YAML::Node sub_node = MaybeGetSubNode(nvp.name());
     if (!sub_node) {
-      ReportError("is missing");
+      if (!options_.allow_cpp_with_no_yaml) {
+        ReportError("is missing");
+      }
       return;
     }
     // Figure out which variant<...> type we have based on the node's tag.
@@ -469,9 +491,14 @@ class YamlReadArchive final {
   // the child.  Otherwise, report an error and return an undefined node.
   YAML::Node GetSubNode(const char*, YAML::NodeType::value) const;
 
-  // If our root is a Map and has child with the given name and type, return
-  // the child.  Otherwise, return an undefined node.
+  // If our root is a Map and has child with the given name, return the child.
+  // Otherwise, return an undefined node.
   YAML::Node MaybeGetSubNode(const char*) const;
+
+  // To be called after Accept-ing a Serializable to cross-check that all keys
+  // in the YAML root's Map matched a Visit call from the Serializable.  This
+  // relates to the Options.allow_yaml_with_no_cpp setting.
+  void CheckAllAccepted() const;
 
   void ReportError(const std::string&) const;
   void PrintNodeSummary(std::ostream& s) const;
@@ -505,6 +532,10 @@ class YamlReadArchive final {
   // When the C++ structure and YAML structure disagree, these options govern
   // which mismatches are permitted without an error.
   const Options options_;
+
+  // The set of NameValue::name keys that have been Visited by the current
+  // Serializable's Accept method so far.
+  std::unordered_set<std::string> visited_names_;
 
   // These are only used for error messages.  The two `debug_...` members are
   // non-nullptr only during Visit()'s lifetime.
