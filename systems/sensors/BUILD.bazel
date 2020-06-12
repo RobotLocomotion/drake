@@ -43,11 +43,12 @@ drake_cc_package_library(
 drake_cc_library(
     name = "accelerometer",
     srcs = ["accelerometer.cc"],
-    hdrs = ["accelerometer.h"],
+    hdrs = ["accelerometer_sensor.h"],
     deps = [
-        "//multibody/tree:multibody_tree_indexes",
         "//math:geometric_transform",
         "//multibody/math",
+        "//multibody/plant",
+        "//multibody/tree:multibody_tree_indexes",
         "//systems/framework",
     ],
     data = ["//examples/pendulum:prod_models"],
@@ -250,9 +251,9 @@ drake_cc_googletest(
     name = "accelerometer_test",
     deps = [
         ":accelerometer",
-        "//multibody/plant",
-        "//multibody/parsing",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

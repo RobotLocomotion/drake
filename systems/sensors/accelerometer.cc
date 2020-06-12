@@ -1,4 +1,4 @@
-#include "drake/systems/sensors/accelerometer.h"
+#include "drake/systems/sensors/accelerometer_sensor.h"
 
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_velocity.h"
@@ -61,6 +61,18 @@ void Accelerometer<T>::CalcOutput(const Context<T>& context,
 
   // Rotate to local frame and return
   output->SetFromVector(R_SW * (A_WS.translational() - gravity_vector_));
+}
+
+template <typename T>
+void Accelerometer<T>::ConnectToPlant(DiagramBuilder<T>* builder,
+      const multibody::MultibodyPlant<T>& plant) const {
+  builder->Connect(plant.get_body_poses_output_port(),
+                   get_body_poses_input_port());
+  builder->Connect(plant.get_body_spatial_velocities_output_port(),
+                   get_body_velocities_input_port());
+  builder->Connect(plant.get_body_spatial_accelerations_output_port(),
+                   get_body_accelerations_input_port());
+
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

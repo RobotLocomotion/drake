@@ -5,7 +5,9 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -14,28 +16,30 @@ namespace sensors {
 
 /// Sensor to represent an ideal accelerometer sensor. Currently does not
 /// represent noise or bias, but this could and should be added at a later
-/// date. This sensor measures the acceleration of a point on a given body,
-/// minus the acceleration due to gravity. Measurement is taken with respect to 
-/// the world frame, but expressed in the coordinates of the local sensor frame 
-/// S. In monogram notation, the measurement is a_WS_S - g_S.
-/// Note that S is rigidly fixed to the given body B. Note, also, the sign
-/// of the gravity component. For typical settings, "-g_S" is in the "up"
-/// direction.
+/// date. This sensor measures the proper acceleration of a point on a given
+/// body B. Proper acceleration subtracts gravity from the coordinate
+/// acceleration a_WS_S. That is,
+///   aproper_WS_S = a_WS_S - g_S
+/// Note that measurement is taken with respect to the world frame,
+/// but expressed in the coordinates of the local sensor frame S.
+/// Sensor frame S is rigidly affixed to the given body B. Note, also, the sign
+/// of the gravity component. For typical settings (e.g. on Earth assuming a
+/// constant gravitational field), the direction of "-g_S" is "upwards."
 ///
 /// There are three inputs to this sensor (nominally from a MultibodyPlant):
-///   1) A vector of body poses (e.g. plant.get_body_poses_output_port)
+///   1) A vector of body poses (e.g. plant.get_body_poses_output_port())
 ///   2) A vector of spatial velocities
-///    (e.g. plant.get_body_spatial_velocities_output_port)
+///    (e.g. plant.get_body_spatial_velocities_output_port())
 ///   3) A vector of spatial accelerations
-///      (e.g. plant.get_body_spatial_accelerations_output_port)
+///      (e.g. plant.get_body_spatial_accelerations_output_port())
 /// This class is therefore defined by:
 ///   1) The BodyIndex of the body to which this sensor is rigidly affixed.
 ///   2) A rigid transform from the body frame to the sensor frame.
 ///
 /// @system{Accelerometer,
-///    @input_port{body_poses},
+///    @input_port{body_poses}
 ///    @input_port{body_spatial_velocities}
-///    @input_port{body_spatial_accelerations}
+///    @input_port{body_spatial_accelerations},
 ///    @output_port{measured_acceleration}
 /// }
 /// @ingroup sensor_systems
@@ -55,6 +59,20 @@ class Accelerometer : public LeafSystem<T> {
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit Accelerometer(const Accelerometer<U>&);
+
+  /// Modifies a Diagram by connecting the input ports of this Accelerometer
+  /// to the appropriate output ports of a MultibodyPlant. Must be called
+  /// during Diagram building and given the appropriate builder. 
+  /// This is a convenience method to simplify some common boilerplate of
+  /// Diagram wiring. Specifically, this makes three connections:
+  ///
+  /// 1) plant.get_body_poses_output_port() to this.get_body_poses_input_port()
+  /// 2) plant.get_body_spatial_velocities_output_port() to
+  ///        this.get_body_velocities_input_port()
+  /// 3) plant.get_body_spatial_accelerations_output_port() to
+  ///        this.get_body_spatial_accelerations_output_port()
+  void ConnectToPlant(DiagramBuilder<T>* builder,
+      const multibody::MultibodyPlant<T>& plant) const;
 
   const InputPort<T>& get_body_poses_input_port() const {
     return *body_poses_input_port_;
