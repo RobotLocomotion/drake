@@ -44,6 +44,7 @@ drake_cc_library(
     name = "accelerometer",
     srcs = ["accelerometer.cc"],
     hdrs = ["accelerometer_sensor.h"],
+    data = ["//examples/pendulum:prod_models"],
     deps = [
         "//math:geometric_transform",
         "//multibody/math",
@@ -51,9 +52,7 @@ drake_cc_library(
         "//multibody/tree:multibody_tree_indexes",
         "//systems/framework",
     ],
-    data = ["//examples/pendulum:prod_models"],
 )
-
 
 drake_cc_vector_gen_library(
     name = "beam_model_params",

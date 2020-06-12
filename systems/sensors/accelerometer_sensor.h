@@ -62,7 +62,7 @@ class Accelerometer : public LeafSystem<T> {
 
   /// Modifies a Diagram by connecting the input ports of this Accelerometer
   /// to the appropriate output ports of a MultibodyPlant. Must be called
-  /// during Diagram building and given the appropriate builder. 
+  /// during Diagram building and given the appropriate builder.
   /// This is a convenience method to simplify some common boilerplate of
   /// Diagram wiring. Specifically, this makes three connections:
   ///

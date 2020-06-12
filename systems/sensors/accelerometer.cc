@@ -1,7 +1,6 @@
-#include "drake/systems/sensors/accelerometer_sensor.h"
-
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_velocity.h"
+#include "drake/systems/sensors/accelerometer_sensor.h"
 
 namespace drake {
 namespace systems {
@@ -72,7 +71,6 @@ void Accelerometer<T>::ConnectToPlant(DiagramBuilder<T>* builder,
                    get_body_velocities_input_port());
   builder->Connect(plant.get_body_spatial_accelerations_output_port(),
                    get_body_accelerations_input_port());
-
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

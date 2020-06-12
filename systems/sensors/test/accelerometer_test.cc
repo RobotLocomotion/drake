@@ -1,5 +1,3 @@
-#include "drake/systems/sensors/accelerometer_sensor.h"
-
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -8,6 +6,7 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/sensors/accelerometer_sensor.h"
 
 namespace drake {
 namespace {
@@ -64,7 +63,7 @@ GTEST_TEST(TestAccelerometer, DefaultRotation) {
 
   // Compute expected result
   // g/L sin(theta)
-  double angular_acceleration = -gravity.norm() / .5 * sin(angle);  
+  double angular_acceleration = -gravity.norm() / .5 * sin(angle);
   Eigen::Vector3d expected_result(-angular_acceleration * r_BS, 0, 0);
   Eigen::Vector3d g_S(cos(angle) * gravity(0)  - sin(angle) * gravity(2),
                       gravity(1),
@@ -116,7 +115,7 @@ GTEST_TEST(TestAccelerometer, Rotated) {
 
   // Test using convenience connection
   accelerometer.ConnectToPlant(&builder, plant);
-  
+
   auto diagram = builder.Build();
 
   auto diagram_context = diagram->CreateDefaultContext();
@@ -137,7 +136,7 @@ GTEST_TEST(TestAccelerometer, Rotated) {
 
   // Compute expected result
   // g/L sin(theta)
-  double angular_acceleration = -gravity.norm() / .5 * sin(angle);  
+  double angular_acceleration = -gravity.norm() / .5 * sin(angle);
   Eigen::Vector3d expected_result(0, 0, -angular_acceleration * r_BS);
   Eigen::Vector3d g_S(-cos(angle) * gravity(2) - sin(angle) * gravity(0),
                       gravity(1),
@@ -156,7 +155,7 @@ GTEST_TEST(TestAccelerometer, Rotated) {
   const auto& result_with_velocity =
       accelerometer.get_output_port(0).Eval<BasicVector<double>>(accel_context);
   Eigen::Vector3d expected_result_with_velocity(
-      - angular_velocity * angular_velocity * r_BS, 
+      - angular_velocity * angular_velocity * r_BS,
       0,
       -angular_acceleration * r_BS);
   expected_result_with_velocity -= g_S;
