@@ -100,7 +100,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void LatchInitialPosition(
       const systems::Context<double>&,
       systems::DiscreteValues<double>*) const;
-  void CalcCachedOutputs(
+  void CalcDefaultedCommand(
       const systems::Context<double>&, lcmt_iiwa_command*) const;
   void CalcPositionOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
@@ -113,7 +113,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   const systems::CacheEntry* position_measured_or_param_{};
   systems::DiscreteStateIndex latched_position_measured_is_set_;
   systems::DiscreteStateIndex latched_position_measured_;
-  const systems::CacheEntry* cached_outputs_{};
+  const systems::CacheEntry* defaulted_command_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_torque_output_{};
 

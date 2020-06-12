@@ -51,8 +51,8 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   // received.  Prior to that event, we continue to use the unlatched value.
   latched_position_measured_is_set_ = DeclareDiscreteState(VectorXd::Zero(1));
   latched_position_measured_ = DeclareDiscreteState(VectorXd::Zero(num_joints));
-  cached_outputs_ = &DeclareCacheEntry(
-      "cached_outputs", &IiwaCommandReceiver::CalcCachedOutputs,
+  defaulted_command_ = &DeclareCacheEntry(
+      "defaulted_command", &IiwaCommandReceiver::CalcDefaultedCommand,
       {message_input_->ticket(),
        discrete_state_ticket(latched_position_measured_is_set_),
        discrete_state_ticket(latched_position_measured_),
@@ -61,12 +61,12 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   DeclareVectorOutputPort(
       "position", BasicVector<double>(num_joints),
       &IiwaCommandReceiver::CalcPositionOutput,
-      {cached_outputs_->ticket()});
+      {defaulted_command_->ticket()});
 
   DeclareVectorOutputPort(
       "torque", BasicVector<double>(num_joints),
       &IiwaCommandReceiver::CalcTorqueOutput,
-      {cached_outputs_->ticket()});
+      {defaulted_command_->ticket()});
 }
 
 void IiwaCommandReceiver::set_initial_position(
@@ -124,37 +124,29 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
       }));
 }
 
-void IiwaCommandReceiver::CalcCachedOutputs(
+void IiwaCommandReceiver::CalcDefaultedCommand(
     const systems::Context<double>& context, lcmt_iiwa_command* result) const {
   // Copy the input value into our tentative result.
   *result = message_input_->Eval<lcmt_iiwa_command>(context);
+
   // If we haven't received a message yet, then fall back to the default
-  // position with zero torques.
+  // position.
   if (lcm::AreLcmMessagesEqual(*result, lcmt_iiwa_command{})) {
     const BasicVector<double>& latch_is_set = context.get_discrete_state(
         latched_position_measured_is_set_);
-    const BasicVector<double>& latched_value = context.get_discrete_state(
-        latched_position_measured_);
-    const BasicVector<double>& measured_value =
-        position_measured_or_param_->Eval<BasicVector<double>>(context);
-    const VectorXd positions =
+    const BasicVector<double>& default_position =
         latch_is_set[0]
-        ? latched_value.CopyToVector()
-        : measured_value.CopyToVector();
-    result->num_joints = positions.size();
-    result->joint_position =
-        {positions.data(), positions.data() + positions.size()};
-  }
-  // If torques were not sent, pad with zeros.
-  if (result->num_torques == 0) {
-    result->num_torques = num_joints_;
-    result->joint_torque.resize(num_joints_, 0.0);
+         ? context.get_discrete_state(latched_position_measured_)
+         : position_measured_or_param_->Eval<BasicVector<double>>(context);
+    const VectorXd vec = default_position.CopyToVector();
+    result->num_joints = vec.size();
+    result->joint_position = {vec.data(), vec.data() + vec.size()};
   }
 }
 
 void IiwaCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto& message = cached_outputs_->Eval<lcmt_iiwa_command>(context);
+  const auto& message = defaulted_command_->Eval<lcmt_iiwa_command>(context);
   if (message.num_joints != num_joints_) {
     throw std::runtime_error(fmt::format(
         "IiwaCommandReceiver expected num_joints = {}, but received {}",
@@ -167,7 +159,12 @@ void IiwaCommandReceiver::CalcPositionOutput(
 
 void IiwaCommandReceiver::CalcTorqueOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto& message = cached_outputs_->Eval<lcmt_iiwa_command>(context);
+  const auto& message = defaulted_command_->Eval<lcmt_iiwa_command>(context);
+  if (message.num_torques == 0) {
+    // If torques were not sent, use zeros.
+    output->SetZero();
+    return;
+  }
   if (message.num_torques != num_joints_) {
     throw std::runtime_error(fmt::format(
         "IiwaCommandReceiver expected num_torques = {}, but received {}",
