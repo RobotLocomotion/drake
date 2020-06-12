@@ -282,6 +282,105 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestComputeCentroid) {
   EXPECT_TRUE(CompareMatrices(centroid, Vector3d(0.25, 0.5, 0.75)));
 }
 
+GTEST_TEST(BoundingVolumeHierarchyTest, TestEqual) {
+  // Tests that two BVHs with the same tree structure but different
+  // bounding volumes are not equal. Each tree has only one node.
+  {
+    const VolumeMesh<double> smaller_tetrahedron(
+        std::vector<VolumeElement>{
+            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
+                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
+        std::vector<VolumeVertex<double>>{
+            VolumeVertex<double>(Vector3d::Zero()),
+            VolumeVertex<double>(Vector3d::UnitX()),
+            VolumeVertex<double>(Vector3d::UnitY()),
+            VolumeVertex<double>(Vector3d::UnitZ())});
+    const BoundingVolumeHierarchy<VolumeMesh<double>> smaller(
+        smaller_tetrahedron);
+    const VolumeMesh<double> bigger_tetrahedron(
+        std::vector<VolumeElement>{
+            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
+                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
+        std::vector<VolumeVertex<double>>{
+            VolumeVertex<double>(Vector3d::Zero()),
+            VolumeVertex<double>(2. * Vector3d::UnitX()),
+            VolumeVertex<double>(2. * Vector3d::UnitY()),
+            VolumeVertex<double>(2. * Vector3d::UnitZ())});
+    const BoundingVolumeHierarchy<VolumeMesh<double>> bigger(
+        bigger_tetrahedron);
+    // Verify that each tree has the same structure. Each has only one node.
+    ASSERT_TRUE(smaller.root_node().is_leaf());
+    ASSERT_TRUE(bigger.root_node().is_leaf());
+    // Verify that the two trees have different bounding volumes.
+    const Aabb smaller_box(Vector3d{0.5, 0.5, 0.5}, Vector3d{0.5, 0.5, 0.5});
+    const Aabb bigger_box(Vector3d{1., 1., 1.}, Vector3d{1., 1., 1.});
+    ASSERT_TRUE(smaller.root_node().aabb().Equal(smaller_box));
+    ASSERT_TRUE(bigger.root_node().aabb().Equal(bigger_box));
+
+    EXPECT_FALSE(smaller.Equal(bigger));
+    EXPECT_FALSE(bigger.Equal(smaller));
+  }
+
+  // Tests that two BVHs with different tree structures but the same bounding
+  // volumes are not equal. One tree has one node. The other tree has one
+  // root node and two leaves. Every node has the same bounding volume.
+  {
+    const VolumeMesh<double> one_tetrahedron(
+        std::vector<VolumeElement>{
+            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
+                          VolumeVertexIndex(2), VolumeVertexIndex(3))},
+        std::vector<VolumeVertex<double>>{
+            VolumeVertex<double>(Vector3d::Zero()),
+            VolumeVertex<double>(Vector3d::UnitX()),
+            VolumeVertex<double>(Vector3d::UnitY()),
+            VolumeVertex<double>(Vector3d::UnitZ())});
+    const BoundingVolumeHierarchy<VolumeMesh<double>> one_node(one_tetrahedron);
+    const VolumeMesh<double> two_tetrahedra(
+        std::vector<VolumeElement>{
+            VolumeElement(VolumeVertexIndex(0), VolumeVertexIndex(1),
+                          VolumeVertexIndex(2), VolumeVertexIndex(3)),
+            VolumeElement(VolumeVertexIndex(1), VolumeVertexIndex(2),
+                          VolumeVertexIndex(3), VolumeVertexIndex(4))},
+        std::vector<VolumeVertex<double>>{
+            VolumeVertex<double>(Vector3d::Zero()),
+            VolumeVertex<double>(Vector3d::UnitX()),
+            VolumeVertex<double>(Vector3d::UnitY()),
+            VolumeVertex<double>(Vector3d::UnitZ()),
+            VolumeVertex<double>(Vector3d{1., 1., 1.})});
+    const BoundingVolumeHierarchy<VolumeMesh<double>> two_leaves(
+        two_tetrahedra);
+    // Verify that the two trees have different structures.
+    ASSERT_TRUE(one_node.root_node().is_leaf());
+    ASSERT_FALSE(two_leaves.root_node().is_leaf());
+    ASSERT_TRUE(two_leaves.root_node().left().is_leaf());
+    ASSERT_TRUE(two_leaves.root_node().right().is_leaf());
+    // Verify that the bounding volume of every node is the same unit box.
+    const Aabb unit_box(Vector3d{0.5, 0.5, 0.5}, Vector3d{0.5, 0.5, 0.5});
+    ASSERT_TRUE(one_node.root_node().aabb().Equal(unit_box));
+    ASSERT_TRUE(two_leaves.root_node().aabb().Equal(unit_box));
+    ASSERT_TRUE(two_leaves.root_node().left().aabb().Equal(unit_box));
+    ASSERT_TRUE(two_leaves.root_node().right().aabb().Equal(unit_box));
+
+    EXPECT_FALSE(one_node.Equal(two_leaves));
+    EXPECT_FALSE(two_leaves.Equal(one_node));
+  }
+
+  // Tests equality of BVH's that require multiple recursive calls in
+  // traversing the trees. The mesh has enough triangles for the tree to have
+  // enough depth.
+  const SurfaceMesh<double> mesh_ellipsoid =
+      MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6.);
+  ASSERT_EQ(8, mesh_ellipsoid.num_faces());
+  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_ellipsoid(
+      mesh_ellipsoid);
+  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_ellipsoid_too(
+      mesh_ellipsoid);
+  EXPECT_TRUE(bvh_ellipsoid.Equal(bvh_ellipsoid_too));
+
+  // Tests reflexive property: equal to itself.
+  EXPECT_TRUE(bvh_ellipsoid.Equal(bvh_ellipsoid));
+}
+
 // Tests calculating the bounding box volume. Due to boundary padding, the
 // volume is increased from 8abc to 8((a + ε)*(b + ε)*(c+ε)), i.e.:
 // 8[abc + (ab + bc + ac)ε + (a + b + c)ε² + ε³].
@@ -756,6 +855,21 @@ GTEST_TEST(AabbTest, HalfSpaceOverlap) {
       EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
     }
   }
+}
+
+GTEST_TEST(AabbTest, TestEqual) {
+  Aabb a{Vector3d{0.5, 0.25, -0.75}, Vector3d{1, 2, 3}};
+  // Equal to itself.
+  EXPECT_TRUE(a.Equal(a));
+  // Different center.
+  Aabb b{Vector3d{1.5, 1.25, -1.75}, Vector3d{1, 2, 3}};
+  EXPECT_FALSE(a.Equal(b));
+  // Different half_width.
+  Aabb c{Vector3d{0.5, 0.25, -0.75}, Vector3d{2, 4, 6}};
+  EXPECT_FALSE(a.Equal(c));
+  // Same.
+  Aabb d{Vector3d{0.5, 0.25, -0.75}, Vector3d{1, 2, 3}};
+  EXPECT_TRUE(a.Equal(d));
 }
 
 }  // namespace
