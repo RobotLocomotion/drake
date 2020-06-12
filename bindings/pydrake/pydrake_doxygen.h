@@ -14,24 +14,71 @@ At present, a fork of `pybind11` is used which permits bindings matrices with
 `dtype=object`, passing `unique_ptr` objects, and prevents aliasing for Python
 classes derived from `pybind11` classes.
 
+Before delving too deep into this, please first review the user-facing
+documentation about
+[What's Available from Python](https://drake.mit.edu/python_bindings.html#what-s-available-from-python).
+
 ## Module Organization
 
+<!--
+TODO(eric.cousineau): Migrate the header -> module mapping to user docs.
+-->
+
 The structure of the bindings generally follow the *directory structure*, not
-the namespace structure. As an example, if in C++  you do:
+the namespace structure. As an example, the following code in C++:
 
-    #include <drake/multibody/plant/{header}.h>
-    using drake::multibody::{symbol};
+```{.cc}
+#include <drake/multibody/parsing/parser.h>
+#include <drake/multibody/plant/multibody_plant.h>
 
-then in Python you would do:
+using drake::multibody::MultibodyPlant;
+using drake::multibody::Parser;
+```
 
-    from pydrake.multibody.plant import {symbol}
+will look similar in Python, but you won't use the header file's name:
 
-Some (but not all) exceptions:
+```{.py}
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+```
 
-- `drake/multibody/rigid_body_tree.h` is actually contained in the module
-`pydrake.multibody.rigid_body_tree`.
-- `drake/solvers/mathematical_program.h` is actually contained in the module
-`pydrake.solvers.mathematicalprogram`.
+In general, you can find where a symbol is bound by searching for the symbol's
+name in quotes underneath the directory `drake/bindings/pydrake`.
+
+For example, you should search for `"MultibodyPlant"`, `"Parser"`, etc. To
+elaborate, the binding of `Parser` is found in
+`.../pydrake/multibody/parsing_py.cc`, and looks like this:
+
+```{.cc}
+using Class = Parser;
+py::class_<Class>(m, "Parser", ...)
+```
+
+and binding of `MultibodyPlant` template instantiations are in
+`.../pydrake/multibody/plant_py.cc` and look like this:
+
+```{.cc}
+using Class = MultibodyPlant<T>;
+DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+    m, "MultibodyPlant", ...)
+```
+
+where the function containing this definition is templated on type `T` and
+invoked for the scalar types mentioned in `drake/common/default_scalars.h`.
+
+Some (but not all) exceptions to the above rules:
+
+- `drake/common/autodiff.h` symbols live in `pydrake.autodiffutils`.
+- `drake/common/symbolic.h` symbols live in `pydrake.symbolic`.
+- `drake/common/value.h` symbols live in `pydrake.common.value`.
+- `drake/solvers/mathematical_program.h` symbols live in
+`pydrake.solvers.mathematicalprogram` (notice the Python name has no
+underscore).
+- `drake/systems/framework/*.h` symbols live in `pydrake.systems.framework`
+(per the rule) and the bindings are ultimately linked via
+`pydrake/systems/framework_py.cc`, but for compilation speed the binding
+definitions themselves are split into
+`./framework_py_{semantics,systems,values}.cc`.
 
 ## `pybind11` Tips
 
@@ -163,7 +210,7 @@ consider placing them in a heredoc string.
 
 An example of incorporating docstrings from `pydrake_doc`:
 
-~~~{.cc}
+```{.cc}
     #include "drake/bindings/pydrake/documentation_pybind.h"
 
     PYBIND11_MODULE(math, m) {
@@ -183,11 +230,11 @@ An example of incorporating docstrings from `pydrake_doc`:
               doc.RigidTransform.set_rotation.doc)
       ...
     }
-~~~
+```
 
 An example of supplying custom strings:
 
-~~~{.cc}
+```{.cc}
     constexpr char another_helper_doc[] = R"""(
     Another helper docstring. This is really long.
     And has multiple lines.
@@ -197,12 +244,12 @@ An example of supplying custom strings:
       m.def("helper", []() { return 42; }, "My helper method");
       m.def("another_helper", []() { return 10; }, another_helper_doc);
     }
-~~~
+```
 
 @note Consider using scoped aliases to abbreviate both the usage of bound types
 and the docstring structures. Borrowing from above:
 
-~~~{.cc}
+```{.cc}
     {
       using Class = RigidTransform<T>;
       constexpr auto& cls_doc = doc.RigidTransform;
@@ -210,7 +257,7 @@ and the docstring structures. Borrowing from above:
           .def(py::init(), cls_doc.ctor.doc_0args)
           ...
     }
-~~~
+```
 
 To view the documentation rendered in Sphinx:
 
@@ -242,11 +289,11 @@ efficient editor!
 @note If you are debugging a certain file and want quicker generation and a
 smaller generated file, you can hack `mkdoc.py` to focus only on your include
 file of chioce. As an example, debugging `mathematical_program.h`:
-~~~{.py}
+```{.py}
     ...
     assert len(include_files) > 0  # Existing code.
     include_files = ["drake/solvers/mathematical_program.h"]  # HACK
-~~~
+```
 This may break the bindings themselves, and should only be used for inspecting
 the output.
 
