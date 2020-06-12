@@ -1,7 +1,5 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
 
-#include <limits>
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
@@ -13,15 +11,10 @@ namespace kuka_iiwa {
 
 using Eigen::VectorXd;
 using systems::BasicVector;
-using systems::CacheEntry;
 using systems::Context;
 using systems::DiscreteValues;
-using systems::DiscreteStateIndex;
 using systems::DiscreteUpdateEvent;
-using systems::InputPortIndex;
 using systems::NumericParameterIndex;
-
-using InPort = systems::InputPort<double>;
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
