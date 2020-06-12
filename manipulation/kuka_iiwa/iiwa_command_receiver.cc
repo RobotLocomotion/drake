@@ -63,9 +63,9 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
       DeclareDiscreteState(VectorXd::Zero(1));
   const DiscreteStateIndex latched_position_measured =
       DeclareDiscreteState(VectorXd::Zero(num_joints));
-  const CacheEntry* const fused_input_and_state =
+  cached_outputs_ =
     &DeclareCacheEntry<lcmt_iiwa_command>(
-      "fused_input_and_state",
+      "cached_outputs",
       lcmt_iiwa_command{},
       [num_joints,
        message_port,
@@ -106,39 +106,13 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
 
   DeclareVectorOutputPort(
       "position", BasicVector<double>(num_joints),
-      [num_joints,
-       fused_input_and_state](
-          const Context<double>& context, BasicVector<double>* output) {
-        const auto& message =
-            fused_input_and_state->Eval<lcmt_iiwa_command>(context);
-        if (message.num_joints != num_joints) {
-          throw std::runtime_error(fmt::format(
-              "IiwaCommandReceiver expected num_joints = {}, but received {}",
-              num_joints, message.num_joints));
-        }
-        output->SetFromVector(Eigen::Map<const VectorXd>(
-            message.joint_position.data(),
-            message.joint_position.size()));
-      },
-      {fused_input_and_state->ticket()});
+      &IiwaCommandReceiver::CalcPositionOutput,
+      {cached_outputs_->ticket()});
 
   DeclareVectorOutputPort(
       "torque", BasicVector<double>(num_joints),
-      [num_joints,
-       fused_input_and_state](
-          const Context<double>& context, BasicVector<double>* output) {
-        const auto& message =
-            fused_input_and_state->Eval<lcmt_iiwa_command>(context);
-        if (message.num_torques != num_joints) {
-          throw std::runtime_error(fmt::format(
-              "IiwaCommandReceiver expected num_torques = {}, but received {}",
-              num_joints, message.num_torques));
-        }
-        output->SetFromVector(Eigen::Map<const VectorXd>(
-            message.joint_torque.data(),
-            message.joint_torque.size()));
-      },
-      {fused_input_and_state->ticket()});
+      &IiwaCommandReceiver::CalcTorqueOutput,
+      {cached_outputs_->ticket()});
 }
 
 const InPort& IiwaCommandReceiver::get_message_input_port() const {
@@ -205,6 +179,34 @@ void IiwaCommandReceiver::DoCalcNextUpdateTime(
           DiscreteValues<double>* next_values) {
         DoLatchInitialPosition(*position_measured, event_context, next_values);
       }));
+}
+
+void IiwaCommandReceiver::CalcPositionOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const int num_joints = output->size();
+  const auto& message = cached_outputs_->Eval<lcmt_iiwa_command>(context);
+  if (message.num_joints != num_joints) {
+    throw std::runtime_error(fmt::format(
+        "IiwaCommandReceiver expected num_joints = {}, but received {}",
+        num_joints, message.num_joints));
+  }
+  output->SetFromVector(Eigen::Map<const VectorXd>(
+      message.joint_position.data(),
+      message.joint_position.size()));
+}
+
+void IiwaCommandReceiver::CalcTorqueOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  const int num_joints = output->size();
+  const auto& message = cached_outputs_->Eval<lcmt_iiwa_command>(context);
+  if (message.num_torques != num_joints) {
+    throw std::runtime_error(fmt::format(
+        "IiwaCommandReceiver expected num_torques = {}, but received {}",
+        num_joints, message.num_torques));
+  }
+  output->SetFromVector(Eigen::Map<const VectorXd>(
+      message.joint_torque.data(),
+      message.joint_torque.size()));
 }
 
 }  // namespace kuka_iiwa

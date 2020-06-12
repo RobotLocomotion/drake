@@ -85,6 +85,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void DoCalcNextUpdateTime(
       const systems::Context<double>&,
       systems::CompositeEventCollection<double>*, double*) const override;
+  void CalcPositionOutput(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void CalcTorqueOutput(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
+
+  const systems::CacheEntry* cached_outputs_{};
 };
 
 }  // namespace kuka_iiwa
