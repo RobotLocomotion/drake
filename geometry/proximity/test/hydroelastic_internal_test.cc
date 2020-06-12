@@ -10,6 +10,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/make_sphere_field.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity_properties.h"
 
@@ -21,7 +23,315 @@ namespace {
 
 using Eigen::Vector3d;
 using std::function;
+using std::make_unique;
 using std::pow;
+
+GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+      sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+  const double elastic_modulus = 1e+7;
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+
+  const SoftMesh original(std::move(mesh), std::move(pressure));
+
+  // Test copy-assignment operator.
+  {
+    SoftMesh copy;
+    copy = original;
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.pressure(), &copy.pressure());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            copy.pressure());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    SoftMesh copy(original);
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.pressure(), &copy.pressure());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            copy.pressure());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    SoftMesh start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const VolumeMesh<double>* const mesh_ptr = &start.mesh();
+    const VolumeMeshField<double, double>* const pressure_ptr =
+        &start.pressure();
+    const BoundingVolumeHierarchy<VolumeMesh<double>>* const bvh_ptr =
+        &start.bvh();
+
+    // Test move constructor.
+    SoftMesh move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.pressure(), pressure_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    SoftMesh move_assigned;
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.pressure(), pressure_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
+
+// SoftGeometry can represent either a mesh or a half space (and in the future,
+// possibly more types). Therefore, in construction, the source can be one of
+// any of the types and in assignment, the target can likewise be any
+// supported type. We do not explicitly test all combinations. We rely on the
+// fact that SoftGeometry's management of these exclusive types is handled by
+// std::variant and the move/copy semantics of the underlying data types
+// (already tested). If SoftGeometry changes its implementation details, this
+// logic would need to be revisited.
+GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+      sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+  const double elastic_modulus = 1e+7;
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+
+  const SoftGeometry original(SoftMesh(std::move(mesh), std::move(pressure)));
+
+  // Test copy-assignment operator.
+  {
+    // Initialize `dut` as a SoftGeometry representing a half space.
+    // Then, change it to a SoftGeometry representing a mesh by copy-assignment.
+    SoftGeometry dut(SoftHalfSpace{1e+7});
+    dut = original;
+
+    // Test for uniqueness. The contents have different memory addresses.
+    EXPECT_NE(&original.mesh(), &dut.mesh());
+    EXPECT_NE(&original.pressure_field(), &dut.pressure_field());
+    EXPECT_NE(&original.bvh(), &dut.bvh());
+
+    EXPECT_TRUE(dut.mesh().Equal(original.mesh()));
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            dut.pressure_field());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure_field());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+    EXPECT_TRUE(dut.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    SoftGeometry copy(original);
+
+    // Test for uniqueness. The contents have different memory addresses.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.pressure_field(), &copy.pressure_field());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    const auto& copy_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            copy.pressure_field());
+    const auto& original_pressure =
+        static_cast<const VolumeMeshFieldLinear<double, double>&>(
+            original.pressure_field());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    SoftGeometry start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const VolumeMesh<double>* const mesh_ptr = &start.mesh();
+    const VolumeMeshField<double, double>* const pressure_ptr =
+        &start.pressure_field();
+    const BoundingVolumeHierarchy<VolumeMesh<double>>* const bvh_ptr =
+        &start.bvh();
+
+    // Test move constructor.
+    SoftGeometry move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.pressure_field(), pressure_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    // Initialize `move_assigned` as a SoftGeometry representing a half spce.
+    // Then, change it to a SoftGeometry of a soft mesh by move-assignment
+    // from `move_constructed`.
+    SoftGeometry move_assigned(SoftHalfSpace{1e+7});
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.pressure_field(), pressure_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
+
+GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(sphere, resolution_hint));
+
+  const RigidMesh original(std::move(mesh));
+
+  // Test copy-assignment operator.
+  {
+    RigidMesh copy;
+    copy = original;
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    RigidMesh copy(original);
+
+    // Test for uniqueness.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    RigidMesh start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>* const bvh_ptr =
+        &start.bvh();
+
+    // Test move constructor.
+    RigidMesh move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    RigidMesh move_assigned;
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
+
+// RigidGeometry can represent either a mesh or a half space (and in the future,
+// possibly more types). Therefore, in construction, the source can be one of
+// any of the types and in assignment, the target can likewise be any
+// supported type. We do not explicitly test all combinations. We rely on the
+// fact that RigidGeometry's management of these exclusive types is handled by
+// std::optional and the move/copy semantics of the underlying data types
+// (already tested). If RigidGeometry changes its implementation details, this
+// logic would need to be revisited.
+GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
+  const RigidGeometry original(RigidMesh(make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(Sphere(1.25), 2.0))));
+
+  // Test copy-assignment operator.
+  {
+    // Initialize `dut` as a RigidGeometry representing a half space. Then,
+    // change it to a RigidGeometry representing a mesh by copy-assignment.
+    RigidGeometry dut(HalfSpace{});
+    dut = original;
+
+    // Test for uniqueness. The contents have different memory addresses.
+    EXPECT_NE(&original.mesh(), &dut.mesh());
+    EXPECT_NE(&original.bvh(), &dut.bvh());
+
+    EXPECT_TRUE(dut.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(dut.bvh().Equal(original.bvh()));
+  }
+
+  // Test copy constructor.
+  {
+    RigidGeometry copy(original);
+
+    // Test for uniqueness. Their contents are at different memory addresses.
+    EXPECT_NE(&original.mesh(), &copy.mesh());
+    EXPECT_NE(&original.bvh(), &copy.bvh());
+
+    EXPECT_TRUE(copy.mesh().Equal(original.mesh()));
+    EXPECT_TRUE(copy.bvh().Equal(original.bvh()));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`, each time confirming that the target of the move has taken
+  // ownership.
+  {
+    RigidGeometry start(original);  // Assume the copy constructor is correct.
+
+    // Grab raw pointers so we can determine that their ownership changes due to
+    // move semantics.
+    const SurfaceMesh<double>* const mesh_ptr = &start.mesh();
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>* const bvh_ptr =
+        &start.bvh();
+
+    // Test move constructor.
+    RigidGeometry move_constructed(std::move(start));
+    EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+
+    // Test move-assignment operator.
+    // Initialize `move_assigned` as a RigidGeometry representing a half space.
+    // Then, change it to a RigidGeometry of a mesh by move-assignment.
+    RigidGeometry move_assigned(HalfSpace{});
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+  }
+}
 
 // Tests the simple public API of the hydroelastic::Geometries: adding
 // geometries and querying the data stored.

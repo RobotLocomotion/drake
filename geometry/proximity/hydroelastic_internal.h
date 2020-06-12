@@ -6,6 +6,7 @@
 #include <utility>
 #include <variant>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
@@ -24,24 +25,44 @@ namespace hydroelastic {
 // TODO(SeanCurtis-TRI): When we do soft-soft contact, we'll need ∇p̃(e) as well.
 //  ∇p̃(e) is piecewise constant -- one ℜ³ vector per tetrahedron.
 /** Defines a soft mesh -- a mesh, its linearized pressure field, p̃(e), and its
- bounding volume hierarchy. While this struct retains ownership of the mesh,
+ bounding volume hierarchy. While this class retains ownership of the mesh,
  we assume that both the pressure field and the bounding volume hierarchy
  are derived from the mesh. */
-struct SoftMesh {
-  std::unique_ptr<VolumeMesh<double>> mesh;
-  std::unique_ptr<VolumeMeshField<double, double>> pressure;
-  std::unique_ptr<BoundingVolumeHierarchy<VolumeMesh<double>>> bvh;
-
+class SoftMesh {
+ public:
   SoftMesh() = default;
 
-  SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh_in,
-           std::unique_ptr<VolumeMeshField<double, double>> pressure_in)
-      : mesh(std::move(mesh_in)),
-        pressure(std::move(pressure_in)),
-        bvh(std::make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(
-            *mesh)) {
-    DRAKE_ASSERT(mesh.get() == &pressure->mesh());
+  SoftMesh(std::unique_ptr<VolumeMesh<double>> mesh,
+           std::unique_ptr<VolumeMeshField<double, double>> pressure)
+      : mesh_(std::move(mesh)),
+        pressure_(std::move(pressure)),
+        bvh_(std::make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(
+            *mesh_)) {
+    DRAKE_ASSERT(mesh_.get() == &pressure_->mesh());
   }
+
+  SoftMesh(const SoftMesh& s) { *this = s; }
+  SoftMesh& operator=(const SoftMesh& s);
+  SoftMesh(SoftMesh&&) = default;
+  SoftMesh& operator=(SoftMesh&&) = default;
+
+  const VolumeMesh<double>& mesh() const {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    return *mesh_;
+  }
+  const VolumeMeshField<double, double>& pressure() const {
+    DRAKE_DEMAND(pressure_ != nullptr);
+    return *pressure_;
+  }
+  const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh() const {
+    DRAKE_DEMAND(bvh_ != nullptr);
+    return *bvh_;
+  }
+
+ private:
+  std::unique_ptr<VolumeMesh<double>> mesh_;
+  std::unique_ptr<VolumeMeshField<double, double>> pressure_;
+  std::unique_ptr<BoundingVolumeHierarchy<VolumeMesh<double>>> bvh_;
 };
 
 /** Defines a soft half space. The half space is defined such that the half
@@ -91,10 +112,7 @@ class SoftGeometry {
   explicit SoftGeometry(SoftMesh&& soft_mesh)
       : geometry_(std::move(soft_mesh)) {}
 
-  SoftGeometry(const SoftGeometry& g) { *this = g; }
-  SoftGeometry& operator=(const SoftGeometry& g);
-  SoftGeometry(SoftGeometry&&) = default;
-  SoftGeometry& operator=(SoftGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry)
 
   /** @name  Distinguishing compliant representations
 
@@ -119,7 +137,7 @@ class SoftGeometry {
       throw std::runtime_error(
           "SoftGeometry::mesh() cannot be invoked for soft half space");
     }
-    return *std::get<SoftMesh>(geometry_).mesh;
+    return std::get<SoftMesh>(geometry_).mesh();
   }
 
   /** Returns a reference to the mesh's linearized pressure field -- calling
@@ -129,7 +147,7 @@ class SoftGeometry {
       throw std::runtime_error("SoftGeometry::pressure_field() cannot be "
                                "invoked for soft half space");
     }
-    return *std::get<SoftMesh>(geometry_).pressure;
+    return std::get<SoftMesh>(geometry_).pressure();
   }
 
   /** Returns a reference to the bounding volume hierarchy -- calling this will
@@ -139,7 +157,7 @@ class SoftGeometry {
       throw std::runtime_error(
           "SoftGeometry::bvh() cannot be invoked for soft half space");
     }
-    return *std::get<SoftMesh>(geometry_).bvh;
+    return std::get<SoftMesh>(geometry_).bvh();
   }
 
   /** Returns the half space's pressure scale -- calling this will throw if
@@ -159,18 +177,31 @@ class SoftGeometry {
 };
 
 /** Defines a rigid mesh -- a surface mesh and its bounding volume hierarchy.
- This struct retains ownership of the mesh, with the bounding volume hierarchy
+ This class retains ownership of the mesh, with the bounding volume hierarchy
  just referencing it.  */
-struct RigidMesh {
-  std::unique_ptr<SurfaceMesh<double>> mesh;
-  std::unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
-
+class RigidMesh {
+ public:
   RigidMesh() = default;
 
-  explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh_in)
-      : mesh(std::move(mesh_in)),
-        bvh(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
-            *mesh)) {}
+  explicit RigidMesh(std::unique_ptr<SurfaceMesh<double>> mesh)
+      : mesh_(std::move(mesh)),
+        bvh_(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
+            *mesh_)) {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
+
+  const SurfaceMesh<double>& mesh() const {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    return *mesh_;
+  }
+  const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh() const {
+    DRAKE_DEMAND(bvh_ != nullptr);
+    return *bvh_;
+  }
+
+ private:
+  copyable_unique_ptr<SurfaceMesh<double>> mesh_;
+  copyable_unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh_;
 };
 
 /** The base representation of rigid geometries. Generally, a rigid geometry
@@ -188,10 +219,7 @@ class RigidGeometry {
   explicit RigidGeometry(RigidMesh&& rigid_mesh)
       : geometry_(RigidMesh(std::move(rigid_mesh))) {}
 
-  RigidGeometry(const RigidGeometry& g) { *this = g; }
-  RigidGeometry& operator=(const RigidGeometry& g);
-  RigidGeometry(RigidGeometry&&) = default;
-  RigidGeometry& operator=(RigidGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
 
   /** Returns true if this RigidGeometry is a half space.  */
   bool is_half_space() const { return !geometry_.has_value(); }
@@ -203,7 +231,7 @@ class RigidGeometry {
       throw std::runtime_error(
           "RigidGeometry::mesh() cannot be invoked for rigid half space");
     }
-    return *(geometry_->mesh);
+    return geometry_->mesh();
   }
 
   /** Returns a reference to the bounding volume hierarchy -- calling this will
@@ -213,7 +241,7 @@ class RigidGeometry {
       throw std::runtime_error(
           "RigidGeometry::bvh() cannot be invoked for rigid half space");
     }
-    return *(geometry_->bvh);
+    return geometry_->bvh();
   }
 
  private:
