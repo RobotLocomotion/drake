@@ -224,7 +224,10 @@ drake_lcm_cc_library(
         "lcmt_planar_gripper_command.lcm",
         "lcmt_planar_gripper_status.lcm",
         "lcmt_planar_gripper_finger_command.lcm",
+        "lcmt_planar_gripper_finger_face_assignment.lcm",
+        "lcmt_planar_gripper_finger_face_assignments.lcm",
         "lcmt_planar_gripper_finger_status.lcm",
+        "lcmt_planar_plant_state.lcm",
         "lcmt_force_torque.lcm",
     ],
 )
