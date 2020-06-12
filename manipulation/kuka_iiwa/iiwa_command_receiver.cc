@@ -41,7 +41,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   initial_state_param_ = NumericParameterIndex{
       DeclareNumericParameter(BasicVector<double>(VectorXd::Zero(num_joints)))};
   position_measured_or_param_ = &DeclareCacheEntry(
-      "position_measured_or_param",
+      "position_measured_or_param", BasicVector<double>(num_joints),
       &IiwaCommandReceiver::CalcPositionMeasuredOrParam,
       {position_measured_input_->ticket(),
        numeric_parameter_ticket(initial_state_param_)});
