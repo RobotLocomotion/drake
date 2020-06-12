@@ -42,6 +42,11 @@ struct SoftMesh {
             *mesh)) {
     DRAKE_ASSERT(mesh.get() == &pressure->mesh());
   }
+
+  SoftMesh(const SoftMesh& s) { *this = s; }
+  SoftMesh& operator=(const SoftMesh& s);
+  SoftMesh(SoftMesh&&) = default;
+  SoftMesh& operator=(SoftMesh&&) = default;
 };
 
 /** Defines a soft half space. The half space is defined such that the half
@@ -171,6 +176,11 @@ struct RigidMesh {
       : mesh(std::move(mesh_in)),
         bvh(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
             *mesh)) {}
+
+  RigidMesh(const RigidMesh& r) { *this = r; }
+  RigidMesh& operator=(const RigidMesh& r);
+  RigidMesh(RigidMesh&&) = default;
+  RigidMesh& operator=(RigidMesh&&) = default;
 };
 
 /** The base representation of rigid geometries. Generally, a rigid geometry
