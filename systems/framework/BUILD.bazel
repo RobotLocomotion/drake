@@ -782,10 +782,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "leaf_system_test",
-    srcs = [
-        "test/leaf_system_declare_cache_entry_test.cc",
-        "test/leaf_system_test.cc",
-    ],
     deps = [
         ":leaf_system",
         "//common:essential",

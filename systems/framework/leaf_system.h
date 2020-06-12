@@ -53,40 +53,6 @@ class LeafSystem : public System<T> {
   type LeafContext<T>. */
   std::unique_ptr<LeafContext<T>> AllocateContext() const;
 
-  /** Declares a cache entry by specifying a (non-member) calculator function
-  with signature:
-  @code
-    void CalcCacheValue(const Context<T>&, ValueType*) const;
-  @endcode
-  This is one overload of many additional overloads; see
-  @ref DeclareCacheEntry_documentation "SystemBase::DeclareCacheEntry" for a
-  full list and complete information about the parameters and behavior. */
-  template <typename ValueType>
-  CacheEntry& DeclareCacheEntry(
-      std::string description,
-      const ValueType& model_value,
-      std::function<void(const Context<T>&, ValueType*)> calc,
-      std::set<DependencyTicket> prerequisites_of_calc = {
-          all_sources_ticket()}) {
-    DRAKE_THROW_UNLESS(bool{calc});
-    copyable_unique_ptr<AbstractValue> owned_model(
-        std::make_unique<Value<ValueType>>(model_value));
-    auto alloc_callback = [owned_model = std::move(owned_model)]() {
-      return owned_model->Clone();
-    };
-    auto calc_callback = [calc = std::move(calc)](
-        const ContextBase& context, AbstractValue* result) {
-      const auto& typed_context = dynamic_cast<const Context<T>&>(context);
-      ValueType& typed_result = result->get_mutable_value<ValueType>();
-      calc(typed_context, &typed_result);
-    };
-    auto& entry = DeclareCacheEntry(
-        std::move(description), std::move(alloc_callback),
-        std::move(calc_callback), std::move(prerequisites_of_calc));
-    return entry;
-  }
-  using SystemBase::DeclareCacheEntry;
-
   // =========================================================================
   // Implementations of System<T> methods.
 
