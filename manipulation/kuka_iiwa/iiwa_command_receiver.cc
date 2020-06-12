@@ -22,13 +22,12 @@ using systems::InputPortIndex;
 using systems::NumericParameterIndex;
 
 using InPort = systems::InputPort<double>;
-using OutPort = systems::OutputPort<double>;
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
   DRAKE_THROW_UNLESS(num_joints > 0);
-  const InPort* const message_port = &DeclareAbstractInputPort(
+  message_input_ = &DeclareAbstractInputPort(
       "lcmt_iiwa_command", Value<lcmt_iiwa_command>());
-  const InPort* const position_measured_port = &DeclareInputPort(
+  position_measured_input_ = &DeclareInputPort(
       "position_measured", systems::kVectorValued, num_joints);
 
   // This (deprecated) parameter stores a value to use for the initial position
@@ -43,16 +42,16 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
     &DeclareCacheEntry<BasicVector<double>>(
       "position_measured_or_param",
       BasicVector<double>(num_joints),
-      [position_measured_port,
+      [this,
        initial_state_param](
           const Context<double>& context, BasicVector<double>* result) {
-        if (position_measured_port->HasValue(context)) {
-          result->SetFromVector(position_measured_port->Eval(context));
+        if (position_measured_input_->HasValue(context)) {
+          result->SetFromVector(position_measured_input_->Eval(context));
         } else {
           result->SetFrom(context.get_numeric_parameter(initial_state_param));
         }
       }, {
-        position_measured_port->ticket(),
+        position_measured_input_->ticket(),
         numeric_parameter_ticket(initial_state_param),
       });
 
@@ -63,18 +62,17 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
       DeclareDiscreteState(VectorXd::Zero(1));
   const DiscreteStateIndex latched_position_measured =
       DeclareDiscreteState(VectorXd::Zero(num_joints));
-  cached_outputs_ =
-    &DeclareCacheEntry<lcmt_iiwa_command>(
+  cached_outputs_ = &DeclareCacheEntry<lcmt_iiwa_command>(
       "cached_outputs",
       lcmt_iiwa_command{},
       [num_joints,
-       message_port,
+       this,
        latched_position_measured_is_set,
        latched_position_measured,
        position_measured_or_param](
           const Context<double>& context, lcmt_iiwa_command* result) {
         // Copy the input value into our tentative result.
-        *result = message_port->Eval<lcmt_iiwa_command>(context);
+        *result = message_input_->Eval<lcmt_iiwa_command>(context);
         // If we haven't received a message yet, then fall back to the default
         // position with zero torques.
         if (lcm::AreLcmMessagesEqual(*result, lcmt_iiwa_command{})) {
@@ -98,7 +96,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
           result->joint_torque.resize(num_joints, 0.0);
         }
       }, {
-        message_port->ticket(),
+        message_input_->ticket(),
         discrete_state_ticket(latched_position_measured_is_set),
         discrete_state_ticket(latched_position_measured),
         position_measured_or_param->ticket(),
@@ -113,19 +111,6 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints) {
       "torque", BasicVector<double>(num_joints),
       &IiwaCommandReceiver::CalcTorqueOutput,
       {cached_outputs_->ticket()});
-}
-
-const InPort& IiwaCommandReceiver::get_message_input_port() const {
-  return LeafSystem<double>::get_input_port(0);
-}
-const InPort& IiwaCommandReceiver::get_position_measured_input_port() const {
-  return LeafSystem<double>::get_input_port(1);
-}
-const OutPort& IiwaCommandReceiver::get_commanded_position_output_port() const {
-  return LeafSystem<double>::get_output_port(0);
-}
-const OutPort& IiwaCommandReceiver::get_commanded_torque_output_port() const {
-  return LeafSystem<double>::get_output_port(1);
 }
 
 void IiwaCommandReceiver::set_initial_position(

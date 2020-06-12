@@ -70,10 +70,19 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   /// @name Named accessors for this System's input and output ports.
   //@{
-  const systems::InputPort<double>& get_message_input_port() const;
-  const systems::InputPort<double>& get_position_measured_input_port() const;
-  const systems::OutputPort<double>& get_commanded_position_output_port() const;
-  const systems::OutputPort<double>& get_commanded_torque_output_port() const;
+  const systems::InputPort<double>& get_message_input_port() const {
+    return *message_input_;
+  }
+  const systems::InputPort<double>& get_position_measured_input_port() const {
+    return *position_measured_input_;
+  }
+  const systems::OutputPort<double>& get_commanded_position_output_port()
+      const {
+    return *commanded_position_output_;
+  }
+  const systems::OutputPort<double>& get_commanded_torque_output_port() const {
+    return *commanded_torque_output_;
+  }
   //@}
 
   DRAKE_DEPRECATED("2020-09-01", "Use get_message_input_port() instead.")
@@ -90,6 +99,10 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void CalcTorqueOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
 
+  const systems::InputPort<double>* message_input_{};
+  const systems::InputPort<double>* position_measured_input_{};
+  const systems::OutputPort<double>* commanded_position_output_{};
+  const systems::OutputPort<double>* commanded_torque_output_{};
   const systems::CacheEntry* cached_outputs_{};
 };
 
