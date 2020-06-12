@@ -106,6 +106,7 @@ Tutorials and examples
 * Add meshcat animation (and binder tutorial) (`#13513`_)
 * Add Strandbeest example (to illustrate parsing LinearBushingRollPitchYaw) (`#13302`_)
 * Add guidance for picking bushing stiffness/damping constants (`#13106`_)
+* Document definitions for "accuracy" and "tolerance" (`#13267`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +125,7 @@ pydrake bindings
 
 New features
 
-* Bind C++ Value<vector<T>> to Python Value[List[T]] (`#13407`_, `#13408`_)
+* Bind C++ Value<vector<T>> to Python Value[List[T]] (`#13359`_, `#13407`_, `#13408`_)
 
 Fixes
 
@@ -195,8 +196,6 @@ Newly bound
 * pydrake.systems.framework.System.GetSystemPathname (`#13413`_)
 * pydrake.systems.framework.System.all_sources_except_input_ports_ticket (`#13413`_)
 * pydrake.systems.framework.SystemBase (`#13413`_)
-* std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::AutoDiffXd>> (`#13359`_)
-* std::vector<drake::multibody::ExternallyAppliedSpatialForce<drake::symbolic::Expression>> (`#13359`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -395,6 +394,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13224: https://github.com/RobotLocomotion/drake/pull/13224
 .. _#13234: https://github.com/RobotLocomotion/drake/pull/13234
 .. _#13266: https://github.com/RobotLocomotion/drake/pull/13266
+.. _#13267: https://github.com/RobotLocomotion/drake/pull/13267
 .. _#13279: https://github.com/RobotLocomotion/drake/pull/13279
 .. _#13283: https://github.com/RobotLocomotion/drake/pull/13283
 .. _#13288: https://github.com/RobotLocomotion/drake/pull/13288
