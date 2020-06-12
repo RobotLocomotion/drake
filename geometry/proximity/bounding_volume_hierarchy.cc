@@ -291,6 +291,26 @@ Vector3d BoundingVolumeHierarchy<MeshType>::ComputeCentroid(
   return centroid;
 }
 
+template <class MeshType>
+bool BoundingVolumeHierarchy<MeshType>::EqualTrees(const BvNode<MeshType>& a,
+                                                   const BvNode<MeshType>& b) {
+  if (&a == &b) return true;
+
+  if (!a.aabb().Equal(b.aabb())) return false;
+
+  if (a.is_leaf()) {
+    if (!b.is_leaf()) {
+      return false;
+    }
+    return a.element_index() == b.element_index();
+  } else {
+    if (b.is_leaf()) {
+      return false;
+    }
+    return EqualTrees(a.left(), b.left()) && EqualTrees(a.right(), b.right());
+  }
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
