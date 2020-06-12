@@ -36,7 +36,7 @@ namespace kuka_iiwa {
 ///
 /// @par Output prior to receiving a valid lcmt_iiwa_command message:
 /// The "position" output initially feeds through from the "position_measured"
-/// input port -- or if not connected, outputs zero.  When discrete updates
+/// input port -- or if not connected, outputs zero.  When discrete update
 /// events are enabled (e.g., during a simulation), the system latches the
 /// "position_measured" input into state during the first event, and the
 /// "position" output comes from the latched state, no longer fed through from

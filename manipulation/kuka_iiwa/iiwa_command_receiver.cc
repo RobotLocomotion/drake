@@ -93,6 +93,9 @@ void IiwaCommandReceiver::LatchInitialPosition(
   LatchInitialPosition(*context, &context->get_mutable_discrete_state());
 }
 
+// TODO(jwnimmer-tri) This is quite a cumbersome syntax to use for declaring a
+// "now" event.  We should try to consolidate it with other similar uses within
+// the source tree.  Relates to #11403 somewhat.
 void IiwaCommandReceiver::DoCalcNextUpdateTime(
     const systems::Context<double>& context,
     systems::CompositeEventCollection<double>* events, double* time) const {
