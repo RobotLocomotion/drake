@@ -94,16 +94,31 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void DoCalcNextUpdateTime(
       const systems::Context<double>&,
       systems::CompositeEventCollection<double>*, double*) const override;
+
+  void CalcPositionMeasuredOrParam(
+      const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void LatchInitialPosition(
+      const systems::Context<double>&,
+      systems::DiscreteValues<double>*) const;
+  void CalcCachedOutputs(
+      const systems::Context<double>&, lcmt_iiwa_command*) const;
   void CalcPositionOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
   void CalcTorqueOutput(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
 
+  const int num_joints_;
   const systems::InputPort<double>* message_input_{};
   const systems::InputPort<double>* position_measured_input_{};
+  const systems::CacheEntry* position_measured_or_param_{};
+  systems::DiscreteStateIndex latched_position_measured_is_set_;
+  systems::DiscreteStateIndex latched_position_measured_;
+  const systems::CacheEntry* cached_outputs_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_torque_output_{};
-  const systems::CacheEntry* cached_outputs_{};
+
+  // Deprecated.
+  systems::NumericParameterIndex initial_state_param_;
 };
 
 }  // namespace kuka_iiwa
