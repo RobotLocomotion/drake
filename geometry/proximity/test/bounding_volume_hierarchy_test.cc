@@ -282,6 +282,22 @@ GTEST_TEST(BoundingVolumeHierarchyTest, TestComputeCentroid) {
   EXPECT_TRUE(CompareMatrices(centroid, Vector3d(0.25, 0.5, 0.75)));
 }
 
+GTEST_TEST(BoundingVolumeHierarchyTest, TestEqual) {
+  BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_ellipsoid(
+      MakeEllipsoidSurfaceMesh<double>(Ellipsoid(1., 2., 3.), 6));
+  EXPECT_TRUE(bvh_ellipsoid.Equal(bvh_ellipsoid));
+
+  BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_sphere(
+      MakeSphereSurfaceMesh<double>(Sphere(3.), 6));
+  EXPECT_FALSE(bvh_ellipsoid.Equal(bvh_sphere));
+
+  // This assumes that the copy constructor creates a completely unique
+  // instance (as tested above) so that the equal test isn't trivially true.
+  BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_ellipsoid_copy(
+      bvh_ellipsoid);
+  EXPECT_TRUE(bvh_ellipsoid.Equal(bvh_ellipsoid_copy));
+}
+
 // Tests calculating the bounding box volume. Due to boundary padding, the
 // volume is increased from 8abc to 8((a + ε)*(b + ε)*(c+ε)), i.e.:
 // 8[abc + (ab + bc + ac)ε + (a + b + c)ε² + ε³].
@@ -756,6 +772,21 @@ GTEST_TEST(AabbTest, HalfSpaceOverlap) {
       EXPECT_TRUE(Aabb::HasOverlap(aabb_H, hs_C, X_CH));
     }
   }
+}
+
+GTEST_TEST(AabbTest, TestEqual) {
+  Aabb a{Vector3d{0.5, 0.25, -0.75}, Vector3d{1, 2, 3}};
+  // Equal to itself.
+  EXPECT_TRUE(a.Equal(a));
+  // Different center.
+  Aabb b{Vector3d{1.5, 1.25, -1.75}, Vector3d{1, 2, 3}};
+  EXPECT_FALSE(a.Equal(b));
+  // Different half_width.
+  Aabb c{Vector3d{0.5, 0.25, -0.75}, Vector3d{2, 4, 6}};
+  EXPECT_FALSE(a.Equal(c));
+  // Same.
+  Aabb d{Vector3d{0.5, 0.25, -0.75}, Vector3d{1, 2, 3}};
+  EXPECT_TRUE(a.Equal(d));
 }
 
 }  // namespace
