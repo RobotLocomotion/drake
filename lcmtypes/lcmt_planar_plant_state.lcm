@@ -1,0 +1,13 @@
+package drake;
+
+// The current status of the entire planar-gripper/brick MBP.  All angular
+// positions/velocities are expressed in radians and radians/second.
+struct lcmt_planar_plant_state
+{
+  // in microseconds
+  int64_t utime;
+
+  int32_t num_states;
+  double plant_state[num_states];
+
+}
