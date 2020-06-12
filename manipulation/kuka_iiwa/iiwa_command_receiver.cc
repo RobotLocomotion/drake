@@ -58,12 +58,12 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
        discrete_state_ticket(latched_position_measured_),
        position_measured_or_param_->ticket()});
 
-  DeclareVectorOutputPort(
+  commanded_position_output_ = &DeclareVectorOutputPort(
       "position", BasicVector<double>(num_joints),
       &IiwaCommandReceiver::CalcPositionOutput,
       {defaulted_command_->ticket()});
 
-  DeclareVectorOutputPort(
+  commanded_torque_output_ = &DeclareVectorOutputPort(
       "torque", BasicVector<double>(num_joints),
       &IiwaCommandReceiver::CalcTorqueOutput,
       {defaulted_command_->ticket()});
