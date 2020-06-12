@@ -16,3 +16,6 @@ The `latest <https://hub.docker.com/r/robotlocomotion/drake/tags?name=latest>`_,
 image can be pulled from Docker Hub as follows::
 
   docker pull robotlocomotion/drake:latest
+
+Docker images based on the Ubuntu 20.04 (Focal) binary archive are not
+available.
