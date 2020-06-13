@@ -505,4 +505,15 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
-  Current newest_commit 6ab67f7796d39fdf1ef0558434e8ab2d6a8b0aa3 (inclusive).
+  Current newest_commit 8d92fae6584f237e5d0989653c0b5915387444bf (inclusive).
+
+* Pin Sphinx to versions below 3.1 on macOS (`#13535`_)
+* yaml: Add read_archive Options struct (currently a no-op) (`#13537`_)  # This paves the way for dealing with parser options in a future commit. Thread the Options through the Serialize/Visit flow but don't use it for anything yet. Rename ReportMissingYaml to ReportError to avoid being overly specific; this was already used for error messages beyond just missing stuff. While we're here, also import the unit test with helpful comments and extracting some literal strings into named variables.
+* doc: Make sure each doxygen-only file has a xref to defined sections (`#13547`_)
+* Add python binding for GenerateSDPA (`#13546`_)
+* Make DiagramContext use the DiagramDiscreteValues type (`#13536`_)  # * Make DiagramContext::Clone() preserve DiagramDiscreteValues type.
+* Add bindings for CsdpSolver (`#13544`_)
+* Fix some collision geometries of the panda arm urdf (`#13550`_)
+* yaml: Add configurable policies for missing items (`#13532`_)
+* Add more mentions of Focal to the documentation (`#13553`_)
+* IiwaCommandReceiver latches initial position until first command (`#13540`_)  # This adjusts the semantics of the recently added position_measured input port to better match the actual control cabinet where the robot is held stiffly in place, instead of allowing external forces to push it around.
