@@ -16,8 +16,8 @@ PYBIND11_MODULE(scs, m) {
 
   m.doc() = "SCS solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework");
 
   py::class_<ScsSolver, SolverInterface>(m, "ScsSolver", doc.ScsSolver.doc)
       .def(py::init<>(), doc.ScsSolver.ctor.doc);

@@ -16,8 +16,8 @@ PYBIND11_MODULE(snopt, m) {
 
   m.doc() = "SNOPT solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework");
 
   py::class_<SnoptSolver, SolverInterface>(
       m, "SnoptSolver", doc.SnoptSolver.doc)
