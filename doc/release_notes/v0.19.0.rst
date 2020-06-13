@@ -52,6 +52,7 @@ Fixes
 * During simulator initialization, trigger concurrent periodic and "right now" events (`#13438`_)
 * VelocityImplicitEulerIntegrator resets cached matrices when user changes Jacobian scheme (`#13392`_)
 * Luenberger observer uses cache entries instead of mutable member variables (`#13307`_)
+* Make DiagramContext use the DiagramDiscreteValues type (`#13536`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -112,13 +113,15 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * common: Disallow Value<T> cv/ref/array/pointer types (`#13444`_)
+* yaml: Add configurable policies for missing items (`#13537`_, `#13532`_)
 * drake_visualizer: Trim clipping range to avoid rendering artifacts (`#13447`_)
 * drake_visualizer: Do not prevent pydrake from appearing on the import path (`#13428`_)
 * lcm: Add EncodeLcmMessage and DecodeLcmMessage sugar (`#13311`_)
 * examples: Rewrite move_jaco_ee to use ConstraintRelaxingIk (`#13325`_)
-* manipulation: Use input (not parameter) for no-op IIWA command (`#13340`_)
+* manipulation: Use latching input (not parameter) for no-op IIWA command (`#13340`_, `#13540`_)
 * manipulation: Check for whole default message, not just utime==0 (`#13311`_)
 * manipulation: Fix a bug calculating the joint index in RobotPlanInterpolator (`#13325`_)
+* manipulation: Fix collision geometries of the panda arm URDF (`#13550`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -174,6 +177,9 @@ Newly bound
 * pydrake.multibody.tree.SpatialInertia.get_com (`#13415`_)
 * pydrake.multibody.tree.SpatialInertia.get_mass (`#13415`_)
 * pydrake.multibody.tree.SpatialInertia.get_unit_inertia (`#13415`_)
+* pydrake.solvers.csdp.CsdpSolver (`#13544`_)
+* pydrake.solvers.csdp.CsdpSolverDetails (`#13544`_)
+* pydrake.solvers.sdpa_free_format.GenerateSDPA (`#13546`_)
 * pydrake.systems.analysis.PrintSimulatorStatistics (`#13343`_)
 * pydrake.systems.analysis.Simulator.ResetStatistics (`#13343`_)
 * pydrake.systems.analysis.Simulator.clear_monitor (`#13413`_)
@@ -204,7 +210,7 @@ Build system and dependencies
   `#13335`_, `#13339`_, `#13345`_, `#13346`_, `#13348`_, `#13353`_, `#13357`_,
   `#13360`_, `#13366`_, `#13383`_, `#13385`_, `#13400`_, `#13418`_, `#13425`_,
   `#13432`_, `#13436`_, `#13437`_, `#13449`_, `#13450`_, `#13469`_, `#13477`_,
-  `#13486`_, `#13487`_, `#13502`_, `#13508`_)
+  `#13486`_, `#13487`_, `#13502`_, `#13508`_, `#13553`_)
 * Add new Ubuntu dependency on pygame for use in examples (`#13381`_, `#13422`_)
 * Add new Ubuntu dependency on libclang-9-dev (`#13432`_, `#13437`_, `#13451`_)
 * Add new Ubuntu dependency on clang-9 (`#13477`_)
@@ -224,6 +230,7 @@ Build system and dependencies
 * On Ubuntu, the Drake APT site is no longer added by default (`#13462`_)
 * On Ubuntu, kcov-35 is no longer installed by default (`#13462`_)
 * On macOS, kcov is no longer required (`#13521`_, `#13522`_)
+* On macOS, pin Sphinx to versions below 3.1 (`#13535`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -506,14 +513,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 2abfd8cce26317556ac54fd3dc63cb57de4480d6 (inclusive).
   Current newest_commit 8d92fae6584f237e5d0989653c0b5915387444bf (inclusive).
-
-* Pin Sphinx to versions below 3.1 on macOS (`#13535`_)
-* yaml: Add read_archive Options struct (currently a no-op) (`#13537`_)  # This paves the way for dealing with parser options in a future commit. Thread the Options through the Serialize/Visit flow but don't use it for anything yet. Rename ReportMissingYaml to ReportError to avoid being overly specific; this was already used for error messages beyond just missing stuff. While we're here, also import the unit test with helpful comments and extracting some literal strings into named variables.
-* doc: Make sure each doxygen-only file has a xref to defined sections (`#13547`_)
-* Add python binding for GenerateSDPA (`#13546`_)
-* Make DiagramContext use the DiagramDiscreteValues type (`#13536`_)  # * Make DiagramContext::Clone() preserve DiagramDiscreteValues type.
-* Add bindings for CsdpSolver (`#13544`_)
-* Fix some collision geometries of the panda arm urdf (`#13550`_)
-* yaml: Add configurable policies for missing items (`#13532`_)
-* Add more mentions of Focal to the documentation (`#13553`_)
-* IiwaCommandReceiver latches initial position until first command (`#13540`_)  # This adjusts the semantics of the recently added position_measured input port to better match the actual control cabinet where the robot is held stiffly in place, instead of allowing external forces to push it around.
