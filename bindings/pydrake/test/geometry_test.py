@@ -76,6 +76,23 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(inspector.num_frames(), 3)
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_geometries(), 3)
+        self.assertEqual(
+            inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
+        self.assertEqual(inspector.NumDynamicGeometries(), 2)
+        self.assertEqual(inspector.NumAnchoredGeometries(), 1)
+        self.assertTrue(inspector.SourceIsRegistered(id=global_source))
+        self.assertEqual(inspector.GetSourceName(id=global_source), "anchored")
+        self.assertEqual(
+            inspector.GetName(frame_id=global_frame), "anchored_frame")
+        self.assertEqual(
+            inspector.GetName(geometry_id=global_geometry), "sphere")
+
+        self.assertIsInstance(
+            inspector.GetPoseInParent(geometry_id=global_geometry),
+            RigidTransform_[float])
+        self.assertIsInstance(
+            inspector.GetPoseInFrame(geometry_id=global_geometry),
+            RigidTransform_[float])
 
         # Check AssignRole bits.
         proximity = mut.ProximityProperties()
@@ -238,6 +255,8 @@ class TestGeometry(unittest.TestCase):
             mut.Sphere(radius=1.0),
             mut.Cylinder(radius=1.0, length=2.0),
             mut.Box(width=1.0, depth=2.0, height=3.0),
+            mut.Capsule(radius=1.0, length=2.0),
+            mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(absolute_filename=box_mesh_path, scale=1.0),
             mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
@@ -261,6 +280,13 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+        capsule = mut.Capsule(radius=1.0, length=2.0)
+        self.assertEqual(capsule.radius(), 1.0)
+        self.assertEqual(capsule.length(), 2.0)
+        ellipsoid = mut.Ellipsoid(a=1.0, b=2.0, c=3.0)
+        self.assertEqual(ellipsoid.a(), 1.0)
+        self.assertEqual(ellipsoid.b(), 2.0)
+        self.assertEqual(ellipsoid.c(), 3.0)
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
         box_mesh_path = FindResourceOrThrow(
@@ -419,6 +445,9 @@ class TestGeometry(unittest.TestCase):
         query_object = scene_graph.get_query_output_port().Eval(context)
 
         self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
+        # self.assertIsInstance(query_object.X_WF(id=), RigidTransform)
+        # self.assertIsInstance(query_object.X_PF(id=), RigidTransform)
+        # self.assertIsInstance(query_object.X_WG(id=), RigidTransform)
 
         # Proximity queries -- all of these will produce empty results.
         results = query_object.ComputeSignedDistancePairwiseClosestPoints()
