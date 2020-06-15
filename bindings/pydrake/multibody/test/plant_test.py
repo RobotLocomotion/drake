@@ -1547,7 +1547,7 @@ class TestPlant(unittest.TestCase):
             self.assertEqual(
                 inspector.GetGeometryIdByName(
                     frame_id, Role.kProximity,
-                    inspector.GetNameByGeometryId(geometry_id)), geometry_id)
+                    inspector.GetName(geometry_id)), geometry_id)
             self.assertIsInstance(inspector.GetShape(geometry_id), Sphere)
             self.assertIsInstance(inspector.GetPoseInFrame(geometry_id),
                                   RigidTransform_[float])

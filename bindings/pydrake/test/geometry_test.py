@@ -12,6 +12,7 @@ from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
@@ -76,6 +77,31 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(inspector.num_frames(), 3)
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_geometries(), 3)
+        self.assertEqual(
+            inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 3)
+        self.assertEqual(inspector.NumDynamicGeometries(), 2)
+        self.assertEqual(inspector.NumAnchoredGeometries(), 1)
+        self.assertTrue(inspector.SourceIsRegistered(id=global_source))
+        self.assertEqual(inspector.GetSourceName(id=global_source), "anchored")
+        self.assertEqual(
+            inspector.GetName(frame_id=global_frame), "anchored_frame")
+        self.assertEqual(
+            inspector.GetName(geometry_id=global_geometry), "sphere")
+
+        with catch_drake_warnings(expected_count=2):
+            self.assertEqual(
+                inspector.GetNameByFrameId(frame_id=global_frame),
+                "anchored_frame")
+            self.assertEqual(
+                inspector.GetNameByGeometryId(geometry_id=global_geometry),
+                "sphere")
+
+        self.assertIsInstance(
+            inspector.GetPoseInParent(geometry_id=global_geometry),
+            RigidTransform_[float])
+        self.assertIsInstance(
+            inspector.GetPoseInFrame(geometry_id=global_geometry),
+            RigidTransform_[float])
 
         # Check AssignRole bits.
         proximity = mut.ProximityProperties()
@@ -238,6 +264,8 @@ class TestGeometry(unittest.TestCase):
             mut.Sphere(radius=1.0),
             mut.Cylinder(radius=1.0, length=2.0),
             mut.Box(width=1.0, depth=2.0, height=3.0),
+            mut.Capsule(radius=1.0, length=2.0),
+            mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(absolute_filename=box_mesh_path, scale=1.0),
             mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
@@ -261,6 +289,13 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(box.depth(), 2.0)
         self.assertEqual(box.height(), 3.0)
         numpy_compare.assert_float_equal(box.size(), np.array([1.0, 2.0, 3.0]))
+        capsule = mut.Capsule(radius=1.0, length=2.0)
+        self.assertEqual(capsule.radius(), 1.0)
+        self.assertEqual(capsule.length(), 2.0)
+        ellipsoid = mut.Ellipsoid(a=1.0, b=2.0, c=3.0)
+        self.assertEqual(ellipsoid.a(), 1.0)
+        self.assertEqual(ellipsoid.b(), 2.0)
+        self.assertEqual(ellipsoid.c(), 3.0)
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
         box_mesh_path = FindResourceOrThrow(
@@ -404,21 +439,39 @@ class TestGeometry(unittest.TestCase):
         SceneGraph = mut.SceneGraph_[T]
         QueryObject = mut.QueryObject_[T]
         SceneGraphInspector = mut.SceneGraphInspector_[T]
+        FramePoseVector = mut.FramePoseVector_[T]
 
         # First, ensure we can default-construct it.
         model = QueryObject()
         self.assertIsInstance(model, QueryObject)
 
         scene_graph = SceneGraph()
+        source_id = scene_graph.RegisterSource("source")
+        frame_id = scene_graph.RegisterFrame(
+            source_id=source_id, frame=mut.GeometryFrame("frame"))
+        geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id, frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=RigidTransform(),
+                                          shape=mut.Sphere(1.), name="sphere"))
         render_params = mut.render.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
                                 mut.render.MakeRenderEngineVtk(render_params))
 
         context = scene_graph.CreateDefaultContext()
+        pose_vector = FramePoseVector()
+        pose_vector.set_value(frame_id, RigidTransform_[T]())
+        scene_graph.get_source_pose_port(source_id).FixValue(
+            context, pose_vector)
         query_object = scene_graph.get_query_output_port().Eval(context)
 
         self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
+        self.assertIsInstance(
+            query_object.X_WF(id=frame_id), RigidTransform_[T])
+        self.assertIsInstance(
+            query_object.X_PF(id=frame_id), RigidTransform_[T])
+        self.assertIsInstance(
+            query_object.X_WG(id=geometry_id), RigidTransform_[T])
 
         # Proximity queries -- all of these will produce empty results.
         results = query_object.ComputeSignedDistancePairwiseClosestPoints()
