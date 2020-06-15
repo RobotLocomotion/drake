@@ -2929,6 +2929,91 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
       kTolerance, MatrixCompareType::relative));
 }
 
+template <typename T, typename U>
+void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
+                                      const MultibodyPlant<U>& plant_u) {
+  // Check input ports
+  // (Except actuation input ports because there is no actuation source)
+  EXPECT_EQ(plant_t.get_applied_generalized_force_input_port().get_index(),
+            plant_u.get_applied_generalized_force_input_port().get_index());
+  EXPECT_EQ(plant_t.get_applied_spatial_force_input_port().get_index(),
+            plant_u.get_applied_spatial_force_input_port().get_index());
+  EXPECT_EQ(plant_t.get_geometry_query_input_port().get_index(),
+            plant_u.get_geometry_query_input_port().get_index());
+  // Check output ports
+  EXPECT_EQ(plant_t.get_body_poses_output_port().get_index(),
+            plant_u.get_body_poses_output_port().get_index());
+  EXPECT_EQ(plant_t.get_body_spatial_velocities_output_port().get_index(),
+            plant_u.get_body_spatial_velocities_output_port().get_index());
+  EXPECT_EQ(plant_t.get_body_spatial_accelerations_output_port().get_index(),
+            plant_u.get_body_spatial_accelerations_output_port().get_index());
+  EXPECT_EQ(plant_t.get_state_output_port().get_index(),
+            plant_u.get_state_output_port().get_index());
+  EXPECT_EQ(plant_t.get_generalized_acceleration_output_port().get_index(),
+            plant_u.get_generalized_acceleration_output_port().get_index());
+  EXPECT_EQ(plant_t.get_reaction_forces_output_port().get_index(),
+            plant_u.get_reaction_forces_output_port().get_index());
+  EXPECT_EQ(plant_t.get_contact_results_output_port().get_index(),
+            plant_u.get_contact_results_output_port().get_index());
+  EXPECT_EQ(plant_t.get_geometry_poses_output_port().get_index(),
+            plant_u.get_geometry_poses_output_port().get_index());
+  EXPECT_EQ(
+      plant_t.get_state_output_port(default_model_instance()).get_index(),
+      plant_u.get_state_output_port(default_model_instance()).get_index());
+  EXPECT_EQ(
+      plant_t.get_generalized_acceleration_output_port(default_model_instance())
+          .get_index(),
+      plant_u.get_generalized_acceleration_output_port(default_model_instance())
+          .get_index());
+  EXPECT_EQ(
+      plant_t
+          .get_generalized_contact_forces_output_port(default_model_instance())
+          .get_index(),
+      plant_u
+          .get_generalized_contact_forces_output_port(default_model_instance())
+          .get_index());
+}
+
+GTEST_TEST(MultibodyPlantTest, RegisterSceneGraphPostFinalize) {
+  systems::DiagramBuilder<double> builder;
+  std::unique_ptr<MultibodyPlant<double>> plant_unique_ptr =
+      std::make_unique<MultibodyPlant<double>>(0.0);
+  plant_unique_ptr->Finalize();
+  auto pair =
+      AddMultibodyPlantSceneGraph(&builder, std::move(plant_unique_ptr));
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  std::unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
+      systems::System<double>::ToAutoDiffXd<Diagram>(*diagram.get());
+
+  const MultibodyPlant<AutoDiffXd>* autodiff_plant =
+      dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+          autodiff_diagram->GetSystems()[0]);
+
+  CompareMultibodyPlantPortIndices(pair.plant, *autodiff_plant);
+}
+
+GTEST_TEST(MultibodyPlantTest, RegisterSceneGraphPreFinalize) {
+  systems::DiagramBuilder<double> builder;
+  std::unique_ptr<MultibodyPlant<double>> plant_unique_ptr =
+      std::make_unique<MultibodyPlant<double>>(0.0);
+  auto pair =
+      AddMultibodyPlantSceneGraph(&builder, std::move(plant_unique_ptr));
+
+  pair.plant.Finalize();
+
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
+      systems::System<double>::ToAutoDiffXd<Diagram>(*diagram.get());
+
+  const MultibodyPlant<AutoDiffXd>* autodiff_plant =
+      dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+          autodiff_diagram->GetSystems()[0]);
+
+  CompareMultibodyPlantPortIndices(pair.plant, *autodiff_plant);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

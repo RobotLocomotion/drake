@@ -571,8 +571,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Refer to section @ref mbp_geometry "Geometry" of this class's
   /// documentation for further details on collision geometry registration and
   /// connection with a SceneGraph.
-  /// @throws std::exception if this system was not registered with a
-  /// SceneGraph.
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns a constant reference to the output port for the multibody state
@@ -641,8 +639,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
-  /// SceneGraph.
-  /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @} <!-- Input and output ports -->
@@ -725,7 +721,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
-    if (geometry_source_is_registered()) DeclareSceneGraphPorts();
+    DeclareSceneGraphPorts();
 
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's

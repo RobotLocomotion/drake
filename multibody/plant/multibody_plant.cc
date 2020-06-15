@@ -272,6 +272,7 @@ MultibodyPlant<T>::MultibodyPlant(
   X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
+  DeclareSceneGraphPorts();
 }
 
 template <typename T>
@@ -348,7 +349,6 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
       member_scene_graph().world_frame_id();
   body_index_to_frame_id_[world_index()] = world_frame_id;
   frame_id_to_body_index_[world_frame_id] = world_index();
-  DeclareSceneGraphPorts();
   // In case any bodies were added before registering scene graph, make sure the
   // bodies get their corresponding geometry frame ids.
   RegisterGeometryFramesForAllBodies();
@@ -3012,14 +3012,12 @@ MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
-  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template <typename T>
 const systems::InputPort<T>&
 MultibodyPlant<T>::get_geometry_query_input_port() const {
-  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_input_port(geometry_query_port_);
 }
 
