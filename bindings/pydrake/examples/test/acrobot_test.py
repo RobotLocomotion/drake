@@ -85,6 +85,14 @@ class TestAcrobot(unittest.TestCase):
         state.set_theta2(0.)
         state.set_theta2dot(0.)
 
+        self.assertIsInstance(acrobot.get_state(context=context), AcrobotState)
+        self.assertIsInstance(acrobot.get_mutable_state(context=context),
+                              AcrobotState)
+        self.assertIsInstance(acrobot.get_parameters(context=context),
+                              AcrobotParams)
+        self.assertIsInstance(acrobot.get_mutable_parameters(context=context),
+                              AcrobotParams)
+
         self.assertTrue(acrobot.DynamicsBiasTerm(context).shape == (2,))
         self.assertTrue(acrobot.MassMatrix(context).shape == (2, 2))
         initial_total_energy = acrobot.EvalPotentialEnergy(context) + \
