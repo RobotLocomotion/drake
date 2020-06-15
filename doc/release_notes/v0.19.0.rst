@@ -19,13 +19,20 @@ Announcements
   * Drake binary packages are available for 20.04, but Docker images are not.
   * Our recommended Ubuntu platform is still Ubuntu 18.04 ("Bionic Beaver").
 
+* YamlReadArchive now offers strictness options (`#13532`_).
+
+  * In a future release, the default options will change to be more strict.
+    Users who wish to retain the weaker options should update their call sites
+    to pass the Options explicitly.
+
 Breaking changes since v0.18.0
 ------------------------------
 
 These are breaking changes that did not undergo a deprecation period:
 
-* Remove attic symbols from pydrake.all; users must import pydrake.attic.all to
-  use them now (`#13315`_).
+* Remove attic symbols from pydrake.all (`#13315`_).
+
+  * Users must import pydrake.attic.all to use them now.
 
 * Remove the incorrect drakeURDF.[xpr|xsd] files (`#13326`_)
 
