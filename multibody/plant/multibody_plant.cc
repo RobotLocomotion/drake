@@ -2870,7 +2870,6 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_ASSERT(source_id_ != std::nullopt);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 

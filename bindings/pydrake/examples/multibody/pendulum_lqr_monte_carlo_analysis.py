@@ -95,7 +95,7 @@ def main():
                     torque_limiter.get_input_port(0))
     builder.Connect(torque_limiter.get_output_port(0),
                     pendulum.get_actuation_input_port())
-    builder.Connect(pendulum.get_output_port(0),
+    builder.Connect(pendulum.get_state_output_port(),
                     controller.get_input_port(0))
     diagram = builder.Build()
 
