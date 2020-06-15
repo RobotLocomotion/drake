@@ -59,10 +59,11 @@ GTEST_TEST(MultibodyDynamicsTest, AllTests) {
       mbp.CalcOutput(*context_mbp, y_mbp.get());
       p.CalcOutput(*context_p, y_p.get());
 
-      EXPECT_TRUE(CompareMatrices(y_mbp->get_vector_data(0)->CopyToVector(),
-                                  y_p->get_vector_data(0)->CopyToVector(),
-                                  1e-8,
-                                  MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(
+          y_mbp->get_vector_data(mbp.get_state_output_port().get_index())
+              ->CopyToVector(),
+          y_p->get_vector_data(0)->CopyToVector(), 1e-8,
+          MatrixCompareType::absolute));
     }
   }
 }
