@@ -2933,7 +2933,7 @@ GTEST_TEST(MultibodyPlantTest, SceneGraphPorts) {
     MultibodyPlant<double> plant(0.0);
     plant.Finalize();
 
-    // Test that these ports exist and are accessable, even without
+    // Test that SceneGraph ports exist and are accessible, even without
     // the presence of a connected SceneGraph.
     EXPECT_NO_THROW(plant.get_geometry_query_input_port());
     EXPECT_NO_THROW(plant.get_geometry_poses_output_port());
