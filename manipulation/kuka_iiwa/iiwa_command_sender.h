@@ -23,9 +23,9 @@ namespace kuka_iiwa {
 ///
 /// This system has one abstract-valued output port of type lcmt_iiwa_command.
 ///
-/// @system {
+/// @system{IiwaCommandSender,
 ///   @input_port{position}
-///   @input_port{torque (optional)}
+///   @input_port{torque (optional)},
 ///   @output_port{lcmt_iiwa_command}
 /// }
 ///

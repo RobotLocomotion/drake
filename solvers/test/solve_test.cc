@@ -53,21 +53,20 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(SolveTest, GetInfeasibleConstraints) {
   if (SnoptSolver::is_available()) {
     MathematicalProgram prog;
     auto x = prog.NewContinuousVariables<1>();
     auto b0 = prog.AddBoundingBoxConstraint(0, 0, x);
     auto b1 = prog.AddBoundingBoxConstraint(1, 1, x);
-
     SnoptSolver solver;
     MathematicalProgramResult result = solver.Solve(prog, {}, {});
     EXPECT_FALSE(result.is_success());
-
     std::vector<std::string> infeasible =
         GetInfeasibleConstraints(prog, result);
     EXPECT_EQ(infeasible.size(), 1);
-
     // If no description is set, we should see the NiceTypeName of the
     // Constraint.
     auto matcher = [](const std::string& s, const std::string& re) {
@@ -75,7 +74,6 @@ GTEST_TEST(SolveTest, GetInfeasibleConstraints) {
     };
     EXPECT_PRED2(matcher, infeasible[0],
                  "drake::solvers::BoundingBoxConstraint.*");
-
     // If a description for the constraint has been set, then that description
     // should be returned instead. There is no reason a priori for b0 or b1 to
     // be the infeasible one, so set both descriptions.
@@ -85,6 +83,6 @@ GTEST_TEST(SolveTest, GetInfeasibleConstraints) {
     EXPECT_PRED2(matcher, infeasible[0], "Test.*");
   }
 }
-
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }  // namespace solvers
 }  // namespace drake

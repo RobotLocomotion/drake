@@ -185,6 +185,13 @@ class TestGeneral(unittest.TestCase):
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
         self.assertTrue(hasattr(context, "get_mutable_abstract_parameter"))
+        context.DisableCaching()
+        context.EnableCaching()
+        context.SetAllCacheEntriesOutOfDate()
+        context.FreezeCache()
+        self.assertTrue(context.is_cache_frozen())
+        context.UnfreezeCache()
+        self.assertFalse(context.is_cache_frozen())
         x = np.array([0.1, 0.2])
         context.SetContinuousState(x)
         np.testing.assert_equal(

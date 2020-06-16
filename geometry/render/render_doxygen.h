@@ -1,3 +1,6 @@
+/** @file
+ Doxygen-only documentation for @ref render_engines.  */
+
 namespace drake {
 namespace geometry {
 namespace render {

@@ -139,6 +139,35 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     }
     return fac.GetExpression();
   }
+  if (is_division(e1)) {
+    const Expression& e1_1{get_first_argument(e1)};
+    const Expression& e1_2{get_second_argument(e1)};
+    if (is_division(e2)) {
+      //    ((e1_1 / e1_2) * (e2_1 / e2_2)).Expand()
+      // => (e1_1 * e2_1).Expand() / (e1_2 * e2_2).Expand().
+      //
+      // Note that e1_1, e1_2, e2_1, and e_2 are already expanded by the
+      // precondition.
+      const Expression& e2_1{get_first_argument(e2)};
+      const Expression& e2_2{get_second_argument(e2)};
+      return ExpandMultiplication(e1_1, e2_1) /
+             ExpandMultiplication(e1_2, e2_2);
+    }
+    //    ((e1_1 / e1_2) * e2).Expand()
+    // => (e1_1 * e2).Expand() / e2.
+    //
+    // Note that e1_1, e1_2, and e_2 are already expanded by the precondition.
+    return ExpandMultiplication(e1_1, e2) / e1_2;
+  }
+  if (is_division(e2)) {
+    //    (e1 * (e2_1 / e2_2)).Expand()
+    // => (e1 * e2_1).Expand() / e2_2.
+    //
+    // Note that e1, e2_1, and e2_2 are already expanded by the precondition.
+    const Expression& e2_1{get_first_argument(e2)};
+    const Expression& e2_2{get_second_argument(e2)};
+    return ExpandMultiplication(e1, e2_1) / e2_2;
+  }
   return e1 * e2;
 }
 

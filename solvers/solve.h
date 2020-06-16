@@ -53,6 +53,10 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  * e.g.
  * `prog.AddConstraint(x == 1).evaluator().set_description(str)`
  * to make this method more specific/useful. */
+DRAKE_DEPRECATED(
+    "2020-09-01",
+    "This function is replaced by "
+    "MathematicalProgramResult::GetInfeasibleConstraintNames(prog, tolerance);")
 std::vector<std::string> GetInfeasibleConstraints(
     const MathematicalProgram& prog, const MathematicalProgramResult& result,
     std::optional<double> tolerance = std::nullopt);

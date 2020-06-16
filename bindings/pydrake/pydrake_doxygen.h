@@ -1,6 +1,5 @@
-/// @file
-/// Doxygen-only documentation for the development of Python bindings.
-/// @sa @ref python_bindings
+/** @file
+ Doxygen-only documentation for @ref python_bindings.  */
 
 /** @defgroup python_bindings Python Bindings
 @ingroup technical_notes

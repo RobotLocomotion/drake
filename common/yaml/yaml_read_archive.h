@@ -4,8 +4,10 @@
 #include <array>
 #include <map>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -66,13 +68,39 @@ class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
+  /// Configuration for YamlReadArchive to govern when certain conditions are
+  /// errors or not.  Refer to the member fields for details.
+  struct Options {
+    friend std::ostream& operator<<(std::ostream& os, const Options& x);
+
+    /// Allows yaml Maps to have extra key-value pairs that are not Visited by
+    /// the Serializable being parsed into.  In other words, the Serializable
+    /// types provide an incomplete schema for the YAML data.  This allows for
+    /// parsing only a subset of the YAML data.
+    bool allow_yaml_with_no_cpp{false};
+
+    /// Allows Serializables to provide more key-value pairs than are present
+    /// in the YAML data.  In other words, the structs have default values that
+    /// are left intact unless the YAML data provides a value.
+    bool allow_cpp_with_no_yaml{false};
+  };
+
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
   /// class overview for details.
-  explicit YamlReadArchive(const YAML::Node& root)
+  ///
+  /// When the `options` are not provided by the caller, this currently sets
+  /// `allow_yaml_with_no_cpp = true` for backwards compatibility reasons.
+  /// This default will change in a future Drake release to be `false`,
+  /// instead.  Callers that wish to avoid disruption should set the options
+  /// explicitly.
+  explicit YamlReadArchive(const YAML::Node& root, const Options& options = {
+                             .allow_yaml_with_no_cpp = true,
+                             .allow_cpp_with_no_yaml = false})
       : owned_root_(root),
         root_(&owned_root_),
         mapish_item_key_(nullptr),
         mapish_item_value_(nullptr),
+        options_(options),
         parent_(nullptr) {
     // Reprocess the owned_root for merge keys only after all member fields are
     // initialized; otherwise, the method might access invalid member data.
@@ -84,10 +112,11 @@ class YamlReadArchive final {
   template <typename Serializable>
   void Accept(Serializable* serializable) {
     if (!has_root()) {
-      // TODO(jwnimmer-tri) This should probably be a ReportMissingYaml error.
+      // TODO(jwnimmer-tri) This should probably be a ReportError error.
       return;
     }
     DoAccept(this, serializable, static_cast<int32_t>(0));
+    CheckAllAccepted();
   }
 
   /// (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
@@ -109,6 +138,7 @@ class YamlReadArchive final {
         root_(root),
         mapish_item_key_(nullptr),
         mapish_item_value_(nullptr),
+        options_(parent->options_),
         parent_(parent) {
     DRAKE_DEMAND(root != nullptr);
     DRAKE_DEMAND(parent != nullptr);
@@ -124,6 +154,7 @@ class YamlReadArchive final {
         root_(nullptr),
         mapish_item_key_(mapish_item_key),
         mapish_item_value_(mapish_item_value),
+        options_(parent->options_),
         parent_(parent) {
     DRAKE_DEMAND(mapish_item_key != nullptr);
     DRAKE_DEMAND(mapish_item_value != nullptr);
@@ -139,6 +170,7 @@ class YamlReadArchive final {
     if (trace == VisitShouldMemorizeType::kYes) {
       debug_visit_name_ = nvp.name();
       debug_visit_type_ = &typeid(*nvp.value());
+      visited_names_.insert(nvp.name());
     }
     // Use int32_t for the final argument to prefer the specialized overload.
     this->DoVisit(nvp, *nvp.value(), static_cast<int32_t>(0));
@@ -284,7 +316,9 @@ class YamlReadArchive final {
   void VisitVariant(const NVP& nvp) {
     const YAML::Node sub_node = MaybeGetSubNode(nvp.name());
     if (!sub_node) {
-      ReportMissingYaml("is missing");
+      if (!options_.allow_cpp_with_no_yaml) {
+        ReportError("is missing");
+      }
       return;
     }
     // Figure out which variant<...> type we have based on the node's tag.
@@ -317,7 +351,7 @@ class YamlReadArchive final {
   // Base case -- no match.
   template <size_t, typename Variant>
   void VariantHelperImpl(const std::string& tag, const char*, Variant*) {
-    ReportMissingYaml(fmt::format(
+    ReportError(fmt::format(
         "has unsupported type tag {} while selecting a variant<>",
         tag));
   }
@@ -354,7 +388,7 @@ class YamlReadArchive final {
     const auto& sub_node = GetSubNode(name, YAML::NodeType::Sequence);
     if (!sub_node) { return; }
     if (sub_node.size() != size) {
-      ReportMissingYaml(fmt::format(
+      ReportError(fmt::format(
           "has {}-size entry (wanted {}-size)",
           sub_node.size(), size));
     }
@@ -390,13 +424,13 @@ class YamlReadArchive final {
       const YAML::Node one_row = sub_node[i];
       const size_t one_row_size = one_row.size();
       if (one_row.Type() != YAML::NodeType::Sequence) {
-        ReportMissingYaml(fmt::format(
+        ReportError(fmt::format(
             "is Sequence-of-{} (not Sequence-of-Sequence)",
             to_string(one_row.Type())));
         return;
       }
       if (one_row_size != cols) {
-        ReportMissingYaml("has inconsistent cols dimensions");
+        ReportError("has inconsistent cols dimensions");
         return;
       }
     }
@@ -404,8 +438,8 @@ class YamlReadArchive final {
     // Check the YAML dimensions vs Eigen dimensions, then resize (if dynamic).
     if (((Rows != Eigen::Dynamic) && (static_cast<int>(rows) != Rows)) ||
         ((Cols != Eigen::Dynamic) && (static_cast<int>(cols) != Cols))) {
-      ReportMissingYaml(fmt::format("has dimension {}x{} (wanted {}x{})",
-                                    rows, cols, Rows, Cols));
+      ReportError(fmt::format(
+          "has dimension {}x{} (wanted {}x{})", rows, cols, Rows, Cols));
       return;
     }
     auto&& storage = *matrix;
@@ -457,11 +491,16 @@ class YamlReadArchive final {
   // the child.  Otherwise, report an error and return an undefined node.
   YAML::Node GetSubNode(const char*, YAML::NodeType::value) const;
 
-  // If our root is a Map and has child with the given name and type, return
-  // the child.  Otherwise, return an undefined node.
+  // If our root is a Map and has child with the given name, return the child.
+  // Otherwise, return an undefined node.
   YAML::Node MaybeGetSubNode(const char*) const;
 
-  void ReportMissingYaml(const std::string&) const;
+  // To be called after Accept-ing a Serializable to cross-check that all keys
+  // in the YAML root's Map matched a Visit call from the Serializable.  This
+  // relates to the Options.allow_yaml_with_no_cpp setting.
+  void CheckAllAccepted() const;
+
+  void ReportError(const std::string&) const;
   void PrintNodeSummary(std::ostream& s) const;
   void PrintVisitNameType(std::ostream& s) const;
   static const char* to_string(YAML::NodeType::value);
@@ -489,6 +528,14 @@ class YamlReadArchive final {
   const char* const mapish_item_key_;
   const YAML::Node* const mapish_item_value_;
   // @}
+
+  // When the C++ structure and YAML structure disagree, these options govern
+  // which mismatches are permitted without an error.
+  const Options options_;
+
+  // The set of NameValue::name keys that have been Visited by the current
+  // Serializable's Accept method so far.
+  std::unordered_set<std::string> visited_names_;
 
   // These are only used for error messages.  The two `debug_...` members are
   // non-nullptr only during Visit()'s lifetime.

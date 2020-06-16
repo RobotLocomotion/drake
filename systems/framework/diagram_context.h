@@ -14,6 +14,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
+#include "drake/systems/framework/diagram_discrete_values.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/parameters.h"
@@ -70,16 +71,14 @@ class DiagramState : public State<T> {
     finalized_ = true;
     std::vector<ContinuousState<T>*> sub_xcs;
     sub_xcs.reserve(num_substates());
-    std::vector<BasicVector<T>*> sub_xds;
+    std::vector<DiscreteValues<T>*> sub_xds;
     std::vector<AbstractValue*> sub_xas;
     for (State<T>* substate : substates_) {
       // Continuous
       sub_xcs.push_back(&substate->get_mutable_continuous_state());
       // Discrete
-      const std::vector<BasicVector<T>*>& xd_data =
-          substate->get_mutable_discrete_state().get_data();
-      sub_xds.insert(sub_xds.end(), xd_data.begin(), xd_data.end());
-      // Abstract
+      sub_xds.push_back(&substate->get_mutable_discrete_state());
+      // Abstract (no substructure)
       AbstractValues& xa = substate->get_mutable_abstract_state();
       for (int i_xa = 0; i_xa < xa.size(); ++i_xa) {
         sub_xas.push_back(&xa.get_mutable_value(i_xa));
@@ -93,7 +92,8 @@ class DiagramState : public State<T> {
     // pointers to that memory.
     this->set_continuous_state(
         std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-    this->set_discrete_state(std::make_unique<DiscreteValues<T>>(sub_xds));
+    this->set_discrete_state(
+        std::make_unique<DiagramDiscreteValues<T>>(sub_xds));
     this->set_abstract_state(std::make_unique<AbstractValues>(sub_xas));
   }
 

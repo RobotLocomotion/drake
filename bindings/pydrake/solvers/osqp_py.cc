@@ -16,8 +16,8 @@ PYBIND11_MODULE(osqp, m) {
 
   m.doc() = "OSQP solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework");
 
   py::class_<OsqpSolver, SolverInterface>(m, "OsqpSolver", doc.OsqpSolver.doc)
       .def(py::init<>(), doc.OsqpSolver.ctor.doc);
