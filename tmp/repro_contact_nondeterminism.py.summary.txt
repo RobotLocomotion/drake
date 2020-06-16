@@ -36,13 +36,13 @@
   * meta_trial = 1, num_sim_trials = 4
       ResimulateStyle.Reuse          : BAD  (num_unique = 2)
       ResimulateStyle.ReuseNewContext: good (num_unique = 1)
-      ResimulateStyle.Recreate       : BAD  (num_unique = 3)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
 
 * setup = SetupEnum.Discrete_WithGeometry_AnzuWsg
   * meta_trial = 0, num_sim_trials = 4
       ResimulateStyle.Reuse          : good (num_unique = 1)
       ResimulateStyle.ReuseNewContext: good (num_unique = 1)
-      ResimulateStyle.Recreate       : BAD  (num_unique = 4)
+      ResimulateStyle.Recreate       : BAD  (num_unique = 3)
   * meta_trial = 1, num_sim_trials = 4
       ResimulateStyle.Reuse          : good (num_unique = 1)
       ResimulateStyle.ReuseNewContext: good (num_unique = 1)
@@ -55,7 +55,7 @@
       ResimulateStyle.Recreate       : BAD  (num_unique = 4)
   * meta_trial = 1, num_sim_trials = 4
       ResimulateStyle.Reuse          : BAD  (num_unique = 2)
-      ResimulateStyle.ReuseNewContext: BAD  (num_unique = 4)
+      ResimulateStyle.ReuseNewContext: BAD  (num_unique = 3)
       ResimulateStyle.Recreate       : BAD  (num_unique = 4)
 
 * setup = SetupEnum.Discrete_WithGeometry_DrakeWsg
