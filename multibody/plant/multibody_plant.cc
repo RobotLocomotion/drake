@@ -1075,7 +1075,7 @@ std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
   if (num_collision_geometries() > 0) {
-    if (!geometry_query_port_.is_valid()) {
+    if (!get_geometry_query_input_port().HasValue(context)) {
       throw std::logic_error(
           "This MultibodyPlant registered geometry for contact handling. "
           "However its query input port (get_geometry_query_input_port()) "
@@ -1799,7 +1799,7 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
-    if (!geometry_query_port_.is_valid()) {
+    if (!get_geometry_query_input_port().HasValue(context)) {
       throw std::logic_error(
           "This MultibodyPlant registered geometry for contact handling. "
           "However its query input port (get_geometry_query_input_port()) "

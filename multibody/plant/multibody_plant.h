@@ -315,11 +315,12 @@ enum class ContactModel {
 /// registrations took place. All geometry registration **must** be performed
 /// pre-finalize.
 ///
+/// Upon construction, %Multibodyplant will declare an input port for geometric
+/// queries, see get_geometry_query_input_port().
 /// If %MultibodyPlant registers geometry with a SceneGraph via calls to
-/// RegisterCollisionGeometry(), an input port for geometric queries will be
-/// declared at Finalize() time, see get_geometry_query_input_port(). Users must
-/// connect this input port to the output port for geometric queries of the
-/// SceneGraph used for registration, which can be obtained with
+/// RegisterCollisionGeometry(), users may use this port for geometric queries.
+/// Users must connect this input port to the output port for geometric
+/// queries of the SceneGraph used for registration, which can be obtained with
 /// SceneGraph::get_query_output_port().
 /// In summary, if %MultibodyPlant registers collision geometry, the setup
 /// process will include:
@@ -346,9 +347,10 @@ enum class ContactModel {
  geometry::SceneGraphInspector APIs as outlined below. %MultibodyPlant expects
  the following properties for point contact modeling:
 
- | Group name |   Property Name  | Required |    Property Type   | Property Description |
- | :--------: | :--------------: | :------: | :----------------: | :------------------- |
- |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
+ | Group name |   Property Name  | Required |    Property Type   | Property
+ Description | | :--------: | :--------------: | :------: | :----------------: |
+ :------------------- | |  material  | coulomb_friction |   yes¹   |
+ CoulombFriction<T> | Static and Dynamic friction. |
 
  ¹ Collision geometry is required to be registered with a
    geometry::ProximityProperties object that contains the
