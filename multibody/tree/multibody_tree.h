@@ -2544,14 +2544,15 @@ class MultibodyTree {
   // @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
   // JacobianWrtVariable::kV, indicating whether the spatial acceleration bias
   // is with respect to 𝑠 = q̇ or 𝑠 = v.
-  // @param[out] AsBias_WBodies Each body's spatial acceleration bias in frame W
+  // @param[out] AsBias_W_all Each body's spatial acceleration bias in frame W
   // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
   // @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  // @throws std::exception if AsBias_WBodies.size() is not num_bodies().
+  // @throws std::exception if AsBias_W_all is nullptr.
+  // @throws std::exception if AsBias_W_all.size() is not num_bodies().
   void CalcAllBodyBiasSpatialAccelerationsInWorld(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,
-      std::vector<SpatialAcceleration<T>>* AsBias_WBodies) const;
+      std::vector<SpatialAcceleration<T>>* AsBias_W_all) const;
 
   // Helper method to access the mobilizer of a free body.
   // If `body` is a free body in the model, this method will return the

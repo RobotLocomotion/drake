@@ -353,6 +353,8 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RevoluteJoint<double>* joint2_{nullptr};
 };
 
+// TODO(Mitiguy) Per issue #13561, add new 3D fixture to fortify existing
+//  analytical tests for CalcBiasSpatialAcceleration().
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
