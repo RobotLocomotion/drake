@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
@@ -128,7 +130,7 @@ namespace sensors {
  pointing down leading to language such as: "X-right", "Y-down", and
  "Z-forward".
 */
-class CameraInfo {
+class CameraInfo final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CameraInfo)
 
@@ -208,43 +210,38 @@ class CameraInfo {
   Eigen::Matrix3d intrinsic_matrix_;
 };
 
-/** Characterizes the Drake _depth_ camera model. The %DepthCameraInfo is a
- CameraInfo -- the definition of a camera's intrinsic matrix -- plus the
- specification of the depth camera's sensing range.  */
-class DepthCameraInfo final : public CameraInfo {
+/** Characterizes a pinhole model camera for use with color/label rendering.  */
+class ColorCameraModel final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthCameraInfo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorCameraModel)
 
-  /** Constructs a %DepthCameraInfo with all of the intrinsic parameters (as
-   documented in CameraInfo) plus the viable depth range. The depth camera
-   this characterizes can only register depth values in the range
-   [`min_depth`, `max_depth`].
+  /** Constructs the color camera model from the pinhole model intrinsic
+   properties.  */
+  explicit ColorCameraModel(CameraInfo intrinsics)
+      : intrinsics_(std::move(intrinsics)) {}
 
-   @pre `min_depth > 0`.
-   @pre `min_depth < max_depth`.  */
-  DepthCameraInfo(int width, int height, double focal_x, double focal_y,
-                  double center_x, double center_y, double min_depth,
-                  double max_depth)
-      : CameraInfo(width, height, focal_x, focal_y, center_x, center_y),
+  /** Reports the color camera's pinhole model's intrinsic properties.  */
+  const CameraInfo& intrinsics() const { return intrinsics_; }
+
+ private:
+  CameraInfo intrinsics_;
+};
+
+/** Characterizes a pinhole model camera for use with depth rendering.  */
+class DepthCameraModel final {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthCameraModel)
+
+  /** Constructs the depth camera model from the pinhole model intrinsic
+   properties and depth camera's sensing range. The depth camera can only
+   register depth values in the range [min_depth', 'max_depth`].  */
+  DepthCameraModel(CameraInfo intrinsics, double min_depth, double max_depth)
+      : intrinsics_(std::move(intrinsics)),
         min_depth_(min_depth),
         max_depth_(max_depth) {}
 
-  /** Constructs a simplified %DepthCameraInfo from image size and vertical
-   field of view. See @ref CameraInfo::CameraInfo(double, double, double)
-   "corresponding CameraInfo constructor".  */
-  DepthCameraInfo(int width, int height, double fov_y, double min_depth,
-                  double max_depth)
-      : CameraInfo(width, height, fov_y),
-        min_depth_(min_depth),
-        max_depth_(max_depth) {}
-
-  /** Constructs a %DepthCameraInfo copying all of the given `intrinsics` with
-   the given depth range `[min_depth, max_depth]`.  */
-  DepthCameraInfo(const CameraInfo& intrinsics, double min_depth,
-                  double max_depth)
-      : CameraInfo(intrinsics),
-        min_depth_(min_depth),
-        max_depth_(max_depth) {}
+  /** Reports the depth camera's pinhole model's intrinsic properties.  */
+  const CameraInfo& intrinsics() const { return intrinsics_; }
 
   /** The minimum distance an object must be to register a depth reading.  */
   double min_depth() const { return min_depth_; }
@@ -253,6 +250,7 @@ class DepthCameraInfo final : public CameraInfo {
   double max_depth() const { return max_depth_; }
 
  private:
+  CameraInfo intrinsics_;
   double min_depth_{};
   double max_depth_{};
 };

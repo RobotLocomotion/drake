@@ -195,7 +195,26 @@ class TestSensors(unittest.TestCase):
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
             assert_pickle(self, info, mut.CameraInfo.intrinsic_matrix)
 
-    def test_deptph_camera_info(self):
+    def test_color_camera_model(self):
+        width = 640
+        height = 480
+        fov_y = np.pi / 4
+        focal_y = height / 2 / np.tan(fov_y / 2)
+        focal_x = focal_y
+        center_x = width / 2 - 0.5
+        center_y = height / 2 - 0.5
+        intrinsic_matrix = np.array([
+            [focal_x, 0, center_x],
+            [0, focal_y, center_y],
+            [0, 0, 1]])
+
+        cam_info = mut.CameraInfo(width=width, height=height, fov_y=fov_y)
+        model = mut.ColorCameraModel(cam_info)
+        self.assertTrue(
+            (model.intrinsics().intrinsic_matrix() == intrinsic_matrix).all())
+        assert_pickle(self, model, lambda x: x.intrinsics().intrinsic_matrix())
+
+    def test_depth_camera_model(self):
         width = 640
         height = 480
         fov_y = np.pi / 4
@@ -211,30 +230,14 @@ class TestSensors(unittest.TestCase):
         max_depth = 11.25
 
         cam_info = mut.CameraInfo(width=width, height=height, fov_y=fov_y)
-        infos = [
-            mut.DepthCameraInfo(
-                width=width, height=height, fov_y=fov_y, min_depth=min_depth,
-                max_depth=max_depth),
-            mut.DepthCameraInfo(
-                width=width, height=height, focal_x=focal_x, focal_y=focal_y,
-                center_x=center_x, center_y=center_y, min_depth=min_depth,
-                max_depth=max_depth),
-            mut.DepthCameraInfo(
-                intrinsics=cam_info, min_depth=min_depth, max_depth=max_depth),
-        ]
-
-        for info in infos:
-            self.assertEqual(info.width(), width)
-            self.assertEqual(info.height(), height)
-            self.assertEqual(info.focal_x(), focal_x)
-            self.assertEqual(info.focal_y(), focal_y)
-            self.assertEqual(info.center_x(), center_x)
-            self.assertEqual(info.center_y(), center_y)
-            self.assertEqual(info.min_depth(), min_depth)
-            self.assertEqual(info.max_depth(), max_depth)
-            self.assertTrue(
-                (info.intrinsic_matrix() == intrinsic_matrix).all())
-            assert_pickle(self, info, mut.DepthCameraInfo.intrinsic_matrix)
+        model = mut.DepthCameraModel(cam_info, min_depth, max_depth)
+        self.assertEqual(model.min_depth(), min_depth)
+        self.assertEqual(model.max_depth(), max_depth)
+        self.assertTrue(
+            (model.intrinsics().intrinsic_matrix() == intrinsic_matrix).all())
+        assert_pickle(self, model, lambda x: x.intrinsics().intrinsic_matrix())
+        assert_pickle(self, model, mut.DepthCameraModel.min_depth)
+        assert_pickle(self, model, mut.DepthCameraModel.max_depth)
 
     def _check_input(self, value):
         self.assertIsInstance(value, InputPort)
@@ -313,6 +316,16 @@ class TestSensors(unittest.TestCase):
 
         check_info(sensor.color_camera_info())
         check_info(sensor.depth_camera_info())
+        self.assertIsInstance(sensor.color_camera_model(),
+                              mut.ColorCameraModel)
+        check_info(sensor.color_camera_model().intrinsics())
+        self.assertIsInstance(sensor.depth_camera_model(),
+                              mut.DepthCameraModel)
+        depth_model = sensor.depth_camera_model()
+        check_info(depth_model.intrinsics())
+        self.assertEqual(depth_model.min_depth(), depth_properties.z_near)
+        self.assertEqual(depth_model.max_depth(), depth_properties.z_far)
+
         self.assertIsInstance(sensor.X_BC(),
                               RigidTransform)
         self.assertIsInstance(sensor.X_BD(),

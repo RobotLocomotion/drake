@@ -38,25 +38,26 @@ namespace {
 // Some utilities to create the full camera specification from a set of "simple"
 // camera properties.
 
-pair<RenderCameraProperties, CameraInfo> make_camera_properties(
+pair<RenderCameraProperties, ColorCameraModel> make_color_camera_model(
     const CameraProperties& props_in) {
-  return make_pair(RenderCameraProperties{props_in.renderer_name},
-                   CameraInfo(props_in.width, props_in.height, props_in.fov_y));
+  return make_pair(
+      RenderCameraProperties{props_in.renderer_name},
+      ColorCameraModel({props_in.width, props_in.height, props_in.fov_y}));
 }
 
-pair<RenderCameraProperties, DepthCameraInfo> make_depth_camera_properties(
+pair<RenderCameraProperties, DepthCameraModel> make_depth_camera_model(
     const DepthCameraProperties& props_in) {
   return make_pair(
       RenderCameraProperties{props_in.renderer_name},
-      DepthCameraInfo(props_in.width, props_in.height, props_in.fov_y,
-                      props_in.z_near, props_in.z_far));
+      DepthCameraModel({props_in.width, props_in.height, props_in.fov_y},
+                       props_in.z_near, props_in.z_far));
 }
 
-pair<RenderCameraProperties, CameraInfo> depth_downcast(
-    const pair<RenderCameraProperties, DepthCameraInfo>& properties) {
+pair<RenderCameraProperties, ColorCameraModel> depth_to_color(
+    const pair<RenderCameraProperties, DepthCameraModel>& properties) {
   // Note: We're intentionally slicing the depth properties out.
-  const CameraInfo& intrinsics = properties.second;
-  return make_pair(properties.first, intrinsics);
+  const CameraInfo& intrinsics = properties.second.intrinsics();
+  return make_pair(properties.first, ColorCameraModel{intrinsics});
 }
 
 }  // namespace
@@ -65,27 +66,27 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const CameraProperties& color_properties,
                        const DepthCameraProperties& depth_properties,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB, make_camera_properties(color_properties),
-                 make_depth_camera_properties(depth_properties), camera_poses,
+    : RgbdSensor(parent_id, X_PB, make_color_camera_model(color_properties),
+                 make_depth_camera_model(depth_properties), camera_poses,
                  show_window) {}
 
 RgbdSensor::RgbdSensor(geometry::FrameId parent_id, const RigidTransformd& X_PB,
                        const DepthCameraProperties& properties,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB, make_camera_properties(properties),
-                 make_depth_camera_properties(properties), camera_poses,
+    : RgbdSensor(parent_id, X_PB, make_color_camera_model(properties),
+                 make_depth_camera_model(properties), camera_poses,
                  show_window) {}
 
-RgbdSensor::RgbdSensor(
-    FrameId parent_id, const RigidTransformd& X_PB,
-    const pair<RenderCameraProperties, CameraInfo>& color_camera_specification,
-    const pair<RenderCameraProperties, DepthCameraInfo>&
-        depth_camera_specification,
-    const CameraPoses& camera_poses, bool show_window)
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
+                       const pair<RenderCameraProperties, ColorCameraModel>&
+                           color_camera_specification,
+                       const pair<RenderCameraProperties, DepthCameraModel>&
+                           depth_camera_specification,
+                       const CameraPoses& camera_poses, bool show_window)
     : parent_frame_id_(parent_id),
       show_window_(show_window),
-      color_camera_info_(color_camera_specification.second),
-      depth_camera_info_(depth_camera_specification.second),
+      color_camera_model_(color_camera_specification.second),
+      depth_camera_model_(depth_camera_specification.second),
       color_properties_(color_camera_specification.first),
       depth_properties_(depth_camera_specification.first),
       X_PB_(X_PB),
@@ -93,46 +94,49 @@ RgbdSensor::RgbdSensor(
       X_BD_(camera_poses.X_BD) {
   // TODO(SeanCurtis-TRI): Remove this test and warning when the rendering
   //  infrastructure handles arbitrary camera intrinsics.
-  if (color_camera_info_.focal_x() != color_camera_info_.focal_y() ||
-      color_camera_info_.center_x() != color_camera_info_.width() / 2.0 + 0.5 ||
-      color_camera_info_.center_y() !=
-          color_camera_info_.height() / 2.0 + 0.5 ||
-      depth_camera_info_.focal_x() != depth_camera_info_.focal_y() ||
-      depth_camera_info_.center_x() != depth_camera_info_.width() / 2.0 + 0.5 ||
-      depth_camera_info_.center_y() !=
-          depth_camera_info_.height() / 2.0 + 0.5) {
+  const CameraInfo& color_intrinsics = color_camera_model_.intrinsics();
+  const CameraInfo& depth_intrinsics = depth_camera_model_.intrinsics();
+  if (color_intrinsics.focal_x() != color_intrinsics.focal_y() ||
+      color_intrinsics.center_x() !=
+          color_intrinsics.width() / 2.0 + 0.5 ||
+      color_intrinsics.center_y() !=
+          color_intrinsics.height() / 2.0 + 0.5 ||
+      depth_intrinsics.focal_x() != depth_intrinsics.focal_y() ||
+      depth_intrinsics.center_x() != depth_intrinsics.width() / 2.0 + 0.5 ||
+      depth_intrinsics.center_y() !=
+          depth_intrinsics.height() / 2.0 + 0.5) {
     logging::Warn(
         "Constructing an instance of RgbdSensor with a \"complex\" camera "
         "specification. For now, the camera must be radially symmetric and "
         "centered on the image. Cameras provided:\n  Color - focal lengths "
         "({}, {}), principal point ({}, {})\n  Depth - focal lengths ({}, {}), "
         "principal point ({}, {})",
-        color_camera_info_.focal_x(), color_camera_info_.focal_y(),
-        color_camera_info_.center_x(), color_camera_info_.center_y(),
-        depth_camera_info_.focal_x(), depth_camera_info_.focal_y(),
-        depth_camera_info_.center_x(), depth_camera_info_.center_y());
+        color_intrinsics.focal_x(), color_intrinsics.focal_y(),
+        color_intrinsics.center_x(), color_intrinsics.center_y(),
+        depth_intrinsics.focal_x(), depth_intrinsics.focal_y(),
+        depth_intrinsics.center_x(), depth_intrinsics.center_y());
   }
 
   query_object_input_port_ = &this->DeclareAbstractInputPort(
       "geometry_query", Value<geometry::QueryObject<double>>{});
 
-  ImageRgba8U color_image(color_camera_info_.width(),
-                          color_camera_info_.height());
+  ImageRgba8U color_image(color_intrinsics.width(),
+                          color_intrinsics.height());
   color_image_port_ = &this->DeclareAbstractOutputPort(
       "color_image", color_image, &RgbdSensor::CalcColorImage);
 
-  ImageDepth32F depth32(depth_camera_info_.width(),
-                        depth_camera_info_.height());
+  ImageDepth32F depth32(depth_intrinsics.width(),
+                        depth_intrinsics.height());
   depth_image_32F_port_ = &this->DeclareAbstractOutputPort(
       "depth_image_32f", depth32, &RgbdSensor::CalcDepthImage32F);
 
-  ImageDepth16U depth16(depth_camera_info_.width(),
-                        depth_camera_info_.height());
+  ImageDepth16U depth16(depth_intrinsics.width(),
+                        depth_intrinsics.height());
   depth_image_16U_port_ = &this->DeclareAbstractOutputPort(
       "depth_image_16u", depth16, &RgbdSensor::CalcDepthImage16U);
 
-  ImageLabel16I label_image(color_camera_info_.width(),
-                            color_camera_info_.height());
+  ImageLabel16I label_image(color_intrinsics.width(),
+                            color_intrinsics.height());
   label_image_port_ = &this->DeclareAbstractOutputPort(
       "label_image", label_image, &RgbdSensor::CalcLabelImage);
 
@@ -145,7 +149,7 @@ RgbdSensor::RgbdSensor(
   // value.
   const float kMaxValidDepth16UInM =
       (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
-  const double max_depth = depth_camera_info_.max_depth();
+  const double max_depth = depth_camera_model_.max_depth();
   if (max_depth > kMaxValidDepth16UInM) {
     drake::log()->warn(
         "Specified max depth is {} m > max valid depth for 16 bits {} m. "
@@ -155,10 +159,10 @@ RgbdSensor::RgbdSensor(
 }
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const math::RigidTransformd& X_PB,
-                       const pair<RenderCameraProperties, DepthCameraInfo>&
+                       const pair<RenderCameraProperties, DepthCameraModel>&
                            both_camera_specifications,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB, depth_downcast(both_camera_specifications),
+    : RgbdSensor(parent_id, X_PB, depth_to_color(both_camera_specifications),
                  both_camera_specifications, camera_poses, show_window) {}
 
 const InputPort<double>& RgbdSensor::query_object_input_port() const {
@@ -188,9 +192,10 @@ const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  CameraProperties simple_camera{
-      color_camera_info_.width(), color_camera_info_.height(),
-      color_camera_info_.fov_y(), color_properties_.render_engine_name()};
+  const CameraInfo& intrinsics = color_camera_model_.intrinsics();
+  CameraProperties simple_camera{intrinsics.width(), intrinsics.height(),
+                                 intrinsics.fov_y(),
+                                 color_properties_.render_engine_name()};
   query_object.RenderColorImage(simple_camera, parent_frame_id_, X_PB_ * X_BC_,
                                 show_window_, color_image);
 }
@@ -198,12 +203,15 @@ void RgbdSensor::CalcColorImage(const Context<double>& context,
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  DepthCameraProperties simple_camera{
-      depth_camera_info_.width(),     depth_camera_info_.height(),
-      depth_camera_info_.fov_y(),     depth_properties_.render_engine_name(),
-      depth_camera_info_.min_depth(), depth_camera_info_.max_depth()};
-  query_object.RenderDepthImage(simple_camera, parent_frame_id_,
-                                X_PB_ * X_BD_, depth_image);
+  const CameraInfo& intrinsics = depth_camera_model_.intrinsics();
+  DepthCameraProperties simple_camera{intrinsics.width(),
+                                      intrinsics.height(),
+                                      intrinsics.fov_y(),
+                                      depth_properties_.render_engine_name(),
+                                      depth_camera_model_.min_depth(),
+                                      depth_camera_model_.max_depth()};
+  query_object.RenderDepthImage(simple_camera, parent_frame_id_, X_PB_ * X_BD_,
+                                depth_image);
 }
 
 void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
@@ -216,9 +224,10 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  CameraProperties simple_camera{
-      color_camera_info_.width(), color_camera_info_.height(),
-      color_camera_info_.fov_y(), color_properties_.render_engine_name()};
+  const CameraInfo& intrinsics = color_camera_model_.intrinsics();
+  CameraProperties simple_camera{intrinsics.width(), intrinsics.height(),
+                                 intrinsics.fov_y(),
+                                 color_properties_.render_engine_name()};
   query_object.RenderLabelImage(simple_camera, parent_frame_id_, X_PB_ * X_BC_,
                                 show_window_, label_image);
 }

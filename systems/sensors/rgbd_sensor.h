@@ -154,9 +154,9 @@ class RgbdSensor final : public LeafSystem<double> {
    @pydrake_mkdoc_identifier{unique_full_intrinsics}  */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const std::pair<geometry::render::RenderCameraProperties,
-                             CameraInfo>& color_camera_specification,
+                             ColorCameraModel>& color_camera_specification,
              const std::pair<geometry::render::RenderCameraProperties,
-                             DepthCameraInfo>& depth_camera_specification,
+                             DepthCameraModel>& depth_camera_specification,
              const CameraPoses& camera_poses = {}, bool show_window = false);
 
   /** Constructs an %RgbdSensor with a fully specified camera model and
@@ -169,25 +169,35 @@ class RgbdSensor final : public LeafSystem<double> {
    @pydrake_mkdoc_identifier{shared_full_intrinsics}  */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const std::pair<geometry::render::RenderCameraProperties,
-                             DepthCameraInfo>& both_camera_specifications,
+                             DepthCameraModel>& both_camera_specifications,
              const CameraPoses& camera_poses = {}, bool show_window = false);
 
   ~RgbdSensor() = default;
 
   // TODO(eric.cousineau): Expose which renderer color / depth uses?
 
-  /** Returns the color sensor's info.  */
-  const CameraInfo& color_camera_info() const { return color_camera_info_; }
+  /** Returns the intrinsics roperties of the color camera model.  */
+  const CameraInfo& color_camera_info() const {
+    return color_camera_model_.intrinsics();
+  }
 
-  /** Returns the depth sensor's info.  */
-  const DepthCameraInfo& depth_camera_info() const {
-    return depth_camera_info_;
+  /** Returns the color camera model.  */
+  const ColorCameraModel& color_camera_model() const {
+    return color_camera_model_;
+  }
+
+  /** Returns the intrinsics roperties of the depth camera model.  */
+  const CameraInfo& depth_camera_info() const {
+    return depth_camera_model_.intrinsics();
+  }
+
+  /** Returns the color camera model.  */
+  const DepthCameraModel& depth_camera_model() const {
+    return depth_camera_model_;
   }
 
   /** Returns `X_BC`.  */
-  const math::RigidTransformd& X_BC() const {
-    return X_BC_;
-  }
+  const math::RigidTransformd& X_BC() const { return X_BC_; }
 
   /** Returns `X_BD`.  */
   const math::RigidTransformd& X_BD() const {
@@ -257,8 +267,8 @@ class RgbdSensor final : public LeafSystem<double> {
 
   // If true, a window will be shown for the camera.
   const bool show_window_;
-  const CameraInfo color_camera_info_;
-  const DepthCameraInfo depth_camera_info_;
+  const ColorCameraModel color_camera_model_;
+  const DepthCameraModel depth_camera_model_;
   const geometry::render::RenderCameraProperties color_properties_;
   const geometry::render::RenderCameraProperties depth_properties_;
   // The position of the camera's B frame relative to its parent frame P.

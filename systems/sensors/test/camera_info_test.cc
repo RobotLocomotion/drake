@@ -76,13 +76,21 @@ GTEST_TEST(TestCameraInfo, FieldOfView) {
   }
 }
 
-GTEST_TEST(TestCameraInfo, DepthCameraInfoConstructionTest) {
+GTEST_TEST(TestCameraInfo, ColorCameraModelConstruction) {
   const Eigen::Matrix3d expected(
       (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
 
-  DepthCameraInfo dut(kWidth, kHeight, kFx, kFy, kCx, kCy, kMinDepth,
-                      kMaxDepth);
-  Verify(expected, dut);
+  ColorCameraModel dut{{kWidth, kHeight, kFx, kFy, kCx, kCy}};
+  Verify(expected, dut.intrinsics());
+}
+
+GTEST_TEST(TestCameraInfo, DepthCameraModelConstruction) {
+  const Eigen::Matrix3d expected(
+      (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
+
+  DepthCameraModel dut({kWidth, kHeight, kFx, kFy, kCx, kCy}, kMinDepth,
+                       kMaxDepth);
+  Verify(expected, dut.intrinsics());
   EXPECT_EQ(dut.min_depth(), kMinDepth);
   EXPECT_EQ(dut.max_depth(), kMaxDepth);
 }

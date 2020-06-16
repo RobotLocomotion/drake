@@ -10,7 +10,7 @@ namespace render {
 
 // TODO(SeanCurtis-TRI): Would this be better as a GeometryProperties instance?
 /** Collection of parameters that helps bridge the camera model (as defined by a
- systems::sensors::CameraInfo or systems::sensors::DepthCameraInfo) and a
+ systems::sensors::ColorCameraModel or systems::sensors::DepthCameraModel) and a
  RenderEngine. This includes those per-camera properties appropriate to the
  RenderEngine's implementation of the camera model. This represents the union
  of known render engine camera properties and it is not the case that all

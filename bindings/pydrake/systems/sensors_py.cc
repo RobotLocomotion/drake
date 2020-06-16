@@ -217,8 +217,12 @@ PYBIND11_MODULE(sensors, m) {
           py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_shared_simple)
       .def("color_camera_info", &RgbdSensor::color_camera_info,
           py_reference_internal, doc.RgbdSensor.color_camera_info.doc)
+      .def("color_camera_model", &RgbdSensor::color_camera_model,
+          py_reference_internal, doc.RgbdSensor.color_camera_model.doc)
       .def("depth_camera_info", &RgbdSensor::depth_camera_info,
           py_reference_internal, doc.RgbdSensor.depth_camera_info.doc)
+      .def("depth_camera_model", &RgbdSensor::depth_camera_model,
+          py_reference_internal, doc.RgbdSensor.depth_camera_model.doc)
       .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
       .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
       .def("parent_frame_id", &RgbdSensor::parent_frame_id,
@@ -276,34 +280,39 @@ PYBIND11_MODULE(sensors, m) {
   }
 
   {
-    using Class = DepthCameraInfo;
-    py::class_<Class, CameraInfo>(m, "DepthCameraInfo", doc.DepthCameraInfo.doc)
-        .def(py::init<int, int, double, double, double, double, double,
-                 double>(),
-            py::arg("width"), py::arg("height"), py::arg("focal_x"),
-            py::arg("focal_y"), py::arg("center_x"), py::arg("center_y"),
-            py::arg("min_depth"), py::arg("max_depth"),
-            doc.DepthCameraInfo.ctor.doc_8args)
-        .def(py::init<int, int, double, double, double>(), py::arg("width"),
-            py::arg("height"), py::arg("fov_y"), py::arg("min_depth"),
-            py::arg("max_depth"), doc.DepthCameraInfo.ctor.doc_5args)
-        .def(py::init<const CameraInfo&, double, double>(),
-            py::arg("intrinsics"), py::arg("min_depth"), py::arg("max_depth"),
-            doc.DepthCameraInfo.ctor.doc_3args)
-        .def("min_depth", &Class::min_depth, doc.DepthCameraInfo.min_depth.doc)
-        .def("max_depth", &Class::max_depth, doc.DepthCameraInfo.max_depth.doc)
+    using Class = ColorCameraModel;
+    constexpr auto& cls_doc = doc.ColorCameraModel;
+    py::class_<Class> cls(m, "ColorCameraModel", cls_doc.doc);
+    cls  // BR
+        .def(py::init<CameraInfo>(), py::arg("intrinsics"), cls_doc.ctor.doc)
+        .def("intrinsics", &Class::intrinsics, cls_doc.intrinsics.doc)
+        .def(py::pickle(
+            [](const Class& self) { return py::make_tuple(self.intrinsics()); },
+            [](py::tuple t) {
+              DRAKE_DEMAND(t.size() == 1);
+              return Class(t[0].cast<CameraInfo>());
+            }));
+  }
+
+  {
+    using Class = DepthCameraModel;
+    constexpr auto& cls_doc = doc.DepthCameraModel;
+    py::class_<Class> cls(m, "DepthCameraModel", cls_doc.doc);
+    cls  // BR
+        .def(py::init<CameraInfo, double, double>(), py::arg("intrinsics"),
+            py::arg("min_depth"), py::arg("max_depth"), cls_doc.ctor.doc)
+        .def("intrinsics", &Class::intrinsics, cls_doc.intrinsics.doc)
+        .def("min_depth", &Class::min_depth, cls_doc.min_depth.doc)
+        .def("max_depth", &Class::max_depth, cls_doc.max_depth.doc)
         .def(py::pickle(
             [](const Class& self) {
-              return py::make_tuple(self.width(), self.height(), self.focal_x(),
-                  self.focal_y(), self.center_x(), self.center_y(),
-                  self.min_depth(), self.max_depth());
+              return py::make_tuple(
+                  self.intrinsics(), self.min_depth(), self.max_depth());
             },
             [](py::tuple t) {
-              DRAKE_DEMAND(t.size() == 8);
-              return Class(t[0].cast<int>(), t[1].cast<int>(),
-                  t[2].cast<double>(), t[3].cast<double>(), t[4].cast<double>(),
-                  t[5].cast<double>(), t[6].cast<double>(),
-                  t[7].cast<double>());
+              DRAKE_DEMAND(t.size() == 3);
+              return Class(t[0].cast<CameraInfo>(), t[1].cast<double>(),
+                  t[2].cast<double>());
             }));
   }
 
