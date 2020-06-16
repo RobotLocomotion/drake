@@ -347,7 +347,7 @@ enum class ContactModel {
  the following properties for point contact modeling:
 
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
- | :--------: | :--------------: | :------: | :----------------: |  :------------------- |
+ | :--------: | :--------------: | :------: | :----------------: | :------------------- |
  |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
 
  ¹ Collision geometry is required to be registered with a
