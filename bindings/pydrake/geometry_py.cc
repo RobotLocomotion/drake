@@ -8,6 +8,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -134,6 +135,10 @@ void def_geometry_render(py::module m) {
   AddValueInstantiation<RenderLabel>(m);
 }
 
+const char* doc_inspector_get_name_deprecation =
+    "Please use SceneGraphInspector.GetName() instead. This method will be "
+    "removed on or after 2020-10-01.";
+
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   py::tuple param = GetPyParam<T>();
@@ -156,23 +161,51 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_geometries.doc)
         .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
             cls_doc.GetAllGeometryIds.doc)
+        .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,
+            py::arg("role"), cls_doc.NumGeometriesWithRole.doc)
+        .def("NumDynamicGeometries", &Class::NumDynamicGeometries,
+            cls_doc.NumDynamicGeometries.doc)
+        .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,
+            cls_doc.NumAnchoredGeometries.doc)
+        .def("SourceIsRegistered", &Class::SourceIsRegistered, py::arg("id"),
+            cls_doc.SourceIsRegistered.doc)
+        .def("GetSourceName", &Class::GetSourceName, py::arg("id"),
+            cls_doc.GetSourceName.doc)
         .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
             cls_doc.GetFrameId.doc)
         .def("GetGeometryIdByName", &Class::GetGeometryIdByName,
             py::arg("frame_id"), py::arg("role"), py::arg("name"),
             cls_doc.GetGeometryIdByName.doc)
-        .def("GetNameByFrameId",
+        .def("GetName",
             overload_cast_explicit<const std::string&, FrameId>(
                 &Class::GetName),
             py_reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
-        .def("GetNameByGeometryId",
+        .def("GetName",
             overload_cast_explicit<const std::string&, GeometryId>(
                 &Class::GetName),
             py_reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)
+        .def(
+            "GetNameByFrameId",
+            [](SceneGraphInspector<T>* self, FrameId frame_id) {
+              WarnDeprecated(doc_inspector_get_name_deprecation);
+              return self->GetName(frame_id);
+            },
+            py_reference_internal, py::arg("frame_id"),
+            doc_inspector_get_name_deprecation)
+        .def(
+            "GetNameByGeometryId",
+            [](SceneGraphInspector<T>* self, GeometryId frame_id) {
+              WarnDeprecated(doc_inspector_get_name_deprecation);
+              return self->GetName(frame_id);
+            },
+            py_reference_internal, py::arg("geometry_id"),
+            doc_inspector_get_name_deprecation)
         .def("GetShape", &Class::GetShape, py_reference_internal,
             py::arg("geometry_id"), cls_doc.GetShape.doc)
+        .def("GetPoseInParent", &Class::GetPoseInParent, py_reference_internal,
+            py::arg("geometry_id"), cls_doc.GetPoseInParent.doc)
         .def("GetPoseInFrame", &Class::GetPoseInFrame, py_reference_internal,
             py::arg("geometry_id"), cls_doc.GetPoseInFrame.doc)
         .def("GetProximityProperties", &Class::GetProximityProperties,
@@ -369,6 +402,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init(), doc.QueryObject.ctor.doc)
         .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
             doc.QueryObject.inspector.doc)
+        .def("X_WF", &QueryObject<T>::X_WF, py::arg("id"),
+            py_reference_internal, doc.QueryObject.X_WF.doc)
+        .def("X_PF", &QueryObject<T>::X_PF, py::arg("id"),
+            py_reference_internal, doc.QueryObject.X_PF.doc)
+        .def("X_WG", &QueryObject<T>::X_WG, py::arg("id"),
+            py_reference_internal, doc.QueryObject.X_WG.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
@@ -612,6 +651,17 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("depth", &Box::depth, doc.Box.depth.doc)
         .def("height", &Box::height, doc.Box.height.doc)
         .def("size", &Box::size, py_reference_internal, doc.Box.size.doc);
+    py::class_<Capsule, Shape>(m, "Capsule", doc.Capsule.doc)
+        .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
+            doc.Capsule.ctor.doc)
+        .def("radius", &Capsule::radius, doc.Capsule.radius.doc)
+        .def("length", &Capsule::length, doc.Capsule.length.doc);
+    py::class_<Ellipsoid, Shape>(m, "Ellipsoid", doc.Ellipsoid.doc)
+        .def(py::init<double, double, double>(), py::arg("a"), py::arg("b"),
+            py::arg("c"), doc.Ellipsoid.ctor.doc)
+        .def("a", &Ellipsoid::a, doc.Ellipsoid.a.doc)
+        .def("b", &Ellipsoid::b, doc.Ellipsoid.b.doc)
+        .def("c", &Ellipsoid::c, doc.Ellipsoid.c.doc);
     py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
         .def(py::init<>(), doc.HalfSpace.ctor.doc)
         .def_static("MakePose", &HalfSpace::MakePose, py::arg("Hz_dir_F"),
