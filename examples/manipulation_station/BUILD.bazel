@@ -120,6 +120,9 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "manipulation_station_test",
+    # Frequently exceeds short timeout in
+    # linux-bionic-clang-bazel-nightly-coverage
+    timeout = "moderate",
     tags = vtk_test_tags(),
     deps = [
         ":manipulation_station",
