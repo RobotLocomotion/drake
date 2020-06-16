@@ -1566,6 +1566,39 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
 
+GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsNoDiagramException) {
+  SceneGraph<double> scene_graph;
+  MultibodyPlant<double> plant(0.0);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  // A half-space for the ground geometry.
+  CoulombFriction<double> ground_friction(0.5, 0.3);
+  plant.RegisterCollisionGeometry(
+      plant.world_body(),
+      // A half-space passing through the origin in the x-z plane.
+      geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+      geometry::HalfSpace(), "ground", ground_friction);
+
+  // Add a spherical body.
+  const RigidBody<double>& sphere1 =
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>());
+  CoulombFriction<double> sphere1_friction(0.8, 0.5);
+  plant.RegisterCollisionGeometry(sphere1, RigidTransformd::Identity(),
+                                  geometry::Sphere(0.5), "collision",
+                                  sphere1_friction);
+
+  plant.Finalize();
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Plant was not connected to the SceneGraph in a diagram, so its input port
+  // should be invalid.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.EvalPointPairPenetrations(*context), std::logic_error,
+      "This MultibodyPlant registered geometry for contact handling. However "
+      "its query input port \\(get_geometry_query_input_port\\(\\)\\) is not "
+      "connected.");
+}
+
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
@@ -2931,12 +2964,16 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
 GTEST_TEST(MultibodyPlantTest, SceneGraphPorts) {
     MultibodyPlant<double> plant(0.0);
-    plant.Finalize();
 
-    // Test that SceneGraph ports exist and are accessible, even without
-    // the presence of a connected SceneGraph.
+    MultibodyPlant<double> plant_finalized(0.0);
+    plant_finalized.Finalize();
+
+    // Test that SceneGraph ports exist and are accessible, both pre and post
+    // finalize, without the presence of a connected SceneGraph.
     EXPECT_NO_THROW(plant.get_geometry_query_input_port());
     EXPECT_NO_THROW(plant.get_geometry_poses_output_port());
+    EXPECT_NO_THROW(plant_finalized.get_geometry_query_input_port());
+    EXPECT_NO_THROW(plant_finalized.get_geometry_poses_output_port());
 }
 
 }  // namespace

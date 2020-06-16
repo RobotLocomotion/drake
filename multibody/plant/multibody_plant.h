@@ -315,15 +315,14 @@ enum class ContactModel {
 /// registrations took place. All geometry registration **must** be performed
 /// pre-finalize.
 ///
-/// Upon construction, %Multibodyplant will declare an input port for geometric
-/// queries, see get_geometry_query_input_port().
-/// If %MultibodyPlant registers geometry with a SceneGraph via calls to
-/// RegisterCollisionGeometry(), users may use this port for geometric queries.
-/// Users must connect this input port to the output port for geometric
-/// queries of the SceneGraph used for registration, which can be obtained with
-/// SceneGraph::get_query_output_port().
-/// In summary, if %MultibodyPlant registers collision geometry, the setup
-/// process will include:
+/// %Multibodyplant declares an input port for geometric queries, see
+/// get_geometry_query_input_port(). If %MultibodyPlant registers geometry with
+/// a SceneGraph via calls to RegisterCollisionGeometry(), users may use this
+/// port for geometric queries. Users must connect this input port to the output
+/// port for geometric queries of the SceneGraph used for registration, which
+/// can be obtained with SceneGraph::get_query_output_port(). In summary, if
+/// %MultibodyPlant registers collision geometry, the setup process will
+/// include:
 ///
 /// 1. Call to RegisterAsSourceForSceneGraph().
 /// 2. Calls to RegisterCollisionGeometry(), as many as needed.

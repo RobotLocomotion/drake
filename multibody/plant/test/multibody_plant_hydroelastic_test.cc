@@ -304,6 +304,44 @@ class ContactModelTest : public ::testing::Test {
     plant_->SetFreeBodyPose(plant_context_, *second_ball_, X_WS2);
   }
 
+  void ConfigureWithoutDiagram(ContactModel model) {
+    plant_no_diagram_ = std::make_unique<MultibodyPlant<double>>(0.0);
+    scene_graph_no_diagram_ = std::make_unique<SceneGraph<double>>();
+
+    plant_ = plant_no_diagram_.get();
+    scene_graph_ = scene_graph_no_diagram_.get();
+
+    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+
+    geometry::ProximityProperties props;
+    geometry::AddContactMaterial(
+        kElasticModulus_, kDissipation_,
+        CoulombFriction<double>(kFrictionCoefficient_, kFrictionCoefficient_),
+        &props);
+    AddGround(props, plant_);
+
+    // Although we're providing elastic modulus and dissipation for the rigid
+    // spheres, those values will be ignored.
+    first_ball_ = &AddSphere("sphere1", kSphereRadius_, props, plant_);
+    second_ball_ = &AddSphere("sphere2", kSphereRadius_, props, plant_);
+
+    // Tell the plant to use the given model.
+    plant_->set_contact_model(model);
+    ASSERT_EQ(plant_->get_contact_model(), model);
+
+    plant_->Finalize();
+
+    // Create a context for this system:
+    plant_no_diagram_context_ = plant_->CreateDefaultContext();
+    plant_context_ = plant_no_diagram_context_.get();
+
+    // Pose the ball.
+    RigidTransformd X_WS1{Vector3d{0.0, 0.0, kSphereRadius_ * 0.9}};
+    plant_->SetFreeBodyPose(plant_context_, *first_ball_, X_WS1);
+    RigidTransformd X_WS2{Vector3d{0.0, 0.0, 2 * kSphereRadius_}};
+    plant_->SetFreeBodyPose(plant_context_, *second_ball_, X_WS2);
+  }
+
   void AddGround(geometry::ProximityProperties contact_material,
                  MultibodyPlant<double>* plant) {
     const double kSize = 10;
@@ -414,6 +452,10 @@ class ContactModelTest : public ::testing::Test {
   unique_ptr<Diagram<double>> diagram_;
   unique_ptr<Context<double>> diagram_context_;
   Context<double>* plant_context_{nullptr};
+
+  std::unique_ptr<MultibodyPlant<double>> plant_no_diagram_;
+  std::unique_ptr<SceneGraph<double>> scene_graph_no_diagram_;
+  std::unique_ptr<Context<double>> plant_no_diagram_context_;
 };
 
 TEST_F(ContactModelTest, PointPairContact) {
@@ -469,6 +511,18 @@ TEST_F(ContactModelTest, HydroelasitcWithFallback) {
     EXPECT_TRUE(CompareMatrices(F_BBo_W_array[b].get_coeffs(),
                                 F_BBo_W_array_expected[b].get_coeffs()));
   }
+}
+
+TEST_F(ContactModelTest, HydroelasitcWithFallbackNoDiagramException) {
+  this->ConfigureWithoutDiagram(ContactModel::kHydroelasticWithFallback);
+
+  // Plant was not connected to the SceneGraph in a diagram, so its input port
+  // should be invalid.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetContactResults(), std::logic_error,
+      "This MultibodyPlant registered geometry for contact handling. However "
+      "its query input port \\(get_geometry_query_input_port\\(\\)\\) is not "
+      "connected.");
 }
 
 }  // namespace
