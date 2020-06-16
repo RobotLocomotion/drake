@@ -3697,8 +3697,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // consistent and helpful error message in the situation where the
   // geometry_query_input_port is not connected, but geometry has been
   // registered.
-  geometry::QueryObject<T> GeometryQueryEvalHelper(
-      const systems::Context<T>&) const;
+  const geometry::QueryObject<T>& EvalGeometryQueryInput(
+      const systems::Context<T>& context) const {
+    if (!get_geometry_query_input_port().HasValue(context)) {
+      throw std::logic_error(
+          "This MultibodyPlant registered geometry for contact handling. "
+          "However its query input port (get_geometry_query_input_port()) "
+          "is not connected.");
+    }
+    return get_geometry_query_input_port()
+        .template Eval<geometry::QueryObject<T>>(context);
+  }
 
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;
@@ -4553,10 +4562,6 @@ struct AddMultibodyPlantSceneGraphResult final {
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
-template <>
-typename geometry::QueryObject<symbolic::Expression>
-MultibodyPlant<symbolic::Expression>::GeometryQueryEvalHelper(
-    const systems::Context<symbolic::Expression>&) const;
 template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(

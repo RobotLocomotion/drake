@@ -826,27 +826,6 @@ MultibodyPlant<symbolic::Expression>::member_scene_graph() {
 }
 
 template <typename T>
-geometry::QueryObject<T> MultibodyPlant<T>::GeometryQueryEvalHelper(
-    const systems::Context<T>& context) const {
-  if (!get_geometry_query_input_port().HasValue(context)) {
-    throw std::logic_error(
-        "This MultibodyPlant registered geometry for contact handling. "
-        "However its query input port (get_geometry_query_input_port()) "
-        "is not connected.");
-  }
-  return get_geometry_query_input_port()
-      .template Eval<geometry::QueryObject<T>>(context);
-}
-
-template <>
-typename geometry::QueryObject<symbolic::Expression>
-MultibodyPlant<symbolic::Expression>::GeometryQueryEvalHelper(
-    const systems::Context<symbolic::Expression>&) const {
-  throw std::logic_error(
-      "This method doesn't support T = symbolic::Expression.");
-}
-
-template <typename T>
 void MultibodyPlant<T>::CheckValidState(const systems::State<T>* state) const {
   DRAKE_THROW_UNLESS(state != nullptr);
   DRAKE_THROW_UNLESS(
@@ -1096,7 +1075,7 @@ std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
   if (num_collision_geometries() > 0) {
-    const auto& query_object = GeometryQueryEvalHelper(context);
+    const auto& query_object = EvalGeometryQueryInput(context);
     return query_object.ComputePointPairPenetration();
   }
   return std::vector<PenetrationAsPointPair<double>>();
@@ -1110,7 +1089,7 @@ std::vector<PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>& context) const {
   if (num_collision_geometries() > 0) {
-    const auto &query_object = GeometryQueryEvalHelper(context);;
+    const auto &query_object = EvalGeometryQueryInput(context);;
     auto results = query_object.ComputePointPairPenetration();
     if (results.size() > 0) {
       throw std::logic_error(
@@ -1155,7 +1134,7 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     return combined_frictions;
   }
 
-  const auto& query_object = GeometryQueryEvalHelper(context);
+  const auto& query_object = EvalGeometryQueryInput(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const auto& pair : point_pairs) {
@@ -1504,7 +1483,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
-  const auto& query_object = GeometryQueryEvalHelper(context);
+  const auto& query_object = EvalGeometryQueryInput(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const ContactSurface<T>& surface : all_surfaces) {
@@ -1786,7 +1765,7 @@ void MultibodyPlant<T>::CalcContactSurfaces(
     std::vector<ContactSurface<T>>* contact_surfaces) const {
   DRAKE_DEMAND(contact_surfaces);
 
-  const auto& query_object = GeometryQueryEvalHelper(context);
+  const auto& query_object = EvalGeometryQueryInput(context);
 
   *contact_surfaces = query_object.ComputeContactSurfaces();
 }
@@ -1806,7 +1785,7 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
-    const auto &query_object = GeometryQueryEvalHelper(context);
+    const auto &query_object = EvalGeometryQueryInput(context);
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
