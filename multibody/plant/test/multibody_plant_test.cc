@@ -1566,7 +1566,7 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
 }
 
-GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsNoDiagramException) {
+GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
   SceneGraph<double> scene_graph;
   MultibodyPlant<double> plant(0.0);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
