@@ -3693,6 +3693,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // SceneGraph supports symbolic::Expression.)
   MemberSceneGraph& member_scene_graph();
 
+  // Consolidates calls to Eval on the geometry query input port to have a
+  // consistent and helpful error message in the situation where the
+  // geometry_query_input_port is not connected, but geometry has been
+  // registered.
+  geometry::QueryObject<T> GeometryQueryEvalHelper(
+      const systems::Context<T>&) const;
+
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;
 
@@ -4546,6 +4553,10 @@ struct AddMultibodyPlantSceneGraphResult final {
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
+template <>
+typename geometry::QueryObject<symbolic::Expression>
+MultibodyPlant<symbolic::Expression>::GeometryQueryEvalHelper(
+    const systems::Context<symbolic::Expression>&) const;
 template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
