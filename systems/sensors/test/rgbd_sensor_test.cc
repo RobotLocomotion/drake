@@ -49,19 +49,20 @@ namespace sensors {
 
 std::ostream& operator<<(std::ostream& out, const CameraInfo& info) {
   out << "\n  width: " << info.width()
-      << "\n  height: " << info.height() << "\n  focal_x: " << info.focal_x()
+      << "\n  height: " << info.height()
+      << "\n  focal_x: " << info.focal_x()
       << "\n  focal_y: " << info.focal_y()
       << "\n  center_x: " << info.center_x()
       << "\n  center_y: " << info.center_y();
   return out;
 }
 std::ostream& operator<<(std::ostream& out, const ColorCameraModel& model) {
-  out << "ColorCameraModel" << model.intrinsics();
+  out << "ColorCameraModel\n" << model.intrinsics();
   return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthCameraModel& model) {
-  out << "DepthCameraModel" << model.intrinsics()
+  out << "DepthCameraModel\n" << model.intrinsics()
       << "\n  min_depth: " << model.min_depth()
       << "\n  max_depth: " << model.max_depth();
   return out;

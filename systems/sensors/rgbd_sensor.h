@@ -191,7 +191,7 @@ class RgbdSensor final : public LeafSystem<double> {
     return depth_camera_model_.intrinsics();
   }
 
-  /** Returns the color camera model.  */
+  /** Returns the depth camera model.  */
   const DepthCameraModel& depth_camera_model() const {
     return depth_camera_model_;
   }
