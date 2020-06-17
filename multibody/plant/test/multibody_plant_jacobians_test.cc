@@ -289,7 +289,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
 // PinJoint1 and PinJoint2 are located at distal ends of the links.
 // PinJoint1 is collocated with Wo (world frame origin)
 // PinJoint2 is collocated with Fo (frame F's origin) and Mo (frame M's origin)
-// where frame F is affixed/welded to link A and frame M is affixed to link B.
+// where frame F is fixed/welded to link A and frame M is fixed to link B.
 // In the baseline configuration, the origin points Wo Ao Fo Mo Bo are
 // sequential along the links (they form a line parallel to Wx = Ax = Bx).
 class TwoDOFPlanarPendulumTest : public ::testing::Test {
@@ -317,9 +317,9 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
         *bodyA_, math::RigidTransformd(p_AoWo_A), Vector3d::UnitZ());
 
     // Create a revolute joint that connects point Fo (frame F's origin) to
-    // point Mo (frame M's origin), where frame F is affixed/welded to the
+    // point Mo (frame M's origin), where frame F is fixed/welded to the
     // distal end of link A (Fo is a distance of link_length/2 from Ao) and
-    // frame M is affixed/welded to link B.  Mo is a distance of link_length/2
+    // frame M is fixed/welded to link B.  Mo is a distance of link_length/2
     // from link B's centroid (point Bo).
     const Vector3d p_AoFo_A(0.5 * link_length_, 0.0, 0.0);
     const Vector3d p_BoMo_B(-0.5 * link_length_, 0.0, 0.0);
