@@ -8,10 +8,13 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 
-using drake::multibody::RevoluteSpring;
+using multibody::RevoluteSpring;
+using systems::DiagramBuilder;
+using systems::Diagram;
 
 namespace multibody {
 namespace {
@@ -55,6 +58,75 @@ GTEST_TEST(ScalarConversionTest, RevoluteJointAndSpring) {
       plant_ad->GetForceElement<RevoluteSpring>(spring.index());
   // Verify correct cross-referencing in the scalar converted model.
   EXPECT_EQ(&pin_ad, &spring_ad.joint());
+}
+
+// Verifies that two MultibodyPlants have the same port indices.
+template <typename T, typename U>
+void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
+                                      const MultibodyPlant<U>& plant_u) {
+  // Check input ports.
+  // (Except actuation input ports because there is no actuation source.)
+  EXPECT_EQ(plant_t.get_applied_generalized_force_input_port().get_index(),
+            plant_u.get_applied_generalized_force_input_port().get_index());
+  EXPECT_EQ(plant_t.get_applied_spatial_force_input_port().get_index(),
+            plant_u.get_applied_spatial_force_input_port().get_index());
+  EXPECT_EQ(plant_t.get_geometry_query_input_port().get_index(),
+            plant_u.get_geometry_query_input_port().get_index());
+  // Check output ports.
+  EXPECT_EQ(plant_t.get_body_poses_output_port().get_index(),
+            plant_u.get_body_poses_output_port().get_index());
+  EXPECT_EQ(plant_t.get_body_spatial_velocities_output_port().get_index(),
+            plant_u.get_body_spatial_velocities_output_port().get_index());
+  EXPECT_EQ(plant_t.get_body_spatial_accelerations_output_port().get_index(),
+            plant_u.get_body_spatial_accelerations_output_port().get_index());
+  EXPECT_EQ(plant_t.get_state_output_port().get_index(),
+            plant_u.get_state_output_port().get_index());
+  EXPECT_EQ(plant_t.get_generalized_acceleration_output_port().get_index(),
+            plant_u.get_generalized_acceleration_output_port().get_index());
+  EXPECT_EQ(plant_t.get_reaction_forces_output_port().get_index(),
+            plant_u.get_reaction_forces_output_port().get_index());
+  EXPECT_EQ(plant_t.get_contact_results_output_port().get_index(),
+            plant_u.get_contact_results_output_port().get_index());
+  EXPECT_EQ(plant_t.get_geometry_poses_output_port().get_index(),
+            plant_u.get_geometry_poses_output_port().get_index());
+  EXPECT_EQ(
+      plant_t.get_state_output_port(default_model_instance()).get_index(),
+      plant_u.get_state_output_port(default_model_instance()).get_index());
+  EXPECT_EQ(
+      plant_t.get_generalized_acceleration_output_port(default_model_instance())
+          .get_index(),
+      plant_u.get_generalized_acceleration_output_port(default_model_instance())
+          .get_index());
+  EXPECT_EQ(
+      plant_t
+          .get_generalized_contact_forces_output_port(default_model_instance())
+          .get_index(),
+      plant_u
+          .get_generalized_contact_forces_output_port(default_model_instance())
+          .get_index());
+}
+
+// This test verifies that the port indices of the input/output ports of
+// MultibodyPlant remain the same after scalar conversion.
+GTEST_TEST(ScalarConversionTest, PortIndexOrdering) {
+  systems::DiagramBuilder<double> builder;
+  std::unique_ptr<MultibodyPlant<double>> plant_unique_ptr =
+      std::make_unique<MultibodyPlant<double>>(0.0);
+  plant_unique_ptr->Finalize();
+  auto pair =
+      AddMultibodyPlantSceneGraph(&builder, std::move(plant_unique_ptr));
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  std::unique_ptr<Diagram<AutoDiffXd>> autodiff_diagram =
+      systems::System<double>::ToAutoDiffXd<Diagram>(*diagram);
+
+  // Making the assumption that the system at index 0 is the plant
+  const MultibodyPlant<AutoDiffXd>* autodiff_plant =
+      dynamic_cast<const MultibodyPlant<AutoDiffXd>*>(
+          autodiff_diagram->GetSystems()[0]);
+  DRAKE_DEMAND(autodiff_plant != nullptr);
+
+  CompareMultibodyPlantPortIndices(pair.plant, *autodiff_plant);
 }
 
 }  // namespace
