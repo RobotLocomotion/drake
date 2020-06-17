@@ -36,37 +36,6 @@ SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
   return *this;
 }
 
-SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
-  if (this == &g) return *this;
-
-  if (g.is_half_space()) {
-    geometry_ = SoftHalfSpace{g.pressure_scale()};
-  } else {
-    geometry_ = SoftMesh{std::get<SoftMesh>(g.geometry_)};
-  }
-  return *this;
-}
-
-RigidMesh& RigidMesh::operator=(const RigidMesh& r) {
-  if (this == &r) return *this;
-
-  mesh = make_unique<SurfaceMesh<double>>(*(r.mesh));
-  bvh = make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(*(r.bvh));
-
-  return *this;
-}
-
-RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
-  if (this == &g) return *this;
-
-  geometry_ = std::nullopt;
-  if (!g.is_half_space()) {
-    geometry_ = RigidMesh(*(g.geometry_));
-  }
-
-  return *this;
-}
-
 HydroelasticType Geometries::hydroelastic_type(GeometryId id) const {
   auto iter = supported_geometries_.find(id);
   if (iter != supported_geometries_.end()) return iter->second;

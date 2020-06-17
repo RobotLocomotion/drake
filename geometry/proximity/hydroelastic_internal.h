@@ -6,6 +6,7 @@
 #include <utility>
 #include <variant>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
@@ -96,10 +97,7 @@ class SoftGeometry {
   explicit SoftGeometry(SoftMesh&& soft_mesh)
       : geometry_(std::move(soft_mesh)) {}
 
-  SoftGeometry(const SoftGeometry& g) { *this = g; }
-  SoftGeometry& operator=(const SoftGeometry& g);
-  SoftGeometry(SoftGeometry&&) = default;
-  SoftGeometry& operator=(SoftGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SoftGeometry)
 
   /** @name  Distinguishing compliant representations
 
@@ -167,8 +165,8 @@ class SoftGeometry {
  This struct retains ownership of the mesh, with the bounding volume hierarchy
  just referencing it.  */
 struct RigidMesh {
-  std::unique_ptr<SurfaceMesh<double>> mesh;
-  std::unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
+  copyable_unique_ptr<SurfaceMesh<double>> mesh;
+  copyable_unique_ptr<BoundingVolumeHierarchy<SurfaceMesh<double>>> bvh;
 
   RigidMesh() = default;
 
@@ -177,10 +175,7 @@ struct RigidMesh {
         bvh(std::make_unique<BoundingVolumeHierarchy<SurfaceMesh<double>>>(
             *mesh)) {}
 
-  RigidMesh(const RigidMesh& r) { *this = r; }
-  RigidMesh& operator=(const RigidMesh& r);
-  RigidMesh(RigidMesh&&) = default;
-  RigidMesh& operator=(RigidMesh&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
 };
 
 /** The base representation of rigid geometries. Generally, a rigid geometry
@@ -198,10 +193,7 @@ class RigidGeometry {
   explicit RigidGeometry(RigidMesh&& rigid_mesh)
       : geometry_(RigidMesh(std::move(rigid_mesh))) {}
 
-  RigidGeometry(const RigidGeometry& g) { *this = g; }
-  RigidGeometry& operator=(const RigidGeometry& g);
-  RigidGeometry(RigidGeometry&&) = default;
-  RigidGeometry& operator=(RigidGeometry&&) = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry)
 
   /** Returns true if this RigidGeometry is a half space.  */
   bool is_half_space() const { return !geometry_.has_value(); }
