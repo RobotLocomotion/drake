@@ -92,6 +92,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "spdlog_pybind",
+    hdrs = ["spdlog_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
     name = "test_util_pybind",
     testonly = 1,
     hdrs = ["test/test_util_pybind.h"],
