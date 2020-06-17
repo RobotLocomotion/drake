@@ -5,19 +5,6 @@ namespace geometry {
 namespace render {
 namespace shaders {
 
-// NOTE: The _original_ vertex shader computed the camera-space normal and
-// propagated the texture coordinate to the fragment shader. These quantities
-// are *not* used and represented wasted computation. However, in the future,
-// these *could* be used to handle more complex depth computations based on how
-// much of a structured IR pattern is fed back to the camera. For example,
-// a surface with a normal perpendicular to the view direction wouldn't reflect
-// anything back and a surface with varying reflectance properties would be
-// captured as a texture. To simplify the inclusion of this data when we're
-// ready, the requisite shader code has been _commented out_ below for future
-// reference.
-// TODO(SeanCurtis-TRI): Re-enable providing normals and texture coordinates
-//  to the fragment shader when these quantities are used.
-
 // NOTE: For the VTK infrastructure, the shader should always start with the
 // line:
 //   //VTK::System::Dec
@@ -26,17 +13,10 @@ namespace shaders {
 constexpr char kDepthVS[] = R"__(
     //VTK::System::Dec
     attribute vec4 vertexMC;
-    // attribute vec3 normalMC;
-    // uniform mat3 normalMatrix;
     uniform mat4 MCDCMatrix;
     uniform mat4 MCVCMatrix;
-    // varying vec3 normalVCVSOutput;
     varying vec4 vertexVCVSOutput;
-    // attribute vec2 tcoordMC;
-    // varying vec2 tcoordVCVSOutput;
     void main () {
-      // normalVCVSOutput = normalMatrix * normalMC;
-      // tcoordVCVSOutput = tcoordMC;
       vertexVCVSOutput = MCVCMatrix * vertexMC;
       gl_Position = MCDCMatrix * vertexMC;
     }
@@ -66,9 +46,7 @@ constexpr char kDepthVS[] = R"__(
 constexpr char kDepthFS[] = R"__(
     //VTK::System::Dec
     //VTK::Output::Dec
-    varying vec3 normalVCVSOutput;
     varying vec4 vertexVCVSOutput;
-    varying vec2 tcoordVCVSOutput;
     out vec4 color_out;
     uniform float z_near;
     uniform float z_far;
