@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/spdlog_pybind.h"
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
@@ -14,6 +15,10 @@
 #include "drake/common/random.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
+
+#ifdef HAVE_SPDLOG
+#include <spdlog/sinks/dist_sink.h>
+#endif
 
 namespace drake {
 namespace pydrake {
@@ -93,8 +98,14 @@ PYBIND11_MODULE(_module_py, m) {
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
-  // TODO(eric.cousineau): Provide a Pythonic spdlog sink that connects to
-  // Python's `logging` module; possibly use `pyspdlog`.
+#ifdef HAVE_SPDLOG
+  // Redirect all logs to Python's `logging` module
+  drake::logging::sink* const sink_base = drake::logging::get_dist_sink();
+  auto* const dist_sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(sink_base);
+  auto python_sink = std::make_shared<internal::pylogging_sink_mt>();
+  dist_sink->set_sinks({python_sink});
+#endif
+
   m.def("set_log_level", &logging::set_log_level, py::arg("level"),
       doc.logging.set_log_level.doc);
 

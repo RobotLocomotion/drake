@@ -45,6 +45,7 @@ drake_pybind_library(
     name = "_init_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:spdlog_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//common:nice_type_name_override_header",
