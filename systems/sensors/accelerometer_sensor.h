@@ -53,26 +53,12 @@ class Accelerometer : public LeafSystem<T> {
   /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
   Accelerometer(
-      multibody::BodyIndex body_index, const math::RigidTransform<T>& X_BS,
+      multibody::BodyIndex body_index, const math::RigidTransform<double>& X_BS,
       const Eigen::Vector3d& gravity_vector = Eigen::Vector3d::Zero());
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit Accelerometer(const Accelerometer<U>&);
-
-  /// Modifies a Diagram by connecting the input ports of this Accelerometer
-  /// to the appropriate output ports of a MultibodyPlant. Must be called
-  /// during Diagram building and given the appropriate builder.
-  /// This is a convenience method to simplify some common boilerplate of
-  /// Diagram wiring. Specifically, this makes three connections:
-  ///
-  /// 1) plant.get_body_poses_output_port() to this.get_body_poses_input_port()
-  /// 2) plant.get_body_spatial_velocities_output_port() to
-  ///        this.get_body_velocities_input_port()
-  /// 3) plant.get_body_spatial_accelerations_output_port() to
-  ///        this.get_body_spatial_accelerations_output_port()
-  void ConnectToPlant(DiagramBuilder<T>* builder,
-      const multibody::MultibodyPlant<T>& plant) const;
 
   const InputPort<T>& get_body_poses_input_port() const {
     return *body_poses_input_port_;
@@ -86,6 +72,24 @@ class Accelerometer : public LeafSystem<T> {
     return *body_accelerations_input_port_;
   }
 
+  /// Static factory method that creates an Accelerometer object and connects
+  /// it to the given plant. Modifies a Diagram by connecting the input ports
+  /// of the new Accelerometer to the appropriate output ports of a
+  /// MultibodyPlant. Must be called during Diagram building and given the
+  /// appropriate builder. This is a convenience method to simplify some common
+  /// boilerplate of Diagram wiring. Specifically, this makes three connections:
+  ///
+  /// 1) plant.get_body_poses_output_port() to this.get_body_poses_input_port()
+  /// 2) plant.get_body_spatial_velocities_output_port() to
+  ///        this.get_body_velocities_input_port()
+  /// 3) plant.get_body_spatial_accelerations_output_port() to
+  ///        this.get_body_spatial_accelerations_output_port()
+  static const Accelerometer& AddToDiagram(multibody::BodyIndex body_index,
+      const math::RigidTransform<double>& X_BS,
+      const Eigen::Vector3d& gravity_vector,
+      const multibody::MultibodyPlant<T>& plant,
+      DiagramBuilder<T>* builder);
+
  private:
   // Allow different specializations to access each other's private data.
   template <typename>
@@ -97,7 +101,7 @@ class Accelerometer : public LeafSystem<T> {
 
   const multibody::BodyIndex
       body_index_;  // Index into the input body velocities/accelerations
-  const math::RigidTransform<T> X_BS_;
+  const math::RigidTransform<double> X_BS_;
   const Eigen::Vector3d gravity_vector_;
   const InputPort<T>* body_poses_input_port_{nullptr};
   const InputPort<T>* body_velocities_input_port_{nullptr};

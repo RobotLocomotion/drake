@@ -13,7 +13,7 @@ using multibody::SpatialVelocity;
 
 template <typename T>
 Accelerometer<T>::Accelerometer(multibody::BodyIndex index,
-                                const RigidTransform<T>& X_BC,
+                                const RigidTransform<double>& X_BC,
                                 const Eigen::Vector3d& gravity_vector)
     : body_index_(index),
       X_BS_(X_BC),
@@ -48,9 +48,9 @@ void Accelerometer<T>::CalcOutput(const Context<T>& context,
   const RotationMatrix<T>& R_WB = X_WB.rotation();
 
   // Express sensor position in world coordinates
-  const Vector3<T>& p_BS_W = R_WB * X_BS_.translation();
+  const Vector3<T>& p_BS_W = R_WB * X_BS_.translation().template cast<T>();
 
-  const RotationMatrix<T>& R_BS = X_BS_.rotation();
+  const RotationMatrix<T>& R_BS = X_BS_.rotation().template cast<T>();
 
   // Acceleration of the accelerometer expressed in world coordinates
   const auto A_WS = A_WB.Shift(p_BS_W, V_WB.rotational());
@@ -63,14 +63,22 @@ void Accelerometer<T>::CalcOutput(const Context<T>& context,
 }
 
 template <typename T>
-void Accelerometer<T>::ConnectToPlant(DiagramBuilder<T>* builder,
-      const multibody::MultibodyPlant<T>& plant) const {
+const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
+    multibody::BodyIndex body_index,
+    const RigidTransform<double>& X_BS,
+    const Eigen::Vector3d& gravity_vector,
+    const multibody::MultibodyPlant<T>& plant,
+    DiagramBuilder<T>* builder) {
+  const auto& accelerometer =
+      *builder->template AddSystem<Accelerometer<T>>(body_index, X_BS,
+          gravity_vector);
   builder->Connect(plant.get_body_poses_output_port(),
-                   get_body_poses_input_port());
+                   accelerometer.get_body_poses_input_port());
   builder->Connect(plant.get_body_spatial_velocities_output_port(),
-                   get_body_velocities_input_port());
+                   accelerometer.get_body_velocities_input_port());
   builder->Connect(plant.get_body_spatial_accelerations_output_port(),
-                   get_body_accelerations_input_port());
+                   accelerometer.get_body_accelerations_input_port());
+  return accelerometer;
 }
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

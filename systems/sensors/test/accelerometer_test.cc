@@ -106,15 +106,12 @@ GTEST_TEST(TestAccelerometer, Rotated) {
   double r_BS = .375;
   const multibody::BodyIndex& arm_body_index =
       plant.GetBodyByName("arm").index();
-  const math::RigidTransform<double> X_BC(
+  const math::RigidTransform<double> X_BS(
         math::RotationMatrix<double>::MakeYRotation(M_PI/2),
         Eigen::Vector3d(0, 0, -r_BS));
   const Eigen::Vector3d& gravity = plant.gravity_field().gravity_vector();
-  const auto& accelerometer =
-      *builder.AddSystem<Accelerometer>(arm_body_index, X_BC, gravity);
-
-  // Test using convenience connection
-  accelerometer.ConnectToPlant(&builder, plant);
+  const auto& accelerometer = Accelerometer<double>::AddToDiagram(
+      arm_body_index, X_BS, gravity, plant, &builder);
 
   auto diagram = builder.Build();
 
