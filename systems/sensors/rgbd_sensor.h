@@ -127,7 +127,7 @@ class RgbdSensor final : public LeafSystem<double> {
                          three frames will be aligned and coincident.
    @param show_window    A flag for showing a visible window. If this is false,
                          off-screen rendering is executed. The default is false.
-   @pydrake_mkdoc_identifier{unique_simple}
+   @pydrake_mkdoc_identifier{legacy_individual_intrinsics}
    */
   RgbdSensor(geometry::FrameId parent_id,
              const math::RigidTransformd& X_PB,
@@ -139,7 +139,7 @@ class RgbdSensor final : public LeafSystem<double> {
   /** Constructs an %RgbdSensor in the same way as the above overload, but
    using the `CameraProperties` portion of `properties` for color (and label)
    properties, and all of `properties` for depth properties.
-   @pydrake_mkdoc_identifier{shared_simple}
+   @pydrake_mkdoc_identifier{legacy_combined_intrinsics}
    */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const geometry::render::DepthCameraProperties& properties,
@@ -151,7 +151,7 @@ class RgbdSensor final : public LeafSystem<double> {
    @warning Currently, only "simple" cameras are supported. If the camera
             intrinsics is not compatible with a simple camera model, a warning
             will be printed and the camera will be "simplified".
-   @pydrake_mkdoc_identifier{unique_full_intrinsics}  */
+   @pydrake_mkdoc_identifier{individual_intrinsics}  */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const std::pair<geometry::render::RenderCameraProperties,
                              ColorCameraModel>& color_camera_specification,
@@ -166,7 +166,7 @@ class RgbdSensor final : public LeafSystem<double> {
    @warning Currently, only "simple" cameras are supported. If the camera
             intrinsics is not compatible with a simple camera model, a warning
             will be printed and the camera will be "simplified".
-   @pydrake_mkdoc_identifier{shared_full_intrinsics}  */
+   @pydrake_mkdoc_identifier{combined_intrinsics}  */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const std::pair<geometry::render::RenderCameraProperties,
                              DepthCameraModel>& both_camera_specifications,
@@ -176,6 +176,7 @@ class RgbdSensor final : public LeafSystem<double> {
 
   // TODO(eric.cousineau): Expose which renderer color / depth uses?
 
+  // TODO(SeanCurtis-TRI): Deprecate this in favor of the color camera model.
   /** Returns the intrinsics roperties of the color camera model.  */
   const CameraInfo& color_camera_info() const {
     return color_camera_model_.intrinsics();
@@ -186,6 +187,7 @@ class RgbdSensor final : public LeafSystem<double> {
     return color_camera_model_;
   }
 
+  // TODO(SeanCurtis-TRI): Deprecate this in favor of the color camera model.
   /** Returns the intrinsics roperties of the depth camera model.  */
   const CameraInfo& depth_camera_info() const {
     return depth_camera_model_.intrinsics();

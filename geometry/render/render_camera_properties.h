@@ -29,10 +29,11 @@ class RenderCameraProperties {
 
    Do keep in mind the service range of your depth sensor. It is important that
    the clipping planes span the range of your depth sensor, otherwise the depth
-   returns will be clipped. For example, the default far clipping plane
-   coincides with the maximum range reported for the
+   returns will be clipped. For example, while the default clipping plane values
+   enclose range reported for the
    <a href="https://www.intelrealsense.com/depth-camera-d415/">
-   Intel RealSense D415 camera</a>.
+   Intel RealSense D415 camera</a>, that shouldn't generally be assumed to be
+   true for arbitrary sensors.
 
    @pre `near_clipping > 0` and `far_clipping > 0`.
    @pre `far_clipping > near_clipping`.  */

@@ -12,6 +12,7 @@ namespace sensors {
 
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
+// TODO(SeanCurtis-TRI) Deprecate the name CameraInfo in favor of Intrinsics.
 /**
  Simple class for characterizing the Drake camera model. The camera model is
  based on the
