@@ -384,6 +384,34 @@ drake_py_unittest(
     ],
 )
 
+drake_pybind_library(
+    name = "text_logging_test_py",
+    testonly = 1,
+    add_install = False,
+    cc_so_name = "test/text_logging_test",
+    cc_srcs = ["test/text_logging_test_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_srcs = ["test/__init__.py"],
+    visibility = ["//visibility:private"],
+)
+
+drake_py_binary(
+    name = "text_logging_example",
+    testonly = 1,
+    srcs = ["test/text_logging_example.py"],
+    deps = [
+        ":module_py",
+        ":text_logging_test_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "text_logging_test",
+    data = [
+        ":text_logging_example",
+    ],
+)
+
 # Test ODR (One Definition Rule).
 drake_pybind_library(
     name = "odr_test_module_py",

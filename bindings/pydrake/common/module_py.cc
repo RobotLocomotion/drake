@@ -2,6 +2,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/text_logging_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/constants.h"
@@ -93,10 +94,10 @@ PYBIND11_MODULE(_module_py, m) {
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
-  // TODO(eric.cousineau): Provide a Pythonic spdlog sink that connects to
-  // Python's `logging` module; possibly use `pyspdlog`.
   m.def("set_log_level", &logging::set_log_level, py::arg("level"),
       doc.logging.set_log_level.doc);
+
+  internal::RedirectPythonLogging();
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("absolute", drake::ToleranceType::kAbsolute)
