@@ -52,6 +52,8 @@ drake_pybind_library(
     cc_so_name = "_module_py",
     cc_srcs = [
         "module_py.cc",
+        "text_logging_pybind.h",
+        "text_logging_pybind.cc",
     ],
     package_info = PACKAGE_INFO,
     py_srcs = [
