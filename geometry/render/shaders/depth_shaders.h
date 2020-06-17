@@ -26,17 +26,10 @@ namespace shaders {
 constexpr char kDepthVS[] = R"__(
     //VTK::System::Dec
     attribute vec4 vertexMC;
-    // attribute vec3 normalMC;
-    // uniform mat3 normalMatrix;
     uniform mat4 MCDCMatrix;
     uniform mat4 MCVCMatrix;
-    // varying vec3 normalVCVSOutput;
     varying vec4 vertexVCVSOutput;
-    // attribute vec2 tcoordMC;
-    // varying vec2 tcoordVCVSOutput;
     void main () {
-      // normalVCVSOutput = normalMatrix * normalMC;
-      // tcoordVCVSOutput = tcoordMC;
       vertexVCVSOutput = MCVCMatrix * vertexMC;
       gl_Position = MCDCMatrix * vertexMC;
     }
@@ -66,9 +59,7 @@ constexpr char kDepthVS[] = R"__(
 constexpr char kDepthFS[] = R"__(
     //VTK::System::Dec
     //VTK::Output::Dec
-    varying vec3 normalVCVSOutput;
     varying vec4 vertexVCVSOutput;
-    varying vec2 tcoordVCVSOutput;
     out vec4 color_out;
     uniform float z_near;
     uniform float z_far;
