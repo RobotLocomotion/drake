@@ -51,10 +51,10 @@ class GeometryVisualizationImpl {
  @ref geometry_roles for details). Specifically, only geometries with
  the illustration role assigned will be included. The visualization function
  looks for the following properties in the IllustrationProperties instance.
- | Group name | Required | Property Name |  Property Type  | Property
- Description | | :--------: | :------: | :-----------: | :-------------: |
- :------------------- | |    phong   | no       | diffuse       |
- Eigen::Vector4d | The rgba value of the object surface |
+
+ | Group name | Required | Property Name |  Property Type  | Property Description |
+ | :--------: | :------: | :-----------: | :-------------: | :------------------- |
+ |    phong   | no       | diffuse       | Eigen::Vector4d | The rgba value of the object surface |
 
  See MakePhongIllustrationProperties() to facilitate making a compliant set of
  illustration properties.
