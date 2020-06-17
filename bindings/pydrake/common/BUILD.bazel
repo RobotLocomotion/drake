@@ -46,6 +46,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:text_logging_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//common:nice_type_name_override_header",
     ],
@@ -70,6 +71,13 @@ drake_py_library(
         ":_init_py",
         "//bindings/pydrake:module_py",
     ],
+)
+
+drake_cc_library(
+    name = "text_logging_pybind",
+    hdrs = ["text_logging_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
