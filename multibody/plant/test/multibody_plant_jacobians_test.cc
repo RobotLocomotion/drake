@@ -319,7 +319,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Create a revolute joint that connects point Fo (frame F's origin) to
     // point Mo (frame M's origin), where frame F is affixed/welded to the
     // distal end of link A (Fo is a distance of link_length/2 from Ao) and
-    // frame M is affixed/welded to link B (Mo is a distance of link_length/2
+    // frame M is affixed/welded to link B.  Mo is a distance of link_length/2
     // from link B's centroid (point Bo).
     const Vector3d p_AoFo_A(0.5 * link_length_, 0.0, 0.0);
     const Vector3d p_BoMo_B(-0.5 * link_length_, 0.0, 0.0);

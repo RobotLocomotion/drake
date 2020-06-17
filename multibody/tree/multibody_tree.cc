@@ -1326,7 +1326,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // For a point Bp that is affixed/welded to a frame B, one way to calculate
+  // For a point Bp that is fixed/welded to a frame B, one way to calculate
   // A_ABp (point Bp's spatial acceleration in frame A) is by rearranging
   // formulas for the angular acceleration and translational acceleration parts
   // of Bp's spatial acceleration in the world frame W.
@@ -1350,7 +1350,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // or from section 2.8, page 39 [Kane & Levinson 1985], references below)
   //   (3)  a_WBp = a_WAp + a_ABp + 2 w_WA x v_ABp    is rearranged to
   //   (4)  a_ABp = a_WBp - a_WAp - 2 w_WA x v_ABp,  where
-  // point Ap is the point affixed to A that is coincident with Bp,
+  // point Ap is the point fixed to A that is coincident with Bp,
   // a_ABp is point Bp's acceleration in frame A,
   // a_WBp is point Bp's acceleration in frame W,
   // a_WAp is point Ap's acceleration in frame W (calculated as shown below),
@@ -1398,7 +1398,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
     const SpatialAcceleration<T> AsBias_WBodyA_W =
         AsBias_WB_all[body_A.node_index()];
 
-    // Point Ap is the point of (affixed to) frame_A that is coincident with
+    // Point Ap is the point of (fixed to) frame_A that is coincident with
     // point Bp. Calculate the position vector from Ao (frame_A's origin) to Ap.
     const RigidTransform<T> X_AB = frame_B.CalcPose(context, frame_A);
     const Vector3<T>& p_AoBo_A = X_AB.translation();
@@ -1407,7 +1407,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
     const Vector3<T> p_AoAp_A = p_AoBo_A + p_BoBp_A;  // Note: p_AoAp = p_AoBp
 
     // Shift bias spatial acceleration from body_A to point Ap of frame_A.
-    // Note: Since Ap is regarded as affixed to frame A, Ap's translational
+    // Note: Since Ap is regarded as fixed to frame A, Ap's translational
     // acceleration in the world frame W is calculated as
     //   a_WAp = a_WAo + α_WA x p_AoAp + w_WA x (w_WA x p_AoAp)
     // Reminder: p_AoAp is an "instantaneous" position vector, so differentation
