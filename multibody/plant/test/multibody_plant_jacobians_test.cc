@@ -287,8 +287,8 @@ TEST_F(KukaIiwaModelTests, CalcJacobianTranslationalVelocityB) {
 // The long axis of link A is parallel to A's unit vector Ax and
 // the long axis of link B is parallel to B's unit vector Bx.
 // PinJoint1 and PinJoint2 are located at distal ends of the links.
-// PinJoint1 is colocated with Wo (world frame origin)
-// PinJoint2 is colocated with Fo (frame F's origin) and Mo (frame M's origin)
+// PinJoint1 is collocated with Wo (world frame origin)
+// PinJoint2 is collocated with Fo (frame F's origin) and Mo (frame M's origin)
 // where frame F is affixed/welded to link A and frame M is affixed to link B.
 // In the baseline configuration, the origin points Wo Ao Fo Mo Bo are
 // sequential along the links (they form a line parallel to Wx = Ax = Bx).
@@ -309,17 +309,18 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     bodyB_ = &plant_->AddRigidBody("BodyB", M_Bcm);
 
     // Create a revolute joint that connects point Wo of the world frame to a
-    // unnamed point of link A that is link_length/2 from point Ao of link A.
-    // Note: Point Ao is link A's geometric center.
+    // unnamed point of link A that is a distance of link_length/2 from link A's
+    // centroid (point Ao).
     const Vector3d p_AoWo_A(-0.5 * link_length_, 0.0, 0.0);
     joint1_ = &plant_->AddJoint<RevoluteJoint>("PinJoint1",
         plant_->world_body(), std::nullopt,
         *bodyA_, math::RigidTransformd(p_AoWo_A), Vector3d::UnitZ());
 
     // Create a revolute joint that connects point Fo (frame F's origin) to
-    // point Mo (frame M's origin), where frame F is affixed/welded to link A
-    // and frame M is affixed/welded to link B.
-    // Note: Point Bo is link B's geometric center.
+    // point Mo (frame M's origin), where frame F is affixed/welded to the
+    // distal end of link A (Fo is a distance of link_length/2 from Ao) and
+    // frame M is affixed/welded to link B (Mo is a distance of link_length/2
+    // from link B's centroid (point Bo).
     const Vector3d p_AoFo_A(0.5 * link_length_, 0.0, 0.0);
     const Vector3d p_BoMo_B(-0.5 * link_length_, 0.0, 0.0);
     joint2_ = &plant_->AddJoint<RevoluteJoint>("PinJoint2",
