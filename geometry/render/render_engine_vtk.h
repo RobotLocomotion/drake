@@ -107,6 +107,10 @@ class RenderEngineVtk : public RenderEngine,
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
+  using RenderEngine::RenderColorImage;
+  using RenderEngine::RenderDepthImage;
+  using RenderEngine::RenderLabelImage;
+
   /** @see RenderEngine::RenderColorImage().  */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
@@ -175,6 +179,21 @@ class RenderEngineVtk : public RenderEngine,
   // @see RenderEngine::DoClone().
   std::unique_ptr<RenderEngine> DoClone() const override;
 
+  // @see RenderEngine::DoRenderColorImage().
+  void DoRenderColorImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageRgba8U* color_image_out) const override;
+
+  // @see RenderEngine::DoRenderDepthImage().
+  void DoRenderDepthImage(
+      const DepthRenderCamera& render_camera,
+      systems::sensors::ImageDepth32F* depth_image_out) const override;
+
+  // @see RenderEngine::DoRenderLabelImage().
+  void DoRenderLabelImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageLabel16I* label_image_out) const override;
+
   // Initializes the VTK pipelines.
   void InitializePipelines();
 
@@ -206,6 +225,17 @@ class RenderEngineVtk : public RenderEngine,
 
   // Modifies the camera for the special case of the depth camera.
   void UpdateWindow(const DepthCameraProperties& camera,
+                    const RenderingPipeline* p) const;
+
+  // Configures the VTK model to reflect the given `camera`, this includes
+  // render size camera intrinsics, visible windows, etc.
+  void UpdateWindow(const RenderCameraCore& camera,
+                    bool show_window, const RenderingPipeline* p,
+                    const char* name) const;
+
+  // Variant of configuring the VTK model (see previous method) that *also*
+  // configures the depth range.
+  void UpdateWindow(const DepthRenderCamera& camera,
                     const RenderingPipeline* p) const;
 
   void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
