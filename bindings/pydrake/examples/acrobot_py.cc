@@ -42,7 +42,23 @@ PYBIND11_MODULE(acrobot, m) {
       .def("SetMITAcrobotParameters", &AcrobotPlant<T>::SetMITAcrobotParameters,
           doc.AcrobotPlant.SetMITAcrobotParameters.doc)
       .def("MassMatrix", &AcrobotPlant<T>::MassMatrix,
-          doc.AcrobotPlant.MassMatrix.doc);
+          doc.AcrobotPlant.MassMatrix.doc)
+      .def_static("get_state",
+          py::overload_cast<const Context<T>&>(&AcrobotPlant<T>::get_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.AcrobotPlant.get_state.doc)
+      .def_static("get_mutable_state",
+          py::overload_cast<Context<T>*>(&AcrobotPlant<T>::get_mutable_state),
+          py::arg("context"),
+          // Keey alive, ownership: `return` keeps `context` alive
+          py::keep_alive<0, 1>(), doc.AcrobotPlant.get_mutable_state.doc)
+      .def("get_parameters", &AcrobotPlant<T>::get_parameters,
+          py_reference_internal, py::arg("context"),
+          doc.AcrobotPlant.get_parameters.doc)
+      .def("get_mutable_parameters", &AcrobotPlant<T>::get_mutable_parameters,
+          py_reference_internal, py::arg("context"),
+          doc.AcrobotPlant.get_mutable_parameters.doc);
 
   py::class_<AcrobotSpongController<T>, LeafSystem<T>>(
       m, "AcrobotSpongController", doc.AcrobotSpongController.doc)

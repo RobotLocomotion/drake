@@ -87,6 +87,11 @@ class AcrobotPlant : public systems::LeafSystem<T> {
     return this->template GetNumericParameter<AcrobotParams>(context, 0);
   }
 
+  const AcrobotParams<T>& get_mutable_parameters(
+      systems::Context<T>* context) const {
+    return this->template GetMutableNumericParameter<AcrobotParams>(context, 0);
+  }
+
  private:
   void CopyStateOut(const systems::Context<T>& context,
                     AcrobotState<T>* output) const;
