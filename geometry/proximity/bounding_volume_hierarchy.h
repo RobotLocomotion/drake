@@ -124,6 +124,11 @@ class Aabb {
   static bool HasOverlap(const Aabb& bv, const HalfSpace& hs_C,
                          const math::RigidTransformd& X_CH);
 
+  bool Equal(const Aabb& other) const {
+    return center_ == other.center_ &&
+           half_width_ == other.half_width_;
+  }
+
  private:
   friend class AabbTester;
 
@@ -383,6 +388,10 @@ class BoundingVolumeHierarchy {
     return result;
   }
 
+  bool Equal(const BoundingVolumeHierarchy<MeshType>& other) const {
+    return EqualNode(this->root_node(), other.root_node());
+  }
+
  private:
   // Convenience class for testing.
   friend class BVHTester;
@@ -403,6 +412,8 @@ class BoundingVolumeHierarchy {
   // and rename to CalcElementCentroid(ElementIndex).
   static Vector3<double> ComputeCentroid(const MeshType& mesh,
                                          IndexType i);
+
+  static bool EqualNode(const BvNode<MeshType>& a, const BvNode<MeshType>& b);
 
   static constexpr int kElementVertexCount = MeshType::kDim + 1;
 

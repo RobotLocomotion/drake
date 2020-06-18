@@ -57,9 +57,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
             original.pressure.get());
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
 
-    // TODO(DamrongGuoy): Check equality of copy.bvh and original.bvh. Right
-    //  now we do not have bvh->Equal(). This line does not compile:
-    //  EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+    EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
   }
 
   // Test copy constructor
@@ -81,9 +79,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
             original.pressure.get());
     EXPECT_TRUE(copy_pressure.Equal(original_pressure));
 
-    // TODO(DamrongGuoy): Check equality of copy.bvh and original.bvh. Right
-    //  now we do not have bvh->Equal(). This line does not compile:
-    //  EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+    EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
   }
 
   // Test move constructor and move-assignment operator.
