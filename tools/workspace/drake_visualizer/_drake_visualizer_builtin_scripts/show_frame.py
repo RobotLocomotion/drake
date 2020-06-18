@@ -11,7 +11,7 @@ import robotlocomotion as lcmrobotlocomotion
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
-class FrameChannel(object):
+class FrameChannel:
 
     def __init__(self, parent_folder, channel):
         self._parent_folder = parent_folder
@@ -43,7 +43,7 @@ class FrameChannel(object):
         om.removeFromObjectModel(self._get_folder())
 
 
-class FramesVisualizer(object):
+class FramesVisualizer:
 
     def __init__(self):
         self._name = "Frame Visualizer"

@@ -9,11 +9,11 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 _TEST_MODULE = "cpp_template_test"
 
 
-class DummyA(object):
+class DummyA:
     pass
 
 
-class DummyB(object):
+class DummyB:
     pass
 
 
@@ -25,7 +25,7 @@ def dummy_b():
     return 2
 
 
-class DummyC(object):
+class DummyC:
     def dummy_c(self):
         return (self, 3)
 
@@ -33,7 +33,7 @@ class DummyC(object):
         return (self, 4)
 
 
-class DummyD(object):
+class DummyD:
     pass
 
 
@@ -141,7 +141,7 @@ class TestCppTemplate(unittest.TestCase):
             # Ensure that we have deferred evaluation.
             test.assertEqual(MyTemplate.param_list, [(int,), (float,)])
 
-            class Impl(object):
+            class Impl:
                 def __init__(self):
                     self.T = T
                     self.mangled_result = self.__mangled_method()

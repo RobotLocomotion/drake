@@ -4,7 +4,7 @@ import pydrake.common.cpp_const as cpp_const
 
 
 # Not annotated.
-class Basic(object):
+class Basic:
     def __init__(self, name):
         self._name = name
         self.value = []
@@ -20,7 +20,7 @@ class Basic(object):
 
 # Annotated.
 @cpp_const.const_decorated(owned_properties=['_values'])
-class Advanced(object):
+class Advanced:
     def __init__(self):
         self._values = {}
 

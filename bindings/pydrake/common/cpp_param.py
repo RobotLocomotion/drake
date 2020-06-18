@@ -17,7 +17,7 @@ def _get_type_name(t, verbose):
         return t.__name__
 
 
-class _StrictMap(object):
+class _StrictMap:
     # Provides a map which may only add a key once.
     def __init__(self):
         self._values = dict()
@@ -30,7 +30,7 @@ class _StrictMap(object):
         return self._values.get(key, default)
 
 
-class _ParamAliases(object):
+class _ParamAliases:
     # Registers aliases for a set of objects. This will be used for template
     # parameters.
     def __init__(self):

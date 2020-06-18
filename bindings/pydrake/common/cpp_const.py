@@ -24,7 +24,7 @@ class ConstError(TypeError):
     pass
 
 
-class _ConstClassMeta(object):
+class _ConstClassMeta:
     # Provides metadata for a given class.
     def __init__(self, cls, owned_properties=None, mutable_methods=None):
         self._cls = cls
@@ -60,7 +60,7 @@ class _ConstClassMeta(object):
         return name in self.mutable_methods
 
 
-class _ConstClassMetaMap(object):
+class _ConstClassMetaMap:
     # Provides mapping from class to metadata.
     def __init__(self):
         self._meta_map = {}

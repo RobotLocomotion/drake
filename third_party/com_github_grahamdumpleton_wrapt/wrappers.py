@@ -13,7 +13,7 @@ def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
 
-class _ObjectProxyMethods(object):
+class _ObjectProxyMethods:
 
     # We use properties to override the values of __module__ and
     # __doc__. If we add these in ObjectProxy, the derived class

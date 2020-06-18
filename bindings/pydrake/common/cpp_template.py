@@ -43,7 +43,7 @@ def get_or_init(scope, name, template_cls, *args, **kwargs):
     return template
 
 
-class TemplateBase(object):
+class TemplateBase:
     """Provides a mechanism to map parameters (types or literals) to
     instantiations, following C++ mechanics.
     """
@@ -126,7 +126,7 @@ class TemplateBase(object):
     # should print out that `MyTemplate` is `<TemplateClass ...MyTemplate>`,
     # would only be called when the user requests something such as
     # `MyTemplate[float]`.
-    class _Deferred(object):
+    class _Deferred:
         pass
 
     _deferred = _Deferred()
@@ -303,7 +303,7 @@ class TemplateBase(object):
                                       param_list=[(int,), (float,)])
                 def MyTemplate(param):
                     T, = param
-                    class Impl(object):
+                    class Impl:
                         def __init__(self):
                             self.T = T
                     return Impl
@@ -432,7 +432,7 @@ class TemplateMethod(TemplateBase):
     def _full_name(self):
         return '{}.{}'.format(self._cls.__name__, self.name)
 
-    class _Bound(object):
+    class _Bound:
         def __init__(self, template, obj):
             self._tpl = template
             self._obj = obj
