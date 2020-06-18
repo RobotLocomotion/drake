@@ -467,8 +467,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   if (include.is_static) {
     throw std::runtime_error(
-        "Drake does not yet support //include/static not supported for custom "
-        "nesting.");
+        "Drake does not yet support //include/static for custom nesting.");
   }
 
   // WARNING: Most of these hacks (remembering model instances, getting silly
@@ -480,14 +479,22 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   std::vector<ModelInstanceIndex> new_model_instances;
   if (is_urdf) {
-    // WARNING: URDF parsing should possibly add a `__model__` frame and
-    // `SetDefaultFreeBodyPose()`?
-    // Note: `SetDefaultFreeBodyPose()` may not be critical.
-    // Or is there a way to do it here easily, w/o computing kinematics?
+    // WARNING: URDF parsing should possibly add a `__model__` frame?
+
+    // We should be good without the URDF parser using `SetDefaultFreeBodyPose`:
+    // - In URDF, all bodies should be connected; if there's a floating body,
+    // it should only be the first one.
+    // - In MBP, if you SetDefaultFreeBodyPose on a floating body with other
+    // bodies attached to it via joints, all other bodies' positions don't
+    // matter
+
     // N.B. Errors will just happen via thrown exceptions.
     new_model_instances = {
         AddModelFromUrdfFile(
             plant, include.file_path, include.absolute_model_name)};
+    // Add explicit model frame to first link..
+    auto& canonical_link = GetModelLinks(plant, new_model_instances[0]).at(0);
+    plant.AddFrame(FixedOffsetFrame("__model__", canonical_link));
   } else {
     // N.B. Errors will just happen via thrown exceptions.
     DRAKE_DEMAND(is_forced_nesting);
