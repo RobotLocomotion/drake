@@ -50,8 +50,8 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
 
     const auto& copy_pressure =
-        *static_cast<VolumeMeshFieldLinear<double,
-                                           double>*>(copy.pressure.get());
+        *static_cast<VolumeMeshFieldLinear<double, double>*>(
+            copy.pressure.get());
     const auto& original_pressure =
         *static_cast<VolumeMeshFieldLinear<double, double>*>(
             original.pressure.get());
@@ -60,7 +60,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
   }
 
-  // Test copy constructor
+  // Test copy constructor.
   {
     SoftMesh copy(original);
 
@@ -72,8 +72,8 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
 
     const auto& copy_pressure =
-        *static_cast<VolumeMeshFieldLinear<double,
-                                           double>*>(copy.pressure.get());
+        *static_cast<VolumeMeshFieldLinear<double, double>*>(
+            copy.pressure.get());
     const auto& original_pressure =
         *static_cast<VolumeMeshFieldLinear<double, double>*>(
             original.pressure.get());
@@ -111,6 +111,67 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(move_assigned.mesh.get(), mesh_ptr);
     EXPECT_EQ(move_constructed.pressure.get(), nullptr);
     EXPECT_EQ(move_assigned.pressure.get(), pressure_ptr);
+    EXPECT_EQ(move_constructed.bvh.get(), nullptr);
+    EXPECT_EQ(move_assigned.bvh.get(), bvh_ptr);
+  }
+}
+
+GTEST_TEST(RigidMeshTest, TestCopyMoveAssignConstruct) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<SurfaceMesh<double>>(
+      MakeSphereSurfaceMesh<double>(sphere, resolution_hint));
+
+  const RigidMesh original(std::move(mesh));
+
+  // Test copy-assignment operator.
+  {
+    RigidMesh copy;
+    copy = original;
+
+    // Test for uniqueness.
+    EXPECT_NE(original.mesh.get(), copy.mesh.get());
+    EXPECT_NE(original.bvh.get(), copy.bvh.get());
+
+    EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
+    EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+  }
+
+  // Test copy constructor.
+  {
+    RigidMesh copy(original);
+
+    // Test for uniqueness.
+    EXPECT_NE(original.mesh.get(), copy.mesh.get());
+    EXPECT_NE(original.bvh.get(), copy.bvh.get());
+
+    EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
+    EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`.
+  {
+    RigidMesh start(original);  // Assume the copy constructor is correct.
+
+    // Content.
+    const SurfaceMesh<double>* const mesh_ptr = start.mesh.get();
+    const BoundingVolumeHierarchy<SurfaceMesh<double>>* const bvh_ptr =
+        start.bvh.get();
+
+    // Test move constructor.
+    RigidMesh move_constructed(std::move(start));
+    EXPECT_EQ(start.mesh.get(), nullptr);
+    EXPECT_EQ(move_constructed.mesh.get(), mesh_ptr);
+    EXPECT_EQ(start.bvh.get(), nullptr);
+    EXPECT_EQ(move_constructed.bvh.get(), bvh_ptr);
+
+    // Test move-assignment operator.
+    RigidMesh move_assigned;
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(move_constructed.mesh.get(), nullptr);
+    EXPECT_EQ(move_assigned.mesh.get(), mesh_ptr);
     EXPECT_EQ(move_constructed.bvh.get(), nullptr);
     EXPECT_EQ(move_assigned.bvh.get(), bvh_ptr);
   }
