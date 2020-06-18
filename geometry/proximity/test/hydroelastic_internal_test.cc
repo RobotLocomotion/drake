@@ -10,6 +10,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/proximity/make_sphere_field.h"
+#include "drake/geometry/proximity/make_sphere_mesh.h"
 #include "drake/geometry/proximity/tessellation_strategy.h"
 #include "drake/geometry/proximity_properties.h"
 
@@ -21,7 +23,41 @@ namespace {
 
 using Eigen::Vector3d;
 using std::function;
+using std::make_unique;
 using std::pow;
+
+GTEST_TEST(SoftMeshTest, TestAssignment) {
+  const Sphere sphere(0.5);
+  const double resolution_hint = 0.5;
+  auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+      sphere, resolution_hint, TessellationStrategy::kSingleInteriorVertex));
+  const double elastic_modulus = 1e+7;
+  auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
+      MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
+
+  SoftMesh original(std::move(mesh), std::move(pressure));
+  SoftMesh copy;
+  copy = original;
+
+  // The member variables of SoftMesh are unique_ptr, so we do not need to
+  // test for uniqueness:
+  // EXPECT_NE(original.mesh.get(), copy.mesh.get());
+  // EXPECT_NE(original.pressure.get(), copy.pressure.get());
+  // EXPECT_NE(original.bvh.get(), copy.bvh.get());
+
+  EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
+
+  const auto& copy_pressure =
+      *static_cast<VolumeMeshFieldLinear<double, double>*>(copy.pressure.get());
+  const auto& original_pressure =
+      *static_cast<VolumeMeshFieldLinear<double, double>*>(
+          original.pressure.get());
+  EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+  // TODO(DamrongGuoy): Check equality of copy.bvh and original.bvh. Right
+  //  now we do not have bvh->Equal(). This line does not compile:
+  //  EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+}
 
 // Tests the simple public API of the hydroelastic::Geometries: adding
 // geometries and querying the data stored.
