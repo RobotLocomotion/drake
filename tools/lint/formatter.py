@@ -8,7 +8,7 @@ from subprocess import Popen, PIPE, CalledProcessError
 import drake.tools.lint.clang_format as clang_format_lib
 
 
-class FormatterBase(object):
+class FormatterBase:
     """A base class for formatting-related tools, with the ability to load a
     file, add / remove / modify lines, clang-format selected regions, and
     compare the changes to the original file contents.

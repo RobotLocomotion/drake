@@ -122,7 +122,7 @@ def get_sub_menu_or_make(menu, menu_name):
     return menu.addMenu(menu_name)
 
 
-class ContactVisualizer(object):
+class ContactVisualizer:
     def __init__(self):
         self._folder_name = 'Point Pair Contact Results'
         self._name = "Contact Visualizer"

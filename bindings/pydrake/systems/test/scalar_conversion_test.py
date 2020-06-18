@@ -234,7 +234,7 @@ class TestScalarConversion(unittest.TestCase):
         @mut.TemplateSystem.define("BadParenting_")
         def BadParenting_(T):
 
-            class BadParentingInstantiation(object):
+            class BadParentingInstantiation:
                 def __init__(self):
                     pass
 

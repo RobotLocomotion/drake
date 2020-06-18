@@ -357,7 +357,7 @@ def get_sub_menu_or_make(menu, menu_name):
     return menu.addMenu(menu_name)
 
 
-class HydroelasticContactVisualizer(object):
+class HydroelasticContactVisualizer:
     def __init__(self):
         self._folder_name = 'Hydroelastic Contact'
         self._name = 'Hydroelastic Contact Visualizer'

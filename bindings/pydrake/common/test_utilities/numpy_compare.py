@@ -27,7 +27,7 @@ class _UnwantedEquality(AssertionError):
     pass
 
 
-class _Registry(object):
+class _Registry:
     # Scalar comparator.
     # `assert_eq` will be vectorized; it should raise an assertion error upon
     # first inequality.
