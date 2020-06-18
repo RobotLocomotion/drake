@@ -26,7 +26,7 @@ using std::function;
 using std::make_unique;
 using std::pow;
 
-GTEST_TEST(SoftMeshTest, TestAssignment) {
+GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   const Sphere sphere(0.5);
   const double resolution_hint = 0.5;
   auto mesh = make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
@@ -35,28 +35,89 @@ GTEST_TEST(SoftMeshTest, TestAssignment) {
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
 
-  SoftMesh original(std::move(mesh), std::move(pressure));
-  SoftMesh copy;
-  copy = original;
+  const SoftMesh original(std::move(mesh), std::move(pressure));
 
-  // The member variables of SoftMesh are unique_ptr, so we do not need to
-  // test for uniqueness:
-  // EXPECT_NE(original.mesh.get(), copy.mesh.get());
-  // EXPECT_NE(original.pressure.get(), copy.pressure.get());
-  // EXPECT_NE(original.bvh.get(), copy.bvh.get());
+  // Test copy-assignment operator.
+  {
+    SoftMesh copy;
+    copy = original;
 
-  EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
+    // Test for uniqueness.
+    EXPECT_NE(original.mesh.get(), copy.mesh.get());
+    EXPECT_NE(original.pressure.get(), copy.pressure.get());
+    EXPECT_NE(original.bvh.get(), copy.bvh.get());
 
-  const auto& copy_pressure =
-      *static_cast<VolumeMeshFieldLinear<double, double>*>(copy.pressure.get());
-  const auto& original_pressure =
-      *static_cast<VolumeMeshFieldLinear<double, double>*>(
-          original.pressure.get());
-  EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+    EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
 
-  // TODO(DamrongGuoy): Check equality of copy.bvh and original.bvh. Right
-  //  now we do not have bvh->Equal(). This line does not compile:
-  //  EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+    const auto& copy_pressure =
+        *static_cast<VolumeMeshFieldLinear<double,
+                                           double>*>(copy.pressure.get());
+    const auto& original_pressure =
+        *static_cast<VolumeMeshFieldLinear<double, double>*>(
+            original.pressure.get());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+    // TODO(DamrongGuoy): Check equality of copy.bvh and original.bvh. Right
+    //  now we do not have bvh->Equal(). This line does not compile:
+    //  EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+  }
+
+  // Test copy constructor
+  {
+    SoftMesh copy(original);
+
+    // Test for uniqueness.
+    EXPECT_NE(original.mesh.get(), copy.mesh.get());
+    EXPECT_NE(original.pressure.get(), copy.pressure.get());
+    EXPECT_NE(original.bvh.get(), copy.bvh.get());
+
+    EXPECT_TRUE(copy.mesh->Equal(*original.mesh));
+
+    const auto& copy_pressure =
+        *static_cast<VolumeMeshFieldLinear<double,
+                                           double>*>(copy.pressure.get());
+    const auto& original_pressure =
+        *static_cast<VolumeMeshFieldLinear<double, double>*>(
+            original.pressure.get());
+    EXPECT_TRUE(copy_pressure.Equal(original_pressure));
+
+    // TODO(DamrongGuoy): Check equality of copy.bvh and original.bvh. Right
+    //  now we do not have bvh->Equal(). This line does not compile:
+    //  EXPECT_TRUE(copy.bvh->Equal(*original.bvh));
+  }
+
+  // Test move constructor and move-assignment operator.
+  // We will move the content from `start` to `move_constructed` to
+  // `move_assigned`.
+  {
+    SoftMesh start(original); // Assume the copy constructor is correct.
+
+    // Content of the SoftMesh.
+    const VolumeMesh<double>* const mesh_ptr = start.mesh.get();
+    const VolumeMeshField<double, double>* const pressure_ptr =
+        start.pressure.get();
+    const BoundingVolumeHierarchy<VolumeMesh<double>>* const bvh_ptr =
+        start.bvh.get();
+
+    // Test move constructor.
+    SoftMesh move_constructed(std::move(start));
+    EXPECT_EQ(start.mesh.get(), nullptr);
+    EXPECT_EQ(move_constructed.mesh.get(), mesh_ptr);
+    EXPECT_EQ(start.pressure.get(), nullptr);
+    EXPECT_EQ(move_constructed.pressure.get(), pressure_ptr);
+    EXPECT_EQ(start.bvh.get(), nullptr);
+    EXPECT_EQ(move_constructed.bvh.get(), bvh_ptr);
+
+    // Test move-assignment operator.
+    SoftMesh move_assigned;
+    move_assigned = std::move(move_constructed);
+    EXPECT_EQ(move_constructed.mesh.get(), nullptr);
+    EXPECT_EQ(move_assigned.mesh.get(), mesh_ptr);
+    EXPECT_EQ(move_constructed.pressure.get(), nullptr);
+    EXPECT_EQ(move_assigned.pressure.get(), pressure_ptr);
+    EXPECT_EQ(move_constructed.bvh.get(), nullptr);
+    EXPECT_EQ(move_assigned.bvh.get(), bvh_ptr);
+  }
 }
 
 // Tests the simple public API of the hydroelastic::Geometries: adding
