@@ -90,7 +90,7 @@ GTEST_TEST(SoftMeshTest, TestCopyMoveAssignConstruct) {
   // We will move the content from `start` to `move_constructed` to
   // `move_assigned`.
   {
-    SoftMesh start(original); // Assume the copy constructor is correct.
+    SoftMesh start(original);  // Assume the copy constructor is correct.
 
     // Content of the SoftMesh.
     const VolumeMesh<double>* const mesh_ptr = start.mesh.get();
