@@ -16,8 +16,8 @@ PYBIND11_MODULE(ipopt, m) {
 
   m.doc() = "Ipopt solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework");
 
   py::class_<IpoptSolver, SolverInterface>(
       m, "IpoptSolver", doc.IpoptSolver.doc)

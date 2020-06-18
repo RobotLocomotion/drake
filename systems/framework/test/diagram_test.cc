@@ -1065,8 +1065,31 @@ TEST_F(DiagramTest, Clone) {
   diagram_->CalcOutput(*context_, output_.get());
   ExpectDefaultOutputs();
 
+  // Verify that we start with a DiagramContext with Diagram ingredients.
+  EXPECT_TRUE(is_dynamic_castable<DiagramContext<double>>(context_));
+  EXPECT_TRUE(is_dynamic_castable<DiagramContinuousState<double>>(
+      diagram_->AllocateTimeDerivatives()));
+  EXPECT_TRUE(is_dynamic_castable<DiagramDiscreteValues<double>>(
+      diagram_->AllocateDiscreteVariables()));
+  const State<double>& state = context_->get_state();
+  EXPECT_TRUE(is_dynamic_castable<DiagramState<double>>(&state));
+  EXPECT_TRUE(is_dynamic_castable<DiagramContinuousState<double>>(
+      &state.get_continuous_state()));
+  EXPECT_TRUE(is_dynamic_castable<DiagramDiscreteValues<double>>(
+      &state.get_discrete_state()));
+  // FYI there is no DiagramAbstractValues.
+
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
+
+  // Verify that the clone is also a DiagramContext with Diagram ingredients.
+  EXPECT_TRUE(is_dynamic_castable<DiagramContext<double>>(clone));
+  const State<double>& clone_state = context_->get_state();
+  EXPECT_TRUE(is_dynamic_castable<DiagramState<double>>(&clone_state));
+  EXPECT_TRUE(is_dynamic_castable<DiagramContinuousState<double>>(
+      &clone_state.get_continuous_state()));
+  EXPECT_TRUE(is_dynamic_castable<DiagramDiscreteValues<double>>(
+      &clone_state.get_discrete_state()));
 
   DRAKE_DEMAND(kSize == 3);
   clone->FixInputPort(0, {3, 6, 9});

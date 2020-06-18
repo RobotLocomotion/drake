@@ -17,8 +17,8 @@ PYBIND11_MODULE(gurobi, m) {
 
   m.doc() = "Gurobi solver bindings for MathematicalProgram";
 
+  py::module::import("pydrake.common.value");
   py::module::import("pydrake.solvers.mathematicalprogram");
-  py::module::import("pydrake.systems.framework");
 
   py::class_<GurobiSolver, SolverInterface> cls(
       m, "GurobiSolver", doc.GurobiSolver.doc);
