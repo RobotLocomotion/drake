@@ -465,6 +465,12 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     return nullptr;
   }
 
+  if (include.is_static) {
+    throw std::runtime_error(
+        "Drake does not yet support //include/static not supported for custom "
+        "nesting.");
+  }
+
   // WARNING: Most of these hacks (remembering model instances, getting silly
   // name hierarchy) come about since MultibodyPlant does not have any
   // mechanism for easy composition by itself (e.g. copying subgraphs, or
@@ -474,9 +480,14 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   std::vector<ModelInstanceIndex> new_model_instances;
   if (is_urdf) {
+    // WARNING: URDF parsing should possibly add a `__model__` frame and
+    // `SetDefaultFreeBodyPose()`?
+    // Note: `SetDefaultFreeBodyPose()` may not be critical.
+    // Or is there a way to do it here easily, w/o computing kinematics?
     // N.B. Errors will just happen via thrown exceptions.
-    new_model_instances = AddModelsFromUrdfFile(
-        plant, include.file_path, include.absolute_model_name);
+    new_model_instances = {
+        AddModelFromUrdfFile(
+            plant, include.file_path, include.absolute_model_name)};
   } else {
     // N.B. Errors will just happen via thrown exceptions.
     DRAKE_DEMAND(is_forced_nesting);
@@ -501,7 +512,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   //  * Remember parsed pose from top-level model's pose.
   //  * Measure delta between that and the overriding pose.
   //  * Apply delta to each individual body's default pose :(
-  RigidTransformd X_WMdesired = ResolvePose(include.pose);
+  RigidTransformd X_WMdesired = ToRigidTransform(include.pose_WM);
   const Frame<double>& main_model_frame = get_model_frame(main_model_instance);
   RigidTransformd X_WMparsed =
       plant->GetDefaultFreeBodyPose(main_model_frame.body()) *
@@ -515,21 +526,24 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // https://github.com/RobotLocomotion/drake/issues/12270#issuecomment-606757766
   std::map<std::string, sdf::InterfaceModelPtr> interface_model_hierarchy;
 
-  auto body_to_interface_frame = [&](const Body<double>& link) {
+  // Converts an MBP Body to sdf::InterfaceLink.
+  auto body_to_interface_link = [&](const Body<double>& link) {
     // Pre-transform default pose, if specified.
     RigidTransform X_WLparsed = plant->GetDefaultPose(*link);
     RigidTransform X_WLdesired = X_WLparsed * X_ParsedDesired;
     plant->SetDefaultPose(*link, X_WLdesired);
+    RigidTransformd X_ML = X_WMdesired.inverse() * X_WLdesired;
     // Register link as grounding frame.
-    sdf::SemanticPose pose("", X_ML);
-    return make_shared<sdf::InterfaceFrame>(link->name(), pose);
+    sdf::InterfacePose pose(X_ML);
+    return make_shared<sdf::InterfaceLink>(link->name(), pose);
   };
 
+  // Converts an MBP Frame to sdf::InterfaceFrame.
   auto frame_to_interface_frame = [&](
       const Frame<double>& frame, std::string name = "") {
     const std::string body_name = frame->body().name();
-    sdf::SemanticPose pose(
-        body_name, frame->GetFixedPoseInBodyFrame());
+    sdf::InterfacePose pose(
+        frame->GetFixedPoseInBodyFrame(), body_name);
     if (name == "") {
       name = frame->name();
     }
@@ -540,7 +554,9 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     return make_shared<sdf::InterfaceFrame>(name, pose);
   };
 
-  auto add_model = [&](ModelInstanceIndex model) {
+  // N.B. For hierarchy, this assumes that "parent" models are defined before
+  // their "child" models.
+  for (auto model : new_model_instances) {
     const std::string absolute_name = plant->GetModelInstanceName(model);
     const auto [absolute_parent_name, local_name] = SplitName(absolute_name);
 
@@ -549,7 +565,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
     auto interface_model = std::make_shared<sdf::InterfaceModel>(
         local_name,
-        body_to_interface_frame(canonical_link),
+        body_to_interface_link(canonical_link),
         // TODO(eric.cousineau): What if the model already has a __model__
         // frame?
         frame_to_interface_frame(model_frame, "__model__"));
@@ -560,7 +576,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         // Already added.
         continue;
       }
-      interface_model->AddFrame(body_to_interface_frame(*body));
+      interface_model->AddLink(body_to_interface_link(*body));
     }
     for (auto* frame : GetModelFrames(plant, model)) {
       if (frame == model_frame) {
@@ -579,13 +595,6 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
           interface_model_hierarchy.at(absolute_parent_name);
       parent_interface_model->AddNestedModel(interface_model);
     }
-    return interface_model;
-  };
-
-  // N.B. For hierarchy, this assumes that "parent" models are defined before
-  // their "child" models.
-  for (auto model : new_model_instances) {
-    add_model(model);
   }
 
   return main_interface_model;
@@ -920,6 +929,9 @@ ModelInstanceIndex AddModelFromSpecification(
   nested_models_post_init();
 
   if (model.Static()) {
+    // NOTE: This should work for nested models, as SDFormat should ensure that
+    // any nested model's are also defined as static.
+
     // Only weld / fixed joints are permissible.
     // TODO(eric.cousineau): Consider "freezing" non-weld joints, as is
     // permissible in Bullet and DART via Gazebo (#12227).
