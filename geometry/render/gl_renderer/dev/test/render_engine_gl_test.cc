@@ -15,7 +15,6 @@
 namespace drake {
 namespace geometry {
 namespace render {
-namespace internal {
 namespace {
 
 using Eigen::Translation3d;
@@ -148,7 +147,7 @@ class RenderEngineGlTest : public ::testing::Test {
         return ::testing::AssertionFailure()
                << "Expected depth at " << coord << " to be " << expected_depth
                << ". Found " << actual_depth << ". Difference " << delta
-               << "is greater than tolerance " << tolerance;
+               << " is greater than tolerance " << tolerance;
       }
     }
   }
@@ -157,15 +156,14 @@ class RenderEngineGlTest : public ::testing::Test {
   // If images are provided, the given images will be tested, otherwise the
   // member images will be tested.
   void VerifyOutliers(const RenderEngineGl& renderer,
-                      const DepthCameraProperties& camera, const char* name,
+                      const DepthCameraProperties& camera,
                       ImageDepth32F* depth_in = nullptr) {
     ImageDepth32F& depth = depth_in ? *depth_in : depth_;
 
     for (const auto& screen_coord : GetOutliers(camera)) {
       // Depth
       EXPECT_TRUE(IsExpectedDepth(depth, screen_coord, expected_outlier_depth_,
-                                  kDepthTolerance))
-          << name;
+                                  kDepthTolerance));
     }
   }
 
@@ -180,7 +178,7 @@ class RenderEngineGlTest : public ::testing::Test {
       const GeometryId ground_id = GeometryId::get_new_id();
       renderer_->RegisterVisual(ground_id, HalfSpace(), PerceptionProperties(),
                                 RigidTransformd::Identity(),
-                                false /** needs update */);
+                                false /* needs update */);
     }
   }
 
@@ -212,7 +210,7 @@ class RenderEngineGlTest : public ::testing::Test {
   // Performs the work to test the rendering with a sphere centered in the
   // image. To pass, the renderer will have to have been populated with a
   // compliant sphere and camera configuration (e.g., PopulateSphereTest()).
-  void PerformCenterShapeTest(RenderEngineGl* renderer, const char* name,
+  void PerformCenterShapeTest(RenderEngineGl* renderer,
                               const DepthCameraProperties* camera = nullptr) {
     const DepthCameraProperties& cam = camera ? *camera : camera_;
     // Can't use the member images in case the camera has been configured to a
@@ -220,13 +218,12 @@ class RenderEngineGlTest : public ::testing::Test {
     ImageDepth32F depth(cam.width, cam.height);
     Render(renderer, &cam, &depth);
 
-    VerifyOutliers(*renderer, cam, name, &depth);
+    VerifyOutliers(*renderer, cam, &depth);
 
     // Verifies inside the sphere.
     const ScreenCoord inlier = GetInlier(cam);
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, inlier, expected_object_depth_, kDepthTolerance))
-        << name;
+    EXPECT_TRUE(IsExpectedDepth(depth, inlier, expected_object_depth_,
+                                kDepthTolerance));
   }
 
   // Provide a default visual color for this tests -- it is intended to be
@@ -259,6 +256,7 @@ TEST_F(RenderEngineGlTest, NoBodyTest) {
   SetUp(RigidTransformd::Identity());
   Render();
 
+  SCOPED_TRACE("NoBodyTest");
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
 }
 
@@ -274,26 +272,27 @@ TEST_F(RenderEngineGlTest, TerrainTest) {
     X_WR_.set_translation(p_WR);
     renderer_->UpdateViewpoint(X_WR_);
     Render();
+    SCOPED_TRACE(fmt::format("TerrainTest: depth = {}", depth));
     VerifyUniformDepth(depth);
   }
 
-  // Closer than kZNear.
-  p_WR.z() = kZNear - 1e-5;
-  X_WR_.set_translation(p_WR);
-  renderer_->UpdateViewpoint(X_WR_);
-  Render();
-  VerifyUniformDepth(InvalidDepth::kTooClose);
-
-  // Farther than kZFar.
-  p_WR.z() = kZFar + 1e-3;
-  X_WR_.set_translation(p_WR);
-  renderer_->UpdateViewpoint(X_WR_);
-  Render();
-  // Verifies depth.
-  for (int y = 0; y < kHeight; ++y) {
-    for (int x = 0; x < kWidth; ++x) {
-      ASSERT_EQ(InvalidDepth::kTooFar, depth_.at(x, y)[0]);
-    }
+  {
+    // Closer than kZNear.
+    p_WR.z() = kZNear - 1e-5;
+    X_WR_.set_translation(p_WR);
+    renderer_->UpdateViewpoint(X_WR_);
+    Render();
+    SCOPED_TRACE("TerrainTest: ground closer than z-near");
+    VerifyUniformDepth(InvalidDepth::kTooClose);
+  }
+  {
+    // Farther than kZFar.
+    p_WR.z() = kZFar + 1e-3;
+    X_WR_.set_translation(p_WR);
+    renderer_->UpdateViewpoint(X_WR_);
+    Render();
+    SCOPED_TRACE("TerrainTest: ground farther than z-far");
+    VerifyUniformDepth(InvalidDepth::kTooFar);
   }
 }
 
@@ -311,7 +310,8 @@ TEST_F(RenderEngineGlTest, BoxTest) {
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
-  PerformCenterShapeTest(renderer_.get(), "Box test");
+  SCOPED_TRACE("Box test");
+  PerformCenterShapeTest(renderer_.get());
 }
 
 // Performs the shape centered in the image with a sphere.
@@ -320,7 +320,8 @@ TEST_F(RenderEngineGlTest, SphereTest) {
 
   PopulateSphereTest(renderer_.get());
 
-  PerformCenterShapeTest(renderer_.get(), "Sphere test");
+  SCOPED_TRACE("Sphere test");
+  PerformCenterShapeTest(renderer_.get());
 }
 
 // Performs the shape centered in the image with a cylinder.
@@ -338,7 +339,8 @@ TEST_F(RenderEngineGlTest, CylinderTest) {
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
-  PerformCenterShapeTest(renderer_.get(), "Cylinder test");
+  SCOPED_TRACE("Cylinder test");
+  PerformCenterShapeTest(renderer_.get());
 }
 
 // Performs the shape centered in the image with a mesh (which happens to be a
@@ -362,7 +364,8 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
       {id, RigidTransformd::Identity()}});
 
-  PerformCenterShapeTest(renderer_.get(), "Mesh test");
+  SCOPED_TRACE("Mesh test");
+  PerformCenterShapeTest(renderer_.get());
 }
 
 // Performs the shape centered in the image with a convex mesh (which happens to
@@ -386,7 +389,8 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
       {id, RigidTransformd::Identity()}});
 
-  PerformCenterShapeTest(renderer_.get(), "Mesh test");
+  SCOPED_TRACE("Mesh test");
+  PerformCenterShapeTest(renderer_.get());
 }
 
 // This confirms that geometries are correctly removed from the render engine.
@@ -450,36 +454,54 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
     expected_object_depth_ = depth;
   };
 
-  const GeometryId id0 = GeometryId::get_new_id();
-  const float depth0 = add_sphere(0.5, id0);
-  set_expectations(depth0);
-  PerformCenterShapeTest(renderer_.get(), "First sphere test");
+  {
+    // Add initial sphere.
+    const GeometryId id = GeometryId::get_new_id();
+    const float depth = add_sphere(0.5, id);
+    ASSERT_EQ(depth, default_depth);
+    set_expectations(depth);
+    SCOPED_TRACE("First sphere test");
+    PerformCenterShapeTest(renderer_.get());
+  }
 
-  // Add another sphere of a different color in front of the default sphere
+  // We'll be adding and removing two spheres; get their ids ready.
   const GeometryId id1 = GeometryId::get_new_id();
-  const float depth1 = add_sphere(0.75, id1);
-  set_expectations(depth1);
-  PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
-
-  // Add a _third_ sphere in front of the second.
   const GeometryId id2 = GeometryId::get_new_id();
-  float depth2 = add_sphere(1.0, id2);
-  set_expectations(depth2);
-  PerformCenterShapeTest(renderer_.get(), "Third sphere added in remove test");
 
-  // Remove the first sphere added; should report "true" and the render test
-  // should pass without changing expectations.
-  bool removed = renderer_->RemoveGeometry(id1);
-  EXPECT_TRUE(removed);
-  PerformCenterShapeTest(renderer_.get(), "First added sphere removed");
+  {
+    // Add another sphere of a different color in front of the default sphere
+    const float depth = add_sphere(0.75, id1);
+    set_expectations(depth);
+    SCOPED_TRACE("Second sphere added in remove test");
+    PerformCenterShapeTest(renderer_.get());
+  }
 
-  // Remove the second added sphere; should report true and rendering should
-  // return to its default configuration.
-  removed = renderer_->RemoveGeometry(id2);
-  EXPECT_TRUE(removed);
-  set_expectations(default_depth);
-  PerformCenterShapeTest(renderer_.get(),
-                         "Default image restored by removing extra geometries");
+  {
+    // Add a _third_ sphere in front of the second.
+    float depth = add_sphere(1.0, id2);
+    set_expectations(depth);
+    SCOPED_TRACE("Third sphere added in remove test");
+    PerformCenterShapeTest(renderer_.get());
+  }
+
+  {
+    // Remove the first sphere added; should report "true" and the render test
+    // should pass without changing expectations.
+    const bool removed = renderer_->RemoveGeometry(id1);
+    EXPECT_TRUE(removed);
+    SCOPED_TRACE("First added sphere removed");
+    PerformCenterShapeTest(renderer_.get());
+  }
+
+  {
+    // Remove the second added sphere; should report true and rendering should
+    // return to its default configuration.
+    const bool removed = renderer_->RemoveGeometry(id2);
+    EXPECT_TRUE(removed);
+    set_expectations(default_depth);
+    SCOPED_TRACE("Default image restored by removing extra geometries");
+    PerformCenterShapeTest(renderer_.get());
+  }
 }
 
 // All of the clone tests use the PerformCenterShapeTest() with the sphere setup
@@ -493,8 +515,8 @@ TEST_F(RenderEngineGlTest, SimpleClone) {
 
   unique_ptr<RenderEngine> clone = renderer_->Clone();
   EXPECT_NE(dynamic_cast<RenderEngineGl*>(clone.get()), nullptr);
-  PerformCenterShapeTest(dynamic_cast<RenderEngineGl*>(clone.get()),
-                         "Simple clone");
+  SCOPED_TRACE("Simple clone");
+  PerformCenterShapeTest(dynamic_cast<RenderEngineGl*>(clone.get()));
 }
 
 // Tests that the cloned renderer still works, even when the original is
@@ -507,8 +529,8 @@ TEST_F(RenderEngineGlTest, ClonePersistence) {
   // This causes the original renderer copied from to be destroyed.
   renderer_.reset();
   ASSERT_EQ(nullptr, renderer_);
-  PerformCenterShapeTest(static_cast<RenderEngineGl*>(clone.get()),
-                         "Clone persistence");
+  SCOPED_TRACE("Clone persistence");
+  PerformCenterShapeTest(static_cast<RenderEngineGl*>(clone.get()));
 }
 
 // Tests that the cloned renderer still works, even when the original has values
@@ -523,8 +545,8 @@ TEST_F(RenderEngineGlTest, CloneIndependence) {
   // This assumes that the terrain is zero-indexed.
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{geometry_id_, X_WT_new}});
-  PerformCenterShapeTest(dynamic_cast<RenderEngineGl*>(clone.get()),
-                         "Clone independence");
+  SCOPED_TRACE("Clone independence");
+  PerformCenterShapeTest(dynamic_cast<RenderEngineGl*>(clone.get()));
 }
 
 // Confirm that the renderer can be used for cameras with different properties.
@@ -533,9 +555,12 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
   SetUp(X_WR_, true);
   PopulateSphereTest(renderer_.get());
 
-  // Baseline -- confirm that all of the defaults in this test still produce
-  // the expected outcome.
-  PerformCenterShapeTest(renderer_.get(), "Camera change - baseline", &camera_);
+  {
+    // Baseline -- confirm that all of the defaults in this test still produce
+    // the expected outcome.
+    SCOPED_TRACE("Camera change - baseline");
+    PerformCenterShapeTest(renderer_.get(), &camera_);
+  }
 
   // Test changes in sensor sizes.
   {
@@ -543,33 +568,41 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
     DepthCameraProperties small_camera{camera_};
     small_camera.width /= 2;
     small_camera.height /= 2;
-    PerformCenterShapeTest(renderer_.get(), "Camera change - small camera",
-                           &small_camera);
+    {
+      SCOPED_TRACE("Camera change - small camera");
+      PerformCenterShapeTest(renderer_.get(), &small_camera);
+    }
 
     // Now run it again with a camera with a bigger sensor (4X area).
-    DepthCameraProperties big_camera{camera_};
-    big_camera.width *= 2;
-    big_camera.height *= 2;
-    PerformCenterShapeTest(renderer_.get(), "Camera change - big camera",
-                           &big_camera);
+    {
+      DepthCameraProperties big_camera{camera_};
+      big_camera.width *= 2;
+      big_camera.height *= 2;
+      SCOPED_TRACE("Camera change - big camera");
+      PerformCenterShapeTest(renderer_.get(), &big_camera);
+    }
 
     // Test rendering with a previous camera once again to make sure the
     // existing target is reused correctly despite being of different sizes.
-    PerformCenterShapeTest(renderer_.get(), "Camera change - small camera",
-                           &small_camera);
+    {
+      SCOPED_TRACE("Camera change - small camera");
+      PerformCenterShapeTest(renderer_.get(), &small_camera);
+    }
   }
 
   // Test changes in fov (larger and smaller).
   {
     DepthCameraProperties narrow_fov(camera_);
     narrow_fov.fov_y /= 2;
-    PerformCenterShapeTest(renderer_.get(), "Camera change - narrow fov",
-                           &narrow_fov);
+    SCOPED_TRACE("Camera change - narrow fov");
+    PerformCenterShapeTest(renderer_.get(), &narrow_fov);
+  }
 
+  {
     DepthCameraProperties wide_fov(camera_);
     wide_fov.fov_y *= 2;
-    PerformCenterShapeTest(renderer_.get(), "Camera change - wide fov",
-                           &wide_fov);
+    SCOPED_TRACE("Camera change - wide fov");
+    PerformCenterShapeTest(renderer_.get(), &wide_fov);
   }
 
   // Test changes to depth range.
@@ -578,27 +611,31 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
     clipping_far_plane.z_far = expected_outlier_depth_ - 0.1;
     const float old_outlier_depth = expected_outlier_depth_;
     expected_outlier_depth_ = std::numeric_limits<float>::infinity();
-    PerformCenterShapeTest(renderer_.get(),
-                           "Camera change - z far clips terrain",
-                           &clipping_far_plane);
-    // NOTE: Need to restored expected outlier depth for next test.
-    expected_outlier_depth_ = old_outlier_depth;
+    {
+      SCOPED_TRACE("Camera change - z far clips terrain");
+      PerformCenterShapeTest(renderer_.get(), &clipping_far_plane);
+      // NOTE: Need to restored expected outlier depth for next test.
+      expected_outlier_depth_ = old_outlier_depth;
+    }
 
-    DepthCameraProperties clipping_near_plane(camera_);
-    clipping_near_plane.z_near = expected_object_depth_ + 0.1;
-    const float old_object_depth = expected_object_depth_;
-    expected_object_depth_ = 0;
-    PerformCenterShapeTest(renderer_.get(), "Camera change - z near clips mesh",
-                           &clipping_near_plane);
-    // NOTE: Need to restored expected object depth for next test.
-    expected_object_depth_ = old_object_depth;
+    {
+      DepthCameraProperties clipping_near_plane(camera_);
+      clipping_near_plane.z_near = expected_object_depth_ + 0.1;
+      const float old_object_depth = expected_object_depth_;
+      expected_object_depth_ = 0;
+      SCOPED_TRACE("Camera change - z near clips mesh");
+      PerformCenterShapeTest(renderer_.get(), &clipping_near_plane);
+      // NOTE: Need to restored expected object depth for next test.
+      expected_object_depth_ = old_object_depth;
+    }
 
-    // Test rendering with a previous camera once again to make sure the
-    // existing target is reused correctly.
-    expected_outlier_depth_ = std::numeric_limits<float>::infinity();
-    PerformCenterShapeTest(renderer_.get(),
-                           "Camera change - z far clips terrain",
-                           &clipping_far_plane);
+    {
+      // Test rendering with a previous camera once again to make sure the
+      // existing target is reused correctly.
+      expected_outlier_depth_ = std::numeric_limits<float>::infinity();
+      SCOPED_TRACE("Camera change - z far clips terrain 2");
+      PerformCenterShapeTest(renderer_.get(), &clipping_far_plane);
+    }
   }
 }
 
@@ -632,13 +669,16 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
   auto add_terrain = [ground](auto* renderer) {
     renderer->RegisterVisual(ground, HalfSpace(), PerceptionProperties(),
                              RigidTransformd::Identity(),
-                             false /** needs update */);
+                             false /* needs update */);
   };
 
   engine1.UpdateViewpoint(X_WR_);
   add_terrain(&engine1);
   PopulateSphereTest(&engine1);
-  PerformCenterShapeTest(&engine1, "engine1 - initial render");
+  {
+    SCOPED_TRACE("engine1 - initial render");
+    PerformCenterShapeTest(&engine1);
+  }
 
   Render(&engine2);
   VerifyUniformDepth(std::numeric_limits<float>::infinity());
@@ -652,13 +692,17 @@ TEST_F(RenderEngineGlTest, MultipleRenderers) {
   RigidTransformd X_WV{Translation3d(0.2, 0.2, 0.5)};
   engine2.UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{box_id, X_WV}});
-  PerformCenterShapeTest(&engine2, "engine2 - offset box test");
-
-  PerformCenterShapeTest(&engine1, "engine1 - second render");
+  {
+    SCOPED_TRACE("engine2 - offset box test");
+    PerformCenterShapeTest(&engine2);
+  }
+  {
+    SCOPED_TRACE("engine1 - second render");
+    PerformCenterShapeTest(&engine1);
+  }
 }
 
 }  // namespace
-}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake
