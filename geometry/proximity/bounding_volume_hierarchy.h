@@ -125,6 +125,7 @@ class Aabb {
                          const math::RigidTransformd& X_CH);
 
   bool Equal(const Aabb& other) const {
+    if (this == &other) return true;
     return center_ == other.center_ &&
            half_width_ == other.half_width_;
   }
@@ -389,6 +390,7 @@ class BoundingVolumeHierarchy {
   }
 
   bool Equal(const BoundingVolumeHierarchy<MeshType>& other) const {
+    if (this == &other) return true;
     return EqualNode(this->root_node(), other.root_node());
   }
 

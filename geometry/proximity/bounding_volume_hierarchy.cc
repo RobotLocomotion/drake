@@ -294,6 +294,8 @@ Vector3d BoundingVolumeHierarchy<MeshType>::ComputeCentroid(
 template <class MeshType>
 bool BoundingVolumeHierarchy<MeshType>::EqualNode(const BvNode<MeshType>& a,
                                                   const BvNode<MeshType>& b) {
+  if (&a == &b) return true;
+
   if (a.is_leaf()) {
     if (!b.is_leaf()) {
       return false;
@@ -303,7 +305,8 @@ bool BoundingVolumeHierarchy<MeshType>::EqualNode(const BvNode<MeshType>& a,
     if (b.is_leaf()) {
       return false;
     }
-    return EqualNode(a.left(), b.left()) && EqualNode(a.right(), b.right());
+    return a.aabb().Equal(b.aabb()) && EqualNode(a.left(), b.left()) &&
+           EqualNode(a.right(), b.right());
   }
 }
 
