@@ -515,11 +515,14 @@ class SatelliteTrackerTest : public ::testing::Test {
   // is approximately ω² * LB_ ≈ 0.5² * 0.6 = 0.15 (which is larger than the
   // maximum absolute value of angular acceleration of 0.12), we test that the
   // errors in bias acceleration calculations are less than 3 bits (2^3 = 8).
-  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  // In connection with real numbers whose absolute value are < 0.25, double-
+  // precision calculations should be accurate to ≈ machine epsilon / 4.
+  // So, for this test, kToletance = 2^3 * machine_epsilon / 4.
+  const double kTolerance = 2 * std::numeric_limits<double>::epsilon();
   const double LB_ = 0.5;  // Bx measure of Q's position vector from Bo (meter).
   const double qB_ = 30 * M_PI / 180.0;  // rad.
-  const double qADt_ = 0.3;  // rad/sec.
-  const double qBDt_ = 0.4;  // rad/sec.
+  const double wA_ = 0.3;  // rad/sec.  Note: wA_ is the time derivative of qA.
+  const double wB_ = 0.4;  // rad/sec.  Note: wB_ is the time derivative of qB.
 
   std::unique_ptr<MultibodyPlant<double>> plant_;
   std::unique_ptr<Context<double>> context_;
@@ -532,29 +535,32 @@ class SatelliteTrackerTest : public ::testing::Test {
 TEST_F(SatelliteTrackerTest, CalcBiasSpatialAcceleration) {
   // MotionGenesis analytical results for this system are:
   // αBias_AB = 0
-  // αBias_WB = -cos(qB) qA' qB' Bx  +  sin(qB) qA' qB' By
-  // aBias_AQ = -L qB'^2 Bx
-  // aBias_WQ = -L (qB'^2 + cos(qB)^2 qA'^2) Bx
-  //           + L sin(qB) cos(qB) qA'^2 By
-  //           - 2 L sin(qB) qA' qB' Bz
+  // αBias_WB = -cos(qB) wA wB Bx  +  sin(qB) wA wB By
+  // aBias_AQ = -L wB^2 Bx
+  // aBias_WQ = -L (wB^2 + cos(qB)^2 wA^2) Bx
+  //           + L sin(qB) cos(qB) wA^2 By
+  //           - 2 L sin(qB) wA wB Bz
   const double cosqB = std::cos(qB_);
   const double sinqB = std::sin(qB_);
-  const double qAADt = qADt_ * qADt_;
-  const double qABDt = qADt_ * qBDt_;
-  const double qBBDt = qBDt_ * qBDt_;
+  const double wAA = wA_ * wA_;
+  const double wAB = wA_ * wB_;
+  const double wBB = wB_ * wB_;
   const Vector3d alphaBias_AB_B_expected(0, 0, 0);
-  const Vector3d alphaBias_WB_B_expected(-cosqB * qABDt, sinqB * qABDt, 0);
-  const Vector3d aBias_AQ_B_expected(-LB_ * qBBDt, 0, 0);
+  const Vector3d alphaBias_WB_B_expected(-cosqB * wAB, sinqB * wAB, 0);
+  const Vector3d aBias_AQ_B_expected(-LB_ * wBB, 0, 0);
   const Vector3d aBias_WQ_B_expected = LB_ * Vector3d(
-    -qBBDt - cosqB * cosqB * qAADt, sinqB * cosqB * qAADt, -2 * sinqB * qABDt);
+    -wBB - cosqB * cosqB * wAA, sinqB * cosqB * wAA, -2 * sinqB * wAB);
 
   // Use Drake to calculate the same quantities.
   // Note: The angle qA is irrelevant because Ao is stationary in the world
   // frame W, i.e., Ao's translational velocity and acceleration in W is 0.
-  // However, the angular rate qADt_ is relevant since A's angular velocity in W
-  // is -qADt Wy.
+  // The angular rate wA_ is relevant since A's angular velocity in W is -wA Wy
+  // and this affects B's bias angular acceleration in W as well as Q's bias
+  // translational acceleration in W.  No forces are relevant because bias
+  // accelerations are only a function of state(q, v) and calculations in this
+  // test depend only on current state (not a future state subject to F = ma).
   const double qA_irrelevant = 15 * M_PI / 180;  // radians.
-  Eigen::VectorXd state = Eigen::Vector4d(qA_irrelevant, qB_, qADt_, qBDt_);
+  Eigen::VectorXd state = Eigen::Vector4d(qA_irrelevant, qB_, wA_, wB_);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
   joint1_->set_angular_rate(context_.get(), state[2]);
