@@ -354,8 +354,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RevoluteJoint<double>* joint2_{nullptr};
 };
 
-// TODO(Mitiguy) Per issue #13561, add new 3D fixture to fortify existing
-//  analytical tests for CalcBiasSpatialAcceleration().
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
@@ -463,6 +461,131 @@ TEST_F(TwoDOFPlanarPendulumTest,
       -link_length_ * (wAz_ * wAz_ + 0.5 * wAz_ * wBz_ + 0.25 * wBz_ * wBz_) *
       Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
+}
+
+// Fixture for two degree-of-freedom 3D satellite tracker with bodies A and B.
+// Body A is a cylinder connected to world (frame W) with a y-axis pin joint
+// (PinJoint1).  Body B is a parabolic satellite dish connected to body A with
+// a z-axis pin joint (PinJoint2).  Orthogonal unit vectors Wx, Wy, Wz are fixed
+// in frame W (on Earth's surface) with Wx locally North and Wy vertically
+// upward and parallel to PinJoint1.  Sets of orthogonal unit vectors Ax, Ay, Az
+// and Bx, By, Bz are fixed in bodies A and B, respectively.  Initially, Aᵢ = Wᵢ
+// (i = x, y, z) and then A is subjected to a right-handed rotation of -qA Wy.
+// Similarly, initially, Bᵢ = Aᵢ (i = x, y, z) and then B is subjected to a
+// right-handed rotation of qB Az.
+// PinJoint1 is collocated with Wo (frame W's origin) and Ao (body A's origin).
+// PinJoint2 is collocated with Ao (frame A's origin) and Bo (body B's origin).
+// Hence PinJoint1 and PinJoint2 do not translate relative to world W.
+// The focal point of satellite dish is point Q, located L Bx from Bo.
+class SatelliteTrackerTest : public ::testing::Test {
+ public:
+  // Setup the Multibody Plant.
+  void SetUp() override {
+    // Set a spatial inertia for each body.  For now, these are unimportant
+    // because this fixture is only used for kinematic tests.
+    const double mA = 4;              // mass of cylinder A (kg).
+    const double rA = 0.2, LA = 0.5;  // cylinder A's radius and length (meter).
+    const UnitInertia<double> G_Acm =
+        UnitInertia<double>::SolidCylinder(rA, LA);
+    const Vector3d p_AoAcm_A = Vector3d::Zero();
+    const SpatialInertia<double> M_Acm(mA, p_AoAcm_A, G_Acm);
+
+    // Create an empty MultibodyPlant and then add the two bodies.
+    plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
+    bodyA_ = &plant_->AddRigidBody("BodyA", M_Acm);
+    bodyB_ = &plant_->AddRigidBody("BodyB", M_Acm);  // same as bodyA_.
+
+    // Create a pin joint with angle -qA Wy that connects point Wo to point Ao.
+    const Vector3d p_WoAo_W(0, 0, 0);  // Points Wo and Ao are collocated.
+    const Vector3d p_AoWo_A(0, 0, 0);
+    joint1_ = &plant_->AddJoint<RevoluteJoint>("PinJoint1",
+        plant_->world_body(), math::RigidTransformd(p_WoAo_W),
+        *bodyA_, math::RigidTransformd(p_AoWo_A), -Vector3d::UnitY());
+
+    // Create a pin joint with angle qB Az that connects point Ao to point Bo.
+    const Vector3d p_AoBo_A(0, 0, 0);  // Points Ao and Bo are collocated.
+    const Vector3d p_BoAo_A(0, 0, 0);
+    joint2_ = &plant_->AddJoint<RevoluteJoint>("PinJoint2",
+        *bodyA_, math::RigidTransformd(p_AoBo_A),
+        *bodyB_, math::RigidTransformd(p_BoAo_A), Vector3d::UnitZ());
+
+    // Finalize the plant and create a context to store this plant's state.
+    plant_->Finalize();
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  const internal::MultibodyTree<double>& tree() const {
+    return internal::GetInternalTree(*plant_);
+  }
+
+ protected:
+  // Since the maximum absolute value of translation acceleration in this test
+  // is approximately ω² * LB_ ≈ 0.5² * 0.6 = 0.15 (which is larger than the
+  // maximum absolute value of angular acceleration of ≈0.12), we test that the
+  // errors in bias acceleration calculations are less than 3 bits (2^3 = 8).
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const double LB_ = 0.5;  // Bx measure of Q's position vector from Bo (meter).
+  const double qB_ = 30 * M_PI / 180.0;  // rad.
+  const double qADt_ = 0.3;  // rad/sec.
+  const double qBDt_ = 0.4;  // rad/sec.
+
+  std::unique_ptr<MultibodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+  const RigidBody<double>* bodyA_{nullptr};
+  const RigidBody<double>* bodyB_{nullptr};
+  const RevoluteJoint<double>* joint1_{nullptr};
+  const RevoluteJoint<double>* joint2_{nullptr};
+};
+
+TEST_F(SatelliteTrackerTest, CalcBiasSpatialAcceleration) {
+  // MotionGenesis analytical results for this system are:
+  // αBias_AB = 0
+  // αBias_WB = -cos(qB) qA' qB' Bx  +  sin(qB) qA' qB' By
+  // aBias_AQ = -L qB'^2 Bx
+  // aBias_WQ = -L (qB'^2 + cos(qB)^2 qA'^2) Bx
+  //           + L sin(qB) cos(qB) qA'^2 By
+  //           - 2 L sin(qB) qA' qB' Bz
+  const double cosqB = std::cos(qB_);
+  const double sinqB = std::sin(qB_);
+  const double qAADt = qADt_ * qADt_;
+  const double qABDt = qADt_ * qBDt_;
+  const double qBBDt = qBDt_ * qBDt_;
+  const Vector3d alphaBias_AB_B_expected(0, 0, 0);
+  const Vector3d alphaBias_WB_B_expected(-cosqB * qABDt, sinqB * qABDt, 0);
+  const Vector3d aBias_AQ_B_expected(-LB_ * qBBDt, 0, 0);
+  const Vector3d aBias_WQ_B_expected = LB_ * Vector3d(
+    -qBBDt - cosqB * cosqB * qAADt, sinqB * cosqB * qAADt, -2 * sinqB * qABDt);
+
+  // Use Drake to calculate the same quantities.
+  const double qA_irrelevant = 15 * M_PI / 180;
+  Eigen::VectorXd state = Eigen::Vector4d(qA_irrelevant, qB_, qADt_, qBDt_);
+  joint1_->set_angle(context_.get(), state[0]);
+  joint2_->set_angle(context_.get(), state[1]);
+  joint1_->set_angular_rate(context_.get(), state[2]);
+  joint2_->set_angular_rate(context_.get(), state[3]);
+
+  // Calculate point Q's bias spatial acceleration in world W, expressed in B.
+  // Note: Point Q is B's focal point and Q's position vector from Bo is LB_ Bx.
+  const Frame<double>& frame_B = bodyB_->body_frame();
+  const Frame<double>& frame_W = plant_->world_frame();
+  const Vector3d p_BoQ_B(LB_, 0, 0);
+  const SpatialAcceleration<double> aBias_WQ_B =
+      plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
+                                          frame_B, p_BoQ_B, frame_W, frame_B);
+  EXPECT_TRUE(CompareMatrices(aBias_WQ_B.rotational(), alphaBias_WB_B_expected,
+                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(aBias_WQ_B.translational(), aBias_WQ_B_expected,
+                              kTolerance));
+
+  // Calculate Q's bias spatial acceleration in frame A, expressed in frame B.
+  const Frame<double>& frame_A = bodyA_->body_frame();
+  const SpatialAcceleration<double> aBias_AQ_B =
+      plant_->CalcBiasSpatialAcceleration(*context_, JacobianWrtVariable::kV,
+                                          frame_B, p_BoQ_B, frame_A, frame_B);
+  EXPECT_TRUE(CompareMatrices(aBias_AQ_B.rotational(), alphaBias_AB_B_expected,
+                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(aBias_AQ_B.translational(), aBias_AQ_B_expected,
+                              kTolerance));
 }
 
 // This tests the method CalcBiasSpatialAcceleration() against an expected
