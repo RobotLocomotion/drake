@@ -332,10 +332,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
   }
 
-  const internal::MultibodyTree<double>& tree() const {
-    return internal::GetInternalTree(*plant_);
-  }
-
  protected:
   // Since the maximum absolute value of acceleration in this test is
   // approximately ω² * (2 * link_length) ≈ 72 , we test that the errors in
@@ -514,14 +510,10 @@ class SatelliteTrackerTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
   }
 
-  const internal::MultibodyTree<double>& tree() const {
-    return internal::GetInternalTree(*plant_);
-  }
-
  protected:
   // Since the maximum absolute value of translation acceleration in this test
   // is approximately ω² * LB_ ≈ 0.5² * 0.6 = 0.15 (which is larger than the
-  // maximum absolute value of angular acceleration of ≈0.12), we test that the
+  // maximum absolute value of angular acceleration of 0.12), we test that the
   // errors in bias acceleration calculations are less than 3 bits (2^3 = 8).
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
   const double LB_ = 0.5;  // Bx measure of Q's position vector from Bo (meter).
@@ -557,7 +549,11 @@ TEST_F(SatelliteTrackerTest, CalcBiasSpatialAcceleration) {
     -qBBDt - cosqB * cosqB * qAADt, sinqB * cosqB * qAADt, -2 * sinqB * qABDt);
 
   // Use Drake to calculate the same quantities.
-  const double qA_irrelevant = 15 * M_PI / 180;
+  // Note: The angle qA is irrelevant because Ao is stationary in the world
+  // frame W, i.e., Ao's translational velocity and acceleration in W is 0.
+  // However, the angular rate qADt_ is relevant since A's angular velocity in W
+  // is -qADt Wy.
+  const double qA_irrelevant = 15 * M_PI / 180;  // radians.
   Eigen::VectorXd state = Eigen::Vector4d(qA_irrelevant, qB_, qADt_, qBDt_);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
