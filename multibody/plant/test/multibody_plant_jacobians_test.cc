@@ -491,14 +491,16 @@ class SatelliteTrackerTest : public ::testing::Test {
     bodyA_ = &plant_->AddRigidBody("BodyA", M_Acm);
     bodyB_ = &plant_->AddRigidBody("BodyB", M_Acm);  // same as bodyA_.
 
-    // Create a pin joint with angle -qA Wy that connects point Wo to point Ao.
+    // Create a pin (revolute) joint that connects point Wo to point Ao.
+    // Described above: The angle associated with this pin joint is -qA Wy.
     const Vector3d p_WoAo_W(0, 0, 0);  // Points Wo and Ao are collocated.
     const Vector3d p_AoWo_A(0, 0, 0);
     joint1_ = &plant_->AddJoint<RevoluteJoint>("PinJoint1",
         plant_->world_body(), math::RigidTransformd(p_WoAo_W),
         *bodyA_, math::RigidTransformd(p_AoWo_A), -Vector3d::UnitY());
 
-    // Create a pin joint with angle qB Az that connects point Ao to point Bo.
+    // Create a pin (revolute) joint that connects point Ao to point Bo.
+    // Described above: The angle associated with this pin joint is qB Az.
     const Vector3d p_AoBo_A(0, 0, 0);  // Points Ao and Bo are collocated.
     const Vector3d p_BoAo_A(0, 0, 0);
     joint2_ = &plant_->AddJoint<RevoluteJoint>("PinJoint2",
