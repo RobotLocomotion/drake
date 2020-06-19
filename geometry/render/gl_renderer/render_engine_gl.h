@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
-#include "drake/geometry/render/gl_renderer/dev/buffer_dim.h"
+#include "drake/geometry/render/gl_renderer/buffer_dim.h"
 #include "drake/geometry/render/gl_renderer/opengl_context.h"
 #include "drake/geometry/render/gl_renderer/opengl_geometry.h"
 #include "drake/geometry/render/gl_renderer/shader_program.h"

@@ -68,6 +68,7 @@ drake_cc_library(
     hdrs = select({
         "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
         "//conditions:default": [
+            "buffer_dim.h",
             "render_engine_gl.h",
             "render_engine_gl_factory.h",
         ],
@@ -76,6 +77,10 @@ drake_cc_library(
         "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
         "//conditions:default": [
             ":opengl_context",
+            ":opengl_geometry",
+            ":shader_program",
+            ":shape_meshes",
+            "//common:essential",
             "//geometry/render:render_engine",
         ],
     }),
@@ -99,6 +104,13 @@ drake_cc_library_gl_ubuntu_only(
         "//common:essential",
         "//geometry/render/gl_renderer:opengl_context",
         "@tinyobjloader",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "buffer_dim_test",
+    deps = [
+        ":render_engine_gl",
     ],
 )
 
@@ -131,8 +143,15 @@ drake_cc_googletest(
         "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
+        "//common:find_resource",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
     ],
 )
 

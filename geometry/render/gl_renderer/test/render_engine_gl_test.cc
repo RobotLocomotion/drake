@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/render_engine_gl.h"
+#include "drake/geometry/render/gl_renderer/render_engine_gl.h"
 
 #include <array>
 #include <cstring>

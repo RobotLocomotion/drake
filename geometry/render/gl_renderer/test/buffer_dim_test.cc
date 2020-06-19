@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/buffer_dim.h"
+#include "drake/geometry/render/gl_renderer/buffer_dim.h"
 
 #include <unordered_set>
 
