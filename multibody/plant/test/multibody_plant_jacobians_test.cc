@@ -519,7 +519,7 @@ class SatelliteTrackerTest : public ::testing::Test {
   // errors in bias acceleration calculations are less than 3 bits (2^3 = 8).
   // In connection with real numbers whose absolute value are < 0.25, double-
   // precision calculations should be accurate to ≈ machine epsilon / 4.
-  // So, for this test, kToletance = 2^3 * machine_epsilon / 4.
+  // So, for this test, kTolerance = 2^3 * machine_epsilon / 4.
   const double kTolerance = 2 * std::numeric_limits<double>::epsilon();
   const double LB_ = 0.5;  // Bx measure of Q's position vector from Bo (meter).
   const double qB_ = 30 * M_PI / 180.0;  // rad.
