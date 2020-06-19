@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 load(
     "defs.bzl",
     "drake_cc_googletest_gl_ubuntu_only",
@@ -23,7 +24,9 @@ drake_cc_package_library_gl_per_os(
     ],
     ubuntu_deps = [
         ":opengl_context",
+        ":opengl_geometry",
         ":render_engine_gl",
+        ":shader_program",
         ":shape_meshes",
     ],
 )
@@ -40,6 +43,15 @@ drake_cc_library_gl_ubuntu_only(
         "//common:scope_exit",
         "@opengl",
         "@x11",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
+    name = "opengl_geometry",
+    hdrs = ["opengl_geometry.h"],
+    deps = [
+        ":opengl_context",
+        "//math:geometric_transform",
     ],
 )
 
@@ -70,6 +82,16 @@ drake_cc_library(
 )
 
 drake_cc_library_gl_ubuntu_only(
+    name = "shader_program",
+    srcs = ["shader_program.cc"],
+    hdrs = ["shader_program.h"],
+    deps = [
+        "//common:essential",
+        "//geometry/render/gl_renderer:opengl_context",
+    ],
+)
+
+drake_cc_library_gl_ubuntu_only(
     name = "shape_meshes",
     srcs = ["shape_meshes.cc"],
     hdrs = ["shape_meshes.h"],
@@ -91,6 +113,15 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
     deps = [
         ":opengl_context",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "opengl_geometry_test",
+    deps = [
+        ":opengl_geometry",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -126,6 +157,17 @@ drake_cc_googletest_gl_ubuntu_only(
         ":shape_meshes",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "shader_program_test",
+    tags = vtk_test_tags(),
+    deps = [
+        ":opengl_context",
+        ":shader_program",
+        "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
     ],
 )
