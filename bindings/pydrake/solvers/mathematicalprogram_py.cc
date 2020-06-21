@@ -394,6 +394,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def(py::init<>(), doc.MathematicalProgramResult.ctor.doc)
       .def("is_success", &MathematicalProgramResult::is_success,
           doc.MathematicalProgramResult.is_success.doc)
+      .def("set_x_val", &MathematicalProgramResult::set_x_val, py::arg("x_val"),
+          doc.MathematicalProgramResult.set_x_val.doc)
       .def("get_x_val", &MathematicalProgramResult::get_x_val,
           doc.MathematicalProgramResult.get_x_val.doc)
       .def("get_solution_result",

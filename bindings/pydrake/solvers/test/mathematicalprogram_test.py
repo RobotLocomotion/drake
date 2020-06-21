@@ -131,6 +131,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
 
+        x_val_new = np.array([1, 2])
+        result.set_x_val(x_val_new)
+        np.testing.assert_array_equal(x_val_new, result.get_x_val())
+
 # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
     # perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
