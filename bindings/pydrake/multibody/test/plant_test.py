@@ -194,7 +194,7 @@ class TestPlant(unittest.TestCase):
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision", coulomb_friction=body_friction)
-            self.assertGreater(plant.num_collision_geometries(), 0)
+            self.assertGreater(plant.EvalNumCollisionGeometries(), 0)
             body0_props = scene_graph.model_inspector().GetProximityProperties(
                 plant.GetCollisionGeometriesForBody(body)[0])
             body0_friction = body0_props.GetProperty(
@@ -211,7 +211,7 @@ class TestPlant(unittest.TestCase):
                 plant.GetCollisionGeometriesForBody(body)[1])
             body1_friction = body1_props.GetProperty(
                 "material", "coulomb_friction")
-            self.assertGreater(plant.num_collision_geometries(), 1)
+            self.assertGreater(plant.EvalNumCollisionGeometries(), 1)
             self.assertEqual(body1_friction.static_friction(), 1.1)
             self.assertEqual(body1_friction.dynamic_friction(), 0.8)
 

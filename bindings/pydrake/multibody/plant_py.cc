@@ -662,21 +662,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetCollisionGeometriesForBody",
             &Class::GetCollisionGeometriesForBody, py::arg("body"),
             py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
-        .def("num_collision_geometries",
-            overload_cast_explicit<int>(&Class::num_collision_geometries),
-            py_reference_internal, cls_doc.num_collision_geometries.doc_0args)
-        .def("num_collision_geometries",
-            overload_cast_explicit<int, const systems::Context<T>&>(
-                &Class::num_collision_geometries),
-            py::arg("context"), py_reference_internal,
-            cls_doc.num_collision_geometries.doc_1args)
+        .def("EvalNumCollisionGeometries", &Class::EvalNumCollisionGeometries,
+            py::arg("context") = nullptr,
+            cls_doc.EvalNumCollisionGeometries.doc)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
             py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def("default_coulomb_friction", &Class::default_coulomb_friction,
-        py::arg("geometry_id"), py_reference_internal,
-        cls_doc.default_coulomb_friction.doc_deprecated);
+           py::arg("geometry_id"), py_reference_internal,
+           cls_doc.default_coulomb_friction.doc_deprecated)
+        .def("num_collision_geometries", &Class::num_collision_geometries,
+            cls_doc.num_collision_geometries.doc_deprecated);
 #pragma GCC diagnostic pop
     DeprecateAttribute(cls, "default_coulomb_friction",
         cls_doc.default_coulomb_friction.doc_deprecated);

@@ -139,6 +139,21 @@ int GeometryState<T>::NumGeometriesWithRole(Role role) const {
 }
 
 template <typename T>
+int GeometryState<T>::NumGeometriesWithRole(SourceId source_id,
+                                            Role role) const {
+  int count = 0;
+  FindOrThrow(source_id, source_names_, [source_id, role]() {
+    return "Cannot report number of geometries with the " + to_string(role) +
+           " role for invalid source id: " + to_string(source_id);
+  });
+  for (const auto& pair : geometries_) {
+    if (pair.second.source_id() == source_id && pair.second.has_role(role))
+      ++count;
+  }
+  return count;
+}
+
+template <typename T>
 int GeometryState<T>::NumDynamicGeometries() const {
   int count = 0;
   for (const auto& pair : frames_) {

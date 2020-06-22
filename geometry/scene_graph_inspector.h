@@ -119,6 +119,13 @@ class SceneGraphInspector {
     return state_->NumGeometriesWithRole(role);
   }
 
+  /** Reports the _total_ number of geometries associated with the given
+   source_id in the scene graph with the indicated role.  */
+  int NumGeometriesWithRole(SourceId source_id, Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->NumGeometriesWithRole(source_id, role);
+  }
+
   /** Reports the total number of _dynamic_ geometries in the scene graph.  */
   int NumDynamicGeometries() const {
     DRAKE_DEMAND(state_ != nullptr);

@@ -839,10 +839,11 @@ int MultibodyPlant<T>::EvalNumCollisionGeometries(
     return const_cast<MultibodyPlant<T>*>(this)
         ->member_scene_graph()
         .model_inspector()
-        .NumGeometriesWithRole(geometry::Role::kProximity);
+        .NumGeometriesWithRole(get_source_id().value(),
+                               geometry::Role::kProximity);
   } else {
-    return EvalGeometryQueryInput(context).inspector().NumGeometriesWithRole(
-        geometry::Role::kProximity);
+    return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+        get_source_id().value(), geometry::Role::kProximity);
   }
 }
 
@@ -1815,8 +1816,7 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
   DRAKE_DEMAND(data != nullptr);
 
   if (EvalNumCollisionGeometries(&context) > 0) {
-    const auto& query_object = const auto& query_object =
-        EvalGeometryQueryInput(context);
+    const auto& query_object = EvalGeometryQueryInput(context);
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 

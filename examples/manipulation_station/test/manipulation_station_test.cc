@@ -238,18 +238,18 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
   const int num_collisions =
-      station1.get_multibody_plant().num_collision_geometries();
+      station1.get_multibody_plant().EvalNumCollisionGeometries();
 
   ManipulationStation<double> station2(0.002);
   station2.SetupManipulationClassStation(IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
-  EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
+  EXPECT_EQ(station2.get_multibody_plant().EvalNumCollisionGeometries(),
             num_collisions + 8);
 
   // The controlled model does not register with a scene graph, so has zero
   // collisions.
-  EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
+  EXPECT_EQ(station2.get_controller_plant().EvalNumCollisionGeometries(), 0);
 }
 
 GTEST_TEST(ManipulationStationTest, AddManipulandFromFile) {

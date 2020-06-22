@@ -53,9 +53,10 @@ GTEST_TEST(MbpWithTamsiSolver, FixedWorld) {
   EXPECT_EQ(plant.num_positions(), 0);
 
   auto context = diagram->CreateDefaultContext();
+  auto& plant_context = plant.GetMyMutableContextFromRoot(context.get());
 
   // However it is not empty, it has all anchored geometry.
-  EXPECT_EQ(plant.num_collision_geometries(*context), 3);
+  EXPECT_EQ(plant.EvalNumCollisionGeometries(&plant_context), 3);
 
   auto& discrete_state_vector = context->get_discrete_state_vector();
   EXPECT_EQ(discrete_state_vector.size(), 0);

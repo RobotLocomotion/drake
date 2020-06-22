@@ -161,8 +161,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_geometries.doc)
         .def("GetAllGeometryIds", &Class::GetAllGeometryIds,
             cls_doc.GetAllGeometryIds.doc)
-        .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,
-            py::arg("role"), cls_doc.NumGeometriesWithRole.doc)
+        .def("NumGeometriesWithRole",
+            overload_cast_explicit<int, Role>(&Class::NumGeometriesWithRole),
+            py_reference_internal, py::arg("role"),
+            cls_doc.NumGeometriesWithRole.doc_1args)
+        .def("NumGeometriesWithRole",
+            overload_cast_explicit<int, SourceId, Role>(
+                &Class::NumGeometriesWithRole),
+            py_reference_internal, py::arg("source_id"), py::arg("role"),
+            cls_doc.NumGeometriesWithRole.doc_2args)
         .def("NumDynamicGeometries", &Class::NumDynamicGeometries,
             cls_doc.NumDynamicGeometries.doc)
         .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,

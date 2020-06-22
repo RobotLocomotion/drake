@@ -120,6 +120,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int NumGeometriesWithRole(Role role) const;
 
+  /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
+  int NumGeometriesWithRole(SourceId source_id, Role role) const;
+
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
 

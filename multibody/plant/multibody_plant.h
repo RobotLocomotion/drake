@@ -3591,10 +3591,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  DRAKE_DEPRECATED("2020-10-01",
-                   "num_collision_geometries() will be removed and replaced by EvalNumCollisionGeometries(const Context<T>*).");
   // Deprecation notes:
   //   - remove `geometry_id_to_collision_index_`
+  DRAKE_DEPRECATED("2020-10-01",
+                   "num_collision_geometries() will be removed and replaced by "
+                   "EvalNumCollisionGeometries(const Context<T>*).")
   int num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
   }
@@ -3610,7 +3611,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometries registered to `this` plant's source_id.
   /// @throws std::runtime_error if `this` plant is registered as a source for
   /// geometry::SceneGraph, but its `geometry_query` InputPort is not connected.
-  int EvalNumCollisionGeometries(const systems::Context<T>* context = nullptr) const;
+  int EvalNumCollisionGeometries(
+      const systems::Context<T>* context = nullptr) const;
 
   /// Returns the unique id identifying `this` plant as a source for a
   /// SceneGraph.

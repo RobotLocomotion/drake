@@ -14,6 +14,7 @@
 #include "drake/multibody/parsing/test/test_loaders.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace multibody {
@@ -29,28 +30,64 @@ class MultibodyPlantLinkTests :
  public:
   // Loads the MultibodyPlant part of the model. Geometry is ignored.
   void LoadMultibodyPlantOnly() {
+    plant_unique_ptr_ = std::make_unique<MultibodyPlant<double>>(0.0);
     auto load_model = GetParam();
-    load_model(base_name_, &plant_, nullptr);
-    plant_.Finalize();
+    load_model(base_name_, plant_unique_ptr_.get(), nullptr);
+    plant_unique_ptr_->Finalize();
   }
 
   // Loads the entire model including the multibody dynamics part of it and the
   // geometries for both visualization and contact modeling.
   void LoadMultibodyPlantAndSceneGraph() {
+    plant_unique_ptr_ = std::make_unique<MultibodyPlant<double>>(0.0);
+    scene_graph_unique_ptr_ = std::make_unique<geometry::SceneGraph<double>>();
     auto load_model = GetParam();
-    load_model(base_name_, &plant_, &scene_graph_);
-    plant_.Finalize();
+    load_model(base_name_, plant_unique_ptr_.get(),
+               scene_graph_unique_ptr_.get());
+    plant_unique_ptr_->Finalize();
+  }
+
+  // Loads the plant and scene graph, connected in a diagram.
+  void LoadMultibodyPlantAndSceneGraphDiagram() {
+    plant_unique_ptr_ = std::make_unique<MultibodyPlant<double>>(0.0);
+    scene_graph_unique_ptr_ = std::make_unique<geometry::SceneGraph<double>>();
+    systems::DiagramBuilder<double> builder;
+    auto result =
+        AddMultibodyPlantSceneGraph(&builder, std::move(plant_unique_ptr_),
+                                    std::move(scene_graph_unique_ptr_));
+    std::tie(plant_ptr_, scene_graph_ptr_) = result;
+    diagram_ptr_ = builder.Build();
+    auto load_model = GetParam();
+    load_model(base_name_, plant_ptr_, scene_graph_ptr_);
+    plant_ptr_->Finalize();
+  }
+
+  // Ownership of the plant and scene graph might be transferred to the diagram,
+  // if built. Use the appropriate pointer.
+  MultibodyPlant<double>& plant() {
+    return (diagram_ptr_ ? *plant_ptr_ : *plant_unique_ptr_);
+  }
+
+  geometry::SceneGraph<double>& scene_graph() {
+    return (diagram_ptr_ ? *scene_graph_ptr_ : *scene_graph_unique_ptr_);
   }
 
  protected:
-  MultibodyPlant<double> plant_{0.0};
-  geometry::SceneGraph<double> scene_graph_;
+  std::unique_ptr<MultibodyPlant<double>> plant_unique_ptr_;
+  std::unique_ptr<geometry::SceneGraph<double>> scene_graph_unique_ptr_;
+  std::unique_ptr<systems::Diagram<double>> diagram_ptr_;
+
+  MultibodyPlant<double>* plant_ptr_{nullptr};
+  geometry::SceneGraph<double>* scene_graph_ptr_{nullptr};
+
+
   const std::string base_name_{"drake/multibody/parsing/test/"
         "links_with_visuals_and_collisions"};
 };
 
 TEST_P(MultibodyPlantLinkTests, LinkWithVisuals) {
   LoadMultibodyPlantAndSceneGraph();
+  MultibodyPlant<double>& plant_ = plant();
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
   EXPECT_EQ(plant_.num_visual_geometries(), 5);
@@ -75,6 +112,7 @@ TEST_P(MultibodyPlantLinkTests, LinkWithVisuals) {
 // supplied.
 TEST_P(MultibodyPlantLinkTests, ParseWithoutASceneGraph) {
   LoadMultibodyPlantOnly();
+  MultibodyPlant<double>& plant_ = plant();
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
   EXPECT_EQ(plant_.num_visual_geometries(), 0);
@@ -83,8 +121,8 @@ TEST_P(MultibodyPlantLinkTests, ParseWithoutASceneGraph) {
 // Verifies that the source registration with a SceneGraph can happen before a
 // call to AddModelFromSdfFile().
 TEST_P(MultibodyPlantLinkTests, RegisterWithASceneGraphBeforeParsing) {
-  plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
-  LoadMultibodyPlantAndSceneGraph();
+  LoadMultibodyPlantAndSceneGraphDiagram();
+  MultibodyPlant<double>& plant_ = plant();
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
   EXPECT_EQ(plant_.num_visual_geometries(), 5);
@@ -115,10 +153,16 @@ TEST_P(MultibodyPlantLinkTests, RegisterWithASceneGraphBeforeParsing) {
 
 // Verifies we can parse link collision geometries and surface friction.
 TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
-  LoadMultibodyPlantAndSceneGraph();
+  LoadMultibodyPlantAndSceneGraphDiagram();
+  MultibodyPlant<double>& plant_ = plant();
+  geometry::SceneGraph<double>& scene_graph_ = scene_graph();
+
+  auto diagram_context = diagram_ptr_->CreateDefaultContext();
+  auto& plant_context =
+      plant_.GetMyMutableContextFromRoot(diagram_context.get());
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant_.num_collision_geometries(*plant_.CreateDefaultContext()), 3);
+  EXPECT_EQ(plant_.EvalNumCollisionGeometries(&plant_context), 3);
 
   const std::vector<GeometryId>& link1_collision_geometry_ids =
       plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link1"));
