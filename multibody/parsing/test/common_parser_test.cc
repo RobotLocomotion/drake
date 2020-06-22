@@ -86,11 +86,14 @@ class MultibodyPlantLinkTests :
 };
 
 TEST_P(MultibodyPlantLinkTests, LinkWithVisuals) {
-  LoadMultibodyPlantAndSceneGraph();
+  LoadMultibodyPlantAndSceneGraphDiagram();
   MultibodyPlant<double>& plant_ = plant();
+  auto diagram_context = diagram_ptr_->CreateDefaultContext();
+  auto& plant_context =
+      plant_.GetMyMutableContextFromRoot(diagram_context.get());
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant_.num_visual_geometries(), 5);
+  EXPECT_EQ(plant_.EvalNumVisualGeometries(&plant_context), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
       plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link1"));
@@ -115,7 +118,6 @@ TEST_P(MultibodyPlantLinkTests, ParseWithoutASceneGraph) {
   MultibodyPlant<double>& plant_ = plant();
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant_.num_visual_geometries(), 0);
 }
 
 // Verifies that the source registration with a SceneGraph can happen before a
@@ -123,9 +125,12 @@ TEST_P(MultibodyPlantLinkTests, ParseWithoutASceneGraph) {
 TEST_P(MultibodyPlantLinkTests, RegisterWithASceneGraphBeforeParsing) {
   LoadMultibodyPlantAndSceneGraphDiagram();
   MultibodyPlant<double>& plant_ = plant();
+  auto diagram_context = diagram_ptr_->CreateDefaultContext();
+  auto& plant_context =
+      plant_.GetMyMutableContextFromRoot(diagram_context.get());
 
   EXPECT_EQ(plant_.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant_.num_visual_geometries(), 5);
+  EXPECT_EQ(plant_.EvalNumVisualGeometries(&plant_context), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
       plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link1"));

@@ -3583,9 +3583,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
+  // Deprecation notes:
+  //   - remove `geometry_id_to_visual_index_`
+  DRAKE_DEPRECATED("2020-10-01",
+                   "num_collision_geometries() will be removed and replaced by "
+                   "EvalNumCollisionGeometries(const Context<T>*).")
   int num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
+
+  /// Returns the number of geometries registered for visualization.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, so long as a systems::Context is available.
+  /// If `this` MultibodyPlant has not registered as a source for
+  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
+  /// will return 0. If `this` plant *has* been registered as a source for
+  /// geometry::SceneGraph, this method will report the number of geometries
+  /// registered with the role geometry::Role::kIllustration, of all the
+  /// geometries registered to `this` plant's source_id.
+  int EvalNumVisualGeometries(
+    const systems::Context<T>* context = nullptr) const;
 
   /// Returns the number of geometries registered for contact modeling.
   /// This method can be called at any time during the lifetime of `this` plant,
@@ -3609,8 +3626,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::SceneGraph, this method will report the number of geometries
   /// registered with the role geometry::Role::kProximity, of all the
   /// geometries registered to `this` plant's source_id.
-  /// @throws std::runtime_error if `this` plant is registered as a source for
-  /// geometry::SceneGraph, but its `geometry_query` InputPort is not connected.
   int EvalNumCollisionGeometries(
       const systems::Context<T>* context = nullptr) const;
 
@@ -4582,6 +4597,9 @@ struct AddMultibodyPlantSceneGraphResult final {
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
+template <>
+int MultibodyPlant<symbolic::Expression>::EvalNumVisualGeometries(
+    const systems::Context<symbolic::Expression>*) const;
 template <>
 int MultibodyPlant<symbolic::Expression>::EvalNumCollisionGeometries(
     const systems::Context<symbolic::Expression>*) const;

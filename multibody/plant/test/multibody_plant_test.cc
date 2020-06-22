@@ -764,15 +764,9 @@ TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
 // Verifies the process of visual geometry registration with a SceneGraph
 // for the acrobot model.
 TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
-  EXPECT_EQ(plant_->num_visual_geometries(), 3);
+  EXPECT_EQ(plant_->EvalNumVisualGeometries(plant_context_), 3);
   EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
-
-  // The default context gets initialized by a call to SetDefaultState(), which
-  // for a MultibodyPlant sets all revolute joints to have zero angles and zero
-  // angular velocity.
-  unique_ptr<systems::Context<double>> context =
-      plant_->CreateDefaultContext();
 
   unique_ptr<AbstractValue> poses_value =
       plant_->get_geometry_poses_output_port().Allocate();
@@ -781,7 +775,8 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       poses_value->get_value<FramePoseVector<double>>();
 
   // Compute the poses for each geometry in the model.
-  plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
+  plant_->get_geometry_poses_output_port().Calc(*plant_context_,
+                                                poses_value.get());
   EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   const FrameId world_frame_id =
@@ -801,8 +796,8 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
     EXPECT_EQ(body_index, plant_->GetBodyFromFrameId(frame_id)->index());
     const Isometry3<double>& X_WB_isometry = poses.value(frame_id);
     const RigidTransform<double> X_WB(X_WB_isometry);
-    const RigidTransform<double>& X_WB_expected =
-        plant_->EvalBodyPoseInWorld(*context, plant_->get_body(body_index));
+    const RigidTransform<double>& X_WB_expected = plant_->EvalBodyPoseInWorld(
+        *plant_context_, plant_->get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
                                 X_WB_expected.GetAsMatrix34(),
                                 kTolerance, MatrixCompareType::relative));
@@ -1393,7 +1388,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // new ports related to SceneGraph interaction.
   EXPECT_TRUE(OnlyAccelerationAndReactionPortsFeedthrough(plant));
 
-  EXPECT_EQ(plant.num_visual_geometries(), 0);
+  EXPECT_EQ(plant.EvalNumVisualGeometries(&context), 0);
   EXPECT_EQ(plant.EvalNumCollisionGeometries(&context), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
@@ -1510,7 +1505,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   Context<double>& plant_context =
       plant.GetMyMutableContextFromRoot(diagram_context.get());
 
-  EXPECT_EQ(plant.num_visual_geometries(), 3);
+  EXPECT_EQ(plant.EvalNumVisualGeometries(&plant_context), 3);
   EXPECT_EQ(plant.EvalNumCollisionGeometries(&plant_context), 0);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
@@ -1676,23 +1671,15 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
 }
 
 TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
-  EXPECT_EQ(plant_->num_visual_geometries(), 3);
+  EXPECT_EQ(plant_->EvalNumVisualGeometries(plant_context_), 3);
   EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
 
-  // The default context gets initialized by a call to SetDefaultState(), which
-  // for a MultibodyPlant sets all revolute joints to have zero angles and zero
-  // angular velocity.
-  unique_ptr<systems::Context<double>> diagram_context =
-      diagram_->CreateDefaultContext();
-  Context<double>& context =
-      plant_->GetMyMutableContextFromRoot(diagram_context.get());
-
   // Set some non-zero state:
-  shoulder_->set_angle(&context, M_PI / 3.0);
-  elbow_->set_angle(&context, -0.2);
-  shoulder_->set_angular_rate(&context, -0.5);
-  elbow_->set_angular_rate(&context, 2.5);
+  shoulder_->set_angle(plant_context_, M_PI / 3.0);
+  elbow_->set_angle(plant_context_, -0.2);
+  shoulder_->set_angular_rate(plant_context_, -0.5);
+  elbow_->set_angular_rate(plant_context_, 2.5);
 
   unique_ptr<AbstractValue> state_value =
       plant_->get_state_output_port().Allocate();
@@ -1702,10 +1689,10 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
   EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
 
   // Compute the poses for each geometry in the model.
-  plant_->get_state_output_port().Calc(context, state_value.get());
+  plant_->get_state_output_port().Calc(*plant_context_, state_value.get());
 
   // Get continuous state_out from context.
-  const VectorBase<double>& state = context.get_continuous_state_vector();
+  const VectorBase<double>& state = plant_context_->get_continuous_state_vector();
 
   // Verify state_out indeed matches state.
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
@@ -1713,13 +1700,13 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
   // Now calculate accelerations and make sure they show up on the
   // all-vdot port and on the appropriate model instance port.
 
-  plant_->get_actuation_input_port().FixValue(&context, 0.0);
+  plant_->get_actuation_input_port().FixValue(plant_context_, 0.0);
   // Time derivatives includes both qdot and vdot.
-  const auto& derivs = plant_->EvalTimeDerivatives(context);
+  const auto& derivs = plant_->EvalTimeDerivatives(*plant_context_);
   const auto& vdot = derivs.get_generalized_velocity();
   EXPECT_EQ(vdot.size(), plant_->num_velocities());
   const auto& accel = plant_->get_generalized_acceleration_output_port()
-      .Eval<BasicVector<double>>(context);
+      .Eval<BasicVector<double>>(*plant_context_);
   EXPECT_EQ(accel.size(), plant_->num_velocities());
   EXPECT_EQ(accel.CopyToVector(), vdot.CopyToVector());
 
@@ -1727,7 +1714,7 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
   const ModelInstanceIndex instance = shoulder_->model_instance();
   const auto& accel_instance =
       plant_->get_generalized_acceleration_output_port(instance)
-      .Eval<BasicVector<double>>(context);
+      .Eval<BasicVector<double>>(*plant_context_);
   EXPECT_EQ(accel_instance.size(), plant_->num_velocities());
   EXPECT_EQ(accel_instance.CopyToVector(), vdot.CopyToVector());
 
@@ -1735,12 +1722,12 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
   // results.
   const auto& accel_default_instance =
       plant_->get_generalized_acceleration_output_port(default_model_instance())
-          .Eval<BasicVector<double>>(context);
+          .Eval<BasicVector<double>>(*plant_context_);
   EXPECT_EQ(accel_default_instance.size(), 0);
 
   const auto& state_world_instance =
       plant_->get_state_output_port(world_model_instance())
-          .Eval<BasicVector<double>>(context);
+          .Eval<BasicVector<double>>(*plant_context_);
   EXPECT_EQ(state_world_instance.size(), 0);
 }
 
@@ -1933,7 +1920,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
   EXPECT_TRUE(plant.geometry_source_is_registered());
-  EXPECT_EQ(plant.num_visual_geometries(), 5);
+  EXPECT_EQ(plant.EvalNumVisualGeometries(&plant_context), 5);
   EXPECT_EQ(plant.EvalNumCollisionGeometries(&plant_context), 3);
 
   const int link1_num_collisions =

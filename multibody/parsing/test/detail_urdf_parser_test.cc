@@ -141,21 +141,29 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
     AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
     plant.Finalize();
-    num_visuals_explicit = plant.num_visual_geometries();
+    auto diagram = builder.Build();
+    auto diagram_context = diagram->CreateDefaultContext();
+    auto& plant_context =
+        plant.GetMyMutableContextFromRoot(diagram_context.get());
+    num_visuals_explicit = plant.EvalNumVisualGeometries(&plant_context);
   }
   EXPECT_NE(num_visuals_explicit, 0);
   {
     // Test implicitly specifying.
-    MultibodyPlant<double> plant(0.0);
-    SceneGraph<double> scene_graph;
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+    systems::DiagramBuilder<double> builder;
+    MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
     AddModelFromUrdfFile(full_name, "", package_map, &plant);
     plant.Finalize();
-    EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
+    auto diagram = builder.Build();
+    auto diagram_context = diagram->CreateDefaultContext();
+    auto& plant_context =
+        plant.GetMyMutableContextFromRoot(diagram_context.get());
+    EXPECT_EQ(plant.EvalNumVisualGeometries(&plant_context),
+              num_visuals_explicit);
   }
 }
 

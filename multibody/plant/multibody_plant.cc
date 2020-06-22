@@ -827,6 +827,36 @@ MultibodyPlant<symbolic::Expression>::member_scene_graph() {
 }
 
 template <typename T>
+int MultibodyPlant<T>::EvalNumVisualGeometries(
+    const systems::Context<T>* context) const {
+  if (!context) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+  }
+
+  if (!geometry_source_is_registered()) return 0;
+
+  if (!context) {
+    return const_cast<MultibodyPlant<T>*>(this)
+        ->member_scene_graph()
+        .model_inspector()
+        .NumGeometriesWithRole(get_source_id().value(),
+                               geometry::Role::kIllustration);
+  } else {
+    return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+        get_source_id().value(), geometry::Role::kIllustration);
+  }
+}
+
+// This does *not* support symbolic::Expression because SceneGraph does *not*
+// support symbolic::Expression.
+template <>
+int MultibodyPlant<symbolic::Expression>::EvalNumVisualGeometries(
+    const systems::Context<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+template <typename T>
 int MultibodyPlant<T>::EvalNumCollisionGeometries(
     const systems::Context<T>* context) const {
   if (!context) {
