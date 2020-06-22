@@ -202,7 +202,7 @@ class RgbdSensor final : public LeafSystem<double> {
   void CalcLabelImage(const Context<double>& context,
                       ImageLabel16I* label_image) const;
   void CalcX_WB(const Context<double>& context,
-                rendering::PoseVector<double>* pose_vector) const;
+                math::RigidTransform<double>* pose_vector) const;
 
   // Convert a single channel, float depth image (with depths in meters) to a
   // single channel, unsigned uint16_t depth image (with depths in millimeters).

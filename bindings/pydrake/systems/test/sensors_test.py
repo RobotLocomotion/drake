@@ -233,14 +233,28 @@ class TestSensors(unittest.TestCase):
         self.assertIsInstance(output.get_data(0), AbstractValue)
 
     def test_rgbd_sensor(self):
+
+        def check_input_port(port):
+            # TODO(eric.cousineau): Test the type once `InportPort.Allocate()`
+            # is added/bound (#13581).
+            self.assertIsInstance(port, InputPort)
+
+        def check_output_port(port, cls):
+            self.assertIsInstance(port, OutputPort)
+            self.assertIsInstance(port.Allocate(), cls)
+
         def check_ports(system):
-            self.assertIsInstance(system.query_object_input_port(), InputPort)
-            self.assertIsInstance(system.color_image_output_port(), OutputPort)
-            self.assertIsInstance(system.depth_image_32F_output_port(),
-                                  OutputPort)
-            self.assertIsInstance(system.depth_image_16U_output_port(),
-                                  OutputPort)
-            self.assertIsInstance(system.label_image_output_port(), OutputPort)
+            check_input_port(system.query_object_input_port())
+            check_output_port(system.color_image_output_port(),
+                              Value[mut.ImageRgba8U])
+            check_output_port(system.depth_image_32F_output_port(),
+                              Value[mut.ImageDepth32F])
+            check_output_port(system.depth_image_16U_output_port(),
+                              Value[mut.ImageDepth16U])
+            check_output_port(system.label_image_output_port(),
+                              Value[mut.ImageLabel16I])
+            check_output_port(system.X_WB_output_port(),
+                              Value[RigidTransform])
 
         # Use HDTV size.
         width = 1280

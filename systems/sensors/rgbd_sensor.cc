@@ -70,8 +70,8 @@ RgbdSensor::RgbdSensor(FrameId parent_id,
   label_image_port_ = &this->DeclareAbstractOutputPort(
       "label_image", label_image, &RgbdSensor::CalcLabelImage);
 
-  X_WB_pose_port_ = &this->DeclareVectorOutputPort(
-      "X_WB", rendering::PoseVector<double>(), &RgbdSensor::CalcX_WB);
+  X_WB_pose_port_ = &this->DeclareAbstractOutputPort(
+      "X_WB", &RgbdSensor::CalcX_WB);
 
   const float kMaxValidDepth16UInMM =
       (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
@@ -137,20 +137,14 @@ void RgbdSensor::CalcLabelImage(const Context<double>& context,
 
 void RgbdSensor::CalcX_WB(
     const Context<double>& context,
-    rendering::PoseVector<double>* pose_vector) const {
+    RigidTransformd* X_WB) const {
   // Calculates X_WB.
-  RigidTransformd X_WB;
   if (parent_frame_id_ == SceneGraph<double>::world_frame_id()) {
-    X_WB = X_PB_;
+    *X_WB = X_PB_;
   } else {
     const QueryObject<double>& query_object = get_query_object(context);
-    X_WB = query_object.X_WF(parent_frame_id_) * X_PB_;
+    *X_WB = query_object.X_WF(parent_frame_id_) * X_PB_;
   }
-
-  Translation3d trans{X_WB.translation()};
-  pose_vector->set_translation(trans);
-
-  pose_vector->set_rotation(X_WB.rotation().ToQuaternion());
 }
 
 void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,
