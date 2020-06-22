@@ -887,13 +887,6 @@ TEST_F(KukaIiwaModelTests, CalcBiasForJacobianTranslationalVelocity) {
                    *context_, JacobianWrtVariable::kQDot, *frame_H_, p_HPi,
                    world_frame, world_frame),
                std::exception);
-
-  // Verify CalcBiasForJacobianTranslationalVelocity() throws an exception if
-  // measured-in-frame is not world frame W.
-  EXPECT_THROW(tree().CalcBiasForJacobianTranslationalVelocity(
-                   *context_, JacobianWrtVariable::kV, *frame_H_, p_HPi,
-                   *frame_H_, world_frame),
-               std::exception);
 }
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
