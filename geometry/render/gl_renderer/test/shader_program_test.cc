@@ -16,14 +16,14 @@ namespace render {
 namespace internal {
 namespace {
 
-const char* simple_vertex_source = R"_(
+constexpr char kVertexSource[] = R"_(
   #version 330
   void main() {
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
   }
 )_";
 
-const char* simple_fragment_source = R"_(
+constexpr char kFragmentSource[] = R"_(
   #version 330
   uniform float test_uniform;
   void main() {
@@ -62,7 +62,7 @@ TEST_F(ShaderProgramTest, LoadShaders) {
     ShaderProgram program;
     EXPECT_EQ(program_id(program), 0);
     EXPECT_NO_THROW(
-        program.LoadFromSources(simple_vertex_source, simple_fragment_source));
+        program.LoadFromSources(kVertexSource, kFragmentSource));
     EXPECT_NE(program_id(program), 0);
   }
 
@@ -78,8 +78,8 @@ TEST_F(ShaderProgramTest, LoadShaders) {
     const string vertex_shader(temp_dir + "/vertex.glsl");
     const string fragment_shader(temp_dir + "/fragment.glsl");
 
-    write_shader(vertex_shader, simple_vertex_source);
-    write_shader(fragment_shader, simple_fragment_source);
+    write_shader(vertex_shader, kVertexSource);
+    write_shader(fragment_shader, kFragmentSource);
 
     ShaderProgram program;
     EXPECT_NO_THROW(program.LoadFromFiles(vertex_shader, fragment_shader));
@@ -99,14 +99,14 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
   {
     // Case: Bad vertex shader.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        program.LoadFromSources("This is garbage", simple_fragment_source),
+        program.LoadFromSources("This is garbage", kFragmentSource),
         std::runtime_error,
         "Error compiling vertex shader[^]+");
   }
   {
     // Case: Bad fragment shader.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        program.LoadFromSources(simple_vertex_source, "This is garbage"),
+        program.LoadFromSources(kVertexSource, "This is garbage"),
         std::runtime_error,
         "Error compiling fragment shader[^]+");
   }
@@ -122,7 +122,7 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     // function from the fragment shader as documented here:
     // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glLinkProgram.xhtml
     DRAKE_EXPECT_THROWS_MESSAGE(
-        program.LoadFromSources(simple_vertex_source, R"_(
+        program.LoadFromSources(kVertexSource, R"_(
             #version 100
             void foo() {
               gl_FragColor = vec4(0.1, 0.2, 0.3, 1.0);
@@ -140,22 +140,22 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
 
 TEST_F(ShaderProgramTest, UniformAccess) {
   ShaderProgram program;
-  program.LoadFromSources(simple_vertex_source, simple_fragment_source);
+  program.LoadFromSources(kVertexSource, kFragmentSource);
   EXPECT_NO_THROW(program.GetUniformLocation("test_uniform"));
   DRAKE_EXPECT_THROWS_MESSAGE(program.GetUniformLocation("invalid"),
                               std::runtime_error,
                               "Cannot get shader uniform invalid");
-  EXPECT_NO_THROW(program.SetUniformValue1f("test_uniform", 1.5f));
-  DRAKE_EXPECT_THROWS_MESSAGE(program.SetUniformValue1f("invalid", 1.75f),
+  EXPECT_NO_THROW(program.SetUniformValue("test_uniform", 1.5f));
+  DRAKE_EXPECT_THROWS_MESSAGE(program.SetUniformValue("invalid", 1.75f),
                               std::runtime_error,
                               "Cannot get shader uniform invalid");
 }
 
 TEST_F(ShaderProgramTest, Binding) {
   ShaderProgram program1;
-  program1.LoadFromSources(simple_vertex_source, simple_fragment_source);
+  program1.LoadFromSources(kVertexSource, kFragmentSource);
   ShaderProgram program2;
-  program2.LoadFromSources(simple_vertex_source, simple_fragment_source);
+  program2.LoadFromSources(kVertexSource, kFragmentSource);
 
   // Report the id of the currently bound program.
   auto current_program = []() {

@@ -14,18 +14,23 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 
-GTEST_TEST(OpenGlGeometryTest, Construction) {
-  const OpenGlGeometry default_geo;
-  EXPECT_EQ(default_geo.vertex_array, OpenGlGeometry::kInvalid);
-  EXPECT_EQ(default_geo.vertex_buffer, OpenGlGeometry::kInvalid);
-  EXPECT_EQ(default_geo.index_buffer, OpenGlGeometry::kInvalid);
-  EXPECT_EQ(default_geo.index_buffer_size, 0);
+// Note: All values in these tests are effectively garbage. They are not really
+// names of OpenGL objects. These tests merely exercise the functionality of the
+// OpenGlGeometry class which does not actually depend on the object names to
+// actually refer to objects in an OpenGL context.
 
-  const OpenGlGeometry geo{1, 2, 3, 4};
-  EXPECT_EQ(geo.vertex_array, 1);
-  EXPECT_EQ(geo.vertex_buffer, 2);
-  EXPECT_EQ(geo.index_buffer, 3);
-  EXPECT_EQ(geo.index_buffer_size, 4);
+GTEST_TEST(OpenGlGeometryTest, Construction) {
+  const OpenGlGeometry default_geometry;
+  EXPECT_EQ(default_geometry.vertex_array, OpenGlGeometry::kInvalid);
+  EXPECT_EQ(default_geometry.vertex_buffer, OpenGlGeometry::kInvalid);
+  EXPECT_EQ(default_geometry.index_buffer, OpenGlGeometry::kInvalid);
+  EXPECT_EQ(default_geometry.index_buffer_size, 0);
+
+  const OpenGlGeometry geometry{1, 2, 3, 4};
+  EXPECT_EQ(geometry.vertex_array, 1);
+  EXPECT_EQ(geometry.vertex_buffer, 2);
+  EXPECT_EQ(geometry.index_buffer, 3);
+  EXPECT_EQ(geometry.index_buffer_size, 4);
 
   DRAKE_EXPECT_THROWS_MESSAGE(OpenGlGeometry(1, 2, 3, -1), std::logic_error,
                               "Index buffer size must be non-negative");
