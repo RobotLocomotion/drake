@@ -60,9 +60,17 @@ drake_cc_library_gl_ubuntu_only(
 
 drake_cc_googletest_gl_ubuntu_only(
     name = "buffer_dim_test",
-    tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "opengl_geometry_test",
+    deps = [
+        ":opengl_geometry",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -77,6 +85,17 @@ drake_cc_googletest_gl_ubuntu_only(
         "//common:find_resource",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
+    name = "shader_program_test",
+    tags = vtk_test_tags(),
+    deps = [
+        ":shader_program",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/render/gl_renderer:opengl_context",
     ],
 )
 

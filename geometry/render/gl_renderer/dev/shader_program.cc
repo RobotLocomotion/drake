@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace geometry {
 namespace render {
@@ -20,14 +22,21 @@ GLuint CompileShader(GLuint shader_type, const std::string& shader_code) {
   glCompileShader(shader_id);
 
   // Check compilation result.
-  GLint result;
-  int info_log_length;
+  GLint result{0};
   glGetShaderiv(shader_id, GL_COMPILE_STATUS, &result);
-  glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &info_log_length);
-  if (info_log_length > 0) {
-    std::vector<char> error_message(info_log_length + 1);
-    glGetShaderInfoLog(shader_id, info_log_length, NULL, &error_message[0]);
-    throw std::runtime_error(&error_message[0]);
+  if (!result) {
+    const std::string error_prefix =
+        fmt::format("Error compiling {} shader: ",
+                    shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment");
+    std::string info("No further information available");
+    int info_log_length;
+    glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &info_log_length);
+    if (info_log_length > 0) {
+      std::vector<char> error_message(info_log_length + 1);
+      glGetShaderInfoLog(shader_id, info_log_length, NULL, &error_message[0]);
+      info = &error_message[0];
+    }
+    throw std::runtime_error(error_prefix + info);
   }
 
   return shader_id;
@@ -56,14 +65,20 @@ void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
   glDeleteShader(fragment_shader_id);
 
   // Check.
-  GLint result;
-  int info_log_length;
+  GLint result{0};
   glGetProgramiv(program_id_, GL_LINK_STATUS, &result);
-  glGetProgramiv(program_id_, GL_INFO_LOG_LENGTH, &info_log_length);
-  if (info_log_length > 0) {
-    std::vector<char> error_message(info_log_length + 1);
-    glGetProgramInfoLog(program_id_, info_log_length, NULL, &error_message[0]);
-    throw std::runtime_error(&error_message[0]);
+  if (!result) {
+    const std::string error_prefix = "Error linking shaders: ";
+    std::string info("No further information available");
+    int info_log_length;
+    glGetProgramiv(program_id_, GL_INFO_LOG_LENGTH, &info_log_length);
+    if (info_log_length > 0) {
+      std::vector<char> error_message(info_log_length + 1);
+      glGetProgramInfoLog(program_id_, info_log_length, NULL,
+                          &error_message[0]);
+      info = &error_message[0];
+    }
+    throw std::runtime_error(error_prefix + info);
   }
 }
 
@@ -86,8 +101,9 @@ void ShaderProgram::LoadFromFiles(const std::string& vertex_shader_file,
 
 GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {
   GLint id = glGetUniformLocation(program_id_, uniform_name.c_str());
-  if (id < 0)
+  if (id < 0) {
     throw std::runtime_error("Cannot get shader uniform " + uniform_name);
+  }
   return id;
 }
 
@@ -98,10 +114,16 @@ void ShaderProgram::SetUniformValue1f(const std::string& uniform_name,
 
 void ShaderProgram::Use() const { glUseProgram(program_id_); }
 
-void ShaderProgram::Unuse() const { glUseProgram(0); }
+void ShaderProgram::Unuse() const {
+  GLint curr_program;
+  glGetIntegerv(GL_CURRENT_PROGRAM, &curr_program);
+  if (curr_program == static_cast<GLint>(program_id_)) {
+    glUseProgram(0);
+  }
+}
 
 ShaderProgram::~ShaderProgram() {
-  glUseProgram(0);
+  Unuse();
   glDeleteProgram(program_id_);
 }
 
