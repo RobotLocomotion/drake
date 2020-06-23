@@ -225,6 +225,13 @@ namespace geometry {
  */
 class GeometryProperties {
  public:
+  /** Possible validity states for a tested property.  */
+  enum Validity {
+    kValid,     ///< Tested property is present and of right type.
+    kMissing,   ///< Tested property is missing.
+    kWrongType  ///< Tested property exists, but is the wrong type.
+  };
+
   virtual ~GeometryProperties() = default;
 
   /** The properties for a single group as a property name-value map.  */
@@ -234,6 +241,40 @@ class GeometryProperties {
   /** Reports if the given named group is part of this property set.  */
   bool HasGroup(const std::string& group_name) const {
     return values_.count(group_name) > 0;
+  }
+
+  /** Reports on the validity of an expected property: its `group` name,
+    `property` name, and type.  */
+  template <typename ValueType>
+  Validity TestPropertyValidity(const std::string& group,
+                                const std::string& property) const {
+    if (!HasProperty(group, property)) return kMissing;
+    const AbstractValue& value = GetPropertyAbstract(group, property);
+    if (value.maybe_get_value<ValueType>() == nullptr) return kWrongType;
+    return kValid;
+  }
+
+  /** Tests for an expected property -- its `group` name, `property` name, and
+   type. If a matching property isn't found, throws an exception with a message
+   indicating the failure cause. The error message will be prefixed with the
+   given `caller_prefix` string.  */
+  template <typename ValueType>
+  void ThrowIfInvalidProperty(const std::string& group,
+                              const std::string& property,
+                              const std::string& caller_prefix) const {
+    Validity result = TestPropertyValidity<ValueType>(group, property);
+    if (result == kMissing) {
+      throw std::runtime_error(
+          fmt::format("{}; expected the missing ({}, {}) property",
+                      caller_prefix, group, property));
+    } else if (result == kWrongType) {
+      const AbstractValue& value = GetPropertyAbstract(group, property);
+      throw std::runtime_error(fmt::format(
+          "{}; property ({}, {}) found, but with the wrong type. Expected {}, "
+          "found {}",
+          caller_prefix, group, property, NiceTypeName::Get<ValueType>(),
+          value.GetNiceTypeName()));
+    }
   }
 
   /** Reports the number of property groups in this set.  */

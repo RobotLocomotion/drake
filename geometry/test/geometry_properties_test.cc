@@ -13,6 +13,8 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using std::string;
+
 using Eigen::Vector4d;
 
 // A constructible sub-class of GeometryProperties.
@@ -25,7 +27,7 @@ class TestProperties : public GeometryProperties {
 
 GTEST_TEST(GeometryProperties, ManagingGroups) {
   TestProperties properties;
-  const std::string& group_name{"some_group"};
+  const string& group_name{"some_group"};
   // Only contains the default group.
   ASSERT_EQ(1, properties.num_groups());
   ASSERT_FALSE(properties.HasGroup(group_name));
@@ -51,10 +53,10 @@ GTEST_TEST(GeometryProperties, ManagingGroups) {
 // GetProperty() to confirm successful add.
 GTEST_TEST(GeometryProperties, AddProperty) {
   TestProperties properties;
-  const std::string& group_name{"some_group"};
+  const string& group_name{"some_group"};
 
   // Confirm property doesn't exist.
-  const std::string prop_name("some_property");
+  const string prop_name("some_property");
   ASSERT_FALSE(properties.HasProperty(group_name, prop_name));
 
   // Add the property.
@@ -77,16 +79,16 @@ GTEST_TEST(GeometryProperties, AddProperty) {
 
 // Struct for the AddPropertyStruct test.
 struct TestData {
-  int i {};
+  int i{};
   double d{};
-  std::string s;
+  string s;
 };
 
 // Tests the case where the property value is a struct.
 GTEST_TEST(GeometryProperties, AddPropertyStruct) {
   TestProperties properties;
 
-  const std::string prop_name("test data");
+  const string prop_name("test data");
   TestData data{1, 2., "3"};
   DRAKE_EXPECT_NO_THROW(properties.AddProperty(
       TestProperties::default_group_name(), prop_name, data));
@@ -98,14 +100,48 @@ GTEST_TEST(GeometryProperties, AddPropertyStruct) {
   EXPECT_EQ(data.s, read.s);
 }
 
+GTEST_TEST(GeometryProperties, PropertyValidation) {
+  TestProperties props;
+  // Create some properties where I have common groups, property names, and
+  // types. Give the GeometryProperties some data that would allow for
+  // confusion, if GeometryProperties were inclined to confusion.
+  props.AddProperty("group_A", "string", "A's string");
+  props.AddProperty("group_B", "string", "B's string");
+  props.AddProperty("group_A", "int", 3);
+
+  // Non-throwing validity result.
+  EXPECT_EQ(props.TestPropertyValidity<string>("group_A", "string"),
+            GeometryProperties::kValid);
+  EXPECT_EQ(props.TestPropertyValidity<string>("group_A", "bad_property"),
+            GeometryProperties::kMissing);
+  EXPECT_EQ(props.TestPropertyValidity<string>("bad_group", "string"),
+            GeometryProperties::kMissing);
+  EXPECT_EQ(props.TestPropertyValidity<string>("bad_group", "bad_property"),
+            GeometryProperties::kMissing);
+  EXPECT_EQ(props.TestPropertyValidity<int>("group_A", "string"),
+            GeometryProperties::kWrongType);
+
+  // Throwing API. In this case, we won't test all permutations of "badness".
+  // We'll assume it exercises TestPropertyValidity and do one example for each
+  // possible invalid value: kMissing and kWrongType.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      props.ThrowIfInvalidProperty<string>("group_A", "bad_property", "Prefix"),
+      std::runtime_error, "Prefix;.*missing.* \\(group_A, bad_property\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      props.ThrowIfInvalidProperty<int>("group_A", "string", "Prefix"),
+      std::runtime_error,
+      "Prefix;.*\\(group_A, string\\) found.*wrong type.* Expected int, found "
+      "std::string");
+}
+
 // Tests property access with default.
 GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
   // Create one group with a single property.
   TestProperties properties;
-  const std::string group_name{"some_group"};
+  const string group_name{"some_group"};
   const double double_value{7};
   const double default_value = double_value - 1;
-  const std::string prop_name("some_property");
+  const string prop_name("some_property");
   DRAKE_EXPECT_NO_THROW(
       properties.AddProperty(group_name, prop_name, double_value));
 
@@ -120,8 +156,8 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
       properties.GetPropertyOrDefault<double>(group_name, prop_name, 3));
 
   // Case: read an existing property.
-  int read_value = properties.GetPropertyOrDefault(group_name, prop_name,
-                                                   default_value);
+  int read_value =
+      properties.GetPropertyOrDefault(group_name, prop_name, default_value);
   EXPECT_EQ(double_value, read_value);
 
   // Case: read from valid group, but invalid property.
@@ -138,16 +174,16 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetPropertyOrDefault(group_name, prop_name, "test"),
       std::logic_error,
-      ".*The property '" + prop_name + "' in group '" + group_name + "' "
-      "exists, but is of a different type. Requested 'std::string', but found "
-      "'double'");
+      ".*The property '" + prop_name + "' in group '" + group_name +
+          "' exists, but is of a different type. Requested 'std::string', but "
+          "found 'double'");
 
   // Using r-values as defaults; this tests both compatibility and correctness.
   properties.AddProperty("strings", "valid_string", "valid_string");
-  std::string valid_value = properties.GetPropertyOrDefault(
-      "strings", "valid_string", "missing");
+  string valid_value =
+      properties.GetPropertyOrDefault("strings", "valid_string", "missing");
   EXPECT_EQ("valid_string", valid_value);
-  std::string default_value_return = properties.GetPropertyOrDefault(
+  string default_value_return = properties.GetPropertyOrDefault(
       "strings", "invalid_string", "rvalue_string");
   EXPECT_EQ("rvalue_string", default_value_return);
 }
@@ -156,8 +192,8 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
 // implicitly tested in the functions that added/set properties).
 GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   TestProperties properties;
-  const std::string& group_name{"some_group"};
-  const std::string prop_name("some_property");
+  const string& group_name{"some_group"};
+  const string prop_name("some_property");
 
   // Getter errors
   // Case: Asking for property from non-existent group.
@@ -176,15 +212,16 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   DRAKE_EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, 7.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
-      ".*The property '" + prop_name + "' in group '" + group_name + "' exists"
-      ", but is of a different type. Requested 'int', but found 'double'");
+      ".*The property '" + prop_name + "' in group '" + group_name +
+          "' exists"
+          ", but is of a different type. Requested 'int', but found 'double'");
 }
 
 // Tests iteration through a group's properties.
 GTEST_TEST(GeometryProperties, PropertyIteration) {
   TestProperties properties;
-  const std::string& default_group = TestProperties::default_group_name();
-  std::unordered_map<std::string, int> reference{{"prop1", 10}, {"prop2", 20}};
+  const string& default_group = TestProperties::default_group_name();
+  std::unordered_map<string, int> reference{{"prop1", 10}, {"prop2", 20}};
   for (const auto& pair : reference) {
     properties.AddProperty(default_group, pair.first, pair.second);
   }
@@ -195,9 +232,9 @@ GTEST_TEST(GeometryProperties, PropertyIteration) {
       ".*Can't retrieve properties for a group that doesn't exist.*");
 
   // Confirm that all properties have the right value and get visited.
-  std::set<std::string> visited_properties;
+  std::set<string> visited_properties;
   for (const auto& pair : properties.GetPropertiesInGroup(default_group)) {
-    const std::string& name = pair.first;
+    const string& name = pair.first;
     EXPECT_GT(reference.count(name), 0);
     EXPECT_EQ(reference[name],
               properties.GetProperty<int>(default_group, name));
@@ -212,53 +249,54 @@ GTEST_TEST(GeometryProperties, CopyMoveSemantics) {
   // they are all int-valued to facilitate comparison between property sets.
   auto make_properties = []() {
     TestProperties props;
-    const std::string& default_group = TestProperties::default_group_name();
+    const string& default_group = TestProperties::default_group_name();
     props.AddProperty(default_group, "prop1", 1);
     props.AddProperty(default_group, "prop2", 2);
 
-    const std::string group1("group1");
+    const string group1("group1");
     // NOTE: Duplicate property name differentiated by different group.
     props.AddProperty(group1, "prop1", 3);
     props.AddProperty(group1, "prop3", 4);
     props.AddProperty(group1, "prop4", 5);
 
-    const std::string group2("group2");
+    const string group2("group2");
     props.AddProperty(group2, "prop5", 6);
     return props;
   };
 
   // Only works for int-valued properties.
-  auto properties_equal = [](
-      const TestProperties& reference,
-      const TestProperties& test) -> ::testing::AssertionResult {
+  auto properties_equal =
+      [](const TestProperties& reference,
+         const TestProperties& test) -> ::testing::AssertionResult {
     if (reference.num_groups() != test.num_groups()) {
       return ::testing::AssertionFailure()
-          << "Different number of groups. Expected "
-          << reference.num_groups() << " found " << test.num_groups();
+             << "Different number of groups. Expected "
+             << reference.num_groups() << " found " << test.num_groups();
     }
 
     for (const auto& group_name : reference.GetGroupNames()) {
       if (test.HasGroup(group_name)) {
         for (const auto& pair : reference.GetPropertiesInGroup(group_name)) {
-          const std::string& name = pair.first;
+          const string& name = pair.first;
           int expected_value = pair.second->get_value<int>();
           if (test.HasProperty(group_name, name)) {
             int test_value = test.GetProperty<int>(group_name, name);
             if (expected_value != test_value) {
               return ::testing::AssertionFailure()
-                  << "Expected value for '" << group_name << "':'" << name
-                  << "' to be " << expected_value << ". Found " << test_value;
+                     << "Expected value for '" << group_name << "':'" << name
+                     << "' to be " << expected_value << ". Found "
+                     << test_value;
             }
           } else {
             return ::testing::AssertionFailure()
-                << "Expected group '" << group_name << "' to have property '"
-                << name <<"'. It does not exist.";
+                   << "Expected group '" << group_name << "' to have property '"
+                   << name << "'. It does not exist.";
           }
         }
       } else {
         return ::testing::AssertionFailure()
-            << "Expected group '" << group_name
-            << "' is missing from test properties";
+               << "Expected group '" << group_name
+               << "' is missing from test properties";
       }
     }
     return ::testing::AssertionSuccess();
@@ -306,10 +344,9 @@ class GloballyCounted {
 
     ::testing::AssertionResult Equal(Stats other) {
       if (num_copies != other.num_copies || num_moves != other.num_moves) {
-        return ::testing::AssertionFailure() <<
-            fmt::format(
-                "(num_copies, num_moves): ({}, {}) != ({}, {})",
-                num_copies, num_moves, other.num_copies, other.num_moves);
+        return ::testing::AssertionFailure() << fmt::format(
+                   "(num_copies, num_moves): ({}, {}) != ({}, {})", num_copies,
+                   num_moves, other.num_copies, other.num_moves);
       }
       return ::testing::AssertionSuccess();
     }
@@ -380,9 +417,9 @@ GTEST_TEST(GeometryProperties, GloballyCounted) {
 // Confirms the amount of copying that occurs.
 GTEST_TEST(GeometryProperties, CopyCountCheck) {
   TestProperties properties;
-  const std::string& group_name{"some_group"};
-  const std::string name_1("name_1");
-  const std::string name_2("name_2");
+  const string& group_name{"some_group"};
+  const string name_1("name_1");
+  const string name_2("name_2");
 
   // When adding a property, 2 copies should occur: once when constructing a
   // value, then another when cloning it.
@@ -404,9 +441,9 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   const Vector4d vector(0.75, 0.5, 0.25, 1.);
 
   TestProperties properties;
-  const std::string& group_name{"some_group"};
-  const std::string color_name("color_name");
-  const std::string fake_name("fake_name");
+  const string& group_name{"some_group"};
+  const string color_name("color_name");
+  const string fake_name("fake_name");
 
   // Add<Rgba>.
   properties.AddProperty(group_name, color_name, color);
@@ -414,13 +451,11 @@ GTEST_TEST(GeometryProperties, RgbaAndVector4) {
   EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, color_name));
   // - Get<Vector4d>.
   EXPECT_EQ(vector, properties.GetProperty<Vector4d>(group_name, color_name));
-  EXPECT_EQ(
-      vector,
-      properties.GetPropertyOrDefault<Vector4d>(
-          group_name, fake_name, vector));
+  EXPECT_EQ(vector, properties.GetPropertyOrDefault<Vector4d>(
+                        group_name, fake_name, vector));
 
   // Add<Vector4d>.
-  const std::string vector_name("vector_name");
+  const string vector_name("vector_name");
   properties.AddProperty(group_name, vector_name, vector);
   // - Get<Rgba>.
   EXPECT_EQ(color, properties.GetProperty<Rgba>(group_name, vector_name));

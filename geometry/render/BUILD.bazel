@@ -28,7 +28,10 @@ drake_cc_library(
     name = "render_camera_properties",
     srcs = ["render_camera_properties.cc"],
     hdrs = ["render_camera_properties.h"],
-    deps = ["//common:essential"],
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_properties",
+    ],
 )
 
 # A build target for code that wants to interact with the *idea* of a render

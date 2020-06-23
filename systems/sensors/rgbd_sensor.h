@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -145,66 +146,81 @@ class RgbdSensor final : public LeafSystem<double> {
              const geometry::render::DepthCameraProperties& properties,
              const CameraPoses& camera_poses = {}, bool show_window = false);
 
-  /** Constructs an %RgbdSensor with a fully specified camera model and
-   render properties.
+  /** Constructs an %RgbdSensor where the camera models and properties are
+   defined in an instance of RenderCameraProperties. %RgbdSensor will
+   specifically look for the following properties:
+
+   @anchor rgbd_sensor_camera_properties
+   |  Group name   | Property Name | Required |  Property Type  | Property Description |
+   | :-----------: | :-----------: | :------: | :-------------: | :------------------- |
+   | render_engine |     name      |   yes    |   std::string   | The name of the RenderEngine implementation as registered with the connected SceneGraph. |
+   |  rgbd_sensor  | show_window   |    no    |      n/a        | The *value* of the property doesn't matter; if the property is present *at all*, %RgbdSensor will _request_ that the RenderEngine show the rendering. |
+   |    camera     |  intrinsics   |   yes    |   CameraInfo    | The full specification of the camera's intrinsics (see CameraInfo for details). |
+   |    depth      |    range      |   yes¹   |   DepthRange    | The valid range for the depth sensor. |
+
+   ¹ The (depth, range) property only needs to be found in
+     `depth_camera_properties`.
+
+   The color/label sensors are configured independently of the depth sensor.
+
+   @param parent_id                 The identifier of a parent frame `P` in
+                                    geometry::SceneGraph to which this camera is
+                                    rigidly affixed with pose `X_PB`.
+   @param X_PB                      The pose of the camera body frame `B`
+                                    relative to the parent frame `P`.
+   @param color_camera_properties   The set of properties for specifying the
+                                    color and label camera properties.
+   @param depth_camera_properties   The set of properties for specifying the
+                                    depth camera properties.
 
    @warning Currently, only "simple" cameras are supported. If the camera
             intrinsics is not compatible with a simple camera model, a warning
             will be printed and the camera will be "simplified".
-   @pydrake_mkdoc_identifier{individual_intrinsics}  */
-  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
-             const std::pair<geometry::render::RenderCameraProperties,
-                             ColorCameraModel>& color_camera_specification,
-             const std::pair<geometry::render::RenderCameraProperties,
-                             DepthCameraModel>& depth_camera_specification,
-             const CameraPoses& camera_poses = {}, bool show_window = false);
+   @throws if required properties are missing.
+   @pydrake_mkdoc_identifier{individual_properties}  */
+  RgbdSensor(
+      geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
+      geometry::render::RenderCameraProperties color_camera_properties,
+      geometry::render::RenderCameraProperties depth_camera_properties,
+      const CameraPoses& camera_poses = {});
 
-  /** Constructs an %RgbdSensor with a fully specified camera model and
-   render properties. Both color and depth renderings use the same camera
-   specification.
+  /** Variant of %RgbdSensor constructor where color, label, and depth all use
+   a set of shared camera properties. This constructor has the same semantics
+   for expected properties.
+
+   The single set of properties must contain _all_ required properties.
 
    @warning Currently, only "simple" cameras are supported. If the camera
             intrinsics is not compatible with a simple camera model, a warning
             will be printed and the camera will be "simplified".
-   @pydrake_mkdoc_identifier{combined_intrinsics}  */
-  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
-             const std::pair<geometry::render::RenderCameraProperties,
-                             DepthCameraModel>& both_camera_specifications,
-             const CameraPoses& camera_poses = {}, bool show_window = false);
+   @throws if required properties are missing.
+   @pydrake_mkdoc_identifier{combined_properties}  */
+  RgbdSensor(
+      geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
+      geometry::render::RenderCameraProperties both_camera_properties,
+      const CameraPoses& camera_poses = {});
 
   ~RgbdSensor() = default;
 
   // TODO(eric.cousineau): Expose which renderer color / depth uses?
 
-  // TODO(SeanCurtis-TRI): Deprecate this in favor of the color camera model.
   /** Returns the intrinsics roperties of the color camera model.  */
   const CameraInfo& color_camera_info() const {
-    return color_camera_model_.intrinsics();
+    return GetIntrinsics(false /* from_depth */);
   }
 
-  /** Returns the color camera model.  */
-  const ColorCameraModel& color_camera_model() const {
-    return color_camera_model_;
-  }
-
-  // TODO(SeanCurtis-TRI): Deprecate this in favor of the color camera model.
   /** Returns the intrinsics roperties of the depth camera model.  */
   const CameraInfo& depth_camera_info() const {
-    return depth_camera_model_.intrinsics();
+    return GetIntrinsics(true /* from_depth */);
   }
 
-  /** Returns the depth camera model.  */
-  const DepthCameraModel& depth_camera_model() const {
-    return depth_camera_model_;
-  }
+  // TODO(SeanCurtis-TRI): Give access to the underlying camera properties.
 
   /** Returns `X_BC`.  */
   const math::RigidTransformd& X_BC() const { return X_BC_; }
 
   /** Returns `X_BD`.  */
-  const math::RigidTransformd& X_BD() const {
-    return X_BD_;
-  }
+  const math::RigidTransformd& X_BD() const { return X_BD_; }
 
   /** Returns the id of the frame to which the base is affixed.  */
   geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
@@ -235,6 +251,15 @@ class RgbdSensor final : public LeafSystem<double> {
  private:
   friend class RgbdSensorTester;
 
+  // The ultimate constructor. Note: the camera poses are spelled out as
+  // arguments so that this signature is distinct from the public constructors.
+  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
+             std::optional<geometry::render::RenderCameraProperties>
+                 color_camera_properties,
+             geometry::render::RenderCameraProperties depth_camera_properties,
+             const math::RigidTransformd& X_BC,
+             const math::RigidTransformd& X_BD);
+
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
                       ImageRgba8U* color_image) const;
@@ -246,6 +271,53 @@ class RgbdSensor final : public LeafSystem<double> {
                       ImageLabel16I* label_image) const;
   void CalcX_WB(const Context<double>& context,
                 rendering::PoseVector<double>* pose_vector) const;
+
+  // Utilities for working with properties.
+
+  // Utility for extracting a property
+  template <typename ValueType>
+  const ValueType& FindProperty(const std::string& group_name,
+                                const std::string& property_name,
+                                bool from_depth) const {
+    const geometry::render::RenderCameraProperties* properties = {};
+    if (!from_depth && color_camera_.has_value()) {
+      properties = &*color_camera_;
+    } else {
+      properties = &depth_camera_;
+    }
+    return properties->GetProperty<ValueType>(group_name, property_name);
+  }
+
+  // Extract the camera intrinsics property from the given set of properties.
+  const CameraInfo& GetIntrinsics(bool from_depth) const {
+    return FindProperty<CameraInfo>("camera", "intrinsics", from_depth);
+  }
+
+  // Extract the name of the render engine from the given set of properties.
+  const std::string& GetRendererName(bool from_depth) const {
+    return FindProperty<std::string>("render_engine", "name",
+                                     from_depth);
+  }
+
+  // Extract the depth range property. Only investigate the depth properties.
+  const geometry::render::DepthRange& GetDepthRange() const {
+    return depth_camera_.GetProperty<geometry::render::DepthRange>("depth",
+                                                                   "range");
+  }
+
+  // Extract the show window property. Only investigate the color properties
+  // because RenderEngine doesn't support show window for depth.
+  bool GetShowWindow() const {
+    return color_camera_.has_value() &&
+           color_camera_->HasProperty("rgbd_sensor", "show_window");
+  }
+
+  // Confirms that the given properties have the properties required by *this*
+  // system. It doesn't guarantee that the downstream RenderEngine will be
+  // satisfied.
+  static void ValidateProperties(
+      const geometry::render::RenderCameraProperties& props,
+      const char* message_prefix, bool require_depth);
 
   // Convert a single channel, float depth image (with depths in meters) to a
   // single channel, unsigned uint16_t depth image (with depths in millimeters).
@@ -267,12 +339,11 @@ class RgbdSensor final : public LeafSystem<double> {
   // The identifier for the parent frame `P`.
   const geometry::FrameId parent_frame_id_;
 
-  // If true, a window will be shown for the camera.
-  const bool show_window_;
-  const ColorCameraModel color_camera_model_;
-  const DepthCameraModel depth_camera_model_;
-  const geometry::render::RenderCameraProperties color_properties_;
-  const geometry::render::RenderCameraProperties depth_properties_;
+  // Color camera properties are considered a subset of depth camera
+  // propeprties. So, if only one set of camera properties are given, we assume
+  // they belong to depth and extract properties for the color camera from them.
+  const std::optional<geometry::render::RenderCameraProperties> color_camera_;
+  const geometry::render::RenderCameraProperties depth_camera_;
   // The position of the camera's B frame relative to its parent frame P.
   const math::RigidTransformd X_PB_;
   // Camera poses.

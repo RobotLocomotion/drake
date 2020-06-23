@@ -211,51 +211,6 @@ class CameraInfo final {
   Eigen::Matrix3d intrinsic_matrix_;
 };
 
-/** Characterizes a pinhole model camera for use with color/label rendering.  */
-class ColorCameraModel final {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorCameraModel)
-
-  /** Constructs the color camera model from the pinhole model intrinsic
-   properties.  */
-  explicit ColorCameraModel(CameraInfo intrinsics)
-      : intrinsics_(std::move(intrinsics)) {}
-
-  /** Reports the color camera's pinhole model's intrinsic properties.  */
-  const CameraInfo& intrinsics() const { return intrinsics_; }
-
- private:
-  CameraInfo intrinsics_;
-};
-
-/** Characterizes a pinhole model camera for use with depth rendering.  */
-class DepthCameraModel final {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthCameraModel)
-
-  /** Constructs the depth camera model from the pinhole model intrinsic
-   properties and depth camera's sensing range. The depth camera can only
-   register depth values in the range [min_depth', 'max_depth`].  */
-  DepthCameraModel(CameraInfo intrinsics, double min_depth, double max_depth)
-      : intrinsics_(std::move(intrinsics)),
-        min_depth_(min_depth),
-        max_depth_(max_depth) {}
-
-  /** Reports the depth camera's pinhole model's intrinsic properties.  */
-  const CameraInfo& intrinsics() const { return intrinsics_; }
-
-  /** The minimum distance an object must be to register a depth reading.  */
-  double min_depth() const { return min_depth_; }
-
-  /** The maximum distance an object can be to register a depth reading.  */
-  double max_depth() const { return max_depth_; }
-
- private:
-  CameraInfo intrinsics_;
-  double min_depth_{};
-  double max_depth_{};
-};
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake

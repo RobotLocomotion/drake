@@ -27,37 +27,38 @@ using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
+using geometry::render::DepthRange;
 using geometry::render::RenderCameraProperties;
 using math::RigidTransformd;
 using std::make_pair;
 using std::move;
+using std::nullopt;
+using std::optional;
 using std::pair;
 
 namespace {
 
-// Some utilities to create the full camera specification from a set of "simple"
-// camera properties.
+// Some utilities to convert from the legacy camera properties representation
+// to the new RenderCameraProperties.
 
-pair<RenderCameraProperties, ColorCameraModel> make_color_camera_model(
-    const CameraProperties& props_in) {
-  return make_pair(
-      RenderCameraProperties{props_in.renderer_name},
-      ColorCameraModel({props_in.width, props_in.height, props_in.fov_y}));
+RenderCameraProperties make_color_camera_model(const CameraProperties& props_in,
+                                               bool show_window) {
+  RenderCameraProperties props;
+  props.AddProperty("render_engine", "name", props_in.renderer_name);
+  props.AddProperty(
+      "camera", "intrinsics",
+      CameraInfo{props_in.width, props_in.height, props_in.fov_y});
+  if (show_window) props.AddProperty("rgbd_sensor", "show_window", true);
+  return props;
 }
 
-pair<RenderCameraProperties, DepthCameraModel> make_depth_camera_model(
-    const DepthCameraProperties& props_in) {
-  return make_pair(
-      RenderCameraProperties{props_in.renderer_name},
-      DepthCameraModel({props_in.width, props_in.height, props_in.fov_y},
-                       props_in.z_near, props_in.z_far));
-}
-
-pair<RenderCameraProperties, ColorCameraModel> depth_to_color(
-    const pair<RenderCameraProperties, DepthCameraModel>& properties) {
-  // Note: We're intentionally slicing the depth properties out.
-  const CameraInfo& intrinsics = properties.second.intrinsics();
-  return make_pair(properties.first, ColorCameraModel{intrinsics});
+RenderCameraProperties make_depth_camera_model(
+    const DepthCameraProperties& props_in, bool show_window) {
+  RenderCameraProperties props =
+      make_color_camera_model(props_in, show_window);
+  props.AddProperty("depth", "range",
+                    DepthRange(props_in.z_near, props_in.z_far));
+  return props;
 }
 
 }  // namespace
@@ -66,36 +67,78 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const CameraProperties& color_properties,
                        const DepthCameraProperties& depth_properties,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB, make_color_camera_model(color_properties),
-                 make_depth_camera_model(depth_properties), camera_poses,
-                 show_window) {}
+    : RgbdSensor(parent_id, X_PB,
+                 make_color_camera_model(color_properties, show_window),
+                 make_depth_camera_model(depth_properties, show_window),
+                 camera_poses) {}
 
 RgbdSensor::RgbdSensor(geometry::FrameId parent_id, const RigidTransformd& X_PB,
                        const DepthCameraProperties& properties,
                        const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB, make_color_camera_model(properties),
-                 make_depth_camera_model(properties), camera_poses,
-                 show_window) {}
+    : RgbdSensor(parent_id, X_PB,
+                 make_depth_camera_model(properties, show_window),
+                 camera_poses) {}
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
-                       const pair<RenderCameraProperties, ColorCameraModel>&
-                           color_camera_specification,
-                       const pair<RenderCameraProperties, DepthCameraModel>&
-                           depth_camera_specification,
-                       const CameraPoses& camera_poses, bool show_window)
+                       RenderCameraProperties color_camera_properties,
+                       RenderCameraProperties depth_camera_properties,
+                       const CameraPoses& camera_poses)
+    : RgbdSensor(parent_id, X_PB, move(color_camera_properties),
+                 move(depth_camera_properties), camera_poses.X_BC,
+                 camera_poses.X_BD) {}
+
+RgbdSensor::RgbdSensor(FrameId parent_id, const math::RigidTransformd& X_PB,
+                       RenderCameraProperties both_camera_properties,
+                       const CameraPoses& camera_poses)
+    : RgbdSensor(parent_id, X_PB, std::nullopt, move(both_camera_properties),
+                 camera_poses.X_BC, camera_poses.X_BD) {}
+
+const InputPort<double>& RgbdSensor::query_object_input_port() const {
+  return *query_object_input_port_;
+}
+
+const OutputPort<double>& RgbdSensor::color_image_output_port() const {
+  return *color_image_port_;
+}
+
+const OutputPort<double>& RgbdSensor::depth_image_32F_output_port() const {
+  return *depth_image_32F_port_;
+}
+
+const OutputPort<double>& RgbdSensor::depth_image_16U_output_port() const {
+  return *depth_image_16U_port_;
+}
+
+const OutputPort<double>& RgbdSensor::label_image_output_port() const {
+  return *label_image_port_;
+}
+
+const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
+  return *X_WB_pose_port_;
+}
+
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
+                       optional<RenderCameraProperties> color_camera_properties,
+                       RenderCameraProperties depth_camera_properties,
+                       const RigidTransformd& X_BC, const RigidTransformd& X_BD)
     : parent_frame_id_(parent_id),
-      show_window_(show_window),
-      color_camera_model_(color_camera_specification.second),
-      depth_camera_model_(depth_camera_specification.second),
-      color_properties_(color_camera_specification.first),
-      depth_properties_(depth_camera_specification.first),
+      color_camera_(move(color_camera_properties)),
+      depth_camera_(move(depth_camera_properties)),
       X_PB_(X_PB),
-      X_BC_(camera_poses.X_BC),
-      X_BD_(camera_poses.X_BD) {
+      X_BC_(X_BC),
+      X_BD_(X_BD) {
+  ValidateProperties(depth_camera_,
+                     "RgbdSensor construction - depth camera properties",
+                     true /* require_depth */);
+  if (color_camera_)
+    ValidateProperties(*color_camera_,
+                       "RgbdSensor construction - color camera properties",
+                       false /* require_depth */);
+
   // TODO(SeanCurtis-TRI): Remove this test and warning when the rendering
   //  infrastructure handles arbitrary camera intrinsics.
-  const CameraInfo& color_intrinsics = color_camera_model_.intrinsics();
-  const CameraInfo& depth_intrinsics = depth_camera_model_.intrinsics();
+  const CameraInfo& color_intrinsics = color_camera_info();
+  const CameraInfo& depth_intrinsics = depth_camera_info();
   if (color_intrinsics.focal_x() != color_intrinsics.focal_y() ||
       color_intrinsics.center_x() !=
           color_intrinsics.width() / 2.0 + 0.5 ||
@@ -147,69 +190,41 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
   // an absolute limit on the farthest distance it can register. This tests to
   // see if the user has specified a maximum depth value that exceeds that
   // value.
+  const auto& depth_range =
+      depth_camera_.GetProperty<DepthRange>("depth", "range");
   const float kMaxValidDepth16UInM =
       (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
-  const double max_depth = depth_camera_model_.max_depth();
-  if (max_depth > kMaxValidDepth16UInM) {
+  if (depth_range.max_depth() > kMaxValidDepth16UInM) {
     drake::log()->warn(
         "Specified max depth is {} m > max valid depth for 16 bits {} m. "
         "depth_image_16u might not be able to capture the full depth range.",
-        max_depth, kMaxValidDepth16UInM);
+        depth_range.max_depth(), kMaxValidDepth16UInM);
   }
-}
-
-RgbdSensor::RgbdSensor(FrameId parent_id, const math::RigidTransformd& X_PB,
-                       const pair<RenderCameraProperties, DepthCameraModel>&
-                           both_camera_specifications,
-                       const CameraPoses& camera_poses, bool show_window)
-    : RgbdSensor(parent_id, X_PB, depth_to_color(both_camera_specifications),
-                 both_camera_specifications, camera_poses, show_window) {}
-
-const InputPort<double>& RgbdSensor::query_object_input_port() const {
-  return *query_object_input_port_;
-}
-
-const OutputPort<double>& RgbdSensor::color_image_output_port() const {
-  return *color_image_port_;
-}
-
-const OutputPort<double>& RgbdSensor::depth_image_32F_output_port() const {
-  return *depth_image_32F_port_;
-}
-
-const OutputPort<double>& RgbdSensor::depth_image_16U_output_port() const {
-  return *depth_image_16U_port_;
-}
-
-const OutputPort<double>& RgbdSensor::label_image_output_port() const {
-  return *label_image_port_;
-}
-
-const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
-  return *X_WB_pose_port_;
 }
 
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  const CameraInfo& intrinsics = color_camera_model_.intrinsics();
+  const CameraInfo& intrinsics = color_camera_info();
+  const std::string& renderer_name = GetRendererName(false /* from_depth */);
   CameraProperties simple_camera{intrinsics.width(), intrinsics.height(),
-                                 intrinsics.fov_y(),
-                                 color_properties_.render_engine_name()};
+                                 intrinsics.fov_y(), renderer_name};
   query_object.RenderColorImage(simple_camera, parent_frame_id_, X_PB_ * X_BC_,
-                                show_window_, color_image);
+                                GetShowWindow(), color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  const CameraInfo& intrinsics = depth_camera_model_.intrinsics();
+  const CameraInfo& intrinsics = depth_camera_info();
+  const std::string& renderer_name = GetRendererName(true /* from_depth */);
+  const DepthRange& depth_range = GetDepthRange();
   DepthCameraProperties simple_camera{intrinsics.width(),
                                       intrinsics.height(),
                                       intrinsics.fov_y(),
-                                      depth_properties_.render_engine_name(),
-                                      depth_camera_model_.min_depth(),
-                                      depth_camera_model_.max_depth()};
+                                      renderer_name,
+                                      depth_range.min_depth(),
+                                      depth_range.max_depth()};
   query_object.RenderDepthImage(simple_camera, parent_frame_id_, X_PB_ * X_BD_,
                                 depth_image);
 }
@@ -224,12 +239,12 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  const CameraInfo& intrinsics = color_camera_model_.intrinsics();
+  const CameraInfo& intrinsics = color_camera_info();
+  const std::string& renderer_name = GetRendererName(false /* from_depth */);
   CameraProperties simple_camera{intrinsics.width(), intrinsics.height(),
-                                 intrinsics.fov_y(),
-                                 color_properties_.render_engine_name()};
+                                 intrinsics.fov_y(), renderer_name};
   query_object.RenderLabelImage(simple_camera, parent_frame_id_, X_PB_ * X_BC_,
-                                show_window_, label_image);
+                                GetShowWindow(), label_image);
 }
 
 void RgbdSensor::CalcX_WB(const Context<double>& context,
@@ -247,6 +262,21 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
   pose_vector->set_translation(trans);
 
   pose_vector->set_rotation(X_WB.rotation().ToQuaternion());
+}
+
+void RgbdSensor::ValidateProperties(
+    const geometry::render::RenderCameraProperties& props,
+    const char* message_prefix, bool require_depth) {
+  props.ThrowIfInvalidProperty<std::string>("render_engine", "name",
+                                            message_prefix);
+  props.ThrowIfInvalidProperty<std::string>("render_engine", "name",
+                                            message_prefix);
+  props.ThrowIfInvalidProperty<CameraInfo>("camera", "intrinsics",
+                                           message_prefix);
+  if (require_depth) {
+    props.ThrowIfInvalidProperty<DepthRange>("depth", "range",
+                                             message_prefix);
+  }
 }
 
 void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,

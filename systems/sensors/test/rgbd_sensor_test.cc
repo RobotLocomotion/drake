@@ -2,12 +2,14 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/render/camera_properties.h"
@@ -56,17 +58,6 @@ std::ostream& operator<<(std::ostream& out, const CameraInfo& info) {
       << "\n  center_y: " << info.center_y();
   return out;
 }
-std::ostream& operator<<(std::ostream& out, const ColorCameraModel& model) {
-  out << "ColorCameraModel\n" << model.intrinsics();
-  return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const DepthCameraModel& model) {
-  out << "DepthCameraModel\n" << model.intrinsics()
-      << "\n  min_depth: " << model.min_depth()
-      << "\n  max_depth: " << model.max_depth();
-  return out;
-}
 
 // Helper class for exercising private methods in RgbdSensor.
 class RgbdSensorTester {
@@ -91,12 +82,16 @@ using geometry::SourceId;
 using geometry::internal::DummyRenderEngine;
 using geometry::render::CameraProperties;
 using geometry::render::DepthCameraProperties;
+using geometry::render::DepthRange;
+using geometry::render::RenderCameraProperties;
 using geometry::render::RenderEngine;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using std::make_pair;
 using std::make_unique;
 using std::move;
+using std::nullopt;
+using std::optional;
 using std::unique_ptr;
 using std::vector;
 using systems::Context;
@@ -115,7 +110,7 @@ using systems::DiagramBuilder;
   }
   return ::testing::AssertionSuccess();
 }
-
+#if 0
 ::testing::AssertionResult Compare(const ColorCameraModel& test,
                                    const ColorCameraModel& expected) {
   return CompareCameraInfo(test.intrinsics(), expected.intrinsics());
@@ -134,7 +129,7 @@ using systems::DiagramBuilder;
 
   return result;
 }
-
+#endif
 class RgbdSensorTest : public ::testing::Test {
  public:
   RgbdSensorTest()
@@ -189,9 +184,8 @@ class RgbdSensorTest : public ::testing::Test {
     result = CompareCameraInfo(
         sensor_->color_camera_info(), expected_color_info);
     if (!result) return result;
-    const ColorCameraModel expected_color_model(expected_color_info);
-    result = Compare(sensor_->color_camera_model(), expected_color_model);
-    if (!result) return result;
+    // TODO(SeanCurtis-TRI): When we are no longer using the old constructor,
+    //  validate based on the RenderCameraProperties for color.
 
     const CameraInfo expected_depth_info(depth_properties_.width,
                                          depth_properties_.height,
@@ -199,10 +193,8 @@ class RgbdSensorTest : public ::testing::Test {
     result = CompareCameraInfo(
         sensor_->depth_camera_info(), expected_depth_info);
     if (!result) return result;
-    const DepthCameraModel expected_depth_model(
-        expected_depth_info, depth_properties_.z_near, depth_properties_.z_far);
-    result = Compare(sensor_->depth_camera_model(), expected_depth_model);
-    if (!result) return result;
+    // TODO(SeanCurtis-TRI): When we are no longer using the old constructor,
+    //  validate based on the RenderCameraProperties for depth.
 
     // By default, frames B, C, and D are aligned and coincident.
     EXPECT_TRUE(CompareMatrices(sensor_->X_BC().matrix(),
@@ -219,6 +211,16 @@ class RgbdSensorTest : public ::testing::Test {
                                 X_WC_expected.matrix()));
 
     return result;
+  }
+
+  static RenderCameraProperties MakeRenderCameraProps(
+      const CameraInfo& intrinsics, const std::string& renderer_name,
+      optional<DepthRange> depth_range = nullopt) {
+    RenderCameraProperties props;
+    props.AddProperty("camera", "intrinsics", intrinsics);
+    props.AddProperty("render_engine", "name", renderer_name);
+    if (depth_range) props.AddProperty("depth", "range", *depth_range);
+    return props;
   }
 
   CameraProperties color_properties_;
@@ -254,41 +256,142 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.X_WB_output_port().get_name(), "X_WB");
 }
 
-// Confirms that simple intrinsics (CameraProperties) gets translated to full
-// intrinsics (CameraInfo) correctly.
-TEST_F(RgbdSensorTest, ConstructFullySpecifiedCameraIntrinsics) {
+TEST_F(RgbdSensorTest, ConstructFromValidRenderCameraProperties) {
   const CameraInfo color_intrinsics{2, 2, M_PI};
-  const ColorCameraModel color_model(color_intrinsics);
+  RenderCameraProperties color =
+      MakeRenderCameraProps(color_intrinsics, "color");
   const CameraInfo depth_intrinsics{3, 3, M_PI * 0.9};
-  const DepthCameraModel depth_model(depth_intrinsics, 1, 10);
+  RenderCameraProperties depth =
+      MakeRenderCameraProps(depth_intrinsics, "depth", DepthRange(1, 10));
 
-  geometry::render::RenderCameraProperties render_cam{"name", 0.01, 5.0};
   const FrameId parent_id = FrameId::get_new_id();
   const RigidTransformd X_PB;
 
   {
     // Case: Declare color and depth intrinsics separately.
-    RgbdSensor sensor{parent_id, X_PB, make_pair(render_cam, color_model),
-                      make_pair(render_cam, depth_model)};
+    RgbdSensor sensor{parent_id, X_PB, color, depth};
+    // Note: We know the two sets of intrinsics are different, so if the
+    // reported intrinsics match the expected intrinsics, we'll know the right
+    // parameter got routed the right way.
     EXPECT_TRUE(
         CompareCameraInfo(sensor.color_camera_info(), color_intrinsics));
     EXPECT_TRUE(
         CompareCameraInfo(sensor.depth_camera_info(), depth_intrinsics));
-    EXPECT_TRUE(Compare(sensor.color_camera_model(), color_model));
-    EXPECT_TRUE(Compare(sensor.depth_camera_model(), depth_model));
   }
 
   {
-    // Case: Declare color and depth intrinsics with a single specification.
-    RgbdSensor sensor{parent_id, X_PB, make_pair(render_cam, depth_model)};
+    // Case: Declare color and depth intrinsics with a single valid
+    // specification.
+    RgbdSensor sensor{parent_id, X_PB, depth};
+    // Note: If both color and depth report the same intrinsics, we'll know
+    // that the single set of properties feeds to both.
     EXPECT_TRUE(
         CompareCameraInfo(sensor.color_camera_info(), depth_intrinsics));
     EXPECT_TRUE(
         CompareCameraInfo(sensor.depth_camera_info(), depth_intrinsics));
-    const ColorCameraModel color_from_depth(depth_intrinsics);
-    EXPECT_TRUE(Compare(sensor.color_camera_model(), color_from_depth));
-    EXPECT_TRUE(Compare(sensor.depth_camera_model(), depth_model));
   }
+}
+
+// This uses property sets that are incomplete. This should test *all*
+// properties marked as required in the documentation of the constructor.
+TEST_F(RgbdSensorTest, ConstructFromIncompleteRenderCameraProperties) {
+  const CameraInfo intrinsics{2, 2, M_PI};
+  const RenderCameraProperties valid_color =
+      MakeRenderCameraProps(intrinsics, "color");
+  const RenderCameraProperties valid_depth =
+      MakeRenderCameraProps(intrinsics, "depth", DepthRange(1, 10));
+
+  const FrameId parent_id = FrameId::get_new_id();
+  const RigidTransformd X_PB;
+
+  // Create variants of the valid properties with selectively missing
+  // properties.
+  auto copy_except = [](const RenderCameraProperties& props,
+                        const std::string& except_group,
+                        const std::string& except_property) {
+    RenderCameraProperties new_props;
+    bool skipped = false;
+    for (const std::string& group_name : props.GetGroupNames()) {
+      for (const auto& [prop_name, value] :
+           props.GetPropertiesInGroup(group_name)) {
+        if (group_name != except_group || prop_name != except_property) {
+          new_props.AddPropertyAbstract(group_name, prop_name, *value);
+        } else {
+          skipped = true;
+        }
+      }
+    }
+    if (!skipped) {
+      throw std::logic_error(
+          fmt::format("A test is trying to exclude a property that isn't in "
+                      "the original set: ({}, {})",
+                      except_group, except_property));
+    }
+    return new_props;
+  };
+
+  // Note: These error messages rely on the
+  // GeometryProperties::ThrowIfInvalidProperty() method to express the error
+  // message. All we're doing is testing for the expected *prefix* and error
+  // details.
+
+  // Case: Renderer name missing.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB,
+                 copy_except(valid_color, "render_engine", "name"),
+                 valid_depth),
+      std::runtime_error,
+      "RgbdSensor construction - color camera properties.+ missing.* "
+      "\\(render_engine, name\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB, valid_color,
+                 copy_except(valid_depth, "render_engine", "name")),
+      std::runtime_error,
+      "RgbdSensor construction - depth camera properties.+ missing.* "
+      "\\(render_engine, name\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB,
+                 copy_except(valid_depth, "render_engine", "name")),
+      std::runtime_error,
+      "RgbdSensor construction - depth camera properties.+ missing.* "
+      "\\(render_engine, name\\).*");
+
+  // Case: Camera intrinsics missing.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB,
+                 copy_except(valid_color, "camera", "intrinsics"),
+                 valid_depth),
+      std::runtime_error,
+      "RgbdSensor construction - color camera properties.+ missing.* "
+      "\\(camera, intrinsics\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB, valid_color,
+                 copy_except(valid_depth, "camera", "intrinsics")),
+      std::runtime_error,
+      "RgbdSensor construction - depth camera properties.+ missing.* "
+      "\\(camera, intrinsics\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB,
+                 copy_except(valid_depth, "camera", "intrinsics")),
+      std::runtime_error,
+      "RgbdSensor construction - depth camera properties.+ missing.* "
+      "\\(camera, intrinsics\\).*");
+
+  // Case: Missing depth range.
+  // Note: there can be no "missing" depth range from an explicitly specified
+  // set of _color_ camera properties.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB, valid_color,
+                 copy_except(valid_depth, "depth", "range")),
+      std::runtime_error,
+      "RgbdSensor construction - depth camera properties.+ missing.* "
+      "\\(depth, range\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RgbdSensor(parent_id, X_PB,
+                 copy_except(valid_depth, "depth", "range")),
+      std::runtime_error,
+      "RgbdSensor construction - depth camera properties.+ missing.* "
+      "\\(depth, range\\).*");
 }
 
 // Tests that the anchored camera reports the correct parent frame and has the

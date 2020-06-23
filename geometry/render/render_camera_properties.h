@@ -2,52 +2,43 @@
 
 #include <string>
 
-#include "drake/common/drake_copyable.h"
+#include "drake/geometry/geometry_properties.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
 
-// TODO(SeanCurtis-TRI): Would this be better as a GeometryProperties instance?
-/** Collection of parameters that helps bridge the camera model (as defined by a
- systems::sensors::ColorCameraModel or systems::sensors::DepthCameraModel) and a
- RenderEngine. This includes those per-camera properties appropriate to the
- RenderEngine's implementation of the camera model. This represents the union
- of known render engine camera properties and it is not the case that all
- properties are used by all render engines. */
-class RenderCameraProperties {
+/** Characterization of a depth sensor's functional range. Only points that lie
+ within the range `[min_depth, max_depth]` will register meaningful values.  */
+class DepthRange {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRange);
+
+  DepthRange(double min_in, double max_in);
+
+  double min_depth() const { return min_depth_;  }
+  double max_depth() const { return max_depth_;  }
+
+ private:
+  double min_depth_{};
+  double max_depth_{};
+};
+
+/** The set of properties for specifying camera models for rendering. Some of
+ the properties relate to an underlying mathematical model and others relate
+ to how a particular RenderEngine implementation implements those mathematical
+ models. Each consumer of %RenderCameraProperties must document what
+ properties it consumes, which are required, and its behavior in the absence
+ of requested properties.
+
+ Examples of such documentation:
+   - @ref rgbd_sensor_camera_properties RgbdSensor's constructor
+ */
+class RenderCameraProperties final : public GeometryProperties {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraProperties);
 
-  /** Constructs properties for the given render engine. The clipping planes
-   can be omitted to use the indicated default values.
-
-   The default values for the clipping planes are motivated by applications of
-   common human-scaled manipulation tasks. As such, these clipping values cover
-   a range appropriate for viewing small objects up close within a large
-   domestic environments.
-
-   Do keep in mind the service range of your depth sensor. It is important that
-   the clipping planes span the range of your depth sensor, otherwise the depth
-   returns will be clipped. For example, while the default clipping plane values
-   enclose range reported for the
-   <a href="https://www.intelrealsense.com/depth-camera-d415/">
-   Intel RealSense D415 camera</a>, that shouldn't generally be assumed to be
-   true for arbitrary sensors.
-
-   @pre `near_clipping > 0` and `far_clipping > 0`.
-   @pre `far_clipping > near_clipping`.  */
-  RenderCameraProperties(std::string render_engine_name,
-                         double near_clipping = 0.01, double far_clipping = 10);
-
-  const std::string& render_engine_name() const { return render_engine_name_; }
-  double near_clipping_plane() const { return near_clipping_; }
-  double far_clipping_plane() const { return far_clipping_; }
-
- private:
-  std::string render_engine_name_;
-  double near_clipping_{};
-  double far_clipping_{};
+  RenderCameraProperties() = default;
 };
 
 }  // namespace render
