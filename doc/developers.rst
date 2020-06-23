@@ -93,7 +93,10 @@ Drake requires a compiler running in C++17 mode.
 +----------------------------------+-------+-------+---------------------+-------------------+--------+
 
 CPython is the only Python implementation supported. On Ubuntu, amd64
-(i.e., x86_64) is the only supported architecture.
+(i.e., x86_64) is the only supported architecture. On macOS, x86_64 is the only
+supported architecture and running Drake under Rosetta 2 emulation on arm64 is
+not supported. Plans for any future arm64 support on macOS and/or Ubuntu are
+discussed in `issue #13514 <https://github.com/RobotLocomotion/drake/issues/13514>`_.
 
 .. _configuration-management-non-determinism:
 
