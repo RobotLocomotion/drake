@@ -1692,7 +1692,8 @@ TEST_F(AcrobotPlantTests, EvalStateAndAccelerationOutputPorts) {
   plant_->get_state_output_port().Calc(*plant_context_, state_value.get());
 
   // Get continuous state_out from context.
-  const VectorBase<double>& state = plant_context_->get_continuous_state_vector();
+  const VectorBase<double>& state =
+      plant_context_->get_continuous_state_vector();
 
   // Verify state_out indeed matches state.
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());

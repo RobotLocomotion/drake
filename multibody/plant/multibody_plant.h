@@ -3601,8 +3601,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::SceneGraph, this method will report the number of geometries
   /// registered with the role geometry::Role::kIllustration, of all the
   /// geometries registered to `this` plant's source_id.
-  int EvalNumVisualGeometries(
-    const systems::Context<T>* context = nullptr) const;
+  int EvalNumVisualGeometries(const systems::Context<T>* context) const {
+    if (!context) {
+      DRAKE_MBP_THROW_IF_FINALIZED();
+    }
+
+    // symbolic::Expression is not supported by SceneGraph.
+    // For now, so anything internally using EvalNumVisualGeometries
+    // doesn't fail on a symbolic plant, return 0.
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      return 0;
+    }
+
+    if (!geometry_source_is_registered()) return 0;
+
+    if (!context) {
+      return const_cast<MultibodyPlant<T>*>(this)
+          ->member_scene_graph()
+          .model_inspector()
+          .NumGeometriesWithRole(get_source_id().value(),
+                                 geometry::Role::kIllustration);
+    } else {
+      return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+          get_source_id().value(), geometry::Role::kIllustration);
+    }
+  }
 
   /// Returns the number of geometries registered for contact modeling.
   /// This method can be called at any time during the lifetime of `this` plant,
@@ -3626,8 +3649,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::SceneGraph, this method will report the number of geometries
   /// registered with the role geometry::Role::kProximity, of all the
   /// geometries registered to `this` plant's source_id.
-  int EvalNumCollisionGeometries(
-      const systems::Context<T>* context = nullptr) const;
+  int EvalNumCollisionGeometries(const systems::Context<T>* context) const {
+    if (!context) {
+      DRAKE_MBP_THROW_IF_FINALIZED();
+    }
+
+    // symbolic::Expression is not supported by SceneGraph.
+    // For now, so anything internally using EvalNumCollisionGeometries
+    // doesn't fail on a symbolic plant, return 0.
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      return 0;
+    }
+
+    if (!geometry_source_is_registered()) return 0;
+
+    if (!context) {
+      return const_cast<MultibodyPlant<T>*>(this)
+          ->member_scene_graph()
+          .model_inspector()
+          .NumGeometriesWithRole(get_source_id().value(),
+                                 geometry::Role::kProximity);
+    } else {
+      return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+          get_source_id().value(), geometry::Role::kProximity);
+    }
+  }
 
   /// Returns the unique id identifying `this` plant as a source for a
   /// SceneGraph.
@@ -4597,12 +4643,6 @@ struct AddMultibodyPlantSceneGraphResult final {
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();
-template <>
-int MultibodyPlant<symbolic::Expression>::EvalNumVisualGeometries(
-    const systems::Context<symbolic::Expression>*) const;
-template <>
-int MultibodyPlant<symbolic::Expression>::EvalNumCollisionGeometries(
-    const systems::Context<symbolic::Expression>*) const;
 template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(

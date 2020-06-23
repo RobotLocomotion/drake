@@ -144,6 +144,8 @@ int do_main() {
   builder.Connect(
       acrobot.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(acrobot.get_source_id().value()));
+  builder.Connect(scene_graph.get_query_output_port(),
+      acrobot.get_geometry_query_input_port());
 
   geometry::ConnectDrakeVisualizer(&builder, scene_graph);
   auto diagram = builder.Build();
