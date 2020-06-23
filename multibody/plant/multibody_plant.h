@@ -3592,42 +3592,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
 
-  /// Returns the number of geometries registered for visualization.
-  /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, so long as a systems::Context is available.
-  /// If `this` MultibodyPlant has not registered as a source for
-  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
-  /// will return 0. If `this` plant *has* been registered as a source for
-  /// geometry::SceneGraph, this method will report the number of geometries
-  /// registered with the role geometry::Role::kIllustration, of all the
-  /// geometries registered to `this` plant's source_id.
-  int EvalNumVisualGeometries(
-      const systems::Context<T>* context = nullptr) const {
-    if (!context) {
-      DRAKE_MBP_THROW_IF_FINALIZED();
-    }
-
-    // symbolic::Expression is not supported by SceneGraph.
-    // For now, so anything internally using EvalNumVisualGeometries
-    // doesn't fail on a symbolic plant, return 0.
-    if constexpr (std::is_same_v<T, symbolic::Expression>) {
-      return 0;
-    }
-
-    if (!geometry_source_is_registered()) return 0;
-
-    if (!context) {
-      return const_cast<MultibodyPlant<T>*>(this)
-          ->member_scene_graph()
-          .model_inspector()
-          .NumGeometriesWithRole(get_source_id().value(),
-                                 geometry::Role::kIllustration);
-    } else {
-      return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
-          get_source_id().value(), geometry::Role::kIllustration);
-    }
-  }
-
   /// Returns the number of geometries registered for contact modeling.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
@@ -3639,42 +3603,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                    "EvalNumCollisionGeometries(const Context<T>*).")
   int num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
-  }
-
-  /// Returns the number of geometries registered for contact modeling.
-  /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, so long as a systems::Context is available.
-  /// If `this` MultibodyPlant has not registered as a source for
-  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
-  /// will return 0. If `this` plant *has* been registered as a source for
-  /// geometry::SceneGraph, this method will report the number of geometries
-  /// registered with the role geometry::Role::kProximity, of all the
-  /// geometries registered to `this` plant's source_id.
-  int EvalNumCollisionGeometries(
-      const systems::Context<T>* context = nullptr) const {
-    if (!context) {
-      DRAKE_MBP_THROW_IF_FINALIZED();
-    }
-
-    // symbolic::Expression is not supported by SceneGraph.
-    // For now, so anything internally using EvalNumCollisionGeometries
-    // doesn't fail on a symbolic plant, return 0.
-    if constexpr (std::is_same_v<T, symbolic::Expression>) {
-      return 0;
-    }
-
-    if (!geometry_source_is_registered()) return 0;
-
-    if (!context) {
-      return const_cast<MultibodyPlant<T>*>(this)
-          ->member_scene_graph()
-          .model_inspector()
-          .NumGeometriesWithRole(get_source_id().value(),
-                                 geometry::Role::kProximity);
-    } else {
-      return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
-          get_source_id().value(), geometry::Role::kProximity);
-    }
   }
 
   /// Returns the unique id identifying `this` plant as a source for a
@@ -3790,6 +3718,78 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     }
     return get_geometry_query_input_port()
         .template Eval<geometry::QueryObject<T>>(context);
+  }
+
+  /// Returns the number of geometries registered for visualization.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, so long as a systems::Context is available.
+  /// If `this` MultibodyPlant has not registered as a source for
+  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
+  /// will return 0. If `this` plant *has* been registered as a source for
+  /// geometry::SceneGraph, this method will report the number of geometries
+  /// registered with the role geometry::Role::kIllustration, of all the
+  /// geometries registered to `this` plant's source_id.
+  int EvalNumVisualGeometries(
+      const systems::Context<T>* context = nullptr) const {
+    if (!context) {
+      DRAKE_MBP_THROW_IF_FINALIZED();
+    }
+
+    // symbolic::Expression is not supported by SceneGraph.
+    // For now, so anything internally using EvalNumVisualGeometries
+    // doesn't fail on a symbolic plant, return 0.
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      return 0;
+    }
+
+    if (!geometry_source_is_registered()) return 0;
+
+    if (!context) {
+      return const_cast<MultibodyPlant<T>*>(this)
+          ->member_scene_graph()
+          .model_inspector()
+          .NumGeometriesWithRole(get_source_id().value(),
+                                 geometry::Role::kIllustration);
+    } else {
+      return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+          get_source_id().value(), geometry::Role::kIllustration);
+    }
+  }
+
+  /// Returns the number of geometries registered for contact modeling.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, so long as a systems::Context is available.
+  /// If `this` MultibodyPlant has not registered as a source for
+  /// geometry::SceneGraph (see RegisterAsSourceForSceneGraph()), this method
+  /// will return 0. If `this` plant *has* been registered as a source for
+  /// geometry::SceneGraph, this method will report the number of geometries
+  /// registered with the role geometry::Role::kProximity, of all the
+  /// geometries registered to `this` plant's source_id.
+  int EvalNumCollisionGeometries(
+      const systems::Context<T>* context = nullptr) const {
+    if (!context) {
+      DRAKE_MBP_THROW_IF_FINALIZED();
+    }
+
+    // symbolic::Expression is not supported by SceneGraph.
+    // For now, so anything internally using EvalNumCollisionGeometries
+    // doesn't fail on a symbolic plant, return 0.
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      return 0;
+    }
+
+    if (!geometry_source_is_registered()) return 0;
+
+    if (!context) {
+      return const_cast<MultibodyPlant<T>*>(this)
+          ->member_scene_graph()
+          .model_inspector()
+          .NumGeometriesWithRole(get_source_id().value(),
+                                 geometry::Role::kProximity);
+    } else {
+      return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+          get_source_id().value(), geometry::Role::kProximity);
+    }
   }
 
   // Checks that the provided State is consistent with this plant.
