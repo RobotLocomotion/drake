@@ -3601,7 +3601,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::SceneGraph, this method will report the number of geometries
   /// registered with the role geometry::Role::kIllustration, of all the
   /// geometries registered to `this` plant's source_id.
-  int EvalNumVisualGeometries(const systems::Context<T>* context) const {
+  int EvalNumVisualGeometries(
+      const systems::Context<T>* context = nullptr) const {
     if (!context) {
       DRAKE_MBP_THROW_IF_FINALIZED();
     }
@@ -3649,7 +3650,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::SceneGraph, this method will report the number of geometries
   /// registered with the role geometry::Role::kProximity, of all the
   /// geometries registered to `this` plant's source_id.
-  int EvalNumCollisionGeometries(const systems::Context<T>* context) const {
+  int EvalNumCollisionGeometries(
+      const systems::Context<T>* context = nullptr) const {
     if (!context) {
       DRAKE_MBP_THROW_IF_FINALIZED();
     }
