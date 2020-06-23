@@ -190,6 +190,8 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
     EXPECT_EQ(&move_constructed.pressure_field(), pressure_ptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+    //TODO(DamrongGuoy): Test `start.*` with EXPECT_THROW() when
+    // we put the guards against unspecified states.
 
     // Test move-assignment operator.
     // Initialize `move_assigned` as a SoftGeometry representing a half spce.
@@ -200,6 +202,8 @@ GTEST_TEST(SoftGeometryTest, TestCopyMoveAssignConstruct) {
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
     EXPECT_EQ(&move_assigned.pressure_field(), pressure_ptr);
     EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+    //TODO(DamrongGuoy): Test `move_constructed.*` with EXPECT_THROW() when
+    // we put the guards against unspecified states.
   }
 }
 
@@ -313,20 +317,20 @@ GTEST_TEST(RigidGeometryTest, TestCopyMoveAssignConstruct) {
 
     // Test move constructor.
     RigidGeometry move_constructed(std::move(start));
-    EXPECT_EQ(&start.mesh(), nullptr);
     EXPECT_EQ(&move_constructed.mesh(), mesh_ptr);
-    EXPECT_EQ(&start.bvh(), nullptr);
     EXPECT_EQ(&move_constructed.bvh(), bvh_ptr);
+    //TODO(DamrongGuoy): Test `start.*` with EXPECT_THROW() when
+    // we put the guards against unspecified states.
 
     // Test move-assignment operator.
     // Initialize `move_assigned` as a RigidGeometry of a half space. Then,
     // change it to a RigidGeometry of a mesh by move-assignment.
     RigidGeometry move_assigned(half_space);
     move_assigned = std::move(move_constructed);
-    EXPECT_EQ(&move_constructed.mesh(), nullptr);
     EXPECT_EQ(&move_assigned.mesh(), mesh_ptr);
-    EXPECT_EQ(&move_constructed.bvh(), nullptr);
     EXPECT_EQ(&move_assigned.bvh(), bvh_ptr);
+    //TODO(DamrongGuoy): Test `move_assigned.*` with EXPECT_THROW() when
+    // we put the guards against unspecified states.
   }
 }
 
