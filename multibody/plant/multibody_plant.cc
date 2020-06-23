@@ -830,6 +830,62 @@ MultibodyPlant<symbolic::Expression>::member_scene_graph() {
 }
 
 template <typename T>
+int MultibodyPlant<T>::EvalNumVisualGeometries(
+    const systems::Context<T>* context) const {
+  if (!context) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+  }
+
+  // symbolic::Expression is not supported by SceneGraph.
+  // For now, so anything internally using EvalNumVisualGeometries
+  // doesn't fail on a symbolic plant, return 0.
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    return 0;
+  }
+
+  if (!geometry_source_is_registered()) return 0;
+
+  if (!context) {
+    return const_cast<MultibodyPlant<T>*>(this)
+        ->member_scene_graph()
+        .model_inspector()
+        .NumGeometriesWithRole(get_source_id().value(),
+                               geometry::Role::kIllustration);
+  } else {
+    return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+        get_source_id().value(), geometry::Role::kIllustration);
+  }
+}
+
+template <typename T>
+int MultibodyPlant<T>::EvalNumCollisionGeometries(
+    const systems::Context<T>* context) const {
+  if (!context) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+  }
+
+  // symbolic::Expression is not supported by SceneGraph.
+  // For now, so anything internally using EvalNumCollisionGeometries
+  // doesn't fail on a symbolic plant, return 0.
+  if constexpr (std::is_same_v<T, symbolic::Expression>) {
+    return 0;
+  }
+
+  if (!geometry_source_is_registered()) return 0;
+
+  if (!context) {
+    return const_cast<MultibodyPlant<T>*>(this)
+        ->member_scene_graph()
+        .model_inspector()
+        .NumGeometriesWithRole(get_source_id().value(),
+                               geometry::Role::kProximity);
+  } else {
+    return EvalGeometryQueryInput(*context).inspector().NumGeometriesWithRole(
+        get_source_id().value(), geometry::Role::kProximity);
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CheckValidState(const systems::State<T>* state) const {
   DRAKE_THROW_UNLESS(state != nullptr);
   DRAKE_THROW_UNLESS(
