@@ -196,10 +196,38 @@ class Frame : public FrameBase<T> {
     return V_WF;
   }
 
+  /// Calculates and returns w_MF_E, "this" frame F's angular velocity measured
+  /// in frame M, expressed in frame E.
+  /// @see CalcSpatialVelocity().
+  Vector3<T> CalcAngularVelocity(const systems::Context<T>& context,
+      const Frame<T>& frame_M, const Frame<T>& frame_E) const {
+    // Shortcut: Efficiently return zero vector if "this" frame_F == frame_M.
+    if (this->index() == frame_M.index()) return Vector3<T>::Zero();
+
+    // Form M's angular velocity in the world frame W, expressed in W.
+    // Form F's angular velocity in the world frame W, expressed in W.
+    const Vector3<T> w_WM_W =
+        frame_M.CalcSpatialVelocityInWorld(context).rotational();
+    const Vector3<T> w_WF_W =
+        this->CalcSpatialVelocityInWorld(context).rotational();
+
+    // The next line results from rearranging the angular addition theorem
+    // w_WF = w_WM + w_MF  ->  w_MF = w_WF - w_WM
+    Vector3<T> w_MF = w_WF_W - w_WM_W;
+
+    // Express results in frame_E (if frame_E is not world frame W).
+    if (frame_E.index() != FrameIndex(0)) {
+      const math::RotationMatrix<T> R_EW =
+          frame_E.CalcRotationMatrixInWorld(context).inverse();
+      w_MF = R_EW * w_MF;
+    }
+    return w_MF;
+  }
+
   /// Computes and returns the spatial velocity `V_MF_E` of `this` frame F
   /// measured in `frame_M` and expressed in `frame_E` as a function of the
   /// state of the model stored in `context`.
-  /// @see CalcSpatialVelocityInWorld().
+  /// @see CalcSpatialVelocityInWorld() and CalcAngularVelocity().
   SpatialVelocity<T> CalcSpatialVelocity(
       const systems::Context<T>& context,
       const Frame<T>& frame_M, const Frame<T>& frame_E) const {

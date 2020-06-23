@@ -385,7 +385,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
 
   // By-hand analysis gives aBias_WBp_W = -L wAz_² Wx - L (wAz_ + wBz_)² Wx
   const double wAB_squared = (wAz_ + wBz_) * (wAz_ + wBz_);
-  const Vector3<double> aBias_WBp_W_expected = (-link_length_ * wAB_squared +
+  const Vector3<double> aBias_WBp_W_expected = (-link_length_ * wA_squared +
       -link_length_ * wAB_squared) * Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(aBias_WBp_W.translational(), aBias_WBp_W_expected,
                               kTolerance));
@@ -829,15 +829,6 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
                    *context_, JacobianWrtVariable::kQDot, frame_E, p_EEi,
                    frame_W, frame_W),
                std::exception);
-
-  // Verify CalcBiasTranslationalAcceleration() throws an exception if
-  // measured-in-frame is something other than the world frame W.
-  // TODO(Mitiguy) Remove this test when CalcBiasTranslationalAcceleration() is
-  //  improved to handle an arbitrary measured-in-frame.
-  EXPECT_THROW(
-      plant_->CalcBiasTranslationalAcceleration(
-          *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_E, frame_W),
-      std::exception);
 }
 
 }  // namespace
