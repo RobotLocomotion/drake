@@ -420,24 +420,30 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 }
 
 template <typename T>
-const std::vector<geometry::GeometryId>&
-MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
+std::vector<geometry::GeometryId> MultibodyPlant<T>::GetVisualGeometriesForBody(
+    const Body<T>& body) const {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_ASSERT(body.index() < num_bodies());
-  FrameId frame_id = body_index_to_frame_id_[body.index()];
-  return member_scene_graph().model_inspector().GetGeometriesForFrameWithRole(
-      frame_id, geometry::Role::kIllustration);
+  FrameId frame_id = body_index_to_frame_id_.at(body.index());
+
+  const std::unordered_set<GeometryId>& ids =
+      const_cast<MultibodyPlant<T>*>(this)
+          ->member_scene_graph()
+          .model_inspector()
+          .GetGeometriesForFrameWithRole(frame_id,
+                                         geometry::Role::kIllustration);
+  return std::vector<GeometryId>(ids.begin(), ids.end());
 }
 
 template <typename T>
-const std::vector<geometry::GeometryId>&
-MultibodyPlant<T>::GetVisualGeometriesForBody(
-    const systems::Context<T>& context, Body<T>& body) const {
+std::vector<geometry::GeometryId> MultibodyPlant<T>::GetVisualGeometriesForBody(
+    const systems::Context<T>& context, const Body<T>& body) const {
   DRAKE_ASSERT(body.index() < num_bodies());
-  FrameId frame_id = body_index_to_frame_id_[body.index()];
-  return EvalGeometryQueryInput(context)
-      .inspector()
-      .GetGeometriesForFrameWithRole(frame_id, geometry::Role::kIllustration);
+  FrameId frame_id = body_index_to_frame_id_.at(body.index());
+  const std::unordered_set<GeometryId>& ids =
+      EvalGeometryQueryInput(context).inspector().GetGeometriesForFrameWithRole(
+          frame_id, geometry::Role::kIllustration);
+  return std::vector<GeometryId>(ids.begin(), ids.end());
 }
 
 template <typename T>
@@ -487,24 +493,29 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
 }
 
 template <typename T>
-const std::vector<geometry::GeometryId>&
+std::vector<geometry::GeometryId>
 MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_ASSERT(body.index() < num_bodies());
-  FrameId frame_id = body_index_to_frame_id_[body.index()];
-  return member_scene_graph().model_inspector().GetGeometriesForFrameWithRole(
-      frame_id, geometry::Role::kProximity);
+  FrameId frame_id = body_index_to_frame_id_.at(body.index());
+  const std::unordered_set<GeometryId>& ids =
+      const_cast<MultibodyPlant<T>*>(this)
+          ->member_scene_graph()
+          .model_inspector()
+          .GetGeometriesForFrameWithRole(frame_id, geometry::Role::kProximity);
+  return std::vector<GeometryId>(ids.begin(), ids.end());
 }
 
 template <typename T>
-const std::vector<geometry::GeometryId>&
+std::vector<geometry::GeometryId>
 MultibodyPlant<T>::GetCollisionGeometriesForBody(
-    const systems::Context<T>& context, Body<T>& body) const {
+    const systems::Context<T>& context, const Body<T>& body) const {
   DRAKE_ASSERT(body.index() < num_bodies());
-  FrameId frame_id = body_index_to_frame_id_[body.index()];
-  return EvalGeometryQueryInput(context)
-      .inspector()
-      .GetGeometriesForFrameWithRole(frame_id, geometry::Role::kProximity);
+  FrameId frame_id = body_index_to_frame_id_.at(body.index());
+  const std::unordered_set<GeometryId>& ids =
+      EvalGeometryQueryInput(context).inspector().GetGeometriesForFrameWithRole(
+          frame_id, geometry::Role::kProximity);
+  return std::vector<GeometryId>(ids.begin(), ids.end());
 }
 
 template <typename T>
@@ -811,6 +822,16 @@ struct MultibodyPlant<T>::SceneGraphStub {
     }
     int NumGeometriesWithRole(geometry::SourceId, geometry::Role) const {
       return 0;
+    }
+
+    std::unordered_set<GeometryId> GetGeometriesForSourceWithRole(
+        geometry::SourceId, geometry::Role) const {
+      return {};
+    }
+
+    std::unordered_set<GeometryId> GetGeometriesForFrameWithRole(
+        geometry::FrameId, geometry::Role) const {
+      return {};
     }
   };
 

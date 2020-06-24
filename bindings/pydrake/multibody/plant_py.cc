@@ -660,8 +660,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("body_index"), py_reference_internal,
             cls_doc.GetBodyFrameIdIfExists.doc)
         .def("GetCollisionGeometriesForBody",
-            &Class::GetCollisionGeometriesForBody, py::arg("body"),
-            py_reference_internal, cls_doc.GetCollisionGeometriesForBody.doc)
+            overload_cast_explicit<std::vector<geometry::GeometryId>,
+                const Body<T>&>(&Class::GetCollisionGeometriesForBody),
+            py::arg("body"), py_reference_internal,
+            cls_doc.GetCollisionGeometriesForBody.doc_1args)
+        .def("GetCollisionGeometriesForBody",
+            overload_cast_explicit<std::vector<geometry::GeometryId>,
+                const systems::Context<T>&, const Body<T>&>(
+                &Class::GetCollisionGeometriesForBody),
+            py::arg("context"), py::arg("body"), py_reference_internal,
+            cls_doc.GetCollisionGeometriesForBody.doc_2args)
+        .def("GetVisualGeometriesForBody",
+            overload_cast_explicit<std::vector<geometry::GeometryId>,
+                const Body<T>&>(&Class::GetVisualGeometriesForBody),
+            py::arg("body"), py_reference_internal,
+            cls_doc.GetCollisionGeometriesForBody.doc_1args)
+        .def("GetVisualGeometriesForBody",
+            overload_cast_explicit<std::vector<geometry::GeometryId>,
+                const systems::Context<T>&, const Body<T>&>(
+                &Class::GetVisualGeometriesForBody),
+            py::arg("context"), py::arg("body"), py_reference_internal,
+            cls_doc.GetCollisionGeometriesForBody.doc_2args)
         .def("EvalNumCollisionGeometries", &Class::EvalNumCollisionGeometries,
             py::arg("context") = nullptr,
             cls_doc.EvalNumCollisionGeometries.doc)

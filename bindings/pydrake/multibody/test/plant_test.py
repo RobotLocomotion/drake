@@ -1567,7 +1567,8 @@ class TestPlant(unittest.TestCase):
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
 
-        id_, = plant.GetCollisionGeometriesForBody(
+        plant_context = diagram.GetMutableSubsystemContext(plant, context)
+        id_, = plant.GetCollisionGeometriesForBody(context=plant_context,
             body=plant.GetBodyByName("body1"))
         self.assertIsInstance(id_, GeometryId)
 

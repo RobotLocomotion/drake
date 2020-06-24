@@ -114,15 +114,16 @@ class SceneGraphInspector {
 
   /** Returns the set of all ids for registered geometries belonging to the
    source with id `source_id`. */
-  std::vector<GeometryId> GetGeometriesForSource(SourceId source_id) const {
+  std::unordered_set<GeometryId> GetGeometriesForSource(
+      SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetGeometriesForSource(source_id);
   }
 
   /** Returns the set of all ids for registered geometries belonging to the
    source with id `source_id` and having the role `role`. */
-  std::vector<GeometryId> GetGeometriesForSourceWithRole(SourceId source_id,
-                                                         Role role) const {
+  std::unordered_set<GeometryId> GetGeometriesForSourceWithRole(
+      SourceId source_id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetGeometriesForSourceWithRole(source_id, role);
   }
@@ -276,7 +277,7 @@ class SceneGraphInspector {
    registered to the frame with the given `id`. This does _not_ include
    geometries attached to frames that are descendants of this frame.
    @throws std::logic_error if `id` does not map to a registered frame.  */
-  std::vector<GeometryId> GetGeometriesForFrameWithRole(
+  std::unordered_set<GeometryId> GetGeometriesForFrameWithRole(
       FrameId id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetGeometriesForFrameWithRole(id, role);

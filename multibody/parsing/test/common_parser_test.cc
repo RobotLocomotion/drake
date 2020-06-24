@@ -96,15 +96,18 @@ TEST_P(MultibodyPlantLinkTests, LinkWithVisuals) {
   EXPECT_EQ(plant_.EvalNumVisualGeometries(&plant_context), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
-      plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link1"));
+      plant_.GetVisualGeometriesForBody(plant_context,
+                                        plant_.GetBodyByName("link1"));
   EXPECT_EQ(link1_visual_geometry_ids.size(), 2);
 
   const std::vector<GeometryId>& link2_visual_geometry_ids =
-      plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link2"));
+      plant_.GetVisualGeometriesForBody(plant_context,
+                                        plant_.GetBodyByName("link2"));
   EXPECT_EQ(link2_visual_geometry_ids.size(), 3);
 
   const std::vector<GeometryId>& link3_visual_geometry_ids =
-      plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link3"));
+      plant_.GetVisualGeometriesForBody(plant_context,
+                                        plant_.GetBodyByName("link3"));
   EXPECT_EQ(link3_visual_geometry_ids.size(), 0);
 
   // TODO(SeanCurtis-TRI): Once SG supports it, confirm `GeometryId` maps to the
@@ -133,7 +136,8 @@ TEST_P(MultibodyPlantLinkTests, RegisterWithASceneGraphBeforeParsing) {
   EXPECT_EQ(plant_.EvalNumVisualGeometries(&plant_context), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
-      plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link1"));
+      plant_.GetVisualGeometriesForBody(plant_context,
+                                        plant_.GetBodyByName("link1"));
   EXPECT_EQ(link1_visual_geometry_ids.size(), 2);
 
   // TODO(sam.creasey) Verify that the path to the mesh for the second
@@ -145,11 +149,13 @@ TEST_P(MultibodyPlantLinkTests, RegisterWithASceneGraphBeforeParsing) {
   // resulting lcmt_viewer_load_robot message, but I don't want to.
 
   const std::vector<GeometryId>& link2_visual_geometry_ids =
-      plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link2"));
+      plant_.GetVisualGeometriesForBody(plant_context,
+                                        plant_.GetBodyByName("link2"));
   EXPECT_EQ(link2_visual_geometry_ids.size(), 3);
 
   const std::vector<GeometryId>& link3_visual_geometry_ids =
-      plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link3"));
+      plant_.GetVisualGeometriesForBody(plant_context,
+                                        plant_.GetBodyByName("link3"));
   EXPECT_EQ(link3_visual_geometry_ids.size(), 0);
 
   // TODO(SeanCurtis-TRI): Once SG supports it, confirm `GeometryId` maps to the
@@ -170,26 +176,39 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
   EXPECT_EQ(plant_.EvalNumCollisionGeometries(&plant_context), 3);
 
   const std::vector<GeometryId>& link1_collision_geometry_ids =
-      plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link1"));
+      plant_.GetCollisionGeometriesForBody(plant_context,
+                                           plant_.GetBodyByName("link1"));
   ASSERT_EQ(link1_collision_geometry_ids.size(), 2);
 
-  EXPECT_TRUE(scene_graph_.model_inspector()
-                  .GetProximityProperties(link1_collision_geometry_ids[0])
-                  ->GetProperty<CoulombFriction<double>>("material",
-                                                         "coulomb_friction") ==
-              CoulombFriction<double>(0.8, 0.3));
-  EXPECT_TRUE(scene_graph_.model_inspector()
-                  .GetProximityProperties(link1_collision_geometry_ids[1])
-                  ->GetProperty<CoulombFriction<double>>("material",
-                                                         "coulomb_friction") ==
-              CoulombFriction<double>(1.5, 0.6));
+  EXPECT_TRUE(
+      scene_graph_.model_inspector()
+          .GetProximityProperties(
+              scene_graph_.model_inspector().GetGeometryIdByName(
+                  plant_.GetBodyFrameIdOrThrow(
+                      plant_.GetBodyByName("link1").index()),
+                  geometry::Role::kProximity, "test_robot::link1_collision1"))
+          ->GetProperty<CoulombFriction<double>>("material",
+                                                 "coulomb_friction") ==
+      CoulombFriction<double>(0.8, 0.3));
+  EXPECT_TRUE(
+      scene_graph_.model_inspector()
+          .GetProximityProperties(
+              scene_graph_.model_inspector().GetGeometryIdByName(
+                  plant_.GetBodyFrameIdOrThrow(
+                      plant_.GetBodyByName("link1").index()),
+                  geometry::Role::kProximity, "test_robot::link1_collision2"))
+          ->GetProperty<CoulombFriction<double>>("material",
+                                                 "coulomb_friction") ==
+      CoulombFriction<double>(1.5, 0.6));
 
   const std::vector<GeometryId>& link2_collision_geometry_ids =
-      plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link2"));
+      plant_.GetCollisionGeometriesForBody(plant_context,
+                                           plant_.GetBodyByName("link2"));
   ASSERT_EQ(link2_collision_geometry_ids.size(), 0);
 
   const std::vector<GeometryId>& link3_collision_geometry_ids =
-      plant_.GetCollisionGeometriesForBody(plant_.GetBodyByName("link3"));
+      plant_.GetCollisionGeometriesForBody(plant_context,
+                                           plant_.GetBodyByName("link3"));
   ASSERT_EQ(link3_collision_geometry_ids.size(), 1);
   // Verifies the default value of the friction coefficients when the user does
   // not specify them in the SDF file.

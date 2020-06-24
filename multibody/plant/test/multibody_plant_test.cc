@@ -1927,21 +1927,39 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   EXPECT_EQ(plant.EvalNumCollisionGeometries(&plant_context), 3);
 
   const int link1_num_collisions =
-      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link1")).size();
+      plant
+          .GetCollisionGeometriesForBody(plant_context,
+                                         plant.GetBodyByName("link1"))
+          .size();
   const int link2_num_collisions =
-      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link2")).size();
+      plant
+          .GetCollisionGeometriesForBody(plant_context,
+                                         plant.GetBodyByName("link2"))
+          .size();
   const int link3_num_collisions =
-      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link3")).size();
+      plant
+          .GetCollisionGeometriesForBody(plant_context,
+                                         plant.GetBodyByName("link3"))
+          .size();
   ASSERT_EQ(link1_num_collisions, 2);
   ASSERT_EQ(link2_num_collisions, 0);
   ASSERT_EQ(link3_num_collisions, 1);
 
   const int link1_num_visuals =
-      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1")).size();
+      plant
+          .GetVisualGeometriesForBody(plant_context,
+                                      plant.GetBodyByName("link1"))
+          .size();
   const int link2_num_visuals =
-      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link2")).size();
+      plant
+          .GetVisualGeometriesForBody(plant_context,
+                                      plant.GetBodyByName("link2"))
+          .size();
   const int link3_num_visuals =
-      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link3")).size();
+      plant
+          .GetVisualGeometriesForBody(plant_context,
+                                      plant.GetBodyByName("link3"))
+          .size();
   ASSERT_EQ(link1_num_visuals, 2);
   ASSERT_EQ(link2_num_visuals, 3);
   ASSERT_EQ(link3_num_visuals, 0);
@@ -1979,18 +1997,42 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   EXPECT_TRUE(plant_autodiff.geometry_source_is_registered());
   EXPECT_EQ(plant_autodiff.EvalNumCollisionGeometries(&plant_context_autodiff),
             plant.EvalNumCollisionGeometries(&plant_context));
-  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
-      plant_autodiff.GetBodyByName("link1")).size(), link1_num_collisions);
-  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
-      plant_autodiff.GetBodyByName("link2")).size(), link2_num_collisions);
-  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
-      plant_autodiff.GetBodyByName("link3")).size(), link3_num_collisions);
-  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
-      plant_autodiff.GetBodyByName("link1")).size(), link1_num_visuals);
-  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
-      plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
-  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
-      plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+  EXPECT_EQ(
+      plant_autodiff
+          .GetCollisionGeometriesForBody(plant_context_autodiff,
+                                         plant_autodiff.GetBodyByName("link1"))
+          .size(),
+      link1_num_collisions);
+  EXPECT_EQ(
+      plant_autodiff
+          .GetCollisionGeometriesForBody(plant_context_autodiff,
+                                         plant_autodiff.GetBodyByName("link2"))
+          .size(),
+      link2_num_collisions);
+  EXPECT_EQ(
+      plant_autodiff
+          .GetCollisionGeometriesForBody(plant_context_autodiff,
+                                         plant_autodiff.GetBodyByName("link3"))
+          .size(),
+      link3_num_collisions);
+  EXPECT_EQ(
+      plant_autodiff
+          .GetVisualGeometriesForBody(plant_context_autodiff,
+                                      plant_autodiff.GetBodyByName("link1"))
+          .size(),
+      link1_num_visuals);
+  EXPECT_EQ(
+      plant_autodiff
+          .GetVisualGeometriesForBody(plant_context_autodiff,
+                                      plant_autodiff.GetBodyByName("link2"))
+          .size(),
+      link2_num_visuals);
+  EXPECT_EQ(
+      plant_autodiff
+          .GetVisualGeometriesForBody(plant_context_autodiff,
+                                      plant_autodiff.GetBodyByName("link3"))
+          .size(),
+      link3_num_visuals);
 
   // Make sure the geometry ports were included in the autodiffed plant.
   DRAKE_EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());

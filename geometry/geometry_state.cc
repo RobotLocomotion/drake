@@ -277,13 +277,13 @@ const std::unordered_set<GeometryId>& GeometryState<T>::GetGeometriesForFrame(
 }
 
 template <typename T>
-std::vector<GeometryId> GeometryState<T>::GetGeometriesForFrameWithRole(
+std::unordered_set<GeometryId> GeometryState<T>::GetGeometriesForFrameWithRole(
     FrameId frame_id, Role role) const {
   const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
-  std::vector<GeometryId> ids;
+  std::unordered_set<GeometryId> ids;
   for (GeometryId geometry_id : frame.child_geometries()) {
     if (geometries_.at(geometry_id).has_role(role)) {
-      ids.push_back(geometry_id);
+      ids.insert(geometry_id);
     }
   }
   return ids;

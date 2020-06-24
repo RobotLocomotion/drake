@@ -1171,22 +1171,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name);
 
-  /// Returns an array of GeometryId's identifying the different visual
+  /// Returns a vector of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
   /// @note This method can only be called pre-finalize, see Finalize().
   /// @see RegisterVisualGeometry(), Finalize()
-  const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
+  std::vector<geometry::GeometryId> GetVisualGeometriesForBody(
       const Body<T>& body) const;
 
-  /// Returns an array of GeometryId's identifying the different visual
+  /// Returns a vector of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
   /// @note This method can be called at any time during the lifetime of `this`
   /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   /// @see RegisterVisualGeometry(), Finalize()
-  const std::vector<geometry::GeometryId>&
-  MultibodyPlant<T>::GetVisualGeometriesForBody(
-      const systems::Context<T>& context, Body<T>& body) const;
+  std::vector<geometry::GeometryId> GetVisualGeometriesForBody(
+      const systems::Context<T>& context, const Body<T>& body) const;
 
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
@@ -1219,22 +1218,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction);
 
-  /// Returns an array of GeometryId's identifying the different contact
+  /// Returns a vector of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
   /// @note This method can only be called pre-finalize, see Finalize().
   /// @see RegisterCollisionGeometry(), Finalize()
-  const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
+  std::vector<geometry::GeometryId> GetCollisionGeometriesForBody(
       const Body<T>& body) const;
 
-  /// Returns an array of GeometryId's identifying the different contact
+  /// Returns a vector of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
   /// @note This method can be called at any time during the lifetime of `this`
   /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   /// @see RegisterCollisionGeometry(), Finalize()
-  const std::vector<geometry::GeometryId>&
-  MultibodyPlant<T>::GetCollisionGeometriesForBody(
-      const systems::Context<T>& context, Body<T>& body) const;
+  std::vector<geometry::GeometryId> GetCollisionGeometriesForBody(
+      const systems::Context<T>& context, const Body<T>& body) const;
 
   /// Excludes the collision geometries between two given collision filter
   /// groups.
@@ -4382,32 +4380,40 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Gets all geometry ids for visual geometries registered by this plant.
   // This method can only be called pre-finalize.
-  vector<geometry::GeometryId> visual_geometries() const {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    return member_scene_graph.model_inspector().GetGeometriesForSourceWithRole(
-        get_source_id(), geometry::Role::kIllustration);
+  std::unordered_set<geometry::GeometryId> visual_geometries() const {
+    DRAKE_DEMAND(geometry_source_is_registered());
+    return const_cast<MultibodyPlant<T>*>(this)
+        ->member_scene_graph()
+        .model_inspector()
+        .GetGeometriesForSourceWithRole(get_source_id().value(),
+                                        geometry::Role::kIllustration);
   }
 
   // Gets all geometry ids for visual geometries registered by this plant.
-  vector<geometry::GeometryId> visual_geometries(
+  std::unordered_set<geometry::GeometryId> visual_geometries(
       geometry::QueryObject<T> query_object) const {
+    DRAKE_DEMAND(geometry_source_is_registered());
     return query_object.inspector().GetGeometriesForSourceWithRole(
-        get_source_id(), geometry::Role::kIllustration);
+        get_source_id().value(), geometry::Role::kIllustration);
   }
 
   // Gets all geometry ids for collision geometries registered by this plant.
   // This method can only be called pre-finalize.
-  vector<geometry::GeometryId> collision_geometries() const {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    return member_scene_graph.model_inspector().GetGeometriesForSourceWithRole(
-        get_source_id(), geometry::Role::kProximity);
+  std::unordered_set<geometry::GeometryId> collision_geometries() const {
+    DRAKE_DEMAND(geometry_source_is_registered());
+    return const_cast<MultibodyPlant<T>*>(this)
+        ->member_scene_graph()
+        .model_inspector()
+        .GetGeometriesForSourceWithRole(get_source_id().value(),
+                                        geometry::Role::kProximity);
   }
 
   // Gets all geometry ids for collision geometries registered by this plant.
-  vector<geometry::GeometryId> collision_geometries(
+  std::unordered_set<geometry::GeometryId> collision_geometries(
       geometry::QueryObject<T> query_object) const {
+    DRAKE_DEMAND(geometry_source_is_registered());
     return query_object.inspector().GetGeometriesForSourceWithRole(
-        get_source_id(), geometry::Role::kProximity);
+        get_source_id().value(), geometry::Role::kProximity);
   }
 
   // Iteration order on this map DOES matter, and therefore we use an std::map.
