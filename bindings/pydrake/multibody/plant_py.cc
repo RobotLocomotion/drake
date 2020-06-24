@@ -269,6 +269,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
         // overload that (a) services MBP directly and (b) uses body
         // association that is less awkward than implicit BodyNodeIndex.
+        .def("CalcCenterOfMassPosition",
+            overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                &Class::CalcCenterOfMassPosition), py::arg("context"),
+            cls_doc.CalcCenterOfMassPosition.doc_1args)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),

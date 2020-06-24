@@ -507,6 +507,9 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
+        p_com = plant.CalcCenterOfMassPosition(context=context)
+        self.assertTupleEqual(p_com.shape, (3, ))
+
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [
