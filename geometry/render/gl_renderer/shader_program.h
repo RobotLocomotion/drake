@@ -53,7 +53,7 @@ class ShaderProgram {
 
   /* Sets the scalar uniform value to the given value.
    @throws std::runtime_error if the named uniform isn't part of the program. */
-  void SetUniformValue1f(const std::string& uniform_name, float value) const;
+  void SetUniformValue(const std::string& uniform_name, float value) const;
 
   /* Binds the program for usage.  */
   void Use() const;

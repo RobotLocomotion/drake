@@ -14,20 +14,9 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_package_library_gl_per_os(
     name = "dev",
     ubuntu_deps = [
-        ":opengl_geometry",
         ":render_engine_gl",
-        ":shader_program",
     ],
     visibility = ["//visibility:private"],
-)
-
-drake_cc_library_gl_ubuntu_only(
-    name = "opengl_geometry",
-    hdrs = ["opengl_geometry.h"],
-    deps = [
-        "//geometry/render/gl_renderer:opengl_context",
-        "//math:geometric_transform",
-    ],
 )
 
 # The pure OpenGL-based render engine implementation.
@@ -39,22 +28,12 @@ drake_cc_library_gl_ubuntu_only(
         "render_engine_gl.h",
     ],
     deps = [
-        ":opengl_geometry",
-        ":shader_program",
         "//common:essential",
         "//geometry/render:render_engine",
+        "//geometry/render/gl_renderer:opengl_geometry",
+        "//geometry/render/gl_renderer:shader_program",
         "//geometry/render/gl_renderer:shape_meshes",
         "//systems/sensors:image",
-    ],
-)
-
-drake_cc_library_gl_ubuntu_only(
-    name = "shader_program",
-    srcs = ["shader_program.cc"],
-    hdrs = ["shader_program.h"],
-    deps = [
-        "//common:essential",
-        "//geometry/render/gl_renderer:opengl_context",
     ],
 )
 
@@ -62,15 +41,6 @@ drake_cc_googletest_gl_ubuntu_only(
     name = "buffer_dim_test",
     deps = [
         ":render_engine_gl",
-    ],
-)
-
-drake_cc_googletest_gl_ubuntu_only(
-    name = "opengl_geometry_test",
-    deps = [
-        ":opengl_geometry",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -85,17 +55,6 @@ drake_cc_googletest_gl_ubuntu_only(
         "//common:find_resource",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
-    ],
-)
-
-drake_cc_googletest_gl_ubuntu_only(
-    name = "shader_program_test",
-    tags = vtk_test_tags(),
-    deps = [
-        ":shader_program",
-        "//common:temp_directory",
-        "//common/test_utilities:expect_throws_message",
-        "//geometry/render/gl_renderer:opengl_context",
     ],
 )
 

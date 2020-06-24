@@ -1,4 +1,4 @@
-#include "drake/geometry/render/gl_renderer/dev/shader_program.h"
+#include "drake/geometry/render/gl_renderer/shader_program.h"
 
 #include <fstream>
 #include <sstream>
@@ -107,8 +107,8 @@ GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {
   return id;
 }
 
-void ShaderProgram::SetUniformValue1f(const std::string& uniform_name,
-                                      float value) const {
+void ShaderProgram::SetUniformValue(const std::string& uniform_name,
+                                    float value) const {
   glUniform1f(GetUniformLocation(uniform_name), value);
 }
 

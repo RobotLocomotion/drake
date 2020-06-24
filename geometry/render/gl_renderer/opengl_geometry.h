@@ -21,10 +21,12 @@ namespace internal {
 struct OpenGlGeometry {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(OpenGlGeometry)
 
-  /* Default constructor; the instances is considered "undefined".  */
+  /* Default constructor; the resultant instance is considered "undefined".  */
   OpenGlGeometry() = default;
 
-  /* Constructs from the handles for the various OpenGl objects.
+  /* Constructs an %OpenGlGeometry from the given "object names" OpenGl objects.
+   (See e.g., https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGenFramebuffers.xhtml
+   for an example of where such an "object name" would come from.)
 
    @param vertex_array_in       The handle to the OpenGl vertex array object
                                 containing the mesh's data.

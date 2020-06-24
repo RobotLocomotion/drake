@@ -96,8 +96,8 @@ void RenderEngineGl::RenderLabelImage(const CameraProperties&, bool,
 void RenderEngineGl::SetGlProjectionMatrix(
     const DepthCameraProperties& camera) {
   shader_program_->Use();
-  shader_program_->SetUniformValue1f("depth_z_near", camera.z_near);
-  shader_program_->SetUniformValue1f("depth_z_far", camera.z_far);
+  shader_program_->SetUniformValue("depth_z_near", camera.z_near);
+  shader_program_->SetUniformValue("depth_z_far", camera.z_far);
 
   static constexpr float kGlZNear = 0.01;
   static constexpr float kGlZFar = 10.0;
