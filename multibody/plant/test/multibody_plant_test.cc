@@ -92,9 +92,11 @@ class MultibodyPlantTester {
   MultibodyPlantTester() = delete;
 
   template <typename T>
-  static BodyIndex geometry_id_to_body_index(
-      const MultibodyPlant<T>& plant, GeometryId id) {
-    return plant.geometry_id_to_body_index_.at(id);
+  static BodyIndex geometry_id_to_body_index(const MultibodyPlant<T>& plant,
+                                             const Context<T>& context,
+                                             GeometryId id) {
+    const auto& query_object = EvalGeometryQueryInput(plant, context);
+    return plant.geometry_id_to_body_index(query_object, id);
   }
 
   static void CalcNormalAndTangentContactJacobians(
@@ -106,9 +108,9 @@ class MultibodyPlantTester {
         context, point_pairs, Jn, Jt, R_WC_set);
   }
 
-  static const geometry::QueryObject<double>& EvalGeometryQueryInput(
-      const MultibodyPlant<double>& plant,
-      const systems::Context<double>& context) {
+  template <typename T>
+  static const geometry::QueryObject<T>& EvalGeometryQueryInput(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalGeometryQueryInput(context);
   }
 };
@@ -2169,7 +2171,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       PenetrationAsPointPair<T> pair_on_T;
 
       BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
-          plant_on_T, pair.id_A);
+          plant_on_T, context_on_T, pair.id_A);
       const RigidTransform<T>& X_WA = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyA_index));
       const SpatialVelocity<T> V_WA =
@@ -2177,7 +2179,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
               context_on_T, plant_on_T.get_body(bodyA_index));
 
       BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
-          plant_on_T, pair.id_B);
+          plant_on_T, context_on_T, pair.id_B);
       const RigidTransform<T>& X_WB = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyB_index));
       const SpatialVelocity<T> V_WB =
@@ -2221,7 +2223,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       PenetrationAsPointPair<T> pair_on_T;
 
       BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
-          plant_on_T, pair.id_A);
+          plant_on_T, context_on_T, pair.id_A);
       const RigidTransform<T>& X_WA = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyA_index));
       const SpatialVelocity<T> V_WA =
@@ -2229,7 +2231,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
               context_on_T, plant_on_T.get_body(bodyA_index));
 
       BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
-          plant_on_T, pair.id_B);
+          plant_on_T, context_on_T, pair.id_B);
       const RigidTransform<T>& X_WB = plant_on_T.EvalBodyPoseInWorld(
           context_on_T, plant_on_T.get_body(bodyB_index));
       const SpatialVelocity<T> V_WB =

@@ -117,6 +117,31 @@ class GeometryState {
     return ids;
   }
 
+  /** Implementation of SceneGraphInspector::GetGeometriesForSource().  */
+  std::vector<GeometryId> GetGeometriesForSource(SourceId source_id) const {
+    std::vector<GeometryId> ids;
+    for (const auto& id_geometry_pair : geometries_) {
+      if (id_geometry_pair.second.belongs_to_source(source_id)) {
+        ids.push_back(id_geometry_pair.first);
+      }
+    }
+    return ids;
+  }
+
+  /** Implementation of SceneGraphInspector::GetGeometriesForSourceWithRole().
+   */
+  std::vector<GeometryId> GetGeometriesForSourceWithRole(SourceId source_id,
+                                                         Role role) const {
+    std::vector<GeometryId> ids;
+    for (const auto& id_geometry_pair : geometries_) {
+      if (id_geometry_pair.second.belongs_to_source(source_id) &&
+          id_geometry_pair.second.has_role(role)) {
+        ids.push_back(id_geometry_pair.first);
+      }
+    }
+    return ids;
+  }
+
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int NumGeometriesWithRole(Role role) const;
 
@@ -174,6 +199,15 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumGeometriesForFrameWithRole().
    */
   int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const;
+
+  /** Implementation of SceneGraphInspector::GetGeometriesForFrame().  */
+  const std::unordered_set<GeometryId>& GetGeometriesForFrame(
+      FrameId frame_id) const;
+
+  /** Implementation of SceneGraphInspector::GetGeometriesForFrameWithRole().
+   */
+  std::vector<GeometryId> GetGeometriesForFrameWithRole(FrameId frame_id,
+      Role role) const;
 
   // TODO(SeanCurtis-TRI): Redundant w.r.t. NumGeometriesForFrameWithRole().
   /** Reports the number of child geometries for this frame that have the

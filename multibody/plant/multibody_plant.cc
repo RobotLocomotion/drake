@@ -265,10 +265,7 @@ MultibodyPlant<T>::MultibodyPlant(
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
-  // TODO(eric.cousineau): Combine all of these elements into one struct, make
-  // it less brittle.
-  visual_geometries_.emplace_back();  // Entries for the "world" body.
-  collision_geometries_.emplace_back();
+  // Entry for the "world" body.
   X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
@@ -414,17 +411,33 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   }
   member_scene_graph().AssignRole(*source_id_, id, perception_props);
 
+  // TODO(joemasterjohn):
+  //   Remove geometry_id_to_visual_index_ member when the
+  //   num_visual_geometries() method is removed on 2020-10-01.
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
-  DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
-  visual_geometries_[body.index()].push_back(id);
   return id;
 }
 
 template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
-  return visual_geometries_[body.index()];
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_ASSERT(body.index() < num_bodies());
+  FrameId frame_id = body_index_to_frame_id_[body.index()];
+  return member_scene_graph().model_inspector().GetGeometriesForFrameWithRole(
+      frame_id, geometry::Role::kIllustration);
+}
+
+template <typename T>
+const std::vector<geometry::GeometryId>&
+MultibodyPlant<T>::GetVisualGeometriesForBody(
+    const systems::Context<T>& context, Body<T>& body) const {
+  DRAKE_ASSERT(body.index() < num_bodies());
+  FrameId frame_id = body_index_to_frame_id_[body.index()];
+  return EvalGeometryQueryInput(context)
+      .inspector()
+      .GetGeometriesForFrameWithRole(frame_id, geometry::Role::kIllustration);
 }
 
 template <typename T>
@@ -448,15 +461,17 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
       body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
   member_scene_graph().AssignRole(*source_id_, id, std::move(properties));
+
+  // TODO(joemasterjohn):
+  //   Remove geometry_id_to_collision_index_ member when the
+  //   num_collision_geometries() method is removed on 2020-10-01.
+  //   Remove default_coulomb_friction_ member when the
+  //   default_coulomb_friction() method is removed on 2020-10-01.
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
-  DRAKE_ASSERT(
-      static_cast<int>(default_coulomb_friction_.size()) == collision_index);
-  // TODO(SeanCurtis-TRI): Stop storing coulomb friction in MBP and simply
-  //  acquire it from SceneGraph.
+  DRAKE_ASSERT(static_cast<int>(default_coulomb_friction_.size()) ==
+               collision_index);
   default_coulomb_friction_.push_back(coulomb_friction);
-  DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
-  collision_geometries_[body.index()].push_back(id);
   return id;
 }
 
@@ -474,8 +489,22 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
 template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
+  DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_ASSERT(body.index() < num_bodies());
-  return collision_geometries_[body.index()];
+  FrameId frame_id = body_index_to_frame_id_[body.index()];
+  return member_scene_graph().model_inspector().GetGeometriesForFrameWithRole(
+      frame_id, geometry::Role::kProximity);
+}
+
+template <typename T>
+const std::vector<geometry::GeometryId>&
+MultibodyPlant<T>::GetCollisionGeometriesForBody(
+    const systems::Context<T>& context, Body<T>& body) const {
+  DRAKE_ASSERT(body.index() < num_bodies());
+  FrameId frame_id = body_index_to_frame_id_[body.index()];
+  return EvalGeometryQueryInput(context)
+      .inspector()
+      .GetGeometriesForFrameWithRole(frame_id, geometry::Role::kProximity);
 }
 
 template <typename T>
@@ -532,7 +561,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   GeometryId geometry_id = member_scene_graph().RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
-  geometry_id_to_body_index_[geometry_id] = body.index();
   return geometry_id;
 }
 
@@ -922,11 +950,11 @@ template <typename T>
 void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   DRAKE_DEMAND(geometry_source_is_registered());
   geometry::GeometrySet visual;
-  for (const auto& body_geometries : visual_geometries_) {
+  for (const auto& body_geometries : visual_geometries()) {
     visual.Add(body_geometries);
   }
   geometry::GeometrySet collision;
-  for (const auto& body_geometries : collision_geometries_) {
+  for (const auto& body_geometries : collision_geometries()) {
     collision.Add(body_geometries);
   }
   member_scene_graph().ExcludeCollisionsWithin(visual);
@@ -949,6 +977,16 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
     member_scene_graph().ExcludeCollisionsBetween(
         collision_filter_group_a.second, collision_filter_group_b.second);
   }
+}
+
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcNormalAndTangentContactJacobians(
+    const systems::Context<symbolic::Expression>&,
+    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&,
+    MatrixX<symbolic::Expression>*, MatrixX<symbolic::Expression>*,
+    std::vector<math::RotationMatrix<symbolic::Expression>>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
 }
 
 template<typename T>
@@ -976,6 +1014,8 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   // sized.
   if (num_contacts == 0) return;
 
+  const auto& query_object = EvalGeometryQueryInput(context);
+
   const Frame<T>& frame_W = world_frame();
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
@@ -983,9 +1023,11 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const GeometryId geometryA_id = point_pair.id_A;
     const GeometryId geometryB_id = point_pair.id_B;
 
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    BodyIndex bodyA_index =
+        geometry_id_to_body_index(query_object, geometryA_id);
     const Body<T>& bodyA = get_body(bodyA_index);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    BodyIndex bodyB_index =
+        geometry_id_to_body_index(query_object, geometryB_id);
     const Body<T>& bodyB = get_body(bodyB_index);
 
     // Penetration depth, > 0 if bodies interpenetrate.
@@ -1291,6 +1333,15 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
   }
 }
 
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousPointPair(
+        const systems::Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const systems::Context<T>& context,
@@ -1307,14 +1358,18 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
   const internal::VelocityKinematicsCache<T>& vc =
       EvalVelocityKinematics(context);
 
+  const auto& query_object = EvalGeometryQueryInput(context);
+
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    BodyIndex bodyA_index =
+        geometry_id_to_body_index(query_object, geometryA_id);
+    BodyIndex bodyB_index =
+        geometry_id_to_body_index(query_object, geometryB_id);
 
     internal::BodyNodeIndex bodyA_node_index =
         get_body(bodyA_index).node_index();
@@ -1393,6 +1448,14 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
   }
 }
 
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcContactResultsDiscrete(
+    const systems::Context<symbolic::Expression>&,
+    ContactResults<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
@@ -1418,14 +1481,18 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
   DRAKE_DEMAND(vn.size() == num_contacts);
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
+  const auto& query_object = EvalGeometryQueryInput(context);
+
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index =
+        geometry_id_to_body_index(query_object, geometryA_id);
+    const BodyIndex bodyB_index =
+        geometry_id_to_body_index(query_object, geometryB_id);
 
     const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
 
@@ -1448,6 +1515,15 @@ void MultibodyPlant<T>::CalcContactResultsDiscrete(
   }
 }
 
+template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcAndAddContactForcesByPenaltyMethod(
+        const systems::Context<symbolic::Expression>&,
+        std::vector<SpatialForce<symbolic::Expression>>*) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
 template <typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
@@ -1461,6 +1537,8 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
+  const auto& query_object = EvalGeometryQueryInput(context);
+
   for (int pair_index = 0;
        pair_index < contact_results.num_point_pair_contacts(); ++pair_index) {
     const PointPairContactInfo<T>& contact_info =
@@ -1470,8 +1548,10 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const BodyIndex bodyA_index =
+        geometry_id_to_body_index(query_object, geometryA_id);
+    const BodyIndex bodyB_index =
+        geometry_id_to_body_index(query_object, geometryB_id);
 
     internal::BodyNodeIndex bodyA_node_index =
         get_body(bodyA_index).node_index();
@@ -1576,8 +1656,10 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
-    const BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryM_id);
-    const BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryN_id);
+    const BodyIndex bodyA_index =
+        geometry_id_to_body_index(query_object, geometryM_id);
+    const BodyIndex bodyB_index =
+        geometry_id_to_body_index(query_object, geometryN_id);
     const Body<T>& bodyA = get_body(bodyA_index);
     const Body<T>& bodyB = get_body(bodyB_index);
 

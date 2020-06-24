@@ -712,12 +712,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     source_id_ = other.source_id_;
     body_index_to_frame_id_ = other.body_index_to_frame_id_;
     frame_id_to_body_index_ = other.frame_id_to_body_index_;
-    geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+
+    // TODO(joemasterjohn):
+    //   Remove geometry_id_to_visual_index_ member when the
+    //   num_visual_geometries() method is removed on 2020-10-01.
+    //   Remove geometry_id_to_collision_index_ member when the
+    //   num_collision_geometries() method is removed on 2020-10-01.
+    //   Remove default_coulomb_friction_ member when the
+    //   default_coulomb_friction() method is removed on 2020-10-01.
     geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
     geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
     default_coulomb_friction_ = other.default_coulomb_friction_;
-    visual_geometries_ = other.visual_geometries_;
-    collision_geometries_ = other.collision_geometries_;
+
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
@@ -763,15 +769,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     // Add the actual rigid body to the model.
     const RigidBody<T>& body = this->mutable_tree().AddRigidBody(
         name, model_instance, M_BBo_B);
-    // Each entry of visual_geometries_, ordered by body index, contains a
-    // std::vector of geometry ids for that body. The emplace_back() below
-    // resizes visual_geometries_ to store the geometry ids for the body we
-    // just added.
-    // Similarly for the collision_geometries_ vector.
-    DRAKE_DEMAND(visual_geometries_.size() == body.index());
-    visual_geometries_.emplace_back();
-    DRAKE_DEMAND(collision_geometries_.size() == body.index());
-    collision_geometries_.emplace_back();
     DRAKE_DEMAND(X_WB_default_list_.size() == body.index());
     X_WB_default_list_.emplace_back();
     RegisterRigidBodyWithSceneGraph(body);
@@ -1176,12 +1173,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
+  /// @note This method can only be called pre-finalize, see Finalize().
+  /// @see RegisterVisualGeometry(), Finalize()
+  const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
+      const Body<T>& body) const;
+
+  /// Returns an array of GeometryId's identifying the different visual
+  /// geometries for `body` previously registered with a SceneGraph.
   /// @note This method can be called at any time during the lifetime of `this`
   /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   /// @see RegisterVisualGeometry(), Finalize()
-  const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
-      const Body<T>& body) const;
+  const std::vector<geometry::GeometryId>&
+  MultibodyPlant<T>::GetVisualGeometriesForBody(
+      const systems::Context<T>& context, Body<T>& body) const;
 
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
@@ -1216,12 +1221,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
+  /// @note This method can only be called pre-finalize, see Finalize().
+  /// @see RegisterCollisionGeometry(), Finalize()
+  const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
+      const Body<T>& body) const;
+
+  /// Returns an array of GeometryId's identifying the different contact
+  /// geometries for `body` previously registered with a SceneGraph.
   /// @note This method can be called at any time during the lifetime of `this`
   /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   /// @see RegisterCollisionGeometry(), Finalize()
-  const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
-      const Body<T>& body) const;
+  const std::vector<geometry::GeometryId>&
+  MultibodyPlant<T>::GetCollisionGeometriesForBody(
+      const systems::Context<T>& context, Body<T>& body) const;
 
   /// Excludes the collision geometries between two given collision filter
   /// groups.
@@ -3572,9 +3585,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       "MultibodyPlant.")
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
-    // TODO(amcastro-tri): This API might change or disappear completely as GS
+    // TODO(amcastro-tri): This API might change or disappear completely as SG
     // provides support for the specification of surface properties.
     DRAKE_DEMAND(is_collision_geometry(id));
+    // TODO(joemasterjohn):
+    //   Remove geometry_id_to_collision_index_ member when the
+    //   num_collision_geometries() method is removed on 2020-10-01.
+    //   Remove default_coulomb_friction_ member when the
+    //   default_coulomb_friction() method is removed on 2020-10-01.
     const int collision_index = geometry_id_to_collision_index_.at(id);
     return default_coulomb_friction_[collision_index];
   }
@@ -3583,12 +3601,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  // Deprecation notes:
-  //   - remove `geometry_id_to_visual_index_`
   DRAKE_DEPRECATED("2020-10-01",
                    "num_visual_geometries() will be removed and replaced by "
                    "EvalNumVisualGeometries(const Context<T>*).")
   int num_visual_geometries() const {
+    // TODO(joemasterjohn):
+    //   Remove geometry_id_to_visual_index_ member when the
+    //   num_visual_geometries() method is removed on 2020-10-01.
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
 
@@ -3608,12 +3627,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  // Deprecation notes:
-  //   - remove `geometry_id_to_collision_index_`
   DRAKE_DEPRECATED("2020-10-01",
                    "num_collision_geometries() will be removed and replaced by "
                    "EvalNumCollisionGeometries(const Context<T>*).")
   int num_collision_geometries() const {
+    // TODO(joemasterjohn):
+    //   Remove geometry_id_to_collision_index_ member when the
+    //   num_collision_geometries() method is removed on 2020-10-01.
     return geometry_id_to_collision_index_.size();
   }
 
@@ -4003,8 +4023,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
   // 1. Register geometry for the corresponding FrameId associated with `body`.
-  // 2. Update the geometry_id_to_body_index_ map associating the new GeometryId
-  //    to the BodyIndex of `body`.
   // This assumes:
   // 1. Finalize() was not called on `this` plant.
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
@@ -4102,7 +4120,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ContactResults<T>* contact_results) const;
 
   // Helper to evaluate if a GeometryId corresponds to a collision model.
+  // TODO(joemasterjohn): remove this function when default_coloumb_friction()
+  // is removed on 2020-10-01.
   bool is_collision_geometry(geometry::GeometryId id) const {
+    // TODO(joemasterjohn):
+    //   Remove geometry_id_to_collision_index_ member when the
+    //   num_collision_geometries() method is removed on 2020-10-01.
     return geometry_id_to_collision_index_.count(id) > 0;
   }
 
@@ -4348,6 +4371,45 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     std::vector<double> damping;
   } joint_limits_parameters_;
 
+  // Gets the BodyIndex associated with the provided GeometryId by querying
+  // for the FrameId of the geometry, and using the frame_id_to_body_index_ map.
+  BodyIndex geometry_id_to_body_index(geometry::QueryObject<T> query_object,
+                                      geometry::GeometryId geometry_id) const {
+    geometry::FrameId frame_id =
+        query_object.inspector().GetFrameId(geometry_id);
+    return frame_id_to_body_index_.at(frame_id);
+  }
+
+  // Gets all geometry ids for visual geometries registered by this plant.
+  // This method can only be called pre-finalize.
+  vector<geometry::GeometryId> visual_geometries() const {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    return member_scene_graph.model_inspector().GetGeometriesForSourceWithRole(
+        get_source_id(), geometry::Role::kIllustration);
+  }
+
+  // Gets all geometry ids for visual geometries registered by this plant.
+  vector<geometry::GeometryId> visual_geometries(
+      geometry::QueryObject<T> query_object) const {
+    return query_object.inspector().GetGeometriesForSourceWithRole(
+        get_source_id(), geometry::Role::kIllustration);
+  }
+
+  // Gets all geometry ids for collision geometries registered by this plant.
+  // This method can only be called pre-finalize.
+  vector<geometry::GeometryId> collision_geometries() const {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    return member_scene_graph.model_inspector().GetGeometriesForSourceWithRole(
+        get_source_id(), geometry::Role::kProximity);
+  }
+
+  // Gets all geometry ids for collision geometries registered by this plant.
+  vector<geometry::GeometryId> collision_geometries(
+      geometry::QueryObject<T> query_object) const {
+    return query_object.inspector().GetGeometriesForSourceWithRole(
+        get_source_id(), geometry::Role::kProximity);
+  }
+
   // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
@@ -4355,34 +4417,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // body.
   std::unordered_map<geometry::FrameId, BodyIndex> frame_id_to_body_index_;
 
-  // Map from GeometryId to BodyIndex. During contact queries, it allows to find
-  // out to which body a given geometry corresponds to.
-  std::unordered_map<geometry::GeometryId, BodyIndex>
-      geometry_id_to_body_index_;
-
   // Maps a GeometryId with a visual index. This allows, for instance, to find
   // out visual properties for a given geometry.
   // TODO(amcastro-tri): verify insertions were correct once visual_index gets
   // used with the landing of visual properties in SceneGraph.
+  // TODO(joemasterjohn):
+  //   Remove geometry_id_to_visual_index_ member when the
+  //   num_visual_geometries() method is removed on 2020-10-01.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
-
-  // Per-body arrays of visual geometries indexed by BodyIndex.
-  // That is, visual_geometries_[body_index] corresponds to the array of visual
-  // geometries for body with index body_index.
-  std::vector<std::vector<geometry::GeometryId>> visual_geometries_;
-
-  // Per-body arrays of collision geometries indexed by BodyIndex.
-  // That is, collision_geometries_[body_index] corresponds to the array of
-  // collision geometries for body with index body_index.
-  std::vector<std::vector<geometry::GeometryId>> collision_geometries_;
 
   // Maps a GeometryId with a collision index. This allows, for instance, to
   // find out collision properties (such as friction coefficient) for a given
   // geometry.
+  // TODO(joemasterjohn):
+  //   Remove geometry_id_to_collision_index_ member when the
+  //   num_collision_geometries() method is removed on 2020-10-01.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
   // Friction coefficients ordered by collision index.
   // See geometry_id_to_collision_index_.
+  // TODO(joemasterjohn): Remove default_coulomb_friction_ member when the
+  // default_coulomb_friction() method is removed on 2020-10-01.
   std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
   // The model used by the plant to compute contact forces.
@@ -4612,15 +4667,29 @@ MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
     const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)
     const;
 template <>
+void MultibodyPlant<symbolic::Expression>::
+    CalcAndAddContactForcesByPenaltyMethod(
+        const systems::Context<symbolic::Expression>&,
+        std::vector<SpatialForce<symbolic::Expression>>*) const;
+template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
     const systems::Context<symbolic::Expression>&,
     internal::HydroelasticContactInfoAndBodySpatialForces<
         symbolic::Expression>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::
+    CalcContactResultsContinuousPointPair(
+        const systems::Context<symbolic::Expression>&,
+        ContactResults<symbolic::Expression>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::
     CalcContactResultsContinuousHydroelastic(
         const systems::Context<symbolic::Expression>&,
         ContactResults<symbolic::Expression>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcContactResultsDiscrete(
+    const systems::Context<symbolic::Expression>&,
+    ContactResults<symbolic::Expression>*) const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcContactSurfaces(
     const systems::Context<symbolic::Expression>&,
@@ -4629,6 +4698,12 @@ template <>
 void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     const systems::Context<double>&,
     internal::HydroelasticFallbackCacheData<double>*) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::CalcNormalAndTangentContactJacobians(
+    const systems::Context<symbolic::Expression>&,
+    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&,
+    MatrixX<symbolic::Expression>*, MatrixX<symbolic::Expression>*,
+    std::vector<math::RotationMatrix<symbolic::Expression>>*) const;
 #endif
 
 }  // namespace multibody

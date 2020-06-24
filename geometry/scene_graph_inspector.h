@@ -112,6 +112,21 @@ class SceneGraphInspector {
     return state_->GetAllGeometryIds();
   }
 
+  /** Returns the set of all ids for registered geometries belonging to the
+   source with id `source_id`. */
+  std::vector<GeometryId> GetGeometriesForSource(SourceId source_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometriesForSource(source_id);
+  }
+
+  /** Returns the set of all ids for registered geometries belonging to the
+   source with id `source_id` and having the role `role`. */
+  std::vector<GeometryId> GetGeometriesForSourceWithRole(SourceId source_id,
+                                                         Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometriesForSourceWithRole(source_id, role);
+  }
+
   /** Reports the _total_ number of geometries in the scene graph with the
    indicated role.  */
   int NumGeometriesWithRole(Role role) const {
@@ -245,6 +260,26 @@ class SceneGraphInspector {
   int NumGeometriesForFrameWithRole(FrameId id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->NumGeometriesForFrameWithRole(id, role);
+  }
+
+  /** Returns all geometries affixed to the frame with the given `id`.
+   This does _not_ include geometries attached to frames that are
+   descendants of this frame.
+   @throws std::logic_error if `id` does not map to a registered frame.  */
+  const std::unordered_set<GeometryId>& GetGeometriesForFrame(
+      FrameId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometriesForFrame(id);
+  }
+
+  /** Returns all geometries with the given `role` directly
+   registered to the frame with the given `id`. This does _not_ include
+   geometries attached to frames that are descendants of this frame.
+   @throws std::logic_error if `id` does not map to a registered frame.  */
+  std::vector<GeometryId> GetGeometriesForFrameWithRole(
+      FrameId id, Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetGeometriesForFrameWithRole(id, role);
   }
 
   /** Reports the id of the geometry with the given `name` and `role`, attached

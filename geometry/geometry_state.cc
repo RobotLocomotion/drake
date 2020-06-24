@@ -147,7 +147,7 @@ int GeometryState<T>::NumGeometriesWithRole(SourceId source_id,
            " role for invalid source id: " + to_string(source_id);
   });
   for (const auto& pair : geometries_) {
-    if (pair.second.source_id() == source_id && pair.second.has_role(role))
+    if (pair.second.belongs_to_source(source_id) && pair.second.has_role(role))
       ++count;
   }
   return count;
@@ -267,6 +267,26 @@ int GeometryState<T>::NumGeometriesForFrameWithRole(FrameId frame_id,
     if (geometries_.at(geometry_id).has_role(role)) ++count;
   }
   return count;
+}
+
+template <typename T>
+const std::unordered_set<GeometryId>& GeometryState<T>::GetGeometriesForFrame(
+    FrameId frame_id) const {
+  const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+  return frame.child_geometries();
+}
+
+template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetGeometriesForFrameWithRole(
+    FrameId frame_id, Role role) const {
+  const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+  std::vector<GeometryId> ids;
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    if (geometries_.at(geometry_id).has_role(role)) {
+      ids.push_back(geometry_id);
+    }
+  }
+  return ids;
 }
 
 template <typename T>
