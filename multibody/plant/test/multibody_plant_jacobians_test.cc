@@ -29,6 +29,109 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
+// Given r_B, an arbitrary vector expressed in a frame_B, which depends on state
+// x (x is the generalized positions q and generalized velocities v), this
+// function calculates DtA_r_A, r's ordinary time-derivative in A evaluated at
+// given values of [q_double, v_double], and the result is expressed in frame_A.
+// This function performs this calculation two ways and checks the results.
+Vector3<double> CalcOrdinaryTimeDerivativeOfVector(
+    const MultibodyPlant<AutoDiffXd>& plant,
+    systems::Context<AutoDiffXd>* context,
+    const Vector3<double>& r_B_double,
+    const Frame<AutoDiffXd>& frame_B,
+    const Frame<AutoDiffXd>& frame_A,
+    const VectorX<double>& q_double,
+    const VectorX<double>& qDt_double,
+    const VectorX<double>& v_double,
+    const VectorX<double>& vDt_double) {
+  const int num_positions = plant.num_positions();
+  const int num_velocities = plant.num_velocities();
+  const int num_states = plant.num_multibody_states();
+  EXPECT_EQ(num_states, num_positions + num_velocities);
+  EXPECT_EQ(q_double.rows(), num_positions);
+  EXPECT_EQ(qDt_double.rows(), num_positions);
+  EXPECT_EQ(v_double.rows(), num_velocities);
+  EXPECT_EQ(vDt_double.rows(), num_velocities);
+
+  // Form arrays with the numerical values of the state and its time-derivative.
+  VectorX<double> x_double(num_states);
+  VectorX<double> xDt_double(num_states);
+  x_double << q_double, v_double;
+  xDt_double << qDt_double, vDt_double;
+
+  // Form an array of variables for subsequent differentiation and set their
+  // values to [q_double; v_double] and the values of their time-derivatives to
+  // [qDt_double; vDt_double].  Also set the system's state to that array.
+  // Note: Pass MatrixXd() so the return gradient uses AutoDiffXd (for which we
+  // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
+  auto x_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+      x_double, MatrixXd(xDt_double));
+  plant.GetMutablePositionsAndVelocities(context) = x_autodiff;
+
+  // Create an Autodiff version of r_B_double.
+  const Vector3<AutoDiffXd> r_B_autodiff(r_B_double);
+
+  //---------------------------------------------------------------------------
+  // Method 1: Use the rotation matrix R_AB to express r_B in terms of frame_A
+  // as r_A = R_AB * r_B and then apply the definition of ordinary vector time-
+  // differentiation in a frame to differentiate vector r_A in frame A.
+  //---------------------------------------------------------------------------
+  // Create an Autodiff version of r_A = R_AB * r_B.
+  const RotationMatrix<AutoDiffXd> R_AB_autodiff =
+      frame_B.CalcRotationMatrix(*context, frame_A);
+  const Vector3<AutoDiffXd> r_A_autodiff = R_AB_autodiff * r_B_autodiff;
+
+  // Calculate DtA(r_B), the ordinary time-derivative in frame A of vector r_B.
+  // Reminder: Eigen returns a weirdly sized matrix if all derivatives = 0, so
+  // I was unable to assign the result to Vector3<double> if derivatives = 0,
+  // hence the use of the "auto" keyword and subsequent resize below.
+  auto DtA_r_A = math::autoDiffToGradientMatrix(r_A_autodiff);
+  DtA_r_A.resize(3, 1);
+
+  //---------------------------------------------------------------------------
+  // Method 2: Differentiate r_B in frame_B and use it in conjunction with the
+  // golden rule for vector differentiation (transport theorem) from Chapter 8
+  // Angular velocity/acceleration [Mitiguy 2019] or from section 2.3, page 23
+  // [Kane & Levinson 1985] to form the derivative of r_B in frame_A.
+  // - [Mitiguy, 2019]: "Advanced Dynamics and Motion Simulation,
+  //   For professional engineers and scientists," Prodigy Press, Sunnyvale CA,
+  //   Available at www.MotionGenesis.com
+  // - [Kane & Levinson 1985] "Dynamics, Theory and Applications," McGraw-Hill.
+  //    Available for free .pdf download: https://hdl.handle.net/1813/638
+  //---------------------------------------------------------------------------
+  // Calculate DtB(r_B), the ordinary time-derivative in frame B of vector r_B.
+  // Reminder: Eigen returns a weirdly sized matrix if all derivatives = 0.
+  auto DtB_r_B = math::autoDiffToGradientMatrix(r_B_autodiff);
+  DtB_r_B.resize(3, 1);
+
+  // Form frame_B's angular velocity in frame_A, expressed in B.
+  // TODO(Mitiguy) For efficiency, calculate w_AB_B with a template on double.
+  const Vector3<double> w_AB_B = math::autoDiffToValueMatrix(
+      frame_B.CalcSpatialVelocity(*context, frame_A, frame_B).rotational());
+
+  // Use the golden rule for vector differentiation to form r's time-derivative
+  // in frame_A, expressed in frame_A.
+  const Vector3<double> DtA_r_B = DtB_r_B + w_AB_B.cross(r_B_double);
+
+  // Since API requires result expressed in frame_A, express DtA_r_B in frame_A.
+  const RotationMatrix<double> R_AB(math::autoDiffToValueMatrix(
+      frame_B.CalcRotationMatrix(*context, frame_A).matrix()));
+  const Vector3<double> DtA_r_A_method2 = R_AB * DtA_r_B;
+
+  //---------------------------------------------------------------------------
+  // Ensure results from each method are the same.
+  //---------------------------------------------------------------------------
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(DtA_r_A, DtA_r_A_method2,
+                              kTolerance, MatrixCompareType::relative));
+
+  // Ensure DtA_r_A has the proper size before returning.
+  EXPECT_EQ(DtA_r_A.rows(), 3);
+  EXPECT_EQ(DtA_r_A.cols(), 1);
+  return DtA_r_A;
+}
+
 // For one or more points Ei fixed on a body B, this method computes Jq_v_WEi_W,
 // Ei's translational velocity Jacobian in world W with respect to q̇.  However,
 // the way this calculation is performed is by forming the partial derivatives
@@ -330,6 +433,10 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Finalize the plant and create a context to store this plant's state.
     plant_->Finalize();
     context_ = plant_->CreateDefaultContext();
+
+    // Scalar-convert the model and create a default context for it.
+    plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
+    context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
 
  protected:
@@ -348,6 +455,10 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RigidBody<double>* bodyB_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
+
+  // AutoDiffXd this system to automate derivative calculations.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
+  std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 };
 
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
@@ -457,6 +568,58 @@ TEST_F(TwoDOFPlanarPendulumTest,
       -link_length_ * (wAz_ * wAz_ + 0.5 * wAz_ * wBz_ + 0.25 * wBz_ * wBz_) *
       Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(abias_WCcm_W, abias_WCcm_W_expected, kTolerance));
+}
+
+TEST_F(TwoDOFPlanarPendulumTest, CalcVectorDerivative) {
+  Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
+  joint1_->set_angle(context_.get(), state[0]);
+  joint2_->set_angle(context_.get(), state[1]);
+  joint1_->set_angular_rate(context_.get(), state[2]);
+  joint2_->set_angular_rate(context_.get(), state[3]);
+  const Eigen::VectorXd q = Eigen::Vector2d(state[0], state[1]);
+  const Eigen::VectorXd qDt = Eigen::Vector2d(state[2], state[3]);
+  const Eigen::VectorXd v = Eigen::Vector2d(state[2], state[3]);
+  const Eigen::VectorXd vDt = Eigen::Vector2d(10, 20);
+
+  // Shortcuts to link frames and world frame.
+  // const Frame<double>& frame_W = plant_->world_frame();
+  const Frame<double>& frame_A = bodyA_->body_frame();
+  const Frame<AutoDiffXd>& frame_W_autodiff = plant_autodiff_->world_frame();
+  const Frame<AutoDiffXd>& frame_A_autodiff =
+      plant_autodiff_->get_body(bodyA_->index()).body_frame();
+
+  // Form Ao's position from Wo expressed in W and differentiate it in W.
+  const Vector3<double> p_WoAo_W(0.5 * link_length_, 0.0, 0.0);
+  const Vector3<double> DtW_p_WoAo_W = CalcOrdinaryTimeDerivativeOfVector(
+      *plant_autodiff_, context_autodiff_.get(), p_WoAo_W, frame_W_autodiff,
+      frame_W_autodiff, q, qDt, v, vDt);
+
+  // Compare results with simple by-hand analysis gives Dt_p_WoAo_W = 0.
+  const Vector3<double> DtW_p_WoAo_W_expected(0, 0, 0);
+  EXPECT_TRUE(CompareMatrices(DtW_p_WoAo_W, DtW_p_WoAo_W_expected, kTolerance));
+
+  // Form Ao's position from Wo expressed in A and differentiate it in A.
+  const Vector3<double> p_WoAo_A(0.5 * link_length_, 0.0, 0.0);
+  const Vector3<double> DtA_p_WoAo_A = CalcOrdinaryTimeDerivativeOfVector(
+      *plant_autodiff_, context_autodiff_.get(), p_WoAo_A, frame_A_autodiff,
+      frame_A_autodiff, q, qDt, v, vDt);
+
+  // Compare results with simple by-hand analysis gives Dt_p_WoAo_W = 0.
+  const Vector3<double> DtA_p_WoAo_A_expected(0, 0, 0);
+  EXPECT_TRUE(CompareMatrices(DtA_p_WoAo_A, DtA_p_WoAo_A_expected, kTolerance));
+
+  // Form Ao's position from Wo expressed in A and differentiate it in W.
+  const Vector3<double> DtW_p_WoAo_A = CalcOrdinaryTimeDerivativeOfVector(
+      *plant_autodiff_, context_autodiff_.get(), p_WoAo_A, frame_A_autodiff,
+      frame_W_autodiff, q, qDt, v, vDt);
+
+  // Compare results with Ao's translational velocity in W, expressed in A.
+  const Vector3<double> v_WAo_W =
+      frame_A.CalcSpatialVelocityInWorld(*context_).translational();
+  const RotationMatrix<double> R_WA =
+      frame_A.CalcRotationMatrixInWorld(*context_);
+  const Vector3<double> v_WAo_A = R_WA * v_WAo_W;
+  EXPECT_TRUE(CompareMatrices(DtW_p_WoAo_A, v_WAo_A, kTolerance));
 }
 
 // Fixture for two degree-of-freedom 3D satellite tracker with bodies A and B.
