@@ -3737,6 +3737,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       std::is_same<T, symbolic::Expression>::value,
       SceneGraphStub, geometry::SceneGraph<T>>::type;
 
+  // A dummy, placeholder type.
+  struct QueryObjectStub;
+  // An alias for QueryObject<T>, except when T = Expression.
+  using ModelQueryObject =
+      typename std::conditional<std::is_same<T, symbolic::Expression>::value,
+                                QueryObjectStub,
+                                geometry::QueryObject<T>>::type;
+
   // Returns the SceneGraph that pre-Finalize geometry operations should
   // interact with.  In most cases, that will be whatever the user has passed
   // into RegisterAsSourceForSceneGraph.  However, when T = Expression, the
@@ -4371,7 +4379,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Gets the BodyIndex associated with the provided GeometryId by querying
   // for the FrameId of the geometry, and using the frame_id_to_body_index_ map.
-  BodyIndex geometry_id_to_body_index(geometry::QueryObject<T> query_object,
+  BodyIndex geometry_id_to_body_index(const ModelQueryObject& query_object,
                                       geometry::GeometryId geometry_id) const {
     geometry::FrameId frame_id =
         query_object.inspector().GetFrameId(geometry_id);
@@ -4655,6 +4663,24 @@ struct AddMultibodyPlantSceneGraphResult final {
 #ifndef DRAKE_DOXYGEN_CXX
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 // See the .cc file for an explanation why we specialize these methods.
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetCollisionGeometriesForBody(
+    const Body<symbolic::Expression>&) const;
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetCollisionGeometriesForBody(
+    const systems::Context<symbolic::Expression>&,
+    const Body<symbolic::Expression>&) const;
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetVisualGeometriesForBody(
+    const Body<symbolic::Expression>&) const;
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetVisualGeometriesForBody(
+    const systems::Context<symbolic::Expression>&,
+    const Body<symbolic::Expression>&) const;
 template <>
 typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
 MultibodyPlant<symbolic::Expression>::member_scene_graph();

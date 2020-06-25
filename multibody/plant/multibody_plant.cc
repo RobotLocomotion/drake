@@ -419,6 +419,23 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   return id;
 }
 
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetVisualGeometriesForBody(
+    const Body<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetVisualGeometriesForBody(
+    const systems::Context<symbolic::Expression>&,
+    const Body<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
 template <typename T>
 std::vector<geometry::GeometryId> MultibodyPlant<T>::GetVisualGeometriesForBody(
     const Body<T>& body) const {
@@ -490,6 +507,23 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   props.AddProperty(geometry::internal::kMaterialGroup,
                     geometry::internal::kFriction, coulomb_friction);
   return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
+}
+
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetCollisionGeometriesForBody(
+    const Body<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
+}
+
+template <>
+std::vector<geometry::GeometryId>
+MultibodyPlant<symbolic::Expression>::GetCollisionGeometriesForBody(
+    const systems::Context<symbolic::Expression>&,
+    const Body<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "This method doesn't support T = symbolic::Expression.");
 }
 
 template <typename T>
@@ -806,8 +840,6 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
   return B;
 }
 
-template <typename T>
-struct MultibodyPlant<T>::SceneGraphStub {
   struct StubSceneGraphInspector {
     const geometry::ProximityProperties* GetProximityProperties(
         GeometryId) const {
@@ -824,6 +856,10 @@ struct MultibodyPlant<T>::SceneGraphStub {
       return 0;
     }
 
+    geometry::FrameId GetFrameId(geometry::GeometryId) const {
+      return geometry::FrameId();
+    }
+
     std::unordered_set<GeometryId> GetGeometriesForSourceWithRole(
         geometry::SourceId, geometry::Role) const {
       return {};
@@ -834,6 +870,9 @@ struct MultibodyPlant<T>::SceneGraphStub {
       return {};
     }
   };
+
+template <typename T>
+struct MultibodyPlant<T>::SceneGraphStub {
 
   static void Throw(const char* operation_name) {
     throw std::logic_error(fmt::format(
@@ -860,6 +899,13 @@ struct MultibodyPlant<T>::SceneGraphStub {
   }
 
 #undef DRAKE_STUB
+};
+
+template <typename T>
+struct MultibodyPlant<T>::QueryObjectStub {
+  StubSceneGraphInspector inspector() const {
+    return StubSceneGraphInspector();
+  }
 };
 
 template <typename T>
@@ -2950,20 +2996,10 @@ MultibodyPlant<T>::get_reaction_forces_output_port() const {
   return this->get_output_port(reaction_forces_port_);
 }
 
-namespace {
-// A dummy, placeholder type.
-struct SymbolicGeometryValue {};
-// An alias for QueryObject<T>, except when T = Expression.
-template <typename T>
-using ModelQueryObject = typename std::conditional<
-    std::is_same<T, symbolic::Expression>::value,
-    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
-}  // namespace
-
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
-      "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
+      "geometry_query", Value<ModelQueryObject>{}).get_index();
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
       "geometry_pose", &MultibodyPlant<T>::CalcFramePoseOutput,
       {this->configuration_ticket()}).get_index();
