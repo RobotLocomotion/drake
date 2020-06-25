@@ -555,7 +555,18 @@ class SceneGraph final : public systems::LeafSystem<T> {
        scene_graph.model_inspector().GetProximityProperties(geometry_id);
    DRAKE_DEMAND(old_props);
    ProximityProperties new_props(*old_props);
-   new_props.AddProperty(...);  // add additional properties.
+   // Add a new property.
+   new_props.AddProperty("group", "new_prop_name", some_value);
+   // Remove a property previously assigned.
+   new_props.RemoveProperty("old_group", "old_name_1");
+   // Update the *value* of an existing property (but enforce same type).
+   new_props.AddProperty("old_group", "old_name_2", new_value,
+                         AddPolicy::kUpdate);
+   // Overwrite the type and value of an existing property. This is the most
+   // dangerous modification; only do it if you're confident a type change is
+   // appropriate.
+   new_props.AddProperty("old_group", "type_A_prop", type_B_value,
+                         AddPolicy::kOverwrite);
    scene_graph.AssignRole(source_id, geometry_id, new_props,
                           RoleAssign::kReplace);
    @endcode
