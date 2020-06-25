@@ -534,7 +534,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
    <h4>Changing the properties for an assigned role</h4>
 
-   If  the geometry has previously been assigned a role, the properties for
+   If the geometry has previously been assigned a role, the properties for
    that role can be modified with the following code (using ProximityProperties
    as an example):
 
@@ -560,13 +560,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    // Remove a property previously assigned.
    new_props.RemoveProperty("old_group", "old_name_1");
    // Update the *value* of an existing property (but enforce same type).
-   new_props.AddProperty("old_group", "old_name_2", new_value,
-                         AddPolicy::kUpdate);
-   // Overwrite the type and value of an existing property. This is the most
-   // dangerous modification; only do it if you're confident a type change is
-   // appropriate.
-   new_props.AddProperty("old_group", "type_A_prop", type_B_value,
-                         AddPolicy::kOverwrite);
+   new_props.UpdateProperty("old_group", "old_name_2", new_value);
    scene_graph.AssignRole(source_id, geometry_id, new_props,
                           RoleAssign::kReplace);
    @endcode
@@ -575,9 +569,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    role; it will simply eliminate possibly necessary properties. To remove
    the role completely, call `RemoveRole()`.
 
-   @warning Currently, only __proximity__ properties can be updated via this
-   mechanism. Updating illustration and perception will throw an exception (to
-   be implemented in the near future).
+   @warning Currently, only __proximity__ and __illustration__ properties can be
+   updated via this mechanism. Updating illustration properties has limitations
+   (see @ref AssignRole(SourceId,GeometryId,IllustrationProperties,RoleAssign)
+   "AssignRole(..., IllustrationProperties)" below). Attempting to update
+   perception will throw an exception (to be implemented in the near future).
 
    All invocations of `AssignRole()` will throw an exception if:
 
@@ -637,6 +633,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
                   RoleAssign assign = RoleAssign::kNew) const;
 
   /** Assigns the illustration role to the geometry indicated by `geometry_id`.
+
+   @warning When changing illustration properties
+   (`assign = RoleAssign::kReplace`), there is no guarantee that these changes
+   will affect the visualization. The visualizer needs to be able to
+   "initialize" itself after changes to properties that will affect how a
+   geometry appears. If changing a geometry's illustration properties doesn't
+   seem to be affecting the visualization, retrigger its initialization action.
    @pydrake_mkdoc_identifier{illustration_direct}
    */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
@@ -647,6 +650,19 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @ref AssignRole(SourceId,GeometryId,IllustrationProperties) "AssignRole()"
    for illustration properties. Rather than modifying %SceneGraph's model, it
    modifies the copy of the model stored in the provided context.
+
+   @warning When changing illustration properties
+   (`assign = RoleAssign::kReplace`), there is no guarantee that these changes
+   will affect the visualization. The visualizer needs to be able to
+   "initialize" itself after changes to properties that will affect how a
+   geometry appears. If changing a geometry's illustration properties doesn't
+   seem to be affecting the visualization, retrigger its initialization action.
+
+   @warning Due to a bug (see issue
+   <a href="https://github.com/RobotLocomotion/drake/issues/13597">#13597</a>),
+   changing the illustration roles or properties in a systems::Context will not
+   have any apparent effect in, at least, drake_visualizer. Please change the
+   illustration role in the model prior to allocating the context.
    @pydrake_mkdoc_identifier{illustration_context}
    */
   void AssignRole(systems::Context<T>* context, SourceId source_id,

@@ -739,6 +739,12 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   PerceptionProperties properties,
                                   RoleAssign assign) {
+  if (assign == RoleAssign::kReplace) {
+    throw std::logic_error(
+        "AssignRole() with RoleAssign::kReplace does not work for perception "
+        "properties");
+  }
+
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kPerception, assign);
 
@@ -779,14 +785,26 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         "roles");
   }
 
+  // TODO(SeanCurtis-TRI): We want to remove this warning. For that to happen,
+  // we need systems dependent on illustration properties to recognize if there
+  // has been a change since last they processed the state. The simplest way to
+  // do that is to have a monotonically increasing serial number on
+  // GeometryState. It would increment for *every* change to GeometryState. A
+  // visualizer could query to determine if the serial number matches the value
+  // it had when it last initialized. If not, it can re-intialize (whatever that
+  // entails). It might also be advisable to have a collection of serial numbers
+  // with reduced scope (i.e., so a change to proximity properties doesn't
+  // cause illustration systems to reinitialize).
+  if (assign == RoleAssign::kReplace) {
+    static logging::Warn log_once(
+        "Updating illustration role properties must be done before visualizer "
+        "initialization to have an effect. When in doubt, after making "
+        "property changes, force the visualizer to re-initialize via its API.");
+  }
+
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kIllustration, assign);
-  // TODO(SeanCurtis-TRI): Ideally, if assign == RoleAssign::kReplace, this
-  //  should cause the visualization to change. I.e., if I've loaded an object
-  //  then I change its color here, it would be great if the visualization
-  //  reflected this. That is a *huge* issue that is not easily resolved.
-  //  Alternatively, I need to document that this *doesn't* happen and that it
-  //  is up to the visualizer to re-initialize itself.
+
   geometry.SetRole(std::move(properties));
 }
 
@@ -1184,12 +1202,6 @@ InternalGeometry& GeometryState<T>::ValidateRoleAssign(SourceId source_id,
                                                        GeometryId geometry_id,
                                                        Role role,
                                                        RoleAssign assign) {
-  if (assign == RoleAssign::kReplace &&
-      (role == Role::kPerception || role == Role::kIllustration)) {
-    throw std::logic_error(
-        "AssignRole() for updating properties currently only supports "
-        "proximity properties");
-  }
   if (!BelongsToSource(geometry_id, source_id)) {
     throw std::logic_error("Given geometry id " + to_string(geometry_id) +
         " does not belong to the given source id " +
