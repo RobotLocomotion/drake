@@ -390,6 +390,25 @@ class TestGeometry(unittest.TestCase):
         for name, value in group_values.items():
             self.assertIsInstance(name, str)
             self.assertIsInstance(value, AbstractValue)
+        # Remove the property.
+        self.assertTrue(prop.RemoveProperty(group_name=default_group,
+                                            name="test"))
+        self.assertFalse(prop.HasProperty(group_name=default_group,
+                                          name="test"))
+        # Overwrite the property.
+        prop.AddProperty(group_name=default_group, name="overwrite", value=17)
+        self.assertTrue(prop.HasProperty(group_name=default_group,
+                                         name="overwrite"))
+        self.assertEqual(
+            prop.GetProperty(group_name=default_group, name="overwrite"), 17)
+
+        prop.AddProperty(group_name=default_group, name="overwrite",
+                         value="test", add_policy=mut.AddPolicy.kOverwrite)
+        self.assertTrue(prop.HasProperty(group_name=default_group,
+                                         name="overwrite"))
+        self.assertEqual(
+            prop.GetProperty(group_name=default_group, name="overwrite"),
+            "test")
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.

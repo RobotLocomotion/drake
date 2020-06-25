@@ -731,6 +731,15 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
+    constexpr auto& cls_doc = doc.AddPolicy;
+    using Class = AddPolicy;
+    py::enum_<Class>(m, "AddPolicy", cls_doc.doc)
+        .value("kUnique", Class::kUnique, cls_doc.kUnique.doc)
+        .value("kUpdate", Class::kUpdate, cls_doc.kUpdate.doc)
+        .value("kOverwrite", Class::kOverwrite, cls_doc.kOverwrite.doc);
+  }
+
+  {
     using Class = GeometryProperties;
     constexpr auto& cls_doc = doc.GeometryProperties;
     py::handle abstract_value_cls =
@@ -756,13 +765,14 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(
             "AddProperty",
             [abstract_value_cls](Class& self, const std::string& group_name,
-                const std::string& name, py::object value) {
+                const std::string& name, py::object value,
+                AddPolicy add_policy) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
-              self.AddPropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+              self.AddPropertyAbstract(group_name, name,
+                  abstract.cast<const AbstractValue&>(), add_policy);
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
-            cls_doc.AddProperty.doc)
+            py::arg("add_policy") = AddPolicy::kUnique, cls_doc.AddProperty.doc)
         .def("HasProperty", &Class::HasProperty, py::arg("group_name"),
             py::arg("name"), cls_doc.HasProperty.doc)
         .def(
@@ -789,6 +799,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             },
             py::arg("group_name"), py::arg("name"), py::arg("default_value"),
             cls_doc.GetPropertyOrDefault.doc)
+        .def("RemoveProperty", &Class::RemoveProperty, py::arg("group_name"),
+            py::arg("name"), cls_doc.RemoveProperty.doc)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
         .def(

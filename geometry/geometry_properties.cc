@@ -1,5 +1,7 @@
 #include "drake/geometry/geometry_properties.h"
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace geometry {
 
@@ -25,7 +27,7 @@ std::set<std::string> GeometryProperties::GetGroupNames() const {
 
 void GeometryProperties::AddPropertyAbstract(
     const std::string& group_name, const std::string& name,
-    const AbstractValue& value) {
+    const AbstractValue& value, AddPolicy add_policy) {
   auto iter = values_.find(group_name);
   if (iter == values_.end()) {
     auto result = values_.insert({group_name, Group{}});
@@ -35,14 +37,24 @@ void GeometryProperties::AddPropertyAbstract(
 
   Group& group = iter->second;
   auto value_iter = group.find(name);
-  if (value_iter == group.end()) {
-    group[name] = value.Clone();
-    return;
+
+  if (value_iter != group.end()) {
+    if (add_policy == AddPolicy::kUnique) {
+      throw std::logic_error(
+          fmt::format("AddProperty(): Trying to add property ('{}', '{}'); "
+                      "a property with that name already exists",
+                      group_name, name));
+    } else if (add_policy == AddPolicy::kUpdate &&
+               group[name]->type_info() != value.type_info()) {
+      throw std::logic_error(fmt::format(
+          "AddProperty(): Trying to add property ('{}', '{}') with kUpdate "
+          "add policy. The property already exists and is of different type. "
+          "New type {}, existing type {}",
+          group_name, name, group[name]->GetNiceTypeName(),
+          value.GetNiceTypeName()));
+    }
   }
-  throw std::logic_error(fmt::format(
-      "AddProperty(): Trying to add property '{}' to group '{}'; "
-      "a property with that name already exists",
-      name, group_name));
+  group[name] = value.Clone();
 }
 
 bool GeometryProperties::HasProperty(const std::string& group_name,
@@ -60,6 +72,17 @@ const AbstractValue& GeometryProperties::GetPropertyAbstract(
                     name, group_name));
   }
   return *abstract;
+}
+
+bool GeometryProperties::RemoveProperty(const std::string& group_name,
+                                        const std::string& name) {
+  auto iter = values_.find(group_name);
+  if (iter == values_.end()) return false;
+  Group& group = iter->second;
+  const auto value_iter = group.find(name);
+  if (value_iter == group.end()) return false;
+  group.erase(value_iter);
+  return true;
 }
 
 const AbstractValue* GeometryProperties::GetPropertyAbstractMaybe(

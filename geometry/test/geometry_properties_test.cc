@@ -67,17 +67,76 @@ GTEST_TEST(GeometryProperties, AddProperty) {
   int read_value = properties.GetProperty<int>(group_name, prop_name);
   ASSERT_EQ(int_value, read_value);
 
-  // Redundant add.
+  // Redundant add (with implicit unique policy).
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.AddProperty(group_name, prop_name, int_value),
       std::logic_error,
-      ".*Trying to add property .+ to group .+; .* name already exists");
+      ".*Trying to add property \\('.+', '.+'\\).+ name already exists");
   ASSERT_TRUE(properties.HasProperty(group_name, prop_name));
+
+  // Redundant add (with explicit unique policy).
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      properties.AddProperty(group_name, prop_name, int_value,
+                             AddPolicy::kUnique),
+      std::logic_error,
+      ".*Trying to add property \\('.+', '.+'\\).+ name already exists");
+  ASSERT_TRUE(properties.HasProperty(group_name, prop_name));
+
+  // Test kUpdate add policy.
+  ASSERT_EQ(properties.GetProperty<int>(group_name, prop_name), int_value);
+  // Update with same type is valid; we change the value.
+  EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, int_value + 1,
+                                         AddPolicy::kUpdate));
+  EXPECT_EQ(properties.GetProperty<int>(group_name, prop_name), int_value + 1);
+  // AddProperty with kUpdate for new property is valid.
+  const std::string alt_group = group_name + "alt";
+  EXPECT_NO_THROW(properties.AddProperty(alt_group, prop_name, int_value,
+                                         AddPolicy::kUpdate));
+  EXPECT_EQ(properties.GetProperty<int>(alt_group, prop_name), int_value);
+
+  // Test kOverwrite add policy.
+  const double double_value = 17.3;
+  EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, double_value,
+                                         AddPolicy::kOverwrite));
+  EXPECT_EQ(properties.GetProperty<double>(group_name, prop_name),
+            double_value);
+}
+
+GTEST_TEST(GeometryProperties, RemoveProperty) {
+  TestProperties properties;
+  const std::string group1{"group1"};
+  const std::string group2{"group2"};
+  const std::string prop1{"prop1"};
+  const std::string prop2{"prop2"};
+
+  // Add two groups with two properties each.
+  properties.AddProperty(group1, prop1, 1);
+  properties.AddProperty(group1, prop2, 2);
+  properties.AddProperty(group2, prop1, 3);
+  properties.AddProperty(group2, prop2, 4);
+  ASSERT_TRUE(properties.HasProperty(group1, prop1));
+  ASSERT_TRUE(properties.HasProperty(group1, prop2));
+  ASSERT_TRUE(properties.HasProperty(group2, prop1));
+  ASSERT_TRUE(properties.HasProperty(group2, prop2));
+
+  // Remove property, make sure all others are still intact.
+  EXPECT_TRUE(properties.RemoveProperty(group1, prop1));
+  ASSERT_FALSE(properties.HasProperty(group1, prop1));
+  ASSERT_TRUE(properties.HasProperty(group1, prop2));
+  ASSERT_TRUE(properties.HasProperty(group2, prop1));
+  ASSERT_TRUE(properties.HasProperty(group2, prop2));
+
+  // Trying to remove it again has no effect.
+  EXPECT_FALSE(properties.RemoveProperty(group1, prop1));
+  ASSERT_FALSE(properties.HasProperty(group1, prop1));
+  ASSERT_TRUE(properties.HasProperty(group1, prop2));
+  ASSERT_TRUE(properties.HasProperty(group2, prop1));
+  ASSERT_TRUE(properties.HasProperty(group2, prop2));
 }
 
 // Struct for the AddPropertyStruct test.
 struct TestData {
-  int i {};
+  int i{};
   double d{};
   std::string s;
 };

@@ -16,6 +16,24 @@
 namespace drake {
 namespace geometry {
 
+/** Policies for specifying how a property gets added to a set of properties.
+
+  - Unique: The input property must be unique (no previous property with the
+            same (group, name) pair).
+  - Update: The input property can have existed previously (the (group, name)
+            pair can be present), but the old and new values must have the same
+            type.
+  - Overwrite: The input property will completely replace any previously
+               existing property with the same (group, name) pair, regardless of
+               type.  */
+enum class AddPolicy {
+  kUnique,    ///< The new property must have a unique (group, name).
+  kUpdate,    ///< The new property must either be unique or be of the same type
+              ///< as the previously existing (group, name).
+  kOverwrite  ///< The property will be set, regardless of whether there was a
+              ///< pre-existing property.
+};
+
 /** The base class for defining a set of geometry properties.
 
  Each property consists of a `(group, property)` name-pair and a typed value.
@@ -258,11 +276,12 @@ class GeometryProperties {
                        copy constructible or cloneable (see Value).  */
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
-                   const ValueType& value) {
+                   const ValueType& value,
+                   AddPolicy add_policy = AddPolicy::kUnique) {
     if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
-      AddPropertyAbstract(group_name, name, Value(ToRgba(value)));
+      AddPropertyAbstract(group_name, name, Value(ToRgba(value)), add_policy);
     } else {
-      AddPropertyAbstract(group_name, name, Value(value));
+      AddPropertyAbstract(group_name, name, Value(value), add_policy);
     }
   }
 
@@ -276,7 +295,7 @@ class GeometryProperties {
                             `group_name`.  */
   void AddPropertyAbstract(
       const std::string& group_name, const std::string& name,
-      const AbstractValue& value);
+      const AbstractValue& value, AddPolicy add_policy = AddPolicy::kUnique);
 
   /** Reports if the property exists in the group.
 
@@ -378,6 +397,11 @@ class GeometryProperties {
     return kDefaultGroup.access();
   }
 
+  /** Removes the property with the given ('group_name', 'name') (if it exists).
+   Upon completion the property will not be in the set.
+   @returns `true` if the property existed prior to the call.  */
+  bool RemoveProperty(const std::string& group_name, const std::string& name);
+
 #ifndef DRAKE_DOXYGEN_CXX
   // Note: these overloads of the property access methods exist to enable
   // calls like `properties.AddProperty("group", "property", "string literal");
@@ -387,8 +411,9 @@ class GeometryProperties {
   // that the user is never actually trying to store const char*. We omit
   // these from the doxygen because they provide no value there.
   void AddProperty(const std::string& group_name, const std::string& name,
-                   const char* value) {
-    AddProperty<std::string>(group_name, name, value);
+                   const char* value,
+                   AddPolicy add_policy = AddPolicy::kUnique) {
+    AddProperty<std::string>(group_name, name, value, add_policy);
   }
 
   std::string GetPropertyOrDefault(const std::string& group_name,
