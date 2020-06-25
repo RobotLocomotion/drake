@@ -1,5 +1,7 @@
 #pragma once
-
+// TODO(Posa): Rename header to accelerometer.h once attic/ code is removed.
+// Currently requires this alternate name to avoid confliciting with
+// attic/systems/sensors/accelerometer.h
 #include <memory>
 #include <vector>
 
@@ -27,14 +29,15 @@ namespace sensors {
 /// constant gravitational field), the direction of "-g_S" is "upwards."
 ///
 /// There are three inputs to this sensor (nominally from a MultibodyPlant):
-///   1) A vector of body poses (e.g. plant.get_body_poses_output_port())
-///   2) A vector of spatial velocities
+///   1. A vector of body poses (e.g. plant.get_body_poses_output_port())
+///   2. A vector of spatial velocities
 ///    (e.g. plant.get_body_spatial_velocities_output_port())
-///   3) A vector of spatial accelerations
+///   3. A vector of spatial accelerations
 ///      (e.g. plant.get_body_spatial_accelerations_output_port())
+///
 /// This class is therefore defined by:
-///   1) The BodyIndex of the body to which this sensor is rigidly affixed.
-///   2) A rigid transform from the body frame to the sensor frame.
+///   1. The BodyIndex of the body to which this sensor is rigidly affixed.
+///   2. A rigid transform from the body frame to the sensor frame.
 ///
 /// @system{Accelerometer,
 ///    @input_port{body_poses}
@@ -79,16 +82,20 @@ class Accelerometer : public LeafSystem<T> {
   /// appropriate builder. This is a convenience method to simplify some common
   /// boilerplate of Diagram wiring. Specifically, this makes three connections:
   ///
-  /// 1) plant.get_body_poses_output_port() to this.get_body_poses_input_port()
-  /// 2) plant.get_body_spatial_velocities_output_port() to
+  /// 1. plant.get_body_poses_output_port() to this.get_body_poses_input_port()
+  /// 2. plant.get_body_spatial_velocities_output_port() to
   ///        this.get_body_velocities_input_port()
-  /// 3) plant.get_body_spatial_accelerations_output_port() to
+  /// 3. plant.get_body_spatial_accelerations_output_port() to
   ///        this.get_body_spatial_accelerations_output_port()
-  static const Accelerometer& AddToDiagram(multibody::BodyIndex body_index,
-      const math::RigidTransform<double>& X_BS,
+  /// @param body_index the index of body B
+  /// @param X_BS the transform from body B to the accelerometer frame S
+  /// @param gravity_vector the constant acceleration due to gravity
+  ///    expressed in world coordinates
+  /// @param builder a pointer to the DiagramBuilder
+  static const Accelerometer& AddToDiagram(
+      multibody::BodyIndex body_index, const math::RigidTransform<double>& X_BS,
       const Eigen::Vector3d& gravity_vector,
-      const multibody::MultibodyPlant<T>& plant,
-      DiagramBuilder<T>* builder);
+      const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder);
 
  private:
   // Allow different specializations to access each other's private data.
@@ -99,8 +106,8 @@ class Accelerometer : public LeafSystem<T> {
  private:
   void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
-  const multibody::BodyIndex
-      body_index_;  // Index into the input body velocities/accelerations
+  // Index into the input body velocities/accelerations
+  const multibody::BodyIndex body_index_;
   const math::RigidTransform<double> X_BS_;
   const Eigen::Vector3d gravity_vector_;
   const InputPort<T>* body_poses_input_port_{nullptr};

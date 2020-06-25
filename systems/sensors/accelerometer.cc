@@ -1,6 +1,8 @@
+/* clang-format off to disable clang-format-includes */ 
+#include "drake/systems/sensors/accelerometer_sensor.h"
+/* clang-format on */ 
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_velocity.h"
-#include "drake/systems/sensors/accelerometer_sensor.h"
 
 namespace drake {
 namespace systems {
@@ -19,7 +21,7 @@ Accelerometer<T>::Accelerometer(multibody::BodyIndex index,
       X_BS_(X_BC),
       gravity_vector_(gravity_vector) {
   // Declare measurement output port.
-  this->DeclareVectorOutputPort("acceleration", BasicVector<T>(3),
+  this->DeclareVectorOutputPort("measured_acceleration", BasicVector<T>(3),
                                 &Accelerometer<T>::CalcOutput);
 
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
