@@ -1,6 +1,6 @@
-/* clang-format off to disable clang-format-includes */ 
+/* clang-format off to disable clang-format-includes */
 #include "drake/systems/sensors/accelerometer_sensor.h"
-/* clang-format on */ 
+/* clang-format on */
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_velocity.h"
 
