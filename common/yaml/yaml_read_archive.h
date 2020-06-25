@@ -83,6 +83,13 @@ class YamlReadArchive final {
     /// in the YAML data.  In other words, the structs have default values that
     /// are left intact unless the YAML data provides a value.
     bool allow_cpp_with_no_yaml{false};
+
+    /// If set to true, when parsing a std::map the Archive will merge the YAML
+    /// data into the destination, instead of replacing the std::map contents
+    /// entirely.  In other words, a visited std::map can have default values
+    /// that are left intact unless the YAML data provides a value *for that
+    /// specific key*.
+    bool retain_map_defaults{false};
   };
 
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
@@ -95,7 +102,8 @@ class YamlReadArchive final {
   /// explicitly.
   explicit YamlReadArchive(const YAML::Node& root, const Options& options = {
                              .allow_yaml_with_no_cpp = true,
-                             .allow_cpp_with_no_yaml = false})
+                             .allow_cpp_with_no_yaml = false,
+                             .retain_map_defaults = false})
       : owned_root_(root),
         root_(&owned_root_),
         mapish_item_key_(nullptr),
@@ -463,13 +471,17 @@ class YamlReadArchive final {
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Map);
     if (!sub_node) { return; }
     auto& result = *nvp.value();
-    result.clear();
+    if (!options_.retain_map_defaults) {
+      result.clear();
+    }
     for (const auto& yaml_key_value : sub_node) {
       const std::string& key = yaml_key_value.first.Scalar();
       auto newiter_inserted = result.emplace(key, Value{});
       auto& newiter = newiter_inserted.first;
       const bool inserted = newiter_inserted.second;
-      DRAKE_DEMAND(inserted == true);
+      if (!options_.retain_map_defaults) {
+        DRAKE_DEMAND(inserted == true);
+      }
       Value& newvalue = newiter->second;
       YamlReadArchive item_archive(&sub_node, this);
       item_archive.Visit(drake::MakeNameValue(key.c_str(), &newvalue));
