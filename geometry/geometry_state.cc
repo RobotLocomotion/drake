@@ -739,6 +739,12 @@ template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                   PerceptionProperties properties,
                                   RoleAssign assign) {
+  if (assign == RoleAssign::kReplace) {
+    throw std::logic_error(
+        "AssignRole() with RoleAssign::kReplace does not work for perception "
+        "properties");
+  }
+
   InternalGeometry& geometry =
       ValidateRoleAssign(source_id, geometry_id, Role::kPerception, assign);
 
@@ -777,6 +783,18 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         "Explicitly defined values for the ('phong', 'diffuse_map') property "
         "are not currently used in illustration roles -- only perception "
         "roles");
+  }
+
+  // TODO(SeanCurtis-TRI): Figure out some way to have this happen
+  // automatically. A monotonically increasing serial number on GeometryState
+  // that a visualizer could query to determine if its view of the world is
+  // stale would be enough. It could then opt to re-initialize based on the new
+  // state.
+  if (assign == RoleAssign::kReplace) {
+    static logging::Warn log_once(
+        "Updating illustration role properties must be done before visualizer "
+        "initialization to have an affect. When in doubt, after making "
+        "property changes, force the visualizer to re-initialize via its API.");
   }
 
   InternalGeometry& geometry =
@@ -1184,12 +1202,6 @@ InternalGeometry& GeometryState<T>::ValidateRoleAssign(SourceId source_id,
                                                        GeometryId geometry_id,
                                                        Role role,
                                                        RoleAssign assign) {
-  if (assign == RoleAssign::kReplace &&
-      (role == Role::kPerception || role == Role::kIllustration)) {
-    throw std::logic_error(
-        "AssignRole() for updating properties currently only supports "
-        "proximity properties");
-  }
   if (!BelongsToSource(geometry_id, source_id)) {
     throw std::logic_error("Given geometry id " + to_string(geometry_id) +
         " does not belong to the given source id " +
