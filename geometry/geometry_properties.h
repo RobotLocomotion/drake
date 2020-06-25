@@ -266,7 +266,7 @@ class GeometryProperties {
 
   /** Updates the named property (`group_name`, `name`) with the given `value`.
    If the property doesn't already exist, it is equivalent to calling
-   `AddProperty`. If the property does exist, and its value the same type as
+   `AddProperty`. If the property does exist, and its value has the same type as
    `value`, the property value will be updated.
 
    @param group_name   The group name.
@@ -281,7 +281,7 @@ class GeometryProperties {
     UpdatePropertyAbstract(group_name, name, Value(value));
   }
 
-  /** Adds the named property (`group_name`, `name`) with the giventype-erased
+  /** Adds the named property (`group_name`, `name`) with the given type-erased
    `value`. Adds the group if it doesn't already exist.
 
    @param group_name   The group name.
@@ -342,7 +342,7 @@ class GeometryProperties {
     }
   }
 
-  /** Retrieves that type-erased value for the property (`group_name`, `name`)
+  /** Retrieves the type-erased value for the property (`group_name`, `name`)
    from this set of properties.
 
    @param group_name  The name of the group to which the property belongs.
@@ -406,7 +406,7 @@ class GeometryProperties {
     return kDefaultGroup.access();
   }
 
-  /** Removes the ('group_name', 'name') property (if it exists). Upon
+  /** Removes the (`group_name`, `name`) property (if it exists). Upon
    completion the property will not be in the set.
    @returns `true` if the property existed prior to the call.  */
   bool RemoveProperty(const std::string& group_name, const std::string& name);

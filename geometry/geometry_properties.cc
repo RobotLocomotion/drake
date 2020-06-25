@@ -52,11 +52,11 @@ void GeometryProperties::UpdatePropertyAbstract(const string& group_name,
         if (value_iter != group.end() &&
             group.at(name)->type_info() != value.type_info()) {
           throw std::logic_error(
-              fmt::format("AddProperty(): Trying to update property ('{}', '{}'"
-                          "); The property already exists and is of different "
-                          "type. New type {}, existing type {}",
-                          group_name, name, group.at(name)->GetNiceTypeName(),
-                          value.GetNiceTypeName()));
+              fmt::format("UpdateProperty(): Trying to update property ('{}', "
+                          "'{}'); The property already exists and is of "
+                          "different type. New type {}, existing type {}",
+                          group_name, name, value.GetNiceTypeName(),
+                          group.at(name)->GetNiceTypeName()));
         }
       });
 }
