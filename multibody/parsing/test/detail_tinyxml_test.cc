@@ -78,7 +78,7 @@ GTEST_TEST(TinyxmlUtilTest, OriginAttributesTest) {
   const RigidTransformd actual = internal::OriginAttributesToTransform(element);
   const RigidTransformd expected(RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
 
-  EXPECT_TRUE(CompareMatrices(actual.matrix(), expected.matrix()));
+  EXPECT_TRUE(CompareMatrices(actual.GetAsMatrix4(), expected.GetAsMatrix4()));
 }
 
 GTEST_TEST(TinyxmlUtilTest, MalformedRpyOriginAttributesTest) {

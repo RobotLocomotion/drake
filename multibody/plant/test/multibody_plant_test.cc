@@ -799,8 +799,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
     ASSERT_TRUE(optional_id.has_value());
     EXPECT_EQ(frame_id, *optional_id);
     EXPECT_EQ(body_index, plant_->GetBodyFromFrameId(frame_id)->index());
-    const Isometry3<double>& X_WB_isometry = poses.value(frame_id);
-    const RigidTransform<double> X_WB(X_WB_isometry);
+    const RigidTransform<double>& X_WB = poses.value(frame_id);
     const RigidTransform<double>& X_WB_expected =
         plant_->EvalBodyPoseInWorld(*context, plant_->get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
@@ -1421,8 +1420,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const Isometry3<double>& X_WB_isometry = pose_data.value(frame_id);
-    const RigidTransform<double> X_WB(X_WB_isometry);
+    const RigidTransform<double>& X_WB = pose_data.value(frame_id);
     const RigidTransform<double>& X_WB_expected =
         plant.EvalBodyPoseInWorld(*context, plant.get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
@@ -2885,7 +2883,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const RigidTransformd X_WM_expected = X_WT * X_TO * X_OM;
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
+  EXPECT_TRUE(CompareMatrices(X_WM.GetAsMatrix4(), X_WM_expected.GetAsMatrix4(),
                               kTolerance, MatrixCompareType::relative));
 
   // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is

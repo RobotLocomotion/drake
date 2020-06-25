@@ -239,8 +239,8 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
     plant_->SetPositions(context_, q + v * dt);
   }
   X_WE = frame_E_->CalcPoseInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(X_WE.GetAsMatrix4(), X_WE_desired.GetAsMatrix4(),
+                              1e-5, MatrixCompareType::absolute));
 }
 
 // Test various throw conditions.

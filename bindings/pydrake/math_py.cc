@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -42,13 +43,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   constexpr auto& doc = pydrake_doc.drake.math;
 
   {
-    // N.B. Keep the deprecation date here in sync with the deprecation comment
-    // inside drake/math/rigid_transform.h.
-    const char* doc_rigid_transform_linear_matrix_deprecation =
-        "DO NOT USE! We offer this API for backwards compatibility with "
-        "Isometry3, but it will be removed on or around 2020-07-01. "
-        "See drake issue #9865 for details.";
-
     using Class = RigidTransform<T>;
     constexpr auto& cls_doc = doc.RigidTransform;
     auto cls = DefineTemplateClassWithDefault<Class>(
@@ -122,11 +116,36 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"),
-            cls_doc.operator_mul.doc_1args_constEigenMatrixBase)
-        .def("matrix", &RigidTransform<T>::matrix,
-            doc_rigid_transform_linear_matrix_deprecation)
-        .def("linear", &RigidTransform<T>::linear, py_reference_internal,
-            doc_rigid_transform_linear_matrix_deprecation)
+            cls_doc.operator_mul.doc_1args_constEigenMatrixBase);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def(
+            "matrix",
+            [](RigidTransform<T>* self) {
+              WarnDeprecated(
+                  "The RigidTransform::matrix() method was added for "
+                  "compatibility with Eigen::Isometry3, and is now deprecated. "
+                  "Use RigidTransform::GetAsMatrix4() instead.");
+              return self->GetAsIsometry3();
+            },
+            "The RigidTransform::matrix() method was added for "
+            "compatibility with Eigen::Isometry3, and is now deprecated. "
+            "Use RigidTransform::GetAsMatrix4() instead.")
+        .def(
+            "linear",
+            [](RigidTransform<T>* self) {
+              WarnDeprecated(
+                  "The RigidTransform::linear() method was added for "
+                  "compatibility with Eigen::Isometry3, and is now deprecated. "
+                  "Use RigidTransform::rotation().matrix() instead.");
+              return self->GetAsMatrix4();
+            },
+            "The RigidTransform::linear() method was added for "
+            "compatibility with Eigen::Isometry3, and is now deprecated. "
+            "Use RigidTransform::rotation().matrix() instead.");
+#pragma GCC diagnostic pop
+    cls  // BR
         .def(py::pickle([](const Class& self) { return self.GetAsMatrix34(); },
             [](const Eigen::Matrix<T, 3, 4>& matrix) {
               return Class(matrix);
@@ -270,12 +289,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
   auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
   // Install constructor to Isometry3 to permit `implicitly_convertible` to
   // work.
-  // TODO(eric.cousineau): Add deprecation message.
   // TODO(eric.cousineau): Consider more elegant implicit conversion process.
   // See pybind/pybind11#1735
   py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
-      .def(py::init(
-          [](const RigidTransform<T>& X) { return X.GetAsIsometry3(); }));
+      .def(py::init([](const RigidTransform<T>& X) {
+        WarnDeprecated(
+            "Implicit conversion from RigidTransform to Eigen::Isometry3 is "
+            "deprecated. You may convert explicitly by calling "
+            "GetAsIsometry3(), or try to avoid using Eigen::Isometry3 in the "
+            "first place.");
+        return X.GetAsIsometry3();
+      }),
+          "Implicit conversion from RigidTransform to Eigen::Isometry3 is "
+          "deprecated. You may convert explicitly by calling "
+          "GetAsIsometry3(), or try to avoid using Eigen::Isometry3 in the "
+          "first place.");
   py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
 

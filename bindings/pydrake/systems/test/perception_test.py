@@ -70,7 +70,7 @@ class TestTransformPoints(unittest.TestCase):
 
     def test_translation(self):
         transformed_points = _TransformPoints(
-            self.points, self.translation.matrix())
+            self.points, self.translation.GetAsMatrix4())
         expected_translated_points = np.array([[2, 3, 3], [3, 3, 3]]).T
 
         self.assertTrue(
@@ -78,7 +78,7 @@ class TestTransformPoints(unittest.TestCase):
 
     def test_rotation(self):
         transformed_points = _TransformPoints(
-            self.points, self.rotation.matrix())
+            self.points, self.rotation.GetAsMatrix4())
         expected_rotated_points = np.array([[-1, 1, 0], [-1, 2, 0]]).T
 
         self.assertTrue(

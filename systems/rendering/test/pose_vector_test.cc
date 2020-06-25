@@ -32,8 +32,8 @@ GTEST_TEST(PoseVector, InitiallyIdentity) {
   EXPECT_TRUE(CompareMatrices(RigidTransformd{}.matrix(),
                               vec.get_isometry().matrix()));
 #pragma GCC diagnostic pop
-  EXPECT_TRUE(CompareMatrices(RigidTransformd().matrix(),
-                              vec.get_transform().matrix()));
+  EXPECT_TRUE(CompareMatrices(RigidTransformd().GetAsMatrix4(),
+                              vec.get_transform().GetAsMatrix4()));
   // Check that the underlying storage has the values we'd expect.
   for (int i = 0; i < 3; ++i) {
     // p_WA is entirely zero.
@@ -64,11 +64,11 @@ GTEST_TEST(PoseVector, FullyParameterizedCtor) {
       CompareMatrices(isometry_expected.matrix(), vec.get_isometry().matrix()));
 #pragma GCC diagnostic pop
   RigidTransformd transform_expected(rotation, origin);
-  EXPECT_TRUE(CompareMatrices(transform_expected.matrix(),
-                              vec.get_transform().matrix()));
+  EXPECT_TRUE(CompareMatrices(transform_expected.GetAsMatrix4(),
+                              vec.get_transform().GetAsMatrix4()));
   EXPECT_TRUE(CompareMatrices(
-      RigidTransformd(translation).matrix(),
-      RigidTransformd(vec.get_translation().vector()).matrix()));
+      RigidTransformd(translation).GetAsMatrix4(),
+      RigidTransformd(vec.get_translation().vector()).GetAsMatrix4()));
   EXPECT_TRUE(CompareMatrices(rotation.matrix(), vec.get_rotation().matrix()));
 }
 
@@ -120,7 +120,7 @@ GTEST_TEST(PoseVector, Symbolic) {
 
   // Spot-check some terms from the output.
   const RigidTransform<symbolic::Expression> X_WA = vec.get_transform();
-  const auto matrix = X_WA.matrix();
+  const auto matrix = X_WA.GetAsMatrix4();
   // Note: RigidTransform normalizes the quaternion in an order of operations
   // that leads to a *very* specific set of symbolic expressions. That is what
   // is represented below.
@@ -161,7 +161,7 @@ GTEST_TEST(PoseVector, Autodiff) {
 
   // Spot-check some terms from the output.
   const RigidTransform<AutoDiffXd> X_WA = vec.get_transform();
-  auto matrix = X_WA.matrix();
+  auto matrix = X_WA.GetAsMatrix4();
 
   // Converting quaternion to RigidTransform performs a normalization step.
   // As illustrated in the `Symbolic` test the value stored in M(0, 0) is:

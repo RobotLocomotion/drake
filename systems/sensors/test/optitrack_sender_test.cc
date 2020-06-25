@@ -71,7 +71,8 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
       lcm_frame.rigid_bodies[0].quat[1], lcm_frame.rigid_bodies[0].quat[2]);
   Eigen::Isometry3d body_pose = Eigen::Isometry3d(quat_rotation).
       pretranslate(Eigen::Vector3d(tx, ty, tz));
-  EXPECT_TRUE(body_pose.isApprox(pose_vector.value(frame_id), 1e-1));
+  EXPECT_TRUE(body_pose.isApprox(
+      pose_vector.value(frame_id).GetAsIsometry3(), 1e-1));
 }
 
 }  // namespace sensors

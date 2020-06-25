@@ -132,16 +132,16 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   EXPECT_EQ("bundle::Sherlock", bundle.get_name(0));
   EXPECT_EQ(kSherlockModelInstanceId, bundle.get_model_instance_id(0));
   const RigidTransformd& generic_pose_0 = bundle.get_transform(0);
-  EXPECT_TRUE(CompareMatrices(RigidTransformd(translation_0).matrix(),
-                              generic_pose_0.matrix()));
+  EXPECT_TRUE(CompareMatrices(RigidTransformd(translation_0).GetAsMatrix4(),
+                              generic_pose_0.GetAsMatrix4()));
   EXPECT_TRUE(CompareMatrices(sherlock_velocity.get_value(),
                               bundle.get_velocity(0).get_value()));
 
   EXPECT_EQ("bundle::Mycroft", bundle.get_name(1));
   EXPECT_EQ(kMycroftModelInstanceId, bundle.get_model_instance_id(1));
   const RigidTransformd& generic_pose_1 = bundle.get_transform(1);
-  EXPECT_TRUE(CompareMatrices(RigidTransformd(translation_1).matrix(),
-                              generic_pose_1.matrix()));
+  EXPECT_TRUE(CompareMatrices(RigidTransformd(translation_1).GetAsMatrix4(),
+                              generic_pose_1.GetAsMatrix4()));
 
   // Check that the PoseVector pose with velocity is passed through to the
   // output.
@@ -149,8 +149,8 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   EXPECT_EQ(42, bundle.get_model_instance_id(2));
   const RigidTransformd& xv_pose = bundle.get_transform(2);
   EXPECT_TRUE(CompareMatrices(
-      RigidTransformd(Vector3d(0.5, 1.5, 2.5)).matrix(),
-      xv_pose.matrix()));
+      RigidTransformd(Vector3d(0.5, 1.5, 2.5)).GetAsMatrix4(),
+      xv_pose.GetAsMatrix4()));
   for (int i = 0; i < 6; ++i) {
     EXPECT_EQ(1.0 + i, bundle.get_velocity(2)[i]);
   }
@@ -163,8 +163,8 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   EXPECT_TRUE(CompareMatrices(
       RigidTransformd(Eigen::Quaternion<double>(0.5, 0.5, 0.5, 0.5),
                       Vector3d{0, 0, 0})
-          .matrix(),
-      x_pose.matrix()));
+          .GetAsMatrix4(),
+      x_pose.GetAsMatrix4()));
 
   // The sequel checks the AutoDiffXd conversion.
   auto autodiff_aggregator = aggregator_.ToAutoDiffXd();
@@ -187,9 +187,9 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
   ASSERT_EQ(bundle.get_num_poses(), autodiff_bundle.get_num_poses());
   for (int i = 0; i < bundle.get_num_poses(); i++) {
     EXPECT_TRUE(
-        CompareMatrices(bundle.get_transform(i).matrix(),
+        CompareMatrices(bundle.get_transform(i).GetAsMatrix4(),
                         math::autoDiffToValueMatrix(
-                            autodiff_bundle.get_transform(i).matrix())));
+                            autodiff_bundle.get_transform(i).GetAsMatrix4())));
     EXPECT_TRUE(
         CompareMatrices(bundle.get_velocity(i).get_value(),
                         math::autoDiffToValueMatrix(
