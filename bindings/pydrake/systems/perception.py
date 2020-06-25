@@ -106,7 +106,8 @@ class PointCloudConcatenation(LeafSystem):
             X_CiSi = self.EvalAbstractInput(
                 context, self._transform_ports[id].get_index()).get_value()
 
-            points[id] = _TransformPoints(point_cloud.xyzs(), X_CiSi.matrix())
+            points[id] = _TransformPoints(
+                point_cloud.xyzs(), X_CiSi.GetAsMatrix4())
 
             if point_cloud.has_rgbs():
                 colors[id] = point_cloud.rgbs()

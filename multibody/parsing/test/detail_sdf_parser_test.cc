@@ -212,7 +212,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
         plant.GetFrameByName(parent_name, instance1);
     const RigidTransformd X_PF = plant.CalcRelativeTransform(
         *context, parent_frame, frame);
-    EXPECT_TRUE(CompareMatrices(X_PF_expected.matrix(), X_PF.matrix(), kEps))
+    EXPECT_TRUE(CompareMatrices(
+        X_PF_expected.GetAsMatrix4(), X_PF.GetAsMatrix4(), kEps))
         << name;
   };
 
@@ -265,12 +266,14 @@ GTEST_TEST(SdfParser, FloatingBodyPose) {
       RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
   const RigidTransformd X_WB_expected(
       RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
   const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
 }
 
 GTEST_TEST(SdfParser, StaticModelSupported) {
@@ -292,12 +295,14 @@ GTEST_TEST(SdfParser, StaticModelSupported) {
       RollPitchYawd(0.1, 0.2, 0.3), Vector3d(1, 2, 3));
   const RigidTransformd X_WA =
       pair.plant->GetFrameByName("a").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WA_expected.matrix(), X_WA.matrix(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WA_expected.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
   const RigidTransformd X_WB_expected(
       RollPitchYawd(0.4, 0.5, 0.6), Vector3d(4, 5, 6));
   const RigidTransformd X_WB =
       pair.plant->GetFrameByName("b").CalcPoseInWorld(*context);
-  EXPECT_TRUE(CompareMatrices(X_WB_expected.matrix(), X_WB.matrix(), kEps));
+  EXPECT_TRUE(CompareMatrices(
+      X_WB_expected.GetAsMatrix4(), X_WB.GetAsMatrix4(), kEps));
 }
 
 GTEST_TEST(SdfParser, StaticModelWithJoints) {

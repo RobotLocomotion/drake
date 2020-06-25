@@ -85,8 +85,9 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   math::RigidTransform<double> X_BF_expected(rpy_expected.ToRotationMatrix(),
                                              xyz_expected);
 
-  EXPECT_TRUE(CompareMatrices(frame_on_link1.GetFixedPoseInBodyFrame().matrix(),
-                              X_BF_expected.GetAsMatrix4(), 1e-10));
+  EXPECT_TRUE(CompareMatrices(
+      frame_on_link1.GetFixedPoseInBodyFrame().GetAsMatrix4(),
+      X_BF_expected.GetAsMatrix4(), 1e-10));
 
   const Frame<double>& link2_com = plant.GetFrameByName("link2_com");
   EXPECT_EQ(link2_com.body().index(), plant.GetBodyByName("link2").index());

@@ -88,6 +88,8 @@ GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
   EXPECT_TRUE(X.IsExactlyIdentity());
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // This tests the conversion operator from a RigidTransform to an Isometry3.
 // This test will fail once the conversion operator is removed per
 // resolution of #9865, and thus this test should be removed as well.
@@ -101,6 +103,7 @@ GTEST_TEST(RigidTransform, ImplicitConstructionFromIsometry3) {
   const Isometry3<double>& Xiso = X;
   EXPECT_TRUE(Xiso.isApprox(X.GetAsIsometry3(), 0));
 }
+#pragma GCC diagnostic pop
 
 // Tests constructing a RigidTransform from a RotationMatrix and Vector3.
 // Also test the set method.
