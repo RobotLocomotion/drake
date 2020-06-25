@@ -758,8 +758,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             [abstract_value_cls](Class& self, const std::string& group_name,
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
-              self.AddPropertyAbstract(group_name, name,
-                  abstract.cast<const AbstractValue&>());
+              self.AddPropertyAbstract(
+                  group_name, name, abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.AddProperty.doc)
@@ -768,8 +768,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             [abstract_value_cls](Class& self, const std::string& group_name,
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
-              self.UpdatePropertyAbstract(group_name, name,
-                  abstract.cast<const AbstractValue&>());
+              self.UpdatePropertyAbstract(
+                  group_name, name, abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.UpdateProperty.doc)

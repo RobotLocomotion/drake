@@ -403,7 +403,7 @@ class TestGeometry(unittest.TestCase):
             prop.GetProperty(group_name=default_group, name="to_update"), 17)
 
         prop.UpdateProperty(group_name=default_group, name="to_update",
-                         value=20)
+                            value=20)
         self.assertTrue(prop.HasProperty(group_name=default_group,
                                          name="to_update"))
         self.assertEqual(
