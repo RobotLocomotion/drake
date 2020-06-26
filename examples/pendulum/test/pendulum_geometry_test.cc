@@ -24,9 +24,7 @@ math::RigidTransformd ExtractSinglePose(
     const geometry::FramePoseVector<double>& pose_vector) {
   DRAKE_THROW_UNLESS(pose_vector.size() == 1);
   for (const auto& id : pose_vector.frame_ids()) {
-    RigidTransformd result;
-    result.SetFromIsometry3(pose_vector.value(id));
-    return result;
+    return pose_vector.value(id);
   }
   DRAKE_UNREACHABLE();
 }
@@ -58,8 +56,8 @@ GTEST_TEST(PendulumGeometryTest, AcceptanceTest) {
   const auto& geom_output_value =
       geom->get_output_port(0).Eval<FramePoseVector<double>>(geom_context);
   EXPECT_TRUE(CompareMatrices(
-      ExtractSinglePose(geom_output_value).matrix(),
-      RigidTransformd(RotationMatrixd::MakeYRotation(theta)).matrix(),
+      ExtractSinglePose(geom_output_value).GetAsMatrix4(),
+      RigidTransformd(RotationMatrixd::MakeYRotation(theta)).GetAsMatrix4(),
       tolerance));
 
   // Check other stuff.

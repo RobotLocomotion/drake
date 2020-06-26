@@ -188,7 +188,8 @@ class TestMath(unittest.TestCase):
         # Explicitly disabled, to mirror C++ API.
         with self.assertRaises(TypeError):
             self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
-        self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
+        with catch_drake_warnings(expected_count=1):
+            self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
 
     @numpy_compare.check_all_types
     def test_rotation_matrix(self, T):

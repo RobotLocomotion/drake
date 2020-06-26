@@ -597,7 +597,8 @@ class TestPlant(unittest.TestCase):
         plant.SetFreeBodyPose(
             context=context, body=base, X_WB=X_WB_desired)
         numpy_compare.assert_float_equal(
-                X_WB.matrix(), numpy_compare.to_float(X_WB_desired.matrix()))
+            X_WB.GetAsMatrix4(),
+            numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
 
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])

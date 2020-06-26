@@ -29,8 +29,8 @@ GTEST_TEST(RenderPoseToGeometryPoseTest, InputOutput) {
   EXPECT_EQ(output.size(), 1);
   ASSERT_TRUE(output.has_id(frame_id));
   EXPECT_TRUE(CompareMatrices(
-      output.value(frame_id).matrix(),
-      input.get_transform().matrix()));
+      output.value(frame_id).GetAsMatrix4(),
+      input.get_transform().GetAsMatrix4()));
 
   EXPECT_TRUE(dut.HasAnyDirectFeedthrough());
 }
