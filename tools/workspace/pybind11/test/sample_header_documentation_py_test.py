@@ -11,7 +11,7 @@ def _read(filename):
 # header file, use this command ...
 #
 # cp \
-#  bazel-genfiles/tools/workspace/pybind11/test/sample_header_documentation.h \
+#  bazel-bin/tools/workspace/pybind11/test/sample_header_documentation.h \
 #  tools/workspace/pybind11/test/sample_header_documentation.expected.h
 #
 # ... and then manually put back the "SCRUBBED" change.

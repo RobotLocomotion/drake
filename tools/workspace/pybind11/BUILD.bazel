@@ -35,6 +35,12 @@ py_library(
     ],
 )
 
+py_library(
+    name = "mkdoc_comment_py",
+    srcs = ["mkdoc_comment.py"],
+    visibility = ["//visibility:public"],
+)
+
 py_binary(
     name = "mkdoc",
     srcs = ["//third_party:com_github_pybind_pybind11/mkdoc.py"],
@@ -46,14 +52,15 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
+        ":mkdoc_comment_py",
         "@clang_cindex_python3//:clang",
     ],
 )
 
 drake_py_unittest(
-    name = "mkdoc_test",
+    name = "mkdoc_comment_test",
     deps = [
-        ":mkdoc",
+        ":mkdoc_comment_py",
     ],
 )
 
