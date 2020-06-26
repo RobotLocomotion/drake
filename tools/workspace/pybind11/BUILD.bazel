@@ -46,15 +46,22 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
-        "//doc:system_doxygen",
+        ":mkdoc_comment_py",
         "@clang_cindex_python3//:clang",
     ],
 )
 
+py_library(
+    name = "mkdoc_comment_py",
+    srcs = ["mkdoc_comment.py"],
+    visibility = ["//visibility:public"],
+    deps = ["//doc:system_doxygen"],
+)
+
 drake_py_unittest(
-    name = "mkdoc_test",
+    name = "mkdoc_comment_test",
     deps = [
-        ":mkdoc",
+        ":mkdoc_comment_py",
     ],
 )
 
