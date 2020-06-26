@@ -3,57 +3,6 @@
 namespace drake {
 namespace solvers {
 namespace internal {
-void RemoveFreeVariableByNullspaceApproach(
-    const SdpaFreeFormat& sdpa_free_format, Eigen::SparseMatrix<double>* C_hat,
-    std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
-    Eigen::VectorXd* y_hat,
-    Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>*
-        QR_B) {
-  DRAKE_ASSERT(sdpa_free_format.num_free_variables() != 0);
-  const int num_constraints =
-      static_cast<int>(sdpa_free_format.A_triplets().size());
-  // Do a QR decomposition on B to find the null space of Bᵀ.
-  QR_B->analyzePattern(sdpa_free_format.B());
-  QR_B->factorize(sdpa_free_format.B());
-  if (QR_B->info() != Eigen::Success) {
-    throw std::runtime_error(
-        "SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(): cannot "
-        "perform QR decomposition of B. Please try the other method "
-        "kTwoSlackVariables.");
-  }
-  // BP = [Q₁ Q₂] * [R; 0], so the nullspace of Bᵀ is Q₂
-  Eigen::SparseMatrix<double> Q;
-  Q = QR_B->matrixQ();
-  const Eigen::SparseMatrix<double> N =
-      Q.rightCols(sdpa_free_format.B().rows() - QR_B->rank());
-  *rhs_hat = N.transpose() * sdpa_free_format.g();
-
-  A_hat->reserve(N.cols());
-  for (int i = 0; i < N.cols(); ++i) {
-    A_hat->emplace_back(sdpa_free_format.num_X_rows(),
-                        sdpa_free_format.num_X_rows());
-    A_hat->back().setZero();
-    for (Eigen::SparseMatrix<double>::InnerIterator it_N(N, i); it_N; ++it_N) {
-      A_hat->back() += it_N.value() * sdpa_free_format.A()[it_N.row()];
-    }
-  }
-
-  const Eigen::SparseMatrix<double> B_t = sdpa_free_format.B().transpose();
-  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
-      qr_B_t;
-  qr_B_t.compute(B_t);
-  if (qr_B_t.info() != Eigen::Success) {
-    throw std::runtime_error(
-        "RemoveFreeVariableByNullspaceApproach():QR "
-        "decomposition on B.transpose() fails\n");
-  }
-  *y_hat = qr_B_t.solve(Eigen::VectorXd(sdpa_free_format.d()));
-  *C_hat = sdpa_free_format.C();
-  for (int i = 0; i < num_constraints; ++i) {
-    *C_hat -= (*y_hat)(i)*sdpa_free_format.A()[i];
-  }
-}
-
 void ConvertSparseMatrixFormatToCsdpProblemData(
     const std::vector<BlockInX>& X_blocks, const Eigen::SparseMatrix<double>& C,
     const std::vector<Eigen::SparseMatrix<double>> A,
