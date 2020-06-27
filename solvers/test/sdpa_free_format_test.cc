@@ -819,6 +819,68 @@ TEST_F(TrivialSOCP1, RemoveFreeVariableByNullspaceApproach) {
   TestRemoveFreeVariableByNullspaceApproach(*prog_);
 }
 
+void TestRemoveFreeVariableByTwoSlackVariablesApproach(
+    const MathematicalProgram& prog) {
+  const SdpaFreeFormat dut(prog);
+  std::vector<internal::BlockInX> X_hat_blocks;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::SparseMatrix<double> C_hat;
+  dut.RemoveFreeVariableByTwoSlackVariablesApproach(&X_hat_blocks, &A_hat,
+                                                    &C_hat);
+  EXPECT_EQ(X_hat_blocks.size(), dut.X_blocks().size() + 1);
+  for (int i = 0; i < static_cast<int>(dut.X_blocks().size()); ++i) {
+    EXPECT_EQ(X_hat_blocks[i].block_type, dut.X_blocks()[i].block_type);
+    EXPECT_EQ(X_hat_blocks[i].num_rows, dut.X_blocks()[i].num_rows);
+  }
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].block_type,
+            BlockType::kDiagonal);
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].num_rows,
+            dut.num_free_variables() * 2);
+  EXPECT_EQ(A_hat.size(), dut.A().size());
+  const int num_X_hat_rows = dut.num_X_rows() + 2 * dut.num_free_variables();
+  for (int i = 0; i < static_cast<int>(A_hat.size()); ++i) {
+    Eigen::MatrixXd A_hat_expected =
+        Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+    A_hat_expected.block(0, 0, dut.A()[i].rows(), dut.A()[i].cols()) =
+        dut.A()[i];
+    Eigen::VectorXd bi = dut.B().row(i).transpose();
+    A_hat_expected.block(dut.A()[i].rows(), dut.A()[i].cols(), dut.B().cols(),
+                         dut.B().cols()) = bi.asDiagonal();
+    A_hat_expected.bottomRightCorner(dut.num_free_variables(),
+                                     dut.num_free_variables()) =
+        (-bi).asDiagonal();
+    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]), A_hat_expected));
+  }
+
+  Eigen::MatrixXd C_hat_expected =
+      Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+  C_hat_expected.topLeftCorner(dut.num_X_rows(), dut.num_X_rows()) = dut.C();
+  C_hat_expected.block(dut.num_X_rows(), dut.num_X_rows(),
+                       dut.num_free_variables(), dut.num_free_variables()) =
+      Eigen::VectorXd(dut.d()).asDiagonal();
+  C_hat_expected.bottomRightCorner(dut.num_free_variables(),
+                                   dut.num_free_variables()) =
+      Eigen::VectorXd(-dut.d()).asDiagonal();
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat), C_hat_expected));
+}
+
+TEST_F(LinearProgramBoundingBox1,
+       RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+TEST_F(CsdpLinearProgram2, RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+TEST_F(TrivialSDP2, RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+TEST_F(TrivialSOCP1, RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
 }  // namespace internal
 GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   // This is the sample program from http://plato.asu.edu/ftp/sdpa_format.txt
