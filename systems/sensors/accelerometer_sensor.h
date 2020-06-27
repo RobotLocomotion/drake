@@ -91,6 +91,7 @@ class Accelerometer : public LeafSystem<T> {
   /// @param X_BS the transform from body B to the accelerometer frame S
   /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
+  /// @param plant the plant to which the sensor will be connected
   /// @param builder a pointer to the DiagramBuilder
   static const Accelerometer& AddToDiagram(
       multibody::BodyIndex body_index, const math::RigidTransform<double>& X_BS,

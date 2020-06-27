@@ -15,10 +15,10 @@ using multibody::SpatialVelocity;
 
 template <typename T>
 Accelerometer<T>::Accelerometer(multibody::BodyIndex index,
-                                const RigidTransform<double>& X_BC,
+                                const RigidTransform<double>& X_BS,
                                 const Eigen::Vector3d& gravity_vector)
     : body_index_(index),
-      X_BS_(X_BC),
+      X_BS_(X_BS),
       gravity_vector_(gravity_vector) {
   // Declare measurement output port.
   this->DeclareVectorOutputPort("measured_acceleration", BasicVector<T>(3),
