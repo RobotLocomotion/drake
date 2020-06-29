@@ -124,6 +124,15 @@ class Aabb {
   static bool HasOverlap(const Aabb& bv, const HalfSpace& hs_C,
                          const math::RigidTransformd& X_CH);
 
+  /** Compares the values of the two Aabb instances for exact equality down to
+   the last bit. Assumes that the quantities are measured and expressed in
+   the same frame. */
+  bool Equal(const Aabb& other) const {
+    if (this == &other) return true;
+    return center_ == other.center_ &&
+           half_width_ == other.half_width_;
+  }
+
  private:
   friend class AabbTester;
 
@@ -383,6 +392,14 @@ class BoundingVolumeHierarchy {
     return result;
   }
 
+  /** Compares the two BoundingVolumeHierarchy instances for exact equality down
+   to the last bit. Assumes that the quantities are measured and expressed in
+   the same frame. */
+  bool Equal(const BoundingVolumeHierarchy<MeshType>& other) const {
+    if (this == &other) return true;
+    return EqualTrees(this->root_node(), other.root_node());
+  }
+
  private:
   // Convenience class for testing.
   friend class BVHTester;
@@ -403,6 +420,11 @@ class BoundingVolumeHierarchy {
   // and rename to CalcElementCentroid(ElementIndex).
   static Vector3<double> ComputeCentroid(const MeshType& mesh,
                                          IndexType i);
+
+  // Tests that the two hierarchy trees, rooted at nodes a and b, are equal in
+  // the sense that they have identical structure and equal bounding volumes
+  // (see Aabb::Equal()).
+  static bool EqualTrees(const BvNode<MeshType>& a, const BvNode<MeshType>& b);
 
   static constexpr int kElementVertexCount = MeshType::kDim + 1;
 

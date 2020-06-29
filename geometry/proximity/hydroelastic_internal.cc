@@ -24,28 +24,14 @@ namespace hydroelastic {
 using std::make_unique;
 using std::move;
 
-SoftGeometry& SoftGeometry::operator=(const SoftGeometry& g) {
-  if (this == &g) return *this;
+SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
+  if (this == &s) return *this;
 
-  if (g.is_half_space()) {
-    geometry_ = SoftHalfSpace{g.pressure_scale()};
-  } else {
-    auto mesh = make_unique<VolumeMesh<double>>(g.mesh());
-    // We can't simply copy the mesh field; the copy must contain a pointer to
-    // the new mesh. So, we use CloneAndSetMesh() instead.
-    auto pressure = g.pressure_field().CloneAndSetMesh(mesh.get());
-    geometry_ = SoftMesh{move(mesh), move(pressure)};
-  }
-  return *this;
-}
-
-RigidGeometry& RigidGeometry::operator=(const RigidGeometry& g) {
-  if (this == &g) return *this;
-
-  geometry_ = std::nullopt;
-  if (!g.is_half_space()) {
-    geometry_ = RigidMesh(make_unique<SurfaceMesh<double>>(g.mesh()));
-  }
+  mesh_ = make_unique<VolumeMesh<double>>(s.mesh());
+  // We can't simply copy the mesh field; the copy must contain a pointer to
+  // the new mesh. So, we use CloneAndSetMesh() instead.
+  pressure_ = s.pressure().CloneAndSetMesh(mesh_.get());
+  bvh_ = make_unique<BoundingVolumeHierarchy<VolumeMesh<double>>>(s.bvh());
 
   return *this;
 }
