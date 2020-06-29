@@ -10,7 +10,9 @@ namespace geometry {
 using math::RigidTransform;
 using math::RigidTransformd;
 using render::CameraProperties;
+using render::ColorRenderCamera;
 using render::DepthCameraProperties;
+using render::DepthRenderCamera;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -172,7 +174,31 @@ void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
 }
 
 template <typename T>
+void QueryObject<T>::RenderColorImage(const ColorRenderCamera& camera,
+                                      FrameId parent_frame,
+                                      const RigidTransformd& X_PC,
+                                      ImageRgba8U* color_image_out) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out);
+}
+
+template <typename T>
 void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
+                                      FrameId parent_frame,
+                                      const RigidTransformd& X_PC,
+                                      ImageDepth32F* depth_image_out) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
+}
+
+template <typename T>
+void QueryObject<T>::RenderDepthImage(const DepthRenderCamera& camera,
                                       FrameId parent_frame,
                                       const RigidTransformd& X_PC,
                                       ImageDepth32F* depth_image_out) const {
@@ -195,6 +221,18 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
   const GeometryState<T>& state = geometry_state();
   return state.RenderLabelImage(camera, parent_frame, X_PC, show_window,
                                 label_image_out);
+}
+
+template <typename T>
+void QueryObject<T>::RenderLabelImage(const ColorRenderCamera& camera,
+                                      FrameId parent_frame,
+                                      const RigidTransformd& X_PC,
+                                      ImageLabel16I* label_image_out) const {
+  ThrowIfNotCallable();
+
+  FullPoseUpdate();
+  const GeometryState<T>& state = geometry_state();
+  return state.RenderLabelImage(camera, parent_frame, X_PC, label_image_out);
 }
 
 template <typename T>
