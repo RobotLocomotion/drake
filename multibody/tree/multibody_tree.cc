@@ -1119,7 +1119,7 @@ RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
-  // Shortcut: Efficiently return identity transform if frame_F == frame_F.
+  // Shortcut: Efficiently return identity transform if frame_F == frame_G.
   if (frame_F.index() == frame_G.index()) return RigidTransform<T>::Identity();
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -1137,7 +1137,7 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
-  // Shortcut: Efficiently return identity matrix if frame_F == frame_F.
+  // Shortcut: Efficiently return identity matrix if frame_F == frame_G.
   if (frame_F.index() == frame_G.index()) return RotationMatrix<T>::Identity();
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -1518,10 +1518,9 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
   const SpatialAcceleration<T> AsBias_ABo_E = CalcBiasSpatialAcceleration(
       context, with_respect_to, frame_B, Vector3<T>::Zero(), frame_A, frame_E);
 
-  // If necessary, get R_EB (rotation matrix relating frame_E to frame_B).
-  RotationMatrix<T> R_EB;
-  if (frame_E.index() != frame_B.index())
-    R_EB = CalcRelativeRotationMatrix(context, frame_E, frame_B);
+  // Get R_EB (rotation matrix relating frame_E to frame_B).
+  const RotationMatrix<T> R_EB =
+      CalcRelativeRotationMatrix(context, frame_E, frame_B);
 
   // Form w_AB_E (B's angular velocity in frame A, measured in frame_E).
   const Vector3<T> w_AB_E =

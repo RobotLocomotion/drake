@@ -115,6 +115,40 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(
       V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+
+  // Test method Frame::CalcAngularVelocity() by calculating world frame W's
+  // angular velocity measured in world frame W (which should be zero).
+  const Frame<double>& frame_W = plant_->world_frame();
+  const Vector3<double> w_WW_W = frame_W.CalcAngularVelocity(*context_,
+                                                             frame_W, frame_W);
+  EXPECT_TRUE(CompareMatrices(w_WW_W, Vector3<double>::Zero(), kTolerance,
+                              MatrixCompareType::relative));
+
+  // Test method Frame::CalcAngularVelocity() by calculating end-effector
+  // frame E's angular velocity measured in world frame W and expressed in W
+  // and ensure it matches V_WE.rotational().
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+  const Vector3<double> w_WE_W = frame_E.CalcAngularVelocity(*context_,
+      frame_W, frame_W);
+  EXPECT_TRUE(CompareMatrices(w_WE_W, V_WE.rotational(), kTolerance,
+                              MatrixCompareType::relative));
+
+  // Test method Frame::CalcAngularVelocity() by calculating
+  // frame H's angular velocity measured in world frame W and expressed in W
+  // and ensure it matches V_WH.rotational().
+  const Vector3<double> w_WH_E = frame_H_->CalcAngularVelocity(*context_,
+      frame_W, frame_E);
+  EXPECT_TRUE(CompareMatrices(w_WH_E, V_WH_E.rotational(), kTolerance,
+                              MatrixCompareType::relative));
+
+  // Test method Frame::CalcAngularVelocity() by calculating
+  // link 3's angular velocity measured in frame H and expressed in E
+  // and ensure it matches V_HL3_E.rotational().
+  const Frame<double>& L3 = link3.body_frame();
+  const Vector3<double> w_HL3_E = L3.CalcAngularVelocity(*context_,
+      *frame_H_, frame_E);
+  EXPECT_TRUE(CompareMatrices(w_HL3_E, V_HL3_E.rotational(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {

@@ -213,15 +213,15 @@ class Frame : public FrameBase<T> {
 
     // The next line results from rearranging the angular addition theorem
     // w_WF = w_WM + w_MF  ->  w_MF = w_WF - w_WM
-    Vector3<T> w_MF = w_WF_W - w_WM_W;
+    const Vector3<T> w_MF_W = w_WF_W - w_WM_W;
 
-    // Express results in frame_E (if frame_E is not world frame W).
-    if (frame_E.index() != FrameIndex(0)) {
-      const math::RotationMatrix<T> R_EW =
-          frame_E.CalcRotationMatrixInWorld(context).inverse();
-      w_MF = R_EW * w_MF;
-    }
-    return w_MF;
+    // If world frame W is frame_E, no need to express results in frame_E.
+    if (frame_E.index() == FrameIndex(0)) return w_MF_W;
+
+    // Otherwise, express results in frame_E.
+    const math::RotationMatrix<T> R_EW =
+        frame_E.CalcRotationMatrixInWorld(context).inverse();
+    return R_EW * w_MF_W;  // This method returns w_MF_E.
   }
 
   /// Computes and returns the spatial velocity `V_MF_E` of `this` frame F
