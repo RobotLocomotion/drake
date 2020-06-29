@@ -14,10 +14,17 @@ using multibody::SpatialAcceleration;
 using multibody::SpatialVelocity;
 
 template <typename T>
-Accelerometer<T>::Accelerometer(multibody::BodyIndex index,
+Accelerometer<T>::Accelerometer(const multibody::Body<T>& body,
                                 const RigidTransform<double>& X_BS,
                                 const Eigen::Vector3d& gravity_vector)
-    : body_index_(index),
+    : Accelerometer(body.index(), X_BS, gravity_vector) {}
+
+template <typename T>
+Accelerometer<T>::Accelerometer(const multibody::BodyIndex& body_index,
+                                const RigidTransform<double>& X_BS,
+                                const Eigen::Vector3d& gravity_vector)
+    : LeafSystem<T>(SystemTypeTag<Accelerometer>{}),
+      body_index_(body_index),
       X_BS_(X_BS),
       gravity_vector_(gravity_vector) {
   // Declare measurement output port.
@@ -66,14 +73,14 @@ void Accelerometer<T>::CalcOutput(const Context<T>& context,
 
 template <typename T>
 const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
-    multibody::BodyIndex body_index,
+    const multibody::Body<T>& body,
     const RigidTransform<double>& X_BS,
     const Eigen::Vector3d& gravity_vector,
     const multibody::MultibodyPlant<T>& plant,
     DiagramBuilder<T>* builder) {
-  const auto& accelerometer =
-      *builder->template AddSystem<Accelerometer<T>>(body_index, X_BS,
-          gravity_vector);
+  const auto& accelerometer = *builder->template AddSystem<Accelerometer<T>>(
+      body, X_BS, gravity_vector);
+
   builder->Connect(plant.get_body_poses_output_port(),
                    accelerometer.get_body_poses_input_port());
   builder->Connect(plant.get_body_spatial_velocities_output_port(),
@@ -82,6 +89,11 @@ const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
                    accelerometer.get_body_accelerations_input_port());
   return accelerometer;
 }
+
+template <typename T>
+template <typename U>
+Accelerometer<T>::Accelerometer(const Accelerometer<U>& other)
+    : Accelerometer(other.body_index_, other.X_BS_, other.gravity_vector_) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::sensors::Accelerometer)

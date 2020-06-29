@@ -12,9 +12,16 @@ using math::RotationMatrix;
 using multibody::SpatialVelocity;
 
 template <typename T>
-Gyroscope<T>::Gyroscope(multibody::BodyIndex index,
+Gyroscope<T>::Gyroscope(const multibody::Body<T>& body,
                         const RotationMatrix<double>& R_BS)
-    : body_index_(index), R_BS_(R_BS) {
+    : Gyroscope(body.index(), R_BS) {}
+
+template <typename T>
+Gyroscope<T>::Gyroscope(const multibody::BodyIndex& body_index,
+                        const RotationMatrix<double>& R_BS)
+    : LeafSystem<T>(SystemTypeTag<Gyroscope>{}),
+      body_index_(body_index),
+      R_BS_(R_BS) {
   // Declare measurement output port.
   this->DeclareVectorOutputPort("measured_angular_velocity", BasicVector<T>(3),
                                 &Gyroscope<T>::CalcOutput);
@@ -39,22 +46,27 @@ void Gyroscope<T>::CalcOutput(const Context<T>& context,
   const auto R_SW =
       R_BS_.template cast<T>().inverse() * X_WB.rotation().inverse();
 
-  // Rotate to local frame and return
+  // Re-express in local frame and return
   output->SetFromVector(R_SW * V_WB.rotational());
 }
 
 template <typename T>
 const Gyroscope<T>& Gyroscope<T>::AddToDiagram(
-    multibody::BodyIndex body_index, const RotationMatrix<double>& R_BS,
+    const multibody::Body<T>& body, const RotationMatrix<double>& R_BS,
     const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder) {
   const auto& gyroscope =
-      *builder->template AddSystem<Gyroscope<T>>(body_index, R_BS);
+      *builder->template AddSystem<Gyroscope<T>>(body, R_BS);
   builder->Connect(plant.get_body_poses_output_port(),
                    gyroscope.get_body_poses_input_port());
   builder->Connect(plant.get_body_spatial_velocities_output_port(),
                    gyroscope.get_body_velocities_input_port());
   return gyroscope;
 }
+
+template <typename T>
+template <typename U>
+Gyroscope<T>::Gyroscope(const Gyroscope<U>& other)
+    : Gyroscope(other.body_index_, other.R_BS_) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::sensors::Gyroscope)

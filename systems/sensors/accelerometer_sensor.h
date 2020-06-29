@@ -36,7 +36,7 @@ namespace sensors {
 ///      (e.g. plant.get_body_spatial_accelerations_output_port())
 ///
 /// This class is therefore defined by:
-///   1. The BodyIndex of the body to which this sensor is rigidly affixed.
+///   1. The body to which this sensor is rigidly affixed.
 ///   2. A rigid transform from the body frame to the sensor frame.
 ///
 /// @system{Accelerometer,
@@ -47,16 +47,16 @@ namespace sensors {
 /// }
 /// @ingroup sensor_systems
 template <typename T>
-class Accelerometer : public LeafSystem<T> {
+class Accelerometer final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer)
 
-  /// @param body_index The index of body B
+  /// @param body the body B to which the sensor is affixed
   /// @param X_BS the transform from body B to the accelerometer frame S
   /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
   Accelerometer(
-      multibody::BodyIndex body_index, const math::RigidTransform<double>& X_BS,
+      const multibody::Body<T>& body, const math::RigidTransform<double>& X_BS,
       const Eigen::Vector3d& gravity_vector = Eigen::Vector3d::Zero());
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
@@ -87,14 +87,14 @@ class Accelerometer : public LeafSystem<T> {
   ///        this.get_body_velocities_input_port()
   /// 3. plant.get_body_spatial_accelerations_output_port() to
   ///        this.get_body_spatial_accelerations_output_port()
-  /// @param body_index the index of body B
+  /// @param body the body B to which the sensor is affixed
   /// @param X_BS the transform from body B to the accelerometer frame S
   /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
   /// @param plant the plant to which the sensor will be connected
   /// @param builder a pointer to the DiagramBuilder
   static const Accelerometer& AddToDiagram(
-      multibody::BodyIndex body_index, const math::RigidTransform<double>& X_BS,
+      const multibody::Body<T>& body, const math::RigidTransform<double>& X_BS,
       const Eigen::Vector3d& gravity_vector,
       const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder);
 
@@ -103,11 +103,15 @@ class Accelerometer : public LeafSystem<T> {
   template <typename>
   friend class Accelerometer;
 
-  // Outputs the transformed signal.
  private:
+  Accelerometer(
+      const multibody::BodyIndex& body_index,
+      const math::RigidTransform<double>& X_BS,
+      const Eigen::Vector3d& gravity_vector = Eigen::Vector3d::Zero());
+
+  // Outputs the transformed signal.
   void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
-  // Index into the input body velocities/accelerations
   const multibody::BodyIndex body_index_;
   const math::RigidTransform<double> X_BS_;
   const Eigen::Vector3d gravity_vector_;

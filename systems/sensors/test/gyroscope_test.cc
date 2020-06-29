@@ -6,57 +6,62 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/sensors/gyroscope_sensor.h"
 
 namespace drake {
 namespace {
 
-using math::RotationMatrix;
 using systems::BasicVector;
 using systems::sensors::Gyroscope;
 
-GTEST_TEST(TestGyroscope, Rotated) {
+class GyroscopeTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Plant/System initialization
+    systems::DiagramBuilder<double> builder;
+    plant_ = builder.AddSystem<multibody::MultibodyPlant>(0.0);
+    const std::string urdf_name =
+        FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
+    multibody::Parser parser(plant_);
+    parser.AddModelFromFile(urdf_name);
+    plant_->WeldFrames(plant_->world_frame(), plant_->GetFrameByName("base"));
+    plant_->Finalize();
+
+    const multibody::Body<double>& arm_body = plant_->GetBodyByName("arm");
+    const math::RotationMatrix<double> R_BS(
+        drake::math::RollPitchYaw<double>(M_PI / 2, 0, 0));
+
+    gyroscope_ =
+        &Gyroscope<double>::AddToDiagram(arm_body, R_BS, *plant_, &builder);
+
+    diagram_ = builder.Build();
+  }
+
+  const Gyroscope<double>* gyroscope_;
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+  multibody::MultibodyPlant<double>* plant_;
+};
+
+TEST_F(GyroscopeTest, Rotated) {
   double tol = 10 * std::numeric_limits<double>::epsilon();
 
-  // Connect a pendulum to the gyroscope
-  // Plant/System initialization
-  systems::DiagramBuilder<double> builder;
-  auto& plant = *builder.AddSystem<multibody::MultibodyPlant>(0.0);
-  const std::string urdf_name =
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf");
-  multibody::Parser parser(&plant);
-  parser.AddModelFromFile(urdf_name);
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
-  plant.Finalize();
-
-  const multibody::BodyIndex& arm_body_index =
-      plant.GetBodyByName("arm").index();
-  const math::RotationMatrix<double> R_BS(
-      drake::math::RollPitchYaw<double>(M_PI / 2, 0, 0));
-
-  std::cout << R_BS.matrix() << std::endl;
-
-  const auto& gyroscope =
-      Gyroscope<double>::AddToDiagram(arm_body_index, R_BS, plant, &builder);
-
-  auto diagram = builder.Build();
-
-  auto diagram_context = diagram->CreateDefaultContext();
+  auto diagram_context = diagram_->CreateDefaultContext();
   auto& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+      diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
   auto& gyro_context =
-      diagram->GetMutableSubsystemContext(gyroscope, diagram_context.get());
+      diagram_->GetMutableSubsystemContext(*gyroscope_, diagram_context.get());
 
   double theta = M_PI / 2;
   double omega = .5;
 
   // Test zero-velocity state
-  plant.get_actuation_input_port().FixValue(&plant_context, Vector1d(0));
-  plant.SetPositions(&plant_context, Vector1d(theta));
-  plant.SetVelocities(&plant_context, Vector1d(omega));
+  plant_->get_actuation_input_port().FixValue(&plant_context, Vector1d(0));
+  plant_->SetPositions(&plant_context, Vector1d(theta));
+  plant_->SetVelocities(&plant_context, Vector1d(omega));
 
   const auto& result =
-      gyroscope.get_output_port(0).Eval<BasicVector<double>>(gyro_context);
+      gyroscope_->get_output_port(0).Eval<BasicVector<double>>(gyro_context);
 
   // Compute expected result
   // Angular velocity in world coordinates is (0, omega, 0)
@@ -66,6 +71,11 @@ GTEST_TEST(TestGyroscope, Rotated) {
   Eigen::Vector3d expected_result(0, 0, -omega);
 
   EXPECT_TRUE(CompareMatrices(result.get_value(), expected_result, tol));
+}
+
+TEST_F(GyroscopeTest, ScalarConversionTest) {
+  EXPECT_TRUE(is_autodiffxd_convertible(*gyroscope_));
+  EXPECT_TRUE(is_symbolic_convertible(*gyroscope_));
 }
 
 }  // namespace

@@ -267,6 +267,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -298,6 +299,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
+        "//systems/framework/test_utilities",
     ],
 )
 
