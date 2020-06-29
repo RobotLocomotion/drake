@@ -21,8 +21,6 @@ const double kFy = 579.41125496954282;  // In pixels.
 const double kCx = kWidth * 0.5 - 0.5;
 const double kCy = kHeight * 0.5 - 0.5;
 const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees.
-const double kMinDepth = 0.25;
-const double kMaxDepth = 10;
 
 void Verify(const Eigen::Matrix3d& expected, const CameraInfo& dut) {
   EXPECT_EQ(kWidth, dut.width());
@@ -31,11 +29,10 @@ void Verify(const Eigen::Matrix3d& expected, const CameraInfo& dut) {
   EXPECT_NEAR(expected(1, 1), dut.focal_y(), kTolerance);
   EXPECT_NEAR(expected(0, 2), dut.center_x(), kTolerance);
   EXPECT_NEAR(expected(1, 2), dut.center_y(), kTolerance);
-  EXPECT_TRUE(CompareMatrices(expected, dut.intrinsic_matrix(),
-                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(expected, dut.intrinsic_matrix(), kTolerance));
 }
 
-GTEST_TEST(TestCameraInfo, CameraInfoConstructionTest) {
+GTEST_TEST(TestCameraInfo, ConstructionTest) {
   const Eigen::Matrix3d expected(
       (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
 
@@ -52,7 +49,8 @@ GTEST_TEST(TestCameraInfo, ConstructionWithFovTest) {
   Verify(expected, dut);
 }
 
-// Confirm that the reported field of view (in radians) is the same as is given.
+// Confirms that the reported field of view (in radians) is the same as is
+// given.
 GTEST_TEST(TestCameraInfo, FieldOfView) {
   // Pick some arbitrary angle that isn't a "nice" angle.
   const double fov_y = M_PI / 7;
@@ -74,25 +72,6 @@ GTEST_TEST(TestCameraInfo, FieldOfView) {
     EXPECT_EQ(camera.fov_y(), fov_y);
     EXPECT_NEAR(camera.fov_x(), fov_x, std::numeric_limits<double>::epsilon());
   }
-}
-
-GTEST_TEST(TestCameraInfo, ColorCameraModelConstruction) {
-  const Eigen::Matrix3d expected(
-      (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
-
-  ColorCameraModel dut{{kWidth, kHeight, kFx, kFy, kCx, kCy}};
-  Verify(expected, dut.intrinsics());
-}
-
-GTEST_TEST(TestCameraInfo, DepthCameraModelConstruction) {
-  const Eigen::Matrix3d expected(
-      (Eigen::Matrix3d() << kFx, 0., kCx, 0., kFy, kCy, 0., 0., 1.).finished());
-
-  DepthCameraModel dut({kWidth, kHeight, kFx, kFy, kCx, kCy}, kMinDepth,
-                       kMaxDepth);
-  Verify(expected, dut.intrinsics());
-  EXPECT_EQ(dut.min_depth(), kMinDepth);
-  EXPECT_EQ(dut.max_depth(), kMaxDepth);
 }
 
 }  // namespace
