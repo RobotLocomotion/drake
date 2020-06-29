@@ -27,6 +27,8 @@ using internal::InternalGeometry;
 using internal::ProximityEngine;
 using math::RigidTransform;
 using math::RigidTransformd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
 using std::make_pair;
 using std::make_unique;
 using std::move;
@@ -943,9 +945,8 @@ void GeometryState<T>::RenderColorImage(const render::CameraProperties& camera,
 
 template <typename T>
 void GeometryState<T>::RenderDepthImage(
-    const render::DepthCameraProperties& camera,
-    FrameId parent_frame, const RigidTransformd& X_PC,
-    ImageDepth32F* depth_image_out) const {
+    const render::DepthCameraProperties& camera, FrameId parent_frame,
+    const RigidTransformd& X_PC, ImageDepth32F* depth_image_out) const {
   const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
   const render::RenderEngine& engine =
       GetRenderEngineOrThrow(camera.renderer_name);
@@ -966,6 +967,46 @@ void GeometryState<T>::RenderLabelImage(const render::CameraProperties& camera,
   // See note in RenderColorImage() about this const cast.
   const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
   engine.RenderLabelImage(camera, show_window, label_image_out);
+}
+
+template <typename T>
+void GeometryState<T>::RenderColorImage(const ColorRenderCamera& camera,
+                                        FrameId parent_frame,
+                                        const RigidTransformd& X_PC,
+                                        ImageRgba8U* color_image_out) const {
+  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
+  const render::RenderEngine& engine =
+      GetRenderEngineOrThrow(camera.core().renderer_name());
+  // TODO(SeanCurtis-TRI): Invoke UpdateViewpoint() as part of a calc cache
+  //  entry. Challenge: how to do that with a parameter passed here?
+  const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
+  engine.RenderColorImage(camera, color_image_out);
+}
+
+template <typename T>
+void GeometryState<T>::RenderDepthImage(const DepthRenderCamera& camera,
+                                        FrameId parent_frame,
+                                        const RigidTransformd& X_PC,
+                                        ImageDepth32F* depth_image_out) const {
+  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
+  const render::RenderEngine& engine =
+      GetRenderEngineOrThrow(camera.core().renderer_name());
+  // See note in RenderColorImage() about this const cast.
+  const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
+  engine.RenderDepthImage(camera, depth_image_out);
+}
+
+template <typename T>
+void GeometryState<T>::RenderLabelImage(const ColorRenderCamera& camera,
+                                        FrameId parent_frame,
+                                        const RigidTransformd& X_PC,
+                                        ImageLabel16I* label_image_out) const {
+  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
+  const render::RenderEngine& engine =
+      GetRenderEngineOrThrow(camera.core().renderer_name());
+  // See note in RenderColorImage() about this const cast.
+  const_cast<render::RenderEngine&>(engine).UpdateViewpoint(X_WC);
+  engine.RenderLabelImage(camera, label_image_out);
 }
 
 template <typename T>

@@ -9,6 +9,7 @@
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
+#include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
@@ -480,6 +481,10 @@ class QueryObject {
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
+  void RenderColorImage(const render::ColorRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageRgba8U* color_image_out) const;
+
   /** Renders a depth image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -496,6 +501,10 @@ class QueryObject {
                         const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
+  void RenderDepthImage(const render::DepthRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageDepth32F* depth_image_out) const;
+
   /** Renders a label image for the given `camera` posed with respect to the
    indicated parent frame P.
 
@@ -508,6 +517,10 @@ class QueryObject {
                         FrameId parent_frame,
                         const math::RigidTransformd& X_PC,
                         bool show_window,
+                        systems::sensors::ImageLabel16I* label_image_out) const;
+
+  void RenderLabelImage(const render::ColorRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
 
