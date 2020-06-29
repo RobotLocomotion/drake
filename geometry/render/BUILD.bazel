@@ -14,7 +14,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "render",
     deps = [
-        ":render_camera_properties",
+        ":render_camera",
         ":render_engine",
         ":render_engine_ospray",
         ":render_engine_vtk",
@@ -25,10 +25,14 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "render_camera_properties",
-    srcs = ["render_camera_properties.cc"],
-    hdrs = ["render_camera_properties.h"],
-    deps = ["//common:essential"],
+    name = "render_camera",
+    srcs = ["render_camera.cc"],
+    hdrs = ["render_camera.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+        "//systems/sensors:camera_info",
+    ],
 )
 
 # A build target for code that wants to interact with the *idea* of a render
@@ -41,7 +45,7 @@ drake_cc_library(
         "render_engine.h",
     ],
     deps = [
-        ":render_camera_properties",
+        ":render_camera",
         ":render_label",
         "//common:essential",
         "//geometry:geometry_ids",
@@ -180,9 +184,9 @@ filegroup(
 )
 
 drake_cc_googletest(
-    name = "render_camera_properties_test",
+    name = "render_camera_test",
     deps = [
-        ":render_camera_properties",
+        ":render_camera",
         "//common/test_utilities",
     ],
 )
