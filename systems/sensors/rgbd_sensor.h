@@ -144,12 +144,8 @@ class RgbdSensor final : public LeafSystem<double> {
              const geometry::render::DepthCameraProperties& properties,
              const CameraPoses& camera_poses = {}, bool show_window = false);
 
-  /** Constructs an %RgbdSensor with a fully specified render camera model for
+  /** Constructs an %RgbdSensor with fully specified render camera models for
    both color/label and depth cameras.
-
-   @warning Currently, only "simple" cameras are supported. If the camera
-            intrinsics is not compatible with a simple camera model, a warning
-            will be printed and the camera will be "simplified".
    @pydrake_mkdoc_identifier{individual_intrinsics}  */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              geometry::render::ColorRenderCamera color_camera,
