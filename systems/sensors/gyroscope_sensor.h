@@ -20,7 +20,7 @@ namespace sensors {
 /// represent noise or bias, but this could and should be added at a later
 /// date. This sensor measures the angular velocity of a given body B relative
 /// to the world frame. The sensor frame S is rigidly affixed to the given
-/// body B. The measurement, written w_WS_S, is is expressed in the coordinates 
+/// body B. The measurement, written w_WS_S, is is expressed in the coordinates
 /// of frame S. Note that, since S is fixed to B, the angular velocity of the
 /// two frames is identical, w_WS_S = w_WB_S.
 ///
@@ -40,7 +40,7 @@ namespace sensors {
 /// }
 /// @ingroup sensor_systems
 template <typename T>
-class Gyroscope : public LeafSystem<T> {
+class Gyroscope final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gyroscope)
 

@@ -9,7 +9,6 @@
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/sensors/accelerometer_sensor.h"
 
-
 namespace drake {
 namespace {
 
@@ -42,9 +41,9 @@ class AccelerometerTest : public ::testing::Test {
     builder.Connect(plant_->get_body_spatial_accelerations_output_port(),
                     accel_default_->get_body_accelerations_input_port());
 
-  const math::RigidTransform<double> X_BS_rotated(
-      math::RotationMatrix<double>::MakeYRotation(M_PI / 2),
-      Eigen::Vector3d(0, 0, -r_BS_));
+    const math::RigidTransform<double> X_BS_rotated(
+        math::RotationMatrix<double>::MakeYRotation(M_PI / 2),
+        Eigen::Vector3d(0, 0, -r_BS_));
     accel_rotated_ = &Accelerometer<double>::AddToDiagram(
         arm_body, X_BS_rotated, gravity_, *plant_, &builder);
 
