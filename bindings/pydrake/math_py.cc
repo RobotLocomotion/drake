@@ -127,7 +127,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   "The RigidTransform::matrix() method was added for "
                   "compatibility with Eigen::Isometry3, and is now deprecated. "
                   "Use RigidTransform::GetAsMatrix4() instead.");
-              return self->GetAsIsometry3();
+              return self->GetAsMatrix4();
             },
             "The RigidTransform::matrix() method was added for "
             "compatibility with Eigen::Isometry3, and is now deprecated. "
@@ -139,7 +139,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   "The RigidTransform::linear() method was added for "
                   "compatibility with Eigen::Isometry3, and is now deprecated. "
                   "Use RigidTransform::rotation().matrix() instead.");
-              return self->GetAsMatrix4();
+              return self->rotation().matrix();
             },
             "The RigidTransform::linear() method was added for "
             "compatibility with Eigen::Isometry3, and is now deprecated. "
