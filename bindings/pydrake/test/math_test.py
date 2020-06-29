@@ -192,6 +192,18 @@ class TestMath(unittest.TestCase):
             self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
 
     @numpy_compare.check_all_types
+    def test_rigid_transform_deprecated_isometry3_workalikes(self, T):
+        X_AB = mut.RigidTransform()
+        with catch_drake_warnings(expected_count=1):
+            mat = X_AB.matrix()
+        with catch_drake_warnings(expected_count=1):
+            lin = X_AB.linear()
+        self.assertIsInstance(mat, np.ndarray)
+        self.assertIsInstance(lin, np.ndarray)
+        self.assertEqual(mat.shape, (4, 4))
+        self.assertEqual(lin.shape, (3, 3))
+
+    @numpy_compare.check_all_types
     def test_rotation_matrix(self, T):
         # - Constructors.
         RotationMatrix = mut.RotationMatrix_[T]
