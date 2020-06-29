@@ -1,8 +1,14 @@
+"""
+Runs manipulation_station example with Sony DualShock4 Controller for teleoperating 
+the end effector.
+"""
+
 import argparse
 from enum import Enum
 import os
 import pprint
 import sys
+from textwrap import dedent
 
 import numpy as np
 
@@ -37,6 +43,18 @@ else:
     from pygame.locals import *
 
 
+def initialize_joystick():
+    pygame.init()
+    try:
+        pygame.joystick.init()
+        joystick = pygame.joystick.Joystick(0)
+        joystick.init()
+        return joystick
+    except pygame.error:
+        raise Exception("Make sure dualshock 4 controller is connected. " 
+                        "Controller initialization failed with: {}".format(repr(sys.exc_info()[1])))
+
+
 class DS4Buttons(Enum):
     X_BUTTON = 0
     O_BUTTON = 1
@@ -62,69 +80,69 @@ class DS4Axis(Enum):
 
 
 def print_instructions():
-    print("")
-    print("END EFFECTOR CONTROL")
-    print("+/- x-axis         - leftjoy left / right")
-    print("+/- y-axis         - leftjoy up / down")
-    print("+/- z-axis         - l2 / r2")
-    print("+/- yaw            - l1 / r1")
-    print("+/- roll           - left / right - hats")
-    print("+/- pitch          - up / down - hats")
-    print("GRIPPER CONTROL")
-    print("open / close       - rightjoy up / down")
-    print("")
-    print("x button           - quit")
+    instructions = '''\
+
+        END EFFECTOR CONTROL
+        -----------------------------------------
+        +/- x-axis         - leftjoy left / right
+        +/- y-axis         - leftjoy up / down
+        +/- z-axis         - l2 / r2
+        +/- yaw            - l1 / r1
+        +/- roll           - left / right - hats
+        +/- pitch          - up / down - hats
+
+        GRIPPER CONTROL
+        -----------------------------------------
+        open / close       - right joy up / down
+
+        -----------------------------------------
+        x button           - quit
+    '''
+    print(dedent(instructions))
 
 
-class TeleopDualShock4Manager():
+class TeleopDualShock4Manager:
 
-    def __init__(self):
-        pygame.init()
-        try:
-            pygame.joystick.init()
-            self.controller = pygame.joystick.Joystick(0)
-            self.controller.init()
-        except:
-            print("Make sure dualshock 4 controller is connected." 
-                  "Initialization failed with: ", sys.exc_info()[0])
-        self.axis_data = dict()
-        self.button_data = dict()
-        self.hat_data = dict()
+    def __init__(self, joystick):
+        self._joystick = joystick
+        self._axis_data = list()
+        self._button_data = list()
+        self._hat_data = list()
 
-        for i in range(self.controller.get_numbuttons()):
-            self.button_data[i] = False
+        for i in range(self._joystick.get_numbuttons()):
+            self._button_data.append(False)
 
-        for i in range(self.controller.get_numhats()):
-            self.hat_data[i] = (0, 0)
+        for i in range(self._joystick.get_numhats()):
+            self._hat_data.append((0, 0))
 
-        for i in range(self.controller.get_numaxes()):
-            self.axis_data[i] = 0.0
+        for i in range(self._joystick.get_numaxes()):
+            self._axis_data.append(0.0)
 
     def get_events(self):
         for event in pygame.event.get():
             if event.type == pygame.JOYAXISMOTION:
-                self.axis_data[event.axis] = round(event.value, 2)
+                self._axis_data[event.axis] = round(event.value, 2)
             if event.type == pygame.JOYBUTTONDOWN:
-                self.button_data[event.button] = True
+                self._button_data[event.button] = True
             if event.type == pygame.JOYBUTTONUP:
-                self.button_data[event.button] = False
+                self._button_data[event.button] = False
             if event.type == pygame.JOYHATMOTION:
-                self.hat_data[event.hat] = event.value
+                self._hat_data[event.hat] = event.value
 
         events = dict()
-        events[DS4Axis.LEFTJOY_UP_DOWN] = self.axis_data[0] 
-        events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self.axis_data[1] 
-        events[DS4Axis.RIGHTJOY_UP_DOWN] = self.axis_data[4] 
-        events[DS4Buttons.X_BUTTON] = self.button_data[0]
-        events[DS4Buttons.L1_BUTTON] = self.button_data[4]
-        events[DS4Buttons.R1_BUTTON] = self.button_data[5]
-        events[DS4Buttons.L2_BUTTON] = self.button_data[6]
-        events[DS4Buttons.R2_BUTTON] = self.button_data[7]
+        events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0] 
+        events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1] 
+        events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4] 
+        events[DS4Buttons.X_BUTTON] = self._button_data[0]
+        events[DS4Buttons.L1_BUTTON] = self._button_data[4]
+        events[DS4Buttons.R1_BUTTON] = self._button_data[5]
+        events[DS4Buttons.L2_BUTTON] = self._button_data[6]
+        events[DS4Buttons.R2_BUTTON] = self._button_data[7]
 
-        events[DS4Hats.LEFT_BUTTON] = (self.hat_data[0][0] == -1)
-        events[DS4Hats.RIGHT_BUTTON] = (self.hat_data[0][0] == 1)
-        events[DS4Hats.DOWN_BUTTON] = (self.hat_data[0][1] == -1)
-        events[DS4Hats.UP_BUTTON] = (self.hat_data[0][1] == 1)
+        events[DS4Hats.LEFT_BUTTON] = (self._hat_data[0][0] == -1)
+        events[DS4Hats.RIGHT_BUTTON] = (self._hat_data[0][0] == 1)
+        events[DS4Hats.DOWN_BUTTON] = (self._hat_data[0][1] == -1)
+        events[DS4Hats.UP_BUTTON] = (self._hat_data[0][1] == 1)
 
         if events[DS4Buttons.X_BUTTON]:
             sys.exit(0)
@@ -132,7 +150,7 @@ class TeleopDualShock4Manager():
 
 
 class DualShock4Teleop(LeafSystem):
-    def __init__(self):
+    def __init__(self, joystick):
         LeafSystem.__init__(self)
         self.DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
                                      self.DoCalcOutput)
@@ -145,7 +163,7 @@ class DualShock4Teleop(LeafSystem):
         #       time step causes more lag in the response.
         self.DeclarePeriodicPublish(1.0, 0.0)
 
-        self.teleop_manager = TeleopDualShock4Manager()
+        self.teleop_manager = TeleopDualShock4Manager(joystick)
         self.roll = self.pitch = self.yaw = 0
         self.x = self.y = self.z = 0
         self.gripper_max = 0.107
@@ -258,9 +276,9 @@ def main():
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
     parser.add_argument(
-        "--filter_time_const", type=float, default=0.005,
-        help="Time constant for the first order low pass filter applied to"
-             "the teleop commands")
+        "--time_step", type=float, default=0.005,
+        help="Time constant for the differential IK solver and first order low pass"
+             "filter applied to the teleop commands")
     parser.add_argument(
         "--velocity_limit_factor", type=float, default=1.0,
         help="This value, typically between 0 and 1, further limits the "
@@ -314,9 +332,8 @@ def main():
     params = DifferentialInverseKinematicsParameters(robot.num_positions(),
                                                      robot.num_velocities())
 
-    time_step = 0.005
-    params.set_timestep(time_step)
-    # True velocity limits for the IIWA14 (in rad, rounded down to the first
+    params.set_timestep(args.time_step)
+    # True velocity limits for the IIWA14 (in rad/s, rounded down to the first
     # decimal)
     iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
     # Stay within a small fraction of those limits for this teleop demo.
@@ -325,14 +342,14 @@ def main():
                                       factor*iiwa14_velocity_limits))
 
     differential_ik = builder.AddSystem(DifferentialIK(
-        robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
+        robot, robot.GetFrameByName("iiwa_link_7"), params, args.time_step))
 
     builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
                     station.GetInputPort("iiwa_position"))
 
-    teleop = builder.AddSystem(DualShock4Teleop())
+    teleop = builder.AddSystem(DualShock4Teleop(initialize_joystick()))
     filter_ = builder.AddSystem(
-        FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
+        FirstOrderLowPassFilter(time_constant=args.time_step, size=6))
 
     builder.Connect(teleop.get_output_port(0), filter_.get_input_port(0))
     builder.Connect(filter_.get_output_port(0),
