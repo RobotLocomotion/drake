@@ -62,7 +62,10 @@ class AccelerometerTest : public ::testing::Test {
 TEST_F(AccelerometerTest, DefaultRotation) {
   double tol = 10 * std::numeric_limits<double>::epsilon();
 
-  auto diagram_context = diagram_, other.gravity_vector_>GetMutableSubsystemContext(
+  auto diagram_context = diagram_->CreateDefaultContext();
+  auto& plant_context =
+      diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
+  auto& accel_context = diagram_->GetMutableSubsystemContext(
       *accel_default_, diagram_context.get());
 
   double angle = .5;
