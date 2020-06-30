@@ -3,7 +3,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -86,19 +85,6 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("samples"),
           py::arg("zero_end_point_derivatives") = false,
           doc.PiecewisePolynomial.CubicShapePreserving.doc)
-      .def_static(
-          "Pchip",
-          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
-              const Eigen::Ref<const MatrixX<T>>& samples,
-              bool zero_end_point_derivatives) {
-            WarnDeprecated(
-                "Pchip has been renamed to CubicShapePreserving.  "
-                "Support will be removed after 2020-07-01.");
-            return PiecewisePolynomial<T>::CubicShapePreserving(
-                breaks, samples, zero_end_point_derivatives);
-          },
-          py::arg("breaks"), py::arg("knots"),
-          py::arg("zero_end_point_derivatives") = false)
       .def_static("CubicWithContinuousSecondDerivatives",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&,
@@ -109,21 +95,6 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("sample_dot_at_end"),
           doc.PiecewisePolynomial.CubicWithContinuousSecondDerivatives
               .doc_4args)
-      .def_static(
-          "Cubic",
-          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
-              const Eigen::Ref<const MatrixX<T>>& samples,
-              const Eigen::Ref<const VectorX<T>>& sample_dot_at_start,
-              const Eigen::Ref<const VectorX<T>>& sample_dot_at_end) {
-            WarnDeprecated(
-                "This version of Cubic has been renamed to "
-                "CubicWithContinuousSecondDerivatives.  "
-                "Support will be removed after 2020-07-01.");
-            return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-                breaks, samples, sample_dot_at_start, sample_dot_at_end);
-          },
-          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot_start"),
-          py::arg("knots_dot_end"))
       .def_static("CubicHermite",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&,
@@ -131,18 +102,6 @@ PYBIND11_MODULE(trajectories, m) {
               &PiecewisePolynomial<T>::CubicHermite),
           py::arg("breaks"), py::arg("samples"), py::arg("samples_dot"),
           doc.PiecewisePolynomial.CubicHermite.doc)
-      .def_static(
-          "Cubic",
-          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
-              const Eigen::Ref<const MatrixX<T>>& samples,
-              const Eigen::Ref<const MatrixX<T>>& samples_dot) {
-            WarnDeprecated(
-                "This version of Cubic has been renamed to CubicHermite.  "
-                "Support will be removed after 2020-07-01.");
-            return PiecewisePolynomial<T>::CubicHermite(
-                breaks, samples, samples_dot);
-          },
-          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot"))
       .def_static("CubicWithContinuousSecondDerivatives",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&, bool>(
@@ -150,18 +109,6 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("breaks"), py::arg("samples"), py::arg("periodic_end"),
           doc.PiecewisePolynomial.CubicWithContinuousSecondDerivatives
               .doc_3args)
-      .def_static(
-          "Cubic",
-          [](const Eigen::Ref<const Eigen::VectorXd>& breaks,
-              const Eigen::Ref<const MatrixX<T>>& samples, bool periodic_end) {
-            WarnDeprecated(
-                "This version of Cubic has been renamed to "
-                "CubicWithContinuousSecondDerivatives.  "
-                "Support will be removed after 2020-07-01.");
-            return PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-                breaks, samples, periodic_end);
-          },
-          py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
       .def_static("LagrangeInterpolatingPolynomial",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&>(

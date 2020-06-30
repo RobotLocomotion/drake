@@ -78,11 +78,6 @@ class AntiderivativeFunction {
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤.
   };
 
-  DRAKE_DEPRECATED(
-      "2020-07-01",
-      "SpecifiedValues has been renamed IntegrableFunctionContext.")
-  typedef IntegrableFunctionContext SpecifiedValues;
-
   /// Constructs the antiderivative function of the given
   /// @p integrable_function, using @p default_values.v as lower integration
   /// bound if given (0 if not) and parameterized with @p default_values.k if
