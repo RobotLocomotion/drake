@@ -42,6 +42,9 @@ RenderEngineGl::RenderEngineGl()
       render_targets_(make_shared<unordered_map<BufferDim, RenderTarget>>()),
       visuals_() {
   // Setup shader program.
+  // The vertex shader computes two pieces of information per vertex: its
+  // transformed position and its depth. Both get linearly interpolated across
+  // the rasterized triangle's fragments.
   const string kVertexShader = R"__(
 #version 330
 
@@ -56,6 +59,10 @@ void main() {
   gl_Position = projection_matrix * p_Camera;
 })__";
 
+  // The fragment shader "clamps" the depth of the fragment to the specified
+  // sensor range. Values closer than depth_z_near are set to zero, values
+  // farther than depth_z_far are pushed to infinity. This "clamped" depth value
+  // gets written to the frame buffer.
   const string kFragmentShader = R"__(
 #version 330
 
@@ -69,8 +76,13 @@ uniform float depth_z_far;
 void main() {
   // We need a value for infinity; 1 / 0 is only guaranteed to work for
   // OpenGL >= 4.1. We apply the bit encoding of IEEE 32-bit infinity
-  // encoding directly.
+  // directly.
   // https://stackoverflow.com/questions/10435253/glsl-infinity-constant
+  // Note: endianness is not a concern.  OpenGL has client pixel data in client
+  // byte ordering.
+  // https://www.khronos.org/opengl/wiki/Pixel_Transfer#Endian_issues
+  // This literal gets represented with the client's byte order, so the
+  // corresponding float will likewise have the right byte order.
   const float pos_infinity = intBitsToFloat(0x7F800000);
   if (depth < depth_z_near)
     encoded_depth = 0;

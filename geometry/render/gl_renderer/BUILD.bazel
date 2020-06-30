@@ -150,6 +150,7 @@ drake_cc_googletest(
     deps = [
         ":render_engine_gl",
         "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
     ],

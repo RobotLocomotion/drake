@@ -23,11 +23,11 @@ namespace render {
 /** See documentation of MakeRenderEngineGl().  */
 class RenderEngineGl final : public RenderEngine {
  public:
-  /** \name Does not allow public copy, move, or assignment  */
+  /** @name Does not allow public copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
-  // Note: the copy constructor operator is actually protected to serve as the
-  // basis for implementing the DoClone() method.
+  // Note: the copy constructor is actually protected to serve as the basis for
+  // implementing the DoClone() method.
   RenderEngineGl(const RenderEngineGl&) = delete;
 #endif
   RenderEngineGl& operator=(const RenderEngineGl&) = delete;
@@ -42,7 +42,8 @@ class RenderEngineGl final : public RenderEngine {
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
-  /** @see RenderEngine::RenderColorImage().  */
+  /** @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
+   this will throw an exception.  */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const final;
@@ -52,7 +53,8 @@ class RenderEngineGl final : public RenderEngine {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const final;
 
-  /** @see RenderEngine::RenderLabelImage().  */
+  /** @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
+   this will throw an exception.  */
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const final;
@@ -131,10 +133,9 @@ class RenderEngineGl final : public RenderEngine {
   // shared, or copy safe w.r.t. the shared context.
   std::shared_ptr<internal::OpenGlContext> opengl_context_;
 
-  // All of the objects below here *depend* on the OpenGL context. Right now,
-  // I'm having each instance of the renderer share these OpenGl objects and
-  // the context. If I'm going to do that, I may be better off making them
-  // part of the Context rather than part of the renderer.
+  // All of the objects below here *require* the OpenGL context. These members
+  // essentially store the OpenGl "objects" (i.e., integers) that live in
+  // graphics memory.
   std::shared_ptr<internal::ShaderProgram> shader_program_;
 
   // One OpenGlGeometry per primitive type. They represent a canonical, "unit"

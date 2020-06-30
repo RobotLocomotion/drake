@@ -10,13 +10,8 @@ namespace geometry {
 namespace render {
 
 /** Constructs a RenderEngine implementation which uses a purely OpenGL
- renderer. Currently this uses a temporary dummy implementation. Due to the lack
- of support on Mac, this has been initially introduced to verify platform
- specific (i.e. Ubuntu only) conditionals for building and installing. The rest
- of the implementation will be ported over once the conditionalizing is no
- longer considered a risk.
- <!-- TODO(tehbelinda): Complete port of RenderEngineGl. -->
- */
+ renderer. The engine only works under Ubuntu. If called on a Mac, it will
+ produce a "dummy" implementation.  */
 std::unique_ptr<RenderEngine> MakeRenderEngineGl();
 
 }  // namespace render
