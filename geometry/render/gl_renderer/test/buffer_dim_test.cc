@@ -51,6 +51,11 @@ GTEST_TEST(BufferDimTest, HashableKey) {
   buffers.insert(same);
   EXPECT_EQ(buffers.count(buffer), 1);
   EXPECT_EQ(buffers.count(same), 1);
+
+  // Show that different buffers aren't mistaken for `buffer`.
+  EXPECT_EQ(buffers.count(BufferDim(w, h + 1)), 0);
+  EXPECT_EQ(buffers.count(BufferDim(w + 1, h)), 0);
+  EXPECT_EQ(buffers.count(BufferDim(w + 1, h + 1)), 0);
 }
 
 }  // namespace

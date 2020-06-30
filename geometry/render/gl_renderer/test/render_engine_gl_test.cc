@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_label.h"
@@ -27,6 +28,8 @@ using std::unique_ptr;
 using std::unordered_map;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 using systems::sensors::InvalidDepth;
 
 // Default camera properties.
@@ -141,7 +144,7 @@ class RenderEngineGlTest : public ::testing::Test {
                << "infinity. Found: " << actual_depth;
       }
     } else {
-      float delta = std::abs(expected_depth - actual_depth);
+      const float delta = std::abs(expected_depth - actual_depth);
       if (delta <= tolerance) {
         return ::testing::AssertionSuccess();
       } else {
@@ -397,8 +400,8 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
 // This confirms that geometries are correctly removed from the render engine.
 // We add two new geometries (testing the rendering after each addition).
 // By removing the first of the added geometries, we can confirm that the
-// remaining geometries are re-ordered appropriately. Then by removing the,
-// second we should restore the original default image.
+// remaining geometries are re-ordered appropriately. Then, by removing the
+// second, we should restore the original default image.
 //
 // The default image is based on a sphere sitting on a plane at z = 0 with the
 // camera located above the sphere's center and aimed at that center.
@@ -737,6 +740,24 @@ TEST_F(RenderEngineGlTest, RendererIndependence) {
   // the reference image.
   Render(&engine1);
   ASSERT_TRUE(ImagesExactlyEqual(reference_1, depth_));
+}
+
+TEST_F(RenderEngineGlTest, RenderColorImageThrows) {
+  RenderEngineGl engine;
+  CameraProperties camera{2, 2, M_PI, "junk"};
+  ImageRgba8U image{camera.width, camera.height};
+  DRAKE_EXPECT_THROWS_MESSAGE(engine.RenderColorImage(camera, false, &image),
+                              std::runtime_error,
+                              "RenderEngineGl cannot render color images");
+}
+
+TEST_F(RenderEngineGlTest, RenderLabelImageThrows) {
+  RenderEngineGl engine;
+  CameraProperties camera{2, 2, M_PI, "junk"};
+  ImageLabel16I image{camera.width, camera.height};
+  DRAKE_EXPECT_THROWS_MESSAGE(engine.RenderLabelImage(camera, false, &image),
+                              std::runtime_error,
+                              "RenderEngineGl cannot render label images");
 }
 
 }  // namespace
