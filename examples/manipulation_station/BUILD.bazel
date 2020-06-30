@@ -161,11 +161,12 @@ drake_py_binary(
 )
 
 drake_py_binary(
-    name="end_effector_teleop_dualshock4",
-    srcs = ["end_effector_teleop_dualshock4.py"], 
-    add_test_rule = 1, 
-    tags = vtk_test_tags(), 
-    test_rule_timeout = "moderate", # Frequently exceeds short timeout in dbg.
+    name = "end_effector_teleop_dualshock4",
+    srcs = ["end_effector_teleop_dualshock4.py"],
+    add_test_rule = 1,
+    tags = vtk_test_tags(),
+    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
         "//bindings/pydrake",

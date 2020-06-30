@@ -1,6 +1,6 @@
 """
-Runs manipulation_station example with Sony DualShock4 Controller for teleoperating 
-the end effector.
+Runs manipulation_station example with Sony DualShock4 Controller for
+teleoperating the end effector.
 """
 
 import argparse
@@ -51,8 +51,9 @@ def initialize_joystick():
         joystick.init()
         return joystick
     except pygame.error:
-        raise Exception("Make sure dualshock 4 controller is connected. " 
-                        "Controller initialization failed with: {}".format(repr(sys.exc_info()[1])))
+        raise Exception("Make sure dualshock 4 controller is connected. "
+                        "Controller initialization failed "
+                        "with: {}".format(repr(sys.exc_info()[1])))
 
 
 class DS4Buttons(Enum):
@@ -130,9 +131,9 @@ class TeleopDualShock4Manager:
                 self._hat_data[event.hat] = event.value
 
         events = dict()
-        events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0] 
-        events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1] 
-        events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4] 
+        events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0]
+        events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1]
+        events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4]
         events[DS4Buttons.X_BUTTON] = self._button_data[0]
         events[DS4Buttons.L1_BUTTON] = self._button_data[4]
         events[DS4Buttons.R1_BUTTON] = self._button_data[5]
@@ -277,8 +278,8 @@ def main():
         help="Disable opening the gui window for testing.")
     parser.add_argument(
         "--time_step", type=float, default=0.005,
-        help="Time constant for the differential IK solver and first order low pass"
-             "filter applied to the teleop commands")
+        help="Time constant for the differential IK solver and first order"
+             "low pass filter applied to the teleop commands")
     parser.add_argument(
         "--velocity_limit_factor", type=float, default=1.0,
         help="This value, typically between 0 and 1, further limits the "
