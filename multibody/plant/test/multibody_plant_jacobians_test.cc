@@ -29,6 +29,41 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
+// Consider an arbitrary vector r_B (expressed in a frame_B) and its ordinary
+// time-derivative DtB_r_B in frame_B (also expressed in frame_B), calculates
+// DtA_r_B_E, the time-derivative in frame_A of r_B, expressed in frame_E.
+template <typename T>
+Vector3<T> ShiftFrameOrdinaryTimeDerivativeOfVector(
+    const systems::Context<T>& context,
+    const Vector3<T>& r_B,
+    const Vector3<T>& DtB_r_B,
+    const Frame<T>& frame_B,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) {
+  //---------------------------------------------------------------------------
+  // Use DtB_r_B, the derivative of r_B in frame_B expressed in B in conjunction
+  // with the golden rule for vector differentiation (transport theorem) from
+  // Chapter 8 Angular velocity/acceleration [Mitiguy 2019] or from section 2.3,
+  // page 23 [Kane & Levinson 1985] to form the derivative of r_B in frame_A.
+  // - [Mitiguy, 2019]: "Advanced Dynamics and Motion Simulation,
+  //   For professional engineers and scientists," Prodigy Press, Sunnyvale CA,
+  //   Available at www.MotionGenesis.com
+  // - [Kane & Levinson 1985] "Dynamics, Theory and Applications," McGraw-Hill.
+  //    Available for free .pdf download: https://hdl.handle.net/1813/638
+  //---------------------------------------------------------------------------
+  // Form frame_B's angular velocity in frame_A, expressed in B.
+  const Vector3<T> w_AB_B = frame_B.CalcSpatialVelocity(context,
+  frame_A, frame_B).rotational();
+
+  // Use the golden rule for vector differentiation to form r's time-derivative
+  // in frame_A, expressed in frame_B.
+  const Vector3<T> DtA_r_B = DtB_r_B + w_AB_B.cross(r_B);
+
+  // Return the time-derivative in frame_A of vector r, expressed in frame_E.
+  const RotationMatrix<T> R_EB = frame_B.CalcRotationMatrix(context, frame_E);
+  return R_EB * DtA_r_B;
+}
+
 // Given r_B, an arbitrary vector expressed in a frame_B, which depends on state
 // x (x is the generalized positions q and generalized velocities v), this
 // function calculates DtA_r_A, r's ordinary time-derivative in A evaluated at
@@ -104,26 +139,17 @@ Vector3<double> CalcOrdinaryTimeDerivativeOfVector(
   auto DtB_r_B = math::autoDiffToGradientMatrix(r_B_autodiff);
   DtB_r_B.resize(3, 1);
 
-  // Form frame_B's angular velocity in frame_A, expressed in B.
-  // TODO(Mitiguy) For efficiency, form w_AB_B without using AutoDiff.
-  const Vector3<double> w_AB_B = math::autoDiffToValueMatrix(
-      frame_B.CalcSpatialVelocity(*context, frame_A, frame_B).rotational());
-
-  // Use the golden rule for vector differentiation to form r's time-derivative
-  // in frame_A, expressed in frame_A.
-  const Vector3<double> DtA_r_B = DtB_r_B + w_AB_B.cross(r_B_double);
-
-  // Since API requires result expressed in frame_A, express DtA_r_B in frame_A.
-  const RotationMatrix<double> R_AB_double(math::autoDiffToValueMatrix(
-      frame_B.CalcRotationMatrix(*context, frame_A).matrix()));
-  const Vector3<double> DtA_r_A_method2 = R_AB_double * DtA_r_B;
+  const Vector3<AutoDiffXd> DtA_r_A_method2 =
+      ShiftFrameOrdinaryTimeDerivativeOfVector(*context, r_B_autodiff,
+          Vector3<AutoDiffXd>(DtB_r_B), frame_B, frame_A, frame_A);
 
   //---------------------------------------------------------------------------
   // Ensure results from each method are the same.
   //---------------------------------------------------------------------------
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 8 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(DtA_r_A, DtA_r_A_method2,
+  EXPECT_TRUE(CompareMatrices(DtA_r_A,
+                              math::autoDiffToValueMatrix(DtA_r_A_method2),
                               kTolerance, MatrixCompareType::relative));
 
   // Ensure DtA_r_A has the proper size before returning.
