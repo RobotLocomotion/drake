@@ -211,7 +211,7 @@ class Frame : public FrameBase<T> {
     const Vector3<T> w_WF_W =
         this->CalcSpatialVelocityInWorld(context).rotational();
 
-    // The next line results from rearranging the angular addition theorem
+    // The next line results from rearranging the angular addition theorem.
     // w_WF = w_WM + w_MF  ->  w_MF = w_WF - w_WM
     const Vector3<T> w_MF_W = w_WF_W - w_WM_W;
 
