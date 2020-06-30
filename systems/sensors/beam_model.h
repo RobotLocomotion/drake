@@ -76,11 +76,23 @@ class BeamModel final : public LeafSystem<T> {
   double max_range() const { return max_range_; }
 
  private:
+  // Allow different specializations to access each other's private date for
+  // scalar conversion constructors.
+  template <typename>
+  friend class BeamModel;
+
   void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
   const double max_range_{1.0};
 };
 
 }  // namespace sensors
+
+// Explicitly disable symbolic::Expression (for now).
+namespace scalar_conversion {
+template <>
+struct Traits<sensors::BeamModel> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
+
 }  // namespace systems
 }  // namespace drake
