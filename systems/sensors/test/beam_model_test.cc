@@ -6,6 +6,7 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/signal_logger.h"
@@ -177,6 +178,16 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   EXPECT_NEAR(
       (x.array() == kMaxRange).template cast<double>().matrix().sum() / N,
       p_max, 3e-3);
+}
+
+GTEST_TEST(BeamModelTest, ScalarConversion) {
+  const int kNumReadings = 10;
+  const double kMaxRange = 5.0;
+  BeamModel<double> model(kNumReadings, kMaxRange);
+  EXPECT_TRUE(is_autodiffxd_convertible(model));
+  // N.B. Thus far conversion to symbolic is not supported. Update this test to
+  // EXPECT_TRUE when supported.
+  EXPECT_FALSE(is_symbolic_convertible(model));
 }
 
 }  // namespace
