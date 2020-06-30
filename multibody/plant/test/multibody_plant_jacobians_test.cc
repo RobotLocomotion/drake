@@ -105,7 +105,7 @@ Vector3<double> CalcOrdinaryTimeDerivativeOfVector(
   DtB_r_B.resize(3, 1);
 
   // Form frame_B's angular velocity in frame_A, expressed in B.
-  // TODO(Mitiguy) For efficiency, calculate w_AB_B with a template on double.
+  // TODO(Mitiguy) For efficiency, form w_AB_B without using AutoDiff.
   const Vector3<double> w_AB_B = math::autoDiffToValueMatrix(
       frame_B.CalcSpatialVelocity(*context, frame_A, frame_B).rotational());
 
@@ -114,9 +114,9 @@ Vector3<double> CalcOrdinaryTimeDerivativeOfVector(
   const Vector3<double> DtA_r_B = DtB_r_B + w_AB_B.cross(r_B_double);
 
   // Since API requires result expressed in frame_A, express DtA_r_B in frame_A.
-  const RotationMatrix<double> R_AB(math::autoDiffToValueMatrix(
+  const RotationMatrix<double> R_AB_double(math::autoDiffToValueMatrix(
       frame_B.CalcRotationMatrix(*context, frame_A).matrix()));
-  const Vector3<double> DtA_r_A_method2 = R_AB * DtA_r_B;
+  const Vector3<double> DtA_r_A_method2 = R_AB_double * DtA_r_B;
 
   //---------------------------------------------------------------------------
   // Ensure results from each method are the same.
