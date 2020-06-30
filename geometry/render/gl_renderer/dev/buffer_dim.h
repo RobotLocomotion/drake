@@ -9,7 +9,7 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-/** Simple class for recording the dimensions of a render target. Used store
+/* Simple class for recording the dimensions of a render target. Used store
  unique RenderTarget instances based on render size.  */
 class BufferDim {
  public:
@@ -20,7 +20,7 @@ class BufferDim {
   int width() const { return width_; }
   int height() const { return height_; }
 
-  /** Implements the @ref hash_append concept.  */
+  /* Implements the @ref hash_append concept.  */
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher,
                           const BufferDim& dim) noexcept {
@@ -38,12 +38,19 @@ class BufferDim {
   int height_{-1};
 };
 
-/** The collection of OpenGL objects which define a render target --
- essentially, a 2D image that the depth data gets rendered to.  */
+/* The collection of OpenGL objects which define a render target.
+ Ultimately, OpenGL's draw commands are sent to this target's `frame_buffer`.
+ The `frame_buffer` is configured with two additional objects:
+
+   - the `value_texture` which stores the result of the rendering operations
+     (i.e., depth values, and, soon, color values and label values).
+   - A z-buffer that OpenGL uses to do hidden surface removal. The values in
+     this buffer are strictly for internal OpenGL consumption.
+*/
 struct RenderTarget {
   GLuint frame_buffer;
-  GLuint texture;
-  GLuint render_buffer;
+  GLuint value_texture;
+  GLuint z_buffer;
 };
 
 }  // namespace internal
@@ -53,7 +60,7 @@ struct RenderTarget {
 
 namespace std {
 
-/** Provides std::hash<BufferDim>.  */
+/* Provides std::hash<BufferDim>.  */
 template <>
 struct hash<drake::geometry::render::internal::BufferDim>
     : public drake::DefaultHash {};
