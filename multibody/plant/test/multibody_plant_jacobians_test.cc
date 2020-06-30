@@ -72,7 +72,7 @@ Vector3<T> ShiftFrameOrdinaryTimeDerivativeOfVector(
 Vector3<double> CalcOrdinaryTimeDerivativeOfVector(
     const MultibodyPlant<AutoDiffXd>& plant,
     systems::Context<AutoDiffXd>* context,
-    const Vector3<double>& r_B_double,
+    const Vector3<AutoDiffXd>& r_B_autodiff,
     const Frame<AutoDiffXd>& frame_B,
     const Frame<AutoDiffXd>& frame_A,
     const VectorX<double>& q_double,
@@ -102,9 +102,6 @@ Vector3<double> CalcOrdinaryTimeDerivativeOfVector(
   auto x_autodiff = math::initializeAutoDiffGivenGradientMatrix(
       x_double, MatrixXd(xDt_double));
   plant.GetMutablePositionsAndVelocities(context) = x_autodiff;
-
-  // Create an Autodiff version of r_B_double.
-  const Vector3<AutoDiffXd> r_B_autodiff(r_B_double);
 
   //---------------------------------------------------------------------------
   // Method 1: Use the rotation matrix R_AB to express r_B in terms of frame_A
@@ -615,7 +612,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcVectorDerivative) {
       plant_autodiff_->get_body(bodyA_->index()).body_frame();
 
   // Form Ao's position from Wo expressed in W and differentiate it in W.
-  const Vector3<double> p_WoAo_W(0.5 * link_length_, 0.0, 0.0);
+  const Vector3<AutoDiffXd> p_WoAo_W(0.5 * link_length_, 0.0, 0.0);
   const Vector3<double> DtW_p_WoAo_W = CalcOrdinaryTimeDerivativeOfVector(
       *plant_autodiff_, context_autodiff_.get(), p_WoAo_W, frame_W_autodiff,
       frame_W_autodiff, q, qDt, v, vDt);
@@ -625,7 +622,7 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcVectorDerivative) {
   EXPECT_TRUE(CompareMatrices(DtW_p_WoAo_W, DtW_p_WoAo_W_expected, kTolerance));
 
   // Form Ao's position from Wo expressed in A and differentiate it in A.
-  const Vector3<double> p_WoAo_A(0.5 * link_length_, 0.0, 0.0);
+  const Vector3<AutoDiffXd> p_WoAo_A(0.5 * link_length_, 0.0, 0.0);
   const Vector3<double> DtA_p_WoAo_A = CalcOrdinaryTimeDerivativeOfVector(
       *plant_autodiff_, context_autodiff_.get(), p_WoAo_A, frame_A_autodiff,
       frame_A_autodiff, q, qDt, v, vDt);
