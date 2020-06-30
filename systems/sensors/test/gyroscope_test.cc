@@ -61,7 +61,8 @@ TEST_F(GyroscopeTest, Rotated) {
   plant_->SetVelocities(&plant_context, Vector1d(omega));
 
   const auto& result =
-      gyroscope_->get_output_port(0).Eval<BasicVector<double>>(gyro_context);
+      gyroscope_->get_measurement_output_port().Eval<BasicVector<double>>(
+          gyro_context);
 
   // Compute expected result
   // Angular velocity in world coordinates is (0, omega, 0)

@@ -43,7 +43,7 @@ namespace sensors {
 ///    @input_port{body_poses}
 ///    @input_port{body_spatial_velocities}
 ///    @input_port{body_spatial_accelerations},
-///    @output_port{measured_acceleration}
+///    @output_port{measurement}
 /// }
 /// @ingroup sensor_systems
 template <typename T>
@@ -73,6 +73,10 @@ class Accelerometer final : public LeafSystem<T> {
 
   const InputPort<T>& get_body_accelerations_input_port() const {
     return *body_accelerations_input_port_;
+  }
+
+  const OutputPort<T>& get_measurement_output_port() const {
+    return *measurement_output_port_;
   }
 
   /// Static factory method that creates an Accelerometer object and connects
@@ -118,6 +122,7 @@ class Accelerometer final : public LeafSystem<T> {
   const InputPort<T>* body_poses_input_port_{nullptr};
   const InputPort<T>* body_velocities_input_port_{nullptr};
   const InputPort<T>* body_accelerations_input_port_{nullptr};
+  const OutputPort<T>* measurement_output_port_{nullptr};
 };
 
 }  // namespace sensors

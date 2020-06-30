@@ -28,8 +28,8 @@ Accelerometer<T>::Accelerometer(const multibody::BodyIndex& body_index,
       X_BS_(X_BS),
       gravity_vector_(gravity_vector) {
   // Declare measurement output port.
-  this->DeclareVectorOutputPort("measured_acceleration", BasicVector<T>(3),
-                                &Accelerometer<T>::CalcOutput);
+  measurement_output_port_ = &this->DeclareVectorOutputPort(
+      "measurement", BasicVector<T>(3), &Accelerometer<T>::CalcOutput);
 
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
       "body_poses", Value<std::vector<RigidTransform<T>>>());
@@ -73,11 +73,9 @@ void Accelerometer<T>::CalcOutput(const Context<T>& context,
 
 template <typename T>
 const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
-    const multibody::Body<T>& body,
-    const RigidTransform<double>& X_BS,
+    const multibody::Body<T>& body, const RigidTransform<double>& X_BS,
     const Eigen::Vector3d& gravity_vector,
-    const multibody::MultibodyPlant<T>& plant,
-    DiagramBuilder<T>* builder) {
+    const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder) {
   const auto& accelerometer = *builder->template AddSystem<Accelerometer<T>>(
       body, X_BS, gravity_vector);
 

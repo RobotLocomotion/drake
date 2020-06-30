@@ -36,7 +36,7 @@ namespace sensors {
 /// @system{Gyroscope,
 ///    @input_port{body_poses}
 ///    @input_port{body_spatial_velocities}
-///    @output_port{measured_angular_velocity}
+///    @output_port{measurement}
 /// }
 /// @ingroup sensor_systems
 template <typename T>
@@ -59,6 +59,10 @@ class Gyroscope final : public LeafSystem<T> {
 
   const InputPort<T>& get_body_velocities_input_port() const {
     return *body_velocities_input_port_;
+  }
+
+  const OutputPort<T>& get_measurement_output_port() const {
+    return *measurement_output_port_;
   }
 
   /// Static factory method that creates a %Gyroscope object and connects
@@ -95,6 +99,7 @@ class Gyroscope final : public LeafSystem<T> {
   const math::RotationMatrix<double> R_BS_;
   const InputPort<T>* body_poses_input_port_{nullptr};
   const InputPort<T>* body_velocities_input_port_{nullptr};
+  const OutputPort<T>* measurement_output_port_{nullptr};
 };
 
 }  // namespace sensors

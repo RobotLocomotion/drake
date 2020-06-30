@@ -75,7 +75,7 @@ TEST_F(AccelerometerTest, DefaultRotation) {
   plant_->SetVelocities(&plant_context, Vector1d(0));
 
   const auto& result =
-      accel_default_->get_output_port(0).Eval<BasicVector<double>>(
+      accel_default_->get_measurement_output_port().Eval<BasicVector<double>>(
           accel_context);
 
   // Compute expected result
