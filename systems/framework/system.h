@@ -60,6 +60,9 @@ class SystemImpl {
 };
 #endif  // DRAKE_DOXYGEN_CXX
 
+template <typename T>
+class SystemVisitor;
+
 /** Base class for all System functionality that is dependent on the templatized
 scalar type T for input, state, parameters, and outputs.
 
@@ -71,6 +74,9 @@ class System : public SystemBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
   ~System() override;
+
+  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  virtual void accept(SystemVisitor<T>* v) const;
 
   //----------------------------------------------------------------------------
   /** @name           Resource allocation and initialization
@@ -1024,7 +1030,7 @@ class System : public SystemBase {
   //----------------------------------------------------------------------------
   /** @name                Automatic differentiation
   From a %System templatized by `double`, you can obtain an identical system
-  templatized by an automatic differentation scalar providing
+  templatized by an automatic differentiation scalar providing
   machine-precision computation of partial derivatives of any numerical
   result of the %System with respect to any of the numerical values that
   can be contained in a Context (time, inputs, parameters, and state). */

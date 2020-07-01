@@ -57,6 +57,9 @@ class OwnedSystems {
 template <typename T>
 class DiagramBuilder;
 
+template <typename T>
+class SystemVisitor;
+
 /// Diagram is a System composed of one or more constituent Systems, arranged
 /// in a directed graph where the vertices are the constituent Systems
 /// themselves, and the edges connect the output of one constituent System
@@ -83,6 +86,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Returns the list of contained Systems.
   std::vector<const systems::System<T>*> GetSystems() const;
+
+  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  void accept(SystemVisitor<T>* v) const override;
 
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
