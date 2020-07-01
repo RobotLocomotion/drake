@@ -10,7 +10,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/polynomial.h"
 
 namespace drake {
@@ -469,14 +468,3 @@ typedef TrigPoly<double> TrigPolyd;
 typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;
 
 }  // namespace drake
-
-template <typename T = double>
-using TrigPoly DRAKE_DEPRECATED("2020-07-01", "Use drake::TrigPoly instead.") =
-    drake::TrigPoly<T>;
-
-using TrigPolyd DRAKE_DEPRECATED("2020-07-01", "Use drake::TrigPolyd.") =
-    drake::TrigPoly<double>;
-
-using VectorXTrigPoly DRAKE_DEPRECATED("2020-07-01",
-                                       "Use drake::VectorXTrigPoly.") =
-    Eigen::Matrix<drake::TrigPolyd, Eigen::Dynamic, 1>;
