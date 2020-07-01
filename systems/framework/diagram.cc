@@ -8,6 +8,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
 namespace systems {
@@ -23,6 +24,12 @@ std::vector<const systems::System<T>*> Diagram<T>::GetSystems() const {
     result.push_back(system.get());
   }
   return result;
+}
+
+template <typename T>
+void Diagram<T>::Accept(SystemVisitor<T>* v) const {
+  DRAKE_DEMAND(v);
+  v->VisitDiagram(*this);
 }
 
 template <typename T>
