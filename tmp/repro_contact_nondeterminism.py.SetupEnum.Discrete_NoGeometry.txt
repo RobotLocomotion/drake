@@ -6,20 +6,7 @@ ResimulateStyle.Reuse
   index: 0
     good (first)
   index: 1
-    BAD
-      diff[0], t: 0.002
-        - q: [0.02 0.08501 -0.285 1.43 0.284 -1.07 0.13]
-        ?               --
-        + q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
-          contact_results:   <no contacts>
-
-      diff[-1], t: 1
-        - q: [-0.316 -2.269 -3.135 -2.194 -0.6454 0.6284 0.1324]
-        ?                ^^      ^      ^      ^      -
-        + q: [-0.3165 -2.271 -3.139 -2.193 -0.6474 0.624 0.1324]
-        ?           +     ^^      ^      ^      ^
-          contact_results:   <no contacts>
-
+    good (not unique)
   index: 2
     good (not unique)
   index: 3
@@ -50,20 +37,7 @@ ResimulateStyle.Reuse
   index: 0
     good (first)
   index: 1
-    BAD
-      diff[0], t: 0.002
-        - q: [0.02 0.08501 -0.285 1.43 0.284 -1.07 0.13]
-        ?               --
-        + q: [0.02 0.085 -0.285 1.43 0.284 -1.07 0.13]
-          contact_results:   <no contacts>
-
-      diff[-1], t: 1
-        - q: [-0.316 -2.269 -3.135 -2.194 -0.6454 0.6284 0.1324]
-        ?                ^^      ^      ^      ^      -
-        + q: [-0.3165 -2.271 -3.139 -2.193 -0.6474 0.624 0.1324]
-        ?           +     ^^      ^      ^      ^
-          contact_results:   <no contacts>
-
+    good (not unique)
   index: 2
     good (not unique)
   index: 3

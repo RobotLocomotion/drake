@@ -389,12 +389,12 @@ def simulate_trials(resimulate_style, num_sim_trials, setup):
 
         simulator, calc_output = make_simulator(setup)
         d_context = simulator.get_mutable_context()
-        simulator.Initialize()
         d_context_initial = d_context.Clone()
         for index in range(num_sim_trials):
             # Run multiple simulations, resetting the context.
             print(f"  index: {index}")
             d_context.SetTimeStateAndParametersFrom(d_context_initial)
+            simulator.Initialize()
             checker.run(simulator, calc_output)
 
     elif resimulate_style == ResimulateStyle.ReuseNewContext:
