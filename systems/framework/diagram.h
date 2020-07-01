@@ -88,6 +88,19 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// Implements a visitor pattern.  @see SystemVisitor<T>.
   void Accept(SystemVisitor<T>* v) const final;
 
+  /// Returns a reference to the map of connections between Systems.
+  const std::map<InputPortLocator, OutputPortLocator>& connection_map() const;
+
+  /// Returns the "locator" for the subsystem input port that was exported as
+  /// the @p port_index input port for the Diagram.
+  const InputPortLocator& get_input_port_locator(
+      InputPortIndex port_index) const;
+
+  /// Returns the "locator" for the subsystem output port that was exported as
+  /// the @p port_index output port for the Diagram.
+  const OutputPortLocator& get_output_port_locator(
+      OutputPortIndex port_index) const;
+
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
   /// Allocates a DiagramEventCollection for this Diagram.
