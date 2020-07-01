@@ -110,7 +110,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// To add objects into the environment for the robot to manipulate, use,
 /// e.g.:
 /// @code
-/// StationSimulation<double> station;
+/// ManipulationStation<double> station;
 /// Parser parser(&station.get_mutable_multibody_plant(),
 ///                &station.get_mutable_scene_graph());
 /// parser.AddModelFromFile("my.sdf", "my_model");
