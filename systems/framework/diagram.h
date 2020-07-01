@@ -17,6 +17,7 @@
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
 namespace systems {
@@ -83,6 +84,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Returns the list of contained Systems.
   std::vector<const systems::System<T>*> GetSystems() const;
+
+  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  void Accept(SystemVisitor<T>* v) const final;
 
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
