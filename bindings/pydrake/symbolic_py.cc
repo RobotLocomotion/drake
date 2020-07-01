@@ -549,7 +549,11 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Variables& vars, const int degree) {
             return MonomialBasis(vars, degree);
           },
-          doc.MonomialBasis.doc_2args);
+          doc.MonomialBasis.doc_2args)
+      .def("EvenDegreeMonomialBasis", &symbolic::EvenDegreeMonomialBasis,
+          py::arg("vars"), py::arg("degree"), doc.EvenDegreeMonomialBasis.doc)
+      .def("OddDegreeMonomialBasis", &symbolic::OddDegreeMonomialBasis,
+          py::arg("vars"), py::arg("degree"), doc.OddDegreeMonomialBasis.doc);
 
   using symbolic::Polynomial;
 

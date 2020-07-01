@@ -272,6 +272,7 @@ MultibodyPlant<T>::MultibodyPlant(
   X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
+  DeclareSceneGraphPorts();
 }
 
 template <typename T>
@@ -348,7 +349,6 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
       member_scene_graph().world_frame_id();
   body_index_to_frame_id_[world_index()] = world_frame_id;
   frame_id_to_body_index_[world_frame_id] = world_index();
-  DeclareSceneGraphPorts();
   // In case any bodies were added before registering scene graph, make sure the
   // bodies get their corresponding geometry frame ids.
   RegisterGeometryFramesForAllBodies();
@@ -1075,14 +1075,7 @@ std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
   if (num_collision_geometries() > 0) {
-    if (!geometry_query_port_.is_valid()) {
-      throw std::logic_error(
-          "This MultibodyPlant registered geometry for contact handling. "
-          "However its query input port (get_geometry_query_input_port()) "
-          "is not connected.");
-    }
-    const auto& query_object = get_geometry_query_input_port().
-        Eval<geometry::QueryObject<double>>(context);
+    const auto& query_object = EvalGeometryQueryInput(context);
     return query_object.ComputePointPairPenetration();
   }
   return std::vector<PenetrationAsPointPair<double>>();
@@ -1096,8 +1089,7 @@ std::vector<PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>& context) const {
   if (num_collision_geometries() > 0) {
-    const auto &query_object = get_geometry_query_input_port().
-        Eval<geometry::QueryObject<AutoDiffXd>>(context);
+    const auto& query_object = EvalGeometryQueryInput(context);
     auto results = query_object.ComputePointPairPenetration();
     if (results.size() > 0) {
       throw std::logic_error(
@@ -1142,9 +1134,7 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     return combined_frictions;
   }
 
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object = EvalGeometryQueryInput(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const auto& pair : point_pairs) {
@@ -1493,9 +1483,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   internal::HydroelasticTractionCalculator<T> traction_calculator(
       friction_model_.stiction_tolerance());
 
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object = EvalGeometryQueryInput(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   for (const ContactSurface<T>& surface : all_surfaces) {
@@ -1777,9 +1765,7 @@ void MultibodyPlant<T>::CalcContactSurfaces(
     std::vector<ContactSurface<T>>* contact_surfaces) const {
   DRAKE_DEMAND(contact_surfaces);
 
-  const auto& query_object =
-      this->get_geometry_query_input_port()
-          .template Eval<geometry::QueryObject<T>>(context);
+  const auto& query_object = EvalGeometryQueryInput(context);
 
   *contact_surfaces = query_object.ComputeContactSurfaces();
 }
@@ -1799,16 +1785,7 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
   DRAKE_DEMAND(data != nullptr);
 
   if (num_collision_geometries() > 0) {
-    if (!geometry_query_port_.is_valid()) {
-      throw std::logic_error(
-          "This MultibodyPlant registered geometry for contact handling. "
-          "However its query input port (get_geometry_query_input_port()) "
-          "is not connected.");
-    }
-
-    const auto &query_object =
-        this->get_geometry_query_input_port()
-            .template Eval<geometry::QueryObject<double>>(context);
+    const auto &query_object = EvalGeometryQueryInput(context);
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
@@ -2870,7 +2847,6 @@ template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_ASSERT(source_id_ != std::nullopt);
   const internal::PositionKinematicsCache<T>& pc =
       EvalPositionKinematics(context);
 
@@ -3012,14 +2988,12 @@ MultibodyPlant<T>::get_body_spatial_accelerations_output_port() const {
 template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
-  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template <typename T>
 const systems::InputPort<T>&
 MultibodyPlant<T>::get_geometry_query_input_port() const {
-  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_input_port(geometry_query_port_);
 }
 

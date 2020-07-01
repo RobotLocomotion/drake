@@ -105,6 +105,12 @@ class MultibodyPlantTester {
     plant.CalcNormalAndTangentContactJacobians(
         context, point_pairs, Jn, Jt, R_WC_set);
   }
+
+  static const geometry::QueryObject<double>& EvalGeometryQueryInput(
+      const MultibodyPlant<double>& plant,
+      const systems::Context<double>& context) {
+    return plant.EvalGeometryQueryInput(context);
+  }
 };
 
 namespace {
@@ -793,8 +799,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
     ASSERT_TRUE(optional_id.has_value());
     EXPECT_EQ(frame_id, *optional_id);
     EXPECT_EQ(body_index, plant_->GetBodyFromFrameId(frame_id)->index());
-    const Isometry3<double>& X_WB_isometry = poses.value(frame_id);
-    const RigidTransform<double> X_WB(X_WB_isometry);
+    const RigidTransform<double>& X_WB = poses.value(frame_id);
     const RigidTransform<double>& X_WB_expected =
         plant_->EvalBodyPoseInWorld(*context, plant_->get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
@@ -1415,8 +1420,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const Isometry3<double>& X_WB_isometry = pose_data.value(frame_id);
-    const RigidTransform<double> X_WB(X_WB_isometry);
+    const RigidTransform<double>& X_WB = pose_data.value(frame_id);
     const RigidTransform<double>& X_WB_expected =
         plant.EvalBodyPoseInWorld(*context, plant.get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.GetAsMatrix34(),
@@ -1564,6 +1568,31 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffCalcPointPairPenetrations) {
   // This test case contains no collisions, and hence we should not throw.
   DRAKE_EXPECT_NO_THROW(
       autodiff_pendulum->EvalPointPairPenetrations(*autodiff_context.get()));
+}
+
+GTEST_TEST(MultibodyPlantTest, CalcPointPairPenetrationsDisconnectedPorts) {
+  // Creates a plant and register geometry with a SceneGraph, but does not
+  // connect their respective ports in a Diagram. MultibodyPlant will know
+  // that it is registered as a source for geometry, but will fail to Eval
+  // its geometry_query_input_port(). Check that this failure happens as
+  // expected.
+  SceneGraph<double> scene_graph;
+  MultibodyPlant<double> plant(0.0);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  plant.Finalize();
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Plant was not connected to the SceneGraph in a diagram, so its input port
+  // should be invalid.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MultibodyPlantTester::EvalGeometryQueryInput(plant, *context),
+      std::logic_error,
+      "The geometry query input port \\(see "
+      "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
+      "of this MultibodyPlant is not connected. Please connect the"
+      "geometry query output port of a SceneGraph object "
+      "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
+      "port in a Diagram.");
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -2854,7 +2883,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const RigidTransformd X_WM_expected = X_WT * X_TO * X_OM;
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_WM.matrix(), X_WM_expected.matrix(),
+  EXPECT_TRUE(CompareMatrices(X_WM.GetAsMatrix4(), X_WM_expected.GetAsMatrix4(),
                               kTolerance, MatrixCompareType::relative));
 
   // SetFreeBodyPoseInAnchoredFrame() should throw if the reference frame F is
@@ -2927,6 +2956,20 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
   EXPECT_TRUE(CompareMatrices(
       X_WB_new.matrix(), X_WB.rotation().matrix(),
       kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTest, SceneGraphPorts) {
+    MultibodyPlant<double> plant(0.0);
+
+    MultibodyPlant<double> plant_finalized(0.0);
+    plant_finalized.Finalize();
+
+    // Test that SceneGraph ports exist and are accessible, both pre and post
+    // finalize, without the presence of a connected SceneGraph.
+    EXPECT_NO_THROW(plant.get_geometry_query_input_port());
+    EXPECT_NO_THROW(plant.get_geometry_poses_output_port());
+    EXPECT_NO_THROW(plant_finalized.get_geometry_query_input_port());
+    EXPECT_NO_THROW(plant_finalized.get_geometry_poses_output_port());
 }
 
 }  // namespace

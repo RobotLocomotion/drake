@@ -25,8 +25,8 @@ To use Drake with CLion, your Drake checkout **must** be named ``drake``.
 Installing CLion
 ----------------
 
-1. Go to https://www.jetbrains.com/clion/download/. Download the latest version
-   of CLion.
+1. Go to https://www.jetbrains.com/clion/download/. Look for "Other versions"
+   and download the appropriate version of CLion (see below).
 2. Install CLion. Exact steps depend on your platform, but it's
    straightforward. Just using defaults for everything is fine. You now have a
    30-day trial version of CLion. Either try it out as is, or get a free
@@ -34,10 +34,10 @@ Installing CLion
 
 The most recent versions that we have tested for compatibility are:
   - Ubuntu 18.04
-  - Bazel 1.1.0 (October 21, 2019)
-  - CLion 2019.2.4 (October 9, 2019) with:
+  - Bazel 3.0.0 (6 April 2020)
+  - CLion 2019.3.6 (5 May 2020) with:
 
-    - Bazel plugin 2019.10.14.0.0 (October 25, 2019).
+    - Bazel plugin 2020.06.01.1.0 (15 June 2020).
 
 Many versions of the above (Bazel / CLion / Bazel plugin) are *not* compatible
 with each other.  We strongly suggest using only the versions shown above, when

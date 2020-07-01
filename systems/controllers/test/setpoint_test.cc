@@ -33,7 +33,8 @@ GTEST_TEST(testQPInverseDynamicsController, testPoseSetpoint) {
 
   for (double ang = ang_d; ang < ang_d + 2 * M_PI + 0.1; ang += 0.1) {
     pose.set_rotation(AngleAxis<double>(ang, vec_d));
-    acc = setpoint.ComputeTargetAcceleration(pose, Vector6<double>::Zero());
+    acc = setpoint.ComputeTargetAcceleration(
+        pose.GetAsIsometry3(), Vector6<double>::Zero());
 
     double err = ang_d - ang;
     if (err > M_PI)

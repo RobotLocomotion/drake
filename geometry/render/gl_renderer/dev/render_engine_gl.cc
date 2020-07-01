@@ -5,8 +5,16 @@
 namespace drake {
 namespace geometry {
 namespace render {
-namespace internal {
 
+using Eigen::Vector3d;
+using internal::BufferDim;
+using internal::IndexBuffer;
+using internal::OpenGlContext;
+using internal::OpenGlGeometry;
+using internal::OpenGlInstance;
+using internal::RenderTarget;
+using internal::ShaderProgram;
+using internal::VertexBuffer;
 using math::RigidTransformd;
 using std::make_shared;
 using std::string;
@@ -15,6 +23,7 @@ using std::unordered_map;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
+using systems::sensors::InvalidDepth;
 
 namespace {
 
@@ -30,9 +39,8 @@ RenderEngineGl::RenderEngineGl()
     : opengl_context_(make_shared<OpenGlContext>()),
       shader_program_(make_shared<ShaderProgram>()),
       meshes_(make_shared<unordered_map<string, OpenGlGeometry>>()),
-      frame_buffers_(make_shared<unordered_map<BufferDim, RenderTarget>>()),
+      render_targets_(make_shared<unordered_map<BufferDim, RenderTarget>>()),
       visuals_() {
-
   // Setup shader program.
   const string kVertexShader = R"__(
 #version 330
@@ -47,24 +55,31 @@ void main() {
   depth = -p_Camera.z;
   gl_Position = projection_matrix * p_Camera;
 })__";
+
   const string kFragmentShader = R"__(
 #version 330
 
 in float depth;
-layout(location = 0) out float inverse_depth;
+// Depth is encoded such that values closer than depth_z_near or farther than
+// depth_z_far get saturated to zero and infinity, respectively.
+layout(location = 0) out float encoded_depth;
 uniform float depth_z_near;
 uniform float depth_z_far;
 
 void main() {
+  // We need a value for infinity; 1 / 0 is only guaranteed to work for
+  // OpenGL >= 4.1. We apply the bit encoding of IEEE 32-bit infinity
+  // encoding directly.
+  // https://stackoverflow.com/questions/10435253/glsl-infinity-constant
+  const float pos_infinity = intBitsToFloat(0x7F800000);
   if (depth < depth_z_near)
-    // This is ok for OpenGL >= 4.1:
-    // https://stackoverflow.com/questions/10435253/glsl-infinity-constant
-    inverse_depth = 1.0 / 0.0;
+    encoded_depth = 0;
   else if (depth > depth_z_far)
-    inverse_depth = 0.0;
+    encoded_depth = pos_infinity;
   else
-    inverse_depth = 1.0 / depth;
+    encoded_depth = depth;
 })__";
+
   shader_program_->LoadFromSources(kVertexShader, kFragmentShader);
 }
 
@@ -81,11 +96,17 @@ void RenderEngineGl::RenderDepthImage(const DepthCameraProperties& camera,
                                       ImageDepth32F* depth_image_out) const {
   opengl_context_->MakeCurrent();
 
-  RenderTarget target =
-      const_cast<RenderEngineGl*>(this)->SetCameraProperties(camera);
+  RenderTarget target = SetCameraProperties(camera);
 
+  // We initialize the color buffer to be all "too far" values. This is the
+  // pixel value if nothing draws there -- i.e., nothing there implies that
+  // whatever *might* be there is "too far" beyond the depth range.
+  glClearNamedFramebufferfv(target.frame_buffer, GL_COLOR, 0,
+                            &InvalidDepth::kTooFar);
   RenderAt(X_CW_.GetAsMatrix4().matrix().cast<float>());
-  GetDepthImage(depth_image_out, target);
+  glGetTextureImage(target.value_texture, 0, GL_RED, GL_FLOAT,
+                    depth_image_out->size() * sizeof(GLfloat),
+                    depth_image_out->at(0, 0));
 }
 
 void RenderEngineGl::RenderLabelImage(const CameraProperties&, bool,
@@ -94,24 +115,21 @@ void RenderEngineGl::RenderLabelImage(const CameraProperties&, bool,
 }
 
 void RenderEngineGl::SetGlProjectionMatrix(
-    const DepthCameraProperties& camera) {
+    const DepthCameraProperties& camera) const {
   shader_program_->Use();
-  shader_program_->SetUniformValue1f("depth_z_near", camera.z_near);
-  shader_program_->SetUniformValue1f("depth_z_far", camera.z_far);
+  shader_program_->SetUniformValue("depth_z_near", camera.z_near);
+  shader_program_->SetUniformValue("depth_z_far", camera.z_far);
 
-  static constexpr float kGlZNear = 0.01;
-  static constexpr float kGlZFar = 10.0;
-  static constexpr float kInvZNearMinusZFar = 1. / (kGlZNear - kGlZFar);
-  if (camera.z_near < kGlZNear)
-    throw std::runtime_error(
-        fmt::format("Camera's z_near ({}) is closer than what this renderer "
-                    "can handle ({})",
-                    camera.z_near, kGlZNear));
-  if (camera.z_far > kGlZFar)
-    throw std::runtime_error(
-        fmt::format("Camera's z_far ({}) is farther than what this renderer "
-                    "can handle ({})",
-                    camera.z_far, kGlZFar));
+  // TODO(SeanCurtis-TRI): When clipping planes get set by the user, conflict
+  //  between depth camera range and clipping range should be an error. For now,
+  //  we simply define the clipping planes to tightly (but not exactly) bound
+  //  the depth ranges. The tightness gives us the most precision in the
+  //  z-buffer in the depth range. The slightly larger domain will allow us
+  //  to recognize at least *some* fragments which rendered outside the depth
+  //  range.
+  const float clip_near = camera.z_near - 0.1;
+  const float clip_far = camera.z_far + 0.1;
+  const float inverse_frustum_depth = 1 / (clip_far - clip_near);
 
   // https://unspecified.wordpress.com/2012/06/21/calculating-the-gluperspective-matrix-and-other-opengl-matrix-maths/
   // An OpenGL projection matrix maps points in a camera coordinate to a "clip
@@ -127,8 +145,8 @@ void RenderEngineGl::SetGlProjectionMatrix(
 
   const float fy = 1.0f / static_cast<float>(tan(camera.fov_y * 0.5));
   const float fx = fy * camera.height / camera.width;
-  const float A = (kGlZNear + kGlZFar) * kInvZNearMinusZFar;
-  const float B = 2.0f * kGlZNear * kGlZFar * kInvZNearMinusZFar;
+  const float A = -(clip_near + clip_far) * inverse_frustum_depth;
+  const float B = -2.0f * clip_near * clip_far * inverse_frustum_depth;
   Eigen::Matrix4f P;
   // Eigen matrices are col-major, similar to OpenGL.
   // clang-format off
@@ -142,17 +160,17 @@ void RenderEngineGl::SetGlProjectionMatrix(
   glUniformMatrix4fv(projection_matrix_id, 1, GL_FALSE, P.data());
 }
 
-OpenGlGeometry RenderEngineGl::SetupVAO(const VertexBuffer& vertices,
+OpenGlGeometry RenderEngineGl::CreateGlGeometry(const VertexBuffer& vertices,
                                         const IndexBuffer& indices) {
   OpenGlGeometry geometry;
-  // Create the VAO.
+  // Create the vertex array object (VAO).
   glCreateVertexArrays(1, &geometry.vertex_array);
 
-  // Vertex Buffer Object.
+  // Create the vertex buffer object (VBO).
   glCreateBuffers(1, &geometry.vertex_buffer);
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertices.size() * sizeof(GLfloat), vertices.data(), 0);
-  // Bind with the VAO.
+  // Bind the VBO with the VAO.
   const int kBindingIndex = 0;  // The binding point.
   glVertexArrayVertexBuffer(geometry.vertex_array, kBindingIndex,
                             geometry.vertex_buffer, 0, 3 * sizeof(GLfloat));
@@ -165,11 +183,11 @@ OpenGlGeometry RenderEngineGl::SetupVAO(const VertexBuffer& vertices,
                              kBindingIndex);
   glEnableVertexArrayAttrib(geometry.vertex_array, kLocP_ModelAttrib);
 
-  // Index Buffer Object.
+  // Create the index buffer object (IBO).
   glCreateBuffers(1, &geometry.index_buffer);
   glNamedBufferStorage(geometry.index_buffer, indices.size() * sizeof(GLuint),
                        indices.data(), 0);
-  // Bind with the VAO.
+  // Bind IBO with the VAO.
   glVertexArrayElementBuffer(geometry.vertex_array, geometry.index_buffer);
 
   geometry.index_buffer_size = indices.size();
@@ -178,39 +196,40 @@ OpenGlGeometry RenderEngineGl::SetupVAO(const VertexBuffer& vertices,
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
   // particular GeometryId is removed, it was only referencing its corresponding
   // canonical mesh. We keep all canonical meshes alive for the lifetime of the
-  // Context for convenient reuse.
+  // OpenGL context for convenient reuse.
   return geometry;
 }
 
-RenderTarget RenderEngineGl::SetupFBO(const DepthCameraProperties& camera) {
-  // Create a framebuffer object.
+RenderTarget RenderEngineGl::CreateRenderTarget(
+    const DepthCameraProperties& camera) {
+  // Create a framebuffer object (FBO).
   RenderTarget target;
   glCreateFramebuffers(1, &target.frame_buffer);
 
-  // Create the texture object to render to.
-  const int kWidth = camera.width;
-  const int kHeight = camera.height;
-  glGenTextures(1, &target.texture);
-  glBindTexture(GL_TEXTURE_2D, target.texture);
+  // Create the texture object that will store the rendered result.
+  const int width = camera.width;
+  const int height = camera.height;
+  glGenTextures(1, &target.value_texture);
+  glBindTexture(GL_TEXTURE_2D, target.value_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, kWidth, kHeight, 0, GL_RED, GL_FLOAT,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT,
                0);
   glBindTexture(GL_TEXTURE_2D, 0);
 
   // Attach the texture to FBO color attachment point.
   glNamedFramebufferTexture(target.frame_buffer, GL_COLOR_ATTACHMENT0,
-                            target.texture, 0);
+                            target.value_texture, 0);
 
-  // Create the renderbuffer object, acting as the z buffer.
-  glCreateRenderbuffers(1, &target.render_buffer);
-  glNamedRenderbufferStorage(target.render_buffer, GL_DEPTH_COMPONENT, kWidth,
-                             kHeight);
-  // Attach the renderbuffer to FBO's depth attachment point.
+  // Create the render buffer object (RBO), acting as the z buffer.
+  glCreateRenderbuffers(1, &target.z_buffer);
+  glNamedRenderbufferStorage(target.z_buffer, GL_DEPTH_COMPONENT, width,
+                             height);
+  // Attach the RBO to FBO's depth attachment point.
   glNamedFramebufferRenderbuffer(target.frame_buffer, GL_DEPTH_ATTACHMENT,
-                                 GL_RENDERBUFFER, target.render_buffer);
+                                 GL_RENDERBUFFER, target.z_buffer);
 
   // Check FBO status.
   GLenum status =
@@ -220,8 +239,8 @@ RenderTarget RenderEngineGl::SetupFBO(const DepthCameraProperties& camera) {
   }
 
   // Specify which buffer to be associated with the fragment shader output.
-  GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
-  glNamedFramebufferDrawBuffers(target.frame_buffer, 1, buffers);
+  GLenum buffer = GL_COLOR_ATTACHMENT0;
+  glNamedFramebufferDrawBuffers(target.frame_buffer, 1, &buffer);
 
   return target;
 }
@@ -240,15 +259,15 @@ void RenderEngineGl::SetGlModelViewMatrix(const Eigen::Matrix4f& X_CM) const {
 }
 
 RenderTarget RenderEngineGl::SetCameraProperties(
-    const DepthCameraProperties& camera) {
+    const DepthCameraProperties& camera) const {
   SetGlProjectionMatrix(camera);
 
   const BufferDim dim{camera.width, camera.height};
   RenderTarget target;
-  auto iter = frame_buffers_->find(dim);
-  if (iter == frame_buffers_->end()) {
-    target = SetupFBO(camera);
-    frame_buffers_->insert({dim, target});
+  auto iter = render_targets_->find(dim);
+  if (iter == render_targets_->end()) {
+    target = CreateRenderTarget(camera);
+    render_targets_->insert({dim, target});
   } else {
     target = iter->second;
   }
@@ -262,18 +281,23 @@ void RenderEngineGl::RenderAt(const Eigen::Matrix4f& X_CW) const {
 
   glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
   glEnable(GL_DEPTH_TEST);
-  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  // Note: We're *not* clearing the color buffer here. We rely on the caller of
+  // RenderAt() to have cleared the frame buffer's color buffer to an
+  // appropriate color for an "empty" pixel.
+  glClear(GL_DEPTH_BUFFER_BIT);
 
   for (const auto& pair : visuals_) {
-    const auto& vis = pair.second;
-    glBindVertexArray(vis.geometry.vertex_array);
+    const internal::OpenGlInstance& instance = pair.second;
+    glBindVertexArray(instance.geometry.vertex_array);
 
-    Eigen::DiagonalMatrix<float, 4, 4> scale(
-        Vector4<float>(vis.scale(0), vis.scale(1), vis.scale(2), 1.0));
-    // Create the scaled transform (S_CG = X_CW * X_WG * scale) which poses a
-    // scaled version of a canonical geometry.
-    SetGlModelViewMatrix(X_CW * vis.X_WG.GetAsMatrix4().cast<float>() * scale);
-    glDrawElements(GL_TRIANGLES, vis.geometry.index_buffer_size,
+    Eigen::DiagonalMatrix<float, 4, 4> scale(Vector4<float>(
+        instance.scale(0), instance.scale(1), instance.scale(2), 1.0));
+    // The pose of the geometry in the camera frame is a _scaled_
+    // transform; the geometry gets scaled, then posed in the world, and finally
+    // the camera frame.
+    SetGlModelViewMatrix(X_CW * instance.X_WG.GetAsMatrix4().cast<float>() *
+                         scale);
+    glDrawElements(GL_TRIANGLES, instance.geometry.index_buffer_size,
                    GL_UNSIGNED_INT, 0);
   }
   // Unbind the vertex array back to the default of 0.
@@ -281,25 +305,12 @@ void RenderEngineGl::RenderAt(const Eigen::Matrix4f& X_CW) const {
   shader_program_->Unuse();
 }
 
-void RenderEngineGl::GetDepthImage(ImageDepth32F* depth_image_out,
-                                   const RenderTarget& target) const {
-  glGetTextureImage(target.texture, 0, GL_RED, GL_FLOAT,
-                    depth_image_out->size() * sizeof(GLfloat),
-                    depth_image_out->at(0, 0));
-
-  for (int y = 0; y < depth_image_out->height(); ++y) {
-    for (int x = 0; x < depth_image_out->width(); ++x) {
-      *depth_image_out->at(x, y) = 1.f / *depth_image_out->at(x, y);
-    }
-  }
-}
-
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   OpenGlGeometry geometry = GetSphere();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = sphere.radius();
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{r, r, r}));
+  visuals_.emplace(data.id,
+                   OpenGlInstance(geometry, data.X_WG, Vector3d{r, r, r}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -308,40 +319,37 @@ void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{r, r, l}));
+  visuals_.emplace(data.id,
+                   OpenGlInstance(geometry, data.X_WG, Vector3d{r, r, l}));
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
   OpenGlGeometry geometry = GetHalfSpace();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{1, 1, 1}));
+  visuals_.emplace(data.id,
+                   OpenGlInstance(geometry, data.X_WG, Vector3d{1, 1, 1}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
   OpenGlGeometry geometry = GetBox();
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(
-      data.id, OpenGlInstance(geometry, data.X_WG,
-                              Vector3<double>{box.width(), box.depth(),
-                                                     box.height()}));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           Vector3d{box.width(), box.depth(),
+                                                    box.height()}));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   OpenGlGeometry geometry = GetMesh(mesh.filename());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  visuals_.emplace(
-      data.id, OpenGlInstance(geometry, data.X_WG,
-                              Vector3<double>{1, 1, 1} * mesh.scale()));
+  visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
+                                           Vector3d(1, 1, 1) * mesh.scale()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   OpenGlGeometry geometry = GetMesh(convex.filename());
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   visuals_.emplace(data.id, OpenGlInstance(geometry, data.X_WG,
-                                           Vector3<double>{1, 1, 1} *
-                                               convex.scale()));
+                                           Vector3d(1, 1, 1) * convex.scale()));
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -378,9 +386,9 @@ OpenGlGeometry RenderEngineGl::GetSphere() {
     const int kLongitudeBands = 50;
 
     auto [vertices, indices] =
-        MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
+        internal::MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
 
-    sphere_ = SetupVAO(vertices, indices);
+    sphere_ = CreateGlGeometry(vertices, indices);
   }
 
   sphere_.throw_if_undefined("Built-in sphere has some invalid objects");
@@ -394,8 +402,8 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
 
     // For long skinny cylinders, it would be better to offer some subdivisions
     // along the length. For now, we'll simply save the triangles.
-    auto [vertices, indices] = MakeUnitCylinder(kLongitudeBands, 1);
-    cylinder_ = SetupVAO(vertices, indices);
+    auto [vertices, indices] = internal::MakeUnitCylinder(kLongitudeBands, 1);
+    cylinder_ = CreateGlGeometry(vertices, indices);
   }
 
   cylinder_.throw_if_undefined("Built-in cylinder has some invalid objects");
@@ -409,8 +417,8 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
     // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
     //  lighting), this will render better with tighter resolution. Consider
     //  making this configurable.
-    auto [vertices, indices] = MakeSquarePatch(kMeasure, 1);
-    half_space_ = SetupVAO(vertices, indices);
+    auto [vertices, indices] = internal::MakeSquarePatch(kMeasure, 1);
+    half_space_ = CreateGlGeometry(vertices, indices);
   }
 
   half_space_.throw_if_undefined(
@@ -421,8 +429,8 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
 
 OpenGlGeometry RenderEngineGl::GetBox() {
   if (!box_.is_defined()) {
-    auto [vertices, indices] = MakeUnitBox();
-    box_ = SetupVAO(vertices, indices);
+    auto [vertices, indices] = internal::MakeUnitBox();
+    box_ = CreateGlGeometry(vertices, indices);
   }
 
   box_.throw_if_undefined("Built-in box has some invalid objects");
@@ -433,8 +441,8 @@ OpenGlGeometry RenderEngineGl::GetBox() {
 OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
   OpenGlGeometry mesh;
   if (meshes_->count(filename) == 0) {
-    auto [vertices, indices] = LoadMeshFromObj(filename);  // NOLINT
-    mesh = SetupVAO(vertices, indices);
+    auto [vertices, indices] = internal::LoadMeshFromObj(filename);
+    mesh = CreateGlGeometry(vertices, indices);
     meshes_->insert({filename, mesh});
   } else {
     mesh = meshes_->at(filename);
@@ -448,7 +456,6 @@ OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
 
 RenderEngineGl::~RenderEngineGl() = default;
 
-}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

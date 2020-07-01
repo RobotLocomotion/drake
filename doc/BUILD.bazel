@@ -9,15 +9,11 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_py_binary(
-    name = "sphinx_build",
-    srcs = ["sphinx_build.py"],
-)
-
 drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
-    deps = [":sphinx_build"],
+    data = ["@sphinx//:sphinx-build"],
+    deps = ["@rules_python//python/runfiles"],
 )
 
 drake_py_binary(

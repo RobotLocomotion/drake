@@ -139,7 +139,7 @@ class _KwArgs(dict):
     pass
 
 
-class _ExecutionCheck(object):
+class _ExecutionCheck:
     # Allows checking that we received and executed a complete set of
     # instructions.
     def __init__(self):
@@ -279,7 +279,7 @@ def default_globals():
         locals())
 
 
-class CallPythonClient(object):
+class CallPythonClient:
     """Provides a client to receive Python commands.
 
     Enables printing or plotting from a C++ application for debugging

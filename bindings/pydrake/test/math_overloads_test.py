@@ -22,7 +22,7 @@ def qualname(obj):
     return "{}.{}".format(obj.__module__, obj.__name__)
 
 
-class Overloads(object):
+class Overloads:
     # Provides interface for testing function overloads for a given type, `T`.
     def supports(self, func):
         # Determines if `func` is supported by this overload.

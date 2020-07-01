@@ -268,9 +268,16 @@ TEST_F(HydroelasticModelTests, ContactDynamics) {
 // contact types (as appropriate).
 class ContactModelTest : public ::testing::Test {
  protected:
-  void Configure(ContactModel model) {
+  void Configure(ContactModel model, bool connect_scene_graph = true) {
     systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    if (connect_scene_graph) {
+      std::tie(plant_, scene_graph_) =
+          AddMultibodyPlantSceneGraph(&builder, 0.0);
+    } else {
+      plant_ = builder.AddSystem(std::make_unique<MultibodyPlant<double>>(0.0));
+      scene_graph_ = builder.AddSystem(std::make_unique<SceneGraph<double>>());
+      plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+    }
 
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(
@@ -469,6 +476,21 @@ TEST_F(ContactModelTest, HydroelasitcWithFallback) {
     EXPECT_TRUE(CompareMatrices(F_BBo_W_array[b].get_coeffs(),
                                 F_BBo_W_array_expected[b].get_coeffs()));
   }
+}
+
+TEST_F(ContactModelTest, HydroelasticWithFallbackDisconnectedPorts) {
+  this->Configure(ContactModel::kHydroelasticWithFallback, false);
+
+  // Plant was not connected to the SceneGraph in a diagram, so its input port
+  // should be invalid.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetContactResults(), std::logic_error,
+      "The geometry query input port \\(see "
+      "MultibodyPlant::get_geometry_query_input_port\\(\\)\\) "
+      "of this MultibodyPlant is not connected. Please connect the"
+      "geometry query output port of a SceneGraph object "
+      "\\(see SceneGraph::get_query_output_port\\(\\)\\) to this plants input "
+      "port in a Diagram.");
 }
 
 }  // namespace

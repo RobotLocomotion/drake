@@ -315,14 +315,14 @@ enum class ContactModel {
 /// registrations took place. All geometry registration **must** be performed
 /// pre-finalize.
 ///
-/// If %MultibodyPlant registers geometry with a SceneGraph via calls to
-/// RegisterCollisionGeometry(), an input port for geometric queries will be
-/// declared at Finalize() time, see get_geometry_query_input_port(). Users must
-/// connect this input port to the output port for geometric queries of the
-/// SceneGraph used for registration, which can be obtained with
-/// SceneGraph::get_query_output_port().
-/// In summary, if %MultibodyPlant registers collision geometry, the setup
-/// process will include:
+/// %Multibodyplant declares an input port for geometric queries, see
+/// get_geometry_query_input_port(). If %MultibodyPlant registers geometry with
+/// a SceneGraph via calls to RegisterCollisionGeometry(), users may use this
+/// port for geometric queries. Users must connect this input port to the output
+/// port for geometric queries of the SceneGraph used for registration, which
+/// can be obtained with SceneGraph::get_query_output_port(). In summary, if
+/// %MultibodyPlant registers collision geometry, the setup process will
+/// include:
 ///
 /// 1. Call to RegisterAsSourceForSceneGraph().
 /// 2. Calls to RegisterCollisionGeometry(), as many as needed.
@@ -571,8 +571,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Refer to section @ref mbp_geometry "Geometry" of this class's
   /// documentation for further details on collision geometry registration and
   /// connection with a SceneGraph.
-  /// @throws std::exception if this system was not registered with a
-  /// SceneGraph.
   const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns a constant reference to the output port for the multibody state
@@ -641,8 +639,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
-  /// SceneGraph.
-  /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @} <!-- Input and output ports -->
@@ -725,7 +721,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     X_WB_default_list_ = other.X_WB_default_list_;
     contact_model_ = other.contact_model_;
     penetration_allowance_ = other.penetration_allowance_;
-    if (geometry_source_is_registered()) DeclareSceneGraphPorts();
+    DeclareSceneGraphPorts();
 
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
@@ -3695,6 +3691,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // result will be a stub type instead.  (We can get rid of the stub once
   // SceneGraph supports symbolic::Expression.)
   MemberSceneGraph& member_scene_graph();
+
+  // Consolidates calls to Eval on the geometry query input port to have a
+  // consistent and helpful error message in the situation where the
+  // geometry_query_input_port is not connected, but is expected to be.
+  const geometry::QueryObject<T>& EvalGeometryQueryInput(
+      const systems::Context<T>& context) const {
+    if (!get_geometry_query_input_port().HasValue(context)) {
+      throw std::logic_error(
+          "The geometry query input port (see "
+          "MultibodyPlant::get_geometry_query_input_port()) "
+          "of this MultibodyPlant is not connected. Please connect the"
+          "geometry query output port of a SceneGraph object "
+          "(see SceneGraph::get_query_output_port()) to this plants input "
+          "port in a Diagram.");
+    }
+    return get_geometry_query_input_port()
+        .template Eval<geometry::QueryObject<T>>(context);
+  }
 
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;

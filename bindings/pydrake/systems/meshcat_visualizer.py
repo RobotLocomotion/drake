@@ -433,7 +433,7 @@ class MeshcatContactVisualizer(LeafSystem):
     MultibodyPlant.
     """
 
-    class _ContactState(object):
+    class _ContactState:
         def __init__(self, key, needs_pruning, info, p_BC):
             # Key for use with meshcat.
             self.key = key

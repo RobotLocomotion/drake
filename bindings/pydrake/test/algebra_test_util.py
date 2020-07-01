@@ -9,7 +9,7 @@ import numpy as np
 import pydrake.math as drake_math
 
 
-class BaseAlgebra(object):
+class BaseAlgebra:
     # Base class for defining scalar or vectorized (array) algebra and math.
     # Checks on custom types that have numeric relations to `float`.
     # Note that linear algebra itself is not "pluggable" for these operations,

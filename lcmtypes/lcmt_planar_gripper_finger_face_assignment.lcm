@@ -1,0 +1,24 @@
+package drake;
+
+// Communicates the finger-face assignment info for a specified finger.
+struct lcmt_planar_gripper_finger_face_assignment {
+  // in microseconds
+  int64_t utime;
+
+  // Finger name: {finger1, finger2, finger3}
+  string finger_name;
+
+  // Brick face name: {PosY, NegY, PosZ, NegZ}
+  string brick_face_name;
+
+  // The contact point if in contact, or the proximity witness point if not in
+  // contact. It is position vector from the brick's body B's origin (Bo) to a
+  // point Bq (a point of B), expressed in B's frame.
+  double p_BoBq_B[2];  // {y-coordinate, z-coordinate}
+
+  // A boolean that indicates whether this finger is in contact with the
+  // specified brick face. If true, the finger is in contact and p_BoBq_B
+  // indicates the actual contact point. If false, the finger is not in contact
+  // and p_BoBq_B indicates the witness point to a proximity query.
+  boolean is_in_contact;  // if true, the finger is in contact.
+}

@@ -165,18 +165,19 @@ class RgbdSensorTest : public ::testing::Test {
     if (!result) return result;
 
     // By default, frames B, C, and D are aligned and coincident.
-    EXPECT_TRUE(CompareMatrices(sensor_->X_BC().matrix(),
-                                RigidTransformd().matrix()));
-    EXPECT_TRUE(CompareMatrices(sensor_->X_BD().matrix(),
-                                RigidTransformd().matrix()));
+    EXPECT_TRUE(CompareMatrices(sensor_->X_BC().GetAsMatrix4(),
+                                RigidTransformd().GetAsMatrix4()));
+    EXPECT_TRUE(CompareMatrices(sensor_->X_BD().GetAsMatrix4(),
+                                RigidTransformd().GetAsMatrix4()));
 
     // Confirm the pose used by the renderer is the expected X_WC pose. We do
     // this by invoking a render (the dummy render engine will cache the last
     // call to UpdateViewpoint()).
     if (pre_render_callback) pre_render_callback();
     sensor_->color_image_output_port().Eval<ImageRgba8U>(*sensor_context_);
-    EXPECT_TRUE(CompareMatrices(render_engine_->last_updated_X_WC().matrix(),
-                                X_WC_expected.matrix()));
+    EXPECT_TRUE(CompareMatrices(
+        render_engine_->last_updated_X_WC().GetAsMatrix4(),
+        X_WC_expected.GetAsMatrix4()));
 
     return result;
   }
@@ -281,8 +282,10 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
   const RgbdSensor sensor(
       scene_graph_->world_frame_id(), X_WB, color_properties_,
       depth_properties_, RgbdSensor::CameraPoses{X_BC, X_BD});
-  EXPECT_TRUE(CompareMatrices(sensor.X_BC().matrix(), X_BC.matrix()));
-  EXPECT_TRUE(CompareMatrices(sensor.X_BD().matrix(), X_BD.matrix()));
+  EXPECT_TRUE(CompareMatrices(
+      sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(CompareMatrices(
+      sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
 }
 
 // We don't explicitly test any of the image outputs. Most of the image outputs

@@ -45,7 +45,7 @@ _max_depth = -1  # m
 DEFAULT_CHANNEL = "DRAKE_RGBD_CAMERA_IMAGES"
 
 
-class ImageHandler(object):
+class ImageHandler:
     """
     Generic handler to update an image for `ImageWidget`.
     """
@@ -65,7 +65,7 @@ class ImageHandler(object):
         return False
 
 
-class ImageWidget(object):
+class ImageWidget:
     """
     Wrapper for displaying vtkImageData on a director-style view.
 
@@ -211,7 +211,7 @@ class ImageWidget(object):
         camera.SetParallelScale(parallel_scale)
 
 
-class ImageArrayWidget(object):
+class ImageArrayWidget:
     """
     Provides a widget to show images from multiple `ImageHandler`s.
     """
@@ -234,7 +234,7 @@ class ImageArrayWidget(object):
         self._widget.show()
 
 
-class DrakeLcmImageViewer(object):
+class DrakeLcmImageViewer:
     """
     Visualize Drake LCM Images.
     """
@@ -430,7 +430,7 @@ class LcmImageHandler(ImageHandler):
         return self._is_depth_image
 
 
-class LcmImageArraySubscriber(object):
+class LcmImageArraySubscriber:
     """
     Provides a connection between the LCM `image_array_t` channel and LCM image
     handlers.
