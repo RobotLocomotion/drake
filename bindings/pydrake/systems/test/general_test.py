@@ -33,6 +33,7 @@ from pydrake.systems.framework import (
     DiscreteValues, DiscreteValues_,
     Event, Event_,
     EventStatus,
+    GenerateHtml,
     InputPort, InputPort_,
     kUseDefaultName,
     LeafContext, LeafContext_,
@@ -819,3 +820,9 @@ class TestGeneral(unittest.TestCase):
             status.KeepMoreSevere(candidate=status), EventStatus)
         status = EventStatus.Failed(system=system, message="failed")
         self.assertIsInstance(status, EventStatus)
+
+    def test_generate_html(self):
+        system = ZeroOrderHold(period_sec=0.1, vector_size=1)
+        system.set_name("zoh")
+        html = GenerateHtml(system, initial_depth=2)
+        self.assertRegex(html, r'key: "zoh"')
