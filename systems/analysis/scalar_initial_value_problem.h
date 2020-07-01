@@ -61,11 +61,6 @@ class ScalarInitialValueProblem {
   using ScalarOdeFunction =
       std::function<T(const T& t, const T& x, const VectorX<T>& k)>;
 
-  DRAKE_DEPRECATED("2020-07-01",
-                   "ScalarODEFunction has been renamed "
-                   "ScalarOdeFunction.")
-  typedef ScalarOdeFunction ScalarODEFunction;
-
   /// A collection of values i.e. initial time t₀, initial state x₀
   /// and parameter vector 𝐤 to further specify the ODE system (in
   /// order to become a scalar initial value problem).
@@ -87,10 +82,6 @@ class ScalarInitialValueProblem {
     std::optional<T> x0;          ///< The initial state x₀ for the IVP.
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
-
-  DRAKE_DEPRECATED("2020-07-01",
-                   "SpecifiedValues has been renamed ScalarOdeContext.")
-  typedef ScalarOdeContext SpecifiedValues;
 
   /// Constructs an scalar IVP described by the given @p scalar_ode_function,
   /// using given @p default_values.t0 and @p default_values.x0 as initial

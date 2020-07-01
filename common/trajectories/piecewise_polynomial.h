@@ -305,15 +305,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<MatrixX<T>>& samples,
       bool zero_end_point_derivatives = false);
 
-  DRAKE_DEPRECATED("2020-07-01",
-                   "Pchip has been renamed to CubicShapePreserving.")
-  static PiecewisePolynomial<T> Pchip(
-      const std::vector<T>& breaks,
-      const std::vector<MatrixX<T>>& samples,
-      bool zero_end_point_derivatives = false) {
-    return CubicShapePreserving(breaks, samples, zero_end_point_derivatives);
-  }
-
   /**
    * Version of CubicShapePreserving(breaks, samples,
    * zero_end_point_derivatives) that uses vector samples and Eigen VectorXd and
@@ -327,15 +318,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const VectorX<T>>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,
       bool zero_end_point_derivatives = false);
-
-  DRAKE_DEPRECATED("2020-07-01",
-                   "Pchip has been renamed to CubicShapePreserving.")
-  static PiecewisePolynomial<T> Pchip(
-      const Eigen::Ref<const VectorX<T>>& breaks,
-      const Eigen::Ref<const MatrixX<T>>& samples,
-      bool zero_end_point_derivatives = false) {
-    return CubicShapePreserving(breaks, samples, zero_end_point_derivatives);
-  }
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples.
@@ -356,17 +338,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const MatrixX<T>& sample_dot_at_start,
       const MatrixX<T>& sample_dot_at_end);
 
-  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
-                                 "CubicWithContinuousSecondDerivatives.")
-  static PiecewisePolynomial<T> Cubic(
-      const std::vector<T>& breaks,
-      const std::vector<MatrixX<T>>& samples,
-      const MatrixX<T>& sample_dot_at_start,
-      const MatrixX<T>& sample_dot_at_end) {
-    return CubicWithContinuousSecondDerivatives(
-        breaks, samples, sample_dot_at_start, sample_dot_at_end);
-  }
-
   /**
    * Version of CubicWithContinuousSecondDerivatives() that uses vector
    * samples and Eigen VectorXd / MatrixX<T> arguments. Each column of
@@ -381,17 +352,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const MatrixX<T>>& samples,
       const Eigen::Ref<const VectorX<T>>& sample_dot_at_start,
       const Eigen::Ref<const VectorX<T>>& sample_dot_at_end);
-
-  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
-  "CubicWithContinuousSecondDerivatives.")
-  static PiecewisePolynomial<T> Cubic(
-      const Eigen::Ref<const VectorX<T>>& breaks,
-      const Eigen::Ref<const MatrixX<T>>& samples,
-      const Eigen::Ref<const VectorX<T>>& sample_dot_at_start,
-      const Eigen::Ref<const VectorX<T>>& sample_dot_at_end) {
-    return CubicWithContinuousSecondDerivatives(
-        breaks, samples, sample_dot_at_start, sample_dot_at_end);
-  }
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples and
@@ -408,15 +368,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<MatrixX<T>>& samples,
       const std::vector<MatrixX<T>>& samples_dot);
 
-  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
-  "CubicHermite.")
-  static PiecewisePolynomial<T> Cubic(
-      const std::vector<T>& breaks,
-      const std::vector<MatrixX<T>>& samples,
-      const std::vector<MatrixX<T>>& samples_dot) {
-    return CubicHermite(breaks, samples, samples_dot);
-  }
-
   /**
    * Version of CubicHermite(breaks, samples, samples_dot) that uses vector
    * samples and Eigen VectorXd / MatrixX<T> arguments. Corresponding columns of
@@ -429,15 +380,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const VectorX<T>>& breaks,
       const Eigen::Ref<const MatrixX<T>>& samples,
       const Eigen::Ref<const MatrixX<T>>& samples_dot);
-
-  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
-  "CubicHermite.")
-  static PiecewisePolynomial<T> Cubic(
-      const Eigen::Ref<const VectorX<T>>& breaks,
-      const Eigen::Ref<const MatrixX<T>>& samples,
-      const Eigen::Ref<const MatrixX<T>>& samples_dot) {
-    return CubicHermite(breaks, samples, samples_dot);
-  }
 
   /**
    * Constructs a third order %PiecewisePolynomial using matrix samples.
@@ -468,16 +410,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const std::vector<T>& breaks,
       const std::vector<MatrixX<T>>& samples,
       bool periodic_end_condition = false);
-
-  DRAKE_DEPRECATED("2020-07-01", "This version of Cubic has been renamed to "
-  "CubicWithContinuousSecondDerivatives.")
-  static PiecewisePolynomial<T> Cubic(
-      const std::vector<T>& breaks,
-      const std::vector<MatrixX<T>>& samples,
-      bool periodic_end_condition = false) {
-    return CubicWithContinuousSecondDerivatives(breaks, samples,
-                                                periodic_end_condition);
-  }
 
   /**
    * Version of CubicWithContinuousSecondDerivatives(breaks, samples) that
