@@ -404,6 +404,7 @@ def simulate_trials(resimulate_style, num_sim_trials, setup):
             # Run multiple simulations, resetting the context.
             print(f"  index: {index}")
             simulator.reset_context(simulator.get_system().CreateDefaultContext())
+            simulator.Initialize()
             checker.run(simulator, calc_output)
 
     elif resimulate_style == ResimulateStyle.Recreate:

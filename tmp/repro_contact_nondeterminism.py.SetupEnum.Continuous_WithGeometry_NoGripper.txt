@@ -25,231 +25,6 @@ ResimulateStyle.Recreate
     good (first)
   index: 1
     BAD
-      diff[0], t: 0.516
-          q: [0.2016 -0.678 -0.5426 2.079 -0.1482 -2.531 0.0636]
-          contact_results:   point_pair_contact_info(0):
-              bodyA: iiwa_link_6
-              bodyB: fake_table
-        -     contact_force: [-95 -0.5094 -95]
-        ?                               ^
-        +     contact_force: [-95 -0.5093 -95]
-        ?                               ^
-              contact_point: [0.197 0.1018 0.2689]
-              slip_speed: [0.05978]
-              separation_speed: [-0.03029]
-
-      diff[-1], t: 1
-          q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
-          contact_results:   point_pair_contact_info(0):
-              bodyA: iiwa_link_4
-              bodyB: iiwa_link_7
-        -     contact_force: [-23.62 5.819 -6.06]
-        ?                         ^^    --  ^  ^
-        +     contact_force: [-23.84 5.518 -4.303]
-        ?                         ^^   ++   ^ + ^
-              contact_point: [0.2269 -0.1423 0.3865]
-        -     slip_speed: [0.001508]
-        ?                      -
-        +     slip_speed: [0.005087]
-        ?                         +
-        -     separation_speed: [-0.0001459]
-        ?                              - ^
-        +     separation_speed: [-0.0004949]
-        ?                               ^^
-            point_pair_contact_info(1):
-              bodyA: iiwa_link_4
-              bodyB: fake_table
-        -     contact_force: [34.35 -80.68 -87.69]
-        ?                         ^     ^^      -
-        +     contact_force: [34.37 -80.75 -87.76]
-        ?                         ^     ^^     +
-              contact_point: [0.3681 -0.3487 0.2692]
-        -     slip_speed: [0.007404]
-        ?                       ^^^
-        +     slip_speed: [0.007395]
-        ?                       ^^^
-        -     separation_speed: [-0.007167]
-        ?                               --
-        +     separation_speed: [-0.0071]
-            point_pair_contact_info(2):
-              bodyA: iiwa_link_6
-              bodyB: fake_table
-        -     contact_force: [-25.16 -50.5 -56.42]
-        ?                       ^ ^^     ^      ^
-        +     contact_force: [-24.89 -50.68 -56.46]
-        ?                       ^ ^^     ^^      ^
-              contact_point: [0.1521 -0.024 0.2696]
-        -     slip_speed: [0.004853]
-        ?                       - ^
-        +     slip_speed: [0.005459]
-        ?                      +  ^
-        -     separation_speed: [0.007628]
-        ?                               -
-        +     separation_speed: [0.007682]
-        ?                              +
-
-  index: 2
-    BAD
-      diff[0], t: 0.446
-          q: [0.06527 -0.604 -0.4069 2.189 -0.0924 -1.955 0.06515]
-          contact_results:   point_pair_contact_info(0):
-              bodyA: iiwa_link_6
-              bodyB: fake_table
-        -     contact_force: [-162.2 -0.665 -162.2]
-        +     contact_force: [-162.2 -0.6651 -162.2]
-        ?                                  +
-              contact_point: [0.239 0.1057 0.2674]
-              slip_speed: [0.01798]
-              separation_speed: [-0.04869]
-
-      diff[-1], t: 1
-        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
-        ?                                                  ^^
-        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.0821]
-        ?                                                  ^
-          contact_results:   point_pair_contact_info(0):
-              bodyA: iiwa_link_4
-              bodyB: iiwa_link_7
-        -     contact_force: [-23.62 5.819 -6.06]
-        +     contact_force: [-10.93 14.02 -2.014]
-              contact_point: [0.2269 -0.1423 0.3865]
-        -     slip_speed: [0.001508]
-        ?                       ---
-        +     slip_speed: [0.0002791]
-        ?                      ++++
-        -     separation_speed: [-0.0001459]
-        ?                         ^ ^^^^^
-        +     separation_speed: [-2.259e-05]
-        ?                         ^ ^  ++++
-            point_pair_contact_info(1):
-              bodyA: iiwa_link_4
-              bodyB: fake_table
-        -     contact_force: [34.35 -80.68 -87.69]
-        ?                         ^      ^      ^
-        +     contact_force: [34.37 -80.65 -87.67]
-        ?                         ^      ^      ^
-              contact_point: [0.3681 -0.3487 0.2692]
-        -     slip_speed: [0.007404]
-        ?                         ^
-        +     slip_speed: [0.007409]
-        ?                         ^
-        -     separation_speed: [-0.007167]
-        ?                               ^^
-        +     separation_speed: [-0.007192]
-        ?                               ^^
-            point_pair_contact_info(2):
-              bodyA: iiwa_link_6
-              bodyB: fake_table
-        -     contact_force: [-25.16 -50.5 -56.42]
-        ?                          ^            ^
-        +     contact_force: [-25.11 -50.51 -56.41]
-        ?                          ^      +      ^
-              contact_point: [0.1521 -0.024 0.2696]
-        -     slip_speed: [0.004853]
-        ?                        --
-        +     slip_speed: [0.004618]
-        ?                       ++
-        -     separation_speed: [0.007628]
-        ?                              ^^
-        +     separation_speed: [0.007606]
-        ?                              ^^
-
-  index: 3
-    BAD
-      diff[0], t: 0.516
-          q: [0.2016 -0.678 -0.5426 2.079 -0.1482 -2.531 0.0636]
-          contact_results:   point_pair_contact_info(0):
-              bodyA: iiwa_link_6
-              bodyB: fake_table
-        -     contact_force: [-95 -0.5094 -95]
-        ?                               ^
-        +     contact_force: [-95 -0.5093 -95]
-        ?                               ^
-              contact_point: [0.197 0.1018 0.2689]
-              slip_speed: [0.05978]
-              separation_speed: [-0.03029]
-
-      diff[-1], t: 1
-        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
-        ?                                                  ^^
-        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08211]
-        ?                                                  ^^
-          contact_results:   point_pair_contact_info(0):
-              bodyA: iiwa_link_4
-              bodyB: iiwa_link_7
-        -     contact_force: [-23.62 5.819 -6.06]
-        ?                         ^^   ^^^  ^ ^^
-        +     contact_force: [-23.87 5.64 -4.978]
-        ?                         ^^   ^^  ^ ^^^
-              contact_point: [0.2269 -0.1423 0.3865]
-        -     slip_speed: [0.001508]
-        ?                       ^^^
-        +     slip_speed: [0.003119]
-        ?                      + ^^
-        -     separation_speed: [-0.0001459]
-        ?                              ^^^^
-        +     separation_speed: [-0.000303]
-        ?                              ^^^
-            point_pair_contact_info(1):
-              bodyA: iiwa_link_4
-              bodyB: fake_table
-        -     contact_force: [34.35 -80.68 -87.69]
-        ?                         ^     ^^     ^^
-        +     contact_force: [34.34 -80.71 -87.72]
-        ?                         ^     ^^     ^^
-              contact_point: [0.3681 -0.3487 0.2692]
-        -     slip_speed: [0.007404]
-        ?                       ^^^
-        +     slip_speed: [0.007399]
-        ?                       ^^^
-        -     separation_speed: [-0.007167]
-        ?                               ^^
-        +     separation_speed: [-0.007139]
-        ?                               ^^
-            point_pair_contact_info(2):
-              bodyA: iiwa_link_6
-              bodyB: fake_table
-        -     contact_force: [-25.16 -50.5 -56.42]
-        ?                         ^^     ^      ^
-        +     contact_force: [-25.22 -50.49 -56.44]
-        ?                         ^^     ^^      ^
-              contact_point: [0.1521 -0.024 0.2696]
-        -     slip_speed: [0.004853]
-        ?                      -- ^
-        +     slip_speed: [0.00516]
-        ?                       ^^
-        -     separation_speed: [0.007628]
-        ?                              ^^
-        +     separation_speed: [0.007656]
-        ?                              ^^
-
-
-
-[ meta_trial = 1, num_sim_trials = 4, setup = SetupEnum.Continuous_WithGeometry_NoGripper ]
-
-ResimulateStyle.Reuse
-  index: 0
-    good (first)
-  index: 1
-    good (not unique)
-  index: 2
-    good (not unique)
-  index: 3
-    good (not unique)
-ResimulateStyle.ReuseNewContext
-  index: 0
-    good (first)
-  index: 1
-    good (not unique)
-  index: 2
-    good (not unique)
-  index: 3
-    good (not unique)
-ResimulateStyle.Recreate
-  index: 0
-    good (first)
-  index: 1
-    BAD
       diff[0], t: 0.522
           q: [0.2142 -0.6845 -0.5555 2.073 -0.1529 -2.563 0.06355]
           contact_results:   point_pair_contact_info(0):
@@ -292,31 +67,57 @@ ResimulateStyle.Recreate
         ?                            ++
 
       diff[-1], t: 1
-          q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
+        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
+        ?                                                  ^^
+        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.0821]
+        ?                                                  ^
           contact_results:   point_pair_contact_info(0):
               bodyA: iiwa_link_4
               bodyB: iiwa_link_7
-        -     contact_force: [-23.84 5.518 -4.302]
-        ?                                       ^
-        +     contact_force: [-23.84 5.518 -4.303]
-        ?                                       ^
+        -     contact_force: [-23.84 5.518 -4.304]
+        ?                         ^^   ^^   ^  -
+        +     contact_force: [-23.61 5.789 -5.934]
+        ?                         ^^   ^ +  ^ +
               contact_point: [0.2269 -0.1423 0.3865]
-              slip_speed: [0.005087]
-              separation_speed: [-0.0004949]
+        -     slip_speed: [0.005088]
+        ?                      ^^^^
+        +     slip_speed: [0.001743]
+        ?                      ^^^^
+        -     separation_speed: [-0.000495]
+        ?                              ^ -
+        +     separation_speed: [-0.0001689]
+        ?                              ^^^
             point_pair_contact_info(1):
               bodyA: iiwa_link_4
               bodyB: fake_table
-              contact_force: [34.37 -80.75 -87.76]
+        -     contact_force: [34.37 -80.75 -87.76]
+        ?                         ^      -     -
+        +     contact_force: [34.33 -80.7 -87.69]
+        ?                         ^            +
               contact_point: [0.3681 -0.3487 0.2692]
-              slip_speed: [0.007395]
-              separation_speed: [-0.0071]
+        -     slip_speed: [0.007395]
+        ?                         ^
+        +     slip_speed: [0.007399]
+        ?                         ^
+        -     separation_speed: [-0.0071]
+        +     separation_speed: [-0.007161]
+        ?                               ++
             point_pair_contact_info(2):
               bodyA: iiwa_link_6
               bodyB: fake_table
-              contact_force: [-24.89 -50.68 -56.46]
+        -     contact_force: [-24.89 -50.68 -56.46]
+        ?                       ^ ^^     ^       ^
+        +     contact_force: [-25.2 -50.48 -56.42]
+        ?                       ^ ^     ^       ^
               contact_point: [0.1521 -0.024 0.2696]
-              slip_speed: [0.005459]
-              separation_speed: [0.007682]
+        -     slip_speed: [0.00546]
+        ?                      - ^
+        +     slip_speed: [0.004894]
+        ?                       ^^^
+        -     separation_speed: [0.007682]
+        ?                              -
+        +     separation_speed: [0.007627]
+        ?                               +
 
   index: 2
     BAD
@@ -336,57 +137,151 @@ ResimulateStyle.Recreate
       diff[-1], t: 1
         - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
         ?                                                  ^^
-        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.0821]
-        ?                                                  ^
+        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08211]
+        ?                                                  ^^
           contact_results:   point_pair_contact_info(0):
               bodyA: iiwa_link_4
               bodyB: iiwa_link_7
-        -     contact_force: [-23.84 5.518 -4.302]
-        ?                         ^^   ^^^  ^ ^ ^
-        +     contact_force: [-23.7 5.734 -5.606]
-        ?                         ^   ^^^  ^ ^ ^
+        -     contact_force: [-23.84 5.518 -4.304]
+        +     contact_force: [-19.4 8.565 -5.773]
               contact_point: [0.2269 -0.1423 0.3865]
-        -     slip_speed: [0.005087]
-        ?                      ^
-        +     slip_speed: [0.002087]
-        ?                      ^
-        -     separation_speed: [-0.0004949]
-        ?                              ^^^^
-        +     separation_speed: [-0.0002025]
-        ?                              ^^^^
+        -     slip_speed: [0.005088]
+        ?                      - ^
+        +     slip_speed: [0.0006278]
+        ?                       ^^^
+        -     separation_speed: [-0.000495]
+        ?                          ------
+        +     separation_speed: [-5.98e-05]
+        ?                         ++++++
             point_pair_contact_info(1):
               bodyA: iiwa_link_4
               bodyB: fake_table
         -     contact_force: [34.37 -80.75 -87.76]
-        ?                        ^^      ^      -
-        +     contact_force: [34.26 -80.74 -87.7]
-        ?                        ^^      ^
+        ?                         ^     ^^      -
+        +     contact_force: [34.36 -80.66 -87.67]
+        ?                         ^     ^^     +
               contact_point: [0.3681 -0.3487 0.2692]
         -     slip_speed: [0.007395]
-        ?                        ^^
-        +     slip_speed: [0.007387]
-        ?                        ^^
+        ?                       ^^
+        +     slip_speed: [0.007405]
+        ?                       ^^
         -     separation_speed: [-0.0071]
-        +     separation_speed: [-0.007153]
+        +     separation_speed: [-0.007181]
         ?                               ++
             point_pair_contact_info(2):
               bodyA: iiwa_link_6
               bodyB: fake_table
         -     contact_force: [-24.89 -50.68 -56.46]
-        ?                       ^ ^^     ^^      ^
-        +     contact_force: [-25.16 -50.5 -56.42]
-        ?                       ^ ^^     ^      ^
+        ?                       ^ ^      ^       ^
+        +     contact_force: [-25.39 -50.38 -56.42]
+        ?                       ^ ^      ^       ^
               contact_point: [0.1521 -0.024 0.2696]
-        -     slip_speed: [0.005459]
-        ?                      - -
-        +     slip_speed: [0.004924]
-        ?                        ++
+        -     slip_speed: [0.00546]
+        ?                      - ^
+        +     slip_speed: [0.004732]
+        ?                       ^^^
         -     separation_speed: [0.007682]
         ?                              ^^
         +     separation_speed: [0.007617]
         ?                              ^^
 
   index: 3
+    BAD
+      diff[0], t: 0.516
+          q: [0.2016 -0.678 -0.5426 2.079 -0.1482 -2.531 0.0636]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-95 -0.5093 -95]
+        ?                               ^
+        +     contact_force: [-95 -0.5094 -95]
+        ?                               ^
+              contact_point: [0.197 0.1018 0.2689]
+              slip_speed: [0.05978]
+              separation_speed: [-0.03029]
+
+      diff[-1], t: 1
+        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
+        ?                                                  ^^
+        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08211]
+        ?                                                  ^^
+          contact_results:   point_pair_contact_info(0):
+              bodyA: iiwa_link_4
+              bodyB: iiwa_link_7
+        -     contact_force: [-23.84 5.518 -4.304]
+        ?                          ^   ^ -  ^ ^^
+        +     contact_force: [-23.87 5.681 -5.194]
+        ?                          ^   ^^   ^ ^^
+              contact_point: [0.2269 -0.1423 0.3865]
+        -     slip_speed: [0.005088]
+        ?                      ^^^^
+        +     slip_speed: [0.002641]
+        ?                      ^^^^
+        -     separation_speed: [-0.000495]
+        ?                               --
+        +     separation_speed: [-0.0002564]
+        ?                              +++
+            point_pair_contact_info(1):
+              bodyA: iiwa_link_4
+              bodyB: fake_table
+        -     contact_force: [34.37 -80.75 -87.76]
+        ?                         ^      -      -
+        +     contact_force: [34.34 -80.7 -87.7]
+        ?                         ^
+              contact_point: [0.3681 -0.3487 0.2692]
+        -     slip_speed: [0.007395]
+        ?                       ^^^
+        +     slip_speed: [0.0074]
+        ?                       ^
+        -     separation_speed: [-0.0071]
+        +     separation_speed: [-0.007148]
+        ?                               ++
+            point_pair_contact_info(2):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-24.89 -50.68 -56.46]
+        ?                       ^ ^^     ^       ^
+        +     contact_force: [-25.23 -50.48 -56.44]
+        ?                       ^ ^^     ^       ^
+        -     contact_point: [0.1521 -0.024 0.2696]
+        ?                                 ^
+        +     contact_point: [0.1521 -0.02399 0.2696]
+        ?                                 ^^^
+        -     slip_speed: [0.00546]
+        ?                       ^^
+        +     slip_speed: [0.005075]
+        ?                       ^^^
+        -     separation_speed: [0.007682]
+        ?                               -
+        +     separation_speed: [0.007648]
+        ?                              +
+
+
+
+[ meta_trial = 1, num_sim_trials = 4, setup = SetupEnum.Continuous_WithGeometry_NoGripper ]
+
+ResimulateStyle.Reuse
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+ResimulateStyle.ReuseNewContext
+  index: 0
+    good (first)
+  index: 1
+    good (not unique)
+  index: 2
+    good (not unique)
+  index: 3
+    good (not unique)
+ResimulateStyle.Recreate
+  index: 0
+    good (first)
+  index: 1
     BAD
       diff[0], t: 0.446
           q: [0.06527 -0.604 -0.4069 2.189 -0.0924 -1.955 0.06515]
@@ -401,55 +296,222 @@ ResimulateStyle.Recreate
               separation_speed: [-0.04869]
 
       diff[-1], t: 1
-        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
+          q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08212]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: iiwa_link_4
+              bodyB: iiwa_link_7
+        -     contact_force: [-23.59 5.928 -6.534]
+        ?                         -    ^     ----
+        +     contact_force: [-23.9 5.528 -4.296]
+        ?                             ^    ++++
+              contact_point: [0.2269 -0.1423 0.3865]
+        -     slip_speed: [0.001219]
+        ?                       - -
+        +     slip_speed: [0.00511]
+        ?                      +
+        -     separation_speed: [-0.0001175]
+        ?                              ^^^^
+        +     separation_speed: [-0.0004969]
+        ?                              ^^^^
+            point_pair_contact_info(1):
+              bodyA: iiwa_link_4
+              bodyB: fake_table
+        -     contact_force: [34.39 -80.65 -87.68]
+        ?                         ^     ^^      -
+        +     contact_force: [34.38 -80.74 -87.76]
+        ?                         ^     ^^     +
+              contact_point: [0.3681 -0.3487 0.2692]
+        -     slip_speed: [0.007408]
+        ?                       ^^^
+        +     slip_speed: [0.007395]
+        ?                       ^^^
+        -     separation_speed: [-0.007169]
+        ?                              ^^
+        +     separation_speed: [-0.007098]
+        ?                              ^ +
+            point_pair_contact_info(2):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-25.14 -50.51 -56.42]
+        ?                       ^ ^^     ^^      ^
+        +     contact_force: [-24.86 -50.69 -56.46]
+        ?                       ^ ^^     ^^      ^
+        -     contact_point: [0.1521 -0.02399 0.2696]
+        ?                                 ^^^
+        +     contact_point: [0.1521 -0.024 0.2696]
+        ?                                 ^
+        -     slip_speed: [0.004807]
+        ?                       ^^^
+        +     slip_speed: [0.005461]
+        ?                      + ^^
+        -     separation_speed: [0.007632]
+        ?                              ^^
+        +     separation_speed: [0.007685]
+        ?                              ^^
+
+  index: 2
+    BAD
+      diff[0], t: 0.516
+          q: [0.2016 -0.678 -0.5426 2.079 -0.1482 -2.531 0.0636]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-95 -0.5094 -95]
+        ?                               ^
+        +     contact_force: [-95 -0.5093 -95]
+        ?                               ^
+              contact_point: [0.197 0.1018 0.2689]
+              slip_speed: [0.05978]
+              separation_speed: [-0.03029]
+
+      diff[-1], t: 1
+        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08212]
+        ?                                                   -
+        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.0821]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: iiwa_link_4
+              bodyB: iiwa_link_7
+        -     contact_force: [-23.59 5.928 -6.534]
+        ?                          -   ^^^  ^  --
+        +     contact_force: [-23.95 5.554 -4.395]
+        ?                         +    ^^^  ^ ++
+              contact_point: [0.2269 -0.1423 0.3865]
+        -     slip_speed: [0.001219]
+        ?                      ^ ^^
+        +     slip_speed: [0.005224]
+        ?                      ^ ^^
+        -     separation_speed: [-0.0001175]
+        ?                              ^^ ^
+        +     separation_speed: [-0.0005077]
+        ?                              ^^ ^
+            point_pair_contact_info(1):
+              bodyA: iiwa_link_4
+              bodyB: fake_table
+        -     contact_force: [34.39 -80.65 -87.68]
+        ?                        ^^     ^^     ^^
+        +     contact_force: [34.44 -80.7 -87.75]
+        ?                        ^^     ^     ^^
+              contact_point: [0.3681 -0.3487 0.2692]
+        -     slip_speed: [0.007408]
+        ?                         ^
+        +     slip_speed: [0.007409]
+        ?                         ^
+        -     separation_speed: [-0.007169]
+        ?                               ^^
+        +     separation_speed: [-0.007104]
+        ?                               ^^
+            point_pair_contact_info(2):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-25.14 -50.51 -56.42]
+        ?                                 ^      ^
+        +     contact_force: [-25.14 -50.57 -56.47]
+        ?                                 ^      ^
+        -     contact_point: [0.1521 -0.02399 0.2696]
+        ?                                 ^^^
+        +     contact_point: [0.1521 -0.024 0.2696]
+        ?                                 ^
+        -     slip_speed: [0.004807]
+        ?                      ^ --
+        +     slip_speed: [0.005568]
+        ?                      ^^^
+        -     separation_speed: [0.007632]
+        ?                             ^^
+        +     separation_speed: [0.007712]
+        ?                             ^^
+
+  index: 3
+    BAD
+      diff[0], t: 0.52
+          q: [0.21 -0.6823 -0.5512 2.075 -0.1513 -2.552 0.06359]
+          contact_results:   point_pair_contact_info(0):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-97.12 -20.4 -99.24]
+        ?                      ---    ^^    ^^ ^^
+        +     contact_force: [-12.43 -1.411 -12.51]
+        ?                        +++  ^  ++  ^^ ^^
+        -     contact_point: [0.1953 0.1013 0.2689]
+        ?                         ^^    ^^^     ^
+        +     contact_point: [0.1906 0.04719 0.2699]
+        ?                         ^^   +++ ^     ^
+        -     slip_speed: [0.05666]
+        ?                      ^^^
+        +     slip_speed: [0.09255]
+        ?                     ++ ^
+        -     separation_speed: [-0.02421]
+        ?                        -   ^ ^^
+        +     separation_speed: [0.08469]
+        ?                           ^ ^^
+            point_pair_contact_info(1):
+              bodyA: iiwa_link_6
+              bodyB: fake_table
+        -     contact_force: [-12.43 -1.411 -12.51]
+        +     contact_force: [-97.12 -20.4 -99.24]
+        -     contact_point: [0.1906 0.04719 0.2699]
+        ?                         ^^    -- ^     ^
+        +     contact_point: [0.1953 0.1013 0.2689]
+        ?                         ^^   +  ^     ^
+        -     slip_speed: [0.09255]
+        ?                     -- ^
+        +     slip_speed: [0.05666]
+        ?                      ^^^
+        -     separation_speed: [0.08469]
+        ?                           ^ ^^
+        +     separation_speed: [-0.02421]
+        ?                        +   ^ ^^
+
+      diff[-1], t: 1
+        - q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08212]
         ?                                                  ^^
-        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08211]
+        + q: [1.006 -1.493 -1.571 1.946 -0.315 -3.037 0.08209]
         ?                                                  ^^
           contact_results:   point_pair_contact_info(0):
               bodyA: iiwa_link_4
               bodyB: iiwa_link_7
-        -     contact_force: [-23.84 5.518 -4.302]
-        ?                         ^^     -     ^^
-        +     contact_force: [-23.95 5.551 -4.383]
-        ?                         ^^    +      ^^
+        -     contact_force: [-23.59 5.928 -6.534]
+        ?                       ^^^^    ^^  ^ ^^^
+        +     contact_force: [-24 5.491 -3.912]
+        ?                       ^   + ^  ^ ^^^
               contact_point: [0.2269 -0.1423 0.3865]
-        -     slip_speed: [0.005087]
-        ?                       ^^^
-        +     slip_speed: [0.005121]
-        ?                       ^^^
-        -     separation_speed: [-0.0004949]
-        ?                                ^^
-        +     separation_speed: [-0.0004977]
-        ?                                ^^
+        -     slip_speed: [0.001219]
+        ?                      ^^^
+        +     slip_speed: [0.006869]
+        ?                      ^^^
+        -     separation_speed: [-0.0001175]
+        ?                              ^^ ^
+        +     separation_speed: [-0.0006672]
+        ?                              ^^ ^
             point_pair_contact_info(1):
               bodyA: iiwa_link_4
               bodyB: fake_table
-        -     contact_force: [34.37 -80.75 -87.76]
-        ?                        ^^     ^^      ^
-        +     contact_force: [34.49 -80.68 -87.75]
-        ?                        ^^     ^^      ^
+        -     contact_force: [34.39 -80.65 -87.68]
+        ?                         ^     ^^     ^
+        +     contact_force: [34.38 -80.77 -87.78]
+        ?                         ^     ^^     ^
               contact_point: [0.3681 -0.3487 0.2692]
-        -     slip_speed: [0.007395]
-        ?                       ^^
-        +     slip_speed: [0.007415]
-        ?                       ^^
-        -     separation_speed: [-0.0071]
-        +     separation_speed: [-0.007106]
-        ?                               ++
+        -     slip_speed: [0.007408]
+        ?                       ^^^
+        +     slip_speed: [0.007392]
+        ?                       ^^^
+        -     separation_speed: [-0.007169]
+        ?                              ^ ^
+        +     separation_speed: [-0.007066]
+        ?                              ^ ^
             point_pair_contact_info(2):
               bodyA: iiwa_link_6
               bodyB: fake_table
-        -     contact_force: [-24.89 -50.68 -56.46]
-        ?                         -       ^      ^
-        +     contact_force: [-24.94 -50.67 -56.47]
-        ?                          +      ^      ^
-              contact_point: [0.1521 -0.024 0.2696]
-        -     slip_speed: [0.005459]
-        ?                       - ^
-        +     slip_speed: [0.005522]
-        ?                        ^^
-        -     separation_speed: [0.007682]
+        -     contact_force: [-25.14 -50.51 -56.42]
+        ?                         ^^     ^^      ^
+        +     contact_force: [-25.86 -50.23 -56.49]
+        ?                         ^^     ^^      ^
+              contact_point: [0.1521 -0.02399 0.2696]
+        -     slip_speed: [0.004807]
+        ?                      ^^ ^
+        +     slip_speed: [0.006006]
+        ?                      ^ ^^
+        -     separation_speed: [0.007632]
         ?                             ^^^
-        +     separation_speed: [0.007714]
+        +     separation_speed: [0.007747]
         ?                             ^^^
 
