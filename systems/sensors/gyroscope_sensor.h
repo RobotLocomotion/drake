@@ -16,7 +16,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Sensor to represent an ideal gyroscopicse sensor. Currently does not
+/// Sensor to represent an ideal gyroscopic sensor. Currently does not
 /// represent noise or bias, but this could and should be added at a later
 /// date. This sensor measures the angular velocity of a given body B relative
 /// to the world frame. The sensor frame S is rigidly affixed to the given

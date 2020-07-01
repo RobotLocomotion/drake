@@ -29,7 +29,7 @@ Gyroscope<T>::Gyroscope(const multibody::BodyIndex& body_index,
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
       "body_poses", Value<std::vector<RigidTransform<T>>>());
   body_velocities_input_port_ = &this->DeclareAbstractInputPort(
-      "body_velocities", Value<std::vector<SpatialVelocity<T>>>());
+      "body_spatial_velocities", Value<std::vector<SpatialVelocity<T>>>());
 }
 
 template <typename T>
@@ -42,11 +42,11 @@ void Gyroscope<T>::CalcOutput(const Context<T>& context,
       get_body_velocities_input_port()
           .template Eval<std::vector<SpatialVelocity<T>>>(context)[body_index_];
 
-  // Calculate rotation from world to gyroscope
+  // Calculate rotation from world to gyroscope.
   const auto R_SW =
       R_BS_.template cast<T>().inverse() * X_WB.rotation().inverse();
 
-  // Re-express in local frame and return
+  // Re-express in local frame and return.
   output->SetFromVector(R_SW * V_WB.rotational());
 }
 

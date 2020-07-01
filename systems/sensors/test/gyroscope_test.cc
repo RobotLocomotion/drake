@@ -18,7 +18,7 @@ using systems::sensors::Gyroscope;
 class GyroscopeTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Plant/System initialization
+    // Plant/System initialization.
     systems::DiagramBuilder<double> builder;
     plant_ = builder.AddSystem<multibody::MultibodyPlant>(0.0);
     const std::string urdf_name =
@@ -55,7 +55,7 @@ TEST_F(GyroscopeTest, Rotated) {
   double theta = M_PI / 2;
   double omega = .5;
 
-  // Test zero-velocity state
+  // Test zero-velocity state.
   plant_->get_actuation_input_port().FixValue(&plant_context, Vector1d(0));
   plant_->SetPositions(&plant_context, Vector1d(theta));
   plant_->SetVelocities(&plant_context, Vector1d(omega));
@@ -64,11 +64,11 @@ TEST_F(GyroscopeTest, Rotated) {
       gyroscope_->get_measurement_output_port().Eval<BasicVector<double>>(
           gyro_context);
 
-  // Compute expected result
-  // Angular velocity in world coordinates is (0, omega, 0)
-  // In body coordinates, it is the same, (0, omega, 0)
+  // Compute expected result.
+  // Angular velocity in world coordinates is (0, omega, 0).
+  // In body coordinates, it is the same, (0, omega, 0).
   // The sensor frame is rotated by pi/2 about the x-axis, so
-  // the expected measurement is (0, 0, -omega)
+  // the expected measurement is (0, 0, -omega).
   Eigen::Vector3d expected_result(0, 0, -omega);
 
   EXPECT_TRUE(CompareMatrices(result.get_value(), expected_result, tol));

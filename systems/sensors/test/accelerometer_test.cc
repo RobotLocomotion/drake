@@ -18,7 +18,7 @@ using systems::sensors::Accelerometer;
 class AccelerometerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    // Plant/System initialization
+    // Plant/System initialization.
     systems::DiagramBuilder<double> builder;
     plant_ = builder.AddSystem<multibody::MultibodyPlant>(0.0);
     const std::string urdf_name =
@@ -28,7 +28,7 @@ class AccelerometerTest : public ::testing::Test {
     plant_->WeldFrames(plant_->world_frame(), plant_->GetFrameByName("base"));
     plant_->Finalize();
 
-    // Connect a pendulum to the accelerometer
+    // Connect a pendulum to the accelerometer.
     const multibody::Body<double>& arm_body = plant_->GetBodyByName("arm");
     const math::RigidTransform<double> X_BS(Eigen::Vector3d(0, 0, -r_BS_));
     gravity_ = plant_->gravity_field().gravity_vector();
@@ -69,7 +69,7 @@ TEST_F(AccelerometerTest, DefaultRotation) {
 
   double angle = .5;
 
-  // Test zero-velocity state
+  // Test zero-velocity state.
   plant_->get_actuation_input_port().FixValue(&plant_context, Vector1d(0));
   plant_->SetPositions(&plant_context, Vector1d(angle));
   plant_->SetVelocities(&plant_context, Vector1d(0));
@@ -78,7 +78,7 @@ TEST_F(AccelerometerTest, DefaultRotation) {
       accel_default_->get_measurement_output_port().Eval<BasicVector<double>>(
           accel_context);
 
-  // Compute expected result
+  // Compute expected result:
   // g/L sin(theta)
   double angular_acceleration = -gravity_.norm() / .5 * sin(angle);
   Eigen::Vector3d expected_result(-angular_acceleration * r_BS_, 0, 0);
@@ -89,11 +89,16 @@ TEST_F(AccelerometerTest, DefaultRotation) {
 
   EXPECT_TRUE(CompareMatrices(result.get_value(), expected_result, tol));
 
-  // Test with non-zero velocity
+  // Test with non-zero velocity.
   double angular_velocity = -2;
   // g/L sin(theta) - b/(m * L^2) * thetadot
+  double g = 9.81;
+  // Constants below from URDF.
+  double L = .5;
+  double m = 1;
+  double b = .1;
   angular_acceleration =
-      -9.81 / .5 * sin(angle) - .1 * angular_velocity / (.5 * .5);
+      -9.81 / L * sin(angle) - b * angular_velocity / (M * L * L);
 
   plant_->SetVelocities(&plant_context, Vector1d(angular_velocity));
   const auto& result_with_velocity =
@@ -118,7 +123,7 @@ TEST_F(AccelerometerTest, Rotated) {
 
   double angle = .5;
 
-  // Test zero-velocity state
+  // Test zero-velocity state.
   plant_->get_actuation_input_port().FixValue(&plant_context, Vector1d(0));
   plant_->SetPositions(&plant_context, Vector1d(angle));
   plant_->SetVelocities(&plant_context, Vector1d(0));
@@ -127,7 +132,7 @@ TEST_F(AccelerometerTest, Rotated) {
       accel_rotated_->get_output_port(0).Eval<BasicVector<double>>(
           accel_context);
 
-  // Compute expected result
+  // Compute expected result:
   // g/L sin(theta)
   double angular_acceleration = -gravity_.norm() / .5 * sin(angle);
   Eigen::Vector3d expected_result(0, 0, -angular_acceleration * r_BS_);
@@ -138,11 +143,16 @@ TEST_F(AccelerometerTest, Rotated) {
 
   EXPECT_TRUE(CompareMatrices(result.get_value(), expected_result, tol));
 
-  // Test with non-zero velocity
+  // Test with non-zero velocity.
   double angular_velocity = -2;
   // g/L sin(theta) - b/(m * L^2) * thetadot
+  double g = 9.81;
+  // Constants below from URDF.
+  double L = .5;
+  double m = 1;
+  double b = .1;
   angular_acceleration =
-      -9.81 / .5 * sin(angle) - .1 * angular_velocity / (.5 * .5);
+      -9.81 / L * sin(angle) - b * angular_velocity / (M * L * L);
 
   plant_->SetVelocities(&plant_context, Vector1d(angular_velocity));
   const auto& result_with_velocity =

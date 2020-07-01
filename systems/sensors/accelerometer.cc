@@ -34,23 +34,24 @@ Accelerometer<T>::Accelerometer(const multibody::BodyIndex& body_index,
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
       "body_poses", Value<std::vector<RigidTransform<T>>>());
   body_velocities_input_port_ = &this->DeclareAbstractInputPort(
-      "body_velocities", Value<std::vector<SpatialVelocity<T>>>());
+      "body_spatial_velocities", Value<std::vector<SpatialVelocity<T>>>());
   body_accelerations_input_port_ = &this->DeclareAbstractInputPort(
-      "body_accelerations", Value<std::vector<SpatialAcceleration<T>>>());
+      "body_spatial_accelerations",
+      Value<std::vector<SpatialAcceleration<T>>>());
 }
 
 template <typename T>
 void Accelerometer<T>::CalcOutput(const Context<T>& context,
                                   BasicVector<T>* output) const {
-  const auto& X_WB = get_body_poses_input_port()
-                          .template Eval<std::vector<RigidTransform<T>>>(
-                              context)[body_index_];
-  const auto& V_WB = get_body_velocities_input_port()
-                          .template Eval<std::vector<SpatialVelocity<T>>>(
-                              context)[body_index_];
+  const auto& X_WB =
+      get_body_poses_input_port().template Eval<std::vector<RigidTransform<T>>>(
+          context)[body_index_];
+  const auto& V_WB =
+      get_body_velocities_input_port()
+          .template Eval<std::vector<SpatialVelocity<T>>>(context)[body_index_];
   const auto& A_WB = get_body_accelerations_input_port()
-                          .template Eval<std::vector<SpatialAcceleration<T>>>(
-                              context)[body_index_];
+                         .template Eval<std::vector<SpatialAcceleration<T>>>(
+                             context)[body_index_];
 
   // Kinematic term expressed in world coordinates unless specified
   // Sensor frame position and orientation.
