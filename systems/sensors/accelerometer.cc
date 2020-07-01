@@ -92,7 +92,8 @@ const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
 template <typename T>
 template <typename U>
 Accelerometer<T>::Accelerometer(const Accelerometer<U>& other)
-    : Accelerometer(other.body_index_, other.X_BS_, other.gravity_vector_) {}
+    : Accelerometer(other.body_index(), other.relative_transform(),
+                    other.gravity_vector()) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::sensors::Accelerometer)

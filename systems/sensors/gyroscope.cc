@@ -8,20 +8,19 @@ namespace systems {
 namespace sensors {
 
 using math::RigidTransform;
-using math::RotationMatrix;
 using multibody::SpatialVelocity;
 
 template <typename T>
 Gyroscope<T>::Gyroscope(const multibody::Body<T>& body,
-                        const RotationMatrix<double>& R_BS)
-    : Gyroscope(body.index(), R_BS) {}
+                        const RigidTransform<double>& X_BS)
+    : Gyroscope(body.index(), X_BS) {}
 
 template <typename T>
 Gyroscope<T>::Gyroscope(const multibody::BodyIndex& body_index,
-                        const RotationMatrix<double>& R_BS)
+                        const RigidTransform<double>& X_BS)
     : LeafSystem<T>(SystemTypeTag<Gyroscope>{}),
       body_index_(body_index),
-      R_BS_(R_BS) {
+      X_BS_(X_BS) {
   // Declare measurement output port.
   measurement_output_port_ = &this->DeclareVectorOutputPort(
       "measurement", BasicVector<T>(3), &Gyroscope<T>::CalcOutput);
@@ -42,9 +41,11 @@ void Gyroscope<T>::CalcOutput(const Context<T>& context,
       get_body_velocities_input_port()
           .template Eval<std::vector<SpatialVelocity<T>>>(context)[body_index_];
 
-  // Calculate rotation from world to gyroscope.
+  // Calculate rotation from world to gyroscope: R_SW = R_SB * R_BW.
+  // Written below using inverses after extracting rotations from relevant
+  // transforms.
   const auto R_SW =
-      R_BS_.template cast<T>().inverse() * X_WB.rotation().inverse();
+      X_BS_.rotation().template cast<T>().inverse() * X_WB.rotation().inverse();
 
   // Re-express in local frame and return.
   output->SetFromVector(R_SW * V_WB.rotational());
@@ -52,10 +53,10 @@ void Gyroscope<T>::CalcOutput(const Context<T>& context,
 
 template <typename T>
 const Gyroscope<T>& Gyroscope<T>::AddToDiagram(
-    const multibody::Body<T>& body, const RotationMatrix<double>& R_BS,
+    const multibody::Body<T>& body, const RigidTransform<double>& X_BS,
     const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder) {
   const auto& gyroscope =
-      *builder->template AddSystem<Gyroscope<T>>(body, R_BS);
+      *builder->template AddSystem<Gyroscope<T>>(body, X_BS);
   builder->Connect(plant.get_body_poses_output_port(),
                    gyroscope.get_body_poses_input_port());
   builder->Connect(plant.get_body_spatial_velocities_output_port(),
@@ -66,7 +67,7 @@ const Gyroscope<T>& Gyroscope<T>::AddToDiagram(
 template <typename T>
 template <typename U>
 Gyroscope<T>::Gyroscope(const Gyroscope<U>& other)
-    : Gyroscope(other.body_index_, other.R_BS_) {}
+    : Gyroscope(other.body_index(), other.relative_transform()) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::sensors::Gyroscope)

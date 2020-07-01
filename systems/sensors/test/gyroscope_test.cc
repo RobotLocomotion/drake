@@ -31,9 +31,10 @@ class GyroscopeTest : public ::testing::Test {
     const multibody::Body<double>& arm_body = plant_->GetBodyByName("arm");
     const math::RotationMatrix<double> R_BS(
         drake::math::RollPitchYaw<double>(M_PI / 2, 0, 0));
+    const math::RigidTransform<double> X_BS(R_BS, Eigen::Vector3d::Zero());
 
     gyroscope_ =
-        &Gyroscope<double>::AddToDiagram(arm_body, R_BS, *plant_, &builder);
+        &Gyroscope<double>::AddToDiagram(arm_body, X_BS, *plant_, &builder);
 
     diagram_ = builder.Build();
   }

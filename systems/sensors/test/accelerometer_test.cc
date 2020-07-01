@@ -98,7 +98,7 @@ TEST_F(AccelerometerTest, DefaultRotation) {
   double m = 1;
   double b = .1;
   angular_acceleration =
-      -9.81 / L * sin(angle) - b * angular_velocity / (M * L * L);
+      -g / L * sin(angle) - b * angular_velocity / (m * L * L);
 
   plant_->SetVelocities(&plant_context, Vector1d(angular_velocity));
   const auto& result_with_velocity =
@@ -152,7 +152,7 @@ TEST_F(AccelerometerTest, Rotated) {
   double m = 1;
   double b = .1;
   angular_acceleration =
-      -9.81 / L * sin(angle) - b * angular_velocity / (M * L * L);
+      -g / L * sin(angle) - b * angular_velocity / (m * L * L);
 
   plant_->SetVelocities(&plant_context, Vector1d(angular_velocity));
   const auto& result_with_velocity =

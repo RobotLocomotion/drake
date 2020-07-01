@@ -79,6 +79,15 @@ class Accelerometer final : public LeafSystem<T> {
     return *measurement_output_port_;
   }
 
+  const multibody::BodyIndex& body_index() const { return body_index_; }
+
+  const Eigen::Vector3d& gravity_vector() const { return gravity_vector_; }
+
+  /// Get the transformation from the body B to sensor S, X_BS.
+  const math::RigidTransform<double>& relative_transform() const {
+    return X_BS_;
+  }
+
   /// Static factory method that creates an Accelerometer object and connects
   /// it to the given plant. Modifies a Diagram by connecting the input ports
   /// of the new Accelerometer to the appropriate output ports of a
@@ -101,11 +110,6 @@ class Accelerometer final : public LeafSystem<T> {
       const multibody::Body<T>& body, const math::RigidTransform<double>& X_BS,
       const Eigen::Vector3d& gravity_vector,
       const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder);
-
- private:
-  // Allow different specializations to access each other's private data.
-  template <typename>
-  friend class Accelerometer;
 
  private:
   Accelerometer(

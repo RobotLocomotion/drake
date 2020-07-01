@@ -20,7 +20,7 @@ namespace sensors {
 /// represent noise or bias, but this could and should be added at a later
 /// date. This sensor measures the angular velocity of a given body B relative
 /// to the world frame. The sensor frame S is rigidly affixed to the given
-/// body B. The measurement, written w_WS_S, is is expressed in the coordinates
+/// body B. The measurement, written w_WS_S, is expressed in the coordinates
 /// of frame S. Note that, since S is fixed to B, the angular velocity of the
 /// two frames is identical, w_WS_S = w_WB_S.
 ///
@@ -31,7 +31,12 @@ namespace sensors {
 ///
 /// This class is therefore defined by:
 ///   1. The Body to which this sensor is rigidly affixed,
-///   2. A rotation matrix from the body frame to the sensor frame, R_BS.
+///   2. A rigid transform from the body frame to the sensor frame.
+/// Note that the translational component of the transformation is not strictly
+/// needed by a gyroscope, as the position of the sensor does not effect the
+/// measurement. However, as a sensor does have a physical location, it is
+/// included here for completeness and in case it might be useful for display or
+/// other purposes.
 ///
 /// @system{Gyroscope,
 ///    @input_port{body_poses}
@@ -44,10 +49,11 @@ class Gyroscope final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gyroscope)
 
+  /// Constructor for %Gyroscope using full transform.
   /// @param body the body B to which the sensor is affixed
-  /// @param R_BS the rotation from body B to the sensor frame S
+  /// @param X_BS the transform from body B to the sensor frame S
   Gyroscope(const multibody::Body<T>& body,
-            const math::RotationMatrix<double>& X_BS);
+            const math::RigidTransform<double>& X_BS);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -65,6 +71,13 @@ class Gyroscope final : public LeafSystem<T> {
     return *measurement_output_port_;
   }
 
+  const multibody::BodyIndex& body_index() const { return body_index_; }
+
+  /// Get the transformation from the body B to sensor S, X_BS.
+  const math::RigidTransform<double>& relative_transform() const {
+    return X_BS_;
+  }
+
   /// Static factory method that creates a %Gyroscope object and connects
   /// it to the given plant. Modifies a Diagram by connecting the input ports
   /// of the new %Gyroscope to the appropriate output ports of a
@@ -76,27 +89,22 @@ class Gyroscope final : public LeafSystem<T> {
   /// 2. plant.get_body_spatial_velocities_output_port() to
   ///        this.get_body_velocities_input_port()
   /// @param body the body B to which the sensor is affixed
-  /// @param R_BS the rotation from body B to the sensor frame S
+  /// @param X_BS the transform from body B to the sensor frame S
   /// @param plant the plant to which the sensor will be connected
   /// @param builder a pointer to the DiagramBuilder
   static const Gyroscope& AddToDiagram(
-      const multibody::Body<T>& body, const math::RotationMatrix<double>& R_BS,
+      const multibody::Body<T>& body, const math::RigidTransform<double>& X_BS,
       const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder);
 
  private:
-  // Allow different specializations to access each other's private data.
-  template <typename>
-  friend class Gyroscope;
-
- private:
   Gyroscope(const multibody::BodyIndex& body_index,
-            const math::RotationMatrix<double>& X_BS);
+            const math::RigidTransform<double>& X_BS);
 
   // Computes the transformed signal.
   void CalcOutput(const Context<T>& context, BasicVector<T>* output) const;
 
   const multibody::BodyIndex body_index_;
-  const math::RotationMatrix<double> R_BS_;
+  const math::RigidTransform<double> X_BS_;
   const InputPort<T>* body_poses_input_port_{nullptr};
   const InputPort<T>* body_velocities_input_port_{nullptr};
   const OutputPort<T>* measurement_output_port_{nullptr};
