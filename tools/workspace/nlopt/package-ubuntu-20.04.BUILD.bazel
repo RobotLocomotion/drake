@@ -1,0 +1,18 @@
+# -*- python -*-
+
+licenses([
+    "notice",  # BSD-3-Clause AND MIT
+    "restricted",  # LGPL-2.1+
+])
+
+cc_library(
+    name = "nlopt",
+    srcs = ["include/nlopt.h"],
+    hdrs = ["include/nlopt.hpp"],
+    includes = ["include"],
+    linkopts = [
+        "-L/usr/lib/x86_64-linux-gnu",
+        "-lnlopt_cxx",
+    ],
+    visibility = ["//visibility:public"],
+)
