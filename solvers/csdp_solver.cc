@@ -320,13 +320,12 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
     SolveProgramWithNoFreeVariables(prog, sdpa_free_format, result);
   } else {
     switch (method_) {
-      case internal::SdpaFreeFormat::RemoveFreeVariableMethod::kNullspace: {
+      case RemoveFreeVariableMethod::kNullspace: {
         SolveProgramThroughNullspaceApproach(prog, sdpa_free_format,
                                                        result);
         break;
       }
-      case internal::SdpaFreeFormat::RemoveFreeVariableMethod::
-          kTwoSlackVariables: {
+      case RemoveFreeVariableMethod::kTwoSlackVariables: {
         SolveProgramThroughTwoSlackVariablesApproach(prog, sdpa_free_format,
                                                      result);
         break;

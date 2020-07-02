@@ -51,8 +51,7 @@ class CsdpSolver final : public SolverBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CsdpSolver)
 
   explicit CsdpSolver(
-      internal::SdpaFreeFormat::RemoveFreeVariableMethod method =
-          internal::SdpaFreeFormat::RemoveFreeVariableMethod::kNullspace);
+      RemoveFreeVariableMethod method = RemoveFreeVariableMethod::kNullspace);
 
   ~CsdpSolver() final;
 
@@ -73,7 +72,7 @@ class CsdpSolver final : public SolverBase {
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                const SolverOptions&, MathematicalProgramResult*) const final;
 
-  internal::SdpaFreeFormat::RemoveFreeVariableMethod method_;
+  RemoveFreeVariableMethod method_;
 };
 }  // namespace solvers
 }  // namespace drake
