@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/render_camera.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/diagram.h"
@@ -104,10 +105,13 @@ class RgbdSensor final : public LeafSystem<double> {
     math::RigidTransformd X_BD;
   };
 
+  // TODO(SeanCurtis-TRI): Deprecate the CameraProperties constructors.
   /** Constructs an %RgbdSensor whose frame `B` is rigidly affixed to the frame
-   P, indicated by `parent_id`, and with the given camera properties. The camera
-   will move as frame P moves. For a stationary camera, use the frame id from
-   SceneGraph::world_frame_id().
+   P, indicated by `parent_id`, and with the given "simple" camera properties.
+   The camera is "simple" in the sense that it models a camera with a radially
+   symmetric lens and a principal point that projects onto the center of the
+   image. The camera will move as frame P moves. For a stationary camera, use
+   the frame id from SceneGraph::world_frame_id().
 
    @param parent_id      The identifier of a parent frame `P` in
                          geometry::SceneGraph to which this camera is rigidly
@@ -122,6 +126,7 @@ class RgbdSensor final : public LeafSystem<double> {
                          three frames will be aligned and coincident.
    @param show_window    A flag for showing a visible window. If this is false,
                          off-screen rendering is executed. The default is false.
+   @pydrake_mkdoc_identifier{legacy_individual_intrinsics}
    */
   RgbdSensor(geometry::FrameId parent_id,
              const math::RigidTransformd& X_PB,
@@ -133,34 +138,57 @@ class RgbdSensor final : public LeafSystem<double> {
   /** Constructs an %RgbdSensor in the same way as the above overload, but
    using the `CameraProperties` portion of `properties` for color (and label)
    properties, and all of `properties` for depth properties.
+   @pydrake_mkdoc_identifier{legacy_combined_intrinsics}
    */
-  RgbdSensor(geometry::FrameId parent_id,
-             const math::RigidTransformd& X_PB,
+  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const geometry::render::DepthCameraProperties& properties,
-             const CameraPoses& camera_poses = {},
-             bool show_window = false)
-    : RgbdSensor(
-          parent_id, X_PB, properties, properties, camera_poses, show_window)
-      {}
+             const CameraPoses& camera_poses = {}, bool show_window = false);
+
+  /** Constructs an %RgbdSensor with a fully specified render camera model for
+   both color/label and depth cameras.
+
+   @warning Currently, only "simple" cameras are supported. If the camera
+            intrinsics is not compatible with a simple camera model, a warning
+            will be printed and the camera will be "simplified".
+   @pydrake_mkdoc_identifier{individual_intrinsics}  */
+  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
+             geometry::render::ColorRenderCamera color_camera,
+             geometry::render::DepthRenderCamera depth_camera);
 
   ~RgbdSensor() = default;
 
   // TODO(eric.cousineau): Expose which renderer color / depth uses?
 
-  /** Returns the color sensor's info.  */
-  const CameraInfo& color_camera_info() const { return color_camera_info_; }
+  // TODO(SeanCurtis-TRI): Deprecate this in favor of the color render camera.
+  /** Returns the intrinsics properties of the color camera model.  */
+  const CameraInfo& color_camera_info() const {
+    return color_camera_.core().intrinsics();
+  }
 
-  /** Returns the depth sensor's info.  */
-  const CameraInfo& depth_camera_info() const { return depth_camera_info_; }
+  // TODO(SeanCurtis-TRI): Deprecate this in favor of the depth render camera.
+  /** Returns the intrinsics properties of the depth camera model.  */
+  const CameraInfo& depth_camera_info() const {
+    return depth_camera_.core().intrinsics();
+  }
+
+  /** Returns the render camera for color/label renderings.  */
+  const geometry::render::ColorRenderCamera& color_render_camera() const {
+    return color_camera_;
+  }
+
+  /** Returns the render camera for depth renderings.  */
+  const geometry::render::DepthRenderCamera& depth_render_camera() const {
+    return depth_camera_;
+  }
 
   /** Returns `X_BC`.  */
   const math::RigidTransformd& X_BC() const {
-    return X_BC_;
+    return color_camera_.core().sensor_pose_in_camera_body();
   }
 
   /** Returns `X_BD`.  */
   const math::RigidTransformd& X_BD() const {
-    return X_BD_;
+    return depth_camera_.core().sensor_pose_in_camera_body();
   }
 
   /** Returns the id of the frame to which the base is affixed.  */
@@ -224,17 +252,11 @@ class RgbdSensor final : public LeafSystem<double> {
   // The identifier for the parent frame `P`.
   const geometry::FrameId parent_frame_id_;
 
-  // If true, a window will be shown for the camera.
-  const bool show_window_;
-  const CameraInfo color_camera_info_;
-  const CameraInfo depth_camera_info_;
-  const geometry::render::CameraProperties color_properties_;
-  const geometry::render::DepthCameraProperties depth_properties_;
+  // The camera specifications for color/label and depth.
+  const geometry::render::ColorRenderCamera color_camera_;
+  const geometry::render::DepthRenderCamera depth_camera_;
   // The position of the camera's B frame relative to its parent frame P.
   const math::RigidTransformd X_PB_;
-  // Camera poses.
-  const math::RigidTransformd X_BC_;
-  const math::RigidTransformd X_BD_;
 };
 
 /**
