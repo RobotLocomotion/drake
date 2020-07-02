@@ -1524,7 +1524,7 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
 
   // Form w_AB_E (B's angular velocity in frame A, measured in frame_E).
   const Vector3<T> w_AB_E =
-      frame_B.CalcAngularVelocity(context, frame_A, frame_E);
+      frame_B.CalcSpatialVelocity(context, frame_A, frame_E).rotational();
 
   // Allocate the output vector.
   const int num_points = p_BoBi_B.cols();

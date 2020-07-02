@@ -556,7 +556,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // @note `w_AC_A ≠ [q̇₀ q̇₁ q̇₂]`
   // @see CalcBushingRollPitchYawAngleRates() for `[q̇₀ q̇₁ q̇₂]`.
   Vector3<T> Calcw_AC_A(const systems::Context<T>& context) const {
-    return frameC().CalcAngularVelocity(context, frameA(), frameA());
+    return frameC().CalcSpatialVelocity(context, frameA(), frameA())
+        .rotational();
   }
 
   // Calculate V_AC_A, frame C's spatial velocity in frame A, expressed in A.
