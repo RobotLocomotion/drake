@@ -24,7 +24,9 @@ PYBIND11_MODULE(sdpa_free_format, m) {
           doc.RemoveFreeVariableMethod.kTwoSlackVariables.doc);
 
   m.def("GenerateSDPA", &solvers::GenerateSDPA, py::arg("prog"),
-      py::arg("file_name"), doc.GenerateSDPA.doc);
+      py::arg("file_name"),
+      py::arg("method") = RemoveFreeVariableMethod::kNullspace,
+      doc.GenerateSDPA.doc);
 }
 }  // namespace pydrake
 }  // namespace drake
