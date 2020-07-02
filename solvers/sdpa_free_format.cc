@@ -697,6 +697,7 @@ void SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(
       Q.rightCols(this->B().rows() - QR_B->rank());
   *rhs_hat = N.transpose() * this->g();
 
+  A_hat->clear();
   A_hat->reserve(N.cols());
   for (int i = 0; i < N.cols(); ++i) {
     A_hat->emplace_back(this->num_X_rows(), this->num_X_rows());
@@ -721,6 +722,7 @@ void SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(
     *C_hat -= (*y_hat)(i) * this->A()[i];
   }
 }
+
 void SdpaFreeFormat::RemoveFreeVariableByTwoSlackVariablesApproach(
     std::vector<internal::BlockInX>* X_hat_blocks,
     std::vector<Eigen::SparseMatrix<double>>* A_hat,
@@ -744,6 +746,7 @@ void SdpaFreeFormat::RemoveFreeVariableByTwoSlackVariablesApproach(
           this->num_X_rows() + this->num_free_variables() + j, -it.value());
     }
   }
+  A_hat->clear();
   A_hat->reserve(this->A().size());
   for (int i = 0; i < static_cast<int>(this->A().size()); ++i) {
     A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);

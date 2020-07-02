@@ -123,6 +123,8 @@ class TestAll(unittest.TestCase):
             "AddLogarithmicSos2Constraint",
             # - gurobi
             "GurobiSolver",
+            # - sdpa_free_format
+            "GenerateSDPA",
             # - ipopt
             "IpoptSolver",
             # - branch_and_bound

@@ -115,59 +115,6 @@ class SdpaFreeFormat {
   explicit SdpaFreeFormat(const MathematicalProgram& prog);
 
   ~SdpaFreeFormat();
-  /**
-   * SDPA format doesn't accept free variables, namely the problem it solves is
-   * in this form P1
-   *
-   *     max tr(C * X)
-   *     s.t tr(Aᵢ*X) = aᵢ
-   *         X ≽ 0.
-   *
-   * Notice that the decision variable X has to be in the proper cone X ≽ 0, and
-   * it doesn't accept free variable (without the conic constraint). On the
-   * other hand, most real-world applications require free variables, namely
-   * problems in this form P2
-   *
-   *     max tr(C * X) + dᵀs
-   *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
-   *         X ≽ 0
-   *         s is free.
-   *
-   * In order to remove the free variables, we consider two approaches.
-   * 1. Replace a free variable s with two variables s = p - q, p ≥ 0, q ≥ 0.
-   * 2. First write the dual of the problem P2 as D2
-   *
-   *        min aᵀy
-   *        s.t ∑ᵢ yᵢAᵢ - C = Z
-   *            Z ≽ 0
-   *            Bᵀ * y = d,
-   *
-   *    where bᵢᵀ is the i'th row of B.
-   *    The last constraint Bᵀ * y = d means y = ŷ + Nt, where Bᵀ * ŷ = d, and N
-   *    is the null space of Bᵀ. Hence, D2 is equivalent to the following
-   *    problem, D3
-   *
-   *        min aᵀNt + aᵀŷ
-   *        s.t ∑ᵢ tᵢFᵢ - (C -∑ᵢ ŷᵢAᵢ) = Z
-   *            Z ≽ 0,
-   *
-   *    where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D3 is the dual of the following primal problem P3
-   *    without free variables
-   *
-   *        max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
-   *        s.t tr(FᵢX̂) = (Nᵀa)(i)
-   *            X̂ ≽ 0.
-   *
-   *    Then (X, s) = (X̂, B⁻¹(a - tr(Aᵢ X̂))) is the solution to the original
-   *    problem P2.
-   *
-   */
-  enum RemoveFreeVariableMethod {
-    kTwoSlackVariables,  ///< Approach 1, replace a free variable s as
-                         ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
-    kNullspace,  ///< Approach 2, reformulate the dual problem by considering
-                 ///< the nullspace of the linear constraint in the dual.
-  };
 
   const std::vector<BlockInX>& X_blocks() const { return X_blocks_; }
 
@@ -402,6 +349,60 @@ class SdpaFreeFormat {
   Eigen::SparseMatrix<double> d_;
 };
 }  // namespace internal
+
+/**
+ * SDPA format doesn't accept free variables, namely the problem it solves is
+ * in this form P1
+ *
+ *     max tr(C * X)
+ *     s.t tr(Aᵢ*X) = aᵢ
+ *         X ≽ 0.
+ *
+ * Notice that the decision variable X has to be in the proper cone X ≽ 0, and
+ * it doesn't accept free variable (without the conic constraint). On the
+ * other hand, most real-world applications require free variables, namely
+ * problems in this form P2
+ *
+ *     max tr(C * X) + dᵀs
+ *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+ *         X ≽ 0
+ *         s is free.
+ *
+ * In order to remove the free variables, we consider two approaches.
+ * 1. Replace a free variable s with two variables s = p - q, p ≥ 0, q ≥ 0.
+ * 2. First write the dual of the problem P2 as D2
+ *
+ *        min aᵀy
+ *        s.t ∑ᵢ yᵢAᵢ - C = Z
+ *            Z ≽ 0
+ *            Bᵀ * y = d,
+ *
+ *    where bᵢᵀ is the i'th row of B.
+ *    The last constraint Bᵀ * y = d means y = ŷ + Nt, where Bᵀ * ŷ = d, and N
+ *    is the null space of Bᵀ. Hence, D2 is equivalent to the following
+ *    problem, D3
+ *
+ *        min aᵀNt + aᵀŷ
+ *        s.t ∑ᵢ tᵢFᵢ - (C -∑ᵢ ŷᵢAᵢ) = Z
+ *            Z ≽ 0,
+ *
+ *    where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D3 is the dual of the following primal problem P3
+ *    without free variables
+ *
+ *        max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
+ *        s.t tr(FᵢX̂) = (Nᵀa)(i)
+ *            X̂ ≽ 0.
+ *
+ *    Then (X, s) = (X̂, B⁻¹(a - tr(Aᵢ X̂))) is the solution to the original
+ *    problem P2.
+ *
+ */
+enum class RemoveFreeVariableMethod {
+  kTwoSlackVariables,  ///< Approach 1, replace a free variable s as
+                       ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
+  kNullspace,  ///< Approach 2, reformulate the dual problem by considering
+               ///< the nullspace of the linear constraint in the dual.
+};
 
 /**
  * SDPA is a format to record an SDP problem
