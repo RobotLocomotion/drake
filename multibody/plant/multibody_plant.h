@@ -1215,12 +1215,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<T>& coulomb_friction);
+      const CoulombFriction<double>& coulomb_friction);
 
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<T>& coulomb_friction, const T& stiffness,
+      const CoulombFriction<double>& coulomb_friction, const T& stiffness,
       const T& dissipation);
 
   /// Returns an array of GeometryId's identifying the different contact

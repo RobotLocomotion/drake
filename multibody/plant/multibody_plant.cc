@@ -464,7 +464,7 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<T>& coulomb_friction) {
+    const CoulombFriction<double>& coulomb_friction) {
   geometry::ProximityProperties props;
   props.AddProperty(geometry::internal::kMaterialGroup,
                     geometry::internal::kFriction, coulomb_friction);
@@ -475,7 +475,7 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<T>& coulomb_friction, const T& stiffness,
+    const CoulombFriction<double>& coulomb_friction, const T& stiffness,
     const T& dissipation) {
   geometry::ProximityProperties props;
   props.AddProperty(geometry::internal::kMaterialGroup,
