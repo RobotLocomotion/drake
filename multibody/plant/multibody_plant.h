@@ -338,8 +338,6 @@ enum class ContactModel {
       the table below. -->
  @anchor accessing_contact_properties
                #### Accessing point contact parameters
- <!-- TODO(joemasterjohn) update this table when other contact parameters
-      are moved into ProximityProperties -->
  %MultibodyPlant's point contact model looks for model parameters stored as
  geometry::ProximityProperties by geometry::SceneGraph. These properties can
  be obtained before or after context creation through
@@ -349,11 +347,16 @@ enum class ContactModel {
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
  | :--------: | :--------------: | :------: | :----------------: | :------------------- |
  |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
+ |  material  | hunt_crossley_stiffness |  no²  | T | Penalty method stiffness. |
+ |  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
+
 
  ¹ Collision geometry is required to be registered with a
    geometry::ProximityProperties object that contains the
    ("material", "coulomb_friction") property. If the parameter
    is not registered, %MultibodyPlant will throw an exeception.
+ ² If the parameter is not registered, %MultibodyPlant will use
+   a heuristic value as the default.
 
  Accessing and modifying contact properties requires interfacing with
  geometry::SceneGraph's model inspector. Interfacing with a model inspector
@@ -1212,7 +1215,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<double>& coulomb_friction);
+      const CoulombFriction<T>& coulomb_friction);
+
+  geometry::GeometryId RegisterCollisionGeometry(
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      const CoulombFriction<T>& coulomb_friction, const T& stiffness,
+      const T& dissipation);
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
@@ -4246,6 +4255,53 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Penetration allowance used to estimate ContactByPenaltyMethodParameters.
   // See set_penetration_allowance() for details.
   double penetration_allowance_{1.0e-3};
+
+  // Helper to acquire per-geometry contact parameters from SG.
+  // Returns the pair (stiffness, dissipation)
+  // Defaults to heuristically computed parameter if the given geometry
+  // isn't assigned that parameter.
+  std::pair<T, T> get_contact_parameters(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const {
+    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+      throw std::domain_error(fmt::format("This method doesn't support T = {}.",
+                                          NiceTypeName::Get<T>()));
+    }
+    const geometry::ProximityProperties* prop =
+        inspector.GetProximityProperties(id);
+    DRAKE_DEMAND(prop != nullptr);
+    // An individual geometry's default stiffness parameter is multiplied by a
+    // factor of 2, so that the combined stiffness parameter for two geometries
+    // with default stiffness evaluates to:
+    // `penalty_method_contact_parameters_.stiffness`
+    // Combined stiffness is defined as (k1*k2)/(k1+k2).
+    // To achieve a  desired combined stiffness of K, we set k1 = k2 = 2*K.
+    return std::pair(
+        prop->template GetPropertyOrDefault<T>(
+            geometry::internal::kMaterialGroup,
+            geometry::internal::kHcStiffness,
+            2 * penalty_method_contact_parameters_.stiffness),
+        prop->template GetPropertyOrDefault<T>(
+            geometry::internal::kMaterialGroup,
+            geometry::internal::kHcDissipation,
+            penalty_method_contact_parameters_.damping));
+  }
+
+  // Helper function to calculate the combined stiffness/dissipation constants
+  // for a pair of surfaces in contact.
+  // Returns the pair (stiffness, dissipation)
+  std::pair<T, T> get_combined_contact_parameters(const T& k1, const T& k2,
+                                                  const T& d1,
+                                                  const T& d2) const {
+    // Simple utility to detect 0 / 0. As it is used in this method, denom
+    // can only be zero if num is also zero, so we'll simply return zero.
+    auto safe_divide = [](const T& num, const T& denom) {
+      return denom == 0.0 ? 0.0 : num / denom;
+    };
+    return std::pair(
+        safe_divide(k1 * k2, k1 + k2),                                   // k
+        safe_divide(k2, k1 + k2) * d1 + safe_divide(k1, k1 + k2) * d2);  // d
+  }
 
   // Stribeck model of friction.
   class StribeckModel {

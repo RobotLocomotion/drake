@@ -464,10 +464,26 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction) {
+    const CoulombFriction<T>& coulomb_friction) {
   geometry::ProximityProperties props;
   props.AddProperty(geometry::internal::kMaterialGroup,
                     geometry::internal::kFriction, coulomb_friction);
+  return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
+    const geometry::Shape& shape, const std::string& name,
+    const CoulombFriction<T>& coulomb_friction, const T& stiffness,
+    const T& dissipation) {
+  geometry::ProximityProperties props;
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kFriction, coulomb_friction);
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kHcStiffness, stiffness);
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kHcDissipation, dissipation);
   return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
@@ -1247,6 +1263,10 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
   const internal::VelocityKinematicsCache<T>& vc =
       EvalVelocityKinematics(context);
 
+  const geometry::QueryObject<T>& query_object =
+      EvalGeometryQueryInput(context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
+
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
     const auto& pair = point_pairs[icontact];
@@ -1290,8 +1310,9 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const T vn = v_AcBc_W.dot(nhat_BA_W);
 
     // Magnitude of the normal force on body A at contact point C.
-    const T k = penalty_method_contact_parameters_.stiffness;
-    const T d = penalty_method_contact_parameters_.damping;
+    const auto [k1, d1] = get_contact_parameters(geometryA_id, inspector);
+    const auto [k2, d2] = get_contact_parameters(geometryB_id, inspector);
+    const auto [k, d] = get_combined_contact_parameters(k1, k2, d1, d2);
     const T fn_AC = k * x * (1.0 + d * vn);
 
     if (fn_AC > 0) {
@@ -1910,13 +1931,32 @@ void MultibodyPlant<T>::CalcTamsiResults(
                    return pair.depth;
                  });
 
-  // TODO(amcastro-tri): Consider using different penalty parameters at each
-  // contact point.
   // Compliance parameters used by the solver for each contact point.
-  VectorX<T> stiffness = VectorX<T>::Constant(
-      num_contacts, penalty_method_contact_parameters_.stiffness);
-  VectorX<T> damping = VectorX<T>::Constant(
-      num_contacts, penalty_method_contact_parameters_.damping);
+  std::vector<std::pair<T, T>> combined_contact_parameters(num_contacts);
+
+  if (num_collision_geometries() > 0) {
+    const geometry::QueryObject<T>& query_object =
+        EvalGeometryQueryInput(context0);
+    const geometry::SceneGraphInspector<T>& inspector =
+        query_object.inspector();
+    std::transform(
+        point_pairs0.begin(), point_pairs0.end(),
+        combined_contact_parameters.begin(),
+        [this, &inspector](const PenetrationAsPointPair<T>& pair) {
+          const auto [k1, d1] = get_contact_parameters(pair.id_A, inspector);
+          const auto [k2, d2] = get_contact_parameters(pair.id_B, inspector);
+          return get_combined_contact_parameters(k1, k2, d1, d2);
+        });
+  }
+
+  VectorX<T> stiffness(num_contacts);
+  VectorX<T> damping(num_contacts);
+  std::transform(combined_contact_parameters.begin(),
+                 combined_contact_parameters.end(), stiffness.data(),
+                 [](const std::pair<T, T>& pair) { return pair.first; });
+  std::transform(combined_contact_parameters.begin(),
+                 combined_contact_parameters.end(), damping.data(),
+                 [](const std::pair<T, T>& pair) { return pair.second; });
 
   // Solve for v and the contact forces.
   TamsiSolverResult info{
