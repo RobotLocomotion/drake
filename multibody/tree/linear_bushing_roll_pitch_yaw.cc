@@ -213,7 +213,9 @@ void LinearBushingRollPitchYaw<T>::ThrowIfInvalidHalfAngleAxis(
 template <typename T>
 Vector3<T> LinearBushingRollPitchYaw<T>::CalcBushing_xyzDt(
     const systems::Context<T>& context) const {
-  const SpatialVelocity<T> V_AC_A = CalcV_AC_A(context);
+  // Calculate V_AC_A, frame C's spatial velocity in frame A, expressed in A.
+  const SpatialVelocity<T> V_AC_A = frameC().CalcSpatialVelocity(context,
+      frameA(), frameA());
   const Vector3<T>& w_AC_A = V_AC_A.rotational();
   const Vector3<T>& v_ACo_A = V_AC_A.translational();
   const Vector3<T> w_AB_A = 0.5 * w_AC_A;

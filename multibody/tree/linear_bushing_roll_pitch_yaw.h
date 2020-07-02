@@ -549,6 +549,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   // the time-derivative in B of p_AoCo (when DtB_p_AoCo is expressed in B).
   // @param[in] context The state of the multibody system.
   // @note Calcp_AoCo_B() returns `p_AoCo_B = [x y z]ʙ`.
+  // @see CalcBushingRollPitchYawAngleRates() for `[q̇₀ q̇₁ q̇₂]`.
   Vector3<T> CalcBushing_xyzDt(const systems::Context<T>& context) const;
 
   // Calculate w_AC_A, frame C's angular velocity in frame A, expressed in A.
@@ -558,14 +559,6 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> Calcw_AC_A(const systems::Context<T>& context) const {
     return frameC().CalcSpatialVelocity(context, frameA(), frameA())
         .rotational();
-  }
-
-  // Calculate V_AC_A, frame C's spatial velocity in frame A, expressed in A.
-  // @param[in] context The state of the multibody system.
-  // @see CalcBushingRollPitchYawAngleRates() for `[q̇₀ q̇₁ q̇₂]`.
-  // @see CalcBushing_xyzDt() for `[ẋ ẏ ż]`.
-  SpatialVelocity<T> CalcV_AC_A(const systems::Context<T>& context) const {
-    return frameC().CalcSpatialVelocity(context, frameA(), frameA());
   }
 
   // Calculate τᴋ = [k₀q₀, k₁q₁, k₂q₂], element-wise multiplication of the

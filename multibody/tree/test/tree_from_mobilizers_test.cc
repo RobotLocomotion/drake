@@ -1357,19 +1357,6 @@ TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {
       *context_, upper_link_->body_frame(), lower_link_->body_frame());
   EXPECT_TRUE(CompareMatrices(R_UL.matrix(), R_UL_expected,
                               kTolerance, MatrixCompareType::relative));
-
-  // Test for a simple identity case of CalcRelativeTransform().
-  const Frame<double>& U = upper_link_->body_frame();
-  const RigidTransformd X_UU = tree().CalcRelativeTransform(*context_, U, U);
-  EXPECT_TRUE(CompareMatrices(X_UU.rotation().matrix(),
-      Matrix3<double>::Identity(), kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(X_UU.translation(), Vector3<double>::Zero(),
-                              kTolerance, MatrixCompareType::relative));
-
-  // Test for a simple identity case of CalcRelativeRotationMatrix().
-  RotationMatrixd R_UU = tree().CalcRelativeRotationMatrix(*context_, U, U);
-  EXPECT_TRUE(CompareMatrices(R_UU.matrix(), Matrix3<double>::Identity(),
-                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PendulumKinematicTests, PointsHaveTheWrongSize) {
