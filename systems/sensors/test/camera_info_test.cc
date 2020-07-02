@@ -54,12 +54,13 @@ GTEST_TEST(TestCameraInfo, ConstructionWithFovTest) {
 GTEST_TEST(TestCameraInfo, FieldOfView) {
   // Pick some arbitrary angle that isn't a "nice" angle.
   const double fov_y = M_PI / 7;
+  const double kEps = std::numeric_limits<double>::epsilon();
 
   {
     // Square camera: fields of view are equal in x- and y-directions.
     CameraInfo camera(100, 100, fov_y);
-    EXPECT_EQ(camera.fov_y(), fov_y);
-    EXPECT_EQ(camera.fov_x(), fov_y);
+    EXPECT_NEAR(camera.fov_y(), fov_y, kEps);
+    EXPECT_NEAR(camera.fov_x(), fov_y, kEps);
   }
 
   {
@@ -69,8 +70,8 @@ GTEST_TEST(TestCameraInfo, FieldOfView) {
     const int h = 200;
     CameraInfo camera{w, h, fov_y};
     const double fov_x = 2 * atan(w * tan(fov_y / 2) / h);
-    EXPECT_EQ(camera.fov_y(), fov_y);
-    EXPECT_NEAR(camera.fov_x(), fov_x, std::numeric_limits<double>::epsilon());
+    EXPECT_NEAR(camera.fov_y(), fov_y, kEps);
+    EXPECT_NEAR(camera.fov_x(), fov_x, kEps);
   }
 }
 
