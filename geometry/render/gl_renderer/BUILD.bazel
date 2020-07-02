@@ -137,7 +137,7 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_googletest_gl_ubuntu_only(
     name = "render_engine_gl_test",
     args = select({
         "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
