@@ -672,6 +672,100 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
 
   Finalize();
 }
+
+void SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(
+    Eigen::SparseMatrix<double>* C_hat,
+    std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
+    Eigen::VectorXd* y_hat,
+    Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>*
+        QR_B) const {
+  DRAKE_ASSERT(this->num_free_variables() != 0);
+  const int num_constraints = static_cast<int>(this->A_triplets().size());
+  // Do a QR decomposition on B to find the null space of Bᵀ.
+  QR_B->analyzePattern(this->B());
+  QR_B->factorize(this->B());
+  if (QR_B->info() != Eigen::Success) {
+    throw std::runtime_error(
+        "SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(): cannot "
+        "perform QR decomposition of B. Please try the other method "
+        "kTwoSlackVariables.");
+  }
+  // BP = [Q₁ Q₂] * [R; 0], so the nullspace of Bᵀ is Q₂
+  Eigen::SparseMatrix<double> Q;
+  Q = QR_B->matrixQ();
+  const Eigen::SparseMatrix<double> N =
+      Q.rightCols(this->B().rows() - QR_B->rank());
+  *rhs_hat = N.transpose() * this->g();
+
+  A_hat->clear();
+  A_hat->reserve(N.cols());
+  for (int i = 0; i < N.cols(); ++i) {
+    A_hat->emplace_back(this->num_X_rows(), this->num_X_rows());
+    A_hat->back().setZero();
+    for (Eigen::SparseMatrix<double>::InnerIterator it_N(N, i); it_N; ++it_N) {
+      A_hat->back() += it_N.value() * this->A()[it_N.row()];
+    }
+  }
+
+  const Eigen::SparseMatrix<double> B_t = this->B().transpose();
+  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
+      qr_B_t;
+  qr_B_t.compute(B_t);
+  if (qr_B_t.info() != Eigen::Success) {
+    throw std::runtime_error(
+        "RemoveFreeVariableByNullspaceApproach():QR "
+        "decomposition on B.transpose() fails\n");
+  }
+  *y_hat = qr_B_t.solve(Eigen::VectorXd(this->d()));
+  *C_hat = this->C();
+  for (int i = 0; i < num_constraints; ++i) {
+    *C_hat -= (*y_hat)(i) * this->A()[i];
+  }
+}
+
+void SdpaFreeFormat::RemoveFreeVariableByTwoSlackVariablesApproach(
+    std::vector<internal::BlockInX>* X_hat_blocks,
+    std::vector<Eigen::SparseMatrix<double>>* A_hat,
+    Eigen::SparseMatrix<double>* C_hat) const {
+  *X_hat_blocks = this->X_blocks();
+  X_hat_blocks->emplace_back(internal::BlockType::kDiagonal,
+                             2 * this->num_free_variables());
+  const int num_X_hat_rows =
+      this->num_X_rows() + 2 * this->num_free_variables();
+  std::vector<std::vector<Eigen::Triplet<double>>> A_hat_triplets =
+      this->A_triplets();
+  for (int j = 0; j < this->num_free_variables(); ++j) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(this->B(), j); it;
+         ++it) {
+      const int i = it.row();
+      // Add the entry in Âᵢ that multiplies with sⱼ.
+      A_hat_triplets[i].emplace_back(this->num_X_rows() + j,
+                                     this->num_X_rows() + j, it.value());
+      A_hat_triplets[i].emplace_back(
+          this->num_X_rows() + this->num_free_variables() + j,
+          this->num_X_rows() + this->num_free_variables() + j, -it.value());
+    }
+  }
+  A_hat->clear();
+  A_hat->reserve(this->A().size());
+  for (int i = 0; i < static_cast<int>(this->A().size()); ++i) {
+    A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+    A_hat->back().setFromTriplets(A_hat_triplets[i].begin(),
+                                  A_hat_triplets[i].end());
+  }
+  // Add the entry in Ĉ that multiplies with sᵢ
+  std::vector<Eigen::Triplet<double>> C_hat_triplets = this->C_triplets();
+  for (Eigen::SparseMatrix<double>::InnerIterator it(this->d(), 0); it; ++it) {
+    const int i = it.row();
+    C_hat_triplets.emplace_back(this->num_X_rows() + i, this->num_X_rows() + i,
+                                it.value());
+    C_hat_triplets.emplace_back(
+        this->num_X_rows() + this->num_free_variables() + i,
+        this->num_X_rows() + this->num_free_variables() + i, -it.value());
+  }
+  *C_hat = Eigen::SparseMatrix<double>(num_X_hat_rows, num_X_hat_rows);
+  C_hat->setFromTriplets(C_hat_triplets.begin(), C_hat_triplets.end());
+}
 }  // namespace internal
 
 bool GenerateSDPA(const MathematicalProgram& prog,

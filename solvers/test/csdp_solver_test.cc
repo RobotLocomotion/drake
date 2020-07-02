@@ -70,10 +70,9 @@ TEST_F(TrivialSDP1, Solve) {
   }
 }
 
-std::vector<CsdpSolver::RemoveFreeVariableMethod>
-GetRemoveFreeVariableMethods() {
-  return {CsdpSolver::RemoveFreeVariableMethod::kTwoSlackVariables,
-          CsdpSolver::kTwoSlackVariables};
+std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
+  return {RemoveFreeVariableMethod::kTwoSlackVariables,
+          RemoveFreeVariableMethod::kTwoSlackVariables};
 }
 
 TEST_F(LinearProgramBoundingBox1, Solve) {

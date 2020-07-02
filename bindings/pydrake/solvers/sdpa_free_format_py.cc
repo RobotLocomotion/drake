@@ -16,6 +16,13 @@ PYBIND11_MODULE(sdpa_free_format, m) {
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 
+  py::enum_<RemoveFreeVariableMethod>(
+      m, "RemoveFreeVariableMethod", doc.RemoveFreeVariableMethod.doc)
+      .value("kNullspace", RemoveFreeVariableMethod::kNullspace,
+          doc.RemoveFreeVariableMethod.kNullspace.doc)
+      .value("kTwoSlackVariables", RemoveFreeVariableMethod::kTwoSlackVariables,
+          doc.RemoveFreeVariableMethod.kTwoSlackVariables.doc);
+
   m.def("GenerateSDPA", &solvers::GenerateSDPA, py::arg("prog"),
       py::arg("file_name"), doc.GenerateSDPA.doc);
 }

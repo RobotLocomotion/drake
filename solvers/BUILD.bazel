@@ -960,6 +960,7 @@ drake_cc_library(
         "//tools:no_csdp": [
             ":mathematical_program",
             ":solver_base",
+            ":sdpa_free_format",
         ],
     }),
 )
@@ -1118,6 +1119,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "sdpa_free_format_test",
     deps = [
+        ":csdp_solver",
         ":csdp_test_examples",
         ":sdpa_free_format",
         "//common:filesystem",
