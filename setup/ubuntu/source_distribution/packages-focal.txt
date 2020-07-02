@@ -21,7 +21,6 @@ libfreetype-dev
 libgflags-dev
 libgl-dev
 libglib2.0-dev
-libglvnd-dev
 libhdf5-dev
 libjpeg-turbo8-dev
 libjsoncpp-dev
@@ -30,6 +29,7 @@ liblz4-dev
 libnetcdf-dev
 libnlopt-cxx-dev
 libogg-dev
+libopengl-dev
 libpng-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
