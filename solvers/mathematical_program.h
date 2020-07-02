@@ -411,6 +411,20 @@ class MathematicalProgram {
       const std::string& coeff_name = "a");
 
   /**
+   * Returns a free polynomial that only contains even degree of monomials. A
+   * monomial is even degree if its total degree (sum of all variables' degree)
+   * is even. For example, xy is an even degree monomial (degree 2) while x²y is
+   * not (degree 3).
+   * @param indeterminates The monomial basis is over these indeterminates.
+   * @param degree The highest degree of the polynomial.
+   * @param coeff_name The coefficients of the polynomial are decision variables
+   * with this name.
+   */
+  symbolic::Polynomial NewEvenDegreeFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name = "a");
+
+  /**
    * Types of non-negative polynomial that can be found through conic
    * optimization. We currently support SOS, SDSOS and DSOS. For more
    * information about these polynomial types, please refer to
