@@ -352,6 +352,7 @@ TEST_F(YamlWriteArchiveTest, Variant) {
   };
 
   test(Variant3(std::string("foo")), "foo");
+  test(Variant3(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {

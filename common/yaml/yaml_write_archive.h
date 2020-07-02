@@ -16,6 +16,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/name_value.h"
+#include "drake/common/nice_type_name.h"
 
 namespace drake {
 namespace yaml {
@@ -259,26 +260,33 @@ class YamlWriteArchive final {
     // the visit_order a second time, duplicating work performed by the Visit()
     // for the *wrapped* value.  We'll undo that duplication now.
     this->visit_order_.pop_back();
-}
+  }
 
   template <typename NVP>
   void VisitVariant(const NVP& nvp) {
+    // Visit the unpacked variant as if it weren't wrapped in variant<>,
+    // setting a YAML type tag iff required.
+    const char* const name = nvp.name();
     auto& variant = *nvp.value();
-    if (variant.index() != 0) {
-      throw std::runtime_error(fmt::format(
-          "Cannot YamlWriteArchive the variant field {} "
-          "with a non-zero type index {}",
-          nvp.name(), variant.index()));
-    }
+    const size_t index = variant.index();
+    std::visit([this, name, index](auto&& unwrapped) {
+      this->Visit(drake::MakeNameValue(name, &unwrapped));
+      if (index != 0) {
+        using T = decltype(unwrapped);
+        root_[name].SetTag(YamlWriteArchive::GetVariantTag<T>());
+      }
+    }, variant);
 
-    // Visit the unpacked variant as if it weren't wrapped in variant<>.
-    auto& unboxed = std::get<0>(variant);
-    this->Visit(drake::MakeNameValue(nvp.name(), &unboxed));
-
-    // The above call to Visit() for the *unwrapped* value pushed our name onto
-    // the visit_order a second time, duplicating work performed by the Visit()
-    // for the *wrapped* value.  We'll undo that duplication now.
+    // The above call to this->Visit() for the *unwrapped* value pushed our
+    // name onto the visit_order a second time, duplicating work performed by
+    // the Visit() for the *wrapped* value.  We'll undo that duplication now.
     this->visit_order_.pop_back();
+  }
+
+  template <typename T>
+  static std::string GetVariantTag() {
+    const std::string full_name = NiceTypeName::Get<T>();
+    return NiceTypeName::RemoveNamespaces(full_name);
   }
 
   template <typename T>
