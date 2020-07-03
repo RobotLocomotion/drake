@@ -424,6 +424,8 @@ class TestMathematicalProgram(unittest.TestCase):
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)
+        even_poly = prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
+        odd_poly = prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
         y = prog.NewIndeterminates(1, "y")
         self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
