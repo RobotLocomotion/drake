@@ -545,6 +545,16 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("indeterminates"), py::arg("deg"),
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewFreePolynomial.doc)
+      .def("NewEvenDegreeFreePolynomial",
+          &MathematicalProgram::NewEvenDegreeFreePolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          py::arg("coeff_name") = "a",
+          doc.MathematicalProgram.NewEvenDegreeFreePolynomial.doc)
+      .def("NewOddDegreeFreePolynomial",
+          &MathematicalProgram::NewOddDegreeFreePolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          py::arg("coeff_name") = "a",
+          doc.MathematicalProgram.NewOddDegreeFreePolynomial.doc)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
