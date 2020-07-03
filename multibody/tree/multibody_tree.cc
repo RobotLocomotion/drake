@@ -1119,6 +1119,9 @@ RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
+  // Shortcut: Efficiently return identity transform if frame_F == frame_G.
+  if (frame_F.index() == frame_G.index()) return RigidTransform<T>::Identity();
+
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Body<T>& A = frame_F.body();
   const Body<T>& B = frame_G.body();
@@ -1134,6 +1137,9 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
+  // Shortcut: Efficiently return identity matrix if frame_F == frame_G.
+  if (frame_F.index() == frame_G.index()) return RotationMatrix<T>::Identity();
+
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Body<T>& A = frame_F.body();
   const Body<T>& B = frame_G.body();
@@ -1508,42 +1514,36 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // TODO(mitiguy) Allow frame_A to be something other than world frame W.
-  const Frame<T>& frame_W = world_frame();
-  DRAKE_THROW_UNLESS(&frame_A == &frame_W);
+  // Form frame_B's bias spatial acceleration in frame_A, expressed in frame_E.
+  const SpatialAcceleration<T> AsBias_ABo_E = CalcBiasSpatialAcceleration(
+      context, with_respect_to, frame_B, Vector3<T>::Zero(), frame_A, frame_E);
 
-  // Reserve room to store all the bodies spatial acceleration bias in world W.
-  // TODO(Mitiguy) Inefficient use of heap. Per issue #13560, implement caching.
-  std::vector<SpatialAcceleration<T>> AsBias_WB_all(num_bodies());
-  CalcAllBodyBiasSpatialAccelerationsInWorld(context, with_respect_to,
-                                             &AsBias_WB_all);
+  // Get R_EB (rotation matrix relating frame_E to frame_B).
+  const RotationMatrix<T> R_EB =
+      CalcRelativeRotationMatrix(context, frame_E, frame_B);
 
-  // Frame_B is regarded as fixed/welded to a body, herein named body_C.
-  // From AsBias_WB_all, extract body_C's spatial acceleration bias in W.
-  const Body<T>& body_C = frame_B.body();
-  const SpatialAcceleration<T> AsBias_WC_W = AsBias_WB_all[body_C.node_index()];
-
-  // If necessary, get R_EW (rotation matrix relating frame_E to world frame W).
-  RotationMatrix<T> R_EW;
-  if (frame_E.index() != world_frame().index())
-    R_EW = CalcRelativeRotationMatrix(context, frame_E, frame_W);
+  // Form w_AB_E (B's angular velocity in frame A, measured in frame_E).
+  const Vector3<T> w_AB_E =
+      frame_B.CalcSpatialVelocity(context, frame_A, frame_E).rotational();
 
   // Allocate the output vector.
   const int num_points = p_BoBi_B.cols();
-  Matrix3X<T> asBias_WBi_E_array(3, num_points);
+  Matrix3X<T> asBias_ABi_E_array(3, num_points);
 
-  // Fill the output vector with translational acceleration biases.
+  // Fill the output vector with bias translational accelerations.
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    // Shift spatial acceleration bias from body_C to point Bi of frame_B.
-    const SpatialAcceleration<T> AsBias_WBi_W =
-        ShiftSpatialAccelerationBiasInWorld(context, body_C, frame_B,
-                                            p_BoBi_B.col(ipoint), AsBias_WC_W);
+    // Express the position vector from Bo (frame_B's origin) to point Bp (the
+    // ith point in the position vector list in p_BoBi_B) in frame_E.
+    const Vector3<T> p_BoBp_E = R_EB * p_BoBi_B.col(ipoint);
 
-    // Output translational component only.
-    const Vector3<T> asBias_WBi_E = R_EW * AsBias_WBi_W.translational();
-    asBias_WBi_E_array.col(ipoint) = asBias_WBi_E;
+    // Shift bias translational acceleration from Bo (frame_B's origin) to Bp.
+    const SpatialAcceleration<T> AsBias_ABp_E =
+        AsBias_ABo_E.Shift(p_BoBp_E, w_AB_E);
+
+    // Store only the translational bias acceleration component in the results.
+    asBias_ABi_E_array.col(ipoint) = AsBias_ABp_E.translational();
   }
-  return asBias_WBi_E_array;
+  return asBias_ABi_E_array;
 }
 
 template <typename T>
