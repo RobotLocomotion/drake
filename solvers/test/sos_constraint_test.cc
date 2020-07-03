@@ -14,19 +14,38 @@ namespace solvers {
 namespace {
 
 using drake::symbolic::Expression;
+using drake::symbolic::Monomial;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
-using drake::symbolic::Monomial;
+using drake::symbolic::internal::DegreeType;
 
 class SosConstraintTest : public ::testing::Test {
  public:
   void CheckNewFreePolynomial(const symbolic::Polynomial& p,
-                              const Variables& indeterminates,
-                              const int degree) {
+                              const Variables& indeterminates, const int degree,
+                              DegreeType degree_type) {
     const drake::VectorX<symbolic::Monomial> monomial_basis{
-        symbolic::MonomialBasis(indeterminates, degree)};
+        symbolic::internal::ComputeMonomialBasis<Eigen::Dynamic>(
+            indeterminates, degree, degree_type)};
 
-    EXPECT_EQ(p.TotalDegree(), degree);
+    switch (degree_type) {
+      case DegreeType::kAny: {
+        EXPECT_EQ(p.TotalDegree(), degree);
+        break;
+      }
+      case DegreeType::kEven: {
+        // p.TotalDegree() should be the largest even number that is no
+        // larger than @p degree.
+        EXPECT_EQ(p.TotalDegree(), degree % 2 == 0 ? degree : degree - 1);
+        break;
+      }
+      case DegreeType::kOdd: {
+        // p.TotalDegree() should be the largest odd number that is no
+        // larger than @p degree.
+        EXPECT_EQ(p.TotalDegree(), degree % 2 == 1 ? degree : degree - 1);
+        break;
+      }
+    }
     EXPECT_EQ(p.monomial_to_coefficient_map().size(), monomial_basis.size());
     EXPECT_EQ(p.monomial_to_coefficient_map().size(),
               p.decision_variables().size());
@@ -40,7 +59,32 @@ class SosConstraintTest : public ::testing::Test {
       // variable in the MathematicalProgram.
       DRAKE_EXPECT_NO_THROW(
           prog_.FindDecisionVariableIndex(decision_variable_i));
+      switch (degree_type) {
+        case DegreeType::kAny: {
+          break;
+        }
+        case DegreeType::kEven: {
+          EXPECT_EQ(pair.first.total_degree() % 2, 0);
+          break;
+        }
+        case DegreeType::kOdd: {
+          EXPECT_EQ(pair.first.total_degree() % 2, 1);
+          break;
+        }
+      }
     }
+  }
+
+  void TestNewFreePolynomial(const Variables& indeterminates, int degree) {
+    const symbolic::Polynomial poly1{
+        prog_.NewFreePolynomial(indeterminates, degree)};
+    CheckNewFreePolynomial(poly1, indeterminates, degree, DegreeType::kAny);
+    const symbolic::Polynomial poly2{
+        prog_.NewEvenDegreeFreePolynomial(indeterminates, degree)};
+    CheckNewFreePolynomial(poly2, indeterminates, degree, DegreeType::kEven);
+    const symbolic::Polynomial poly3{
+        prog_.NewOddDegreeFreePolynomial(indeterminates, degree)};
+    CheckNewFreePolynomial(poly3, indeterminates, degree, DegreeType::kOdd);
   }
 
   void CheckNewSosPolynomial(const symbolic::Polynomial& p,
@@ -104,42 +148,21 @@ class SosConstraintTest : public ::testing::Test {
   MathematicalProgramResult result_;
 };
 
-TEST_F(SosConstraintTest, NewFreePolynomialUnivariateDegree1) {
+TEST_F(SosConstraintTest, NewFreePolynomialUnivariateDegree) {
   const auto& x = x_(0);
   const Variables indeterminates{x};
-  const int degree{1};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
+  TestNewFreePolynomial(indeterminates, 1);
+  TestNewFreePolynomial(indeterminates, 2);
+  TestNewFreePolynomial(indeterminates, 3);
 }
 
-TEST_F(SosConstraintTest, NewFreePolynomialUnivariateDegree2) {
-  const auto& x = x_(0);
-  const Variables indeterminates{x};
-  const int degree{2};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
-}
-
-TEST_F(SosConstraintTest, NewFreePolynomialMultivariateDegree1) {
+TEST_F(SosConstraintTest, NewFreePolynomialMultivariateDegree) {
   const auto& x0 = x_(0);
   const auto& x1 = x_(1);
   const Variables indeterminates{x0, x1};
-  const int degree{1};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
-}
-
-TEST_F(SosConstraintTest, NewFreePolynomialMultivariateDegree2) {
-  const auto& x0 = x_(0);
-  const auto& x1 = x_(1);
-  const Variables indeterminates{x0, x1};
-  const int degree{2};
-  const symbolic::Polynomial poly{
-      prog_.NewFreePolynomial(indeterminates, degree)};
-  CheckNewFreePolynomial(poly, indeterminates, degree);
+  TestNewFreePolynomial(indeterminates, 1);
+  TestNewFreePolynomial(indeterminates, 2);
+  TestNewFreePolynomial(indeterminates, 3);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialUnivariate1) {

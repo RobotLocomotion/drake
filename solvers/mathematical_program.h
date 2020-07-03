@@ -411,16 +411,30 @@ class MathematicalProgram {
       const std::string& coeff_name = "a");
 
   /**
-   * Returns a free polynomial that only contains even degree of monomials. A
+   * Returns a free polynomial that only contains even degree monomials. A
    * monomial is even degree if its total degree (sum of all variables' degree)
    * is even. For example, xy is an even degree monomial (degree 2) while x²y is
    * not (degree 3).
    * @param indeterminates The monomial basis is over these indeterminates.
    * @param degree The highest degree of the polynomial.
    * @param coeff_name The coefficients of the polynomial are decision variables
-   * with this name.
+   * with this name as a base. The variable name would be "a1", "a2", etc.
    */
   symbolic::Polynomial NewEvenDegreeFreePolynomial(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name = "a");
+
+  /**
+   * Returns a free polynomial that only contains odd degree monomials. A
+   * monomial is odd degree if its total degree (sum of all variables' degree)
+   * is even. For example, xy is not an odd degree monomial (degree 2) while x²y
+   * is (degree 3).
+   * @param indeterminates The monomial basis is over these indeterminates.
+   * @param degree The highest degree of the polynomial.
+   * @param coeff_name The coefficients of the polynomial are decision variables
+   * with this name as a base. The variable name would be "a1", "a2", etc.
+   */
+  symbolic::Polynomial NewOddDegreeFreePolynomial(
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name = "a");
 
@@ -3085,7 +3099,7 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const std::set<symbolic::Formula>& formulas);
 
-  /**
+  /*
    * Adds new variables to MathematicalProgram.
    */
   template <int Rows, int Cols>
@@ -3099,7 +3113,7 @@ class MathematicalProgram {
     return decision_variable_matrix;
   }
 
-  /**
+  /*
    * Adds symmetric matrix variables to optimization program. Only the lower
    * triangular part of the matrix is used as decision variables.
    * @param names The names of the stacked columns of the lower triangular part
@@ -3113,6 +3127,15 @@ class MathematicalProgram {
     NewVariables_impl(type, names, true, decision_variable_matrix);
     return decision_variable_matrix;
   }
+
+  /*
+   * Create a new free polynomial, and add its coefficients as decision
+   * variables.
+   */
+  symbolic::Polynomial NewFreePolynomialImpl(
+      const symbolic::Variables& indeterminates, int degree,
+      const std::string& coeff_name,
+      symbolic::internal::DegreeType degree_type);
 
   std::unordered_map<int, double> var_scaling_map_{};
 };
