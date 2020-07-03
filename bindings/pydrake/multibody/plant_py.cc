@@ -471,8 +471,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_F,
                 const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
-              return self->CalcBiasSpatialAcceleration(context,
-                  with_respect_to, frame_F, p_BoBp_B, frame_A, frame_E);
+              return self->CalcBiasSpatialAcceleration(context, with_respect_to,
+                  frame_F, p_BoBp_B, frame_A, frame_E);
             },
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_F"),
             py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
