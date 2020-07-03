@@ -586,6 +586,16 @@ class TestPlant(unittest.TestCase):
                 p_BoBi_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (3, nw))
+            Abias_V_AFp = plant.CalcBiasSpatialAcceleration(
+                context=context, with_respect_to=wrt, frame_F=base_frame,
+                p_BoBp_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Abias_V_AFp)
+            self.assertEqual(Abias_V_AFp.shape, (3, nw))
+            Abias_v_AFp = plant.CalcBiasTranslationalAcceleration(
+                context=context, with_respect_to=wrt, frame_F=base_frame,
+                p_BoBi_B=np.zeros(3), frame_A=world_frame, frame_E=world_frame)
+            self.assert_sane(Abias_v_AFp)
+            self.assertEqual(Abias_v_AFp.shape, (3, nw))
 
             Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
