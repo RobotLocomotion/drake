@@ -52,7 +52,7 @@ class Accelerometer final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer)
 
   /// @param body the body B to which the sensor is affixed
-  /// @param X_BS the transform from body B to the accelerometer frame S
+  /// @param X_BS the pose of sensor frame S in body B
   /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
   Accelerometer(
@@ -79,12 +79,14 @@ class Accelerometer final : public LeafSystem<T> {
     return *measurement_output_port_;
   }
 
+  /// Returns the index of the Body that was supplied in the constructor
   const multibody::BodyIndex& body_index() const { return body_index_; }
 
+  /// Returns the gravity vector supplied in the constructor, or zero if none.
   const Eigen::Vector3d& gravity_vector() const { return gravity_vector_; }
 
-  /// Get the transformation from the body B to sensor S, X_BS.
-  const math::RigidTransform<double>& relative_transform() const {
+  /// Gets X_BS, the pose of sensor frame S in body B
+  const math::RigidTransform<double>& pose() const {
     return X_BS_;
   }
 
@@ -101,7 +103,7 @@ class Accelerometer final : public LeafSystem<T> {
   /// 3. plant.get_body_spatial_accelerations_output_port() to
   ///        this.get_body_spatial_accelerations_output_port()
   /// @param body the body B to which the sensor is affixed
-  /// @param X_BS the transform from body B to the accelerometer frame S
+  /// @param X_BS the pose of sensor frame S in body B
   /// @param gravity_vector the constant acceleration due to gravity
   ///    expressed in world coordinates
   /// @param plant the plant to which the sensor will be connected

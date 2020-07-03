@@ -42,10 +42,9 @@ void Gyroscope<T>::CalcOutput(const Context<T>& context,
           .template Eval<std::vector<SpatialVelocity<T>>>(context)[body_index_];
 
   // Calculate rotation from world to gyroscope: R_SW = R_SB * R_BW.
-  // Written below using inverses after extracting rotations from relevant
-  // transforms.
-  const auto R_SW =
-      X_BS_.rotation().template cast<T>().inverse() * X_WB.rotation().inverse();
+  const auto R_SB = X_BS_.rotation().matrix().template cast<T>().transpose();
+  const auto R_BW = X_WB.rotation().matrix().transpose();
+  const auto R_SW = R_SB * R_BW;
 
   // Re-express in local frame and return.
   output->SetFromVector(R_SW * V_WB.rotational());
@@ -67,7 +66,7 @@ const Gyroscope<T>& Gyroscope<T>::AddToDiagram(
 template <typename T>
 template <typename U>
 Gyroscope<T>::Gyroscope(const Gyroscope<U>& other)
-    : Gyroscope(other.body_index(), other.relative_transform()) {}
+    : Gyroscope(other.body_index(), other.pose()) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::sensors::Gyroscope)

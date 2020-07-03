@@ -31,9 +31,9 @@ namespace sensors {
 ///
 /// This class is therefore defined by:
 ///   1. The Body to which this sensor is rigidly affixed,
-///   2. A rigid transform from the body frame to the sensor frame.
+///   2. The pose of the sensor frame in the body frame.
 /// Note that the translational component of the transformation is not strictly
-/// needed by a gyroscope, as the position of the sensor does not effect the
+/// needed by a gyroscope, as the position of the sensor does not affect the
 /// measurement. However, as a sensor does have a physical location, it is
 /// included here for completeness and in case it might be useful for display or
 /// other purposes.
@@ -51,7 +51,7 @@ class Gyroscope final : public LeafSystem<T> {
 
   /// Constructor for %Gyroscope using full transform.
   /// @param body the body B to which the sensor is affixed
-  /// @param X_BS the transform from body B to the sensor frame S
+  /// @param X_BS X_BS the pose of sensor frame S in body B
   Gyroscope(const multibody::Body<T>& body,
             const math::RigidTransform<double>& X_BS);
 
@@ -71,10 +71,11 @@ class Gyroscope final : public LeafSystem<T> {
     return *measurement_output_port_;
   }
 
+  /// Returns the index of the Body that was supplied in the constructor
   const multibody::BodyIndex& body_index() const { return body_index_; }
 
-  /// Get the transformation from the body B to sensor S, X_BS.
-  const math::RigidTransform<double>& relative_transform() const {
+  /// Gets X_BS, the pose of sensor frame S in body B
+  const math::RigidTransform<double>& pose() const {
     return X_BS_;
   }
 
@@ -89,7 +90,7 @@ class Gyroscope final : public LeafSystem<T> {
   /// 2. plant.get_body_spatial_velocities_output_port() to
   ///        this.get_body_velocities_input_port()
   /// @param body the body B to which the sensor is affixed
-  /// @param X_BS the transform from body B to the sensor frame S
+  /// @param X_BS X_BS the pose of sensor frame S in body B
   /// @param plant the plant to which the sensor will be connected
   /// @param builder a pointer to the DiagramBuilder
   static const Gyroscope& AddToDiagram(
