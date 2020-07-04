@@ -51,7 +51,7 @@ class Gyroscope final : public LeafSystem<T> {
 
   /// Constructor for %Gyroscope using full transform.
   /// @param body the body B to which the sensor is affixed
-  /// @param X_BS X_BS the pose of sensor frame S in body B
+  /// @param X_BS the pose of sensor frame S in body B
   Gyroscope(const multibody::Body<T>& body,
             const math::RigidTransform<double>& X_BS);
 
@@ -71,10 +71,10 @@ class Gyroscope final : public LeafSystem<T> {
     return *measurement_output_port_;
   }
 
-  /// Returns the index of the Body that was supplied in the constructor
+  /// Returns the index of the Body that was supplied in the constructor.
   const multibody::BodyIndex& body_index() const { return body_index_; }
 
-  /// Gets X_BS, the pose of sensor frame S in body B
+  /// Gets X_BS, the pose of sensor frame S in body B.
   const math::RigidTransform<double>& pose() const {
     return X_BS_;
   }
