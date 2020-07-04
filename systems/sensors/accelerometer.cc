@@ -14,36 +14,44 @@ using multibody::SpatialAcceleration;
 using multibody::SpatialVelocity;
 
 template <typename T>
-Accelerometer<T>::Accelerometer(multibody::BodyIndex index,
-                                const RigidTransform<double>& X_BC,
+Accelerometer<T>::Accelerometer(const multibody::Body<T>& body,
+                                const RigidTransform<double>& X_BS,
                                 const Eigen::Vector3d& gravity_vector)
-    : body_index_(index),
-      X_BS_(X_BC),
+    : Accelerometer(body.index(), X_BS, gravity_vector) {}
+
+template <typename T>
+Accelerometer<T>::Accelerometer(const multibody::BodyIndex& body_index,
+                                const RigidTransform<double>& X_BS,
+                                const Eigen::Vector3d& gravity_vector)
+    : LeafSystem<T>(SystemTypeTag<Accelerometer>{}),
+      body_index_(body_index),
+      X_BS_(X_BS),
       gravity_vector_(gravity_vector) {
   // Declare measurement output port.
-  this->DeclareVectorOutputPort("measured_acceleration", BasicVector<T>(3),
-                                &Accelerometer<T>::CalcOutput);
+  measurement_output_port_ = &this->DeclareVectorOutputPort(
+      "measurement", BasicVector<T>(3), &Accelerometer<T>::CalcOutput);
 
   body_poses_input_port_ = &this->DeclareAbstractInputPort(
       "body_poses", Value<std::vector<RigidTransform<T>>>());
   body_velocities_input_port_ = &this->DeclareAbstractInputPort(
-      "body_velocities", Value<std::vector<SpatialVelocity<T>>>());
+      "body_spatial_velocities", Value<std::vector<SpatialVelocity<T>>>());
   body_accelerations_input_port_ = &this->DeclareAbstractInputPort(
-      "body_accelerations", Value<std::vector<SpatialAcceleration<T>>>());
+      "body_spatial_accelerations",
+      Value<std::vector<SpatialAcceleration<T>>>());
 }
 
 template <typename T>
 void Accelerometer<T>::CalcOutput(const Context<T>& context,
                                   BasicVector<T>* output) const {
-  const auto& X_WB = get_body_poses_input_port()
-                          .template Eval<std::vector<RigidTransform<T>>>(
-                              context)[body_index_];
-  const auto& V_WB = get_body_velocities_input_port()
-                          .template Eval<std::vector<SpatialVelocity<T>>>(
-                              context)[body_index_];
+  const auto& X_WB =
+      get_body_poses_input_port().template Eval<std::vector<RigidTransform<T>>>(
+          context)[body_index_];
+  const auto& V_WB =
+      get_body_velocities_input_port()
+          .template Eval<std::vector<SpatialVelocity<T>>>(context)[body_index_];
   const auto& A_WB = get_body_accelerations_input_port()
-                          .template Eval<std::vector<SpatialAcceleration<T>>>(
-                              context)[body_index_];
+                         .template Eval<std::vector<SpatialAcceleration<T>>>(
+                             context)[body_index_];
 
   // Kinematic term expressed in world coordinates unless specified
   // Sensor frame position and orientation.
@@ -66,14 +74,12 @@ void Accelerometer<T>::CalcOutput(const Context<T>& context,
 
 template <typename T>
 const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
-    multibody::BodyIndex body_index,
-    const RigidTransform<double>& X_BS,
+    const multibody::Body<T>& body, const RigidTransform<double>& X_BS,
     const Eigen::Vector3d& gravity_vector,
-    const multibody::MultibodyPlant<T>& plant,
-    DiagramBuilder<T>* builder) {
-  const auto& accelerometer =
-      *builder->template AddSystem<Accelerometer<T>>(body_index, X_BS,
-          gravity_vector);
+    const multibody::MultibodyPlant<T>& plant, DiagramBuilder<T>* builder) {
+  const auto& accelerometer = *builder->template AddSystem<Accelerometer<T>>(
+      body, X_BS, gravity_vector);
+
   builder->Connect(plant.get_body_poses_output_port(),
                    accelerometer.get_body_poses_input_port());
   builder->Connect(plant.get_body_spatial_velocities_output_port(),
@@ -82,6 +88,11 @@ const Accelerometer<T>& Accelerometer<T>::AddToDiagram(
                    accelerometer.get_body_accelerations_input_port());
   return accelerometer;
 }
+
+template <typename T>
+template <typename U>
+Accelerometer<T>::Accelerometer(const Accelerometer<U>& other)
+    : Accelerometer(other.body_index(), other.pose(), other.gravity_vector()) {}
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::sensors::Accelerometer)

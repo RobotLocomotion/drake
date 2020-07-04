@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":beam_model_params",
         ":camera_info",
         ":color_palette",
+        ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
         ":image_writer",
@@ -44,7 +45,6 @@ drake_cc_library(
     name = "accelerometer",
     srcs = ["accelerometer.cc"],
     hdrs = ["accelerometer_sensor.h"],
-    data = ["//examples/pendulum:prod_models"],
     deps = [
         "//math:geometric_transform",
         "//multibody/math",
@@ -79,6 +79,19 @@ drake_cc_library(
         "camera_info.h",
     ],
     deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "gyroscope",
+    srcs = ["gyroscope.cc"],
+    hdrs = ["gyroscope_sensor.h"],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody/math",
+        "//multibody/plant",
+        "//multibody/tree:multibody_tree_indexes",
         "//systems/framework",
     ],
 )
@@ -248,11 +261,13 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "accelerometer_test",
+    data = ["//examples/pendulum:prod_models"],
     deps = [
         ":accelerometer",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -274,6 +289,18 @@ drake_cc_googletest(
     deps = [
         ":camera_info",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gyroscope_test",
+    data = ["//examples/pendulum:prod_models"],
+    deps = [
+        ":gyroscope",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework/test_utilities",
     ],
 )
 
