@@ -106,6 +106,14 @@ void func(T tee);
 ///
 /// Quisque sagittis purus sit amet volutpat.
 ///
+/// @system
+/// name: Alchemist
+/// input_ports:
+/// - lead
+/// output_ports:
+/// - gold
+/// @endsystem
+///
 /// # First level heading #
 /// Aliquet nec ullamcorper sit amet risus nullam eget felis. __Bold__. Hac
 /// habitasse platea dictumst quisque sagittis purus sit.

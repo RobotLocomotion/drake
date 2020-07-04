@@ -40,32 +40,35 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// structure for IIWA and several RGBD cameras.  Alternative Setup___()
 /// methods are provided, as well.
 ///
-/// @system{ ManipulationStation,
-///   @input_port{iiwa_position}
-///   @input_port{iiwa_feedforward_torque}
-///   @input_port{wsg_position}
-///   @input_port{wsg_force_limit},
-///   @output_port{iiwa_position_commanded}
-///   @output_port{iiwa_position_measured}
-///   @output_port{iiwa_velocity_estimated}
-///   @output_port{iiwa_state_estimated}
-///   @output_port{iiwa_torque_commanded}
-///   @output_port{iiwa_torque_measured}
-///   @output_port{iiwa_torque_external}
-///   @output_port{wsg_state_measured}
-///   @output_port{wsg_force_measured}
-///   @output_port{camera_[NAME]_rgb_image}
-///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
-///   @output_port{...}
-///   @output_port{camera_[NAME]_rgb_image}
-///   @output_port{camera_[NAME]_depth_image}
-///   @output_port{<b style="color:orange">camera_[NAME]_label_image</b>}
-///   @output_port{<b style="color:orange">pose_bundle</b>}
-///   @output_port{<b style="color:orange">contact_results</b>}
-///   @output_port{<b style="color:orange">plant_continuous_state</b>}
-///   @output_port{<b style="color:orange">geometry_poses</b>}
-/// }
+/// @system
+/// name: ManipulationStation
+/// input_ports:
+/// - iiwa_position
+/// - iiwa_feedforward_torque
+/// - wsg_position
+/// - wsg_force_limit
+/// output_ports:
+/// - iiwa_position_commanded
+/// - iiwa_position_measured
+/// - iiwa_velocity_estimated
+/// - iiwa_state_estimated
+/// - iiwa_torque_commanded
+/// - iiwa_torque_measured
+/// - iiwa_torque_external
+/// - wsg_state_measured
+/// - wsg_force_measured
+/// - camera_[NAME]_rgb_image
+/// - camera_[NAME]_depth_image
+/// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - ...
+/// - camera_[NAME]_rgb_image
+/// - camera_[NAME]_depth_image
+/// - <b style="color:orange">camera_[NAME]_label_image</b>
+/// - <b style="color:orange">pose_bundle</b>
+/// - <b style="color:orange">contact_results</b>
+/// - <b style="color:orange">plant_continuous_state</b>
+/// - <b style="color:orange">geometry_poses</b>
+/// @endsystem
 ///
 /// Each pixel in the output image from `depth_image` is a 16bit unsigned
 /// short in millimeters.

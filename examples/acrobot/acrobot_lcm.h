@@ -20,9 +20,13 @@ namespace acrobot {
 /// acrobot state channel with LCM type lcmt_acrobot_x, and outputs the
 /// acrobot states as an AcrobotState.
 ///
-/// @system{ AcrobotStateReceiver,
-///   @input_port{lcmt_acrobot_x},
-///   @output_port{acrobot_state} }
+/// @system
+/// name: AcrobotStateReceiver
+/// input_ports:
+/// - lcmt_acrobot_x
+/// output_ports:
+/// - acrobot_state
+/// @endsystem
 ///
 /// @ingroup acrobot_systems
 class AcrobotStateReceiver : public systems::LeafSystem<double> {
@@ -38,9 +42,13 @@ class AcrobotStateReceiver : public systems::LeafSystem<double> {
 /// message with type lcm_acrobot_u. Its output port is usually connected to
 /// an LcmPublisherSystem to publish the messages it generates.
 ///
-/// @system{ AcrobotCommandSender,
-///   @input_port{elbow_torque},
-///   @output_port{lcm_acrobot_u} }
+/// @system
+/// name : AcrobotCommandSender
+/// input_ports:
+/// - elbow_torque
+/// output_ports:
+/// - lcm_acrobot_u
+/// @endsystem
 ///
 /// @ingroup acrobot_systems
 class AcrobotCommandSender : public systems::LeafSystem<double> {
