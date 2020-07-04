@@ -11,13 +11,18 @@ namespace acrobot {
 
 /// Expresses an AcrobotPlant's geometry to a SceneGraph.
 ///
-/// @system{AcrobotGeometry,
-///    @input_port{state},
-///    @output_port{geometry_pose}
-/// }
+/// @system
+/// name: AcrobotGeometry
+/// input_ports:
+/// - state
+/// output_ports:
+/// - geometry_pose
+/// @endsystem
 ///
 /// This class has no public constructor; instead use the AddToBuilder() static
 /// method to create and add it to a DiagramBuilder directly.
+///
+/// @ingroup acrobot_systems
 class AcrobotGeometry final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotGeometry);
