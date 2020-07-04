@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/name_value.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 using drake::yaml::YamlWriteArchive;
 
@@ -352,6 +353,14 @@ TEST_F(YamlWriteArchiveTest, Variant) {
   };
 
   test(Variant3(std::string("foo")), "foo");
+  test(Variant3(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
+
+  // TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our writer
+  // does not yet support that output syntax.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    Save(VariantStruct{double{1.0}}),
+    std::exception,
+    "Cannot YamlWriteArchive the variant type double with a non-zero index");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {
