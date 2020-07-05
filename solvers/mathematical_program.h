@@ -11,6 +11,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -494,6 +495,76 @@ class MathematicalProgram {
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const symbolic::Variables& indeterminates, int degree);
+
+  /**
+   * @anchor even_degree_nonnegative_polynomial
+   * @name    new even degree nonnegative polynomial
+   * Returns a nonnegative polynomial p = m(x)ᵀQm(x) of degree @p degree, and p
+   * only contains even-degree monomials. If we partition the monomials m(x) to
+   * odd degree monomials m_o(x) and even degree monomials m_e(x), then we
+   * can write p(x) as
+   * <pre>
+   * ⌈m_o(x)⌉ᵀ * ⌈Q_oo Q_oeᵀ⌉ * ⌈m_o(x)⌉
+   * ⌊m_e(x)⌋    ⌊Q_oe Q_ee ⌋   ⌊m_e(x)⌋
+   * </pre>
+   * Since p(x) doesn't contain any odd degree monomials, we know that the
+   * off-diagonal block Q_oe has to be zero. So the constraint that Q is psd
+   * can be simplified as Q_oo and Q_ee has to be psd. Since both Q_oo and
+   * Q_ee has smaller size than Q, these PSD constraints are easier to solve
+   * than requiring Q to be PSD.
+   */
+
+  //@{
+  /**
+   * See @ref even_degree_nonnegative_polynomial for more details.
+   * @param indeterminates The set of indeterminates x
+   * @param degree The total degree of the polynomial p. This should be an
+   * even number.
+   * @param type The returned polynomial p(x) can be either SOS, SDSOS or DSOS,
+   * depending on @p type.
+   * @return (p(x), Q_oo, Q_ee). p(x) is the newly added non-negative
+   * polynomial. p(x) = m_o(x)ᵀ*Q_oo*m_o(x) + m_e(x)ᵀ*Q_ee*m_e(x) where m_o(x)
+   * and m_e(x) contains all the even/odd monomials of x respectively.
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeNonnegativePolynomial(const symbolic::Variables& indeterminates,
+                                     int degree, NonnegativePolynomial type);
+
+  /**
+   * See @ref even_degree_nonnegative_polynomial for more details.
+   * @param indeterminates The set of indeterminates x
+   * @param degree The total degree of the polynomial p. This should be an
+   * even number.
+   * @return (p(x), Q_oo, Q_ee). p(x) is the newly added SOS polynomial.
+   * p(x) = m_o(x)ᵀ*Q_oo*m_o(x) + m_e(x)ᵀ*Q_ee*m_e(x) where m_o(x) and m_e(x)
+   * contains all the even/odd monomials of x respectively.
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeSosPolynomial(const symbolic::Variables& indeterminates,
+                             int degree);
+
+  /**
+   * see @ref even_degree_nonnegative_polynomial for details.
+   * Same as NewEvenDegreeSosPolynomial, except the returned polynomial is
+   * scaled diagonally dominant sum of squares (sdsos).
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeSdsosPolynomial(const symbolic::Variables& indeterminates,
+                               int degree);
+
+  /**
+   * see @ref even_degree_nonnegative_polynomial for details.
+   * Same as NewEvenDegreeSosPolynomial, except the returned polynomial is
+   * diagonally dominant sum of squares (dsos).
+   */
+  std::tuple<symbolic::Polynomial, MatrixXDecisionVariable,
+             MatrixXDecisionVariable>
+  NewEvenDegreeDsosPolynomial(const symbolic::Variables& indeterminates,
+                              int degree);
+  //@}
 
   /**
    * Creates a symbolic polynomial from the given expression `e`. It uses this
