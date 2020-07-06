@@ -409,12 +409,18 @@ class MeshcatVisualizer(LeafSystem):
         # Note: This syntax was chosen to match PyPlotVisualizer.
         self._is_recording = False
 
-    def publish_recording(self):
+    def publish_recording(self, play=True, repetitions=1):
         """
         Publish any recorded animation to Meshcat.  Use the controls dialog
         in the browser to review it.
+
+        Args:
+            play: boolean that determines whether the animation will play
+                automatically.
+            repetitions: number of times that the animation should play.
         """
-        self.vis.set_animation(self._animation)
+        self.vis.set_animation(self._animation, play=play,
+                               repetitions=repetitions)
 
     def reset_recording(self):
         """

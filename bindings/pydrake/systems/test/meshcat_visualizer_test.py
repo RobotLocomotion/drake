@@ -92,7 +92,7 @@ class TestMeshcat(unittest.TestCase):
         self.assertEqual(len(visualizer._animation.clips), 2)
         # After .1 seconds, we should have had 4 publish events.
         self.assertEqual(visualizer._recording_frame_num, 4)
-        visualizer.publish_recording()
+        visualizer.publish_recording(play=True, repetitions=1)
         visualizer.reset_recording()
         self.assertEqual(len(visualizer._animation.clips), 0)
 
