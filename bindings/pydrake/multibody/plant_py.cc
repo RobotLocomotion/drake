@@ -266,6 +266,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::CalcCenterOfMassPosition),
             py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
         .def(
+            "CalcBiasCenterOfMassTranslationalAcceleration",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
+                const Frame<T>& frame_E) {
+              return self->CalcBiasCenterOfMassTranslationalAcceleration(
+                  context, with_respect_to, frame_A, frame_E);
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_A"),
+            py::arg("frame_E"),
+            cls_doc.CalcBiasCenterOfMassTranslationalAcceleration.doc)
+        .def(
             "CalcJacobianCenterOfMassTranslationalVelocity",
             [](const Class* self, const Context<T>& context,
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_A,
