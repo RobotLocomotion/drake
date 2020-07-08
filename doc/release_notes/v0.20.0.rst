@@ -42,6 +42,7 @@ New features
 
 * Create even or odd degree monomial basis (`#13605`_)
 * SdpaFreeFormat can remove free variables (`#13600`_)
+* GenerateSDPA supports removing free variables (`#13636`_)
 
 Fixes
 
@@ -52,12 +53,13 @@ Multibody Dynamics
 
 New features
 
-* RenderEngineGl is now available (`#13584`_, `#13616`_, `#13629`_)
 * Add accelerometer sensor (`#13501`_)
 * Add gyroscope sensor (`#13604`_)
 * Enable CalcBiasSpatialAcceleration to have non-world measured-in-frame (`#13453`_)
 * Enable CalcBiasTranslationalAcceleration for non-world measured-in frame (`#13587`_)
-* Add base infrastructure for declaring full camera intrinsics; new RenderCameraCore, ColorRenderCamera, and DepthRenderCameras are introduced; RgbdSensor API extend to provide RenderCamera compatible interface; in the future, CameraProperties will be deprecated. (`#13557`_, `#13634`_)
+* RenderEngineGl is now available (`#13584`_, `#13616`_, `#13626`_, `#13629`_)
+* Extend camera intrinsics into geometry and geometry/render (`#13557`_, `#13634`_, `#13635`_)
+* IllustrationProperties can be updated after parsing (`#13598`_)
 
 Fixes
 
@@ -118,6 +120,7 @@ Build system and dependencies
 * Upgrade googlebenchmark to latest release (`#13623`_)
 * Upgrade lcm to latest commit (`#13622`_)
 * Upgrade pybind11 fork to latest commit (`#13579`_)
+* TBD Add missing tools relating to LLVM 9 (`#13656`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -165,13 +168,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
-  Current newest_commit 0eccf1a5f26727bcf394443d4aee22e4278cac5f (inclusive).
-
-* GenerateSDPA supports removing free variables (`#13636`_)
-* Remove TODO(Mitiguy) as issues were addressed (`#13652`_)
-* [render] Extend camera intrinsics into geometry and geometry/render (`#13635`_)  # * Extend camera intrinsics in geometry and geometry/render - RenderEngine given new API to handle full camera model specification. - handles sub-classes that haven't implemented full intrinsics by defaulting to legacy rendering (with a warning about throwing out information). - The "simple" camera model now invokes the full-intrinsics version. - Geometry infrastructure extended to exercise render engine API - QueryObject and GeometryState have appropriate APIs. - New API essentially duplicates old API. Deprecation of old API will come in follow up PR. - RgbdSensor now assumes RenderEngine handles full intrinsics and no longer protects it.
-* GeometryProperties adds API to change values (`#13598`_)  # Given a mutable set of properties, the existing set of properties can be modified by adding to, overwriting, updating, or removing properties. This further modifies documentation and error messages so that properties are more uniformly referred to as (group, name) rather than ugly structures like "name in the group".
-* Allow AssignRole(IllustrationProperties, kReplace) valid (`#13598`_)  # This allows illustration properties to be replaced. It hasn't been allowed previously because there is no formal connection between changing those properties and guaranteeing they proppagate into the visualizer. This "addresses" that guarantee by printing a warning to the console introducing a TODO for making it more robust.
-* RenderEngineGl gets ability to "show_window" (`#13626`_)  # The RenderEngine API has the ability to request showing the display for color and label images. Up to this point, RenderEngineGl hasn't supported that. This adds the infrastructure necessary to display the images. Currently only exercised in test. Its inclusion now facilitates the development of label and color rendering down the road. It's nice to be able to see the images. (Incidentally changes opengel_context.h documentation to /* from /** because it is in internal:: namespace.) Co-authored-by: Belinda Teh <belzteh@gmail.com>
-* Add missing tools relating to LLVM 9 (`#13656`_)
-* Minor documentation improvements (`#13658`_)
+  Current newest_commit 00becb60b995475ccfaa4fdd002814644ffd4563 (inclusive).
