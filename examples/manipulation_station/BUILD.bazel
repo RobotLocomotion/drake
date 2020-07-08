@@ -83,7 +83,10 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+    ],
     deps = [
         ":manipulation_station",
         "//geometry:geometry_visualization",
@@ -104,7 +107,11 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1 --test"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+        "--test",
+    ],
     test_rule_timeout = "moderate",
     deps = [
         ":manipulation_station",
@@ -153,7 +160,11 @@ drake_py_binary(
     srcs = ["joint_teleop.py"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+        "--test",
+    ],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         "//bindings/pydrake",
@@ -165,7 +176,11 @@ drake_py_binary(
     srcs = ["end_effector_teleop_dualshock4.py"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+        "--test",
+    ],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
@@ -179,7 +194,11 @@ drake_py_binary(
     srcs = ["end_effector_teleop_mouse.py"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+        "--test",
+    ],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
@@ -193,7 +212,11 @@ drake_py_binary(
     srcs = ["end_effector_teleop_sliders.py"],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+        "--test",
+    ],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",

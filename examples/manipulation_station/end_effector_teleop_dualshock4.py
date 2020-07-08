@@ -50,10 +50,10 @@ def initialize_joystick():
         joystick = pygame.joystick.Joystick(0)
         joystick.init()
         return joystick
-    except pygame.error:
+    except pygame.error as e:
         raise Exception("Make sure dualshock 4 controller is connected. "
                         "Controller initialization failed "
-                        "with: {}".format(repr(sys.exc_info()[1])))
+                        f"with: {e}")
 
 
 class DS4Buttons(Enum):
@@ -145,6 +145,8 @@ class TeleopDualShock4Manager:
         events[DS4Hats.DOWN_BUTTON] = (self._hat_data[0][1] == -1)
         events[DS4Hats.UP_BUTTON] = (self._hat_data[0][1] == 1)
 
+        # TODO(eric.cousineau): Replace `sys.exit` with a status to
+        # the Systems Framework.
         if events[DS4Buttons.X_BUTTON]:
             sys.exit(0)
         return events
