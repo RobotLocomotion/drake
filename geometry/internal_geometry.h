@@ -171,18 +171,15 @@ class InternalGeometry {
    engine's understanding as well.  */
   //@{
 
-  /** Assigns a proximity role to this geometry, replacing any properties that
-   were previously assigned.  */
+  /** Assigns a proximity role to this geometry, replacing any proximity
+   properties that were previously assigned.  */
   void SetRole(ProximityProperties properties) {
     proximity_props_ = std::move(properties);
   }
 
-  /** Assigns a illustration role to this geometry. Fails if it has already been
-   assigned.  */
+  /** Assigns an illustration role to this geometry, replacing any illustration
+   properties that were previously assigned.  */
   void SetRole(IllustrationProperties properties) {
-    if (illustration_props_) {
-      throw std::logic_error("Geometry already has illustration role assigned");
-    }
     illustration_props_ = std::move(properties);
   }
 

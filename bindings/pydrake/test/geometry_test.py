@@ -390,6 +390,25 @@ class TestGeometry(unittest.TestCase):
         for name, value in group_values.items():
             self.assertIsInstance(name, str)
             self.assertIsInstance(value, AbstractValue)
+        # Remove the property.
+        self.assertTrue(prop.RemoveProperty(group_name=default_group,
+                                            name="test"))
+        self.assertFalse(prop.HasProperty(group_name=default_group,
+                                          name="test"))
+        # Update a property.
+        prop.AddProperty(group_name=default_group, name="to_update", value=17)
+        self.assertTrue(prop.HasProperty(group_name=default_group,
+                                         name="to_update"))
+        self.assertEqual(
+            prop.GetProperty(group_name=default_group, name="to_update"), 17)
+
+        prop.UpdateProperty(group_name=default_group, name="to_update",
+                            value=20)
+        self.assertTrue(prop.HasProperty(group_name=default_group,
+                                         name="to_update"))
+        self.assertEqual(
+            prop.GetProperty(group_name=default_group, name="to_update"),
+            20)
 
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
