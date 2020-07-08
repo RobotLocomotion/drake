@@ -475,15 +475,17 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction, const T& stiffness,
-    const T& dissipation) {
+    const CoulombFriction<double>& coulomb_friction,
+    const T& point_contact_stiffness, const T& hunt_crossley_dissipation) {
   geometry::ProximityProperties props;
   props.AddProperty(geometry::internal::kMaterialGroup,
                     geometry::internal::kFriction, coulomb_friction);
   props.AddProperty(geometry::internal::kMaterialGroup,
-                    geometry::internal::kHcStiffness, stiffness);
+                    geometry::internal::kPointStiffness,
+                    point_contact_stiffness);
   props.AddProperty(geometry::internal::kMaterialGroup,
-                    geometry::internal::kHcDissipation, dissipation);
+                    geometry::internal::kHcDissipation,
+                    hunt_crossley_dissipation);
   return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
@@ -1079,7 +1081,19 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   const double damping = damping_ratio * time_scale / penetration_allowance;
 
   // Final parameters used in the penalty method:
-  penalty_method_contact_parameters_.stiffness = stiffness;
+  // Stiffness in the penalty method is calculated as a combination of
+  // individual stiffness parameters per geometry. The variable `stiffness` as
+  // calculated here is a combined stiffness, but
+  // `penalty_method_contact_parameters_.stiffness` stores the parameter for an
+  // individual geometry.
+  // Combined stiffness, for geometries with individual stiffnesses k1 and k2
+  // respectively, is defined as:
+  //   Kc = (k1*k2) / (k1 + k2)
+  // If we have a desired combined stiffness Kd (for two geometries with
+  // default heuristically computed parameters), setting k1 = k2 = 2 * Kd
+  // results in the correct combined stiffness:
+  //   Kc = (2*Kd*2*Kd) / (2*Kd + 2*Kd) = Kd
+  penalty_method_contact_parameters_.stiffness = 2 * stiffness;
   penalty_method_contact_parameters_.damping = damping;
   // The time scale can be requested to hint the integrator's time step.
   penalty_method_contact_parameters_.time_scale = time_scale;
@@ -1310,9 +1324,9 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const T vn = v_AcBc_W.dot(nhat_BA_W);
 
     // Magnitude of the normal force on body A at contact point C.
-    const auto [k1, d1] = get_contact_parameters(geometryA_id, inspector);
-    const auto [k2, d2] = get_contact_parameters(geometryB_id, inspector);
-    const auto [k, d] = get_combined_contact_parameters(k1, k2, d1, d2);
+    const auto [kA, dA] = get_point_contact_parameters(geometryA_id, inspector);
+    const auto [kB, dB] = get_point_contact_parameters(geometryB_id, inspector);
+    const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
     const T fn_AC = k * x * (1.0 + d * vn);
 
     if (fn_AC > 0) {
@@ -1932,32 +1946,24 @@ void MultibodyPlant<T>::CalcTamsiResults(
                  });
 
   // Compliance parameters used by the solver for each contact point.
-  std::vector<std::pair<T, T>> combined_contact_parameters(num_contacts);
+  VectorX<T> stiffness(num_contacts);
+  VectorX<T> damping(num_contacts);
 
   if (num_collision_geometries() > 0) {
     const geometry::QueryObject<T>& query_object =
         EvalGeometryQueryInput(context0);
     const geometry::SceneGraphInspector<T>& inspector =
         query_object.inspector();
-    std::transform(
-        point_pairs0.begin(), point_pairs0.end(),
-        combined_contact_parameters.begin(),
-        [this, &inspector](const PenetrationAsPointPair<T>& pair) {
-          const auto [k1, d1] = get_contact_parameters(pair.id_A, inspector);
-          const auto [k2, d2] = get_contact_parameters(pair.id_B, inspector);
-          return get_combined_contact_parameters(k1, k2, d1, d2);
-        });
+    for (int i = 0; i < num_contacts; ++i) {
+      const PenetrationAsPointPair<T>& pair = point_pairs0[i];
+      const auto [kA, dA] = get_point_contact_parameters(pair.id_A, inspector);
+      const auto [kB, dB] = get_point_contact_parameters(pair.id_B, inspector);
+      const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
+
+      stiffness(i) = k;
+      damping(i) = d;
+    }
   }
-
-  VectorX<T> stiffness(num_contacts);
-  VectorX<T> damping(num_contacts);
-  std::transform(combined_contact_parameters.begin(),
-                 combined_contact_parameters.end(), stiffness.data(),
-                 [](const std::pair<T, T>& pair) { return pair.first; });
-  std::transform(combined_contact_parameters.begin(),
-                 combined_contact_parameters.end(), damping.data(),
-                 [](const std::pair<T, T>& pair) { return pair.second; });
-
   // Solve for v and the contact forces.
   TamsiSolverResult info{
       TamsiSolverResult::kMaxIterationsReached};

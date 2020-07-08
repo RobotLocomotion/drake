@@ -347,7 +347,7 @@ enum class ContactModel {
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
  | :--------: | :--------------: | :------: | :----------------: | :------------------- |
  |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
- |  material  | hunt_crossley_stiffness |  no²  | T | Penalty method stiffness. |
+ |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
  |  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
 
 
@@ -356,7 +356,9 @@ enum class ContactModel {
    ("material", "coulomb_friction") property. If the parameter
    is not registered, %MultibodyPlant will throw an exeception.
  ² If the parameter is not registered, %MultibodyPlant will use
-   a heuristic value as the default.
+   a heuristic value as the default. Refer to the
+   section @ref mbp_penalty_method "Contact by penalty method" for further
+   details.
 
  Accessing and modifying contact properties requires interfacing with
  geometry::SceneGraph's model inspector. Interfacing with a model inspector
@@ -1217,11 +1219,31 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction);
 
+  /// Convenience overload to specify point contact parameters.
+  ///
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] X_BG
+  ///   The fixed pose of the geometry frame G in the body frame B.
+  /// @param[in] shape
+  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
+  ///   geometry::Cylinder, etc.
+  /// @param[in] properties
+  ///   The proximity properties associated with the collision geometry. They
+  ///   *must* include the (`material`, `coulomb_friction`) property of type
+  ///   CoulombFriction<double>.
+  /// @param[in] point_contact_stiffness
+  ///   Stiffness coefficient, k (in N/m), for penalty method point contact.
+  /// @param[in] hunt_crossley_dissipation
+  ///   Damping coefficient, d (in s/m), for penalty method point contact.
+  /// @throws std::exception if called post-finalize or if the properties are
+  /// missing the coulomb friction property (or if it is of the wrong type).
+  /// @see @ref mbp_penalty_method
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
-      const CoulombFriction<double>& coulomb_friction, const T& stiffness,
-      const T& dissipation);
+      const CoulombFriction<double>& coulomb_friction,
+      const T& point_contact_stiffness, const T& hunt_crossley_dissipation);
 
   /// Returns an array of GeometryId's identifying the different contact
   /// geometries for `body` previously registered with a SceneGraph.
@@ -4260,12 +4282,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Returns the pair (stiffness, dissipation)
   // Defaults to heuristically computed parameter if the given geometry
   // isn't assigned that parameter.
-  std::pair<T, T> get_contact_parameters(
+  std::pair<T, T> get_point_contact_parameters(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
     if constexpr (std::is_same<symbolic::Expression, T>::value) {
-      throw std::domain_error(fmt::format("This method doesn't support T = {}.",
-                                          NiceTypeName::Get<T>()));
+      throw std::domain_error(
+          "This method doesn't support T = symbolic::Expression.");
     }
     const geometry::ProximityProperties* prop =
         inspector.GetProximityProperties(id);
@@ -4279,8 +4301,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return std::pair(
         prop->template GetPropertyOrDefault<T>(
             geometry::internal::kMaterialGroup,
-            geometry::internal::kHcStiffness,
-            2 * penalty_method_contact_parameters_.stiffness),
+            geometry::internal::kPointStiffness,
+            penalty_method_contact_parameters_.stiffness),
         prop->template GetPropertyOrDefault<T>(
             geometry::internal::kMaterialGroup,
             geometry::internal::kHcDissipation,
@@ -4290,9 +4312,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper function to calculate the combined stiffness/dissipation constants
   // for a pair of surfaces in contact.
   // Returns the pair (stiffness, dissipation)
-  std::pair<T, T> get_combined_contact_parameters(const T& k1, const T& k2,
-                                                  const T& d1,
-                                                  const T& d2) const {
+  std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
+                                                const T& d1,
+                                                const T& d2) const {
     // Simple utility to detect 0 / 0. As it is used in this method, denom
     // can only be zero if num is also zero, so we'll simply return zero.
     auto safe_divide = [](const T& num, const T& denom) {

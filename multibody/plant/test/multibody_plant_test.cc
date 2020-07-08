@@ -1358,9 +1358,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
-  // estimated parameters for mass=1kg and penetration_tolerance=0.01m
-  const double sphere1_stiffness = 980;
-  const double sphere1_dissipation = 3.2;
+  // estimated parameters for mass=1kg, penetration_tolerance=0.01m
+  // and gravity g=9.8 m/s^2.
+  const double sphere1_stiffness = 980;  // N/m
+  const double sphere1_dissipation = 3.2;  // s/m
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
       "collision", sphere1_friction, sphere1_stiffness, sphere1_dissipation);
@@ -1368,12 +1369,15 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   geometry::ProximityProperties properties;
   properties.AddProperty("test", "dummy", 7);
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
-  // estimated parameters for mass=1kg and penetration_tolerance=0.05m
-  const double sphere2_stiffness = 196;
-  const double sphere2_dissipation = 1.4;
-  geometry::AddContactMaterial({}, {}, sphere2_friction, &properties);
+  // estimated parameters for mass=1kg, penetration_tolerance=0.05m
+  // and gravity g=9.8 m/s^2.
+  const double sphere2_stiffness = 196;  // N/m
+  const double sphere2_dissipation = 1.4;  // s/m
   properties.AddProperty(geometry::internal::kMaterialGroup,
-                         geometry::internal::kHcStiffness, sphere2_stiffness);
+                         geometry::internal::kFriction, sphere2_friction);
+  properties.AddProperty(geometry::internal::kMaterialGroup,
+                         geometry::internal::kPointStiffness,
+                         sphere2_stiffness);
   properties.AddProperty(geometry::internal::kMaterialGroup,
                          geometry::internal::kHcDissipation,
                          sphere2_dissipation);
@@ -1460,10 +1464,10 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   EXPECT_TRUE(sphere1_props.GetProperty<double>(
                   geometry::internal::kMaterialGroup,
-                  geometry::internal::kHcStiffness) == sphere1_stiffness);
+                  geometry::internal::kPointStiffness) == sphere1_stiffness);
   EXPECT_TRUE(sphere2_props.GetProperty<double>(
                   geometry::internal::kMaterialGroup,
-                  geometry::internal::kHcStiffness) == sphere2_stiffness);
+                  geometry::internal::kPointStiffness) == sphere2_stiffness);
 
   EXPECT_TRUE(sphere1_props.GetProperty<double>(
                   geometry::internal::kMaterialGroup,
