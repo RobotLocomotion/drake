@@ -43,6 +43,8 @@ libxml2-dev
 libxt-dev
 libyaml-cpp-dev
 lldb
+lldb-9
+llvm-9
 locales
 openssh-client
 patch
