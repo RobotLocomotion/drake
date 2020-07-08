@@ -116,5 +116,56 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
-  Current oldest_commit 8d92fae6584f237e5d0989653c0b5915387444bf (exclusive).
-  Current newest_commit TBD (inclusive).
+  Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
+  Current newest_commit 0eccf1a5f26727bcf394443d4aee22e4278cac5f (inclusive).
+
+* examples: Force older and newer yaml.dump to give the same output (`#13543`_)  # * pyyaml changed its default flow semantics in https://github.com/yaml/pyyaml/pull/256 * We must override the default with the magic tribool value `None` * Fixes #13541
+* doc: doc: Add release notes v0.19.0 (`#13512`_)
+* bindings: Add bindings for SceneGraphInspector and Shapes (`#13559`_)
+* examples: examples: Fix timeout in manipulation_station_test (`#13563`_)
+* examples,multibody: Declares SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
+* examples: pydrake examples: Add bindings for AcrobotPlant (`#13556`_)  # * Add bindings for AcrobotPlant
+* geometry: [doc] Fix formatting on mangled markdown table (`#13566`_)
+* common,third_party,tools: Remove old Python 2-isms (`#13569`_)  # * `__future__`: All relevant features are part of Python 3.6 * https://docs.python.org/3.6/library/__future__.html#module-__future__ * `class MyClass(object)`: All classes extend object in Python 3 * https://docs.python.org/3/reference/compound_stmts.html#class
+* doc,setup,tools: Use sphinx-doc@1.8 from Homebrew instead of Sphinx and sphinx_rtd_theme from PyPI (`#13551`_)
+* lcmtypes: Adds additional lcm message types for the planar gripper example (`#13554`_)
+* tools: Prefer Python 3 sphinx-build on Ubuntu (`#13575`_)  # Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
+* multibody: Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not the World (`#13453`_)  # Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not World.
+* bindings: Add python binding for MPResult.set_x_val (`#13577`_)
+* geometry: [gl_renderer/dev] Clean up documentation and add unit tests (`#13573`_)  # * Clean up documentation and add unit tests - OpenGlGeometry and OpenGlInstance get their documentation extended and clarified. - missing unit tests added. - ShaderProgram gets updated: - extended documentation - improved error messages - evolved semantics - unit tests - buffer_dim_test loses superfluous vtk_tags() - internal classes have /** */ documentation replpaced with /* */
+* doc: Update CLion instructions to recommend CLion 2019.3.6 (`#13588`_)  # * Update CLion instructions.
+* doc: Add a note about arm64 support (`#13592`_)
+* tools: workspace: Update pybind11 fork to latest commit (`#13579`_)  # Merge pybind/pybind11@master into RobotLocomotion/pybind11@drake
+* geometry: [render] Move RenderEngineGl prereqs out of dev into master (`#13584`_)  # * Moves opengl_geometry and shader_program out of dev into master. * Brings tests along. * These are the last two dependencies for RenderEngineGl.
+* common: yaml: Remove NANs from unit test (`#13589`_)  # We had been using NAN to indicate "unset default value", but it leads to awkward test phrasing because it does not compare equal with itself. Instead, we'll just use a magic sentinel.
+* bindings: Added binding for MBP.CalcCenterOfMassPosition (`#13594`_)
+* common: yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
+* systems: Add accelerometer sensor (`#13501`_)
+* manipulation: manipulation/util: Deprecate bot_core_encode_decode (`#13596`_)
+* examples,manipulation,math,multibody,systems: Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_)
+* bindings: Fix deprecated pydrake Isometry3 stubs (`#13607`_)  # In 24113fc9f3d60cbc37cf9d46688c2130d267b4bf, the replacement stubs were calling the wrong methods.
+* common: Create even or odd degree monomial basis (`#13605`_)
+* bindings: pydrake: Add regression test for deprecated Isometry3 stubs (`#13608`_)  # This tests the fixes in de3271607a4d3c1313c49e73e90db04a52feff04.
+* geometry: Copy {Rigid/Soft}Mesh without rebuilding BoundingVolumeHierarchy (`#13564`_)  # * geometry: Copy RigidMesh and SoftMesh without rebuilding BVH (BoudningVolumeHierarchy).
+* geometry: [dev] Bring RenderEngineGl up to full Drake standards (`#13583`_)  # * Polish RenderEngineGl - Depth computation made more efficient - previously, we computed *inverse* depth on the GPU and then inverted it on the CPU requiring another linear pass on the image. The reason for this is that the depth image was being initialized to 0. That means any pixel that wasn't drawn on by geometry was reporting that there was something that was too close. In fact, that's the inverse of the answer we actually wanted. - Instead, we know explicitly clear the depth image to be all "too far" values. So, we if we don't draw, we have the expected depth value. And where we do draw, we're computing the actual depth. - Clean up documentation - Clean up various method and member names (e.g. SetupFBO --> CreateRenderTarget) - Clean up some const sloppiness and cache members. - Clean up depth shader. - Modify setting clipping planes for depth. - Push some methods to static. - Test infrastructure uses SCOPED_TRACE instead of passing strings. - Internal classes no longer get /** */ documentation. - RenderEngineGl moved into geometry::render namespace to maintain parity with other render engine implementations. - RenderTarget (in buffer_dim.h) has improved names and documentation
+* doc: purge unused files in doc/ (`#13613`_)
+* common,systems: trajectories: Remove deprecated methods 2020-07-01 (`#13610`_)
+* examples: examples: Remove deprecated methods 2020-07-01 (`#13612`_)
+* CMakeLists.txt,setup,tools: tools: Remove deprecated version support 2020-07-01 (`#13611`_)
+* tools: workspace: Upgrade lcm to latest commit (`#13622`_)
+* tools: workspace: Update buildifier to latest release 3.3.0 (`#13620`_)
+* tools: workspace: Upgrade googlebenchmark to latest release (`#13623`_)
+* tools: workspace: Upgrade fcl to latest commit (`#13621`_)
+* geometry: [render] Move RenderEngineGl out of dev into master (`#13616`_)  # This is the final step of porting RenderEngineGl from Anzu. - Move the RenderEngineGl, supporting files and tests. - Close out the dev folder.
+* geometry: Switch render_engine_gl_test to be ubuntu only (`#13629`_)
+* systems: Implement BeamModel's scalar conversion constructor (`#13615`_)
+* geometry,systems: [render] Add base infrastructure for declaring full camera intrinsics (`#13557`_)  # * Add base infrastructure for declaring full camera intrinsics - New RenderCameraCore, ColorRenderCamera, and DepthRenderCameras are introduced. - RgbdSensor API extend to provide RenderCamera compatible interface - underlying representation implemented in terms of new classes. - In the future, CameraProperties will be deprecated. - Currently, there is no change to the rendered output as arbitrary intrinsics are simplified down before rendering. Subsequent PRs will move this down into RenderEngine. - CameraInfo docs cleaned a bit and new API added to facilitate testing.
+* solvers: SdpaFreeFormat can remove free variables (`#13600`_)  # SdpaFreeFormat can remove free variables. Previously only CSDP solver can remove free variables. Now we moved this feature from CSDP solver to SdpaFreeFormat.
+* systems: Fix Mac CI - exact comparison fails in camera_info_test (`#13634`_)  # Conversion from field-of-view to focal length and back is not perfectly invertible on mac. This changes the test from "equals" to "near".
+* systems: Implement SystemVisitor (`#13628`_)  # Provides a visitor pattern to introspect into Diagrams (as Diagrams) and LeafSystems (as Systems) from a const System<T>&.  This is very useful for looping through a nested diagram.
+* multibody: Enable CalcBiasTranslationalAcceleration for non-world measured-in frames (`#13587`_)  # Allow CalcBiasTranslationalAcceleration to handle non-world measured-in-frames.
+* bindings: Add ConnectMeshcatVisualizer (`#13632`_)  # Provides the same syntactic sugar that we've given to ConnectDrakeVisualizer and ConnectPlanarSceneGraphVisualizer.  (the implementation here is almost identical to the planar scene graph version)
+* systems: Add gyroscope sensor (`#13604`_)  # Also fixes minor typos in accelerometer sensor.
+* doc: remove outdated tex in doc folder (`#13640`_)
+* bindings: Pass animation arguments through to meshcat (`#13643`_)  # I've named them here, instead of passing kwargs, to improve readability/usability.
+* tools: Link to nlopt_cxx on Focal and do not use pkg-config (`#13633`_)
