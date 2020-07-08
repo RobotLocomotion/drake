@@ -29,25 +29,23 @@ Dynamical Systems
 
 New features
 
-TBD
+* Add SystemVisitor to introspect Diagrams (`#13628`_)
 
 Fixes
 
 TBD
-* systems: Implement SystemVisitor (`#13628`_)  # Provides a visitor pattern to introspect into Diagrams (as Diagrams) and LeafSystems (as Systems) from a const System<T>&.  This is very useful for looping through a nested diagram.
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 New features
 
-TBD
+* Create even or odd degree monomial basis (`#13605`_)
+* SdpaFreeFormat can remove free variables (`#13600`_)
 
 Fixes
 
 TBD
-* common: Create even or odd degree monomial basis (`#13605`_)
-* solvers: SdpaFreeFormat can remove free variables (`#13600`_)  # SdpaFreeFormat can remove free variables. Previously only CSDP solver can remove free variables. Now we moved this feature from CSDP solver to SdpaFreeFormat.
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -82,23 +80,17 @@ pydrake bindings
 
 New features
 
-TBD
+* Add ConnectMeshcatVisualizer sugar (`#13632`_)
 
 Fixes
 
-TBD
+* Pass animation arguments through to meshcat (`#13643`_)
 
 Newly bound
-
-TBD
-* bindings: Add ConnectMeshcatVisualizer (`#13632`_)  # Provides the same syntactic sugar that we've given to ConnectDrakeVisualizer and ConnectPlanarSceneGraphVisualizer.  (the implementation here is almost identical to the planar scene graph version)
-* bindings: Add bindings for SceneGraphInspector and Shapes (`#13559`_)
-* bindings: Add python binding for MPResult.set_x_val (`#13577`_)
-* bindings: Added binding for MBP.CalcCenterOfMassPosition (`#13594`_)
-* bindings: Fix deprecated pydrake Isometry3 stubs (`#13607`_)  # In 24113fc9f3d60cbc37cf9d46688c2130d267b4bf, the replacement stubs were calling the wrong methods.
-* bindings: Pass animation arguments through to meshcat (`#13643`_)  # I've named them here, instead of passing kwargs, to improve readability/usability.
-* pydrake: Add regression test for deprecated Isometry3 stubs (`#13608`_)  # This tests the fixes in de3271607a4d3c1313c49e73e90db04a52feff04.
-* pydrake: Add bindings for AcrobotPlant (`#13556`_)  # * Add bindings for AcrobotPlant
+* TBD Add bindings for SceneGraphInspector and Shapes (`#13559`_)
+* TBD Add python binding for MPResult.set_x_val (`#13577`_)
+* TBD Added binding for MBP.CalcCenterOfMassPosition (`#13594`_)
+* TBD Add bindings for AcrobotPlant (`#13556`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -116,8 +108,8 @@ Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 TBD
-* examples,manipulation,math,multibody,systems: Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_)
-* manipulation: manipulation/util: Deprecate bot_core_encode_decode (`#13596`_)
+* Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_, `#13607`_, `#13608`_)
+* Deprecate bot_core_encode_decode (`#13596`_)
 
 The RigidBodyPlant and all of the drake "attic" is scheduled for removal on
 2020-09-01 (`#12158`_, `#13030`_).  Please see `#12158`_ for details of the
