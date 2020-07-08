@@ -2934,8 +2934,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// point Ccm is the composite center of mass of the system of all bodies
   /// (except world_body()) in the MultibodyPlant. abias_ACcm is the part of
   /// a_ACcm (Ccm's translational acceleration) that does not multiply ṡ, equal
-  /// to abias_ACcm = J̇𝑠_v_ACcm * s. This allows a_ACcm to be written as
-  /// a_ACcm = J̇𝑠_v_ACcm * s + abias_ACcm.
+  /// to abias_ACcm = J̇𝑠_v_ACcm ⋅ s. This allows a_ACcm to be written as
+  /// a_ACcm = J𝑠_v_ACcm ⋅ ṡ + abias_ACcm.
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
