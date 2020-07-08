@@ -633,19 +633,20 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
       renderer_->RegisterVisual(id, box, props,
                                 RigidTransformd::Identity(),
                                 true /* needs update */);
-      // Position the box so that one corner is in the center of the image. The
-      // corner will report the expected depth, color, and label. Typically, the
-      // center of the box would render to the center of the image, so putting
-      // the corner of the box at the center of the image would require moving
-      // the box half its dimension lengths. Moving it *exactly* that length
-      // means that the center pixel would only partially be filled (the vertex
-      // would be in the center). We want the whole pixel filled so we place the
-      // vertex just *beyond* the center so that the whole pixel is filled by
-      // box face. The z-value comes from taking the *rotated* box and making
-      // sure the near face has the expected depth.
-      RigidTransformd X_WV{
-          RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitX())},
-          Vector3d{-box.width() * 0.49, -box.depth() * 0.49, 0.625}};
+      // We want to position the box so that one corner of the box exactly
+      // covers the pixel used for the "inlier test" (w/2, h/2). We can't put
+      // the corner at (0, 0, z) (for some depth z) because pixel (w/2, h/2)
+      // isn't *centered* on the world origin. We actually want the corner to be
+      // half a pixel away from the origin at (px/2, py/2, z), where px and py
+      // are the measures of a pixel in meters at the expected depth of the
+      // box's leading face.
+      // Because we have a radially symmetric lens, px = py and we can compute
+      // that measure by with simple trigonometry.
+      const double pixel_size = 4 * expected_object_depth_ *
+                                tan(camera_.fov_y / 2.0) / camera_.height;
+      RigidTransformd X_WV{RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitX())},
+                           Vector3d{(-box.width() + pixel_size) * 0.5,
+                                    (-box.depth() + pixel_size) * 0.5, 0.625}};
       renderer_->UpdatePoses(
           unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
@@ -659,10 +660,10 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
         // When we scale the image differently, we'll radically change the
         // color at that same corner.
 
-        expected_color_ = RgbaColor(ColorI{132, 119, 16}, 255);
+        expected_color_ = RgbaColor(ColorI{130, 119, 16}, 255);
         // Quick proof that we're testing for a different color -- we're drawing
         // the red channel from our expected color.
-        ASSERT_NE(kTextureColor.r, 132);
+        ASSERT_NE(kTextureColor.r, expected_color_.r);
       } else {
         // Otherwise the expected is simply the texture color of box.png.
         expected_color_ =
