@@ -92,27 +92,8 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
       color_camera_(move(color_camera)),
       depth_camera_(move(depth_camera)),
       X_PB_(X_PB) {
-  // TODO(SeanCurtis-TRI): Remove this test and warning when the rendering
-  //  infrastructure handles arbitrary camera intrinsics.
   const CameraInfo& color_intrinsics = color_camera_.core().intrinsics();
   const CameraInfo& depth_intrinsics = depth_camera_.core().intrinsics();
-  if (color_intrinsics.focal_x() != color_intrinsics.focal_y() ||
-      color_intrinsics.center_x() != color_intrinsics.width() / 2.0 + 0.5 ||
-      color_intrinsics.center_y() != color_intrinsics.height() / 2.0 + 0.5 ||
-      depth_intrinsics.focal_x() != depth_intrinsics.focal_y() ||
-      depth_intrinsics.center_x() != depth_intrinsics.width() / 2.0 + 0.5 ||
-      depth_intrinsics.center_y() != depth_intrinsics.height() / 2.0 + 0.5) {
-    logging::Warn(
-        "Constructing an instance of RgbdSensor with a \"complex\" camera "
-        "specification. For now, the camera must be radially symmetric and "
-        "centered on the image. Cameras provided:\n  Color - focal lengths "
-        "({}, {}), principal point ({}, {})\n  Depth - focal lengths ({}, {}), "
-        "principal point ({}, {})",
-        color_intrinsics.focal_x(), color_intrinsics.focal_y(),
-        color_intrinsics.center_x(), color_intrinsics.center_y(),
-        depth_intrinsics.focal_x(), depth_intrinsics.focal_y(),
-        depth_intrinsics.center_x(), depth_intrinsics.center_y());
-  }
 
   query_object_input_port_ = &this->DeclareAbstractInputPort(
       "geometry_query", Value<geometry::QueryObject<double>>{});
@@ -179,28 +160,16 @@ const OutputPort<double>& RgbdSensor::X_WB_output_port() const {
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  const CameraInfo& intrinsics = color_camera_.core().intrinsics();
-  CameraProperties simple_camera{intrinsics.width(), intrinsics.height(),
-                                 intrinsics.fov_y(),
-                                 color_camera_.core().renderer_name()};
   query_object.RenderColorImage(
-      simple_camera, parent_frame_id_,
-      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(),
-      color_camera_.show_window(), color_image);
+      color_camera_, parent_frame_id_,
+      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  const CameraInfo& intrinsics = depth_camera_.core().intrinsics();
-  DepthCameraProperties simple_camera{intrinsics.width(),
-                                      intrinsics.height(),
-                                      intrinsics.fov_y(),
-                                      depth_camera_.core().renderer_name(),
-                                      depth_camera_.depth_range().min_depth(),
-                                      depth_camera_.depth_range().max_depth()};
   query_object.RenderDepthImage(
-      simple_camera, parent_frame_id_,
+      depth_camera_, parent_frame_id_,
       X_PB_ * depth_camera_.core().sensor_pose_in_camera_body(), depth_image);
 }
 
@@ -214,14 +183,9 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  const CameraInfo& intrinsics = color_camera_.core().intrinsics();
-  CameraProperties simple_camera{intrinsics.width(), intrinsics.height(),
-                                 intrinsics.fov_y(),
-                                 color_camera_.core().renderer_name()};
   query_object.RenderLabelImage(
-      simple_camera, parent_frame_id_,
-      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(),
-      color_camera_.show_window(), label_image);
+      color_camera_, parent_frame_id_,
+      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), label_image);
 }
 
 void RgbdSensor::CalcX_WB(const Context<double>& context,

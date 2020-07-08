@@ -2,13 +2,20 @@
 
 #include <typeinfo>
 
+#include <fmt/format.h>
+
 #include "drake/common/nice_type_name.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace geometry {
 namespace render {
 
 using math::RigidTransformd;
+using systems::sensors::CameraInfo;
+using systems::sensors::ImageRgba8U;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
 
 std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
   std::unique_ptr<RenderEngine> clone(DoClone());
@@ -72,6 +79,57 @@ RenderLabel RenderEngine::GetRenderLabelOrThrow(
         "missing render labels in the properties.");
   }
   return label;
+}
+
+void RenderEngine::DoRenderColorImage(const ColorRenderCamera& camera,
+                                      ImageRgba8U* color_image_out) const {
+  // TODO(SeanCurtis-TRI): Consider modifying this warning (and those for the
+  //  other image types) so that it only gets broadcast if the intrinsics *have*
+  //  properties that would lose information.
+  static const logging::Warn log_once(
+      "{}::DoRenderColorImage has not been implemented; using simple camera "
+      "model variant; if the camera intrinsics have anisotropic focal lengths "
+      "or a non-centered principal point, those details will be lost.",
+      NiceTypeName::Get(*this));
+
+  const CameraInfo& intrinsics = camera.core().intrinsics();
+  CameraProperties simple_props{intrinsics.width(), intrinsics.height(),
+                                intrinsics.fov_y(),
+                                camera.core().renderer_name()};
+  RenderColorImage(simple_props, camera.show_window(), color_image_out);
+}
+
+void RenderEngine::DoRenderDepthImage(const DepthRenderCamera& camera,
+                                      ImageDepth32F* depth_image_out) const {
+  static const logging::Warn log_once(
+      "{}::DoRenderDepthImage has not been implemented; using simple camera "
+      "model variant; if the camera intrinsics have anisotropic focal lengths "
+      "or a non-centered principal point, those details will be lost.",
+      NiceTypeName::Get(*this));
+
+  const CameraInfo& intrinsics = camera.core().intrinsics();
+  DepthCameraProperties simple_props{intrinsics.width(),
+                                     intrinsics.height(),
+                                     intrinsics.fov_y(),
+                                     camera.core().renderer_name(),
+                                     camera.depth_range().min_depth(),
+                                     camera.depth_range().max_depth()};
+  RenderDepthImage(simple_props, depth_image_out);
+}
+
+void RenderEngine::DoRenderLabelImage(const ColorRenderCamera& camera,
+                                      ImageLabel16I* label_image_out) const {
+  static const logging::Warn log_once(
+      "{}::DoRenderLabelImage has not been implemented; using simple camera "
+      "model variant; if the camera intrinsics have anisotropic focal lengths "
+      "or a non-centered principal point, those details will be lost.",
+      NiceTypeName::Get(*this));
+
+  const CameraInfo& intrinsics = camera.core().intrinsics();
+  CameraProperties simple_props{intrinsics.width(), intrinsics.height(),
+                                intrinsics.fov_y(),
+                                camera.core().renderer_name()};
+  RenderLabelImage(simple_props, camera.show_window(), label_image_out);
 }
 
 void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}

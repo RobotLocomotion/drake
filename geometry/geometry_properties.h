@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <string>
@@ -37,9 +38,6 @@ namespace geometry {
  group, property keys being likewise correctly spelled, and values of the
  expected type. Correct spelling includes correct case. The instantiator uses
  the AddProperty() method to add new properties to the set.
- <!-- TODO(SeanCurtis-TRI): As need becomes apparent, add interface to replace
- values in previously defined values -- while preserving the original type.
- -->
 
  To read the property (`some_group`, `some_property`) from a property set:
 
@@ -247,13 +245,13 @@ class GeometryProperties {
   /** Returns all of the defined group names.  */
   std::set<std::string> GetGroupNames() const;
 
-  /** Adds a property with the given `name` and `value` to the the named
-   property group. Adds the group if it doesn't already exist.
+  /** Adds the named property (`group_name`, `name`) with the given `value`.
+   Adds the group if it doesn't already exist.
 
    @param group_name   The group name.
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
-   @throws std::logic_error if `name` already exists in the group `group_name`.
+   @throws std::logic_error if the property already exists.
    @tparam ValueType   The type of data to store with the attribute -- must be
                        copy constructible or cloneable (see Value).  */
   template <typename ValueType>
@@ -266,19 +264,47 @@ class GeometryProperties {
     }
   }
 
-  /** Adds a property with the given `name` and type-erased `value` to the the
-   named property group. Adds the group if it doesn't already exist.
+  /** Updates the named property (`group_name`, `name`) with the given `value`.
+   If the property doesn't already exist, it is equivalent to calling
+   `AddProperty`. If the property does exist, its value (which must have the
+   same type as `value`) will be replaced.
 
    @param group_name   The group name.
    @param name         The name of the property -- must be unique in the group.
    @param value        The value to assign to the property.
-   @throws std::logic_error if `name` already exists in the group
-                            `group_name`.  */
-  void AddPropertyAbstract(
-      const std::string& group_name, const std::string& name,
-      const AbstractValue& value);
+   @throws std::logic_error if the property exists with a different type.
+   @tparam ValueType   The type of data to store with the attribute -- must be
+                       copy constructible or cloneable (see Value).  */
+  template <typename ValueType>
+  void UpdateProperty(const std::string& group_name, const std::string& name,
+                      const ValueType& value) {
+    UpdatePropertyAbstract(group_name, name, Value(value));
+  }
 
-  /** Reports if the property exists in the group.
+  /** Adds the named property (`group_name`, `name`) with the given type-erased
+   `value`. Adds the group if it doesn't already exist.
+
+   @param group_name   The group name.
+   @param name         The name of the property -- must be unique in the group.
+   @param value        The value to assign to the property.
+   @throws std::logic_error if the property already exists.  */
+  void AddPropertyAbstract(const std::string& group_name,
+                           const std::string& name, const AbstractValue& value);
+
+  /** Updates the named property (`group_name`, `name`) with the given
+   type-erased `value`. If the property doesn't already exist, it is equivalent
+   to calling `AddPropertyAbstract`. If the property does exist, its value
+   (which must have the same type as `value`) will be replaced.
+
+   @param group_name   The group name.
+   @param name         The name of the property -- must be unique in the group.
+   @param value        The value to assign to the property.
+   @throws std::logic_error if the property exists with a different type.  */
+  void UpdatePropertyAbstract(const std::string& group_name,
+                              const std::string& name,
+                              const AbstractValue& value);
+
+  /** Reports if the property (`group_name`, `name`) exists in the group.
 
    @param group_name  The name of the group to which the tested property should
                       belong.
@@ -288,7 +314,8 @@ class GeometryProperties {
   bool HasProperty(const std::string& group_name,
                    const std::string& name) const;
 
-  /** Retrieves the typed value from this set of properties.
+  /** Retrieves the typed value for the property (`group_name`, `name`) from
+   this set of properties.
 
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
@@ -301,34 +328,35 @@ class GeometryProperties {
             translated from Rgba.
    */
   template <typename ValueType>
-  decltype(auto)
-  GetProperty(const std::string& group_name, const std::string& name) const {
+  decltype(auto) GetProperty(const std::string& group_name,
+                             const std::string& name) const {
     const AbstractValue& abstract = GetPropertyAbstract(group_name, name);
     if constexpr (std::is_same_v<ValueType, Eigen::Vector4d>) {
-      const Rgba color = GetValueOrThrow<Rgba>(
-          "GetProperty", group_name, name, abstract,
-          NiceTypeName::Get<Eigen::Vector4d>());
+      const Rgba color =
+          GetValueOrThrow<Rgba>("GetProperty", group_name, name, abstract,
+                                NiceTypeName::Get<Eigen::Vector4d>());
       return ToVector4d(color);
     } else {
-      return GetValueOrThrow<ValueType>(
-          "GetProperty", group_name, name, abstract);
+      return GetValueOrThrow<ValueType>("GetProperty", group_name, name,
+                                        abstract);
     }
   }
 
-  /** Retrieves that type-erased value from this set of properties.
+  /** Retrieves the type-erased value for the property (`group_name`, `name`)
+   from this set of properties.
 
    @param group_name  The name of the group to which the property belongs.
    @param name        The name of the desired property.
    @throws std::logic_error if a) the group name is invalid, or
                             b) the property name is invalid. */
-  const AbstractValue& GetPropertyAbstract(
-      const std::string& group_name, const std::string& name) const;
+  const AbstractValue& GetPropertyAbstract(const std::string& group_name,
+                                           const std::string& name) const;
 
-  /** Retrieves the typed value from the set of properties (if it exists),
-   otherwise returns the given default value. The given `default_value` is
-   returned only if the group or property are missing. If the property exists
-   and is of a _different_ type, an exception will be thrown. If it is of the
-   expected type, the stored value will be returned.
+  /** Retrieves the typed value for the property (`group_name`, `name`) from the
+   set of properties (if it exists), otherwise returns the given default value.
+   The given `default_value` is returned only if the property is missing. If the
+   property exists and is of a _different_ type, an exception will be thrown. If
+   it is of the expected type, the stored value will be returned.
 
    Generally, it is unnecessary to explicitly declare the `ValueType` of the
    property value; it will be inferred from the provided default value.
@@ -364,8 +392,8 @@ class GeometryProperties {
         return ToVector4d(color);
       } else {
         // This incurs the cost of copying a stored value.
-        return GetValueOrThrow<ValueType>(
-            "GetPropertyOrDefault", group_name, name, *abstract);
+        return GetValueOrThrow<ValueType>("GetPropertyOrDefault", group_name,
+                                          name, *abstract);
       }
     }
   }
@@ -377,6 +405,11 @@ class GeometryProperties {
     static const never_destroyed<std::string> kDefaultGroup("__default__");
     return kDefaultGroup.access();
   }
+
+  /** Removes the (`group_name`, `name`) property (if it exists). Upon
+   completion the property will not be in the set.
+   @returns `true` if the property existed prior to the call.  */
+  bool RemoveProperty(const std::string& group_name, const std::string& name);
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Note: these overloads of the property access methods exist to enable
@@ -391,6 +424,11 @@ class GeometryProperties {
     AddProperty<std::string>(group_name, name, value);
   }
 
+  void UpdateProperty(const std::string& group_name, const std::string& name,
+                      const char* value) {
+    UpdateProperty<std::string>(group_name, name, value);
+  }
+
   std::string GetPropertyOrDefault(const std::string& group_name,
                                    const std::string& name,
                                    const char* default_value) const {
@@ -401,38 +439,44 @@ class GeometryProperties {
  protected:
   /** Constructs a property set with the default group. Only invoked by final
    subclasses.  */
-  GeometryProperties() {
-    values_.emplace(default_group_name(), Group{});
-  }
+  GeometryProperties() { values_.emplace(default_group_name(), Group{}); }
 
   // Final subclasses are allowed to make copy/move/assign public.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryProperties)
 
  private:
+  // Conditionally writes the property (group_name, name) with the given value.
+  // The caller provides a test function that should throw if assigning `value`
+  // to the specified property would fail. The function takes the `Group`
+  // associated with `group_name`.
+  void WritePropertyAbstract(
+      const std::string& group_name, const std::string& name,
+      const AbstractValue& value,
+      const std::function<void(const Group&)>& throw_if_invalid);
+
   // The collection of property groups.
   std::unordered_map<std::string, Group> values_;
 
   // Return value or nullptr if it does not exist.
   // If `throw_for_bad_group` is true, an error will be thrown if `group_name`
   // does not exist.
-  const AbstractValue* GetPropertyAbstractMaybe(
-      const std::string& group_name, const std::string& name,
-      bool throw_for_bad_group) const;
+  const AbstractValue* GetPropertyAbstractMaybe(const std::string& group_name,
+                                                const std::string& name,
+                                                bool throw_for_bad_group) const;
 
   // Get the wrapped value from an AbstractValue, or throw an error message
   // that is easily traceable to this class.
   template <typename ValueType>
-  static const ValueType&
-  GetValueOrThrow(
+  static const ValueType& GetValueOrThrow(
       const std::string& method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract,
       const std::string& nice_type_name = NiceTypeName::Get<ValueType>()) {
     const ValueType* value = abstract.maybe_get_value<ValueType>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
-          "{}(): The property '{}' in group '{}' exists, "
-          "but is of a different type. Requested '{}', but found '{}'",
-          method, name, group_name, nice_type_name,
+          "{}(): The property ('{}', '{}') exists, but is of a different type. "
+          "Requested '{}', but found '{}'",
+          method, group_name, name, nice_type_name,
           abstract.GetNiceTypeName()));
     }
     return *value;

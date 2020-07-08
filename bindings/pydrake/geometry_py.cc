@@ -763,6 +763,16 @@ void DoScalarIndependentDefinitions(py::module m) {
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.AddProperty.doc)
+        .def(
+            "UpdateProperty",
+            [abstract_value_cls](Class& self, const std::string& group_name,
+                const std::string& name, py::object value) {
+              py::object abstract = abstract_value_cls.attr("Make")(value);
+              self.UpdatePropertyAbstract(
+                  group_name, name, abstract.cast<const AbstractValue&>());
+            },
+            py::arg("group_name"), py::arg("name"), py::arg("value"),
+            cls_doc.UpdateProperty.doc)
         .def("HasProperty", &Class::HasProperty, py::arg("group_name"),
             py::arg("name"), cls_doc.HasProperty.doc)
         .def(
@@ -789,6 +799,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             },
             py::arg("group_name"), py::arg("name"), py::arg("default_value"),
             cls_doc.GetPropertyOrDefault.doc)
+        .def("RemoveProperty", &Class::RemoveProperty, py::arg("group_name"),
+            py::arg("name"), cls_doc.RemoveProperty.doc)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
         .def(

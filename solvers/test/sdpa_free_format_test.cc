@@ -895,7 +895,6 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
       x(1) + 5 * X(0, 0) + 4 * X(0, 1) + 6 * X(1, 1), 20);
 
   const std::string file_name = temp_directory() + "/sdpa";
-  std::cout << file_name << "\n";
   EXPECT_TRUE(GenerateSDPA(prog, file_name));
   EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
 
@@ -940,12 +939,78 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateInvalidSDPA) {
   MathematicalProgram prog1;
   prog1.NewBinaryVariables<2>();
   EXPECT_THROW(GenerateSDPA(prog1, "tmp"), std::invalid_argument);
+}
 
-  // program with unbounded variables.
-  MathematicalProgram prog2;
-  auto x = prog2.NewContinuousVariables<2>();
-  prog2.AddLinearEqualityConstraint(x(0) + x(1), 1);
-  EXPECT_FALSE(GenerateSDPA(prog2, "tmp"));
+GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_two_slack) {
+  // Test GenerateSDPA with prog that has free variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+
+  internal::SdpaFreeFormat dut(prog);
+  EXPECT_GT(dut.num_free_variables(), 0);
+  const std::string file_name = temp_directory() + "/sdpa_free1";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name,
+                           RemoveFreeVariableMethod::kTwoSlackVariables));
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 -4 ");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 1 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 2 2 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 3 3 -1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 4 4 -1");
+  EXPECT_FALSE(std::getline(infile, line));
+
+  infile.close();
+}
+
+GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_null_space) {
+  // Test GenerateSDPA with prog that has free variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+
+  internal::SdpaFreeFormat dut(prog);
+  EXPECT_GT(dut.num_free_variables(), 0);
+  const std::string file_name = temp_directory() + "/sdpa_free2";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name,
+                           RemoveFreeVariableMethod::kNullspace));
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  // The null space approach completely removes the constraint.
+  EXPECT_EQ(line, "0");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 ");
+  std::getline(infile, line);
+  // The constraint is empty.
+  EXPECT_EQ(line, "");
+
+  infile.close();
 }
 
 }  // namespace solvers

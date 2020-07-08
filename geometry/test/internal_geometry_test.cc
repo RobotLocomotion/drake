@@ -1,5 +1,7 @@
 #include "drake/geometry/internal_geometry.h"
 
+#include <utility>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -10,29 +12,68 @@ namespace geometry {
 namespace internal {
 namespace {
 
+// Create two instances of the given Properties type with different properties:
+// ('group1', 'value') in the first, ('group2', 'value') in the second.
+template <typename Properties>
+std::pair<Properties, Properties> MakePropertyPair() {
+  Properties p1;
+  p1.AddProperty("group1", "value", 1);
+  Properties p2;
+  p2.AddProperty("group2", "value", 2);
+  return std::make_pair(p1, p2);
+}
+
 // Confirms that properties get set properly.
 GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
   InternalGeometry geometry;
 
-  EXPECT_FALSE(geometry.has_proximity_role());
-  DRAKE_EXPECT_NO_THROW(geometry.SetRole(ProximityProperties()));
-  EXPECT_TRUE(geometry.has_proximity_role());
+  {
+    // Proximity.
+    EXPECT_FALSE(geometry.has_proximity_role());
+    const auto [p1, p2] = MakePropertyPair<ProximityProperties>();
+    DRAKE_EXPECT_NO_THROW(geometry.SetRole(p1));
+    EXPECT_TRUE(geometry.has_proximity_role());
+    EXPECT_TRUE(
+        geometry.proximity_properties()->HasProperty("group1", "value"));
+    EXPECT_FALSE(
+        geometry.proximity_properties()->HasProperty("group2", "value"));
+    // Resetting proximity properties is not an error.
+    DRAKE_EXPECT_NO_THROW(geometry.SetRole(p2));
+    EXPECT_FALSE(
+        geometry.proximity_properties()->HasProperty("group1", "value"));
+    EXPECT_TRUE(
+        geometry.proximity_properties()->HasProperty("group2", "value"));
+  }
 
-  EXPECT_FALSE(geometry.has_illustration_role());
-  DRAKE_EXPECT_NO_THROW(geometry.SetRole(IllustrationProperties()));
-  EXPECT_TRUE(geometry.has_illustration_role());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry.SetRole(IllustrationProperties()), std::logic_error,
-      "Geometry already has illustration role assigned");
-  EXPECT_TRUE(geometry.has_illustration_role());
+  {
+    // Illustration.
+    EXPECT_FALSE(geometry.has_illustration_role());
+    const auto [p1, p2] = MakePropertyPair<IllustrationProperties>();
+    DRAKE_EXPECT_NO_THROW(geometry.SetRole(p1));
+    EXPECT_TRUE(geometry.has_illustration_role());
+    EXPECT_TRUE(
+        geometry.illustration_properties()->HasProperty("group1", "value"));
+    EXPECT_FALSE(
+        geometry.illustration_properties()->HasProperty("group2", "value"));
+    // Resetting illustration properties is not an error.
+    DRAKE_EXPECT_NO_THROW(geometry.SetRole(p2));
+    EXPECT_FALSE(
+        geometry.illustration_properties()->HasProperty("group1", "value"));
+    EXPECT_TRUE(
+        geometry.illustration_properties()->HasProperty("group2", "value"));
+  }
 
-  EXPECT_FALSE(geometry.has_perception_role());
-  DRAKE_EXPECT_NO_THROW(geometry.SetRole(PerceptionProperties()));
-  EXPECT_TRUE(geometry.has_perception_role());
-  DRAKE_EXPECT_THROWS_MESSAGE(geometry.SetRole(PerceptionProperties()),
-                              std::logic_error,
-                              "Geometry already has perception role assigned");
-  EXPECT_TRUE(geometry.has_perception_role());
+  {
+    // Perception.
+    EXPECT_FALSE(geometry.has_perception_role());
+    DRAKE_EXPECT_NO_THROW(geometry.SetRole(PerceptionProperties()));
+    EXPECT_TRUE(geometry.has_perception_role());
+    // Cannot yet overwrite perception properties.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        geometry.SetRole(PerceptionProperties()), std::logic_error,
+        "Geometry already has perception role assigned");
+    EXPECT_TRUE(geometry.has_perception_role());
+  }
 }
 
 // Tests the removal of all roles.

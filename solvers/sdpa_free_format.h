@@ -423,12 +423,18 @@ enum class RemoveFreeVariableMethod {
  * @param prog a program that contains an optimization program.
  * @param file_name The name of the file, note that the extension will be added
  * automatically.
+ * @param method If @p prog contains free variables (i.e., variables without
+ * bounds), then we need to remove these free variables to write the program
+ * in the SDPA format. Please refer to RemoveFreeVariableMethod for details
+ * on how to remove the free variables. @default is
+ * RemoveFreeVariableMethod::kNullspace.
  * @retval is_success. Returns true if we can generate the SDPA file. The
  * failure could be
  * 1. @p prog cannot be captured by the formulation above.
  * 2. @p prog cannot create a file with the given name, etc.
  */
-bool GenerateSDPA(const MathematicalProgram& prog,
-                  const std::string& file_name);
+bool GenerateSDPA(
+    const MathematicalProgram& prog, const std::string& file_name,
+    RemoveFreeVariableMethod method = RemoveFreeVariableMethod::kNullspace);
 }  // namespace solvers
 }  // namespace drake

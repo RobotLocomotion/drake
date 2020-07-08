@@ -760,6 +760,10 @@ TEST_F(RenderEngineGlTest, RenderLabelImageThrows) {
                               "RenderEngineGl cannot render label images");
 }
 
+// TODO(SeanCurtis-TRI): When either the color or label images are supported
+// provide a test indicating that the RenderEngineGl test is appropriately
+// calling the window display API on OpenGlContext.
+
 }  // namespace
 }  // namespace render
 }  // namespace geometry

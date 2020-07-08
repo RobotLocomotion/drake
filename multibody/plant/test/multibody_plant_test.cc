@@ -1311,7 +1311,7 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesWeldedTo) {
 // are acceleration and reaction force ports.
 bool OnlyAccelerationAndReactionPortsFeedthrough(
     const MultibodyPlant<double>& plant) {
-  // Whitelist the indices of all ports that can be feedthrough.
+  // Create a set of the indices of all ports that can be feedthrough.
   std::set<int> ok_to_feedthrough;
   ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
   ok_to_feedthrough.insert(
@@ -1322,7 +1322,8 @@ bool OnlyAccelerationAndReactionPortsFeedthrough(
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
 
-  // Now find all the feedthrough ports and make sure they are on the whitelist.
+  // Now find all the feedthrough ports and make sure they are on the
+  // list of expected feedthrough ports.
   const std::multimap<int, int> feedthroughs = plant.GetDirectFeedthroughs();
   for (const auto& inout_pair : feedthroughs) {
     if (ok_to_feedthrough.count(inout_pair.second) == 0)
