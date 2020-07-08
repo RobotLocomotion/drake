@@ -56,6 +56,18 @@ TBD
 Fixes
 
 TBD
+* multibody: Declares SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
+* multibody: Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not the World (`#13453`_)  # Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not World.
+* multibody: Enable CalcBiasTranslationalAcceleration for non-world measured-in frames (`#13587`_)  # Allow CalcBiasTranslationalAcceleration to handle non-world measured-in-frames.
+* geometry,systems: [render] Add base infrastructure for declaring full camera intrinsics (`#13557`_)  # * Add base infrastructure for declaring full camera intrinsics - New RenderCameraCore, ColorRenderCamera, and DepthRenderCameras are introduced. - RgbdSensor API extend to provide RenderCamera compatible interface - underlying representation implemented in terms of new classes. - In the future, CameraProperties will be deprecated. - Currently, there is no change to the rendered output as arbitrary intrinsics are simplified down before rendering. Subsequent PRs will move this down into RenderEngine. - CameraInfo docs cleaned a bit and new API added to facilitate testing.
+* geometry: Copy {Rigid/Soft}Mesh without rebuilding BoundingVolumeHierarchy (`#13564`_)  # * geometry: Copy RigidMesh and SoftMesh without rebuilding BVH (BoudningVolumeHierarchy).
+* geometry: Switch render_engine_gl_test to be ubuntu only (`#13629`_)
+* geometry: [doc] Fix formatting on mangled markdown table (`#13566`_)
+* geometry: [render] Move RenderEngineGl out of dev into master (`#13616`_)  # This is the final step of porting RenderEngineGl from Anzu. - Move the RenderEngineGl, supporting files and tests. - Close out the dev folder.
+* geometry: [render] Move RenderEngineGl prereqs out of dev into master (`#13584`_)  # * Moves opengl_geometry and shader_program out of dev into master. * Brings tests along. * These are the last two dependencies for RenderEngineGl.
+* systems: Add accelerometer sensor (`#13501`_)
+* systems: Add gyroscope sensor (`#13604`_)  # Also fixes minor typos in accelerometer sensor.
+* systems: Implement BeamModel's scalar conversion constructor (`#13615`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -108,6 +120,7 @@ Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 TBD
+* examples,manipulation,math,multibody,systems: Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_)
 
 The RigidBodyPlant and all of the drake "attic" is scheduled for removal on
 2020-09-01 (`#12158`_, `#13030`_).  Please see `#12158`_ for details of the
@@ -140,26 +153,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * common: Create even or odd degree monomial basis (`#13605`_)
 * common: yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
 * common: yaml: Remove NANs from unit test (`#13589`_)  # We had been using NAN to indicate "unset default value", but it leads to awkward test phrasing because it does not compare equal with itself. Instead, we'll just use a magic sentinel.
-* examples,manipulation,math,multibody,systems: Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_)
-* examples,multibody: Declares SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
 * examples: Force older and newer yaml.dump to give the same output (`#13543`_)  # * pyyaml changed its default flow semantics in https://github.com/yaml/pyyaml/pull/256 * We must override the default with the magic tribool value `None` * Fixes #13541
 * examples: examples: Fix timeout in manipulation_station_test (`#13563`_)
 * examples: examples: Remove deprecated methods 2020-07-01 (`#13612`_)
-* geometry,systems: [render] Add base infrastructure for declaring full camera intrinsics (`#13557`_)  # * Add base infrastructure for declaring full camera intrinsics - New RenderCameraCore, ColorRenderCamera, and DepthRenderCameras are introduced. - RgbdSensor API extend to provide RenderCamera compatible interface - underlying representation implemented in terms of new classes. - In the future, CameraProperties will be deprecated. - Currently, there is no change to the rendered output as arbitrary intrinsics are simplified down before rendering. Subsequent PRs will move this down into RenderEngine. - CameraInfo docs cleaned a bit and new API added to facilitate testing.
-* geometry: Copy {Rigid/Soft}Mesh without rebuilding BoundingVolumeHierarchy (`#13564`_)  # * geometry: Copy RigidMesh and SoftMesh without rebuilding BVH (BoudningVolumeHierarchy).
-* geometry: Switch render_engine_gl_test to be ubuntu only (`#13629`_)
-* geometry: [dev] Bring RenderEngineGl up to full Drake standards (`#13583`_)  # * Polish RenderEngineGl - Depth computation made more efficient - previously, we computed *inverse* depth on the GPU and then inverted it on the CPU requiring another linear pass on the image. The reason for this is that the depth image was being initialized to 0. That means any pixel that wasn't drawn on by geometry was reporting that there was something that was too close. In fact, that's the inverse of the answer we actually wanted. - Instead, we know explicitly clear the depth image to be all "too far" values. So, we if we don't draw, we have the expected depth value. And where we do draw, we're computing the actual depth. - Clean up documentation - Clean up various method and member names (e.g. SetupFBO --> CreateRenderTarget) - Clean up some const sloppiness and cache members. - Clean up depth shader. - Modify setting clipping planes for depth. - Push some methods to static. - Test infrastructure uses SCOPED_TRACE instead of passing strings. - Internal classes no longer get /** */ documentation. - RenderEngineGl moved into geometry::render namespace to maintain parity with other render engine implementations. - RenderTarget (in buffer_dim.h) has improved names and documentation
-* geometry: [doc] Fix formatting on mangled markdown table (`#13566`_)
-* geometry: [gl_renderer/dev] Clean up documentation and add unit tests (`#13573`_)  # * Clean up documentation and add unit tests - OpenGlGeometry and OpenGlInstance get their documentation extended and clarified. - missing unit tests added. - ShaderProgram gets updated: - extended documentation - improved error messages - evolved semantics - unit tests - buffer_dim_test loses superfluous vtk_tags() - internal classes have /** */ documentation replpaced with /* */
-* geometry: [render] Move RenderEngineGl out of dev into master (`#13616`_)  # This is the final step of porting RenderEngineGl from Anzu. - Move the RenderEngineGl, supporting files and tests. - Close out the dev folder.
-* geometry: [render] Move RenderEngineGl prereqs out of dev into master (`#13584`_)  # * Moves opengl_geometry and shader_program out of dev into master. * Brings tests along. * These are the last two dependencies for RenderEngineGl.
 * lcmtypes: Adds additional lcm message types for the planar gripper example (`#13554`_)
 * manipulation: manipulation/util: Deprecate bot_core_encode_decode (`#13596`_)
-* multibody: Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not the World (`#13453`_)  # Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not World.
-* multibody: Enable CalcBiasTranslationalAcceleration for non-world measured-in frames (`#13587`_)  # Allow CalcBiasTranslationalAcceleration to handle non-world measured-in-frames.
 * solvers: SdpaFreeFormat can remove free variables (`#13600`_)  # SdpaFreeFormat can remove free variables. Previously only CSDP solver can remove free variables. Now we moved this feature from CSDP solver to SdpaFreeFormat.
-* systems: Add accelerometer sensor (`#13501`_)
-* systems: Add gyroscope sensor (`#13604`_)  # Also fixes minor typos in accelerometer sensor.
 * systems: Fix Mac CI - exact comparison fails in camera_info_test (`#13634`_)  # Conversion from field-of-view to focal length and back is not perfectly invertible on mac. This changes the test from "equals" to "near".
-* systems: Implement BeamModel's scalar conversion constructor (`#13615`_)
 * systems: Implement SystemVisitor (`#13628`_)  # Provides a visitor pattern to introspect into Diagrams (as Diagrams) and LeafSystems (as Systems) from a const System<T>&.  This is very useful for looping through a nested diagram.
