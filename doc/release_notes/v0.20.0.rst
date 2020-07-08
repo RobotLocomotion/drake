@@ -87,10 +87,25 @@ Fixes
 * Pass animation arguments through to meshcat (`#13643`_)
 
 Newly bound
-* TBD Add bindings for SceneGraphInspector and Shapes (`#13559`_)
-* TBD Add python binding for MPResult.set_x_val (`#13577`_)
-* TBD Added binding for MBP.CalcCenterOfMassPosition (`#13594`_)
-* TBD Add bindings for AcrobotPlant (`#13556`_)
+* pydrake.examples.acrobot.AcrobotPlant.get_mutable_parameters (`#13556`_)
+* pydrake.examples.acrobot.AcrobotPlant.get_mutable_state (`#13556`_)
+* pydrake.examples.acrobot.AcrobotPlant.get_parameters (`#13556`_)
+* pydrake.examples.acrobot.AcrobotPlant.get_state (`#13556`_)
+* pydrake.geometry.Capsule (`#13559`_)
+* pydrake.geometry.Ellipsoid (`#13559`_)
+* pydrake.geometry.QueryObject.X_PF (`#13559`_)
+* pydrake.geometry.QueryObject.X_WF (`#13559`_)
+* pydrake.geometry.QueryObject.X_WG (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.GetName (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.GetPoseInParent (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.GetSourceName (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.NumAnchoredGeometries (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.NumDynamicGeometries (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.NumDynamicGeometries (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.NumGeometriesWithRole (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.SourceIsRegistered (`#13559`_)
+* pydrake.multibody.plant.MultibodyPlant.CalcCenterOfMassPosition (`#13594`_)
+* pydrake.solvers.MathematicalProgramResult.set_x_val (`#13577`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,6 +121,9 @@ Build system and dependencies
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
+
+* pydrake.geometry.SceneGraphInspector.GetNameByFrameId (`#13559`_)
+* pydrake.geometry.SceneGraphInspector.GetNameByGeometryId (`#13559`_)
 
 TBD
 * Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_, `#13607`_, `#13608`_)
