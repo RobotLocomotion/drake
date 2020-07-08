@@ -33,7 +33,7 @@ New features
 
 Fixes
 
-TBD
+* None
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -45,7 +45,7 @@ New features
 
 Fixes
 
-TBD
+* None
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -67,7 +67,7 @@ Fixes
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+None
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
