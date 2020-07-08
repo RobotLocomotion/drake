@@ -1,8 +1,5 @@
 # -*- python -*-
 
-DO_NOT_MERGE  # Revert this file before the merge into master.
-DISABLE_CI    # Induce a syntax error to cut off CI builds early.
-
 # This file marks a workspace root for the Bazel build system. see
 # https://bazel.build/ .
 
