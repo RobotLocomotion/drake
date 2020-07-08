@@ -32,10 +32,15 @@ namespace compass_gait {
 /// collision witness function that avoids fall detection on the "foot
 /// scuffing" collision.
 ///
-/// @system{CompassGait,
-///    @input_port{hip_torque},
-///    @output_port{minimal_state, floating_base_state}
-/// }
+/// @system
+/// name: CompassGait
+/// input_ports:
+/// - hip_torque
+/// output_ports:
+/// - minimal_state
+/// - floating_base_state
+/// @endsystem
+///
 /// Continuous States: stance, swing, stancedot, swingdot.<br/>
 /// Discrete State: stance toe position.<br/>
 /// Abstract State: left support indicator.<br/>

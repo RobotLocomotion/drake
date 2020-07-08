@@ -1,10 +1,10 @@
 import re
 import unittest
 
-from drake.doc.mk_system_doc import process_doxygen_system_tags
+from drake.doc.system_doxygen import process_doxygen_system_tags
 
 
-class TestMkSystemDoc(unittest.TestCase):
+class TestSystemDoxygen(unittest.TestCase):
     def test_triple_slash_comment(self):
         s = R"""()
 /// This is one style of comments
@@ -73,18 +73,27 @@ output_ports:
         self.assertRegex(t, 'Alchemist<br/><img src="photo.jpg" />')
         self.assertRegex(t, '<b>gold</b>')
 
-    def test_old_system_tag(self):
-        # Confirm that the old @system{ name, input_ports, output_ports }
-        # syntax gets passed through (to be handled by the doxygen alias).
+    def test_multiple_system_tags(self):
         s = R"""(
 /** This is another style of comments
 
-@system{Alchemist,
-  @input_port{lead},
-  @output_port{gold}
-}
-*/
+@system
+name: Alchemist
+input_ports:
+- lead
+output_ports:
+- gold
+@endsystem
+
+And then we have some more insightful documentation...
+
+@system
+name: Researcher
+input_ports:
+- ideas
+output_ports:
+- gold
+@endsystem */
 )"""
         t = process_doxygen_system_tags(s)
-        self.assertRegex(t, '@system')
-        self.assertNotRegex(t, '<table>')
+        self.assertEqual(t.count("\n<table"), 2)

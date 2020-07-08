@@ -38,11 +38,15 @@ namespace sensors {
 /// included here for completeness and in case it might be useful for display or
 /// other purposes.
 ///
-/// @system{Gyroscope,
-///    @input_port{body_poses}
-///    @input_port{body_spatial_velocities}
-///    @output_port{measurement}
-/// }
+/// @system
+/// name: Gyroscope
+/// input_ports:
+/// - body_poses
+/// - body_spatial_velocities
+/// output_ports:
+/// - measurement
+/// @endsystem
+///
 /// @ingroup sensor_systems
 template <typename T>
 class Gyroscope final : public LeafSystem<T> {

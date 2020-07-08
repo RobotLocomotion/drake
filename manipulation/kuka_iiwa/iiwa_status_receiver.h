@@ -24,15 +24,19 @@ namespace kuka_iiwa {
 /// num_joints elements.  The ports will output zeros until an input message is
 /// received.
 //
-/// @system{ IiwaStatusReceiver,
-///   @input_port{lcmt_iiwa_status},
-///   @output_port{position_commanded}
-///   @output_port{position_measured}
-///   @output_port{velocity_estimated}
-///   @output_port{torque_commanded}
-///   @output_port{torque_measured}
-///   @output_port{torque_external}
-/// }
+/// @system
+/// name: IiwaStatusReceiver
+/// input_ports:
+/// - lcmt_iiwa_status
+/// output_ports:
+/// - position_commanded
+/// - position_measured
+/// - velocity_estimated
+/// - torque_commanded
+/// - torque_measured
+/// - torque_external
+/// @endsystem
+///
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusReceiver : public systems::LeafSystem<double> {
  public:

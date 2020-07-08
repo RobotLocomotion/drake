@@ -24,13 +24,16 @@ selected). Just remember that their state dynamics *will* still be evaluated
 when the diagram's dynamics are evaluated (e.g. during simulation), and their
 output ports could be evaluated via other connections.
 
-@system{PortSwitch,
- @input_port{port_selector}
- @input_port{value0 (with assigned port name)}
- @inputport{...}
- @inputport{valueN (with assigned port name)},
- @output_port{value}
-}
+@system
+name: PortSwitch
+input_ports:
+- port_selector
+- value0 (with assigned port name)
+- ...
+- valueN (with assigned port name)
+output_ports:
+- value
+@endsystem
 
 @tparam_default_scalar
 */

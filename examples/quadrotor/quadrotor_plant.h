@@ -16,10 +16,15 @@ namespace quadrotor {
 /// Quadrotor is implemented to match the dynamics of the plant specified in
 /// the `quadrotor.urdf` model file.
 ///
-/// @system{QuadrotorPlant,
-///    @input_port{propellor_force},
-///    @output_port{state}
-/// }
+/// @system
+/// name: QuadrotorPlant
+/// input_ports:
+/// - propellor_force
+/// output_ports:
+/// - state
+/// @endsystem
+///
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class QuadrotorPlant final : public systems::LeafSystem<T> {
  public:

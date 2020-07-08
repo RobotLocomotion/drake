@@ -13,7 +13,11 @@ namespace fibonacci {
 /** A pure discrete system that generates the Fibonacci sequence F_n using
 a difference equation.
 
-@system{ FibonacciDifferenceEquation, , @output_port{Fn} }
+@system
+name: FibonacciDifferenceEquation
+output_ports:
+- Fn
+@endsystem
 
 In general, a discrete system has a difference equation (update function),
 output function, and (for simulation) an initial value:

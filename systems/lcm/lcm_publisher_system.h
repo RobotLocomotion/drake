@@ -38,8 +38,11 @@ using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
  * interface in your program, you can let %LcmPublisherSystem allocate and
  * maintain a drake::lcm::DrakeLcm object internally.
  *
- * @system{ LcmPublisherSystem,
- *  @input_port{lcm_message}, }
+ * @system
+ * name: LcmPublisherSystem
+ * input_ports:
+ * - lcm_message
+ * @endsystem
  *
  * @ingroup message_passing
  */

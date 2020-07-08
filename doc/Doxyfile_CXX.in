@@ -40,9 +40,6 @@ SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 2
 ALIASES                = "default=@n @a Default: " \
                          "concept{1}=@ingroup \1\n@par Implemented concepts:\n@ref \1" \
-                         "system{3}=<table align=center cellpadding=0 cellspacing=0><tr align=center><td><table cellspacing=0 cellpadding=0>\2</table></td><td align=center style=\"border:solid;padding-left:20px;padding-right:20px\" bgcolor=#F0F0F0>\1</td><td><table cellspacing=0 cellpadding=0>\3</table></td></tr></table>" \
-                         "input_port{1}=<tr><td align=right style=\"padding:5px 0px 5px 0px\">\1 &rarr;</td></tr>" \
-                         "output_port{1}=<tr><td align=left style=\"padding:5px 0px 5px 0px\">&rarr; \1</td></tr>" \
                          "tparam_default_scalar=@tparam T The scalar type, which must be one of the @ref default_scalars \"default scalars\". " \
                          "tparam_nonsymbolic_scalar=@tparam T The scalar type, which must be one of the @ref default_scalars \"default nonsymbolic scalars\". " \
                          "tparam_double_only=@tparam T The scalar type, which must be `double`. " \
@@ -144,7 +141,7 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             = "@INPUT_ROOT@/drake"
-INPUT_FILTER           = "@INPUT_ROOT@/drake/doc/mk_system_doc.py"
+INPUT_FILTER           = "@INPUT_ROOT@/drake/doc/system_doxygen.py"
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
 FILTER_SOURCE_PATTERNS =
