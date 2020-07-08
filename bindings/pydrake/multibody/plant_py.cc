@@ -468,25 +468,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "CalcBiasSpatialAcceleration",
             [](const Class* self, const systems::Context<T>& context,
-                JacobianWrtVariable with_respect_to, const Frame<T>& frame_F,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
                 const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
               return self->CalcBiasSpatialAcceleration(context, with_respect_to,
-                  frame_F, p_BoBp_B, frame_A, frame_E);
+                  frame_B, p_BoBp_B, frame_A, frame_E);
             },
-            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_F"),
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcBiasSpatialAcceleration.doc)
         .def(
             "CalcBiasTranslationalAcceleration",
             [](const Class* self, const Context<T>& context,
-                JacobianWrtVariable with_respect_to, const Frame<T>& frame_F,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
                 const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
               return self->CalcBiasTranslationalAcceleration(context,
-                  with_respect_to, frame_F, p_BoBi_B, frame_A, frame_E);
+                  with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
             },
-            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_F"),
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BoBi_B"), py::arg("frame_A"), py::arg("frame_E"),
             cls_doc.CalcBiasTranslationalAcceleration.doc)
         .def(
