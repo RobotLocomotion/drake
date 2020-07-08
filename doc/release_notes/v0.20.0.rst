@@ -54,35 +54,28 @@ Multibody Dynamics
 
 New features
 
-TBD
+* RenderEngineGl is now available (`#13584`_, `#13616`_, `#13629`_)
+* Add accelerometer sensor (`#13501`_)
+* Add gyroscope sensor (`#13604`_)
+* Enable CalcBiasSpatialAcceleration to have non-world measured-in-frame (`#13453`_)
+* Enable CalcBiasTranslationalAcceleration for non-world measured-in frame (`#13587`_)
+* Add base infrastructure for declaring full camera intrinsics; new RenderCameraCore, ColorRenderCamera, and DepthRenderCameras are introduced; RgbdSensor API extend to provide RenderCamera compatible interface; in the future, CameraProperties will be deprecated. (`#13557`_, `#13634`_)
 
 Fixes
 
-TBD
-* multibody: Declares SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
-* multibody: Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not the World (`#13453`_)  # Enable CalcBiasSpatialAcceleration() to have a measured-in-frame that is not World.
-* multibody: Enable CalcBiasTranslationalAcceleration for non-world measured-in frames (`#13587`_)  # Allow CalcBiasTranslationalAcceleration to handle non-world measured-in-frames.
-* geometry,systems: [render] Add base infrastructure for declaring full camera intrinsics (`#13557`_, `#13634`_)  # * Add base infrastructure for declaring full camera intrinsics - New RenderCameraCore, ColorRenderCamera, and DepthRenderCameras are introduced. - RgbdSensor API extend to provide RenderCamera compatible interface - underlying representation implemented in terms of new classes. - In the future, CameraProperties will be deprecated. - Currently, there is no change to the rendered output as arbitrary intrinsics are simplified down before rendering. Subsequent PRs will move this down into RenderEngine. - CameraInfo docs cleaned a bit and new API added to facilitate testing.
-* geometry: Copy {Rigid/Soft}Mesh without rebuilding BoundingVolumeHierarchy (`#13564`_)  # * geometry: Copy RigidMesh and SoftMesh without rebuilding BVH (BoudningVolumeHierarchy).
-* geometry: Switch render_engine_gl_test to be ubuntu only (`#13629`_)
-* geometry: [doc] Fix formatting on mangled markdown table (`#13566`_)
-* geometry: [render] Move RenderEngineGl out of dev into master (`#13616`_)  # This is the final step of porting RenderEngineGl from Anzu. - Move the RenderEngineGl, supporting files and tests. - Close out the dev folder.
-* geometry: [render] Move RenderEngineGl prereqs out of dev into master (`#13584`_)  # * Moves opengl_geometry and shader_program out of dev into master. * Brings tests along. * These are the last two dependencies for RenderEngineGl.
-* systems: Add accelerometer sensor (`#13501`_)
-* systems: Add gyroscope sensor (`#13604`_)  # Also fixes minor typos in accelerometer sensor.
-* systems: Implement BeamModel's scalar conversion constructor (`#13615`_)
+* Fix BeamModel's scalar conversion constructor (`#13615`_)
+* Declare SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 TBD
-* lcmtypes: Adds additional lcm message types for the planar gripper example (`#13554`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
-* common: yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
+* yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
+* planar_gripper: Add additional lcm message types (`#13554`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
