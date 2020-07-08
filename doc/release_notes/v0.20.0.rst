@@ -120,7 +120,7 @@ Build system and dependencies
 * Upgrade googlebenchmark to latest release (`#13623`_)
 * Upgrade lcm to latest commit (`#13622`_)
 * Upgrade pybind11 fork to latest commit (`#13579`_)
-* TBD Add missing tools relating to LLVM 9 (`#13656`_)
+* Add clang-9 releated optional dependencies (`#13656`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -148,9 +148,24 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
-* examples: examples: Remove deprecated methods 2020-07-01 (`#13612`_)
-* common,systems: trajectories: Remove deprecated methods 2020-07-01 (`#13610`_)
+* ::Polynomial<T> (`#13610`_)
+* ::Polynomiald (`#13610`_)
+* ::TrigPoly<T> (`#13610`_)
+* ::TrigPolyd (`#13610`_)
+* ::VectorXPoly (`#13610`_)
+* ::VectorXTrigPoly (`#13610`_)
+* drake::examples::kuka_iiwa_arm::ApplyJointVelocityLimits (`#13612`_)
+* drake::examples::kuka_iiwa_arm::EncodeKeyFrames (`#13612`_)
+* drake::symbolic::Expression::ToPolynomial (`#13610`_)
+* drake::systems::AntiderivativeFunction::SpecifiedValues (`#13610`_)
+* drake::systems::InitialValueProblem::ODEFunction (`#13610`_)
+* drake::systems::InitialValueProblem::SpecifiedValues (`#13610`_)
+* drake::systems::ScalarInitialValueProblem::ScalarODEFunction (`#13610`_)
+* drake::systems::ScalarInitialValueProblem::SpecifiedValues (`#13610`_)
+* drake::trajectories::PiecewisePolynomial::Cubic (`#13610`_)
+* drake::trajectories::PiecewisePolynomial::Pchip (`#13610`_)
+* drake::trajectories::PiecewisePolynomial<T>::PolynomialType (`#13610`_)
+* drake::trajectories::PiecewiseQuaternionSlerp::get_quaternion_knots (`#13610`_)
 
 Notes
 -----
