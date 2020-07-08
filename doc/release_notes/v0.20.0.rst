@@ -1,0 +1,120 @@
+*************
+Drake v0.20.0
+*************
+
+Announcements
+-------------
+
+.. warning::
+
+  On macOS, Drake only supports Python 3.8.  Users **must** read `#13097`_ for
+  upgrade instructions.
+
+  When paths are set incorrectly, you will see an error such as this::
+
+      ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
+
+Breaking changes since v0.19.0
+------------------------------
+
+These are breaking changes that did not undergo a deprecation period:
+
+TBD
+
+Changes since v0.19.0:
+----------------------
+
+Dynamical Systems
+~~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Mathematical Program
+~~~~~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Multibody Dynamics
+~~~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Tutorials and examples
+~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+Miscellaneous features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+pydrake bindings
+~~~~~~~~~~~~~~~~
+
+New features
+
+TBD
+
+Fixes
+
+TBD
+
+Newly bound
+
+TBD
+
+Build system and dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+Newly-deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+The RigidBodyPlant and all of the drake "attic" is scheduled for removal on
+2020-09-01 (`#12158`_, `#13030`_).  Please see `#12158`_ for details of the
+timeline, and let us know if this will cause a problem.
+
+Removal of deprecated items
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TBD
+
+Notes
+-----
+
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.20.0>`__ named
+``drake-YYYYMMDD-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+<nightly-releases>` for instructions on how to use them.
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
+..
+  Current oldest_commit 8d92fae6584f237e5d0989653c0b5915387444bf (exclusive).
+  Current newest_commit TBD (inclusive).
