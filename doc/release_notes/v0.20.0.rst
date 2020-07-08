@@ -19,7 +19,7 @@ Breaking changes since v0.19.0
 
 These are breaking changes that did not undergo a deprecation period:
 
-TBD
+* None
 
 Changes since v0.19.0:
 ----------------------
