@@ -25,9 +25,13 @@ namespace acrobot {
 /// functional set of gains to stabilize the robot about its upright fixed
 /// point using the parameters of the physical robot we have in lab.
 ///
-/// @system{ AcrobotSpongController,
-///   @input_port{acrobot_state},
-///   @output_port{elbow_torque} }
+/// @system
+/// name: AcrobotSpongController
+/// input_ports:
+/// - acrobot_state
+/// output_ports:
+/// - elbow_torque
+/// @endsystem
 ///
 /// @ingroup acrobot_systems
 template <typename T>

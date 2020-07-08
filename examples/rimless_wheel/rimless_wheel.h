@@ -26,10 +26,12 @@ namespace rimless_wheel {
 ///   challenges of simulation around the Zeno phenomenon at the standing
 ///   fixed point).
 ///
-/// @system{RimlessWheel, ,
-///   @output_port{minimal_state (theta and thetadot only)}
-///   @output_port{floating_base_state}
-/// }
+/// @system
+/// name: RimlessWheel
+/// output_ports:
+/// - minimal_state (theta and thetadot only)
+/// - floating_base_state
+/// @endsystem
 ///
 /// Continuous States: theta, thetadot.
 /// Discrete States: stance toe position, double support indicator.

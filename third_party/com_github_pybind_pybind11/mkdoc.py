@@ -22,7 +22,7 @@ from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
 from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
-from drake.doc.mk_system_doc import process_doxygen_system_tags
+from drake.doc.system_doxygen import process_doxygen_system_tags
 
 CLASS_KINDS = [
     CursorKind.CLASS_DECL,
@@ -639,7 +639,7 @@ def process_comment(comment):
             for y in re.split(r'(?: *\n){2,}', x):
                 # Do not reflow rst directives.
                 # These appear, for instance, through our implementation of the
-                # Doxygen @system tag.
+                # custom @system / @endsystem tags.
                 if in_rst_directive:
                     if y[:3] != '   ':
                         in_rst_directive = False

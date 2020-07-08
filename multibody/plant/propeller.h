@@ -46,11 +46,14 @@ struct PropellerInfo {
 /** A System that connects to the MultibodyPlant in order to model the effects
 of one or more controlled propellers acting on a Body.
 
-@system{Propeller,
-  @input_port{command}
-  @input_port{body_poses},
-  @output_port{spatial_forces}
-}
+@system
+name: Propeller
+input_ports:
+- command
+- body_poses
+output_ports:
+- spatial_forces
+@endsystem
 
 - The command input is a BasicVector<T> with one element per propeller.
 - It is expected that the body_poses input should be connected to the

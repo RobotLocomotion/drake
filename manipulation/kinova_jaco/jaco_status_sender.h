@@ -28,13 +28,17 @@ namespace kinova_jaco {
 /// This system is presently only used in simulation. The robot hardware drivers
 /// publish directly to LCM and do not make use of this system.
 ///
-/// @system { JacoStatusSender,
-///   @input_port{state}
-///   @input_port{torque (optional)}
-///   @input_port{torque_external (optional)}
-///   @input_port{current (optional)}
-///   @output_port{lcmt_jaco_status}
-/// }
+/// @system
+/// name: JacoStatusSender
+/// input_ports:
+/// - state
+/// - torque (optional)
+/// - torque_external (optional)
+/// - current (optional)
+/// output_ports:
+/// - lcmt_jaco_status
+/// @endsystem
+///
 /// @see `lcmt_jaco_status.lcm` for additional documentation.
 class JacoStatusSender : public systems::LeafSystem<double> {
  public:

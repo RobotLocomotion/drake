@@ -22,9 +22,10 @@ class SystemSliders(VectorSystem):
     @warning: Do not close the slider GUI while running a simulation. It will
     cause the simulation to crash.
 
-    @system{ SystemSliders,
-            , # no input ports
-            @output_port{slider_positions} }
+    System YAML
+        name: SystemSliders
+        output_ports:
+        - slider_positions
     """
     def __init__(self, port_size, slider_names=None,
                  lower_limit=-10., upper_limit=10.,

@@ -60,15 +60,16 @@ class PointCloudConcatenation(LeafSystem):
             in the absence of PointCloud.rgbs. Values should be between 0 and
             255. The default is white.
 
-        @system{
-          @input_port{point_cloud_CiSi_id0}
-          @input_port{X_FCi_id0}
-          .
-          .
-          .
-          @input_port{point_cloud_CiSi_idN}
-          @input_port{X_FCi_idN}
-          @output_port{point_cloud_FS}
+        System YAML
+          name: PointCloudConcatenation
+          input_ports:
+          - point_cloud_CiSi_id0
+          - X_FCi_id0
+          - ...
+          - point_cloud_CiSi_idN
+          - X_FCi_idN
+          output_ports:
+          - point_cloud_FS
         }
         """
         LeafSystem.__init__(self)

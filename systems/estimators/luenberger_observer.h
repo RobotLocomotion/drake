@@ -23,11 +23,14 @@ namespace estimators {
 ///
 /// The output of the observer system is @f$\hat{x}@f$.
 ///
-/// @system{LuenbergerObserver,
-///   @input_port{observed system input}
-///   @input_port{observed_system_output},
-///   @output_port{estimated_state}
-/// }
+/// @system
+/// name: LuenbergerObserver
+/// input_ports:
+/// - observed system input
+/// - observed_system_output
+/// output_ports:
+/// - estimated_state
+/// @endsystem
 ///
 /// @ingroup estimator_systems
 /// @tparam_default_scalars

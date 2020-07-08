@@ -18,7 +18,7 @@ Coming soon. See issue
 
 Classes that implement the `drake::systems::System <https://drake.mit
 .edu/doxygen_cxx/classdrake_1_1systems_1_1_system.html>`_ interface should add a
-simple diagram documenting their input and output ports using the `@system` and `@endsystem` doxygen tags:
+simple diagram documenting their input and output ports using the custom doxygen-style ``@system`` and ``@endsystem`` tags:
 
 .. code-block:: none
 
@@ -35,14 +35,14 @@ The text between these tags is parsed as YAML, and must define the key ``name``
 and may optionally define the lists ``input_ports`` and/or ``output_ports``. The
 values may include ``html`` code.  The class name appears in the inside of the
 rendered system block, you can get creative and add an image, or you can adjust
-the text colors of your ports.  
+the text colors of your ports.
 
 Some systems have variable numbers of ports, or ports that are created
 conditionally.  Prefer to add all possible ports to the diagram; see the `Adder
 <https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_adder.html>`_
 system for an example of a system with a variable number of ports.  The
-``@system`` doxygen tag can be used multiple times to add multiple renders of
-the system to the documentation, if the system is most clearly described by a
+``@system/@endsystem`` tags can be used multiple times to add multiple renders
+of the system to the documentation, if the system is most clearly described by a
 few examples.
 
 Documentation Tips and Tricks

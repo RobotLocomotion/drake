@@ -19,12 +19,15 @@ namespace perception {
 
 /// Converts a depth image to a point cloud.
 ///
-/// @system{ DepthImageToPointCloud,
-///          @input_port{depth_image}
-///          @input_port{color_image (optional)}
-///          @input_port{camera_pose (optional)},
-///          @output_port{point_cloud}
-/// }
+/// @system
+/// name: DepthImageToPointCloud
+/// input_ports:
+/// - depth_image
+/// - color_image (optional)
+/// - camera_pose (optional)
+/// output_ports:
+/// - point_cloud
+/// @endsystem
 ///
 /// The system has an input port that takes a depth image, an optional input
 /// port that takes a color image, and an additional optional input port that

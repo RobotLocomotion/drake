@@ -16,11 +16,14 @@ namespace schunk_wsg {
 /// the target position from the command message) combined with a saturation
 /// block (which applies the force control from the command message).
 ///
-/// @system{
-///   @input_port{state}
-///   @input_port{command_message}
-///   @output_port{force}
-/// }
+/// @system
+/// name: SchunkWsgController
+/// input_ports:
+/// - state
+/// - command_message
+/// output_ports:
+/// - force
+/// @endsystem
 ///
 /// @ingroup manipulation_systems
 class SchunkWsgController : public systems::Diagram<double> {

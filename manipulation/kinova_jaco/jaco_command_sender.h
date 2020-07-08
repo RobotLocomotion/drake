@@ -25,10 +25,13 @@ namespace kinova_jaco {
 ///
 /// This system has one abstract-valued output port of type lcmt_jaco_command.
 ///
-/// @system {
-///   @input_port{state}
-///   @output_port{lcmt_jaco_command}
-/// }
+/// @system
+/// name: JacoCommandSender
+/// input_ports:
+/// - state
+/// output_ports:
+/// - lcmt_jaco_command
+/// @endsystem
 ///
 /// @see `lcmt_jaco_command.lcm` for additional documentation.
 class JacoCommandSender : public systems::LeafSystem<double> {

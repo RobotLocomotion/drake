@@ -24,10 +24,15 @@ namespace schunk_wsg {
 /// commanded force limit.  The commanded position and force limit are scalars
 /// (BasicVector<double> of size 1).
 ///
-/// @system{ SchunkWsgCommandReceiver,
-///   @input_port{command_message},
-///   @output_port{position}
-///   @output_port{force_limit} }
+/// @system
+/// name: SchunkWsgCommandReceiver
+/// input_ports:
+/// - command_message
+/// output_ports:
+/// - position
+/// - force_limit
+/// @endsystem
+///
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
@@ -66,11 +71,15 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
 /// commanded force limit.  The commanded position and force limit are
 /// scalars (BasicVector<double> of size 1).
 ///
-/// @system{ SchunkWsgCommandSender,
-///   @input_port{position}
-///   @input_port{force_limit},
-///   @output_port{lcmt_schunk_wsg_command}
-/// }
+/// @system
+/// name: SchunkWsgCommandSender
+/// input_ports:
+/// - position
+/// - force_limit
+/// output_ports:
+/// - lcmt_schunk_wsg_command
+/// @endsystem
+///
 class SchunkWsgCommandSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandSender)
@@ -107,11 +116,15 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
 /// the signed distance between the fingers in meters and its corresponding
 /// velocity, and one for the measured force.
 ///
-/// @system{ SchunkWsgStatusReceiver,
-///   @input_port{lcmt_schunk_wsg_status},
-///   @output_port{state}
-///   @output_port{force}
-/// }
+/// @system
+/// name: SchunkWsgStatusReceiver
+/// input_ports:
+/// - lcmt_schunk_wsg_status
+/// output_ports:
+/// - state
+/// - force
+/// @endsystem
+///
 class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgStatusReceiver)
@@ -151,11 +164,14 @@ class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
 /// system has one input port for the current state of the WSG, and one
 /// optional input port for the measured gripping force.
 ///
-/// @system{ SchunkStatusSender,
-///          @input_port{state}
-///          @input_port{force},
-///          @output_port{lcmt_schunk_wsg_status}
-/// }
+/// @system
+/// name: SchunkStatusSender
+/// input_ports:
+/// - state
+/// - force
+/// output_ports:
+/// - lcmt_schunk_wsg_status
+/// @endsystem
 ///
 /// The state input is a BasicVector<double> of size 2 -- with one position
 /// and one velocity -- representing the distance between the fingers (positive

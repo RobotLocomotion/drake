@@ -39,12 +39,16 @@ namespace sensors {
 ///   1. The body to which this sensor is rigidly affixed.
 ///   2. A rigid transform from the body frame to the sensor frame.
 ///
-/// @system{Accelerometer,
-///    @input_port{body_poses}
-///    @input_port{body_spatial_velocities}
-///    @input_port{body_spatial_accelerations},
-///    @output_port{measurement}
-/// }
+/// @system
+/// name: Accelerometer
+/// input_ports:
+/// - body_poses
+/// - body_spatial_velocities
+/// - body_spatial_accelerations
+/// output_ports:
+/// - measurement
+/// @endsystem
+///
 /// @ingroup sensor_systems
 template <typename T>
 class Accelerometer final : public LeafSystem<T> {

@@ -44,7 +44,11 @@ namespace systems {
 /// @see Simulator::set_publish_every_time_step()
 /// @see Simulator::set_publish_at_initialization()
 ///
-/// @system{ SignalLogger, @input_port{data}, }
+/// @system
+/// name: SignalLogger
+/// input_ports:
+/// - data
+/// @endsystem
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems
