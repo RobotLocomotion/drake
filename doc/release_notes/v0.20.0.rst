@@ -132,12 +132,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * common: Create even or odd degree monomial basis (`#13605`_)
 * common: yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
 * common: yaml: Remove NANs from unit test (`#13589`_)  # We had been using NAN to indicate "unset default value", but it leads to awkward test phrasing because it does not compare equal with itself. Instead, we'll just use a magic sentinel.
-* doc,setup,tools: Use sphinx-doc@1.8 from Homebrew instead of Sphinx and sphinx_rtd_theme from PyPI (`#13551`_)
-* doc: Add a note about arm64 support (`#13592`_)
-* doc: Update CLion instructions to recommend CLion 2019.3.6 (`#13588`_)  # * Update CLion instructions.
-* doc: doc: Add release notes v0.19.0 (`#13512`_)
-* doc: purge unused files in doc/ (`#13613`_)
-* doc: remove outdated tex in doc folder (`#13640`_)
+* setup: Use sphinx-doc@1.8 from Homebrew instead of Sphinx and sphinx_rtd_theme from PyPI (`#13551`_)
 * examples,manipulation,math,multibody,systems: Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_)
 * examples,multibody: Declares SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
 * examples: Force older and newer yaml.dump to give the same output (`#13543`_)  # * pyyaml changed its default flow semantics in https://github.com/yaml/pyyaml/pull/256 * We must override the default with the magic tribool value `None` * Fixes #13541
