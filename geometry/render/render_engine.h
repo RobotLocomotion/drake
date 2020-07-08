@@ -13,10 +13,12 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
@@ -167,7 +169,26 @@ class RenderEngine : public ShapeReifier {
                 system.  */
   virtual void UpdateViewpoint(const math::RigidTransformd& X_WR) = 0;
 
-  /** Renders the registered geometry into the given color (rgb) image.
+  /** @name Rendering using simple camera models
+
+   These methods use a simplified camera model. They allow specification of the
+   camera image size and the the focal length in the y-direction (via the
+   given field-of-view value). However, it assumes that the focal length in the
+   x direction is the same and further assumes that camera's principal point
+   projects onto the _center_ of the image.
+
+   For %RenderEngine implementations that also depend on near and far clipping
+   planes, those planes are set arbitrarily by the implementation.
+
+   For full control over the camera model (and related rendering properties),
+   use the fully-specified variants defined below.
+   */
+  //@{
+
+  // TODO(SeanCurtis-TRI): Deprecate these (Depth)CameraProperties variants
+  //  of the render functions.
+  /** Renders the registered geometry into the given color (rgb) image based on
+   a simplified camera model.
 
    @param camera                The intrinsic properties of the camera.
    @param show_window           If true, the render window will be displayed.
@@ -176,10 +197,10 @@ class RenderEngine : public ShapeReifier {
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const = 0;
 
-  /** Renders the registered geometry into the given depth image. In contrast to
-   the other rendering operations, depth images don't have an option to display
-   the window; generally, basic depth images are not readily communicative to
-   humans.
+  /** Renders the registered geometry into the given depth image based on
+   a simplified camera model. In contrast to the other rendering operations,
+   depth images don't have an option to display the window; generally, basic
+   depth images are not readily communicative to humans.
 
    @param camera                The intrinsic properties of the camera.
    @param[out] depth_image_out  The rendered depth image.  */
@@ -187,7 +208,8 @@ class RenderEngine : public ShapeReifier {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const = 0;
 
-  /** Renders the registered geometry into the given label image.
+  /** Renders the registered geometry into the given label image based on
+   a simplified camera model.
 
    @param camera                The intrinsic properties of the camera.
    @param show_window           If true, the render window will be displayed.
@@ -196,6 +218,67 @@ class RenderEngine : public ShapeReifier {
       const CameraProperties& camera,
       bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const = 0;
+
+  //@}
+
+  /** @name Rendering using fully-specified camera models
+
+   These methods allow for full specification of the camera model -- its
+   intrinsics and render engine parameters. See the documentation of
+   ColorRenderCamera and DepthRenderCamera for the full details.
+   */
+  //@{
+
+  /** Renders the registered geometry into the given color (rgb) image based on
+   a _fully_ specified camera.
+
+   @param camera                The _render engine_ camera properties.
+   @param[out] color_image_out  The rendered color image.
+   @throws std::logic_error if `color_image_out` is `nullptr` or the size of the
+                            given input image doesn't match the size declared in
+                            `camera`.  */
+  void RenderColorImage(const ColorRenderCamera& camera,
+                        systems::sensors::ImageRgba8U* color_image_out) const {
+    ThrowIfInvalid(camera.core().intrinsics(), color_image_out, "color");
+    DoRenderColorImage(camera, color_image_out);
+  }
+
+  /** Renders the registered geometry into the given depth image based on
+   a _fully_ specified camera. In contrast to the other rendering operations,
+   depth images don't have an option to display the window; generally, basic
+   depth images are not readily communicative to humans.
+
+   @param camera                The _render engine_ camera properties.
+   @param[out] depth_image_out  The rendered depth image.
+   @throws std::logic_error if `depth_image_out` is `nullptr` or the size of the
+                            given input image doesn't match the size declared in
+                            `camera`.  */
+  void RenderDepthImage(
+      const DepthRenderCamera& camera,
+      systems::sensors::ImageDepth32F* depth_image_out) const {
+    ThrowIfInvalid(camera.core().intrinsics(), depth_image_out, "depth");
+    DoRenderDepthImage(camera, depth_image_out);
+  }
+
+  /** Renders the registered geometry into the given label image based on
+   a _fully_ specified camera.
+
+   @note This uses the ColorRenderCamera as label images are typically rendered
+   to be exactly registered with a corresponding color image.
+
+   @param camera                The _render engine_ camera properties.
+   @param[out] label_image_out  The rendered label image.
+   @throws std::logic_error if `label_image_out` is `nullptr` or the size of the
+                            given input image doesn't match the size declared in
+                            `camera`.  */
+  void RenderLabelImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageLabel16I* label_image_out) const {
+    ThrowIfInvalid(camera.core().intrinsics(), label_image_out, "label");
+    DoRenderLabelImage(camera, label_image_out);
+  }
+
+  //@}
 
   /** Reports the render label value this render engine has been configured to
    use.  */
@@ -241,6 +324,39 @@ class RenderEngine : public ShapeReifier {
 
   /** The NVI-function for cloning this render engine.  */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
+
+  /** The NVI-function for rendering color with a fully-specified camera.
+   When RenderColorImage calls this, it has already confirmed that
+   `color_image_out` is not `nullptr` and its size is consistent with the
+   camera intrinsics.
+
+   The default implementation strips out intrinsics unsupported by the simple
+   render API and prints a warning. */
+  virtual void DoRenderColorImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageRgba8U* color_image_out) const;
+
+  /** The NVI-function for rendering depth with a fully-specified camera.
+   When RenderDepthImage calls this, it has already confirmed that
+   `depth_image_out` is not `nullptr` and its size is consistent with the
+   camera intrinsics.
+
+   The default implementation strips out intrinsics unsupported by the simple
+   render API and prints a warning. */
+  virtual void DoRenderDepthImage(
+      const DepthRenderCamera& camera,
+      systems::sensors::ImageDepth32F* depth_image_out) const;
+
+  /** The NVI-function for rendering label with a fully-specified camera.
+   When RenderLabelImage calls this, it has already confirmed that
+   `label_image_out` is not `nullptr` and its size is consistent with the
+   camera intrinsics.
+
+   The default implementation strips out intrinsics unsupported by the simple
+   render API and prints a warning. */
+  virtual void DoRenderLabelImage(
+      const ColorRenderCamera& camera,
+      systems::sensors::ImageLabel16I* label_image_out) const;
 
   /** Extracts the `(label, id)` RenderLabel property from the given
    `properties` and validates it (or the configured default if no such
@@ -299,6 +415,24 @@ class RenderEngine : public ShapeReifier {
                looking towards (0, 0, 0) at a distance of 1, with up being
                (0, 1, 0).  */
   virtual void SetDefaultLightPosition(const Vector3<double>& X_DL);
+
+  template <typename ImageType>
+  static void ThrowIfInvalid(const systems::sensors::CameraInfo& intrinsics,
+                             const ImageType* image, const char* image_type) {
+    if (image == nullptr) {
+      throw std::logic_error(fmt::format(
+          "Can't render a {} image. The given output image is nullptr",
+          image_type));
+    }
+    if (image->width() != intrinsics.width() ||
+        image->height() != intrinsics.height()) {
+      throw std::logic_error(fmt::format(
+          "The {} image to write has a size different from that specified in "
+          "the camera intrinsics. Image: ({}, {}), intrinsics: ({}, {})",
+          image_type, image->width(), image->height(), intrinsics.width(),
+          intrinsics.height()));
+    }
+  }
 
  private:
   friend class RenderEngineTester;
