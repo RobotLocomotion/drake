@@ -28,14 +28,17 @@ namespace sensors {
 /** A meta-sensor that houses RGB, depth, and label cameras, producing their
  corresponding images based on the contents of the geometry::SceneGraph.
 
- @system{RgbdSensor,
-    @input_port{geometry_query},
-    @output_port{color_image}
-    @output_port{depth_image_32f}
-    @output_port{depth_image_16u}
-    @output_port{label_image}
-    @output_port{X_WB}
- }
+ @system
+ name: RgbdSensor
+ input_ports:
+ - geometry_query
+ output_ports:
+ - color_image
+ - depth_image_32f
+ - depth_image_16u
+ - label_image
+ - X_WB
+ @endsystem
 
  The following text uses terminology and conventions from CameraInfo. Please
  review its documentation.
@@ -259,14 +262,17 @@ class RgbdSensor final : public LeafSystem<double> {
  Wraps a continuous %RgbdSensor with a zero-order hold to create a discrete
  sensor.
 
- @system{%RgbdSensorDiscrete,
-    @input_port{geometry_query},
-    @output_port{color_image}
-    @output_port{depth_image_32f}
-    @output_port{depth_image_16u}
-    @output_port{label_image}
-    @output_port{X_WB}
- }
+ @system
+ name: RgbdSensorDiscrete
+ input_ports:
+ - geometry_query
+ output_ports:
+ - color_image
+ - depth_image_32f
+ - depth_image_16u
+ - label_image
+ - X_WB
+ @endsystem
  */
 class RgbdSensorDiscrete final : public systems::Diagram<double> {
  public:

@@ -18,7 +18,13 @@ namespace systems {
 /// vector of zeros for vector-valued or a given value for abstract-valued
 /// until the delay time has passed.
 ///
-/// @system{DiscreteTimeDelay, @input_port{u}, @output_port{delayed_u}}
+/// @system
+/// name: DiscreteTimeDelay
+/// input_ports:
+/// - u
+/// output_ports:
+/// - delayed_u
+/// @endsystem
 ///
 /// Let t,z ∈ ℕ be the number of delay time steps and the input vector size.
 /// For abstract-valued %DiscreteTimeDelay, z is 1.

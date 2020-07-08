@@ -56,14 +56,14 @@ drake_py_binary(
 )
 
 drake_py_library(
-    name = "mk_system_doc",
-    srcs = ["mk_system_doc.py"],
+    name = "system_doxygen",
+    srcs = ["system_doxygen.py"],
     visibility = ["//visibility:public"],
 )
 
 drake_py_unittest(
-    name = "mk_system_doc_test",
-    deps = [":mk_system_doc"],
+    name = "system_doxygen_test",
+    deps = [":system_doxygen"],
 )
 
 drake_py_binary(
@@ -72,7 +72,7 @@ drake_py_binary(
         "doxygen_main.py",
     ],
     data = [
-        "mk_system_doc.py",
+        "system_doxygen.py",
         "//:.bazelproject",
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
@@ -84,7 +84,7 @@ add_lint_tests(
         ":conf.py",
         # The following needs the executable flag to be run by doxygen, but the
         # linter complains:
-        ":mk_system_doc.py",
+        ":system_doxygen.py",
     ],
     python_lint_extra_srcs = [":doxygen.py"],
 )

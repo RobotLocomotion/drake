@@ -46,7 +46,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
-        "//doc:mk_system_doc",
+        "//doc:system_doxygen",
         "@clang_cindex_python3//:clang",
     ],
 )

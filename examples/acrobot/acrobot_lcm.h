@@ -64,9 +64,13 @@ class AcrobotCommandSender : public systems::LeafSystem<double> {
 /// acrobot input channel with LCM type lcmt_acrobot_u, and outputs the
 /// acrobot input as a BasicVector.
 ///
-/// @system{ AcrobotCommandReceiver,
-///   @input_port{lcmt_acrobot_u},
-///   @output_port{elbow_torque} }
+/// @system
+/// name: AcrobotCommandReceiver
+/// input_ports:
+/// - lcmt_acrobot_u
+/// output_ports:
+/// - elbow_torque
+/// @endsystem
 ///
 /// @ingroup acrobot_systems
 class AcrobotCommandReceiver : public systems::LeafSystem<double> {
@@ -82,9 +86,13 @@ class AcrobotCommandReceiver : public systems::LeafSystem<double> {
 /// message with type lcm_acrobot_x. Its output port is usually connected to
 /// an LcmPublisherSystem to publish the messages it generates.
 ///
-/// @system{ AcrobotStateSender,
-///   @input_port{acrobot_state},
-///   @output_port{lcmt_acrobot_x} }
+/// @system
+/// name: AcrobotStateSender
+/// input_ports:
+/// - acrobot_state
+/// output_ports:
+/// - lcmt_acrobot_x
+/// @endsystem
 ///
 /// @ingroup acrobot_systems
 class AcrobotStateSender : public systems::LeafSystem<double> {

@@ -101,27 +101,28 @@ enum class ContactModel {
 /// collection of interconnected bodies.  See @ref multibody for an overview of
 /// concepts/notation.
 ///
-/// @system{MultibodyPlant,
-///   @input_port{applied_generalized_force}
-///   @input_port{applied_spatial_force}
-///   @input_port{<em style="color:gray">
-///     model_instance_name[i]</em>_actuation}
-///   @input_port{<span style="color:green">geometry_query</span>},
-///   @output_port{continuous_state}
-///   @output_port{body_poses}
-///   @output_port{body_spatial_velocities}
-///   @output_port{body_spatial_accelerations}
-///   @output_port{generalized_acceleration}
-///   @output_port{reaction_forces}
-///   @output_port{contact_results}
-///   @output_port{<em style="color:gray">
-///     model_instance_name[i]</em>_continuous_state}
-///   @output_port{<em style="color:gray">
-///     model_instance_name[i]</em>_generalized_acceleration}
-///   @output_port{<em style="color:gray">
-///     model_instance_name[i]</em>_generalized_contact_forces}
-///   @output_port{<span style="color:green">geometry_pose</span>}
-/// }
+/// @system
+/// name: MultibodyPlant
+/// input_ports:
+/// - applied_generalized_force
+/// - applied_spatial_force
+/// - <em style="color:gray">model_instance_name[i]</em>_actuation
+/// - <span style="color:green">geometry_query</span>
+/// output_ports:
+/// - continuous_state
+/// - body_poses
+/// - body_spatial_velocities
+/// - body_spatial_accelerations
+/// - generalized_acceleration
+/// - reaction_forces
+/// - contact_results
+/// - <em style="color:gray">model_instance_name[i]</em>_continuous_state
+/// - '<em style="color:gray">
+///   model_instance_name[i]</em>_generalized_acceleration'
+/// - '<em style="color:gray">
+///   model_instance_name[i]</em>_generalized_contact_forces'
+/// - <span style="color:green">geometry_pose</span>
+/// @endsystem
 ///
 /// The ports whose names begin with <em style="color:gray">
 /// model_instance_name[i]</em> represent groups of ports, one for each of the

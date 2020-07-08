@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
-# Usage:
-#   mk_system_doc input-file
-# Will load input-file from disk, replace our custom doxygen @system tags into
-# html code that can be rendered in the browser, and print the updated file
-# contents to stdout.
+# Usage: 
+#   system_doxygen input-file
+#
+# Will load input-file from disk, replace our custom doxygen @system/@endsystem
+# tags into html code that can be rendered in the browser, and print the updated
+# file contents to stdout.
 #
 # This is intended to be used as an INPUT_FILTER for doxygen.
 #
-# The generate_system_html is also used by mkdoc.py to handle this custom tag
-# in the python documentation.
+# These utilities are also used by mkdoc.py to handle this custom tag in the 
+# python documentation.
 
 import re
 import sys
@@ -17,10 +18,20 @@ import yaml
 
 
 def generate_system_html(comment):
+    """
+    Converts a yaml description of a system into an html table.  It is designed to accept the text *between* (and not including) the @system and @endsystem tags.  It allows C++ comments:
+      - /// and leading * comments markings are simply removed, as we expect the tag to reside in a comment block.
+      - // comments imply that the remainder of the line should be removed.
+    """
     comment = re.sub(r'\/\/\/', '', comment)
     comment = re.sub(r'\/\/.*', '', comment)
     comment = re.sub(r'\n\s*\*', '\n', comment)
-    y = yaml.load(comment, Loader=yaml.SafeLoader)
+    try:
+        y = yaml.load(comment, Loader=yaml.SafeLoader)
+    except yaml.scanner.ScannerError as e:
+        print(comment, file=sys.stderr)
+        raise(e)
+
     input_port_html = ""
     if "input_ports" in y:
         for p in y["input_ports"]:
@@ -40,16 +51,14 @@ def generate_system_html(comment):
 
 
 def process_doxygen_system_tags(s, add_rst_preamble=False):
-    # Process any @system{ } blocks
+    """
+    Given a multiline string s (potentially the entire contents of a c++ file), this finds the @system / @endsystem tags and calls generate_system_html() on their contents.
+    """ 
     index = 0
     start_tag = "@system"
     end_tag = "@endsystem"
     while s.find(start_tag, index) > 0:
         start = s.find(start_tag, index)
-        # Ignore deprecated @system{ } style tag.
-        if (s[start+len(start_tag)] == "{"):
-            index = start + len(start_tag)
-            continue
         end = s.find(end_tag, start + len(start_tag))
         html = generate_system_html(s[start + len(start_tag):end])
         if add_rst_preamble:
@@ -61,7 +70,7 @@ def process_doxygen_system_tags(s, add_rst_preamble=False):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        raise RuntimeError("Usage: mk_system_doc.py input_file")
+        raise RuntimeError("Usage: system_doxygen.py input_file")
 
     # Load the file in batch into a string.
     with open(sys.argv[1], 'r') as f:

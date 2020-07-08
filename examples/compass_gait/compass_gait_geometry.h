@@ -11,10 +11,13 @@ namespace compass_gait {
 
 /// Expresses a CompassGait's geometry to a SceneGraph.
 ///
-/// @system{CompassGaitGeometry,
-///    @input_port{floating_base_state},
-///    @output_port{geometry_pose}
-/// }
+/// @system
+/// name: CompassGaitGeometry
+/// input_ports:
+/// - floating_base_state
+/// output_ports:
+/// - geometry_pose
+/// @endsystem
 ///
 /// This class has no public constructor; instead use the AddToBuilder() static
 /// method to create and add it to a DiagramBuilder directly.
