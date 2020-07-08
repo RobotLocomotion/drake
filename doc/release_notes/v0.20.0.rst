@@ -122,12 +122,25 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
+* Automatic conversion and interop between RigidTransform/Isometry3 (`#13595`_, `#13607`_, `#13608`_)
+
+  * drake::math::RigidTransform::linear
+  * drake::math::RigidTransform::matrix
+  * drake::math::RigidTransform::operator Isometry3
+
+* All functions within manipulation/util/bot_core_lcm_encode_decode.h (`#13596`_)
+
+  * ::EncodeVector3d
+  * ::DecodeVector3d
+  * ::EncodeQuaternion
+  * ::DecodeQuaternion
+  * ::EncodePose
+  * ::DecodePose
+  * ::EncodeTwist
+  * ::DecodeTwist
+
 * pydrake.geometry.SceneGraphInspector.GetNameByFrameId (`#13559`_)
 * pydrake.geometry.SceneGraphInspector.GetNameByGeometryId (`#13559`_)
-
-TBD
-* Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_, `#13607`_, `#13608`_)
-* Deprecate bot_core_encode_decode (`#13596`_)
 
 The RigidBodyPlant and all of the drake "attic" is scheduled for removal on
 2020-09-01 (`#12158`_, `#13030`_).  Please see `#12158`_ for details of the
