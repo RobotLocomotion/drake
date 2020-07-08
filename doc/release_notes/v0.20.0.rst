@@ -86,6 +86,15 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 TBD
+* tools: Link to nlopt_cxx on Focal and do not use pkg-config (`#13633`_)
+* tools: Prefer Python 3 sphinx-build on Ubuntu (`#13575`_)  # Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
+* tools: workspace: Update buildifier to latest release 3.3.0 (`#13620`_)
+* tools: workspace: Update pybind11 fork to latest commit (`#13579`_)  # Merge pybind/pybind11@master into RobotLocomotion/pybind11@drake
+* tools: workspace: Upgrade fcl to latest commit (`#13621`_)
+* tools: workspace: Upgrade googlebenchmark to latest release (`#13623`_)
+* tools: workspace: Upgrade lcm to latest commit (`#13622`_)
+* tools: Remove deprecated version support 2020-07-01 (`#13611`_)
+* tools: Use sphinx-doc@1.8 from Homebrew instead of Sphinx and sphinx_rtd_theme from PyPI (`#13551`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -119,7 +128,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
   Current newest_commit 0eccf1a5f26727bcf394443d4aee22e4278cac5f (inclusive).
 
-* CMakeLists.txt,setup,tools: tools: Remove deprecated version support 2020-07-01 (`#13611`_)
 * bindings: Add ConnectMeshcatVisualizer (`#13632`_)  # Provides the same syntactic sugar that we've given to ConnectDrakeVisualizer and ConnectPlanarSceneGraphVisualizer.  (the implementation here is almost identical to the planar scene graph version)
 * bindings: Add bindings for SceneGraphInspector and Shapes (`#13559`_)
 * bindings: Add python binding for MPResult.set_x_val (`#13577`_)
@@ -128,11 +136,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * bindings: Pass animation arguments through to meshcat (`#13643`_)  # I've named them here, instead of passing kwargs, to improve readability/usability.
 * bindings: pydrake: Add regression test for deprecated Isometry3 stubs (`#13608`_)  # This tests the fixes in de3271607a4d3c1313c49e73e90db04a52feff04.
 * common,systems: trajectories: Remove deprecated methods 2020-07-01 (`#13610`_)
-* common,third_party,tools: Remove old Python 2-isms (`#13569`_)  # * `__future__`: All relevant features are part of Python 3.6 * https://docs.python.org/3.6/library/__future__.html#module-__future__ * `class MyClass(object)`: All classes extend object in Python 3 * https://docs.python.org/3/reference/compound_stmts.html#class
 * common: Create even or odd degree monomial basis (`#13605`_)
 * common: yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
 * common: yaml: Remove NANs from unit test (`#13589`_)  # We had been using NAN to indicate "unset default value", but it leads to awkward test phrasing because it does not compare equal with itself. Instead, we'll just use a magic sentinel.
-* setup: Use sphinx-doc@1.8 from Homebrew instead of Sphinx and sphinx_rtd_theme from PyPI (`#13551`_)
 * examples,manipulation,math,multibody,systems: Deprecate RigidTransform/Isometry3 automatic conversion (`#13595`_)
 * examples,multibody: Declares SceneGraph related ports in MultibodyPlant constructor (`#13558`_)
 * examples: Force older and newer yaml.dump to give the same output (`#13543`_)  # * pyyaml changed its default flow semantics in https://github.com/yaml/pyyaml/pull/256 * We must override the default with the magic tribool value `None` * Fixes #13541
@@ -157,10 +163,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * systems: Fix Mac CI - exact comparison fails in camera_info_test (`#13634`_)  # Conversion from field-of-view to focal length and back is not perfectly invertible on mac. This changes the test from "equals" to "near".
 * systems: Implement BeamModel's scalar conversion constructor (`#13615`_)
 * systems: Implement SystemVisitor (`#13628`_)  # Provides a visitor pattern to introspect into Diagrams (as Diagrams) and LeafSystems (as Systems) from a const System<T>&.  This is very useful for looping through a nested diagram.
-* tools: Link to nlopt_cxx on Focal and do not use pkg-config (`#13633`_)
-* tools: Prefer Python 3 sphinx-build on Ubuntu (`#13575`_)  # Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
-* tools: workspace: Update buildifier to latest release 3.3.0 (`#13620`_)
-* tools: workspace: Update pybind11 fork to latest commit (`#13579`_)  # Merge pybind/pybind11@master into RobotLocomotion/pybind11@drake
-* tools: workspace: Upgrade fcl to latest commit (`#13621`_)
-* tools: workspace: Upgrade googlebenchmark to latest release (`#13623`_)
-* tools: workspace: Upgrade lcm to latest commit (`#13622`_)
