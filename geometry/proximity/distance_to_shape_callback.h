@@ -387,7 +387,7 @@ struct ScalarSupport<double> {
 template <typename DerType>
 struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   static bool is_supported(fcl::NODE_TYPE node1, fcl::NODE_TYPE node2) {
-    // Explicitly whitelist the  following pair types (with ordering
+    // Explicitly permit the following pair types (with ordering
     // permutations):
     //  (sphere, sphere)
     //  (sphere, box)
