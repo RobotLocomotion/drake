@@ -142,10 +142,6 @@ Newly-deprecated APIs
 * pydrake.geometry.SceneGraphInspector.GetNameByFrameId (`#13559`_)
 * pydrake.geometry.SceneGraphInspector.GetNameByGeometryId (`#13559`_)
 
-The RigidBodyPlant and all of the drake "attic" is scheduled for removal on
-2020-09-01 (`#12158`_, `#13030`_).  Please see `#12158`_ for details of the
-timeline, and let us know if this will cause a problem.
-
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
