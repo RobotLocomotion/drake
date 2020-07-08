@@ -15,7 +15,3 @@ class TestSdpaFreeFormat(unittest.TestCase):
         file_name = temp_directory() + "/sdpa"
         self.assertTrue(GenerateSDPA(prog=prog, file_name=file_name))
         self.assertTrue(os.path.exists(file_name + ".dat-s"))
-
-        # Add a free variable, now sdpa format cannot be generated.
-        prog.NewContinuousVariables(1)
-        self.assertFalse(GenerateSDPA(prog=prog, file_name=file_name))
