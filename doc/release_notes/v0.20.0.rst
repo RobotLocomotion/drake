@@ -110,16 +110,14 @@ TBD
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
-* tools: Link to nlopt_cxx on Focal and do not use pkg-config (`#13633`_)
-* tools: Prefer Python 3 sphinx-build on Ubuntu (`#13575`_)  # Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
-* tools: workspace: Update buildifier to latest release 3.3.0 (`#13620`_)
-* tools: workspace: Update pybind11 fork to latest commit (`#13579`_)  # Merge pybind/pybind11@master into RobotLocomotion/pybind11@drake
-* tools: workspace: Upgrade fcl to latest commit (`#13621`_)
-* tools: workspace: Upgrade googlebenchmark to latest release (`#13623`_)
-* tools: workspace: Upgrade lcm to latest commit (`#13622`_)
-* tools: Remove deprecated version support 2020-07-01 (`#13611`_)
-* tools: Use sphinx-doc@1.8 from Homebrew instead of Sphinx and sphinx_rtd_theme from PyPI (`#13551`_)
+* On macOS, use Sphinx from Homebrew instead of PyPI (`#13551`_, `#13575`_)
+* On Ubuntu, the minimum GCC version is now 7.5 (`#13611`_)
+* Fix Ubuntu Focal 20.04 to use C++ flavor of nlopt (`#13633`_)
+* Upgrade buildifier to latest release 3.3.0 (`#13620`_)
+* Upgrade fcl to latest commit (`#13621`_)
+* Upgrade googlebenchmark to latest release (`#13623`_)
+* Upgrade lcm to latest commit (`#13622`_)
+* Upgrade pybind11 fork to latest commit (`#13579`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
