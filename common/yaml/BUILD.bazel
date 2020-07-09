@@ -38,6 +38,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
+        "//common:nice_type_name",
         "//third_party/com_github_jbeder_yaml_cpp:emitfromevents",
         "@yaml_cpp",
     ],
@@ -71,6 +72,7 @@ drake_cc_googletest(
     deps = [
         ":yaml_write_archive",
         "//common:name_value",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
