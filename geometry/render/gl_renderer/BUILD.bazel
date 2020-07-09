@@ -15,7 +15,7 @@ load(
     "drake_cc_package_library_gl_per_os",
 )
 
-package(default_visibility = ["//geometry/render/gl_renderer:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library_gl_per_os(
     name = "gl_renderer",
