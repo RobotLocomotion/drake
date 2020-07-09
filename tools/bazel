@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+if [[ "$(uname -s)" == Linux ]]; then
+  if [[ "${CC:-}" == clang ]]; then
+    export CC=clang-9
+  fi
+
+  if [[ "${CXX:-}" == clang++ ]]; then
+    export CXX=clang++-9
+  fi
+
+  if command -v "${CC:-}" &>/dev/null; then
+    "${CC:-}" --version >&2
+  fi
+
+  if command -v "${CXX:-}" &>/dev/null; then
+    "${CXX:-}" --version >&2
+  fi
+
+  exec -a "$0" /usr/bin/bazel-real "$@"
+
+elif [[ "$(uname -s)" == Darwin ]]; then
+  xcrun clang --version >&2
+
+  exec -a "$0" /usr/local/opt/bazel/libexec/bin/bazel-real "$@"
+
+else
+  echo 'Operating system is NOT supported' >&2
+  exit 1
+fi
