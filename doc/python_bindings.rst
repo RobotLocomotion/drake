@@ -16,11 +16,6 @@ installed as a single package called ``pydrake``.
    Please uninstall Anaconda or remove the Anaconda ``bin`` directory from the
    ``PATH`` before building or using the Drake Python bindings.
 
-.. warning::
-   On macOS, Drake only supports Python 3.8, which is located at
-   ``/usr/local/opt/python@3.8/bin/python3`` and is not usually on the
-   ``PATH``.
-
 .. _python-bindings-binary:
 
 Installation
@@ -58,6 +53,12 @@ Next, ensure that your ``PYTHONPATH`` is properly configured.
 .. code-block:: shell
 
     export PYTHONPATH=/opt/drake/lib/python3.6/site-packages:${PYTHONPATH}
+
+*Ubuntu 20.04 (Focal):*
+
+.. code-block:: shell
+
+    export PYTHONPATH=/opt/drake/lib/python3.8/site-packages:${PYTHONPATH}
 
 *macOS:*
 
@@ -140,6 +141,13 @@ You will also need to have your ``PYTHONPATH`` configured correctly.
     cd drake-build
     export PYTHONPATH=${PWD}/install/lib/python3.6/site-packages:${PYTHONPATH}
 
+*Ubuntu 20.04 (Focal):*
+
+.. code-block:: shell
+
+    cd drake-build
+    export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
+
 *macOS:*
 
 .. code-block:: shell
@@ -158,18 +166,9 @@ Check Installation
 After following the above install steps, check to ensure you can import
 ``pydrake``.
 
-*Ubuntu 18.04 (Bionic):*
-
 .. code-block:: shell
 
     python3 -c 'import pydrake; print(pydrake.__file__)'
-
-*macOS:*
-
-.. code-block:: shell
-
-    /usr/local/opt/python@3.8/bin/python3 -c 'import pydrake; print(pydrake.__file__)'
-
 
 .. _using-python-mac-os-path:
 
