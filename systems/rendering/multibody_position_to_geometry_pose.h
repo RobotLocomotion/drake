@@ -14,10 +14,13 @@ namespace rendering {
  * directly to a geometry::FramePoseVector<T> to behave like a
  * MultibodyPlant::get_geometry_pose_output_port().
  *
- * @system{ MultibodyPositionToGeometryPose,
- *          @input_port{position},
- *          @output_port{geometry_pose}
- * }
+ * @system
+ * name: MultibodyPositionToGeometryPose
+ * input_ports:
+ * - position
+ * output_ports:
+ * - geometry_pose
+ * @endsystem
  *
  * The position input must be a vector whose length matches either the
  * number of positions in the MultibodyPlant or the number of states (based

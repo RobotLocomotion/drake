@@ -60,12 +60,14 @@ void SaveToPng(const ImageLabel16I& image, const std::string& file_path);
  By design, this system is intended to work with RgbdCamera, but can connect to
  any output port that provides images.
 
- @system{ImageWriter,
-    @input_port{declared_image1}
-    @input_port{declared_image2}
-    @input_port{...}
-    @input_port{declared_imageN},
- }
+ @system
+ name: ImageWriter
+ input_ports:
+ - declared_image1
+ - declared_image2
+ - ...
+ - declared_imageN
+ @endsystem
 
  %ImageWriter supports three specific types of images:
 

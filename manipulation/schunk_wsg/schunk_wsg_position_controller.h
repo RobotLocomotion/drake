@@ -34,12 +34,16 @@ namespace schunk_wsg {
 /// force_limit].  The expectation is that
 ///   kp_constraint ≫ kp_command.
 ///
-/// @system{ SchunkWSGPdController,
-///   @input_port{desired_state}
-///   @input_port{force_limit}
-///   @input_port{state},
-///   @output_port{generalized_force}
-///   @output_port{grip_force} }
+/// @system
+/// name: SchunkWSGPdController
+/// input_ports:
+/// - desired_state
+/// - force_limit
+/// - state
+/// output_ports:
+/// - generalized_force
+/// - grip_force
+/// @endsystem
 ///
 /// The desired_state is a BasicVector<double> of size 2 (position and
 /// velocity of the distance between the fingers).  The force_limit is a
@@ -113,12 +117,16 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 /// velocity from the desired position commands.  It is a thin wrapper
 /// around SchunkWsgPdController.
 ///
-/// @system{ SchunkWSGPositionController,
-///   @input_port{desired_position}
-///   @input_port{force_limit}
-///   @input_port{state},
-///   @output_port{generalized_force}
-///   @output_port{grip_force} }
+/// @system
+/// name: SchunkWSGPositionController
+/// input_ports:
+/// - desired_position
+/// - force_limit
+/// - state
+/// output_ports:
+/// - generalized_force
+/// - grip_force
+/// @endsystem
 ///
 /// @see SchunkWsgPdController
 class SchunkWsgPositionController : public systems::Diagram<double> {

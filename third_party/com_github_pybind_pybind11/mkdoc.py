@@ -22,7 +22,7 @@ from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
 from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
-
+from drake.doc.system_doxygen import process_doxygen_system_tags
 
 CLASS_KINDS = [
     CursorKind.CLASS_DECL,
@@ -355,6 +355,8 @@ def process_comment(comment):
         s = re.sub(r'[@\\]%s(?:\{\.\w+\})?\s?(.*?)\s?[@\\]%s' % (start_, end_),
                    r"```\n\1\n```\n", s, flags=re.DOTALL)
 
+    s = process_doxygen_system_tags(s, add_rst_preamble=True)
+
     s = re.sub(r'[@\\](?:end)?htmlonly\s+', r'', s)
 
     # These commands are always prefixed with an @ sign.
@@ -633,7 +635,22 @@ def process_comment(comment):
         elif in_code_segment:
             result += '    '.join(('\n' + x.strip()).splitlines(True))
         else:
-            for y in re.split(r'(?: *\n *){2,}', x):
+            in_rst_directive = False
+            for y in re.split(r'(?: *\n){2,}', x):
+                # Do not reflow rst directives.
+                # These appear, for instance, through our implementation of the
+                # custom @system / @endsystem tags.
+                if in_rst_directive:
+                    if y[:3] != '   ':
+                        in_rst_directive = False
+                        # and program flow continues in this loop.
+                    else:
+                        result += y + '\n\n'
+                        continue
+                elif y[:3] == '.. ':
+                    in_rst_directive = True
+                    result += y + '\n\n'
+                    continue
                 lines = re.split(r'(?: *\n *)', y)
                 # Do not reflow lists or section headings.
                 if (re.match(r'^(?:[*+\-]|[0-9]+[.)]) ', lines[0])

@@ -12,10 +12,13 @@ namespace pendulum {
 /// A model of a simple pendulum
 /// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = \tau @f]
 ///
-/// @system{PendulumPlant,
-///    @input_port{tau},
-///    @output_port{state}
-/// }
+/// @system
+/// name: PendulumPlant
+/// input_ports:
+/// - tau
+/// output_ports:
+/// - state
+/// @endsystem
 ///
 /// @tparam_default_scalar
 template <typename T>

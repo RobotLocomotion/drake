@@ -21,9 +21,10 @@ class JointSliders(VectorSystem):
     floating-base "mobilizers") are held constant at the default value
     obtained from robot.CreateDefaultContext().
 
-    @system{ JointSliders,
-             , # no input ports
-             @output_port{positions} }
+    System YAML
+        name: JointSliders
+        output_ports:
+        - positions
     """
 
     def __init__(self, robot, lower_limit=-10., upper_limit=10.,
@@ -147,10 +148,11 @@ class SchunkWsgButtons(LeafSystem):
     Adds buttons to open/close the Schunk WSG gripper to an existing Tkinter
     window.
 
-    @system{ SchunkWsgButtons,
-             , # no input ports
-             @output_port{position}
-             @output_port{max_force} }
+    System YAML
+        name: SchunkWsgButtons
+        output_ports:
+        - position
+        - max_force
     """
 
     def __init__(self, window=None, open_position=0.107,

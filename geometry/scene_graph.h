@@ -36,10 +36,16 @@ class QueryObject;
  interface for registering the geometry, updating its position based on the
  current context, and performing geometric queries.
 
- @system{SceneGraph,
-   @input_port{source_pose{0}} @input_port{...} @input_port{source_pose{N-1}},
-   @output_port{lcm_visualization} @output_port{query}
- }
+ @system
+ name: SceneGraph
+ input_ports:
+ - source_pose{0}
+ - ...
+ - source_pose{N-1}
+ output_ports:
+ - lcm_visualization
+ - query
+ @endsystem
 
  Only registered "geometry sources" can introduce geometry into %SceneGraph.
  Geometry sources will typically be other leaf systems, but, in the case of
