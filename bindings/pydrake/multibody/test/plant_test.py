@@ -591,8 +591,8 @@ class TestPlant(unittest.TestCase):
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_B=base_frame, p_BoBp_B=np.zeros(3), frame_A=world_frame,
             frame_E=world_frame)
-        self.assert_sane(AsBias_ABp, nonzero=False)
-        self.assertEqual(AsBias_ABp.shape, (6,))
+        self.assert_sane(AsBias_ABp.rotational(), nonzero=False)
+        self.assert_sane(AsBias_ABp.translational(), nonzero=False)
         asBias_ABi = plant.CalcBiasTranslationalAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_B=base_frame, p_BoBi_B=np.zeros(3), frame_A=world_frame,
