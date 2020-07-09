@@ -591,13 +591,13 @@ class TestPlant(unittest.TestCase):
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_B=base_frame, p_BoBp_B=np.zeros(3), frame_A=world_frame,
             frame_E=world_frame)
-        self.assert_sane(AsBias_ABp)
+        self.assert_sane(AsBias_ABp, nonzero=False)
         self.assertEqual(AsBias_ABp.shape, (6,))
         asBias_ABi = plant.CalcBiasTranslationalAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
             frame_B=base_frame, p_BoBi_B=np.zeros(3), frame_A=world_frame,
             frame_E=world_frame)
-        self.assert_sane(asBias_ABi)
+        self.assert_sane(asBias_ABi, nonzero=False)
         self.assertEqual(asBias_ABi.shape, (3, 1))
 
             Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
