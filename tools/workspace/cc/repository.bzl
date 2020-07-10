@@ -127,8 +127,8 @@ def _impl(repository_ctx):
             ))
 
     elif compiler_id == "Clang":
-        if compiler_version_major < 6:
-            fail("Clang compiler version {}.{} is less than 6.0.".format(
+        if compiler_version_major < 9:
+            fail("Clang compiler version {}.{} is less than 9.0".format(
                 compiler_version_major,
                 compiler_version_minor,
             ))
