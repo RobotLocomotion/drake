@@ -54,8 +54,8 @@ py_binary(
 py_library(
     name = "mkdoc_comment_py",
     srcs = ["mkdoc_comment.py"],
-    deps = ["//doc:system_doxygen",]
     visibility = ["//visibility:public"],
+    deps = ["//doc:system_doxygen"],
 )
 
 drake_py_unittest(
