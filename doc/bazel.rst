@@ -38,9 +38,9 @@ https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 On Ubuntu, the default compiler is the first ``gcc`` compiler in the
 ``PATH``, usually GCC 7.5 on Bionic and GCC 9.3 on Focal. On macOS, the default
-compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu 18.04 (Bionic),
-set the ``CC`` and ``CXX`` environment variables before running **bazel build**,
-**bazel test** or any other **bazel** commands.
+compiler is the Apple LLVM compiler. To use Clang 9 on Ubuntu, set the ``CC``
+and ``CXX`` environment variables before running **bazel build**, **bazel test**
+or any other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
@@ -48,8 +48,8 @@ Cheat sheet for operating on the entire project::
   bazel build //...                               # Build the entire project.
   bazel test //...                                # Build and test the entire project.
 
-  CC=clang CXX=clang++ bazel build //...          # Build using Clang 6.0 on Bionic.
-  CC=clang CXX=clang++ bazel test //...           # Build and test using Clang 6.0 on Bionic.
+  CC=clang-9 CXX=clang++-9 bazel build //...      # Build using Clang 9 on Ubuntu.
+  CC=clang-9 CXX=clang++-9 bazel test //...       # Build and test using Clang 9 on Ubuntu.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".

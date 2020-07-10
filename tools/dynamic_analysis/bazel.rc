@@ -43,6 +43,9 @@ build:asan --copt=-O0
 build:asan --copt=-fno-omit-frame-pointer
 build:asan --linkopt=-fsanitize=address
 build:asan --linkopt=-fsanitize-address-use-after-scope
+# ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
+build:asan --linkopt=-fuse-ld=ld
+build:asan --start_end_lib=no
 build:asan --run_under=//tools/dynamic_analysis:asan
 build:asan --test_env=ASAN_OPTIONS
 build:asan --test_env=LSAN_OPTIONS
@@ -70,6 +73,9 @@ build:asan_everything --copt=-O0
 build:asan_everything --copt=-fno-omit-frame-pointer
 build:asan_everything --linkopt=-fsanitize=address
 build:asan_everything --linkopt=-fsanitize-address-use-after-scope
+# ld.gold: warning: Cannot export local symbol __asan_extra_spill_area
+build:asan --linkopt=-fuse-ld=ld
+build:asan --start_end_lib=no
 # LSan is run with ASan by default
 build:asan_everything --test_tag_filters=-no_asan,-no_lsan
 build:asan_everything --run_under=//tools/dynamic_analysis:asan
@@ -164,9 +170,9 @@ build:tsan_everything --test_timeout=300,1500,5400,18000
 build:ubsan --build_tests_only
 build:ubsan --copt -g
 build:ubsan --copt -fsanitize=undefined
-# Since Bazel uses clang instead of clang++, enabling -fsanitize=vptr would
-# require extra linkopts that cause segmentation faults on pure C code.
-build:ubsan --copt -fno-sanitize=float-divide-by-zero,vptr
+# Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
+# would require extra linkopts that cause segmentation faults on pure C code.
+build:ubsan --copt -fno-sanitize=float-divide-by-zero,function,vptr
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
@@ -188,10 +194,10 @@ build:ubsan_everything --define=WITH_MOSEK=ON
 build:ubsan_everything --define=WITH_SNOPT=ON
 build:ubsan_everything --copt -g
 build:ubsan_everything --copt -fsanitize=undefined
-# Since Bazel uses clang instead of clang++, enabling -fsanitize=vptr would
-# require extra linkopts that cause segmentation faults on pure C code.
+# Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
+# would require extra linkopts that cause segmentation faults on pure C code.
 # TODO(jamiesnape): Enable -fsanitize=pointer-overflow when SNOPT is fixed.
-build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,pointer-overflow,vptr
+build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero,function,pointer-overflow,vptr
 build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
 # TODO(jamiesnape): Find a solution to using sanitizer blacklists with the
