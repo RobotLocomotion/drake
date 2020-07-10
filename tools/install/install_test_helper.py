@@ -100,8 +100,6 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     """
     if from_install_dir:
         cmd[0] = os.path.join(get_install_dir(), cmd[0])
-    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
-    # the python formula is updated to 3.8.
     env = os.environ
     if sys.platform == 'darwin':
         env['PATH'] = '/usr/local/opt/python@3.8/bin:' + env['PATH']
@@ -127,8 +125,6 @@ def check_call(args, *extra_args, **kwargs):
     if args[0].endswith('.py'):
         # Ensure that we test with the same Python version that Bazel is using.
         args = [get_python_executable()] + args
-    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
-    # the python formula is updated to 3.8.
     if 'env' in kwargs:
         env = kwargs.pop('env')
     else:
@@ -146,8 +142,6 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    # TODO(jamiesnape): Remove /usr/local/opt/python@3.8/bin from the PATH when
-    # the python formula is updated to 3.8.
     if 'env' in kwargs:
         env = kwargs.pop('env')
     else:
