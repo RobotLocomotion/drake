@@ -18,6 +18,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/sos_basis_generator.h"
 #include "drake/solvers/symbolic_extraction.h"
@@ -147,18 +148,40 @@ void MathematicalProgram::AddDecisionVariables(
   AppendNanToEnd(decision_variables.rows(), &x_initial_guess_);
 }
 
-symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
-    const Variables& indeterminates, const int degree,
-    const string& coeff_name) {
-  const drake::VectorX<symbolic::Monomial> m{
-      MonomialBasis(indeterminates, degree)};
+symbolic::Polynomial MathematicalProgram::NewFreePolynomialImpl(
+    const Variables& indeterminates, const int degree, const string& coeff_name,
+    symbolic::internal::DegreeType degree_type) {
+  const drake::VectorX<symbolic::Monomial> m =
+      symbolic::internal::ComputeMonomialBasis<Eigen::Dynamic>(
+          indeterminates, degree, degree_type);
   const VectorXDecisionVariable coeffs{
-      NewContinuousVariables(m.size(), coeff_name)};
+      this->NewContinuousVariables(m.size(), coeff_name)};
   symbolic::Polynomial p;
   for (int i = 0; i < m.size(); ++i) {
     p.AddProduct(coeffs(i), m(i));  // p += coeffs(i) * m(i);
   }
   return p;
+}
+
+symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
+    const Variables& indeterminates, const int degree,
+    const string& coeff_name) {
+  return NewFreePolynomialImpl(indeterminates, degree, coeff_name,
+                               symbolic::internal::DegreeType::kAny);
+}
+
+symbolic::Polynomial MathematicalProgram::NewEvenDegreeFreePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    const std::string& coeff_name) {
+  return NewFreePolynomialImpl(indeterminates, degree, coeff_name,
+                               symbolic::internal::DegreeType::kEven);
+}
+
+symbolic::Polynomial MathematicalProgram::NewOddDegreeFreePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    const std::string& coeff_name) {
+  return NewFreePolynomialImpl(indeterminates, degree, coeff_name,
+                               symbolic::internal::DegreeType::kOdd);
 }
 
 // This is the utility function for creating new nonnegative polynomials
