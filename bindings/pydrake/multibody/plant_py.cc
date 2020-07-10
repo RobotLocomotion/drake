@@ -415,8 +415,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
                 const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_ABi_E(
-                  3, GetVariableSize<T>(*self, with_respect_to));
+              const int num_points = p_BoBi_B.cols();
+              MatrixX<T> Js_v_ABi_E(
+                  3 * num_points, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianTranslationalVelocity(context, with_respect_to,
                   frame_B, p_BoBi_B, frame_A, frame_E, &Js_v_ABi_E);
               return Js_v_ABi_E;
