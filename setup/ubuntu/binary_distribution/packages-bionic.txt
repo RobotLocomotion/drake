@@ -11,8 +11,8 @@ libeigen3-dev
 libexpat1
 libgflags2.2
 libgfortran4
-libgl1-mesa-glx
 libglib2.0-0
+libglx0
 libhdf5-100
 libjpeg8
 libjsoncpp1
@@ -21,6 +21,7 @@ libldl2
 libnetcdf13
 libnlopt0
 libogg0
+libopengl0
 libpng16-16
 libqt5multimedia5
 libqt5x11extras5

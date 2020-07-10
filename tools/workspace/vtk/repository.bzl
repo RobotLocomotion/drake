@@ -693,6 +693,7 @@ licenses([
             ":vtkRenderingCore",
             ":vtksys",
             VTKGLEW,
+            "@opengl",
         ],
     )
 
@@ -867,7 +868,11 @@ cc_library(
     )
 
     if repository_ctx.os.name == "linux":
-        file_content += _vtk_cc_library(repository_ctx.os.name, "vtkglew")
+        file_content += _vtk_cc_library(
+            repository_ctx.os.name,
+            "vtkglew",
+            deps = ["@opengl"],
+        )
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,

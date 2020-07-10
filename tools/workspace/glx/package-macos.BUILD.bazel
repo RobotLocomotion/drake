@@ -1,0 +1,8 @@
+# -*- python -*-
+
+# On macOS, no targets should depend on @glx.
+cc_library(
+    name = "glx",
+    srcs = ["missing-macos.cc"],
+    visibility = ["//visibility:public"],
+)
