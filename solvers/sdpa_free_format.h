@@ -176,8 +176,9 @@ class SdpaFreeFormat {
    *     max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
    *     s.t tr(FᵢX̂) = (Nᵀa)(i)
    *         X̂ ≽ 0,
+   *
    * where Fᵢ  = ∑ⱼ NⱼᵢAⱼ, N is the null space of Bᵀ. Bᵀ * ŷ = d.
-   * For more information, refer to CsdpSolver::RemoveFreeVariableMethod for the
+   * For more information, refer to RemoveFreeVariableMethod for the
    * derivation.
    * @param C_hat[out] C_hat is (C-∑ᵢ ŷᵢAᵢ) in the documentation.
    * @param A_hat[out] A_hat[i] is Fᵢ in the documentation.
@@ -194,19 +195,23 @@ class SdpaFreeFormat {
 
   /**
    * For the problem
-   * max tr(C * X) + dᵀs
-   * s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
-   *     X ≽ 0
-   *     s is free.
+   *
+   *     max tr(C * X) + dᵀs
+   *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+   *         X ≽ 0
+   *         s is free.
+   *
    * Remove the free variable s by introducing two slack variables y⁺ ≥ 0 and y⁻
    * ≥ 0, and the constraint y⁺ - y⁻ = s. We get a new program without free
    * variables.
-   * max tr(Ĉ * X̂)
-   * s.t tr(Âᵢ*X̂) = aᵢ
-   *     X̂ ≽ 0
-   * where Ĉ = diag(C, diag(d), -diag(d))
-   *       X̂ = diag(X, diag(y⁺), diag(y⁻))
-   *       Âᵢ = diag(Aᵢ, diag(bᵢ), -diag(bᵢ))
+   *
+   *     max tr(Ĉ * X̂)
+   *     s.t tr(Âᵢ*X̂) = aᵢ
+   *         X̂ ≽ 0
+   *     where Ĉ = diag(C, diag(d), -diag(d))
+   *           X̂ = diag(X, diag(y⁺), diag(y⁻))
+   *           Âᵢ = diag(Aᵢ, diag(bᵢ), -diag(bᵢ))
+   *
    * @param[out] X_hat_blocks The block matrix recording X̂.
    * @param[out] A_hat A_hat[i] is Âᵢ in the documentation.
    * @param[out] C_hat Ĉ in the documentation.
@@ -214,6 +219,61 @@ class SdpaFreeFormat {
   void RemoveFreeVariableByTwoSlackVariablesApproach(
       std::vector<internal::BlockInX>* X_hat_blocks,
       std::vector<Eigen::SparseMatrix<double>>* A_hat,
+      Eigen::SparseMatrix<double>* C_hat) const;
+
+  /**
+   * For the problem
+   *
+   *     max tr(C * X) + dᵀs
+   *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+   *         X ≽ 0
+   *         s is free.
+   *
+   * Remove the free variable s by introducing a slack variable t with the
+   * Lorentz cone constraint t ≥ sqrt(sᵀs). We get a new program without free
+   * variables.
+   * The Lorentz cone constraint t ≥ sqrt(sᵀs) is equivalent to the following
+   * matrix being positive semidefinite (LMI constraint on t and s).
+   *
+   *     ⎡   t  s(1) s(2) ... s(n)⎤
+   *     ⎢s(1)    t     0 ...    0⎥
+   *     ⎢         ...            ⎥
+   *     ⎣s(n)    0     0        t⎦
+   *
+   * To write this LMI in SDPA format, we can introduce a new matrix variable Y
+   * with the constraint Y ≽ 0
+   * Y(1, 1) is set to t, Y(1, i+1) is set to s(i)
+   * We also introduce the linear equality constraints
+   * Y(i, i) = Y(1, 1) if i >= 1
+   * Y(i, j) = 0 if i > j >=1
+   *
+   * After removing the free variables with Y, the SDP problem can be formulated
+   * as below:
+   *
+   *     max tr(Ĉ * X̂)
+   *     s.t tr(Âᵢ*X̂) = âᵢ
+   *         X̂ ≽ 0
+   *     where Ĉ = diag(C, D)
+   *           X̂ = diag(X, Y)
+   *           Âᵢ = diag(Aᵢ, B̂ᵢ)
+   *           and the extra linear equality constraint
+   *           Y(i, i) = Y(1, 1) if i >= 1
+   *           Y(i, j) = 0 if i > j >= 1
+   *     where D = ⎡0  dᵀ/2⎤
+   *               ⎣d/2   0⎦
+   *     B̂ᵢ = ⎡0  bᵢᵀ/2⎤
+   *          ⎣bᵢ/2   0⎦
+   * in both D and B̂ᵢ, the top left 0 is a scalar, while the bottom right 0 is
+   * a matrix of size s.rows() x s.rows()
+   *
+   * @param[out] X_hat_blocks The block matrix recording X̂.
+   * @param[out] A_hat A_hat[i] is Âᵢ in the documentation.
+   * @param[out] rhs_hat rhs_hat[i] is âᵢ in the documentation.
+   * @param[out] C_hat Ĉ in the documentation.
+   */
+  void RemoveFreeVariableByLorentzConeSlackApproach(
+      std::vector<internal::BlockInX>* X_hat_blocks,
+      std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
       Eigen::SparseMatrix<double>* C_hat) const;
 
  private:
@@ -368,7 +428,7 @@ class SdpaFreeFormat {
  *         X ≽ 0
  *         s is free.
  *
- * In order to remove the free variables, we consider two approaches.
+ * In order to remove the free variables, we consider three approaches.
  * 1. Replace a free variable s with two variables s = p - q, p ≥ 0, q ≥ 0.
  * 2. First write the dual of the problem P2 as D2
  *
@@ -395,6 +455,7 @@ class SdpaFreeFormat {
  *
  *    Then (X, s) = (X̂, B⁻¹(a - tr(Aᵢ X̂))) is the solution to the original
  *    problem P2.
+ * 3. Add a slack variable t, with the Lorentz cone constraint t ≥ sqrt(sᵀs).
  *
  */
 enum class RemoveFreeVariableMethod {
@@ -402,6 +463,8 @@ enum class RemoveFreeVariableMethod {
                        ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
   kNullspace,  ///< Approach 2, reformulate the dual problem by considering
                ///< the nullspace of the linear constraint in the dual.
+  kLorentzConeSlack,  ///< Approach 3, add a slack variable t with the lorentz
+                      ///< cone constraint t ≥ sqrt(sᵀs).
 };
 
 /**
@@ -410,10 +473,12 @@ enum class RemoveFreeVariableMethod {
  *     max tr(C*X)
  *     s.t tr(Aᵢ*X) = gᵢ
  *         X ≽ 0
+ *
  * or the dual of the problem
  *
  *     min gᵀy
  *     s.t ∑ᵢ yᵢAᵢ - C ≽ 0
+ *
  * where X is a symmetric block diagonal matrix.
  * The format is described in http://plato.asu.edu/ftp/sdpa_format.txt. Many
  * solvers, such as CSDP, DSDP, SDPA, sedumi and SDPT3, accept an SDPA format
