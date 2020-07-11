@@ -30,7 +30,8 @@ Dynamical Systems
 New features
 
 * Add SystemVisitor to introspect Diagrams (`#13628`_)
-
+* Add JavaScript system diagram visualization (`#13644`_)
+  
 Fixes
 
 * None
@@ -43,6 +44,7 @@ New features
 * Create even or odd degree monomial basis (`#13605`_)
 * SdpaFreeFormat can remove free variables (`#13600`_)
 * GenerateSDPA supports removing free variables (`#13636`_)
+* MathematicalProgram creates free even or odd degree polynomial (`#13637`_)
 
 Fixes
 
@@ -69,12 +71,13 @@ Fixes
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
-None
+* Use JavaScript system diagram visualization in dynamical_system.ipynb (`#13644`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
+* yaml: Permit writing variant values beyond the 0'th index (`#13631`_)
 * planar_gripper: Add additional lcm message types (`#13554`_)
 
 pydrake bindings
@@ -87,6 +90,7 @@ New features
 Fixes
 
 * Pass animation arguments through to meshcat (`#13643`_)
+* Size the CalcJacobianTranslationalVelocity output matrix correctly (`#13653`_)
 
 Newly bound
 * pydrake.examples.acrobot.AcrobotPlant.get_mutable_parameters (`#13556`_)
@@ -231,9 +235,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
   Current newest_commit 04396b46dc5e5505f1aebe79264619f8061f6bb2 (inclusive).
-
-* implement javascript system diagram visualization (`#13644`_)  # Also updates the example in tutorials/dynamical_system.ipynb We should definitely make this much prettier, but this shows what's possible and is already better than graphviz for navigating large diagrams
-* Updates @system doxygen tag to use yaml; use it in body doxygen and sphinx (`#13642`_)  # . First 3/4 of #12590 This provides a new @system @endsystem tag Update all old @system{} tags to the new @system / @endsystem tags zap unused mcode.sty
-* yaml: Permit writing variant values beyond the 0'th index (`#13631`_)  # Upstream yaml-cpp does not support writing out primary tags, so here we also patch our vendored copy of yaml-cpp's emitter to write them.
-* MathematicalProgram add even and odd polynomial (`#13637`_)  # MathematicalProgram creates free even or odd degree polynomial.
-* Fix binding for CalcJacobianTranslationalVelocity output matrix not sized correctly (`#13653`_)
