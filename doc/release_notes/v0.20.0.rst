@@ -5,21 +5,14 @@ Drake v0.20.0
 Announcements
 -------------
 
-.. warning::
-
-  On macOS, Drake only supports Python 3.8.  Users **must** read `#13097`_ for
-  upgrade instructions.
-
-  When paths are set incorrectly, you will see an error such as this::
-
-      ImportError: Python version mismatch: module was compiled for Python 3.8, but the interpreter version is incompatible: 3.7.7
+On macOS, Homebrew now symlinks Drake's compatible version of Python 3 (3.8)
+into ``/usr/local/bin/``, so it is on the ``$PATH`` by default.  There is no
+longer any need to add ``/usr/local/opt/python@3.8/bin`` to your ``$PATH``.
 
 Breaking changes since v0.19.0
 ------------------------------
 
-These are breaking changes that did not undergo a deprecation period:
-
-* None
+These are no breaking changes that did not undergo a deprecation period.
 
 Changes since v0.19.0:
 ----------------------
