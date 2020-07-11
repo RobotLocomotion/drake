@@ -587,6 +587,13 @@ class TestPlant(unittest.TestCase):
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (3, nw))
 
+            Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
+                context=context, with_respect_to=wrt, frame_B=base_frame,
+                p_BoBi_B=np.zeros((3, 3)), frame_A=world_frame,
+                frame_E=world_frame)
+            self.assert_sane(Js_v_AB_E)
+            self.assertEqual(Js_v_AB_E.shape, (9, nw))
+
         # Compute body pose.
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
         self.assertIsInstance(X_WBase, RigidTransform)

@@ -24,9 +24,13 @@ namespace acrobot {
 /// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 /// of Underactuated Robotics</a>.
 ///
-/// @system{ AcrobotPlant,
-///   @input_port{elbow_torque},
-///   @output_port{acrobot_state} }
+/// @system
+/// name: AcrobotPlant
+/// input_ports:
+/// - elbow_torque
+/// output_ports:
+/// - acrobot_state
+/// @endsystem
 ///
 /// @tparam_default_scalar
 /// @ingroup acrobot_systems
@@ -112,10 +116,14 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
 /// Constructs the Acrobot with (only) encoder outputs.
 ///
-/// @system{ AcrobotWEncoder,
-///          @input_port{elbow_torque},
-///          @output_port{measured_joint_positions}
-///          @output_port{acrobot_state (optional)} }
+/// @system
+/// name: AcrobotWEncoder
+/// input_ports:
+/// - elbow_torque
+/// output_ports:
+/// - measured_joint_positions
+/// - acrobot_state (optional)
+/// @endsystem
 ///
 /// @ingroup acrobot_systems
 template <typename T>

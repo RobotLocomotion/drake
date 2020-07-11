@@ -655,11 +655,10 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         viz = meshcat.Visualizer()
         pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
 
-    System ports::
-
-        @system{
-            @input_port{point_cloud_P},
-        }
+    System YAML
+        name: MeshcatPointCloudVisualizer
+        input_ports:
+        - point_cloud_P
     """
 
     def __init__(self, meshcat_viz, draw_period=_DEFAULT_PUBLISH_PERIOD,

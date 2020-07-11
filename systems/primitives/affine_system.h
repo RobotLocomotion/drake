@@ -15,10 +15,13 @@ namespace systems {
  * Base class for a discrete- or continuous-time, time-varying affine
  * system, with potentially time-varying coefficients.
  *
- * @system{TimeVaryingAffineSystem,
- *    @input_port{u(t)},
- *    @output_port{y(t)}
- * }
+ * @system
+ * name: TimeVaryingAffineSystem
+ * input_ports:
+ * - u(t)
+ * output_ports:
+ * - y(t)
+ * @endsystem
  *
  * If `time_period > 0.0`, then the affine system will have the state update:
  *   @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
@@ -156,10 +159,13 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 
 /// A discrete OR continuous affine system (with constant coefficients).
 ///
-/// @system{AffineSystem,
-///   @input_port{u(t)},
-///   @output_port{y(t)}
-/// }
+/// @system
+/// name: AffineSystem
+/// input_ports:
+/// - u(t)
+/// output_ports:
+/// - y(t)
+/// @endsystem
 ///
 /// Let `u` denote the input vector, `x` denote the state vector, and
 /// `y` denote the output vector.
