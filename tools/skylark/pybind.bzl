@@ -354,6 +354,7 @@ def _generate_pybind_documentation_header_impl(ctx):
         uniquify = True,
     )
     outputs = [ctx.outputs.out]
+    args.add("-castxml-bin=" + ctx.executable._castxml_bin.path)
     args.add("-output=" + ctx.outputs.out.path)
     out_xml = getattr(ctx.outputs, "out_xml", None)
     if out_xml != None:
@@ -378,6 +379,10 @@ def _generate_pybind_documentation_header_impl(ctx):
             target_deps.transitive_headers,
         ]),
         arguments = [args],
+        tools = [
+            ctx.executable._castxml_bin,
+            ctx.executable._mkdoc,
+        ],
         executable = ctx.executable._mkdoc,
     )
 
@@ -399,6 +404,12 @@ generate_pybind_documentation_header = rule(
         "target_deps": attr.label_list(),
         "_mkdoc": attr.label(
             default = Label("//tools/workspace/pybind11:mkdoc"),
+            allow_files = True,
+            cfg = "host",
+            executable = True,
+        ),
+        "_castxml_bin": attr.label(
+            default = Label("@castxml//:castxml_bin"),
             allow_files = True,
             cfg = "host",
             executable = True,

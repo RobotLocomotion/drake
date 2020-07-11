@@ -1,4 +1,5 @@
 bash-completion
+castxml
 clang
 clang-9
 clang-format-9

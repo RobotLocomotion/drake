@@ -22,7 +22,7 @@ from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
 from drake.tools.workspace.pybind11.mkdoc_comment import process_comment
 
-from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
+# from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
 
 
 CLASS_KINDS = [
@@ -639,42 +639,65 @@ def prettify(elem):
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
 
+import pygccxml
+import logging
+
+def do_stuff(ns):
+    print('"ns" declarations: \n')
+    pygccxml.declarations.print_declarations(ns)
+    # # Print all base and derived class names
+    # for class_ in ns.classes():
+    #     print('class "%s" hierarchy information:' % class_.name)
+    #     print('\tbase classes   : ', repr([
+    #         base.related_class.name for base in class_.bases]))
+    #     print('\tderived classes: ', repr([
+    #         derive.related_class.name for derive in class_.derived]))
+    #     print('\n')
+
+    # # Pygccxml has very powerfull query api:
+
+    # # Select multiple declarations
+    # run_functions = ns.member_functions('run')
+    # print('the namespace contains %d "run" member functions' % len(run_functions))
+    # print('they are: ')
+    # for f in run_functions:
+    #     print('\t' + declarations.full_name(f))
+
+    test_container = ns.class_('mkdoc_test::Class')
+    print(test_container)
+
+import argparse
+from os.path import isfile
 
 def main():
-    parameters = ['-x', 'c++', '-D__MKDOC_PY__']
-    add_library_paths(parameters)
-    filenames = []
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-quiet", action="store_true")
+    parser.add_argument("-output", type=str, required=True)
+    parser.add_argument("-output_xml", type=str, default=None)
+    parser.add_argument("-std", type=str, default="c++11")
+    parser.add_argument("-ignore-dirs-for-coverage", type=str, default="")
+    parser.add_argument("-root-name", type=str, default="mkdoc_doc")
+    parser.add_argument("-exclude-hdr-patterns", type=str, default="")
+    parser.add_argument("-castxml-bin", type=str, required=True)
+    parser.add_argument("filenames", type=str, nargs="+")
+    args, argv = parser.parse_known_args()
 
-    quiet = False
-    std = '-std=c++11'
-    root_name = 'mkdoc_doc'
-    ignore_patterns = []
-    output_filename = None
-    output_filename_xml = None
+    parameters = ['-x', 'c++', '-D__MKDOC_PY__'] + argv
+    # add_library_paths(parameters)
+    filenames = args.filenames
 
-    # TODO(m-chaturvedi): Consider using argparse.
-    for item in sys.argv[1:]:
-        if item == '-quiet':
-            quiet = True
-        elif item.startswith('-output='):
-            output_filename = item[len('-output='):]
-        elif item.startswith('-output_xml='):
-            output_filename_xml = item[len('-output_xml='):]
-        elif item.startswith('-std='):
-            std = item
-        elif item.startswith('-ignore-dirs-for-coverage='):
-            ignore_dir_str = item[len('-ignore-dirs-for-coverage='):]
-            ignore_dirs_for_coverage = None
-            if ignore_dir_str:
-                ignore_dirs_for_coverage = tuple(ignore_dir_str.split(','))
-        elif item.startswith('-root-name='):
-            root_name = item[len('-root-name='):]
-        elif item.startswith('-exclude-hdr-patterns='):
-            ignore_patterns.append(item[len('-exclude-hdr-patterns='):])
-        elif item.startswith('-'):
-            parameters.append(item)
-        else:
-            filenames.append(item)
+    castxml_bin = args.castxml_bin
+    print("\n\n\n\n")
+    print(os.getcwd())
+    print(castxml_bin)
+    assert isfile(castxml_bin), castxml_bin
+    quiet = args.quiet
+    std = f'-std={args.std}'
+    root_name = args.root_name
+    ignore_patterns = args.exclude_hdr_patterns.split(",")
+    output_filename = args.output
+    output_filename_xml = args.output_xml
+    ignore_dirs_for_coverage = tuple(args.ignore_dirs_for_coverage.split(","))
 
     parameters.append(std)
 
@@ -744,6 +767,7 @@ def main():
     # usage with Bazel.
     tmpdir = output_filename + ".tmp_artifacts"
     os.mkdir(tmpdir)
+
     glue_filename = os.path.join(tmpdir, "mkdoc_glue.h")
     with open(glue_filename, 'w') as glue_f:
         for include_file in sorted(include_files):
@@ -754,24 +778,47 @@ def main():
         glue_f.flush()
         if not quiet:
             eprint("Parse headers...")
-        index = cindex.Index(
-            cindex.conf.lib.clang_createIndex(False, True))
-        translation_unit = index.parse(
-            glue_filename, parameters,
-            options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
-        if not translation_unit:
-            raise RuntimeError(
-                "Parsing headers using the clang library failed")
-        severities = [
-            diagnostic.severity for diagnostic in translation_unit.diagnostics
-            if diagnostic.severity >= cindex.Diagnostic.Error
-        ]
-        if severities:
-            raise RuntimeError(
-                ("Parsing headers using the clang library failed with {} "
-                 "error(s) and {} fatal error(s)").format(
-                     severities.count(cindex.Diagnostic.Error),
-                     severities.count(cindex.Diagnostic.Fatal)))
+
+        # Configure the xml generator
+        import shlex
+        cflags = " ".join(shlex.quote(x) for x in parameters)
+        castxml_config = pygccxml.parser.xml_generator_configuration_t(
+            xml_generator_path=castxml_bin,
+            xml_generator="castxml",
+            cflags=cflags,
+            # include_paths=[self.opts.source_dir] + rsp_includes,
+        )
+
+        # Run CastXML and parse back the resulting XML into a Python Object.
+        pygccxml.utils.loggers.cxx_parser.setLevel(logging.CRITICAL)
+        decls, = pygccxml.parser.parse(
+            [glue_filename],
+            castxml_config,
+            compilation_mode=pygccxml.parser.COMPILATION_MODE.ALL_AT_ONCE)
+
+        ns = pygccxml.declarations.get_global_namespace(decls).namespace("drake")
+        do_stuff(ns)
+
+        exit(1)
+
+        # index = cindex.Index(
+        #     cindex.conf.lib.clang_createIndex(False, True))
+        # translation_unit = index.parse(
+        #     glue_filename, parameters,
+        #     options=cindex.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
+        # if not translation_unit:
+        #     raise RuntimeError(
+        #         "Parsing headers using the clang library failed")
+        # severities = [
+        #     diagnostic.severity for diagnostic in translation_unit.diagnostics
+        #     if diagnostic.severity >= cindex.Diagnostic.Error
+        # ]
+        # if severities:
+        #     raise RuntimeError(
+        #         ("Parsing headers using the clang library failed with {} "
+        #          "error(s) and {} fatal error(s)").format(
+        #              severities.count(cindex.Diagnostic.Error),
+        #              severities.count(cindex.Diagnostic.Fatal)))
     shutil.rmtree(tmpdir)
     # Extract symbols.
     if not quiet:
@@ -802,6 +849,7 @@ If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
 #pragma GCC diagnostic pop
 #endif
 ''')
+    exit(1)
     if f_xml is not None:
         f_xml.write(prettify(tree_parser["tree_parser_xpath"][0]))
 

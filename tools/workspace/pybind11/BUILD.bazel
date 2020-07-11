@@ -42,12 +42,14 @@ py_binary(
         "generate_pybind_coverage.py",
         "pybind_coverage_libclang_parser.py",
         "pybind_coverage_xml_parser.py",
+        "@castxml//:castxml_bin",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":libclang_setup_py",
         ":mkdoc_comment_py",
         "@clang_cindex_python3//:clang",
+        "@pygccxml_py",
     ],
 )
 
@@ -119,7 +121,7 @@ generate_pybind_documentation_header(
     name = "generate_sample_header",
     testonly = 1,
     out = "test/sample_header_documentation.h",
-    out_xml = "sample_header_documentation_test.xml",
+    # out_xml = "sample_header_documentation_test.xml",
     root_name = "sample_header_doc",
     targets = [
         ":sample_header",
