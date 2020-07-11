@@ -227,4 +227,14 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
-  Current newest_commit 00becb60b995475ccfaa4fdd002814644ffd4563 (inclusive).
+  Current newest_commit 04396b46dc5e5505f1aebe79264619f8061f6bb2 (inclusive).
+
+* implement javascript system diagram visualization (`#13644`_)  # Also updates the example in tutorials/dynamical_system.ipynb We should definitely make this much prettier, but this shows what's possible and is already better than graphviz for navigating large diagrams
+* Updates @system doxygen tag to use yaml; use it in body doxygen and sphinx (`#13642`_)  # . First 3/4 of #12590 This provides a new @system @endsystem tag Update all old @system{} tags to the new @system / @endsystem tags zap unused mcode.sty
+* doc: Modernize advice regarding PYTHONPATH (`#13660`_)
+* yaml: Permit writing variant values beyond the 0'th index (`#13631`_)  # Upstream yaml-cpp does not support writing out primary tags, so here we also patch our vendored copy of yaml-cpp's emitter to write them.
+* MathematicalProgram add even and odd polynomial (`#13637`_)  # MathematicalProgram creates free even or odd degree polynomial.
+* Fix binding for CalcJacobianTranslationalVelocity output matrix not sized correctly (`#13653`_)
+* Remove TODOs related to python@3.8 formula (`#13668`_)
+* workspace: Use spdlog-1.7.0 and fmt-7.0.1 (`#13667`_)
+* Split mkdoc comment processing to its own module (`#13651`_)  # Move code from sample_header.h to focused tests. Resolves #13499
