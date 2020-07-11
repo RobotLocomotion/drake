@@ -881,6 +881,92 @@ TEST_F(TrivialSOCP1, RemoveFreeVariableByTwoSlackVariablesApproach) {
   TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
 }
 
+void TestRemoveFreeVariableByLorentzConeSlackApproach(
+    const MathematicalProgram& prog) {
+  const SdpaFreeFormat dut(prog);
+  std::vector<internal::BlockInX> X_hat_blocks;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat;
+  Eigen::SparseMatrix<double> C_hat;
+  dut.RemoveFreeVariableByLorentzConeSlackApproach(&X_hat_blocks, &A_hat,
+                                                   &rhs_hat, &C_hat);
+  EXPECT_EQ(X_hat_blocks.size(), dut.X_blocks().size() + 1);
+  for (int i = 0; i < static_cast<int>(dut.X_blocks().size()); ++i) {
+    EXPECT_EQ(X_hat_blocks[i].block_type, dut.X_blocks()[i].block_type);
+    EXPECT_EQ(X_hat_blocks[i].num_rows, dut.X_blocks()[i].num_rows);
+  }
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].block_type,
+            BlockType::kMatrix);
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].num_rows,
+            dut.num_free_variables() + 1);
+  EXPECT_EQ(A_hat.size(), dut.A().size() + dut.num_free_variables() *
+                                               (dut.num_free_variables() + 1) /
+                                               2);
+  EXPECT_EQ(rhs_hat.rows(), A_hat.size());
+  Eigen::VectorXd rhs_hat_expected = Eigen::VectorXd::Zero(A_hat.size());
+  rhs_hat_expected.head(dut.A().size()) = dut.g();
+  EXPECT_TRUE(CompareMatrices(rhs_hat, rhs_hat_expected));
+  const int num_X_hat_rows = dut.num_X_rows() + dut.num_free_variables() + 1;
+  for (int i = 0; i < static_cast<int>(dut.A().size()); ++i) {
+    Eigen::MatrixXd A_hat_expected =
+        Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+    A_hat_expected.block(0, 0, dut.A()[i].rows(), dut.A()[i].cols()) =
+        dut.A()[i];
+    const Eigen::VectorXd bi = dut.B().row(i).transpose();
+    A_hat_expected.block(dut.A()[i].rows(), dut.A()[i].cols() + 1, 1,
+                         dut.B().cols()) = bi.transpose() / 2;
+    A_hat_expected.block(dut.A()[i].rows() + 1, dut.A()[i].cols(),
+                         dut.B().cols(), 1) = bi / 2;
+    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]), A_hat_expected));
+  }
+  // Now check the newly added linear equality constraint
+  // Y(i, i) = Y(0, 0) and Y(i, j) = 0 for j > i >= 1
+  int A_hat_count = dut.A().size();
+  for (int i = 1; i < dut.num_free_variables() + 1; ++i) {
+    Eigen::MatrixXd A_hat_expected =
+        Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+    A_hat_expected(dut.num_X_rows() + i, dut.num_X_rows() + i) = 1;
+    A_hat_expected(dut.num_X_rows(), dut.num_X_rows()) = -1;
+    EXPECT_TRUE(
+        CompareMatrices(Eigen::MatrixXd(A_hat[A_hat_count++]), A_hat_expected));
+    for (int j = i + 1; j < dut.num_free_variables() + 1; ++j) {
+      A_hat_expected.setZero();
+      A_hat_expected(dut.num_X_rows() + i, dut.num_X_rows() + j) = 0.5;
+      A_hat_expected(dut.num_X_rows() + j, dut.num_X_rows() + i) = 0.5;
+      EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[A_hat_count++]),
+                                  A_hat_expected));
+    }
+  }
+
+  Eigen::MatrixXd C_hat_expected =
+      Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+  C_hat_expected.topLeftCorner(dut.num_X_rows(), dut.num_X_rows()) = dut.C();
+  C_hat_expected.block(dut.num_X_rows(), dut.num_X_rows() + 1, 1,
+                       dut.num_free_variables()) =
+      Eigen::VectorXd(dut.d()).transpose() / 2;
+  C_hat_expected.block(dut.num_X_rows() + 1, dut.num_X_rows(),
+                       dut.num_free_variables(), 1) =
+      Eigen::VectorXd(dut.d()) / 2;
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat), C_hat_expected));
+}
+
+TEST_F(LinearProgramBoundingBox1,
+       RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+TEST_F(CsdpLinearProgram2, RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+TEST_F(TrivialSDP2, RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+TEST_F(TrivialSOCP1, RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
 }  // namespace internal
 GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   // This is the sample program from http://plato.asu.edu/ftp/sdpa_format.txt
@@ -948,6 +1034,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_two_slack) {
   auto X = prog.NewSymmetricContinuousVariables<2>();
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+  prog.AddLinearCost(X(0, 1) + 2 * x(1));
 
   internal::SdpaFreeFormat dut(prog);
   EXPECT_GT(dut.num_free_variables(), 0);
@@ -967,6 +1054,12 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_two_slack) {
   EXPECT_EQ(line, "2 -4 ");
   std::getline(infile, line);
   EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 1 1 2 -0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 2 2 -2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 4 4 2");
   std::getline(infile, line);
   EXPECT_EQ(line, "1 1 1 1 1");
   std::getline(infile, line);
@@ -1009,6 +1102,65 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_null_space) {
   std::getline(infile, line);
   // The constraint is empty.
   EXPECT_EQ(line, "");
+
+  infile.close();
+}
+
+GTEST_TEST(SdpaFreeFormatTest,
+           GenerateSDPA_remove_free_variables_lorentz_slack) {
+  // Test GenerateSDPA with prog that has free variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+  prog.AddLinearCost(X(0, 1) + 2 * x(1));
+
+  internal::SdpaFreeFormat dut(prog);
+  EXPECT_GT(dut.num_free_variables(), 0);
+  const std::string file_name = temp_directory() + "/sdpa_free3";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name,
+                           RemoveFreeVariableMethod::kLorentzConeSlack));
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  // number of constraints.
+  EXPECT_EQ(line, "4");
+  std::getline(infile, line);
+  // nblocks
+  EXPECT_EQ(line, "2");
+  std::getline(infile, line);
+  // block sizes
+  EXPECT_EQ(line, "2 3 ");
+  std::getline(infile, line);
+  // constraint rhs
+  EXPECT_EQ(line, "1 0 0 0");
+  // Each non-zero entry in C
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 1 1 2 -0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 1 3 -1");
+  // Each non-zero entry in Ai
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 1 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 2 0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 3 0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 2 1 1 -1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 2 2 2 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "3 2 2 3 0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "4 2 1 1 -1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "4 2 3 3 1");
+  EXPECT_FALSE(std::getline(infile, line));
 
   infile.close();
 }
