@@ -1,7 +1,8 @@
 #include "drake/solvers/cost.h"
-#include "drake/math/autodiff_gradient.h"
 
 #include <memory>
+
+#include "drake/math/autodiff_gradient.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
