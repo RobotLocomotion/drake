@@ -173,6 +173,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//math:gradient",
         "//math:matrix_util",
     ],
 )

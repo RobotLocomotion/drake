@@ -1,4 +1,5 @@
 #include "drake/solvers/cost.h"
+#include "drake/math/autodiff_gradient.h"
 
 #include <memory>
 
@@ -71,7 +72,11 @@ void QuadraticCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void QuadraticCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                            AutoDiffVecXd* y) const {
-  DoEvalGeneric(x, y);
+  Eigen::VectorXd x_val = drake::math::autoDiffToValueMatrix(x);
+  auto xT_times_Q = x_val.transpose() * Q_;
+  Vector1d result(.5 * xT_times_Q.dot(x_val) + b_.dot(x_val) + c_);
+  Eigen::Matrix<double, 1, Eigen::Dynamic> grad = xT_times_Q + b_.transpose();
+  *y = math::initializeAutoDiffGivenGradientMatrix(result, grad);
 }
 
 void QuadraticCost::DoEval(
