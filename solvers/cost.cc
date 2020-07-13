@@ -75,7 +75,7 @@ void QuadraticCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                            AutoDiffVecXd* y) const {
   // Specialized evaluation of cost and gradient
   Eigen::VectorXd x_val = drake::math::autoDiffToValueMatrix(x);
-  Eigen::VectorXd xT_times_Q = x_val.transpose() * Q_;
+  Eigen::Matrix<double, 1, Eigen::Dynamic> xT_times_Q = x_val.transpose() * Q_;
   Vector1d result(.5 * xT_times_Q.dot(x_val) + b_.dot(x_val) + c_);
   Eigen::Matrix<double, 1, Eigen::Dynamic> grad = xT_times_Q + b_.transpose();
   *y = math::initializeAutoDiffGivenGradientMatrix(result, grad);
