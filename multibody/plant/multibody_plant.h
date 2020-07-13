@@ -3885,12 +3885,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // During the time span dt the problem data M, Jn, Jt and minus_tau, are
   // approximated to be constant, a first order approximation.
   TamsiSolverResult SolveUsingSubStepping(
-      int num_substeps,
-      const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
-      const VectorX<T>& minus_tau,
+      int num_substeps, const MatrixX<T>& M0, const MatrixX<T>& Jn,
+      const MatrixX<T>& Jt, const VectorX<T>& minus_tau,
       const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu,
-      const VectorX<T>& v0, const VectorX<T>& phi0) const;
+      const VectorX<T>& mu, const VectorX<T>& v0, const VectorX<T>& phi0,
+      const VectorX<T>& fn0) const;
 
   // This method uses the time stepping method described in
   // TamsiSolver to advance the model's state stored in
