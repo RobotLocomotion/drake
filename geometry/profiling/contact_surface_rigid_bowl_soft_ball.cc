@@ -1,4 +1,4 @@
-/** @file
+/* @file
  A simple binary for profiling computation of ContactSurface between an
  anchored rigid bowl and a dynamic soft ball. The rigid bowl is a realistic
  non-convex object represented by 7,910 triangles. The soft ball is
@@ -88,7 +88,7 @@ DEFINE_double(resolution_hint, 0.0125,
               "is 2.5cm in radius. By default, its mesh resolution is "
               "1.25cm, which is half the radius.");
 
-/** Places a ball and defines its velocity as being sinusoidal in time
+/* Places a ball and defines its velocity as being sinusoidal in time
  in World z direction.
 
  The center of the moving soft ball starts from a point O at the mid-height of
@@ -176,7 +176,7 @@ class MovingBall final : public LeafSystem<double> {
   int geometry_pose_port_{-1};
 };
 
-/** A system that evaluates contact surfaces from SceneGraph and outputs a fake
+/* A system that evaluates contact surfaces from SceneGraph and outputs a fake
  ContactResults with the actual contact surfaces.
 
  @system

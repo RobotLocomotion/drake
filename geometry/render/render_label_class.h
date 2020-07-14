@@ -16,7 +16,7 @@ namespace geometry {
 namespace render {
 namespace internal {
 
-/** The definition of a semantic render class. As documented in RenderLabel,
+/* The definition of a semantic render class. As documented in RenderLabel,
  it is the association of a semantic class (a (source id, name) pair) with the
  allocated RenderLabel value.  */
 struct RenderLabelClass {
@@ -26,7 +26,7 @@ struct RenderLabelClass {
   RenderLabelClass(std::string name_in, SourceId id_in, RenderLabel label_in) :
       name(std::move(name_in)), source_id(id_in), label(label_in) {}
 
-  /** The source-local unique name of the class. The name may be shared by
+  /* The source-local unique name of the class. The name may be shared by
    multiple sources.  */
   std::string name;
 
@@ -34,10 +34,10 @@ struct RenderLabelClass {
   // is internal and isn't part of the public API, so it's not a leak today. If
   // it ever becomes part of the public API, it *cannot* contain a SourceId to
   // avoid becoming a leak.
-  /** The source id that requested the render label.  */
+  /* The source id that requested the render label.  */
   SourceId source_id;
 
-  /** The label associated with the class.  */
+  /* The label associated with the class.  */
   RenderLabel label;
 
   bool operator==(const RenderLabelClass& c2) const {
