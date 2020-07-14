@@ -217,6 +217,7 @@ make the review faster.
 - @EricCousineau-TRI (Toyota Research Institute)
 - @ggould-tri (Toyota Research Institute)
 - @jwnimmer-tri (Toyota Research Institute)
+- @rpoyner-tri (Toyota Research Institute)
 - @sammy-tri (Toyota Research Institute)
 - @SeanCurtis-TRI (Toyota Research Institute)
 - @sherm1 (Toyota Research Institute)
