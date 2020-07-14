@@ -1065,13 +1065,14 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   // Final parameters used in the penalty method:
   //
   // Before #13630 this method estimated an effective "combined" stiffness.
-  // That is, penalty_method_contact_parameters_.stiffness was the desired
+  // That is, penalty_method_contact_parameters_.geometry_stiffness (previously
+  // called penalty_method_contact_parameters_.stiffness) was the desired
   // stiffness of the contact pair. Post #13630, the semantics of this variable
   // changes to "stiffness per contact geometry". Therefore, in order to
   // maintain backwards compatibility for sims run pre #13630, we include now a
   // factor of 2 so that when two geometries have the same stiffness, the
-  //
   // combined stiffness reduces to combined_stiffness.
+  //
   // Stiffness in the penalty method is calculated as a combination of
   // individual stiffness parameters per geometry. The variable
   // `combined_stiffness` as calculated here is a combined stiffness, but
