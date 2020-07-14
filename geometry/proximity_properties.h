@@ -30,14 +30,14 @@ namespace internal {
  called out in the documentation of the ProximityProperties class).  */
 //@{
 
-extern const char* const kMaterialGroup;  ///< The contact material group name.
-extern const char* const kElastic;        ///< Elastic modulus property name.
-extern const char* const kFriction;       ///< Friction coefficients property
-                                          ///< name.
-extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
-                                          ///< property name.
-extern const char* const kPointStiffness; ///< Point stiffness property
-                                          ///< name.
+extern const char* const kMaterialGroup;   ///< The contact material group name.
+extern const char* const kElastic;         ///< Elastic modulus property name.
+extern const char* const kFriction;        ///< Friction coefficients property
+                                           ///< name.
+extern const char* const kHcDissipation;   ///< Hunt-Crossley dissipation
+                                           ///< property name.
+extern const char* const kPointStiffness;  ///< Point stiffness property
+                                           ///< name.
 
 //@}
 
