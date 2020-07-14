@@ -932,8 +932,10 @@ class TamsiSolver {
     }
 
     // Returns the current (maximum) capacity of the workspace.
+    // This is measured as the number of contact points the workspace was last
+    // resized for.
     int capacity() const {
-      return vt_.size();
+      return vn_.size();
     }
 
     // Returns a constant reference to the vector of separation velocities in
