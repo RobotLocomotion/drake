@@ -472,24 +472,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
 }
 
 template <typename T>
-geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
-    const Body<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name,
-    const CoulombFriction<double>& coulomb_friction,
-    const T& point_contact_stiffness, const T& hunt_crossley_dissipation) {
-  geometry::ProximityProperties props;
-  props.AddProperty(geometry::internal::kMaterialGroup,
-                    geometry::internal::kFriction, coulomb_friction);
-  props.AddProperty(geometry::internal::kMaterialGroup,
-                    geometry::internal::kPointStiffness,
-                    point_contact_stiffness);
-  props.AddProperty(geometry::internal::kMaterialGroup,
-                    geometry::internal::kHcDissipation,
-                    hunt_crossley_dissipation);
-  return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
-}
-
-template <typename T>
 const std::vector<geometry::GeometryId>&
 MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
   DRAKE_ASSERT(body.index() < num_bodies());
@@ -1061,10 +1043,10 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   // damping constant d using a time scale related to the free oscillation
   // (omega below) and the requested penetration allowance as a length scale.
 
-  // We first estimate the stiffness based on static equilibrium.
-  const double stiffness = mass * g / penetration_allowance;
-  // Frequency associated with the stiffness above.
-  const double omega = sqrt(stiffness / mass);
+  // We first estimate the combined stiffness based on static equilibrium.
+  const double combined_stiffness = mass * g / penetration_allowance;
+  // Frequency associated with the combined_stiffness above.
+  const double omega = sqrt(combined_stiffness / mass);
 
   // Estimated contact time scale. The relative velocity of objects coming into
   // contact goes to zero in this time scale.
@@ -1073,28 +1055,29 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   // Damping ratio for a critically damped model. We could allow users to set
   // this. Right now, critically damp the normal direction.
   // This corresponds to a non-penetraion constraint in the limit for
-  // contact_penetration_allowance_ goint to zero (no bounce off).
+  // contact_penetration_allowance_ going to zero (no bounce off).
   const double damping_ratio = 1.0;
-  // We form the damping (with units of 1/velocity) using dimensional analysis.
-  // Thus we use 1/omega for the time scale and penetration_allowance for the
-  // length scale. We then scale it by the damping ratio.
-  const double damping = damping_ratio * time_scale / penetration_allowance;
+  // We form the dissipation (with units of 1/velocity) using dimensional
+  // analysis. Thus we use 1/omega for the time scale and penetration_allowance
+  // for the length scale. We then scale it by the damping ratio.
+  const double dissipation = damping_ratio * time_scale / penetration_allowance;
 
   // Final parameters used in the penalty method:
   // Stiffness in the penalty method is calculated as a combination of
-  // individual stiffness parameters per geometry. The variable `stiffness` as
-  // calculated here is a combined stiffness, but
-  // `penalty_method_contact_parameters_.stiffness` stores the parameter for an
-  // individual geometry.
-  // Combined stiffness, for geometries with individual stiffnesses k1 and k2
-  // respectively, is defined as:
+  // individual stiffness parameters per geometry. The variable
+  // `combined_stiffness` as calculated here is a combined stiffness, but
+  // `penalty_method_contact_parameters_.geometry_stiffness` stores the
+  // parameter for an individual geometry. Combined stiffness, for geometries
+  // with individual stiffnesses k1 and k2 respectively, is defined as:
   //   Kc = (k1*k2) / (k1 + k2)
   // If we have a desired combined stiffness Kd (for two geometries with
   // default heuristically computed parameters), setting k1 = k2 = 2 * Kd
   // results in the correct combined stiffness:
   //   Kc = (2*Kd*2*Kd) / (2*Kd + 2*Kd) = Kd
-  penalty_method_contact_parameters_.stiffness = 2 * stiffness;
-  penalty_method_contact_parameters_.damping = damping;
+  // Therefore we set the `geometry_stiffness` to 2*`combined_stiffness`.
+  penalty_method_contact_parameters_.geometry_stiffness =
+      2 * combined_stiffness;
+  penalty_method_contact_parameters_.dissipation = dissipation;
   // The time scale can be requested to hint the integrator's time step.
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
@@ -1260,6 +1243,21 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
     contact_results->AddContactInfo(&contact_info);
   }
 }
+
+namespace {
+template <typename T>
+std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
+                                              const T& d1, const T& d2) {
+  // Simple utility to detect 0 / 0. As it is used in this method, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](const T& num, const T& denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
+  return std::pair(
+      safe_divide(k1 * k2, k1 + k2),                                   // k
+      safe_divide(k2, k1 + k2) * d1 + safe_divide(k1, k1 + k2) * d2);  // d
+}
+}  // namespace
 
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
