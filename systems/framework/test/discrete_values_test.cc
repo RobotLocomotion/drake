@@ -163,6 +163,26 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
   EXPECT_EQ(1000.0, xd[1]);
 }
 
+// Tests that the convenience accessors for a DiscreteValues that contains
+// no groups work as documented.
+GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugarEmpty) {
+  DiscreteValues<double> xd;
+  EXPECT_THROW(xd.size(), std::logic_error);
+  EXPECT_THROW(xd[0], std::logic_error);
+  EXPECT_THROW(xd.get_vector(), std::logic_error);
+  EXPECT_THROW(xd.get_mutable_vector(), std::logic_error);
+}
+
+// Tests that the convenience accessors for a DiscreteValues that contains
+// multiple groups work as documented.
+TEST_F(DiscreteValuesTest, ConvenienceSugarMultiple) {
+  DiscreteValues<double> xd(std::move(data_));
+  EXPECT_THROW(xd.size(), std::logic_error);
+  EXPECT_THROW(xd[0], std::logic_error);
+  EXPECT_THROW(xd.get_vector(), std::logic_error);
+  EXPECT_THROW(xd.get_mutable_vector(), std::logic_error);
+}
+
 // For DiagramDiscreteValues we want to check that we can build a tree of
 // unowned DiscreteValues but then Clone() produces an identical tree of
 // owned DiscreteValues, with underlying BasicVector types preserved.
