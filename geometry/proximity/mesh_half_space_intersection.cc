@@ -241,7 +241,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
             vertices_F, v2, X_WF, vertices_to_newly_created_vertices,
             new_vertices_W);
 
-        // Add the polygon (i1, i2, e02, e01)
+        // Add the polygon internal(i1, i2, e02, e01)
         //
         //             i0
         //            ╱╲

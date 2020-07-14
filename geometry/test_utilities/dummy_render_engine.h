@@ -15,7 +15,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** A dummy implementation of the RenderEngine to facilitate testing. Its
+/* A dummy implementation of the RenderEngine to facilitate testing. Its
  purpose is to facilitate testing at the RenderEngine interface and _not_ the
  details of any particular implementation. To that end, it has the following
  features:
@@ -35,20 +35,20 @@ class DummyRenderEngine : public render::RenderEngine {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
 
-  /** Constructor to exercise the default constructor of RenderEngine.  */
+  /* Constructor to exercise the default constructor of RenderEngine.  */
   DummyRenderEngine()
       : color_props_{-1, -1, -1.0, ""},
         depth_props_{-1, -1, -1.0, "", -1, -1},
         label_props_{-1, -1, -1.0, ""} {}
 
-  /** Constructor for configuring the underlying RenderEngine.  */
+  /* Constructor for configuring the underlying RenderEngine.  */
   explicit DummyRenderEngine(const render::RenderLabel& label)
       : render::RenderEngine(label),
         color_props_{-1, -1, -1.0, ""},
         depth_props_{-1, -1, -1.0, "", -1, -1},
         label_props_{-1, -1, -1.0, ""} {}
 
-  /** @group No-op implementation of RenderEngine interface.  */
+  /* @group No-op implementation of RenderEngine interface.  */
   //@{
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override {
     X_WC_ = X_WC;
@@ -84,10 +84,10 @@ class DummyRenderEngine : public render::RenderEngine {
   void ImplementGeometry(const Convex& convex, void* user_data) override {}
   //@}
 
-  /** @name  Functions for supporting tests.  */
+  /* @name  Functions for supporting tests.  */
   //@{
 
-  /** Creates a set of perception properties that will cause this render engine
+  /* Creates a set of perception properties that will cause this render engine
    to _accept_ geometry during registration.  */
   PerceptionProperties accepting_properties() const {
     PerceptionProperties properties;
@@ -95,30 +95,30 @@ class DummyRenderEngine : public render::RenderEngine {
     return properties;
   }
 
-  /** Creates a set of perception properties that will cause this render engine
+  /* Creates a set of perception properties that will cause this render engine
    to _reject_ geometry during registration.  */
   PerceptionProperties rejecting_properties() const {
     return PerceptionProperties();
   }
 
-  /** Initializes the set data to the freshly-constructed values. This
+  /* Initializes the set data to the freshly-constructed values. This
    leaves the registered data intact.  */
   void init_test_data() {
     updated_ids_.clear();
   }
 
-  /** If true, this render engine will accept all registered geometry.  */
+  /* If true, this render engine will accept all registered geometry.  */
   void set_force_accept(bool force_accept) {
     force_accept_ = force_accept;
   }
 
-  /** Reports the number of geometries that have been _accepted_ in
+  /* Reports the number of geometries that have been _accepted_ in
    registration.  */
   int num_registered() const {
     return static_cast<int>(registered_geometries_.size());
   }
 
-  /** Reports `true` if the given id is registered with `this` engine.  */
+  /* Reports `true` if the given id is registered with `this` engine.  */
   bool is_registered(GeometryId id) const {
     return registered_geometries_.count(id) > 0;
   }
@@ -143,7 +143,7 @@ class DummyRenderEngine : public render::RenderEngine {
     return label_props_;
   }
 
-  /** Returns the ids that have been updated via a call to UpdatePoses() and
+  /* Returns the ids that have been updated via a call to UpdatePoses() and
    the poses that were set.  */
   const std::map<GeometryId, math::RigidTransformd>& updated_ids() const {
     return updated_ids_;
@@ -157,7 +157,7 @@ class DummyRenderEngine : public render::RenderEngine {
   using RenderEngine::GetColorIFromLabel;
 
  protected:
-  /** Dummy implementation that registers the given `shape` if the `properties`
+  /* Dummy implementation that registers the given `shape` if the `properties`
    contains the "in_test" group or the render engine has been forced to accept
    all geometries (via set_force_accept()). (Also counts the number of
    successfully registered shape over the lifespan of `this` instance.)  */
@@ -172,7 +172,7 @@ class DummyRenderEngine : public render::RenderEngine {
     return false;
   }
 
-  /** Updates the pose X_WG for the geometry with the given `id`. Also tracks
+  /* Updates the pose X_WG for the geometry with the given `id`. Also tracks
    which ids have been updated and the poses set (over the _lifespan_ of
    `this` instance). This can be reset with a call to init_test_data().  */
   void DoUpdateVisualPose(GeometryId id,
@@ -180,12 +180,12 @@ class DummyRenderEngine : public render::RenderEngine {
     updated_ids_[id] = X_WG;
   }
 
-  /** Removes the given geometry id (if it is registered).  */
+  /* Removes the given geometry id (if it is registered).  */
   bool DoRemoveGeometry(GeometryId id) override {
     return registered_geometries_.erase(id) > 0;
   }
 
-  /** Implementation of RenderEngine::DoClone().  */
+  /* Implementation of RenderEngine::DoClone().  */
   std::unique_ptr<render::RenderEngine> DoClone() const override {
     return std::make_unique<DummyRenderEngine>(*this);
   }

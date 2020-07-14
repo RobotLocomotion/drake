@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** The definition of a half space, posed in an arbitrary frame. It is
+/* The definition of a half space, posed in an arbitrary frame. It is
  defined by its boundary plane such that a point's signed distance relative to
  the half space is equal to its height relative to the boundary plane (see
  Plane for details). The boundary plane's normal points outside the half space.
@@ -36,14 +36,14 @@ class PosedHalfSpace {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PosedHalfSpace)
 
-  /** Constructs a half space in frame F in terms of its boundary plane. The
+  /* Constructs a half space in frame F in terms of its boundary plane. The
    parameters define the boundary plane (see Plane for details). The boundary
    plane's normal points _outside_ the half space.  */
   PosedHalfSpace(const Vector3<T>& nhat_F, const Vector3<T>& p_FP,
                  bool already_normalized = false)
       : plane_(nhat_F, p_FP, already_normalized) {}
 
-  /** Computes the signed distance to the point Q (measured and expressed in
+  /* Computes the signed distance to the point Q (measured and expressed in
    Frame F). If Q's signed distance is positive, it lies outside the half space.
    If it is negative, it lies inside. If it is zero, it lies on the boundary
    plane of the half space.  */
@@ -51,10 +51,10 @@ class PosedHalfSpace {
     return plane_.CalcHeight(p_FQ);
   }
 
-  /** Gets the normal expressed in Frame F. */
+  /* Gets the normal expressed in Frame F. */
   const Vector3<T>& normal() const { return plane_.normal(); }
 
-  /** Gets the boundary plane of `this` posed half space.  */
+  /* Gets the boundary plane of `this` posed half space.  */
   const Plane<T>& boundary_plane() const { return plane_; }
 
  private:

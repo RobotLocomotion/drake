@@ -16,7 +16,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/**
+/*
  * An internal functor to support the call back function in proximity_engine.cc.
  * It computes the signed distance to a query point from a supported geometry.
  */
@@ -28,11 +28,11 @@ class DistanceToPointWithGradient {
                               Eigen::Vector3d p_WQ)
       : geometry_id_(id), X_WG_(std::move(X_WG)), p_WQ_(std::move(p_WQ)) {}
 
-  /** Overload for sphere object */
+  /* Overload for sphere object */
   SignedDistanceToPointWithGradient operator()(
       const fcl::Sphered& sphere) const;
 
-  /** Overload for half space object */
+  /* Overload for half space object */
   SignedDistanceToPointWithGradient operator()(
       const fcl::Halfspaced& halfspace) const;
 

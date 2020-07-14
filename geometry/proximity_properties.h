@@ -17,7 +17,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** @name  Declaring general contact material properties
+/* @name  Declaring general contact material properties
 
  String constants used to access the contact material properties that
  SceneGraph depends on. These are not the exhaustive set of contact material
@@ -39,7 +39,7 @@ extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
 
 //@}
 
-/** @name  Declaring geometry for hydroelastic contact.
+/* @name  Declaring geometry for hydroelastic contact.
 
  In order for a geometry to be used in hydroelastic contact, it must be declared
  as such. The declaration consists of setting a number of properties in the

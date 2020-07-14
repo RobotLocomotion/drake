@@ -13,13 +13,13 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** Canonicalizes the given geometry *candidate* name. A canonicalized name may
+/* Canonicalizes the given geometry *candidate* name. A canonicalized name may
  still not be valid (as it may duplicate a previously used name). See
  @ref canonicalized_geometry_names "documentation in GeometryInstance" for
  details. */
 std::string CanonicalizeStringName(const std::string& name);
 
-/// A const range iterator through the keys of an unordered map.
+// A const range iterator through the keys of an unordered map.
 template <typename K, typename V>
 class MapKeyRange {
  public:
@@ -56,7 +56,7 @@ class MapKeyRange {
   const std::unordered_map<K, V>* map_;
 };
 
-/** @name Isometry scalar conversion
+/* @name Isometry scalar conversion
 
  Some of SceneGraph's inner-workings are _not_ templated on scalar type and
  always require double values. These functions work in an ADL-compatible

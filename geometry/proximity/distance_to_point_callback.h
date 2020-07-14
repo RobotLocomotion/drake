@@ -23,7 +23,7 @@ namespace geometry {
 namespace internal {
 namespace point_distance {
 
-/** Supporting data for the distance-to-point callback (see Callback below).
+/* Supporting data for the distance-to-point callback (see Callback below).
  It includes:
     - The query point Q, measured and expressed in the world frame, `p_WQ_W`.
     - The fcl collision object representing the query point, Q.
@@ -36,7 +36,7 @@ namespace point_distance {
  */
 template <typename T>
 struct CallbackData {
-  /** Constructs the fully-specified callback data. The values are as described
+  /* Constructs the fully-specified callback data. The values are as described
    above. _Some_ of the parameters are aliased in the data and require the
    aliased parameters to remain valid at least as long as the CallbackData
    instance.
@@ -63,23 +63,23 @@ struct CallbackData {
     DRAKE_DEMAND(distances_in);
   }
 
-  /** The query fcl object.  */
+  /* The query fcl object.  */
   const fcl::CollisionObjectd& query_point;
 
-  /** The query threshold.  */
+  /* The query threshold.  */
   const double threshold;
 
-  /** The T-valued query point Q.  */
+  /* The T-valued query point Q.  */
   const Vector3<T> p_WQ_W;
 
-  /** The T-valued pose of every geometry.  */
+  /* The T-valued pose of every geometry.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
-  /** The accumulator for results.  */
+  /* The accumulator for results.  */
   std::vector<SignedDistanceToPoint<T>>& distances;
 };
 
-/** @name Functions for computing distance from point to primitives
+/* @name Functions for computing distance from point to primitives
  This family of functions compute the distance from a point Q to a primitive
  shape.  Refer to QueryObject::ComputeSignedDistanceToPoint() for more details.
 
@@ -101,7 +101,7 @@ struct CallbackData {
  @param is_grad_w_unique[out] True if the value in `grad_W` is unique.  */
 //@{
 
-/** Computes distance from point to sphere with the understanding that all
+/* Computes distance from point to sphere with the understanding that all
  quantities are measured and expressed in the sphere's frame, S. Otherwise, the
  semantics of the parameters are as documented as above.  */
 template <typename T>
@@ -135,7 +135,7 @@ void SphereDistanceInSphereFrame(const fcl::Sphered& sphere,
   *distance = (p_SQ - *p_SN).dot(*grad_S);
 }
 
-/** Overload of ComputeDistanceToPrimitive() for sphere primitive. */
+/* Overload of ComputeDistanceToPrimitive() for sphere primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
                                 const math::RigidTransform<T>& X_WG,
@@ -151,7 +151,7 @@ void ComputeDistanceToPrimitive(const fcl::Sphered& sphere,
   *grad_W = X_WG.rotation() * grad_G;
 }
 
-/** Overload of ComputeDistanceToPrimitive() for halfspace primitive. */
+/* Overload of ComputeDistanceToPrimitive() for halfspace primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
                                 const math::RigidTransform<T>& X_WG,
@@ -173,7 +173,7 @@ void ComputeDistanceToPrimitive(const fcl::Halfspaced& halfspace,
   *is_grad_W_unique = true;
 }
 
-/** Overload of ComputeDistanceToPrimitive() for capsule primitive. */
+/* Overload of ComputeDistanceToPrimitive() for capsule primitive. */
 template <typename T>
 void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
                                 const math::RigidTransform<T>& X_WG,
@@ -263,7 +263,7 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
 
 //@}
 
-/** A functor to compute signed distance between a point and a geometry. By
+/* A functor to compute signed distance between a point and a geometry. By
  design, one instance should be created for each unique pairing of query point Q
  with geometry G. The functor is constructed with all the parameters _except_
  the actual shape. It relies on overloading the () operator and ADL to handle
@@ -271,7 +271,7 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
 template <typename T>
 class DistanceToPoint {
  public:
-  /** Constructs the functor DistanceToPoint.
+  /* Constructs the functor DistanceToPoint.
    @param id    The id of the geometry G,
    @param X_WG  The pose of the G in world frame,
    @param p_WQ  The position of the query point Q in world frame.  */
@@ -283,7 +283,7 @@ class DistanceToPoint {
   // TODO(DamrongGuoy): Revisit computation over operator() overloads as per
   //  issue: https://github.com/RobotLocomotion/drake/issues/11227
 
-  /** Overload to compute distance to a sphere.  */
+  /* Overload to compute distance to a sphere.  */
   SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere) {
     T distance{};
     Vector3<T> p_GN_G, grad_W;
@@ -295,7 +295,7 @@ class DistanceToPoint {
                                     is_grad_W_unique};
   }
 
-  /** Overload to compute distance to a halfspace.  */
+  /* Overload to compute distance to a halfspace.  */
   SignedDistanceToPoint<T> operator()(const fcl::Halfspaced& halfspace) {
     T distance{};
     Vector3<T> p_GN_G, grad_W;
@@ -307,7 +307,7 @@ class DistanceToPoint {
                                     is_grad_W_unique};
   }
 
-  /** Overload to compute distance to a capsule.  */
+  /* Overload to compute distance to a capsule.  */
   SignedDistanceToPoint<T> operator()(const fcl::Capsuled& capsule) {
     // TODO(SeanCurtis-TRI): This would be better if `SignedDistanceToPoint`
     //  could be default constructed in an uninitialized state and then
@@ -323,7 +323,7 @@ class DistanceToPoint {
                                     is_grad_W_unique};
   }
 
-  /** Overload to compute distance to a box.  */
+  /* Overload to compute distance to a box.  */
   SignedDistanceToPoint<T> operator()(const fcl::Boxd& box) {
     // Express the given query point Q in the frame of the box geometry G.
     const Vector3<T> p_GQ_G = X_WG_.inverse() * p_WQ_;
@@ -343,7 +343,7 @@ class DistanceToPoint {
                                     is_grad_W_unique};
   }
 
-  /** Overload to compute distance to a cylinder.  */
+  /* Overload to compute distance to a cylinder.  */
   SignedDistanceToPoint<T> operator()(const fcl::Cylinderd& cylinder) {
     using std::sqrt;
     // TODO(SeanCurtis-TRI): This is not a good algorithm for differentiation.
@@ -439,13 +439,13 @@ class DistanceToPoint {
                                     true /* is_grad_W_unique */};
   }
 
-  /** Reports the "sign" of x with a small modification; Sign(0) --> 1.
+  /* Reports the "sign" of x with a small modification; Sign(0) --> 1.
    @tparam U  Templated to allow DistanceToPoint<AutoDiffXd> to still compute
               Sign<double> or Sign<AutoDiffXd> as needed.  */
   template <typename U = T>
   static U Sign(const U& x) { return (x < U(0.0)) ? U(-1.0) : U(1.0); }
 
-  /** Picks the axis i whose coordinate p(i) is closest to the boundary value
+  /* Picks the axis i whose coordinate p(i) is closest to the boundary value
    ±bounds(i). If there are ties, we prioritize according to an arbitrary
    ordering: +x,-x,+y,-y,+z,-z.
 
@@ -471,7 +471,7 @@ class DistanceToPoint {
     return axis;
   }
 
-  /** Calculates the signed distance from a query point Q to a box, G. The box
+  /* Calculates the signed distance from a query point Q to a box, G. The box
    can be either two-dimensional or three-dimensional. It is defined centered
    on its frame G and aligned with G's axes. We use the 3D version directly
    for the signed distance from Box and use the 2D version indirectly for the
@@ -589,7 +589,7 @@ class DistanceToPoint {
 
 // TODO(SeanCurtis-TRI): Replace this clunky mechanism with a new mechanism
 // which does this implicitly via ADL and templates.
-/** @name   Mechanism for reporting on which scalars and for which shapes
+/* @name   Mechanism for reporting on which scalars and for which shapes
             point-to-shape queries can be made.
 
  By default, nothing is supported. For each supported scalar type, a class
@@ -603,7 +603,7 @@ struct ScalarSupport {
   static bool is_supported(fcl::NODE_TYPE node_type) { return false; }
 };
 
-/** Primitive support for double-valued query.  */
+/* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
   static bool is_supported(fcl::NODE_TYPE node_type) {
@@ -620,7 +620,7 @@ struct ScalarSupport<double> {
   }
 };
 
-/** Primitive support for AutoDiff-valued query.  */
+/* Primitive support for AutoDiff-valued query.  */
 template <typename DerType>
 struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   static bool is_supported(fcl::NODE_TYPE node_type) {
@@ -638,7 +638,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
 
 //@}
 
-/** The callback function for computing the signed distance between a point and
+/* The callback function for computing the signed distance between a point and
  a supported shape. Intended to be invoked as a result of broadphase culling
  of candidate geometry pairs for the pair (`object_A_ptr`, `object_B_ptr`).
 

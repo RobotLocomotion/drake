@@ -12,7 +12,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/**
+/*
  Identify the triangular boundary faces of a tetrahedral volume mesh.
  @param tetrahedra   The tetrahedra of the mesh.
  @return             The boundary faces, each of which is represented as an
@@ -27,7 +27,7 @@ namespace internal {
 std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
     const std::vector<VolumeElement>& tetrahedra);
 
-/**
+/*
  Collects unique vertices from faces of a volume mesh. Each vertex shared by
  multiple faces is reported once. Each face is represented as an array of
  three vertices of a volume mesh.
@@ -37,7 +37,7 @@ std::vector<std::array<VolumeVertexIndex, 3>> IdentifyBoundaryFaces(
 std::vector<VolumeVertexIndex> CollectUniqueVertices(
     const std::vector<std::array<VolumeVertexIndex, 3>>& faces);
 
-/**
+/*
  Converts a tetrahedral volume mesh to a triangulated surface mesh of the
  boundary surface of the volume.
  @param volume  The tetrahedral volume mesh, whose vertex positions are

@@ -16,7 +16,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/**
+/*
  Generates a linear approximation of a pressure field inside the given box as
  represented by the given volume mesh. The pressure at a point is defined
  as E * e(x) where e ∈ [0,1] is the extent -- a measure of penetration into

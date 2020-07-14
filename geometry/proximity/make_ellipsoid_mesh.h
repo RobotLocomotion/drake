@@ -16,7 +16,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** Creates a volume mesh for the given `ellipsoid`; the level of
+/* Creates a volume mesh for the given `ellipsoid`; the level of
  tessellation is guided by the `resolution_hint` parameter.
 
  `resolution_hint` influences the resolution of the mesh. Smaller values
@@ -72,7 +72,7 @@ VolumeMesh<T> MakeEllipsoidVolumeMesh(const Ellipsoid& ellipsoid,
   return VolumeMesh<T>(std::move(tetrahedra), std::move(vertices));
 }
 
-/** Creates a surface mesh for the given `ellipsoid`; the level of
+/* Creates a surface mesh for the given `ellipsoid`; the level of
  tessellation is guided by the `resolution_hint` parameter in the same way as
  MakeEllipsoidVolumeMesh.
 

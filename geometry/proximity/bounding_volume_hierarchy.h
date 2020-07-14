@@ -24,7 +24,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** Axis-aligned bounding box used in BoundingVolumeHierarchy. The box is
+/* Axis-aligned bounding box used in BoundingVolumeHierarchy. The box is
  defined in a canonical frame B such that it is centered on Bo and its extents
  are aligned with B's axes. However, the box is posed in a hierarchical frame
  H. Because this is an _axis-aligned_ bounding box, `Bx = Hx`, `By = Hy`, and
@@ -45,7 +45,7 @@ class Aabb {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Aabb)
 
-  /** Constructs an axis-aligned bounding box measured and expressed in frame H.
+  /* Constructs an axis-aligned bounding box measured and expressed in frame H.
 
    @param p_HoBo_H      The position vector from the hierarchy frame's origin to
                         the box's canonical origin, expressed in frame H. The
@@ -63,32 +63,32 @@ class Aabb {
     PadBoundary();
   }
 
-  /** Returns the center of the box -- equivalent to the position vector from
+  /* Returns the center of the box -- equivalent to the position vector from
    the hierarchy frame's origin Ho to `this` box's origin Bo: `p_HoBo_H`. */
   const Vector3<double>& center() const { return center_; }
 
-  /** Returns the half_width. */
+  /* Returns the half_width. */
   const Vector3<double>& half_width() const { return half_width_; }
 
-  /** Returns the upper bounding point: p_HoU_H. */
+  /* Returns the upper bounding point: p_HoU_H. */
   Vector3<double> upper() const { return center_ + half_width_; }
 
-  /** Returns the lower bounding point: p_HoL_H. */
+  /* Returns the lower bounding point: p_HoL_H. */
   Vector3<double> lower() const { return center_ - half_width_; }
 
-  /** @return Volume of the bounding box.  */
+  /* @return Volume of the bounding box.  */
   double CalcVolume() const {
     // Double the three half widths using * 8 instead of repeating * 2 three
     // times to help the compiler out.
     return half_width_[0] * half_width_[1] * half_width_[2] * 8;
   }
 
-  /** Checks whether the two bounding volumes overlap by applying the transform
+  /* Checks whether the two bounding volumes overlap by applying the transform
    between the two boxes and using Gottschalk's OBB overlap test.  */
   static bool HasOverlap(const Aabb& a, const Aabb& b,
                          const math::RigidTransformd& X_AB);
 
-  /** Checks whether bounding volume `bv` intersects the given plane. The
+  /* Checks whether bounding volume `bv` intersects the given plane. The
    bounding volume is centered on its canonical frame B and B is posed in the
    corresponding hierarchy frame H; by construction B is aligned with H. The
    plane is defined in frame P.
@@ -107,7 +107,7 @@ class Aabb {
   static bool HasOverlap(const Aabb& bv, const Plane<double>& plane_P,
                          const math::RigidTransformd& X_PH);
 
-  /** Checks whether bounding volume `bv` intersects the given half space. The
+  /* Checks whether bounding volume `bv` intersects the given half space. The
    bounding volume is centered on its canonical frame B and B is posed in the
    corresponding hierarchy frame H; by construction B is aligned with H. The
    half space is defined in its canonical frame C (such that the boundary plane
@@ -124,7 +124,7 @@ class Aabb {
   static bool HasOverlap(const Aabb& bv, const HalfSpace& hs_C,
                          const math::RigidTransformd& X_CH);
 
-  /** Compares the values of the two Aabb instances for exact equality down to
+  /* Compares the values of the two Aabb instances for exact equality down to
    the last bit. Assumes that the quantities are measured and expressed in
    the same frame. */
   bool Equal(const Aabb& other) const {
@@ -153,18 +153,18 @@ class Aabb {
   Vector3<double> half_width_;
 };
 
-/** Node of the tree structure representing the BoundingVolumeHierarchy.  */
+/* Node of the tree structure representing the BoundingVolumeHierarchy.  */
 template <class MeshType>
 class BvNode {
  public:
-  /** Constructor for leaf nodes.
+  /* Constructor for leaf nodes.
    @param aabb The bounding volume encompassing the element.
    @param index The index into the mesh for retrieving the element.
    */
   BvNode(Aabb aabb, typename MeshType::ElementIndex index)
       : aabb_(std::move(aabb)), child_(index) {}
 
-  /** Constructor for branch/internal nodes.
+  /* Constructor for branch/internal nodes.
    @param aabb The bounding volume encompassing the elements in child branches.
    @param left Unique pointer to the left child branch.
    @param right Unique pointer to the right child branch.
@@ -177,28 +177,28 @@ class BvNode {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BvNode)
 
-  /** Returns the bounding volume.  */
+  /* Returns the bounding volume.  */
   const Aabb& aabb() const { return aabb_; }
 
-  /** Returns the index into the mesh's elements.
+  /* Returns the index into the mesh's elements.
    @pre Assumes that is_leaf() returns true.  */
   typename MeshType::ElementIndex element_index() const {
     return std::get<typename MeshType::ElementIndex>(child_);
   }
 
-  /** Returns the left child branch.
+  /* Returns the left child branch.
    @pre Assumes that is_leaf() returns false.  */
   const BvNode<MeshType>& left() const {
     return *(std::get<NodeChildren>(child_).left);
   }
 
-  /** Returns the right child branch.
+  /* Returns the right child branch.
    @pre Assumes that is_leaf() returns false.  */
   const BvNode<MeshType>& right() const {
     return *(std::get<NodeChildren>(child_).right);
   }
 
-  /** Returns whether this is a leaf node as a opposed to a branch node.  */
+  /* Returns whether this is a leaf node as a opposed to a branch node.  */
   bool is_leaf() const {
     return std::holds_alternative<typename MeshType::ElementIndex>(child_);
   }
@@ -235,7 +235,7 @@ class BvNode {
   std::variant<typename MeshType::ElementIndex, NodeChildren> child_;
 };
 
-/** Resulting instruction from performing the bounding volume tree traversal
+/* Resulting instruction from performing the bounding volume tree traversal
  (BVTT) callback on two potentially colliding pairs. Note that this is not the
  mathematical result but information on how the traversal should proceed.  */
 enum BvttCallbackResult {
@@ -243,13 +243,13 @@ enum BvttCallbackResult {
   Terminate
 };
 
-/** Bounding volume tree traversal (BVTT) callback. Returns a BvttCallbackResult
+/* Bounding volume tree traversal (BVTT) callback. Returns a BvttCallbackResult
  for further action, e.g. deciding whether to exit early.  */
 template <class MeshType, class OtherMeshType>
 using BvttCallback = std::function<BvttCallbackResult(
     typename MeshType::ElementIndex, typename OtherMeshType::ElementIndex)>;
 
-/** BoundingVolumeHierarchy is an acceleration structure for performing spatial
+/* BoundingVolumeHierarchy is an acceleration structure for performing spatial
  queries against a collection of objects (in this case, triangles or
  tetrahedra). Specifically, for identifying those objects in or near a
  particular region of interest. It serves as a basis for culling objects that
@@ -285,7 +285,7 @@ class BoundingVolumeHierarchy {
 
   const BvNode<MeshType>& root_node() const { return *root_node_; }
 
-  /** Perform a query of this bvh's mesh elements against the given bvh's
+  /* Perform a query of this bvh's mesh elements against the given bvh's
    mesh elements and runs the callback for each unculled pair.  */
   template <class OtherMeshType>
   void Collide(const BoundingVolumeHierarchy<OtherMeshType>& bvh,
@@ -326,7 +326,7 @@ class BoundingVolumeHierarchy {
     }
   }
 
-  /** Culls the nodes of the BVH based on the nodes' bounding volumes'
+  /* Culls the nodes of the BVH based on the nodes' bounding volumes'
    relationships with a primitive object. This is different from the BVH-BVH
    Collide() method in that when a node is found to be overlapping the
    primitive, it triggers two new tests, one for each of the node's children;
@@ -371,7 +371,7 @@ class BoundingVolumeHierarchy {
     }
   }
 
-  /** Wrapper around `Collide` with a callback that accumulates each pair of
+  /* Wrapper around `Collide` with a callback that accumulates each pair of
    collision candidates and returns them all.
    @return Vector of element index pairs whose bounding volumes are candidates
    for collision.  */
@@ -392,7 +392,7 @@ class BoundingVolumeHierarchy {
     return result;
   }
 
-  /** Compares the two BoundingVolumeHierarchy instances for exact equality down
+  /* Compares the two BoundingVolumeHierarchy instances for exact equality down
    to the last bit. Assumes that the quantities are measured and expressed in
    the same frame. */
   bool Equal(const BoundingVolumeHierarchy<MeshType>& other) const {

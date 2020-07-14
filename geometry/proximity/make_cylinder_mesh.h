@@ -235,21 +235,21 @@ void RefineCylinderTetrahdron(
   split_mesh_tetrahedra.emplace_back(g, h, f, j);
 }
 
-/// Splits a mesh by calling RefineCylinderTetrahdron() on each
-/// tetrahedron of `mesh`. `vertex_type` is a vector describing the
-/// CylinderVertexType of each vertex in `mesh`
-///
-/// When splitting an edge, the midpoint of the edge is projected along the line
-/// orthogonal to the z-axis. For an edge on the side surface of the cylinder,
-/// the newly created vertex is placed on the side surface. For other kinds
-/// of edges, the projection places the newly created vertex at the distance
-/// from the z-axis equal to the average of the two distances from the z-axis
-/// of the two original vertices of the split edge.  If the two original
-/// vertices have the same distance from the z-axis, the newly created vertex
-/// will have the same distance from the z-axis as the original vertices.  As
-/// a result, the mesh vertices are placed on the 2ⁿ concentric cylindrical
-/// surfaces inside the cylinder, where n is the `refinement_level`.
-///
+// Splits a mesh by calling RefineCylinderTetrahdron() on each
+// tetrahedron of `mesh`. `vertex_type` is a vector describing the
+// CylinderVertexType of each vertex in `mesh`
+//
+// When splitting an edge, the midpoint of the edge is projected along the line
+// orthogonal to the z-axis. For an edge on the side surface of the cylinder,
+// the newly created vertex is placed on the side surface. For other kinds
+// of edges, the projection places the newly created vertex at the distance
+// from the z-axis equal to the average of the two distances from the z-axis
+// of the two original vertices of the split edge.  If the two original
+// vertices have the same distance from the z-axis, the newly created vertex
+// will have the same distance from the z-axis as the original vertices.  As
+// a result, the mesh vertices are placed on the 2ⁿ concentric cylindrical
+// surfaces inside the cylinder, where n is the `refinement_level`.
+//
 template <typename T>
 std::pair<VolumeMesh<T>, std::vector<CylinderVertexType>> RefineCylinderMesh(
     const VolumeMesh<T>& mesh,
@@ -396,58 +396,58 @@ MakeCylinderMeshLevel0(const double& height, const double& radius) {
 
 #endif
 
-/// Generates a tetrahedral volume mesh of a cylinder whose bounding box is
-/// [-radius, radius]x[-radius,radius]x[-length/2, length/2], i.e., the center
-/// line of the cylinder is the z-axis, and the center of the cylinder is at
-/// the origin.
-///
-/// The level of tessellation is guided by the `resolution_hint` parameter.
-/// Smaller values create higher-resolution meshes with smaller tetrahedra.
-/// The resolution hint is interpreted as an edge length, and the cylinder is
-/// subdivided to guarantee that edge lengths along the boundary circle of
-/// the top and bottom caps will be less than or equal to that edge length.
-///
-/// The resolution of the final mesh will change discontinuously. Small
-/// changes to `resolution_hint` will likely produce the same mesh.
-/// However, cutting `resolution_hint` in half will likely increase the
-/// number of tetrahedra.
-///
-/// Ultimately, successively smaller values of `resolution_hint` will no
-/// longer change the output mesh. This algorithm will not produce more than
-/// 100 million tetrahedra.
-///
-/// This method implements a variant of the generator described in
-/// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
-/// but the main ideas used from the paper are:
-///
-///   - the pattern of subdividing edges to create vertices
-///   - the projection of surface vertices
-///   - the consideration of the combinatorics of how to associate new
-///     subdivision tetrahedra to the newly created vertices.
-///
-/// It is based on a recursive refinement of an initial
-/// (refinement_level = 0) coarse mesh representation of a cylinder with
-/// given height and radius. The initial mesh discretizes a rectangular
-/// prism, subdividing to make roughly regular tetrahedra.
-/// At each refinement level, each tetrahedron is split into eight new
-/// tetrahedra by splitting each edge in half.
-///
-/// As edges get split, cylindrical shells are created. Each shell layer
-/// conforms to a cylindrical offset surface of the outer cylindrical surface.
-///
-/// @param[in] cylinder
-///    Specification of the parameterized cylinder the output mesh should
-///    approximate.
-/// @param[in] resolution_hint
-///    The positive characteristic edge length for the mesh. The coarsest
-///    possible mesh (a rectangular prism) is guaranteed for any value of
-///    `resolution_hint` greater than √2 times the radius of the cylinder.
-/// @tparam T
-///    The Eigen-compatible scalar for representing the mesh vertex positions.
-/// @pre resolution_hint is positive.
-///
-/// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
-/// generator. Geophysical Journal International, 130(1), pp.193-200.
+// Generates a tetrahedral volume mesh of a cylinder whose bounding box is
+// [-radius, radius]x[-radius,radius]x[-length/2, length/2], i.e., the center
+// line of the cylinder is the z-axis, and the center of the cylinder is at
+// the origin.
+//
+// The level of tessellation is guided by the `resolution_hint` parameter.
+// Smaller values create higher-resolution meshes with smaller tetrahedra.
+// The resolution hint is interpreted as an edge length, and the cylinder is
+// subdivided to guarantee that edge lengths along the boundary circle of
+// the top and bottom caps will be less than or equal to that edge length.
+//
+// The resolution of the final mesh will change discontinuously. Small
+// changes to `resolution_hint` will likely produce the same mesh.
+// However, cutting `resolution_hint` in half will likely increase the
+// number of tetrahedra.
+//
+// Ultimately, successively smaller values of `resolution_hint` will no
+// longer change the output mesh. This algorithm will not produce more than
+// 100 million tetrahedra.
+//
+// This method implements a variant of the generator described in
+// [Everett, 1997]. The algorithm has diverged a bit from the one in the paper,
+// but the main ideas used from the paper are:
+//
+//   - the pattern of subdividing edges to create vertices
+//   - the projection of surface vertices
+//   - the consideration of the combinatorics of how to associate new
+//     subdivision tetrahedra to the newly created vertices.
+//
+// It is based on a recursive refinement of an initial
+// (refinement_level = 0) coarse mesh representation of a cylinder with
+// given height and radius. The initial mesh discretizes a rectangular
+// prism, subdividing to make roughly regular tetrahedra.
+// At each refinement level, each tetrahedron is split into eight new
+// tetrahedra by splitting each edge in half.
+//
+// As edges get split, cylindrical shells are created. Each shell layer
+// conforms to a cylindrical offset surface of the outer cylindrical surface.
+//
+// @param[in] cylinder
+//    Specification of the parameterized cylinder the output mesh should
+//    approximate.
+// @param[in] resolution_hint
+//    The positive characteristic edge length for the mesh. The coarsest
+//    possible mesh (a rectangular prism) is guaranteed for any value of
+//    `resolution_hint` greater than √2 times the radius of the cylinder.
+// @tparam T
+//    The Eigen-compatible scalar for representing the mesh vertex positions.
+// @pre resolution_hint is positive.
+//
+// [Everett, 1997]  Everett, M.E., 1997. A three-dimensional spherical mesh
+// generator. Geophysical Journal International, 130(1), pp.193-200.
 template <typename T>
 VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
                                      double resolution_hint) {
@@ -542,24 +542,24 @@ VolumeMesh<T> MakeCylinderVolumeMesh(const Cylinder& cylinder,
   return mesh;
 }
 
-/// Creates a surface mesh for the given `cylinder`; the level of
-/// tessellation is guided by the `resolution_hint` parameter in the same way
-/// as MakeCylinderVolumeMesh.
-///
-/// @param[in] cylinder
-///    Specification of the parameterized cylinder the output surface mesh
-///    should approximate.
-/// @param[in] resolution_hint
-///    The positive characteristic edge length for the mesh. The coarsest
-///    possible mesh (a rectangular prism) is guaranteed for any value of
-///    `resolution_hint` greater than √2 times the radius of the cylinder.
-///    For any cylinder, there is a `resolution_hint` value that serves as the
-///    smallest value that will produce more triangles -- values smaller than
-///    that will have no effect.
-/// @returns The triangulated surface mesh for the given cylinder.
-/// @pre resolution_hint is positive.
-/// @tparam T
-///    The Eigen-compatible scalar for representing the mesh vertex positions.
+// Creates a surface mesh for the given `cylinder`; the level of
+// tessellation is guided by the `resolution_hint` parameter in the same way
+// as MakeCylinderVolumeMesh.
+//
+// @param[in] cylinder
+//    Specification of the parameterized cylinder the output surface mesh
+//    should approximate.
+// @param[in] resolution_hint
+//    The positive characteristic edge length for the mesh. The coarsest
+//    possible mesh (a rectangular prism) is guaranteed for any value of
+//    `resolution_hint` greater than √2 times the radius of the cylinder.
+//    For any cylinder, there is a `resolution_hint` value that serves as the
+//    smallest value that will produce more triangles -- values smaller than
+//    that will have no effect.
+// @returns The triangulated surface mesh for the given cylinder.
+// @pre resolution_hint is positive.
+// @tparam T
+//    The Eigen-compatible scalar for representing the mesh vertex positions.
 template <typename T>
 SurfaceMesh<T> MakeCylinderSurfaceMesh(const Cylinder& cylinder,
                                        double resolution_hint) {
