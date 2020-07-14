@@ -28,7 +28,7 @@ namespace {
 
 #ifndef DRAKE_DOXYGEN_CXX
 
-/**
+/*
  Converts vertices of tinyobj to vertices of SurfaceMesh.
  @param tinyobj_vertices
      Vertices from tinyobj represented as `std::vector` of floating-point
@@ -63,7 +63,7 @@ std::vector<SurfaceVertex<double>> TinyObjToSurfaceVertices(
   return vertices;
 }
 
-/**
+/*
  Converts faces of tinyobj::mesh_t to faces of SurfaceMesh.
  @param[in] mesh
      The mesh from tinyobj.

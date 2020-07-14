@@ -13,7 +13,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** The definition of a plane in ℜ³, posed in an arbitrary frame. The plane
+/* The definition of a plane in ℜ³, posed in an arbitrary frame. The plane
  normal implicitly defines "above" and "below" directions relative to the plane.
  The "height" of a point relative to the plane can be queried.
 
@@ -35,7 +35,7 @@ class Plane {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Plane)
 
-  /** Constructs a %Plane in frame F which is normal to `n_F` and passes
+  /* Constructs a %Plane in frame F which is normal to `n_F` and passes
    through the point `p_FP`.
    @param n_F
        A (possibly unit-length) vector perpendicular to the plane expressed in
@@ -74,7 +74,7 @@ class Plane {
     displacement_ = nhat_F_.dot(p_FP);
   }
 
-  /** Computes the height of Point Q relative to the plane. A positive height
+  /* Computes the height of Point Q relative to the plane. A positive height
    indicates the point lies _above_ the plane; negative height indicates
    _below_. The point must be measured and expressed in the same frame as the
    plane.   */
@@ -82,7 +82,7 @@ class Plane {
     return nhat_F_.dot(p_FQ) - displacement_;
   }
 
-  /** Gets the plane's normal expressed in frame F. */
+  /* Gets the plane's normal expressed in frame F. */
   const Vector3<T>& normal() const { return nhat_F_; }
 
  private:

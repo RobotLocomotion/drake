@@ -11,30 +11,30 @@ namespace geometry {
 namespace internal {
 namespace has_collisions {
 
-/** Supporting data for the collisions exist callback (see Callback below).
+/* Supporting data for the collisions exist callback (see Callback below).
    It includes:
     - A collision filter instance.
     - A boolean of whether any collisions exist.
  */
 struct CallbackData {
-  /** Constructs the fully-specified callback data. The values are as described
+  /* Constructs the fully-specified callback data. The values are as described
    in the class documentation. The parameters are all aliased in the data and
    must remain valid at least as long as the CallbackData instance.
 
    @param collision_filter_in     The collision filter system. Aliased.  */
   explicit CallbackData(const CollisionFilterLegacy* collision_filter_in);
 
-  /** The collision filter system.  */
+  /* The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The parameters for the fcl object-object collision function.  */
+  /* The parameters for the fcl object-object collision function.  */
   fcl::CollisionRequestd request;
 
-  /** The result of the collisions exist query.  */
+  /* The result of the collisions exist query.  */
   bool collisions_exist{false};
 };
 
-/** The callback function for computing if there is a collision.
+/* The callback function for computing if there is a collision.
 
  @param object_A_ptr    Pointer to the first object in the pair (the order has
                         no significance).
