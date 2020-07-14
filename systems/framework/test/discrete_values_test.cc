@@ -163,6 +163,32 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
   EXPECT_EQ(1000.0, xd[1]);
 }
 
+// Tests that the convenience accessors for a DiscreteValues that contains
+// no groups work as documented.
+GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugarEmpty) {
+  static constexpr char expected_pattern[] = ".*exactly one group.*";
+  DiscreteValues<double> xd;
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.size(), std::logic_error, expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd[0], std::logic_error, expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_vector(), std::logic_error,
+                              expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
+                              expected_pattern);
+}
+
+// Tests that the convenience accessors for a DiscreteValues that contains
+// multiple groups work as documented.
+TEST_F(DiscreteValuesTest, ConvenienceSugarMultiple) {
+  static constexpr char expected_pattern[] = ".*exactly one group.*";
+  DiscreteValues<double> xd(std::move(data_));
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.size(), std::logic_error, expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd[0], std::logic_error, expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_vector(), std::logic_error,
+                              expected_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(xd.get_mutable_vector(), std::logic_error,
+                              expected_pattern);
+}
+
 // For DiagramDiscreteValues we want to check that we can build a tree of
 // unowned DiscreteValues but then Clone() produces an identical tree of
 // owned DiscreteValues, with underlying BasicVector types preserved.
