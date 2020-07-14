@@ -93,39 +93,36 @@ class DiscreteValues {
 
   //----------------------------------------------------------------------------
   /// @name Convenience accessors for %DiscreteValues with just one group.
-  /// These will fail (at least in Debug builds) if there is more than one
-  /// group in this %DiscreteValues object.
+  /// These will fail if there is not exactly one group in this %DiscreteValues
+  /// object.
   //@{
 
   /// Returns the number of elements in the only %DiscreteValues group.
   int size() const {
-    DRAKE_ASSERT(num_groups() == 1);
-    return data_[0]->size();
+    return get_vector().size();
   }
 
   /// Returns a mutable reference to an element in the _only_ group.
   T& operator[](std::size_t idx) {
-    DRAKE_ASSERT(num_groups() == 1);
-    return (*data_[0])[idx];
+    return get_mutable_vector()[idx];
   }
 
   /// Returns a const reference to an element in the _only_ group.
   const T& operator[](std::size_t idx) const {
-    DRAKE_ASSERT(num_groups() == 1);
-    return (*data_[0])[idx];
+    return get_vector()[idx];
   }
 
   /// Returns a const reference to the BasicVector containing the values for
   /// the _only_ group.
   const BasicVector<T>& get_vector() const {
-    DRAKE_ASSERT(num_groups() == 1);
+    DRAKE_DEMAND(num_groups() == 1);
     return get_vector(0);
   }
 
   /// Returns a mutable reference to the BasicVector containing the values for
   /// the _only_ group.
   BasicVector<T>& get_mutable_vector() {
-    DRAKE_ASSERT(num_groups() == 1);
+    DRAKE_DEMAND(num_groups() == 1);
     return get_mutable_vector(0);
   }
   //@}
@@ -133,16 +130,16 @@ class DiscreteValues {
   /// Returns a const reference to the vector holding data for the indicated
   /// group.
   const BasicVector<T>& get_vector(int index) const {
-    DRAKE_ASSERT(index >= 0 && index < num_groups());
-    DRAKE_ASSERT(data_[index] != nullptr);
+    DRAKE_DEMAND(index >= 0 && index < num_groups());
+    DRAKE_DEMAND(data_[index] != nullptr);
     return *data_[index];
   }
 
   /// Returns a mutable reference to the vector holding data for the indicated
   /// group.
   BasicVector<T>& get_mutable_vector(int index) {
-    DRAKE_ASSERT(index >= 0 && index < num_groups());
-    DRAKE_ASSERT(data_[index] != nullptr);
+    DRAKE_DEMAND(index >= 0 && index < num_groups());
+    DRAKE_DEMAND(data_[index] != nullptr);
     return *data_[index];
   }
 
