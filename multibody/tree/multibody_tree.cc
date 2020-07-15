@@ -1840,8 +1840,6 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // TODO(amcastro-tri): cache Nplus to avoid memory allocations.
       Nplus.resize(mobilizer_num_velocities, mobilizer_num_positions);
       mobilizer.CalcNplusMatrix(context, &Nplus);
-    } else {
-      Nplus.setIdentity(mobilizer_num_velocities, mobilizer_num_velocities);
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
@@ -1851,7 +1849,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // corresponding to the contribution of the mobilities in level ilevel.
       auto Js_w_PB_W = Js_w_WF_W->block(0, start_index, 3,
                                         mobilizer_jacobian_ncols);
-      Js_w_PB_W = Hw_PB_W * Nplus;
+      if (is_wrt_qdot){
+        Js_w_PB_W = Hw_PB_W * Nplus;
+      } else {
+        Js_w_PB_W = Hw_PB_W;
+      }
     }
 
     if (Js_v_WFpi_W) {
@@ -1870,10 +1872,10 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
         // Position from Wo to Fp (ith point of Fpi), expressed in world W.
-        const Vector3<T>& p_WoFp = p_WoFpi_W.col(ipoint);
+        const auto p_WoFp = p_WoFpi_W.col(ipoint);
 
         // Position from Bo to Fp, expressed in world W.
-        const Vector3<T> p_BoFp_W = p_WoFp - p_WoBo;
+        const auto p_BoFp_W = p_WoFp - p_WoBo;
 
         // Point Fp's Jacobian translational velocity is placed in the output
         // memory block in the same order input points Fpi are listed on input.
@@ -1886,7 +1888,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
         // Now "shift" Hv_PB_W to Hv_PFqi_W one column at a time.
         // Reminder: frame_F is fixed/welded to body_F so its angular velocity
         // in world W is the same as body_F's angular velocity in W.
-        Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
+        if (is_wrt_qdot) {
+          Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
+        } else {
+          Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W));
+        }
       }  // ipoint.
     }
   }  // body_node_index
