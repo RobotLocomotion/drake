@@ -557,7 +557,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
-                 const UnitInertia<T>&>(),
+                 const UnitInertia<T>&>(), const bool,
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
             py::arg("skip_validity_check"),
             cls_doc.ctor.doc_4args)
