@@ -41,6 +41,7 @@ drake_cc_library_gl_ubuntu_only(
     deps = [
         "//common:essential",
         "//common:scope_exit",
+        "@glx",
         "@opengl",
         "@x11",
     ],
