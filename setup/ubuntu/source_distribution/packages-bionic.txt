@@ -1,5 +1,4 @@
 bash-completion
-clang
 clang-9
 clang-format-9
 coinor-libclp-dev
@@ -42,7 +41,6 @@ libx11-dev
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
-lldb
 llvm-9
 locales
 openssh-client

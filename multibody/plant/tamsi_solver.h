@@ -931,10 +931,10 @@ class TamsiSolver {
       Gn_.resize(nc, nv);
     }
 
-    // Returns the current (maximum) capacity of the workspace.
-    int capacity() const {
-      return vt_.size();
-    }
+    // Returns the size of TAMSI's workspace that was last allocated. It is
+    // measured as the number of contact points since the last call to either
+    // SetOneWayCoupledProblemData() or SetTwoWayCoupledProblemData.
+    int capacity() const { return vn_.size(); }
 
     // Returns a constant reference to the vector of separation velocities in
     // the normal direction, of size nc.

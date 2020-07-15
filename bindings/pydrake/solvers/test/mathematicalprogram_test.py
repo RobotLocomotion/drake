@@ -437,6 +437,13 @@ class TestMathematicalProgram(unittest.TestCase):
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
+        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
+        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSdsosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
+        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeDsosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
+
     def test_make_polynomial(self):
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")[0]

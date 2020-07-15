@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/geometry/render/gl_renderer/opengl_includes.h"
 
 namespace drake {
@@ -20,7 +21,12 @@ class ShaderProgram {
 
   ShaderProgram() = default;
 
-  ~ShaderProgram();
+  /* Note: we're using the default destructor and explicitly *not* cleaning up
+   the OpenGl context. This is consistent with how we treat all OpenGl objects:
+   RenderTarget, OpenGlGeometry, etc. We assume that destruction of the OpenGL
+   context will clean it up and the RenderEngineGl's footprint is sufficiently
+   small that no actual object management will be required.  */
+  ~ShaderProgram() = default;
 
   /* Loads a %ShaderProgram from GLSL code contained in the provided strings.
 
@@ -54,6 +60,10 @@ class ShaderProgram {
   /* Sets the scalar uniform value to the given value.
    @throws std::runtime_error if the named uniform isn't part of the program. */
   void SetUniformValue(const std::string& uniform_name, float value) const;
+
+  /* Sets the vector4 uniform value to the given value.  */
+  void SetUniformValue(const std::string& uniform_name,
+                       const Vector4<float>& value) const;
 
   /* Binds the program for usage.  */
   void Use() const;

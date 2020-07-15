@@ -15,15 +15,34 @@ namespace solvers {
  *     ⎡x0 x2⎤ is psd, and
  *     ⎣x2 x0⎦
  *     x1 == 1.
+ *     x0 >= 0.5
+ *     x2 <= 2
  * The optimal solution is x = (1, 1, -1).
  */
-class SDPwithOverlappingVariables : public ::testing::Test {
+class SDPwithOverlappingVariables1 : public ::testing::Test {
  public:
-  SDPwithOverlappingVariables();
+  SDPwithOverlappingVariables1();
 
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
   Vector3<symbolic::Variable> x_;
+};
+
+/**
+ * min 2x0 + x1
+ * s.t ⎡x0 x1⎤ is psd,
+ *     ⎣x1 x0⎦
+ *     2 <= x0 <= 3
+ *     1 <= x1
+ * The optimal solution is x = (2, 1).
+ */
+class SDPwithOverlappingVariables2 : public ::testing::Test {
+ public:
+  SDPwithOverlappingVariables2();
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
 };
 
 /**

@@ -71,8 +71,9 @@ TEST_F(TrivialSDP1, Solve) {
 }
 
 std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
-  return {RemoveFreeVariableMethod::kTwoSlackVariables,
-          RemoveFreeVariableMethod::kTwoSlackVariables};
+  return {RemoveFreeVariableMethod::kNullspace,
+          RemoveFreeVariableMethod::kTwoSlackVariables,
+          RemoveFreeVariableMethod::kLorentzConeSlack};
 }
 
 TEST_F(LinearProgramBoundingBox1, Solve) {
