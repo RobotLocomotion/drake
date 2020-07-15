@@ -13,7 +13,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** @defgroup render_engine_benchmarks Render Engine Benchmarks
+/* @defgroup render_engine_benchmarks Render Engine Benchmarks
  @ingroup render_benchmarks
 
  The benchmark consists of a scene with a ground box, one or more spheres
@@ -192,7 +192,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
   using benchmark::Fixture::SetUp;
   void SetUp(const ::benchmark::State&) { cameras_.clear(); }
 
-  /** Set up the scene using the VTK render engine.
+  /* Set up the scene using the VTK render engine.
    @param sphere_count Number of spheres to include in the render.
    @param camera_count Number of cameras to include in the render.
    @param width Width of the render image.
@@ -205,7 +205,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
     SetupScene(sphere_count, camera_count, width, height);
   }
 
-  /** Set up the scene using the Ospray render engine.
+  /* Set up the scene using the Ospray render engine.
    @param sphere_count Number of spheres to include in the render.
    @param camera_count Number of cameras to include in the render.
    @param width Width of the render image.
@@ -223,7 +223,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
     SetupScene(sphere_count, camera_count, width, height);
   }
 
-  /** Parse arguments from the benchmark state.
+  /* Parse arguments from the benchmark state.
    @return A tuple representing the sphere count, camera count, width, and
            height.  */
   static std::tuple<int, int, int, int> ReadState(
@@ -232,7 +232,7 @@ class RenderEngineBenchmark : public benchmark::Fixture {
                            state.range(3));
   }
 
-  /** Helper function for generating the image path name based on the benchmark
+  /* Helper function for generating the image path name based on the benchmark
    arguments and file format. The benchmark state is assumed to have 4 arguments
    representing the sphere count, camera count, width, and height.  */
   static std::string image_path_name(const std::string& test_name,

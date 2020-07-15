@@ -16,7 +16,7 @@ namespace internal {
 
 // TODO(SeanCurtis-TRI): Replace this "legacy" mechanism with the
 // new-and-improved alternative when it is ready.
-/** A simple class for providing collision filtering functionality similar to
+/* A simple class for providing collision filtering functionality similar to
  that found in RigidBodyTree but made compatible with fcl. The majority of
  this code is lifted verbatim from drake/multibody/collision/element.{h, cc}.
 
@@ -33,19 +33,19 @@ class CollisionFilterLegacy {
 
   CollisionFilterLegacy() = default;
 
-  /** Adds a geometry to the filter system as represented by its encoded `id`
+  /* Adds a geometry to the filter system as represented by its encoded `id`
    (see EncodedData). When added, it will not be part of any filtered pairs.  */
   void AddGeometry(uintptr_t id) {
     collision_cliques_.insert({id, std::vector<int>()});
   }
 
-  /** Removes the geometry represented by its encoded `id` from the data. If
+  /* Removes the geometry represented by its encoded `id` from the data. If
    `id` has no collision filters; no action is taken.  */
   void RemoveGeometry(uintptr_t id) {
     collision_cliques_.erase(id);
   }
 
-  /** Reports true if the geometry pair (`id_A`, `id_B`) has been explicitly
+  /* Reports true if the geometry pair (`id_A`, `id_B`) has been explicitly
    added to the set of filtered pairs.  */
   bool CanCollideWith(uintptr_t id_A, uintptr_t id_B) const {
     // These ids should all be registered with the filter machinery.
@@ -59,7 +59,7 @@ class CollisionFilterLegacy {
     return !excluded;
   }
 
-  /** Adds the previously registered geometry indicated by its encoded id
+  /* Adds the previously registered geometry indicated by its encoded id
    `geometry_id` to the clique with the given `clique_id`.  */
   void AddToCollisionClique(uintptr_t geometry_id, int clique_id) {
     DRAKE_ASSERT(collision_cliques_.count(geometry_id) == 1);
@@ -81,7 +81,7 @@ class CollisionFilterLegacy {
     return static_cast<int>(collision_cliques_.at(geometry_id).size());
   }
 
-  /** Allocates a new clique and returns its id (to use with
+  /* Allocates a new clique and returns its id (to use with
    AddToCollisionClique()). Allocation is _not_ threadsafe.
    @throws std::logic_error if all cliques have been allocated.  */
   int next_clique_id() {
@@ -95,7 +95,7 @@ class CollisionFilterLegacy {
 
   // TODO(SeanCurtis-TRI): Eliminate this method; I'm sure I can reframe the
   // tests without this.
-  /** (Test support) reports what the next value that would be returned by
+  /* (Test support) reports what the next value that would be returned by
    next_clique_id().  */
   int peek_next_clique() const { return next_available_clique_; }
 
