@@ -152,7 +152,7 @@ void SolveProgramWithNoFreeVariables(
 void SolveProgramThroughNullspaceApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  drake::log()->warn(
+  static const logging::Warn log_once(
       "The problem has free variables, and CSDP removes the free "
       "variables by computing the null space of linear constraint in the "
       "dual space. This step can be time consuming. Consider providing a lower "
@@ -233,7 +233,7 @@ void SolveProgramThroughNullspaceApproach(
 void SolveProgramThroughTwoSlackVariablesApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  drake::log()->warn(
+  static const logging::Warn log_once(
       "The problem has free variables, and CSDP removes the free "
       "variables by introducing the slack variable y_plus >=0 , y_minus >= "
       "0, and constraint y_plus - y_minus = free_variable. This can "
@@ -323,7 +323,7 @@ void SolveProgramThroughTwoSlackVariablesApproach(
 void SolveProgramThroughLorentzConeSlackApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     MathematicalProgramResult* result) {
-  drake::log()->warn(
+  static const logging::Warn log_once(
       "The problem has free variables, and CSDP removes the free "
       "variables by introducing a slack variable t with the Lorentz cone "
       "constraint t>= sqrt(s'*s) This can introduce numerical problems to the "
