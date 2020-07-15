@@ -17,15 +17,20 @@ bazel run //tutorials:mathematical_program
 
 ## Running and Viewing the Notebooks Online
 
-The notebooks in this folder can be run and quickly viewed online using
-[Binder](https://mybinder.org) and [nbviewer](https://nbviewer.jupyter.org/).
+The notebooks in this folder can be run and quickly viewed online using Google
+[Colab](https://colab.research.google.com/), [Binder](https://mybinder.org), or
+[nbviewer](https://nbviewer.jupyter.org/).
 
 To run or quickly view them from the Drake `nightly-release` branch on GitHub:
 
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/RobotLocomotion/drake/blob/master/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/RobotLocomotion/drake/nightly-release?filepath=tutorials)
 [![nbviewer](https://img.shields.io/badge/view%20on-nbviewer-brightgreen.svg)](https://nbviewer.jupyter.org/github/RobotLocomotion/drake/blob/nightly-release/tutorials/)
 
-Since Binder uses the `robotlocomotion/drake:latest` image on
+To support Colab, each tutorial notebook has a preamble that will install drake
+if needed.
+
+Binder uses the `robotlocomotion/drake:latest` image on
 [Docker Hub](https://hub.docker.com/r/robotlocomotion/drake) that is published
 once a day from the `nightly-release` branch, it may be missing features used by
 notebooks on `master`. These will be available the next day when the
