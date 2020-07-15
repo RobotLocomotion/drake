@@ -184,6 +184,22 @@ struct OuterStruct {
   }
 };
 
+struct OuterWithBlankInner {
+  struct Blank {
+    template <typename Archive>
+    void Serialize(Archive* a) {}
+  };
+
+  double outer_value = NAN;
+  Blank inner_struct;
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(outer_value));
+    a->Visit(DRAKE_NVP(inner_struct));
+  }
+};
+
 }  // namespace
 
 namespace drake {
@@ -420,6 +436,18 @@ TEST_F(YamlWriteArchiveTest, Nested) {
   outer_value: 1.0
   inner_struct:
     inner_value: 2.0
+)R";
+  EXPECT_EQ(saved, expected);
+}
+
+TEST_F(YamlWriteArchiveTest, BlankInner) {
+  OuterWithBlankInner x;
+  x.outer_value = 1.0;
+
+  const std::string saved = Save(x);
+  const std::string expected = R"R(doc:
+  outer_value: 1.0
+  inner_struct: {}
 )R";
   EXPECT_EQ(saved, expected);
 }

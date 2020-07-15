@@ -230,7 +230,11 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     sub_archive.Accept(value);
-    root_[nvp.name()] = std::move(sub_archive.root_);
+    YAML::Node node = std::move(sub_archive.root_);
+    if (node.IsNull()) {
+      node = YAML::Node(YAML::NodeType::Map);
+    }
+    root_[nvp.name()] = std::move(node);
   }
 
   template <typename NVP>
