@@ -17,7 +17,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** @name  Declaring general contact material properties
+/* @name  Declaring general contact material properties
 
  String constants used to access the contact material properties that
  SceneGraph depends on. These are not the exhaustive set of contact material
@@ -30,16 +30,18 @@ namespace internal {
  called out in the documentation of the ProximityProperties class).  */
 //@{
 
-extern const char* const kMaterialGroup;  ///< The contact material group name.
-extern const char* const kElastic;        ///< Elastic modulus property name.
-extern const char* const kFriction;       ///< Friction coefficients property
-                                          ///< name.
-extern const char* const kHcDissipation;  ///< Hunt-Crossley dissipation
-                                          ///< property name.
+extern const char* const kMaterialGroup;   ///< The contact material group name.
+extern const char* const kElastic;         ///< Elastic modulus property name.
+extern const char* const kFriction;        ///< Friction coefficients property
+                                           ///< name.
+extern const char* const kHcDissipation;   ///< Hunt-Crossley dissipation
+                                           ///< property name.
+extern const char* const kPointStiffness;  ///< Point stiffness property
+                                           ///< name.
 
 //@}
 
-/** @name  Declaring geometry for hydroelastic contact.
+/* @name  Declaring geometry for hydroelastic contact.
 
  In order for a geometry to be used in hydroelastic contact, it must be declared
  as such. The declaration consists of setting a number of properties in the
@@ -73,7 +75,7 @@ extern const char* const kSlabThickness;    ///< Slab thickness property name
 //  very stiff and one very soft object interact, it might make sense to
 //  consider the stiff object as effectively rigid and simplify the computation.
 //  In this case, the object would get two representations.
-/** Classification of the type of representation a shape has for the
+/* Classification of the type of representation a shape has for the
  hydroelastic contact model: rigid or soft.  */
 enum class HydroelasticType {
   kUndefined,
@@ -81,7 +83,7 @@ enum class HydroelasticType {
   kSoft
 };
 
-/** Streaming operator for writing hydroelastic type to output stream.  */
+/* Streaming operator for writing hydroelastic type to output stream.  */
 std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal

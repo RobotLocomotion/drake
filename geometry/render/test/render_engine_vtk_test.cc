@@ -350,7 +350,7 @@ class RenderEngineVtkTest : public ::testing::Test {
           Vector4d{kTerrainColorD.r, kTerrainColorD.g, kTerrainColorD.b, 1.0});
       engine->RegisterVisual(GeometryId::get_new_id(), HalfSpace(), material,
                              RigidTransformd::Identity(),
-                             false /** needs update */);
+                             false /* needs update */);
     }
   }
 

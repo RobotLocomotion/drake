@@ -13,8 +13,6 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
-#include "drake/common/text_logging.h"
-
 namespace drake {
 namespace solvers {
 namespace internal {

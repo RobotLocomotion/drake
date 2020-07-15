@@ -27,7 +27,7 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
-/** Supporting data for the shape-to-shape hydroelastic contact callback (see
+/* Supporting data for the shape-to-shape hydroelastic contact callback (see
  Callback below). It includes:
 
     - A collision filter instance.
@@ -41,7 +41,7 @@ namespace hydroelastic {
  @tparam T The computation scalar.  */
 template <typename T>
 struct CallbackData {
-  /** Constructs the fully-specified callback data. The values are as described
+  /* Constructs the fully-specified callback data. The values are as described
    in the class documentation. The parameters are all aliased in the data and
    must remain valid at least as long as the CallbackData instance.
 
@@ -65,16 +65,16 @@ struct CallbackData {
     DRAKE_DEMAND(surfaces_in);
   }
 
-  /** The collision filter system.  */
+  /* The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The T-valued poses of all geometries.  */
+  /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
-  /** The hydroelastic geometric representations.  */
+  /* The hydroelastic geometric representations.  */
   const Geometries& geometries;
 
-  /** The results of the distance query.  */
+  /* The results of the distance query.  */
   std::vector<ContactSurface<T>>& surfaces;
 };
 
@@ -87,7 +87,7 @@ enum class CalcContactSurfaceResult {
   kSameCompliance       //< The two geometries have the same compliance type.
 };
 
-/** Computes ContactSurface using the algorithm appropriate to the Shape types
+/* Computes ContactSurface using the algorithm appropriate to the Shape types
  represented by the given `soft` and `rigid` geometries.
  @pre The geometries are not *both* half spaces.  */
 template <typename T>
@@ -126,7 +126,7 @@ std::unique_ptr<ContactSurface<T>> DispatchRigidSoftCalculation(
   }
 }
 
-/** Calculates the contact surface (if it exists) between two potentially
+/* Calculates the contact surface (if it exists) between two potentially
  colliding geometries.
 
  @param object_A_ptr         Pointer to the first object in the pair (the order
@@ -183,7 +183,7 @@ CalcContactSurfaceResult MaybeCalcContactSurface(
   return CalcContactSurfaceResult::kCalculated;
 }
 
-/** Assess contact between two objects -- if it can't be determined with
+/* Assess contact between two objects -- if it can't be determined with
  hydroelastic contact, it throws an exception. All parameters are as documented
  in MaybeCalcContactSurface().
  @returns `false`; the broad phase should _not_ terminate its process.
@@ -240,7 +240,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;
 }
 
-/** Supporting data for the shape-to-shape hydroelastic contact callback with
+/* Supporting data for the shape-to-shape hydroelastic contact callback with
  fallback (see CallbackWithFallback below). It includes:
 
     - CallbackData for strict hydroelastic contact (see above).
@@ -254,7 +254,7 @@ struct CallbackWithFallbackData {
   std::vector<PenetrationAsPointPair<double>>* point_pairs;
 };
 
-/** Assess contact between two objects -- if it can't be determined with
+/* Assess contact between two objects -- if it can't be determined with
  hydroelastic contact, it assess the contact using point-contact. All parameters
  are as documented in MaybeCalcContactSurface(). However, both ContactSurface
  and PenetrationAsPointPair instances are written to the `callback_data`.

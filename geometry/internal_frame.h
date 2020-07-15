@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** This is the internal representation of a GeometryFrame. It includes the
+/* This is the internal representation of a GeometryFrame. It includes the
  user-specified data (name and frame group), excludes the pose data, and then
  includes topology data.
 
@@ -31,11 +31,11 @@ class InternalFrame {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalFrame)
 
-  /** Default constructor. The parent identifier and pose index will be
+  /* Default constructor. The parent identifier and pose index will be
    invalid.  */
   InternalFrame();
 
-  /** Full constructor.
+  /* Full constructor.
    @param source_id     The identifier of the source this belongs to.
    @param frame_id      The identifier of _this_ frame.
    @param name          The name of the frame.
@@ -48,67 +48,67 @@ class InternalFrame {
                 int frame_group, FrameIndex index, FrameId parent_id,
                 int clique);
 
-  /** Compares two %InternalFrame instances for "equality". Two internal frames
+  /* Compares two %InternalFrame instances for "equality". Two internal frames
    are considered equal if they have the same frame identifier.  */
   bool operator==(const InternalFrame &other) const;
 
-  /** Compares two %InternalFrame instances for inequality. See operator==()
+  /* Compares two %InternalFrame instances for inequality. See operator==()
    for the definition of equality.  */
   bool operator!=(const InternalFrame &other) const;
 
-  /** @name      Frame properties    */
+  /* @name      Frame properties    */
   //@{
 
-  /** Returns the source id that registered the frame.  */
+  /* Returns the source id that registered the frame.  */
   SourceId source_id() const { return source_id_; }
 
-  /** Returns the globally unique identifier for this frame.  */
+  /* Returns the globally unique identifier for this frame.  */
   FrameId id() const { return id_; }
 
-  /** Returns the name of this frame.  */
+  /* Returns the name of this frame.  */
   const std::string& name() const { return name_; }
 
-  /** Returns the frame group of this frame. It is an externally defined integer
+  /* Returns the frame group of this frame. It is an externally defined integer
    value that can be used to create relationships between frames; it has no
    internal significance or dependencies.  */
   int frame_group() const { return frame_group_; }
 
-  /** Returns the index of this frame in the full scene graph.  */
+  /* Returns the index of this frame in the full scene graph.  */
   FrameIndex index() const { return index_; }
 
-  /** Returns the clique associated with this frame.  */
+  /* Returns the clique associated with this frame.  */
   int clique() const { return clique_; }
 
   //@}
 
-  /** @name     Scene Graph topology    */
+  /* @name     Scene Graph topology    */
   //@{
 
-  /** Returns true if this frame has the given id as its parent.  */
+  /* Returns true if this frame has the given id as its parent.  */
   bool has_parent(FrameId parent) const { return parent_id_ == parent; }
 
-  /** Returns true if this frame is the one and only world frame.  */
+  /* Returns true if this frame is the one and only world frame.  */
   bool is_world() const { return id_ == world_frame_id(); }
 
-  /** Returns the id of this frame's parent frame. If this is the world frame,
+  /* Returns the id of this frame's parent frame. If this is the world frame,
    it returns its own id (as there is no usable "undefined" identifier value).
    */
   FrameId parent_frame_id() const { return parent_id_; }
 
-  /** Returns a list of ids of the frames that have *this* frame as a parent
+  /* Returns a list of ids of the frames that have *this* frame as a parent
    frame.  */
   const std::unordered_set<FrameId>& child_frames() const {
     return child_frames_;
   }
 
-  /** Returns a list of ids of the geometries that are *directly* attached to
+  /* Returns a list of ids of the geometries that are *directly* attached to
    this frame. It does *not* include geometries that are attached to child
    frames of this frame.  */
   const std::unordered_set<GeometryId>& child_geometries() const {
     return child_geometries_;
   }
 
-  /** The number of total geometries attached to this frame. It should be true
+  /* The number of total geometries attached to this frame. It should be true
    that `this->num_child_geometries() == this->child_geometries().size()`.
    To determine the number of geometries attached to this frame *by geometry
    role*, use the GeometryState::GetNumFrameGeometriesByRole() method.  */
@@ -116,31 +116,31 @@ class InternalFrame {
     return static_cast<int>(child_geometries_.size());
   }
 
-  /** Returns true if this frame considers the given `frame_id` to be a child.
+  /* Returns true if this frame considers the given `frame_id` to be a child.
    */
   bool has_child(FrameId frame_id) const {
     return child_frames_.count(frame_id) > 0;
   }
 
-  /** Adds the given `frame_id` to the set of frames that this frame considers
+  /* Adds the given `frame_id` to the set of frames that this frame considers
    to be children.  */
   void add_child(FrameId frame_id) {
     child_frames_.insert(frame_id);
   }
 
-  /** Returns true if this frame considers the given `geometry_id` to be rigidly
+  /* Returns true if this frame considers the given `geometry_id` to be rigidly
    affixed to it.  */
   bool has_child(GeometryId geometry_id) const {
     return child_geometries_.count(geometry_id) > 0;
   }
 
-  /** Adds the given `geometry_id` to the set of geometries that this frame
+  /* Adds the given `geometry_id` to the set of geometries that this frame
    considers to be children.  */
   void add_child(GeometryId geometry_id) {
     child_geometries_.insert(geometry_id);
   }
 
-  /** Removes the given `geometry_id` from the set of geometries that this frame
+  /* Removes the given `geometry_id` from the set of geometries that this frame
    considers to be children.
    @pre the id _is_ a valid child of this frame.  */
   void remove_child(GeometryId geometry_id) {
@@ -148,13 +148,13 @@ class InternalFrame {
     child_geometries_.erase(geometry_id);
   }
 
-  /** The identifier used for identifying the single world frame in all
+  /* The identifier used for identifying the single world frame in all
    instances of SceneGraph. The world frame will eventually have an arbitrary
    number of child frames and geometries; but there will always only be one
    world frame.  */
   static FrameId world_frame_id();
 
-  /** Reports the reserved frame group for the world frame.  */
+  /* Reports the reserved frame group for the world frame.  */
   static int world_frame_group() {
     // Pick a sentinel value that can't be mistaken for initialization noise.
     // Users cannot declare geometry frames with negative frame groups
@@ -162,7 +162,7 @@ class InternalFrame {
     return -1234567;
   }
 
-  /** Reports the reserved clique for the world frame.  */
+  /* Reports the reserved clique for the world frame.  */
   static int world_frame_clique() {
     // Pick a sentinel value that can't be mistaken for initialization noise.
     // Cliques are generated strictly internally. They start at zero and span
