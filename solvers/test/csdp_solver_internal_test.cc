@@ -47,7 +47,7 @@ void CheckSparseblock(const csdp::sparseblock& block,
   }
 }
 
-TEST_F(SDPwithOverlappingVariables1,
+TEST_F(SDPwithOverlappingVariables,
        GenerateCsdpProblemDataWithoutFreeVariables) {
   const SdpaFreeFormat dut(*prog_);
   struct csdp::blockmatrix C_csdp;
@@ -57,10 +57,9 @@ TEST_F(SDPwithOverlappingVariables1,
                                               &constraints);
 
   // Check the cost min 2 * x0 + x2
-  EXPECT_EQ(C_csdp.nblocks, 3);
+  EXPECT_EQ(C_csdp.nblocks, 2);
   CompareBlockrec(C_csdp.blocks[1], csdp::MATRIX, 2, {-2, 0, 0, 0}, 0);
   CompareBlockrec(C_csdp.blocks[2], csdp::MATRIX, 2, {0, -0.5, -0.5, 0}, 0);
-  CompareBlockrec(C_csdp.blocks[3], csdp::DIAG, 2, {0, 0}, 0);
 
   // Check the equality constraint from
   // [x0 x1] is psd
@@ -100,40 +99,15 @@ TEST_F(SDPwithOverlappingVariables1,
   EXPECT_EQ(blockptr->next, nullptr);
   EXPECT_EQ(rhs_csdp[3], 0);
 
-  // The equality constraint x0 - X(4, 4) = 0.5
+  // The equality constraint x1 = 1
   blockptr = constraints[4].blocks;
   block_entries.clear();
-  block_entries.emplace_back(0, 0, 1);
+  block_entries.emplace_back(0, 1, 0.5);
   CheckSparseblock(*blockptr, block_entries, 1, 2, 4);
-  blockptr = blockptr->next;
-  block_entries.clear();
-  block_entries.emplace_back(0, 0, -1);
-  CheckSparseblock(*blockptr, block_entries, 3, 2, 4);
   EXPECT_EQ(blockptr->next, nullptr);
-  EXPECT_EQ(rhs_csdp[4], 0.5);
+  EXPECT_EQ(rhs_csdp[4], 1);
 
-  // The equality constraint x1 = 1
-  blockptr = constraints[5].blocks;
-  block_entries.clear();
-  block_entries.emplace_back(0, 1, 0.5);
-  CheckSparseblock(*blockptr, block_entries, 1, 2, 5);
-  EXPECT_EQ(blockptr->next, nullptr);
-  EXPECT_EQ(rhs_csdp[5], 1);
-
-  // To impose the inequality constraint x2 <= 2, we add the equality constraint
-  // x2 + X(5, 5) = 2
-  blockptr = constraints[6].blocks;
-  block_entries.clear();
-  block_entries.emplace_back(0, 1, 0.5);
-  CheckSparseblock(*blockptr, block_entries, 2, 2, 6);
-  blockptr = blockptr->next;
-  block_entries.clear();
-  block_entries.emplace_back(1, 1, 1);
-  CheckSparseblock(*blockptr, block_entries, 3, 2, 6);
-  EXPECT_EQ(blockptr->next, nullptr);
-  EXPECT_EQ(rhs_csdp[6], 2);
-
-  FreeCsdpProblemData(6, C_csdp, rhs_csdp, constraints);
+  FreeCsdpProblemData(4, C_csdp, rhs_csdp, constraints);
 }
 
 TEST_F(CsdpDocExample, GenerateCsdpProblemDataWithoutFreeVariables) {
@@ -230,7 +204,7 @@ TEST_F(TrivialSDP1, GenerateCsdpProblemDataWithoutFreeVariables) {
   FreeCsdpProblemData(2, C_csdp, rhs_csdp, constraints);
 }
 
-TEST_F(SDPwithOverlappingVariables1, Solve) {
+TEST_F(SDPwithOverlappingVariables, Solve) {
   const SdpaFreeFormat dut(*prog_);
   csdp::blockmatrix C;
   double* rhs;
@@ -250,38 +224,9 @@ TEST_F(SDPwithOverlappingVariables1, Solve) {
   EXPECT_NEAR(pobj, -1, tol);
   EXPECT_NEAR(dobj, -1, tol);
   // Check the value of X
-  EXPECT_EQ(X.nblocks, 3);
+  EXPECT_EQ(X.nblocks, 2);
   CompareBlockrec(X.blocks[1], csdp::MATRIX, 2, {1, 1, 1, 1}, tol);
   CompareBlockrec(X.blocks[2], csdp::MATRIX, 2, {1, -1, -1, 1}, tol);
-  CompareBlockrec(X.blocks[3], csdp::DIAG, 2, {0.5, 3}, tol);
-
-  csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
-                  Z);
-}
-
-TEST_F(SDPwithOverlappingVariables2, Solve) {
-  const SdpaFreeFormat dut(*prog_);
-  csdp::blockmatrix C;
-  double* rhs;
-  csdp::constraintmatrix* constraints{nullptr};
-  GenerateCsdpProblemDataWithoutFreeVariables(dut, &C, &rhs, &constraints);
-
-  struct csdp::blockmatrix X, Z;
-  double* y;
-  csdp::initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X, &y,
-                 &Z);
-  double pobj, dobj;
-  const int ret =
-      csdp::easy_sdp(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     -dut.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
-  EXPECT_EQ(ret, 0 /* 0 is for success */);
-  const double tol = 1E-7;
-  EXPECT_NEAR(pobj, -5, tol);
-  EXPECT_NEAR(dobj, -5, tol);
-  // Check the value of X
-  EXPECT_EQ(X.nblocks, 2);
-  CompareBlockrec(X.blocks[1], csdp::MATRIX, 2, {2, 1, 1, 2}, tol);
-  CompareBlockrec(X.blocks[2], csdp::DIAG, 3, {0, 1, 0}, tol);
 
   csdp::free_prob(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, X, y,
                   Z);
