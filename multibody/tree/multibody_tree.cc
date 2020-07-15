@@ -581,7 +581,6 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
     // Spatial inertia of body B about Bo and expressed in the body frame B.
     // This call has zero cost for rigid bodies.
     const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
-
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_B_W = (*M_B_W_cache)[body.node_index()];
     M_B_W = M_B.ReExpress(R_WB);
@@ -1692,19 +1691,29 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
   // TODO(Mitiguy): When performance becomes an issue, optimize this method by
   // only using the kinematics path from A to B.
 
+  // In the common, but special, case where A is the world W, only call 
+  // CalcJacobianAngularAndOrTranslationalVelocityInWorld once using the pointer
+  // to the result Js_v_ABi_W.
+  if (&frame_A == &world_frame()) {
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
+    return;
+  }
+
+  // Calculate each point Bi's translational velocity Jacobian in world W.
+  // The result is Js_v_WBi_W, but we store into Js_v_ABi_W for performance.
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
+
   // Calculate each point Ai's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
     with_respect_to, frame_A, p_WoBi_W, nullptr, &Js_v_WAi_W);
 
-  // Calculate each point Bi's translational velocity Jacobian in world W.
-  MatrixX<T> Js_v_WBi_W(3 * num_points, num_columns);
-  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-    with_respect_to, frame_B, p_WoBi_W, nullptr, &Js_v_WBi_W);
-
   // Calculate each point Bi's translational velocity Jacobian in frame A,
-  // expressed in world W.
-  *Js_v_ABi_W = Js_v_WBi_W - Js_v_WAi_W;  // This calculates Js_v_ABi_W.
+  // expressed in world W. Note, again, that before this line Js_v_ABi_W
+  // is actually storing Js_v_WBi_W
+  *Js_v_ABi_W -= Js_v_WAi_W;  // This calculates Js_v_ABi_W.
 }
 
 template <typename T>
@@ -1891,7 +1900,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
         if (is_wrt_qdot) {
           Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
         } else {
-          Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W));
+          Hv_PFpi_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W);
         }
       }  // ipoint.
     }
