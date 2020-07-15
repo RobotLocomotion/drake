@@ -100,6 +100,13 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 void AddContactMaterial(
     const std::optional<double>& elastic_modulus,
     const std::optional<double>& dissipation,
+    const std::optional<double>& point_stiffness,
+    const std::optional<multibody::CoulombFriction<double>>& friction,
+    ProximityProperties* properties);
+
+void AddContactMaterial(
+    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& dissipation,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties);
 

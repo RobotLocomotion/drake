@@ -33,6 +33,9 @@ geometry::ProximityProperties ParseProximityProperties(
   std::optional<double> dissipation =
       read_double("drake:hunt_crossley_dissipation");
 
+  std::optional<double> stiffness =
+      read_double("drake:point_contact_stiffness");
+
   std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
   std::optional<double> mu_static = read_double("drake:mu_static");
   std::optional<CoulombFriction<double>> friction;
@@ -46,8 +49,8 @@ geometry::ProximityProperties ParseProximityProperties(
     friction = CoulombFriction<double>(*mu_static, *mu_static);
   }
 
-  geometry::AddContactMaterial(elastic_modulus, dissipation, friction,
-                               &properties);
+  geometry::AddContactMaterial(elastic_modulus, dissipation, stiffness,
+                               friction, &properties);
 
   return properties;
 }
