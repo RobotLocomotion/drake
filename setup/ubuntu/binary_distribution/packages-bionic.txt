@@ -9,10 +9,13 @@ libblas3
 libboost-all-dev
 libeigen3-dev
 libexpat1
+libfreetype6
 libgflags2.2
 libgfortran4
-libgl1-mesa-glx
+libglew2.0
 libglib2.0-0
+libglu1-mesa
+libglx0
 libhdf5-100
 libjpeg8
 libjsoncpp1
@@ -21,6 +24,7 @@ libldl2
 libnetcdf13
 libnlopt0
 libogg0
+libopengl0
 libpng16-16
 libqt5multimedia5
 libqt5x11extras5

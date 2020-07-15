@@ -17,7 +17,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     libexpat1-dev \
     libfreetype6-dev \
     libgl1-mesa-dev \
+    libglew-dev \
     libglib2.0-dev \
+    libglu1-mesa-dev \
+    libglvnd-dev \
     libhdf5-dev \
     libjpeg8-dev \
     libjsoncpp-dev \

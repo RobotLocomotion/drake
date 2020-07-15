@@ -1,0 +1,14 @@
+# -*- python -*-
+
+licenses(["notice"])  # SGI-B-2.0
+
+cc_library(
+    name = "opengl",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    linkopts = [
+        "-L/usr/lib/x86_64-linux-gnu",
+        "-lOpenGL",
+    ],
+    visibility = ["//visibility:public"],
+)

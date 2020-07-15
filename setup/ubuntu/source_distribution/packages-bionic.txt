@@ -18,8 +18,9 @@ libclang-9-dev
 libexpat1-dev
 libfreetype6-dev
 libgflags-dev
+libgl1-mesa-dev
+libglew-dev
 libglib2.0-dev
-libglu1-mesa-dev
 libhdf5-dev
 libjpeg8-dev
 libjsoncpp-dev
