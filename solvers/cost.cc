@@ -76,15 +76,13 @@ void QuadraticCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   // Specialized evaluation of cost and gradient
   const MatrixXd dx = math::autoDiffToGradientMatrix(x);
   const Eigen::VectorXd x_val = drake::math::autoDiffToValueMatrix(x);
-  const Eigen::Matrix<double, 1, Eigen::Dynamic> xT_times_Q =
-      x_val.transpose() * Q_;
+  const Eigen::RowVectorXd xT_times_Q = x_val.transpose() * Q_;
   const Vector1d result(.5 * xT_times_Q.dot(x_val) + b_.dot(x_val) + c_);
-  const Eigen::Matrix<double, 1, Eigen::Dynamic> dy =
-      xT_times_Q + b_.transpose();
+  const Eigen::RowVectorXd dy = xT_times_Q + b_.transpose();
 
   // If dx is the identity matrix (very common here), then skip the chain rule
   // multiplication dy * dx
-  if (dx.isIdentity(1e-16)) {
+  if (dx.isIdentity()) {
     *y = math::initializeAutoDiffGivenGradientMatrix(result, dy);
   } else {
     *y = math::initializeAutoDiffGivenGradientMatrix(result, dy * dx);
