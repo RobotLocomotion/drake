@@ -24,7 +24,7 @@ using CoulombFrictiond = multibody::CoulombFriction<double>;
 GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   const double E = 1e8;
   const double d = 0.1;
-  const double s = 250.0;
+  const double ps = 250.0;
   CoulombFrictiond mu{0.9, 0.5};
 
   // Case: Correct configuration.
@@ -33,7 +33,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     EXPECT_NO_THROW(AddContactMaterial(E, d, s, mu, &p));
     EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kElastic), E);
     EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kHcDissipation), d);
-    EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kPointStiffness), s);
+    EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kPointStiffness), ps);
     const CoulombFrictiond& mu_stored =
         p.GetProperty<CoulombFrictiond>(kMaterialGroup, kFriction);
     EXPECT_EQ(mu_stored.static_friction(), mu.static_friction());
@@ -45,7 +45,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kElastic, E);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(E, d, s, mu, &p), std::logic_error,
+        AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
@@ -54,7 +54,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kHcDissipation, d);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(E, d, s, mu, &p), std::logic_error,
+        AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
@@ -63,7 +63,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kPointStiffness, s);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(E, d, s, mu, &p), std::logic_error,
+        AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
@@ -72,14 +72,14 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     ProximityProperties p;
     p.AddProperty(kMaterialGroup, kFriction, mu);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        AddContactMaterial(E, d, s, mu, &p), std::logic_error,
+        AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
   }
 
   // Error case: 0 elasticity.
   {
     ProximityProperties p;
-    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(0, d, s, mu, &p),
+    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(0, d, ps, mu, &p),
                                 std::logic_error,
                                 ".+elastic modulus must be positive.+");
   }
@@ -87,7 +87,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: negative elasticity.
   {
     ProximityProperties p;
-    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(-1.3, d, s, mu, &p),
+    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(-1.3, d, ps, mu, &p),
                                 std::logic_error,
                                 ".+elastic modulus must be positive.+");
   }
@@ -95,7 +95,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: negative dissipation.
   {
     ProximityProperties p;
-    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(E, -1.2, s, mu, &p),
+    DRAKE_EXPECT_THROWS_MESSAGE(AddContactMaterial(E, -1.2, ps, mu, &p),
                                 std::logic_error,
                                 ".+dissipation can't be negative.+");
   }
