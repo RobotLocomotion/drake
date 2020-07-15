@@ -179,7 +179,8 @@ TEST_F(TrivialSOCP3, Solve) {
       MathematicalProgramResult result;
       solver.Solve(*prog_, {}, {}, &result);
       EXPECT_TRUE(result.is_success());
-      const double tol = 1.E-6;
+      // The accuracy for this test on the Mac machine is 5E-6.
+      const double tol = 5.E-6;
       EXPECT_NEAR(result.get_optimal_cost(), 2 - std::sqrt(7.1), tol);
       EXPECT_TRUE(CompareMatrices(result.GetSolution(x_),
                                   Eigen::Vector2d(-0.1, 2 - std::sqrt(7.1)),
