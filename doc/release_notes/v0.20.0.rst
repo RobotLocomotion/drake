@@ -74,8 +74,8 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * yaml: Add retain_map_defaults to YamlReadArchive::Options (`#13590`_)
-* yaml: Correctly write out empty sub-structs (`#13679`_)
 * yaml: Permit writing variant values beyond the 0'th index (`#13631`_)
+* yaml: Correctly write out empty sub-structs (`#13679`_)
 * planar_gripper: Add additional lcm message types (`#13554`_)
 
 pydrake bindings
