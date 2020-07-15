@@ -21,7 +21,9 @@ PYBIND11_MODULE(sdpa_free_format, m) {
       .value("kNullspace", RemoveFreeVariableMethod::kNullspace,
           doc.RemoveFreeVariableMethod.kNullspace.doc)
       .value("kTwoSlackVariables", RemoveFreeVariableMethod::kTwoSlackVariables,
-          doc.RemoveFreeVariableMethod.kTwoSlackVariables.doc);
+          doc.RemoveFreeVariableMethod.kTwoSlackVariables.doc)
+      .value("kLorentzConeSlack", RemoveFreeVariableMethod::kLorentzConeSlack,
+          doc.RemoveFreeVariableMethod.kLorentzConeSlack.doc);
 
   m.def("GenerateSDPA", &solvers::GenerateSDPA, py::arg("prog"),
       py::arg("file_name"),
