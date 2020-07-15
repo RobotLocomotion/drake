@@ -88,20 +88,40 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal
 
-
+/** @name Contact Material Utility Functions
+ *
+ * For legacy and backwards compatibility purposes, two overloads for
+ * AddContactMaterial() are provided. One supports all contact material
+ * properties **except** `point_stiffness`, and the other includes it.
+ * Users are encouraged to use the overload that contains the argument for
+ * `point_stiffness`.
+ */
+//@{
 /** Adds contact material properties to the given set of proximity `properties`.
  Only the parameters that carry values will be added to the given set of
  `properties`; no default values will be provided. Downstream consumers of the
  contact materials can optionally provide defaults for missing properties.
 
  @throws std::logic_error if `elastic_modulus` is not positive, `dissipation` is
-                          negative, or any of the contact material properties
-                          have already been defined in `properties`.  */
+                          negative, `point_stiffness` is negative, or any of the
+ contact material properties have already been defined in `properties`.  */
+void AddContactMaterial(
+    const std::optional<double>& elastic_modulus,
+    const std::optional<double>& dissipation,
+    const std::optional<double>& point_stiffness,
+    const std::optional<multibody::CoulombFriction<double>>& friction,
+    ProximityProperties* properties);
+
+/**
+ * @warning Please use the overload of AddContactMaterial() that includes the
+ * argument for `point_stiffness` rather than this one.
+ */
 void AddContactMaterial(
     const std::optional<double>& elastic_modulus,
     const std::optional<double>& dissipation,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties);
+//@}
 
 /** Adds properties to the given set of proximity properties sufficient to cause
  the associated geometry to generate a rigid hydroelastic representation.

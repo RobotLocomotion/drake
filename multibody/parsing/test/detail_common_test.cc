@@ -14,6 +14,7 @@ using geometry::internal::kComplianceType;
 using geometry::internal::kElastic;
 using geometry::internal::kFriction;
 using geometry::internal::kHcDissipation;
+using geometry::internal::kPointStiffness;
 using geometry::internal::kHydroGroup;
 using geometry::internal::kMaterialGroup;
 using geometry::internal::kRezHint;
@@ -167,6 +168,19 @@ GTEST_TEST(ParseProximityPropertiesTest, Dissipation) {
       !soft);
   EXPECT_TRUE(ExpectScalar(kMaterialGroup, kHcDissipation, kValue, properties));
   // Dissipation is the only property.
+  EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
+  EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+}
+
+// Confirms successful parsing of stiffness.
+GTEST_TEST(ParseProximityPropertiesTest, Stiffness) {
+  const double kValue = 300.0;
+  ProximityProperties properties = ParseProximityProperties(
+      param_read_double("drake:point_contact_stiffness", kValue), !rigid,
+      !soft);
+  EXPECT_TRUE(
+      ExpectScalar(kMaterialGroup, kPointStiffness, kValue, properties));
+  // Stiffness is the only property.
   EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
   EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
 }
