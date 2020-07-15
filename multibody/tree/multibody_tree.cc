@@ -1691,19 +1691,16 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
   // TODO(Mitiguy): When performance becomes an issue, optimize this method by
   // only using the kinematics path from A to B.
 
-  // In the common, but special, case where A is the world W, only call 
-  // CalcJacobianAngularAndOrTranslationalVelocityInWorld once using the pointer
-  // to the result Js_v_ABi_W.
-  if (&frame_A == &world_frame()) {
-  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-    with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
-    return;
-  }
-
   // Calculate each point Bi's translational velocity Jacobian in world W.
   // The result is Js_v_WBi_W, but we store into Js_v_ABi_W for performance.
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
     with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
+
+  // In the common, but special, case where A is the world W, we are done since
+  /// Js_v_ABi_W = Js_v_WBi_W
+  if (&frame_A == &world_frame()) {
+    return;
+  }
 
   // Calculate each point Ai's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);

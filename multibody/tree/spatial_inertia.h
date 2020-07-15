@@ -149,7 +149,7 @@ class SpatialInertia {
   ///                                above. Defaults to false.
   SpatialInertia(
       const T& mass, const Vector3<T>& p_PScm_E, const UnitInertia<T>& G_SP_E,
-      bool check_validity = false) :
+      bool skip_validity_check = false) :
       mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
     if (!skip_validity_check) {
       CheckInvariants();
