@@ -30,7 +30,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Case: Correct configuration.
   {
     ProximityProperties p;
-    EXPECT_NO_THROW(AddContactMaterial(E, d, s, mu, &p));
+    EXPECT_NO_THROW(AddContactMaterial(E, d, ps, mu, &p));
     EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kElastic), E);
     EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kHcDissipation), d);
     EXPECT_EQ(p.GetProperty<double>(kMaterialGroup, kPointStiffness), ps);
@@ -61,7 +61,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
   // Error case: Already has stiffness.
   {
     ProximityProperties p;
-    p.AddProperty(kMaterialGroup, kPointStiffness, s);
+    p.AddProperty(kMaterialGroup, kPointStiffness, ps);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
         ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
