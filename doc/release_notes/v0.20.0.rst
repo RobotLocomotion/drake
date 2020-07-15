@@ -247,4 +247,10 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
-  Current newest_commit 6fe5a83e10f8cbecef7e1cb9e8fd532b1dc0b5af (inclusive).
+  Current newest_commit 67249e77748d71a60d25f63a74cb53dd07457bdf (inclusive).
+
+* MBP uses contact parameters stored by SceneGraph (`#13630`_)  # Per this PR, now users have the ability to change point contact parameters on a per geometry basis through SGs APIs. As a side effect, these become "true" parameters in the "systems::framework" sense, i.e. live in the Context.
+* yaml: Correctly write out empty sub-structs (`#13679`_)  # When a child structure did not have any elements, we were recording it as Null which trips an assertion in the emitter.  Fix and add a test.
+* Fix macOS failure on csdp_solver_test (`#13685`_)  # This amends commit 6fe5a83e10f8cbecef7e1cb9e8fd532b1dc0b5af.
+* CsdpSolver only warn once (`#13687`_)
+* Change internal Doxygen comments to normal ones (`#13680`_)  # Replace Doxygen comments (/// or /** */) with normal comments (// or /* */) for code in internal namespace and in .cc files under drake/geometry.
