@@ -235,3 +235,13 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
   Current newest_commit 04396b46dc5e5505f1aebe79264619f8061f6bb2 (inclusive).
+
+* manipulation_station: Move clutter clearing bins lower relative to robot (`#13666`_)  # to dramatically improve kinematic feasibility.  (Teleoping was annoying/impossible before because diff IK would constantly hit singularities)
+* Upgrade to Clang 9 on Bionic (`#13650`_)
+* Python bindings for CalcBiasSpatialAcceleration, CalcBiasTranslationalAcceleration (`#13638`_)
+* MathematicalProgram adds NewEvenDegreeNonnegativePolynomial (`#13641`_)
+* [render] RenderEngineVtk now uses full camera intrinsics (`#13655`_)  # * RenderEngineVtk now uses full camera intrinsics - RenderEngineVtk - implements full camera intrinsics - Implement simple camera model in terms of full camera model. - Also cleaned up the old zombie code in its depth shader. - Tests extended accordingly. - Incidental clean up on depth shader code.
+* Add rpoyner-tri to list of platform reviewers (`#13677`_)  # Per platform reviewer's meeting 2020/07/01.
+* [render] Implement RenderImageLabel in RenderEngineGl (`#13659`_)  # * Implement RenderLabelImage in RenderEngineGl The implementation is straight forward. It provides a springboard for also adding the color label, because the infrastructure no longer assumes all depth all the time. - Adds infrastructure to distinguish shaders (depth vs label). - Adds a new shader for label images. - Stores per-geometry render labels (OpenGlGeometry) - Extend ShaderProgram to set a new kind of uniform value (vec4). - Also cleans up the otherwise inconsistent ~ShaderProgram. (Incidentally re-orders definitions to match declaration order.) Co-authored-by: Belinda Teh <belzteh@gmail.com>
+* Bug fix on workspace allocation by TAMSI (`#13676`_)  # * Bug fix on memory allocation by TAMSI.
+* SdpaFreeFormat can remove free variable by using a slack variable and a Lorentz cone constraint (`#13669`_)  # This is how SeDuMi removes free decision variables.
