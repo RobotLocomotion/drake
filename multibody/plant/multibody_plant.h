@@ -339,8 +339,6 @@ enum class ContactModel {
       the table below. -->
  @anchor accessing_contact_properties
                #### Accessing point contact parameters
- <!-- TODO(joemasterjohn) update this table when other contact parameters
-      are moved into ProximityProperties -->
  %MultibodyPlant's point contact model looks for model parameters stored as
  geometry::ProximityProperties by geometry::SceneGraph. These properties can
  be obtained before or after context creation through
@@ -350,11 +348,19 @@ enum class ContactModel {
  | Group name |   Property Name  | Required |    Property Type   | Property Description |
  | :--------: | :--------------: | :------: | :----------------: | :------------------- |
  |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
+ |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
+ |  material  | hunt_crossley_dissipation |  no²  | T | Penalty method dissipation. |
+
 
  ¹ Collision geometry is required to be registered with a
    geometry::ProximityProperties object that contains the
-   ("material", "coulomb_friction") property. If the parameter
-   is not registered, %MultibodyPlant will throw an exeception.
+   ("material", "coulomb_friction") property. If the property
+   is missing, %MultibodyPlant will throw an exeception.
+
+ ² If the property is missing, %MultibodyPlant will use
+   a heuristic value as the default. Refer to the
+   section @ref mbp_penalty_method "Penalty method point contact" for further
+   details.
 
  Accessing and modifying contact properties requires interfacing with
  geometry::SceneGraph's model inspector. Interfacing with a model inspector
@@ -1393,12 +1399,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// positive when the bodies are in contact) and the penetration distance
   /// rate ẋ (with ẋ > 0 meaning the penetration distance is increasing and
   /// therefore the interpenetration between the bodies is also increasing).
-  /// k and d are the penalty method coefficients for stiffness and damping.
+  /// k and d are the combined penalty method coefficients for stiffness and
+  /// dissipation, given a pair of colliding geometries.
+  /// For flexibility of parameterization, stiffness and dissipation are set on
+  /// a per-geometry basis (@ref accessing_contact_properties). Given two
+  /// geometries with individual stiffness and dissipation parameters (k₁, d₁)
+  /// and (k₂, d₂), we define the rule for combined stiffness (k) and
+  /// dissipation (d) as: <pre>
+  ///     k = (k₁⋅k₂)/(k₁+k₂)
+  ///     d = (k₂/(k₁+k₂))⋅d₁ + (k₁/(k₁+k₂))⋅d₂
+  /// </pre>
+  /// These parameters are optional for each geometry. For any geometry not
+  /// assigned these parameters by a user Pre-Finalize, %MultibodyPlant will
+  /// assign default values such that the combined parameters of two geometries
+  /// with default values match those estimated using the user-supplied
+  /// "penetration allowance", as described below.
+  ///
   /// These are ad-hoc parameters which need to be tuned as a trade-off between:
   /// - The accuracy of the numerical approximation to rigid contact, which
   ///   requires a stiffness that approaches infinity, and
   /// - the computational cost of the numerical integration, which will
   ///   require smaller time steps for stiffer systems.
+  ///
   ///
   /// There is no exact procedure for choosing these coefficients, and
   /// estimating them manually can be cumbersome since in general they will
@@ -1414,15 +1436,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// increase it for the simulation of heavy walking robots for which an
   /// allowance of 1 millimeter would result in a very stiff system.
   ///
-  /// As for the damping coefficient in the simple law above, %MultibodyPlant
-  /// chooses the damping coefficient d to model inelastic collisions and
-  /// therefore sets it so that the penetration distance x behaves as a
-  /// critically damped oscillator. That is, at the limit of ideal rigid contact
-  /// (very stiff penalty coefficient k or equivalently the penetration
-  /// allowance goes to zero), this method behaves as a unilateral constraint on
-  /// the penetration distance, which models a perfect inelastic collision. For
-  /// most applications, such as manipulation and walking, this is the desired
-  /// behavior.
+  /// As for the dissipation coefficient in the simple law above,
+  /// %MultibodyPlant chooses the dissipation coefficient d to model inelastic
+  /// collisions and therefore sets it so that the penetration distance x
+  /// behaves as a critically damped oscillator. That is, at the limit of ideal
+  /// rigid contact (very stiff penalty coefficient k or equivalently the
+  /// penetration allowance goes to zero), this method behaves as a unilateral
+  /// constraint on the penetration distance, which models a perfect inelastic
+  /// collision. For most applications, such as manipulation and walking, this
+  /// is the desired behavior.
   ///
   /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
   /// reasonable penalty method coefficients as a function of the input
@@ -3707,6 +3729,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<geometry::QueryObject<T>>(context);
   }
 
+  // Helper to acquire per-geometry contact parameters from SG.
+  // Returns the pair (stiffness, dissipation)
+  // Defaults to heuristically computed parameter if the given geometry
+  // isn't assigned that parameter.
+  std::pair<T, T> get_point_contact_parameters(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const {
+    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+      throw std::domain_error(
+          "This method doesn't support T = symbolic::Expression.");
+    }
+    const geometry::ProximityProperties* prop =
+        inspector.GetProximityProperties(id);
+    DRAKE_DEMAND(prop != nullptr);
+    return std::pair(prop->template GetPropertyOrDefault<T>(
+                         geometry::internal::kMaterialGroup,
+                         geometry::internal::kPointStiffness,
+                         penalty_method_contact_parameters_.geometry_stiffness),
+                     prop->template GetPropertyOrDefault<T>(
+                         geometry::internal::kMaterialGroup,
+                         geometry::internal::kHcDissipation,
+                         penalty_method_contact_parameters_.dissipation));
+  }
+
   // Checks that the provided State is consistent with this plant.
   void CheckValidState(const systems::State<T>*) const;
 
@@ -4224,13 +4270,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // no-interpenetration between bodies by a penalty method.
   struct ContactByPenaltyMethodParameters {
     // Penalty method coefficients used to compute contact forces.
-    // TODO(amcastro-tri): consider having these per body. That would allow us
-    // for instance to calibrate the stiffness at the fingers (stiffness related
-    // to the weight of the objects being manipulated) of a walking robot (
-    // stiffness related to the weight of the entire robot) with the same
-    // penetration allowance.
-    double stiffness{0};
-    double damping{0};
+    double geometry_stiffness{0};
+    double dissipation{0};
     // An estimated time scale in which objects come to a relative stop during
     // contact.
     double time_scale{-1.0};

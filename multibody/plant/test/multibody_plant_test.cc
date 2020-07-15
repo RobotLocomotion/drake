@@ -1359,18 +1359,45 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
+  // estimated parameters for mass=1kg, penetration_tolerance=0.01m
+  // and gravity g=9.8 m/s^2.
+  const double sphere1_stiffness = 980;    // N/m
+  const double sphere1_dissipation = 3.2;  // s/m
+  geometry::ProximityProperties sphere1_properties;
+  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kFriction,
+                                 sphere1_friction);
+  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kPointStiffness,
+                                 sphere1_stiffness);
+  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kHcDissipation,
+                                 sphere1_dissipation);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "collision", sphere1_friction);
-  geometry::ProximityProperties properties;
-  properties.AddProperty("test", "dummy", 7);
+      "collision", std::move(sphere1_properties));
+
+  geometry::ProximityProperties sphere2_properties;
+  sphere2_properties.AddProperty("test", "dummy", 7);
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
-  geometry::AddContactMaterial({}, {}, sphere2_friction, &properties);
+  // estimated parameters for mass=1kg, penetration_tolerance=0.05m
+  // and gravity g=9.8 m/s^2.
+  const double sphere2_stiffness = 196;    // N/m
+  const double sphere2_dissipation = 1.4;  // s/m
+  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kFriction,
+                                 sphere2_friction);
+  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kPointStiffness,
+                                 sphere2_stiffness);
+  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kHcDissipation,
+                                 sphere2_dissipation);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "collision", std::move(properties));
+      "collision", std::move(sphere2_properties));
 
   // Confirm externally-defined proximity properties propagate through.
   {
@@ -1438,11 +1465,28 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       *scene_graph.model_inspector().GetProximityProperties(sphere2_id);
 
   EXPECT_TRUE(ground_props.GetProperty<CoulombFriction<double>>(
-                  "material", "coulomb_friction") == ground_friction);
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kFriction) == ground_friction);
   EXPECT_TRUE(sphere1_props.GetProperty<CoulombFriction<double>>(
-                  "material", "coulomb_friction") == sphere1_friction);
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kFriction) == sphere1_friction);
   EXPECT_TRUE(sphere2_props.GetProperty<CoulombFriction<double>>(
-                  "material", "coulomb_friction") == sphere2_friction);
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kFriction) == sphere2_friction);
+
+  EXPECT_TRUE(sphere1_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kPointStiffness) == sphere1_stiffness);
+  EXPECT_TRUE(sphere2_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kPointStiffness) == sphere2_stiffness);
+
+  EXPECT_TRUE(sphere1_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kHcDissipation) == sphere1_dissipation);
+  EXPECT_TRUE(sphere2_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kHcDissipation) == sphere2_dissipation);
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph.
