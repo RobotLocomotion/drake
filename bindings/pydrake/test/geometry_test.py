@@ -520,6 +520,47 @@ class TestGeometry(unittest.TestCase):
         test_color = mut.Rgba(0., 0., 1., 1.)
         phong_props = mut.MakePhongIllustrationProperties(test_vector)
         self.assertIsInstance(phong_props, mut.IllustrationProperties)
+        phong_diffuse = "phong/diffuse"
+        actual_color = phong_props.Get(phong_diffuse)
+        self.assertEqual(actual_color, test_color)
+        # Ensure that we can create it manually.
+        phong_props = mut.IllustrationProperties()
+        phong_props.Add(phong_diffuse, test_color)
+        actual_color = phong_props.Get(phong_diffuse)
+        self.assertEqual(actual_color, test_color)
+        # Test proximity properties.
+        prop = mut.ProximityProperties()
+        self.assertEqual(str(prop), "drake::geometry::ProximityProperties")
+        default_test = "test"
+        prop.Add(name=default_test, value=3)
+        self.assertTrue(prop.HasProperty(default_test))
+        self.assertEqual(prop.Get(name=default_test), 3)
+        self.assertEqual(
+            prop.GetPropertyOrDefault(
+                name="invalid",
+                default_value=5),
+            5)
+        # Remove the property.
+        self.assertTrue(prop.Remove(name=default_test))
+        self.assertFalse(prop.HasProperty(name=default_test))
+        # Update a property.
+        default_to_update = "to_update"
+        prop.Add(name=default_to_update, value=17)
+        self.assertTrue(prop.HasProperty(name=default_to_update))
+        self.assertEqual(prop.Get(name=default_to_update), 17)
+
+        prop.Update(name=default_to_update, value=20)
+        self.assertTrue(prop.HasProperty(name=default_to_update))
+        self.assertEqual(prop.Get(name=default_to_update), 20)
+
+    def test_geometry_properties_old_api(self):
+        # TODO(SeanCurtis-TRI): This whole test should be deprecated when the
+        #  old API gets deprecated.
+        # Test perception/ illustration properties (specifically Rgba).
+        test_vector = [0., 0., 1., 1.]
+        test_color = mut.Rgba(0., 0., 1., 1.)
+        phong_props = mut.MakePhongIllustrationProperties(test_vector)
+        self.assertIsInstance(phong_props, mut.IllustrationProperties)
         actual_color = phong_props.GetProperty("phong", "diffuse")
         self.assertEqual(actual_color, test_color)
         # Ensure that we can create it manually.
@@ -529,7 +570,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(actual_color, test_color)
         # Test proximity properties.
         prop = mut.ProximityProperties()
-        self.assertEqual(str(prop), "[__default__]")
+        self.assertEqual(str(prop), "drake::geometry::ProximityProperties")
         default_group = prop.default_group_name()
         self.assertTrue(prop.HasGroup(group_name=default_group))
         self.assertEqual(prop.num_groups(), 1)

@@ -1217,54 +1217,112 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("group_name"), cls_doc.GetPropertiesInGroup.doc)
         .def("GetGroupNames", &Class::GetGroupNames, cls_doc.GetGroupNames.doc)
         .def(
+            "Add",
+            [abstract_value_cls](
+                Class& self, const std::string& name, py::object value) {
+              py::object abstract = abstract_value_cls.attr("Make")(value);
+              self.AddAbstract(name, abstract.cast<const AbstractValue&>());
+            },
+            py::arg("name"), py::arg("value"), cls_doc.Add.doc)
+        .def(
             "AddProperty",
             [abstract_value_cls](Class& self, const std::string& group_name,
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
-              self.AddPropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+              self.AddAbstract(group_name + "/" + name,
+                  abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.AddProperty.doc)
+        .def(
+            "Update",
+            [abstract_value_cls](
+                Class& self, const std::string& name, py::object value) {
+              py::object abstract = abstract_value_cls.attr("Make")(value);
+              self.UpdateAbstract(
+                  name, abstract.cast<const AbstractValue&>());
+            },
+            py::arg("name"), py::arg("value"), cls_doc.Add.doc)
         .def(
             "UpdateProperty",
             [abstract_value_cls](Class& self, const std::string& group_name,
                 const std::string& name, py::object value) {
               py::object abstract = abstract_value_cls.attr("Make")(value);
-              self.UpdatePropertyAbstract(
-                  group_name, name, abstract.cast<const AbstractValue&>());
+              self.UpdateAbstract(group_name + "/" + name,
+                  abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
             cls_doc.UpdateProperty.doc)
-        .def("HasProperty", &Class::HasProperty, py::arg("group_name"),
-            py::arg("name"), cls_doc.HasProperty.doc)
+        .def(
+            "HasProperty",
+            pydrake::overload_cast_explicit<bool, const std::string&>(
+                &Class::HasProperty),
+            py::arg("name"), cls_doc.HasProperty.doc_1args)
+        .def(
+            "HasProperty",
+            [](const Class& self, const std::string& group_name,
+                const std::string& name) {
+              return self.HasProperty(group_name + "/" + name);
+            },
+            py::arg("group_name"), py::arg("name"),
+            cls_doc.HasProperty.doc_2args)
+        .def(
+            "Get",
+            [](const Class& self, const std::string& name) {
+              py::object abstract =
+                  py::cast(self.GetAbstract(name), py_rvp::reference);
+              return abstract.attr("get_value")();
+            },
+            py::arg("name"), cls_doc.Add.doc)
         .def(
             "GetProperty",
             [](const Class& self, const std::string& group_name,
                 const std::string& name) {
               py::object abstract =
-                  py::cast(self.GetPropertyAbstract(group_name, name),
+                  py::cast(self.GetAbstract(group_name + "/" + name),
                       py_rvp::reference);
               return abstract.attr("get_value")();
             },
             py::arg("group_name"), py::arg("name"), cls_doc.GetProperty.doc)
         .def(
             "GetPropertyOrDefault",
+            [](const Class& self, const std::string& name,
+                py::object default_value) {
+              // For now, ignore typing. This is less efficient, but eh, it's
+              // Python.
+              if (self.HasProperty(name)) {
+                py::object py_self = py::cast(&self, py_rvp::reference);
+                return py_self.attr("Get")(name);
+              } else {
+                return default_value;
+              }
+            },
+            py::arg("name"), py::arg("default_value"),
+            cls_doc.GetPropertyOrDefault.doc_2args)
+        .def(
+            "GetPropertyOrDefault",
             [](const Class& self, const std::string& group_name,
                 const std::string& name, py::object default_value) {
               // For now, ignore typing. This is less efficient, but eh, it's
               // Python.
-              if (self.HasProperty(group_name, name)) {
+              const std::string property = group_name + "/" + name;
+              if (self.HasProperty(property)) {
                 py::object py_self = py::cast(&self, py_rvp::reference);
-                return py_self.attr("GetProperty")(group_name, name);
+                return py_self.attr("Get")(property);
               } else {
                 return default_value;
               }
             },
             py::arg("group_name"), py::arg("name"), py::arg("default_value"),
-            cls_doc.GetPropertyOrDefault.doc)
-        .def("RemoveProperty", &Class::RemoveProperty, py::arg("group_name"),
-            py::arg("name"), cls_doc.RemoveProperty.doc)
+            cls_doc.GetPropertyOrDefault.doc_3args)
+        .def("Remove", &Class::Remove, py::arg("name"), cls_doc.Remove.doc)
+        .def(
+            "RemoveProperty",
+            [](Class& self, const std::string& group_name,
+                const std::string& name) {
+              return self.Remove(group_name + "/" + name);
+            },
+            py::arg("group_name"), py::arg("name"), cls_doc.RemoveProperty.doc)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
         .def(
