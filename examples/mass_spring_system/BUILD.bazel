@@ -1,0 +1,65 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "mass_spring_system",
+    srcs = [
+        "mass_spring_system.cc",
+    ],
+    hdrs = [
+        "mass_spring_system.h",
+    ],
+    deps = [
+        ":mass_spring_system_params",
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_vector_gen_library(
+    name = "mass_spring_system_params",
+    srcs = ["mass_spring_system_params_named_vector.yaml"],
+)
+
+drake_cc_library(
+    name = "mass_spring_system_geometry",
+    srcs = ["mass_spring_system_geometry.cc"],
+    hdrs = ["mass_spring_system_geometry.h"],
+    deps = [
+        ":mass_spring_system_params",
+        "//geometry:geometry_roles",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "cloth_demo",
+    srcs = [
+        "mass_spring_cloth.cc",
+    ],
+    deps = [
+        ":mass_spring_system",
+        ":mass_spring_system_geometry",
+        "//common:add_text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+add_lint_tests()
