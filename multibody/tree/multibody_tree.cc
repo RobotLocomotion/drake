@@ -1855,7 +1855,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // corresponding to the contribution of the mobilities in level ilevel.
       auto Js_w_PB_W = Js_w_WF_W->block(0, start_index, 3,
                                         mobilizer_jacobian_ncols);
-      if (is_wrt_qdot){
+      if (is_wrt_qdot) {
         Js_w_PB_W = Hw_PB_W * Nplus;
       } else {
         Js_w_PB_W = Hw_PB_W;
