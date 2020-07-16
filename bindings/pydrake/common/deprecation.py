@@ -24,7 +24,7 @@ import warnings
 # (for PEP 562).
 
 
-class ModuleShim(object):
+class ModuleShim:
     """Provides a shim for automatically resolving extra variables.
 
     This can be used to deprecate import alias in modules to simplify
@@ -118,7 +118,7 @@ def _warn_deprecated(message, stacklevel=2):
         message, category=DrakeDeprecationWarning, stacklevel=stacklevel)
 
 
-class _DeprecatedDescriptor(object):
+class _DeprecatedDescriptor:
     """Wraps a descriptor to warn that it is deprecated any time it is
     accessed.
     """

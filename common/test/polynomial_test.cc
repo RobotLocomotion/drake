@@ -511,24 +511,6 @@ GTEST_TEST(PolynomialTest, FromExpression) {
   }
 }
 
-// Checks deprecated aliases.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-// TODO(soonho-tri): Remove the following checks when we remove ::Polynomial.
-static_assert(
-    std::is_same<::Polynomial<double>, drake::Polynomial<double>>::value,
-    "::Polynomial should be an alias of drake::Polynomial.");
-static_assert(std::is_same<::Polynomiald, drake::Polynomiald>::value,
-              "::Polynomiald should be an alias of drake::Polynomiald.");
-static_assert(std::is_same<::VectorXPoly, drake::VectorXPoly>::value,
-              "::VectorXPoly should be an alias of drake::VectorXPoly.");
-GTEST_TEST(PolynomialTest, DeprecatedPow) {
-  const Polynomiald x = Polynomiald("x");
-  EXPECT_EQ(::pow(x, 2), x * x);
-}
-#pragma GCC diagnostic pop
-
 template <typename T>
 void TestScalarType() {
   Eigen::Vector3d coeffs(1., 2., 3.);

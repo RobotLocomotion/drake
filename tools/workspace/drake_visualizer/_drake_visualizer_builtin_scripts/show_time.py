@@ -8,7 +8,7 @@ from director.visualization import updateText
 from _drake_visualizer_builtin_scripts import scoped_singleton_func
 
 
-class TimeVisualizer(object):
+class TimeVisualizer:
 
     def __init__(self):
         self._name = "Time Visualizer"

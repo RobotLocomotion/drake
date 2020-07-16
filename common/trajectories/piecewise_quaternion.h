@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
 
@@ -111,13 +110,6 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    * @return the internal sample points.
    */
   const std::vector<Quaternion<T>>& get_quaternion_samples() const {
-    return quaternions_;
-  }
-
-  DRAKE_DEPRECATED(
-      "2020-07-01",
-      "get_quaternion_knots() is renamed get_quaternion_samples().")
-  const std::vector<Quaternion<T>>& get_quaternion_knots() const {
     return quaternions_;
   }
 

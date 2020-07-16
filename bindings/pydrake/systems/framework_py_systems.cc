@@ -15,6 +15,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_html.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/vector_system.h"
 #include "drake/systems/framework/witness_function.h"
@@ -810,6 +811,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     converter.attr("SupportedConversionPairs") =
         GetPyParamList(ConversionPairs{});
   }
+
+  m.def("GenerateHtml", &GenerateHtml, py::arg("system"),
+      py::arg("initial_depth") = 1, doc.GenerateHtml.doc);
 }
 
 }  // namespace

@@ -8,6 +8,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
 namespace systems {
@@ -23,6 +24,35 @@ std::vector<const systems::System<T>*> Diagram<T>::GetSystems() const {
     result.push_back(system.get());
   }
   return result;
+}
+
+template <typename T>
+void Diagram<T>::Accept(SystemVisitor<T>* v) const {
+  DRAKE_DEMAND(v);
+  v->VisitDiagram(*this);
+}
+
+template <typename T>
+const std::map<typename Diagram<T>::InputPortLocator,
+               typename Diagram<T>::OutputPortLocator>&
+Diagram<T>::connection_map() const {
+  return connection_map_;
+}
+
+template <typename T>
+const typename Diagram<T>::InputPortLocator& Diagram<T>::get_input_port_locator(
+    InputPortIndex port_index) const {
+  DRAKE_DEMAND(port_index >= 0 &&
+               port_index < static_cast<int>(input_port_ids_.size()));
+  return input_port_ids_[port_index];
+}
+
+template <typename T>
+const typename Diagram<T>::OutputPortLocator&
+Diagram<T>::get_output_port_locator(OutputPortIndex port_index) const {
+  DRAKE_DEMAND(port_index >= 0 &&
+               port_index < static_cast<int>(output_port_ids_.size()));
+  return output_port_ids_[port_index];
 }
 
 template <typename T>

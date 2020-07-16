@@ -22,9 +22,6 @@ brew 'nlopt'
 brew 'numpy'
 brew 'openblas'
 brew 'pkg-config'
-# TODO(jamiesnape): Remove "unless" condition when the python formula is updated to 3.8.
-brew 'python' unless MacOS.version >= :catalina
-# TODO(jamiesnape): Remove python@3.8 when the python formula is updated to 3.8.
 brew 'python@3.8'
 brew 'scipy'
 brew 'suite-sparse'

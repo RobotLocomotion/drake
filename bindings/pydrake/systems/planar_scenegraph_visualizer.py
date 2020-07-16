@@ -371,7 +371,7 @@ def ConnectPlanarSceneGraphVisualizer(builder,
                                       **kwargs):
     """Creates an instance of PlanarSceneGraphVisualizer, adds it to the
     diagram, and wires the scene_graph pose bundle output port to the input
-    port of the visualizer.  Provides a comparable interface to
+    port of the visualizer.  Provides an interface comparable to
     ConnectDrakeVisualizer.
 
     Args:

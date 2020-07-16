@@ -260,6 +260,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
         // overload that (a) services MBP directly and (b) uses body
         // association that is less awkward than implicit BodyNodeIndex.
+        .def("CalcCenterOfMassPosition",
+            overload_cast_explicit<Vector3<T>, const Context<T>&>(
+                &Class::CalcCenterOfMassPosition),
+            py::arg("context"), cls_doc.CalcCenterOfMassPosition.doc_1args)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -411,8 +415,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
                 const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
                 const Frame<T>& frame_A, const Frame<T>& frame_E) {
-              Matrix3X<T> Js_v_ABi_E(
-                  3, GetVariableSize<T>(*self, with_respect_to));
+              const int num_points = p_BoBi_B.cols();
+              MatrixX<T> Js_v_ABi_E(
+                  3 * num_points, GetVariableSize<T>(*self, with_respect_to));
               self->CalcJacobianTranslationalVelocity(context, with_respect_to,
                   frame_B, p_BoBi_B, frame_A, frame_E, &Js_v_ABi_E);
               return Js_v_ABi_E;
@@ -460,6 +465,30 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return H;
             },
             py::arg("context"))
+        .def(
+            "CalcBiasSpatialAcceleration",
+            [](const Class* self, const systems::Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              return self->CalcBiasSpatialAcceleration(context, with_respect_to,
+                  frame_B, p_BoBp_B, frame_A, frame_E);
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcBiasSpatialAcceleration.doc)
+        .def(
+            "CalcBiasTranslationalAcceleration",
+            [](const Class* self, const Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              return self->CalcBiasTranslationalAcceleration(context,
+                  with_respect_to, frame_B, p_BoBi_B, frame_A, frame_E);
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBi_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcBiasTranslationalAcceleration.doc)
         .def(
             "CalcBiasTerm",
             [](const Class* self, const Context<T>& context) {

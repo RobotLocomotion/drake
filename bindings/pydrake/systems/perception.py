@@ -43,6 +43,18 @@ def _ConcatenatePointClouds(points_dict, colors_dict):
 
 
 class PointCloudConcatenation(LeafSystem):
+    """
+    System YAML
+        name: PointCloudConcatenation
+        input_ports:
+        - point_cloud_CiSi_id0
+        - X_FCi_id0
+        - ...
+        - point_cloud_CiSi_idN
+        - X_FCi_idN
+        output_ports:
+        - point_cloud_FS
+    """
 
     def __init__(self, id_list, default_rgb=[255., 255., 255.]):
         """
@@ -59,17 +71,6 @@ class PointCloudConcatenation(LeafSystem):
         @param default_rgb A list of length 3 containing the RGB values to use
             in the absence of PointCloud.rgbs. Values should be between 0 and
             255. The default is white.
-
-        @system{
-          @input_port{point_cloud_CiSi_id0}
-          @input_port{X_FCi_id0}
-          .
-          .
-          .
-          @input_port{point_cloud_CiSi_idN}
-          @input_port{X_FCi_idN}
-          @output_port{point_cloud_FS}
-        }
         """
         LeafSystem.__init__(self)
 
@@ -106,7 +107,8 @@ class PointCloudConcatenation(LeafSystem):
             X_CiSi = self.EvalAbstractInput(
                 context, self._transform_ports[id].get_index()).get_value()
 
-            points[id] = _TransformPoints(point_cloud.xyzs(), X_CiSi.matrix())
+            points[id] = _TransformPoints(
+                point_cloud.xyzs(), X_CiSi.GetAsMatrix4())
 
             if point_cloud.has_rgbs():
                 colors[id] = point_cloud.rgbs()

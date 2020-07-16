@@ -394,6 +394,8 @@ top-level documentation for :py:mod:`pydrake.math`.
       .def(py::init<>(), doc.MathematicalProgramResult.ctor.doc)
       .def("is_success", &MathematicalProgramResult::is_success,
           doc.MathematicalProgramResult.is_success.doc)
+      .def("set_x_val", &MathematicalProgramResult::set_x_val, py::arg("x_val"),
+          doc.MathematicalProgramResult.set_x_val.doc)
       .def("get_x_val", &MathematicalProgramResult::get_x_val,
           doc.MathematicalProgramResult.get_x_val.doc)
       .def("get_solution_result",
@@ -543,6 +545,16 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("indeterminates"), py::arg("deg"),
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewFreePolynomial.doc)
+      .def("NewEvenDegreeFreePolynomial",
+          &MathematicalProgram::NewEvenDegreeFreePolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          py::arg("coeff_name") = "a",
+          doc.MathematicalProgram.NewEvenDegreeFreePolynomial.doc)
+      .def("NewOddDegreeFreePolynomial",
+          &MathematicalProgram::NewOddDegreeFreePolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          py::arg("coeff_name") = "a",
+          doc.MathematicalProgram.NewOddDegreeFreePolynomial.doc)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
@@ -556,6 +568,18 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::NewSosPolynomial),
           py::arg("indeterminates"), py::arg("degree"),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
+      .def("NewEvenDegreeSosPolynomial",
+          &MathematicalProgram::NewEvenDegreeSosPolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          doc.MathematicalProgram.NewEvenDegreeSosPolynomial.doc)
+      .def("NewEvenDegreeSdsosPolynomial",
+          &MathematicalProgram::NewEvenDegreeSdsosPolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          doc.MathematicalProgram.NewEvenDegreeSdsosPolynomial.doc)
+      .def("NewEvenDegreeDsosPolynomial",
+          &MathematicalProgram::NewEvenDegreeDsosPolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          doc.MathematicalProgram.NewEvenDegreeDsosPolynomial.doc)
       .def("NewIndeterminates",
           static_cast<VectorXIndeterminate (MathematicalProgram::*)(int,
               const std::string&)>(&MathematicalProgram::NewIndeterminates),

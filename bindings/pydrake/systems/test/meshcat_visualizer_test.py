@@ -33,6 +33,7 @@ from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
+    ConnectMeshcatVisualizer,
     MeshcatVisualizer,
     MeshcatContactVisualizer,
     MeshcatPointCloudVisualizer
@@ -91,7 +92,7 @@ class TestMeshcat(unittest.TestCase):
         self.assertEqual(len(visualizer._animation.clips), 2)
         # After .1 seconds, we should have had 4 publish events.
         self.assertEqual(visualizer._recording_frame_num, 4)
-        visualizer.publish_recording()
+        visualizer.publish_recording(play=True, repetitions=1)
         visualizer.reset_recording()
         self.assertEqual(len(visualizer._animation.clips), 0)
 
@@ -385,3 +386,31 @@ class TestMeshcat(unittest.TestCase):
         show_cloud(
             pc, pc_no_rgbs, name="point_cloud_6",
             X_WP=se3_from_xyz([1.5, 0, 0]), default_rgb=[0., 255., 0.])
+
+    def testConnectMeschatVisualizer(self):
+        """Cart-Pole with simple geometry."""
+        file_name = FindResourceOrThrow(
+            "drake/examples/multibody/cart_pole/cart_pole.sdf")
+        builder = DiagramBuilder()
+        cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        Parser(plant=cart_pole).AddModelFromFile(file_name)
+        cart_pole.Finalize()
+
+        visualizer = ConnectMeshcatVisualizer(builder=builder,
+                                              scene_graph=scene_graph,
+                                              zmq_url=ZMQ_URL,
+                                              open_browser=False)
+        self.assertIsInstance(visualizer, MeshcatVisualizer)
+
+        vis2 = ConnectMeshcatVisualizer(
+            builder=builder,
+            scene_graph=scene_graph,
+            output_port=scene_graph.get_pose_bundle_output_port(),
+            zmq_url=ZMQ_URL,
+            open_browser=False)
+        vis2.set_name("vis2")
+        self.assertIsInstance(vis2, MeshcatVisualizer)
+
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        diagram.Publish(context)

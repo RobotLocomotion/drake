@@ -30,6 +30,7 @@
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
+#include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/witness_function.h"
 
 namespace drake {
@@ -71,6 +72,9 @@ class System : public SystemBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
   ~System() override;
+
+  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  virtual void Accept(SystemVisitor<T>* v) const;
 
   //----------------------------------------------------------------------------
   /** @name           Resource allocation and initialization
@@ -991,7 +995,10 @@ class System : public SystemBase {
   use the Graphviz tool, ``dot``. http://www.graphviz.org/
 
   @param max_depth Sets a limit to the depth of nested diagrams to
-  visualize.  Set to zero to render a diagram as a single system block. */
+  visualize.  Set to zero to render a diagram as a single system block.
+
+  @see GenerateHtml
+  */
   std::string GetGraphvizString(
       int max_depth = std::numeric_limits<int>::max()) const;
 
@@ -1024,7 +1031,7 @@ class System : public SystemBase {
   //----------------------------------------------------------------------------
   /** @name                Automatic differentiation
   From a %System templatized by `double`, you can obtain an identical system
-  templatized by an automatic differentation scalar providing
+  templatized by an automatic differentiation scalar providing
   machine-precision computation of partial derivatives of any numerical
   result of the %System with respect to any of the numerical values that
   can be contained in a Context (time, inputs, parameters, and state). */

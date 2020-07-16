@@ -19,9 +19,6 @@ fi
 
 /usr/local/bin/brew update
 
-# TODO(jamiesnape): Remove the below line on or after 2020-07-01.
-/usr/local/bin/brew cask uninstall font-dejavu-sans 2>/dev/null || true
-
 # TODO(jamiesnape): Remove the lines uninstalling llvm@6 and llvm@9 on or after
 # 2020-08-01.
 if [[ -z "$(/usr/local/bin/brew uses --include-optional --installed llvm@6)" ]]; then

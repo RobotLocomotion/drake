@@ -1,5 +1,4 @@
 bash-completion
-clang
 clang-9
 clang-format-9
 coinor-libclp-dev
@@ -19,8 +18,9 @@ libclang-9-dev
 libexpat1-dev
 libfreetype6-dev
 libgflags-dev
+libgl1-mesa-dev
+libglew-dev
 libglib2.0-dev
-libglu1-mesa-dev
 libhdf5-dev
 libjpeg8-dev
 libjsoncpp-dev
@@ -42,7 +42,7 @@ libx11-dev
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
-lldb
+llvm-9
 locales
 openssh-client
 patch

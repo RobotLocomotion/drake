@@ -25,7 +25,7 @@ from pydrake.systems.test.test_util import (
     )
 
 
-class Info(object):
+class Info:
     # Tracks if an instance has been deleted.
     def __init__(self):
         self.deleted = False

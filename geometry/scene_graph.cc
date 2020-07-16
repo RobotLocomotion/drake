@@ -271,6 +271,11 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) const {
+  static const logging::Warn one_time(
+      "Due to a bug (see issue #13597), changing the illustration roles or "
+      "properties in the context will not have any apparent effect in, at "
+      "least, drake_visualizer. Please change the illustration role in the "
+      "model prior to allocating the Context.");
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }

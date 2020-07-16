@@ -3,6 +3,7 @@
 #include <optional>
 #include <set>
 #include <unordered_map>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -38,8 +39,12 @@ using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using std::set;
 using std::unordered_map;
-using systems::sensors::ColorI;
+using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
+using systems::sensors::ColorI;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 // Tests the RenderEngine-specific functionality for managing registration of
 // geometry and its corresponding update behavior. The former should configure
@@ -244,6 +249,170 @@ GTEST_TEST(RenderEngine, DefaultRenderLabel) {
                                   ".* default render label must be either "
                                   "'kUnspecified' or 'kDontCare'");
     }
+  }
+}
+
+// The render API with full intrinsics promises some validation before calling
+// the virtual DoRender*Image() API. Confirm that it happens.
+GTEST_TEST(RenderEngine, ValidateIntrinsicsAndImage) {
+  const DummyRenderEngine engine;
+  const int w = 2;
+  const int h = 2;
+  const CameraInfo intrinsics{w, h, M_PI};
+  const ColorRenderCamera color_camera{
+      {"n/a", intrinsics, {0.1, 10}, RigidTransformd{}}, false};
+  const DepthRenderCamera depth_camera{
+      {"n/a", intrinsics, {0.1, 10}, RigidTransformd{}}, {1.0, 5.0}};
+
+  // Image is nullptr.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RenderColorImage(color_camera, nullptr),
+      std::logic_error,
+      "Can't render a color image. The given output image is nullptr");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RenderDepthImage(depth_camera, nullptr),
+      std::logic_error,
+      "Can't render a depth image. The given output image is nullptr");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.RenderLabelImage(color_camera, nullptr),
+      std::logic_error,
+      "Can't render a label image. The given output image is nullptr");
+
+  // Image size doesn't match.
+  const char* error_message =
+      "The {} image to write has a size different from that specified in "
+      "the camera intrinsics. Image: \\({}, {}\\), intrinsics: \\({}, {}\\)";
+
+  auto test_bad_sizes = [&](const char* image_type, auto image_example,
+                            auto render) {
+    using Image = decltype(image_example);
+    std::vector<Image> images{Image{w - 1, h}, Image{w, h - 1},
+                              Image{w - 1, h - 1}};
+    for (Image& i : images) {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          render(&i), std::logic_error,
+          fmt::format(error_message, image_type, i.width(), i.height(),
+                      intrinsics.width(), intrinsics.height()));
+    }
+  };
+
+  test_bad_sizes("color", ImageRgba8U{1, 1}, [&](ImageRgba8U* i) {
+    engine.RenderColorImage(color_camera, i);
+  });
+
+  test_bad_sizes("depth", ImageDepth32F{1, 1}, [&](ImageDepth32F* i) {
+    engine.RenderDepthImage(depth_camera, i);
+  });
+
+  test_bad_sizes("label", ImageLabel16I{1, 1}, [&](ImageLabel16I* i) {
+    engine.RenderLabelImage(color_camera, i);
+  });
+}
+
+/* A sub-class of DummyRenderEngine that *does* implement the full-intrinsics
+ camera API. Exercising that API on this instance should use the full API and
+ not the fallback, simple API.  */
+class FullSpecRenderEngine : public DummyRenderEngine {
+ public:
+  int num_full_color_renders() const { return full_color_count_; }
+  int num_full_depth_renders() const { return full_depth_count_; }
+  int num_full_label_renders() const { return full_label_count_; }
+
+ private:
+  void DoRenderColorImage(const ColorRenderCamera&,
+                          ImageRgba8U*) const override {
+    ++full_color_count_;
+  }
+
+  void DoRenderDepthImage(const DepthRenderCamera&,
+                          ImageDepth32F*) const override {
+    ++full_depth_count_;
+  }
+
+  void DoRenderLabelImage(const ColorRenderCamera&,
+                          ImageLabel16I*) const override {
+    ++full_label_count_;
+  }
+
+  mutable int full_color_count_{};
+  mutable int full_depth_count_{};
+  mutable int full_label_count_{};
+};
+
+// Confirms expected behavior of the full-camera-intrinsics API.
+// For engines that *haven't* implemented the API, it defaults to simple API.
+// For engines that *have* implemented the API, confirm it is exercised.
+GTEST_TEST(RenderEngine, FullIntrinsicsRendering) {
+  const CameraInfo intrinsics{2, 2, M_PI};
+  const ColorRenderCamera color_camera{
+      {"n/a", intrinsics, {0.1, 10}, RigidTransformd{}}, false};
+  const DepthRenderCamera depth_camera{
+      {"n/a", intrinsics, {0.1, 10}, RigidTransformd{}}, {1.0, 5.0}};
+
+  ImageRgba8U color(2, 2);
+  ImageDepth32F depth(2, 2);
+  ImageLabel16I label(2, 2);
+  {
+    // Case: RenderEngine has *not* implemented the full-intrinsics API. It
+    // defaults to the simple intrinsics API. We also need to confirm that
+    // the properties are properly "converted".
+    DummyRenderEngine default_engine;
+
+    // Confirm all counters are as expected before starting.
+    ASSERT_EQ(default_engine.num_simple_color_renders(), 0);
+    ASSERT_EQ(default_engine.num_simple_depth_renders(), 0);
+    ASSERT_EQ(default_engine.num_simple_label_renders(), 0);
+
+    auto cameras_match = [](const CameraProperties& test,
+                            const CameraInfo& expected) {
+      return test.width == expected.width() &&
+             test.height == expected.height() && test.fov_y == expected.fov_y();
+    };
+
+    auto depths_match = [](const DepthCameraProperties& test,
+                           const DepthRenderCamera& expected) {
+      return test.z_near == expected.depth_range().min_depth() &&
+             test.z_far == expected.depth_range().max_depth();
+    };
+
+    default_engine.RenderColorImage(color_camera, &color);
+    EXPECT_EQ(default_engine.num_simple_color_renders(), 1);
+    EXPECT_TRUE(cameras_match(default_engine.last_color_camera_properties(),
+                              intrinsics));
+    default_engine.RenderDepthImage(depth_camera, &depth);
+    EXPECT_EQ(default_engine.num_simple_depth_renders(), 1);
+    EXPECT_TRUE(cameras_match(default_engine.last_depth_camera_properties(),
+                              intrinsics));
+    EXPECT_TRUE(depths_match(default_engine.last_depth_camera_properties(),
+                             depth_camera));
+    default_engine.RenderLabelImage(color_camera, &label);
+    EXPECT_EQ(default_engine.num_simple_label_renders(), 1);
+    EXPECT_TRUE(cameras_match(default_engine.last_label_camera_properties(),
+                              intrinsics));
+  }
+
+  {
+    // Case: RenderEngine *has* implemented the full-intrinsics API. The simple
+    // API does *not* get called.
+    FullSpecRenderEngine full_engine;
+
+    // Confirm all counters are as expected before starting.
+    ASSERT_EQ(full_engine.num_simple_color_renders(), 0);
+    ASSERT_EQ(full_engine.num_simple_depth_renders(), 0);
+    ASSERT_EQ(full_engine.num_simple_label_renders(), 0);
+    ASSERT_EQ(full_engine.num_full_color_renders(), 0);
+    ASSERT_EQ(full_engine.num_full_depth_renders(), 0);
+    ASSERT_EQ(full_engine.num_full_label_renders(), 0);
+
+    full_engine.RenderColorImage(color_camera, &color);
+    EXPECT_EQ(full_engine.num_simple_color_renders(), 0);
+    EXPECT_EQ(full_engine.num_full_color_renders(), 1);
+    full_engine.RenderDepthImage(depth_camera, &depth);
+    EXPECT_EQ(full_engine.num_simple_depth_renders(), 0);
+    EXPECT_EQ(full_engine.num_full_depth_renders(), 1);
+    full_engine.RenderLabelImage(color_camera, &label);
+    EXPECT_EQ(full_engine.num_simple_label_renders(), 0);
+    EXPECT_EQ(full_engine.num_full_label_renders(), 1);
   }
 }
 

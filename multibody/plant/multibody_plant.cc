@@ -1043,10 +1043,10 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   // damping constant d using a time scale related to the free oscillation
   // (omega below) and the requested penetration allowance as a length scale.
 
-  // We first estimate the stiffness based on static equilibrium.
-  const double stiffness = mass * g / penetration_allowance;
-  // Frequency associated with the stiffness above.
-  const double omega = sqrt(stiffness / mass);
+  // We first estimate the combined stiffness based on static equilibrium.
+  const double combined_stiffness = mass * g / penetration_allowance;
+  // Frequency associated with the combined_stiffness above.
+  const double omega = sqrt(combined_stiffness / mass);
 
   // Estimated contact time scale. The relative velocity of objects coming into
   // contact goes to zero in this time scale.
@@ -1055,16 +1055,39 @@ void MultibodyPlant<T>::EstimatePointContactParameters(
   // Damping ratio for a critically damped model. We could allow users to set
   // this. Right now, critically damp the normal direction.
   // This corresponds to a non-penetraion constraint in the limit for
-  // contact_penetration_allowance_ goint to zero (no bounce off).
+  // contact_penetration_allowance_ going to zero (no bounce off).
   const double damping_ratio = 1.0;
-  // We form the damping (with units of 1/velocity) using dimensional analysis.
-  // Thus we use 1/omega for the time scale and penetration_allowance for the
-  // length scale. We then scale it by the damping ratio.
-  const double damping = damping_ratio * time_scale / penetration_allowance;
+  // We form the dissipation (with units of 1/velocity) using dimensional
+  // analysis. Thus we use 1/omega for the time scale and penetration_allowance
+  // for the length scale. We then scale it by the damping ratio.
+  const double dissipation = damping_ratio * time_scale / penetration_allowance;
 
   // Final parameters used in the penalty method:
-  penalty_method_contact_parameters_.stiffness = stiffness;
-  penalty_method_contact_parameters_.damping = damping;
+  //
+  // Before #13630 this method estimated an effective "combined" stiffness.
+  // That is, penalty_method_contact_parameters_.geometry_stiffness (previously
+  // called penalty_method_contact_parameters_.stiffness) was the desired
+  // stiffness of the contact pair. Post #13630, the semantics of this variable
+  // changes to "stiffness per contact geometry". Therefore, in order to
+  // maintain backwards compatibility for sims run pre #13630, we include now a
+  // factor of 2 so that when two geometries have the same stiffness, the
+  // combined stiffness reduces to combined_stiffness.
+  //
+  // Stiffness in the penalty method is calculated as a combination of
+  // individual stiffness parameters per geometry. The variable
+  // `combined_stiffness` as calculated here is a combined stiffness, but
+  // `penalty_method_contact_parameters_.geometry_stiffness` stores the
+  // parameter for an individual geometry. Combined stiffness, for geometries
+  // with individual stiffnesses k1 and k2 respectively, is defined as:
+  //   Kc = (k1*k2) / (k1 + k2)
+  // If we have a desired combined stiffness Kd (for two geometries with
+  // default heuristically computed parameters), setting k1 = k2 = 2 * Kd
+  // results in the correct combined stiffness:
+  //   Kc = (2*Kd*2*Kd) / (2*Kd + 2*Kd) = Kd
+  // Therefore we set the `geometry_stiffness` to 2*`combined_stiffness`.
+  penalty_method_contact_parameters_.geometry_stiffness =
+      2 * combined_stiffness;
+  penalty_method_contact_parameters_.dissipation = dissipation;
   // The time scale can be requested to hint the integrator's time step.
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
@@ -1231,6 +1254,21 @@ void MultibodyPlant<T>::CalcContactResultsContinuousHydroelastic(
   }
 }
 
+namespace {
+template <typename T>
+std::pair<T, T> CombinePointContactParameters(const T& k1, const T& k2,
+                                              const T& d1, const T& d2) {
+  // Simple utility to detect 0 / 0. As it is used in this method, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](const T& num, const T& denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
+  return std::pair(
+      safe_divide(k1 * k2, k1 + k2),                                   // k
+      safe_divide(k2, k1 + k2) * d1 + safe_divide(k1, k1 + k2) * d2);  // d
+}
+}  // namespace
+
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const systems::Context<T>& context,
@@ -1246,6 +1284,10 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
       EvalPositionKinematics(context);
   const internal::VelocityKinematicsCache<T>& vc =
       EvalVelocityKinematics(context);
+
+  const geometry::QueryObject<T>& query_object =
+      EvalGeometryQueryInput(context);
+  const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
@@ -1290,8 +1332,9 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
     const T vn = v_AcBc_W.dot(nhat_BA_W);
 
     // Magnitude of the normal force on body A at contact point C.
-    const T k = penalty_method_contact_parameters_.stiffness;
-    const T d = penalty_method_contact_parameters_.damping;
+    const auto [kA, dA] = get_point_contact_parameters(geometryA_id, inspector);
+    const auto [kB, dB] = get_point_contact_parameters(geometryB_id, inspector);
+    const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
     const T fn_AC = k * x * (1.0 + d * vn);
 
     if (fn_AC > 0) {
@@ -1910,14 +1953,25 @@ void MultibodyPlant<T>::CalcTamsiResults(
                    return pair.depth;
                  });
 
-  // TODO(amcastro-tri): Consider using different penalty parameters at each
-  // contact point.
   // Compliance parameters used by the solver for each contact point.
-  VectorX<T> stiffness = VectorX<T>::Constant(
-      num_contacts, penalty_method_contact_parameters_.stiffness);
-  VectorX<T> damping = VectorX<T>::Constant(
-      num_contacts, penalty_method_contact_parameters_.damping);
+  VectorX<T> stiffness(num_contacts);
+  VectorX<T> damping(num_contacts);
 
+  if (num_collision_geometries() > 0) {
+    const geometry::QueryObject<T>& query_object =
+        EvalGeometryQueryInput(context0);
+    const geometry::SceneGraphInspector<T>& inspector =
+        query_object.inspector();
+    for (int i = 0; i < num_contacts; ++i) {
+      const PenetrationAsPointPair<T>& pair = point_pairs0[i];
+      const auto [kA, dA] = get_point_contact_parameters(pair.id_A, inspector);
+      const auto [kB, dB] = get_point_contact_parameters(pair.id_B, inspector);
+      const auto [k, d] = CombinePointContactParameters(kA, kB, dA, dB);
+
+      stiffness(i) = k;
+      damping(i) = d;
+    }
+  }
   // Solve for v and the contact forces.
   TamsiSolverResult info{
       TamsiSolverResult::kMaxIterationsReached};

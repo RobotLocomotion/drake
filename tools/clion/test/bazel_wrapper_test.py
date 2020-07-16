@@ -19,7 +19,7 @@ class ExecDetail(Exception):
         self.args = args
 
 
-class Mock(object):
+class Mock:
     pass
 
 

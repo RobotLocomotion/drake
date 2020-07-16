@@ -10,10 +10,15 @@ namespace systems {
 
 /// An adder for arbitrarily many inputs of equal size.
 ///
-/// @system{Adder,
-///    @input_port{input(0)} @input_port{...} @input_port{input(N-1)},
-///    @output_port{sum}
-/// }
+/// @system
+/// name: Adder
+/// input_ports:
+/// - input(0)
+/// - ...
+/// - input(N-1)
+/// output_ports:
+/// - sum
+/// @endsystem
 ///
 /// @tparam_default_scalar
 /// @ingroup primitive_systems

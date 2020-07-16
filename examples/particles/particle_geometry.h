@@ -10,10 +10,13 @@ namespace particles {
 
 /// Expresses a Particle system's visualization geometry to a SceneGraph.
 ///
-/// @system{ParticleGeometry,
-///    @input_port{state},
-///    @output_port{geometry_pose}
-/// }
+/// @system
+/// name: ParticleGeometry
+/// input_ports:
+/// - state
+/// output_ports:
+/// - geometry_pose
+/// @endsystem
 ///
 /// The visualization shows the particle as a sphere moving along the x axis.
 ///

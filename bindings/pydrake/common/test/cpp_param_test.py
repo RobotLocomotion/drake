@@ -15,7 +15,7 @@ import numpy as np
 import pydrake.common.cpp_param as mut
 
 
-class CustomPyType(object):
+class CustomPyType:
     pass
 
 

@@ -104,11 +104,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.6.9-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
-            sha256 = "8c9d0cef96a7d377a588f58b2a3d63f617c55df8f493208971791a8ea207789d"  # noqa
+            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.6.9-qt-5.9.5-bionic-x86_64-1.tar.gz"  # noqa
+            sha256 = "f32b7b8c0894c31b8665bb28cdf9682683315a13b7779effdfb765a812453a67"  # noqa
         elif os_result.ubuntu_release == "20.04":
-            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.8.2-qt-5.12.8-focal-x86_64.tar.gz"  # noqa
-            sha256 = "868e0ffbb85e8620d9653e55a60080cde900d508794247bc6181b8a8013cb6fb"  # noqa
+            archive = "vtk-8.2.0-embree-3.5.2-ospray-1.8.5-python-3.8.2-qt-5.12.8-focal-x86_64-1.tar.gz"  # noqa
+            sha256 = "495a97a208eddb4ebfa4214041400d6d7c842ae9dd3b3157208dd859759654e4"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -343,6 +343,7 @@ licenses([
         deps = [":vtksys"],
     )
 
+    # TODO(jamiesnape): Use system library instead.
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkdoubleconversion",
@@ -603,6 +604,7 @@ licenses([
         ],
     )
 
+    # TODO(jamiesnape): Use system library instead.
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtklzma")
 
     file_content += _vtk_cc_library(
@@ -661,12 +663,6 @@ licenses([
         ],
     )
 
-    # Segmentation faults with system versions of GLEW on Ubuntu 16.04.
-    if repository_ctx.os.name == "linux":
-        VTKGLEW = ":vtkglew"
-    else:
-        VTKGLEW = "@glew"
-
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkRenderingOpenGL2",
@@ -692,7 +688,8 @@ licenses([
             ":vtkCommonTransforms",
             ":vtkRenderingCore",
             ":vtksys",
-            VTKGLEW,
+            "@glew",
+            "@opengl",
         ],
     )
 
@@ -862,12 +859,10 @@ cc_library(
             ":vtkRenderingOpenGL2",
             ":vtkRenderingVolume",
             ":vtksys",
-            VTKGLEW,
+            "@glew",
+            "@opengl",
         ],
     )
-
-    if repository_ctx.os.name == "linux":
-        file_content += _vtk_cc_library(repository_ctx.os.name, "vtkglew")
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,

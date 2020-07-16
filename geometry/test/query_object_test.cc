@@ -16,7 +16,9 @@ namespace geometry {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using render::ColorRenderCamera;
 using render::DepthCameraProperties;
+using render::DepthRenderCamera;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -178,19 +180,30 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
 
   // Render queries.
-  DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1, 5.0);
-  RigidTransformd X_WC = RigidTransformd::Identity();
+  const ColorRenderCamera color_camera{
+      {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, false};
+  const DepthRenderCamera depth_camera{
+      {"n/a", {2, 2, M_PI}, {0.1, 10}, RigidTransformd{}}, {0.2, 0.9}};
+  const DepthCameraProperties properties(2, 2, M_PI, "dummy_renderer", 0.1,
+                                         5.0);
+  const RigidTransformd X_WC = RigidTransformd::Identity();
   ImageRgba8U color;
   EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
       properties, FrameId::get_new_id(), X_WC, false, &color));
+  EXPECT_DEFAULT_ERROR(default_object.RenderColorImage(
+      color_camera, FrameId::get_new_id(), X_WC, &color));
 
   ImageDepth32F depth;
   EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(
       properties, FrameId::get_new_id(), X_WC, &depth));
+  EXPECT_DEFAULT_ERROR(default_object.RenderDepthImage(
+      depth_camera, FrameId::get_new_id(), X_WC, &depth));
 
   ImageLabel16I label;
   EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
       properties, FrameId::get_new_id(), X_WC, false, &label));
+  EXPECT_DEFAULT_ERROR(default_object.RenderLabelImage(
+      color_camera, FrameId::get_new_id(), X_WC, &label));
 
   EXPECT_DEFAULT_ERROR(default_object.GetRenderEngineByName("dummy"));
 

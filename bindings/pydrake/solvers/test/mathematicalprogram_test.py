@@ -131,6 +131,10 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
 
+        x_val_new = np.array([1, 2])
+        result.set_x_val(x_val_new)
+        np.testing.assert_array_equal(x_val_new, result.get_x_val())
+
 # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
     # perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
@@ -420,6 +424,8 @@ class TestMathematicalProgram(unittest.TestCase):
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)
+        even_poly = prog.NewEvenDegreeFreePolynomial(sym.Variables(x), 2)
+        odd_poly = prog.NewOddDegreeFreePolynomial(sym.Variables(x), 3)
         y = prog.NewIndeterminates(1, "y")
         self.assertEqual(prog.indeterminates_index()[y[0].get_id()], 1)
         (poly, binding) = prog.NewSosPolynomial(
@@ -430,6 +436,13 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
+
+        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
+        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSdsosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
+        (poly, Q_oo, Q_ee) = prog.NewEvenDegreeDsosPolynomial(
+            indeterminates=sym.Variables(x), degree=2)
 
     def test_make_polynomial(self):
         prog = mp.MathematicalProgram()

@@ -17,7 +17,11 @@ namespace systems {
 /// (with a power-spectral density of the form Ts * sinc^2( omega * Ts ), where
 /// Ts is the sampling interval.
 ///
-/// @system{RandomSource,,@output_port{output}}
+/// @system
+/// name: RandomSource
+/// output_ports:
+/// - output
+/// @endsystem
 ///
 /// This system exposes a parameter named `seed` for the pseudo-random number
 /// generator that determines the noise output.  The `seed` parameter behaves

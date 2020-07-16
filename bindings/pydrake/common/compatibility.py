@@ -17,7 +17,7 @@ def _defer_callable_type(cls):
     # Makes a type, which is meant to purely callable, and defers its
     # construction until it needs to be called.
 
-    class Deferred(object):
+    class Deferred:
         def __init__(self, *args, **kwargs):
             self._args = args
             self._kwargs = kwargs

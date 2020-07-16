@@ -409,12 +409,18 @@ class MeshcatVisualizer(LeafSystem):
         # Note: This syntax was chosen to match PyPlotVisualizer.
         self._is_recording = False
 
-    def publish_recording(self):
+    def publish_recording(self, play=True, repetitions=1):
         """
         Publish any recorded animation to Meshcat.  Use the controls dialog
         in the browser to review it.
+
+        Args:
+            play: boolean that determines whether the animation will play
+                automatically.
+            repetitions: number of times that the animation should play.
         """
-        self.vis.set_animation(self._animation)
+        self.vis.set_animation(self._animation, play=play,
+                               repetitions=repetitions)
 
     def reset_recording(self):
         """
@@ -433,7 +439,7 @@ class MeshcatContactVisualizer(LeafSystem):
     MultibodyPlant.
     """
 
-    class _ContactState(object):
+    class _ContactState:
         def __init__(self, key, needs_pruning, info, p_BC):
             # Key for use with meshcat.
             self.key = key
@@ -649,11 +655,10 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         viz = meshcat.Visualizer()
         pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
 
-    System ports::
-
-        @system{
-            @input_port{point_cloud_P},
-        }
+    System YAML
+        name: MeshcatPointCloudVisualizer
+        input_ports:
+        - point_cloud_P
     """
 
     def __init__(self, meshcat_viz, draw_period=_DEFAULT_PUBLISH_PERIOD,
@@ -706,3 +711,34 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         # Send to meshcat.
         self._meshcat_viz[self._name].set_object(g.PointCloud(p_PQs, rgbs))
         self._meshcat_viz[self._name].set_transform(self._X_WP.matrix())
+
+
+def ConnectMeshcatVisualizer(builder, scene_graph, output_port=None, **kwargs):
+    """Creates an instance of MeshcatVisualizer, adds it to the
+    diagram, and wires the scene_graph pose bundle output port to the input
+    port of the visualizer.  Provides an interface comparable to
+    ConnectDrakeVisualizer.
+
+    Args:
+        builder: The diagram builder used to construct the Diagram.
+        scene_graph: The SceneGraph in builder containing the geometry to be
+            visualized.
+        output_port: (optional) If not None, then output_port will be connected
+            to the visualizer input port instead of the scene_graph.
+            get_pose_bundle_output_port().  This is required, for instance,
+            when the SceneGraph is inside a Diagram, and we must connect the
+            exposed port to the visualizer instead of the original SceneGraph
+            port.
+
+        Additional kwargs are passed through to the MeshcatVisualizer
+        constructor.
+
+    Returns:
+        The newly created MeshcatVisualizer object.
+    """
+    if output_port is None:
+        output_port = scene_graph.get_pose_bundle_output_port()
+    visualizer = builder.AddSystem(
+        MeshcatVisualizer(scene_graph, **kwargs))
+    builder.Connect(output_port, visualizer.get_input_port(0))
+    return visualizer

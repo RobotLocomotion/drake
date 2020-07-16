@@ -560,6 +560,9 @@ class TestPlant(unittest.TestCase):
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
+        p_com = plant.CalcCenterOfMassPosition(context=context)
+        self.assertTupleEqual(p_com.shape, (3, ))
+
         nq = plant.num_positions()
         nv = plant.num_velocities()
         wrt_list = [
@@ -584,6 +587,26 @@ class TestPlant(unittest.TestCase):
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (3, nw))
 
+            Js_v_AB_E = plant.CalcJacobianTranslationalVelocity(
+                context=context, with_respect_to=wrt, frame_B=base_frame,
+                p_BoBi_B=np.zeros((3, 3)), frame_A=world_frame,
+                frame_E=world_frame)
+            self.assert_sane(Js_v_AB_E)
+            self.assertEqual(Js_v_AB_E.shape, (9, nw))
+
+        AsBias_ABp_E = plant.CalcBiasSpatialAcceleration(
+            context=context, with_respect_to=JacobianWrtVariable.kV,
+            frame_B=base_frame, p_BoBp_B=np.zeros(3), frame_A=world_frame,
+            frame_E=world_frame)
+        self.assert_sane(AsBias_ABp_E.rotational(), nonzero=False)
+        self.assert_sane(AsBias_ABp_E.translational(), nonzero=False)
+        asBias_ABi_E = plant.CalcBiasTranslationalAcceleration(
+            context=context, with_respect_to=JacobianWrtVariable.kV,
+            frame_B=base_frame, p_BoBi_B=np.zeros(3), frame_A=world_frame,
+            frame_E=world_frame)
+        self.assert_sane(asBias_ABi_E, nonzero=False)
+        self.assertEqual(asBias_ABi_E.shape, (3, 1))
+
         # Compute body pose.
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
         self.assertIsInstance(X_WBase, RigidTransform)
@@ -594,7 +617,8 @@ class TestPlant(unittest.TestCase):
         plant.SetFreeBodyPose(
             context=context, body=base, X_WB=X_WB_desired)
         numpy_compare.assert_float_equal(
-                X_WB.matrix(), numpy_compare.to_float(X_WB_desired.matrix()))
+            X_WB.GetAsMatrix4(),
+            numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
 
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])

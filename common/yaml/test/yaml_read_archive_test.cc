@@ -19,6 +19,10 @@
 
 namespace {
 
+// A value used in the test data below to include a default (placeholder) value
+// when initializing struct data members.
+constexpr double kNominalDouble = 1.2345;
+
 // These unit tests use a variety of sample Serializable structs, showing what
 // a user may write for their own schemas.
 
@@ -28,7 +32,7 @@ struct DoubleStruct {
     a->Visit(DRAKE_NVP(value));
   }
 
-  double value = NAN;
+  double value = kNominalDouble;
 };
 
 bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
@@ -42,7 +46,7 @@ struct ArrayStruct {
   }
 
   ArrayStruct() {
-    value.fill(NAN);
+    value.fill(kNominalDouble);
   }
 
   std::array<double, 3> value;
@@ -55,7 +59,7 @@ struct VectorStruct {
   }
 
   VectorStruct() {
-    value.resize(1, NAN);
+    value.resize(1, kNominalDouble);
   }
 
   std::vector<double> value;
@@ -68,7 +72,7 @@ struct MapStruct {
   }
 
   MapStruct() {
-    value["NAN"] = NAN;
+    value["kNominalDouble"] = kNominalDouble;
   }
 
   std::map<std::string, double> value;
@@ -81,7 +85,7 @@ struct OptionalStruct {
   }
 
   OptionalStruct() {
-    value = NAN;
+    value = kNominalDouble;
   }
 
   std::optional<double> value;
@@ -107,7 +111,7 @@ struct VariantStruct {
   }
 
   VariantStruct() {
-    value = NAN;
+    value = kNominalDouble;
   }
 
   Variant3 value;
@@ -133,7 +137,7 @@ struct EigenStruct {
     if (value.size() == 0) {
       value.resize(1, 1);
     }
-    value.setConstant(NAN);
+    value.setConstant(kNominalDouble);
   }
 
   Eigen::Matrix<double, Rows, Cols> value;
@@ -146,7 +150,7 @@ using EigenMatrix34Struct = EigenStruct<3, 4>;
 
 struct OuterStruct {
   struct InnerStruct {
-    double inner_value = NAN;
+    double inner_value = kNominalDouble;
 
     template <typename Archive>
     void Serialize(Archive* a) {
@@ -160,8 +164,22 @@ struct OuterStruct {
     a->Visit(DRAKE_NVP(inner_struct));
   }
 
-  double outer_value = NAN;
+  double outer_value = kNominalDouble;
   InnerStruct inner_struct;
+};
+
+struct BigMapStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  BigMapStruct() {
+    value["foo"].outer_value = 1.0;
+    value["foo"].inner_struct.inner_value = 2.0;
+  }
+
+  std::map<std::string, OuterStruct> value;
 };
 
 }  // namespace
@@ -282,7 +300,7 @@ TEST_P(YamlReadArchiveTest, Double) {
 
 TEST_P(YamlReadArchiveTest, DoubleMissing) {
   const auto& x = AcceptEmptyDoc<DoubleStruct>();
-  EXPECT_THAT(x.value, testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_EQ(x.value, kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
@@ -297,9 +315,9 @@ TEST_P(YamlReadArchiveTest, StdArray) {
 
 TEST_P(YamlReadArchiveTest, StdArrayMissing) {
   const auto& x = AcceptEmptyDoc<ArrayStruct>();
-  EXPECT_THAT(x.value[0], testing::NanSensitiveDoubleEq(NAN));
-  EXPECT_THAT(x.value[1], testing::NanSensitiveDoubleEq(NAN));
-  EXPECT_THAT(x.value[2], testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_EQ(x.value[0], kNominalDouble);
+  EXPECT_EQ(x.value[1], kNominalDouble);
+  EXPECT_EQ(x.value[2], kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, StdVector) {
@@ -315,31 +333,128 @@ TEST_P(YamlReadArchiveTest, StdVector) {
 TEST_P(YamlReadArchiveTest, StdVectorMissing) {
   const auto& x = AcceptEmptyDoc<VectorStruct>();
   ASSERT_EQ(x.value.size(), 1);
-  EXPECT_THAT(x.value[0], testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_EQ(x.value[0], kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, StdMap) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
     const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
-    EXPECT_EQ(x.value, expected) << doc;
+    std::map<std::string, double> adjusted_expected = expected;
+    if (GetParam().retain_map_defaults) {
+      adjusted_expected["kNominalDouble"] = kNominalDouble;
+    }
+    EXPECT_EQ(x.value, adjusted_expected) << doc;
   };
 
   test("doc:\n  value:\n    foo: 0.0\n    bar: 1.0\n",
        {{"foo", 0.0}, {"bar", 1.0}});
 }
 
+TEST_P(YamlReadArchiveTest, BigStdMapAppend) {
+  if (!GetParam().allow_cpp_with_no_yaml) {
+    // The parser would raise an uninteresting exception in this case.
+    return;
+  }
+  std::string doc = R"R(
+doc:
+  value:
+    bar:
+      outer_value: 3.0
+      inner_struct:
+        inner_value: 4.0
+)R";
+  const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
+  if (GetParam().retain_map_defaults) {
+    EXPECT_EQ(x.value.size(), 2);
+    EXPECT_EQ(x.value.at("foo").outer_value, 1.0);
+    EXPECT_EQ(x.value.at("foo").inner_struct.inner_value, 2.0);
+  } else {
+    EXPECT_EQ(x.value.size(), 1);
+  }
+  EXPECT_EQ(x.value.at("bar").outer_value, 3.0);
+  EXPECT_EQ(x.value.at("bar").inner_struct.inner_value, 4.0);
+}
+
+TEST_P(YamlReadArchiveTest, BigStdMapMergeNewOuterValue) {
+  if (!GetParam().allow_cpp_with_no_yaml) {
+    // The parser would raise an uninteresting exception in this case.
+    return;
+  }
+  std::string doc = R"R(
+doc:
+  value:
+    foo:
+      outer_value: 3.0
+)R";
+  const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
+  EXPECT_EQ(x.value.size(), 1);
+  EXPECT_EQ(x.value.at("foo").outer_value, 3.0);
+  if (GetParam().retain_map_defaults) {
+    EXPECT_EQ(x.value.at("foo").inner_struct.inner_value, 2.0);
+  } else {
+    EXPECT_EQ(x.value.at("foo").inner_struct.inner_value, kNominalDouble);
+  }
+}
+
+TEST_P(YamlReadArchiveTest, BigStdMapMergeNewInnerValue) {
+  if (!GetParam().allow_cpp_with_no_yaml) {
+    // The parser would raise an uninteresting exception in this case.
+    return;
+  }
+  std::string doc = R"R(
+doc:
+  value:
+    foo:
+      inner_struct:
+        inner_value: 4.0
+)R";
+  const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
+  EXPECT_EQ(x.value.size(), 1);
+  if (GetParam().retain_map_defaults) {
+    EXPECT_EQ(x.value.at("foo").outer_value, 1.0);
+  } else {
+    EXPECT_EQ(x.value.at("foo").outer_value, kNominalDouble);
+  }
+  EXPECT_EQ(x.value.at("foo").inner_struct.inner_value, 4.0);
+}
+
+TEST_P(YamlReadArchiveTest, BigStdMapMergeEmpty) {
+  if (!GetParam().allow_cpp_with_no_yaml) {
+    // The parser would raise an uninteresting exception in this case.
+    return;
+  }
+  std::string doc = R"R(
+doc:
+  value:
+    foo: {}
+)R";
+  const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
+  EXPECT_EQ(x.value.size(), 1);
+  if (GetParam().retain_map_defaults) {
+    EXPECT_EQ(x.value.at("foo").outer_value, 1.0);
+    EXPECT_EQ(x.value.at("foo").inner_struct.inner_value, 2.0);
+  } else {
+    EXPECT_EQ(x.value.at("foo").outer_value, kNominalDouble);
+    EXPECT_EQ(x.value.at("foo").inner_struct.inner_value, kNominalDouble);
+  }
+}
+
 TEST_P(YamlReadArchiveTest, StdMapMissing) {
   const auto& x = AcceptEmptyDoc<MapStruct>();
   ASSERT_EQ(x.value.size(), 1);
-  EXPECT_THAT(x.value.at("NAN"), testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_EQ(x.value.at("kNominalDouble"), kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, StdMapWithMergeKeys) {
   const auto test = [](const std::string& doc,
                        const std::map<std::string, double>& expected) {
     const auto& x = AcceptNoThrow<MapStruct>(Load(doc));
-    EXPECT_EQ(x.value, expected) << doc;
+    std::map<std::string, double> adjusted_expected = expected;
+    if (GetParam().retain_map_defaults) {
+      adjusted_expected["kNominalDouble"] = kNominalDouble;
+    }
+    EXPECT_EQ(x.value, adjusted_expected) << doc;
   };
 
   // Use merge keys to populate some keys.
@@ -442,7 +557,7 @@ TEST_P(YamlReadArchiveTest, Variant) {
 
 TEST_P(YamlReadArchiveTest, VariantMissing) {
   const auto& x = AcceptEmptyDoc<VariantStruct>();
-  EXPECT_THAT(std::get<double>(x.value), testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_EQ(std::get<double>(x.value), kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, EigenVector) {
@@ -494,10 +609,10 @@ TEST_P(YamlReadArchiveTest, EigenMissing) {
   const auto& mn = AcceptEmptyDoc<EigenMatrix34Struct>();
   ASSERT_EQ(vx.value.size(), 1);
   ASSERT_EQ(mx.value.size(), 1);
-  EXPECT_THAT(vx.value(0), testing::NanSensitiveDoubleEq(NAN));
-  EXPECT_THAT(vn.value(0), testing::NanSensitiveDoubleEq(NAN));
-  EXPECT_THAT(mx.value(0, 0), testing::NanSensitiveDoubleEq(NAN));
-  EXPECT_THAT(mn.value(0, 0), testing::NanSensitiveDoubleEq(NAN));
+  EXPECT_EQ(vx.value(0), kNominalDouble);
+  EXPECT_EQ(vn.value(0), kNominalDouble);
+  EXPECT_EQ(mx.value(0, 0), kNominalDouble);
+  EXPECT_EQ(mn.value(0, 0), kNominalDouble);
 }
 
 TEST_P(YamlReadArchiveTest, Nested) {
@@ -638,7 +753,7 @@ doc:
       GetParam().allow_yaml_with_no_cpp) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
     EXPECT_EQ(x.outer_value, 1.0);
-    EXPECT_THAT(x.inner_struct.inner_value, testing::NanSensitiveDoubleEq(NAN));
+    EXPECT_EQ(x.inner_struct.inner_value, kNominalDouble);
   } else if (GetParam().allow_cpp_with_no_yaml) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         AcceptIntoDummy<OuterStruct>(node),
@@ -912,7 +1027,7 @@ TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
   if (GetParam().allow_cpp_with_no_yaml) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
     EXPECT_EQ(x.outer_value, 1.0);
-    EXPECT_THAT(x.inner_struct.inner_value, testing::NanSensitiveDoubleEq(NAN));
+    EXPECT_EQ(x.inner_struct.inner_value, kNominalDouble);
   } else {
     DRAKE_EXPECT_THROWS_MESSAGE(
         AcceptIntoDummy<OuterStruct>(node),
@@ -950,21 +1065,21 @@ doc:
       " has non-Map \\(Sequence\\) entry for [^ ]*InnerStruct inner_struct\\.");
 }
 
+std::vector<YamlReadArchive::Options> MakeAllPossibleOptions() {
+  std::vector<YamlReadArchive::Options> all;
+  for (const bool i : {false, true}) {
+    for (const bool j : {false, true}) {
+      for (const bool k : {false, true}) {
+        all.push_back(YamlReadArchive::Options{i, j, k});
+      }
+    }
+  }
+  return all;
+}
+
 INSTANTIATE_TEST_SUITE_P(
     AllOptions, YamlReadArchiveTest,
-    ::testing::Values(
-        YamlReadArchive::Options{
-            .allow_yaml_with_no_cpp = false,
-            .allow_cpp_with_no_yaml = false},
-        YamlReadArchive::Options{
-            .allow_yaml_with_no_cpp = false,
-            .allow_cpp_with_no_yaml = true},
-        YamlReadArchive::Options{
-            .allow_yaml_with_no_cpp = true,
-            .allow_cpp_with_no_yaml = false},
-        YamlReadArchive::Options{
-            .allow_yaml_with_no_cpp = true,
-            .allow_cpp_with_no_yaml = true}));
+    ::testing::ValuesIn(MakeAllPossibleOptions()));
 
 }  // namespace
 }  // namespace yaml

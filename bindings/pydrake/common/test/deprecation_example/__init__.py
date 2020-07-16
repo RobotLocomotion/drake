@@ -14,7 +14,7 @@ __all__ = ["value", "sub_module"]
 ModuleShim._install(__name__, _handler)
 
 
-class ExampleClass(object):
+class ExampleClass:
     doc_method = "Method Doc"
     doc_prop = "Prop Doc"
     message_method = "`deprecated_method` is deprecated"

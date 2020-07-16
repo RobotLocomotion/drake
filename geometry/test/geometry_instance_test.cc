@@ -21,9 +21,9 @@ GTEST_TEST(GeometryInstanceTest, IsCopyable) {
   // Verify that this is copyable as defined by copyable_unique_ptr. We don't
   // have a runtime check available but this will fail to compile if the class
   // is not copyable.
-  copyable_unique_ptr<GeometryInstance> geo(make_unique<GeometryInstance>
+  copyable_unique_ptr<GeometryInstance> geometry(make_unique<GeometryInstance>
       (RigidTransformd(), make_unique<Sphere>(1), "sphere"));
-  EXPECT_TRUE(geo->id().is_valid());
+  EXPECT_TRUE(geometry->id().is_valid());
 }
 
 GTEST_TEST(GeometryInstanceTest, IdCopies) {

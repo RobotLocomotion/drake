@@ -59,7 +59,7 @@ def repair_naive_name_split(objpath):
     return out
 
 
-class IrregularExpression(object):
+class IrregularExpression:
     """Provides analogous parsing to `autodoc.py_ext_sig_re` and
     `pydoc.py_sig_re`, but permits nested parsing for class-like directives to
     work with the munged names.

@@ -13,8 +13,6 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
-#include "drake/common/text_logging.h"
-
 namespace drake {
 namespace solvers {
 namespace internal {
@@ -672,27 +670,188 @@ SdpaFreeFormat::SdpaFreeFormat(const MathematicalProgram& prog) {
 
   Finalize();
 }
-}  // namespace internal
 
-bool GenerateSDPA(const MathematicalProgram& prog,
-                  const std::string& file_name) {
-  const internal::SdpaFreeFormat sdpa_free_format(prog);
-  if (sdpa_free_format.num_free_variables() != 0) {
-    drake::log()->warn(
-        "GenerateSDPA(): the program contains variables that are "
-        "unbounded (no upper bound or lower bound). The program "
-        "cannot be formulated as an SDP in the standard form.\n");
-    return false;
+void SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(
+    Eigen::SparseMatrix<double>* C_hat,
+    std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
+    Eigen::VectorXd* y_hat,
+    Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>*
+        QR_B) const {
+  DRAKE_ASSERT(this->num_free_variables() != 0);
+  const int num_constraints = static_cast<int>(this->A_triplets().size());
+  // Do a QR decomposition on B to find the null space of Bᵀ.
+  QR_B->analyzePattern(this->B());
+  QR_B->factorize(this->B());
+  if (QR_B->info() != Eigen::Success) {
+    throw std::runtime_error(
+        "SdpaFreeFormat::RemoveFreeVariableByNullspaceApproach(): cannot "
+        "perform QR decomposition of B. Please try the other method "
+        "kTwoSlackVariables.");
   }
+  // BP = [Q₁ Q₂] * [R; 0], so the nullspace of Bᵀ is Q₂
+  Eigen::SparseMatrix<double> Q;
+  Q = QR_B->matrixQ();
+  const Eigen::SparseMatrix<double> N =
+      Q.rightCols(this->B().rows() - QR_B->rank());
+  *rhs_hat = N.transpose() * this->g();
+
+  A_hat->clear();
+  A_hat->reserve(N.cols());
+  for (int i = 0; i < N.cols(); ++i) {
+    A_hat->emplace_back(this->num_X_rows(), this->num_X_rows());
+    A_hat->back().setZero();
+    for (Eigen::SparseMatrix<double>::InnerIterator it_N(N, i); it_N; ++it_N) {
+      A_hat->back() += it_N.value() * this->A()[it_N.row()];
+    }
+  }
+
+  const Eigen::SparseMatrix<double> B_t = this->B().transpose();
+  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
+      qr_B_t;
+  qr_B_t.compute(B_t);
+  if (qr_B_t.info() != Eigen::Success) {
+    throw std::runtime_error(
+        "RemoveFreeVariableByNullspaceApproach():QR "
+        "decomposition on B.transpose() fails\n");
+  }
+  *y_hat = qr_B_t.solve(Eigen::VectorXd(this->d()));
+  *C_hat = this->C();
+  for (int i = 0; i < num_constraints; ++i) {
+    *C_hat -= (*y_hat)(i) * this->A()[i];
+  }
+}
+
+void SdpaFreeFormat::RemoveFreeVariableByTwoSlackVariablesApproach(
+    std::vector<internal::BlockInX>* X_hat_blocks,
+    std::vector<Eigen::SparseMatrix<double>>* A_hat,
+    Eigen::SparseMatrix<double>* C_hat) const {
+  *X_hat_blocks = this->X_blocks();
+  X_hat_blocks->emplace_back(internal::BlockType::kDiagonal,
+                             2 * this->num_free_variables());
+  const int num_X_hat_rows =
+      this->num_X_rows() + 2 * this->num_free_variables();
+  std::vector<std::vector<Eigen::Triplet<double>>> A_hat_triplets =
+      this->A_triplets();
+  for (int j = 0; j < this->num_free_variables(); ++j) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(this->B(), j); it;
+         ++it) {
+      const int i = it.row();
+      // Add the entry in Âᵢ that multiplies with sⱼ.
+      A_hat_triplets[i].emplace_back(this->num_X_rows() + j,
+                                     this->num_X_rows() + j, it.value());
+      A_hat_triplets[i].emplace_back(
+          this->num_X_rows() + this->num_free_variables() + j,
+          this->num_X_rows() + this->num_free_variables() + j, -it.value());
+    }
+  }
+  A_hat->clear();
+  A_hat->reserve(this->A().size());
+  for (int i = 0; i < static_cast<int>(this->A().size()); ++i) {
+    A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+    A_hat->back().setFromTriplets(A_hat_triplets[i].begin(),
+                                  A_hat_triplets[i].end());
+  }
+  // Add the entry in Ĉ that multiplies with sᵢ
+  std::vector<Eigen::Triplet<double>> C_hat_triplets = this->C_triplets();
+  for (Eigen::SparseMatrix<double>::InnerIterator it(this->d(), 0); it; ++it) {
+    const int i = it.row();
+    C_hat_triplets.emplace_back(this->num_X_rows() + i, this->num_X_rows() + i,
+                                it.value());
+    C_hat_triplets.emplace_back(
+        this->num_X_rows() + this->num_free_variables() + i,
+        this->num_X_rows() + this->num_free_variables() + i, -it.value());
+  }
+  *C_hat = Eigen::SparseMatrix<double>(num_X_hat_rows, num_X_hat_rows);
+  C_hat->setFromTriplets(C_hat_triplets.begin(), C_hat_triplets.end());
+}
+
+void SdpaFreeFormat::RemoveFreeVariableByLorentzConeSlackApproach(
+    std::vector<internal::BlockInX>* X_hat_blocks,
+    std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
+    Eigen::SparseMatrix<double>* C_hat) const {
+  *X_hat_blocks = this->X_blocks();
+  X_hat_blocks->emplace_back(internal::BlockType::kMatrix,
+                             this->num_free_variables() + 1);
+  const int num_X_hat_rows =
+      this->num_X_rows() + this->num_free_variables() + 1;
+  std::vector<std::vector<Eigen::Triplet<double>>> A_hat_triplets =
+      this->A_triplets();
+  // Âᵢ = diag(Aᵢ, B̂ᵢ)
+  // where B̂ᵢ = ⎡0  bᵢᵀ/2⎤
+  //            ⎣bᵢ/2   0⎦
+  for (int j = 0; j < this->num_free_variables(); ++j) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(this->B(), j); it;
+         ++it) {
+      const int i = it.row();
+      // Add the entry in Âᵢ that multiplies with sⱼ.
+      A_hat_triplets[i].emplace_back(
+          this->num_X_rows(), this->num_X_rows() + j + 1, it.value() / 2);
+      A_hat_triplets[i].emplace_back(this->num_X_rows() + j + 1,
+                                     this->num_X_rows(), it.value() / 2);
+    }
+  }
+  const int num_linear_eq_constr =
+      this->A().size() + (num_free_variables_ * (num_free_variables_ + 1)) / 2;
+  A_hat->clear();
+  A_hat->reserve(num_linear_eq_constr);
+  for (int i = 0; i < static_cast<int>(this->A().size()); ++i) {
+    A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+    A_hat->back().setFromTriplets(A_hat_triplets[i].begin(),
+                                  A_hat_triplets[i].end());
+  }
+  // The new right hand side is the same as the old one, except padding 0's
+  // in the end.
+  *rhs_hat = Eigen::VectorXd::Zero(num_linear_eq_constr);
+  rhs_hat->head(this->A().size()) = this->g();
+
+  for (int i = 0; i < num_free_variables_; ++i) {
+    // Append the constraint Y(i + 1, i + 1) = Y(0, 0).
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(2);
+    triplets.emplace_back(num_X_rows_, num_X_rows_, -1);
+    triplets.emplace_back(num_X_rows_ + i + 1, num_X_rows_ + i + 1, 1);
+    A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+    A_hat->back().setFromTriplets(triplets.begin(), triplets.end());
+    for (int j = i + 1; j < num_free_variables_; ++j) {
+      // Append the constraint Y(i+1, j+1) = 0
+      triplets.clear();
+      triplets.reserve(2);
+      triplets.emplace_back(num_X_rows_ + i + 1, num_X_rows_ + j + 1, 0.5);
+      triplets.emplace_back(num_X_rows_ + j + 1, num_X_rows_ + i + 1, 0.5);
+      A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+      A_hat->back().setFromTriplets(triplets.begin(), triplets.end());
+    }
+  }
+  // Add the entry in Ĉ that multiplies with sᵢ.
+  std::vector<Eigen::Triplet<double>> C_hat_triplets = this->C_triplets();
+  for (Eigen::SparseMatrix<double>::InnerIterator it(this->d(), 0); it; ++it) {
+    const int i = it.row();
+    C_hat_triplets.emplace_back(this->num_X_rows(), this->num_X_rows() + i + 1,
+                                it.value() / 2);
+    C_hat_triplets.emplace_back(this->num_X_rows() + i + 1, this->num_X_rows(),
+                                it.value() / 2);
+  }
+  *C_hat = Eigen::SparseMatrix<double>(num_X_hat_rows, num_X_hat_rows);
+  C_hat->setFromTriplets(C_hat_triplets.begin(), C_hat_triplets.end());
+}
+
+namespace {
+bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
+                      const Eigen::SparseMatrix<double>& C,
+                      const std::vector<Eigen::SparseMatrix<double>>& A,
+                      const Eigen::Ref<const Eigen::VectorXd>& g,
+                      const std::string& file_name) {
+  const int num_X_rows = C.rows();
+  DRAKE_DEMAND(C.cols() == num_X_rows);
   std::ofstream sdpa_file;
   sdpa_file.open(file_name + ".dat-s", std::ios::out | std::ios::trunc);
   if (sdpa_file.is_open()) {
     // First line, number of constraints.
-    sdpa_file << sdpa_free_format.g().rows() << "\n";
+    sdpa_file << g.rows() << "\n";
     // Second line, number of blocks in X.
-    sdpa_file << sdpa_free_format.X_blocks().size() << "\n";
+    sdpa_file << X_blocks.size() << "\n";
     // Third line, size of each block.
-    for (const auto& X_block : sdpa_free_format.X_blocks()) {
+    for (const auto& X_block : X_blocks) {
       switch (X_block.block_type) {
         case internal::BlockType::kMatrix: {
           sdpa_file << X_block.num_rows;
@@ -710,28 +869,24 @@ bool GenerateSDPA(const MathematicalProgram& prog,
     // Forth line, the right-hand side of the constraint g.
     std::stringstream g_stream;
     g_stream << std::setprecision(20);
-    g_stream << sdpa_free_format.g().transpose() << "\n";
+    g_stream << g.transpose() << "\n";
     sdpa_file << g_stream.str();
     // block_start_rows[i] records the starting row index of the i'th block in
     // X. row_to_block_indices[i] records the index of the block that X(i, i)
     // belongs to.
-    std::vector<int> block_start_rows(sdpa_free_format.A().size());
-    std::vector<int> row_to_block_indices(sdpa_free_format.num_X_rows());
+    std::vector<int> block_start_rows(X_blocks.size());
+    std::vector<int> row_to_block_indices(num_X_rows);
     int X_row_count = 0;
-    for (int i = 0; i < static_cast<int>(sdpa_free_format.X_blocks().size());
-         ++i) {
+    for (int i = 0; i < static_cast<int>(X_blocks.size()); ++i) {
       block_start_rows[i] = X_row_count;
-      for (int j = X_row_count;
-           j < X_row_count + sdpa_free_format.X_blocks()[i].num_rows; ++j) {
+      for (int j = X_row_count; j < X_row_count + X_blocks[i].num_rows; ++j) {
         row_to_block_indices[j] = i;
       }
-      X_row_count += sdpa_free_format.X_blocks()[i].num_rows;
+      X_row_count += X_blocks[i].num_rows;
     }
     // The non-zero entries in C
-    for (int i = 0; i < sdpa_free_format.num_X_rows(); ++i) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(sdpa_free_format.C(),
-                                                         i);
-           it; ++it) {
+    for (int i = 0; i < num_X_rows; ++i) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(C, i); it; ++it) {
         if (it.row() <= it.col()) {
           const int block_start_row = block_start_rows[row_to_block_indices[i]];
           sdpa_file << 0 /* 0 for cost matrix C */ << " "
@@ -748,11 +903,9 @@ bool GenerateSDPA(const MathematicalProgram& prog,
       }
     }
     // The remaining lines are for A
-    for (int i = 0; i < static_cast<int>(sdpa_free_format.A().size()); ++i) {
-      for (int j = 0; j < sdpa_free_format.num_X_rows(); ++j) {
-        for (Eigen::SparseMatrix<double>::InnerIterator it(
-                 sdpa_free_format.A()[i], j);
-             it; ++it) {
+    for (int i = 0; i < static_cast<int>(A.size()); ++i) {
+      for (int j = 0; j < num_X_rows; ++j) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A[i], j); it; ++it) {
           if (it.row() <= it.col()) {
             const int block_start_row =
                 block_start_rows[row_to_block_indices[j]];
@@ -774,6 +927,53 @@ bool GenerateSDPA(const MathematicalProgram& prog,
   }
   sdpa_file.close();
   return true;
+}
+}  // namespace
+
+}  // namespace internal
+
+bool GenerateSDPA(const MathematicalProgram& prog, const std::string& file_name,
+                  RemoveFreeVariableMethod method) {
+  const internal::SdpaFreeFormat sdpa_free_format(prog);
+  if (sdpa_free_format.num_free_variables() == 0) {
+    return internal::GenerateSdpaImpl(
+        sdpa_free_format.X_blocks(), sdpa_free_format.C(), sdpa_free_format.A(),
+        sdpa_free_format.g(), file_name);
+  }
+  switch (method) {
+    case RemoveFreeVariableMethod::kNullspace: {
+      Eigen::SparseMatrix<double> C_hat;
+      std::vector<Eigen::SparseMatrix<double>> A_hat;
+      Eigen::VectorXd rhs_hat, y_hat;
+      Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
+          QR_B;
+      sdpa_free_format.RemoveFreeVariableByNullspaceApproach(
+          &C_hat, &A_hat, &rhs_hat, &y_hat, &QR_B);
+      return internal::GenerateSdpaImpl(sdpa_free_format.X_blocks(), C_hat,
+                                        A_hat, rhs_hat, file_name);
+      break;
+    }
+    case RemoveFreeVariableMethod::kTwoSlackVariables: {
+      std::vector<internal::BlockInX> X_hat_blocks;
+      std::vector<Eigen::SparseMatrix<double>> A_hat;
+      Eigen::SparseMatrix<double> C_hat;
+      sdpa_free_format.RemoveFreeVariableByTwoSlackVariablesApproach(
+          &X_hat_blocks, &A_hat, &C_hat);
+      return internal::GenerateSdpaImpl(X_hat_blocks, C_hat, A_hat,
+                                        sdpa_free_format.g(), file_name);
+    }
+    case RemoveFreeVariableMethod::kLorentzConeSlack: {
+      std::vector<internal::BlockInX> X_hat_blocks;
+      std::vector<Eigen::SparseMatrix<double>> A_hat;
+      Eigen::VectorXd rhs_hat;
+      Eigen::SparseMatrix<double> C_hat;
+      sdpa_free_format.RemoveFreeVariableByLorentzConeSlackApproach(
+          &X_hat_blocks, &A_hat, &rhs_hat, &C_hat);
+      return internal::GenerateSdpaImpl(X_hat_blocks, C_hat, A_hat, rhs_hat,
+                                        file_name);
+    }
+  }
+  return false;
 }
 }  // namespace solvers
 }  // namespace drake

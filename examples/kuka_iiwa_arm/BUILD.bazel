@@ -28,12 +28,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial",
         "//manipulation/kuka_iiwa:iiwa_constants",
-        "//manipulation/util:robot_plan_utils",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -135,11 +130,11 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
-        ":iiwa_common",
-        ":iiwa_lcm",
+        "//common:find_resource",
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:iiwa",
         "//multibody/parsing",
         "//multibody/plant",
-        "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
 )
