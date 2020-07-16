@@ -128,6 +128,7 @@ void GeometryProperties::WriteAbstract(
   }
 
   Group& group = iter->second;
+  DoThrowIfInvalid(property, value);
   throw_if_invalid(group);
 
   group[property.property()] = value.Clone();
