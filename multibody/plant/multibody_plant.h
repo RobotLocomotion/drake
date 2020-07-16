@@ -1492,6 +1492,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// penalty method used to impose non-penetration among bodies. Refer to the
   /// section @ref mbp_penalty_method "Contact by penalty method" for further
   /// details.
+  ///
+  /// @throws std::logic_error if penetration_allowance is not positive.
   void set_penetration_allowance(double penetration_allowance = 0.001);
 
   /// Returns a time-scale estimate `tc` based on the requested penetration
