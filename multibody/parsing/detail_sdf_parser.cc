@@ -563,25 +563,19 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         plant->GetModelInstanceName(model_instance);
     const auto [absolute_parent_name, local_name] = SplitName(absolute_name);
 
-    auto& model_frame = plant->GetFrameByName("__model__", model_instance);
-    auto& canonical_link = model_frame.body();
-
-    auto interface_model = std::make_shared<sdf::InterfaceModel>(
-        local_name,
-        reposture_model,
-        body_to_interface_link(canonical_link),
-        frame_to_interface_frame(model_frame));
+    sdf::InterfaceModelPtr interface_model =
+        std::make_shared<sdf::InterfaceModel>(
+            local_name,
+            reposture_model,
+            model_frame.body().name(),
+            model_frame.GetFixedPoseInBodyFrame());
 
     // Record all frames.
     for (auto* link : GetModelLinks(plant, model_instance)) {
-      if (link == &canonical_link) {
-        // Already added.
-        continue;
-      }
       interface_model->AddLink(body_to_interface_link(*body));
     }
     for (auto* frame : GetModelFrames(plant, model_instance)) {
-      if (frame == &model_frame) {
+      if (frame.name() == "__model__") {
         // Already added.
         continue;
       }
