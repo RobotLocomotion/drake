@@ -46,7 +46,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     p.AddProperty(kMaterialGroup, kElastic, E);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
-        ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
+        ".+ Trying to add property .+ name already exists");
   }
 
   // Error case: Already has dissipation.
@@ -55,7 +55,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     p.AddProperty(kMaterialGroup, kHcDissipation, d);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
-        ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
+        ".+ Trying to add property .+ name already exists");
   }
 
   // Error case: Already has stiffness.
@@ -64,7 +64,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     p.AddProperty(kMaterialGroup, kPointStiffness, ps);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
-        ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
+        ".+ Trying to add property .+ name already exists");
   }
 
   // Error case: Already has friction.
@@ -73,7 +73,7 @@ GTEST_TEST(ProximityPropertiesTest, AddContactMaterial) {
     p.AddProperty(kMaterialGroup, kFriction, mu);
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddContactMaterial(E, d, ps, mu, &p), std::logic_error,
-        ".+ Trying to add property \\('.+', '.+'\\).+ name already exists");
+        ".+ Trying to add property .+ name already exists");
   }
 
   // Error case: 0 elasticity.

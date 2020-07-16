@@ -704,8 +704,8 @@ void TestPropertyErrors(
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, wrong_value), std::logic_error,
-        fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
-                    "different type.+string'",
+        fmt::format(".*The property '{}/{}' exists, but is of a different "
+                    "type.+string'",
                     group_name, property_name));
   }
 

@@ -7,140 +7,118 @@ namespace geometry {
 
 using std::string;
 
-const GeometryProperties::Group& GeometryProperties::GetPropertiesInGroup(
-    const string& group_name) const {
-  const auto iter = values_.find(group_name);
+GeometryProperties& GeometryProperties::AddAbstract(
+    const string& name, const AbstractValue& value) {
+  const auto iter = values_.find(name);
   if (iter != values_.end()) {
-    return iter->second;
+    throw std::logic_error(
+        fmt::format("Add(): Trying to add property '{}'; a property with "
+                    "that name already exists",
+                    name));
   }
-  throw std::logic_error(
-      fmt::format("GetPropertiesInGroup(): Can't retrieve properties for a "
-                  "group that doesn't exist: '{}'",
-                  group_name));
+  values_[name] = value.Clone();
+  return *this;
 }
 
-std::set<string> GeometryProperties::GetGroupNames() const {
-  std::set<string> group_names;
-  for (const auto& pair : values_) {
-    group_names.insert(pair.first);
-  }
-  return group_names;
-}
-
-void GeometryProperties::AddPropertyAbstract(const string& group_name,
-                                             const string& name,
-                                             const AbstractValue& value) {
-  WritePropertyAbstract(
-      group_name, name, value, [&group_name, &name](const Group& group) {
-        const auto value_iter = group.find(name);
-        if (value_iter != group.end()) {
-          throw std::logic_error(
-              fmt::format("AddProperty(): Trying to add property ('{}', '{}'); "
-                          "a property with that name already exists",
-                          group_name, name));
-        }
-      });
-}
-
-void GeometryProperties::UpdatePropertyAbstract(const string& group_name,
-                                                const string& name,
-                                                const AbstractValue& value) {
-  WritePropertyAbstract(
-      group_name, name, value,
-      [&group_name, &name, &value](const Group& group) {
-        const auto value_iter = group.find(name);
-        if (value_iter != group.end() &&
-            group.at(name)->type_info() != value.type_info()) {
-          throw std::logic_error(
-              fmt::format("UpdateProperty(): Trying to update property ('{}', "
-                          "'{}'); The property already exists and is of "
-                          "different type. New type {}, existing type {}",
-                          group_name, name, value.GetNiceTypeName(),
-                          group.at(name)->GetNiceTypeName()));
-        }
-      });
-}
-
-bool GeometryProperties::HasProperty(const string& group_name,
-                                     const string& name) const {
-  return GetPropertyAbstractMaybe(group_name, name, false) != nullptr;
-}
-
-const AbstractValue& GeometryProperties::GetPropertyAbstract(
-    const string& group_name, const string& name) const {
-  const AbstractValue* abstract =
-      GetPropertyAbstractMaybe(group_name, name, true);
-  if (!abstract) {
+GeometryProperties& GeometryProperties::UpdateAbstract(
+    const string& name, const AbstractValue& value) {
+  const auto iter = values_.find(name);
+  if (iter != values_.end() &&
+      values_.at(name)->type_info() != value.type_info()) {
     throw std::logic_error(fmt::format(
-        "GetProperty(): There is no property ('{}', '{}')", group_name, name));
+        "Update(): Trying to update property '{}'; the property already exists "
+        "and is of different type. New type {}, existing type {}",
+        name, value.GetNiceTypeName(), values_.at(name)->GetNiceTypeName()));
+  }
+
+  values_[name] = value.Clone();
+  return *this;
+}
+
+bool GeometryProperties::HasProperty(const string& name) const {
+  return GetAbstractMaybe(name) != nullptr;
+}
+
+const AbstractValue& GeometryProperties::GetAbstract(const string& name) const {
+  const AbstractValue* abstract = GetAbstractMaybe(name);
+  if (!abstract) {
+    throw std::logic_error(
+        fmt::format("Get(): There is no property '{}'.", name));
   }
   return *abstract;
 }
 
-bool GeometryProperties::RemoveProperty(const string& group_name,
-                                        const string& name) {
-  const auto iter = values_.find(group_name);
+bool GeometryProperties::Remove(const string& name) {
+  const auto iter = values_.find(name);
   if (iter == values_.end()) return false;
-  Group& group = iter->second;
-  const auto value_iter = group.find(name);
-  if (value_iter == group.end()) return false;
-  group.erase(value_iter);
+  values_.erase(iter);
   return true;
 }
 
-void GeometryProperties::WritePropertyAbstract(
-    const string& group_name, const string& name, const AbstractValue& value,
-    const std::function<void(const Group&)>& throw_if_invalid) {
-  auto iter = values_.find(group_name);
-  if (iter == values_.end()) {
-    auto result = values_.insert({group_name, Group{}});
-    DRAKE_DEMAND(result.second);
-    iter = result.first;
-  }
-
-  Group& group = iter->second;
-  throw_if_invalid(group);
-
-  group[name] = value.Clone();
+bool GeometryProperties::HasGroup(const string& group_name) const {
+  return GetGroupNames().count(group_name) > 0;
 }
 
-const AbstractValue* GeometryProperties::GetPropertyAbstractMaybe(
-    const string& group_name, const string& name,
-    bool throw_for_bad_group) const {
-  const auto iter = values_.find(group_name);
-  if (iter == values_.end()) {
-    if (throw_for_bad_group) {
-      throw std::logic_error(fmt::format(
-          "GetProperty(): Trying to read property ('{}', '{}'), but the group "
-          "does not exist.",
-          group_name, name));
-    } else {
-      return nullptr;
+int GeometryProperties::num_groups() const {
+  return static_cast<int>(GetGroupNames().size());
+}
+
+GeometryProperties::Group GeometryProperties::GetPropertiesInGroup(
+    const string& group_name) const {
+  Group group;
+  for (const auto& pair : values_) {
+    const string& name = pair.first;
+    const string pair_group = extract_group(name);
+    if (pair_group == group_name) {
+      group[extract_property(name)] = pair.second->Clone();
     }
   }
-  const Group& group = iter->second;
-  const auto value_iter = group.find(name);
-  if (value_iter != group.end()) {
-    return value_iter->second.get();
-  } else {
+
+  return group;
+}
+
+std::set<string> GeometryProperties::GetGroupNames() const {
+  std::set<string> group_names;
+  group_names.insert("");  // Always include the "default" group.
+  for (const auto& pair : values_) {
+    const string& name = pair.first;
+    group_names.insert(extract_group(name));
+  }
+  return group_names;
+}
+
+string GeometryProperties::extract_group(const string& name) {
+  size_t index = name.find_first_of("/");
+  if (index == string::npos) {
+    return "";
+  }
+  return name.substr(0, index);
+}
+
+string GeometryProperties::extract_property(const string& name) {
+  size_t index = name.find_first_of("/");
+  if (index == string::npos) {
+    return name;
+  }
+  return name.substr(index + 1, string::npos);
+}
+
+const AbstractValue* GeometryProperties::GetAbstractMaybe(
+    const string& name) const {
+  const auto iter = values_.find(name);
+  if (iter == values_.end()) {
     return nullptr;
   }
+  return iter->second.get();
 }
 
 std::ostream& operator<<(std::ostream& out, const GeometryProperties& props) {
-  int i = 0;
-  for (const auto& group_pair : props.values_) {
-    const string& group_name = group_pair.first;
-    const GeometryProperties::Group& group_properties = group_pair.second;
-    out << "[" << group_name << "]";
-    for (const auto& property_pair : group_properties) {
-      const string& property_name = property_pair.first;
-      out << "\n  " << property_name << ": "
-          << property_pair.second->GetNiceTypeName();
-      // TODO(SeanCurtis-TRI): How do I print the value in an AbstractValue?
-    }
-    if (i < props.num_groups() - 1) out << "\n";
-    ++i;
+  out << NiceTypeName::Get(props);
+  for (const auto& property_pair : props.values_) {
+    const string& property_name = property_pair.first;
+    out << "\n  " << property_name << ": "
+        << property_pair.second->GetNiceTypeName();
+    // TODO(SeanCurtis-TRI): How do I print the value in an AbstractValue?
   }
   return out;
 }

@@ -429,29 +429,30 @@ using Class = MultibodyPlant<T>;
 ...
 ```
 
+<!-- TODO(SeanCurtis-TRI): Once the new API (Add, Update, and Remove) has been
+ added, change these permalinks to refer to those functions.  ->
 As an example for parameter packs,
-`GeometryProperties::AddProperty<ValueType>`
+`GeometryProperties::Add<ValueType>`
 ([code permalink](https://git.io/JfqhL)) is a C++ sugar method that uses
 type erasure and ultimately passes the result to
-`GeometryProperties::AddPropertyAbstract`
-([code permalink](https://git.io/Jfqhm)), and only the `AddPropertyAbstract`
+`GeometryProperties::AddAbstract`
+([code permalink](https://git.io/Jfqhm)), and only the `AddAbstract`
 flavor is used in the bindings, but in such a way that it is similar to the C++
-API for `AddProperty` ([code permalink](https://git.io/JfqiT)):
+API for `Add` ([code permalink](https://git.io/JfqiT)):
 
 ```
 using Class = GeometryProperties;
 py::handle abstract_value_cls =
     py::module::import("pydrake.systems.framework").attr("AbstractValue");
 ...
-    .def("AddProperty",
-        [abstract_value_cls](Class* self, const std::string& group_name,
-            const std::string& name, py::object value) {
+    .def("Add",
+        [abstract_value_cls](
+            Class* self, const std::string& name, py::object value) {
           py::object abstract = abstract_value_cls.attr("Make")(value);
-          self->AddPropertyAbstract(
-              group_name, name, abstract.cast<const AbstractValue&>());
+          self->AddAbstract(name, abstract.cast<const AbstractValue&>());
         },
-        py::arg("group_name"), py::arg("name"), py::arg("value"),
-        cls_doc.AddProperty.doc)
+        py::arg("name"), py::arg("value"),
+        cls_doc.Add.doc)
 ...
 ```
 
