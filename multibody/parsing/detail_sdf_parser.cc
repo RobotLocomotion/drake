@@ -443,6 +443,16 @@ std::pair<std::string, std::string> SplitName(std::string full) {
   return {first, second};
 }
 
+RigidTransformd GetDefaultFramePose(
+    const MultibodyPlant<double>& plant,
+    const Frame<double>& frame) {
+  const RigidTransformd X_WB =
+      plant->GetDefaultFreeBodyPose(frame.body());
+  const RigidTransformd X_WF =
+      X_WB * frame.GetFixedPoseInBodyFrame();
+  return X_WF;
+}
+
 // For the libsdformat API, see:
 // http://sdformat.org/tutorials?tut=composition_proposal&cat=pose_semantics_docs&branch=feature-composition-interface-api&repo=https%3A%2F%2Fgithub.com%2FEricCousineau-TRI%2Fsdf_tutorials-1#1-5-minimal-libsdformat-interface-types-for-non-sdformat-models
 
@@ -479,20 +489,12 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   std::vector<ModelInstanceIndex> new_model_instances;
   if (is_urdf) {
-    // WARNING: URDF parsing should possibly add a `__model__` frame?
-
-    // We should be good without the URDF parser using `SetDefaultFreeBodyPose`:
-    // - In URDF, all bodies should be connected; if there's a floating body,
-    // it should only be the first one.
-    // - In MBP, if you SetDefaultFreeBodyPose on a floating body with other
-    // bodies attached to it via joints, all other bodies' positions don't
-    // matter
-
+    // TOOD(eric.cousineau): Handle URDF and SetDefaultFreeBodyPose() (#13692)
     // N.B. Errors will just happen via thrown exceptions.
     new_model_instances = {
         AddModelFromUrdfFile(
             plant, include.file_path, include.absolute_model_name)};
-    // Add explicit model frame to first link..
+    // Add explicit model frame to first link.
     auto& canonical_link = GetModelLinks(plant, new_model_instances[0]).at(0);
     plant.AddFrame(FixedOffsetFrame("__model__", canonical_link));
   } else {
@@ -504,15 +506,6 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   DRAKE_DEMAND(new_model_instances.size() > 0);
   const ModelInstanceIndex main_model_instance = new_model_instances[0];
 
-  auto& get_model_frame = [&](ModelInstanceIndex model) {
-    if (plant->HasFrameNamed("__model__", model)) {
-      return plant->GetFrameByName("__model__", model);
-    } else {
-      auto* link = GetModelLinks(plant, model)[0];
-      return link->body_frame();
-    }
-  };
-
   // And because we don't have great composition, I need to go through and do
   // hacks to override default initial poses.
   // Process:
@@ -520,11 +513,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   //  * Measure delta between that and the overriding pose.
   //  * Apply delta to each individual body's default pose :(
   RigidTransformd X_WMdesired = ToRigidTransform(include.pose_WM);
-  const Frame<double>& main_model_frame = get_model_frame(main_model_instance);
-  RigidTransformd X_WMparsed =
-      plant->GetDefaultFreeBodyPose(main_model_frame.body()) *
-      main_model_frame.GetFixedPoseInBodyFrame();
-  RigidTransformd X_ParsedDesired = X_WMparsed.inverse() * X_WMdesired;
+  const Frame<double>& main_model_frame =
+      plant->GetFrameByName("__model__", main_model_instance);
 
   // This will be populated for the first model instance.
   sdf::InterfaceModelPtr main_interface_model;
@@ -535,58 +525,63 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   // Converts an MBP Body to sdf::InterfaceLink.
   auto body_to_interface_link = [&](const Body<double>& link) {
-    // Pre-transform default pose, if specified.
-    RigidTransform X_WLparsed = plant->GetDefaultPose(*link);
-    RigidTransform X_WLdesired = X_WLparsed * X_ParsedDesired;
-    plant->SetDefaultPose(*link, X_WLdesired);
-    RigidTransformd X_ML = X_WMdesired.inverse() * X_WLdesired;
-    // Register link as grounding frame.
-    sdf::InterfacePose pose(X_ML);
-    return make_shared<sdf::InterfaceLink>(link->name(), pose);
+    const RigidTransformd X_WM = GetDefaultFramePose(*plant, main_model_frame);
+    RigidTransformd X_ML =
+        X_WM.inverse() * plant->GetDefaultFreeBodyPose(link);
+    return make_shared<sdf::InterfaceLink>(link->name(), ToPose3d(X_ML));
   };
 
   // Converts an MBP Frame to sdf::InterfaceFrame.
-  auto frame_to_interface_frame = [&](
-      const Frame<double>& frame, std::string name = "") {
+  auto frame_to_interface_frame = [&](const Frame<double>& frame) {
     const std::string body_name = frame->body().name();
-    sdf::InterfacePose pose(
-        frame->GetFixedPoseInBodyFrame(), body_name);
-    if (name == "") {
-      name = frame->name();
-    }
+    const std::string attached_to = body_name;
+    sdf::InterfacePose pose(frame->GetFixedPoseInBodyFrame(), body_name);
     if (name == "" || name == body_name) {
       // Do not register un-named frames or body frames.
       return nullptr;
     }
-    return make_shared<sdf::InterfaceFrame>(name, pose);
+    return make_shared<sdf::InterfaceFrame>(name, body_name, ToPose3d(X_BF));
   };
 
   // N.B. For hierarchy, this assumes that "parent" models are defined before
   // their "child" models.
-  for (auto model : new_model_instances) {
-    const std::string absolute_name = plant->GetModelInstanceName(model);
+  for (auto model_instance : new_model_instances) {
+    sdf::RepostureFunction reposture_model = [plant, model_instance](
+        sdf::InterfaceModelPtr interface_model,
+        sdf::NestedModelFrameGraphPtr graph) {
+      // N.B. This should also posture the model appropriately.
+      for (auto interface_link : interface_model.GetLinks()) {
+        const auto& body =
+            plant->GetBodyByName(interface_link.GetName(), model_instance);
+        RigidTransformd X_WL =
+            graph.ResolveNestedFramePose(interface_link.GetName());
+        plant->SetFreeBodyPose();
+      }
+    };
+
+    const std::string absolute_name =
+        plant->GetModelInstanceName(model_instance);
     const auto [absolute_parent_name, local_name] = SplitName(absolute_name);
 
-    auto& model_frame = get_model_frame(model);
+    auto& model_frame = plant->GetFrameByName("__model__", model_instance);
     auto& canonical_link = model_frame.body();
 
     auto interface_model = std::make_shared<sdf::InterfaceModel>(
         local_name,
+        reposture_model,
         body_to_interface_link(canonical_link),
-        // TODO(eric.cousineau): What if the model already has a __model__
-        // frame?
-        frame_to_interface_frame(model_frame, "__model__"));
+        frame_to_interface_frame(model_frame));
 
     // Record all frames.
-    for (auto* link : GetModelLinks(plant, model)) {
+    for (auto* link : GetModelLinks(plant, model_instance)) {
       if (link == &canonical_link) {
         // Already added.
         continue;
       }
       interface_model->AddLink(body_to_interface_link(*body));
     }
-    for (auto* frame : GetModelFrames(plant, model)) {
-      if (frame == model_frame) {
+    for (auto* frame : GetModelFrames(plant, model_instance)) {
+      if (frame == &model_frame) {
         // Already added.
         continue;
       }
@@ -832,26 +827,13 @@ bool AreWelded(
   return false;
 }
 
-using VoidFunction = std::function<void()>;
-
-VoidFunction AddNestedModelsFromSpecification(
+void AddNestedModelsFromSpecification(
     auto model, model_name, auto plant, X_WM, package_map, root_dir) {
-  std::vector<VoidFunction> post_inits;
   Parser parser(plant);
   for (sdf::Model nested_model : model.GetParsedNestedModels()) {
     // libsdformat parsed the model fully. Add the new elements directly.
-    // All other models have already been added.
-    auto model_instance = AddModelFromSpecification(
-        nested_model.AsSdfModel(), ...);
-    post_inits.append([model_instance, plant]() {
-      // Weld frames or posture stuff???
-    });
+    AddModelFromSpecification(nested_model.AsSdfModel(), ...);
   }
-  return [std::move(post_inits)]() {
-    for (auto f : post_inits) {
-      f();
-    }
-  };
 }
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
@@ -873,9 +855,8 @@ ModelInstanceIndex AddModelFromSpecification(
 
   // First, add nested models, since they are encapsulated, so that the MBP
   // frames can be referenced explicitly.
-  std::function<()> nested_models_post_init =
-      AddNestedModelsFromSpecification(
-          model, model_name, plant, X_WM, package_map, root_dir);
+  AddNestedModelsFromSpecification(
+      model, model_name, plant, X_WM, package_map, root_dir);
 
   drake::log()->trace("sdf_parser: Add links");
   std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
@@ -931,9 +912,6 @@ ModelInstanceIndex AddModelFromSpecification(
       AddBushingFromSpecification(bushing_node, plant);
     }
   }
-
-  // Finalize connections for nested model posturing, etc.
-  nested_models_post_init();
 
   if (model.Static()) {
     // NOTE: This should work for nested models, as SDFormat should ensure that

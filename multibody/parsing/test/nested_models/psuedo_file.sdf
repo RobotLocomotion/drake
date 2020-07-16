@@ -1,0 +1,73 @@
+<!-- top.sdf -->
+<sdf>
+  <model name="top">
+    <link name="torso"/>
+
+    <include name="random_crap">
+      <pose relative_to="right_arm::gripper::grasp_frame"/>
+      <uri>...</uri>
+    </include>
+
+    <include name="arm">
+      <pose relative_to="torso">X_TArm</pose>
+      <uri>file://.../arm.forced_nesting_sdf</uri>
+    </include>
+
+    <joint name="arm_attach">
+      <parent>torso</parent>
+      <child>arm::mount</child>
+    </joint>
+
+    <include name="extra_arm">
+      <pose relative_to="arm">X_ArmExtra</pose>
+      <uri>file://.../extra_arm.urdf</uri>
+    </include>
+
+    <joint name="extra_arm_attach">
+      <parent>arm::L1</parent>
+      <child>extra_arm::L2</child>
+    </joint>
+
+  </model>
+</sdf>
+
+<!-- left.urdf -->
+<robot name="arm">
+  <link name="L1"/>
+  <joint name="J1" type="revolute">
+    <origin xyz="{xyz_L1J1}" rpy="{rpy_L1J1}"/>
+    <parent link="L1"/>
+    <child link="L2"/>
+  </joint>
+  <link name="L2"/>
+</robot>
+
+<!-- right.forced_nesting_sdf -->
+<sdf>
+  <model name="arm">
+    <link name="L1"/>
+    <joint name="J1" type="revolute">
+      <pose relative_to="L1">{X_L1J1}</pose>
+      <parent>L1</parent>
+      <child>L2</child>
+    </joint>
+    <link name="L2"/>
+    <frame name="gripper_mount" attached_to="L2">
+      <pose>{X_L2Gm}</pose>
+    </frame>
+    <include name="gripper">
+      <pose relative_to="gripper_mount"/>
+      <uri>file://.../gripper.sdf</uri>
+    </include>
+  </model>
+</sdf>
+
+<!-- gripper.sdf -->
+<sdf>
+  <model name="gripper">
+    <link name="body"/>
+    <frame name="grasp_frame">
+      <pose>{X_GGrasp}</pose>
+    </frame>
+  </model>
+</sdf>
