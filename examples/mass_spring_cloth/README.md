@@ -1,0 +1,39 @@
+Mass Spring Cloth Example
+==========================
+
+The following instructions assume Drake was
+[built using bazel](https://drake.mit.edu/bazel.html?highlight=bazel).
+
+All instructions assume that you are launching from the `drake`
+workspace directory.
+```
+cd drake
+```
+
+Prerequisites
+-------------
+
+Ensure that you have built the drake visualizer with
+```
+bazel build //tools:drake_visualizer
+```
+
+Ensure that you have built the mass spring cloth with
+```
+bazel build //examples:mass_spring_cloth
+```
+
+
+
+Mass Spring Cloth Simulation
+---------------------
+
+Launch the visualizer
+```
+bazel-bin/tools/drake_visualizer
+```
+
+Launch the mass spring cloth simulation
+```
+bazel-bin/examples/mass_spring_cloth/mass_spring_cloth
+```
