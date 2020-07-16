@@ -174,7 +174,7 @@ class SpatialInertia {
         get_mass(),
         get_com().template cast<Scalar>(),
         get_unit_inertia().template cast<Scalar>(),
-        false);  // Skip validity check since this inertia is already valid.
+        true);  // Skip validity check since this inertia is already valid.
   }
 
   /// Get a constant reference to the mass of this spatial inertia.
