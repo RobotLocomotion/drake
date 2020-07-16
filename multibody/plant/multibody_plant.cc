@@ -1003,6 +1003,12 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
 template <typename T>
 void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
+  if (penetration_allowance <= 0) {
+    throw std::logic_error(
+        "set_penetration_allowance(): penetration_allowance must be strictly "
+        "positive.");
+  }
+
   penetration_allowance_ = penetration_allowance;
   // We update the point contact parameters when this method is called
   // post-finalize.
