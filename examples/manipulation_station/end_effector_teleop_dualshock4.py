@@ -67,16 +67,10 @@ class DS4Buttons(Enum):
     R2_BUTTON = 7
 
 
-class DS4Hats(Enum):
-    LEFT_BUTTON = 0
-    RIGHT_BUTTON = 1
-    UP_BUTTON = 2
-    DOWN_BUTTON = 3
-
-
 class DS4Axis(Enum):
     LEFTJOY_UP_DOWN = 0
     LEFTJOY_LEFT_RIGHT = 1
+    RIGHTJOY_LEFT_RIGHT = 2
     RIGHTJOY_UP_DOWN = 3
 
 
@@ -87,14 +81,14 @@ def print_instructions():
         -----------------------------------------
         +/- x-axis         - leftjoy left / right
         +/- y-axis         - leftjoy up / down
+        +/- roll           - rightjoy up / down
+        +/- pitch          - rightjoy left / right
         +/- z-axis         - l2 / r2
         +/- yaw            - l1 / r1
-        +/- roll           - left / right - hats
-        +/- pitch          - up / down - hats
 
         GRIPPER CONTROL
         -----------------------------------------
-        open / close       - right joy up / down
+        open / close       - square / circle (O)
 
         -----------------------------------------
         x button           - quit
@@ -108,13 +102,9 @@ class TeleopDualShock4Manager:
         self._joystick = joystick
         self._axis_data = list()
         self._button_data = list()
-        self._hat_data = list()
 
         for i in range(self._joystick.get_numbuttons()):
             self._button_data.append(False)
-
-        for i in range(self._joystick.get_numhats()):
-            self._hat_data.append((0, 0))
 
         for i in range(self._joystick.get_numaxes()):
             self._axis_data.append(0.0)
@@ -127,23 +117,19 @@ class TeleopDualShock4Manager:
                 self._button_data[event.button] = True
             if event.type == pygame.JOYBUTTONUP:
                 self._button_data[event.button] = False
-            if event.type == pygame.JOYHATMOTION:
-                self._hat_data[event.hat] = event.value
 
         events = dict()
         events[DS4Axis.LEFTJOY_UP_DOWN] = self._axis_data[0]
         events[DS4Axis.LEFTJOY_LEFT_RIGHT] = self._axis_data[1]
+        events[DS4Axis.RIGHTJOY_LEFT_RIGHT] = self._axis_data[3]
         events[DS4Axis.RIGHTJOY_UP_DOWN] = self._axis_data[4]
         events[DS4Buttons.X_BUTTON] = self._button_data[0]
+        events[DS4Buttons.O_BUTTON] = self._button_data[1]
+        events[DS4Buttons.SQUARE_BUTTON] = self._button_data[3]
         events[DS4Buttons.L1_BUTTON] = self._button_data[4]
         events[DS4Buttons.R1_BUTTON] = self._button_data[5]
         events[DS4Buttons.L2_BUTTON] = self._button_data[6]
         events[DS4Buttons.R2_BUTTON] = self._button_data[7]
-
-        events[DS4Hats.LEFT_BUTTON] = (self._hat_data[0][0] == -1)
-        events[DS4Hats.RIGHT_BUTTON] = (self._hat_data[0][0] == 1)
-        events[DS4Hats.DOWN_BUTTON] = (self._hat_data[0][1] == -1)
-        events[DS4Hats.UP_BUTTON] = (self._hat_data[0][1] == 1)
 
         # TODO(eric.cousineau): Replace `sys.exit` with a status to
         # the Systems Framework.
@@ -214,12 +200,15 @@ class DualShock4Teleop(LeafSystem):
         self.z += delta_z
 
     def SetRpyFromEvents(self, events):
-        roll_scale = 0.0003
-        if events[DS4Hats.LEFT_BUTTON]:
-            self.roll += roll_scale
-        if events[DS4Hats.RIGHT_BUTTON]:
-            self.roll -= roll_scale
-        self.roll = np.clip(self.roll, a_min=-2*np.pi, a_max=2*np.pi)
+        roll_scale = 0.0001
+        delta_roll = -roll_scale * events[DS4Axis.RIGHTJOY_LEFT_RIGHT]
+        self.roll = np.clip(self.roll + delta_roll,
+                            a_min=-2*np.pi, a_max=2*np.pi)
+
+        pitch_scale = 0.0001
+        delta_pitch = pitch_scale * events[DS4Axis.RIGHTJOY_UP_DOWN]
+        self.pitch = np.clip(self.pitch + delta_pitch,
+                             a_min=-2*np.pi, a_max=2*np.pi)
 
         yaw_scale = 0.0003
         if events[DS4Buttons.L1_BUTTON]:
@@ -228,16 +217,10 @@ class DualShock4Teleop(LeafSystem):
             self.yaw -= yaw_scale
         self.yaw = np.clip(self.yaw, a_min=-2*np.pi, a_max=2*np.pi)
 
-        pitch_scale = 0.0003
-        if events[DS4Hats.UP_BUTTON]:
-            self.pitch += pitch_scale
-        if events[DS4Hats.DOWN_BUTTON]:
-            self.pitch -= pitch_scale
-        self.pitch = np.clip(self.pitch, a_min=-2*np.pi, a_max=2*np.pi)
-
     def SetGripperFromEvents(self, events):
-        gripper_scale = 0.0001
-        self.gripper_goal += (gripper_scale * events[DS4Axis.RIGHTJOY_UP_DOWN])
+        gripper_scale = 0.00005
+        self.gripper_goal += (gripper_scale * events[DS4Buttons.SQUARE_BUTTON])
+        self.gripper_goal -= (gripper_scale * events[DS4Buttons.O_BUTTON])
         self.gripper_goal = np.clip(self.gripper_goal,
                                     a_min=self.gripper_min,
                                     a_max=self.gripper_max)
