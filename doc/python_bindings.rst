@@ -383,14 +383,14 @@ Similarly, type-erasure C++ APIs that look like:
 .. code-block:: cpp
 
     InputPort<T>::Eval<ValueType>(context)
-    GeometryProperties::AddProperty<ValueType>(group_name, name, value)
+    GeometryProperties::Add<ValueType>({group_name, name}, value)
 
 will become the following in Python:
 
 .. code-block:: pycon
 
     InputPort_[T].Eval(context)
-    GeometryProperties.AddProperty(group_name, name, value)
+    GeometryProperties.Add({group_name, name}, value)
 
 Debugging with the Python Bindings
 ----------------------------------
