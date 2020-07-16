@@ -91,7 +91,7 @@ class DummyRenderEngine : public render::RenderEngine {
    to _accept_ geometry during registration.  */
   PerceptionProperties accepting_properties() const {
     PerceptionProperties properties;
-    properties.AddProperty(include_group_name_, "ignored", 0);
+    properties.Add({include_group_name_, "ignored"}, 0);
     return properties;
   }
 

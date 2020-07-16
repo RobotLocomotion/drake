@@ -592,8 +592,7 @@ class GeometryStateTestBase {
   void AssignIllustrationToSingleSourceTree() {
     ASSERT_TRUE(source_id_.is_valid());
     IllustrationProperties properties;
-    properties.AddProperty("phong", "diffuse",
-                           Vector4<double>{0.8, 0.8, 0.8, 1.0});
+    properties.Add({"phong", "diffuse"}, Vector4<double>{0.8, 0.8, 0.8, 1.0});
     AssignRoleToSingleSourceTree(properties);
   }
 
@@ -606,9 +605,8 @@ class GeometryStateTestBase {
     PerceptionProperties properties =
         render_engine_ ? render_engine_->accepting_properties()
                        : DummyRenderEngine().accepting_properties();
-    properties.AddProperty("phong", "diffuse",
-                           Vector4<double>{0.8, 0.8, 0.8, 1.0});
-    properties.AddProperty("label", "id", RenderLabel::kDontCare);
+    properties.Add({"phong", "diffuse"}, Vector4<double>{0.8, 0.8, 0.8, 1.0})
+        .Add({"label", "id"}, RenderLabel::kDontCare);
     AssignRoleToSingleSourceTree(properties);
   }
 
@@ -2355,7 +2353,7 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
       geometry_state_.AssignRole(source_id_, id, ProximityProperties());
     }
     PerceptionProperties p = render_engine_->accepting_properties();
-    p.AddProperty("label", "id", RenderLabel(10));
+    p.Add({"label", "id"}, RenderLabel(10));
     if (set_perception) {
       geometry_state_.AssignRole(source_id_, id, p);
     }
@@ -2431,9 +2429,9 @@ TEST_F(GeometryStateTest, ModifyProximityProperties) {
 
   ProximityProperties empty_props;
   ProximityProperties props1;
-  props1.AddProperty("prop1", "value", 1);
+  props1.Add({"prop1", "value"}, 1);
   ProximityProperties props2;
-  props2.AddProperty("prop2", "value", 2);
+  props2.Add({"prop2", "value"}, 2);
   AddRigidHydroelasticProperties(1.0, &props2);
 
   // Case: Can't reassign when it hasn't been assigned.
@@ -2461,9 +2459,9 @@ TEST_F(GeometryStateTest, ModifyProximityProperties) {
       geometry_state_.GetProximityProperties(geometries_[0]);
   EXPECT_NE(props, nullptr);
   EXPECT_TRUE(props->HasGroup("prop1"));
-  EXPECT_TRUE(props->HasProperty("prop1", "value"));
-  EXPECT_EQ(props->GetProperty<int>("prop1", "value"),
-            props1.GetProperty<int>("prop1", "value"));
+  EXPECT_TRUE(props->HasProperty({"prop1", "value"}));
+  EXPECT_EQ(props->Get<int>({"prop1", "value"}),
+            props1.Get<int>({"prop1", "value"}));
   EXPECT_EQ(hydroelastic_geometries.hydroelastic_type(geometries_[0]),
             internal::HydroelasticType::kUndefined);
 
@@ -2477,9 +2475,9 @@ TEST_F(GeometryStateTest, ModifyProximityProperties) {
   EXPECT_NE(props, nullptr);
   EXPECT_TRUE(props->HasGroup("prop2"));
   EXPECT_FALSE(props->HasGroup("prop1"));
-  EXPECT_TRUE(props->HasProperty("prop2", "value"));
-  EXPECT_EQ(props->GetProperty<int>("prop2", "value"),
-            props2.GetProperty<int>("prop2", "value"));
+  EXPECT_TRUE(props->HasProperty({"prop2", "value"}));
+  EXPECT_EQ(props->Get<int>({"prop2", "value"}),
+            props2.Get<int>({"prop2", "value"}));
   EXPECT_EQ(hydroelastic_geometries.hydroelastic_type(geometries_[0]),
             internal::HydroelasticType::kRigid);
 }
@@ -2496,9 +2494,9 @@ TEST_F(GeometryStateTest, ModifyIllustrationProperties) {
 
   IllustrationProperties empty_props;
   IllustrationProperties props1;
-  props1.AddProperty("group1", "value", 1);
+  props1.Add({"group1", "value"}, 1);
   IllustrationProperties props2;
-  props2.AddProperty("group2", "value", 2);
+  props2.Add({"group2", "value"}, 2);
 
   // Generally, we assume that illustration property replacement exercises the
   // same infrastructure as proximity, so we're going to omit some of the
@@ -2515,16 +2513,16 @@ TEST_F(GeometryStateTest, ModifyIllustrationProperties) {
                                              RoleAssign::kReplace));
   props = geometry_state_.GetIllustrationProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  ASSERT_TRUE(props->HasProperty("group1", "value"));
-  ASSERT_FALSE(props->HasProperty("group2", "value"));
+  ASSERT_TRUE(props->HasProperty({"group1", "value"}));
+  ASSERT_FALSE(props->HasProperty({"group2", "value"}));
 
   // Now re-assign again.
   EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometry_id, props2,
                                              RoleAssign::kReplace));
   props = geometry_state_.GetIllustrationProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  ASSERT_FALSE(props->HasProperty("group1", "value"));
-  ASSERT_TRUE(props->HasProperty("group2", "value"));
+  ASSERT_FALSE(props->HasProperty({"group1", "value"}));
+  ASSERT_TRUE(props->HasProperty({"group2", "value"}));
 }
 
 // Test that attempting to reassign perception properties to a geometry that
@@ -2535,7 +2533,7 @@ TEST_F(GeometryStateTest, ModifyPerceptionProperties) {
   // Case: confirm throw for perception properties.
   PerceptionProperties perception_props =
       render_engine_->accepting_properties();
-  perception_props.AddProperty("label", "id", RenderLabel(10));
+  perception_props.Add({"label", "id"}, RenderLabel(10));
   EXPECT_NO_THROW(
       geometry_state_.AssignRole(source_id_, geometries_[1], perception_props));
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -2590,7 +2588,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
 
   PerceptionProperties perception_props =
       render_engine_->accepting_properties();
-  perception_props.AddProperty("label", "id", RenderLabel(10));
+  perception_props.Add({"label", "id"}, RenderLabel(10));
 
   // Case: no properties assigned leaves geometry with no roles.
   {
@@ -2666,11 +2664,9 @@ TEST_F(GeometryStateTest, RolePropertyValueAssignment) {
 
   ProximityProperties source;
   const string& default_group = source.default_group_name();
-  source.AddProperty(default_group, "prop1", 7);
-  source.AddProperty(default_group, "prop2", 10);
+  source.Add({default_group, "prop1"}, 7).Add({default_group, "prop2"}, 10);
   const string group1("group1");
-  source.AddProperty(group1, "propA", 7.5);
-  source.AddProperty(group1, "propB", "test");
+  source.Add({group1, "propA"}, 7.5).Add({group1, "propB"}, "test");
 
   geometry_state_.AssignRole(source_id_, geometries_[0], source);
   const ProximityProperties* read =
@@ -2704,17 +2700,17 @@ TEST_F(GeometryStateTest, RolePropertyValueAssignment) {
 
   EXPECT_EQ(num_group_properties(source, default_group),
             num_group_properties(*read, default_group));
-  EXPECT_EQ(source.GetProperty<int>(default_group, "prop1"),
-            read->GetProperty<int>(default_group, "prop1"));
-  EXPECT_EQ(source.GetProperty<int>(default_group, "prop2"),
-            read->GetProperty<int>(default_group, "prop2"));
+  EXPECT_EQ(source.Get<int>({default_group, "prop1"}),
+            read->Get<int>({default_group, "prop1"}));
+  EXPECT_EQ(source.Get<int>({default_group, "prop2"}),
+            read->Get<int>({default_group, "prop2"}));
 
   EXPECT_EQ(num_group_properties(source, group1),
             num_group_properties(*read, group1));
-  EXPECT_EQ(source.GetProperty<double>(group1, "propA"),
-            read->GetProperty<double>(group1, "propA"));
-  EXPECT_EQ(source.GetProperty<string>(group1, "propB"),
-            read->GetProperty<string>(group1, "propB"));
+  EXPECT_EQ(source.Get<double>({group1, "propA"}),
+            read->Get<double>({group1, "propA"}));
+  EXPECT_EQ(source.Get<string>({group1, "propB"}),
+            read->Get<string>({group1, "propB"}));
 }
 
 // Tests the conditions in which `AssignRole()` throws an exception.
@@ -2723,7 +2719,7 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
 
   PerceptionProperties perception_props =
       render_engine_->accepting_properties();
-  perception_props.AddProperty("label", "id", RenderLabel(10));
+  perception_props.Add({"label", "id"}, RenderLabel(10));
 
   // NOTE: On the basis that all AssignRole variants ultimately call the same
   // underlying method, this only exercises one variant to represent all. If
@@ -2846,7 +2842,7 @@ TEST_F(GeometryStateTest, ChildGeometryRoleCount) {
 
   PerceptionProperties perception_props =
       render_engine_->accepting_properties();
-  perception_props.AddProperty("label", "id", RenderLabel(10));
+  perception_props.Add({"label", "id"}, RenderLabel(10));
 
   // Confirm the two geometries I'm going to play with belong to the same frame.
   const GeometryId g_id1 = geometries_[0];
@@ -3178,9 +3174,8 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   // Instantiate base properties with the minimum acceptable set of properties.
   PerceptionProperties base_properties =
       DummyRenderEngine().accepting_properties();
-  base_properties.AddProperty("phong", "diffuse",
-                              Vector4<double>{0.8, 0.8, 0.8, 1.0});
-  base_properties.AddProperty("label", "id", RenderLabel::kDontCare);
+  base_properties.Add({"phong", "diffuse"}, Vector4<double>{0.8, 0.8, 0.8, 1.0})
+      .Add({"label", "id"}, RenderLabel::kDontCare);
   {
     // Case: No property provided; geometry belongs to all.
     const GeometryId id = geometries_[0];
@@ -3192,7 +3187,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   {
     // Case: Property provided with empty set of names.
     PerceptionProperties properties(base_properties);
-    properties.AddProperty("renderer", "accepting", set<string>{});
+    properties.Add({"renderer", "accepting"}, set<string>{});
     const GeometryId id = geometries_[1];
     geometry_state_.AssignRole(source_id_, id, move(properties));
     EXPECT_TRUE(first_renderer.is_registered(id));
@@ -3202,8 +3197,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   {
     // Case: Property provided with a single name.
     PerceptionProperties properties(base_properties);
-    properties.AddProperty("renderer", "accepting",
-                           set<string>{kDummyRenderName});
+    properties.Add({"renderer", "accepting"}, set<string>{kDummyRenderName});
     const GeometryId id = geometries_[2];
     geometry_state_.AssignRole(source_id_, id, move(properties));
     EXPECT_TRUE(first_renderer.is_registered(id));
@@ -3213,7 +3207,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   {
     // Case: Property provided with other single name.
     PerceptionProperties properties(base_properties);
-    properties.AddProperty("renderer", "accepting", set<string>{second_name});
+    properties.Add({"renderer", "accepting"}, set<string>{second_name});
     const GeometryId id = geometries_[3];
     geometry_state_.AssignRole(source_id_, id, move(properties));
     EXPECT_FALSE(first_renderer.is_registered(id));
@@ -3223,7 +3217,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   {
     // Case: Property provided with other arbitrary name.
     PerceptionProperties properties(base_properties);
-    properties.AddProperty("renderer", "accepting", set<string>{"junk"});
+    properties.Add({"renderer", "accepting"}, set<string>{"junk"});
     const GeometryId id = geometries_[4];
     geometry_state_.AssignRole(source_id_, id, move(properties));
     EXPECT_FALSE(first_renderer.is_registered(id));
@@ -3233,8 +3227,8 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   {
     // Case: Property provided with all names.
     PerceptionProperties properties(base_properties);
-    properties.AddProperty("renderer", "accepting",
-                           set<string>{kDummyRenderName, second_name});
+    properties.Add({"renderer", "accepting"},
+                   set<string>{kDummyRenderName, second_name});
     const GeometryId id = geometries_[5];
     geometry_state_.AssignRole(source_id_, id, move(properties));
     EXPECT_TRUE(first_renderer.is_registered(id));

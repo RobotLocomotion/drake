@@ -395,8 +395,7 @@ enum class ContactModel {
  const geometry::ProximityProperties* props =
      inspector.GetProximityProperties(geometry_id);
  const CoulombFriction<T>& geometry_friction =
-     props->GetProperty<CoulombFriction<T>>("material",
-                                            "coulomb_friction");
+     props->Get<CoulombFriction<T>>({"material", "coulomb_friction"});
  @endcode
 */
 /// @anchor mbp_adding_elements
@@ -3745,13 +3744,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const geometry::ProximityProperties* prop =
         inspector.GetProximityProperties(id);
     DRAKE_DEMAND(prop != nullptr);
+    // Note: Invocation of GetPropertyOrDefault<T> requires implicit conversion
+    // from the stored propeprty type (double) to T.
     return std::pair(prop->template GetPropertyOrDefault<T>(
-                         geometry::internal::kMaterialGroup,
-                         geometry::internal::kPointStiffness,
+                         {geometry::internal::kMaterialGroup,
+                          geometry::internal::kPointStiffness},
                          penalty_method_contact_parameters_.geometry_stiffness),
                      prop->template GetPropertyOrDefault<T>(
-                         geometry::internal::kMaterialGroup,
-                         geometry::internal::kHcDissipation,
+                         {geometry::internal::kMaterialGroup,
+                          geometry::internal::kHcDissipation},
                          penalty_method_contact_parameters_.dissipation));
   }
 

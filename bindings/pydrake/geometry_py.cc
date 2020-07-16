@@ -760,9 +760,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.GeometryProperties;
     py::handle abstract_value_cls =
         py::module::import("pydrake.common.value").attr("AbstractValue");
-    py::class_<Class>(m, "GeometryProperties", cls_doc.doc)
-        .def("HasGroup", &Class::HasGroup, py::arg("group_name"),
-            cls_doc.HasGroup.doc)
+    py::class_<Class> cls(m, "GeometryProperties", cls_doc.doc);
+    cls.def("HasGroup", &Class::HasGroup, py::arg("group_name"),
+           cls_doc.HasGroup.doc)
         .def("num_groups", &Class::num_groups, cls_doc.num_groups.doc)
         .def(
             "GetPropertiesInGroup",
@@ -795,7 +795,7 @@ void DoScalarIndependentDefinitions(py::module m) {
                   {group_name, name}, abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
-            cls_doc.AddProperty.doc)
+            cls_doc.AddProperty.doc_AddProperty_deprecated)
         .def(
             "Update",
             [abstract_value_cls](
@@ -814,20 +814,19 @@ void DoScalarIndependentDefinitions(py::module m) {
                   {group_name, name}, abstract.cast<const AbstractValue&>());
             },
             py::arg("group_name"), py::arg("name"), py::arg("value"),
-            cls_doc.UpdateProperty.doc)
-        .def(
-            "HasProperty",
+            cls_doc.UpdateProperty.doc_UpdateProperty_deprecated)
+        .def("HasProperty",
             pydrake::overload_cast_explicit<bool, const PropertyName&>(
                 &Class::HasProperty),
-            py::arg("property"), cls_doc.HasProperty.doc_1args)
-        .def(
-            "HasProperty",
-            [](const Class& self, const std::string& group_name,
-                const std::string& name) {
-              return self.HasProperty({group_name, name});
-            },
+            py::arg("property"), cls_doc.HasProperty.doc)
+        .def("HasProperty",
+            WrapDeprecated(cls_doc.HasProperty.doc_deprecated,
+                [](const Class& self, const std::string& group_name,
+                    const std::string& name) {
+                  return self.HasProperty({group_name, name});
+                }),
             py::arg("group_name"), py::arg("name"),
-            cls_doc.HasProperty.doc_2args)
+            cls_doc.HasProperty.doc_deprecated)
         .def(
             "Get",
             [](const Class& self, const PropertyName& property) {
@@ -845,7 +844,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                       py_rvp::reference);
               return abstract.attr("get_value")();
             },
-            py::arg("group_name"), py::arg("name"), cls_doc.GetProperty.doc)
+            py::arg("group_name"), py::arg("name"),
+            cls_doc.GetProperty.doc_deprecated)
         .def(
             "GetPropertyOrDefault",
             [](const Class& self, const PropertyName& property,
@@ -860,23 +860,24 @@ void DoScalarIndependentDefinitions(py::module m) {
               }
             },
             py::arg("property"), py::arg("default_value"),
-            cls_doc.GetPropertyOrDefault.doc_2args)
-        .def(
-            "GetPropertyOrDefault",
-            [](const Class& self, const std::string& group_name,
-                const std::string& name, py::object default_value) {
-              // For now, ignore typing. This is less efficient, but eh, it's
-              // Python.
-              const PropertyName property(group_name, name);
-              if (self.HasProperty(property)) {
-                py::object py_self = py::cast(&self, py_rvp::reference);
-                return py_self.attr("Get")(property);
-              } else {
-                return default_value;
-              }
-            },
+            cls_doc.GetPropertyOrDefault.doc)
+        .def("GetPropertyOrDefault",
+            WrapDeprecated(cls_doc.GetPropertyOrDefault
+                               .doc_GetPropertyOrDefault_deprecated,
+                [](const Class& self, const std::string& group_name,
+                    const std::string& name, py::object default_value) {
+                  // For now, ignore typing. This is less efficient, but eh,
+                  // it's Python.
+                  const PropertyName property(group_name, name);
+                  if (self.HasProperty(property)) {
+                    py::object py_self = py::cast(&self, py_rvp::reference);
+                    return py_self.attr("Get")(property);
+                  } else {
+                    return default_value;
+                  }
+                }),
             py::arg("group_name"), py::arg("name"), py::arg("default_value"),
-            cls_doc.GetPropertyOrDefault.doc_3args)
+            cls_doc.GetPropertyOrDefault.doc_GetPropertyOrDefault_deprecated)
         .def("Remove", &Class::Remove, py::arg("property"), cls_doc.Remove.doc)
         .def(
             "RemoveProperty",
@@ -884,7 +885,8 @@ void DoScalarIndependentDefinitions(py::module m) {
                 const std::string& name) {
               return self.Remove({group_name, name});
             },
-            py::arg("group_name"), py::arg("name"), cls_doc.RemoveProperty.doc)
+            py::arg("group_name"), py::arg("name"),
+            cls_doc.RemoveProperty.doc_deprecated)
         .def_static("default_group_name", &Class::default_group_name,
             cls_doc.default_group_name.doc)
         .def(
@@ -895,6 +897,13 @@ void DoScalarIndependentDefinitions(py::module m) {
               return ss.str();
             },
             "Returns formatted string.");
+    DeprecateAttribute(
+        cls, "AddProperty", cls_doc.AddProperty.doc_AddProperty_deprecated);
+    DeprecateAttribute(cls, "UpdateProperty",
+        cls_doc.UpdateProperty.doc_UpdateProperty_deprecated);
+    DeprecateAttribute(cls, "GetProperty", cls_doc.GetProperty.doc_deprecated);
+    DeprecateAttribute(
+        cls, "RemoveProperty", cls_doc.RemoveProperty.doc_deprecated);
   }
 
   // GeometrySet

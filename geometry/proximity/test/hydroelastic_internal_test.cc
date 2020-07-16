@@ -642,10 +642,7 @@ HalfSpace make_default_shape<HalfSpace>() {
 //
 // @param shape_spec     The shape from which we attempt to create a hydro-
 //                       elastic representation.
-// @param group_name     The name of the property group (in which the property
-//                       lives).
-// @param property_name  The name of the property (in the `group_name` group)
-//                       to be tested.
+// @param property       The name of the property under test.
 // @param compliance     A string representing the compliance being requested
 //                       ("rigid" or "soft").
 // @param maker          The function that processes the shape and properties.
@@ -662,8 +659,8 @@ HalfSpace make_default_shape<HalfSpace>() {
 // @tparam ValueTYpe  The type of value under test.
 template <typename ShapeType, typename ValueType>
 void TestPropertyErrors(
-    const ShapeType& shape_spec, const char* group_name,
-    const char* property_name, const char* compliance,
+    const ShapeType& shape_spec, const PropertyName& property,
+    const char* compliance,
     function<void(const ShapeType&, const ProximityProperties&)> maker,
     std::optional<ValueType> bad_value, const ProximityProperties& props) {
   ShapeName shape_name(shape_spec);
@@ -673,29 +670,29 @@ void TestPropertyErrors(
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, props), std::logic_error,
         fmt::format("Cannot create {} {}.+{} property", compliance,
-                    shape_name, property_name));
+                    shape_name, property));
   }
 
   // Error case: property value is wrong type.
   {
     ProximityProperties wrong_value(props);
-    wrong_value.AddProperty(group_name, property_name, "10");
-    // This error message comes from GeometryProperties::GetProperty().
+    wrong_value.Add(property, "10");
+    // This error message comes from GeometryProperties::Get().
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, wrong_value), std::logic_error,
         fmt::format(
             ".*The property {} exists, but is of a different type.+string'",
-            PropertyName(group_name, property_name)));
+           property));
   }
 
   // Error case: property value is not positive.
   if (bad_value.has_value()) {
     ProximityProperties negative_value(props);
-    negative_value.AddProperty(group_name, property_name, *bad_value);
+    negative_value.Add(property, *bad_value);
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, negative_value), std::logic_error,
         fmt::format("Cannot create {} {}.+{}.+ positive", compliance,
-                    shape_name, property_name));
+                    shape_name, property));
   }
 }
 
@@ -718,7 +715,7 @@ TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
   ShapeType shape_spec = make_default_shape<ShapeType>();
 
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, kHydroGroup, kRezHint, "rigid",
+      shape_spec, {kHydroGroup, kRezHint}, "rigid",
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeRigidRepresentation(s, p);
       },
@@ -769,14 +766,14 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
 
   // Case: fully specified half space.
   const double thickness = 1.3;
-  properties.AddProperty(kHydroGroup, kSlabThickness, thickness);
+  properties.Add({kHydroGroup, kSlabThickness}, thickness);
   std::optional<SoftGeometry> half_space =
       MakeSoftRepresentation(HalfSpace(), properties);
   ASSERT_NE(half_space, std::nullopt);
   EXPECT_TRUE(half_space->is_half_space());
   EXPECT_EQ(
       half_space->pressure_scale(),
-      properties.GetProperty<double>(kMaterialGroup, kElastic) / thickness);
+      properties.Get<double>({kMaterialGroup, kElastic}) / thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(), std::runtime_error,
@@ -832,7 +829,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
 
   // Confirm pressure field is as specified in the properties.
   const double E =
-      properties1.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties1.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
   // We assume that the sphere's pressure is defined as E * (1 - r/R).
   auto pressure = [E, kRadius](const Vector3d& r_MV) {
     return E * (1.0 - r_MV.norm() / kRadius);
@@ -868,8 +865,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Starting with sphere 1's properties, we'll set it to dense and observe
     // more tets.
     ProximityProperties dense_properties(properties1);
-    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
-                                 TessellationStrategy::kDenseInteriorVertices);
+    dense_properties.Add({kHydroGroup, "tessellation_strategy"},
+                         TessellationStrategy::kDenseInteriorVertices);
     std::optional<SoftGeometry> dense_sphere =
         MakeSoftRepresentation(sphere_spec, dense_properties);
     EXPECT_LT(sphere1->mesh().num_elements(),
@@ -882,8 +879,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Starting with sphere 1's properties, we'll explicitly set it to sparse
     // and observe the same number of tets.
     ProximityProperties dense_properties(properties1);
-    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
-                                 TessellationStrategy::kSingleInteriorVertex);
+    dense_properties.Add({kHydroGroup, "tessellation_strategy"},
+                         TessellationStrategy::kSingleInteriorVertex);
     std::optional<SoftGeometry> dense_sphere =
         MakeSoftRepresentation(sphere_spec, dense_properties);
     EXPECT_EQ(sphere1->mesh().num_elements(),
@@ -895,7 +892,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Starting with sphere 1's properties, we'll set the property to be a
     // string. Should throw.
     ProximityProperties dense_properties(properties1);
-    dense_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
+    dense_properties.Add({kHydroGroup, "tessellation_strategy"}, "dense");
     EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
                  std::logic_error);
   }
@@ -916,7 +913,7 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   const int expected_num_vertices = 3 * 5 * 9;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
   for (VolumeVertexIndex v(0); v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -942,7 +939,7 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   const int expected_num_vertices = 15;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
   for (VolumeVertexIndex v(0); v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -971,7 +968,7 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   const int expected_num_vertices = 7;
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
   const double E =
-      properties.GetPropertyOrDefault(kMaterialGroup, kElastic, 1e8);
+      properties.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
   for (VolumeVertexIndex v(0); v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -983,11 +980,11 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
 
   ProximityProperties basic_properties = soft_properties(0.08);
   ProximityProperties sparse_properties(basic_properties);
-  sparse_properties.AddProperty(kHydroGroup, "tessellation_strategy",
-                                TessellationStrategy::kSingleInteriorVertex);
+  sparse_properties.Add({kHydroGroup, "tessellation_strategy"},
+                        TessellationStrategy::kSingleInteriorVertex);
   ProximityProperties dense_properties(basic_properties);
-  dense_properties.AddProperty(kHydroGroup, "tessellation_strategy",
-                               TessellationStrategy::kDenseInteriorVertices);
+  dense_properties.Add({kHydroGroup, "tessellation_strategy"},
+                       TessellationStrategy::kDenseInteriorVertices);
 
   std::optional<SoftGeometry> implicit_sparse_ellipsoid =
       MakeSoftRepresentation(ellipsoid_spec, basic_properties);
@@ -1021,7 +1018,7 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
     // Starting with the basic properties, we'll set the property to be a
     // string. Should throw.
     ProximityProperties bad_properties(basic_properties);
-    bad_properties.AddProperty(kHydroGroup, "tessellation_strategy", "dense");
+    bad_properties.Add({kHydroGroup, "tessellation_strategy"}, "dense");
     EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
                  std::logic_error);
   }
@@ -1043,7 +1040,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
   ShapeType shape_spec = make_default_shape<ShapeType>();
   if (ShapeName(shape_spec).name() != "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
-        shape_spec, kHydroGroup, kRezHint, "soft",
+        shape_spec, {kHydroGroup, kRezHint}, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
           MakeSoftRepresentation(s, p);
         },
@@ -1058,10 +1055,10 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
   ProximityProperties soft_properties;
   // Add the resolution hint and slab thickness, so that creation of the
   // hydroelastic representation can choke on elastic modulus value.
-  soft_properties.AddProperty(kHydroGroup, kRezHint, 10.0);
-  soft_properties.AddProperty(kHydroGroup, kSlabThickness, 1.0);
+  soft_properties.Add({kHydroGroup, kRezHint}, 10.0);
+  soft_properties.Add({kHydroGroup, kSlabThickness}, 1.0);
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, kMaterialGroup, kElastic, "soft",
+      shape_spec, {kMaterialGroup, kElastic}, "soft",
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeSoftRepresentation(s, p);
       },
@@ -1074,7 +1071,7 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
   // Half space only!
   if (ShapeName(shape_spec).name() == "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
-        shape_spec, kHydroGroup, kSlabThickness, "soft",
+        shape_spec, {kHydroGroup, kSlabThickness}, "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
           MakeSoftRepresentation(s, p);
         },

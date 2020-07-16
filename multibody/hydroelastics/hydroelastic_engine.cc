@@ -32,9 +32,9 @@ MaterialProperties GetMaterials(GeometryId id,
   if (const ProximityProperties* properties =
           inspector.GetProximityProperties(id)) {
     material.elastic_modulus =
-        properties->GetPropertyOrDefault("material", "elastic_modulus", kInf);
+        properties->GetPropertyOrDefault({"material", "elastic_modulus"}, kInf);
     material.dissipation = properties->GetPropertyOrDefault(
-        "material", "hunt_crossley_dissipation", 0.0);
+        {"material", "hunt_crossley_dissipation"}, 0.0);
     DRAKE_DEMAND(material.elastic_modulus > 0);
     DRAKE_DEMAND(material.dissipation >= 0);
   } else {

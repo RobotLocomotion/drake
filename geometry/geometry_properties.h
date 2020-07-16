@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 #include "drake/geometry/rgba.h"
@@ -280,8 +281,11 @@ class GeometryProperties {
     }
   }
 
-  /** Variant of Add() where `group_name`/`name` are given explicitly.  */
+  /** Variant of Add() where `group_name`/`name` are given explicitly.
+   @pydrake_mkdoc_identifier{AddProperty_deprecated}
+    */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01", "Please use Add instead of AddProperty")
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
     Add({group_name, name}, value);
@@ -304,8 +308,10 @@ class GeometryProperties {
     return UpdateAbstract(property, Value(value));
   }
 
-  /** Variant of Update() where `group_name`/`name` are given explicitly.  */
+  /** Variant of Update() where `group_name`/`name` are given explicitly.
+   @pydrake_mkdoc_identifier{UpdateProperty_deprecated}  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01", "Please use Update instead of UpdateProperty")
   void UpdateProperty(const std::string& group_name, const std::string& name,
                       const ValueType& value) {
     Update({group_name, name}, value);
@@ -323,6 +329,8 @@ class GeometryProperties {
 
   /** Variant of AddAbstract() where `group_name`/`name` are given
     explicitly.  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use AddAbstract instead of "
+                                 "AddPropertyAbstract")
   void AddPropertyAbstract(const std::string& group_name,
                            const std::string& name, const AbstractValue& value);
 
@@ -340,6 +348,8 @@ class GeometryProperties {
 
   /** Variant of UpdateAbstract() where `group_name`/`name` are given
     explicitly.  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use UpdateAbstract instead of "
+                                 "UpdatePropertyAbstract")
   void UpdatePropertyAbstract(const std::string& group_name,
                               const std::string& name,
                               const AbstractValue& value);
@@ -353,6 +363,8 @@ class GeometryProperties {
 
   /** Variant of HasProperty() where `group_name`/`name` are given
     explicitly.  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use HasProperty(PropertyName) "
+                                 "instead of HasProperty(string, string)")
   bool HasProperty(const std::string& group_name,
                    const std::string& name) const;
 
@@ -383,6 +395,7 @@ class GeometryProperties {
 
   /** Variant of Get() where `group_name`/`name` are given explicitly.  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01", "Please use Get instead of GetProperty")
   decltype(auto) GetProperty(const std::string& group_name,
                              const std::string& name) const {
     return Get<ValueType>({group_name, name});
@@ -398,6 +411,8 @@ class GeometryProperties {
 
   /** Variant of GetAbstract() where `group_name`/`name` are given
    explicitly.  */
+  DRAKE_DEPRECATED("2020-11-01", "Please use GetAbstract instead of "
+                                 "GetPropertyAbstract")
   const AbstractValue& GetPropertyAbstract(const std::string& group_name,
                                            const std::string& name) const;
 
@@ -446,8 +461,12 @@ class GeometryProperties {
   }
 
   /** Variant of GetPropertyOrDefault() where `group_name`/`name` are given
-   explicitly.  */
+   explicitly.
+   @pydrake_mkdoc_identifier{GetPropertyOrDefault_deprecated}  */
   template <typename ValueType>
+  DRAKE_DEPRECATED("2020-11-01",
+                   "Please use GetPropertyOrDefault(PropertyName, value) "
+                   "instead of GetPropertyOrDefault(string, string, value)")
   ValueType GetPropertyOrDefault(const std::string& group_name,
                                  const std::string& name,
                                  ValueType default_value) const {
@@ -470,6 +489,8 @@ class GeometryProperties {
   bool Remove(const PropertyName& property);
 
   /** Variant of Remove() where `group_name`/`name` are given explicitly.  */
+  DRAKE_DEPRECATED("2020-11-01",
+                   "Please use Remove instead of RemoveProperty")
   bool RemoveProperty(const std::string& group_name, const std::string& name);
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -480,16 +501,21 @@ class GeometryProperties {
   // implicitly convert the string literals to copyable std::strings. We assume
   // that the user is never actually trying to store const char*. We omit
   // these from the doxygen because they provide no value there.
+  DRAKE_DEPRECATED("2020-11-01", "Please use Add instead of AddProperty")
   void AddProperty(const std::string& group_name, const std::string& name,
                    const char* value) {
     Add<std::string>({group_name, name}, value);
   }
 
+  DRAKE_DEPRECATED("2020-11-01", "Please use Uppdate instead of UpdateProperty")
   void UpdateProperty(const std::string& group_name, const std::string& name,
                       const char* value) {
     Update<std::string>({group_name, name}, value);
   }
 
+  DRAKE_DEPRECATED("2020-11-01",
+                   "Please use GetPropertyOrDefault(PropertyName, value) "
+                   "instead of GetPropertyOrDefault(string, string, value)")
   std::string GetPropertyOrDefault(const std::string& group_name,
                                    const std::string& name,
                                    const char* default_value) const {

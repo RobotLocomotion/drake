@@ -53,16 +53,16 @@ void AddContactMaterial(
       throw std::logic_error(fmt::format(
           "The elastic modulus must be positive; given {}", *elastic_modulus));
     }
-    properties->AddProperty(internal::kMaterialGroup, internal::kElastic,
-                            *elastic_modulus);
+    properties->Add({internal::kMaterialGroup, internal::kElastic},
+                    *elastic_modulus);
   }
   if (dissipation.has_value()) {
     if (*dissipation < 0) {
       throw std::logic_error(fmt::format(
           "The dissipation can't be negative; given {}", *dissipation));
     }
-    properties->AddProperty(internal::kMaterialGroup, internal::kHcDissipation,
-                            *dissipation);
+    properties->Add({internal::kMaterialGroup, internal::kHcDissipation},
+                    *dissipation);
   }
 
   if (point_stiffness.has_value()) {
@@ -71,13 +71,12 @@ void AddContactMaterial(
           "The point_contact_stiffness must be strictly positive; given {}",
           *point_stiffness));
     }
-    properties->AddProperty(internal::kMaterialGroup, internal::kPointStiffness,
-                            *point_stiffness);
+    properties->Add({internal::kMaterialGroup, internal::kPointStiffness},
+                    *point_stiffness);
   }
 
   if (friction.has_value()) {
-    properties->AddProperty(internal::kMaterialGroup, internal::kFriction,
-                            *friction);
+    properties->Add({internal::kMaterialGroup, internal::kFriction}, *friction);
   }
 }
 
@@ -87,8 +86,7 @@ void AddContactMaterial(
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties) {
   DRAKE_DEMAND(properties);
-  properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
-                          resolution_hint);
+  properties->Add({internal::kHydroGroup, internal::kRezHint}, resolution_hint);
   AddRigidHydroelasticProperties(properties);
 }
 
@@ -97,15 +95,14 @@ void AddRigidHydroelasticProperties(ProximityProperties* properties) {
   // The bare minimum of defining a rigid geometry is to declare its compliance
   // type. Downstream consumers (ProximityEngine) will determine if this is
   // sufficient.
-  properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
-                          internal::HydroelasticType::kRigid);
+  properties->Add({internal::kHydroGroup, internal::kComplianceType},
+                  internal::HydroelasticType::kRigid);
 }
 
 void AddSoftHydroelasticProperties(double resolution_hint,
                                    ProximityProperties* properties) {
   DRAKE_DEMAND(properties);
-  properties->AddProperty(internal::kHydroGroup, internal::kRezHint,
-                          resolution_hint);
+  properties->Add({internal::kHydroGroup, internal::kRezHint}, resolution_hint);
   AddSoftHydroelasticProperties(properties);
 }
 
@@ -114,15 +111,15 @@ void AddSoftHydroelasticProperties(ProximityProperties* properties) {
   // The bare minimum of defining a soft geometry is to declare its compliance
   // type. Downstream consumers (ProximityEngine) will determine if this is
   // sufficient.
-  properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
-                          internal::HydroelasticType::kSoft);
+  properties->Add({internal::kHydroGroup, internal::kComplianceType},
+                  internal::HydroelasticType::kSoft);
 }
 
 void AddSoftHydroelasticPropertiesForHalfSpace(
     double slab_thickness, ProximityProperties* properties) {
   DRAKE_DEMAND(properties);
-  properties->AddProperty(internal::kHydroGroup, internal::kSlabThickness,
-                          slab_thickness);
+  properties->Add({internal::kHydroGroup, internal::kSlabThickness},
+                  slab_thickness);
   AddSoftHydroelasticProperties(properties);
 }
 

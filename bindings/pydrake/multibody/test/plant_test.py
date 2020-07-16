@@ -78,6 +78,7 @@ from pydrake.geometry import (
     GeometrySet,
     Role,
     PenetrationAsPointPair_,
+    PropertyName,
     ProximityProperties,
     SceneGraph_,
     SignedDistancePair_,
@@ -202,8 +203,8 @@ class TestPlant(unittest.TestCase):
             self.assertEqual(body0_friction.static_friction(), 0.6)
             self.assertEqual(body0_friction.dynamic_friction(), 0.5)
             explicit_props = ProximityProperties()
-            explicit_props.AddProperty("material", "coulomb_friction",
-                                       CoulombFriction(1.1, 0.8))
+            explicit_props.Add(PropertyName("material", "coulomb_friction"),
+                               CoulombFriction(1.1, 0.8))
             plant.RegisterCollisionGeometry(
                 body=body, X_BG=body_X_BG, shape=box,
                 name="new_body_collision2", properties=explicit_props)
