@@ -6,9 +6,24 @@ load(
 )
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace/models:files.bzl", "wsg_50_description_mesh_files")
 
 package(
     default_visibility = [":__subpackages__"],
+)
+
+_MESHES = forward_files(
+    srcs = ["@models//:" + x for x in wsg_50_description_mesh_files()],
+    dest_prefix = "",
+    strip_prefix = "@models//:wsg_50_description/",
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    extra_prod_models = [
+        "LICENSE.TXT",
+    ] + _MESHES,
 )
 
 # === test/ ===
@@ -21,12 +36,6 @@ drake_cc_googletest(
         "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
-    ],
-)
-
-install_data(
-    extra_prod_models = [
-        "LICENSE.TXT",
     ],
 )
 

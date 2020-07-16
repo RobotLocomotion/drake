@@ -63,6 +63,14 @@ def skydio_2_mesh_files():
         "skydio_2/LICENSE",
     ]
 
+def wsg_50_description_mesh_files():
+    return [
+        "wsg_50_description/LICENSE",
+        "wsg_50_description/meshes/GUIDE_WSG50_110.obj",
+        "wsg_50_description/meshes/WSG50_110.obj",
+        "wsg_50_description/meshes/WSG-FMF.obj",
+    ]
+
 def ycb_mesh_files():
     """Manual enumeration of mesh files, to avoid needing to write extra Bazel
     logic.

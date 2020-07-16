@@ -11,3 +11,7 @@ rosrun xacro xacro -o urdf/wsg_50_mesh_collision.urdf urdf/wsg_50_mesh_collision
 ```
 
 [1] http://wiki.ros.org/xacro#Conditional_Blocks
+
+The meshes used by this model are stored in the
+[`RobotLocomotion/models`](https://github.com/RobotLocomotion/models/tree/master/wsg_50_description)
+repository.
