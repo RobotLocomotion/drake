@@ -115,11 +115,11 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
               signed_distance_pair.id_B);
 
       const CoulombFriction<double>& geometryA_friction =
-          geometryA_props.GetProperty<CoulombFriction<double>>(
-              "material", "coulomb_friction");
+          geometryA_props.Get<CoulombFriction<double>>(
+              {"material", "coulomb_friction"});
       const CoulombFriction<double>& geometryB_friction =
-          geometryB_props.GetProperty<CoulombFriction<double>>(
-              "material", "coulomb_friction");
+          geometryB_props.Get<CoulombFriction<double>>(
+              {"material", "coulomb_friction"});
 
       CoulombFriction<double> combined_friction =
           CalcContactFrictionFromSurfaceProperties(geometryA_friction,

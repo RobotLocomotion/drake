@@ -253,7 +253,7 @@ class RenderEngineGlTest : public ::testing::Test {
     if (add_terrain) {
       const GeometryId ground_id = GeometryId::get_new_id();
       PerceptionProperties material;
-      material.AddProperty("label", "id", RenderLabel::kDontCare);
+      material.Add({"label", "id"}, RenderLabel::kDontCare);
       renderer_->RegisterVisual(ground_id, HalfSpace(), material,
                                 RigidTransformd::Identity(),
                                 false /* needs update */);
@@ -265,8 +265,8 @@ class RenderEngineGlTest : public ::testing::Test {
     PerceptionProperties material;
     Vector4d color(kDefaultVisualColor.r / 255., kDefaultVisualColor.g / 255.,
                    kDefaultVisualColor.b / 255., 1.);
-    material.AddProperty("phong", "diffuse", color);
-    material.AddProperty("label", "id", expected_label_);
+    material.Add({"phong", "diffuse"}, color)
+        .Add({"label", "id"}, expected_label_);
     return material;
   }
 
@@ -443,7 +443,7 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   // NOTE: Specifying a diffuse map with a known bad path, will force the box
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
   // texture.
-  material.AddProperty("phong", "diffuse_map", "bad_path");
+  material.Add({"phong", "diffuse_map"}, "bad_path");
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -469,7 +469,7 @@ TEST_F(RenderEngineGlTest, ConvexTest) {
   // NOTE: Specifying a diffuse map with a known bad path, will force the box
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
   // texture.
-  material.AddProperty("phong", "diffuse_map", "bad_path");
+  material.Add({"phong", "diffuse_map"}, "bad_path");
   const GeometryId id = GeometryId::get_new_id();
   renderer_->RegisterVisual(id, convex, material, RigidTransformd::Identity(),
                             true /* needs update */);
@@ -531,7 +531,7 @@ TEST_F(RenderEngineGlTest, RemoveVisual) {
     const float depth = kDefaultDistance - kRadius - z;
     RenderLabel label = RenderLabel(5);
     PerceptionProperties material;
-    material.AddProperty("label", "id", label);
+    material.Add({"label", "id"}, label);
     // This will accept all registered geometries and therefore, (bool)index
     // should always be true.
     renderer_->RegisterVisual(geometry_id, sphere, material,
@@ -749,7 +749,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
       std::logic_error,
       ".* geometry with the 'unspecified' or 'empty' render labels.*");
   PerceptionProperties material;
-  material.AddProperty("label", "id", RenderLabel::kDontCare);
+  material.Add({"label", "id"}, RenderLabel::kDontCare);
   renderer_->RegisterVisual(id, box, material, RigidTransformd::Identity(),
                             true);
   RigidTransformd X_WV{Translation3d(0, 0, 0.5)};
@@ -787,7 +787,7 @@ TEST_F(RenderEngineGlTest, RendererIndependence) {
 
   auto add_terrain = [ground](auto* renderer) {
     PerceptionProperties material;
-    material.AddProperty("label", "id", RenderLabel::kDontCare);
+    material.Add({"label", "id"}, RenderLabel::kDontCare);
     renderer->RegisterVisual(ground, HalfSpace(), material,
                              RigidTransformd::Identity(),
                              false /* needs update */);

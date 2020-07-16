@@ -208,12 +208,12 @@ GripperBrickHelper<T>::GetFingerTipBrickCoulombFriction(Finger finger) const {
           finger_tip_sphere_geometry_id(finger));
 
   const multibody::CoulombFriction<T>& brick_friction =
-      brick_props.GetProperty<multibody::CoulombFriction<T>>(
-          "material", "coulomb_friction");
+      brick_props.Get<multibody::CoulombFriction<T>>(
+          {"material", "coulomb_friction"});
 
   const multibody::CoulombFriction<T>& finger_tip_friction =
-      finger_props.GetProperty<multibody::CoulombFriction<T>>(
-          "material", "coulomb_friction");
+      finger_props.Get<multibody::CoulombFriction<T>>(
+          {"material", "coulomb_friction"});
 
   return multibody::CalcContactFrictionFromSurfaceProperties(
       brick_friction, finger_tip_friction);

@@ -187,8 +187,8 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
 
         // Perception properties -- diffuse color and per-body label.
         PerceptionProperties perception;
-        perception.AddProperty("phong", "diffuse", diffuse);
-        perception.AddProperty("label", "id", label);
+        perception.Add({"phong", "diffuse"}, diffuse)
+            .Add({"label", "id"}, label);
         scene_graph->AssignRole(source_id_, id, perception);
       }
     }
