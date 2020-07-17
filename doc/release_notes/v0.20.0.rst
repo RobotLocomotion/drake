@@ -24,7 +24,7 @@ New features
 
 * Add SystemVisitor to introspect Diagrams (`#13628`_)
 * Add JavaScript system diagram visualization (`#13644`_)
-  
+
 Fixes
 
 * None
