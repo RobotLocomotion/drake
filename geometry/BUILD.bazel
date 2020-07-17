@@ -137,6 +137,9 @@ drake_cc_library(
     deps = [
         ":geometry_properties",
         "//common:essential",
+        "//geometry/proximity:hydroelastic_type",
+        "//geometry/proximity:tessellation_strategy",
+        "//multibody/plant:coulomb_friction",
     ],
 )
 
@@ -171,6 +174,7 @@ drake_cc_library(
     hdrs = ["proximity_properties.h"],
     deps = [
         ":geometry_roles",
+        "//geometry/proximity:hydroelastic_type",
         "//multibody/plant:coulomb_friction",
     ],
 )
@@ -344,6 +348,14 @@ drake_cc_googletest(
     name = "geometry_properties_test",
     deps = [
         ":geometry_properties",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "geometry_roles_test",
+    deps = [
+        ":geometry_roles",
         "//common/test_utilities",
     ],
 )

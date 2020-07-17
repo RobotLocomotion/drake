@@ -15,23 +15,6 @@ const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
 const char* const kSlabThickness = "slab_thickness";
 
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
-  switch (type) {
-    case HydroelasticType::kUndefined:
-      out << "undefined";
-      break;
-    case HydroelasticType::kRigid:
-      out << "rigid";
-      break;
-    case HydroelasticType::kSoft:
-      out << "soft";
-      break;
-    default:
-      DRAKE_UNREACHABLE();
-  }
-  return out;
-}
-
 std::string PropName(const std::string& group, const std::string& prop) {
   return group + "/" + prop;
 }
