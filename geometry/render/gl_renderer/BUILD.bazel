@@ -38,6 +38,7 @@ drake_cc_library_gl_ubuntu_only(
         "opengl_context.h",
         "opengl_includes.h",
     ],
+    declare_installed_headers = False,
     deps = [
         "//common:essential",
         "//common:scope_exit",
@@ -50,6 +51,7 @@ drake_cc_library_gl_ubuntu_only(
 drake_cc_library_gl_ubuntu_only(
     name = "opengl_geometry",
     hdrs = ["opengl_geometry.h"],
+    declare_installed_headers = False,
     deps = [
         ":opengl_context",
         "//geometry/render:render_label",
@@ -75,6 +77,13 @@ drake_cc_library(
             "render_engine_gl_factory.h",
         ],
     }),
+    install_hdrs_exclude = select({
+        "//tools/cc_toolchain:apple": [],
+        "//conditions:default": [
+            "buffer_dim.h",
+            "render_engine_gl.h",
+        ],
+    }),
     deps = select({
         "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
         "//conditions:default": [
@@ -94,6 +103,7 @@ drake_cc_library_gl_ubuntu_only(
     name = "shader_program",
     srcs = ["shader_program.cc"],
     hdrs = ["shader_program.h"],
+    declare_installed_headers = False,
     deps = [
         "//common:essential",
         "//geometry/render/gl_renderer:opengl_context",
@@ -104,6 +114,7 @@ drake_cc_library_gl_ubuntu_only(
     name = "shape_meshes",
     srcs = ["shape_meshes.cc"],
     hdrs = ["shape_meshes.h"],
+    declare_installed_headers = False,
     deps = [
         "//common:essential",
         "//geometry/render/gl_renderer:opengl_context",
