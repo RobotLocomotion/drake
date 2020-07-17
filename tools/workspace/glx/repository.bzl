@@ -9,16 +9,15 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
+        # On macOS, no targets should depend on @glx.
         repository_ctx.symlink(
-            Label("@drake//tools/workspace/opengl:package-macos.BUILD.bazel"),
+            Label("@drake//tools/workspace/glx:package-macos.BUILD.bazel"),
             "BUILD.bazel",
         )
     elif os_result.is_ubuntu:
         hdrs = [
-            "GL/gl.h",
-            "GL/glcorearb.h",
-            "GL/glext.h",
-            "KHR/khrplatform.h",
+            "GL/glx.h",
+            "GL/glxext.h",
         ]
         for hdr in hdrs:
             repository_ctx.symlink(
@@ -26,13 +25,13 @@ def _impl(repository_ctx):
                 "include/{}".format(hdr),
             )
         repository_ctx.symlink(
-            Label("@drake//tools/workspace/opengl:package-ubuntu.BUILD.bazel"),
+            Label("@drake//tools/workspace/glx:package-ubuntu.BUILD.bazel"),
             "BUILD.bazel",
         )
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
-opengl_repository = repository_rule(
+glx_repository = repository_rule(
     local = True,
     configure = True,
     implementation = _impl,
