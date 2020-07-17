@@ -15,6 +15,7 @@ package(
 
 drake_cc_package_library(
     name = "plant",
+    visibility = ["//visibility:public"],
     deps = [
         ":calc_distance_and_time_derivative",
         ":contact_jacobians",

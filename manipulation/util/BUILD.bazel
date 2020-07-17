@@ -27,6 +27,7 @@ drake_py_library(
 
 drake_cc_package_library(
     name = "util",
+    visibility = ["//visibility:public"],
     deps = [
         ":bot_core_lcm_encode_decode",
         ":move_ik_demo_base",

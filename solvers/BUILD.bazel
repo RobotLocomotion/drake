@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "solvers",
+    visibility = ["//visibility:public"],
     deps = [
         ":bilinear_product_util",
         ":binding",

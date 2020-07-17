@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "estimators",
+    visibility = ["//visibility:public"],
     deps = [
         ":kalman_filter",
         ":luenberger_observer",

@@ -18,6 +18,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "multibody",
+    visibility = ["//visibility:public"],
     deps = [
         ":approximate_ik",
         ":global_inverse_kinematics",

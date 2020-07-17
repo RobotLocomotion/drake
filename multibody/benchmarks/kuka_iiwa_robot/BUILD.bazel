@@ -14,6 +14,7 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "kuka_iiwa_robot",
+    visibility = ["//visibility:public"],
     deps = [
         ":make_kuka_iiwa_model",
     ],

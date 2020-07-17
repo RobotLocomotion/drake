@@ -14,6 +14,7 @@ package(
 
 drake_cc_package_library(
     name = "planner",
+    visibility = ["//visibility:public"],
     deps = [
         ":rbt_differential_inverse_kinematics",
     ],
