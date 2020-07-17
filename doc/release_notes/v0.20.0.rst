@@ -56,7 +56,7 @@ New features
 * RenderEngineVtk now uses full camera intrinsics (`#13655`_)
 * Extend camera intrinsics into geometry and geometry/render (`#13557`_, `#13634`_, `#13635`_)
 * IllustrationProperties can be updated after parsing (`#13598`_)
-* Allow changing point contact parameters on a per-geometry basis via SceneGraph; these become Systems Framework parameters that live in the Context (`#13630`_)
+* Allow changing point contact parameters on a per-geometry basis via SceneGraph; these become Systems Framework parameters that live in the Context (`#13630`_, `#13686`_)
 
 Fixes
 
@@ -121,6 +121,8 @@ Build system and dependencies
 * On macOS, Drake's supported python3.8 is now on the default PATH (`#13660`_, `#13668`_)
 * On Ubuntu, the minimum GCC version is now 7.5 (`#13611`_)
 * On Ubuntu, the supported Clang version is now 9 (`#13650`_, `#13656`_)
+* On Ubuntu, GL-related dependencies are more precise and use libOpenGL instead of libGL (`#13649`_)
+* Rebuild VTK and drake-visualizer against OpenGL (`#13649`_)
 * Fix Ubuntu Focal 20.04 to use C++ flavor of nlopt (`#13633`_)
 * Upgrade buildifier to latest release 3.3.0 (`#13620`_)
 * Upgrade fcl to latest commit (`#13621`_)
@@ -150,6 +152,7 @@ Newly-deprecated APIs
   * ::EncodeTwist
   * ::DecodeTwist
 
+* manipulation/models/wsg_50_description URDF and meshes (`#13693`_)
 * pydrake.geometry.SceneGraphInspector.GetNameByFrameId (`#13559`_)
 * pydrake.geometry.SceneGraphInspector.GetNameByGeometryId (`#13559`_)
 
@@ -255,6 +258,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
   Current newest_commit bc71215641a7f23f9a9eeb668e0efcc839c57562 (inclusive).
 
-* Fix and/or cleanup OpenGL dependencies (`#13649`_)  # We need either libOpenGL.so, libOpenGL.so.0, libGLX.so, libGLX.0, GL/gl.h, and GL/glx.h (modern, vendor neutral) or libGL.so, libGL.so.1, GL/gl.h, and GL/glx.h (legacy). Vendor neutral is preferable, for NVIDIA users and others, so we choose libOpenGL.so and libGLX.so rather than libGL.so. Also rebuild VTK and drake-visualizer to ensure they are correctly linked to libOpenGL.so and libGLX.so rather than libGL.so.
-* wsg_50_description: Deprecate the URDF and meshes (`#13693`_)
-* added parsing of point_contact_stiffness (`#13686`_)
