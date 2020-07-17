@@ -23,6 +23,7 @@ exports_files([
 drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
+    visibility = ["//visibility:public"],
     deps = [
         ":eigen_geometry_compare",
         ":eigen_matrix_compare",

@@ -16,6 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "parsers",
+    visibility = ["//visibility:public"],
     deps = [
         ":find_files",
         ":parsing",

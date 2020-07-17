@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "lcm",
+    visibility = ["//visibility:public"],
     deps = [
         ":connect_lcm_scope",
         ":lcm_interface_system",

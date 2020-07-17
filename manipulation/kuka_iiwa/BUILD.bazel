@@ -14,6 +14,7 @@ package(
 
 drake_cc_package_library(
     name = "kuka_iiwa",
+    visibility = ["//visibility:public"],
     deps = [
         ":iiwa_command_receiver",
         ":iiwa_command_sender",

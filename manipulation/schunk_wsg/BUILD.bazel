@@ -18,6 +18,7 @@ package(
 
 drake_cc_package_library(
     name = "schunk_wsg",
+    visibility = ["//visibility:public"],
     deps = [
         ":schunk_wsg_constants",
         ":schunk_wsg_controller",

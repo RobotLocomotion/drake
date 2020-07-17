@@ -418,7 +418,7 @@ def drake_cc_package_library(
         name,
         deps = [],
         testonly = 0,
-        visibility = ["//visibility:public"]):
+        visibility = None):
     """Creates a rule to declare a C++ "package" library -- a library whose
     name matches the current Bazel package name (i.e., directory name) and
     whose dependencies are (usually) all of the other drake_cc_library targets
@@ -436,9 +436,18 @@ def drake_cc_package_library(
     The name must be the same as the final element of the current package.
     This rule does not accept srcs, hdrs, etc. -- only deps.
     The testonly argument has the same meaning as the native cc_library.
-    By default, this target has public visibility, but that may be overridden.
+
+    The visibility must be explicitly provided, not relying on the BUILD file
+    default.  Setting to "//visibility:public" is strongly recommended.
     """
     _check_package_library_name(name)
+    if not visibility:
+        fail(("//{}:{} must provide a visibility setting; " +
+              "add this line to the BUILD.bazel file:\n" +
+              "        visibility = \"//visibility:public\",").format(
+            native.package_name(),
+            name,
+        ))
     drake_cc_library(
         name = name,
         testonly = testonly,
