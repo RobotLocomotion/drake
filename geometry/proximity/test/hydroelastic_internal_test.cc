@@ -646,35 +646,30 @@ HalfSpace make_default_shape<HalfSpace>() {
 
 // Boilerplate for testing error conditions relating to properties. Its purpose
 // is to test that the `Make*Representation` (either "Rigid" or "Soft")
-// family of functions correctly validate all required properties. A property
-// value can be wrong for one of three reasons:
-//
-//   - Missing property
-//   - Wrong type for property
-//   - Invalid value (maybe)
+// family of functions correctly validate all required properties as necessary.
+// Hydroelastics uses "canonical" properties whose type and value should be
+// validated when the value is set (see ProximityProperties in
+// geometry_roles.h). So, the only thing that needs to be validated is that
+// required properties are not missing (assuming that ProximityProperties API
+// has been sufficiently tested).
 //
 // This is sufficiently generic to test both kinds of geometry (rigid and soft)
 // based on any shape, for a property of any type. It confirms that properly
 // formatted errors are emitted in all cases.
 //
-// Not all properties validate invalid values. It might simply be treated as a
-// black box. The third error condition is only handled if an example "bad"
-// value is provided (see `bad_value` below).
-//
-// @param shape_spec     The shape from which we attempt to create a hydro-
-//                       elastic representation.
-// @param property       The name of the property under test.
-// @param compliance     A string representing the compliance being requested
-//                       ("rigid" or "soft").
-// @param maker          The function that processes the shape and properties.
-//                       Note: this is declared to return void; the
-//                       Make*Representation() methods will need to be wrapped.
-// @param bad_value      If provided, sets the property to this value to test
-//                       validation against bad values.
-// @param props          The baseline properties to start the test from --
-//                       properties are generally tested in some sequence.
-//                       Each test may add a property to a copy of this input
-//                       to test a particular aspect.
+// @param shape_spec   The shape from which we attempt to create a hydro-
+//                     elastic representation.
+// @param property     The name of the property to be tested.
+// @param compliance   A string representing the compliance being requested
+//                     ("rigid" or "soft").
+// @param maker        The function that processes the shape and properties.
+//                     Note: this is declared to return void; the
+//                     Make*Representation() methods will need to be wrapped.
+// @param props        The baseline properties to start the test from -- the
+//                     factory methods extract properties in arbitrary sequence.
+//                     So, to test the iᵗʰ property, the i-1ˢᵗ property must be
+//                     present in `props` so that it doesn't cause the test to
+//                     fail prematurely.
 // @tparam ShapeType  The derived class from geometry::Shape (e.g., Sphere, Box,
 //                    etc.)
 // @tparam ValueTYpe  The type of value under test.
@@ -683,36 +678,14 @@ void TestPropertyErrors(
     const ShapeType& shape_spec, const std::string& property,
     const char* compliance,
     function<void(const ShapeType&, const ProximityProperties&)> maker,
-    std::optional<ValueType> bad_value, const ProximityProperties& props) {
+    const ProximityProperties& props) {
   ShapeName shape_name(shape_spec);
 
   // Error case: missing property value.
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, props), std::logic_error,
-        fmt::format("Cannot create {} {}.+{} property", compliance,
-                    shape_name, property));
-  }
-
-  // Error case: property value is wrong type.
-  {
-    ProximityProperties wrong_value(props);
-    wrong_value.Add(property, "10");
-    // This error message comes from GeometryProperties::Get().
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, wrong_value), std::logic_error,
-        fmt::format(
-            ".*The property '{}' exists, but is of a different type.+string'",
-           property));
-  }
-
-  // Error case: property value is not positive.
-  if (bad_value.has_value()) {
-    ProximityProperties negative_value(props);
-    negative_value.Add(property, *bad_value);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        maker(shape_spec, negative_value), std::logic_error,
-        fmt::format("Cannot create {} {}.+{}.+ positive", compliance,
+        fmt::format("Cannot create {} {}; missing the {} property", compliance,
                     shape_name, property));
   }
 }
@@ -732,20 +705,22 @@ class HydroelasticRigidGeometryErrorTests : public ::testing::Test {};
 
 TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests);
 
-TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, BadResolutionHint) {
+TYPED_TEST_P(HydroelasticRigidGeometryErrorTests, MissingResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
 
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, PropName(kHydroGroup, kRezHint), "rigid",
+      shape_spec, ProximityProperties::hydroelastic_resolution_hint(), "rigid",
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeRigidRepresentation(s, p);
       },
-      -0.2, {});
+      {});
 }
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
-                            BadResolutionHint);
+                            MissingResolutionHint);
+// If the rigid geometry error tests ever goes beyond "missing resolution hint",
+// Box will have to be included in this set of Shapes.
 typedef ::testing::Types<Sphere, Cylinder, Ellipsoid> RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
                               RigidErrorShapeTypes);
@@ -910,16 +885,6 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     EXPECT_EQ(sphere1->mesh().num_elements(),
               dense_sphere->mesh().num_elements());
   }
-
-  {
-    // A value that isn't a TessellationStrategy throws.
-    // Starting with sphere 1's properties, we'll set the property to be a
-    // string. Should throw.
-    ProximityProperties dense_properties(properties1);
-    dense_properties.Add(tessellation_name, "dense");
-    EXPECT_THROW(MakeSoftRepresentation(sphere_spec, dense_properties),
-                 std::logic_error);
-  }
 }
 
 // Test construction of a soft box.
@@ -1035,18 +1000,6 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
     EXPECT_LT(sparse_ellipsoid->mesh().num_elements(),
               dense_ellipsoid->mesh().num_elements());
   }
-
-  {
-    // A value that isn't a TessellationStrategy throws.
-
-    // Starting with the basic properties, we'll set the property to be a
-    // string. Should throw.
-    ProximityProperties bad_properties(basic_properties);
-    bad_properties.Add(PropName(kHydroGroup, "tessellation_strategy"),
-                       "dense");
-    EXPECT_THROW(MakeSoftRepresentation(ellipsoid_spec, bad_properties),
-                 std::logic_error);
-  }
 }
 
 // Test suite for testing the common failure conditions for generating soft
@@ -1063,21 +1016,21 @@ class HydroelasticSoftGeometryErrorTests : public ::testing::Test {};
 
 TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests);
 
-TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadResolutionHint) {
+TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, MissingResolutionHint) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   if (ShapeName(shape_spec).name() != "HalfSpace" &&
       ShapeName(shape_spec).name() != "Box") {
     TestPropertyErrors<ShapeType, double>(
-        shape_spec, PropName(kHydroGroup, kRezHint), "soft",
+        shape_spec, ProximityProperties::hydroelastic_resolution_hint(), "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
           MakeSoftRepresentation(s, p);
         },
-        -0.2, {});
+        {});
   }
 }
 
-TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
+TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, MissingElasticModulus) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
 
@@ -1087,31 +1040,31 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadElasticModulus) {
   soft_properties.Add(PropName(kHydroGroup, kRezHint), 10.0);
   soft_properties.Add(PropName(kHydroGroup, kSlabThickness), 1.0);
   TestPropertyErrors<ShapeType, double>(
-      shape_spec, PropName(kMaterialGroup, kElastic), "soft",
+      shape_spec, ProximityProperties::material_elastic_modulus(), "soft",
       [](const ShapeType& s, const ProximityProperties& p) {
         MakeSoftRepresentation(s, p);
       },
-      -0.2, soft_properties);
+      soft_properties);
 }
 
-TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, BadSlabThickness) {
+TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, MissingSlabThickness) {
   using ShapeType = TypeParam;
   ShapeType shape_spec = make_default_shape<ShapeType>();
   // Half space only!
   if (ShapeName(shape_spec).name() == "HalfSpace") {
     TestPropertyErrors<ShapeType, double>(
-        shape_spec, PropName(kHydroGroup, kSlabThickness), "soft",
+        shape_spec, ProximityProperties::hydroelastic_slab_thickness(), "soft",
         [](const ShapeType& s, const ProximityProperties& p) {
           MakeSoftRepresentation(s, p);
         },
-        -0.2, {});
+        {});
   }
 }
 
 REGISTER_TYPED_TEST_SUITE_P(HydroelasticSoftGeometryErrorTests,
-                            BadResolutionHint, BadElasticModulus,
-                            BadSlabThickness);
-typedef ::testing::Types<Sphere, Box, Cylinder, Ellipsoid, HalfSpace>
+                            MissingResolutionHint, MissingElasticModulus,
+                            MissingSlabThickness);
+typedef ::testing::Types<Sphere, Cylinder, Box, Ellipsoid, HalfSpace>
     SoftErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticSoftGeometryErrorTests,
                                SoftErrorShapeTypes);

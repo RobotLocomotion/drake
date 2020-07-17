@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":find_collision_candidates_callback",
         ":hydroelastic_callback",
         ":hydroelastic_internal",
+        ":hydroelastic_type",
         ":make_box_field",
         ":make_box_mesh",
         ":make_cylinder_field",
@@ -236,6 +237,13 @@ drake_cc_library(
         "//geometry:shape_specification",
         "@fmt",
     ],
+)
+
+drake_cc_library(
+    name = "hydroelastic_type",
+    srcs = ["hydroelastic_type.cc"],
+    hdrs = ["hydroelastic_type.h"],
+    deps = ["//common:essential"],
 )
 
 drake_cc_library(

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity/hydroelastic_type.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
@@ -74,23 +75,6 @@ extern const char* const kSlabThickness;    ///< Slab thickness property name
 //  look like {group, prop} into the single string format. Remove this when
 //  I kill off all of the above char*.
 std::string PropName(const std::string& group, const std::string& prop);
-
-// TODO(SeanCurtis-TRI): Update this to have an additional classification: kBoth
-//  when we have the need from the algorithm. For example: when we have two
-//  very stiff objects, we'd want to process them as soft. But when one
-//  very stiff and one very soft object interact, it might make sense to
-//  consider the stiff object as effectively rigid and simplify the computation.
-//  In this case, the object would get two representations.
-/* Classification of the type of representation a shape has for the
- hydroelastic contact model: rigid or soft.  */
-enum class HydroelasticType {
-  kUndefined,
-  kRigid,
-  kSoft
-};
-
-/* Streaming operator for writing hydroelastic type to output stream.  */
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal
 

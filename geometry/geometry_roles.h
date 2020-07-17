@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/geometry/geometry_properties.h"
 
 namespace drake {
@@ -145,9 +146,46 @@ namespace geometry {
 
 /** The set of properties for geometry used in a _proximity_ role.
 
- <!-- TODO(SeanCurtis-TRI): When the hydroelastic geometry module is written,
-  put a reference to the discussion of ProximityProperties here.  -->
+ There are a number of properties that Drake-native systems and functions make
+ use of. These are the "canonical" proximity properties. %ProximityProperties
+ facilitates exercising these properties in the following ways:
+
+   - Known restrictions are enforce when adding/updating the named property
+     (e.g., value _type_ or value).
+   - The actual PropertyName can be retrieved from ProximityProperties directly
+     negating the need to spell it out and the risk of spelling it incorrectly.
+
+ Working with these helper methods facilitates conveniently reading and writing
+ as shown below (assuming canonical properties `('contact', 'foo')` and
+ `('distance', 'bar')`):
+
+ ```c++
+ ProximityProperties props;
+ props.Add(props.contact_foo(), 10.0).Add(props.distance_bar(), "thing");
+ const double value = props.Get(props.contact_foo());
+ ```
+
+  The table below below lists the canonical properties and the methods used to
+ access them.
+
+ |  Group Name  |       Property Name       |             Type               | Value Constraints | PropertyName method |
+ | :----------: | :-----------------------: | :----------------------------: | :---------------: | :-----------------: |
+ |   material   |      elastic_modulus      |            double              |          > 0      | material_elastic_modulus |
+ |   material   |      coulomb_friction     |    CoulombFriction<double>     |          n/a      | material_coulomb_friction |
+ |   material   | hunt_crossley_dissipation |            double              |          ≥ 0      | material_hunt_crossley_dissipation |
+ |   material   |  point_contact_stiffness  |            double              |          > 0      | material_point_contact_stiffness |
+ | hydroelastic |      resolution_hint      |            double              |          > 0      | hydroelastic_resolution_hint |
+ | hydroelastic |      slab_thickness       |            double              |          > 0      | hydroelastic_slab_thickness |
+ | hydroelastic |      compliance_type      |   internal::HydroelasticType   |   != kUndefined   | hydroelastic_compliance_type |
+ | hydroelastic |   tessellation_strategy   | internal::TessellationStrategy |          n/a      | hydrolastic_tessellation_strategy |
+
+ @note Using, for example, ProximityProperties::material_elastic_modulus() has
+ the exact effect that using PropertyName("material", "elastic_modulus") has.
+ Adding/updating a property so named will still be evaluated for correctness.
+ The latter spelling has the advantage of being tested at compile time.
+
  Examples of functionality that depends on the proximity role:
+   - @ref accessing_contact_properties "multibody::MultibodyPlant"
  <!-- TODO(SeanCurtis-TRI): Write up a module on hydroelastic proximity
        properties and link to that.  -->
  */
@@ -156,6 +194,58 @@ class ProximityProperties final : public GeometryProperties {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ProximityProperties);
   // TODO(SeanCurtis-TRI): Should this have the physical properties built in?
   ProximityProperties() = default;
+
+  /* NOTE TO DEVELOPERS: When ever adding a canonical property here, it is
+   important to add it to the geometry_roles_test in UniquePropertyName test. */
+
+  static const PropertyName& material_elastic_modulus() {
+    static never_destroyed<PropertyName> name("material", "elastic_modulus");
+    return name.access();
+  }
+
+  static const PropertyName& material_coulomb_friction() {
+    static never_destroyed<PropertyName> name("material", "coulomb_friction");
+    return name.access();
+  }
+
+  static const PropertyName& material_hunt_crossley_dissipation() {
+    static never_destroyed<PropertyName> name("material",
+                                              "hunt_crossley_dissipation");
+    return name.access();
+  }
+
+  static const PropertyName& material_point_contact_stiffness() {
+    static never_destroyed<PropertyName> name("material",
+                                              "point_contact_stiffness");
+    return name.access();
+  }
+
+  static const PropertyName& hydroelastic_resolution_hint() {
+    static never_destroyed<PropertyName> name("hydroelastic",
+                                              "resolution_hint");
+    return name.access();
+  }
+
+  static const PropertyName& hydroelastic_slab_thickness() {
+    static never_destroyed<PropertyName> name("hydroelastic", "slab_thickness");
+    return name.access();
+  }
+
+  static const PropertyName& hydroelastic_compliance_type() {
+    static never_destroyed<PropertyName> name("hydroelastic",
+                                              "compliance_type");
+    return name.access();
+  }
+
+  static const PropertyName& hydrolastic_tessellation_strategy() {
+    static never_destroyed<PropertyName> name("hydroelastic",
+                                              "tessellation_strategy");
+    return name.access();
+  }
+
+ private:
+  void DoThrowIfInvalid(const PropertyName& property,
+                        const AbstractValue& value) const override;
 };
 
 /** The set of properties for geometry used in a "perception" role.
