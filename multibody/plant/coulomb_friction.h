@@ -95,6 +95,14 @@ class CoulombFriction {
   T dynamic_friction_{0.0};
 };
 
+template <typename T>
+std::ostream& operator<<(std::ostream& out,
+                         const CoulombFriction<T>& friction) {
+  out << "CoulombFriction(static: " << friction.static_friction()
+      << ", dynamic: " << friction.dynamic_friction() << ")";
+  return out;
+}
+
 /// Given the surface properties of two different surfaces, this method computes
 /// the Coulomb's law coefficients of friction characterizing the interaction by
 /// friction of the given surface pair.

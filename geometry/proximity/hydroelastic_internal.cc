@@ -122,12 +122,12 @@ void Geometries::AddGeometry(GeometryId id, RigidGeometry geometry) {
 }
 
 // Validator interface for use with extracting valid properties. It is
-// instantiated with shape (e.g., "Sphere", "Box", etc.) and compliance (i.e.,
-// "rigid" or "soft") strings (to help give intelligible error messages) and
-// then attempts to extract a typed value from a set of proximity properties --
-// spewing meaningful error messages based on absence, type mismatch, and
-// invalid values.
-template <typename ValueType>
+// instantiated with shape name (e.g., "Sphere", "Box", etc.) and compliance
+// (i.e., "rigid" or "soft") strings (to help give intelligible error messages)
+// and then attempts to extract a typed value from a set of proximity properties
+// -- spewing meaningful error messages based on absence, type mismatch, and
+// invalid values. When using _canonical_ proximity properties, we assume that
+// type and value has been validated prior to be stored in the properties.
 class Validator {
  public:
   // Parameters `shape_name` and `compliance` are only for error messages.
@@ -139,48 +139,20 @@ class Validator {
   // Extract an arbitrary property from the proximity properties. Throws a
   // consistent error message in the case of missing or mis-typed properties.
   // Relies on the ValidateValue() method to validate the value.
+  template <typename ValueType>
   const ValueType& Extract(const ProximityProperties& props,
-                           const PropertyName& property) {
+                           const PropertyName& property) const {
     if (!props.HasProperty(property)) {
       throw std::logic_error(
           fmt::format("Cannot create {} {}; missing the {} property",
-                      compliance(), shape_name(), property));
+                      compliance_, shape_name_, property));
     }
-    const auto& value = props.Get<ValueType>(property);
-    ValidateValue(value, property);
-    return value;
+    return props.Get<ValueType>(property);
   }
-
- protected:
-  const char* shape_name() const { return shape_name_; }
-  const char* compliance() const { return compliance_; }
-
-  // Does the work of validating the given value. Sub-classes should throw if
-  // the provided value is not valid. The first parameter is the value to
-  // validate; the second is the property in question.
-  virtual void ValidateValue(const ValueType&,
-                             const PropertyName& property) const {}
 
  private:
   const char* shape_name_{};
   const char* compliance_{};
-};
-
-// Validator that extracts *positive doubles*.
-class PositiveDouble : public Validator<double> {
- public:
-  // Inherit the constructor from the base class.
-  using Validator<double>::Validator;
-
- protected:
-  void ValidateValue(const double& value,
-                     const PropertyName& property) const override {
-    if (value <= 0) {
-      throw std::logic_error(
-          fmt::format("Cannot create {} {}; the {} property must be positive",
-                      compliance(), shape_name(), property));
-    }
-  }
 };
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
@@ -190,8 +162,9 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  PositiveDouble validator("Sphere", "rigid");
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  Validator validator("Sphere", "rigid");
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, edge_length));
 
@@ -200,8 +173,9 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties& props) {
-  PositiveDouble validator("Box", "rigid");
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  Validator validator("Box", "rigid");
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeBoxSurfaceMesh<double>(box, edge_length));
 
@@ -210,8 +184,9 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
-  PositiveDouble validator("Cylinder", "rigid");
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  Validator validator("Cylinder", "rigid");
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeCylinderSurfaceMesh<double>(cylinder, edge_length));
 
@@ -220,8 +195,9 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
-  PositiveDouble validator("Ellipsoid", "rigid");
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  Validator validator("Ellipsoid", "rigid");
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   auto mesh = make_unique<SurfaceMesh<double>>(
       MakeEllipsoidSurfaceMesh<double>(ellipsoid, edge_length));
 
@@ -239,18 +215,19 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Sphere& sphere, const ProximityProperties& props) {
-  PositiveDouble validator("Sphere", "soft");
+  Validator validator("Sphere", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
-      props.GetPropertyOrDefault({kHydroGroup, "tessellation_strategy"},
+      props.GetPropertyOrDefault(props.hydrolastic_tessellation_strategy(),
                                  TessellationStrategy::kSingleInteriorVertex);
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeSphereVolumeMesh<double>(sphere, edge_length, strategy));
 
   const double elastic_modulus =
-      validator.Extract(props, {kMaterialGroup, kElastic});
+      validator.Extract<double>(props, props.material_elastic_modulus());
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeSpherePressureField(sphere, mesh.get(), elastic_modulus));
@@ -260,14 +237,15 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props) {
-  PositiveDouble validator("Box", "soft");
+  Validator validator("Box", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeBoxVolumeMesh<double>(box, edge_length));
 
   const double elastic_modulus =
-      validator.Extract(props, {kMaterialGroup, kElastic});
+      validator.Extract<double>(props, props.material_elastic_modulus());
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeBoxPressureField(box, mesh.get(), elastic_modulus));
@@ -277,14 +255,15 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Cylinder& cylinder, const ProximityProperties& props) {
-  PositiveDouble validator("Cylinder", "soft");
+  Validator validator("Cylinder", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeCylinderVolumeMesh<double>(cylinder, edge_length));
 
   const double elastic_modulus =
-      validator.Extract(props, {kMaterialGroup, kElastic});
+      validator.Extract<double>(props, props.material_elastic_modulus());
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeCylinderPressureField(cylinder, mesh.get(), elastic_modulus));
@@ -294,18 +273,19 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Ellipsoid& ellipsoid, const ProximityProperties& props) {
-  PositiveDouble validator("Ellipsoid", "soft");
+  Validator validator("Ellipsoid", "soft");
   // First, create the mesh.
-  const double edge_length = validator.Extract(props, {kHydroGroup, kRezHint});
+  const double edge_length =
+      validator.Extract<double>(props, props.hydroelastic_resolution_hint());
   // If nothing is said, let's go for the *cheap* tessellation strategy.
   const TessellationStrategy strategy =
-      props.GetPropertyOrDefault({kHydroGroup, "tessellation_strategy"},
+      props.GetPropertyOrDefault(props.hydrolastic_tessellation_strategy(),
                                  TessellationStrategy::kSingleInteriorVertex);
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeEllipsoidVolumeMesh<double>(ellipsoid, edge_length, strategy));
 
   const double elastic_modulus =
-      validator.Extract(props, {kMaterialGroup, kElastic});
+      validator.Extract<double>(props, props.material_elastic_modulus());
 
   auto pressure = make_unique<VolumeMeshFieldLinear<double, double>>(
       MakeEllipsoidPressureField(ellipsoid, mesh.get(), elastic_modulus));
@@ -315,13 +295,13 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const HalfSpace&, const ProximityProperties& props) {
-  PositiveDouble validator("HalfSpace", "soft");
+  Validator validator("HalfSpace", "soft");
 
   const double thickness =
-      validator.Extract(props, {kHydroGroup, kSlabThickness});
+      validator.Extract<double>(props, props.hydroelastic_slab_thickness());
 
   const double elastic_modulus =
-      validator.Extract(props, {kMaterialGroup, kElastic});
+      validator.Extract<double>(props, props.material_elastic_modulus());
 
   return SoftGeometry(SoftHalfSpace{elastic_modulus / thickness});
 }
