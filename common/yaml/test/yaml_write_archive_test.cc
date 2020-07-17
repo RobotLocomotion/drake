@@ -452,6 +452,22 @@ TEST_F(YamlWriteArchiveTest, BlankInner) {
   EXPECT_EQ(saved, expected);
 }
 
+TEST_F(YamlWriteArchiveTest, Subtract) {
+  OuterStruct y;
+  y.outer_value = 1.0;
+  y.inner_struct.inner_value = 2.0;
+  YamlWriteArchive ya;
+  ya.Accept(y);
+
+  OuterStruct x = y;
+  x.outer_value = 3.0;
+  YamlWriteArchive xa;
+  xa.Accept(x);
+
+  xa.SubtractDefaults(ya);
+  EXPECT_EQ(xa.EmitString("doc"), "doc:\n  outer_value: 3.0\n");
+}
+
 }  // namespace
 }  // namespace yaml
 }  // namespace drake

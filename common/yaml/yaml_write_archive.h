@@ -96,17 +96,14 @@ class YamlWriteArchive final {
   /// passed into Accept.  The returned document will be a single Map node
   /// named using `root_name` with the Serializable's visited fields as
   /// key-value entries within it.
-  std::string EmitString(const std::string& root_name = "root") const {
-    std::string result;
-    if (root_.IsNull()) {
-      result = root_name + ":\n";
-    } else {
-      YAML::Node document;
-      document[root_name] = root_;
-      result = YamlDumpWithSortedMaps(document) + "\n";
-    }
-    return result;
-  }
+  std::string EmitString(const std::string& root_name = "root") const;
+
+  /// (Advanced.)  Remove from this archive any map entries that are identical
+  /// to an entry in `other`, iff they reside at the same location within the
+  /// node tree hierarchy and their parent notes are also all maps.  This
+  /// enables emitting a minimal YAML representation when the output will be
+  /// later loaded using YamlReadArchive's option to retain_map_defaults.
+  void SubtractDefaults(const YamlWriteArchive& other);
 
   /// (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
   /// object.  Most users should should call Accept, not Visit.
