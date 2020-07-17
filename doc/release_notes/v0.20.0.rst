@@ -253,4 +253,8 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 43a28f99ac2aa9d152c096b6a878465336d879f6 (inclusive).
-  Current newest_commit 67249e77748d71a60d25f63a74cb53dd07457bdf (inclusive).
+  Current newest_commit bc71215641a7f23f9a9eeb668e0efcc839c57562 (inclusive).
+
+* Fix and/or cleanup OpenGL dependencies (`#13649`_)  # We need either libOpenGL.so, libOpenGL.so.0, libGLX.so, libGLX.0, GL/gl.h, and GL/glx.h (modern, vendor neutral) or libGL.so, libGL.so.1, GL/gl.h, and GL/glx.h (legacy). Vendor neutral is preferable, for NVIDIA users and others, so we choose libOpenGL.so and libGLX.so rather than libGL.so. Also rebuild VTK and drake-visualizer to ensure they are correctly linked to libOpenGL.so and libGLX.so rather than libGL.so.
+* wsg_50_description: Deprecate the URDF and meshes (`#13693`_)
+* added parsing of point_contact_stiffness (`#13686`_)
