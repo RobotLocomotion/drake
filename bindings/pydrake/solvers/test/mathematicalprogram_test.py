@@ -556,6 +556,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
         prog.AddLinearEqualityConstraint(x[0] == 1)
         prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
+        prog.AddLinearEqualityConstraint(
+            2 * x[:2] + np.array([0, 1]), np.array([3, 2]))
 
     def test_constraint_gradient_sparsity(self):
         prog = mp.MathematicalProgram()

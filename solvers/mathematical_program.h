@@ -1519,8 +1519,6 @@ class MathematicalProgram {
    * @param b A vector of doubles.
    * @return The newly added linear equality constraint, together with the
    * bound variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
