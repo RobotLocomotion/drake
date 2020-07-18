@@ -209,7 +209,8 @@ std::string GenerateHtml(const System<double>& system, int initial_depth) {
 <script>
   $ = go.GraphObject.make
   var diagram = $(go.Diagram, "myDiagramDiv", {
-    "undoManager.isEnabled": true
+    "undoManager.isEnabled": true,
+    initialAutoScale: go.Diagram.Uniform
   });
   diagram.layout = $(go.LayeredDigraphLayout, {
     layerSpacing: 20,
