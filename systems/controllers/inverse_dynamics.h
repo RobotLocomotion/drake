@@ -121,6 +121,9 @@ class InverseDynamics : public LeafSystem<T> {
 
   const int q_dim_{0};
   const int v_dim_{0};
+
+  drake::systems::CacheIndex external_forces_cache_index_;
+  drake::systems::CacheIndex multibody_plant_context_cache_index_;
 };
 
 }  // namespace controllers
