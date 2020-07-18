@@ -68,8 +68,8 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                   get_input_port_estimated_state().get_index())})
           .cache_index();
 
-  // Declare external forces cache entry and desired acceleration input port if this is doing
-  // inverse dynamics.
+  // Declare external forces cache entry and desired acceleration input port if
+  // this is doing inverse dynamics.
   if (!this->is_pure_gravity_compensation()) {
     external_forces_cache_index_ =
         this->DeclareCacheEntry(
