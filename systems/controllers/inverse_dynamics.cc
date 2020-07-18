@@ -33,9 +33,12 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
               [this]() {
                 auto multibody_plant_context =
                     multibody_plant_->CreateDefaultContext();
-                multibody_plant_->SetVelocities(
-                    multibody_plant_context.get(),
-                    VectorX<T>::Zero(multibody_plant_->num_velocities()));
+                // Gravity compensation mode requires velocities to be zero.
+                if (this->is_pure_gravity_compensation()) {
+                  multibody_plant_->SetVelocities(
+                      multibody_plant_context.get(),
+                      VectorX<T>::Zero(multibody_plant_->num_velocities()));
+                }
                 return AbstractValue::Make(*multibody_plant_context);
               },
               [this](const ContextBase& context_base,
@@ -46,12 +49,11 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
                 auto& multibody_plant_context =
                     cache_value->template get_mutable_value<Context<T>>();
 
-                // State input.
                 Eigen::VectorBlock<const VectorX<T>> x =
                     get_input_port_estimated_state().Eval(context);
 
                 if (this->is_pure_gravity_compensation()) {
-                  // Velocities remain zero, as set in the cache construction
+                  // Velocities remain zero, as set in the cache allocation
                   // function, for pure gravity compensation mode.
                   multibody_plant_->SetPositions(
                       &multibody_plant_context,
