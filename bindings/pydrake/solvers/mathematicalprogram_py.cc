@@ -700,17 +700,31 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_3args)
+          py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_3args_Aeq_beq_vars)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Expression&, double)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_2args)
+          py::arg("e"), py::arg("b"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_2args_e_b)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Formula&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args)
+          py::arg("f"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args_f)
+      .def(
+          "AddLinearEqualityConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+              const Eigen::Ref<const Eigen::VectorXd>& b) {
+            return self->AddLinearEqualityConstraint(v, b);
+          },
+          py::arg("v"), py::arg("b"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_2args_constEigenMatrixBase_constEigenMatrixBase)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
