@@ -111,10 +111,6 @@ class InverseDynamics : public LeafSystem<T> {
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
 
-  // This context is used solely for setting generalized positions and
-  // velocities in multibody_plant_.
-  std::unique_ptr<Context<T>> multibody_plant_context_;
-
   int input_port_index_state_{0};
   int input_port_index_desired_acceleration_{0};
   int output_port_index_force_{0};
