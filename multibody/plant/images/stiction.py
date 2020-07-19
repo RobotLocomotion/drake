@@ -2,9 +2,9 @@
 Produces stiction.png for contact documentation.
 """
 
+import matplotlib.patches as patches
 import numpy as np
 import pylab as plt
-import matplotlib.patches as patches
 
 
 def step5(x):

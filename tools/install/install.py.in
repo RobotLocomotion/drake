@@ -19,8 +19,8 @@ import os
 import re
 import shutil
 import stat
+from subprocess import check_call, check_output
 import sys
-from subprocess import check_output, check_call
 
 # Stores subdirectories that have already been created.
 subdirs = set()

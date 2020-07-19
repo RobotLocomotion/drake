@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation.planner as mut
-
 import unittest
+
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.plant import MultibodyPlant
-from pydrake.multibody.parsing import Parser
 from pydrake.common.eigen_geometry import Isometry3
+import pydrake.manipulation.planner as mut
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 
 
 class TestPlanner(unittest.TestCase):

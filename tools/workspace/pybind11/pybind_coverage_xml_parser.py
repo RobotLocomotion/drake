@@ -1,8 +1,8 @@
+import logging
+import os
+
 from lxml import etree as ET
 import pandas
-import os
-import logging
-
 
 XPATHS = {
     "class_decl": ".//Node[@kind='CursorKind.CLASS_DECL' or "

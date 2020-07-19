@@ -13,13 +13,13 @@ For guidance, see:
 
 from collections import namedtuple
 import re
-import warnings
 from typing import Any, Tuple
+import warnings
 
 from sphinx import version_info as sphinx_version
-from sphinx.locale import _
 import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
+from sphinx.locale import _
 
 from pydrake.common.cpp_template import TemplateBase
 from pydrake.common.deprecation import DrakeDeprecationWarning

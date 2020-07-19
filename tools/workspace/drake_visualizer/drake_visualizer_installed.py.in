@@ -7,7 +7,7 @@ Note that it is not entirely important that this script's Python interpreter
 match that of the real `drake-visualizer` binary.
 """
 
-from os.path import isdir, join, dirname, realpath
+from os.path import dirname, isdir, join, realpath
 import sys
 
 # Ensure that we can import the necessary scripts, accommodating symlinks.

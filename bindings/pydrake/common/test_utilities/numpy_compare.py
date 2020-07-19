@@ -18,9 +18,14 @@ from itertools import product
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import (
-    Expression, Formula, Monomial, Polynomial, Variable)
 from pydrake.polynomial import Polynomial as RawPolynomial
+from pydrake.symbolic import (
+    Expression,
+    Formula,
+    Monomial,
+    Polynomial,
+    Variable,
+)
 
 
 class _UnwantedEquality(AssertionError):

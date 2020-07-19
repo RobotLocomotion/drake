@@ -1,9 +1,8 @@
-import platform
 import os
+import platform
 import subprocess
 
 from clang import cindex
-
 
 # Alternative: Make this a function in `mkdoc.py`, and import it from mkdoc as
 # a module? (if this was really authored in `mkdoc.py`...)

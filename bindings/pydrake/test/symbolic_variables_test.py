@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+
 import numpy as np
+
 import pydrake.symbolic as sym
 
 # Define global variables to make the tests less verbose.

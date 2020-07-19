@@ -2,13 +2,12 @@ import copy
 import unittest
 
 from pydrake.common.cpp_param import List
-from pydrake.common.value import AbstractValue, Value
-
 from pydrake.common.test.value_test_util import (
-    make_abstract_value_cc_type_unregistered,
     CustomType,
     MoveOnlyType,
+    make_abstract_value_cc_type_unregistered,
 )
+from pydrake.common.value import AbstractValue, Value
 
 
 class TestValue(unittest.TestCase):

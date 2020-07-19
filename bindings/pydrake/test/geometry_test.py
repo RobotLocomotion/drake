@@ -1,35 +1,25 @@
-import pydrake.geometry as mut
-import pydrake.geometry._testing as mut_testing
-
+from math import pi
 import sys
 import unittest
 import warnings
-from math import pi
 
 import numpy as np
 
-from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
+from drake import lcmt_viewer_draw, lcmt_viewer_load_robot
+
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
+import pydrake.geometry as mut
+import pydrake.geometry._testing as mut_testing
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
-from pydrake.systems.analysis import (
-    Simulator_,
-)
-from pydrake.systems.framework import (
-    DiagramBuilder_,
-    InputPort_,
-    OutputPort_,
-)
-from pydrake.systems.sensors import (
-    ImageRgba8U,
-    ImageDepth32F,
-    ImageLabel16I
-    )
+from pydrake.systems.analysis import Simulator_
+from pydrake.systems.framework import DiagramBuilder_, InputPort_, OutputPort_
+from pydrake.systems.sensors import ImageDepth32F, ImageLabel16I, ImageRgba8U
 
 
 class TestGeometry(unittest.TestCase):

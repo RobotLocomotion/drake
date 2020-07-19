@@ -2,9 +2,9 @@
 """
 
 import os
-import unittest
 import subprocess
 import sys
+import unittest
 
 import install_test_helper
 

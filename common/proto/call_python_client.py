@@ -181,11 +181,11 @@ def default_globals():
     # `CallPythonClient`) and the client user code (e.g. `plot(x, y)`).
     # TODO(eric.cousineau): Consider relegating this to a different module,
     # possibly when this falls under `pydrake`.
-    import numpy as np
-    from mpl_toolkits.mplot3d import Axes3D
     import matplotlib
     import matplotlib.pyplot as plt
-    import pylab  # See `%pylab?` in IPython.
+    from mpl_toolkits.mplot3d import Axes3D
+    import numpy as np
+    import pylab
 
     # TODO(eric.cousineau): Where better to put this?
     matplotlib.interactive(True)

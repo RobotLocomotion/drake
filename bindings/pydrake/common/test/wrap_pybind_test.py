@@ -3,12 +3,12 @@ import gc
 import unittest
 
 from pydrake.common.test.wrap_test_util import (
+    CheckTypeConversionExample,
+    MakeTypeConversionExample,
+    MakeTypeConversionExampleBadRvp,
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,
-    MakeTypeConversionExample,
-    MakeTypeConversionExampleBadRvp,
-    CheckTypeConversionExample,
 )
 
 

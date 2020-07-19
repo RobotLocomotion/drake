@@ -3,6 +3,7 @@
 import unittest
 
 import numpy as np
+
 try:
     import tkinter as tk
 except ImportError:

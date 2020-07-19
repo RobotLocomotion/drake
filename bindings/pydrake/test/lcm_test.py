@@ -1,8 +1,8 @@
 import unittest
 
-from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
-
 from robotlocomotion import quaternion_t
+
+from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm, Subscriber
 
 
 class TestLcm(unittest.TestCase):

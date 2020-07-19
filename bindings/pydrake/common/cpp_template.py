@@ -4,7 +4,7 @@ import inspect
 import sys
 import types
 
-from pydrake.common.cpp_param import get_param_names, get_param_canonical
+from pydrake.common.cpp_param import get_param_canonical, get_param_names
 from pydrake.common.deprecation import _warn_deprecated
 
 

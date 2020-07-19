@@ -20,7 +20,6 @@ from clang import cindex
 
 from .libclang_setup import add_library_paths
 
-
 REPLACE_VARIABLES = ["doc", "cls_doc", "var_doc", "enum_doc"]
 
 

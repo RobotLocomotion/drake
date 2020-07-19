@@ -1,6 +1,7 @@
-import cps
 import re
 import sys
+
+import cps
 
 # n.b. sys.argv[0] is the program name
 version_file = sys.argv[1]

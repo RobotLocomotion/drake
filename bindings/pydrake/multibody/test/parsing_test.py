@@ -1,20 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.multibody.parsing import (
-    Parser,
-    PackageMap,
-)
-
 import os
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.tree import (
-    ModelInstanceIndex,
-)
-from pydrake.multibody.plant import (
-    MultibodyPlant,
-)
+from pydrake.multibody.parsing import PackageMap, Parser
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import ModelInstanceIndex
 
 
 class TestParsing(unittest.TestCase):

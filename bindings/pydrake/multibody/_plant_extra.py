@@ -1,12 +1,12 @@
-import textwrap as _textwrap
 import sys as _sys
+import textwrap as _textwrap
 
 import pydrake.autodiffutils as _ad
-import pydrake.symbolic as _sym
 from pydrake.common import cpp_param as _cpp_param
 from pydrake.common import cpp_template as _cpp_template
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.common.value import Value as _Value
+import pydrake.symbolic as _sym
 
 _PARAM_LIST = (
     (float,),

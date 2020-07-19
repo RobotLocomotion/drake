@@ -1,12 +1,13 @@
-import math
-import warnings
-
 import errno
 import glob
+import math
+import os
+import warnings
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import os
+
 with warnings.catch_warnings():  # noqa
     # N.B. We must suppress this to appease `all_test`.
     # TODO(eric.cousineau): Remove this once all supported platform ships
@@ -16,6 +17,7 @@ with warnings.catch_warnings():  # noqa
     from scipy import spatial
 
 from drake import lcmt_viewer_load_robot
+
 from pydrake.common.eigen_geometry import Quaternion
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import DispatchLoadMessage, ReadObjToSurfaceMesh

@@ -3,14 +3,8 @@
 import copy
 from functools import partial
 
-from pydrake.systems.framework import (
-    LeafSystem_,
-    SystemScalarConverter,
-)
-from pydrake.common.cpp_template import (
-    _get_module_from_stack,
-    TemplateClass,
-)
+from pydrake.common.cpp_template import TemplateClass, _get_module_from_stack
+from pydrake.systems.framework import LeafSystem_, SystemScalarConverter
 
 
 def _get_conversion_pairs(T_list):

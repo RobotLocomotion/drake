@@ -1,10 +1,10 @@
-import pydrake.visualization.plotting as mut
+import unittest
 
 import matplotlib.pyplot as plt
 import numpy as np
-import unittest
 
 from pydrake.symbolic import Variable
+import pydrake.visualization.plotting as mut
 
 
 class TestMatplotlibUtil(unittest.TestCase):

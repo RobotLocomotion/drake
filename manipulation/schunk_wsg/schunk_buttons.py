@@ -20,6 +20,7 @@ from director import lcmUtils
 
 import drake as lcmdrake
 
+
 def sendGripperCommand(targetPositionMM, force):
     msg = lcmdrake.lcmt_schunk_wsg_command()
     msg.utime = int(time.time()*1e6)

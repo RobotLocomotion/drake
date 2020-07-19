@@ -14,7 +14,8 @@ from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
-    PlanarSceneGraphVisualizer)
+    PlanarSceneGraphVisualizer,
+)
 
 
 def run_pendulum_example(args):

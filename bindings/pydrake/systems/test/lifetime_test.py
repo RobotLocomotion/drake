@@ -8,21 +8,16 @@ lifetime of objects, eventually lock down capabilities as they are introduced.
 
 
 import unittest
+
 import numpy as np
 
-from pydrake.systems.analysis import (
-    Simulator,
-    )
-from pydrake.systems.framework import (
-    DiagramBuilder,
-    )
-from pydrake.systems.primitives import (
-    Adder,
-    )
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.primitives import Adder
 from pydrake.systems.test.test_util import (
     DeleteListenerSystem,
     DeleteListenerVector,
-    )
+)
 
 
 class Info:

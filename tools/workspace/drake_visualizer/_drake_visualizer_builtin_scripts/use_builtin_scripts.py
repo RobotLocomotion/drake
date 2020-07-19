@@ -8,12 +8,12 @@ import sys
 from _drake_visualizer_builtin_scripts import (
     AVAILABLE_SCRIPTS,
     limit_clipping_range,
+    scoped_singleton_func,
     show_frame,
     show_hydroelastic_contact,
     show_image,
     show_point_pair_contact,
     show_time,
-    scoped_singleton_func,
 )
 
 

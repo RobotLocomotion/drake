@@ -1,16 +1,15 @@
-import pydrake.systems.scalar_conversion as mut
-
 import copy
 import unittest
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.cpp_template import TemplateClass
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     DiagramBuilder,
     LeafSystem_,
     SystemScalarConverter,
 )
-from pydrake.common.cpp_template import TemplateClass
+import pydrake.systems.scalar_conversion as mut
 
 
 @mut.TemplateSystem.define("Example_")

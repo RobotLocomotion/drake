@@ -1,7 +1,7 @@
 from os.path import isfile
-import unittest
 from subprocess import run
 import sys
+import unittest
 
 
 class TestCreatePlot(unittest.TestCase):

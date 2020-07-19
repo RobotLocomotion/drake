@@ -1,8 +1,6 @@
 """
 Test bindings of LCM integration with the Systems framework.
 """
-import pydrake.systems.lcm as mut
-
 import collections
 from multiprocessing import Process
 import time
@@ -17,6 +15,7 @@ from pydrake.common.value import AbstractValue
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import BasicVector, DiagramBuilder, LeafSystem
+import pydrake.systems.lcm as mut
 from pydrake.systems.primitives import ConstantVectorSource, LogOutput
 
 

@@ -1,20 +1,20 @@
-import pydrake.math as mut
-import pydrake.math._test as mtest
-from pydrake.math import (BarycentricMesh, wrap_to)
-from pydrake.common.cpp_param import List
-from pydrake.common.eigen_geometry import Isometry3_, Quaternion_, AngleAxis_
-from pydrake.common.value import Value
-from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import Expression
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import pydrake.common.test_utilities.numpy_compare as numpy_compare
-from pydrake.common.test_utilities.pickle_compare import assert_pickle
-
 import copy
 import math
 import unittest
 
 import numpy as np
+
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.cpp_param import List
+from pydrake.common.eigen_geometry import AngleAxis_, Isometry3_, Quaternion_
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+import pydrake.common.test_utilities.numpy_compare as numpy_compare
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
+from pydrake.common.value import Value
+import pydrake.math as mut
+from pydrake.math import BarycentricMesh, wrap_to
+import pydrake.math._test as mtest
+from pydrake.symbolic import Expression
 
 
 class TestBarycentricMesh(unittest.TestCase):

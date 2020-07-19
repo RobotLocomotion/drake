@@ -3,8 +3,8 @@ from types import ModuleType
 import unittest
 
 import pydrake.common.cpp_template as m
-from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 _TEST_MODULE = "cpp_template_test"
 

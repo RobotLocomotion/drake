@@ -2,9 +2,9 @@
 
 import os
 from os.path import isdir, join, relpath
-import unittest
 from subprocess import STDOUT, check_call, check_output
 import sys
+import unittest
 
 # TODO(eric.cousineau): Expand on these tests, especially for nuanced things
 # like Python C extensions.

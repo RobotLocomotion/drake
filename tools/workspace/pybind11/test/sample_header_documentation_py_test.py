@@ -1,6 +1,6 @@
 from os.path import join, realpath
-import unittest
 import subprocess
+import unittest
 
 
 def _read(filename):

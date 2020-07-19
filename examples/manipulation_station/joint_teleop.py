@@ -9,17 +9,20 @@ import sys
 import numpy as np
 
 from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList)
+    CreateClutterClearingYcbObjectList,
+    ManipulationStation,
+    ManipulationStationHardwareInterface,
+)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 from pydrake.math import RigidTransform, RotationMatrix
-from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
+from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.planar_scenegraph_visualizer import (
+    PlanarSceneGraphVisualizer,
+)
 from pydrake.systems.primitives import FirstOrderLowPassFilter, SignalLogger
-from pydrake.systems.planar_scenegraph_visualizer import \
-    PlanarSceneGraphVisualizer
 
 
 def main():

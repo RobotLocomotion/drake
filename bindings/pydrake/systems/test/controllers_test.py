@@ -5,9 +5,9 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.examples.pendulum import PendulumPlant
-from pydrake.multibody.tree import MultibodyForces
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import MultibodyForces
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
     DiscreteTimeLinearQuadraticRegulator,
@@ -16,10 +16,10 @@ from pydrake.systems.controllers import (
     FiniteHorizonLinearQuadraticRegulatorOptions,
     FiniteHorizonLinearQuadraticRegulatorResult,
     FittedValueIteration,
-    InverseDynamicsController,
     InverseDynamics,
-    LinearQuadraticRegulator,
+    InverseDynamicsController,
     LinearProgrammingApproximateDynamicProgramming,
+    LinearQuadraticRegulator,
     MakeFiniteHorizonLinearQuadraticRegulator,
     PeriodicBoundaryCondition,
     PidControlledSystem,

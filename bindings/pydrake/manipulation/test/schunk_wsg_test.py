@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation.schunk_wsg as mut
-
 import unittest
+
 import numpy as np
 
+import pydrake.manipulation.schunk_wsg as mut
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.systems.primitives import MatrixGain
 

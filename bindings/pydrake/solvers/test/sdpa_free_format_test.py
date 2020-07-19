@@ -1,8 +1,9 @@
+import os
 import unittest
+
+from pydrake.common import temp_directory
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.sdpa_free_format import GenerateSDPA
-from pydrake.common import temp_directory
-import os
 
 
 class TestSdpaFreeFormat(unittest.TestCase):

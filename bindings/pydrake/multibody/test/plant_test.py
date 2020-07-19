@@ -1,12 +1,56 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-
-import numpy as np
 import warnings
 
+import numpy as np
+
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import Expression
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.cpp_param import List
+from pydrake.common.deprecation import install_numpy_warning_filters
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue, Value
+from pydrake.geometry import (
+    Box,
+    GeometryId,
+    GeometrySet,
+    PenetrationAsPointPair_,
+    ProximityProperties,
+    Role,
+    SceneGraph_,
+    SignedDistancePair_,
+    SignedDistanceToPoint_,
+    Sphere,
+)
+from pydrake.math import RigidTransform_, RollPitchYaw_, RotationMatrix_
+from pydrake.multibody.benchmarks.acrobot import (
+    AcrobotParameters,
+    MakeAcrobotPlant,
+)
+from pydrake.multibody.math import (
+    SpatialAcceleration_,
+    SpatialForce_,
+    SpatialMomentum_,
+    SpatialVelocity_,
+)
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import (
+    AddMultibodyPlantSceneGraph,
+    CalcContactFrictionFromSurfaceProperties,
+    ConnectContactResultsToDrakeVisualizer,
+    ContactResults_,
+    ContactResultsToLcmSystem,
+    CoulombFriction_,
+    ExternallyAppliedSpatialForce_,
+    MultibodyPlant_,
+    PointPairContactInfo_,
+    Propeller_,
+    PropellerInfo,
+    VectorExternallyAppliedSpatialForced,
+    VectorExternallyAppliedSpatialForced_,
+)
 from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
@@ -29,77 +73,29 @@ from pydrake.multibody.tree import (
     PrismaticJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
-    RotationalInertia_,
     RigidBody_,
+    RotationalInertia_,
     SpatialInertia_,
     UniformGravityFieldElement_,
     UnitInertia_,
     UniversalJoint_,
     WeldJoint_,
+    default_model_instance,
     world_index,
     world_model_instance,
-    default_model_instance
 )
-from pydrake.multibody.math import (
-    SpatialForce_,
-    SpatialMomentum_,
-    SpatialVelocity_,
-    SpatialAcceleration_,
-)
-from pydrake.multibody.plant import (
-    AddMultibodyPlantSceneGraph,
-    CalcContactFrictionFromSurfaceProperties,
-    ConnectContactResultsToDrakeVisualizer,
-    ContactResults_,
-    ContactResultsToLcmSystem,
-    CoulombFriction_,
-    ExternallyAppliedSpatialForce_,
-    MultibodyPlant_,
-    PointPairContactInfo_,
-    PropellerInfo,
-    Propeller_,
-    VectorExternallyAppliedSpatialForced,
-    VectorExternallyAppliedSpatialForced_,
-)
-from pydrake.multibody.parsing import Parser
-from pydrake.multibody.benchmarks.acrobot import (
-    AcrobotParameters,
-    MakeAcrobotPlant,
-)
-from pydrake.common.cpp_param import List
-from pydrake.common import FindResourceOrThrow
-from pydrake.common.deprecation import install_numpy_warning_filters
-from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.common.value import AbstractValue, Value
-from pydrake.geometry import (
-    Box,
-    GeometryId,
-    GeometrySet,
-    Role,
-    PenetrationAsPointPair_,
-    ProximityProperties,
-    SceneGraph_,
-    SignedDistancePair_,
-    SignedDistanceToPoint_,
-    Sphere,
-)
-from pydrake.math import (
-    RigidTransform_,
-    RollPitchYaw_,
-    RotationMatrix_,
-)
+from pydrake.symbolic import Expression
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
     BasicVector_,
     DiagramBuilder_,
-    System_,
-    LeafSystem_,
     InputPort_,
+    LeafSystem_,
     OutputPort_,
+    System_,
 )
-from pydrake.systems.scalar_conversion import TemplateSystem
 from pydrake.systems.lcm import LcmPublisherSystem
+from pydrake.systems.scalar_conversion import TemplateSystem
 
 
 def get_index_class(cls, T):

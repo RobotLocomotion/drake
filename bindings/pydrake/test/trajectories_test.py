@@ -1,12 +1,11 @@
-import numpy as np
 import unittest
+
+import numpy as np
 
 from pydrake.common import ToleranceType
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.polynomial import Polynomial
-from pydrake.trajectories import (
-    PiecewisePolynomial,
-)
+from pydrake.trajectories import PiecewisePolynomial
 
 
 class TestTrajectories(unittest.TestCase):

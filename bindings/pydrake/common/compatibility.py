@@ -4,7 +4,6 @@ which may need changes for compatibility.
 
 import numpy as np
 
-
 _patches = {
     'numpy_formatters': {
         'applied': False,
