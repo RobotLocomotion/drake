@@ -174,15 +174,15 @@ drake_py_binary(
 drake_py_binary(
     name = "end_effector_teleop_dualshock4",
     srcs = ["end_effector_teleop_dualshock4.py"],
-    # Disabling testing for this module since it will fail on buildfarm since
-    # it assumes that dualshock4 controller is connected.
-    # add_test_rule = 1,
-    # tags = vtk_test_tags(),
-    # test_rule_args = [
-    #     "--target_realtime_rate=0.0",
-    #     "--duration=0.1",
-    #     "--test",
-    # ],
+    # Disabling automatic testing for this module since it will fail on buildfarm 
+    #because it assumes that dualshock4 controller is connected.
+    add_test_rule = 1,
+    tags = vtk_test_tags() + ["manual"],
+    test_rule_args = [
+        "--target_realtime_rate=0.0",
+        "--duration=0.1",
+        "--test",
+    ],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
     deps = [
         ":differential_ik",
