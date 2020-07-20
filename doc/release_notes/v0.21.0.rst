@@ -1,0 +1,109 @@
+*************
+Drake v0.21.0
+*************
+
+Announcements
+-------------
+
+On macOS, Homebrew now symlinks Drake's compatible version of Python 3 (3.8)
+into ``/usr/local/bin/``, so it is on the ``$PATH`` by default.  There is no
+longer any need to add ``/usr/local/opt/python@3.8/bin`` to your ``$PATH``.
+
+Breaking changes since v0.20.0
+------------------------------
+
+These are no breaking changes that did not undergo a deprecation period.
+
+Changes since v0.20.0:
+----------------------
+
+Dynamical Systems
+~~~~~~~~~~~~~~~~~
+
+New features
+
+* None
+
+Fixes
+
+* None
+
+Mathematical Program
+~~~~~~~~~~~~~~~~~~~~
+
+New features
+
+* None
+
+Fixes
+
+* None
+
+Multibody Dynamics
+~~~~~~~~~~~~~~~~~~
+
+New features
+
+* None
+
+Fixes
+
+* None
+
+Tutorials and examples
+~~~~~~~~~~~~~~~~~~~~~~
+
+* None
+
+Miscellaneous features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* None
+
+pydrake bindings
+~~~~~~~~~~~~~~~~
+
+New features
+
+* Add ConnectMeshcatVisualizer sugar (`#13632`_)
+
+Fixes
+
+* None
+
+Newly bound
+
+* None
+
+Build system and dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* None
+
+Newly-deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~
+
+* None
+
+Removal of deprecated items
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* None
+
+Notes
+-----
+
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.21.0>`__ named
+``drake-YYYYMMDD-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+<nightly-releases>` for instructions on how to use them.
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
+..
+  Current oldest_commit bc71215641a7f23f9a9eeb668e0efcc839c57562 (exclusive).
+  Current newest_commit None (inclusive).
