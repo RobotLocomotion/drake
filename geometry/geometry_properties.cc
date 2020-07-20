@@ -8,7 +8,7 @@ namespace geometry {
 using std::string;
 
 std::ostream& operator<<(std::ostream& out, const PropertyName& property) {
-  out << "('" << property.group() << "', '" << property.property() << "')";
+  out << property.group() << "/" << property.property();
   return out;
 }
 

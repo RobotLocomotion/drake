@@ -672,7 +672,7 @@ void TestPropertyErrors(
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, props), std::logic_error,
-        fmt::format("Cannot create {} {}.+'{}'\\) property", compliance,
+        fmt::format("Cannot create {} {}.+{} property", compliance,
                     shape_name, property_name));
   }
 
@@ -683,9 +683,9 @@ void TestPropertyErrors(
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, wrong_value), std::logic_error,
-        fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
-                    "different type.+string'",
-                    group_name, property_name));
+        fmt::format(
+            ".*The property {} exists, but is of a different type.+string'",
+            PropertyName(group_name, property_name)));
   }
 
   // Error case: property value is not positive.
@@ -694,7 +694,7 @@ void TestPropertyErrors(
     negative_value.AddProperty(group_name, property_name, *bad_value);
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, negative_value), std::logic_error,
-        fmt::format("Cannot create {} {}.+'{}'.+ positive", compliance,
+        fmt::format("Cannot create {} {}.+{}.+ positive", compliance,
                     shape_name, property_name));
   }
 }
