@@ -70,9 +70,8 @@ GTEST_TEST(GeometryProperties, AddProperty) {
   // Redundant add fails.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.Add(property, int_value), std::logic_error,
-      fmt::format(
-          ".*Trying to add property \\('{}', '{}'\\).+ name already exists",
-          group_name, prop_name));
+      fmt::format(".*Trying to add property {}.+ name already exists",
+                  property));
   ASSERT_TRUE(properties.HasProperty(property));
 }
 
@@ -104,9 +103,8 @@ GTEST_TEST(GeometryProperties, UpdateProperty) {
   // Update alias fails for changing type.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.Update(property, 17.0), std::logic_error,
-      fmt::format(".*Trying to update property \\('{}', '{}'\\).+ is of "
-                  "different type.+",
-                  group_name, prop_name));
+      fmt::format(".*Trying to update property {}.+ is of different type.+",
+                  property));
 }
 
 GTEST_TEST(GeometryProperties, RemoveProperty) {
@@ -181,12 +179,10 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
   // Case: default value that can be *implicitly* converted to the desired
   // type requires explicit template declaration.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      properties.GetPropertyOrDefault(property, 3),
-      std::logic_error,
-      fmt::format(
-          ".*The property \\('{}', '{}'\\) exists, but is of a different type. "
-          "Requested 'int', but found 'double'",
-          group_name, prop_name));
+      properties.GetPropertyOrDefault(property, 3), std::logic_error,
+      fmt::format(".*The property {} exists, but is of a different type. "
+                  "Requested 'int', but found 'double'",
+                  property));
   DRAKE_EXPECT_NO_THROW(
       properties.GetPropertyOrDefault<double>(property, 3));
 
@@ -207,11 +203,10 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
 
   // Case: Property exists of different type.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      properties.GetPropertyOrDefault(property, "test"),
-      std::logic_error,
-      fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
-                  "different type. Requested 'std::string', but found 'double'",
-                  group_name, prop_name));
+      properties.GetPropertyOrDefault(property, "test"), std::logic_error,
+      fmt::format(".*The property {} exists, but is of a different type. "
+                  "Requested 'std::string', but found 'double'",
+                  property));
 
   // Using r-values as defaults; this tests both compatibility and correctness.
   properties.Add({"strings", "valid_string"}, "valid_string");
@@ -236,25 +231,22 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.Get<int>(property), std::logic_error,
       fmt::format(
-          ".*Trying to read property \\('{}', '{}'\\), but the group does not "
-          "exist.",
-          group_name, prop_name));
+          ".*Trying to read property {}, but the group does not exist.",
+          property));
 
   // Case: Group exists, property does not.
   properties.Add({group_name, prop_name + "_alt"}, 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.Get<int>(property), std::logic_error,
-      fmt::format(".*There is no property \\('{}', '{}'\\)", group_name,
-                  prop_name));
+      fmt::format(".*There is no property {}", property));
 
   // Case: Group and property exists, but property is of different type.
   DRAKE_EXPECT_NO_THROW(properties.Add(property, 7.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.Get<int>(property), std::logic_error,
-      fmt::format(
-          ".*The property \\('{}', '{}'\\) exists, but is of a different type. "
-          "Requested 'int', but found 'double'",
-          group_name, prop_name));
+      fmt::format(".*The property {} exists, but is of a different type. "
+                  "Requested 'int', but found 'double'",
+                  property));
 }
 
 // Tests iteration through a group's properties.
@@ -571,9 +563,8 @@ GTEST_TEST(GeometryPropertiesOld, AddProperty) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.AddProperty(group_name, prop_name, int_value),
       std::logic_error,
-      fmt::format(
-          ".*Trying to add property \\('{}', '{}'\\).+ name already exists",
-          group_name, prop_name));
+      fmt::format(".*Trying to add property {}.+ name already exists",
+                  PropertyName(group_name, prop_name)));
   ASSERT_TRUE(properties.HasProperty(group_name, prop_name));
 }
 
@@ -606,9 +597,8 @@ GTEST_TEST(GeometryPropertiesOld, UpdateProperty) {
   // UpdateProperty alias fails for changing type.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.UpdateProperty(group_name, prop_name, 17.0), std::logic_error,
-      fmt::format(".*Trying to update property \\('{}', '{}'\\).+ is of "
-                  "different type.+",
-                  group_name, prop_name));
+      fmt::format(".*Trying to update property {}.+ is of different type.+",
+                  PropertyName(group_name, prop_name)));
 }
 
 GTEST_TEST(GeometryPropertiesOld, RemoveProperty) {
@@ -675,10 +665,9 @@ GTEST_TEST(GeometryPropertiesOld, GetPropertyOrDefault) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetPropertyOrDefault(group_name, prop_name, 3),
       std::logic_error,
-      fmt::format(
-          ".*The property \\('{}', '{}'\\) exists, but is of a different type. "
-          "Requested 'int', but found 'double'",
-          group_name, prop_name));
+      fmt::format(".*The property {} exists, but is of a different type. "
+                  "Requested 'int', but found 'double'",
+                  PropertyName(group_name, prop_name)));
   DRAKE_EXPECT_NO_THROW(
       properties.GetPropertyOrDefault<double>(group_name, prop_name, 3));
 
@@ -701,9 +690,9 @@ GTEST_TEST(GeometryPropertiesOld, GetPropertyOrDefault) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetPropertyOrDefault(group_name, prop_name, "test"),
       std::logic_error,
-      fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
-                  "different type. Requested 'std::string', but found 'double'",
-                  group_name, prop_name));
+      fmt::format(".*The property {} exists, but is of a different type. "
+                  "Requested 'std::string', but found 'double'",
+                  PropertyName(group_name, prop_name)));
 
   // Using r-values as defaults; this tests both compatibility and correctness.
   properties.AddProperty("strings", "valid_string", "valid_string");
@@ -726,26 +715,23 @@ GTEST_TEST(GeometryPropertiesOld, GetPropertyFailure) {
   // Case: Asking for property from non-existent group.
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
-      fmt::format(
-          ".*Trying to read property \\('{}', '{}'\\), but the group does not "
-          "exist.",
-          group_name, prop_name));
+      fmt::format(".*Trying to read property {}, but the group does not exist.",
+                  PropertyName(group_name, prop_name)));
 
   // Case: Group exists, property does not.
   properties.AddProperty(group_name, prop_name + "_alt", 1);
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
-      fmt::format(".*There is no property \\('{}', '{}'\\)", group_name,
-                  prop_name));
+      fmt::format(".*There is no property {}",
+                  PropertyName(group_name, prop_name)));
 
   // Case: Group and property exists, but property is of different type.
   DRAKE_EXPECT_NO_THROW(properties.AddProperty(group_name, prop_name, 7.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
-      fmt::format(
-          ".*The property \\('{}', '{}'\\) exists, but is of a different type. "
-          "Requested 'int', but found 'double'",
-          group_name, prop_name));
+      fmt::format(".*The property {} exists, but is of a different type. "
+                  "Requested 'int', but found 'double'",
+                  PropertyName(group_name, prop_name)));
 }
 
 // Tests iteration through a group's properties.
