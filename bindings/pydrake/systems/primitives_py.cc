@@ -87,10 +87,10 @@ PYBIND11_MODULE(primitives, m) {
         // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
         // wrapped.
         .def("get_input_port", &TimeVaryingAffineSystem<T>::get_input_port,
-            py_reference_internal,
+            py_rvp::reference_internal,
             doc.TimeVaryingAffineSystem.get_input_port.doc)
         .def("get_output_port", &TimeVaryingAffineSystem<T>::get_output_port,
-            py_reference_internal,
+            py_rvp::reference_internal,
             doc.TimeVaryingAffineSystem.get_output_port.doc)
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc)
@@ -104,10 +104,10 @@ PYBIND11_MODULE(primitives, m) {
         // Need to specifically redeclare the System to have both overloads
         // available.
         .def("get_input_port", &System<T>::get_input_port,
-            py_reference_internal, py::arg("port_index"),
+            py_rvp::reference_internal, py::arg("port_index"),
             pydrake_doc.drake.systems.System.get_input_port.doc)
         .def("get_output_port", &System<T>::get_output_port,
-            py_reference_internal, py::arg("port_index"),
+            py_rvp::reference_internal, py::arg("port_index"),
             pydrake_doc.drake.systems.System.get_output_port.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
@@ -120,11 +120,11 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<VectorX<T>>(), py::arg("source_value"),
             doc.ConstantVectorSource.ctor.doc)
         .def("get_source_value", &ConstantVectorSource<T>::get_source_value,
-            py::arg("context"), py_reference_internal,
+            py::arg("context"), py_rvp::reference_internal,
             doc.ConstantVectorSource.get_source_value.doc)
         .def("get_mutable_source_value",
             &ConstantVectorSource<T>::get_mutable_source_value,
-            py::arg("context"), py_reference_internal,
+            py::arg("context"), py_rvp::reference_internal,
             doc.ConstantVectorSource.get_mutable_source_value.doc);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
@@ -246,8 +246,8 @@ PYBIND11_MODULE(primitives, m) {
             &SignalLogger<T>::set_forced_publish_only,
             doc.SignalLogger.set_forced_publish_only.doc)
         .def("sample_times", &SignalLogger<T>::sample_times,
-            py_reference_internal, doc.SignalLogger.sample_times.doc)
-        .def("data", &SignalLogger<T>::data, py_reference_internal,
+            py_rvp::reference_internal, doc.SignalLogger.sample_times.doc)
+        .def("data", &SignalLogger<T>::data, py_rvp::reference_internal,
             doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
@@ -383,8 +383,8 @@ PYBIND11_MODULE(primitives, m) {
   m.def("LogOutput", &LogOutput<double>, py::arg("src"), py::arg("builder"),
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 2>(),
-      // See #11531 for why `py_reference` is needed.
-      py_reference, doc.LogOutput.doc);
+      // See #11531 for why `py_rvp::reference` is needed.
+      py_rvp::reference, doc.LogOutput.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.
 }
