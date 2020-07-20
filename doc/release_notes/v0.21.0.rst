@@ -26,7 +26,7 @@ New features
 
 Fixes
 
-* None
+* Improve error checking of DiscreteValues (`#13681`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -53,42 +53,42 @@ Fixes
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
-* None
+* manipulation_station: Add dualshock4 teleoperation (`#13570`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* None
+* Tell gojs to autoscale for system diagrams (`#13704`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 New features
 
-* Add ConnectMeshcatVisualizer sugar (`#13632`_)
+* None
 
 Fixes
 
-* None
+* Improve documentation of module path naming for C++ vs Python (`#13555`_)
 
 Newly bound
 
-* None
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLinearEqualityConstraint overload (`#13703`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* None
+None.
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* None
+None.
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* None
+None.
 
 Notes
 -----
@@ -107,9 +107,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
   Current newest_commit 29c7513f714804389bec8550b2b94e8c837e883f (inclusive).
-
-* DiscreteValues: always error-check convenience methods (`#13681`_)
-* pydrake doc: Elaborate on how to discover C++ Python bindings (`#13555`_)
-* Tell gojs to autoscale for system diagrams (`#13704`_)
-* Add python binding for AddLinearEqualityConstraint overload (`#13703`_)
-* Adding dualshock4 teleoperation example to manipulation station (`#13570`_)
