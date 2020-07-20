@@ -248,4 +248,20 @@ drake_cc_googletest(
     ],
 )
 
+# Provides a target for drake-bazel-external workflows to still access targets
+# like `render_engine_vtk` (e.g. for writing bindings that leverage those
+# headers).
+# N.B. We only expose the headers, not the requisite dependencies, so they can
+# easily be incorporated into `//:drake_shared_library`.
+drake_cc_library(
+    name = "uninstalled_shared_library_hdrs",
+    hdrs = [
+        "render_engine_ospray.h",
+        "render_engine_vtk.h",
+        "render_engine_vtk_base.h",
+    ],
+    tags = ["exclude_from_package"],
+    visibility = ["//tools/install/libdrake:__pkg__"],
+)
+
 add_lint_tests()

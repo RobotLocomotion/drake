@@ -87,6 +87,10 @@ cc_library(
     deps = [
         ":libdrake_header_only_deps",
         ":libdrake_runtime_so_deps",
+        # N.B. We include this here so that we can access the headers using
+        # the drake-bazel-external workflow, but not from drake-*-installed
+        # workflows.
+        "//geometry/render:uninstalled_shared_library_hdrs",
     ],
 )
 
