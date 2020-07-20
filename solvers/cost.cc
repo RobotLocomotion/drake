@@ -82,7 +82,7 @@ void QuadraticCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
 
   // If dx is the identity matrix (very common here), then skip the chain rule
   // multiplication dy * dx
-  if (dx.isIdentity()) {
+  if (dx == MatrixXd::Identity(x.size(), x.size())) {
     *y = math::initializeAutoDiffGivenGradientMatrix(result, dy);
   } else {
     *y = math::initializeAutoDiffGivenGradientMatrix(result, dy * dx);
