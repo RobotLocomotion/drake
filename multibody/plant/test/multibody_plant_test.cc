@@ -144,6 +144,16 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // We should throw an exception if finalize is called twice.  Verify this.
   EXPECT_THROW(plant->Finalize(), std::logic_error);
 
+  // Verify that a non-positive penetration_allowance throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->set_penetration_allowance(-1), std::logic_error,
+      "set_penetration_allowance\\(\\): penetration_allowance must be strictly "
+      "positive.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->set_penetration_allowance(0), std::logic_error,
+      "set_penetration_allowance\\(\\): penetration_allowance must be strictly "
+      "positive.");
+
   // Verify the final model size for the model as a whole and for each instance.
   EXPECT_EQ(plant->num_bodies(), 5);
   EXPECT_EQ(plant->num_joints(), 4);
