@@ -4125,7 +4125,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // CalcContactFrictionFromSurfaceProperties().
   // The i-th entry in the returned std::vector corresponds to the combined
   // friction properties for the i-th point pair in `point_pairs`.
-  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
+  std::vector<CoulombFriction<T>> CalcCombinedFrictionCoefficients(
       const drake::systems::Context<T>& context,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs)
       const;
@@ -4302,7 +4302,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     /// See contact_model_doxygen.h @section tangent_force for details.
     T ComputeFrictionCoefficient(
         const T& speed_BcAc,
-        const CoulombFriction<double>& friction) const;
+        const CoulombFriction<T>& friction) const;
 
     /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
     /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
@@ -4609,7 +4609,7 @@ std::vector<geometry::PenetrationAsPointPair<AutoDiffXd>>
 MultibodyPlant<AutoDiffXd>::CalcPointPairPenetrations(
     const systems::Context<AutoDiffXd>&) const;
 template <>
-std::vector<CoulombFriction<double>>
+std::vector<CoulombFriction<symbolic::Expression>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<symbolic::Expression>&,
     const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)

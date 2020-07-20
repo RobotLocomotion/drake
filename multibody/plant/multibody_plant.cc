@@ -1137,7 +1137,7 @@ MultibodyPlant<T>::CalcPointPairPenetrations(const systems::Context<T>&) const {
 }
 
 template <>
-std::vector<CoulombFriction<double>>
+std::vector<CoulombFriction<symbolic::Expression>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<symbolic::Expression>&,
     const std::vector<PenetrationAsPointPair<symbolic::Expression>>&) const {
@@ -1146,11 +1146,11 @@ MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
 }
 
 template<typename T>
-std::vector<CoulombFriction<double>>
+std::vector<CoulombFriction<T>>
 MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<T>& context,
     const std::vector<PenetrationAsPointPair<T>>& point_pairs) const {
-  std::vector<CoulombFriction<double>> combined_frictions;
+  std::vector<CoulombFriction<T>> combined_frictions;
   combined_frictions.reserve(point_pairs.size());
 
   if (point_pairs.size() == 0) {
@@ -1175,11 +1175,11 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     DRAKE_THROW_UNLESS(propB->HasProperty(geometry::internal::kMaterialGroup,
                                           geometry::internal::kFriction));
 
-    const CoulombFriction<double>& geometryA_friction =
-        propA->GetProperty<CoulombFriction<double>>(
+    const CoulombFriction<T>& geometryA_friction =
+        propA->GetProperty<CoulombFriction<T>>(
             geometry::internal::kMaterialGroup, geometry::internal::kFriction);
-    const CoulombFriction<double>& geometryB_friction =
-        propB->GetProperty<CoulombFriction<double>>(
+    const CoulombFriction<T>& geometryB_friction =
+        propB->GetProperty<CoulombFriction<T>>(
             geometry::internal::kMaterialGroup, geometry::internal::kFriction);
 
     combined_frictions.push_back(CalcContactFrictionFromSurfaceProperties(
@@ -1277,7 +1277,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuousPointPair(
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
 
-  const std::vector<CoulombFriction<double>> combined_friction_pairs =
+  const std::vector<CoulombFriction<T>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(context, point_pairs);
 
   const internal::PositionKinematicsCache<T>& pc =
@@ -1544,18 +1544,18 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     DRAKE_THROW_UNLESS(propN->HasProperty(geometry::internal::kMaterialGroup,
                                           geometry::internal::kFriction));
 
-    const CoulombFriction<double>& geometryM_friction =
-        propM->GetProperty<CoulombFriction<double>>(
+    const CoulombFriction<T>& geometryM_friction =
+        propM->GetProperty<CoulombFriction<T>>(
             geometry::internal::kMaterialGroup, geometry::internal::kFriction);
-    const CoulombFriction<double>& geometryN_friction =
-        propN->GetProperty<CoulombFriction<double>>(
+    const CoulombFriction<T>& geometryN_friction =
+        propN->GetProperty<CoulombFriction<T>>(
             geometry::internal::kMaterialGroup, geometry::internal::kFriction);
 
     // Compute combined friction coefficient.
-    const CoulombFriction<double> combined_friction =
+    const CoulombFriction<T> combined_friction =
         CalcContactFrictionFromSurfaceProperties(geometryM_friction,
                                                  geometryN_friction);
-    const double dynamic_friction = combined_friction.dynamic_friction();
+    const T& dynamic_friction = combined_friction.dynamic_friction();
 
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
@@ -1575,7 +1575,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         X_WA, X_WB, V_WA, V_WB, &surface);
 
     // Combined Hunt & Crossley dissipation.
-    const double dissipation = hydroelastics_engine_.CalcCombinedDissipation(
+    const T dissipation = hydroelastics_engine_.CalcCombinedDissipation(
         geometryM_id, geometryN_id, inspector);
 
     // Integrate the hydroelastic traction field over the contact surface.
@@ -1938,12 +1938,12 @@ void MultibodyPlant<T>::CalcTamsiResults(
 
   // Get friction coefficient into a single vector. Static friction is ignored
   // by the time stepping scheme.
-  std::vector<CoulombFriction<double>> combined_friction_pairs =
+  std::vector<CoulombFriction<T>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(context0, point_pairs0);
   VectorX<T> mu(num_contacts);
   std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
                  mu.data(),
-                 [](const CoulombFriction<double>& coulomb_friction) {
+                 [](const CoulombFriction<T>& coulomb_friction) {
                    return coulomb_friction.dynamic_friction();
                  });
 
@@ -3079,10 +3079,10 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
 template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc,
-    const CoulombFriction<double>& friction) const {
+    const CoulombFriction<T>& friction) const {
   DRAKE_ASSERT(speed_BcAc >= 0);
-  const double mu_d = friction.dynamic_friction();
-  const double mu_s = friction.static_friction();
+  const T& mu_d = friction.dynamic_friction();
+  const T& mu_s = friction.static_friction();
   const T v = speed_BcAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
     return mu_d;

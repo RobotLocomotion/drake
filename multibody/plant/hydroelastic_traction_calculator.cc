@@ -27,7 +27,7 @@ namespace internal {
 template <class T>
 void HydroelasticTractionCalculator<T>::
     ComputeSpatialForcesAtCentroidFromHydroelasticModel(
-        const Data& data, double dissipation, double mu_coulomb,
+        const Data& data, const T& dissipation, const T& mu_coulomb,
         std::vector<HydroelasticQuadraturePointData<T>>*
             traction_at_quadrature_points,
         SpatialForce<T>* F_Ac_W) const {
@@ -135,7 +135,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtPoint(
     const Data& data,
     SurfaceFaceIndex face_index,
     const typename SurfaceMesh<T>::Barycentric& Q_barycentric,
-    double dissipation, double mu_coulomb) const {
+    const T& dissipation, const T& mu_coulomb) const {
   // Compute the point of contact in the world frame.
   const Vector3<T> p_WQ = data.surface.mesh_W().CalcCartesianFromBarycentric(
       face_index, Q_barycentric);
@@ -173,7 +173,7 @@ template <typename T>
 HydroelasticQuadraturePointData<T>
 HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
     const Data& data, SurfaceFaceIndex face_index, const T& e,
-    const Vector3<T>& nhat_W, double dissipation, double mu_coulomb,
+    const Vector3<T>& nhat_W, const T& dissipation, const T& mu_coulomb,
     const Vector3<T>& p_WQ) const {
   HydroelasticQuadraturePointData<T> traction_data;
 

@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/proximity_properties.h"
 
 namespace drake {
 namespace multibody {
@@ -19,22 +20,25 @@ using geometry::GeometryId;
 using geometry::ProximityProperties;
 using geometry::SceneGraphInspector;
 
+template <typename T>
 struct MaterialProperties {
-  double elastic_modulus{-1};
-  double dissipation{-1};
+  T elastic_modulus{-1.0};
+  T dissipation{-1.0};
 };
 
 template <typename T>
-MaterialProperties GetMaterials(GeometryId id,
-                                const SceneGraphInspector<T>& inspector) {
+MaterialProperties<T> GetMaterials(GeometryId id,
+                                   const SceneGraphInspector<T>& inspector) {
   const double kInf = std::numeric_limits<double>::infinity();
-  MaterialProperties material;
+  MaterialProperties<T> material;
   if (const ProximityProperties* properties =
           inspector.GetProximityProperties(id)) {
-    material.elastic_modulus =
-        properties->GetPropertyOrDefault("material", "elastic_modulus", kInf);
+    material.elastic_modulus = properties->GetPropertyOrDefault(
+        drake::geometry::internal::kMaterialGroup,
+        drake::geometry::internal::kElastic, T(kInf));
     material.dissipation = properties->GetPropertyOrDefault(
-        "material", "hunt_crossley_dissipation", 0.0);
+        drake::geometry::internal::kMaterialGroup,
+        drake::geometry::internal ::kHcDissipation, T(0.0));
     DRAKE_DEMAND(material.elastic_modulus > 0);
     DRAKE_DEMAND(material.dissipation >= 0);
   } else {
@@ -47,16 +51,16 @@ MaterialProperties GetMaterials(GeometryId id,
 }
 
 template <typename T>
-double HydroelasticEngine<T>::CalcCombinedElasticModulus(
+T HydroelasticEngine<T>::CalcCombinedElasticModulus(
     GeometryId id_A, GeometryId id_B,
     const SceneGraphInspector<T>& inspector) const {
-  const double kInf = std::numeric_limits<double>::infinity();
+  const T kInf(std::numeric_limits<double>::infinity());
 
   const MaterialProperties material_A = GetMaterials(id_A, inspector);
   const MaterialProperties material_B = GetMaterials(id_B, inspector);
 
-  const double E_A = material_A.elastic_modulus;
-  const double E_B = material_B.elastic_modulus;
+  const T& E_A = material_A.elastic_modulus;
+  const T& E_B = material_B.elastic_modulus;
   if (E_A == kInf) return E_B;
   if (E_B == kInf) return E_A;
   return E_A * E_B / (E_A + E_B);
@@ -66,24 +70,24 @@ double HydroelasticEngine<T>::CalcCombinedElasticModulus(
 // these material properties. Update this method once the discussion is
 // resolved.
 template <typename T>
-double HydroelasticEngine<T>::CalcCombinedDissipation(
+T HydroelasticEngine<T>::CalcCombinedDissipation(
     GeometryId id_A, GeometryId id_B,
     const SceneGraphInspector<T>& inspector) const {
-  const double kInf = std::numeric_limits<double>::infinity();
+  const T kInf(std::numeric_limits<double>::infinity());
   const MaterialProperties material_A = GetMaterials(id_A, inspector);
   const MaterialProperties material_B = GetMaterials(id_B, inspector);
 
-  const double E_A = material_A.elastic_modulus;
-  const double E_B = material_B.elastic_modulus;
-  const double d_A = material_A.dissipation;
-  const double d_B = material_B.dissipation;
-  const double Estar = CalcCombinedElasticModulus(id_A, id_B, inspector);
+  const T E_A = material_A.elastic_modulus;
+  const T E_B = material_B.elastic_modulus;
+  const T d_A = material_A.dissipation;
+  const T d_B = material_B.dissipation;
+  const T Estar = CalcCombinedElasticModulus(id_A, id_B, inspector);
 
   // Both bodies are rigid. We simply return the arithmetic average.
   if (Estar == kInf) return 0.5 * (d_A + d_B);
 
   // At least one body is soft.
-  double d_star = 0;
+  T d_star = 0;
   if (E_A != kInf) d_star += Estar / E_A * d_A;
   if (E_B != kInf) d_star += Estar / E_B * d_B;
   return d_star;
