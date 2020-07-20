@@ -1761,12 +1761,11 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     const VectorX<T>& minus_tau,
     const VectorX<T>& stiffness, const VectorX<T>& damping,
     const VectorX<T>& mu,
-    const VectorX<T>& v0, const VectorX<T>& phi0, const VectorX<T>& fn0) const {
+    const VectorX<T>& v0, const VectorX<T>& fn0) const {
 
   const double dt = time_step_;  // just a shorter alias.
   const double dt_substep = dt / num_substeps;
   VectorX<T> v0_substep = v0;
-  VectorX<T> phi0_substep = phi0;
   VectorX<T> fn0_substep = fn0;
 
   // Initialize info to an unsuccessful result.
@@ -1793,13 +1792,18 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     // Update previous time step to new solution.
     v0_substep = tamsi_solver_->get_generalized_velocities();
 
-    // Update penetration distance consistently with the solver update.
+    // TAMSI updates each normal force according to:
+    //   fₙ = (1 − d vₙ)₊ (fₙ₀ − h k vₙ)₊
+    // using the last computed normal velocity vₙ and we use the shorthand
+    // notation  h = dt_substep in this scope.
+    // The input fₙ₀ to the solver is the undamped (no dissipation) term only.
+    // We must update fₙ₀ for each substep accordingly, i.e:
+    //   fₙ₀(next) = (fₙ₀(previous) − h k vₙ(next))₊
     const auto vn_substep =
         tamsi_solver_->get_normal_velocities();
-    phi0_substep = phi0_substep - dt_substep * vn_substep;
-
-    // Similarly, update fn0_substep.
-    fn0_substep = tamsi_solver_->get_normal_forces();
+    fn0_substep = fn0_substep.array() -
+                  dt_substep * stiffness.array() * vn_substep.array();
+    fn0_substep = fn0_substep.cwiseMax(T(0.0));
   }
 
   return info;
@@ -2003,7 +2007,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
     ++num_substeps;
     info = SolveUsingSubStepping(num_substeps, M0, contact_jacobians.Jn,
                                  contact_jacobians.Jt, minus_tau, stiffness,
-                                 damping, mu, v0, phi0, fn0);
+                                 damping, mu, v0, fn0);
   } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
