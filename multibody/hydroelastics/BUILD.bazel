@@ -46,6 +46,7 @@ drake_cc_library(
         "hydroelastic_engine.h",
     ],
     deps = [
+        "//geometry:proximity_properties",
         "//geometry:scene_graph",
         "//geometry:scene_graph_inspector",
     ],
