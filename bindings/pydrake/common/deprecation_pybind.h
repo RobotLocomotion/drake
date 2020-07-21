@@ -5,9 +5,12 @@
 /// For example usages, please see `deprecation_example/cc_module_py.cc`.
 
 #include <memory>
+#include <optional>
+#include <string>
 #include <utility>
 
 #include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -15,14 +18,19 @@
 namespace drake {
 namespace pydrake {
 
+// N.B. We cannot use `py::str date = py::none()` because the pybind Python C++
+// API converts `None` to a string.
+// See: https://github.com/pybind/pybind11/issues/2361
+
 /// Deprecates an attribute `name` of a class `cls`.
 /// This *only* works with class attributes (unbound members or methods) as it
 /// is implemented with a Python property descriptor.
-inline void DeprecateAttribute(py::object cls, py::str name, py::str message) {
+inline void DeprecateAttribute(py::object cls, py::str name, py::str message,
+    std::optional<std::string> date = {}) {
   py::object deprecated =
       py::module::import("pydrake.common.deprecation").attr("deprecated");
   py::object original = cls.attr(name);
-  cls.attr(name) = deprecated(message)(original);
+  cls.attr(name) = deprecated(message, py::arg("date") = date)(original);
 }
 
 /// Raises a deprecation warning.
@@ -30,10 +38,21 @@ inline void DeprecateAttribute(py::object cls, py::str name, py::str message) {
 /// @note If you are deprecating a class's member or method, please use
 /// `DeprecateAttribute` so that the warning is issued immediately when
 /// accessed, not only when it is called.
-inline void WarnDeprecated(py::str message) {
+inline void WarnDeprecated(
+    py::str message, std::optional<std::string> date = {}) {
   py::object warn_deprecated =
       py::module::import("pydrake.common.deprecation").attr("_warn_deprecated");
-  warn_deprecated(message);
+  warn_deprecated(message, py::arg("date") = date);
+}
+
+/// Takes a date and message and formats it to be consistent with other
+/// deprecation messages.
+inline py::str FormatDeprecationMessage(
+    py::str message, std::optional<std::string> date = {}) {
+  py::object format_deprecation_message =
+      py::module::import("pydrake.common.deprecation")
+          .attr("_format_deprecation_message");
+  return format_deprecation_message(message, py::arg("date") = date);
 }
 
 namespace internal {
@@ -59,6 +78,8 @@ auto WrapDeprecatedImpl(py::str message,
 }
 
 }  // namespace internal
+
+// TODO(eric.cousineau): Expose `dae
 
 /// Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
 /// a deprecation message.
