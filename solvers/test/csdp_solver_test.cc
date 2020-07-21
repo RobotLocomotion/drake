@@ -7,6 +7,7 @@
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
+#include "drake/solvers/test/sos_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -292,6 +293,39 @@ GTEST_TEST(TestSOCP, SmallestEllipsoidCoveringProblem) {
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver(method);
     SolveAndCheckSmallestEllipsoidCoveringProblems(solver, 1E-6);
+  }
+}
+
+GTEST_TEST(TestSOS, UnivariateQuarticSos) {
+  UnivariateQuarticSos dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1E-10);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, BivariateQuarticSos) {
+  BivariateQuarticSos dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1E-10);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, SimpleSos1) {
+  SimpleSos1 dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 1E-10);
+    }
   }
 }
 }  // namespace test
