@@ -31,11 +31,12 @@ PYBIND11_MODULE(compass_gait, m) {
       m, "CompassGait", doc.CompassGait.doc)
       .def(py::init<>(), doc.CompassGait.ctor.doc)
       .def("get_minimal_state_output_port",
-          &CompassGait<T>::get_minimal_state_output_port, py_reference_internal,
+          &CompassGait<T>::get_minimal_state_output_port,
+          py_rvp::reference_internal,
           doc.CompassGait.get_minimal_state_output_port.doc)
       .def("get_floating_base_state_output_port",
           &CompassGait<T>::get_floating_base_state_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.CompassGait.get_floating_base_state_output_port.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
@@ -99,8 +100,8 @@ PYBIND11_MODULE(compass_gait, m) {
           py::arg("compass_gait_params"), py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(),
-          // See #11531 for why `py_reference` is needed.
-          py_reference, doc.CompassGaitGeometry.AddToBuilder.doc_4args)
+          // See #11531 for why `py_rvp::reference` is needed.
+          py_rvp::reference, doc.CompassGaitGeometry.AddToBuilder.doc_4args)
       .def_static("AddToBuilder",
           py::overload_cast<systems::DiagramBuilder<double>*,
               const systems::OutputPort<double>&,
@@ -110,8 +111,8 @@ PYBIND11_MODULE(compass_gait, m) {
           py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(),
-          // See #11531 for why `py_reference` is needed.
-          py_reference, doc.CompassGaitGeometry.AddToBuilder.doc_3args);
+          // See #11531 for why `py_rvp::reference` is needed.
+          py_rvp::reference, doc.CompassGaitGeometry.AddToBuilder.doc_3args);
 }
 
 }  // namespace pydrake

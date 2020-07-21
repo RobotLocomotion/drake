@@ -162,7 +162,7 @@ void DefReadUniquePtr(PyClass* cls, const char* name,
     const std::unique_ptr<T> Class::*member, const char* doc = "") {
   auto getter = py::cpp_function(
       [member](const Class* obj) { return (obj->*member).get(); },
-      py_reference_internal);
+      py_rvp::reference_internal);
   cls->def_property_readonly(name, getter, doc);
 }
 
@@ -172,7 +172,7 @@ void DefReadUniquePtr(PyClass* cls, const char* name,
     const copyable_unique_ptr<T> Class::*member, const char* doc = "") {
   auto getter = py::cpp_function(
       [member](const Class* obj) { return (obj->*member).get(); },
-      py_reference_internal);
+      py_rvp::reference_internal);
   cls->def_property_readonly(name, getter, doc);
 }
 

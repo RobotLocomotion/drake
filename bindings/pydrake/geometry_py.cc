@@ -179,12 +179,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetName",
             overload_cast_explicit<const std::string&, FrameId>(
                 &Class::GetName),
-            py_reference_internal, py::arg("frame_id"),
+            py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
         .def("GetName",
             overload_cast_explicit<const std::string&, GeometryId>(
                 &Class::GetName),
-            py_reference_internal, py::arg("geometry_id"),
+            py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)
         .def(
             "GetNameByFrameId",
@@ -192,7 +192,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
               WarnDeprecated(doc_inspector_get_name_deprecation);
               return self->GetName(frame_id);
             },
-            py_reference_internal, py::arg("frame_id"),
+            py_rvp::reference_internal, py::arg("frame_id"),
             doc_inspector_get_name_deprecation)
         .def(
             "GetNameByGeometryId",
@@ -200,22 +200,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
               WarnDeprecated(doc_inspector_get_name_deprecation);
               return self->GetName(frame_id);
             },
-            py_reference_internal, py::arg("geometry_id"),
+            py_rvp::reference_internal, py::arg("geometry_id"),
             doc_inspector_get_name_deprecation)
-        .def("GetShape", &Class::GetShape, py_reference_internal,
+        .def("GetShape", &Class::GetShape, py_rvp::reference_internal,
             py::arg("geometry_id"), cls_doc.GetShape.doc)
-        .def("GetPoseInParent", &Class::GetPoseInParent, py_reference_internal,
-            py::arg("geometry_id"), cls_doc.GetPoseInParent.doc)
-        .def("GetPoseInFrame", &Class::GetPoseInFrame, py_reference_internal,
-            py::arg("geometry_id"), cls_doc.GetPoseInFrame.doc)
+        .def("GetPoseInParent", &Class::GetPoseInParent,
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetPoseInParent.doc)
+        .def("GetPoseInFrame", &Class::GetPoseInFrame,
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetPoseInFrame.doc)
         .def("GetProximityProperties", &Class::GetProximityProperties,
-            py_reference_internal, py::arg("geometry_id"),
+            py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetProximityProperties.doc)
         .def("GetIllustrationProperties", &Class::GetIllustrationProperties,
-            py_reference_internal, py::arg("geometry_id"),
+            py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetIllustrationProperties.doc)
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
-            py_reference_internal, py::arg("geometry_id"),
+            py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
         .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
             py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc);
@@ -230,17 +232,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
-            py_reference_internal, cls_doc.get_source_pose_port.doc)
+            py_rvp::reference_internal, cls_doc.get_source_pose_port.doc)
         .def(
             "get_pose_bundle_output_port",
             [](Class* self) -> const systems::OutputPort<T>& {
               return self->get_pose_bundle_output_port();
             },
-            py_reference_internal, cls_doc.get_pose_bundle_output_port.doc)
+            py_rvp::reference_internal, cls_doc.get_pose_bundle_output_port.doc)
         .def("get_query_output_port", &Class::get_query_output_port,
-            py_reference_internal, cls_doc.get_query_output_port.doc)
-        .def("model_inspector", &Class::model_inspector, py_reference_internal,
-            cls_doc.model_inspector.doc)
+            py_rvp::reference_internal, cls_doc.get_query_output_port.doc)
+        .def("model_inspector", &Class::model_inspector,
+            py_rvp::reference_internal, cls_doc.model_inspector.doc)
         .def("RegisterSource",
             py::overload_cast<const std::string&>(  // BR
                 &Class::RegisterSource),
@@ -273,22 +275,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ExcludeCollisionsBetween",
             py::overload_cast<const GeometrySet&, const GeometrySet&>(
                 &Class::ExcludeCollisionsBetween),
-            py_reference_internal, py::arg("setA"), py::arg("setB"),
+            py_rvp::reference_internal, py::arg("setA"), py::arg("setB"),
             cls_doc.ExcludeCollisionsBetween.doc_2args)
         .def("ExcludeCollisionsBetween",
             overload_cast_explicit<void, Context<T>*, const GeometrySet&,
                 const GeometrySet&>(&Class::ExcludeCollisionsBetween),
-            py_reference_internal, py::arg("context"), py::arg("setA"),
+            py_rvp::reference_internal, py::arg("context"), py::arg("setA"),
             py::arg("setB"), cls_doc.ExcludeCollisionsBetween.doc_3args)
         .def("ExcludeCollisionsWithin",
             py::overload_cast<const GeometrySet&>(
                 &Class::ExcludeCollisionsWithin),
-            py_reference_internal, py::arg("set"),
+            py_rvp::reference_internal, py::arg("set"),
             cls_doc.ExcludeCollisionsWithin.doc_1args)
         .def("ExcludeCollisionsWithin",
             overload_cast_explicit<void, Context<T>*, const GeometrySet&>(
                 &Class::ExcludeCollisionsWithin),
-            py_reference_internal, py::arg("context"), py::arg("set"),
+            py_rvp::reference_internal, py::arg("context"), py::arg("set"),
             cls_doc.ExcludeCollisionsWithin.doc_2args)
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
@@ -400,14 +402,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "QueryObject", param, doc.QueryObject.doc);
     cls  // BR
         .def(py::init(), doc.QueryObject.ctor.doc)
-        .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
-            doc.QueryObject.inspector.doc)
+        .def("inspector", &QueryObject<T>::inspector,
+            py_rvp::reference_internal, doc.QueryObject.inspector.doc)
         .def("X_WF", &QueryObject<T>::X_WF, py::arg("id"),
-            py_reference_internal, doc.QueryObject.X_WF.doc)
+            py_rvp::reference_internal, doc.QueryObject.X_WF.doc)
         .def("X_PF", &QueryObject<T>::X_PF, py::arg("id"),
-            py_reference_internal, doc.QueryObject.X_PF.doc)
+            py_rvp::reference_internal, doc.QueryObject.X_PF.doc)
         .def("X_WG", &QueryObject<T>::X_WG, py::arg("id"),
-            py_reference_internal, doc.QueryObject.X_WG.doc)
+            py_rvp::reference_internal, doc.QueryObject.X_WG.doc)
         .def("ComputeSignedDistancePairwiseClosestPoints",
             &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
             py::arg("max_distance") = std::numeric_limits<double>::infinity(),
@@ -615,8 +617,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // See #11531 for why `py_reference` is needed.
-      py_reference, doc.ConnectDrakeVisualizer.doc_4args);
+      // See #11531 for why `py_rvp::reference` is needed.
+      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_4args);
   m.def("ConnectDrakeVisualizer",
       py::overload_cast<systems::DiagramBuilder<double>*,
           const SceneGraph<double>&, const systems::OutputPort<double>&,
@@ -626,8 +628,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
-      // See #11531 for why `py_reference` is needed.
-      py_reference, doc.ConnectDrakeVisualizer.doc_5args);
+      // See #11531 for why `py_rvp::reference` is needed.
+      py_rvp::reference, doc.ConnectDrakeVisualizer.doc_5args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
       py::arg("lcm"), py::arg("role") = geometry::Role::kIllustration,
       doc.DispatchLoadMessage.doc);
@@ -650,7 +652,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("width", &Box::width, doc.Box.width.doc)
         .def("depth", &Box::depth, doc.Box.depth.doc)
         .def("height", &Box::height, doc.Box.height.doc)
-        .def("size", &Box::size, py_reference_internal, doc.Box.size.doc);
+        .def("size", &Box::size, py_rvp::reference_internal, doc.Box.size.doc);
     py::class_<Capsule, Shape>(m, "Capsule", doc.Capsule.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Capsule.ctor.doc)
@@ -700,10 +702,11 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("X_PG"), py::arg("shape"), py::arg("name"),
             cls_doc.ctor.doc)
         .def("id", &Class::id, cls_doc.id.doc)
-        .def("pose", &Class::pose, py_reference_internal, cls_doc.pose.doc)
+        .def("pose", &Class::pose, py_rvp::reference_internal, cls_doc.pose.doc)
         .def(
             "set_pose", &Class::set_pose, py::arg("X_PG"), cls_doc.set_pose.doc)
-        .def("shape", &Class::shape, py_reference_internal, cls_doc.shape.doc)
+        .def("shape", &Class::shape, py_rvp::reference_internal,
+            cls_doc.shape.doc)
         .def("release_shape", &Class::release_shape, cls_doc.release_shape.doc)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("set_name", &Class::set_name, cls_doc.set_name.doc)
@@ -714,20 +717,20 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("set_perception_properties", &Class::set_perception_properties,
             py::arg("properties"), cls_doc.set_perception_properties.doc)
         .def("mutable_proximity_properties",
-            &Class::mutable_proximity_properties, py_reference_internal,
+            &Class::mutable_proximity_properties, py_rvp::reference_internal,
             cls_doc.mutable_proximity_properties.doc)
         .def("proximity_properties", &Class::proximity_properties,
-            py_reference_internal, cls_doc.proximity_properties.doc)
+            py_rvp::reference_internal, cls_doc.proximity_properties.doc)
         .def("mutable_illustration_properties",
-            &Class::mutable_illustration_properties, py_reference_internal,
+            &Class::mutable_illustration_properties, py_rvp::reference_internal,
             cls_doc.mutable_illustration_properties.doc)
         .def("illustration_properties", &Class::illustration_properties,
-            py_reference_internal, cls_doc.illustration_properties.doc)
+            py_rvp::reference_internal, cls_doc.illustration_properties.doc)
         .def("mutable_perception_properties",
-            &Class::mutable_perception_properties, py_reference_internal,
+            &Class::mutable_perception_properties, py_rvp::reference_internal,
             cls_doc.mutable_perception_properties.doc)
         .def("perception_properties", &Class::perception_properties,
-            py_reference_internal, cls_doc.perception_properties.doc);
+            py_rvp::reference_internal, cls_doc.perception_properties.doc);
   }
 
   {
@@ -743,11 +746,11 @@ void DoScalarIndependentDefinitions(py::module m) {
             "GetPropertiesInGroup",
             [](const Class& self, const std::string& group_name) {
               py::dict out;
-              py::object py_self = py::cast(&self, py_reference);
+              py::object py_self = py::cast(&self, py_rvp::reference);
               for (auto& [name, abstract] :
                   self.GetPropertiesInGroup(group_name)) {
-                out[name.c_str()] =
-                    py::cast(abstract.get(), py_reference_internal, py_self);
+                out[name.c_str()] = py::cast(
+                    abstract.get(), py_rvp::reference_internal, py_self);
               }
               return out;
             },
@@ -779,8 +782,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             "GetProperty",
             [](const Class& self, const std::string& group_name,
                 const std::string& name) {
-              py::object abstract = py::cast(
-                  self.GetPropertyAbstract(group_name, name), py_reference);
+              py::object abstract =
+                  py::cast(self.GetPropertyAbstract(group_name, name),
+                      py_rvp::reference);
               return abstract.attr("get_value")();
             },
             py::arg("group_name"), py::arg("name"), cls_doc.GetProperty.doc)
@@ -791,7 +795,7 @@ void DoScalarIndependentDefinitions(py::module m) {
               // For now, ignore typing. This is less efficient, but eh, it's
               // Python.
               if (self.HasProperty(group_name, name)) {
-                py::object py_self = py::cast(&self, py_reference);
+                py::object py_self = py::cast(&self, py_rvp::reference);
                 return py_self.attr("GetProperty")(group_name, name);
               } else {
                 return default_value;
@@ -831,7 +835,7 @@ void DoScalarIndependentDefinitions(py::module m) {
       m, "PerceptionProperties", doc.PerceptionProperties.doc)
       .def(py::init(), doc.PerceptionProperties.ctor.doc);
   m.def("MakePhongIllustrationProperties", &MakePhongIllustrationProperties,
-      py_reference_internal, py::arg("diffuse"),
+      py_rvp::reference_internal, py::arg("diffuse"),
       doc.MakePhongIllustrationProperties.doc);
 
   m.def("ReadObjToSurfaceMesh",

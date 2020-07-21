@@ -30,9 +30,9 @@ PYBIND11_MODULE(collision, m) {
 
   py::class_<PointPair<double>>(m, "PointPair")
       .def_readonly(
-          "elementA", &PointPair<double>::elementA, py_reference_internal)
+          "elementA", &PointPair<double>::elementA, py_rvp::reference_internal)
       .def_readonly(
-          "elementB", &PointPair<double>::elementB, py_reference_internal)
+          "elementB", &PointPair<double>::elementB, py_rvp::reference_internal)
       .def_readonly("idA", &PointPair<double>::idA)
       .def_readonly("idB", &PointPair<double>::idB)
       .def_readonly("ptA", &PointPair<double>::ptA)
