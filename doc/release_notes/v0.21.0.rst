@@ -12,7 +12,11 @@ longer any need to add ``/usr/local/opt/python@3.8/bin`` to your ``$PATH``.
 Breaking changes since v0.20.0
 ------------------------------
 
-These are no breaking changes that did not undergo a deprecation period.
+The new feature in v0.20.0 for JavaScript system diagram visualization
+(`#13644`_) with function name ``drake::systems::GenerateHtml`` in C++ and
+``pydrake.systems.framework.GenerateHtml`` in Python fetched the GoJS graph
+library in your browser with only an evaluation license.  We have removed this
+feature while we sort out the licensing question (`#13705`_, `#13720`_).
 
 Changes since v0.20.0:
 ----------------------
@@ -58,7 +62,7 @@ Tutorials and examples
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Tell gojs to autoscale for system diagrams (`#13704`_)
+* Remove GoJS from GenerateHtml; the function is now inoperative (`#13720`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -111,6 +115,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * Update TAMSI to consume fn0 instead of phi0 (`#13696`_)  # Prepare TAMSI to be agnostic to where the contact pairs stems from; point contact or discrete hydro.
 * checks for positive penetration_allowance (`#13694`_)
 * Specialize QuadraticCost evaluation for AutoDiff (`#13674`_)  # Specialize QuadraticCost evaluation for analytical computation of the gradients which was measured to be 15% faster then when using AutoDiffXd on use cases with dirtlib.
-* doc: Add v0.20.0 warning about GoJS (`#13721`_)
 * Fixes sub-stepping update of fn0 (`#13712`_)
-* framework: Remove GoJS from GenerateHtml; rendering is now broken (`#13720`_)  # The implementation of GenerateHtml has been temporarily removed from Drake due to licensing restrictions.  The function will return valid HTML, but will not produce any useful rendering.
