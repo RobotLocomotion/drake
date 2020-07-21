@@ -5,6 +5,8 @@ Drake v0.21.0
 Announcements
 -------------
 
+This is relatively minor update to the prior release, v0.20.0.
+
 On macOS, Homebrew now symlinks Drake's compatible version of Python 3 (3.8)
 into ``/usr/local/bin/``, so it is on the ``$PATH`` by default.  There is no
 longer any need to add ``/usr/local/opt/python@3.8/bin`` to your ``$PATH``.
@@ -24,20 +26,12 @@ Changes since v0.20.0:
 Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
-New features
-
-* None
-
 Fixes
 
 * Improve error checking of DiscreteValues (`#13681`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
-
-New features
-
-* None
 
 Fixes
 
@@ -46,10 +40,6 @@ Fixes
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
-New features
-
-* None
-
 Fixes
 
 * Check for positive penetration_allowance (`#13694`_)
@@ -57,19 +47,12 @@ Fixes
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
+New features
+
 * manipulation_station: Add dualshock4 teleoperation (`#13570`_)
-
-Miscellaneous features and fixes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* Remove GoJS from GenerateHtml; the function is now inoperative (`#13720`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
-
-New features
-
-* None
 
 Fixes
 
@@ -82,17 +65,17 @@ Newly bound
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-None.
+No changes.
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-None.
+No changes.
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-None.
+No changes.
 
 Notes
 -----
