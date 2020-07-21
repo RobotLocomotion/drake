@@ -187,9 +187,10 @@ components being built.
 
 ## pybind Module Definitions
 
+- Modules should be defined within the drake::pydrake namespace. Please review
+this namespace for available helper methods / classes.
 - Any Drake pybind module should include `pydrake_pybind.h`.
 - `PYBIND_MODULE` should be used to define modules.
-- Modules should be defined within the namespace `drake::pydrake`.
 - The alias `namespace py = pybind11` is defined as `drake::pydrake::py`. Drake
 modules should not re-define this alias at global scope.
 - If a certain namespace is being bound (e.g. `drake::systems::sensors`), you
@@ -369,6 +370,25 @@ Some example comments:
 // Keep alive, ownership (tr.): `return` keeps `self` alive.
 ```
 
+@anchor PydrakeReturnValuePolicy
+## Return Value Policy
+
+For more information about `pybind11` return value policies, see [the pybind11
+documentation](
+https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies).
+
+`pydrake` offers the @ref drake::pydrake::py_rvp "py_rvp" alias to help with
+shortened usage of `py::return_value_policy`. The most used (non-default)
+policies in `pydrake` are `reference` and `reference_internal` due to the usage
+of raw pointers / references in the public C++ API (rather than
+`std::shared_ptr<>`).
+
+@note While `py_rvp::reference_internal` effectively implies
+`py_rvp::reference` and `py::keep_alive<0, 1>()`, we choose to only use it when
+`self` is the intended patient (i.e. the bound item is a class method). For
+static / free functions, we instead explicitly spell out `py_rvp::reference`
+and `py::keep_alive<0, 1>()`.
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
@@ -447,19 +467,6 @@ Python. When you do wish to do this, ensure that you use a trampoline class
 in `pybind`, and ensure that the trampoline class inherits from the
 `py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
 slicing happens with the subclassed instances.
-
-## Convenience aliases
-
-Some aliases are provided; prefer these to the full spellings.
-
-`namespace py` is a shorthand alias to `pybind11` for consistency.
-
-@see @ref drake::pydrake::py_rvp "py_rvp" for dealing with %common ownership
-issues.
-
-@note Downstream users should avoid `using namespace drake::pydrake`, as
-this may create ambiguous aliases (especially for GCC). Instead, consider
-using your own alias directly to the `pybind11` namespace.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel
