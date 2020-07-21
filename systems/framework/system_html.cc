@@ -200,12 +200,11 @@ class LinkWriter : public SystemVisitor<double> {
 
 std::string GenerateHtml(const System<double>& system, int initial_depth) {
   std::stringstream html;
-
-  // Note: Consider using this website for rapid prototyping the javascript:
-  // https://observablehq.com/@russtedrake/gojs-for-drake-system-diagrams
   html << R"!(
-<div style='height:400px;' id='myDiagramDiv' ></div>
-<script src="https://unpkg.com/gojs/release/go.js"></script>
+<div style='height:400px;' id='myDiagramDiv'>
+The implementation of GenerateHtml has been temporarily removed from Drake due
+to licensing restrictions.
+</div>
 <script>
   $ = go.GraphObject.make
   var diagram = $(go.Diagram, "myDiagramDiv", {
