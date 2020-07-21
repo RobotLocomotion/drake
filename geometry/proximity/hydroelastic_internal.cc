@@ -51,7 +51,7 @@ void Geometries::RemoveGeometry(GeometryId id) {
 void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
                                   const ProximityProperties& properties) {
   const HydroelasticType type = properties.GetPropertyOrDefault(
-      PropName(kHydroGroup, kComplianceType), HydroelasticType::kUndefined);
+      properties.hydroelastic_compliance_type(), HydroelasticType::kUndefined);
   if (type != HydroelasticType::kUndefined) {
     ReifyData data{type, id, properties};
     shape.Reify(this, &data);

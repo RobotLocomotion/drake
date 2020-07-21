@@ -1032,10 +1032,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
 
   auto assert_friction = [](const ProximityProperties& properties,
                             const CoulombFriction<double>& expected_friction) {
-    ASSERT_TRUE(properties.HasProperty({geometry::internal::kMaterialGroup,
-                                        geometry::internal::kFriction}));
-    const auto& friction = properties.Get<CoulombFriction<double>>(
-        {geometry::internal::kMaterialGroup, geometry::internal::kFriction});
+    const PropertyName& property = properties.material_coulomb_friction();
+    ASSERT_TRUE(properties.HasProperty(property));
+    const auto& friction = properties.Get<CoulombFriction<double>>(property);
     EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
     EXPECT_EQ(friction.dynamic_friction(),
               expected_friction.dynamic_friction());
@@ -1063,12 +1062,12 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
-    assert_single_property(properties, {geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint}, 2.5);
-    assert_single_property(properties, {geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic}, 3.5);
-    assert_single_property(properties, {geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation}, 4.5);
+    assert_single_property(properties,
+                           properties.hydroelastic_resolution_hint(), 2.5);
+    assert_single_property(properties, properties.material_elastic_modulus(),
+                           3.5);
+    assert_single_property(
+        properties, properties.material_hunt_crossley_dissipation(), 4.5);
     assert_friction(properties, {4.75, 4.5});
   }
 
@@ -1080,10 +1079,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
-    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
-                                        geometry::internal::kComplianceType}));
+    ASSERT_TRUE(
+        properties.HasProperty(properties.hydroelastic_compliance_type()));
     EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
-        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
+                  properties.hydroelastic_compliance_type()),
               geometry::internal::HydroelasticType::kRigid);
   }
 
@@ -1095,10 +1094,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     ProximityProperties properties =
         MakeProximityPropertiesForCollision(*sdf_collision);
-    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
-                                        geometry::internal::kComplianceType}));
+    ASSERT_TRUE(
+        properties.HasProperty(properties.hydroelastic_compliance_type()));
     EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
-        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
+                  properties.hydroelastic_compliance_type()),
               geometry::internal::HydroelasticType::kSoft);
   }
 

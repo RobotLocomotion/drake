@@ -47,7 +47,7 @@ ProximityProperties soft_properties() {
   AddSoftHydroelasticProperties(resolution_hint, &props);
   // Redundantly add slab thickness so it can be used with compliant mesh or
   // compliant half space.
-  props.Add(PropName(kHydroGroup, kSlabThickness), 0.25);
+  props.Add(props.hydroelastic_slab_thickness(), 0.25);
   return props;
 }
 
