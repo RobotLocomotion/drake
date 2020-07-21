@@ -91,6 +91,16 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
 Philip E. Gill and Elizabeth Wong for their kind support.
 
+.. _#13555: https://github.com/RobotLocomotion/drake/pull/13555
+.. _#13570: https://github.com/RobotLocomotion/drake/pull/13570
+.. _#13644: https://github.com/RobotLocomotion/drake/pull/13644
+.. _#13674: https://github.com/RobotLocomotion/drake/pull/13674
+.. _#13681: https://github.com/RobotLocomotion/drake/pull/13681
+.. _#13694: https://github.com/RobotLocomotion/drake/pull/13694
+.. _#13703: https://github.com/RobotLocomotion/drake/pull/13703
+.. _#13705: https://github.com/RobotLocomotion/drake/pull/13705
+.. _#13720: https://github.com/RobotLocomotion/drake/pull/13720
+
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
   Current newest_commit 0c692498d85bc2fef70a3d1e23a8e97c820388e6 (inclusive).
