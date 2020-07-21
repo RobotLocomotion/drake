@@ -11,6 +11,7 @@
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
+#include "drake/solvers/test/sos_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -315,6 +316,33 @@ GTEST_TEST(MosekSolver, TestInitialGuess) {
   solver.Solve(prog, prog.initial_guess(), solver_options, &result);
   EXPECT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 1.0 / 17, tol);
+}
+
+GTEST_TEST(MosekTest, UnivariateQuarticSos) {
+  UnivariateQuarticSos dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-10);
+  }
+}
+
+GTEST_TEST(MosekTest, BivariateQuarticSos) {
+  BivariateQuarticSos dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-10);
+  }
+}
+
+GTEST_TEST(MosekTest, SimpleSos1) {
+  SimpleSos1 dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 2E-9);
+  }
 }
 }  // namespace test
 }  // namespace solvers

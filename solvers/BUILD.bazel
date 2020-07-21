@@ -589,6 +589,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sos_examples",
+    testonly = 1,
+    srcs = ["test/sos_examples.cc"],
+    hdrs = ["test/sos_examples.h"],
+    deps = [
+        ":mathematical_program",
+        ":mathematical_program_result",
+        "//common/test_utilities:symbolic_test_util",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "exponential_cone_program_examples",
     testonly = 1,
     srcs = ["test/exponential_cone_program_examples.cc"],
@@ -1146,6 +1159,7 @@ drake_cc_googletest(
         ":linear_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":sos_examples",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1317,6 +1331,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":sos_examples",
         "//common:filesystem",
         "//common:temp_directory",
     ],
@@ -1497,6 +1512,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        ":sos_examples",
     ],
 )
 
