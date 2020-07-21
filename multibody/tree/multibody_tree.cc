@@ -1691,16 +1691,15 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
   // TODO(Mitiguy): When performance becomes an issue, optimize this method by
   // only using the kinematics path from A to B.
 
+
   // Calculate each point Bi's translational velocity Jacobian in world W.
   // The result is Js_v_WBi_W, but we store into Js_v_ABi_W for performance.
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
     with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
 
-  // In the common, but special, case where A is the world W, we are done since
-  /// Js_v_ABi_W = Js_v_WBi_W
-  if (&frame_A == &world_frame()) {
-    return;
-  }
+  // For the common special case in which frame A is the world W, optimize as
+  // Js_v_ABi_W = Js_v_WBi_W
+  if (frame_A.index() == world_frame().index() ) return;
 
   // Calculate each point Ai's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);
@@ -1709,7 +1708,7 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
 
   // Calculate each point Bi's translational velocity Jacobian in frame A,
   // expressed in world W. Note, again, that before this line Js_v_ABi_W
-  // is actually storing Js_v_WBi_W
+  // is actually storing Js_v_WBi_W.
   *Js_v_ABi_W -= Js_v_WAi_W;  // This calculates Js_v_ABi_W.
 }
 
@@ -1879,10 +1878,10 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
         // Warning: p_WoFp and p_BoFp_W are stored using Eigen temporaries!
         // Position from Wo to Fp (ith point of Fpi), expressed in world W.
-        const auto p_WoFp = p_WoFpi_W.col(ipoint);
+        const Vector3<T>& p_WoFp = p_WoFpi_W.col(ipoint);
 
         // Position from Bo to Fp, expressed in world W.
-        const auto p_BoFp_W = p_WoFp - p_WoBo;
+        const Vector3<T>& p_BoFp_W = p_WoFp - p_WoBo;
 
         // Point Fp's Jacobian translational velocity is placed in the output
         // memory block in the same order input points Fpi are listed on input.
