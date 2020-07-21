@@ -17,7 +17,8 @@ PYBIND11_MODULE(cc_module, m) {
 
   m.def("emit_deprecation", []() {
     // N.B. This is only for coverage. You generally do not need this.
-    WarnDeprecated("Example emitting of deprecation");
+    WarnDeprecated(
+        py::make_tuple("2050-01-01", "Example emitting of deprecation"));
   });
 
   {
@@ -68,7 +69,7 @@ PYBIND11_MODULE(cc_module, m) {
     // Bind deprecated property (which forwards to original property).
     constexpr char deprecated_prop_doc[] =
         "Do not use deprecated_prop. This will be removed on or after "
-        "2038-01-19.";
+        "2050-01-01.";
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls.def_property(

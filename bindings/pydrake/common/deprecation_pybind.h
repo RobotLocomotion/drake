@@ -36,6 +36,15 @@ inline void WarnDeprecated(py::str message) {
   warn_deprecated(message);
 }
 
+/// Takes a date and message and formats it to be consistent with other
+/// deprecation messages.
+inline py::str FormatDeprecationMessage(py::str date, py::str message) {
+  py::object format_deprecation_message =
+      py::module::import("pydrake.common.deprecation")
+          .attr("_format_deprecation_message");
+  return format_deprecation_message(py::make_tuple(date, message));
+}
+
 namespace internal {
 
 template <typename Func, typename Return, typename... Args>

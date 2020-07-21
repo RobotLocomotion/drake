@@ -13,6 +13,7 @@ If you would like to disable all Drake-related warnings, you may use the
 """
 
 import os
+import re
 import sys
 import traceback
 from types import ModuleType
@@ -111,11 +112,36 @@ class DrakeDeprecationWarning(DeprecationWarning):
     pass
 
 
+def _format_deprecation_message(message):
+    if isinstance(message, tuple):
+        (date, text) = message
+        assert _date_pattern.fullmatch(date) is not None, (
+            f"Date does not match YYYY-MM-DD pattern: {repr(date)}"
+        )
+        message = (
+            f"{text}\nThe deprecated code will be removed from Drake on or "
+            f"after {date}."
+        )
+    else:
+        assert isinstance(message, str)
+        assert _date_pattern.search(message) is not None, (
+            f"Deprecation messages should have a removal date in the form of "
+            f"YYYY-MM-DD. Consider passing in a tuple of `(date, message)` to "
+            f"have a preformatted message.\n"
+            f"Original message:\n"
+            f"{message}"
+        )
+    return message
+
+
 def _warn_deprecated(message, stacklevel=2):
     # Logs a deprecation warning message.  Also used by `deprecation_pybind.h`
     # in addition to this file.
     warnings.warn(
-        message, category=DrakeDeprecationWarning, stacklevel=stacklevel)
+        _format_deprecation_message(message),
+        category=DrakeDeprecationWarning,
+        stacklevel=stacklevel,
+    )
 
 
 class _DeprecatedDescriptor:
@@ -197,7 +223,7 @@ def _deprecated_callable(f, message):
 
     wrapper.__name__ = f.__name__
     wrapper.__qualname__ = f.__name__
-    wrapper.__doc__ = "Warning:\n\n    {}".format(message)
+    wrapper.__doc__ = f"Warning:\n\n    {_format_deprecation_message(message)}"
     return wrapper
 
 
@@ -212,9 +238,10 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
         assert hasattr(new, "__call__")
         old_name = var_dict["__name__"]
         message = (
-            "``{}.{}`` is deprecated and will be removed on or around {}; "
-            "please use ``{}.{}`` instead.").format(
-            old_name, symbol, date, m_new.__name__, symbol)
+            date,
+            f"Please use ``{m_new.__name__}.{symbol}`` instead of "
+            f"``{old_name}.{symbol}``.",
+        )
         old = _deprecated_callable(new, message)
         old.__module__ = old_name
         var_dict[symbol] = old
@@ -226,3 +253,6 @@ if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
 else:
     warnings.simplefilter('once', DrakeDeprecationWarning)
 _installed_numpy_warning_filters = False
+
+# Used to enforce presence of yyyy-mm-dd timestamp for deprecation.
+_date_pattern = re.compile(r"\d\d\d\d\-\d\d\-\d\d")

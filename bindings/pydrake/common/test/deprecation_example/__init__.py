@@ -21,11 +21,12 @@ class ExampleClass:
     message_prop = "`deprecated_prop` is also deprecated"
 
     # Deprecate method.
-    @deprecated(message_method)
+    @deprecated(("2050-01-01", message_method))
     def deprecated_method(self):
         """Method Doc"""
         return 1
 
     # Deprecate public property.
     _deprecated_prop = property(lambda self: 2, doc=doc_prop)
-    deprecated_prop = deprecated(message_prop)(_deprecated_prop)
+    deprecated_prop = deprecated(("2050-01-01", message_prop))(
+        _deprecated_prop)

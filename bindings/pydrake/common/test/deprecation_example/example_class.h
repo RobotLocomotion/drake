@@ -14,13 +14,13 @@ class ExampleCppClass {
   // N.B. This spacer is to ensure that the class's documentation does not pick
   // up the following deprecation below.
 
-  DRAKE_DEPRECATED("2038-01-19", "Do not use ExampleCppClass(int).")
+  DRAKE_DEPRECATED("2050-01-01", "Do not use ExampleCppClass(int).")
   explicit ExampleCppClass(int) {}
 
-  DRAKE_DEPRECATED("2038-01-19", "Do not use ExampleCppClass(double).")
+  DRAKE_DEPRECATED("2050-01-01", "Do not use ExampleCppClass(double).")
   explicit ExampleCppClass(double) {}
 
-  DRAKE_DEPRECATED("2038-01-19", "Do not use DeprecatedMethod().")
+  DRAKE_DEPRECATED("2050-01-01", "Do not use DeprecatedMethod().")
   void DeprecatedMethod() {}
 
   /// Good property.
@@ -29,7 +29,7 @@ class ExampleCppClass {
   /// Good overload.
   void overload() {}
 
-  DRAKE_DEPRECATED("2038-01-19", "Do not use overload(int).")
+  DRAKE_DEPRECATED("2050-01-01", "Do not use overload(int).")
   void overload(int) {}
 };
 
