@@ -10,14 +10,6 @@ namespace {
 using geometry::GeometryProperties;
 using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
-using geometry::internal::kComplianceType;
-using geometry::internal::kElastic;
-using geometry::internal::kFriction;
-using geometry::internal::kHcDissipation;
-using geometry::internal::kHydroGroup;
-using geometry::internal::kMaterialGroup;
-using geometry::internal::kPointStiffness;
-using geometry::internal::kRezHint;
 using std::optional;
 
 using ReadDoubleFunc = std::function<optional<double>(const char*)>;
@@ -79,13 +71,13 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
     DRAKE_DEMAND(!(is_rigid && is_soft));
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
     const bool has_compliance_type =
-        p.HasProperty(make_property_name(kHydroGroup, kComplianceType));
+        p.HasProperty(p.hydroelastic_compliance_type());
     if (is_rigid || is_soft) {
       if (!has_compliance_type) {
         return failure << "Expected compliance; found none";
       }
       auto compliance =
-          p.Get<HydroelasticType>({kHydroGroup, kComplianceType});
+          p.Get<HydroelasticType>(p.hydroelastic_compliance_type());
       if (is_rigid && compliance != HydroelasticType::kRigid) {
         return failure << "Expected rigid compliance; found " << compliance;
       } else if (is_soft && compliance != HydroelasticType::kSoft) {
@@ -99,6 +91,8 @@ GTEST_TEST(ParseProximityPropertiesTest, HydroelasticProperties) {
     return ::testing::AssertionSuccess();
   };
 
+  const PropertyName& rez_hint_prop =
+      ProximityProperties::hydroelastic_resolution_hint();
   // Case: Declared rigid without a resolution hint.
   {
     ProximityProperties properties =
@@ -206,17 +200,15 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
       [](double mu_d, double mu_s,
          const ProximityProperties& p) -> ::testing::AssertionResult {
     ::testing::AssertionResult failure = ::testing::AssertionFailure();
-    const std::string kFrictionName =
-        make_property_name(kMaterialGroup, kFriction);
-    const bool has_value = p.HasProperty(kFrictionName);
+    const PropertyName& property = p.material_coulomb_friction();
+    const bool has_value = p.HasProperty(property);
     if (!has_value) {
-      return failure << "Expected '" << kFrictionName << "'; not found";
+      return failure << "Expected " << property << "; not found";
     }
-    const auto& friction =
-        p.Get<CoulombFriction<double>>(kFrictionName);
+    const auto& friction = p.Get<CoulombFriction<double>>(property);
     if (friction.dynamic_friction() != mu_d ||
         friction.static_friction() != mu_s) {
-      return failure << "Wrong value for '" << kFrictionName << "': "
+      return failure << "Wrong value for " << property << ":"
                      << "\n  Expected mu_d: " << mu_d << ", mu_s: " << mu_s
                      << "\n  Found mu_d " << friction.dynamic_friction()
                      << ", mu_s: " << friction.static_friction();
@@ -224,6 +216,8 @@ GTEST_TEST(ParseProximityPropertiesTest, Friction) {
     return ::testing::AssertionSuccess();
   };
 
+  const PropertyName& property =
+      ProximityProperties::material_coulomb_friction();
   // Case: Only dynamic -- both coefficients match dynamic coefficient.
   {
     const double kValue = 1.25;

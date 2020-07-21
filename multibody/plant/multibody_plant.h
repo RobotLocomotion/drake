@@ -3780,14 +3780,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(prop != nullptr);
     // Note: Invocation of GetPropertyOrDefault<T> requires implicit conversion
     // from the stored propeprty type (double) to T.
-    return std::pair(prop->template GetPropertyOrDefault<T>(
-                         {geometry::internal::kMaterialGroup,
-                          geometry::internal::kPointStiffness},
-                         penalty_method_contact_parameters_.geometry_stiffness),
-                     prop->template GetPropertyOrDefault<T>(
-                         {geometry::internal::kMaterialGroup,
-                          geometry::internal::kHcDissipation},
-                         penalty_method_contact_parameters_.dissipation));
+    return std::pair(
+        prop->template GetPropertyOrDefault<T>(
+            prop->material_point_contact_stiffness(),
+            penalty_method_contact_parameters_.geometry_stiffness),
+        prop->template GetPropertyOrDefault<T>(
+            prop->material_hunt_crossley_dissipation(),
+            penalty_method_contact_parameters_.dissipation));
   }
 
   // Helper to acquire per-geometry Coulomb friction coefficients from
@@ -3802,10 +3801,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const geometry::ProximityProperties* prop =
         inspector.GetProximityProperties(id);
     DRAKE_DEMAND(prop != nullptr);
-    DRAKE_THROW_UNLESS(prop->HasProperty({geometry::internal::kMaterialGroup,
-                                         geometry::internal::kFriction}));
+    DRAKE_THROW_UNLESS(prop->HasProperty(prop->material_coulomb_friction()));
     return prop->GetProperty<CoulombFriction<double>>(
-        {geometry::internal::kMaterialGroup, geometry::internal::kFriction});
+        prop->material_coulomb_friction());
   }
 
   // Checks that the provided State is consistent with this plant.

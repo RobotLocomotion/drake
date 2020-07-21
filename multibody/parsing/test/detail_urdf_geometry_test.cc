@@ -568,12 +568,12 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
-    verify_single_property(properties, {geometry::internal::kHydroGroup,
-                           geometry::internal::kRezHint}, 2.5);
-    verify_single_property(properties, {geometry::internal::kMaterialGroup,
-                           geometry::internal::kElastic}, 3.5);
-    verify_single_property(properties, {geometry::internal::kMaterialGroup,
-                           geometry::internal::kHcDissipation}, 3.5);
+    verify_single_property(properties,
+                           properties.hydroelastic_resolution_hint(), 2.5);
+    verify_single_property(properties, properties.material_elastic_modulus(),
+                           3.5);
+    verify_single_property(
+        properties, properties.material_hunt_crossley_dissipation(), 3.5);
     verify_friction(properties, {3.5, 3.25});
   }
 
@@ -589,11 +589,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
-    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
-                                        geometry::internal::kComplianceType}));
+    ASSERT_TRUE(
+        properties.HasProperty(properties.hydroelastic_compliance_type()));
     EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
-        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
-            geometry::internal::HydroelasticType::kRigid);
+                  properties.hydroelastic_compliance_type()),
+              geometry::internal::HydroelasticType::kRigid);
   }
 
   // Case: specifies soft hydroelastic.
@@ -608,10 +608,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
         ParseCollision("link_name", package_map, root_dir, collision_node);
     ASSERT_NE(instance.proximity_properties(), nullptr);
     const ProximityProperties& properties = *instance.proximity_properties();
-    ASSERT_TRUE(properties.HasProperty({geometry::internal::kHydroGroup,
-                                        geometry::internal::kComplianceType}));
+    ASSERT_TRUE(
+        properties.HasProperty(properties.hydroelastic_compliance_type()));
     EXPECT_EQ(properties.Get<geometry::internal::HydroelasticType>(
-        {geometry::internal::kHydroGroup, geometry::internal::kComplianceType}),
+                  properties.hydroelastic_compliance_type()),
               geometry::internal::HydroelasticType::kSoft);
   }
 

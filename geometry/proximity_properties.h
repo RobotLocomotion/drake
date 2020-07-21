@@ -17,66 +17,6 @@
 
 namespace drake {
 namespace geometry {
-namespace internal {
-
-/* @name  Declaring general contact material properties
-
- String constants used to access the contact material properties that
- SceneGraph depends on. These are not the exhaustive set of contact material
- properties that downstream consumers (e.g., MultibodyPlant) may require.
-
- As the namespace indicates, these are for internal use only, so Drake entities
- can implicitly coordinate the values they use to define proximity properties.
- These strings don't suggest what constitutes a valid property *value*. For
- those definitions, one should refer to the consumer of the properties (as
- called out in the documentation of the ProximityProperties class).  */
-//@{
-
-extern const char* const kMaterialGroup;   ///< The contact material group name.
-extern const char* const kElastic;         ///< Elastic modulus property name.
-extern const char* const kFriction;        ///< Friction coefficients property
-                                           ///< name.
-extern const char* const kHcDissipation;   ///< Hunt-Crossley dissipation
-                                           ///< property name.
-extern const char* const kPointStiffness;  ///< Point stiffness property
-                                           ///< name.
-
-//@}
-
-/* @name  Declaring geometry for hydroelastic contact.
-
- In order for a geometry to be used in hydroelastic contact, it must be declared
- as such. The declaration consists of setting a number of properties in the
- geometry's associated ProximityProperties.
-
- These utilities include:
-
-   - string constants to read and write the indicated properties, and
-   - utility functions for declaring consistent hydroelastic properties
-     including
-       - differentiating between a rigid and soft geometry
-       - accounting for differences between tessellated meshes and half spaces.
-
- @todo Add reference to discussion of hydroelastic proximity properties along
- the lines of "For the full discussion of preparing geometry for use in the
- hydroelastic contact model, see `@ref MODULE_NOT_WRITTEN_YET`.
- */
-//@{
-
-extern const char* const kHydroGroup;       ///< Hydroelastic group name.
-extern const char* const kRezHint;          ///< Resolution hint property name.
-extern const char* const kComplianceType;   ///< Compliance type property name.
-extern const char* const kSlabThickness;    ///< Slab thickness property name
-                                            ///< (for half spaces).
-
-//@}
-
-// TODO(SeanCurtis-TRI) This is a short-term hack to convert call sites that
-//  look like {group, prop} into the single string format. Remove this when
-//  I kill off all of the above char*.
-std::string PropName(const std::string& group, const std::string& prop);
-
-}  // namespace internal
 
 /**
  * @anchor contact_material_utility_functions

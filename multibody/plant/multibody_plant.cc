@@ -45,10 +45,11 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::PenetrationAsPointPair;
+using geometry::PropertyName;
 using geometry::ProximityProperties;
-using geometry::render::RenderLabel;
 using geometry::SceneGraph;
 using geometry::SourceId;
+using geometry::render::RenderLabel;
 using systems::InputPort;
 using systems::OutputPort;
 using systems::State;
@@ -436,12 +437,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     geometry::ProximityProperties properties) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  DRAKE_THROW_UNLESS(properties.HasProperty({geometry::internal::kMaterialGroup,
-                                             geometry::internal::kFriction}));
 
-  const CoulombFriction<double> coulomb_friction =
-      properties.Get<CoulombFriction<double>>(
-          {geometry::internal::kMaterialGroup, geometry::internal::kFriction});
+  const PropertyName& property = properties.material_coulomb_friction();
+  DRAKE_THROW_UNLESS(properties.HasProperty(property));
+  const auto coulomb_friction =
+      properties.Get<CoulombFriction<double>>(property);
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -468,8 +468,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const geometry::Shape& shape, const std::string& name,
     const CoulombFriction<double>& coulomb_friction) {
   geometry::ProximityProperties props;
-  props.Add({geometry::internal::kMaterialGroup, geometry::internal::kFriction},
-            coulomb_friction);
+  props.Add(props.material_coulomb_friction(), coulomb_friction);
   return RegisterCollisionGeometry(body, X_BG, shape, name, std::move(props));
 }
 
@@ -1535,17 +1534,15 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
         inspector.GetProximityProperties(geometryM_id);
     DRAKE_DEMAND(propM != nullptr);
     DRAKE_DEMAND(propN != nullptr);
-    DRAKE_THROW_UNLESS(propM->HasProperty({geometry::internal::kMaterialGroup,
-                                           geometry::internal::kFriction}));
-    DRAKE_THROW_UNLESS(propN->HasProperty({geometry::internal::kMaterialGroup,
-                                           geometry::internal::kFriction}));
+    const PropertyName& property =
+        ProximityProperties::material_coulomb_friction();
+    DRAKE_THROW_UNLESS(propM->HasProperty(property));
+    DRAKE_THROW_UNLESS(propN->HasProperty(property));
 
-    const CoulombFriction<double>& geometryM_friction =
-        propM->Get<CoulombFriction<double>>({geometry::internal::kMaterialGroup,
-                                             geometry::internal::kFriction});
-    const CoulombFriction<double>& geometryN_friction =
-        propN->Get<CoulombFriction<double>>({geometry::internal::kMaterialGroup,
-                                             geometry::internal::kFriction});
+    const auto& geometryM_friction =
+        propM->Get<CoulombFriction<double>>(property);
+    const auto& geometryN_friction =
+        propN->Get<CoulombFriction<double>>(property);
 
     // Compute combined friction coefficient.
     const CoulombFriction<double> combined_friction =

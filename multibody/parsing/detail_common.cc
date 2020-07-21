@@ -23,9 +23,7 @@ geometry::ProximityProperties ParseProximityProperties(
     } else if (is_soft) {
       geometry::AddSoftHydroelasticProperties(*rez_hint, &properties);
     } else {
-      properties.Add(
-          {geometry::internal::kHydroGroup, geometry::internal::kRezHint},
-          *rez_hint);
+      properties.Add(properties.hydroelastic_resolution_hint(), *rez_hint);
     }
   } else {
     if (is_rigid) {
