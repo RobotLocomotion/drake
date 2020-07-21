@@ -1003,6 +1003,12 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
 template <typename T>
 void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
+  if (penetration_allowance <= 0) {
+    throw std::logic_error(
+        "set_penetration_allowance(): penetration_allowance must be strictly "
+        "positive.");
+  }
+
   penetration_allowance_ = penetration_allowance;
   // We update the point contact parameters when this method is called
   // post-finalize.
@@ -1761,12 +1767,12 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     const VectorX<T>& minus_tau,
     const VectorX<T>& stiffness, const VectorX<T>& damping,
     const VectorX<T>& mu,
-    const VectorX<T>& v0, const VectorX<T>& phi0) const {
+    const VectorX<T>& v0, const VectorX<T>& fn0) const {
 
   const double dt = time_step_;  // just a shorter alias.
   const double dt_substep = dt / num_substeps;
   VectorX<T> v0_substep = v0;
-  VectorX<T> phi0_substep = phi0;
+  VectorX<T> fn0_substep = fn0;
 
   // Initialize info to an unsuccessful result.
   TamsiSolverResult info{
@@ -1781,11 +1787,10 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     // Update the data.
     tamsi_solver_->SetTwoWayCoupledProblemData(
         &M0, &Jn, &Jt,
-        &p_star_substep, &phi0_substep,
+        &p_star_substep, &fn0_substep,
         &stiffness, &damping, &mu);
 
-    info = tamsi_solver_->SolveWithGuess(dt_substep,
-                                                     v0_substep);
+    info = tamsi_solver_->SolveWithGuess(dt_substep, v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
     if (info != TamsiSolverResult::kSuccess) break;
@@ -1793,10 +1798,18 @@ TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     // Update previous time step to new solution.
     v0_substep = tamsi_solver_->get_generalized_velocities();
 
-    // Update penetration distance consistently with the solver update.
+    // TAMSI updates each normal force according to:
+    //   fₙ = (1 − d vₙ)₊ (fₙ₀ − h k vₙ)₊
+    // using the last computed normal velocity vₙ and we use the shorthand
+    // notation  h = dt_substep in this scope.
+    // The input fₙ₀ to the solver is the undamped (no dissipation) term only.
+    // We must update fₙ₀ for each substep accordingly, i.e:
+    //   fₙ₀(next) = (fₙ₀(previous) − h k vₙ(next))₊
     const auto vn_substep =
         tamsi_solver_->get_normal_velocities();
-    phi0_substep = phi0_substep - dt_substep * vn_substep;
+    fn0_substep = fn0_substep.array() -
+                  dt_substep * stiffness.array() * vn_substep.array();
+    fn0_substep = fn0_substep.cwiseMax(T(0.0));
   }
 
   return info;
@@ -1972,6 +1985,10 @@ void MultibodyPlant<T>::CalcTamsiResults(
       damping(i) = d;
     }
   }
+
+  // (Undamped) Normal force at t0.
+  const VectorX<T> fn0 = stiffness.array() * phi0.array();
+
   // Solve for v and the contact forces.
   TamsiSolverResult info{
       TamsiSolverResult::kMaxIterationsReached};
@@ -1996,7 +2013,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
     ++num_substeps;
     info = SolveUsingSubStepping(num_substeps, M0, contact_jacobians.Jn,
                                  contact_jacobians.Jt, minus_tau, stiffness,
-                                 damping, mu, v0, phi0);
+                                 damping, mu, v0, fn0);
   } while (info != TamsiSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
