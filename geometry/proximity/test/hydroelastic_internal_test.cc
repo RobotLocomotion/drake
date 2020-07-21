@@ -739,14 +739,14 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
 
   // Case: fully specified half space.
   const double thickness = 1.3;
-  properties.Add({kHydroGroup, kSlabThickness}, thickness);
+  properties.Add(properties.hydroelastic_slab_thickness(), thickness);
   std::optional<SoftGeometry> half_space =
       MakeSoftRepresentation(HalfSpace(), properties);
   ASSERT_NE(half_space, std::nullopt);
   EXPECT_TRUE(half_space->is_half_space());
-  EXPECT_EQ(
-      half_space->pressure_scale(),
-      properties.Get<double>({kMaterialGroup, kElastic}) / thickness);
+  EXPECT_EQ(half_space->pressure_scale(),
+            properties.Get<double>(properties.material_elastic_modulus()) /
+                thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(), std::runtime_error,
@@ -801,8 +801,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   ASSERT_NEAR(max_distance, kRadius, 1e-15);
 
   // Confirm pressure field is as specified in the properties.
-  const double E =
-      properties1.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
+  const double E = properties1.GetPropertyOrDefault(
+      properties1.material_elastic_modulus(), 1e8);
   // We assume that the sphere's pressure is defined as E * (1 - r/R).
   auto pressure = [E, kRadius](const Vector3d& r_MV) {
     return E * (1.0 - r_MV.norm() / kRadius);
@@ -831,6 +831,8 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
                 sphere2->mesh().num_elements());
   }
 
+  const PropertyName& tess_prop =
+      ProximityProperties::hydrolastic_tessellation_strategy();
   {
     // Defining kDenseInteriorVertices produces a mesh with an increased number
     // of tets (compared to an otherwise identical mesh declared to sparse).
@@ -838,7 +840,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Starting with sphere 1's properties, we'll set it to dense and observe
     // more tets.
     ProximityProperties dense_properties(properties1);
-    dense_properties.Add({kHydroGroup, "tessellation_strategy"},
+    dense_properties.Add(tess_prop,
                          TessellationStrategy::kDenseInteriorVertices);
     std::optional<SoftGeometry> dense_sphere =
         MakeSoftRepresentation(sphere_spec, dense_properties);
@@ -852,7 +854,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
     // Starting with sphere 1's properties, we'll explicitly set it to sparse
     // and observe the same number of tets.
     ProximityProperties dense_properties(properties1);
-    dense_properties.Add({kHydroGroup, "tessellation_strategy"},
+    dense_properties.Add(tess_prop,
                          TessellationStrategy::kSingleInteriorVertex);
     std::optional<SoftGeometry> dense_sphere =
         MakeSoftRepresentation(sphere_spec, dense_properties);
@@ -875,8 +877,8 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 3 * 5 * 9;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
+  const double E = properties.GetPropertyOrDefault(
+      properties.material_elastic_modulus(), 1e8);
   for (VolumeVertexIndex v(0); v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -901,8 +903,8 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 15;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
+  const double E = properties.GetPropertyOrDefault(
+      properties.material_elastic_modulus(), 1e8);
   for (VolumeVertexIndex v(0); v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -930,8 +932,8 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 7;
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault({kMaterialGroup, kElastic}, 1e8);
+  const double E = properties.GetPropertyOrDefault(
+      properties.material_elastic_modulus(), 1e8);
   for (VolumeVertexIndex v(0); v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -940,13 +942,13 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
 
   // The remaining tests confirm that it respects the
   // ("hydroelastic", "tessellation_strategy") property.
-
+  const PropertyName tess_prop = properties.hydrolastic_tessellation_strategy();
   ProximityProperties basic_properties = soft_properties(0.08);
   ProximityProperties sparse_properties(basic_properties);
-  sparse_properties.Add({kHydroGroup, "tessellation_strategy"},
+  sparse_properties.Add(tess_prop,
                         TessellationStrategy::kSingleInteriorVertex);
   ProximityProperties dense_properties(basic_properties);
-  dense_properties.Add({kHydroGroup, "tessellation_strategy"},
+  dense_properties.Add(tess_prop,
                        TessellationStrategy::kDenseInteriorVertices);
 
   std::optional<SoftGeometry> implicit_sparse_ellipsoid =
@@ -1007,8 +1009,8 @@ TYPED_TEST_P(HydroelasticSoftGeometryErrorTests, MissingElasticModulus) {
   ProximityProperties soft_properties;
   // Add the resolution hint and slab thickness, so that creation of the
   // hydroelastic representation can choke on elastic modulus value.
-  soft_properties.Add({kHydroGroup, kRezHint}, 10.0);
-  soft_properties.Add({kHydroGroup, kSlabThickness}, 1.0);
+  soft_properties.Add(soft_properties.hydroelastic_resolution_hint(), 10.0);
+  soft_properties.Add(soft_properties.hydroelastic_slab_thickness(), 1.0);
   TestPropertyErrors<ShapeType, double>(
       shape_spec, ProximityProperties::material_elastic_modulus(), "soft",
       [](const ShapeType& s, const ProximityProperties& p) {

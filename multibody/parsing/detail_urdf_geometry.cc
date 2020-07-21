@@ -559,15 +559,12 @@ geometry::GeometryInstance ParseCollision(
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
   //  issue #12598.
   // Now test to see how we should handle a potential <drake_compliance> tag.
-  if (!props.HasProperty({geometry::internal::kMaterialGroup,
-                          geometry::internal::kFriction})) {
+  if (!props.HasProperty(props.material_coulomb_friction())) {
     // We have no friction from <drake:proximity_properties> so we need the old
     // tag.
     CoulombFriction<double> friction =
         ParseCoulombFrictionFromDrakeCompliance(parent_element_name, node);
-    props.Add(
-        {geometry::internal::kMaterialGroup, geometry::internal::kFriction},
-        friction);
+    props.Add(props.material_coulomb_friction(), friction);
   } else {
     // We parsed friction from <drake:proximity_properties>; test for the
     // existence of <drake_compliance> and warn that it won't be used.

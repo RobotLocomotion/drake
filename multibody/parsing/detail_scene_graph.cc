@@ -406,11 +406,9 @@ ProximityProperties MakeProximityPropertiesForCollision(
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
   //  issue #12598.
-  if (!properties.HasProperty({geometry::internal::kMaterialGroup,
-                               geometry::internal::kFriction})) {
-    properties.Add(
-        {geometry::internal::kMaterialGroup, geometry::internal::kFriction},
-        MakeCoulombFrictionFromSdfCollisionOde(sdf_collision));
+  if (!properties.HasProperty(properties.material_coulomb_friction())) {
+    properties.Add(properties.material_coulomb_friction(),
+                   MakeCoulombFrictionFromSdfCollisionOde(sdf_collision));
   } else {
     // We parsed friction from <drake:proximity_properties>; test for the
     // existence of the legacy mechanism and warn we're not using it.
