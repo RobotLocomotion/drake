@@ -347,6 +347,64 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
                std::logic_error);
 }
 
+GTEST_TEST(SceneGraphTransmogrifiedPropertiesTest,
+           TransmogrifiedPropertiesTest) {
+  // Create SceneGraph and register a single frame and a single geometry
+  SceneGraph<double> scene_graph;
+  geometry::SourceId source_id = scene_graph.RegisterSource();
+
+  geometry::FrameId frame_id =
+      scene_graph.RegisterFrame(source_id, geometry::GeometryFrame("frame", 0));
+  std::unique_ptr<geometry::GeometryInstance> geometry_instance =
+      std::make_unique<geometry::GeometryInstance>(
+          math::RigidTransformd(), std::make_unique<geometry::Sphere>(1),
+          "sphere");
+
+  geometry::GeometryId geometry_id = scene_graph.RegisterGeometry(
+      source_id, frame_id, std::move(geometry_instance));
+
+  // Add ProximityProperties
+  const double point_stiffness = 200;
+  const double dissipation = 1.2;
+  geometry::ProximityProperties props;
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kPointStiffness, point_stiffness);
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kHcDissipation, dissipation);
+  scene_graph.AssignRole(source_id, geometry_id, std::move(props));
+
+  // Transmogriphy the SG
+  std::unique_ptr<systems::System<AutoDiffXd>> scene_graph_unique_ptr =
+      scene_graph.ToAutoDiffXd();
+  SceneGraph<AutoDiffXd>* scene_graph_autodiff =
+      static_cast<SceneGraph<AutoDiffXd>*>(scene_graph_unique_ptr.get());
+
+  std::unique_ptr<systems::Context<double>> context =
+      scene_graph.CreateDefaultContext();
+  std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff =
+      scene_graph_autodiff->CreateDefaultContext();
+  context_autodiff->SetTimeStateAndParametersFrom(*context);
+
+  const geometry::QueryObject<AutoDiffXd>& query_object_autodiff =
+      scene_graph_autodiff->get_query_output_port()
+          .template Eval<geometry::QueryObject<AutoDiffXd>>(*context_autodiff);
+
+  // Query for AutoDiffXd type ProximityProperties
+  const geometry::ProximityProperties* props_autodiff =
+      query_object_autodiff.inspector().GetProximityProperties(geometry_id);
+  const AutoDiffXd& point_stiffness_autodiff =
+      props_autodiff->GetPropertyOrDefault(
+          drake::geometry::internal::kMaterialGroup,
+          drake::geometry::internal::kPointStiffness,
+          AutoDiffXd(std::numeric_limits<double>::infinity()));
+  const AutoDiffXd& dissipation_autodiff = props_autodiff->GetPropertyOrDefault(
+      drake::geometry::internal::kMaterialGroup,
+      drake::geometry::internal::kHcDissipation, AutoDiffXd(0.0));
+
+  std::cout << fmt::format("(stiffness, dissipation) = ({}, {})\n",
+                           point_stiffness_autodiff, dissipation_autodiff);
+}
+
 // Tests that exercising the collision filtering logic *after* allocation is
 // allowed.
 TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
