@@ -410,7 +410,7 @@ using Class = MultibodyPlant<T>;
         [](Class* self, std::unique_ptr<Joint<T>> joint) -> auto& {
           return self->AddJoint(std::move(joint));
         },
-        py::arg("joint"), py_reference_internal, cls_doc.AddJoint.doc_1args)
+        py::arg("joint"), py_rvp::reference_internal, cls_doc.AddJoint.doc_1args)
 ...
 ```
 
@@ -454,13 +454,12 @@ Some aliases are provided; prefer these to the full spellings.
 
 `namespace py` is a shorthand alias to `pybind11` for consistency.
 
-@see @ref drake::pydrake::py_reference "py_reference",
-@ref drake::pydrake::py_reference_internal "py_reference_internal" for dealing
-with %common ownership issues.
+@see @ref drake::pydrake::py_rvp "py_rvp" for dealing with %common ownership
+issues.
 
 @note Downstream users should avoid `using namespace drake::pydrake`, as
 this may create ambiguous aliases (especially for GCC). Instead, consider
-an alias.
+using your own alias directly to the `pybind11` namespace.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel

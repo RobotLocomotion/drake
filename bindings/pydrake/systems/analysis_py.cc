@@ -52,7 +52,7 @@ PYBIND11_MODULE(analysis, m) {
         .def("boundary_time", &Class::boundary_time, cls_doc.boundary_time.doc)
         .def("return_time", &Class::return_time, cls_doc.return_time.doc)
         .def("reason", &Class::reason, cls_doc.reason.doc)
-        .def("system", &Class::system, py_reference, cls_doc.system.doc)
+        .def("system", &Class::system, py_rvp::reference, cls_doc.system.doc)
         .def("message", &Class::message, cls_doc.message.doc)
         .def("IsIdenticalStatus", &Class::IsIdenticalStatus, py::arg("other"),
             cls_doc.IsIdenticalStatus.doc);
@@ -90,7 +90,7 @@ PYBIND11_MODULE(analysis, m) {
         .def("StartDenseIntegration", &IntegratorBase<T>::StartDenseIntegration,
             doc.IntegratorBase.StartDenseIntegration.doc)
         .def("get_dense_output", &IntegratorBase<T>::get_dense_output,
-            py_reference_internal, doc.IntegratorBase.get_dense_output.doc)
+            py_rvp::reference_internal, doc.IntegratorBase.get_dense_output.doc)
         .def("StopDenseIntegration", &IntegratorBase<T>::StopDenseIntegration,
             doc.IntegratorBase.StopDenseIntegration.doc);
 
@@ -142,14 +142,15 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.clear_monitor.doc)
         .def("get_monitor", &Simulator<T>::get_monitor,
             doc.Simulator.get_monitor.doc)
-        .def("get_context", &Simulator<T>::get_context, py_reference_internal,
-            doc.Simulator.get_context.doc)
+        .def("get_context", &Simulator<T>::get_context,
+            py_rvp::reference_internal, doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,
-            py_reference_internal, doc.Simulator.get_integrator.doc)
+            py_rvp::reference_internal, doc.Simulator.get_integrator.doc)
         .def("get_mutable_integrator", &Simulator<T>::get_mutable_integrator,
-            py_reference_internal, doc.Simulator.get_mutable_integrator.doc)
+            py_rvp::reference_internal,
+            doc.Simulator.get_mutable_integrator.doc)
         .def("get_mutable_context", &Simulator<T>::get_mutable_context,
-            py_reference_internal, doc.Simulator.get_mutable_context.doc)
+            py_rvp::reference_internal, doc.Simulator.get_mutable_context.doc)
         .def("has_context", &Simulator<T>::has_context,
             doc.Simulator.has_context.doc)
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
@@ -171,7 +172,7 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.get_actual_realtime_rate.doc)
         .def("ResetStatistics", &Simulator<T>::ResetStatistics,
             doc.Simulator.ResetStatistics.doc)
-        .def("get_system", &Simulator<T>::get_system, py_reference,
+        .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -204,7 +205,7 @@ PYBIND11_MODULE(analysis, m) {
             return &result;
           },
           py::arg("simulator"), py::arg("scheme"), py::arg("max_step_size"),
-          py_reference,
+          py_rvp::reference,
           // Keep alive, reference: `return` keeps `simulator` alive.
           py::keep_alive<0, 1>(),
           pydrake_doc.drake.systems.ResetIntegratorFromFlags.doc)

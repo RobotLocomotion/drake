@@ -409,11 +409,11 @@ top-level documentation for :py:mod:`pydrake.math`.
           "get_solver_details",
           [](const MathematicalProgramResult& self) {
             const auto& abstract = self.get_abstract_solver_details();
-            // TODO(#9398): Figure out why `py_reference` is necessary.
-            py::object value_ref = py::cast(&abstract, py_reference);
+            // TODO(#9398): Figure out why `py_rvp::reference` is necessary.
+            py::object value_ref = py::cast(&abstract, py_rvp::reference);
             return value_ref.attr("get_value")();
           },
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.MathematicalProgramResult.get_solver_details.doc)
       .def(
           "GetSolution",

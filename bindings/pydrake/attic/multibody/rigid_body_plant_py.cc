@@ -61,7 +61,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("get_element_id_2", &Class::get_element_id_2,
             cls_doc.get_element_id_2.doc)
         .def("get_resultant_force", &Class::get_resultant_force,
-            py_reference_internal, cls_doc.get_resultant_force.doc);
+            py_rvp::reference_internal, cls_doc.get_resultant_force.doc);
   }
 
   {
@@ -95,7 +95,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("get_num_contacts", &Class::get_num_contacts,
             cls_doc.get_num_contacts.doc)
         .def("get_contact_info", &Class::get_contact_info,
-            py_reference_internal, cls_doc.get_contact_info.doc)
+            py_rvp::reference_internal, cls_doc.get_contact_info.doc)
         .def(
             "set_generalized_contact_force",
             [](Class* self, const Eigen::VectorXd& f) {
@@ -103,9 +103,9 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             },
             cls_doc.set_generalized_contact_force.doc)
         .def("get_generalized_contact_force",
-            &Class::get_generalized_contact_force, py_reference_internal,
+            &Class::get_generalized_contact_force, py_rvp::reference_internal,
             cls_doc.get_generalized_contact_force.doc)
-        .def("AddContact", &Class::AddContact, py_reference_internal,
+        .def("AddContact", &Class::AddContact, py_rvp::reference_internal,
             py::arg("element_a"), py::arg("element_b"), cls_doc.AddContact.doc)
         .def("Clear", &Class::Clear, cls_doc.Clear.doc);
     AddValueInstantiation<Class>(m);
@@ -122,8 +122,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             py::arg("static_friction"), py::arg("dynamic_friction"),
             cls_doc.ctor.doc_4args)
         // youngs_modulus
-        .def("set_youngs_modulus", &Class::set_youngs_modulus, py_reference,
-            cls_doc.set_youngs_modulus.doc)
+        .def("set_youngs_modulus", &Class::set_youngs_modulus,
+            py_rvp::reference, cls_doc.set_youngs_modulus.doc)
         .def("youngs_modulus", &Class::youngs_modulus,
             py::arg("default_value") = Class::kDefaultYoungsModulus,
             cls_doc.youngs_modulus.doc)
@@ -133,7 +133,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             &Class::set_youngs_modulus_to_default,
             cls_doc.set_youngs_modulus_to_default.doc)
         // dissipation
-        .def("set_dissipation", &Class::set_dissipation, py_reference,
+        .def("set_dissipation", &Class::set_dissipation, py_rvp::reference,
             cls_doc.set_dissipation.doc)
         .def("dissipation", &Class::dissipation,
             py::arg("default_value") = Class::kDefaultDissipation,
@@ -144,11 +144,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             cls_doc.set_dissipation_to_default.doc)
         // friction
         .def("set_friction", py::overload_cast<double>(&Class::set_friction),
-            py::arg("value"), py_reference, cls_doc.set_friction.doc_1args)
+            py::arg("value"), py_rvp::reference, cls_doc.set_friction.doc_1args)
         .def("set_friction",
             py::overload_cast<double, double>(&Class::set_friction),
             py::arg("static_friction"), py::arg("dynamic_friction"),
-            py_reference, cls_doc.set_friction.doc_2args)
+            py_rvp::reference, cls_doc.set_friction.doc_2args)
         .def("static_friction", &Class::static_friction,
             py::arg("default_value") = Class::kDefaultStaticFriction,
             cls_doc.static_friction.doc)
@@ -179,7 +179,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             &Class::set_default_compliant_material,
             cls_doc.set_default_compliant_material.doc)
         .def("get_rigid_body_tree", &Class::get_rigid_body_tree,
-            py_reference_internal, cls_doc.get_rigid_body_tree.doc)
+            py_rvp::reference_internal, cls_doc.get_rigid_body_tree.doc)
         .def("get_num_bodies", &Class::get_num_bodies,
             cls_doc.get_num_bodies.doc)
         .def("get_num_positions",
@@ -228,39 +228,41 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             &Class::FindInstancePositionIndexFromWorldIndex,
             cls_doc.FindInstancePositionIndexFromWorldIndex.doc)
         .def("actuator_command_input_port", &Class::actuator_command_input_port,
-            py_reference_internal, cls_doc.actuator_command_input_port.doc)
+            py_rvp::reference_internal, cls_doc.actuator_command_input_port.doc)
         .def("model_instance_has_actuators",
             &Class::model_instance_has_actuators,
             cls_doc.model_instance_has_actuators.doc)
         .def("model_instance_actuator_command_input_port",
             &Class::model_instance_actuator_command_input_port,
-            py_reference_internal,
+            py_rvp::reference_internal,
             cls_doc.model_instance_actuator_command_input_port.doc)
         .def("state_output_port", &Class::state_output_port,
-            py_reference_internal, cls_doc.state_output_port.doc)
+            py_rvp::reference_internal, cls_doc.state_output_port.doc)
         .def("state_derivative_output_port",
-            &Class::state_derivative_output_port, py_reference_internal,
+            &Class::state_derivative_output_port, py_rvp::reference_internal,
             cls_doc.state_derivative_output_port.doc)
         .def("model_instance_state_output_port",
-            &Class::model_instance_state_output_port, py_reference_internal,
+            &Class::model_instance_state_output_port,
+            py_rvp::reference_internal,
             cls_doc.model_instance_state_output_port.doc)
         .def("torque_output_port", &Class::torque_output_port,
-            py_reference_internal, cls_doc.torque_output_port.doc)
+            py_rvp::reference_internal, cls_doc.torque_output_port.doc)
         .def("model_instance_torque_output_port",
-            &Class::model_instance_torque_output_port, py_reference_internal,
+            &Class::model_instance_torque_output_port,
+            py_rvp::reference_internal,
             cls_doc.model_instance_torque_output_port.doc)
         .def("kinematics_results_output_port",
-            &Class::kinematics_results_output_port, py_reference_internal,
+            &Class::kinematics_results_output_port, py_rvp::reference_internal,
             cls_doc.kinematics_results_output_port.doc)
         .def("contact_results_output_port", &Class::contact_results_output_port,
-            py_reference_internal, cls_doc.contact_results_output_port.doc)
+            py_rvp::reference_internal, cls_doc.contact_results_output_port.doc)
         .def(
             "GetStateVector",
             [](const Class* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
               return self->GetStateVector(context);
             },
-            py::arg("context"), py_reference,
+            py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.GetStateVector.doc)
         .def("is_state_discrete", &Class::is_state_discrete,

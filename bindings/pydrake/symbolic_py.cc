@@ -521,7 +521,7 @@ PYBIND11_MODULE(symbolic, m) {
                          const Monomial& monomial) { return self == monomial; })
       .def("GetVariables", &Monomial::GetVariables,
           doc.Monomial.GetVariables.doc)
-      .def("get_powers", &Monomial::get_powers, py_reference_internal,
+      .def("get_powers", &Monomial::get_powers, py_rvp::reference_internal,
           doc.Monomial.get_powers.doc)
       .def("ToExpression", &Monomial::ToExpression,
           doc.Monomial.ToExpression.doc)
@@ -531,7 +531,7 @@ PYBIND11_MODULE(symbolic, m) {
             return self.Evaluate(Environment{env});
           },
           doc.Monomial.Evaluate.doc)
-      .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal,
+      .def("pow_in_place", &Monomial::pow_in_place, py_rvp::reference_internal,
           doc.Monomial.pow_in_place.doc)
       .def("__pow__",
           [](const Monomial& self, const int p) { return pow(self, p); });

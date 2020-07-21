@@ -87,7 +87,7 @@ PYBIND11_MODULE(shapes, m) {
       .def(py::init<const Geometry&, const Eigen::Isometry3d&>(),
           py::arg("geometry_in"), py::arg("T_element_to_local"))
       .def("hasGeometry", &Element::hasGeometry, doc.Element.hasGeometry.doc)
-      .def("getGeometry", &Element::getGeometry, py_reference_internal,
+      .def("getGeometry", &Element::getGeometry, py_rvp::reference_internal,
           doc.Element.getGeometry.doc)
       .def(
           "getLocalTransform",
