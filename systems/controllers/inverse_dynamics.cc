@@ -72,10 +72,8 @@ std::unique_ptr<AbstractValue> InverseDynamics<T>::MakeMultibodyContext()
 }
 
 template <typename T>
-void InverseDynamics<T>::SetMultibodyContext(const Context<T>& context_base,
+void InverseDynamics<T>::SetMultibodyContext(const Context<T>& context,
                                              AbstractValue* cache_value) const {
-  const auto& context = dynamic_cast<const Context<T>&>(context_base);
-
   auto& multibody_plant_context =
       cache_value->template get_mutable_value<Context<T>>();
 
@@ -100,9 +98,7 @@ MultibodyForces<T> InverseDynamics<T>::MakeMultibodyForces() const {
 
 template <typename T>
 void InverseDynamics<T>::CalcMultibodyForces(
-    const Context<T>& context_base, MultibodyForces<T>* cache_value) const {
-  const auto& context = dynamic_cast<const Context<T>&>(context_base);
-
+    const Context<T>& context, MultibodyForces<T>* cache_value) const {
   const auto& multibody_plant_context =
       this->get_cache_entry(multibody_plant_context_cache_index_)
           .template Eval<Context<T>>(context);
