@@ -30,39 +30,10 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
   multibody_plant_context_cache_index_ =
       this->DeclareCacheEntry(
               "multibody_plant_context_cache",
-              [this]() {
-                auto multibody_plant_context =
-                    multibody_plant_->CreateDefaultContext();
-                // Gravity compensation mode requires velocities to be zero.
-                if (this->is_pure_gravity_compensation()) {
-                  multibody_plant_->SetVelocities(
-                      multibody_plant_context.get(),
-                      VectorX<T>::Zero(multibody_plant_->num_velocities()));
-                }
-                return AbstractValue::Make(*multibody_plant_context);
-              },
-              [this](const ContextBase& context_base,
-                     AbstractValue* cache_value) {
-                const auto& context =
-                    dynamic_cast<const Context<T>&>(context_base);
-
-                auto& multibody_plant_context =
-                    cache_value->template get_mutable_value<Context<T>>();
-
-                Eigen::VectorBlock<const VectorX<T>> x =
-                    get_input_port_estimated_state().Eval(context);
-
-                if (this->is_pure_gravity_compensation()) {
-                  // Velocities remain zero, as set in the cache allocation
-                  // function, for pure gravity compensation mode.
-                  multibody_plant_->SetPositions(
-                      &multibody_plant_context,
-                      x.head(multibody_plant_->num_positions()));
-                } else {
-                  // Set the plant positions and velocities.
-                  multibody_plant_->SetPositionsAndVelocities(
-                      &multibody_plant_context, x);
-                }
+              [this]() { return this->MakeMultibodyContext(); },
+              [this](const ContextBase& context, AbstractValue* cache_value) {
+                this->SetMultibodyContext(
+                    dynamic_cast<const Context<T>&>(context), cache_value);
               },
               {this->input_port_ticket(
                   get_input_port_estimated_state().get_index())})
@@ -72,31 +43,11 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
   // this is doing inverse dynamics.
   if (!this->is_pure_gravity_compensation()) {
     external_forces_cache_index_ =
-        this->DeclareCacheEntry(
-                "external_forces_cache",
-                [this]() {
-                  return AbstractValue::Make(
-                      MultibodyForces<T>(*multibody_plant_));
-                },
-                [this](const ContextBase& context_base,
-                       AbstractValue* cache_value) {
-                  const auto& context =
-                      dynamic_cast<const Context<T>&>(context_base);
-
-                  const auto& multibody_plant_context =
-                      this->get_cache_entry(
-                              multibody_plant_context_cache_index_)
-                          .template Eval<Context<T>>(context);
-
-                  auto& external_forces =
-                      cache_value
-                          ->template get_mutable_value<MultibodyForces<T>>();
-
-                  multibody_plant_->CalcForceElementsContribution(
-                      multibody_plant_context, &external_forces);
-                },
-                {this->cache_entry_ticket(
-                    multibody_plant_context_cache_index_)})
+        this->DeclareCacheEntry("external_forces_cache",
+                                &InverseDynamics<T>::MakeMultibodyForces,
+                                &InverseDynamics<T>::CalcMultibodyForces,
+                                {this->cache_entry_ticket(
+                                    multibody_plant_context_cache_index_)})
             .cache_index();
 
     input_port_index_desired_acceleration_ =
@@ -106,6 +57,59 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>* plant,
 
 template <typename T>
 InverseDynamics<T>::~InverseDynamics() = default;
+
+template <typename T>
+std::unique_ptr<AbstractValue> InverseDynamics<T>::MakeMultibodyContext()
+    const {
+  auto multibody_plant_context = multibody_plant_->CreateDefaultContext();
+  // Gravity compensation mode requires velocities to be zero.
+  if (this->is_pure_gravity_compensation()) {
+    multibody_plant_->SetVelocities(
+        multibody_plant_context.get(),
+        VectorX<T>::Zero(multibody_plant_->num_velocities()));
+  }
+  return AbstractValue::Make(*multibody_plant_context);
+}
+
+template <typename T>
+void InverseDynamics<T>::SetMultibodyContext(const Context<T>& context_base,
+                                             AbstractValue* cache_value) const {
+  const auto& context = dynamic_cast<const Context<T>&>(context_base);
+
+  auto& multibody_plant_context =
+      cache_value->template get_mutable_value<Context<T>>();
+
+  Eigen::VectorBlock<const VectorX<T>> x =
+      get_input_port_estimated_state().Eval(context);
+
+  if (this->is_pure_gravity_compensation()) {
+    // Velocities remain zero, as set in the cache allocation
+    // function, for pure gravity compensation mode.
+    multibody_plant_->SetPositions(&multibody_plant_context,
+                                   x.head(multibody_plant_->num_positions()));
+  } else {
+    // Set the plant positions and velocities.
+    multibody_plant_->SetPositionsAndVelocities(&multibody_plant_context, x);
+  }
+}
+
+template <typename T>
+MultibodyForces<T> InverseDynamics<T>::MakeMultibodyForces() const {
+  return MultibodyForces<T>(*multibody_plant_);
+}
+
+template <typename T>
+void InverseDynamics<T>::CalcMultibodyForces(
+    const Context<T>& context_base, MultibodyForces<T>* cache_value) const {
+  const auto& context = dynamic_cast<const Context<T>&>(context_base);
+
+  const auto& multibody_plant_context =
+      this->get_cache_entry(multibody_plant_context_cache_index_)
+          .template Eval<Context<T>>(context);
+
+  multibody_plant_->CalcForceElementsContribution(multibody_plant_context,
+                                                  cache_value);
+}
 
 template <typename T>
 void InverseDynamics<T>::CalcOutputForce(const Context<T>& context,
