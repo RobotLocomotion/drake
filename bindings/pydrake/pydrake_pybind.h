@@ -11,17 +11,27 @@
 // for) these binding capabilities.
 
 namespace drake {
+
+/// For more high-level information, see the @ref python_bindings
+/// "Python Bindings" technical notes.
+///
+/// Drake developers should prefer any aliases defined here over their full
+/// spellings in `pybind11`.
+///
+/// `namespace py` is a shorthand alias to `pybind11` for consistency. (This
+/// symbol cannot be exposed directly in Doxygen.)
+///
+/// @note Downstream users should avoid `using namespace drake::pydrake`, as
+/// this may create ambiguous aliases (especially for GCC). Instead, consider
+/// using your own alias directly to the `pybind11` namespace.
 namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
-// you put Doxygen comments here they will apply instead to py_rvp::reference.
-// See the "Convenience aliases" section above for documentation.
+// you put Doxygen comments here they will apply instead to py_rvp.
 namespace py = pybind11;
 
-/// Shortened alias for py::return_value_policy. For more information, see:
-/// https://pybind11.readthedocs.io/en/stable/advanced/functions.html#return-value-policies
-/// The most used (non-default) policies in pydrake are `reference` and
-/// `reference_internal`.
+/// Shortened alias for py::return_value_policy. For more information, see
+/// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::return_value_policy;
 
 /// Used when returning `T& or `const T&`, as pybind's default behavior is to
