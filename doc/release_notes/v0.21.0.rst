@@ -41,7 +41,7 @@ New features
 
 Fixes
 
-* None
+* Speed up QuadraticCost evaluation for AutoDiff (`#13674`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -52,7 +52,7 @@ New features
 
 Fixes
 
-* None
+* Check for positive penetration_allowance (`#13694`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -111,8 +111,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
   Current newest_commit 0c692498d85bc2fef70a3d1e23a8e97c820388e6 (inclusive).
-
-* Update TAMSI to consume fn0 instead of phi0 (`#13696`_)  # Prepare TAMSI to be agnostic to where the contact pairs stems from; point contact or discrete hydro.
-* checks for positive penetration_allowance (`#13694`_)
-* Specialize QuadraticCost evaluation for AutoDiff (`#13674`_)  # Specialize QuadraticCost evaluation for analytical computation of the gradients which was measured to be 15% faster then when using AutoDiffXd on use cases with dirtlib.
-* Fixes sub-stepping update of fn0 (`#13712`_)
