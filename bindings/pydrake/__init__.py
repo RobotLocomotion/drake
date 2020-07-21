@@ -112,9 +112,16 @@ https://github.com/pytorch/pytorch/issues/3059#issuecomment-534676459
 
 
 def _check_for_rtld_global_usages():
-    # Naively check if `torch` is using RTLD_GLOBAL.
+    # Naively check if `torch` is using RTLD_GLOBAL. For more information, see
+    # the above _RTLD_GLOBAL_WARNING message, #12073, and #13707.
     torch = sys.modules.get("torch")
     if torch is None:
+        return False
+    # This symbol was introduced in v1.5.0 (pytorch@ddff4efa2).
+    # N.B. Per investigation in #13707, it seems like torch==1.4.0 also plays
+    # better with pydrake. However, we will keep our warning conservative.
+    using_rtld_global = getattr(torch, "USE_RTLD_GLOBAL_WITH_LIBTORCH", True)
+    if not using_rtld_global:
         return False
     init_file = getattr(torch, "__file__")
     if init_file.endswith(".pyc"):
