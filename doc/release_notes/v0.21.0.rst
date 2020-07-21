@@ -28,6 +28,7 @@ Dynamical Systems
 
 Fixes
 
+* Remove thread-unsafe private data from InverseDynamics system (`#13706`_)
 * Improve error checking of DiscreteValues (`#13681`_)
 
 Mathematical Program
@@ -54,9 +55,14 @@ New features
 pydrake bindings
 ~~~~~~~~~~~~~~~~
 
+New features
+
+* Add drake::pydrake::py_rvp alias (`#13716`_)
+
 Fixes
 
 * Improve documentation of module path naming for C++ vs Python (`#13555`_)
+* Relax RTLD_GLOBAL warning for torch>=1.5.0 (`#13708`_)
 
 Newly bound
 
@@ -70,7 +76,8 @@ No changes.
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-No changes.
+* drake::pydrake::py_reference (`#13716`_)
+* drake::pydrake::py_reference_internal (`#13716`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,8 +111,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
   Current newest_commit 4a6eae1fe0667e5aa68f12b20b4d95b289b2583a (inclusive).
-
-* Fix typo (`#13725`_)
-* pydrake: Relax RTLD_GLOBAL warning for torch>=1.5.0 (`#13708`_)
-* Makes inverse dynamics system const (`#13706`_)  # Made inverse dynamics system const (eliminate mutable member).
-* pydrake_pybind: Use simplified alias py_rvp (`#13716`_)  # Deprecate usage of py_reference and py_reference_internal
