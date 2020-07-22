@@ -57,7 +57,7 @@ pydrake bindings
 
 New features
 
-* Add drake::pydrake::py_rvp alias (`#13716`_)
+* Add drake::pydrake::py_rvp alias (`#13716`_, `#13727`_)
 
 Fixes
 
@@ -67,6 +67,7 @@ Fixes
 Newly bound
 
 * pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLinearEqualityConstraint overload (`#13703`_)
+* pydrake.geometry.SceneGraph.RemoveRole (`#13731`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,8 +115,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
   Current newest_commit f07f3b2d5360a8d86898e8b357337047535f24cc (inclusive).
-
-* pydrake doc: Simplify cross-references and symbol discovery for pydrake (`#13727`_)
-* py geometry: Bind overload of SceneGraph.RemoveRole (`#13731`_)
-* yaml: Move method definition to cc file (`#13732`_)  # Generally we should prefer cc file for compilation speed, but it was overlooked during the initial implementation.
-* yaml: Factor out example_structs for unit tests (`#13733`_)  # Tidy up the struct a little bit to resolve differences between the two copies: Serialize as first thing in struct, use kNominalDouble not NAN, always have a non-zero, non-empty default value, etc.
