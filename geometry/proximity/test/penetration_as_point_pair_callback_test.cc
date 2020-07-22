@@ -8,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -19,6 +20,7 @@ using Eigen::Vector3d;
 using fcl::CollisionObjectd;
 using fcl::Sphered;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using std::make_shared;
 using std::vector;
 
@@ -93,10 +95,18 @@ TEST_F(PenetrationAsPointPairCallbackTest, NonCollision) {
 // of the objects as parameters.
 // And confirms that if the pair is filtered, no collision is reported.
 TEST_F(PenetrationAsPointPairCallbackTest, CollisionFilterRespected) {
-  // Move sphere B away from origin such that it penetrations A 0.1 units.
+  // Move sphere B away from origin in an arbitrary direction with an arbitrary
+  // rotation, such that it penetrates A to a depth of 0.1 units. We want to
+  // make sure the two spheres have a non-trivial transform between their frames
+  // and show that regardless of their ordering in the callback, the result is
+  // bit identical.
   const double target_depth = 0.1;
+  const double center_distance = kRadius * 2 - target_depth;
+  const Vector3d p_WBo = Vector3d{1, -2, 3}.normalized() * center_distance;
   sphere_B_.setTransform(
-      RigidTransformd{Vector3d{kRadius * 2 - target_depth, 0, 0}}
+      RigidTransformd{RotationMatrixd::MakeYRotation(M_PI / 3) *
+                          RotationMatrixd::MakeZRotation(-M_PI / 7),
+                      p_WBo}
           .GetAsIsometry3());
 
   // Two executions with the order of the objects reversed -- should produce
@@ -111,11 +121,11 @@ TEST_F(PenetrationAsPointPairCallbackTest, CollisionFilterRespected) {
   const PenetrationAsPointPair<double> second_result = point_pairs_[0];
   point_pairs_.clear();
 
-  const double kEps = std::numeric_limits<double>::epsilon();
   ASSERT_EQ(first_result.id_A, second_result.id_A);
   ASSERT_EQ(first_result.id_B, second_result.id_B);
+  const double kEps = std::numeric_limits<double>::epsilon();
   ASSERT_NEAR(first_result.depth, target_depth, kEps);
-  ASSERT_NEAR(second_result.depth, target_depth, kEps);
+  ASSERT_EQ(second_result.depth, first_result.depth);
   ASSERT_TRUE(CompareMatrices(first_result.nhat_BA_W, second_result.nhat_BA_W));
   ASSERT_TRUE(CompareMatrices(first_result.p_WCa, second_result.p_WCa));
   ASSERT_TRUE(CompareMatrices(first_result.p_WCb, second_result.p_WCb));
