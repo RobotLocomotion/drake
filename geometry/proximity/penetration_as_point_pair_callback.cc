@@ -20,20 +20,30 @@ using fcl::Contactd;
 bool Callback(CollisionObjectd* fcl_object_A_ptr,
               CollisionObjectd* fcl_object_B_ptr,
               void* callback_data) {
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We ensure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
-
   auto& data = *static_cast<CallbackData*>(callback_data);
 
   // Extract the collision filter keys from the fcl collision objects. These
   // keys will also be used to map the fcl collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(fcl_object_A);
-  EncodedData encoding_B(fcl_object_B);
+  EncodedData encoding_A(*fcl_object_A_ptr);
+  EncodedData encoding_B(*fcl_object_B_ptr);
+
+  // Guarantee for geometries A and B, we always evaluate the collision between
+  // them in a fixed order (e.g., the first geometry gets transformed into the
+  // second geometry's frame for evaluation).
+  const bool swap = encoding_B.id() < encoding_A.id();
+  if (swap) {
+    std::swap(encoding_A, encoding_B);
+  }
+
+  // NOTE: Although this function *takes* non-const pointers to satisfy the
+  // fcl api, it should not exploit the non-constness to modify the collision
+  // objects. We ensure this by immediately assigning to a const version and
+  // not directly using the provided parameters.
+  const CollisionObjectd& fcl_object_A =
+      swap ? *fcl_object_B_ptr : *fcl_object_A_ptr;
+  const CollisionObjectd& fcl_object_B =
+      swap ? *fcl_object_A_ptr : *fcl_object_B_ptr;
 
   const bool can_collide = data.collision_filter.CanCollideWith(
       encoding_A.encoding(), encoding_B.encoding());
@@ -92,13 +102,6 @@ bool Callback(CollisionObjectd* fcl_object_A_ptr,
   penetration.p_WCa = p_WAc;
   penetration.p_WCb = p_WBc;
   penetration.nhat_BA_W = drake_normal;
-  // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-  // surfaces and then flip the normal.
-  if (penetration.id_B < penetration.id_A) {
-    std::swap(penetration.id_A, penetration.id_B);
-    std::swap(penetration.p_WCa, penetration.p_WCb);
-    penetration.nhat_BA_W = -penetration.nhat_BA_W;
-  }
   data.point_pairs.push_back(std::move(penetration));
 
   return false;

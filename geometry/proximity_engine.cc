@@ -758,6 +758,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                penetration_as_point_pair::Callback);
 
+    std::sort(contacts.begin(), contacts.end(),
+              [](const PenetrationAsPointPair<double>& p1,
+                 const PenetrationAsPointPair<double>& p2) {
+                if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+                return p1.id_B < p2.id_B;
+              });
+
     return contacts;
   }
 
@@ -773,6 +780,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // anchored against anchored because those pairs are implicitly filtered.
     FclCollide(dynamic_tree_, anchored_tree_, &data,
                find_collision_candidates::Callback);
+
+    std::sort(
+        pairs.begin(), pairs.end(),
+        [](const SortedPair<GeometryId>& p1, const SortedPair<GeometryId>& p2) {
+          if (p1.first() != p2.first()) return p1.first() < p2.first();
+          return p1.second() < p2.second();
+        });
+
     return pairs;
   }
 
@@ -812,6 +827,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                hydroelastic::Callback<T>);
     FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data,
                hydroelastic::Callback<T>);
+
+    std::sort(surfaces.begin(), surfaces.end(),
+              [](const ContactSurface<T>& s1,
+                 const ContactSurface<T>& s2) {
+                if (s1.id_M() != s2.id_M()) return s1.id_M() < s2.id_M();
+                return s1.id_N() < s2.id_N();
+              });
 
     return surfaces;
   }
@@ -860,6 +882,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                hydroelastic::Callback<T>);
     FclCollide(dynamic_mesh_tree_, anchored_mesh_tree_, &data.data,
                hydroelastic::Callback<T>);
+
+    std::sort(surfaces->begin(), surfaces->end(),
+              [](const ContactSurface<T>& s1,
+                 const ContactSurface<T>& s2) {
+                if (s1.id_M() != s2.id_M()) return s1.id_M() < s2.id_M();
+                return s1.id_N() < s2.id_N();
+              });
+
+    std::sort(point_pairs->begin(), point_pairs->end(),
+              [](const PenetrationAsPointPair<double>& p1,
+                 const PenetrationAsPointPair<double>& p2) {
+                if (p1.id_A != p2.id_A) return p1.id_A < p2.id_A;
+                return p1.id_B < p2.id_B;
+              });
   }
 
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.

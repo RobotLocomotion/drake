@@ -222,6 +222,10 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
             type_A, GetGeometryName(*object_A_ptr), encoding_a.id(), type_B,
             GetGeometryName(*object_B_ptr), encoding_b.id()));
       case CalcContactSurfaceResult::kSameCompliance:
+        // TODO(SeanCurtis-TRI): When we introduce soft-soft compliance, make
+        //  sure we always dispatch the two soft objects in a fixed order based
+        //  on their corresponding geometry ids. See penetration_as_point_pair
+        //  Callback for an example.
         throw std::logic_error(fmt::format(
             "Requested contact between two {} objects ({} with id "
             "{}, {} with id {}); only rigid-soft pairs are currently supported",
