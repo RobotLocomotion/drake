@@ -113,4 +113,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
-  Current newest_commit 4a6eae1fe0667e5aa68f12b20b4d95b289b2583a (inclusive).
+  Current newest_commit d48da673b62b7226cfba7a9f91d67f7b77024f9e (inclusive).
