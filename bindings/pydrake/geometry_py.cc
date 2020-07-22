@@ -362,6 +362,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("properties"), py::arg("assign") = RoleAssign::kNew,
             cls_doc.AssignRole.doc_illustration_context)
         // - End: AssignRole Overloads.
+        // - Begin: RemoveRole Overloads
+        .def(
+            "RemoveRole",
+            [](Class& self, SourceId source_id, GeometryId geometry_id,
+                Role role) {
+              return self.RemoveRole(source_id, geometry_id, role);
+            },
+            py::arg("source_id"), py::arg("geometry_id"), py::arg("role"),
+            cls_doc.RemoveRole.doc_geometry_direct)
+        // - End: RemoveRole Overloads.
         .def_static("world_frame_id", &Class::world_frame_id,
             cls_doc.world_frame_id.doc);
   }
