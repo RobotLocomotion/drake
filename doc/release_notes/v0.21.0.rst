@@ -66,8 +66,8 @@ Fixes
 
 Newly bound
 
-* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLinearEqualityConstraint overload (`#13703`_)
 * pydrake.geometry.SceneGraph.RemoveRole (`#13731`_)
+* pydrake.solvers.mathematicalprogram.MathematicalProgram.AddLinearEqualityConstraint overload (`#13703`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
