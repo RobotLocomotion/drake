@@ -1,11 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
-#include <cmath>
-#include <limits>
-#include <sstream>
 #include <vector>
 
-#include <Eigen/Core>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -13,180 +9,20 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/test/example_structs.h"
 
 // TODO(jwnimmer-tri) All of these regexps would be better off using the
 // std::regex::basic grammar, where () and {} are not special characters.
 
-namespace {
-
-// A value used in the test data below to include a default (placeholder) value
-// when initializing struct data members.
-constexpr double kNominalDouble = 1.2345;
-
-// These unit tests use a variety of sample Serializable structs, showing what
-// a user may write for their own schemas.
-
-struct DoubleStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  double value = kNominalDouble;
-};
-
-bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
-  return a.value == b.value;
-}
-
-struct ArrayStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  ArrayStruct() {
-    value.fill(kNominalDouble);
-  }
-
-  std::array<double, 3> value;
-};
-
-struct VectorStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VectorStruct() {
-    value.resize(1, kNominalDouble);
-  }
-
-  std::vector<double> value;
-};
-
-struct MapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  MapStruct() {
-    value["kNominalDouble"] = kNominalDouble;
-  }
-
-  std::map<std::string, double> value;
-};
-
-struct OptionalStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  OptionalStruct() {
-    value = kNominalDouble;
-  }
-
-  std::optional<double> value;
-};
-
-using Variant3 = std::variant<std::string, double, DoubleStruct>;
-
-std::ostream& operator<<(std::ostream& os, const Variant3& value) {
-  if (value.index() == 0) {
-    os << "std::string{" << std::get<0>(value) << "}";
-  } else if (value.index() == 1) {
-    os << "double{" << std::get<1>(value) << "}";
-  } else {
-    os << "DoubleStruct{" << std::get<2>(value).value << "}";
-  }
-  return os;
-}
-
-struct VariantStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VariantStruct() {
-    value = kNominalDouble;
-  }
-
-  Variant3 value;
-};
-
-struct VariantWrappingStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(inner));
-  }
-
-  VariantStruct inner;
-};
-
-template <int Rows, int Cols>
-struct EigenStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  EigenStruct() {
-    if (value.size() == 0) {
-      value.resize(1, 1);
-    }
-    value.setConstant(kNominalDouble);
-  }
-
-  Eigen::Matrix<double, Rows, Cols> value;
-};
-
-using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
-using EigenVec3Struct = EigenStruct<3, 1>;
-using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
-using EigenMatrix34Struct = EigenStruct<3, 4>;
-
-struct OuterStruct {
-  struct InnerStruct {
-    double inner_value = kNominalDouble;
-
-    template <typename Archive>
-    void Serialize(Archive* a) {
-      a->Visit(DRAKE_NVP(inner_value));
-    }
-  };
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(outer_value));
-    a->Visit(DRAKE_NVP(inner_struct));
-  }
-
-  double outer_value = kNominalDouble;
-  InnerStruct inner_struct;
-};
-
-struct BigMapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  BigMapStruct() {
-    value["foo"].outer_value = 1.0;
-    value["foo"].inner_struct.inner_value = 2.0;
-  }
-
-  std::map<std::string, OuterStruct> value;
-};
-
-}  // namespace
-
 namespace drake {
 namespace yaml {
+namespace test {
 namespace {
+
+// TODO(jwnimmer-tri) Add a test case for reading NonPodVectorStruct.
+// TODO(jwnimmer-tri) Add a test case for reading OuterWithBlankInner.
+// TODO(jwnimmer-tri) Add a test case for reading StringStruct.
+// TODO(jwnimmer-tri) Add a test case for reading UnorderedMapStruct.
 
 // A test fixture with common helpers.
 class YamlReadArchiveTest
@@ -893,7 +729,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Null\\) entry for std::string value"
       " while accepting YAML node of type Map \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting \\(anonymous\\)::VariantStruct inner.");
+      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
 
   // std::string values should load correctly even without a YAML type tag.
   const auto& str = AcceptNoThrow<VariantWrappingStruct>(
@@ -907,7 +743,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for std::string value"
       " while accepting YAML node of type Map \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting \\(anonymous\\)::VariantStruct inner.");
+      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
@@ -916,7 +752,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Map\\) entry for std::string value\\"
       " while accepting YAML node of type Map \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting \\(anonymous\\)::VariantStruct inner.");
+      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
 }
 
 // This finds an unknown tag when a variant was wanted.
@@ -927,7 +763,8 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\) "
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
-      "st.::variant<std::string,double,\\(anonymous\\)::DoubleStruct> value.");
+      "std::variant<std::string,double,drake::yaml::test::DoubleStruct> "
+      "value.");
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.
@@ -1082,5 +919,6 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(MakeAllPossibleOptions()));
 
 }  // namespace
+}  // namespace test
 }  // namespace yaml
 }  // namespace drake

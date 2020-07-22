@@ -96,5 +96,17 @@ std::string YamlWriteArchive::YamlDumpWithSortedMaps(
   return emitter.c_str();
 }
 
+std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
+  std::string result;
+  if (root_.IsNull()) {
+    result = root_name + ":\n";
+  } else {
+    YAML::Node document;
+    document[root_name] = root_;
+    result = YamlDumpWithSortedMaps(document) + "\n";
+  }
+  return result;
+}
+
 }  // namespace yaml
 }  // namespace drake

@@ -139,6 +139,18 @@ class TestGeometry(unittest.TestCase):
             inspector.CloneGeometryInstance(geometry_id=global_geometry),
             mut.GeometryInstance)
 
+        roles = [
+            mut.Role.kProximity,
+            mut.Role.kPerception,
+            mut.Role.kIllustration,
+        ]
+        for role in roles:
+            self.assertEqual(
+                scene_graph.RemoveRole(
+                    source_id=global_source, geometry_id=global_geometry,
+                    role=role),
+                1)
+
     def test_connect_drake_visualizer(self):
         # Test visualization API.
         T = float
