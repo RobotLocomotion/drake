@@ -701,7 +701,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
                             b) `geometry_id` does not map to a registered
                             geometry,
                             c) `geometry_id` does not belong to `source_id`, or
-                            d) the context has already been allocated.  */
+                            d) the context has already been allocated.
+   @pydrake_mkdoc_identifier{geometry_direct}  */
   int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
 
   /** systems::Context-modifying variant of
