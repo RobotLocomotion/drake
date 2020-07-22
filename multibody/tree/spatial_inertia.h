@@ -138,7 +138,9 @@ class SpatialInertia {
   /// This constructor checks for the physical validity of the resulting
   /// %SpatialInertia with IsPhysicallyValid() and throws a std::runtime_error
   /// exception in the event the provided input parameters lead to
-  /// non-physically viable spatial inertia.
+  /// non-physically viable spatial inertia. Since this check has non-negligable
+  /// runtime costs, it can be disabled by setting the optional argument
+  /// `skip_validity_check` to `true`.
   ///
   /// @param[in] mass The mass of the body or composite body S.
   /// @param[in] p_PScm_E The position vector from point P to the center of mass

@@ -1876,12 +1876,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       const Vector3<T>& p_WoBo = pc.get_X_WB(node.index()).translation();
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-        // Warning: p_WoFp and p_BoFp_W are stored using Eigen temporaries!
         // Position from Wo to Fp (ith point of Fpi), expressed in world W.
-        const Vector3<T>& p_WoFp = p_WoFpi_W.col(ipoint);
+        const Vector3<T> p_WoFp = p_WoFpi_W.col(ipoint);
 
         // Position from Bo to Fp, expressed in world W.
-        const Vector3<T>& p_BoFp_W = p_WoFp - p_WoBo;
+        const Vector3<T> p_BoFp_W = p_WoFp - p_WoBo;
 
         // Point Fp's Jacobian translational velocity is placed in the output
         // memory block in the same order input points Fpi are listed on input.
