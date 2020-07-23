@@ -57,9 +57,13 @@ void RecursiveEmit(const YAML::Node& node, YAML::EmitFromEvents* sink) {
       std::vector<std::string> key_order;
       const YAML::Node key_order_node = node[kKeyOrder];
       if (key_order_node) {
-        // Use Accept()'s ordering.
+        // Use Accept()'s ordering.  (If SubstractDefaults has been called,
+        // some of the keys may have disappeared.)
         for (const auto& item : key_order_node) {
-          key_order.push_back(item.Scalar());
+          const std::string& key = item.Scalar();
+          if (node[key].IsDefined()) {
+            key_order.push_back(key);
+          }
         }
       } else {
         // Use alphabetical ordering.
@@ -106,6 +110,114 @@ std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
     result = YamlDumpWithSortedMaps(document) + "\n";
   }
   return result;
+}
+
+namespace {
+
+// Returns true iff x and y have a identical node types and values throughout
+// their entire tree structure, but without trying to match representationally
+// distinct but semantically equal values (e.g., 0x0a compared to 10 may return
+// false even though they refer to the same integer).
+//
+// See https://github.com/jbeder/yaml-cpp/issues/274 for a feature request to
+// provide this kind of function directly as part of yaml-cpp.
+bool AreLexicallyEqual(const YAML::Node& x, const YAML::Node& y) {
+  DRAKE_DEMAND(x.IsDefined() && y.IsDefined());
+  const YAML::NodeType::value type = x.Type();
+  if (y.Type() != type) {
+    return false;
+  }
+  switch (type) {
+    case YAML::NodeType::Undefined: { DRAKE_UNREACHABLE(); }
+    case YAML::NodeType::Null: { return true; }
+    case YAML::NodeType::Scalar: {
+      return x.Scalar() == y.Scalar();
+    }
+    case YAML::NodeType::Sequence: {
+      size_t size = x.size();
+      if (y.size() != size) {
+        return false;
+      }
+      for (size_t i = 0; i < size; ++i) {
+        if (!AreLexicallyEqual(x[i], y[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    case YAML::NodeType::Map: {
+      if (x.size() != y.size()) {
+        return false;
+      }
+      if (x.Tag() != y.Tag()) {
+        return false;
+      }
+      for (const auto& x_key_value : x) {
+        const std::string& key = x_key_value.first.Scalar();
+        const YAML::Node& x_val = x_key_value.second;
+        const YAML::Node& y_val = y[key];
+        if (!y_val.IsDefined()) {
+          return false;
+        }
+        if (!AreLexicallyEqual(x_val, y_val)) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+// Implements YamlWriteArchive::SubtractDefaults recursively.
+void RecursiveSubtract(YAML::Node* x, const YAML::Node* y) {
+  // If x and y are different types, then no subtraction that can be done.
+  DRAKE_DEMAND((x != nullptr) && (y != nullptr));
+  DRAKE_DEMAND(x->IsDefined() && y->IsDefined());
+  const YAML::NodeType::value type = x->Type();
+  if (y->Type() != type) {
+    return;
+  }
+  // If their type is non-map, then we do not subtract them.  The reader's
+  // retain_map_defaults mode only merges default maps; it does not, e.g.,
+  // concatenate sequences.
+  switch (type) {
+    case YAML::NodeType::Undefined: { DRAKE_UNREACHABLE(); }
+    case YAML::NodeType::Null: { return; }
+    case YAML::NodeType::Scalar: { return; }
+    case YAML::NodeType::Sequence: { return; }
+    case YAML::NodeType::Map: {
+      break;
+    }
+  }
+  // Both x are y are maps.  Remove from x any key-value pair that is identical
+  // within both x and y.
+  std::vector<std::string> keys_to_prune;
+  for (const auto& x_key_value : *x) {
+    const std::string& key = x_key_value.first.Scalar();
+    const YAML::Node& x_val = x_key_value.second;
+    const YAML::Node& y_val = (*y)[key];
+    if (y_val.IsDefined() && AreLexicallyEqual(x_val, y_val)) {
+      keys_to_prune.push_back(key);
+    }
+  }
+  for (const auto& key : keys_to_prune) {
+    x->remove(key);
+  }
+  for (auto&& x_key_value : *x) {
+    const std::string& key = x_key_value.first.Scalar();
+    YAML::Node& x_val = x_key_value.second;
+    const YAML::Node& y_val = (*y)[key];
+    if (y_val.IsDefined()) {
+      RecursiveSubtract(&x_val, &y_val);
+    }
+  }
+}
+
+}  // namespace
+
+void YamlWriteArchive::SubtractDefaults(const YamlWriteArchive& other) {
+  RecursiveSubtract(&(this->root_), &(other.root_));
 }
 
 }  // namespace yaml

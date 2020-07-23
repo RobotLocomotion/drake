@@ -89,4 +89,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "yaml_write_subtract_test",
+    deps = [
+        ":example_structs",
+        ":yaml_write_archive",
+        "//common:name_value",
+    ],
+)
+
 add_lint_tests()
