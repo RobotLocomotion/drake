@@ -44,6 +44,7 @@ Multibody Dynamics
 Fixes
 
 * Check for positive penetration_allowance (`#13694`_)
+* Improve CalcJacobianAngularAndOrTranslationalVelocityInWorld efficiency (`#13682`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -104,6 +105,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13644: https://github.com/RobotLocomotion/drake/pull/13644
 .. _#13674: https://github.com/RobotLocomotion/drake/pull/13674
 .. _#13681: https://github.com/RobotLocomotion/drake/pull/13681
+.. _#13682: https://github.com/RobotLocomotion/drake/pull/13682
 .. _#13694: https://github.com/RobotLocomotion/drake/pull/13694
 .. _#13703: https://github.com/RobotLocomotion/drake/pull/13703
 .. _#13705: https://github.com/RobotLocomotion/drake/pull/13705
@@ -116,4 +118,4 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit 1557d8606a42fef254e08cf1fb564bfacb1f3f28 (inclusive).
-  Current newest_commit f07f3b2d5360a8d86898e8b357337047535f24cc (inclusive).
+  Current newest_commit a6e1082ca8f23e068a2e82e6462e1e9557138d7a (inclusive).
