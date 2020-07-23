@@ -1,192 +1,17 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
-#include <cmath>
 #include <vector>
 
-#include <Eigen/Core>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/name_value.h"
-
-using drake::yaml::YamlWriteArchive;
-
-namespace {
-
-// These unit tests use a variety of sample Serializable structs, showing what
-// a user may write for their own schemas.
-
-struct DoubleStruct {
-  double value = NAN;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-};
-
-struct StringStruct {
-  std::string value = "NAN";
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-};
-
-struct ArrayStruct {
-  std::array<double, 3> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  ArrayStruct() {
-    value.fill(NAN);
-  }
-
-  explicit ArrayStruct(const std::array<double, 3>& value_in)
-      : value(value_in) {}
-};
-
-struct VectorStruct {
-  std::vector<double> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VectorStruct() {
-    value.resize(1, NAN);
-  }
-
-  explicit VectorStruct(const std::vector<double>& value_in)
-      : value(value_in) {}
-};
-
-struct NonPodVectorStruct {
-  std::vector<StringStruct> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  NonPodVectorStruct() {
-    value.resize(1, {"NAN"});
-  }
-};
-
-struct MapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  std::map<std::string, double> value;
-};
-
-struct UnorderedMapStruct {
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  std::unordered_map<std::string, double> value;
-};
-
-struct OptionalStruct {
-  std::optional<double> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  OptionalStruct()
-      : OptionalStruct(NAN) {}
-
-  explicit OptionalStruct(const double value_in)
-      : OptionalStruct(std::optional<double>(value_in)) {}
-
-  explicit OptionalStruct(const std::optional<double>& value_in)
-      : value(value_in) {}
-};
-
-using Variant3 = std::variant<std::string, double, DoubleStruct>;
-
-struct VariantStruct {
-  Variant3 value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  VariantStruct()
-      : VariantStruct(NAN) {}
-
-  explicit VariantStruct(const Variant3& value_in)
-      : value(value_in) {}
-};
-
-struct VariantWrappingStruct {
-  VariantStruct inner;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(inner));
-  }
-};
-
-template <int Rows, int Cols>
-struct EigenStruct {
-  Eigen::Matrix<double, Rows, Cols> value;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(value));
-  }
-
-  EigenStruct() {
-    value.setConstant(NAN);
-  }
-
-  explicit EigenStruct(const Eigen::Matrix<double, Rows, Cols>& value_in)
-      : value(value_in) {}
-};
-
-using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
-using EigenVec3Struct = EigenStruct<3, 1>;
-using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
-using EigenMatrix34Struct = EigenStruct<3, 4>;
-
-struct OuterStruct {
-  struct InnerStruct {
-    double inner_value = NAN;
-
-    template <typename Archive>
-    void Serialize(Archive* a) {
-      a->Visit(DRAKE_NVP(inner_value));
-    }
-  };
-
-  double outer_value = NAN;
-  InnerStruct inner_struct;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(outer_value));
-    a->Visit(DRAKE_NVP(inner_struct));
-  }
-};
-
-}  // namespace
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/test/example_structs.h"
 
 namespace drake {
 namespace yaml {
+namespace test {
 namespace {
 
 // A test fixture with common helpers.
@@ -352,6 +177,14 @@ TEST_F(YamlWriteArchiveTest, Variant) {
   };
 
   test(Variant3(std::string("foo")), "foo");
+  test(Variant3(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
+
+  // TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our writer
+  // does not yet support that output syntax.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    Save(VariantStruct{double{1.0}}),
+    std::exception,
+    "Cannot YamlWriteArchive the variant type double with a non-zero index");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {
@@ -415,6 +248,19 @@ TEST_F(YamlWriteArchiveTest, Nested) {
   EXPECT_EQ(saved, expected);
 }
 
+TEST_F(YamlWriteArchiveTest, BlankInner) {
+  OuterWithBlankInner x;
+  x.outer_value = 1.0;
+
+  const std::string saved = Save(x);
+  const std::string expected = R"R(doc:
+  outer_value: 1.0
+  inner_struct: {}
+)R";
+  EXPECT_EQ(saved, expected);
+}
+
 }  // namespace
+}  // namespace test
 }  // namespace yaml
 }  // namespace drake

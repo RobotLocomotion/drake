@@ -574,9 +574,9 @@ class TamsiSolver {
   /// @param[in] p_star
   ///   The generalized momentum the system would have at `n + 1` if contact
   ///   forces were zero.
-  /// @param[in] x0
-  ///   The signed penetration distance at the previous time step. It is defined
-  ///   positive when bodies overlap.
+  /// @param[in] fn0
+  ///   Normal force at the previous time step. Always positive since bodies
+  ///   cannot attract each other.
   /// @param[in] stiffness
   ///   A vector of size `nc` storing at each ith entry the stiffness
   ///   coefficient for the ith contact pair.
@@ -606,7 +606,7 @@ class TamsiSolver {
   void SetTwoWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
       EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
-      EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
+      EigenPtr<const VectorX<T>> fn0, EigenPtr<const VectorX<T>> stiffness,
       EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu);
 
   /// Given an initial guess `v_guess`, this method uses a Newton-Raphson
@@ -748,14 +748,14 @@ class TamsiSolver {
         EigenPtr<const MatrixX<T>> M,
         EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
         EigenPtr<const VectorX<T>> p_star,
-        EigenPtr<const VectorX<T>> x0,
+        EigenPtr<const VectorX<T>> fn0,
         EigenPtr<const VectorX<T>> stiffness,
         EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
       DRAKE_DEMAND(M != nullptr);
       DRAKE_DEMAND(Jn != nullptr);
       DRAKE_DEMAND(Jt != nullptr);
       DRAKE_DEMAND(p_star != nullptr);
-      DRAKE_DEMAND(x0 != nullptr);
+      DRAKE_DEMAND(fn0 != nullptr);
       DRAKE_DEMAND(stiffness != nullptr);
       DRAKE_DEMAND(dissipation != nullptr);
       DRAKE_DEMAND(mu != nullptr);
@@ -766,7 +766,7 @@ class TamsiSolver {
       Jn_ptr_ = Jn;
       Jt_ptr_ = Jt;
       p_star_ptr_ = p_star;
-      x0_ptr_ = x0;
+      fn0_ptr_ = fn0;
       stiffness_ptr_ = stiffness;
       dissipation_ptr_ = dissipation;
       mu_ptr_ = mu;
@@ -794,9 +794,9 @@ class TamsiSolver {
     // For the two-way coupled scheme, it returns a constant reference to the
     // data for the penetration distance. It aborts if called on data for the
     // one-way coupled scheme, see has_two_way_coupling_data().
-    Eigen::Ref<const VectorX<T>> x0() const {
-      DRAKE_DEMAND(x0_ptr_ != nullptr);
-      return *x0_ptr_;
+    Eigen::Ref<const VectorX<T>> fn0() const {
+      DRAKE_DEMAND(fn0_ptr_ != nullptr);
+      return *fn0_ptr_;
     }
 
     // For the two-way coupled scheme, it returns a constant reference to the
@@ -837,10 +837,9 @@ class TamsiSolver {
     // Normal force at each contact point. fn_ptr_ is nullptr for two-way
     // coupled problems.
     EigenPtr<const VectorX<T>> fn_ptr_{nullptr};
-    // Penetration distance. Positive when there is penetration and negative
-    // when there is separation, i.e. it is minus the signed distance function.
-    // x0_ptr_ is nullptr for one-way coupled problems.
-    EigenPtr<const VectorX<T>> x0_ptr_{nullptr};
+    // Normal force at previous time step t0. Always positive.
+    // fn0_ptr_ is nullptr for one-way coupled problems.
+    EigenPtr<const VectorX<T>> fn0_ptr_{nullptr};
     // Stiffness in the normal direction. nullptr for one-way coupled problems.
     EigenPtr<const VectorX<T>> stiffness_ptr_{nullptr};
     // Damping in the normal direction. nullptr for one-way coupled problems.
@@ -921,7 +920,6 @@ class TamsiSolver {
       vt_.resize(nf);
       fn_.resize(nc);
       ft_.resize(nf);
-      x_.resize(nc);
       Delta_vn_.resize(nc);
       Delta_vt_.resize(nf);
       t_hat_.resize(nf);
@@ -931,10 +929,10 @@ class TamsiSolver {
       Gn_.resize(nc, nv);
     }
 
-    // Returns the current (maximum) capacity of the workspace.
-    int capacity() const {
-      return vt_.size();
-    }
+    // Returns the size of TAMSI's workspace that was last allocated. It is
+    // measured as the number of contact points since the last call to either
+    // SetOneWayCoupledProblemData() or SetTwoWayCoupledProblemData.
+    int capacity() const { return vn_.size(); }
 
     // Returns a constant reference to the vector of separation velocities in
     // the normal direction, of size nc.
@@ -981,12 +979,6 @@ class TamsiSolver {
     // contact forces fₙ for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_fn() {
       return fn_.segment(0, nc_);
-    }
-
-    // Returns a mutable reference to the vector containing the penetration
-    // depths for all contact points, of size nc.
-    Eigen::VectorBlock<VectorX<T>> mutable_x() {
-      return x_.segment(0, nc_);
     }
 
     // Returns a constant reference to the vector containing the tangential
@@ -1043,7 +1035,6 @@ class TamsiSolver {
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.
     VectorX<T> fn_;        // fₙᵏ, in ℝⁿᶜ.
     VectorX<T> ft_;        // fₜᵏ, in ℝ²ⁿᶜ.
-    VectorX<T> x_;         // xˢ⁺¹ = xˢ − δt vₙˢ
     VectorX<T> t_hat_;     // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
     VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
     VectorX<T> mus_;       // (modified) regularized friction, in ℝⁿᶜ.
@@ -1066,7 +1057,6 @@ class TamsiSolver {
   // In addition, this method also computes the gradient
   // Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹).
   void CalcNormalForces(
-      const Eigen::Ref<const VectorX<T>>& x,
       const Eigen::Ref<const VectorX<T>>& vn,
       const Eigen::Ref<const MatrixX<T>>& Jn,
       double dt,

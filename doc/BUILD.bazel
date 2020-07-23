@@ -6,6 +6,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -54,12 +55,24 @@ drake_py_binary(
     deps = [":sphinx_base"],
 )
 
+drake_py_library(
+    name = "system_doxygen",
+    srcs = ["system_doxygen.py"],
+    visibility = ["//visibility:public"],
+)
+
+drake_py_unittest(
+    name = "system_doxygen_test",
+    deps = [":system_doxygen"],
+)
+
 drake_py_binary(
     name = "doxygen",
     srcs = [
         "doxygen_main.py",
     ],
     data = [
+        "system_doxygen.py",
         "//:.bazelproject",
         "@bazel_tools//tools/python/runfiles",
         "@doxygen",
@@ -67,6 +80,11 @@ drake_py_binary(
 )
 
 add_lint_tests(
-    python_lint_exclude = [":conf.py"],
+    python_lint_exclude = [
+        ":conf.py",
+        # The following needs the executable flag to be run by doxygen, but the
+        # linter complains:
+        ":system_doxygen.py",
+    ],
     python_lint_extra_srcs = [":doxygen.py"],
 )

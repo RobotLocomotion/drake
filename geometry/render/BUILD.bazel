@@ -13,13 +13,26 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "render",
+    visibility = ["//visibility:public"],
     deps = [
+        ":render_camera",
         ":render_engine",
         ":render_engine_ospray",
         ":render_engine_vtk",
         ":render_engine_vtk_base",
         ":render_label",
         ":render_label_class",
+    ],
+)
+
+drake_cc_library(
+    name = "render_camera",
+    srcs = ["render_camera.cc"],
+    hdrs = ["render_camera.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+        "//systems/sensors:camera_info",
     ],
 )
 
@@ -33,12 +46,15 @@ drake_cc_library(
         "render_engine.h",
     ],
     deps = [
+        ":render_camera",
         ":render_label",
+        "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
         "//geometry:utilities",
         "//math:geometric_transform",
+        "//systems/sensors:camera_info",
         "//systems/sensors:color_palette",
         "//systems/sensors:image",
     ],
@@ -166,6 +182,14 @@ filegroup(
     name = "test_models",
     testonly = 1,
     srcs = ["test/diag_gradient.png"],
+)
+
+drake_cc_googletest(
+    name = "render_camera_test",
+    deps = [
+        ":render_camera",
+        "//common/test_utilities",
+    ],
 )
 
 drake_cc_googletest(

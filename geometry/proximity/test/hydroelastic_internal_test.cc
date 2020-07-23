@@ -417,7 +417,7 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
 
 class HydroelasticRigidGeometryTest : public ::testing::Test {
  protected:
-  /** Creates a simple set of properties for generating rigid geometry. */
+  /* Creates a simple set of properties for generating rigid geometry. */
   ProximityProperties rigid_properties(double edge_length = 0.1) const {
     ProximityProperties properties;
     AddRigidHydroelasticProperties(edge_length, &properties);
@@ -683,9 +683,9 @@ void TestPropertyErrors(
     // This error message comes from GeometryProperties::GetProperty().
     DRAKE_EXPECT_THROWS_MESSAGE(
         maker(shape_spec, wrong_value), std::logic_error,
-        fmt::format(".*The property '{}' .+ exists, but is of a different "
-                    "type.+string'",
-                    property_name));
+        fmt::format(".*The property \\('{}', '{}'\\) exists, but is of a "
+                    "different type.+string'",
+                    group_name, property_name));
   }
 
   // Error case: property value is not positive.
@@ -733,7 +733,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
 
 class HydroelasticSoftGeometryTest : public ::testing::Test {
  protected:
-  /** Creates a simple set of properties for generating soft geometry. */
+  /* Creates a simple set of properties for generating soft geometry. */
   ProximityProperties soft_properties(double edge_length = 0.1) const {
     ProximityProperties soft_properties;
     AddContactMaterial(1e8, {}, {}, &soft_properties);

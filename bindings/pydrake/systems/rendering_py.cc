@@ -128,12 +128,12 @@ PYBIND11_MODULE(rendering, m) {
       m, "PoseAggregator", doc.PoseAggregator.doc)
       .def(py::init<>(), doc.PoseAggregator.ctor.doc)
       .def("AddSingleInput", &PoseAggregator<T>::AddSingleInput,
-          py_reference_internal, doc.PoseAggregator.AddSingleInput.doc)
+          py_rvp::reference_internal, doc.PoseAggregator.AddSingleInput.doc)
       .def("AddSinglePoseAndVelocityInput",
           &PoseAggregator<T>::AddSinglePoseAndVelocityInput,
           doc.PoseAggregator.AddSinglePoseAndVelocityInput.doc)
       .def("AddBundleInput", &PoseAggregator<T>::AddBundleInput,
-          py_reference_internal, doc.PoseAggregator.AddBundleInput.doc);
+          py_rvp::reference_internal, doc.PoseAggregator.AddBundleInput.doc);
 
   py::class_<MultibodyPositionToGeometryPose<T>, LeafSystem<T>>(m,
       "MultibodyPositionToGeometryPose",
@@ -146,11 +146,11 @@ PYBIND11_MODULE(rendering, m) {
               .doc_2args_plant_input_multibody_state)
       .def("get_input_port",
           &MultibodyPositionToGeometryPose<T>::get_input_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.MultibodyPositionToGeometryPose.get_input_port.doc)
       .def("get_output_port",
           &MultibodyPositionToGeometryPose<T>::get_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.MultibodyPositionToGeometryPose.get_output_port.doc);
 
   // TODO(eric.cousineau): Add more systems as needed.

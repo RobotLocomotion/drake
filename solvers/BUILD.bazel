@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "solvers",
+    visibility = ["//visibility:public"],
     deps = [
         ":bilinear_product_util",
         ":binding",
@@ -173,6 +174,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//math:gradient",
         "//math:matrix_util",
     ],
 )
@@ -960,6 +962,7 @@ drake_cc_library(
         "//tools:no_csdp": [
             ":mathematical_program",
             ":solver_base",
+            ":sdpa_free_format",
         ],
     }),
 )
@@ -1118,6 +1121,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "sdpa_free_format_test",
     deps = [
+        ":csdp_solver",
         ":csdp_test_examples",
         ":sdpa_free_format",
         "//common:filesystem",

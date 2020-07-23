@@ -112,6 +112,11 @@ void ShaderProgram::SetUniformValue(const std::string& uniform_name,
   glUniform1f(GetUniformLocation(uniform_name), value);
 }
 
+void ShaderProgram::SetUniformValue(const std::string& uniform_name,
+                                    const Vector4<float>& value) const {
+  glUniform4fv(GetUniformLocation(uniform_name), 1, value.data());
+}
+
 void ShaderProgram::Use() const { glUseProgram(program_id_); }
 
 void ShaderProgram::Unuse() const {
@@ -120,11 +125,6 @@ void ShaderProgram::Unuse() const {
   if (curr_program == static_cast<GLint>(program_id_)) {
     glUseProgram(0);
   }
-}
-
-ShaderProgram::~ShaderProgram() {
-  Unuse();
-  glDeleteProgram(program_id_);
 }
 
 }  // namespace internal

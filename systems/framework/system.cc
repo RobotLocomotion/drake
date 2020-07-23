@@ -5,12 +5,19 @@
 #include <regex>
 
 #include "drake/common/unused.h"
+#include "drake/systems/framework/system_visitor.h"
 
 namespace drake {
 namespace systems {
 
 template <typename T>
 System<T>::~System() {}
+
+template <typename T>
+void System<T>::Accept(SystemVisitor<T>* v) const {
+  DRAKE_DEMAND(v);
+  v->VisitSystem(*this);
+}
 
 template <typename T>
 std::unique_ptr<Context<T>> System<T>::AllocateContext() const {

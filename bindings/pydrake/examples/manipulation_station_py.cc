@@ -69,20 +69,22 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("num_iiwa_joints", &ManipulationStation<T>::num_iiwa_joints,
           doc.ManipulationStation.num_iiwa_joints.doc)
       .def("get_multibody_plant", &ManipulationStation<T>::get_multibody_plant,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStation.get_multibody_plant.doc)
       .def("get_mutable_multibody_plant",
           &ManipulationStation<T>::get_mutable_multibody_plant,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStation.get_mutable_multibody_plant.doc)
       .def("get_scene_graph", &ManipulationStation<T>::get_scene_graph,
-          py_reference_internal, doc.ManipulationStation.get_scene_graph.doc)
+          py_rvp::reference_internal,
+          doc.ManipulationStation.get_scene_graph.doc)
       .def("get_mutable_scene_graph",
           &ManipulationStation<T>::get_mutable_scene_graph,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStation.get_mutable_scene_graph.doc)
       .def("get_controller_plant",
-          &ManipulationStation<T>::get_controller_plant, py_reference_internal,
+          &ManipulationStation<T>::get_controller_plant,
+          py_rvp::reference_internal,
           doc.ManipulationStation.get_controller_plant.doc)
       .def("GetIiwaPosition", &ManipulationStation<T>::GetIiwaPosition,
           doc.ManipulationStation.GetIiwaPosition.doc)
@@ -116,7 +118,7 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStation.SetWsgVelocity.doc_2args)
       .def("GetStaticCameraPosesInWorld",
           &ManipulationStation<T>::GetStaticCameraPosesInWorld,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStation.GetStaticCameraPosesInWorld.doc)
       .def("get_camera_names", &ManipulationStation<T>::get_camera_names,
           doc.ManipulationStation.get_camera_names.doc)
@@ -143,11 +145,11 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStationHardwareInterface.Connect.doc)
       .def("get_controller_plant",
           &ManipulationStationHardwareInterface::get_controller_plant,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStationHardwareInterface.get_controller_plant.doc)
       .def("get_camera_names",
           &ManipulationStationHardwareInterface::get_camera_names,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.ManipulationStationHardwareInterface.get_camera_names.doc)
       .def("num_iiwa_joints",
           &ManipulationStationHardwareInterface::num_iiwa_joints,

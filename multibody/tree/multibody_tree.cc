@@ -581,7 +581,6 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
     // Spatial inertia of body B about Bo and expressed in the body frame B.
     // This call has zero cost for rigid bodies.
     const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
-
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_B_W = (*M_B_W_cache)[body.node_index()];
     M_B_W = M_B.ReExpress(R_WB);
@@ -1119,6 +1118,9 @@ RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
+  // Shortcut: Efficiently return identity transform if frame_F == frame_G.
+  if (frame_F.index() == frame_G.index()) return RigidTransform<T>::Identity();
+
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Body<T>& A = frame_F.body();
   const Body<T>& B = frame_G.body();
@@ -1134,6 +1136,9 @@ RotationMatrix<T> MultibodyTree<T>::CalcRelativeRotationMatrix(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Frame<T>& frame_G) const {
+  // Shortcut: Efficiently return identity matrix if frame_F == frame_G.
+  if (frame_F.index() == frame_G.index()) return RotationMatrix<T>::Identity();
+
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Body<T>& A = frame_F.body();
   const Body<T>& B = frame_G.body();
@@ -1508,42 +1513,36 @@ Matrix3X<T> MultibodyTree<T>::CalcBiasTranslationalAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // TODO(mitiguy) Allow frame_A to be something other than world frame W.
-  const Frame<T>& frame_W = world_frame();
-  DRAKE_THROW_UNLESS(&frame_A == &frame_W);
+  // Form frame_B's bias spatial acceleration in frame_A, expressed in frame_E.
+  const SpatialAcceleration<T> AsBias_ABo_E = CalcBiasSpatialAcceleration(
+      context, with_respect_to, frame_B, Vector3<T>::Zero(), frame_A, frame_E);
 
-  // Reserve room to store all the bodies spatial acceleration bias in world W.
-  // TODO(Mitiguy) Inefficient use of heap. Per issue #13560, implement caching.
-  std::vector<SpatialAcceleration<T>> AsBias_WB_all(num_bodies());
-  CalcAllBodyBiasSpatialAccelerationsInWorld(context, with_respect_to,
-                                             &AsBias_WB_all);
+  // Get R_EB (rotation matrix relating frame_E to frame_B).
+  const RotationMatrix<T> R_EB =
+      CalcRelativeRotationMatrix(context, frame_E, frame_B);
 
-  // Frame_B is regarded as fixed/welded to a body, herein named body_C.
-  // From AsBias_WB_all, extract body_C's spatial acceleration bias in W.
-  const Body<T>& body_C = frame_B.body();
-  const SpatialAcceleration<T> AsBias_WC_W = AsBias_WB_all[body_C.node_index()];
-
-  // If necessary, get R_EW (rotation matrix relating frame_E to world frame W).
-  RotationMatrix<T> R_EW;
-  if (frame_E.index() != world_frame().index())
-    R_EW = CalcRelativeRotationMatrix(context, frame_E, frame_W);
+  // Form w_AB_E (B's angular velocity in frame A, measured in frame_E).
+  const Vector3<T> w_AB_E =
+      frame_B.CalcSpatialVelocity(context, frame_A, frame_E).rotational();
 
   // Allocate the output vector.
   const int num_points = p_BoBi_B.cols();
-  Matrix3X<T> asBias_WBi_E_array(3, num_points);
+  Matrix3X<T> asBias_ABi_E_array(3, num_points);
 
-  // Fill the output vector with translational acceleration biases.
+  // Fill the output vector with bias translational accelerations.
   for (int ipoint = 0; ipoint < num_points; ++ipoint) {
-    // Shift spatial acceleration bias from body_C to point Bi of frame_B.
-    const SpatialAcceleration<T> AsBias_WBi_W =
-        ShiftSpatialAccelerationBiasInWorld(context, body_C, frame_B,
-                                            p_BoBi_B.col(ipoint), AsBias_WC_W);
+    // Express the position vector from Bo (frame_B's origin) to point Bp (the
+    // ith point in the position vector list in p_BoBi_B) in frame_E.
+    const Vector3<T> p_BoBp_E = R_EB * p_BoBi_B.col(ipoint);
 
-    // Output translational component only.
-    const Vector3<T> asBias_WBi_E = R_EW * AsBias_WBi_W.translational();
-    asBias_WBi_E_array.col(ipoint) = asBias_WBi_E;
+    // Shift bias translational acceleration from Bo (frame_B's origin) to Bp.
+    const SpatialAcceleration<T> AsBias_ABp_E =
+        AsBias_ABo_E.Shift(p_BoBp_E, w_AB_E);
+
+    // Store only the translational bias acceleration component in the results.
+    asBias_ABi_E_array.col(ipoint) = AsBias_ABp_E.translational();
   }
-  return asBias_WBi_E_array;
+  return asBias_ABi_E_array;
 }
 
 template <typename T>
@@ -1692,19 +1691,25 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
   // TODO(Mitiguy): When performance becomes an issue, optimize this method by
   // only using the kinematics path from A to B.
 
+
+  // Calculate each point Bi's translational velocity Jacobian in world W.
+  // The result is Js_v_WBi_W, but we store into Js_v_ABi_W for performance.
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
+
+  // For the common special case in which frame A is the world W, optimize as
+  // Js_v_ABi_W = Js_v_WBi_W
+  if (frame_A.index() == world_frame().index() ) return;
+
   // Calculate each point Ai's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
     with_respect_to, frame_A, p_WoBi_W, nullptr, &Js_v_WAi_W);
 
-  // Calculate each point Bi's translational velocity Jacobian in world W.
-  MatrixX<T> Js_v_WBi_W(3 * num_points, num_columns);
-  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-    with_respect_to, frame_B, p_WoBi_W, nullptr, &Js_v_WBi_W);
-
   // Calculate each point Bi's translational velocity Jacobian in frame A,
-  // expressed in world W.
-  *Js_v_ABi_W = Js_v_WBi_W - Js_v_WAi_W;  // This calculates Js_v_ABi_W.
+  // expressed in world W. Note, again, that before this line Js_v_ABi_W
+  // is actually storing Js_v_WBi_W.
+  *Js_v_ABi_W -= Js_v_WAi_W;  // This calculates Js_v_ABi_W.
 }
 
 template <typename T>
@@ -1840,8 +1845,6 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // TODO(amcastro-tri): cache Nplus to avoid memory allocations.
       Nplus.resize(mobilizer_num_velocities, mobilizer_num_positions);
       mobilizer.CalcNplusMatrix(context, &Nplus);
-    } else {
-      Nplus.setIdentity(mobilizer_num_velocities, mobilizer_num_velocities);
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
@@ -1851,7 +1854,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // corresponding to the contribution of the mobilities in level ilevel.
       auto Js_w_PB_W = Js_w_WF_W->block(0, start_index, 3,
                                         mobilizer_jacobian_ncols);
-      Js_w_PB_W = Hw_PB_W * Nplus;
+      if (is_wrt_qdot) {
+        Js_w_PB_W = Hw_PB_W * Nplus;
+      } else {
+        Js_w_PB_W = Hw_PB_W;
+      }
     }
 
     if (Js_v_WFpi_W) {
@@ -1870,7 +1877,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
         // Position from Wo to Fp (ith point of Fpi), expressed in world W.
-        const Vector3<T>& p_WoFp = p_WoFpi_W.col(ipoint);
+        const Vector3<T> p_WoFp = p_WoFpi_W.col(ipoint);
 
         // Position from Bo to Fp, expressed in world W.
         const Vector3<T> p_BoFp_W = p_WoFp - p_WoBo;
@@ -1886,7 +1893,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
         // Now "shift" Hv_PB_W to Hv_PFqi_W one column at a time.
         // Reminder: frame_F is fixed/welded to body_F so its angular velocity
         // in world W is the same as body_F's angular velocity in W.
-        Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
+        if (is_wrt_qdot) {
+          Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
+        } else {
+          Hv_PFpi_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W);
+        }
       }  // ipoint.
     }
   }  // body_node_index

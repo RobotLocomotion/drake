@@ -29,6 +29,7 @@ drake_cc_package_library_gl_per_os(
         ":shader_program",
         ":shape_meshes",
     ],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library_gl_ubuntu_only(
@@ -41,6 +42,7 @@ drake_cc_library_gl_ubuntu_only(
     deps = [
         "//common:essential",
         "//common:scope_exit",
+        "@glx",
         "@opengl",
         "@x11",
     ],
@@ -51,6 +53,7 @@ drake_cc_library_gl_ubuntu_only(
     hdrs = ["opengl_geometry.h"],
     deps = [
         ":opengl_context",
+        "//geometry/render:render_label",
         "//math:geometric_transform",
     ],
 )
@@ -68,6 +71,7 @@ drake_cc_library(
     hdrs = select({
         "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
         "//conditions:default": [
+            "buffer_dim.h",
             "render_engine_gl.h",
             "render_engine_gl_factory.h",
         ],
@@ -76,7 +80,13 @@ drake_cc_library(
         "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
         "//conditions:default": [
             ":opengl_context",
+            ":opengl_geometry",
+            ":shader_program",
+            ":shape_meshes",
+            "//common:essential",
             "//geometry/render:render_engine",
+            "//geometry/render:render_label",
+            "//systems/sensors:image",
         ],
     }),
 )
@@ -103,6 +113,13 @@ drake_cc_library_gl_ubuntu_only(
 )
 
 drake_cc_googletest_gl_ubuntu_only(
+    name = "buffer_dim_test",
+    deps = [
+        ":render_engine_gl",
+    ],
+)
+
+drake_cc_googletest_gl_ubuntu_only(
     name = "opengl_context_test",
     tags = [
         # GLX functions show up with bad reads, bad writes, possibly lost, and
@@ -125,14 +142,22 @@ drake_cc_googletest_gl_ubuntu_only(
     ],
 )
 
-drake_cc_googletest(
+drake_cc_googletest_gl_ubuntu_only(
     name = "render_engine_gl_test",
     args = select({
         "//tools/cc_toolchain:apple": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
     deps = [
         ":render_engine_gl",
+        "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/render:render_label",
+        "//systems/sensors:color_palette",
     ],
 )
 

@@ -72,7 +72,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetFromIsometry3", &Class::SetFromIsometry3, py::arg("pose"),
             cls_doc.SetFromIsometry3.doc)
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc)
-        .def("rotation", &Class::rotation, py_reference_internal,
+        .def("rotation", &Class::rotation, py_rvp::reference_internal,
             cls_doc.rotation.doc)
         .def("set_rotation",
             py::overload_cast<const RotationMatrix<T>&>(&Class::set_rotation),

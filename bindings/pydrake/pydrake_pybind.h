@@ -4,25 +4,45 @@
 
 #include "pybind11/pybind11.h"
 
+#include "drake/common/drake_deprecated.h"
+
 // N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
 // `pybind11/functional.sh`, such that modules can opt-in to (and pay the cost
 // for) these binding capabilities.
 
 namespace drake {
+
+/// For more high-level information, see the @ref python_bindings
+/// "Python Bindings" technical notes.
+///
+/// Drake developers should prefer any aliases defined here over their full
+/// spellings in `pybind11`.
+///
+/// `namespace py` is a shorthand alias to `pybind11` for consistency. (This
+/// symbol cannot be exposed directly in Doxygen.)
+///
+/// @note Downstream users should avoid `using namespace drake::pydrake`, as
+/// this may create ambiguous aliases (especially for GCC). Instead, consider
+/// using your own alias directly to the `pybind11` namespace.
 namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
-// you put Doxygen comments here they will apply instead to py_reference. See
-// the "Convenience aliases" section above for documentation.
+// you put Doxygen comments here they will apply instead to py_rvp.
 namespace py = pybind11;
+
+/// Shortened alias for py::return_value_policy. For more information, see
+/// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
+using py_rvp = py::return_value_policy;
 
 /// Used when returning `T& or `const T&`, as pybind's default behavior is to
 /// copy lvalue references.
+DRAKE_DEPRECATED("2020-11-01", "Please use py_rvp::reference instead")
 const auto py_reference = py::return_value_policy::reference;
 
 /// Used when returning references to objects that are internally owned by
-/// `self`. Implies both `py_reference` and `py::keep_alive<0, 1>`, which
+/// `self`. Implies both `py_rvp::reference` and `py::keep_alive<0, 1>`, which
 /// implies "Keep alive, reference: `return` keeps` self` alive".
+DRAKE_DEPRECATED("2020-11-01", "Please use py_rvp::reference_internal instead")
 const auto py_reference_internal = py::return_value_policy::reference_internal;
 
 /// Use this when you must do manual casting - e.g. lists or tuples of nurses,
@@ -105,7 +125,7 @@ auto ParamInit() {
     // reference may evaporate by the time the true holding pybind11 record is
     // constructed. Would be alleviated using old-style pybind11 init :(
     Class obj{};
-    py::object py_obj = py::cast(&obj, py_reference);
+    py::object py_obj = py::cast(&obj, py_rvp::reference);
     py::module::import("pydrake").attr("_setattr_kwargs")(py_obj, kwargs);
     return obj;
   });

@@ -85,6 +85,7 @@ using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unordered_map;
+using std::vector;
 
 // Tests for manipulating the population of the proximity engine.
 
@@ -1718,6 +1719,216 @@ GTEST_TEST(ProximityEngineTests, PenetrationMultipleAnchored) {
   engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
   auto results = engine.ComputePointPairPenetration();
   EXPECT_EQ(results.size(), 0);
+}
+
+// Utility test for evaluating the following "ResultOrdering" test. It produces
+// a "ring" of spheres such that each sphere makes contact with its two
+// neighbors. So, N spheres produce N contacts. Given the input radius and
+// count (N), produces a map of geometry ids to poses for the N spheres.
+unordered_map<GeometryId, RigidTransformd> MakeCollidingRing(double radius,
+                                                             int N) {
+  /*
+              y
+              │                   Example of N = 4.
+              o
+             ╱│╲
+           ╱  │  ╲ s
+         ╱    │θ   ╲
+  ──────o───────────o───── x
+         ╲    │    ╱
+           ╲  │  ╱
+             ╲│╱
+              o
+              │
+  Put spheres centered at the dots indicated. We want the distance between two
+  "adjacent" spheres to be s = 1.9 * r (so that they collide). So, how far from
+  the center should those centers be? We can use the equilateral triangle and
+  law of sines. Each triangle has angles θ = π/2, α = π/4, α = π/4. The distance
+  from the origin d can be found by solving for:
+
+       d            s
+   --------  =  --------  --> d = s / sin(θ) * sin(α)
+    sin(α)       sin(θ)
+
+  Note: as long as we define θ = 2π / N, this will work for positioning N
+  spheres.
+
+  We play weird games with the geometry ids. If we simply enumerate the ids
+  in *order* (let's call them A, B, C, D) as we walk around the ring, then we'll
+  have contact pairs (A, B), (B, C), (C, D), (D, A)
+  */
+  DRAKE_DEMAND(radius > 0.0);
+  DRAKE_DEMAND(N > 0);
+  unordered_map<GeometryId, RigidTransformd> poses;
+  const double span = 2 * M_PI / N;
+  const double d = 1.9 * radius / sin(span) * sin((M_PI - span) / 2);
+  for (int i = 0; i < N; ++i) {
+    const double angle = i * span;
+    const Vector3d p_WSo = Vector3d(cos(angle), sin(angle), 0) * d;
+    poses[GeometryId::get_new_id()] = RigidTransformd(p_WSo);
+  }
+  return poses;
+}
+
+// Confirms that the ComputePointPairPenetration() computation returns the
+// same results twice in a row. This test is explicitly required because it is
+// known that updating the pose in the FCL tree can lead to erratic ordering.
+GTEST_TEST(ProximityEngineTests, PenetrationAsPointPairResultOrdering) {
+  ProximityEngine<double> engine;
+
+  const double r = 0.5;
+  // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
+  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, 4);
+
+  const Sphere sphere{r};
+  for (const auto& pair : poses) {
+    engine.AddDynamicGeometry(sphere, pair.first);
+  }
+  engine.UpdateWorldPoses(poses);
+  const auto results1 = engine.ComputePointPairPenetration();
+  ASSERT_EQ(results1.size(), poses.size());
+
+  engine.UpdateWorldPoses(poses);
+  const auto results2 = engine.ComputePointPairPenetration();
+  ASSERT_EQ(results1.size(), poses.size());
+
+  for (size_t i = 0; i < poses.size(); ++i) {
+    EXPECT_EQ(results1[i].id_A, results2[i].id_A);
+    EXPECT_EQ(results1[i].id_B, results2[i].id_B);
+  }
+}
+
+// Confirms that the FindCollisionCandidates() computation returns the
+// same results twice in a row. This test is explicitly required because it is
+// known that updating the pose in the FCL tree can lead to erratic ordering.
+GTEST_TEST(ProximityEngineTests, FindCollisionCandidatesResultOrdering) {
+  ProximityEngine<double> engine;
+
+  const double r = 0.5;
+  // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
+  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, 4);
+
+  const Sphere sphere{r};
+  for (const auto& pair : poses) {
+    engine.AddDynamicGeometry(sphere, pair.first);
+  }
+  engine.UpdateWorldPoses(poses);
+  const auto results1 = engine.FindCollisionCandidates();
+  ASSERT_EQ(results1.size(), poses.size());
+
+  engine.UpdateWorldPoses(poses);
+  const auto results2 = engine.FindCollisionCandidates();
+  ASSERT_EQ(results1.size(), poses.size());
+
+  for (size_t i = 0; i < poses.size(); ++i) {
+    EXPECT_EQ(results1[i].first(), results2[i].first());
+    EXPECT_EQ(results1[i].second(), results2[i].second());
+  }
+}
+
+// Confirms that the ComputeContactSurfaces() computation returns the
+// same results twice in a row. This test is explicitly required because it is
+// known that updating the pose in the FCL tree can lead to erratic ordering.
+GTEST_TEST(ProximityEngineTests, ComputeContactSurfacesResultOrdering) {
+  ProximityEngine<double> engine;
+
+  const double r = 0.5;
+  // For radius = 0.5, we find 4 spheres is sufficient to expose the old bug.
+  // And, for contact surfaces, we need an even number to guarantee rigid-soft
+  // alternation.
+  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, 4);
+
+  ProximityProperties soft_properties;
+  AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
+  AddSoftHydroelasticProperties(r, &soft_properties);
+  ProximityProperties rigid_properties;
+  AddRigidHydroelasticProperties(r, &rigid_properties);
+
+  // Extract the ids from poses and sort them so that we know we're assigning
+  // appropriate alternativing compliance.
+  std::vector<GeometryId> ids;
+  for (const auto& pair : poses) {
+    ids.push_back(pair.first);
+  }
+  std::sort(ids.begin(), ids.end());
+
+  int n = 0;
+  const Sphere sphere{r};
+  for (const auto& id : ids) {
+    engine.AddDynamicGeometry(sphere, id,
+                              (n % 2) ? soft_properties : rigid_properties);
+    ++n;
+  }
+  engine.UpdateWorldPoses(poses);
+  const auto results1 = engine.ComputeContactSurfaces(poses);
+  ASSERT_EQ(results1.size(), poses.size());
+
+  engine.UpdateWorldPoses(poses);
+  const auto results2 = engine.ComputeContactSurfaces(poses);
+  ASSERT_EQ(results1.size(), poses.size());
+
+  for (size_t i = 0; i < poses.size(); ++i) {
+    EXPECT_EQ(results1[i].id_M(), results2[i].id_M());
+    EXPECT_EQ(results1[i].id_N(), results2[i].id_N());
+  }
+}
+
+// Confirms that the ComputeContactSurfacesWithFallback() computation returns
+// the same results twice in a row. This test is explicitly required because it
+// is known that updating the pose in the FCL tree can lead to erratic ordering.
+GTEST_TEST(ProximityEngineTests,
+           ComputeContactSurfacesWithFallbackResultOrdering) {
+  ProximityEngine<double> engine;
+
+  const double r = 0.5;
+  // For this case we want at least four contacts *of each type*. So, we order
+  // geometries as: S S R R S S R R. This will give us four soft contacts and
+  // four rigid contacts.
+  const int N = 8;
+  unordered_map<GeometryId, RigidTransformd> poses = MakeCollidingRing(r, N);
+
+  ProximityProperties soft_properties;
+  AddContactMaterial(1e8, {}, {}, {}, &soft_properties);
+  AddSoftHydroelasticProperties(r / 2, &soft_properties);
+  ProximityProperties rigid_properties;
+  AddRigidHydroelasticProperties(r, &rigid_properties);
+
+  // Extract the ids from poses and sort them so that we know we're assigning
+  // appropriate alternativing compliance.
+  std::vector<GeometryId> ids;
+  for (const auto& pair : poses) {
+    ids.push_back(pair.first);
+  }
+  std::sort(ids.begin(), ids.end());
+
+  int n = 0;
+  const Sphere sphere{r};
+  for (const auto& id : ids) {
+    bool is_soft = (n % 4) < 2;
+    engine.AddDynamicGeometry(sphere, id,
+                              is_soft ? soft_properties : rigid_properties);
+    ++n;
+  }
+  engine.UpdateWorldPoses(poses);
+  vector<ContactSurface<double>> surfaces1;
+  vector<PenetrationAsPointPair<double>> points1;
+  engine.ComputeContactSurfacesWithFallback(poses, &surfaces1, &points1);
+  ASSERT_EQ(surfaces1.size(), N / 2);
+  ASSERT_EQ(points1.size(), N / 2);
+
+  engine.UpdateWorldPoses(poses);
+  vector<ContactSurface<double>> surfaces2;
+  vector<PenetrationAsPointPair<double>> points2;
+  engine.ComputeContactSurfacesWithFallback(poses, &surfaces2, &points2);
+  ASSERT_EQ(surfaces2.size(), N / 2);
+  ASSERT_EQ(points2.size(), N / 2);
+
+  for (size_t i = 0; i < N / 2; ++i) {
+    EXPECT_EQ(surfaces1[i].id_M(), surfaces2[i].id_M());
+    EXPECT_EQ(surfaces1[i].id_N(), surfaces2[i].id_N());
+    EXPECT_EQ(points1[i].id_A, points2[i].id_A);
+    EXPECT_EQ(points1[i].id_B, points2[i].id_B);
+  }
 }
 
 // These tests validate collisions/distance between spheres. This does *not*

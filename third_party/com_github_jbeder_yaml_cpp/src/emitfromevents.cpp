@@ -109,8 +109,14 @@ void EmitFromEvents::BeginNode() {
 }
 
 void EmitFromEvents::EmitProps(const std::string& tag, anchor_t anchor) {
-  if (!tag.empty() && tag != "?" && tag != "!")
-    m_emitter << VerbatimTag(tag);
+  if (!tag.empty() && tag != "?" && tag != "!") {
+    // N.B. The upstream yaml-cpp uses VerbatimTag here, but Drake has patched
+    // this file to use LocalTag instead.  Upstream support for custom tags
+    // during emitting is "pretty bad" (i.e., non-existent); for details see
+    // https://github.com/jbeder/yaml-cpp/issues/311 and
+    // https://github.com/jbeder/yaml-cpp/issues/447.
+    m_emitter << LocalTag(tag);
+  }
   if (anchor)
     m_emitter << Anchor(ToString(anchor));
 }

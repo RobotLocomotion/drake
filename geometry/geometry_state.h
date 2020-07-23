@@ -19,6 +19,7 @@
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
+#include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
 
@@ -508,6 +509,24 @@ class GeometryState {
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
+                        systems::sensors::ImageLabel16I* label_image_out) const;
+
+  /** Implementation of QueryObject::RenderColorImage().
+   @pre All poses have already been updated.  */
+  void RenderColorImage(const render::ColorRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageRgba8U* color_image_out) const;
+
+  /** Implementation of QueryObject::RenderDepthImage().
+   @pre All poses have already been updated.  */
+  void RenderDepthImage(const render::DepthRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
+                        systems::sensors::ImageDepth32F* depth_image_out) const;
+
+  /** Implementation of QueryObject::RenderLabelImage().
+   @pre All poses have already been updated.  */
+  void RenderLabelImage(const render::ColorRenderCamera& camera,
+                        FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
   //@}

@@ -110,15 +110,14 @@ UrdfMaterial ParseMaterial(const tinyxml2::XMLElement* node, bool name_required,
     </visual>
  ```
 
- The new tag serves as a whitelist of renderers for which this visual is
- targeted.
+ The new tag serves as a list of renderers for which this visual is targeted.
 
   - The _value_ of the tag is the name of the renderer.
   - If the _value_ is empty, that is a parsing error.
   - If no instance of `<drake:accepting_renderer>` every renderer will be given
     the chance to reify this visual geometry.
   - Multiple instances of this tag are allowed. Each instance adds a renderer to
-    the white list.
+    the list of targeted renderers.
 
  This feature is one way to provide multiple visual representations of a body.
 

@@ -15,6 +15,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "collision",
+    visibility = ["//visibility:public"],
     deps = [
         ":bullet_collision",
         ":collision_api",

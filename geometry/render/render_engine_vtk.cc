@@ -30,8 +30,9 @@ namespace render {
 
 using Eigen::Vector2d;
 using Eigen::Vector4d;
-using std::make_unique;
 using math::RigidTransformd;
+using std::make_unique;
+using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
@@ -73,23 +74,13 @@ void SetModelTransformMatrixToVtkCamera(
 
 float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
                                    double z_far) {
-  const double kA = z_far - kClippingPlaneNear;
-  // Initialize with the assumption that the buffer value is outside the range
-  // [kClippingPlaneNear, z_far]. If the buffer value is *not* 1,
-  // then it lies inside the range.
-  float z = std::numeric_limits<float>::quiet_NaN();
-  if (z_buffer_value != 1.f) {
-    z = static_cast<float>(z_buffer_value * kA + kClippingPlaneNear);
-    // TODO(SeanCurtis-TRI): This is now slightly strange; the OpenGL clipping
-    //  plane is being set to the camera's z_far; we should never get a value
-    //  greater than that. Clean this up. Ideally, do more in the shader.
-    if (z > z_far) {
-      z = InvalidDepth::kTooFar;
-    } else if (z < z_near) {
-      z = InvalidDepth::kTooClose;
-    }
-  }
-  return z;
+  // This assumes the values have already been encoded to the range [0, 1]
+  // inside the image itself. This includes sentinel values:
+  //   - The value 1 indicates the depth is too far away.
+  //   - The value 0 indicates the depth is too near.
+  if (z_buffer_value == 0) return InvalidDepth::kTooClose;
+  if (z_buffer_value == 1) return InvalidDepth::kTooFar;
+  return static_cast<float>(z_buffer_value * (z_far - z_near) + z_near);
 }
 
 enum ImageType {
@@ -317,6 +308,83 @@ std::unique_ptr<RenderEngine> RenderEngineVtk::DoClone() const {
   return std::unique_ptr<RenderEngineVtk>(new RenderEngineVtk(*this));
 }
 
+void RenderEngineVtk::DoRenderColorImage(
+    const ColorRenderCamera& camera,
+    ImageRgba8U* color_image_out) const {
+  UpdateWindow(camera.core(), camera.show_window(),
+               pipelines_[ImageType::kColor].get(), "Color_image");
+  PerformVtkUpdate(*pipelines_[ImageType::kColor]);
+
+  // TODO(SeanCurtis-TRI): Determine if this copies memory (and find some way
+  // around copying).
+  pipelines_[ImageType::kColor]->exporter->Export(color_image_out->at(0, 0));
+}
+
+void RenderEngineVtk::DoRenderDepthImage(
+    const DepthRenderCamera& camera,
+      ImageDepth32F* depth_image_out) const {
+  UpdateWindow(camera, pipelines_[ImageType::kDepth].get());
+  PerformVtkUpdate(*pipelines_[ImageType::kDepth]);
+
+  const CameraInfo& intrinsics = camera.core().intrinsics();
+  ImageRgba8U image(intrinsics.width(), intrinsics.height());
+  // TODO(SeanCurtis-TRI): We're doing multiple passes on the pixel data. This
+  // does one pass by copying the filter to the given image. We then do a second
+  // pass where we re-encode the values. It would be much better to process the
+  // pixels in a single pass.  The solution is to simply call
+  // exporter->GetPointerToData() and process the pixels as they are read.
+  // See the implementation in vtkImageExport::Export() for details.
+  pipelines_[ImageType::kDepth]->exporter->Export(image.at(0, 0));
+
+  const double min_depth = camera.depth_range().min_depth();
+  const double max_depth = camera.depth_range().max_depth();
+  for (int v = 0; v < intrinsics.height(); ++v) {
+    for (int u = 0; u < intrinsics.width(); ++u) {
+      if (image.at(u, v)[0] == 255u && image.at(u, v)[1] == 255u &&
+          image.at(u, v)[2] == 255u) {
+        depth_image_out->at(u, v)[0] = InvalidDepth::kTooFar;
+      } else {
+        // Decoding three channel color values to a float value. For the detail,
+        // see depth_shaders.h.
+        float shader_value = image.at(u, v)[0] + image.at(u, v)[1] / 255. +
+                             image.at(u, v)[2] / (255. * 255.);
+
+        // Dividing by 255 so that the range gets to be [0, 1].
+        shader_value /= 255.f;
+        // TODO(kunimatsu-tri) Calculate this in a vertex shader.
+        depth_image_out->at(u, v)[0] = CheckRangeAndConvertToMeters(
+            shader_value, min_depth, max_depth);
+      }
+    }
+  }
+}
+
+void RenderEngineVtk::DoRenderLabelImage(
+    const ColorRenderCamera& camera,
+    ImageLabel16I* label_image_out) const {
+  UpdateWindow(camera.core(), camera.show_window(),
+               pipelines_[ImageType::kLabel].get(), "Label Image");
+  PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
+
+  // TODO(SeanCurtis-TRI): This copies the image and *that's* a tragedy. It
+  // would be much better to process the pixels directly. The solution is to
+  // simply call exporter->GetPointerToData() and process the pixels myself.
+  // See the implementation in vtkImageExport::Export() for details.
+  const CameraInfo& intrinsics = camera.core().intrinsics();
+  ImageRgba8U image(intrinsics.width(), intrinsics.height());
+  pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
+
+  ColorI color;
+  for (int v = 0; v < intrinsics.height(); ++v) {
+    for (int u = 0; u < intrinsics.width(); ++u) {
+      color.r = image.at(u, v)[0];
+      color.g = image.at(u, v)[1];
+      color.b = image.at(u, v)[2];
+      label_image_out->at(u, v)[0] = RenderEngine::LabelFromColor(color);
+    }
+  }
+}
+
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
       pipelines_{{make_unique<RenderingPipeline>(),
@@ -414,19 +482,23 @@ void RenderEngineVtk::InitializePipelines() {
     // tests. Alternatively, find other way to resolve the driver bug.
     pipeline->window->SetMultiSamples(0);
 
-    auto camera = pipeline->renderer->GetActiveCamera();
-    camera->SetViewAngle(90.0);  // Default to an arbitrary 90° field of view.
-    // Initialize far plane to arbitrary value. In the case of depth it will be
-    // overwritten by the depth camera's z-far value.
-    // TODO(SeanCurtis-TRI): Provide mechanism where user can set this value.
-    //  It's important to expose this as it will affect the efficacy of the
-    //  z-buffer.
-    camera->SetClippingRange(kClippingPlaneNear, 100.0);
+    auto* camera = pipeline->renderer->GetActiveCamera();
+    camera->UseExplicitProjectionTransformMatrixOn();
+    vtkNew<vtkMatrix4x4> projection;
+    projection->Zero();
+    camera->SetExplicitProjectionTransformMatrix(projection.Get());
+
     SetModelTransformMatrixToVtkCamera(camera, vtk_identity);
 
     pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
     pipeline->filter->SetInput(pipeline->window.GetPointer());
     pipeline->filter->SetScale(1);
+    // TODO(SeanCurtis-TRI): In (at least) VTK 8.2, there is an error with
+    // using an explicitly set projection matrix and this property being set to
+    // true. Essentially, the "re render" copies the camera, and the camera
+    // copy fails to include explicit projection matrix bits. See:
+    // https://gitlab.kitware.com/vtk/vtk/-/issues/17520#note_776238
+    pipeline->filter->SetShouldRerender(false);
     pipeline->filter->ReadFrontBufferOff();
     pipeline->filter->SetInputBufferTypeToRGBA();
     pipeline->exporter->SetInputData(pipeline->filter->GetOutput());
@@ -593,29 +665,105 @@ void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
 }
 
 void RenderEngineVtk::UpdateWindow(const CameraProperties& camera,
-                                   bool show_window,
-                                   const RenderingPipeline* p,
+                                   bool show_window, const RenderingPipeline* p,
                                    const char* name) const {
-  // NOTE: This is a horrible hack for modifying what otherwise looks like
-  // const entities.
-  p->window->SetSize(camera.width, camera.height);
-  p->window->SetOffScreenRendering(!show_window);
-  if (show_window) p->window->SetWindowName(name);
-  p->renderer->GetActiveCamera()->SetViewAngle(camera.fov_y * 180 / M_PI);
+  const CameraInfo intrinsics(camera.width, camera.height, camera.fov_y);
+  const RenderCameraCore render_cam{
+      camera.renderer_name, intrinsics, {kClippingPlaneNear, 100.0}, {}};
+  UpdateWindow(render_cam, show_window, p, name);
 }
 
 void RenderEngineVtk::UpdateWindow(const DepthCameraProperties& camera,
                                    const RenderingPipeline* p) const {
-  p->renderer->GetActiveCamera()->SetClippingRange(kClippingPlaneNear,
-                                                   camera.z_far);
+  const DepthRenderCamera render_cam{
+      {camera.renderer_name,
+       {camera.width, camera.height, camera.fov_y},
+       {kClippingPlaneNear, camera.z_far * 1.1},
+       {}},
+      {camera.z_near, camera.z_far}};
+  UpdateWindow(render_cam, p);
+}
 
-  // See notes at the definition of kClippingPlaneNear (above) for the
-  // explanation of this value.
-  uniform_setting_callback_->set_z_near(kClippingPlaneNear);
-  uniform_setting_callback_->set_z_far(static_cast<float>(camera.z_far));
+void RenderEngineVtk::UpdateWindow(const RenderCameraCore& camera,
+                                   bool show_window, const RenderingPipeline* p,
+                                   const char* name) const {
+  // NOTE: Although declared const, this method modifies VTK entities. The
+  // conflict between ostensibly const operations and invocation of black-box
+  // entities that need state mutated should be more formally handled.
+
+  const CameraInfo& intrinsics = camera.intrinsics();
+  p->window->SetSize(intrinsics.width(), intrinsics.height());
+  p->window->SetOffScreenRendering(!show_window);
+  if (show_window) p->window->SetWindowName(name);
+
+  // TODO(SeanCurtis-TRI): refactor this to support other matrix types as:
+  //  void SetIntrinsics(const RenderCameraCore&,
+  //                    std::function<void(int, int, double)> set_element);
+  //  Such that we can call something like:
+  //   set_element(0, 0, 2 * fx / 2);
+  //  This can be used to set vtkMatrix4x4, Eigen::Matrix4, double[16], etc.
+  //  It would have the pre-requisite that all unset elements are *zero*.
+  //  Calling it here would look like:
+  //
+  //   vtkCamera* vtk_camera = p->renderer->GetActiveCamera();
+  //   DRAKE_DEMAND(vtk_camera->GetUseExplicitProjectionTransformMatrix());
+  //   vtkMatrix4x4* proj_mat =
+  //       vtk_camera->GetExplicitProjectionTransformMatrix();
+  //   DRAKE_DEMAND(proj_mat != nullptr);
+  //   proj_mat->Zero();
+  //   SetIntrinsics(vtk_camera,
+  //                 [proj_mat](int i, int j, double value) {
+  //                     proj_mat->SetElement(i, j, value); });
+  //
+  //  I'll do the refactor when more render engine implementations support
+  //  full camera intrinsics.
+  /* Given the camera intrinsics and render cam properties we compute the
+   projection matrix as follows:
+   (See https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/)
+
+               │ 2*fx/w     0      (w - 2*cx) / w       0    │
+               │ 0        2*fy/h  -(h - 2*cy) / h       0    │
+               │ 0          0        -(f+n) / d   -2*f*n / d │
+               │ 0          0             -1            0    │
+
+   The symbols in the matrix are predominantly aliases for the input parameter
+   values (see below for details).
+  */
+  const double fx = intrinsics.focal_x();
+  const double fy = intrinsics.focal_y();
+  const double n = camera.clipping().near();
+  const double f = camera.clipping().far();
+  const int w = intrinsics.width();
+  const int h = intrinsics.height();
+  const double cx = intrinsics.center_x();
+  const double cy = intrinsics.center_y();
+  const double d = f - n;
+
+  vtkCamera* vtk_camera = p->renderer->GetActiveCamera();
+  DRAKE_DEMAND(vtk_camera->GetUseExplicitProjectionTransformMatrix());
+
+  vtkMatrix4x4* proj_mat = vtk_camera->GetExplicitProjectionTransformMatrix();
+  DRAKE_DEMAND(proj_mat != nullptr);
+  proj_mat->Zero();
+  proj_mat->SetElement(0, 0,  2 * fx / w);
+  proj_mat->SetElement(0, 2, (w - 2 * cx) / w);
+  proj_mat->SetElement(1, 1, 2 * fy / h);
+  proj_mat->SetElement(1, 2, -(h - 2 * cy) / h);
+  proj_mat->SetElement(2, 2, -(f + n) / d);
+  proj_mat->SetElement(2, 3, -2 * f * n / d);
+  proj_mat->SetElement(3, 2, -1);
+  vtk_camera->Modified();
+}
+
+void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
+                                   const RenderingPipeline* p) const {
+  uniform_setting_callback_->set_z_near(
+      static_cast<float>(camera.depth_range().min_depth()));
+  uniform_setting_callback_->set_z_far(
+      static_cast<float>(camera.depth_range().max_depth()));
   // Never show window for depth camera; it is a meaningless operation as the
   // raw depth rasterization is not human consummable.
-  UpdateWindow(camera, false, p, "Depth Image");
+  UpdateWindow(camera.core(), false, p, "");
 }
 
 }  // namespace render

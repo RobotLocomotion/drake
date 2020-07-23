@@ -9,6 +9,7 @@
 #include "drake/common/filesystem.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/csdp_solver_internal.h"
 #include "drake/solvers/test/csdp_test_examples.h"
 
 namespace drake {
@@ -64,13 +65,14 @@ void CompareTriplets(const std::vector<Eigen::Triplet<double>>& triplets1,
       CompareMatrices(Eigen::MatrixXd(mat1), Eigen::MatrixXd(mat2), 1E-12));
 }
 
-TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
+TEST_F(SDPwithOverlappingVariables1, TestSdpaFreeFormatConstructor) {
   const SdpaFreeFormat dut(*prog_);
-  ASSERT_EQ(dut.num_X_rows(), 4);
+  ASSERT_EQ(dut.num_X_rows(), 6);
   ASSERT_EQ(dut.num_free_variables(), 0);
-  ASSERT_EQ(dut.X_blocks().size(), 2);
+  ASSERT_EQ(dut.X_blocks().size(), 3);
   CompareBlockInX(dut.X_blocks()[0], BlockInX(BlockType::kMatrix, 2));
   CompareBlockInX(dut.X_blocks()[1], BlockInX(BlockType::kMatrix, 2));
+  CompareBlockInX(dut.X_blocks()[2], BlockInX(BlockType::kDiagonal, 2));
   ASSERT_EQ(dut.prog_var_in_sdpa().size(), 3);
   CompareProgVarInSdpa(dut, prog_->FindDecisionVariableIndex(x_(0)),
                        DecisionVariableInSdpaX(Sign::kPositive, 0, 0, 0, 0, 0));
@@ -80,7 +82,7 @@ TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
                        DecisionVariableInSdpaX(Sign::kPositive, 0, 1, 0, 1, 2));
 
   // Check A_triplets.
-  ASSERT_EQ(dut.A_triplets().size(), 4);
+  ASSERT_EQ(dut.A_triplets().size(), 6);
   CompareTriplets(
       dut.A_triplets()[0],
       {Eigen::Triplet<double>(0, 0, 1.0), Eigen::Triplet<double>(1, 1, -1.0)},
@@ -93,13 +95,27 @@ TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
       dut.A_triplets()[2],
       {Eigen::Triplet<double>(0, 0, 1.0), Eigen::Triplet<double>(3, 3, -1.0)},
       dut.num_X_rows(), dut.num_X_rows());
+  // The constraint x0 >= 0.5, we add a slack variable y0 >= 0 with constraint
+  // x0 - y0 = 0.5
+  CompareTriplets(dut.A_triplets()[3],
+                  {Eigen::Triplet<double>(0, 0, 1.), Eigen::Triplet(4, 4, -1.)},
+                  dut.num_X_rows(), dut.num_X_rows());
   // The constraint that x1 = 1
   CompareTriplets(
-      dut.A_triplets()[3],
+      dut.A_triplets()[4],
       {Eigen::Triplet<double>(0, 1, 0.5), Eigen::Triplet<double>(1, 0, 0.5)},
       dut.num_X_rows(), dut.num_X_rows());
+  // The constraint x2 <= 2. We add a slack variable y2 >= 0 with the constraint
+  // x2 + y2 = 2
+  CompareTriplets(
+      dut.A_triplets()[5],
+      {Eigen::Triplet<double>(2, 3, 0.5), Eigen::Triplet<double>(3, 2, 0.5),
+       Eigen::Triplet<double>(5, 5, 1)},
+      dut.num_X_rows(), dut.num_X_rows());
 
-  EXPECT_TRUE(CompareMatrices(dut.g(), Eigen::Vector4d(0, 0, 0, 1)));
+  Eigen::Matrix<double, 6, 1> g_expected;
+  g_expected << 0, 0, 0, 0.5, 1, 2;
+  EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
   EXPECT_EQ(dut.B_triplets().size(), 0);
 
   // Now check the cost.
@@ -107,6 +123,57 @@ TEST_F(SDPwithOverlappingVariables, TestSdpaFreeFormatConstructor) {
       dut.C_triplets(),
       {Eigen::Triplet<double>(0, 0, -2), Eigen::Triplet<double>(2, 3, -0.5),
        Eigen::Triplet<double>(3, 2, -0.5)},
+      dut.num_X_rows(), dut.num_X_rows());
+  EXPECT_EQ(dut.d_triplets().size(), 0);
+  EXPECT_EQ(dut.constant_min_cost_term(), 0);
+}
+
+TEST_F(SDPwithOverlappingVariables2, TestSdpaFreeFormatConstructor) {
+  const SdpaFreeFormat dut(*prog_);
+  ASSERT_EQ(dut.num_X_rows(), 5);
+  ASSERT_EQ(dut.num_free_variables(), 0);
+  ASSERT_EQ(dut.X_blocks().size(), 2);
+  CompareBlockInX(dut.X_blocks()[0], BlockInX(BlockType::kMatrix, 2));
+  CompareBlockInX(dut.X_blocks()[1], BlockInX(BlockType::kDiagonal, 3));
+  ASSERT_EQ(dut.prog_var_in_sdpa().size(), 2);
+  CompareProgVarInSdpa(dut, prog_->FindDecisionVariableIndex(x_(0)),
+                       DecisionVariableInSdpaX(Sign::kPositive, 0, 0, 0, 0, 0));
+  CompareProgVarInSdpa(dut, prog_->FindDecisionVariableIndex(x_(1)),
+                       DecisionVariableInSdpaX(Sign::kPositive, 0, 0, 0, 1, 0));
+
+  // Check A_triplets.
+  ASSERT_EQ(dut.A_triplets().size(), 4);
+  CompareTriplets(
+      dut.A_triplets()[0],
+      {Eigen::Triplet<double>(0, 0, 1.0), Eigen::Triplet<double>(1, 1, -1.0)},
+      dut.num_X_rows(), dut.num_X_rows());
+  // The constraint 2 <= x0 <= 3, we add a slack variable y0 >= 0 with
+  // constraint x0 - y0 = 2, and slack variable y1 >= 0 with constraint x0 + y1
+  // = 3
+  CompareTriplets(
+      dut.A_triplets()[1],
+      {Eigen::Triplet<double>(0, 0, 1.), Eigen::Triplet<double>(2, 2, -1.)},
+      dut.num_X_rows(), dut.num_X_rows());
+  CompareTriplets(
+      dut.A_triplets()[2],
+      {Eigen::Triplet<double>(0, 0, 1.), Eigen::Triplet<double>(3, 3, 1.)},
+      dut.num_X_rows(), dut.num_X_rows());
+  // The constraint that x1 >= 1
+  CompareTriplets(
+      dut.A_triplets()[3],
+      {Eigen::Triplet<double>(0, 1, 0.5), Eigen::Triplet<double>(1, 0, 0.5),
+       Eigen::Triplet<double>(4, 4, -1)},
+      dut.num_X_rows(), dut.num_X_rows());
+
+  Eigen::Vector4d g_expected(0, 2, 3, 1);
+  EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
+  EXPECT_EQ(dut.B_triplets().size(), 0);
+
+  // Now check the cost.
+  CompareTriplets(
+      dut.C_triplets(),
+      {Eigen::Triplet<double>(0, 0, -2), Eigen::Triplet<double>(0, 1, -0.5),
+       Eigen::Triplet<double>(1, 0, -0.5)},
       dut.num_X_rows(), dut.num_X_rows());
   EXPECT_EQ(dut.d_triplets().size(), 0);
   EXPECT_EQ(dut.constant_min_cost_term(), 0);
@@ -697,6 +764,275 @@ TEST_F(TrivialSOCP3, TestSdpaFreeFormatConstructor) {
   EXPECT_TRUE(CompareMatrices(dut.g(), g_expected));
 }
 
+void CheckRemoveFreeVariableByNullspaceApproach(
+    const SdpaFreeFormat& dut, const Eigen::SparseMatrix<double>& C_hat,
+    const std::vector<Eigen::SparseMatrix<double>>& A_hat,
+    const Eigen::VectorXd& rhs_hat, const Eigen::VectorXd& y_hat,
+    const Eigen::SparseQR<Eigen::SparseMatrix<double>,
+                          Eigen::COLAMDOrdering<int>>& QR_B,
+    double tol) {
+  EXPECT_EQ(y_hat.rows(), static_cast<int>(dut.A().size()));
+  // Check Bᵀ * ŷ = d
+  EXPECT_TRUE(CompareMatrices(Eigen::VectorXd(dut.B().transpose() * y_hat),
+                              Eigen::VectorXd(dut.d()), tol));
+  // Check Ĉ = C -∑ᵢ ŷᵢAᵢ
+  Eigen::SparseMatrix<double> C_hat_expected = dut.C();
+  for (int i = 0; i < y_hat.rows(); ++i) {
+    C_hat_expected -= y_hat(i) * dut.A()[i];
+  }
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat),
+                              Eigen::MatrixXd(C_hat_expected), tol));
+  // N is the null space of Bᵀ. Namely if we do a QR decomposition on B, then
+  // N = Q₂.
+  Eigen::SparseMatrix<double> Q;
+  Q = QR_B.matrixQ();
+  const Eigen::SparseMatrix<double> N =
+      Q.rightCols(dut.B().rows() - QR_B.rank());
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(dut.B().transpose() * N),
+                              Eigen::MatrixXd::Zero(dut.B().cols(), N.cols()),
+                              tol));
+  // Check rhs_hat = Nᵀ * rhs
+  EXPECT_TRUE(
+      CompareMatrices(rhs_hat, Eigen::VectorXd(N.transpose() * dut.g()), tol));
+  // Check Âᵢ = ∑ⱼNⱼᵢAⱼ
+  EXPECT_EQ(static_cast<int>(A_hat.size()), N.cols());
+  for (int i = 0; i < N.cols(); ++i) {
+    Eigen::SparseMatrix<double> A_hat_expected(dut.num_X_rows(),
+                                               dut.num_X_rows());
+    A_hat_expected.setZero();
+    for (int j = 0; j < static_cast<int>(dut.A().size()); ++j) {
+      A_hat_expected += N.coeff(j, i) * dut.A()[j];
+    }
+    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]),
+                                Eigen::MatrixXd(A_hat_expected), tol));
+  }
+}
+
+void TestRemoveFreeVariableByNullspaceApproach(
+    const MathematicalProgram& prog) {
+  const SdpaFreeFormat dut(prog);
+  Eigen::SparseMatrix<double> C_hat;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat, y_hat;
+  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
+  dut.RemoveFreeVariableByNullspaceApproach(&C_hat, &A_hat, &rhs_hat, &y_hat,
+                                            &QR_B);
+  CheckRemoveFreeVariableByNullspaceApproach(dut, C_hat, A_hat, rhs_hat, y_hat,
+                                             QR_B, 1E-10);
+}
+
+TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
+  const SdpaFreeFormat dut(*prog_);
+  Eigen::SparseMatrix<double> C_hat;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat, y_hat;
+  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>> QR_B;
+  dut.RemoveFreeVariableByNullspaceApproach(&C_hat, &A_hat, &rhs_hat, &y_hat,
+                                            &QR_B);
+  CheckRemoveFreeVariableByNullspaceApproach(dut, C_hat, A_hat, rhs_hat, y_hat,
+                                             QR_B, 1E-10);
+
+  // Now try to call CSDP to solve this problem.
+  csdp::blockmatrix C_csdp;
+  double* rhs_csdp{nullptr};
+  csdp::constraintmatrix* constraints_csdp{nullptr};
+  ConvertSparseMatrixFormatToCsdpProblemData(dut.X_blocks(), C_hat, A_hat,
+                                             rhs_hat, &C_csdp, &rhs_csdp,
+                                             &constraints_csdp);
+  struct csdp::blockmatrix X_csdp, Z;
+  double* y{nullptr};
+  csdp::initsoln(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+                 constraints_csdp, &X_csdp, &y, &Z);
+  double pobj{0};
+  double dobj{0};
+  const int ret = csdp::easy_sdp(
+      dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
+      -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
+      &pobj, &dobj);
+  EXPECT_EQ(ret, 0 /* 0 is for success */);
+  Eigen::SparseMatrix<double> X_hat(dut.num_X_rows(), dut.num_X_rows());
+  ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
+  // Now compute the free variable values.
+  Eigen::VectorXd AX(dut.A().size());
+  for (int i = 0; i < AX.rows(); ++i) {
+    AX(i) = (dut.A()[i].cwiseProduct(X_hat)).sum();
+  }
+  Eigen::VectorXd s_val;
+  s_val = QR_B.solve(dut.g() - AX);
+  const double tol = 1E-6;
+  EXPECT_NEAR(pobj, 43, tol);
+  EXPECT_EQ(X_csdp.nblocks, 1);
+  EXPECT_EQ(X_csdp.blocks[1].blockcategory, csdp::blockcat::DIAG);
+  EXPECT_EQ(X_csdp.blocks[1].blocksize, 7);
+  std::vector<double> block_val({0, 5, 0, 0, 0, 7, 0});
+  for (int i = 0; i < 7; ++i) {
+    EXPECT_NEAR(X_csdp.blocks[1].data.vec[i + 1], block_val[i], tol);
+  }
+
+  csdp::free_prob(dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+                  constraints_csdp, X_csdp, y, Z);
+}
+
+TEST_F(CsdpLinearProgram2, RemoveFreeVariableByNullspaceApproach) {
+  TestRemoveFreeVariableByNullspaceApproach(*prog_);
+}
+
+TEST_F(TrivialSDP2, RemoveFreeVariableByNullspaceApproach) {
+  TestRemoveFreeVariableByNullspaceApproach(*prog_);
+}
+
+TEST_F(TrivialSOCP1, RemoveFreeVariableByNullspaceApproach) {
+  TestRemoveFreeVariableByNullspaceApproach(*prog_);
+}
+
+void TestRemoveFreeVariableByTwoSlackVariablesApproach(
+    const MathematicalProgram& prog) {
+  const SdpaFreeFormat dut(prog);
+  std::vector<internal::BlockInX> X_hat_blocks;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::SparseMatrix<double> C_hat;
+  dut.RemoveFreeVariableByTwoSlackVariablesApproach(&X_hat_blocks, &A_hat,
+                                                    &C_hat);
+  EXPECT_EQ(X_hat_blocks.size(), dut.X_blocks().size() + 1);
+  for (int i = 0; i < static_cast<int>(dut.X_blocks().size()); ++i) {
+    EXPECT_EQ(X_hat_blocks[i].block_type, dut.X_blocks()[i].block_type);
+    EXPECT_EQ(X_hat_blocks[i].num_rows, dut.X_blocks()[i].num_rows);
+  }
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].block_type,
+            BlockType::kDiagonal);
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].num_rows,
+            dut.num_free_variables() * 2);
+  EXPECT_EQ(A_hat.size(), dut.A().size());
+  const int num_X_hat_rows = dut.num_X_rows() + 2 * dut.num_free_variables();
+  for (int i = 0; i < static_cast<int>(A_hat.size()); ++i) {
+    Eigen::MatrixXd A_hat_expected =
+        Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+    A_hat_expected.block(0, 0, dut.A()[i].rows(), dut.A()[i].cols()) =
+        dut.A()[i];
+    Eigen::VectorXd bi = dut.B().row(i).transpose();
+    A_hat_expected.block(dut.A()[i].rows(), dut.A()[i].cols(), dut.B().cols(),
+                         dut.B().cols()) = bi.asDiagonal();
+    A_hat_expected.bottomRightCorner(dut.num_free_variables(),
+                                     dut.num_free_variables()) =
+        (-bi).asDiagonal();
+    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]), A_hat_expected));
+  }
+
+  Eigen::MatrixXd C_hat_expected =
+      Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+  C_hat_expected.topLeftCorner(dut.num_X_rows(), dut.num_X_rows()) = dut.C();
+  C_hat_expected.block(dut.num_X_rows(), dut.num_X_rows(),
+                       dut.num_free_variables(), dut.num_free_variables()) =
+      Eigen::VectorXd(dut.d()).asDiagonal();
+  C_hat_expected.bottomRightCorner(dut.num_free_variables(),
+                                   dut.num_free_variables()) =
+      Eigen::VectorXd(-dut.d()).asDiagonal();
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat), C_hat_expected));
+}
+
+TEST_F(LinearProgramBoundingBox1,
+       RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+TEST_F(CsdpLinearProgram2, RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+TEST_F(TrivialSDP2, RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+TEST_F(TrivialSOCP1, RemoveFreeVariableByTwoSlackVariablesApproach) {
+  TestRemoveFreeVariableByTwoSlackVariablesApproach(*prog_);
+}
+
+void TestRemoveFreeVariableByLorentzConeSlackApproach(
+    const MathematicalProgram& prog) {
+  const SdpaFreeFormat dut(prog);
+  std::vector<internal::BlockInX> X_hat_blocks;
+  std::vector<Eigen::SparseMatrix<double>> A_hat;
+  Eigen::VectorXd rhs_hat;
+  Eigen::SparseMatrix<double> C_hat;
+  dut.RemoveFreeVariableByLorentzConeSlackApproach(&X_hat_blocks, &A_hat,
+                                                   &rhs_hat, &C_hat);
+  EXPECT_EQ(X_hat_blocks.size(), dut.X_blocks().size() + 1);
+  for (int i = 0; i < static_cast<int>(dut.X_blocks().size()); ++i) {
+    EXPECT_EQ(X_hat_blocks[i].block_type, dut.X_blocks()[i].block_type);
+    EXPECT_EQ(X_hat_blocks[i].num_rows, dut.X_blocks()[i].num_rows);
+  }
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].block_type,
+            BlockType::kMatrix);
+  EXPECT_EQ(X_hat_blocks[X_hat_blocks.size() - 1].num_rows,
+            dut.num_free_variables() + 1);
+  EXPECT_EQ(A_hat.size(), dut.A().size() + dut.num_free_variables() *
+                                               (dut.num_free_variables() + 1) /
+                                               2);
+  EXPECT_EQ(rhs_hat.rows(), A_hat.size());
+  Eigen::VectorXd rhs_hat_expected = Eigen::VectorXd::Zero(A_hat.size());
+  rhs_hat_expected.head(dut.A().size()) = dut.g();
+  EXPECT_TRUE(CompareMatrices(rhs_hat, rhs_hat_expected));
+  const int num_X_hat_rows = dut.num_X_rows() + dut.num_free_variables() + 1;
+  for (int i = 0; i < static_cast<int>(dut.A().size()); ++i) {
+    Eigen::MatrixXd A_hat_expected =
+        Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+    A_hat_expected.block(0, 0, dut.A()[i].rows(), dut.A()[i].cols()) =
+        dut.A()[i];
+    const Eigen::VectorXd bi = dut.B().row(i).transpose();
+    A_hat_expected.block(dut.A()[i].rows(), dut.A()[i].cols() + 1, 1,
+                         dut.B().cols()) = bi.transpose() / 2;
+    A_hat_expected.block(dut.A()[i].rows() + 1, dut.A()[i].cols(),
+                         dut.B().cols(), 1) = bi / 2;
+    EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[i]), A_hat_expected));
+  }
+  // Now check the newly added linear equality constraint.
+  // Y(i, i) = Y(0, 0) and Y(i, j) = 0 for j > i >= 1
+  int A_hat_count = dut.A().size();
+  for (int i = 1; i < dut.num_free_variables() + 1; ++i) {
+    Eigen::MatrixXd A_hat_expected =
+        Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+    A_hat_expected(dut.num_X_rows() + i, dut.num_X_rows() + i) = 1;
+    A_hat_expected(dut.num_X_rows(), dut.num_X_rows()) = -1;
+    EXPECT_TRUE(
+        CompareMatrices(Eigen::MatrixXd(A_hat[A_hat_count++]), A_hat_expected));
+    for (int j = i + 1; j < dut.num_free_variables() + 1; ++j) {
+      A_hat_expected.setZero();
+      A_hat_expected(dut.num_X_rows() + i, dut.num_X_rows() + j) = 0.5;
+      A_hat_expected(dut.num_X_rows() + j, dut.num_X_rows() + i) = 0.5;
+      EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(A_hat[A_hat_count++]),
+                                  A_hat_expected));
+    }
+  }
+
+  Eigen::MatrixXd C_hat_expected =
+      Eigen::MatrixXd::Zero(num_X_hat_rows, num_X_hat_rows);
+  C_hat_expected.topLeftCorner(dut.num_X_rows(), dut.num_X_rows()) = dut.C();
+  C_hat_expected.block(dut.num_X_rows(), dut.num_X_rows() + 1, 1,
+                       dut.num_free_variables()) =
+      Eigen::VectorXd(dut.d()).transpose() / 2;
+  C_hat_expected.block(dut.num_X_rows() + 1, dut.num_X_rows(),
+                       dut.num_free_variables(), 1) =
+      Eigen::VectorXd(dut.d()) / 2;
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(C_hat), C_hat_expected));
+}
+
+TEST_F(LinearProgramBoundingBox1,
+       RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+TEST_F(CsdpLinearProgram2, RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+TEST_F(TrivialSDP2, RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
+TEST_F(TrivialSOCP1, RemoveFreeVariableByLorentzConeSlackApproach) {
+  TestRemoveFreeVariableByLorentzConeSlackApproach(*prog_);
+}
+
 }  // namespace internal
 GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   // This is the sample program from http://plato.asu.edu/ftp/sdpa_format.txt
@@ -711,7 +1047,6 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
       x(1) + 5 * X(0, 0) + 4 * X(0, 1) + 6 * X(1, 1), 20);
 
   const std::string file_name = temp_directory() + "/sdpa";
-  std::cout << file_name << "\n";
   EXPECT_TRUE(GenerateSDPA(prog, file_name));
   EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
 
@@ -756,12 +1091,144 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateInvalidSDPA) {
   MathematicalProgram prog1;
   prog1.NewBinaryVariables<2>();
   EXPECT_THROW(GenerateSDPA(prog1, "tmp"), std::invalid_argument);
+}
 
-  // program with unbounded variables.
-  MathematicalProgram prog2;
-  auto x = prog2.NewContinuousVariables<2>();
-  prog2.AddLinearEqualityConstraint(x(0) + x(1), 1);
-  EXPECT_FALSE(GenerateSDPA(prog2, "tmp"));
+GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_two_slack) {
+  // Test GenerateSDPA with prog that has free variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+  prog.AddLinearCost(X(0, 1) + 2 * x(1));
+
+  internal::SdpaFreeFormat dut(prog);
+  EXPECT_GT(dut.num_free_variables(), 0);
+  const std::string file_name = temp_directory() + "/sdpa_free1";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name,
+                           RemoveFreeVariableMethod::kTwoSlackVariables));
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 -4 ");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 1 1 2 -0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 2 2 -2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 4 4 2");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 1 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 2 2 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 3 3 -1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 4 4 -1");
+  EXPECT_FALSE(std::getline(infile, line));
+
+  infile.close();
+}
+
+GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_null_space) {
+  // Test GenerateSDPA with prog that has free variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+
+  internal::SdpaFreeFormat dut(prog);
+  EXPECT_GT(dut.num_free_variables(), 0);
+  const std::string file_name = temp_directory() + "/sdpa_free2";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name,
+                           RemoveFreeVariableMethod::kNullspace));
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  // The null space approach completely removes the constraint.
+  EXPECT_EQ(line, "0");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 ");
+  std::getline(infile, line);
+  // The constraint is empty.
+  EXPECT_EQ(line, "");
+
+  infile.close();
+}
+
+GTEST_TEST(SdpaFreeFormatTest,
+           GenerateSDPA_remove_free_variables_lorentz_slack) {
+  // Test GenerateSDPA with prog that has free variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLinearEqualityConstraint(X(0, 0) + x(0) + x(1), 1);
+  prog.AddLinearCost(X(0, 1) + 2 * x(1));
+
+  internal::SdpaFreeFormat dut(prog);
+  EXPECT_GT(dut.num_free_variables(), 0);
+  const std::string file_name = temp_directory() + "/sdpa_free3";
+  EXPECT_TRUE(GenerateSDPA(prog, file_name,
+                           RemoveFreeVariableMethod::kLorentzConeSlack));
+  EXPECT_TRUE(filesystem::exists({file_name + ".dat-s"}));
+
+  std::ifstream infile(file_name + ".dat-s");
+  ASSERT_TRUE(infile.is_open());
+  std::string line;
+  std::getline(infile, line);
+  // number of constraints.
+  EXPECT_EQ(line, "4");
+  std::getline(infile, line);
+  // nblocks
+  EXPECT_EQ(line, "2");
+  std::getline(infile, line);
+  // block sizes
+  EXPECT_EQ(line, "2 3 ");
+  std::getline(infile, line);
+  // constraint rhs
+  EXPECT_EQ(line, "1 0 0 0");
+  // Each non-zero entry in C
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 1 1 2 -0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "0 2 1 3 -1");
+  // Each non-zero entry in Ai
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 1 1 1 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 2 0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "1 2 1 3 0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 2 1 1 -1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "2 2 2 2 1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "3 2 2 3 0.5");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "4 2 1 1 -1");
+  std::getline(infile, line);
+  EXPECT_EQ(line, "4 2 3 3 1");
+  EXPECT_FALSE(std::getline(infile, line));
+
+  infile.close();
 }
 
 }  // namespace solvers

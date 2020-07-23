@@ -86,7 +86,11 @@ DEFINE_bool(hybrid, false, "Set to true to run hybrid hydroelastic");
 /** Places a ball at the world's origin and defines its velocity as being
  sinusoidal in time in the z direction.
 
- @system{MovingBall,, @output_port{geometry_pose} }
+ @system
+ name: MovingBall
+ output_ports:
+ - geometry_pose
+ @endsystem
  */
 class MovingBall final : public LeafSystem<double> {
  public:
@@ -152,10 +156,13 @@ class MovingBall final : public LeafSystem<double> {
 /** A system that evaluates contact surfaces from SceneGraph and outputs a fake
  ContactResults with the actual contact surfaces.
 
- @system{ContactResultMaker,
-   @intput_port{query_object},
-   @output_port{contact_result}
- }
+ @system
+ name: ContactResultMaker
+ input_ports:
+ - query_object
+ output_ports:
+ - contact_result
+ @endsystem
  */
 class ContactResultMaker final : public LeafSystem<double> {
  public:

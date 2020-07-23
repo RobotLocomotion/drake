@@ -85,29 +85,29 @@ void init_perception(py::module m) {
             py::arg("new_size"), cls_doc.resize.doc)
         // XYZs
         .def("has_xyzs", &Class::has_xyzs, cls_doc.has_xyzs.doc)
-        .def("xyzs", &Class::xyzs, py_reference_internal, cls_doc.xyzs.doc)
-        .def("mutable_xyzs", &Class::mutable_xyzs, py_reference_internal,
+        .def("xyzs", &Class::xyzs, py_rvp::reference_internal, cls_doc.xyzs.doc)
+        .def("mutable_xyzs", &Class::mutable_xyzs, py_rvp::reference_internal,
             cls_doc.mutable_xyzs.doc)
         .def("xyz", &Class::xyz, py::arg("i"), cls_doc.xyz.doc)
         .def("mutable_xyz", &Class::mutable_xyz, py::arg("i"),
-            py_reference_internal, cls_doc.mutable_xyz.doc)
+            py_rvp::reference_internal, cls_doc.mutable_xyz.doc)
         // Normals
         .def("has_normals", &Class::has_normals, cls_doc.has_normals.doc)
-        .def("normals", &Class::normals, py_reference_internal,
+        .def("normals", &Class::normals, py_rvp::reference_internal,
             cls_doc.normals.doc)
-        .def("mutable_normals", &Class::mutable_normals, py_reference_internal,
-            cls_doc.mutable_normals.doc)
+        .def("mutable_normals", &Class::mutable_normals,
+            py_rvp::reference_internal, cls_doc.mutable_normals.doc)
         .def("normal", &Class::normal, py::arg("i"), cls_doc.normal.doc)
         .def("mutable_normal", &Class::mutable_normal, py::arg("i"),
-            py_reference_internal, cls_doc.mutable_normal.doc)
+            py_rvp::reference_internal, cls_doc.mutable_normal.doc)
         // RGBs
         .def("has_rgbs", &Class::has_rgbs, cls_doc.has_rgbs.doc)
-        .def("rgbs", &Class::rgbs, py_reference_internal, cls_doc.rgbs.doc)
-        .def("mutable_rgbs", &Class::mutable_rgbs, py_reference_internal,
+        .def("rgbs", &Class::rgbs, py_rvp::reference_internal, cls_doc.rgbs.doc)
+        .def("mutable_rgbs", &Class::mutable_rgbs, py_rvp::reference_internal,
             cls_doc.mutable_rgbs.doc)
         .def("rgb", &Class::rgb, py::arg("i"), cls_doc.rgb.doc)
         .def("mutable_rgb", &Class::mutable_rgb, py::arg("i"),
-            py_reference_internal, cls_doc.mutable_rgb.doc)
+            py_rvp::reference_internal, cls_doc.mutable_rgb.doc)
         // Mutators.
         .def(
             "SetFrom",
@@ -131,11 +131,11 @@ void init_perception(py::module m) {
             py::arg("scale") = 1.0, py::arg("fields") = pc_flags::kXYZs,
             cls_doc.ctor.doc)
         .def("depth_image_input_port", &Class::depth_image_input_port,
-            py_reference_internal, cls_doc.depth_image_input_port.doc)
+            py_rvp::reference_internal, cls_doc.depth_image_input_port.doc)
         .def("color_image_input_port", &Class::color_image_input_port,
-            py_reference_internal, cls_doc.color_image_input_port.doc)
+            py_rvp::reference_internal, cls_doc.color_image_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,
-            py_reference_internal, cls_doc.point_cloud_output_port.doc);
+            py_rvp::reference_internal, cls_doc.point_cloud_output_port.doc);
   }
 }
 

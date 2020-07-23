@@ -115,6 +115,20 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(
       V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+
+  // Test for a simple identity case of CalcRelativeTransform().
+  const RigidTransformd X_HH =
+      plant_->CalcRelativeTransform(*context_, *frame_H_, *frame_H_);
+  EXPECT_TRUE(CompareMatrices(X_HH.rotation().matrix(),
+      Matrix3<double>::Identity(), kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_HH.translation(), Vector3<double>::Zero(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Test for a simple identity case of CalcRelativeRotationMatrix().
+  const RotationMatrixd R_HH =
+      plant_->CalcRelativeRotationMatrix(*context_, *frame_H_, *frame_H_);
+  EXPECT_TRUE(CompareMatrices(R_HH.matrix(), Matrix3<double>::Identity(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
 GTEST_TEST(MultibodyPlantTest, FixedWorldKinematics) {

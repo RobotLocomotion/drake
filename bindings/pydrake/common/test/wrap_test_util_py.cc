@@ -72,7 +72,7 @@ namespace pydrake {
 PYBIND11_MODULE(wrap_test_util, m) {
   py::class_<MyValue>(m, "MyValue")
       .def(py::init<double>(), py::arg("value"))
-      .def_readwrite("value", &MyValue::value, py_reference_internal);
+      .def_readwrite("value", &MyValue::value, py_rvp::reference_internal);
 
   py::class_<MyContainerRawPtr> my_container(m, "MyContainerRawPtr");
   my_container  // BR
@@ -90,7 +90,7 @@ PYBIND11_MODULE(wrap_test_util, m) {
 
   m.def("MakeTypeConversionExample", &MakeTypeConversionExample);
   m.def("MakeTypeConversionExampleBadRvp", &MakeTypeConversionExample,
-      py_reference);
+      py_rvp::reference);
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
 }

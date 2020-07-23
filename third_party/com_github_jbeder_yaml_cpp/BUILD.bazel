@@ -9,6 +9,9 @@ licenses(["notice"])  # MIT
 # hidden on Ubuntu 20.04 (Focal) where, due to a quilt patch, the default
 # visibility is "hidden" and only declarations decorated with YAML_CPP_API have
 # "default" (i.e., external) visibility.
+#
+# Furthermore, we need to tweak the YAML tag output so we've applied a 1-line
+# patch to our vendored copy.
 cc_library(
     name = "emitfromevents",
     srcs = ["src/emitfromevents.cpp"],

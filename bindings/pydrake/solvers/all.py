@@ -9,4 +9,5 @@ from .ipopt import *  # noqa
 from .mixed_integer_optimization_util import *  # noqa
 from .mosek import *  # noqa
 from .osqp import *  # noqa
+from .sdpa_free_format import *  # noqa
 from .snopt import *  # noqa

@@ -29,11 +29,11 @@ PYBIND11_MODULE(van_der_pol, m) {
       .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc)
       .def("get_position_output_port",
           &VanDerPolOscillator<T>::get_position_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.VanDerPolOscillator.get_position_output_port.doc)
       .def("get_full_state_output_port",
           &VanDerPolOscillator<T>::get_full_state_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.VanDerPolOscillator.get_full_state_output_port.doc)
       .def_static("CalcLimitCycle", &VanDerPolOscillator<T>::CalcLimitCycle,
           doc.VanDerPolOscillator.CalcLimitCycle.doc);

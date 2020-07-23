@@ -16,6 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "framework",
+    visibility = ["//visibility:public"],
     deps = [
         ":abstract_values",
         ":cache_and_dependency_tracker",
@@ -47,9 +48,11 @@ drake_cc_package_library(
         ":system",
         ":system_base",
         ":system_constraint",
+        ":system_html",
         ":system_output",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
+        ":system_visitor",
         ":value_checker",
         ":value_to_abstract_value",
         ":vector",
@@ -344,6 +347,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "system_html",
+    srcs = ["system_html.cc"],
+    hdrs = [
+        "system_html.h",
+    ],
+    deps = [
+        ":diagram",
+        ":system",
+    ],
+)
+
+drake_cc_library(
     name = "context",
     srcs = ["context.cc"],
     hdrs = ["context.h"],
@@ -430,6 +445,7 @@ drake_cc_library(
         ":system_constraint",
         ":system_output",
         ":system_scalar_converter",
+        ":system_visitor",
         ":witness_function",
         "//common:autodiff",
         "//common:default_scalars",
@@ -598,6 +614,15 @@ drake_cc_library(
         "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "system_visitor",
+    srcs = ["system_visitor.cc"],
+    hdrs = ["system_visitor.h"],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 
@@ -849,6 +874,25 @@ drake_cc_googletest(
         ":system_output",
         "//common:essential",
         "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_visitor_test",
+    deps = [
+        ":diagram_builder",
+        ":system_visitor",
+        "//systems/primitives:adder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_html_test",
+    deps = [
+        ":diagram_builder",
+        ":system_html",
+        "//examples/manipulation_station",
+        "//systems/primitives",
     ],
 )
 

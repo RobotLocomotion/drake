@@ -130,6 +130,10 @@ enum class DegreeType {
  * lexicographic order. This is called by MonomialBasis functions defined below.
  *
  * @tparam rows Number of rows or Dynamic
+ * @param degree_type If degree_type is kAny, then the monomials' degrees are no
+ * larger than @p degree. If degree_type is kEven, then the monomial's degrees
+ * are even numbers no larger than @p degree. If degree_type is kOdd, then the
+ * monomial degrees are odd numbers no larger than @p degree.
  */
 template <int rows>
 Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(

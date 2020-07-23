@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "rendering",
+    visibility = ["//visibility:public"],
     deps = [
         ":frame_velocity",
         ":multibody_position_to_geometry_pose",

@@ -12,9 +12,10 @@ libexpat1
 libfreetype6
 libgflags2.2
 libgfortran4
-libgl1
+libglew2.1
 libglib2.0-0
-libglvnd0
+libglu1-mesa
+libglx0
 libhdf5-103
 libjpeg-turbo8
 libjsoncpp1
@@ -24,6 +25,7 @@ liblz4-1
 libnetcdf15
 libnlopt-cxx0
 libogg0
+libopengl0
 libpng16-16
 libqt5multimedia5
 libqt5opengl5

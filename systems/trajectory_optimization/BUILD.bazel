@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "trajectory_optimization",
+    visibility = ["//visibility:public"],
     deps = [
         ":direct_collocation",
         ":direct_transcription",

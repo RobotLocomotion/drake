@@ -141,13 +141,13 @@ PYBIND11_MODULE(sensors, m) {
           .def("height", &ImageT::height, doc.Image.height.doc)
           .def("size", &ImageT::size, doc.Image.size.doc)
           .def("resize", &ImageT::resize, doc.Image.resize.doc)
-          .def("at", at, py::arg("x"), py::arg("y"), py_reference_internal,
+          .def("at", at, py::arg("x"), py::arg("y"), py_rvp::reference_internal,
               doc.Image.at.doc_2args_x_y_nonconst)
           // Non-C++ properties. Make them Pythonic.
           .def_property_readonly("shape", get_shape)
-          .def_property_readonly("data", get_data, py_reference_internal)
+          .def_property_readonly("data", get_data, py_rvp::reference_internal)
           .def_property_readonly(
-              "mutable_data", get_mutable_data, py_reference_internal);
+              "mutable_data", get_mutable_data, py_rvp::reference_internal);
       // Constants.
       image.attr("Traits") = traits;
       // - Do not duplicate aliases (e.g. `kNumChannels`) for now.
@@ -179,17 +179,17 @@ PYBIND11_MODULE(sensors, m) {
     using Class = typename PyClass::type;
     py_class
         .def("query_object_input_port", &Class::query_object_input_port,
-            py_reference_internal, cls_doc.query_object_input_port.doc)
+            py_rvp::reference_internal, cls_doc.query_object_input_port.doc)
         .def("color_image_output_port", &Class::color_image_output_port,
-            py_reference_internal, cls_doc.color_image_output_port.doc)
+            py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
         .def("depth_image_32F_output_port", &Class::depth_image_32F_output_port,
-            py_reference_internal, cls_doc.depth_image_32F_output_port.doc)
+            py_rvp::reference_internal, cls_doc.depth_image_32F_output_port.doc)
         .def("depth_image_16U_output_port", &Class::depth_image_16U_output_port,
-            py_reference_internal, cls_doc.depth_image_16U_output_port.doc)
+            py_rvp::reference_internal, cls_doc.depth_image_16U_output_port.doc)
         .def("label_image_output_port", &Class::label_image_output_port,
-            py_reference_internal, cls_doc.label_image_output_port.doc)
+            py_rvp::reference_internal, cls_doc.label_image_output_port.doc)
         .def("X_WB_output_port", &Class::X_WB_output_port,
-            py_reference_internal, cls_doc.X_WB_output_port.doc);
+            py_rvp::reference_internal, cls_doc.X_WB_output_port.doc);
   };
 
   py::class_<RgbdSensor, LeafSystem<T>> rgbd_sensor(
@@ -208,21 +208,23 @@ PYBIND11_MODULE(sensors, m) {
           py::arg("parent_id"), py::arg("X_PB"), py::arg("color_properties"),
           py::arg("depth_properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_6args)
+          py::arg("show_window") = false,
+          doc.RgbdSensor.ctor.doc_legacy_individual_intrinsics)
       .def(py::init<FrameId, const RigidTransformd&,
                const DepthCameraProperties&, const RgbdSensor::CameraPoses&,
                bool>(),
           py::arg("parent_id"), py::arg("X_PB"), py::arg("properties"),
           py::arg("camera_poses") = RgbdSensor::CameraPoses{},
-          py::arg("show_window") = false, doc.RgbdSensor.ctor.doc_5args)
+          py::arg("show_window") = false,
+          doc.RgbdSensor.ctor.doc_legacy_combined_intrinsics)
       .def("color_camera_info", &RgbdSensor::color_camera_info,
-          py_reference_internal, doc.RgbdSensor.color_camera_info.doc)
+          py_rvp::reference_internal, doc.RgbdSensor.color_camera_info.doc)
       .def("depth_camera_info", &RgbdSensor::depth_camera_info,
-          py_reference_internal, doc.RgbdSensor.depth_camera_info.doc)
+          py_rvp::reference_internal, doc.RgbdSensor.depth_camera_info.doc)
       .def("X_BC", &RgbdSensor::X_BC, doc.RgbdSensor.X_BC.doc)
       .def("X_BD", &RgbdSensor::X_BD, doc.RgbdSensor.X_BD.doc)
       .def("parent_frame_id", &RgbdSensor::parent_frame_id,
-          py_reference_internal, doc.RgbdSensor.parent_frame_id.doc);
+          py_rvp::reference_internal, doc.RgbdSensor.parent_frame_id.doc);
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
   py::class_<RgbdSensorDiscrete, Diagram<T>> rgbd_camera_discrete(
@@ -235,7 +237,7 @@ PYBIND11_MODULE(sensors, m) {
           py::keep_alive<2, 1>(), doc.RgbdSensorDiscrete.ctor.doc)
       // N.B. Since `camera` is already connected, we do not need additional
       // `keep_alive`s.
-      .def("sensor", &RgbdSensorDiscrete::sensor, py_reference_internal,
+      .def("sensor", &RgbdSensorDiscrete::sensor, py_rvp::reference_internal,
           doc.RgbdSensorDiscrete.sensor.doc)
       .def("period", &RgbdSensorDiscrete::period,
           doc.RgbdSensorDiscrete.period.doc);
@@ -288,13 +290,13 @@ PYBIND11_MODULE(sensors, m) {
         .def(py::init<bool>(), py::arg("do_compress") = false,
             cls_doc.ctor.doc_1args)
         .def("color_image_input_port", &Class::color_image_input_port,
-            py_reference_internal, cls_doc.color_image_input_port.doc)
+            py_rvp::reference_internal, cls_doc.color_image_input_port.doc)
         .def("depth_image_input_port", &Class::depth_image_input_port,
-            py_reference_internal, cls_doc.depth_image_input_port.doc)
+            py_rvp::reference_internal, cls_doc.depth_image_input_port.doc)
         .def("label_image_input_port", &Class::label_image_input_port,
-            py_reference_internal, cls_doc.label_image_input_port.doc)
+            py_rvp::reference_internal, cls_doc.label_image_input_port.doc)
         .def("image_array_t_msg_output_port",
-            &Class::image_array_t_msg_output_port, py_reference_internal,
+            &Class::image_array_t_msg_output_port, py_rvp::reference_internal,
             cls_doc.image_array_t_msg_output_port.doc);
     // Because the public interface requires templates and it's hard to
     // reproduce the logic publicly (e.g. no overload that just takes
@@ -305,7 +307,7 @@ PYBIND11_MODULE(sensors, m) {
           decltype(param)::template type_at<0>::value;
       AddTemplateMethod(cls, "DeclareImageInputPort",
           &Class::DeclareImageInputPort<kPixelType>, GetPyParam(param),
-          py::arg("name"), py_reference_internal,
+          py::arg("name"), py_rvp::reference_internal,
           cls_doc.DeclareImageInputPort.doc);
     };
     type_visit(def_image_input_port, PixelTypeList{});

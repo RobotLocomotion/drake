@@ -2422,8 +2422,9 @@ TEST_F(GeometryStateTest, AssignRolesToGeometry) {
   EXPECT_TRUE(has_expected_roles(anchored_geometry_, true, false, true));
 }
 
-// Test the ability to reassign properties to a role that already exists.
-TEST_F(GeometryStateTest, ModifyRoleProperties) {
+// Test the ability to reassign proximity properties to a geometry that already
+// has the proximity role.
+TEST_F(GeometryStateTest, ModifyProximityProperties) {
   SetUpSingleSourceTree();
   // No roles assigned.
   EXPECT_EQ(gs_tester_.proximity_engine().num_geometries(), 0);
@@ -2481,27 +2482,67 @@ TEST_F(GeometryStateTest, ModifyRoleProperties) {
             props2.GetProperty<int>("prop2", "value"));
   EXPECT_EQ(hydroelastic_geometries.hydroelastic_type(geometries_[0]),
             internal::HydroelasticType::kRigid);
+}
 
-  // Case: confirm throw for perception and illustration properties.
+// Test the ability to reassign illustration properties to a geometry that
+// already has the illustration role.
+TEST_F(GeometryStateTest, ModifyIllustrationProperties) {
+  SetUpSingleSourceTree();
+
+  // The geometry we're going to play with. Confirm that it starts without the
+  // illustration role.
+  const GeometryId geometry_id = geometries_[1];
+  ASSERT_EQ(geometry_state_.GetIllustrationProperties(geometry_id), nullptr);
+
+  IllustrationProperties empty_props;
+  IllustrationProperties props1;
+  props1.AddProperty("group1", "value", 1);
+  IllustrationProperties props2;
+  props2.AddProperty("group2", "value", 2);
+
+  // Generally, we assume that illustration property replacement exercises the
+  // same infrastructure as proximity, so we're going to omit some of the
+  // error condition tests (e.g., replacing with nothing to replace).
+  EXPECT_NO_THROW(
+      geometry_state_.AssignRole(source_id_, geometry_id, empty_props));
+  const IllustrationProperties* props =
+      geometry_state_.GetIllustrationProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  ASSERT_EQ(props->num_groups(), 1);  // Just the default group.
+
+  // Now re-assign.
+  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometry_id, props1,
+                                             RoleAssign::kReplace));
+  props = geometry_state_.GetIllustrationProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  ASSERT_TRUE(props->HasProperty("group1", "value"));
+  ASSERT_FALSE(props->HasProperty("group2", "value"));
+
+  // Now re-assign again.
+  EXPECT_NO_THROW(geometry_state_.AssignRole(source_id_, geometry_id, props2,
+                                             RoleAssign::kReplace));
+  props = geometry_state_.GetIllustrationProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  ASSERT_FALSE(props->HasProperty("group1", "value"));
+  ASSERT_TRUE(props->HasProperty("group2", "value"));
+}
+
+// Test that attempting to reassign perception properties to a geometry that
+// already has the perception role fails.
+TEST_F(GeometryStateTest, ModifyPerceptionProperties) {
+  SetUpSingleSourceTree();
+
+  // Case: confirm throw for perception properties.
   PerceptionProperties perception_props =
       render_engine_->accepting_properties();
   perception_props.AddProperty("label", "id", RenderLabel(10));
-  geometry_state_.AssignRole(source_id_, geometries_[1], perception_props);
+  EXPECT_NO_THROW(
+      geometry_state_.AssignRole(source_id_, geometries_[1], perception_props));
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.AssignRole(source_id_, geometries_[1], perception_props,
                                  RoleAssign::kReplace),
       std::logic_error,
-      "AssignRole.. for updating properties currently only supports proximity "
-      "properties");
-
-  geometry_state_.AssignRole(source_id_, geometries_[1],
-                             IllustrationProperties());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.AssignRole(source_id_, geometries_[1],
-                                 IllustrationProperties(),
-                                 RoleAssign::kReplace),
-      std::logic_error,
-      "AssignRole.. for updating properties currently only supports proximity "
+      "AssignRole\\(\\) with RoleAssign::kReplace does not work for perception "
       "properties");
 }
 

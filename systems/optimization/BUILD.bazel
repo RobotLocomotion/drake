@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "optimization",
+    visibility = ["//visibility:public"],
     deps = [
         ":system_constraint_adapter",
         ":system_constraint_wrapper",

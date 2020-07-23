@@ -350,7 +350,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RevoluteJoint<double>* joint2_{nullptr};
 };
 
-TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
+TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
   Eigen::VectorXd state = Eigen::Vector4d(0.0, 0.0, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
   joint2_->set_angle(context_.get(), state[1]);
@@ -384,9 +384,9 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
                                           frame_B, p_BoBp_B, frame_W, frame_W);
 
   // By-hand analysis gives aBias_WBp_W = -L wAz_² Wx - L (wAz_ + wBz_)² Wx
-  const double wB_squared = (wAz_ + wBz_) * (wAz_ + wBz_);
+  const double wAB_squared = (wAz_ + wBz_) * (wAz_ + wBz_);
   const Vector3<double> aBias_WBp_W_expected = (-link_length_ * wA_squared +
-      -link_length_ * wB_squared) * Vector3d::UnitX();
+      -link_length_ * wAB_squared) * Vector3d::UnitX();
   EXPECT_TRUE(CompareMatrices(aBias_WBp_W.translational(), aBias_WBp_W_expected,
                               kTolerance));
   EXPECT_TRUE(CompareMatrices(aBias_WBp_W.rotational(), Vector3d::Zero(),
@@ -413,6 +413,30 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcBiasSpatialAcceleration) {
   EXPECT_TRUE(CompareMatrices(aBias_ABp_A.translational(), aBias_ABp_A_expected,
                               kTolerance));
   EXPECT_TRUE(CompareMatrices(aBias_ABp_A.rotational(), Vector3d::Zero(),
+                              kTolerance));
+
+  // Points Bi (i = 0, 1) are fixed to link B and located from Bo as below.
+  const int kNumPoints = 2;  // The set stores 2 points.
+  Matrix3X<double> p_BoBi_B(3, kNumPoints);
+  const double x = 0.1, y = -0.2, z = 0.3;
+  p_BoBi_B.col(0) << x, y, z;
+  p_BoBi_B.col(1) << 2 * x, 3 * y, 4 * z;
+
+  // Compute Bi's bias translational acceleration with respect to generalized
+  // velocities v measured in frame A, expressed in frame B.
+  Matrix3X<double> aBias_ABi_B = plant_->CalcBiasTranslationalAcceleration(
+      *context_, JacobianWrtVariable::kV, frame_B, p_BoBi_B, frame_A, frame_B);
+
+  // MotionGenesis gives  aBias_AB0_B = -0.5 (L+2*x) wBz_² Bx -   y wBz_² By.
+  // MotionGenesis gives  aBias_AB1_B = -0.5 (L+4*x) wBz_² Bx - 3 y wBz_² By.
+  const double wB_squared = wBz_ * wBz_;
+  const Vector3<double> aBias_AB0_B_expected(
+      -0.5 * (link_length_ + 2 * x) * wB_squared, -y * wB_squared, 0);
+  const Vector3<double> aBias_AB1_B_expected(
+      -0.5 * (link_length_ + 4 * x) * wB_squared, -3 * y * wB_squared, 0);
+  EXPECT_TRUE(CompareMatrices(aBias_ABi_B.col(0), aBias_AB0_B_expected,
+                              kTolerance));
+  EXPECT_TRUE(CompareMatrices(aBias_ABi_B.col(1), aBias_AB1_B_expected,
                               kTolerance));
 }
 
@@ -534,7 +558,7 @@ class SatelliteTrackerTest : public ::testing::Test {
   const RevoluteJoint<double>* joint2_{nullptr};
 };
 
-TEST_F(SatelliteTrackerTest, CalcBiasSpatialAcceleration) {
+TEST_F(SatelliteTrackerTest, CalcBiasAccelerations) {
   // MotionGenesis analytical results for this system are:
   // αBias_AB = 0
   // αBias_WB = -cos(qB) wA wB Bx  +  sin(qB) wA wB By
@@ -590,6 +614,19 @@ TEST_F(SatelliteTrackerTest, CalcBiasSpatialAcceleration) {
                               kTolerance));
   EXPECT_TRUE(CompareMatrices(aBias_AQ_B.translational(), aBias_AQ_B_expected,
                               kTolerance));
+
+  // Point Bp is fixed to link B and is located from Bo (B's origin) as below.
+  // Compute Bp's bias translational acceleration with respect to generalized
+  // velocities v measured in frame A, expressed in frame B.
+  const double x = 0.1, y = -0.2, z = 0.3;
+  Vector3<double> p_BoBp_B(x, y, z);
+  Vector3<double> aBias_ABp_B = plant_->CalcBiasTranslationalAcceleration(
+      *context_, JacobianWrtVariable::kV, frame_B, p_BoBp_B, frame_A, frame_B);
+
+  // MotionGenesis gives  aBias_ABp_B = -x wB_² Bx - y wB_² By.
+  const double wB_squared = wB_ * wB_;
+  Vector3<double> aBias_ABp_B_expected(-x * wB_squared, -y * wB_squared, 0);
+  EXPECT_TRUE(CompareMatrices(aBias_ABp_B, aBias_ABp_B_expected, kTolerance));
 }
 
 // This tests the method CalcBiasSpatialAcceleration() against an expected
@@ -792,15 +829,6 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
                    *context_, JacobianWrtVariable::kQDot, frame_E, p_EEi,
                    frame_W, frame_W),
                std::exception);
-
-  // Verify CalcBiasTranslationalAcceleration() throws an exception if
-  // measured-in-frame is something other than the world frame W.
-  // TODO(Mitiguy) Remove this test when CalcBiasTranslationalAcceleration() is
-  //  improved to handle an arbitrary measured-in-frame.
-  EXPECT_THROW(
-      plant_->CalcBiasTranslationalAcceleration(
-          *context_, JacobianWrtVariable::kV, frame_E, p_EEi, frame_E, frame_W),
-      std::exception);
 }
 
 }  // namespace

@@ -409,11 +409,11 @@ top-level documentation for :py:mod:`pydrake.math`.
           "get_solver_details",
           [](const MathematicalProgramResult& self) {
             const auto& abstract = self.get_abstract_solver_details();
-            // TODO(#9398): Figure out why `py_reference` is necessary.
-            py::object value_ref = py::cast(&abstract, py_reference);
+            // TODO(#9398): Figure out why `py_rvp::reference` is necessary.
+            py::object value_ref = py::cast(&abstract, py_rvp::reference);
             return value_ref.attr("get_value")();
           },
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.MathematicalProgramResult.get_solver_details.doc)
       .def(
           "GetSolution",
@@ -545,6 +545,16 @@ top-level documentation for :py:mod:`pydrake.math`.
           py::arg("indeterminates"), py::arg("deg"),
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewFreePolynomial.doc)
+      .def("NewEvenDegreeFreePolynomial",
+          &MathematicalProgram::NewEvenDegreeFreePolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          py::arg("coeff_name") = "a",
+          doc.MathematicalProgram.NewEvenDegreeFreePolynomial.doc)
+      .def("NewOddDegreeFreePolynomial",
+          &MathematicalProgram::NewOddDegreeFreePolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          py::arg("coeff_name") = "a",
+          doc.MathematicalProgram.NewOddDegreeFreePolynomial.doc)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(
@@ -558,6 +568,18 @@ top-level documentation for :py:mod:`pydrake.math`.
               &MathematicalProgram::NewSosPolynomial),
           py::arg("indeterminates"), py::arg("degree"),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
+      .def("NewEvenDegreeSosPolynomial",
+          &MathematicalProgram::NewEvenDegreeSosPolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          doc.MathematicalProgram.NewEvenDegreeSosPolynomial.doc)
+      .def("NewEvenDegreeSdsosPolynomial",
+          &MathematicalProgram::NewEvenDegreeSdsosPolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          doc.MathematicalProgram.NewEvenDegreeSdsosPolynomial.doc)
+      .def("NewEvenDegreeDsosPolynomial",
+          &MathematicalProgram::NewEvenDegreeDsosPolynomial,
+          py::arg("indeterminates"), py::arg("degree"),
+          doc.MathematicalProgram.NewEvenDegreeDsosPolynomial.doc)
       .def("NewIndeterminates",
           static_cast<VectorXIndeterminate (MathematicalProgram::*)(int,
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
@@ -678,17 +700,31 @@ top-level documentation for :py:mod:`pydrake.math`.
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_3args)
+          py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_3args_Aeq_beq_vars)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Expression&, double)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_2args)
+          py::arg("e"), py::arg("b"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_2args_e_b)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Formula&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args)
+          py::arg("f"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args_f)
+      .def(
+          "AddLinearEqualityConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+              const Eigen::Ref<const Eigen::VectorXd>& b) {
+            return self->AddLinearEqualityConstraint(v, b);
+          },
+          py::arg("v"), py::arg("b"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_2args_constEigenMatrixBase_constEigenMatrixBase)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(

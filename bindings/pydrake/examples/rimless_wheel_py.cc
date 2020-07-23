@@ -32,11 +32,11 @@ PYBIND11_MODULE(rimless_wheel, m) {
       .def(py::init<>(), doc.RimlessWheel.ctor.doc)
       .def("get_minimal_state_output_port",
           &RimlessWheel<T>::get_minimal_state_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.RimlessWheel.get_minimal_state_output_port.doc)
       .def("get_floating_base_state_output_port",
           &RimlessWheel<T>::get_floating_base_state_output_port,
-          py_reference_internal,
+          py_rvp::reference_internal,
           doc.RimlessWheel.get_floating_base_state_output_port.doc)
       .def_static("calc_alpha", &RimlessWheel<T>::calc_alpha, py::arg("params"),
           doc.RimlessWheel.calc_alpha.doc);
@@ -89,8 +89,8 @@ PYBIND11_MODULE(rimless_wheel, m) {
           py::arg("rimless_wheel_params"), py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(),
-          // See #11531 for why `py_reference` is needed.
-          py_reference, doc.RimlessWheelGeometry.AddToBuilder.doc_4args)
+          // See #11531 for why `py_rvp::reference` is needed.
+          py_rvp::reference, doc.RimlessWheelGeometry.AddToBuilder.doc_4args)
       .def_static("AddToBuilder",
           py::overload_cast<systems::DiagramBuilder<double>*,
               const systems::OutputPort<double>&,
@@ -100,8 +100,8 @@ PYBIND11_MODULE(rimless_wheel, m) {
           py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
           py::keep_alive<0, 1>(),
-          // See #11531 for why `py_reference` is needed.
-          py_reference, doc.RimlessWheelGeometry.AddToBuilder.doc_3args);
+          // See #11531 for why `py_rvp::reference` is needed.
+          py_rvp::reference, doc.RimlessWheelGeometry.AddToBuilder.doc_3args);
 }
 
 }  // namespace pydrake

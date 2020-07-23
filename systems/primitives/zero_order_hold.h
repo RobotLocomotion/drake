@@ -13,7 +13,13 @@ namespace systems {
 /// or continuous) or abstract, and discrete output y, where the y is sampled
 /// from u with a fixed period.
 ///
-/// @system{ZeroOrderHold, @input_port{u}, @output_port{y}}
+/// @system
+/// name: ZeroOrderHold
+/// input_ports:
+/// - u
+/// output_ports:
+/// - y
+/// @endsystem
 ///
 /// The discrete state space dynamics of %ZeroOrderHold is:
 /// ```
