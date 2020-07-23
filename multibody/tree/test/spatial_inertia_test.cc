@@ -13,6 +13,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/rotational_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace multibody {
@@ -343,13 +344,13 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidWithCOMTooFarOut) {
   }
 }
 
-// Tessts that by setting skip_validity_check = false, it is possible to create
+// Tessts that by setting skip_validity_check = true, it is possible to create
 // invalid spatial inertias with negative mass and malformed COM
 GTEST_TEST(SpatialInertia, SkipValidityCheck) {
-  SpatialInertia<double> M_neg_mass(-1.0, Vector3d::Zero(),
-                           UnitInertia<double>::SolidSphere(1.0), true);
-  SpatialInertia<double> M_bad_com(1.0, Vector3d(2.0, 0.0, 0.0),
-                           UnitInertia<double>::SolidSphere(1.0), true);
+  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(-1.0, Vector3d::Zero(),
+                           UnitInertia<double>::SolidSphere(1.0), true));
+  DRAKE_EXPECT_NO_THROW(SpatialInertia<double>(1.0, Vector3d(2.0, 0.0, 0.0),
+                           UnitInertia<double>::SolidSphere(1.0), true));
 }
 
 // Tests the method SpatialInertia::MakeFromCentralInertia(...).
