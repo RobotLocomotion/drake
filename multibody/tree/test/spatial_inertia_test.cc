@@ -8,12 +8,12 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/rotational_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
-#include "drake/common/test_utilities/expect_no_throw.h"
 
 namespace drake {
 namespace multibody {
