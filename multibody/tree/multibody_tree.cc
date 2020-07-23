@@ -581,7 +581,6 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
     // Spatial inertia of body B about Bo and expressed in the body frame B.
     // This call has zero cost for rigid bodies.
     const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
-
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_B_W = (*M_B_W_cache)[body.node_index()];
     M_B_W = M_B.ReExpress(R_WB);
@@ -1692,19 +1691,25 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
   // TODO(Mitiguy): When performance becomes an issue, optimize this method by
   // only using the kinematics path from A to B.
 
+
+  // Calculate each point Bi's translational velocity Jacobian in world W.
+  // The result is Js_v_WBi_W, but we store into Js_v_ABi_W for performance.
+  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
+    with_respect_to, frame_B, p_WoBi_W, nullptr, Js_v_ABi_W);
+
+  // For the common special case in which frame A is the world W, optimize as
+  // Js_v_ABi_W = Js_v_WBi_W
+  if (frame_A.index() == world_frame().index() ) return;
+
   // Calculate each point Ai's translational velocity Jacobian in world W.
   MatrixX<T> Js_v_WAi_W(3 * num_points, num_columns);
   CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
     with_respect_to, frame_A, p_WoBi_W, nullptr, &Js_v_WAi_W);
 
-  // Calculate each point Bi's translational velocity Jacobian in world W.
-  MatrixX<T> Js_v_WBi_W(3 * num_points, num_columns);
-  CalcJacobianAngularAndOrTranslationalVelocityInWorld(context,
-    with_respect_to, frame_B, p_WoBi_W, nullptr, &Js_v_WBi_W);
-
   // Calculate each point Bi's translational velocity Jacobian in frame A,
-  // expressed in world W.
-  *Js_v_ABi_W = Js_v_WBi_W - Js_v_WAi_W;  // This calculates Js_v_ABi_W.
+  // expressed in world W. Note, again, that before this line Js_v_ABi_W
+  // is actually storing Js_v_WBi_W.
+  *Js_v_ABi_W -= Js_v_WAi_W;  // This calculates Js_v_ABi_W.
 }
 
 template <typename T>
@@ -1840,8 +1845,6 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // TODO(amcastro-tri): cache Nplus to avoid memory allocations.
       Nplus.resize(mobilizer_num_velocities, mobilizer_num_positions);
       mobilizer.CalcNplusMatrix(context, &Nplus);
-    } else {
-      Nplus.setIdentity(mobilizer_num_velocities, mobilizer_num_velocities);
     }
 
     // The Jacobian angular velocity term is the same for all points Fpi since
@@ -1851,7 +1854,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
       // corresponding to the contribution of the mobilities in level ilevel.
       auto Js_w_PB_W = Js_w_WF_W->block(0, start_index, 3,
                                         mobilizer_jacobian_ncols);
-      Js_w_PB_W = Hw_PB_W * Nplus;
+      if (is_wrt_qdot) {
+        Js_w_PB_W = Hw_PB_W * Nplus;
+      } else {
+        Js_w_PB_W = Hw_PB_W;
+      }
     }
 
     if (Js_v_WFpi_W) {
@@ -1870,7 +1877,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
 
       for (int ipoint = 0; ipoint < num_points; ++ipoint) {
         // Position from Wo to Fp (ith point of Fpi), expressed in world W.
-        const Vector3<T>& p_WoFp = p_WoFpi_W.col(ipoint);
+        const Vector3<T> p_WoFp = p_WoFpi_W.col(ipoint);
 
         // Position from Bo to Fp, expressed in world W.
         const Vector3<T> p_BoFp_W = p_WoFp - p_WoBo;
@@ -1886,7 +1893,11 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
         // Now "shift" Hv_PB_W to Hv_PFqi_W one column at a time.
         // Reminder: frame_F is fixed/welded to body_F so its angular velocity
         // in world W is the same as body_F's angular velocity in W.
-        Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
+        if (is_wrt_qdot) {
+          Hv_PFpi_W = (Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W)) * Nplus;
+        } else {
+          Hv_PFpi_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BoFp_W);
+        }
       }  // ipoint.
     }
   }  // body_node_index

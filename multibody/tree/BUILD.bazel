@@ -340,6 +340,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//math:gradient",
     ],
