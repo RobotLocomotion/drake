@@ -89,6 +89,6 @@ dpkg_install_from_wget() {
 }
 
 dpkg_install_from_wget \
-  bazel 3.0.0 \
-  https://releases.bazel.build/3.0.0/release/bazel_3.0.0-linux-x86_64.deb \
-  dfa79c10bbfa39cd778e1813a273fd3236beb495497baa046f26d393c58bdc35
+  bazel 3.4.1 \
+  https://releases.bazel.build/3.4.1/release/bazel_3.4.1-linux-x86_64.deb \
+  dc8f51b7ed039d57bb990a1eebddcbb0014fe267a88df8972f4609ded1f11c90
