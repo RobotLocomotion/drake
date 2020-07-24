@@ -365,6 +365,8 @@ def _generate_pybind_documentation_header_impl(ctx):
              ",".join(ctx.attr.ignore_dirs_for_coverage))
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
+    if ctx.attr.add_source_location:
+        args.add("-add-source-location")
     args.add_all(ctx.fragments.cpp.cxxopts, uniquify = True)
     args.add("-w")
 
@@ -411,6 +413,7 @@ generate_pybind_documentation_header = rule(
             mandatory = False,
             default = [],
         ),
+        "add_source_location": attr.bool(default = True),
     },
     fragments = ["cpp"],
     implementation = _generate_pybind_documentation_header_impl,
