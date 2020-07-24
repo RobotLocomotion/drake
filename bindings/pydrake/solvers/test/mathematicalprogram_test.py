@@ -436,6 +436,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearEqualityConstraint(d[0] + d[1] == 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
+        result.GetSolution(poly)
 
         (poly, Q_oo, Q_ee) = prog.NewEvenDegreeSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)

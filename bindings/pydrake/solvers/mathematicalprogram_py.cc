@@ -448,6 +448,11 @@ top-level documentation for :py:mod:`pydrake.math`.
           [](const MathematicalProgramResult& self,
               const symbolic::Expression& e) { return self.GetSolution(e); },
           doc.MathematicalProgramResult.GetSolution.doc_1args_e)
+      .def(
+          "GetSolution",
+          [](const MathematicalProgramResult& self,
+              const symbolic::Polynomial& p) { return self.GetSolution(p); },
+          doc.MathematicalProgramResult.GetSolution.doc_1args_p)
       .def("GetSolution",
           [](const MathematicalProgramResult& self,
               const MatrixX<symbolic::Expression>& mat) {
