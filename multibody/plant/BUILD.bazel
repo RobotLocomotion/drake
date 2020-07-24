@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
+        ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
@@ -30,6 +31,16 @@ drake_cc_package_library(
         ":propeller",
         ":tamsi_solver",
         ":tamsi_solver_results",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_contact_pair",
+    srcs = [],
+    hdrs = ["discrete_contact_pair.h"],
+    deps = [
+        "//common:essential",
+        "//geometry:geometry_ids",
     ],
 )
 
@@ -56,6 +67,7 @@ drake_cc_library(
         ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
+        ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
         ":tamsi_solver",
