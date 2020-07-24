@@ -74,5 +74,71 @@ class SimpleSos1 {
   VectorX<symbolic::Monomial> monomial_basis1_;
   VectorX<symbolic::Monomial> monomial_basis2_;
 };
+
+/**
+ * Prove that the Motzkin polynomial m(x, y) = x⁴y² + x²y⁴ + 1 − 3x²y² is
+ * always non-negative.
+ * One ceritificate for the proof is the existentce of a polynomial r(x, y)
+ * satisfying r(x, y) being sos and r(x, y) > 0  for all x, y ≠ 0, such that
+ * r(x, y) * m(x, y) is sos.
+ * So we solve the following problem
+ * find r(x, y)
+ * s.t r(x, y) - x² − y² is sos
+ *     r(x, y) * m(x, y) is sos
+ */
+class MotzkinPolynomial {
+ public:
+  MotzkinPolynomial();
+
+  const MathematicalProgram& prog() const { return prog_; }
+
+  void CheckResult(const MathematicalProgramResult& result, double tol) const;
+
+ private:
+  MathematicalProgram prog_;
+  symbolic::Variable x_;
+  symbolic::Variable y_;
+  symbolic::Polynomial m_;
+  symbolic::Polynomial r_;
+  MatrixXDecisionVariable gram1_;
+  MatrixXDecisionVariable gram2_;
+  VectorX<symbolic::Monomial> monomial_basis1_;
+  VectorX<symbolic::Monomial> monomial_basis2_;
+};
+
+/**
+ * Solve the following optimization problem for a univariate polynomial
+ * max a + b + c
+ * s.t p(x) = x⁴+ax³+bx²+c+1>=0 for all x >= 0
+ *     p(1) = 1
+ * According to theorem 3.71 in Semidefinite Optimization and Convex Algebraic
+ * Geometry by G. Blekherman, P. Parrilo and R. Thomas, this is equivalent to
+ * the following SOS problem
+ * max a + b + c
+ * s.t p(x) = s(x) + x * t(x)
+ *     p(1) = 1
+ *     s(x) is sos
+ *     t(x) is sos
+ */
+class UnivariateNonnegative1 {
+ public:
+  UnivariateNonnegative1();
+
+  const MathematicalProgram& prog() const { return prog_; }
+
+  void CheckResult(const MathematicalProgramResult& result, double tol) const;
+
+ private:
+  MathematicalProgram prog_;
+  symbolic::Variable a_;
+  symbolic::Variable b_;
+  symbolic::Variable c_;
+  symbolic::Variable x_;
+  symbolic::Polynomial p_;
+  symbolic::Polynomial s_;
+  symbolic::Polynomial t_;
+  MatrixXDecisionVariable gram_s_;
+  MatrixXDecisionVariable gram_t_;
+};
 }  // namespace solvers
 }  // namespace drake

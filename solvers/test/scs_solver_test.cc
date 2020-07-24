@@ -374,6 +374,24 @@ GTEST_TEST(TestScs, SimpleSos1) {
     dut.CheckResult(result, 1E-6);
   }
 }
+
+GTEST_TEST(TestScs, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  ScsSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
+  }
+}
+
+GTEST_TEST(TestScs, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  ScsSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-6);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
