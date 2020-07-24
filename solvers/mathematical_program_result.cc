@@ -79,6 +79,36 @@ symbolic::Expression MathematicalProgramResult::GetSolution(
   return e.EvaluatePartial(env);
 }
 
+symbolic::Polynomial MathematicalProgramResult::GetSolution(
+    const symbolic::Polynomial& p) const {
+  DRAKE_ASSERT(decision_variable_index_.has_value());
+  for (const auto& indeterminate : p.indeterminates()) {
+    if (decision_variable_index_->count(indeterminate.get_id()) > 0) {
+      throw std::invalid_argument(
+          fmt::format("GetSolution: {} is an indeterminate in the polynomial, "
+                      "but result stores its value as a decision variable.",
+                      indeterminate.get_name()));
+    }
+  }
+
+  symbolic::Environment env;
+  symbolic::Polynomial::MapType monomial_to_coefficient_result_map;
+  for (const auto& [monomial, coefficient] : p.monomial_to_coefficient_map()) {
+    for (const auto& var : coefficient.GetVariables()) {
+      const auto it = decision_variable_index_->find(var.get_id());
+      if (it != decision_variable_index_->end()) {
+        env.insert(var, x_val_(it->second));
+      }
+    }
+    // Evaluate the coefficient using env, and then add the pair (monomial,
+    // coefficient_evaluate_result) to the new map.
+    monomial_to_coefficient_result_map.emplace_hint(
+        monomial_to_coefficient_result_map.end(), monomial,
+        coefficient.EvaluatePartial(env));
+  }
+  return symbolic::Polynomial(monomial_to_coefficient_result_map);
+}
+
 double MathematicalProgramResult::GetSuboptimalSolution(
     const symbolic::Variable& var, int solution_number) const {
   return GetVariableValue(var, decision_variable_index_,
