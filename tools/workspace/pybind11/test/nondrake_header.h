@@ -1,5 +1,15 @@
 #pragma once
 
+/*
+To generate a preview of what clang could provide:
+
+clang-9 \
+    -x c++ -std=c++17 \
+    -Xclang -ast-dump -fsyntax-only \
+    -fno-color-diagnostics \
+     nondrake_header.h
+*/
+
 /// @dir
 /// Directory docs ignored.
 
