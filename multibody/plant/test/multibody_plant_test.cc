@@ -31,6 +31,7 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -103,8 +104,20 @@ class MultibodyPlantTester {
       const std::vector<PenetrationAsPointPair<double>>& point_pairs,
       MatrixX<double>* Jn, MatrixX<double>* Jt,
       std::vector<RotationMatrix<double>>* R_WC_set) {
+    // We first convert point contact pairs to discrete contact pairs.
+    std::vector<internal::DiscreteContactPair<double>> discrete_pairs;
+    for (const PenetrationAsPointPair<double>& pair : point_pairs) {
+      const Vector3d p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
+      // fn0, k and d are irrelevant values for Jacobian computation. Thus we
+      // arbitrarily set them to zero.
+      const double fn0 = 0.0;
+      const double k = 0.0;
+      const double d = 0.0;
+      discrete_pairs.push_back(
+          {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, fn0, k, d});
+    }
     plant.CalcNormalAndTangentContactJacobians(
-        context, point_pairs, Jn, Jt, R_WC_set);
+        context, discrete_pairs, Jn, Jt, R_WC_set);
   }
 
   static const geometry::QueryObject<double>& EvalGeometryQueryInput(
@@ -2232,14 +2245,17 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
               context_on_T, plant_on_T.get_body(bodyB_index));
 
       const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      // The one and only point of contact C.
+      // Thus far MBP places it midway for point contact.
+      const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
 
       const Vector3<T> p_WAo = X_WA.translation();
-      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
+      const Vector3<T> p_AoCa_W = p_WC - p_WAo;
       const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
 
-      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
       const Vector3<T> p_WBo = X_WB.translation();
-      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
+      const Vector3<T> p_BoCb_W = p_WC - p_WBo;
       const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
 
       // From the relative velocity of B in A, compute the normal separation
@@ -2284,13 +2300,17 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
               context_on_T, plant_on_T.get_body(bodyB_index));
 
       const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      // The one and only point of contact C.
+      // Thus far MBP places it midway for point contact.
+      const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
+
       const Vector3<T> p_WAo = X_WA.translation();
-      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
+      const Vector3<T> p_AoCa_W = p_WC - p_WAo;
       const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
 
-      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
       const Vector3<T> p_WBo = X_WB.translation();
-      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
+      const Vector3<T> p_BoCb_W = p_WC - p_WBo;
       const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
 
       // The columns of R_WC (the orientation of contact frame C in the world),

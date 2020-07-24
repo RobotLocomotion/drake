@@ -22,6 +22,7 @@
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/plant/tamsi_solver_results.h"
 #include "drake/multibody/topology/multibody_graph.h"
@@ -3735,7 +3736,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Returns the pair (stiffness, dissipation)
   // Defaults to heuristically computed parameter if the given geometry
   // isn't assigned that parameter.
-  std::pair<T, T> get_point_contact_parameters(
+  std::pair<T, T> GetPointContactParameters(
       geometry::GeometryId id,
       const geometry::SceneGraphInspector<T>& inspector) const {
     if constexpr (std::is_same<symbolic::Expression, T>::value) {
@@ -3753,6 +3754,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                          geometry::internal::kMaterialGroup,
                          geometry::internal::kHcDissipation,
                          penalty_method_contact_parameters_.dissipation));
+  }
+
+  // Helper to acquire per-geometry Coulomb friction coefficients from
+  // SceneGraph.
+  const CoulombFriction<double>& GetCoulombFriction(
+      geometry::GeometryId id,
+      const geometry::SceneGraphInspector<T>& inspector) const {
+    if constexpr (std::is_same<symbolic::Expression, T>::value) {
+      throw std::domain_error(
+          "This method doesn't support T = symbolic::Expression.");
+    }
+    const geometry::ProximityProperties* prop =
+        inspector.GetProximityProperties(id);
+    DRAKE_DEMAND(prop != nullptr);
+    DRAKE_THROW_UNLESS(prop->HasProperty(geometry::internal::kMaterialGroup,
+                                         geometry::internal::kFriction));
+    return prop->GetProperty<CoulombFriction<double>>(
+        geometry::internal::kMaterialGroup, geometry::internal::kFriction);
   }
 
   // Checks that the provided State is consistent with this plant.
@@ -3941,6 +3960,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
+  // Depending on the ContactModel, this method performs point contact and
+  // hydroelastic queries and prepares the results in the form of a list of
+  // DiscreteContactPair to be consummed by our discrete solvers.
+  std::vector<internal::DiscreteContactPair<T>> CalcDiscreteContactPairs(
+      const systems::Context<T>& context) const;
+
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
   void CalcContactResultsContinuous(const systems::Context<T>& context,
@@ -4128,8 +4153,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // friction properties for the i-th point pair in `point_pairs`.
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const drake::systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs)
-      const;
+      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
 
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
@@ -4202,7 +4226,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // contact point.
   void CalcNormalAndTangentContactJacobians(
       const systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
+      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
 
@@ -4613,7 +4637,7 @@ template <>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<symbolic::Expression>::CalcCombinedFrictionCoefficients(
     const drake::systems::Context<symbolic::Expression>&,
-    const std::vector<geometry::PenetrationAsPointPair<symbolic::Expression>>&)
+    const std::vector<internal::DiscreteContactPair<symbolic::Expression>>&)
     const;
 template <>
 void MultibodyPlant<symbolic::Expression>::CalcHydroelasticContactForces(
