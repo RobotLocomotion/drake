@@ -328,6 +328,28 @@ GTEST_TEST(TestSOS, SimpleSos1) {
     }
   }
 }
+
+GTEST_TEST(TestSOS, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 6E-9);
+    }
+  }
+}
+
+GTEST_TEST(TestSOS, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  for (auto method : GetRemoveFreeVariableMethods()) {
+    CsdpSolver solver(method);
+    if (solver.available()) {
+      const auto result = solver.Solve(dut.prog());
+      dut.CheckResult(result, 6E-9);
+    }
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
