@@ -29,6 +29,7 @@ drake_cc_package_library_gl_per_os(
         ":shader_program",
         ":shape_meshes",
     ],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library_gl_ubuntu_only(
@@ -41,6 +42,7 @@ drake_cc_library_gl_ubuntu_only(
     deps = [
         "//common:essential",
         "//common:scope_exit",
+        "@glx",
         "@opengl",
         "@x11",
     ],
@@ -51,6 +53,7 @@ drake_cc_library_gl_ubuntu_only(
     hdrs = ["opengl_geometry.h"],
     deps = [
         ":opengl_context",
+        "//geometry/render:render_label",
         "//math:geometric_transform",
     ],
 )
@@ -82,6 +85,8 @@ drake_cc_library(
             ":shape_meshes",
             "//common:essential",
             "//geometry/render:render_engine",
+            "//geometry/render:render_label",
+            "//systems/sensors:image",
         ],
     }),
 )

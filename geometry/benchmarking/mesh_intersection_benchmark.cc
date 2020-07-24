@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-/** @defgroup mesh_intersection_benchmarks Mesh Intersection Benchmarks
+/* @defgroup mesh_intersection_benchmarks Mesh Intersection Benchmarks
  @ingroup proximity_queries
 
  The benchmark compares mesh intersection techniques between soft and rigid
@@ -210,7 +210,7 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
                                                     kElasticModulus)),
         mesh_R_(MakeEllipsoidSurfaceMesh<double>(ellipsoid_, 1)) {}
 
-  /** Parse arguments from the benchmark state.
+  /* Parse arguments from the benchmark state.
   @return A tuple representing the resolution, the contact overlap, and the
           rotation factor.  */
   static std::tuple<int, int, int> ReadState(
@@ -218,7 +218,7 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
     return std::make_tuple(state.range(0), state.range(1), state.range(2));
   }
 
-  /** Set up the two ellipsoid meshes and their relative transform.  */
+  /* Set up the two ellipsoid meshes and their relative transform.  */
   void SetupMeshes(const benchmark::State& state) {
     const auto [resolution, contact_overlap, rotation_factor] =
         ReadState(state);
@@ -235,7 +235,7 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
         kContactOverlapTranslation[contact_overlap]};
   }
 
-  /** Record metrics on the resulting contact surface for reporting later.  */
+  /* Record metrics on the resulting contact surface for reporting later.  */
   void RecordContactSurfaceResult(const SurfaceMesh<double>* surface_SR,
                                   const std::string& test_name,
                                   const benchmark::State& state) {

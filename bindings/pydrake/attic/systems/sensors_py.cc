@@ -35,16 +35,16 @@ PYBIND11_MODULE(sensors, m) {
     using PyClass = std::decay_t<decltype(py_class)>;
     using Class = typename PyClass::type;
     py_class
-        .def(
-            "state_input_port", &Class::state_input_port, py_reference_internal)
+        .def("state_input_port", &Class::state_input_port,
+            py_rvp::reference_internal)
         .def("color_image_output_port", &Class::color_image_output_port,
-            py_reference_internal)
+            py_rvp::reference_internal)
         .def("depth_image_output_port", &Class::depth_image_output_port,
-            py_reference_internal)
+            py_rvp::reference_internal)
         .def("label_image_output_port", &Class::label_image_output_port,
-            py_reference_internal)
+            py_rvp::reference_internal)
         .def("camera_base_pose_output_port",
-            &Class::camera_base_pose_output_port, py_reference_internal);
+            &Class::camera_base_pose_output_port, py_rvp::reference_internal);
   };
 
   py::class_<RgbdCamera, LeafSystem<T>> rgbd_camera(m, "RgbdCamera");
@@ -60,18 +60,19 @@ PYBIND11_MODULE(sensors, m) {
           // Keep alive, reference: `self` keeps `tree` alive.
           py::keep_alive<1, 3>(), doc.RgbdCamera.ctor.doc_10args)
       .def("color_camera_info", &RgbdCamera::color_camera_info,
-          py_reference_internal, doc.RgbdCamera.color_camera_info.doc)
+          py_rvp::reference_internal, doc.RgbdCamera.color_camera_info.doc)
       .def("depth_camera_info", &RgbdCamera::depth_camera_info,
-          py_reference_internal, doc.RgbdCamera.depth_camera_info.doc)
+          py_rvp::reference_internal, doc.RgbdCamera.depth_camera_info.doc)
       .def("color_camera_optical_pose", &RgbdCamera::color_camera_optical_pose,
           doc.RgbdCamera.color_camera_optical_pose.doc)
       .def("depth_camera_optical_pose", &RgbdCamera::depth_camera_optical_pose,
           doc.RgbdCamera.depth_camera_optical_pose.doc)
-      .def("frame", &RgbdCamera::frame, py_reference_internal,
+      .def("frame", &RgbdCamera::frame, py_rvp::reference_internal,
           doc.RgbdCamera.frame.doc)
-      .def("frame", &RgbdCamera::frame, py_reference_internal,
+      .def("frame", &RgbdCamera::frame, py_rvp::reference_internal,
           doc.RgbdCamera.frame.doc)
-      .def("tree", &RgbdCamera::tree, py_reference, doc.RgbdCamera.tree.doc);
+      .def("tree", &RgbdCamera::tree, py_rvp::reference,
+          doc.RgbdCamera.tree.doc);
   def_camera_ports(&rgbd_camera);
 
   py::class_<RgbdCameraDiscrete, Diagram<T>> rgbd_camera_discrete(

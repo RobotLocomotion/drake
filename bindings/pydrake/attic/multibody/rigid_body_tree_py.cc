@@ -123,7 +123,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             py::object self = py::cast(&tree);
             for (auto& body_unique_ptr : body_unique_ptrs) {
               py::object body_py =
-                  py::cast(body_unique_ptr.get(), py_reference);
+                  py::cast(body_unique_ptr.get(), py_rvp::reference);
               py_bodies.append(py_keep_alive(body_py, self));
             }
             return py_bodies;
@@ -262,7 +262,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def_readonly("actuators", &RigidBodyTree<double>::actuators,
           doc.RigidBodyTree.actuators.doc)
       .def("GetActuator", &RigidBodyTree<double>::GetActuator,
-          py_reference_internal, doc.RigidBodyTree.GetActuator.doc)
+          py_rvp::reference_internal, doc.RigidBodyTree.GetActuator.doc)
       .def("FindBaseBodies", &RigidBodyTree<double>::FindBaseBodies,
           py::arg("model_instance_id") = -1,
           doc.RigidBodyTree.FindBaseBodies.doc)
@@ -532,7 +532,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index,
           doc.RigidBodyFrame.get_frame_index.doc)
       .def("get_rigid_body", &RigidBodyFrame<double>::get_rigid_body,
-          py_reference,
+          py_rvp::reference,
           // Keep alive: `self` keeps `return` alive.
           py::keep_alive<1, 0>(), doc.RigidBodyFrame.get_rigid_body.doc)
       .def("get_transform_to_body",

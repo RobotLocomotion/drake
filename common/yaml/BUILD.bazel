@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "yaml",
+    visibility = ["//visibility:public"],
     deps = [
         ":yaml_read_archive",
         ":yaml_write_archive",
@@ -46,6 +47,16 @@ drake_cc_library(
 
 # === test/ ===
 
+drake_cc_library(
+    name = "example_structs",
+    testonly = True,
+    hdrs = ["test/example_structs.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
 drake_cc_googletest(
     name = "yaml_performance_test",
     deps = [
@@ -60,6 +71,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "yaml_read_archive_test",
     deps = [
+        ":example_structs",
         ":yaml_read_archive",
         "//common:name_value",
         "//common/test_utilities:eigen_matrix_compare",
@@ -70,6 +82,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "yaml_write_archive_test",
     deps = [
+        ":example_structs",
         ":yaml_write_archive",
         "//common:name_value",
         "//common/test_utilities:expect_throws_message",

@@ -70,6 +70,7 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
+using multibody::MultibodyForces;
 using multibody::Parser;
 using systems::BasicVector;
 using systems::ConstantVectorSource;
@@ -142,6 +143,16 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   plant->Finalize();
   // We should throw an exception if finalize is called twice.  Verify this.
   EXPECT_THROW(plant->Finalize(), std::logic_error);
+
+  // Verify that a non-positive penetration_allowance throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->set_penetration_allowance(-1), std::logic_error,
+      "set_penetration_allowance\\(\\): penetration_allowance must be strictly "
+      "positive.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant->set_penetration_allowance(0), std::logic_error,
+      "set_penetration_allowance\\(\\): penetration_allowance must be strictly "
+      "positive.");
 
   // Verify the final model size for the model as a whole and for each instance.
   EXPECT_EQ(plant->num_bodies(), 5);
@@ -550,6 +561,60 @@ class AcrobotPlantTests : public ::testing::Test {
 
     EXPECT_TRUE(CompareMatrices(
         tau_g, tau_g_expected, kTolerance, MatrixCompareType::relative));
+
+    // Alternatively, we can use CalcForceElementsContribution().
+    MultibodyForces<double> forces(*plant_);
+    plant_->CalcForceElementsContribution(*plant_context_, &forces);
+    // N.B. For this particular model we know `forces` only includes generalized
+    // forces due to dissipation at the joints and spatial forces due to
+    // gravity. In general after this call, MultibodyForces will contain a soup
+    // of all forces stemming from a ForceElement making it impossible to
+    // discern separate contributions. Therefore we should always use
+    // ForceElement's API to retrieve the specific component we are interested
+    // in. Here we access the internal data in MultibodyForces directly for
+    // testing purposes only, a pattern not to be followed.
+
+    // We verify first the body spatial forces include gravity. For this case,
+    // it is all they should include. Skip the world, index = 0.
+    const Vector3<double> gacc = plant_->gravity_field().gravity_vector();
+    for (BodyIndex body_index(1); body_index < plant_->num_bodies();
+         ++body_index) {
+      const Body<double>& body = plant_->get_body(body_index);
+      const SpatialForce<double>& F_Bo_W =
+          body.GetForceInWorld(*plant_context_, forces);
+      const double mass = body.get_default_mass();
+      // TODO(amcastro-tri): provide Body::EvalCOMInWorld().
+      const Vector3<double> p_BoBcm_B =
+          body.CalcCenterOfMassInBodyFrame(*plant_context_);
+      const RigidTransform<double> X_WB =
+          plant_->EvalBodyPoseInWorld(*plant_context_, body);
+      const RotationMatrix<double> R_WB = X_WB.rotation();
+      const Vector3<double> p_BoBcm_W = R_WB * p_BoBcm_B;
+
+      const Vector3<double> f_Bo_W_expected = mass * gacc;
+      const Vector3<double> t_Bo_W_expected = p_BoBcm_W.cross(f_Bo_W_expected);
+      EXPECT_TRUE(CompareMatrices(F_Bo_W.translational(), f_Bo_W_expected,
+                                  kTolerance, MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(F_Bo_W.rotational(), t_Bo_W_expected,
+                                  kTolerance, MatrixCompareType::relative));
+    }
+
+    // Now we'll use inverse dynamics to obtain the generalized forces
+    // contribution due to gravity.
+
+    // Zero generalized forces due to joint dissipation.
+    forces.mutable_generalized_forces().setZero();
+
+    // Zero accelerations.
+    const VectorX<double> zero_vdot =
+        VectorX<double>::Zero(plant_->num_velocities());
+    // Zero velocities.
+    shoulder_->set_angular_rate(plant_context_, 0.0);
+    elbow_->set_angular_rate(plant_context_, 0.0);
+    const VectorX<double> tau_g_id =
+        -plant_->CalcInverseDynamics(*plant_context_, zero_vdot, forces);
+    EXPECT_TRUE(CompareMatrices(tau_g_id, tau_g_expected, kTolerance,
+                                MatrixCompareType::relative));
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
@@ -1359,18 +1424,45 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   CoulombFriction<double> sphere1_friction(0.8, 0.5);
+  // estimated parameters for mass=1kg, penetration_tolerance=0.01m
+  // and gravity g=9.8 m/s^2.
+  const double sphere1_stiffness = 980;    // N/m
+  const double sphere1_dissipation = 3.2;  // s/m
+  geometry::ProximityProperties sphere1_properties;
+  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kFriction,
+                                 sphere1_friction);
+  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kPointStiffness,
+                                 sphere1_stiffness);
+  sphere1_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kHcDissipation,
+                                 sphere1_dissipation);
   GeometryId sphere1_id = plant.RegisterCollisionGeometry(
       sphere1, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "collision", sphere1_friction);
-  geometry::ProximityProperties properties;
-  properties.AddProperty("test", "dummy", 7);
+      "collision", std::move(sphere1_properties));
+
+  geometry::ProximityProperties sphere2_properties;
+  sphere2_properties.AddProperty("test", "dummy", 7);
   CoulombFriction<double> sphere2_friction(0.7, 0.6);
-  geometry::AddContactMaterial({}, {}, sphere2_friction, &properties);
+  // estimated parameters for mass=1kg, penetration_tolerance=0.05m
+  // and gravity g=9.8 m/s^2.
+  const double sphere2_stiffness = 196;    // N/m
+  const double sphere2_dissipation = 1.4;  // s/m
+  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kFriction,
+                                 sphere2_friction);
+  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kPointStiffness,
+                                 sphere2_stiffness);
+  sphere2_properties.AddProperty(geometry::internal::kMaterialGroup,
+                                 geometry::internal::kHcDissipation,
+                                 sphere2_dissipation);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   GeometryId sphere2_id = plant.RegisterCollisionGeometry(
       sphere2, RigidTransformd::Identity(), geometry::Sphere(radius),
-      "collision", std::move(properties));
+      "collision", std::move(sphere2_properties));
 
   // Confirm externally-defined proximity properties propagate through.
   {
@@ -1438,11 +1530,28 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       *scene_graph.model_inspector().GetProximityProperties(sphere2_id);
 
   EXPECT_TRUE(ground_props.GetProperty<CoulombFriction<double>>(
-                  "material", "coulomb_friction") == ground_friction);
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kFriction) == ground_friction);
   EXPECT_TRUE(sphere1_props.GetProperty<CoulombFriction<double>>(
-                  "material", "coulomb_friction") == sphere1_friction);
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kFriction) == sphere1_friction);
   EXPECT_TRUE(sphere2_props.GetProperty<CoulombFriction<double>>(
-                  "material", "coulomb_friction") == sphere2_friction);
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kFriction) == sphere2_friction);
+
+  EXPECT_TRUE(sphere1_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kPointStiffness) == sphere1_stiffness);
+  EXPECT_TRUE(sphere2_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kPointStiffness) == sphere2_stiffness);
+
+  EXPECT_TRUE(sphere1_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kHcDissipation) == sphere1_dissipation);
+  EXPECT_TRUE(sphere2_props.GetProperty<double>(
+                  geometry::internal::kMaterialGroup,
+                  geometry::internal::kHcDissipation) == sphere2_dissipation);
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph.

@@ -14,6 +14,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
+    visibility = ["//visibility:public"],
     deps = [
         ":dummy_render_engine",
         ":geometry_set_tester",

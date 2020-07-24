@@ -15,7 +15,7 @@ namespace penetration_as_point_pair {
 
 // TODO(SeanCurtis-TRI): Template this and include X_WGs when this query
 //  supports AutoDiff scalars.
-/** Supporting data for the detecting collision between geometries and reporting
+/* Supporting data for the detecting collision between geometries and reporting
  them as a pair of points (see PenetrationAsPointPair). It includes:
 
     - A collision filter instance.
@@ -41,18 +41,20 @@ struct CallbackData {
     request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
   }
 
-  /** The collision filter system.  */
+  /* The collision filter system.  */
   const CollisionFilterLegacy& collision_filter;
 
-  /** The parameters for the fcl object-object collision function.  */
+  /* The parameters for the fcl object-object collision function.  */
   fcl::CollisionRequestd request;
 
-  /** The results of the collision query.  */
+  /* The results of the collision query.  */
   std::vector<PenetrationAsPointPair<double>>& point_pairs;
 };
 
-// Callback function for FCL's collide() function for retrieving a *single*
-// contact.
+/* Callback function for FCL's collide() function for retrieving a *single*
+ contact. As documented by QueryObject::ComputePointPairPenetration(), the
+ result added to the output data is the same, regardless of the order of
+ the two fcl objects.  */
 bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
               fcl::CollisionObjectd* fcl_object_B_ptr, void* callback_data);
 

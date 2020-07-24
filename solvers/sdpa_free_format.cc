@@ -13,8 +13,6 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseQR>
 
-#include "drake/common/text_logging.h"
-
 namespace drake {
 namespace solvers {
 namespace internal {
@@ -767,6 +765,76 @@ void SdpaFreeFormat::RemoveFreeVariableByTwoSlackVariablesApproach(
   C_hat->setFromTriplets(C_hat_triplets.begin(), C_hat_triplets.end());
 }
 
+void SdpaFreeFormat::RemoveFreeVariableByLorentzConeSlackApproach(
+    std::vector<internal::BlockInX>* X_hat_blocks,
+    std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
+    Eigen::SparseMatrix<double>* C_hat) const {
+  *X_hat_blocks = this->X_blocks();
+  X_hat_blocks->emplace_back(internal::BlockType::kMatrix,
+                             this->num_free_variables() + 1);
+  const int num_X_hat_rows =
+      this->num_X_rows() + this->num_free_variables() + 1;
+  std::vector<std::vector<Eigen::Triplet<double>>> A_hat_triplets =
+      this->A_triplets();
+  // Âᵢ = diag(Aᵢ, B̂ᵢ)
+  // where B̂ᵢ = ⎡0  bᵢᵀ/2⎤
+  //            ⎣bᵢ/2   0⎦
+  for (int j = 0; j < this->num_free_variables(); ++j) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(this->B(), j); it;
+         ++it) {
+      const int i = it.row();
+      // Add the entry in Âᵢ that multiplies with sⱼ.
+      A_hat_triplets[i].emplace_back(
+          this->num_X_rows(), this->num_X_rows() + j + 1, it.value() / 2);
+      A_hat_triplets[i].emplace_back(this->num_X_rows() + j + 1,
+                                     this->num_X_rows(), it.value() / 2);
+    }
+  }
+  const int num_linear_eq_constr =
+      this->A().size() + (num_free_variables_ * (num_free_variables_ + 1)) / 2;
+  A_hat->clear();
+  A_hat->reserve(num_linear_eq_constr);
+  for (int i = 0; i < static_cast<int>(this->A().size()); ++i) {
+    A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+    A_hat->back().setFromTriplets(A_hat_triplets[i].begin(),
+                                  A_hat_triplets[i].end());
+  }
+  // The new right hand side is the same as the old one, except padding 0's
+  // in the end.
+  *rhs_hat = Eigen::VectorXd::Zero(num_linear_eq_constr);
+  rhs_hat->head(this->A().size()) = this->g();
+
+  for (int i = 0; i < num_free_variables_; ++i) {
+    // Append the constraint Y(i + 1, i + 1) = Y(0, 0).
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(2);
+    triplets.emplace_back(num_X_rows_, num_X_rows_, -1);
+    triplets.emplace_back(num_X_rows_ + i + 1, num_X_rows_ + i + 1, 1);
+    A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+    A_hat->back().setFromTriplets(triplets.begin(), triplets.end());
+    for (int j = i + 1; j < num_free_variables_; ++j) {
+      // Append the constraint Y(i+1, j+1) = 0
+      triplets.clear();
+      triplets.reserve(2);
+      triplets.emplace_back(num_X_rows_ + i + 1, num_X_rows_ + j + 1, 0.5);
+      triplets.emplace_back(num_X_rows_ + j + 1, num_X_rows_ + i + 1, 0.5);
+      A_hat->emplace_back(num_X_hat_rows, num_X_hat_rows);
+      A_hat->back().setFromTriplets(triplets.begin(), triplets.end());
+    }
+  }
+  // Add the entry in Ĉ that multiplies with sᵢ.
+  std::vector<Eigen::Triplet<double>> C_hat_triplets = this->C_triplets();
+  for (Eigen::SparseMatrix<double>::InnerIterator it(this->d(), 0); it; ++it) {
+    const int i = it.row();
+    C_hat_triplets.emplace_back(this->num_X_rows(), this->num_X_rows() + i + 1,
+                                it.value() / 2);
+    C_hat_triplets.emplace_back(this->num_X_rows() + i + 1, this->num_X_rows(),
+                                it.value() / 2);
+  }
+  *C_hat = Eigen::SparseMatrix<double>(num_X_hat_rows, num_X_hat_rows);
+  C_hat->setFromTriplets(C_hat_triplets.begin(), C_hat_triplets.end());
+}
+
 namespace {
 bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
                       const Eigen::SparseMatrix<double>& C,
@@ -893,6 +961,16 @@ bool GenerateSDPA(const MathematicalProgram& prog, const std::string& file_name,
           &X_hat_blocks, &A_hat, &C_hat);
       return internal::GenerateSdpaImpl(X_hat_blocks, C_hat, A_hat,
                                         sdpa_free_format.g(), file_name);
+    }
+    case RemoveFreeVariableMethod::kLorentzConeSlack: {
+      std::vector<internal::BlockInX> X_hat_blocks;
+      std::vector<Eigen::SparseMatrix<double>> A_hat;
+      Eigen::VectorXd rhs_hat;
+      Eigen::SparseMatrix<double> C_hat;
+      sdpa_free_format.RemoveFreeVariableByLorentzConeSlackApproach(
+          &X_hat_blocks, &A_hat, &rhs_hat, &C_hat);
+      return internal::GenerateSdpaImpl(X_hat_blocks, C_hat, A_hat, rhs_hat,
+                                        file_name);
     }
   }
   return false;

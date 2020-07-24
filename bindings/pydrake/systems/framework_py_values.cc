@@ -38,7 +38,7 @@ void DefineFrameworkPyValues(py::module m) {
             })
         .def("__repr__",
             [](const VectorBase<T>& self) {
-              py::handle cls = py::cast(&self, py_reference).get_type();
+              py::handle cls = py::cast(&self, py_rvp::reference).get_type();
               return py::str("{}({})").format(cls.attr("__name__"),
                   py::cast(self.CopyToVector()).attr("tolist")());
             })
@@ -69,7 +69,7 @@ void DefineFrameworkPyValues(py::module m) {
             [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
               return self->get_value();
             },
-            py_reference_internal, doc.BasicVector.get_value.doc)
+            py_rvp::reference_internal, doc.BasicVector.get_value.doc)
         // TODO(eric.cousineau): Remove this once `get_value` is changed, or
         // reference semantics are changed for custom dtypes.
         .def("_get_value_copy",
@@ -81,13 +81,13 @@ void DefineFrameworkPyValues(py::module m) {
             [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
               return self->get_mutable_value();
             },
-            py_reference_internal, doc.BasicVector.get_mutable_value.doc)
+            py_rvp::reference_internal, doc.BasicVector.get_mutable_value.doc)
         .def(
             "GetAtIndex",
             [](BasicVector<T>* self, int index) -> T& {
               return self->GetAtIndex(index);
             },
-            py_reference_internal, doc.VectorBase.GetAtIndex.doc)
+            py_rvp::reference_internal, doc.VectorBase.GetAtIndex.doc)
         .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(

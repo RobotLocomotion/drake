@@ -160,7 +160,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
-        .def("body", &Class::body, py_reference_internal, cls_doc.body.doc)
+        .def("body", &Class::body, py_rvp::reference_internal, cls_doc.body.doc)
         .def("GetFixedPoseInBodyFrame", &Frame<T>::GetFixedPoseInBodyFrame,
             cls_doc.GetFixedPoseInBodyFrame.doc);
   }
@@ -204,7 +204,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
     BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
-        .def("body_frame", &Class::body_frame, py_reference_internal,
+        .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
         .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)
         .def("GetForceInWorld", &Class::GetForceInWorld, py::arg("context"),
@@ -223,12 +223,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "RigidBody", param, cls_doc.doc);
     cls  // BR
         .def("default_mass", &Class::default_mass, cls_doc.default_mass.doc)
-        .def("default_com", &Class::default_com, py_reference_internal,
+        .def("default_com", &Class::default_com, py_rvp::reference_internal,
             cls_doc.default_com.doc)
         .def("default_unit_inertia", &Class::default_unit_inertia,
-            py_reference_internal, cls_doc.default_unit_inertia.doc)
+            py_rvp::reference_internal, cls_doc.default_unit_inertia.doc)
         .def("default_spatial_inertia", &Class::default_spatial_inertia,
-            py_reference_internal, cls_doc.default_spatial_inertia.doc);
+            py_rvp::reference_internal, cls_doc.default_spatial_inertia.doc);
   }
 
   // Joints.
@@ -240,14 +240,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
     BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
-        .def("parent_body", &Class::parent_body, py_reference_internal,
+        .def("parent_body", &Class::parent_body, py_rvp::reference_internal,
             cls_doc.parent_body.doc)
-        .def("child_body", &Class::child_body, py_reference_internal,
+        .def("child_body", &Class::child_body, py_rvp::reference_internal,
             cls_doc.child_body.doc)
-        .def("frame_on_parent", &Class::frame_on_parent, py_reference_internal,
-            cls_doc.frame_on_parent.doc)
-        .def("frame_on_child", &Class::frame_on_child, py_reference_internal,
-            cls_doc.frame_on_child.doc)
+        .def("frame_on_parent", &Class::frame_on_parent,
+            py_rvp::reference_internal, cls_doc.frame_on_parent.doc)
+        .def("frame_on_child", &Class::frame_on_child,
+            py_rvp::reference_internal, cls_doc.frame_on_child.doc)
         .def("position_start", &Class::position_start,
             cls_doc.position_start.doc)
         .def("velocity_start", &Class::velocity_start,
@@ -421,7 +421,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     BindMultibodyElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
-        .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc)
+        .def("joint", &Class::joint, py_rvp::reference_internal,
+            cls_doc.joint.doc)
         .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc);
   }
 
@@ -445,8 +446,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("bodyA"), py::arg("p_AP"), py::arg("bodyB"),
             py::arg("p_BQ"), py::arg("free_length"), py::arg("stiffness"),
             py::arg("damping"), cls_doc.ctor.doc)
-        .def("bodyA", &Class::bodyA, py_reference_internal, cls_doc.bodyA.doc)
-        .def("bodyB", &Class::bodyB, py_reference_internal, cls_doc.bodyB.doc)
+        .def("bodyA", &Class::bodyA, py_rvp::reference_internal,
+            cls_doc.bodyA.doc)
+        .def("bodyB", &Class::bodyB, py_rvp::reference_internal,
+            cls_doc.bodyB.doc)
         .def("p_AP", &Class::p_AP, cls_doc.p_AP.doc)
         .def("p_BQ", &Class::p_BQ, cls_doc.p_BQ.doc)
         .def("free_length", &Class::free_length, cls_doc.free_length.doc)
@@ -463,7 +466,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::init<const RevoluteJoint<T>&, double, double>(),
             py::arg("joint"), py::arg("nominal_angle"), py::arg("stiffness"),
             cls_doc.ctor.doc)
-        .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc)
+        .def("joint", &Class::joint, py_rvp::reference_internal,
+            cls_doc.joint.doc)
         .def("nominal_angle", &Class::nominal_angle, cls_doc.nominal_angle.doc)
         .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
   }
@@ -489,9 +493,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         m, "DoorHinge", param, cls_doc.doc);
     cls.def(py::init<const RevoluteJoint<T>&, const DoorHingeConfig&>(),
            py::arg("joint"), py::arg("config"), cls_doc.ctor.doc)
-        .def("joint", &Class::joint, py_reference_internal, cls_doc.joint.doc)
-        .def(
-            "config", &Class::config, py_reference_internal, cls_doc.config.doc)
+        .def("joint", &Class::joint, py_rvp::reference_internal,
+            cls_doc.joint.doc)
+        .def("config", &Class::config, py_rvp::reference_internal,
+            cls_doc.config.doc)
         .def("CalcHingeFrictionalTorque", &Class::CalcHingeFrictionalTorque,
             py::arg("angular_rate"), cls_doc.CalcHingeFrictionalTorque.doc)
         .def("CalcHingeSpringTorque", &Class::CalcHingeSpringTorque,
@@ -520,7 +525,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("generalized_forces", &Class::generalized_forces,
             cls_doc.generalized_forces.doc)
         .def("mutable_generalized_forces", &Class::mutable_generalized_forces,
-            py_reference_internal, cls_doc.mutable_generalized_forces.doc)
+            py_rvp::reference_internal, cls_doc.mutable_generalized_forces.doc)
         // WARNING: Do not bind `body_forces` or `mutable_body_forces` because
         // they use `internal::BodyNodeIndex`. Instead, use force API in Body.
         .def("AddInForces", &Class::AddInForces, py::arg("addend"),
@@ -557,9 +562,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
-                 const UnitInertia<T>&>(),
+                 const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
-            cls_doc.ctor.doc_3args)
+            py::arg("skip_validity_check") = false, cls_doc.ctor.doc_4args)
         .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
         .def("get_com", &Class::get_com, cls_doc.get_com.doc)
         .def("CalcComMoment", &Class::CalcComMoment, cls_doc.CalcComMoment.doc)

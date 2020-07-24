@@ -14,6 +14,7 @@ package(
 
 drake_cc_package_library(
     name = "tree",
+    visibility = ["//visibility:public"],
     deps = [
         ":articulated_body_inertia",
         ":multibody_element",
@@ -339,6 +340,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//common/test_utilities:expect_no_throw",
         "//math:geometric_transform",
         "//math:gradient",
     ],

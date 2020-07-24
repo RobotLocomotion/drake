@@ -14,6 +14,7 @@ package(
 
 drake_cc_package_library(
     name = "planner",
+    visibility = ["//visibility:public"],
     deps = [
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",

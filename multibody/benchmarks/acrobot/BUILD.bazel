@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "acrobot",
+    visibility = ["//visibility:public"],
     deps = [
         ":analytical_acrobot",
         ":make_acrobot_plant",

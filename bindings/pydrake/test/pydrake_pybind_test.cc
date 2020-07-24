@@ -19,6 +19,17 @@ namespace drake {
 namespace pydrake {
 namespace {
 
+GTEST_TEST(PydrakePybindTest, PyReturnValuePolicy) {
+  static_assert(
+      std::is_same_v<py_rvp, py::return_value_policy>, "Alias is wrong?");
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(py_rvp::reference, py_reference);
+  EXPECT_EQ(py_rvp::reference_internal, py_reference_internal);
+#pragma GCC diagnostic pop
+}
+
 // Expects that a given Python expression `expr` evaluates to true, using
 // globals and the variables available in `m`.
 void PyExpectTrue(py::module m, const char* expr) {
@@ -27,8 +38,7 @@ void PyExpectTrue(py::module m, const char* expr) {
   EXPECT_TRUE(value) << expr;
 }
 
-// TODO(eric.cousineau): Test coverage of `py_reference`,
-// `py_reference_internal`, `py_keep_alive`, etc.
+// TODO(eric.cousineau): Test coverage of `py_keep_alive`, etc.
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.
 struct ExampleDefCopyAndDeepCopy {

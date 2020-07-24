@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "trajectories",
+    visibility = ["//visibility:public"],
     deps = [
         ":bspline_trajectory",
         ":discrete_time_trajectory",

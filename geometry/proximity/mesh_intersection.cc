@@ -356,7 +356,7 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
       "e", std::move(surface_e), surface_MN_M->get(), calculate_gradient);
 }
 
-/** A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
+/* A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
  reduce the number of element-pairs evaluated.  */
 template <typename T>
 void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
@@ -483,7 +483,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
                                              std::move(e_SR));
 }
 
-/** A variant of ComputeContactSurfaceFromSoftVolumeRigidSurface but with
+/* A variant of ComputeContactSurfaceFromSoftVolumeRigidSurface but with
  broad-phase culling to reduce the number of element-pairs evaluated.  */
 template <typename T>
 std::unique_ptr<ContactSurface<T>>

@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "inclined_plane",
+    visibility = ["//visibility:public"],
     deps = [
         ":inclined_plane_plant",
     ],

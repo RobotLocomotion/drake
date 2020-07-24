@@ -60,7 +60,7 @@ py::class_<Class, drake::AbstractValue> AddValueInstantiation(
   constexpr bool has_get_mutable_value =
       internal::is_generic_pybind_v<T> || std::is_same_v<T, Object>;
   if constexpr (has_get_mutable_value) {
-    py::return_value_policy return_policy = py_reference_internal;
+    py::return_value_policy return_policy = py_rvp::reference_internal;
     if (std::is_same_v<T, Object>) {
       // N.B. This implies that `Object` will be copied by value; however, it
       // is only a shallow copy of the pointer, not a deep copy of the object.

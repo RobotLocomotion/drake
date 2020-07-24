@@ -20,8 +20,9 @@ libexpat1-dev
 libfreetype-dev
 libgflags-dev
 libgl-dev
+libglew-dev
 libglib2.0-dev
-libglvnd-dev
+libglx-dev
 libhdf5-dev
 libjpeg-turbo8-dev
 libjsoncpp-dev
@@ -30,6 +31,7 @@ liblz4-dev
 libnetcdf-dev
 libnlopt-cxx-dev
 libogg-dev
+libopengl-dev
 libpng-dev
 libqt5opengl5-dev
 libqt5x11extras5-dev
@@ -43,7 +45,6 @@ libx11-dev
 libxml2-dev
 libxt-dev
 libyaml-cpp-dev
-lldb-9
 llvm-9
 locales
 openssh-client

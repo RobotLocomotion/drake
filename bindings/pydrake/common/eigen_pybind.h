@@ -23,7 +23,7 @@ py::object ToArray(T* ptr, int size, py::tuple shape) {
   // Create flat array to be reshaped in numpy.
   using Vector = VectorX<T>;
   Eigen::Map<Vector> data(ptr, size);
-  return py::cast(Eigen::Ref<Vector>(data), py_reference)
+  return py::cast(Eigen::Ref<Vector>(data), py_rvp::reference)
       .attr("reshape")(shape);
 }
 
@@ -33,7 +33,7 @@ py::object ToArray(const T* ptr, int size, py::tuple shape) {
   // Create flat array to be reshaped in numpy.
   using Vector = const VectorX<T>;
   Eigen::Map<Vector> data(ptr, size);
-  return py::cast(Eigen::Ref<Vector>(data), py_reference)
+  return py::cast(Eigen::Ref<Vector>(data), py_rvp::reference)
       .attr("reshape")(shape);
 }
 

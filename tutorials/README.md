@@ -1,6 +1,6 @@
 # Drake Tutorials
 
-This provdies more in-depth documentation on top of the
+This provides more in-depth documentation on top of the
 [Drake Documentation's Tutorials](https://drake.mit.edu/#tutorials) section.
 
 ## Running the Tutorials Locally

@@ -16,6 +16,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "framework",
+    visibility = ["//visibility:public"],
     deps = [
         ":abstract_values",
         ":cache_and_dependency_tracker",

@@ -22,9 +22,9 @@ using math::RigidTransform;
 using math::RotationMatrix;
 using std::move;
 
-/// Creates a SurfaceMesh of a box. The box is defined in frame B, centered on
-/// Bo with its dimensions aligned with Bx, By, and Bz. The resultant mesh
-/// has the vertices expressed in Frame F, courtesy of the transform `X_FB`.
+// Creates a SurfaceMesh of a box. The box is defined in frame B, centered on
+// Bo with its dimensions aligned with Bx, By, and Bz. The resultant mesh
+// has the vertices expressed in Frame F, courtesy of the transform `X_FB`.
 SurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
   // Set the box vertices according to the following diagram. The box is
   // centered at the origin of Frame B. We transform it to some query frame F,
@@ -77,14 +77,14 @@ SurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
   return {move(faces), move(vertices_F)};
 }
 
-/// Creates a new SurfaceMesh mesh from the given input mesh, such that the
-/// resulting mesh has the same domain, but with two differences:
-///
-///   1. The vertices in the resultant mesh are measured and expressed in
-///      Frame W (as opposed to the input mesh's Frame F)
-///   2. Each triangle in the input mesh has been turned into three triangles;
-///      the original turned into a triangle fan around its centroid.
-/// This method confirms that the face normal directions are preserved.
+// Creates a new SurfaceMesh mesh from the given input mesh, such that the
+// resulting mesh has the same domain, but with two differences:
+//
+//   1. The vertices in the resultant mesh are measured and expressed in
+//      Frame W (as opposed to the input mesh's Frame F)
+//   2. Each triangle in the input mesh has been turned into three triangles;
+//      the original turned into a triangle fan around its centroid.
+// This method confirms that the face normal directions are preserved.
 template <typename T>
 static SurfaceMesh<double> CreateMeshWithCentroids(
     const SurfaceMesh<double>& mesh_F, const RigidTransform<T>& X_WF) {
@@ -132,7 +132,7 @@ static SurfaceMesh<double> CreateMeshWithCentroids(
   return SurfaceMesh<double>(move(new_faces), move(new_vertices_W));
 }
 
-/// Creates a SurfaceMesh with a single triangle using the given vertices.
+// Creates a SurfaceMesh with a single triangle using the given vertices.
 SurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
                                           const Vector3d& v1,
                                           const Vector3d& v2) {

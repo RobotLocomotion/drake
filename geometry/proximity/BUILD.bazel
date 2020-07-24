@@ -12,6 +12,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "proximity",
+    visibility = ["//visibility:public"],
     deps = [
         ":bounding_volume_hierarchy",
         ":collision_filter_legacy",

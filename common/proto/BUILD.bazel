@@ -19,6 +19,7 @@ package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "proto",
+    visibility = ["//visibility:public"],
     deps = [
         ":call_python",
         ":rpc_pipe_temp_directory",
