@@ -813,6 +813,9 @@ def main():
             # include_paths=[self.opts.source_dir] + rsp_includes,
         )
 
+        # TODO(eric.cousineau): Keep an eye for inefficiency (e.g. C++ -> XML
+        # -> Python).
+
         # Run CastXML and parse back the resulting XML into a Python Object.
         pygccxml.utils.loggers.cxx_parser.setLevel(logging.CRITICAL)
         decls, = pygccxml.parser.parse(

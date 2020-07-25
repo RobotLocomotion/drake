@@ -71,6 +71,8 @@ void func(T tee);
 
 struct SimpleStruct { int value; };
 
+// N.B. No need for the argument `tee`.
+extern template void func<int>(int);
 template <typename T>
 struct TemplateStruct { T value; };
 
