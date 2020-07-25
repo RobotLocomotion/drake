@@ -71,15 +71,24 @@ drake_cc_library(
     name = "sample_header",
     testonly = 1,
     hdrs = ["test/sample_header.h"],
-    deps = [
-        "//common",
+)
+
+generate_pybind_documentation_header(
+    name = "generate_sample_header",
+    testonly = 1,
+    out = "test/output/sample_header_documentation.h",
+    add_source_location = 0,
+    # out_xml = "test/output/sample_header_documentation.xml",
+    root_name = "sample_header_doc",
+    targets = [
+        ":sample_header",
     ],
 )
 
 drake_cc_library(
     name = "sample_header_documentation",
     testonly = 1,
-    hdrs = ["test/sample_header_documentation.h"],
+    hdrs = ["test/output/sample_header_documentation.h"],
     tags = ["nolint"],
 )
 
@@ -93,8 +102,8 @@ drake_cc_googletest(
 drake_py_unittest(
     name = "sample_header_documentation_py_test",
     data = [
-        "test/sample_header_documentation.expected.h",
-        "test/sample_header_documentation.h",
+        "test/output/sample_header_documentation.h",
+        "test/output_expected/sample_header_documentation.h",
     ],
 )
 
@@ -117,57 +126,46 @@ py_binary(
     deps = [":pybind_coverage_py"],
 )
 
-generate_pybind_documentation_header(
-    name = "generate_sample_header",
-    testonly = 1,
-    out = "test/sample_header_documentation.h",
-    # out_xml = "sample_header_documentation_test.xml",
-    root_name = "sample_header_doc",
-    targets = [
-        ":sample_header",
-    ],
-)
-
 filegroup(
     name = "pybind_coverage_data",
     srcs = glob(["test/*.cc"]),
 )
 
 generate_pybind_coverage(
-    name = "generate_pybind_coverage_example",
-    class_coverage = "class_coverage_test.csv",
+    name = "generate_sample_header_coverage",
+    class_coverage = "test/output/sample_header_class_coverage.csv",
     doc_variable_name = "sample_header_doc",
-    file_coverage = "file_coverage_test.csv",
+    file_coverage = "test/output/sample_header_file_coverage.csv",
     pybind_coverage_data = [":pybind_coverage_data"],
-    xml_docstrings = "sample_header_documentation_test.xml",
+    xml_docstrings = "test/output/sample_header_documentation.xml",
 )
 
 filegroup(
-    name = "pybind_coverage_test_expected_data",
+    name = "sample_header_coverage_expected_data",
     testonly = 1,
     data = [
-        "test/sample_header_class_coverage_expected.csv",
-        "test/sample_header_documentation_pybind_expected.xml",
-        "test/sample_header_file_coverage_expected.csv",
+        "test/output_expected/sample_header_class_coverage.csv",
+        "test/output_expected/sample_header_documentation.xml",
+        "test/output_expected/sample_header_file_coverage.csv",
     ],
 )
 
 filegroup(
-    name = "pybind_coverage_test_actual_data",
+    name = "sample_header_coverage_actual_data",
     testonly = 1,
     data = [
-        ":class_coverage_test.csv",
-        ":file_coverage_test.csv",
-        ":sample_header_documentation_test.xml",
+        "test/output/sample_header_class_coverage.csv",
+        "test/output/sample_header_documentation.xml",
+        "test/output/sample_header_file_coverage.csv",
     ],
 )
 
 drake_py_unittest(
-    name = "generate_pybind_coverage_test",
+    name = "sample_header_coverage_py_test",
     data = [
         "test/sample_header_py.cc",
-        ":pybind_coverage_test_actual_data",
-        ":pybind_coverage_test_expected_data",
+        ":sample_header_coverage_actual_data",
+        ":sample_header_coverage_expected_data",
     ],
     deps = [":mkdoc"],
 )

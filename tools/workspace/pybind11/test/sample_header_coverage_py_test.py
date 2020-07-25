@@ -48,19 +48,14 @@ class TestLibclangParser(unittest.TestCase):
     def get_test_file(self, relpath):
         return os.path.join("tools/workspace/pybind11", relpath)
 
+    def assert_test_files_equal(self, relpath):
+        self.assert_file_equal(
+            self.get_test_file(os.path.join("test/output", relpath)),
+            self.get_test_file(os.path.join("test/output_expected", relpath)),
+        )
+
     def test_parser(self):
-        self.assert_file_equal(
-            self.get_test_file("file_coverage_test.csv"),
-            self.get_test_file(
-                "test/sample_header_file_coverage_expected.csv"),
-        )
-        self.assert_file_equal(
-            self.get_test_file("class_coverage_test.csv"),
-            self.get_test_file(
-                "test/sample_header_class_coverage_expected.csv"),
-        )
-        self.assert_xml_file_semantically_equal(
-            self.get_test_file("sample_header_documentation_test.xml"),
-            self.get_test_file(
-                "test/sample_header_documentation_pybind_expected.xml"),
-        )
+        self.assert_test_files_equal("sample_header_documentation.xml")
+        self.assert_test_files_equal("sample_header_file_coverage.csv")
+        self.assert_test_files_equal("sample_header_class_coverage.csv")
+        self.assert_test_files_equal("sample_header_class_coverage.csv")

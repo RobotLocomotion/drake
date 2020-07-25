@@ -9,15 +9,13 @@ from clang import cindex
 # a module? (if this was really authored in `mkdoc.py`...)
 
 
-def add_library_paths(parameters=None):
+def add_library_paths():
     """Set library paths for finding libclang on supported platforms.
 
-    Args:
-        parameters(list): If not None, it's used for adding parameters which
-            are used in `mkdoc.py`.
-
     Returns:
+        parameters (list)
     """
+    parameters = []
     library_file = None
     if platform.system() == 'Darwin':
         completed_process = subprocess.run(['xcrun', '--find', 'clang'],
@@ -34,10 +32,10 @@ def add_library_paths(parameters=None):
         if parameters is not None and completed_process.returncode == 0:
             sdkroot = completed_process.stdout.strip()
             if os.path.exists(sdkroot):
-                parameters.append('-isysroot')
-                parameters.append(sdkroot)
+                parameters += ['-isysroot', sdkroot]
     elif platform.system() == 'Linux':
         library_file = '/usr/lib/x86_64-linux-gnu/libclang-9.so'
     if not os.path.exists(library_file):
         raise RuntimeError(f'Library file {library_file} does NOT exist')
     cindex.Config.set_library_file(library_file)
+    return parameters

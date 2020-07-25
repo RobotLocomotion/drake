@@ -6,6 +6,7 @@
 #  Extract documentation from C++ header files to use it in Python bindings
 #
 
+import argparse
 from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
@@ -507,8 +508,16 @@ def choose_doc_var_names(symbols):
 
 
 # TODO(m-chaturvedi): Refactor this to not use stack
-def print_symbols(f, name, node, level=0, *, tree_parser_doc,
-                  tree_parser_xpath, ignore_dirs_for_coverage):
+def print_symbols(
+        f,
+        name,
+        node,
+        add_source_location,
+        level=0,
+        *,
+        tree_parser_doc,
+        tree_parser_xpath,
+        ignore_dirs_for_coverage):
     """
     Prints C++ code for relevant documentation.
     """
@@ -560,7 +569,8 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
         delim = "\n"
         if "\n" not in comment and len(comment) < 40:
             delim = " "
-        iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
+        if add_source_location:
+            iprint('  // Source: {}:{}'.format(symbol.include, symbol.line))
         iprint('  const char* {} ={}R"""({})""";'.format(
             doc_var, delim, comment.strip()))
 
@@ -599,7 +609,14 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
                 "tree_parser_xpath": tree_parser_xpath,
                 "ignore_dirs_for_coverage": ignore_dirs_for_coverage
             }
-        print_symbols(f, key, child, level=level + 1, **tree_parser_args)
+        print_symbols(
+            f,
+            key,
+            child,
+            add_source_location,
+            level=level + 1,
+            **tree_parser_args
+        )
     iprint('}} {};'.format(name_var))
 
     tree_parser_doc.pop()
@@ -678,28 +695,37 @@ def main():
     parser.add_argument("-ignore-dirs-for-coverage", type=str, default="")
     parser.add_argument("-root-name", type=str, default="mkdoc_doc")
     parser.add_argument("-exclude-hdr-patterns", type=str, default="")
+    # This breaks coverage???
+    parser.add_argument("-add-source-location", action="store_true")
     parser.add_argument("-castxml-bin", type=str, required=True)
     parser.add_argument("filenames", type=str, nargs="+")
     args, argv = parser.parse_known_args()
-
-    parameters = ['-x', 'c++', '-D__MKDOC_PY__'] + argv
-    # add_library_paths(parameters)
-    filenames = args.filenames
 
     castxml_bin = args.castxml_bin
     print("\n\n\n\n")
     print(os.getcwd())
     print(castxml_bin)
     assert isfile(castxml_bin), castxml_bin
+
+    filenames = args.filenames
     quiet = args.quiet
     std = f'-std={args.std}'
     root_name = args.root_name
-    ignore_patterns = args.exclude_hdr_patterns.split(",")
+    ignore_patterns = [
+        x
+        for x in args.exclude_hdr_patterns.split(",")
+        if x
+    ]
     output_filename = args.output
     output_filename_xml = args.output_xml
     ignore_dirs_for_coverage = tuple(args.ignore_dirs_for_coverage.split(","))
+    add_source_location = args.add_source_location
 
-    parameters.append(std)
+    # extra_parameters = add_library_paths()
+    parameters = (
+        ['-x', 'c++', '-D__MKDOC_PY__'] + argv + [std] 
+        # + extra_parameters
+    )
 
     if output_filename is None or len(filenames) == 0:
         eprint('Syntax: %s -output=<file> [.. a list of header files ..]'
@@ -833,7 +859,13 @@ def main():
                        "tree_parser_xpath": [ET.Element("Root")],
                        "ignore_dirs_for_coverage": ignore_dirs_for_coverage}
 
-        print_symbols(f, root_name, symbol_tree.root, **tree_parser)
+        print_symbols(
+            f,
+            root_name,
+            symbol_tree.root,
+            add_source_location=add_source_location,
+            **tree_parser
+        )
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print("""
