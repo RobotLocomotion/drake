@@ -10,6 +10,7 @@ import argparse
 from collections import OrderedDict, defaultdict
 from fnmatch import fnmatch
 import os
+from os.path import isfile
 import platform
 import re
 import shutil
@@ -22,6 +23,9 @@ from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
 from drake.tools.workspace.pybind11.mkdoc_comment import process_comment
+
+import pygccxml
+import logging
 
 # from drake.tools.workspace.pybind11.libclang_setup import add_library_paths
 
@@ -656,9 +660,6 @@ def prettify(elem):
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
 
-import pygccxml
-import logging
-
 def do_stuff(ns):
     print('"ns" declarations: \n')
     pygccxml.declarations.print_declarations(ns)
@@ -682,9 +683,6 @@ def do_stuff(ns):
 
     test_container = ns.class_('mkdoc_test::Class')
     print(test_container)
-
-import argparse
-from os.path import isfile
 
 def main():
     parser = argparse.ArgumentParser()
