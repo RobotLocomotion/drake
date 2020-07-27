@@ -165,7 +165,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
                  v->size() == 3 * num_particles_);
     for (int i = 0; i < nx_; ++i) {
       for (int j = 0; j < ny_; ++j) {
-        int node_index = i * ny_ + j;
+        int particle_index = i * ny_ + j;
         /* The particles are ordered in the following fashion:
         +y
           ^
@@ -189,8 +189,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
           Note that we replaced nx_/ny_ with nx/ny in the diagram above for more
         readability.
         */
-        set_particle_state(node_index, {i * h_, j * h_, 0.0}, x);
-        set_particle_state(node_index, {0.0, 0.0, 0.0}, v);
+        set_particle_state(particle_index, {i * h_, j * h_, 0.0}, x);
+        set_particle_state(particle_index, {0.0, 0.0, 0.0}, v);
       }
     }
   }
@@ -226,9 +226,10 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
         context, param_index_);
   }
 
-  // Calculates the elastic force from springs given the positions of the nodes
-  // and add to the output elastic_force. The values contained in elastic_force
-  // should be set to zero outside this function if fresh values are required.
+  // Calculates the elastic force from springs given the positions of the
+  // particles and add to the output elastic_force. The values contained in
+  // elastic_force should be set to zero outside this function if fresh values
+  // are required.
   //
   // PositionVectorType, VelocityVectorType and ForceVectorType are
   // placeholders for systems::VectorBase<T> and Eigen::VectorBlock<VectorX<T>>
@@ -256,7 +257,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   }
 
   // Calculates the damping force from springs given the positions and
-  // velocities of the nodes and add to the output damping_force. The values
+  // velocities of the particles and add to the output damping_force. The values
   // contained in damping_force should be set to zero outside this function if
   // fresh values are required.
   template <class PositionVectorType, class VelocityVectorType,

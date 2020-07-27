@@ -269,7 +269,7 @@ void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
         // safely add to the diagonal blocks because they were reset earlier.
         H_.coeffRef(3 * p0 + j, 3 * p0 + k) += damping_force_derivative(j, k);
         H_.coeffRef(3 * p1 + j, 3 * p1 + k) += damping_force_derivative(j, k);
-        // Do not add in the off-diagonal terms involving fixed nodes.
+        // Do not add in the off-diagonal terms involving fixed particles.
         if (p0 != left_corner_ && p0 != right_corner_ && p1 != left_corner_ &&
             p1 != right_corner_) {
           // Each off-diagonal block only gets contribution from a single
