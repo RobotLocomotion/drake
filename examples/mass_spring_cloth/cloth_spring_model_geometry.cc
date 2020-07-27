@@ -24,7 +24,7 @@ const ClothSpringModelGeometry& ClothSpringModelGeometry::AddToBuilder(
 
   auto cloth_spring_model_geometry = builder->AddSystem(
       std::unique_ptr<ClothSpringModelGeometry>(new ClothSpringModelGeometry(
-          scene_graph, cloth_spring_model.num_points())));
+          scene_graph, cloth_spring_model.num_particles())));
   builder->Connect(cloth_spring_model.get_output_port(0),
                    cloth_spring_model_geometry->get_input_port(0));
   builder->Connect(cloth_spring_model_geometry->get_output_port(0),
@@ -35,21 +35,21 @@ const ClothSpringModelGeometry& ClothSpringModelGeometry::AddToBuilder(
 }
 
 ClothSpringModelGeometry::ClothSpringModelGeometry(
-    geometry::SceneGraph<double>* scene_graph, int num_points)
-    : num_points_(num_points) {
+    geometry::SceneGraph<double>* scene_graph, int num_particles)
+    : num_particles_(num_particles) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   source_id_ = scene_graph->RegisterSource();
 
   this->DeclareInputPort("particle_positions", systems::kVectorValued,
-                         num_points * 3);
+                         num_particles * 3);
   this->DeclareAbstractOutputPort(
       "geometry_pose", &ClothSpringModelGeometry::OutputGeometryPose);
 
-  frame_ids_.resize(num_points);
-  for (int i = 0; i < num_points; ++i) {
+  frame_ids_.resize(num_particles);
+  for (int i = 0; i < num_particles; ++i) {
     frame_ids_[i] = scene_graph->RegisterFrame(
-        source_id_, geometry::GeometryFrame("mass_points" + std::to_string(i)));
-    // Attach a sphere to the frame for simple visualization of the mass points.
+        source_id_, geometry::GeometryFrame("particle" + std::to_string(i)));
+    // Attach a sphere to the frame for simple visualization of the particles.
     const geometry::GeometryId id = scene_graph->RegisterGeometry(
         source_id_, frame_ids_[i],
         std::make_unique<geometry::GeometryInstance>(
@@ -64,12 +64,12 @@ ClothSpringModelGeometry::ClothSpringModelGeometry(
 void ClothSpringModelGeometry::OutputGeometryPose(
     const systems::Context<double>& context,
     geometry::FramePoseVector<double>* poses) const {
-  for (int i = 0; i < num_points_; ++i) {
+  for (int i = 0; i < num_particles_; ++i) {
     DRAKE_DEMAND(frame_ids_[i].is_valid());
   }
   const auto& input = get_input_port(0).Eval(context);
   poses->clear();
-  // Set the frames to the positions of the points.
+  // Set the frames to the positions of the particles.
   for (int i = 0; i < static_cast<int>(frame_ids_.size()); ++i) {
     const double x = input(3 * i);
     const double y = input(3 * i + 1);

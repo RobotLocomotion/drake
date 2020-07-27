@@ -16,9 +16,9 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-DEFINE_int32(nx, 20, "Number of points in the x direction");
-DEFINE_int32(ny, 20, "Number of points in the y direction");
-DEFINE_double(h, 0.05, "Separation between neighboring points");
+DEFINE_int32(nx, 20, "Number of particles in the x direction");
+DEFINE_int32(ny, 20, "Number of particles in the y direction");
+DEFINE_double(h, 0.05, "Separation between neighboring particles");
 DEFINE_double(dt, 0.01,
               "Time step size for system. Discrete time stepping "
               "scheme described in Bridson et.al. will be used if dt > 0. The "

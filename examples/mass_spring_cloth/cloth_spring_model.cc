@@ -9,40 +9,41 @@ template <typename T>
 ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
     : nx_(nx),
       ny_(ny),
-      num_points_(nx * ny),
+      num_particles_(nx * ny),
       h_(h),
       dt_(dt),
       left_corner_(0),
       right_corner_(ny_ - 1),
-      H_(3 * num_points_, 3 * num_points_) {
+      H_(3 * num_particles_, 3 * num_particles_) {
   if (dt > 0) {
     // Discrete system.
     // Adding 3*N positions and 3*N velocities.
-    this->DeclareDiscreteState(6 * num_points_);
+    this->DeclareDiscreteState(6 * num_particles_);
     this->DeclareVectorOutputPort("particle_positions",
-                                  systems::BasicVector<T>(3 * num_points_),
+                                  systems::BasicVector<T>(3 * num_particles_),
                                   &ClothSpringModel::CopyDiscreteStateOut);
     this->DeclarePeriodicDiscreteUpdateEvent(
         dt_, 0., &ClothSpringModel::UpdateDiscreteState);
   } else {
     // Continuous system.
     // Adding 3*N positions and 3*N velocities.
-    this->DeclareContinuousState(3 * num_points_, 3 * num_points_, 0);
+    this->DeclareContinuousState(3 * num_particles_, 3 * num_particles_, 0);
     // A 6*N dimensional output vector for 3*N positions and 3*N velocities.
-    this->DeclareVectorOutputPort(systems::BasicVector<T>(3 * num_points_),
+    this->DeclareVectorOutputPort(systems::BasicVector<T>(3 * num_particles_),
                                   &ClothSpringModel::CopyContinuousStateOut);
   }
   param_index_ = this->DeclareNumericParameter(ClothSpringModelParams<T>());
   BuildConnectingSprings(true);
   // Allocate the H matrix now that we know the sparsity pattern.
   if (dt > 0) {
-    // The H matrix is organized into num_points * num_points blocks of 3 * 3
-    // sub-matrices. The ij-th 3*3 sub-matrix consists of M_ij (mass matrix) and
-    // ∂f_i/∂v_j (damping force derivative). Since we do mass-lumping, M_ij =
-    // mass(i) * Identity(3,3) if i==j, and Zero(3,3) otherwise. If there exists
-    // a spring connecting points i and j, the blocks
+    // The H matrix is organized into num_particles * num_particles blocks of 3
+    // * 3 sub-matrices. The ij-th 3*3 sub-matrix consists of M_ij (mass matrix)
+    // and ∂f_i/∂v_j (damping force derivative). Since we do mass-lumping, M_ij
+    // = mass(i) * Identity(3,3) if i==j, and Zero(3,3) otherwise. If there
+    // exists a spring connecting particles i and j, the blocks
     // ∂f_i/∂v_i,∂f_j/∂v_j,∂f_i/∂v_j,and ∂f_j/∂v_i will contain nonzero entries.
-    VectorX<int> num_nonzero_entries = VectorX<int>::Ones(3 * num_points_) * 3;
+    VectorX<int> num_nonzero_entries =
+        VectorX<int>::Ones(3 * num_particles_) * 3;
     for (const Spring& s : springs_) {
       for (int d = 0; d < 3; ++d) {
         num_nonzero_entries[3 * s.particle0 + d] += 3;
@@ -99,7 +100,7 @@ void ClothSpringModel<T>::BuildConnectingSprings(bool use_shearing_springs) {
   if (use_shearing_springs) {
     for (int i = 0; i < nx_ - 1; ++i) {
       for (int j = 0; j < ny_ - 1; ++j) {
-        // For each point p, build diagonal and anti-diagonal springs for the
+        // For each particle p, build diagonal and anti-diagonal springs for the
         // cell that p is on the top-left corner of.
         /*
                   | p     | p+1
@@ -130,7 +131,7 @@ void ClothSpringModel<T>::CopyDiscreteStateOut(
   const systems::BasicVector<T>& discrete_state_vector =
       context.get_discrete_state(0);
   output->SetFromVector(
-      discrete_state_vector.get_value().head(3 * num_points_));
+      discrete_state_vector.get_value().head(3 * num_particles_));
 }
 
 template <typename T>
@@ -148,15 +149,15 @@ void ClothSpringModel<T>::DoCalcTimeDerivatives(
   vdot.SetZero();
   AccumulateContinuousSpringForce(context, &vdot);
   const ClothSpringModelParams<T>& p = get_parameters(context);
-  T mass_per_point = p.mass() / static_cast<T>(num_points_);
-  // Mass of each mass point must be positive.
-  DRAKE_THROW_UNLESS(mass_per_point > 0);
+  T mass_per_particle = p.mass() / static_cast<T>(num_particles_);
+  // Mass of each particle must be positive.
+  DRAKE_THROW_UNLESS(mass_per_particle > 0);
   for (int i = 0; i < vdot.size(); ++i) {
-    vdot[i] /= mass_per_point;
+    vdot[i] /= mass_per_particle;
   }
   // Apply gravity to acceleration.
   const Vector3<T> gravity{0, 0, p.gravity()};
-  for (int i = 0; i < num_points_; ++i) {
+  for (int i = 0; i < num_particles_; ++i) {
     accumulate_particle_state(i, gravity, &vdot);
   }
   ApplyDirichletBoundary(&vdot);
@@ -170,22 +171,22 @@ void ClothSpringModel<T>::UpdateDiscreteState(
       context.get_discrete_state().get_vector();
   const Eigen::VectorBlock<const VectorX<T>>& current_state_values =
       current_state.get_value();
-  const auto& x_n = current_state_values.head(3 * num_points_);
-  const auto& v_n = current_state_values.tail(3 * num_points_);
-  // v_hat is the velocity of the points after adding the effect of the explicit
-  // elastic and gravity forces.
+  const auto& x_n = current_state_values.head(3 * num_particles_);
+  const auto& v_n = current_state_values.tail(3 * num_particles_);
+  // v_hat is the velocity of the particles after adding the effect of the
+  // explicit elastic and gravity forces.
   VectorX<T> v_hat(v_n);
   const ClothSpringModelParams<T>& p = get_parameters(context);
   // Add contribution of gravity to v_hat.
   const Vector3<T> gravity_dv{0, 0, p.gravity() * dt_};
-  for (int i = 0; i < num_points_; ++i) {
+  for (int i = 0; i < num_particles_; ++i) {
     accumulate_particle_state(i, gravity_dv, &v_hat);
   }
   // Add the contribution of explicit spring elastic force to v_hat.
   VectorX<T> elastic_force = VectorX<T>::Zero(v_hat.size());
   AccumulateElasticForce(p, x_n, &elastic_force);
-  T mass_per_point = p.mass() / static_cast<T>(num_points_);
-  v_hat += elastic_force * dt_ / mass_per_point;
+  T mass_per_particle = p.mass() / static_cast<T>(num_particles_);
+  v_hat += elastic_force * dt_ / mass_per_particle;
   ApplyDirichletBoundary(&v_hat);
 
   // dv is the change in velocity contributed by the implicit damping force.
@@ -202,8 +203,8 @@ void ClothSpringModel<T>::UpdateDiscreteState(
   // Write v_hat + dv into the velocity at the next time step.
   Eigen::VectorBlock<VectorX<T>> next_state_values =
       next_states->get_mutable_vector().get_mutable_value();
-  auto next_x = next_state_values.head(3 * num_points_);
-  auto next_v = next_state_values.tail(3 * num_points_);
+  auto next_x = next_state_values.head(3 * num_particles_);
+  auto next_v = next_state_values.tail(3 * num_particles_);
   next_v = v_hat + dv;
   ApplyDirichletBoundary(&next_v);
   // Update position using velocity at time n+1.
@@ -220,6 +221,68 @@ void ClothSpringModel<T>::AccumulateContinuousSpringForce(
   const ClothSpringModelParams<T>& p = get_parameters(context);
   AccumulateElasticForce(p, x, forces);
   AccumulateDampingForce(p, x, v, forces);
+}
+
+template <typename T>
+void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
+                                         const VectorX<T>& x,
+                                         const VectorX<T>& f,
+                                         VectorX<T>* dv) const {
+  DRAKE_DEMAND(x.size() == dv->size());
+  DRAKE_DEMAND(x.size() == f.size());
+  const T mass_per_particle = param.mass() / static_cast<T>(num_particles_);
+  // Initialize the diagonal of the matrix to be mass_per_particle.
+  for (int i = 0; i < num_particles_; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 0; k < 3; ++k) {
+        H_.coeffRef(3 * i + j, 3 * i + k) =
+            (j == k) ? mass_per_particle : static_cast<T>(0.0);
+      }
+    }
+  }
+  // Add in the contribution from damping force differential.
+  for (const Spring& s : springs_) {
+    // Get the positions of the two particles connected by the spring.
+    const int p0 = s.particle0;
+    const int p1 = s.particle1;
+    const Vector3<T> p_WP0 = particle_state(p0, x);
+    const Vector3<T> p_WP1 = particle_state(p1, x);
+    const Vector3<T> p_P0P1_W = p_WP1 - p_WP0;
+    const T spring_length = p_P0P1_W.norm();
+    ThrowIfInvalidSpringLength(spring_length, s.rest_length);
+    const Vector3<T> n = p_P0P1_W / spring_length;
+    // If the n is the unit vector point from x0 to x1,
+    // the spring elastic force = elastic stiffness * (length - restlength) *
+    // n, and damping force = (damping coefficient * velocity difference)
+    // projected in the direction of n.
+    const Matrix3<T> damping_force_derivative =
+        param.d() * dt_ * n * n.transpose();
+    // H_ is a sparse matrix. If it were a DenseMatrix, these for loops would
+    // be equivalent to:
+    // H_.block<3,3>(3*n0, 3*n0) += damping_force_derivative;
+    // H_.block<3,3>(3*n1, 3*n1) += damping_force_derivative;
+    // H_.block<3,3>(3*n0, 3*n1) = -damping_force_derivative;
+    // H_.block<3,3>(3*n1, 3*n0) = -damping_force_derivative;
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 0; k < 3; ++k) {
+        // The diagonal blocks get contribution from multiple springs. We can
+        // safely add to the diagonal blocks because they were reset earlier.
+        H_.coeffRef(3 * p0 + j, 3 * p0 + k) += damping_force_derivative(j, k);
+        H_.coeffRef(3 * p1 + j, 3 * p1 + k) += damping_force_derivative(j, k);
+        // Do not add in the off-diagonal terms involving fixed nodes.
+        if (p0 != left_corner_ && p0 != right_corner_ && p1 != left_corner_ &&
+            p1 != right_corner_) {
+          // Each off-diagonal block only gets contribution from a single
+          // spring. It's important to overwrite the value from previous
+          // time-step.
+          H_.coeffRef(3 * p1 + j, 3 * p0 + k) = -damping_force_derivative(j, k);
+          H_.coeffRef(3 * p0 + j, 3 * p1 + k) = -damping_force_derivative(j, k);
+        }
+      }
+    }
+  }
+  cg_.compute(H_);
+  (*dv) = cg_.solve(f * dt_);
 }
 template class ClothSpringModel<double>;
 

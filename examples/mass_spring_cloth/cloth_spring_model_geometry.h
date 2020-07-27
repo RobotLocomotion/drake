@@ -11,7 +11,7 @@ namespace examples {
 namespace mass_spring_cloth {
 
 /** Expresses a ClothSpringModel's visualization geometry to a SceneGraph. This
- visualization takes the position_states output from ClothSpringModel.
+ visualization takes the particle_positions output from ClothSpringModel.
 
  @system
  name: ClothSpringModelGeometry
@@ -21,7 +21,7 @@ namespace mass_spring_cloth {
  - geometry_pose
  @endsystem
 
- The visualization shows the mass points as spheres without any visualization of
+ The visualization shows the particles as spheres without any visualization of
  the springs.
 
  This class has no public constructor; instead use the AddToBuilder() static
@@ -46,16 +46,16 @@ class ClothSpringModelGeometry final : public systems::LeafSystem<double> {
 
  private:
   ClothSpringModelGeometry(geometry::SceneGraph<double>* scene_graph,
-                           int num_points);
+                           int num_particles);
   void OutputGeometryPose(const systems::Context<double>&,
                           geometry::FramePoseVector<double>*) const;
 
   // Geometry source identifier for this system to interact with SceneGraph.
   geometry::SourceId source_id_{};
-  // The identifier for each point's frame.
+  // The identifier for each particle's frame.
   std::vector<geometry::FrameId> frame_ids_;
-  // Number of mass points.
-  int num_points_{};
+  // Number of particles.
+  int num_particles_{};
 };
 
 }  // namespace mass_spring_cloth
