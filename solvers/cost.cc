@@ -24,7 +24,20 @@ void LinearCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 }
 void LinearCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                         AutoDiffVecXd* y) const {
-  DoEvalGeneric(x, y);
+  // Specialized evaluation of cost value and gradient.
+  const Eigen::VectorXd x_val = math::autoDiffToValueMatrix(x);
+  const Vector1d y_val(a_.dot(x_val) + b_);
+  const Eigen::MatrixXd dx = math::autoDiffToGradientMatrix(x);
+
+  if (dx.rows() == x.size() && dx.cols() == x.size() &&
+      dx == Eigen::MatrixXd::Identity(x.rows(), x.rows())) {
+    *y = math::initializeAutoDiffGivenGradientMatrix(y_val, a_.transpose());
+  } else if (dx.rows() == 0 && dx.cols() == 0) {
+    *y = y_val.cast<AutoDiffXd>();
+  } else {
+    *y =
+        math::initializeAutoDiffGivenGradientMatrix(y_val, a_.transpose() * dx);
+  }
 }
 
 void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
@@ -82,7 +95,8 @@ void QuadraticCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
 
   // If dx is the identity matrix (very common here), then skip the chain rule
   // multiplication dy * dx
-  if (dx == MatrixXd::Identity(x.size(), x.size())) {
+  if (dx.rows() == x.size() && dx.cols() == x.size() &&
+      dx == MatrixXd::Identity(x.size(), x.size())) {
     *y = math::initializeAutoDiffGivenGradientMatrix(result, dy);
   } else {
     *y = math::initializeAutoDiffGivenGradientMatrix(result, dy * dx);
