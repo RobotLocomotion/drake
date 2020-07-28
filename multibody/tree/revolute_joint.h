@@ -229,15 +229,10 @@ class RevoluteJoint final : public Joint<T> {
   double get_default_angle() const { return this->default_positions()[0]; }
 
   /// Sets the `default_positions` of this joint (in this case a single angle).
-  /// If the parent tree has been finalized and the underlying mobilizer is
-  /// valid, this method sets the default position of that mobilizer.
   /// @param[in] angle
   ///   The desired default angle of the joint
   void set_default_angle(double angle) {
     this->set_default_positions(Vector1d{angle});
-    if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(this->default_positions());
-    }
   }
 
   /// Adds into `forces` a given `torque` for `this` joint that is to be applied
@@ -308,6 +303,13 @@ class RevoluteJoint final : public Joint<T> {
 
   int do_get_num_positions() const override {
     return 1;
+  }
+
+  void do_set_default_positions(
+      const VectorX<double>& default_positions) override {
+    if (this->has_implementation()) {
+      get_mutable_mobilizer()->set_default_position(default_positions);
+    }
   }
 
   const T& DoGetOnePosition(const systems::Context<T>& context) const override {
