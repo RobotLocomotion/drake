@@ -38,7 +38,7 @@ using Eigen::Vector3d;
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
 SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
     const MultibodyPlant<AutoDiffXd>& plant,
-    systems::Context<AutoDiffXd>& context,
+    const systems::Context<AutoDiffXd>& context,
     const Frame<AutoDiffXd>& frame_B,
     const Vector3<AutoDiffXd>& p_BoBp_B,
     const Frame<AutoDiffXd>& frame_A,
