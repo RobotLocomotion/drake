@@ -79,7 +79,7 @@ Drake requires a compiler running in C++17 mode.
 | Operating System                 | Bazel | CMake | C/C++ Compiler      | Java              | Python |
 +==================================+=======+=======+=====================+===================+========+
 +----------------------------------+-------+-------+---------------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | 3.0   | 3.10  | | GCC 7.5 (default) | OpenJDK 11        | 3.6    |
+| Ubuntu 18.04 LTS (Bionic Beaver) | 3.4   | 3.10  | | GCC 7.5 (default) | OpenJDK 11        | 3.6    |
 |                                  |       |       | | Clang 9           |                   |        |
 +----------------------------------+       +-------+---------------------+                   +--------+
 | Ubuntu 20.04 LTS (Focal Fossa)   |       | 3.16  | | GCC 9.3 (default) |                   | 3.8    |
