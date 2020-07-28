@@ -20,7 +20,7 @@ class TestAll(unittest.TestCase):
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
             import pydrake.all
-            self.assertEqual(len(w), 0, w)
+            self.assertEqual(len(w), 0, [x.message for x in w])
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
