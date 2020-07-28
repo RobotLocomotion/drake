@@ -1,4 +1,4 @@
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='SplitPendulum'>
     <!-- This is the companion SDF file for the unit test SplitPendulum in
          multibody_plant_test.cc. They must be kept in sync.

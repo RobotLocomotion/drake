@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version='1.6'>
+<sdf version="1.7">
 <model name="010_potted_meat_can">
   <!--
     Axes:
@@ -29,7 +29,7 @@
     </inertial>
 
     <visual name='base_link_meat'>
-      <pose frame=''>0.034 0.039 0.025 1.57 0.052 0.0</pose>
+      <pose>0.034 0.039 0.025 1.57 0.052 0.0</pose>
       <geometry>
         <mesh>
           <uri>../meshes/010_potted_meat_can_textured.obj</uri>

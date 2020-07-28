@@ -59,7 +59,7 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
-// Fails fast if a user attempts to specify `<pose frame='...'/>` in an
+// Fails fast if a user attempts to specify `<pose relative_to='...'/>` in an
 // unsupported location.
 void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
   // TODO(eric.cousineau): Fix this for `<inertial/>` and `<model/>`.

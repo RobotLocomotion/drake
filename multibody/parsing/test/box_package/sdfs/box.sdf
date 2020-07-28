@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version="1.7">
   <!-- Note: This is an SDF file used for testing Parser package path
        functionality. It relies upon ../meshes/box.obj. 
   -->

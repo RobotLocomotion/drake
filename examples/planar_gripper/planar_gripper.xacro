@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<sdf xmlns:xacro="http://www.ros.org/wiki/xacro" version='1.6'>
+<sdf xmlns:xacro="http://www.ros.org/wiki/xacro" version='1.7'>
   <model name='planar_gripper'>
 
     <!-- Link mass and inertia values are guesses (currently), calculated using

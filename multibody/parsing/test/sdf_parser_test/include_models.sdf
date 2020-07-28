@@ -1,4 +1,4 @@
-<sdf version='1.6'>
+<sdf version="1.7">
   <world name="SimWorld">
     <include>
       <uri>model://simple_robot1</uri>

@@ -1,11 +1,11 @@
 <?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='extra_heavy_duty_table'>
     <link name='link'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose>0 0 0 0 -0 0</pose>
       <inertial>
         <mass>53.5</mass>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose>0 0 0 0 -0 0</pose>
         <!--
         The spatial inertia values given below were derived based on the
         equation for a cuboid:
@@ -32,7 +32,7 @@
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='back_right_leg'>
-        <pose frame=''>-0.33 -0.35 0.381 0 -0 0</pose>
+        <pose>-0.33 -0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -55,7 +55,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='front_left_leg'>
-        <pose frame=''>0.33 0.35 0.381 0 -0 0</pose>
+        <pose>0.33 0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -78,7 +78,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='left_crossbar'>
-        <pose frame=''>0.33 0 0.13335 0 -0 0</pose>
+        <pose>0.33 0 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.662 0.05</size>
@@ -101,7 +101,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='right_crossbar'>
-        <pose frame=''>-0.33 0 0.13335 0 -0 0</pose>
+        <pose>-0.33 0 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.662 0.05</size>
@@ -124,7 +124,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='back_left_leg'>
-        <pose frame=''>-0.33 0.35 0.381 0 -0 0</pose>
+        <pose>-0.33 0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -147,7 +147,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='front_right_leg'>
-        <pose frame=''>0.33 -0.35 0.381 0 -0 0</pose>
+        <pose>0.33 -0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -170,7 +170,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='back_crossbar'>
-        <pose frame=''>0 0.35 0.13335 0 -0 0</pose>
+        <pose>0 0.35 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.6112 0.05 0.05</size>
@@ -193,7 +193,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='front_crossbar'>
-        <pose frame=''>0 -0.35 0.13335 0 -0 0</pose>
+        <pose>0 -0.35 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.6112 0.05 0.05</size>
@@ -216,7 +216,7 @@
         <transparency>0</transparency>
       </visual>
       <visual name='visual1'>
-        <pose frame=''>0 0 0.736 0 -0 0</pose>
+        <pose>0 0 0.736 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.7112 0.762 0.057</size>
@@ -241,7 +241,7 @@
       <collision name='front_crossbar'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 -0.35 0.13335 0 -0 0</pose>
+        <pose>0 -0.35 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.6112 0.05 0.05</size>
@@ -296,7 +296,7 @@
       <collision name='back_crossbar'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 0.35 0.13335 0 -0 0</pose>
+        <pose>0 0.35 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.6112 0.05 0.05</size>
@@ -351,7 +351,7 @@
       <collision name='left_crossbar'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0.33 0 0.13335 0 -0 0</pose>
+        <pose>0.33 0 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.662 0.05</size>
@@ -406,7 +406,7 @@
       <collision name='right_crossbar'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>-0.33 0 0.13335 0 -0 0</pose>
+        <pose>-0.33 0 0.13335 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.662 0.05</size>
@@ -461,7 +461,7 @@
       <collision name='back_right_leg'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>-0.33 -0.35 0.381 0 -0 0</pose>
+        <pose>-0.33 -0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -516,7 +516,7 @@
       <collision name='front_left_leg'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0.33 0.35 0.381 0 -0 0</pose>
+        <pose>0.33 0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -571,7 +571,7 @@
       <collision name='back_left_leg'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>-0.33 0.35 0.381 0 -0 0</pose>
+        <pose>-0.33 0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -626,7 +626,7 @@
       <collision name='front_right_leg'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0.33 -0.35 0.381 0 -0 0</pose>
+        <pose>0.33 -0.35 0.381 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.05 0.762</size>
@@ -681,7 +681,7 @@
       <collision name='surface'>
         <laser_retro>0</laser_retro>
         <max_contacts>10</max_contacts>
-        <pose frame=''>0 0 0.736 0 -0 0</pose>
+        <pose>0 0 0.736 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.7112 0.762 0.057</size>

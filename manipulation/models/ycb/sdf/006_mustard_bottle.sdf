@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version='1.6'>
+<sdf version="1.7">
 <model name="006_mustard_bottle">
   <!--
     Axes:
@@ -29,7 +29,7 @@
       </inertia>
     </inertial>
     <visual name='base_link_mustard'>
-      <pose frame=''>0.0049 0.092 0.027 1.57 -0.40 0.0</pose>
+      <pose>0.0049 0.092 0.027 1.57 -0.40 0.0</pose>
       <geometry>
         <mesh>
           <uri>../meshes/006_mustard_bottle_textured.obj</uri>

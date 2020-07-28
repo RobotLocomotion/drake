@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version="1.7">
   <!-- Note: This is the accompaning SDF file for the unit test box_test.cc
        and therefore these two files must be kept in sync.
 
@@ -62,7 +62,7 @@
 
     <!-- Ghost body of negligible mass. -->
     <link name='ghost_body'>
-      <pose frame=''>0 0 0.5 0 0 0</pose>
+      <pose>0 0 0.5 0 0 0</pose>
       <inertial>
         <mass>1.0e-6</mass>
         <inertia>
