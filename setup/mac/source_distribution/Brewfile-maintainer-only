@@ -1,0 +1,5 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+brew 'diffstat'
+brew 'patchutils'

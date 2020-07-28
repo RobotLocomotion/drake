@@ -5,6 +5,23 @@
 
 set -euxo pipefail
 
+source_distribution_args=()
+
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    --with-maintainer-only)
+      source_distribution_args+=(--with-maintainer-only)
+      ;;
+    --without-test-only)
+      source_distribution_args+=(--without-test-only)
+      ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 1
+  esac
+  shift
+done
+
 # Dependencies that are installed by the following sourced script that are
 # needed when developing with binary distributions are also needed when
 # developing with source distributions.
@@ -14,7 +31,8 @@ source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
 # The following additional dependencies are only needed when developing with
 # source distributions.
 
-source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh"
+source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
+  "${source_distribution_args[@]:-}"
 
 # The preceding only needs to be run once per machine. The following sourced
 # script should be run once per user who develops with source distributions.

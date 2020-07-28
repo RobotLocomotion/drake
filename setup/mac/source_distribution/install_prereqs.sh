@@ -7,6 +7,24 @@
 
 set -euxo pipefail
 
+with_maintainer_only=0
+with_test_only=1
+
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    --with-maintainer-only)
+      with_maintainer_only=1
+      ;;
+    --without-test-only)
+      with_test_only=0
+      ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 5
+  esac
+  shift
+done
+
 if [[ "${EUID}" -eq 0 ]]; then
   echo 'ERROR: This script must NOT be run as root' >&2
   exit 1
@@ -30,9 +48,21 @@ fi
 
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
+if [[ "${with_maintainer_only}" -eq 1 ]]; then
+  /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
+fi
+
 if ! command -v /usr/local/opt/python@3.8/bin/pip3  &>/dev/null; then
   echo 'ERROR: pip3 for python@3.8 is NOT installed. The post-install step for the python@3.8 formula may have failed.' >&2
   exit 2
 fi
 
-/usr/local/opt/python@3.8/bin/pip3 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+if [[ "${with_test_only}" -eq 1 ]]; then
+  /usr/local/opt/python@3.8/bin/pip3 install --upgrade --requirement \
+    "${BASH_SOURCE%/*}/requirements-test-only.txt"
+fi
+
+if [[ "${with_maintainer_only}" -eq 1 ]]; then
+  /usr/local/opt/python@3.8/bin/pip3 install --upgrade --requirement \
+    "${BASH_SOURCE%/*}/requirements-maintainer-only.txt"
+fi

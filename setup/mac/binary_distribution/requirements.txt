@@ -7,4 +7,3 @@ PyYAML
 pyzmq
 tornado
 u-msgpack-python
-virtualenv
