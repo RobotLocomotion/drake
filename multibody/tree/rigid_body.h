@@ -10,7 +10,9 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 
@@ -131,18 +133,44 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_;
   }
 
-  T get_mass(const systems::Context<T>&) const final {
-    return default_spatial_inertia_.get_mass();
+  /// Gets the mass stored in @p context
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  T get_mass(const systems::Context<T>& context) const final {
+    const SpatialInertia<T>& M_Bo_B =
+        this->GetParentTreeSystem().GetRigidBodyParameters(context,
+                                                           this->index());
+    return M_Bo_B.get_mass();
   }
 
+  /// Gets the center of mass stored in @p context
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
   const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const systems::Context<T>&) const final {
-    return default_com().template cast<T>();
+      const systems::Context<T>& context) const final {
+    const SpatialInertia<T>& M_Bo_B =
+        this->GetParentTreeSystem().GetRigidBodyParameters(context,
+                                                           this->index());
+    return M_Bo_B.get_com();
   }
 
+  /// Gets the spatial inertia stored in @p context
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const systems::Context<T>&) const override {
-    return default_spatial_inertia_.cast<T>();
+      const systems::Context<T>& context) const override {
+    return this->GetParentTreeSystem().GetRigidBodyParameters(context,
+                                                              this->index());
+  }
+
+  /// Sets the spatial inertia stored in @p context to @p M_Bo_B
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  void SetSpatialInertiaInBodyFrame(
+      systems::Context<T>* context,
+      const SpatialInertia<T>& M_Bo_B) const override {
+    return this->GetParentTreeSystem().SetRigidBodyParameters(
+        context, this->index(), M_Bo_B);
   }
 
   /// @name Methods to access position kinematics quantities.

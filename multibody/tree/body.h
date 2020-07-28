@@ -290,6 +290,12 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
+  /// (Advanced) Sets the SpatialInertia `M_BBo_B` of `this` body about its
+  /// frame origin `Bo` (not necessarily its center of mass) and expressed in
+  /// its body frame `B`.
+  virtual void SetSpatialInertiaInBodyFrame(
+      systems::Context<T>* context, const SpatialInertia<T>& M_Bo_B) const = 0;
+
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.
   const math::RigidTransform<T>& EvalPoseInWorld(

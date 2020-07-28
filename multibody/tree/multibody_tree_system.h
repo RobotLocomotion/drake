@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -12,6 +13,7 @@
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -382,6 +384,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                       std::unique_ptr<MultibodyTree<T>> tree,
                       bool is_discrete);
 
+  void DeclareParameters();
+
   // Use continuous state variables by default.
   bool is_discrete_{false};
 
@@ -392,6 +396,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
+
+  // Maps a body's index to the index fo the NumericalParameter storing
+  // inertial properties for the body. Used by GetBodyParameters().
+  std::vector<int> body_index_to_parameter_index_;
 };
 
 /* Access internal tree outside of MultibodyTreeSystem. */
