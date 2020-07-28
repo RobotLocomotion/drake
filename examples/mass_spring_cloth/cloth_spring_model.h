@@ -137,6 +137,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   // The setter corresponding to particle_state. Set position/velocity/force the
   // particle indexed with particle_index to the state parameter.
+  // All per-particle quantities are elements of R³ and are aligned in each of
+  // the quantity vectors.
   template <class VectorType>
   static void set_particle_state(int particle_index, const Vector3<T>& state,
                                  VectorType* vec) {
@@ -148,6 +150,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   // Similar to set_particle_state, but add state into the corresponding
   // position in vec without zeroing out the old value.
+  // All per-particle quantities are elements of R³ and are aligned in each of
+  // the quantity vectors..
   template <class VectorType>
   static void accumulate_particle_state(int particle_index,
                                         const Vector3<T>& state,
