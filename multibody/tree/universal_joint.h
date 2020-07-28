@@ -157,12 +157,11 @@ class UniversalJoint final : public Joint<T> {
   }
 
   /// Sets the default angles of this joint.
+  /// If the parent tree has been finalized and the underlying mobilizer is
+  /// valid, the default positions of the mobilizer will be set.
   /// @param[in] angles The desired default angles of the joint
   void set_default_angles(const Vector2<double>& angles) {
     this->set_default_positions(angles);
-    if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(this->default_positions());
-    }
   }
 
   /// Sets the random distribution that angles of this joint will be randomly
@@ -223,6 +222,12 @@ class UniversalJoint final : public Joint<T> {
   }
 
   int do_get_num_positions() const override { return 2; }
+
+  void do_set_default_positions() override {
+    if (this->has_implementation()) {
+      get_mutable_mobilizer()->set_default_position(this->default_positions());
+    }
+  }
 
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint()

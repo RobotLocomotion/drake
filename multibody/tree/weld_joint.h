@@ -87,6 +87,8 @@ class WeldJoint final : public Joint<T> {
     return 0;
   }
 
+  void do_set_default_positions() override { return; }
+
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const override;
