@@ -313,6 +313,8 @@ def main():
                 station.get_scene_graph(), zmq_url=args.meshcat))
             builder.Connect(station.GetOutputPort("pose_bundle"),
                             meshcat.get_input_port(0))
+            if args.setup == 'planar':
+                meshcat.set_planar_viewpoint()
 
     robot = station.get_controller_plant()
     params = DifferentialInverseKinematicsParameters(robot.num_positions(),
