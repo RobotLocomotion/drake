@@ -1,4 +1,4 @@
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='CartPole'>
     <!-- This sdf file produces a model with the default parameters as
          documented in cart_pole_params_named_vector.yaml.

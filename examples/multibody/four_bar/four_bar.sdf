@@ -1,4 +1,4 @@
-<sdf version='1.7'>
+<sdf version="1.7">
   <model name='four_bar'>
     <!--
     This sdf file produces a model of a planar four bar linkage.

@@ -7,7 +7,7 @@ Later edited by hand to:
 * remove damping from the joints
 * use pose frame semantics to reflect URDF pose values.
 -->
-<sdf version='1.7'>
+<sdf version="1.7">
   <model name='iiwa14'>
     <link name='iiwa_link_0'>
       <pose>0 0 0 0 -0 0</pose>

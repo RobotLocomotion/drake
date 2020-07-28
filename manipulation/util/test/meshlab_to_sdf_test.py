@@ -35,7 +35,7 @@ LOG: 2     | 2083.457031  2370.329590  1879.999878 |
         mass_kg = 0.321
         expected = """
 <?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='myfile'>
     <link name='myfile'>
       <pose>0 0 0 0 0 0</pose>

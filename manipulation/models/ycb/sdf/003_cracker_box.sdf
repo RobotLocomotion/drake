@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version='1.6'>
+<sdf version="1.7">
 <model name="003_cracker_box">
   <!--
     Axes:
@@ -29,7 +29,7 @@
     </inertial>
 
     <visual name='base_link_cracker'>
-      <pose frame=''>-0.014 0.103 0.013 1.57 -1.57 0</pose>
+      <pose>-0.014 0.103 0.013 1.57 -1.57 0</pose>
       <geometry>
         <mesh>
           <uri>../meshes/003_cracker_box_textured.obj</uri>

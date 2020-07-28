@@ -1,4 +1,4 @@
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='robot2'>
     <link name='base_link'>
     </link>

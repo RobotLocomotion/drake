@@ -8,7 +8,7 @@ This is an accompanying file to detail_sdf_parser_test.cc and therefore they
 must be kept in sync with each other.
 -->
 
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='joint_actuator_parsing_test'>
     <link name='link1'>
       <inertial>

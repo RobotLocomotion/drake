@@ -236,7 +236,7 @@ struct PlantAndSceneGraph {
 PlantAndSceneGraph ParseTestString(const std::string& inner) {
   const std::string filename = temp_directory() + "/test_string.sdf";
   std::ofstream file(filename);
-  file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
+  file << "<sdf version='1.7'>" << inner << "\n</sdf>\n";
   file.close();
   PlantAndSceneGraph pair;
   pair.plant = std::make_unique<MultibodyPlant<double>>(0.0);

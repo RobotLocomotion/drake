@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='bin_model'>
     <!--
     Axes:
@@ -10,9 +10,9 @@
       (0, 0, 0) at the center bottom of the bin
     -->
     <link name='bin_base'>
-      <pose frame=''>0 0 0 0 0 0</pose>
+      <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>18.70</mass>
         <inertia>
           <ixx>0.79</ixx>
@@ -24,7 +24,7 @@
         </inertia>
       </inertial>
       <visual name='visual'>
-        <pose frame=''>0.22 0 0.105 0 0 0</pose>
+        <pose>0.22 0 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.63 0.21</size>
@@ -32,7 +32,7 @@
         </geometry>
       </visual>
       <collision name='front'>
-        <pose frame=''>0.22 0 0.105 0 0 0</pose>
+        <pose>0.22 0 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.63 0.21</size>
@@ -41,7 +41,7 @@
       </collision>
 
       <visual name='slope'>
-        <pose frame=''>0.182 0 0.102 0 0.35 0</pose>
+        <pose>0.182 0 0.102 0 0.35 0</pose>
         <geometry>
           <box>
             <size>0.05 0.63 0.21</size>
@@ -49,7 +49,7 @@
         </geometry>
       </visual>
       <collision name='slope'>
-        <pose frame=''>0.182 0 0.102 0 0.35 0</pose>
+        <pose>0.182 0 0.102 0 0.35 0</pose>
         <geometry>
           <box>
             <size>0.05 0.63 0.21</size>
@@ -58,7 +58,7 @@
       </collision>
 
       <visual name='back'>
-        <pose frame=''>-0.22 0 0.105 0 0 0</pose>
+        <pose>-0.22 0 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.63 0.21</size>
@@ -66,7 +66,7 @@
         </geometry>
       </visual>
       <collision name='back'>
-        <pose frame=''>-0.22 0 0.105 0 0 0</pose>
+        <pose>-0.22 0 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.05 0.63 0.21</size>
@@ -75,7 +75,7 @@
       </collision>
 
       <visual name='left'>
-        <pose frame=''>0 0.29 0.105 0 0 0</pose>
+        <pose>0 0.29 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.49 0.05 0.21</size>
@@ -83,7 +83,7 @@
         </geometry>
       </visual>
       <collision name='left'>
-        <pose frame=''>0 0.29 0.105 0 0 0</pose>
+        <pose>0 0.29 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.49 0.05 0.21</size>
@@ -92,7 +92,7 @@
       </collision>
 
       <visual name='right'>
-        <pose frame=''>0 -0.29 0.105 0 0 0</pose>
+        <pose>0 -0.29 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.49 0.05 0.21</size>
@@ -100,7 +100,7 @@
         </geometry>
       </visual>
       <collision name='right'>
-        <pose frame=''>0 -0.29 0.105 0 0 0</pose>
+        <pose>0 -0.29 0.105 0 0 0</pose>
         <geometry>
           <box>
             <size>0.49 0.05 0.21</size>
@@ -109,7 +109,7 @@
       </collision>
 
       <visual name='bottom'>
-        <pose frame=''>0.0 0.0 0.0075 0 0 0</pose>
+        <pose>0.0 0.0 0.0075 0 0 0</pose>
         <geometry>
           <box>
             <size>0.49 0.63 0.015</size>
@@ -117,7 +117,7 @@
         </geometry>
       </visual>
       <collision name='bottom'>
-        <pose frame=''>0.0 0.0 0.0075 0 0 0</pose>
+        <pose>0.0 0.0 0.0075 0 0 0</pose>
         <geometry>
           <box>
             <size>0.49 0.63 0.015</size>
@@ -126,7 +126,7 @@
       </collision>
     </link>
     <frame name='bin_front_top_center'>
-      <pose frame="bin_base">0.22 0 0.21 0 0 0</pose>
+      <pose relative_to="bin_base">0.22 0 0.21 0 0 0</pose>
     </frame>
   </model>
 </sdf>

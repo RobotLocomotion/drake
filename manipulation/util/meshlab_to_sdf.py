@@ -31,7 +31,7 @@ import re
 import sys
 
 _TEMPLATE = """<?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='{name}'>
     <link name='{name}'>
       <pose>0 0 0 0 0 0</pose>

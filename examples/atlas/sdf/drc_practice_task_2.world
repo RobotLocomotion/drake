@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<sdf version="1.4">
+<sdf version="1.7">
   <world name="trials_task_2">
     <physics type="ode">
       <gravity>0 0 -9.81</gravity>

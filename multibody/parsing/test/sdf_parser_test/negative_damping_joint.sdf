@@ -1,4 +1,4 @@
-<sdf version='1.6'>
+<sdf version="1.7">
   <model name='robot_model'>
     <!-- This sdf defines a simple model with one link and a revolute joint
          connecting it to the world. The only purpose of this file is to

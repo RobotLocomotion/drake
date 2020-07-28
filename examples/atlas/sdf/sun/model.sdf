@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<sdf version="1.5">
+<sdf version="1.7">
   <!-- Light Source -->
   <light type="directional" name="sun">
     <cast_shadows>true</cast_shadows>

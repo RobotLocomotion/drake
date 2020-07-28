@@ -1,5 +1,5 @@
 <!-- An acceptance test that libsdformat can upgrade very old files. -->
-<sdf version='1.2'>
+<sdf version="1.7">
   <model name='robot'>
     <link name="need_at_least_one_link"/>
   </model>
