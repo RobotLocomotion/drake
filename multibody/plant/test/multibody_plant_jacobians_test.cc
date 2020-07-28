@@ -29,8 +29,57 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
-// Calculates the spatial acceleration of a frame B in a frame A, expressed in
-// a frame E and evaluated at the given values of q, q̇, v, v̇.
+// Returns A_AB_E, frame B's spatial acceleration in frame_A, expressed in
+// frame_E, and evaluated at values of q, q̇, v, v̇ found in the state.
+// @param[in] plant The plant associated with the system and context.
+// @param[in] context The state of the multibody system.
+// @param[in] frame_B The frame for which spatial acceleration is calculated.
+// @param[in] frame_A The measured-in frame for spatial acceleration.
+// @param[in] frame_E The expressed-in frame for spatial acceleration.
+SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
+    const MultibodyPlant<AutoDiffXd>& plant,
+    systems::Context<AutoDiffXd>& context,
+    const Frame<AutoDiffXd>& frame_B,
+    const Vector3<AutoDiffXd>& p_BoBp_B,
+    const Frame<AutoDiffXd>& frame_A,
+    const Frame<AutoDiffXd>& frame_E) {
+  // Calculate V_ABo_A, frame B's spatial velocity in frame A, expressed in A.
+  const SpatialVelocity<AutoDiffXd> V_ABo_A =
+      frame_B.CalcSpatialVelocity(context, frame_A, frame_A);
+
+  // Form A_ABo_A by ordinary differentiation in frame A of V_AB_A.
+  // Reminder: Eigen returns an empty matrix if all derivatives = 0,
+  // hence the use of the "auto" keyword and subsequent resize below.
+  // Reminder: DtA_V_ABo_A.resize(6, 1) will not fill the matrix with zeros.
+  auto DtA_V_ABo_A = math::autoDiffToGradientMatrix(V_ABo_A.get_coeffs());
+  const bool is_empty_matrix = DtA_V_ABo_A.size() == 0;
+  const SpatialAcceleration<AutoDiffXd> A_ABo_A =
+      is_empty_matrix ? SpatialAcceleration<AutoDiffXd>::Zero()
+                      : SpatialAcceleration<AutoDiffXd>(DtA_V_ABo_A);
+
+  // a_ABp_A = a_ABo_A + alpha_AB_A x p_BoBp_A + w_AB_A x (w_AB_A x p_BoBp_A).
+  SpatialAcceleration<AutoDiffXd> A_ABp_A = A_ABo_A;
+  if (p_BoBp_B != Vector3<AutoDiffXd>::Zero()) {
+    // To shift SpatialVelocity from Bo to Bp, express p_BoBp_B in frame A.
+    const RotationMatrix<AutoDiffXd> R_AB =
+        frame_A.CalcRotationMatrix(context, frame_B);
+    const Vector3<AutoDiffXd> p_BoBp_A = R_AB * p_BoBp_B;
+
+    // To shift, also need to form B's angular velocity in A, expressed in A.
+    const Vector3<AutoDiffXd>& w_AB_A = V_ABo_A.rotational();
+    A_ABp_A.ShiftInPlace(p_BoBp_A, w_AB_A);
+  }
+
+  // Express the result in frame_E.
+  const RotationMatrix<AutoDiffXd> R_EA =
+      frame_A.CalcRotationMatrix(context, frame_E);
+  const SpatialAcceleration<AutoDiffXd> A_ABp_E = R_EA * A_ABp_A;
+  return SpatialAcceleration<double>(
+      math::autoDiffToValueMatrix(A_ABp_E.get_coeffs()));
+}
+
+// Returns A_AB_E, frame B's spatial acceleration in frame_A, expressed in
+// frame_E, and evaluated at the given values of q, q̇, v, v̇.
 // @param[in] plant The plant associated with the system and context.
 // @param[in] context The state of the multibody system.
 // @param[in] frame_B The frame for which spatial acceleration is calculated.
@@ -40,8 +89,6 @@ using Eigen::Vector3d;
 // @param[in] qDt_double Values of q̇ (the time-derivatives of q).
 // @param[in] v_double Values of the generalized velocities (v).
 // @param[in] vDt_double Values of v̇ (the time-derivatives of v).
-// @returns A_AB_E, frame B's spatial acceleration in frame_A, expressed in
-//    frame_E, and evaluated at the given values of q, q̇, v, v̇.
 SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
     const MultibodyPlant<AutoDiffXd>& plant,
     systems::Context<AutoDiffXd>* context,
@@ -77,39 +124,9 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
       x_double, MatrixXd(xDt_double));
   plant.GetMutablePositionsAndVelocities(context) = x_autodiff;
 
-  // Calculate V_ABo_A, frame B's spatial velocity in frame A, expressed in A.
-  const SpatialVelocity<AutoDiffXd> V_ABo_A =
-      frame_B.CalcSpatialVelocity(*context, frame_A, frame_A);
-
-  // Form A_ABo_A by ordinary differentiation in frame A of V_AB_A.
-  // Reminder: Eigen returns an empty matrix if all derivatives = 0,
-  // hence the use of the "auto" keyword and subsequent resize below.
-  // Reminder: DtA_V_ABo_A.resize(6, 1) will not fill the matrix with zeros.
-  auto DtA_V_ABo_A = math::autoDiffToGradientMatrix(V_ABo_A.get_coeffs());
-  const bool is_empty_matrix = DtA_V_ABo_A.size() == 0;
-  const SpatialAcceleration<AutoDiffXd> A_ABo_A =
-      is_empty_matrix ? SpatialAcceleration<AutoDiffXd>::Zero()
-                      : SpatialAcceleration<AutoDiffXd>(DtA_V_ABo_A);
-
-  // a_ABp_A = a_ABo_A + alpha_AB_A x p_BoBp_A + w_AB_A x (w_AB_A x p_BoBp_A).
-  SpatialAcceleration<AutoDiffXd> A_ABp_A = A_ABo_A;
-  if (p_BoBp_B != Vector3<AutoDiffXd>::Zero()) {
-    // To shift SpatialVelocity from Bo to Bp, express p_BoBp_B in frame A.
-    const RotationMatrix<AutoDiffXd> R_AB =
-        frame_A.CalcRotationMatrix(*context, frame_B);
-    const Vector3<AutoDiffXd> p_BoBp_A = R_AB * p_BoBp_B;
-
-    // To shift, also need to form B's angular velocity in A, expressed in A.
-    const Vector3<AutoDiffXd>& w_AB_A = V_ABo_A.rotational();
-    A_ABp_A.ShiftInPlace(p_BoBp_A, w_AB_A);
-  }
-
-  // Express the result in frame_E.
-  const RotationMatrix<AutoDiffXd> R_EA =
-      frame_A.CalcRotationMatrix(*context, frame_E);
-  const SpatialAcceleration<AutoDiffXd> A_ABp_E = R_EA * A_ABp_A;
-  return SpatialAcceleration<double>(
-      math::autoDiffToValueMatrix(A_ABp_E.get_coeffs()));
+  // Calculate and return Bp's spatial acceleration in frame A, expressed in E.
+  return CalcSpatialAccelerationViaSpatialVelocityDerivative(plant, *context,
+      frame_B, p_BoBp_B, frame_A, frame_E);
 }
 
 // For one or more points Ei fixed on a body B, this method computes Jq_v_WEi_W,
@@ -575,7 +592,7 @@ TEST_F(TwoDOFPlanarPendulumTest,
 }
 
 TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAccelerationViaVectorDerivative) {
-  const double qA =  M_PI / 6.0, qB = 0;  // Link angles.
+  const double qA =  0 * M_PI / 6.0, qB = 0;  // Link angles.
   const double wAzDt = 10, wBzDt = 20;    // Link angular accelerations.
   Eigen::VectorXd state = Eigen::Vector4d(qA, qB, wAz_, wBz_);
   joint1_->set_angle(context_.get(), state[0]);
@@ -684,11 +701,11 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAccelerationViaVectorDerivative) {
 
   // Compare results with the following by-hand analytical results.
   // A_WBp_W = L alphaA Ay - L wAz² Ax + L alphaAB By - L (wAz + wBz)² Bx
-  //         = L { -  L [wAz² + (wAz + wBz)²] Wy (alphaA + alphaAB) Ay
+  //         = -L [wAz² + (wAz + wBz)²] Ax  + L (alphaA + alphaAB) Ay
   // Reminder: Ax = Bx, Ay = By, Az = Bz when qB = 0°..
   const Vector3<double> a_WBp_A_expected(
-      -link_length_ * (alphaA + alphaAB),
-      -link_length_ * (wA_squared + wAB_squared), 0);
+      -link_length_ * (wA_squared + wAB_squared),
+       link_length_ * (alphaA + alphaAB), 0);
   EXPECT_TRUE(
       CompareMatrices(A_WBp_A.translational(), a_WBp_A_expected, kTolerance));
 }
