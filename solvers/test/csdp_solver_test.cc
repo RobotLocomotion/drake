@@ -335,7 +335,7 @@ GTEST_TEST(TestSOS, MotzkinPolynomial) {
     CsdpSolver solver(method);
     if (solver.available()) {
       const auto result = solver.Solve(dut.prog());
-      dut.CheckResult(result, 6E-9);
+      dut.CheckResult(result, 1.5E-8);
     }
   }
 }
