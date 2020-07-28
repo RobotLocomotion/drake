@@ -270,8 +270,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   double get_default_mass() const { return default_mass_; }
 
   /// (Advanced) Returns the mass of this body stored in `context`.
-  virtual T get_mass(
-      const systems::Context<T> &context)const = 0;
+  virtual const T& get_mass(
+      const systems::Context<T> &context) const = 0;
 
   /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   /// of this body measured from this body's frame origin `Bo` and expressed in

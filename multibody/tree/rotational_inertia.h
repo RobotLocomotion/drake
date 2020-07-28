@@ -468,7 +468,8 @@ class RotationalInertia {
   /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename Scalar>
   RotationalInertia<Scalar> cast() const {
-    return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>());
+    // Skip validity check since this inertia is already valid.
+    return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>(), true);
   }
 
   /// This method takes `this` rotational inertia about-point P, expressed-in
@@ -808,16 +809,21 @@ class RotationalInertia {
   // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
   // entries corresponding to inertia moments and products as described in this
   // class's documentation. This constructor will assert that I is a 3x3 matrix.
+  // Runtime checks for physical validity can be disabled by setting the
+  // optional argument `skip_validity_check` to `true`.
   // For internal use only.
   template <typename I_Type>
-  explicit RotationalInertia(const Eigen::MatrixBase<I_Type>& I) {
+  explicit RotationalInertia(const Eigen::MatrixBase<I_Type>& I,
+                             const bool skip_validity_check = false) {
     EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<I_Type>, 3, 3);
     // Input matrix must be templated on the same scalar type as this inertia.
     static_assert(std::is_same<typename I_Type::Scalar, T>::value,
                   "Input argument I must be templated on the same scalar type "
                   "as this rotational inertia");
     I_SP_E_ = I;
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    if (!skip_validity_check) {
+      DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
+    }
   }
 
   // Sets this rotational inertia's moments and products of inertia. This method
