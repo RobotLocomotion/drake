@@ -208,6 +208,16 @@ class MathematicalProgramResult final {
   symbolic::Expression GetSolution(const symbolic::Expression& e) const;
 
   /**
+   * Substitutes the value of all decision variables into the coefficients of
+   * the symbolic polynomial.
+   * @param p A symbolic polynomial. Its indeterminates can't intersect with the
+   * set of decision variables of the MathematicalProgram from which this result
+   * is obtained.
+   * @return the symbolic::Polynomial as the result of the substitution.
+   */
+  symbolic::Polynomial GetSolution(const symbolic::Polynomial& p) const;
+
+  /**
    * Substitutes the value of all decision variables into the
    * Matrix<Expression>.
    * @tparam Derived An Eigen matrix containing Expression.

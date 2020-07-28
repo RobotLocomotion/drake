@@ -6,6 +6,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -46,14 +47,11 @@ TEST_F(MathematicalProgramResultTest, Setters) {
       Eigen::VectorXd::Constant(decision_variable_index_.size(),
                                 std::numeric_limits<double>::quiet_NaN())));
   result.set_solution_result(SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
   result.AddSuboptimalSolution(0.1, Eigen::Vector2d(1, 2));
   EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
-  EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
-  EXPECT_EQ(result.GetSolution(x0_), x_val(0));
-  EXPECT_EQ(result.GetSolution(x1_), x_val(1));
-  EXPECT_EQ(result.GetSolution(Vector2<symbolic::Variable>(x0_, x1_)), x_val);
   EXPECT_EQ(result.num_suboptimal_solution(), 1);
   EXPECT_EQ(result.GetSuboptimalSolution(x0_, 0), 1);
   EXPECT_EQ(result.GetSuboptimalSolution(x1_, 0), 2);
@@ -65,11 +63,24 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   const double cost = 1;
   result.set_optimal_cost(cost);
   result.set_solver_id(SolverId("foo"));
-  EXPECT_TRUE(result.is_success());
-  EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
-  EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
+}
+
+TEST_F(MathematicalProgramResultTest, GetSolution) {
+  // Test GetSolution function.
+  MathematicalProgramResult result;
+  result.set_decision_variable_index(decision_variable_index_);
+  result.set_solution_result(SolutionResult::kSolutionFound);
+  const Eigen::Vector2d x_val(0, 1);
+  result.set_x_val(x_val);
+
+  EXPECT_EQ(result.GetSolution(x0_), x_val(0));
+  EXPECT_EQ(result.GetSolution(x1_), x_val(1));
+  EXPECT_EQ(result.GetSolution(Vector2<symbolic::Variable>(x0_, x1_)), x_val);
+  EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
 
   // Getting solution for a variable y not in decision_variable_index_.
   symbolic::Variable y("y");
@@ -86,6 +97,38 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   const Vector2<symbolic::Expression> msol = result.GetSolution(m);
   EXPECT_TRUE(msol[0].EqualTo(x_val(0) + x_extra));
   EXPECT_TRUE(msol[1].EqualTo(x_val(1) * x_extra));
+}
+
+TEST_F(MathematicalProgramResultTest, GetSolutionPolynomial) {
+  // Test GetSolution on symbolic::Polynomial.
+  MathematicalProgramResult result;
+  result.set_decision_variable_index(decision_variable_index_);
+  const Eigen::Vector2d x_val(2, 1);
+  result.set_x_val(x_val);
+
+  // t1 and t2 are indeterminates.
+  symbolic::Variable t1{"t1"};
+  symbolic::Variable t2{"t2"};
+
+  // p1 doesn't contain any decision variable. Its coefficients are constant.
+  const symbolic::Polynomial p1(2 * t1 * t1 + t2, {t1, t2});
+  EXPECT_PRED2(symbolic::test::PolyEqual, p1, result.GetSolution(p1));
+
+  // p2's coeffcients are expressions of x0 and x1
+  const symbolic::Polynomial p2(
+      (1 + x0_ * x1_) * t1 * t1 + 2 * sin(x1_) * t1 * t2 + 3 * x0_, {t1, t2});
+  EXPECT_PRED2(
+      symbolic::test::PolyEqual,
+      symbolic::Polynomial(
+          {{symbolic::Monomial(t1, 2), 1 + x_val(0) * x_val(1)},
+           {symbolic::Monomial({{t1, 1}, {t2, 1}}), 2 * std::sin(x_val(1))},
+           {symbolic::Monomial(), 3 * x_val(0)}}),
+      result.GetSolution(p2));
+
+  // p3's indeterminates contain x0, expect to throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      result.GetSolution(symbolic::Polynomial(x0_ * t1 + 1, {x0_, t1})),
+      std::invalid_argument, ".*x0 is an indeterminate in the polynomial.*");
 }
 
 TEST_F(MathematicalProgramResultTest, DualSolution) {

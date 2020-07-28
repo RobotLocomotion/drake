@@ -71,10 +71,10 @@ void SimpleSos1::CheckResult(const MathematicalProgramResult& result,
   const Eigen::MatrixXd gram1_val = result.GetSolution(gram1_);
   const Eigen::MatrixXd gram2_val = result.GetSolution(gram2_);
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
-      symbolic::Polynomial(result.GetSolution(p1_.ToExpression()), {x_}),
+      result.GetSolution(p1_),
       monomial_basis1_.dot(gram1_val * monomial_basis1_), tol));
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
-      symbolic::Polynomial(result.GetSolution(p2_.ToExpression()), {x_}),
+      result.GetSolution(p2_),
       monomial_basis2_.dot(gram2_val * monomial_basis2_), tol));
   CheckSymmetricMatrixPSD(gram1_val, tol);
   CheckSymmetricMatrixPSD(gram2_val, tol);
