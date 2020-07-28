@@ -84,6 +84,9 @@ class TestMeshcat(unittest.TestCase):
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
+        visualizer.set_planar_viewpoint(
+            camera_position=[0, -1, 0], camera_focus=[0, 0, 0],
+            xmin=-2, xmax=2, ymin=-1, ymax=2)
         visualizer.start_recording()
         simulator.AdvanceTo(.1)
         visualizer.stop_recording()
