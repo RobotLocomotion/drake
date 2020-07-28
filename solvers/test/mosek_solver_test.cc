@@ -344,6 +344,24 @@ GTEST_TEST(MosekTest, SimpleSos1) {
     dut.CheckResult(result, 2E-9);
   }
 }
+
+GTEST_TEST(MosekTest, MotzkinPolynomial) {
+  MotzkinPolynomial dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-9);
+  }
+}
+
+GTEST_TEST(MosekTest, UnivariateNonnegative1) {
+  UnivariateNonnegative1 dut;
+  MosekSolver solver;
+  if (solver.available()) {
+    const auto result = solver.Solve(dut.prog());
+    dut.CheckResult(result, 1E-9);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
