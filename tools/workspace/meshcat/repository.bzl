@@ -8,11 +8,12 @@ def meshcat_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "rdeits/meshcat",
+        # TODO(russt): Use rdeits/meshcat again once my fixes are merged.
+        repository = "RussTedrake/meshcat",
         # Updating this commit requires local testing; see
         # drake/tools/workspace/meshcat/README.md for details.
-        commit = "02b605b6def67f198d7a86ae60c8bb977ba7ef13",
-        sha256 = "0e818ade5ef037f4db735aef1f67baf146ace0f458324da76367a66a72faf729",  # noqa
+        commit = "1c1460169e20bb63bb882321b6c5051766bbdf71",
+        sha256 = "e5cf68d4229a49d34a6bba4547478e5157564d292ed25637c9d1c4e0aa5f3fc1",  # noqa
         build_file = "@drake//tools/workspace/meshcat:package.BUILD.bazel",  # noqa
         mirrors = mirrors,
     )
