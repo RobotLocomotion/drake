@@ -196,15 +196,10 @@ class PrismaticJoint final : public Joint<T> {
 
   /// Sets the `default_positions` of this joint (in this case a single
   /// translation)
-  /// If the parent tree has been finalized and the underlying mobilizer is
-  /// valid, this method sets the default position of that mobilizer.
   /// @param[in] translation
   ///   The desired default translation of the joint
   void set_default_translation(double translation) {
     this->set_default_positions(Vector1d{translation});
-    if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(this->default_positions());
-    }
   }
 
   void set_random_translation_distribution(
@@ -265,16 +260,19 @@ class PrismaticJoint final : public Joint<T> {
     return get_mobilizer()->velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const override {
-    return 1;
-  }
+  int do_get_num_velocities() const override { return 1; }
 
   int do_get_position_start() const override {
     return get_mobilizer()->position_start_in_q();
   }
 
-  int do_get_num_positions() const override {
-    return 1;
+  int do_get_num_positions() const override { return 1; }
+
+  void do_set_default_positions(
+      const VectorX<double>& default_positions) override {
+    if (this->has_implementation()) {
+      get_mutable_mobilizer()->set_default_position(default_positions);
+    }
   }
 
   const T& DoGetOnePosition(const systems::Context<T>& context) const override {
