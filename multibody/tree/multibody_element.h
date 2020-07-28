@@ -100,6 +100,13 @@ class MultibodyElement {
     return *parent_tree_;
   }
 
+  /// Returns a constant reference to the parent MultibodyTreeSystem that
+  /// owns the parent MultibodyTree that owns this element.
+  const internal::MultibodyTreeSystem<T>& GetParentTreeSystem() const {
+    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    return parent_tree_->tree_system();
+  }
+
   /// Gives MultibodyElement-derived objects the opportunity to retrieve their
   /// topology after MultibodyTree::Finalize() is invoked.
   /// NVI to pure virtual method DoSetTopology().
