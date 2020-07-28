@@ -1,4 +1,4 @@
-<sdf version='1.7'>
+<sdf version="1.7">
   <model name='test_robot'>
     <!-- This sdf file defines a simple test robot with a single link that
          contains one visual tag for each supported geometry type. We're

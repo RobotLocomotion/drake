@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<sdf version='1.6'>
+<sdf version="1.7">
 <model name="sphere">
   <link name="base_link">
     <inertial>
-      <pose frame=''>0 0 0.025 0 0 0 </pose>
+      <pose>0 0 0.025 0 0 0 </pose>
       <mass>0.028</mass>
         <inertia>
           <ixx>1.17e-5</ixx>
@@ -15,7 +15,7 @@
         </inertia>
     </inertial>
     <visual name='sphere_visual'>
-      <pose frame=''>0 0 0.025 0 0 0</pose>
+      <pose>0 0 0.025 0 0 0</pose>
       <geometry>
         <sphere>
           <radius>0.04</radius>
