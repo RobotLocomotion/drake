@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -9,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -169,6 +171,41 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<Vector6<T>>>(context);
   }
 
+  /**
+   * Gets the current parameters for @p body, stored in @p context.
+   * @param[in] context
+   *   The context storing the parameters of the model.
+   * @param[in] body
+   *   The body for which the parameters are requested.
+   * @return const RigidBodyParams<T>&
+   *   Reference to the parameters for @p body, stored in @p context.
+   */
+  const RigidBodyParams<T>& GetRigidBodyParameters(
+      const systems::Context<T>& context, const BodyIndex& body_index) const {
+    const int body_params_index =
+        body_index_to_parameter_index_.at(body_index);
+    return this->template GetNumericParameter<RigidBodyParams>(
+        context, body_params_index);
+  }
+
+  /**
+   * Sets the parameters for @p body, storing them in @p context.
+   * @param[in] context
+   *   The context storing the parameters of the model.
+   * @param[in] body
+   *   The body for which the parameters are being set.
+   * @param[in] body_params
+   *   The parameters of the body to be set in the context.
+   */
+  void SetRigidBodyParameters(systems::Context<T>* context,
+                              const BodyIndex& body_index,
+                              const RigidBodyParams<T>& body_params) const {
+    const int body_params_index =
+        body_index_to_parameter_index_.at(body_index);
+    this->template GetMutableNumericParameter<RigidBodyParams>(
+        context, body_params_index) = body_params;
+  }
+
  protected:
   /** @name        Alternate API for derived classes
   Derived classes may use these methods to create a MultibodyTreeSystem
@@ -217,6 +254,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
+  // Maps a body's index to the index fo the NumericalParameter storing
+  // inertial properties for the body. Used by GetBodyParameters().
+  std::unordered_map<BodyIndex, int> body_index_to_parameter_index_;
+
  private:
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const final {
     return internal_tree().CalcPotentialEnergy(context);
@@ -262,6 +303,8 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                       bool null_tree_is_ok,
                       std::unique_ptr<MultibodyTree<T>> tree,
                       bool is_discrete);
+
+  void DeclareParameters();
 
   // Use continuous state variables by default.
   bool is_discrete_{false};

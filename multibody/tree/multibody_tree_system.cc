@@ -91,6 +91,27 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
 }
 
 template <typename T>
+void MultibodyTreeSystem<T>::DeclareParameters() {
+  // In order to ensure that declaration order of parameter indices is
+  // preserved between transmogrified copies of this system, all parameters
+  // should be declared at `Finalize` time within DeclareParameters.
+
+  // Declare rigid body parameters for each body (other than world body)
+  for (BodyIndex body_index(1); body_index < internal_tree().num_bodies();
+       ++body_index) {
+    const RigidBody<T>& body =
+        dynamic_cast<const RigidBody<T>&>(internal_tree().get_body(body_index));
+    // Register a set of default parameters for this RigidBody and store the
+    // the parameter index.
+    const int body_param_index =
+        this->DeclareNumericParameter(internal::RigidBodyParams<T>(
+            body.default_spatial_inertia().template cast<T>()));
+    this->body_index_to_parameter_index_.insert(
+        std::pair(body_index, body_param_index));
+  }
+}
+
+template <typename T>
 void MultibodyTreeSystem<T>::Finalize() {
   if (already_finalized_) {
     throw std::logic_error(
@@ -110,6 +131,9 @@ void MultibodyTreeSystem<T>::Finalize() {
                                  0 /* num_z */);
   }
 
+  // Declare all parameters.
+  this->DeclareParameters();
+
   // Allocate position cache.
   auto& position_kinematics_cache_entry = this->DeclareCacheEntry(
       std::string("position kinematics"),
@@ -124,7 +148,7 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<PositionKinematicsCache<T>>();
         tree->CalcPositionKinematicsCache(context, &position_cache);
       },
-      {this->configuration_ticket()});
+      {this->configuration_ticket(),  this->all_parameters_ticket()});
   cache_indexes_.position_kinematics =
       position_kinematics_cache_entry.cache_index();
 
@@ -143,7 +167,8 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcSpatialInertiaInWorldCache(context,
                                              &spatial_inertia_in_world_cache);
       },
-      {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
+      {this->cache_entry_ticket(cache_indexes_.position_kinematics),
+       this->all_parameters_ticket()});
   cache_indexes_.spatial_inertia_in_world =
       spatial_inertia_in_world_cache_entry.cache_index();
 
@@ -162,7 +187,7 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcVelocityKinematicsCache(
             context, tree->EvalPositionKinematics(context), &velocity_cache);
       },
-      {this->kinematics_ticket()});
+      {this->kinematics_ticket(), this->all_parameters_ticket()});
   cache_indexes_.velocity_kinematics =
       velocity_kinematics_cache_entry.cache_index();
 
@@ -185,7 +210,8 @@ void MultibodyTreeSystem<T>::Finalize() {
       // Another alternative would be to state the dependence on q and v.
       // However this option is not optimal until #9171 gets resolved.
       {this->cache_entry_ticket(cache_indexes_.spatial_inertia_in_world),
-       this->cache_entry_ticket(cache_indexes_.velocity_kinematics)});
+       this->cache_entry_ticket(cache_indexes_.velocity_kinematics),
+       this->all_parameters_ticket()});
   cache_indexes_.dynamic_bias = dynamic_bias_cache_entry.cache_index();
 
   // Declare cache entry for H_PB_W(q).
@@ -204,7 +230,8 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcAcrossNodeJacobianWrtVExpressedInWorld(
             context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },
-      {this->cache_entry_ticket(cache_indexes_.position_kinematics)});
+      {this->cache_entry_ticket(cache_indexes_.position_kinematics),
+       this->all_parameters_ticket()});
   cache_indexes_.across_node_jacobians = H_PB_W_cache_entry.cache_index();
 
   // Allocate articulated body inertia cache.
@@ -221,7 +248,7 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<ArticulatedBodyInertiaCache<T>>();
         tree->CalcArticulatedBodyInertiaCache(context, &abi_cache);
       },
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), this->all_parameters_ticket()});
   cache_indexes_.abi_cache_index = abi_cache_entry.cache_index();
 
   auto& Ab_WB_cache_entry = this->DeclareCacheEntry(
@@ -239,7 +266,7 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcSpatialAccelerationBiasCache(
             context, &Ab_WB_cache);
       },
-      {this->kinematics_ticket()});
+      {this->kinematics_ticket(), this->all_parameters_ticket()});
   cache_indexes_.spatial_acceleration_bias =
       Ab_WB_cache_entry.cache_index();
 
@@ -258,7 +285,7 @@ void MultibodyTreeSystem<T>::Finalize() {
         tree->CalcArticulatedBodyForceBiasCache(
             context, &Zb_Bo_W_cache);
       },
-      {this->kinematics_ticket()});
+      {this->kinematics_ticket(), this->all_parameters_ticket()});
   cache_indexes_.articulated_body_velocity_bias =
       Zb_Bo_W_cache_entry.cache_index();
 

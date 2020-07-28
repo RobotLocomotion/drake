@@ -89,6 +89,8 @@ class AcrobotParameters {
   double lc2() const { return lc2_; }
   double Ic1() const { return Ic1_; }
   double Ic2() const { return Ic2_; }
+  double G1() const { return Ic1_ / m1_; }
+  double G2() const { return Ic2_ / m2_; }
   double b1() const { return b1_; }
   double b2() const { return b2_; }
   double g() const { return g_; }

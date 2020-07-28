@@ -30,6 +30,7 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -149,6 +150,8 @@ enum class ContactModel {
 ///   Select and parameterize contact models.
 /// - @ref mbp_state_accessors_and_mutators "State access and modification":
 ///   Obtain and manipulate position and velocity state variables.
+/// - @ref mbp_parameters "Parameters"
+///   Working with system parameters for various multibody elements.
 /// - @ref mbp_working_with_free_bodies "Free bodies":
 ///   Work conveniently with free (floating) bodies.
 /// - @ref mbp_kinematic_and_dynamic_computations "Kinematics and dynamics":
@@ -1947,6 +1950,92 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, v);
   }
   /// @} <!-- State accessors and mutators -->
+
+  /** @anchor mbp_parameters
+   *  @name              Working with parameters
+   * %MultibodyPlant exposes several parameters, allowing the user flexible
+   * modification of some aspects of the plant's model, post systems::Context
+   * creation. Each parameter lives as either a NumericParameter or
+   * AbstractParameter of the underlying plant system, however the following
+   * methods are provided to interface with those parameters. The current list
+   * of parameters supported by %MultibodyPlant is listed below.
+   *
+   * |   Type | Description |
+   * | :--------: | :---------: |
+   * | SpatialInertia<T> | Per-body paramters including *mass*, *center of mass*
+   * and *unit inertia* for a RigidBody<T>.|
+   *
+   * An example of accessing and modifying parameters during simulation:
+   * @code
+   *    MultibodyPlant<double> plant;
+   *    // ... Code to add bodies, finalize plant, and to obtain a
+   * Context<double>& context const RigidBody<T>& body =
+   *        plant.GetRigidBodyByName("BodyName");
+   *    const SpatialInertia<double>& M_BBo_B =
+   *        plant->GetBodySpatialInertia(context, body);
+   *    // .. logic to determine a new mass parameter for body
+   *    const double new_mass = ....
+   *    SpatialInertia<double> M_BBo_B_new(new_mass, M_BBo_B.get_com(),
+   *        M_BBo_B.get_unit_inertia());
+   *    plant->SetBodySpatialInertia(&context, body, M_BBo_B_new);
+   * @endcode
+   *
+   * An example of working with transmogrified AutoDiffXd parameters:
+   * @code
+   *    MultibodyPlant<double> plant;
+   *    // ... Code to add bodies, finalize plant, and to obtain a
+   *    // Context<double>& context and a body's SpatialInertia<double> M_BBo_B
+   *
+   *    // Transmogrify the plant
+   *    unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
+   *        systems::System<double>::ToAutoDiffXd(plant);
+   *    unique_ptr<Context<AutoDiffXd>> context_autodiff =
+   *        plant_autodiff->CreateDefaultContext();
+   *    context_autodiff->SetTimeStateAndParametersFrom(context);
+   *
+   *    const RigidBody<AutoDiffXd>& body =
+   *        plant_autodiff->GetRigidBodyByName("BodyName");
+   *    const AutoDiffXd mass_autodiff(mass, Vector1d(1));
+   *    SpatialInertia<AutoDiffXd> M_BBo_B_autodiff(mass_autodiff,
+   *        M_BBo_B.get_com(), M_BBo_B.get_unit_inertia());
+   *    plant_autodiff->SetBodySpatialInertia(context_autodiff.get(), body,
+   *        M_BBo_B_autodiff);
+   * @endcode
+   * @{
+   */
+
+  /**
+   * Gets the spatial inertia for @p body, stored in @p context.
+   * @param[in] context
+   *   The context storing the SpatialInertia of the body.
+   * @param[in] body
+   *   The body for which the SpatialInertia is requested.
+   * @return const SpatialInertia<T>
+   *   The SpatialInertia stored in @p context for @p body.
+   */
+  const SpatialInertia<T> GetBodySpatialInertia(
+      const systems::Context<T>& context, const Body<T>& body) const {
+    return this->GetRigidBodyParameters(context, body.index())
+        .spatial_inertia();
+  }
+
+  /**
+   * Sets the spatial inertia for @p body, storing them in @p context.
+   * @param[in] context
+   *   The context in which to store the SpatialInertia of the body.
+   * @param[in] body
+   *   The body for which the SpatialInertia is being set.
+   * @param[in] M_BBo_B
+   *   The new SpatialInertia of the rigid body, @p body, computed about the
+   *   body frame origin `Bo` and expressed in the body frame B.
+   */
+  void SetBodySpatialInertia(systems::Context<T>* context, const Body<T>& body,
+                             const SpatialInertia<T>& M_BBo_B) const {
+    this->SetRigidBodyParameters(context, body.index(),
+                                 internal::RigidBodyParams<T>(M_BBo_B));
+  }
+
+  /** @} <!-- Working with parameters --> */
 
   /// @anchor mbp_working_with_free_bodies
   /// @name                Working with free bodies

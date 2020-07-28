@@ -2512,7 +2512,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       std::string("Hydroelastic contact with point-pair fallback"),
       internal::HydroelasticFallbackCacheData<T>(),
       &MultibodyPlant::CalcHydroelasticWithFallback,
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), this->all_parameters_ticket()});
   cache_indexes_.hydro_fallback = hydro_point_cache_entry.cache_index();
 
   // Cache entry for point contact queries.
@@ -2529,7 +2529,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             std::vector<geometry::PenetrationAsPointPair<T>>>();
         point_pairs_cache = this->CalcPointPairPenetrations(context);
       },
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), this->all_parameters_ticket()});
   cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
 
   // Cache entry for hydroelastic contact surfaces.
@@ -2546,7 +2546,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             std::vector<ContactSurface<T>>>();
         this->CalcContactSurfaces(context, &contact_surfaces_cache);
       },
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), this->all_parameters_ticket()});
   cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
   // Cache contact Jacobians.
@@ -2569,7 +2569,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // We explicitly declare the configuration dependence even though the
       // Eval() above implicitly evaluates configuration dependent cache
       // entries.
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), this->all_parameters_ticket()});
   cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
@@ -2609,7 +2609,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // on time and (even continuous) inputs. However it does emulate the
       // discrete update of these values as if zero-order held, which is what we
       // want.
-      {this->xd_ticket()});
+      {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.tamsi_solver_results =
       tamsi_solver_cache_entry.cache_index();
 
@@ -2639,7 +2639,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             },
             // Compliant contact forces due to hydroelastics with Hunt &
             // Crosseley are function of the kinematic variables q & v only.
-            {this->kinematics_ticket()});
+            {this->kinematics_ticket(), this->all_parameters_ticket()});
     cache_indexes_.contact_info_and_body_spatial_forces =
         contact_info_and_body_spatial_forces_cache_entry.cache_index();
   }
@@ -2661,6 +2661,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             cache_indexes_.contact_info_and_body_spatial_forces));
       }
     }
+    tickets.insert(this->all_parameters_ticket());
 
     return tickets;
   }();
@@ -2690,7 +2691,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // computation of acceleration and thus depend on both state and inputs.
       // All sources include: time, accuracy, state, input ports, and
       // parameters.
-      {this->all_sources_ticket()});
+      {this->all_sources_ticket(), this->all_parameters_ticket()});
   cache_indexes_.aba_force_cache =
       aba_force_cache_entry.cache_index();
 
@@ -2715,7 +2716,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // Accelerations depend on both state and inputs.
       // All sources include: time, accuracy, state, input ports, and
       // parameters.
-      {this->all_sources_ticket()});
+      {this->all_sources_ticket(), this->all_parameters_ticket()});
   cache_indexes_.aba_accelerations =
       aba_accelerations_cache_entry.cache_index();
 
@@ -2724,7 +2725,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       "Spatial contact forces (continuous).",
       std::vector<SpatialForce<T>>(num_bodies()),
       &MultibodyPlant::CalcSpatialContactForcesContinuous,
-      {this->kinematics_ticket()});
+      {this->kinematics_ticket(), this->all_parameters_ticket()});
   cache_indexes_.spatial_contact_forces_continuous =
       spatial_contact_forces_continuous_cache_entry.cache_index();
 
@@ -2735,7 +2736,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
           VectorX<T>(num_velocities()),
           &MultibodyPlant::CalcGeneralizedContactForcesContinuous,
           {this->cache_entry_ticket(
-              cache_indexes_.spatial_contact_forces_continuous)});
+               cache_indexes_.spatial_contact_forces_continuous),
+           this->all_parameters_ticket()});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
 }
