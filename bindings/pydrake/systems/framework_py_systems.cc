@@ -816,6 +816,10 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   m.def("GenerateHtml", &GenerateHtml, py::arg("system"),
       py::arg("initial_depth") = 1, doc.GenerateHtml.doc);
+
+  m.def("PublishInitializationEvents", &PublishInitializationEvents,
+      py::arg("system"), py::arg("context"),
+      doc.PublishInitializationEvents.doc);
 }
 
 }  // namespace

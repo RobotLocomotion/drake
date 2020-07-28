@@ -43,6 +43,7 @@ drake_cc_package_library(
         ":output_port_base",
         ":parameters",
         ":port_base",
+        ":publish_initialization_events",
         ":single_output_vector_source",
         ":state",
         ":system",
@@ -659,6 +660,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "publish_initialization_events",
+    srcs = ["publish_initialization_events.cc"],
+    hdrs = ["publish_initialization_events.h"],
+    deps = [
+        ":context",
+        ":system",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -1013,6 +1024,14 @@ drake_cc_googletest(
     name = "system_scalar_conversion_doxygen_test",
     deps = [
         "//examples/pendulum:pendulum_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "publish_initialization_events_test",
+    deps = [
+        ":leaf_system",
+        ":publish_initialization_events",
     ],
 )
 

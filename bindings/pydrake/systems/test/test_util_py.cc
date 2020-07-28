@@ -91,15 +91,8 @@ PYBIND11_MODULE(test_util, m) {
                                           const LeafSystem<T>& system) {
     py::dict results;
     auto context = system.AllocateContext();
-    {
-      // Leverage simulator to call initialization events.
-      // TODO(eric.cousineau): Simplify as part of #10015.
-      Simulator<T> simulator(system);
-      // Do not publish at initialization because we want to track publishes
-      // from only events of trigger type `kInitialization`.
-      simulator.set_publish_at_initialization(false);
-      simulator.Initialize();
-    }
+
+    PublishInitializationEvents(system, *context);
     {
       // Call `Publish` to test `DoPublish`.
       auto events =

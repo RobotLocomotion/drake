@@ -26,6 +26,7 @@ from pydrake.systems.framework import (
     NumericParameterIndex,
     PortDataType,
     PublishEvent,
+    PublishInitializationEvents,
     State,
     TriggerType,
     UnrestrictedUpdateEvent,
@@ -380,6 +381,11 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_witness)
         self.assertTrue(system.called_guard)
         self.assertTrue(system.called_reset)
+
+        system = TrivialSystem()
+        context = system.CreateDefaultContext()
+        PublishInitializationEvents(system, context)
+        self.assertTrue(system.called_initialize)
 
     def test_vector_system_overrides(self):
         dt = 0.5

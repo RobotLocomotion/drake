@@ -51,7 +51,10 @@ from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import (
+    DiagramBuilder,
+    PublishInitializationEvents,
+)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.planar_scenegraph_visualizer import (
     PlanarSceneGraphVisualizer,
@@ -191,10 +194,8 @@ def main():
     diagram = builder.Build()
     context = diagram.CreateDefaultContext()
 
-    # Use Simulator to dispatch initialization events.
-    # TODO(eric.cousineau): Simplify as part of #10015.
-    Simulator(diagram).Initialize()
-    # Publish draw messages with current state.
+    # Publish initialize and draw messages with current state.
+    PublishInitializationEvents(diagram, context)
     diagram.Publish(context)
 
 
