@@ -637,6 +637,11 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
+  Body<T>& get_mutable_body(BodyIndex body_index) {
+    DRAKE_THROW_UNLESS(body_index < num_bodies());
+    return *owned_bodies_[body_index];
+  }
+
   /// See MultibodyPlant method.
   const Joint<T>& get_joint(JointIndex joint_index) const {
     DRAKE_THROW_UNLESS(joint_index < num_joints());
@@ -658,6 +663,11 @@ class MultibodyTree {
 
   /// See MultibodyPlant method.
   const Frame<T>& get_frame(FrameIndex frame_index) const {
+    DRAKE_THROW_UNLESS(frame_index < num_frames());
+    return *frames_[frame_index];
+  }
+
+  Frame<T>& get_mutable_frame(FrameIndex frame_index) {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
   }
@@ -692,6 +702,12 @@ class MultibodyTree {
 
   const ForceElement<T>& get_force_element(
       ForceElementIndex force_element_index) const {
+    DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
+    return *owned_force_elements_[force_element_index];
+  }
+
+  ForceElement<T>& get_mutable_force_element(
+      ForceElementIndex force_element_index) {
     DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
     return *owned_force_elements_[force_element_index];
   }
@@ -2909,7 +2925,7 @@ class MultibodyTree {
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a
   // pointer to each BodyFrame, which are owned by their corresponding Body.
-  std::vector<const Frame<T>*> frames_;
+  std::vector<Frame<T>*> frames_;
 
   // The gravity field force element.
   UniformGravityFieldElement<T>* gravity_field_{nullptr};

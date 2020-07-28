@@ -32,16 +32,16 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
 
   // Define each link's spatial inertia about their respective COM.
   UnitInertia<double> G1_Bcm =
-      UnitInertia<double>::StraightLine(params.Ic1(), Vector3d::UnitZ());
+      UnitInertia<double>::StraightLine(params.Gc1(), Vector3d::UnitZ());
   SpatialInertia<double> M1_L1o =
       SpatialInertia<double>::MakeFromCentralInertia(
-          params.m1(), p_L1L1cm, G1_Bcm);
+          params.m1(), p_L1L1cm, G1_Bcm * params.m1());
 
   UnitInertia<double> G2_Bcm =
-      UnitInertia<double>::StraightLine(params.Ic2(), Vector3d::UnitZ());
+      UnitInertia<double>::StraightLine(params.Gc2(), Vector3d::UnitZ());
   SpatialInertia<double> M2_L2o =
       SpatialInertia<double>::MakeFromCentralInertia(
-          params.m2(), p_L2L2cm, G2_Bcm);
+          params.m2(), p_L2L2cm, G2_Bcm * params.m2());
 
   // Add a rigid body to model each link.
   const RigidBody<double>& link1 = plant->AddRigidBody(
