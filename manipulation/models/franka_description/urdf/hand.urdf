@@ -6,9 +6,9 @@
 <robot name="hand">
   <link name="panda_hand">
     <inertial>
-      <mass value="0.73" />
-      <origin xyz="0 0.0015244 0.0275912" rpy="0 0 0" />
-      <inertia ixx="0.00278560230025" ixy="0.0" ixz="0.0" iyy="0.000400033405336" iyz="0.0" izz="0.00256378041832" />
+      <mass value="0.73"/>
+      <origin xyz="0 0.0015244 0.0275912" rpy="0 0 0"/>
+      <inertia ixx="0.00278560230025" ixy="0.0" ixz="0.0" iyy="0.000400033405336" iyz="0.0" izz="0.00256378041832"/>
     </inertial>
     <visual>
       <origin rpy="1.57079632679 0 0"/>
@@ -43,9 +43,9 @@
   </link>
   <link name="panda_leftfinger">
     <inertial>
-      <mass value="0.1" />
-      <origin xyz="0 0.0145644 0.0227941" rpy="0 0 0" />
-      <inertia ixx="3.01220925051e-05" ixy="0.0" ixz="0.0" iyy="2.95873808038e-05" iyz="0.0" izz="6.95125211657e-06" />
+      <mass value="0.1"/>
+      <origin xyz="0 0.0145644 0.0227941" rpy="0 0 0"/>
+      <inertia ixx="3.01220925051e-05" ixy="0.0" ixz="0.0" iyy="2.95873808038e-05" iyz="0.0" izz="6.95125211657e-06"/>
     </inertial>
     <visual>
       <origin rpy="1.57079632679 0 0"/>
@@ -65,12 +65,12 @@
         <sphere radius="0.012"/>
       </geometry>
     </collision>
- </link>
+  </link>
   <link name="panda_rightfinger">
     <inertial>
-      <mass value="0.1" />
-      <origin xyz="0 0.0145644 0.0227941" rpy="0 0 3.14159265359" />
-      <inertia ixx="3.01220925051e-05" ixy="0.0" ixz="0.0" iyy="2.95873808038e-05" iyz="0.0" izz="6.95125211657e-06" />
+      <mass value="0.1"/>
+      <origin xyz="0 0.0145644 0.0227941" rpy="0 0 3.14159265359"/>
+      <inertia ixx="3.01220925051e-05" ixy="0.0" ixz="0.0" iyy="2.95873808038e-05" iyz="0.0" izz="6.95125211657e-06"/>
     </inertial>
     <visual>
       <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 0"/>

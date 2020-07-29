@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.4">
   <model name="cinder_block_2">
     <link name="link">
@@ -9,8 +9,11 @@
         <!-- approximate as uniform box 0.37 x 0.17 x 0.20 m -->
         <inertia>
           <ixx>0.06908</ixx>
-          <ixy>0.0000</ixy><iyy>0.028705</iyy>
-          <ixz>0.0000</ixz><iyz>0.0000</iyz><izz>0.073708</izz>
+          <ixy>0.0000</ixy>
+          <iyy>0.028705</iyy>
+          <ixz>0.0000</ixz>
+          <iyz>0.0000</iyz>
+          <izz>0.073708</izz>
         </inertia>
       </inertial>
       <visual name="visual">
@@ -20,7 +23,6 @@
           </mesh>
         </geometry>
       </visual>
-
       <collision name="top">
         <pose>0 0 0.130175 0 0 0</pose>
         <geometry>
@@ -43,7 +45,6 @@
           </friction>
         </surface>
       </collision>
-
       <collision name="bottom">
         <pose>0 0 0.0127 0 0 0</pose>
         <geometry>
@@ -66,7 +67,6 @@
           </friction>
         </surface>
       </collision>
-
       <collision name="left">
         <pose>0 -0.1857375 0.0714375 0 0 0</pose>
         <geometry>
@@ -89,7 +89,6 @@
           </friction>
         </surface>
       </collision>
-
       <collision name="right">
         <pose>0 0.1857375 0.0714375 0 0 0</pose>
         <geometry>
@@ -112,7 +111,6 @@
           </friction>
         </surface>
       </collision>
-
       <collision name="middle">
         <pose>0 0 0.0714375 0 0 0</pose>
         <geometry>

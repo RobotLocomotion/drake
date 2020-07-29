@@ -1,15 +1,13 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 Defines an SDF model with various types of joints used for testing the parser.
 -->
-
-<sdf version='1.6'>
-  <model name='joint_parsing_test'>
-    <link name='link1'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+<sdf version="1.6">
+  <model name="joint_parsing_test">
+    <link name="link1">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -21,10 +19,10 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <link name='link2'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link2">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -36,7 +34,7 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_joint' type='revolute'>
+    <joint name="revolute_joint" type="revolute">
       <child>link2</child>
       <parent>link1</parent>
       <axis>
@@ -55,10 +53,10 @@ Defines an SDF model with various types of joints used for testing the parser.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link3'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link3">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -70,7 +68,7 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <joint name='prismatic_joint' type='prismatic'>
+    <joint name="prismatic_joint" type="prismatic">
       <child>link3</child>
       <parent>link2</parent>
       <axis>
@@ -89,10 +87,10 @@ Defines an SDF model with various types of joints used for testing the parser.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link4'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link4">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -104,7 +102,7 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_joint_no_limits' type='revolute'>
+    <joint name="revolute_joint_no_limits" type="revolute">
       <child>link4</child>
       <parent>link3</parent>
       <axis>
@@ -116,10 +114,10 @@ Defines an SDF model with various types of joints used for testing the parser.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link5'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link5">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>
@@ -142,10 +140,10 @@ Defines an SDF model with various types of joints used for testing the parser.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link6'>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+    <link name="link6">
+      <pose frame="">0 0 0 0 -0 0</pose>
       <inertial>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.1</ixx>

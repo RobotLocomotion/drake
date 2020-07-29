@@ -2,18 +2,16 @@
 <robot name="big_robot_toy">
   <link name="base_link">
     <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.1" />
-      <inertia ixx="0.000363" ixy="0" ixz="0" iyy="0.000363" iyz="0"
-          izz="0.00006" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.000363" ixy="0" ixz="0" iyy="0.000363" iyz="0" izz="0.00006"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
         <mesh filename="./meshes/visual/big_robot_toy.obj"/>
       </geometry>
     </visual>
-
     <!--
       This places contact spheres on the corners of the visual box and a
       *slightly* smaller inset contact box (centered on the visual origin). This
@@ -31,10 +29,9 @@
      -->
     <collision>
       <geometry>
-        <box size="0.099 0.034 0.179" />
+        <box size="0.099 0.034 0.179"/>
       </geometry>
     </collision>
-
     <collision>
       <origin xyz="-0.05 -0.0175 -0.09" rpy="0 0 0"/>
       <geometry>
@@ -59,7 +56,6 @@
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
-
     <collision>
       <origin xyz="-0.05 -0.0175 0.09" rpy="0 0 0"/>
       <geometry>
@@ -84,6 +80,5 @@
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
-
-   </link>
+  </link>
 </robot>
