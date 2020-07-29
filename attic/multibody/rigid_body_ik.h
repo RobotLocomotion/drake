@@ -159,7 +159,9 @@ IKResults inverseKinPointwiseSimple(
  * Try to generate a smooth trajectory by assuming cubic spline for the posture,
  * and minimize the acceleration of the interpolated trajectory
  * min_(q, qdot, qddot)
- * sum(q(t(i))-q_nom(t(i)))'*Q*(q(t(i))-q_nom(t(i)))+qdot(t(i))'*Qv*qdot(t(i))+qddot(t(i))'*Qa*qddot(t(i))
+ * sum(q(t(i))-q_nom(t(i)))'*Q*(q(t(i))-q_nom(t(i))) +
+ * qdot(t(i))'*Qv*qdot(t(i)) +
+ * qddot(t(i))'*Qa*qddot(t(i))
  * @param nT    The length of time samples
  * @param t     t[i] is the i'th time
  * @param q_seed   An nq x nT double matrix. q_seed.col(i) is the seed for the

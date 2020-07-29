@@ -150,7 +150,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
    * Returns the asymptotic order of the difference between the large and small
    * steps (from which the error estimate is computed), which is 2. That is, the
    * error estimate, `ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
-   * and it deviates from the true error, `ε`, by `‖ε - ε*‖ = O(h³)`. 
+   * and it deviates from the true error, `ε`, by `‖ε - ε*‖ = O(h³)`.
    *
    * ### Derivation of the asymptotic order
    *

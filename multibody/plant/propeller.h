@@ -39,7 +39,8 @@ struct PropellerInfo {
   double thrust_ratio{1.0};
 
   /** The moment about the z axis (in frame P) of the spatial force will have
-  magnitude `moment_ratio*command` in Newton-meters. The default is 0, which makes the propeller a simple Cartesian force generator. */
+  magnitude `moment_ratio*command` in Newton-meters. The default is 0, which
+  makes the propeller a simple Cartesian force generator. */
   double moment_ratio{0.0};
 };
 
@@ -61,7 +62,7 @@ output_ports:
   output port".
 - The output is of type std::vector<ExternallyAppliedSpatialForce<T>>; it is
   expected that this output will be connected to the @ref
-  MultibodyPlant::get_applied_spatial_force_input_port() 
+  MultibodyPlant::get_applied_spatial_force_input_port()
   "externally_applied_spatial_force input port" of the MultibodyPlant.
 - This system does not have any state.
 

@@ -67,7 +67,7 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 /** Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
  file. The material properties are placed into both a
- geometry::IllustrationProperties and geometry::PerceptionProperties  as follows:
+ geometry::IllustrationProperties and geometry::PerceptionProperties as follows:
 
  <!-- NOTE: Lines longer than 80 columns required for the doxygen tables. -->
  | Group |    Name     |      Type       | Description |

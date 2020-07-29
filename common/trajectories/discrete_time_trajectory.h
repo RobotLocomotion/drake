@@ -90,7 +90,8 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   PiecewisePolynomial<T>::ZeroOrderHold(). */
   PiecewisePolynomial<T> ToZeroOrderHold() const;
 
-  /** The trajectory is only defined at finite sample times.  This method returns the tolerance used determine which time sample (if any) matches a
+  /** The trajectory is only defined at finite sample times.  This method
+  returns the tolerance used determine which time sample (if any) matches a
   query time on calls to value(t). */
   double time_comparison_tolerance() const;
 

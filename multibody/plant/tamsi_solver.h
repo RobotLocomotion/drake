@@ -494,7 +494,7 @@ term exactly as needed in Eq. (16).
   arXiv:1909.05700 [cs.RO].
 - @anchor uchida_etal_2015 Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
   Making a meaningful impact: modelling simultaneous frictional collisions
-  in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.   
+  in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
 
 @tparam_default_scalar
 
