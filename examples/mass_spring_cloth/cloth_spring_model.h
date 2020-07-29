@@ -39,9 +39,9 @@ namespace mass_spring_cloth {
  When the system is integrated discretely, the elastic force and gravity are
  integrated explicitly while the damping force is integrated implicitly to
  obtain a linear system as described in [Bridson, 2005]. One should be careful
- not to take too large a timestep when the system is integrated discretely to
- prevent the springs being compressed so much that one particle goes through
- the other.
+ not to take too large a timestep when using the discrete system because it is
+ conditionally stable, and large time steps can lead to an unstable numerical
+ solution.
 
  The system has a single output port that provides the positions of the
  particles. The 3*i-th, 3*i+1-th, and 3*i+2-th entry describe the position of
@@ -92,8 +92,6 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
     // Indices of the two particles connected by the spring.
     int particle0{};
     int particle1{};
-    // Note that particle index is an abstraction for the underlying states and
-    // don't actually index into any collection of particles.
     T rest_length{};
   };
   // Number of particles in the x direction.
@@ -107,9 +105,9 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // The time period between discrete updates.
   const T dt_{};
   // The index of the fixed particle at the top-left corner of the grid.
-  const int left_corner_{};
+  const int bottom_left_corner_{};
   // The index of the fixed particle at the top-right corner of the grid.
-  const int right_corner_{};
+  const int top_left_corner_{};
   // The starting index of the parameters of this system.
   int param_index_{};
   // Pre-allocated H matrix to prevent reallocations.
@@ -224,7 +222,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   void AccumulateContinuousSpringForce(const systems::Context<T>& context,
                                        systems::VectorBase<T>* forces) const;
 
-  const ClothSpringModelParams<T>& get_parameters(
+  const ClothSpringModelParams<T>& GetParameters(
       const systems::Context<T>& context) const {
     return this->template GetNumericParameter<ClothSpringModelParams>(
         context, param_index_);
@@ -321,8 +319,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   /// grid.
   template <class VectorType>
   void ApplyDirichletBoundary(VectorType* state) const {
-    set_particle_state(left_corner_, {0, 0, 0}, state);
-    set_particle_state(right_corner_, {0, 0, 0}, state);
+    set_particle_state(bottom_left_corner_, {0, 0, 0}, state);
+    set_particle_state(top_left_corner_, {0, 0, 0}, state);
   }
 
   // Customized throw to prevent invalid configuration of springs.
@@ -331,17 +329,19 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
     constexpr double kRelativeTolerance =
         10 * std::numeric_limits<double>::epsilon();
     constexpr char prefix[] =
-        "Two masses are nearly coincident; the simulation has grown "
-        "unstable.";
+        "Two particles are nearly coincident; the simulation reached an "
+        "invalid state.";
+    constexpr char postfix[] =
+        "Try simulating a less energetic condition or revisit the spring law "
+        "of the model.";
     if (spring_length < kRelativeTolerance * rest_length) {
       if (dt_ > 0) {
         throw std::runtime_error(
             fmt::format("{} Current discrete time step ({} s) may be too "
-                        "large. Try a smaller value",
-                        prefix, dt_));
+                        "large. Try a smaller value. If that does not work, {}",
+                        prefix, dt_, postfix));
       } else {
-        throw std::runtime_error(fmt::format(
-            "{}. The continuous integrator needs to be stricter", prefix));
+        throw std::runtime_error(fmt::format("{} {}", prefix, postfix));
       }
     }
   }

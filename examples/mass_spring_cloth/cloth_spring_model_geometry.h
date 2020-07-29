@@ -38,6 +38,9 @@ class ClothSpringModelGeometry final : public systems::LeafSystem<double> {
    The `scene_graph` pointer is not retained by the %ClothSpringModelGeometry
    system. The return value pointer is an alias of the new
    %ClothSpringModelGeometry system that is owned by the `builder`.
+
+   @throws std::logic_error if @p cloth_spring_model or @p scene_graph is not
+   already added to the given @p builder.
    */
   static const ClothSpringModelGeometry& AddToBuilder(
       systems::DiagramBuilder<double>* builder,
