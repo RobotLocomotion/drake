@@ -1772,7 +1772,7 @@ class MultibodyTree {
   </pre>
   which describe the effect of the total applied spatial forces Fapp_B on the
   spatial acceleration A_WB of a **rigid body** B with spatial inertia M_B.
-  Fb_B is the spatial force bias containing gyroscopic terms. 
+  Fb_B is the spatial force bias containing gyroscopic terms.
 
   Similarly, it is possible to show that there exists a linear relationship
   between the spatial acceleration and external forces for a body that belongs

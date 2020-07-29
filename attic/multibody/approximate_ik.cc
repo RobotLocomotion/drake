@@ -80,11 +80,6 @@ void approximateIK(RigidBodyTree<double>* model,
   if (error) {
     printf("Set Gurobi outputflag error %s\n", GRBgeterrormsg(grb_env));
   }
-  /*error = GRBsetintparam(grb_env,"method", 2);
-  error = GRBsetintparam(grb_env,"presolve", 0);
-  error = GRBsetintparam(grb_env,"bariterlimit", 20);
-  error = GRBsetintparam(grb_env,"barhomogenous", 0);
-  error = GRBsetdblparam(grb_env,"barconvtol", 1e-4);*/
   error = GRBnewmodel(grb_env, &grb_model, "ApproximateIK", nq, qtmp.data(),
                       joint_lb, joint_ub, nullptr, nullptr);
   if (error) {
@@ -190,22 +185,6 @@ void approximateIK(RigidBodyTree<double>* model,
   } else {
     (*info) = 1;
   }
-  // debug only
-  /*GRBwrite(grb_model,"gurobi_approximateIK.lp");
-  int num_gurobi_cnst;
-  GRBgetintattr(grb_model, GRB_INT_ATTR_NUMCONSTRS,&num_gurobi_cnst);
-  MatrixXd J(num_gurobi_cnst, nq);
-  VectorXd rhs(num_gurobi_cnst);
-  for(int i = 0;i<num_gurobi_cnst;i++)
-  {
-    for(int j = 0;j<nq;j++)
-    {
-      GRBgetcoeff(grb_model, i, j,&J(i, j));
-    }
-    GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_RHS, 0, num_gurobi_cnst,
-                       rhs.data());
-  }
-  */
 
   GRBfreemodel(grb_model);
   GRBfreeenv(grb_env);

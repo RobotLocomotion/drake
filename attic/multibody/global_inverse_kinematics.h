@@ -295,8 +295,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * Notice that when zᵢ = 0, Aᵢ * yᵢ ≤ 0 implies that yᵢ = 0. This is due to
    * the boundedness of the polytope. If Aᵢ * yᵢ ≤ 0 has a non-zero solution y̅,
    * that y̅ ≠ 0 and Aᵢ * y̅ ≤ 0. Then for any point x̂ in the polytope satisfying
-   * Aᵢ * x̂ ≤ bᵢ, we know the ray x̂ + ty̅, ∀ t ≥ 0 also satisfies Aᵢ * (x̂ + ty̅) ≤
-   * bᵢ, thus the ray is within the polytope, violating the boundedness
+   * Aᵢ * x̂ ≤ bᵢ, we know the ray x̂ + ty̅, ∀ t ≥ 0 also satisfies Aᵢ * (x̂ + ty̅)
+   * ≤ bᵢ, thus the ray is within the polytope, violating the boundedness
    * assumption.
    * @param body_index The index of the body to which the sphere is attached.
    * @param p_BQ The position of the sphere center in the body frame B.

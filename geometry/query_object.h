@@ -69,7 +69,8 @@ class QueryObject {
   /** Constructs a default QueryObject (all pointers are null). */
   QueryObject() = default;
 
-  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable
+  /** @name Implements CopyConstructible, CopyAssignable, \
+                       MoveConstructible, MoveAssignable
 
    Calling the copy constructor or assignment will turn a _live_ %QueryObject
    into a _baked_ %QueryObject (an expensive operation). Copying baked

@@ -135,7 +135,8 @@ class RigidBody {
   }
 
   /**
-   * An accessor to this rigid body's mutable inboard joint. Also called "parent joint".
+   * An accessor to this rigid body's mutable inboard joint. Also called
+   * "parent joint".
    *
    * @throws std::runtime_error if there is no joint (joint == nullptr)
    * @return The mutable inboard joint of this rigid body.

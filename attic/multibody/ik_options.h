@@ -41,7 +41,7 @@ class IKoptions {
 
   /**
    * Sets the quadratic cost matrix Q where the cost
-   * for the optimization is formulated as q_err' Q q_err, 
+   * for the optimization is formulated as q_err' Q q_err,
    * where q_err = q - q_nominal
    */
   void setQ(const Eigen::MatrixXd &Q);
