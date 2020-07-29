@@ -361,7 +361,8 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     acc_upper_limits_ = upper_limits;
   }
 
-  /// Sets the default positions to @p default_positions.
+  /// Sets the default positions to @p default_positions. Joint subclasses are
+  /// expected to implement the do_set_default_positions().
   /// @throws std::exception if the dimension of @p default_positions does not
   /// match num_positions().
   /// @note The values in @p default_positions are NOT constrained to be within
@@ -369,6 +370,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   void set_default_positions(const VectorX<double>& default_positions) {
     DRAKE_THROW_UNLESS(default_positions.size() == num_positions());
     default_positions_ = default_positions;
+    do_set_default_positions(default_positions);
   }
   /// @}
 
@@ -455,19 +457,36 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   /// Implementation to the NVI velocity_start(), see velocity_start() for
   /// details.
+  /// @note Implementations must meet the styleguide requirements for snake_case
+  /// accessor methods.
   virtual int do_get_velocity_start() const = 0;
 
   /// Implementation to the NVI num_velocities(), see num_velocities() for
   /// details.
+  /// @note Implementations must meet the styleguide requirements for snake_case
+  /// accessor methods.
   virtual int do_get_num_velocities() const = 0;
 
   /// Implementation to the NVI position_start(), see position_start() for
   /// details.
+  /// @note Implementations must meet the styleguide requirements for snake_case
+  /// accessor methods.
   virtual int do_get_position_start() const = 0;
 
   /// Implementation to the NVI num_positions(), see num_positions() for
   /// details.
+  /// @note Implementations must meet the styleguide requirements for
+  /// snake_case accessor methods.
   virtual int do_get_num_positions() const = 0;
+
+  /// Implementation to the NVI set_default_positions(), see
+  /// set_default_positions() for details. It is the responsibility of the
+  /// subclass to ensure that their joint implementation, should they have one,
+  /// is updated with @p default_positions.
+  /// @note Implementations must meet the styleguide requirements for snake_case
+  /// accessor methods.
+  virtual void do_set_default_positions(
+      const VectorX<double>& default_positions) = 0;
 
   /// Implementation to the NVI GetOnePosition() that must only be implemented
   /// by those joint subclasses that have a single degree of freedom.
