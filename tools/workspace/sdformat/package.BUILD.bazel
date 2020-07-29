@@ -163,7 +163,9 @@ SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
 
 # Generates the library exported to users. The explicitly listed srcs= matches
 # upstream's explicitly listed sources. The explicitly listed hdrs= matches
-# upstream's private headers. We exclude the irrelevant ign.hh and ign.cc.
+# upstream's private headers. ign.hh and ign.cc are not incorporated in this
+# library, but are incorporated into the `ign_sdf_cmdline` library defined
+# below.
 cc_library(
     name = "sdformat",
     srcs = [
@@ -238,6 +240,19 @@ cc_library(
         ":urdfdom",
         "@ignition_math",
         "@tinyxml",
+    ],
+)
+
+cc_library(
+    name = "ign_sdf_cmdline",
+    srcs = [
+        "src/ign.cc",
+        "src/ign.hh",
+    ],
+    copts = ["-w"],
+    linkstatic = 1,
+    deps = [
+        ":sdformat",
     ],
 )
 
