@@ -8,13 +8,13 @@
      Note that if no mesh specification appears below, it's because the wsg_50
      macro automatically defaults to use mesh collision models.-->
 <!-- ===================================================================== -->
-<robot name="wsg_50" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="wsg_50">
   <!-- Imports the wsg_50 macro. -->
   <xacro:include filename="$(find wsg_50_description)/urdf/wsg_50.urdf.xacro"/>
   <xacro:arg default="wsg_50" name="robot_name"/>
   <xacro:arg default="world" name="parent"/>
   <!-- Instantiates a WSG 50 URDF model by calling the wsg_50 macro. -->
-  <link name="world"></link>
+  <link name="world"/>
   <xacro:wsg_50 name="$(arg robot_name)" parent="$(arg parent)">
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </xacro:wsg_50>

@@ -1,12 +1,10 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 This URDF contains a robot-level material named "brown" that clashes with a
 link-level material named "brown". The material is defined after the link. When
 loading this, no exception should be thrown since the RGBA values for both are
 the same.
 -->
-
 <robot name="non_conflicting_materials_3">
   <link name="base_link">
     <inertial>

@@ -1,12 +1,12 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.4">
-  <model name='foo'>
+  <model name="foo">
     <pose>0 0 0 0 0 0</pose>
-    <link name='link'>
+    <link name="link">
       <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>1.</mass>
-        </inertial>
+      <inertial>
+        <mass>1.</mass>
+      </inertial>
     </link>
     <static>1</static>
   </model>

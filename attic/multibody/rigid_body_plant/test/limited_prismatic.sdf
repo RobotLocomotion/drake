@@ -1,8 +1,8 @@
-<?xml version='1.0'?>
-<sdf version='1.6'>
-  <model name='limited_prismatic_test_model'>
-    <link name='body'>
-      <pose frame=''>0 -0.049133 0 0 -0 0</pose>
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="limited_prismatic_test_model">
+    <link name="body">
+      <pose frame="">0 -0.049133 0 0 -0 0</pose>
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -13,12 +13,12 @@
           <iyz>0</iyz>
           <izz>0.164814</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="visual">
+        <pose frame="">0 0 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.146 0.0725 0.049521</size>
@@ -26,8 +26,8 @@
         </geometry>
       </visual>
     </link>
-    <link name='finger'>
-      <pose frame=''>-0.008016 0.024751 0 0 -0 0</pose>
+    <link name="finger">
+      <pose frame="">-0.008016 0.024751 0 0 -0 0</pose>
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -38,12 +38,12 @@
           <iyz>0</iyz>
           <izz>0.16</izz>
         </inertia>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+        <pose frame="">0 0 0 0 -0 0</pose>
       </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
-      <visual name='visual'>
-        <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name="visual">
+        <pose frame="">0 0 0 0 -0 0</pose>
         <geometry>
           <box>
             <size>0.016 0.075 0.02</size>
@@ -51,10 +51,10 @@
         </geometry>
       </visual>
     </link>
-    <joint name='finger_sliding_joint' type='prismatic'>
+    <joint name="finger_sliding_joint" type="prismatic">
       <parent>body</parent>
       <child>finger</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose frame="">0 0 0 0 -0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <use_parent_model_frame>0</use_parent_model_frame>

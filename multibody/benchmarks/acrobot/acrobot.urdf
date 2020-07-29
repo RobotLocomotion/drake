@@ -1,40 +1,38 @@
 <?xml version="1.0"?>
-<robot name='acrobot'>
-<!-- This urdf file produces a model with the default parameters documented
+<robot name="acrobot">
+  <!-- This urdf file produces a model with the default parameters documented
      in AcrobotParameters in make_acrobot_plant.h.
      They MUST be kept in sync. -->
-<link name='Link1'>
-  <inertial>
-    <mass value="1"/>
-    <origin xyz="0 0 -0.5"/>
-    <!-- This inertia is based on a solid cylinder with
+  <link name="Link1">
+    <inertial>
+      <mass value="1"/>
+      <origin xyz="0 0 -0.5"/>
+      <!-- This inertia is based on a solid cylinder with
          radius=0.001 meters and height=1.0 meters. -->
-    <inertia
-          ixx="0.083" iyy="0.083" izz="5e-7"
-          ixy="0" ixz="0" iyz="0"/>
-  </inertial>
-  <visual name='Link1_visual'>
-    <origin xyz="0 0 -0.5"/>
-    <geometry>
-      <cylinder length="1.1" radius="0.05"/>
-    </geometry>
-    <material>
-      <color rgba="0 1 0 1"/>
-    </material>
-  </visual>
-  <!-- A visual to show the link's pivot point -->
-  <visual name='Link1_pivot_visual'>
-    <!-- Pose of the sphere used for visual in Link1's frame -->
-    <origin xyz="0 0 0"/>
-    <geometry>
-      <sphere radius="0.125"/>
-    </geometry>
-    <material>
-      <color rgba="0 0 1 1"/>
-    </material>
-   </visual>
+      <inertia ixx="0.083" iyy="0.083" izz="5e-7" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual name="Link1_visual">
+      <origin xyz="0 0 -0.5"/>
+      <geometry>
+        <cylinder length="1.1" radius="0.05"/>
+      </geometry>
+      <material>
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <!-- A visual to show the link's pivot point -->
+    <visual name="Link1_pivot_visual">
+      <!-- Pose of the sphere used for visual in Link1's frame -->
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.125"/>
+      </geometry>
+      <material>
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
   </link>
-  <joint name='ShoulderJoint' type='revolute'>
+  <joint name="ShoulderJoint" type="revolute">
     <child link="Link1"/>
     <parent link="world"/>
     <origin xyz="0 0.15 0"/>
@@ -42,7 +40,7 @@
     <limit effort="0"/>
     <dynamics damping="0.1"/>
   </joint>
-  <link name='Link2'>
+  <link name="Link2">
     <!-- The origin of the Link2 frame is defined to be coincident with
          the origin of the x-z plane in the elbow joint frame. -->
     <inertial>
@@ -50,11 +48,9 @@
       <mass value="1"/>
       <!-- This inertia is based on a solid cylinder with
            radius=1.0 meters and height=2.0 meters. -->
-      <inertia
-          ixx="0.33" iyy="0.33" izz="5e-7"
-          ixy="0" ixz="0" iyz="0"/>
+      <inertia ixx="0.33" iyy="0.33" izz="5e-7" ixy="0" ixz="0" iyz="0"/>
     </inertial>
-    <visual name='Link2_visual'>
+    <visual name="Link2_visual">
       <origin xyz="0 0 -1"/>
       <geometry>
         <cylinder length="2.1" radius="0.05"/>
@@ -64,17 +60,16 @@
       </material>
     </visual>
   </link>
-  <joint name='ElbowJoint' type='revolute'>
+  <joint name="ElbowJoint" type="revolute">
     <parent link="Link1"/>
     <child link="Link2"/>
     <axis xyz="0 1 0"/>
     <origin xyz="0 0.15 -1"/>
     <dynamics damping="0.1"/>
   </joint>
-
   <transmission type="SimpleTransmission" name="elbow_trans">
-    <actuator name="ElbowJoint" />
-    <joint name="ElbowJoint" />
+    <actuator name="ElbowJoint"/>
+    <joint name="ElbowJoint"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 </robot>

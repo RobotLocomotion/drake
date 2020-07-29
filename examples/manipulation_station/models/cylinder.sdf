@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.6">
   <model name="cylinder">
     <!--
@@ -45,7 +45,6 @@
           <diffuse>1.0 0 0 1.0</diffuse>
         </material>
       </visual>
-
       <collision name="collision_cylinder">
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -180,4 +179,3 @@
     </link>
   </model>
 </sdf>
-

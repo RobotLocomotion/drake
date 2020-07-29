@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name='test_robot'>
+<robot name="test_robot">
   <!-- This urdf file defines a simple test robot with a single link that
        contains one collision tag for each supported geometry type. We're
        confirming that each geometry declaration produces a corresponding
@@ -12,43 +12,37 @@
        MultibodyPlant.
        This file is meant to be kept in sync with the corresponding unit
        test file detail_urdf_parser_test.cc -->
-  <link name='link1'>
+  <link name="link1">
     <inertial>
       <mass value="1"/>
     </inertial>
-
-    <collision name = 'Box'>
+    <collision name="Box">
       <geometry>
         <box size="1 2 3"/>
       </geometry>
     </collision>
-
-    <collision name = 'Capsule'>
+    <collision name="Capsule">
       <geometry>
         <capsule radius="0.5" length="2.0"/>
       </geometry>
     </collision>
-
-    <collision name = 'Convex'>
+    <collision name="Convex">
       <geometry>
         <mesh filename="../tri_cube.obj">
           <drake:declare_convex/>
         </mesh>
       </geometry>
     </collision>
-
-    <collision name = 'Cylinder'>
+    <collision name="Cylinder">
       <geometry>
         <cylinder radius="0.5" length="2.0"/>
       </geometry>
     </collision>
-
-    <collision name = 'Ellipsoid'>
+    <collision name="Ellipsoid">
       <geometry>
         <drake:ellipsoid a="1.0" b="2.0" c="3.0"/>
       </geometry>
     </collision>
-
     <!--
     TODO(SeanCurtis-TRI): Parse halfspace from URDF files. Part of it is
      defining the semantics. Do I allow an arbitrary normal and point in the
@@ -60,14 +54,12 @@
       </geometry>
     </collision>
     -->
-
-    <collision name = 'Mesh'>
+    <collision name="Mesh">
       <geometry>
         <mesh filename="../tri_cube.obj"/>
       </geometry>
     </collision>
-
-    <collision name = 'Sphere'>
+    <collision name="Sphere">
       <geometry>
         <sphere radius="1.0"/>
       </geometry>

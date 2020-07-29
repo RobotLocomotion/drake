@@ -1,97 +1,86 @@
 <?xml version="1.0"?>
-
-<robot xmlns="https://drake.mit.edu"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- name="Acrobot">
-
+<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Acrobot">
   <link name="base_link">
     <visual>
       <geometry>
-        <box size="0.2 0.2 0.2" />
+        <box size="0.2 0.2 0.2"/>
       </geometry>
       <material name="green">
-        <color rgba="0 1 0 1" />
+        <color rgba="0 1 0 1"/>
       </material>
     </visual>
     <collision name="base_link_collision">
       <geometry>
-        <box size="0.2 0.2 0.2" />
+        <box size="0.2 0.2 0.2"/>
       </geometry>
     </collision>
   </link>
-
   <link name="upper_link">
     <inertial>
-      <origin xyz="0 0 -.5" rpy="0 0 0" />
-      <mass value="1" />
-      <inertia ixx="1" ixy="0" ixz="0" iyy="0.083" iyz="0" izz="1" />
+      <origin xyz="0 0 -.5" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.083" iyz="0" izz="1"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="1.1" radius="0.05" />
+        <cylinder length="1.1" radius="0.05"/>
       </geometry>
       <material name="red">
-        <color rgba="1 0 0 1" />
+        <color rgba="1 0 0 1"/>
       </material>
     </visual>
     <collision name="upper_link_collision">
-      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="1.1" radius="0.05" />
+        <cylinder length="1.1" radius="0.05"/>
       </geometry>
     </collision>
   </link>
-
   <link name="lower_link">
     <inertial>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
-      <mass value="1" />
-      <inertia ixx="1" ixy="0" ixz="0" iyy="0.33" iyz="0" izz="1" />
+      <origin xyz="0 0 -1" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.33" iyz="0" izz="1"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -1" rpy="0 0 0"/>
       <geometry>
-         <cylinder length="2.1" radius=".05" />
+        <cylinder length="2.1" radius=".05"/>
       </geometry>
       <material name="blue">
-        <color rgba="0 0 1 1" />
+        <color rgba="0 0 1 1"/>
       </material>
     </visual>
     <collision name="lower_link_collision">
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -1" rpy="0 0 0"/>
       <geometry>
-         <cylinder length="2.1" radius=".05" />
+        <cylinder length="2.1" radius=".05"/>
       </geometry>
     </collision>
   </link>
-
   <joint name="base_weld" type="fixed">
-    <parent link="world" />
-    <child link="base_link" />
+    <parent link="world"/>
+    <child link="base_link"/>
   </joint>
-
   <joint name="shoulder" type="continuous">
-    <parent link="base_link" />
-    <child link="upper_link" />
-    <origin xyz="0 0.15 0" />
-    <axis xyz="0 1 0" />
-    <dynamics damping="0.1" />
+    <parent link="base_link"/>
+    <child link="upper_link"/>
+    <origin xyz="0 0.15 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
   </joint>
-
   <joint name="elbow" type="continuous">
-    <parent link="upper_link" />
-    <child link="lower_link" />
-    <origin xyz="0 0.1 -1" />
-    <axis xyz="0 1 0" />
-    <dynamics damping="0.1" />
+    <parent link="upper_link"/>
+    <child link="lower_link"/>
+    <origin xyz="0 0.1 -1"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
   </joint>
-
   <transmission type="SimpleTransmission" name="elbow_trans">
-    <actuator name="elbow" />
-    <joint name="elbow" />
+    <actuator name="elbow"/>
+    <joint name="elbow"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  
-  <frame name="hand" link="lower_link" xyz="0 0 -2.1" rpy="0 0 0" />
+  <frame name="hand" link="lower_link" xyz="0 0 -2.1" rpy="0 0 0"/>
 </robot>

@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.4">
   <model name="sphere">
     <pose>0 0 0 0 0 0</pose>

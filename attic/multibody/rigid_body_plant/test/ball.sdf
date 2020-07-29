@@ -1,22 +1,22 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.4">
   <model name="ball">
     <pose>0 0 0 0 0 0</pose>
     <link name="ball">
       <pose>0 0 0 0 0 0</pose>
-        <inertial>
-          <mass>5.</mass>
-          <!-- These values are set using inertia matrix values for a sphere
+      <inertial>
+        <mass>5.</mass>
+        <!-- These values are set using inertia matrix values for a sphere
                with radius 0.05 and mass 5.0 -->
-          <inertia>
-            <ixx>.005</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>.005</iyy>
-            <iyz>0</iyz>
-            <izz>.005</izz>
+        <inertia>
+          <ixx>.005</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>.005</iyy>
+          <iyz>0</iyz>
+          <izz>.005</izz>
         </inertia>
-        </inertial>
+      </inertial>
       <visual name="ball">
         <pose>0 0 0 0 0 0</pose>
         <geometry>

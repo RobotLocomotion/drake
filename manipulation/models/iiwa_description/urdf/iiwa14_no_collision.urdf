@@ -1,9 +1,9 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- ===================================================================== -->
 <!-- Collision models: All collision models are omitted in this version of 
      the iiwa arm.-->
 <!-- ===================================================================== -->
-<robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="iiwa14">
   <!-- Import Rviz colors -->
   <material name="Black">
     <color rgba="0.0 0.0 0.0 1.0"/>

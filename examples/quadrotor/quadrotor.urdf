@@ -1,11 +1,6 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!-- Mesh file and approximate numbers are from Abe Bachrach at Skdio.  -->
-
-<robot xmlns="https://drake.mit.edu"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- name="quadrotor">
-
+<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="quadrotor">
   <!--
   Axes are standard vehicle coordinates:
     +X - Pointing toward the nose (primary camera).
@@ -14,7 +9,6 @@
   Origin:
     (0, 0, 0) in the center of the main quadrotor body.
   -->
-
   <link name="base_link">
     <inertial>
       <mass value="0.775"/>
@@ -35,4 +29,3 @@
     </collision>
   </link>
 </robot>
-

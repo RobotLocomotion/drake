@@ -1,8 +1,8 @@
-<?xml version='1.0' ?>
-<sdf version='1.6'>
-  <model name='simple_anchored'>
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="simple_anchored">
     <pose>0 0 0 0 0 0</pose>
-    <link name='parentless_body'>
+    <link name="parentless_body">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -15,11 +15,11 @@
         </inertia>
       </inertial>
       <pose>1 0 0 0 0 0</pose>
-      <collision name='anchor_box'>
+      <collision name="anchor_box">
         <pose>0 0 1 0 0 0</pose>
         <geometry>
           <box>
-             <size>1 1 1</size>
+            <size>1 1 1</size>
           </box>
         </geometry>
       </collision>

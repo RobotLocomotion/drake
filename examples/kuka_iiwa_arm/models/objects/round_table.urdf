@@ -3,12 +3,12 @@
   <link name="table_surface_center"/>
   <link name="table_top">
     <inertial>
-      <mass value="1.0" />
-      <inertia ixx="0.0225" ixy="0" ixz="0" iyy="0.0225" iyz="0" izz="0.0450" />
+      <mass value="1.0"/>
+      <inertia ixx="0.0225" ixy="0" ixz="0" iyy="0.0225" iyz="0" izz="0.0450"/>
     </inertial>
     <visual>
       <geometry>
-        <cylinder length="0.017" radius="0.30" />
+        <cylinder length="0.017" radius="0.30"/>
       </geometry>
       <material name="White">
         <color rgba="0.9 0.9 0.9 1.0"/>
@@ -16,13 +16,13 @@
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.017" radius="0.30" />
+        <cylinder length="0.017" radius="0.30"/>
       </geometry>
     </collision>
-   </link>
-   <joint name="table_top_joint" type="fixed">
-     <origin xyz="0 0 -0.0085"/>
-     <parent link="table_surface_center"/>
-     <child link="table_top"/>
-   </joint>
+  </link>
+  <joint name="table_top_joint" type="fixed">
+    <origin xyz="0 0 -0.0085"/>
+    <parent link="table_surface_center"/>
+    <child link="table_top"/>
+  </joint>
 </robot>

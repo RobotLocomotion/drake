@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <Root>
   <Node doc_var="" file_name="" full_name="sample_header_doc" ignore="" kind="None" name="sample_header_doc">
     <Node doc_var="sample_header_doc.RootLevelSymbol.doc" file_name="drake/tools/workspace/pybind11/test/sample_header.h" full_name="RootLevelSymbol" ignore="0" kind="CursorKind.STRUCT_DECL" name="RootLevelSymbol"/>

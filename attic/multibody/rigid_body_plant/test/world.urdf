@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
   A simple world URDF composed of two ramps with boxes between them.
 -->
@@ -8,10 +9,8 @@
   <material name="ramp">
     <color rgba="0.93333333333 0.2 0.2 1"/>
   </material>
-
   <link name="world_">
   </link>
-
   <link name="floor">
     <visual>
       <material name="terrain"/>
@@ -27,7 +26,6 @@
       </geometry>
     </collision>
   </link>
-
   <link name="ramp_1">
     <visual>
       <material name="ramp"/>
@@ -43,7 +41,6 @@
       </geometry>
     </collision>
   </link>
-
   <link name="ramp_2">
     <visual>
       <material name="ramp"/>
@@ -59,7 +56,6 @@
       </geometry>
     </collision>
   </link>
-
   <link name="box_1">
     <visual>
       <origin xyz="0 -2 0" rpy="0 0 1.57079632679"/>
@@ -92,7 +88,6 @@
       </geometry>
     </visual>
   </link>
-
   <joint name="world_to_floor" type="fixed">
     <parent link="world_"/>
     <child link="floor"/>

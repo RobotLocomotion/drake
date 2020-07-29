@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 Defines an SDF model with revolute joints for testing the revolute spring
 parser. The only focus is that the parser reads in the values from the
@@ -8,10 +7,9 @@ default value of zero when the tag is not present. This is an accompanying
 file to detail_sdf_parser_test.cc and therefore they must be kept in sync
 with each other.
 -->
-
-<sdf version='1.6'>
-  <model name='revolute_spring_parsing_test'>
-    <link name='link1'>
+<sdf version="1.6">
+  <model name="revolute_spring_parsing_test">
+    <link name="link1">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -24,7 +22,7 @@ with each other.
         </inertia>
       </inertial>
     </link>
-    <link name='link2'>
+    <link name="link2">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -37,7 +35,7 @@ with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_spring_reference_and_stiffness' type='revolute'>
+    <joint name="revolute_spring_reference_and_stiffness" type="revolute">
       <child>link2</child>
       <parent>link1</parent>
       <axis>
@@ -49,7 +47,7 @@ with each other.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link3'>
+    <link name="link3">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -62,7 +60,7 @@ with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_spring_only_reference' type='revolute'>
+    <joint name="revolute_spring_only_reference" type="revolute">
       <child>link3</child>
       <parent>link2</parent>
       <axis>
@@ -74,7 +72,7 @@ with each other.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link4'>
+    <link name="link4">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -87,7 +85,7 @@ with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_spring_only_stiffness' type='revolute'>
+    <joint name="revolute_spring_only_stiffness" type="revolute">
       <child>link4</child>
       <parent>link3</parent>
       <axis>
@@ -99,7 +97,7 @@ with each other.
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='link5'>
+    <link name="link5">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -112,7 +110,7 @@ with each other.
         </inertia>
       </inertial>
     </link>
-    <joint name='revolute_spring_no_spring' type='revolute'>
+    <joint name="revolute_spring_no_spring" type="revolute">
       <child>link5</child>
       <parent>link4</parent>
       <axis>

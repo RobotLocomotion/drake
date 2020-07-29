@@ -1,13 +1,10 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 Defines a URDF model in which two links have the same material definition. This
 should NOT be a problem.
 -->
-
 <!-- TODO(SeanCurtis-TRI): Delete this file when attic goes away.  -->
-
-<robot name="duplicate_but_same_materials" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="duplicate_but_same_materials">
   <link name="link1">
     <inertial>
       <mass value="0.00001"/>
@@ -23,7 +20,6 @@ should NOT be a problem.
       </material>
     </visual>
   </link>
-
   <link name="link2">
     <inertial>
       <mass value="0.00001"/>
@@ -39,7 +35,6 @@ should NOT be a problem.
       </material>
     </visual>
   </link>
-
   <joint name="joint1" type="continuous">
     <axis xyz="0 0 1"/>
     <parent link="link1"/>

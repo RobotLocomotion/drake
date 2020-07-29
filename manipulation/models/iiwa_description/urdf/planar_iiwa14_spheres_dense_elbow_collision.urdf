@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <!-- ===================================================================== -->
 <!-- |    This model is a hand edited version of the original model (see | -->
 <!-- |    iiwa14_spheres_dense_elbow_collision.urdf). Joint 1 has been   | -->
@@ -8,7 +8,7 @@
 <!-- |    (e.g. transmissions for the newly welded joints) have been     | -->
 <!-- |    removed.                                                       | -->
 <!-- ===================================================================== -->
-<robot name="iiwa14" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="iiwa14">
   <!-- Import Rviz colors -->
   <material name="Black">
     <color rgba="0.0 0.0 0.0 1.0"/>
