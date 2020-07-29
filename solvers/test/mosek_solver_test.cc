@@ -350,7 +350,7 @@ GTEST_TEST(MosekTest, MotzkinPolynomial) {
   MosekSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-9);
+    dut.CheckResult(result, 1.3E-9);
   }
 }
 
