@@ -246,15 +246,15 @@
         <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
-    <!--<collision>	
-				<origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
-				<geometry>
-					<mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
-				</geometry>
-				<material name="yellow">
-					<color rgba="0 1 1 1"/>
-				</material>
-			</collision>-->
+    <!--<collision>
+        <origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
+        <geometry>
+          <mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
+        </geometry>
+        <material name="yellow">
+          <color rgba="0 1 1 1"/>
+        </material>
+      </collision>-->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -286,10 +286,10 @@
   </link>
   <link name="finger_1_link_2">
     <!--
-			NOTE: This link has an offset in the z-direction based on the models that were
-			used to generate grap-it poses.  With the offset below the model appears visually
-			correct, but it is suspect.
-			-->
+      NOTE: This link has an offset in the z-direction based on the models that were
+      used to generate grap-it poses.  With the offset below the model appears visually
+      correct, but it is suspect.
+      -->
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -580,15 +580,15 @@
         <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
-    <!--<collision>	
-				<origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
-				<geometry>
-					<mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
-				</geometry>
-				<material name="yellow">
-					<color rgba="0 1 1 1"/>
-				</material>
-			</collision>-->
+    <!--<collision>
+        <origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
+        <geometry>
+          <mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
+        </geometry>
+        <material name="yellow">
+          <color rgba="0 1 1 1"/>
+        </material>
+      </collision>-->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -618,10 +618,10 @@
   </link>
   <link name="finger_2_link_2">
     <!--
-			NOTE: This link has an offset in the z-direction based on the models that were
-			used to generate grap-it poses.  With the offset below the model appears visually
-			correct, but it is suspect.
-			-->
+      NOTE: This link has an offset in the z-direction based on the models that were
+      used to generate grap-it poses.  With the offset below the model appears visually
+      correct, but it is suspect.
+      -->
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -912,15 +912,15 @@
         <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
-    <!--<collision>	
-				<origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
-				<geometry>
-					<mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
-				</geometry>
-				<material name="yellow">
-					<color rgba="0 1 1 1"/>
-				</material>
-			</collision>-->
+    <!--<collision>
+        <origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
+        <geometry>
+          <mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
+        </geometry>
+        <material name="yellow">
+          <color rgba="0 1 1 1"/>
+        </material>
+      </collision>-->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -950,10 +950,10 @@
   </link>
   <link name="finger_middle_link_2">
     <!--
-			NOTE: This link has an offset in the z-direction based on the models that were
-			used to generate grap-it poses.  With the offset below the model appears visually
-			correct, but it is suspect.
-			-->
+      NOTE: This link has an offset in the z-direction based on the models that were
+      used to generate grap-it poses.  With the offset below the model appears visually
+      correct, but it is suspect.
+      -->
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
