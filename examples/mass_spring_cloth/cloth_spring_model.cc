@@ -34,7 +34,8 @@ ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
   }
   param_index_ = this->DeclareNumericParameter(ClothSpringModelParams<T>());
   BuildConnectingSprings(true);
-  // Allocate the H matrix now that we know the sparsity pattern.
+  // As in symbolic assembly, we allocate for the nonzero entries in the H
+  // matrix now that we know the sparsity pattern.
   if (dt > 0) {
     // The H matrix is organized into num_particles * num_particles blocks of 3
     // * 3 sub-matrices. The ij-th 3*3 sub-matrix consists of M_ij (mass matrix)
@@ -239,7 +240,9 @@ void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
   DRAKE_DEMAND(x.size() == dv->size());
   DRAKE_DEMAND(x.size() == f.size());
   const T mass_per_particle = param.mass() / static_cast<T>(num_particles_);
-  // Initialize the diagonal of the matrix to be mass_per_particle.
+  // Here we construct the H matrix. Take extreme care to overwrite the stale
+  // data from the previous time step. Initialize the diagonal of the matrix to
+  // be mass_per_particle.
   for (int i = 0; i < num_particles_; ++i) {
     for (int j = 0; j < 3; ++j) {
       for (int k = 0; k < 3; ++k) {
@@ -293,11 +296,41 @@ void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
       }
     }
   }
+  // Set the blocks in H corresponding to the particles subject to boundary
+  // condition to the identity matrix.
+  for (int j = 0; j < 3; ++j) {
+    for (int k = 0; k < 3; ++k) {
+      H_.coeffRef(3 * bottom_left_corner_ + j, 3 * bottom_left_corner_ + k) =
+          (j == k) ? 1.0 : 0.0;
+      H_.coeffRef(3 * top_left_corner_ + j, 3 * top_left_corner_ + k) =
+          (j == k) ? 1.0 : 0.0;
+    }
+  }
   cg_.compute(H_);
   (*dv) = cg_.solve(f * dt_);
 }
-template class ClothSpringModel<double>;
 
+template <typename T>
+void ClothSpringModel<T>::ThrowIfInvalidSpringLength(
+    const T& spring_length, const T& rest_length) const {
+  constexpr double kRelativeTolerance =
+      10 * std::numeric_limits<double>::epsilon();
+  constexpr char prefix[] =
+      "Two particles are nearly coincident; the simulation reached an "
+      "invalid state.";
+  constexpr char postfix[] = "Try simulating a less energetic condition.";
+  if (spring_length < kRelativeTolerance * rest_length) {
+    if (dt_ > 0) {
+      throw std::runtime_error(
+          fmt::format("{} Current discrete time step ({} s) may be too "
+                      "large. Try a smaller value. If that does not work, {}",
+                      prefix, dt_, postfix));
+    } else {
+      throw std::runtime_error(fmt::format("{} {}", prefix, postfix));
+    }
+  }
+}
+template class ClothSpringModel<double>;
 }  // namespace mass_spring_cloth
 }  // namespace examples
 }  // namespace drake

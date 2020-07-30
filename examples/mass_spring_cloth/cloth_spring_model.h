@@ -43,6 +43,11 @@ namespace mass_spring_cloth {
  conditionally stable, and large time steps can lead to an unstable numerical
  solution.
 
+ Note that the spring energy is finite and thus the particles can overlap in
+ certain scenarios. For both the discrete and the continuous system, when two
+ particles overlap, the state is invalid and the system will throw a
+ ``std::logic_error`` and cause the program to crash.
+
  The system has a single output port that provides the positions of the
  particles. The 3*i-th, 3*i+1-th, and 3*i+2-th entry describe the position of
  the i-th particle.
@@ -86,6 +91,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   /// This returns nx * ny.
   int num_particles() const { return num_particles_; }
+
+  T h() const { return h_; }
 
  private:
   struct Spring {
@@ -295,17 +302,17 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // elastic and gravity forces are added. This function overwrites the values
   // in dv.
   //
-  // The momentum equation
+  // The discrete momentum equation reads
   //
-  //      M * dv = f(vⁿ⁺¹) * dt,
+  //      M * dv = f(xⁿ, vⁿ⁺¹) * dt,
   //
-  // where f is the damping force, is equivalent to
+  // where f is the damping force, which is equivalent to
   //
-  //      M * dv = (f(v̂) + ∂f/∂v(v̂) * dv) * dt,
+  //      M * dv = (f(xⁿ, v̂) + ∂f/∂v(xⁿ, v̂) * dv) * dt,
   //
   // because damping force is linear in v. Moving terms we end up with
   //
-  //      (M - ∂f/∂v(v̂)) * dv = f(v̂) * dt
+  //      (M - ∂f/∂v(xⁿ, v̂)) * dv = f(xⁿ, v̂) * dt
   //
   // which we abbreviate as
   //
@@ -325,26 +332,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   // Customized throw to prevent invalid configuration of springs.
   void ThrowIfInvalidSpringLength(const T& spring_length,
-                                  const T& rest_length) const {
-    constexpr double kRelativeTolerance =
-        10 * std::numeric_limits<double>::epsilon();
-    constexpr char prefix[] =
-        "Two particles are nearly coincident; the simulation reached an "
-        "invalid state.";
-    constexpr char postfix[] =
-        "Try simulating a less energetic condition or revisit the spring law "
-        "of the model.";
-    if (spring_length < kRelativeTolerance * rest_length) {
-      if (dt_ > 0) {
-        throw std::runtime_error(
-            fmt::format("{} Current discrete time step ({} s) may be too "
-                        "large. Try a smaller value. If that does not work, {}",
-                        prefix, dt_, postfix));
-      } else {
-        throw std::runtime_error(fmt::format("{} {}", prefix, postfix));
-      }
-    }
-  }
+                                  const T& rest_length) const;
 };
 }  // namespace mass_spring_cloth
 }  // namespace examples

@@ -49,7 +49,7 @@ class ClothSpringModelGeometry final : public systems::LeafSystem<double> {
 
  private:
   ClothSpringModelGeometry(geometry::SceneGraph<double>* scene_graph,
-                           int num_particles);
+                           int num_particles, double h);
   void OutputGeometryPose(const systems::Context<double>&,
                           geometry::FramePoseVector<double>*) const;
 
@@ -59,6 +59,7 @@ class ClothSpringModelGeometry final : public systems::LeafSystem<double> {
   std::vector<geometry::FrameId> frame_ids_;
   // Number of particles.
   int num_particles_{};
+  double particle_radius_{};
 };
 
 }  // namespace mass_spring_cloth

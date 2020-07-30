@@ -24,7 +24,8 @@ const ClothSpringModelGeometry& ClothSpringModelGeometry::AddToBuilder(
 
   auto cloth_spring_model_geometry = builder->AddSystem(
       std::unique_ptr<ClothSpringModelGeometry>(new ClothSpringModelGeometry(
-          scene_graph, cloth_spring_model.num_particles())));
+          scene_graph, cloth_spring_model.num_particles(),
+          cloth_spring_model.h())));
   builder->Connect(cloth_spring_model.get_output_port(0),
                    cloth_spring_model_geometry->get_input_port(0));
   builder->Connect(cloth_spring_model_geometry->get_output_port(0),
@@ -35,8 +36,11 @@ const ClothSpringModelGeometry& ClothSpringModelGeometry::AddToBuilder(
 }
 
 ClothSpringModelGeometry::ClothSpringModelGeometry(
-    geometry::SceneGraph<double>* scene_graph, int num_particles)
-    : num_particles_(num_particles) {
+    geometry::SceneGraph<double>* scene_graph, int num_particles, double h)
+    : num_particles_(num_particles),
+      // We set particle radius to be 80% of the gap between particles for
+      // pleasing visual effects.
+      particle_radius_(h * 0.8) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   source_id_ = scene_graph->RegisterSource();
 
@@ -54,7 +58,8 @@ ClothSpringModelGeometry::ClothSpringModelGeometry(
         source_id_, frame_ids_[i],
         std::make_unique<geometry::GeometryInstance>(
             math::RigidTransformd::Identity(),
-            std::make_unique<geometry::Sphere>(0.04), "sphere_visual"));
+            std::make_unique<geometry::Sphere>(particle_radius_),
+            "sphere_visual"));
     scene_graph->AssignRole(
         source_id_, id,
         geometry::MakePhongIllustrationProperties(Vector4d(1, 0, 1, 1)));
