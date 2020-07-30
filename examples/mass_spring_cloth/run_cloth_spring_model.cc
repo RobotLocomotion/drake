@@ -44,7 +44,9 @@ int DoMain() {
   ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
-  cloth_spring_model->InitializePositionAndVelocity(context.get());
+  auto& cloth_context =
+      cloth_spring_model->GetMyMutableContextFromRoot(context.get());
+  cloth_spring_model->InitializePositionAndVelocity(&cloth_context);
   auto simulator =
       systems::MakeSimulatorFromGflags(*diagram, std::move(context));
   simulator->set_target_realtime_rate(FLAGS_realtime_rate);

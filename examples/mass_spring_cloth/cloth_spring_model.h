@@ -128,14 +128,11 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
                                    Eigen::Lower | Eigen::Upper>
       cg_;
 
-  // VectorType is a placeholder for systems::VectorBase and Eigen::VectorX<T>.
-  // vec is a vector of positions, velocities or forces.
   // This function extracts the position/velocity/force corresponding to the
   // particle indexed with particle_index from the vector of that quantity.
   // All per-particle quantities are elements of R³ and are aligned in each of
   // the quantity vectors.
-  template <class VectorType>
-  static Vector3<T> particle_state(int particle_index, const VectorType& vec) {
+  static Vector3<T> particle_state(int particle_index, const Eigen::VectorBlock<const VectorX<T>>& vec) {
     const int p_index = particle_index * 3;
     return Vector3<T>{vec[p_index], vec[p_index + 1], vec[p_index + 2]};
   }
@@ -144,9 +141,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // particle indexed with particle_index to the state parameter.
   // All per-particle quantities are elements of R³ and are aligned in each of
   // the quantity vectors.
-  template <class VectorType>
   static void set_particle_state(int particle_index, const Vector3<T>& state,
-                                 VectorType* vec) {
+                                 EigenPtr<VectorX<T>> vec) {
     const int p_index = particle_index * 3;
     (*vec)[p_index] = state(0);
     (*vec)[p_index + 1] = state(1);
@@ -157,51 +153,13 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // position in vec without zeroing out the old value.
   // All per-particle quantities are elements of R³ and are aligned in each of
   // the quantity vectors..
-  template <class VectorType>
   static void accumulate_particle_state(int particle_index,
                                         const Vector3<T>& state,
-                                        VectorType* vec) {
+                                        EigenPtr<VectorX<T>> vec) {
     const int p_index = particle_index * 3;
     (*vec)[p_index] += state(0);
     (*vec)[p_index + 1] += state(1);
     (*vec)[p_index + 2] += state(2);
-  }
-
-  // VectorType is a placeholder for systems::VectorBase and Eigen::VectorX<T>.
-  template <class VectorType>
-  void InitializePositionAndVelocity(VectorType* x, VectorType* v) const {
-    DRAKE_DEMAND(x->size() == 3 * num_particles_ &&
-                 v->size() == 3 * num_particles_);
-    for (int i = 0; i < nx_; ++i) {
-      for (int j = 0; j < ny_; ++j) {
-        int particle_index = i * ny_ + j;
-        /* The particles are ordered in the following fashion:
-        +y
-          ^
-          ┊
-          ┊ny-1    2ny-1            nx*ny-1
-          ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
-          ┃       ┃        ┃       ┃
-          ┃ny-2   ┃2ny-2   ┃       ┃
-          ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
-          ┃       ┃        ┃       ┃
-          ┊       ┊        ┊       ┊
-          ┊       ┊        ┊       ┊
-          ┃       ┃        ┃       ┃
-          ┃1      ┃ny+1    ┃       ┃
-          ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
-          ┃       ┃        ┃       ┃
-          ┃0      ┃ny      ┃       ┃(nx-1)*ny
-        ┄┄●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●┄┄┄┄┄┄┄┄┄> +x
-          ┊
-
-          Note that we replaced nx_/ny_ with nx/ny in the diagram above for more
-        readability.
-        */
-        set_particle_state(particle_index, {i * h_, j * h_, 0.0}, x);
-        set_particle_state(particle_index, {0.0, 0.0, 0.0}, v);
-      }
-    }
   }
 
   /* TODO(xuchenhan-tri) Expose the use_shearing_springs parameter in the
@@ -227,7 +185,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // integration. The values contained in forces should be set to zero outside
   // this function if fresh values are required.
   void AccumulateContinuousSpringForce(const systems::Context<T>& context,
-                                       systems::VectorBase<T>* forces) const;
+                                       EigenPtr<VectorX<T>> forces) const;
 
   const ClothSpringModelParams<T>& GetParameters(
       const systems::Context<T>& context) const {
@@ -239,14 +197,9 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // particles and add to the output elastic_force. The values contained in
   // elastic_force should be set to zero outside this function if fresh values
   // are required.
-  //
-  // PositionVectorType, VelocityVectorType and ForceVectorType are
-  // placeholders for systems::VectorBase<T> and Eigen::VectorBlock<VectorX<T>>
-  // to accommodate different data types from discrete and continuous solvers.
-  template <class PositionVectorType, class ForceVectorType>
   void AccumulateElasticForce(const ClothSpringModelParams<T>& param,
-                              const PositionVectorType& x,
-                              ForceVectorType* elastic_force) const {
+                              const Eigen::VectorBlock<const VectorX<T>>& x,
+                              EigenPtr<VectorX<T>> elastic_force) const {
     for (const Spring& s : springs_) {
       // Get the positions of the two particles connected by the spring.
       const int p0 = s.particle0;
@@ -269,12 +222,10 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // velocities of the particles and add to the output damping_force. The values
   // contained in damping_force should be set to zero outside this function if
   // fresh values are required.
-  template <class PositionVectorType, class VelocityVectorType,
-            class ForceVectorType>
   void AccumulateDampingForce(const ClothSpringModelParams<T>& param,
-                              const PositionVectorType& x,
-                              const VelocityVectorType& v,
-                              ForceVectorType* damping_force) const {
+                              const Eigen::VectorBlock<const VectorX<T>>& x,
+                              const Eigen::VectorBlock<const VectorX<T>>& v,
+                              EigenPtr<VectorX<T>> damping_force) const {
     for (const Spring& s : springs_) {
       // Get the positions and velocities of the two particles connected by
       // the spring.
@@ -324,8 +275,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   /// Apply Dirichlet boundary conditions to the two corners of the rectangular
   /// grid.
-  template <class VectorType>
-  void ApplyDirichletBoundary(VectorType* state) const {
+  void ApplyDirichletBoundary(EigenPtr<VectorX<T>> state) const {
     set_particle_state(bottom_left_corner_, {0, 0, 0}, state);
     set_particle_state(top_left_corner_, {0, 0, 0}, state);
   }
