@@ -141,8 +141,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // particle indexed with particle_index from the vector of that quantity.
   // All per-particle quantities are elements of R³ and are aligned in each of
   // the quantity vectors.
-  static Vector3<T> particle_state(
-      int particle_index, const Eigen::VectorBlock<const VectorX<T>>& vec) {
+  static Vector3<T> particle_state(int particle_index,
+                                   const Eigen::Ref<const VectorX<T>>& vec) {
     const int p_index = particle_index * 3;
     return Vector3<T>{vec[p_index], vec[p_index + 1], vec[p_index + 2]};
   }
@@ -208,55 +208,17 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // elastic_force should be set to zero outside this function if fresh values
   // are required.
   void AccumulateElasticForce(const ClothSpringModelParams<T>& param,
-                              const Eigen::VectorBlock<const VectorX<T>>& x,
-                              EigenPtr<VectorX<T>> elastic_force) const {
-    for (const Spring& s : springs_) {
-      // Get the positions of the two particles connected by the spring.
-      const int p0 = s.particle0;
-      const int p1 = s.particle1;
-      const Vector3<T> p_WP0 = particle_state(p0, x);
-      const Vector3<T> p_WP1 = particle_state(p1, x);
-      const Vector3<T> p_P0P1_W = p_WP1 - p_WP0;
-      const T spring_length = p_P0P1_W.norm();
-      ThrowIfInvalidSpringLength(spring_length, s.rest_length);
-      const Vector3<T> n = p_P0P1_W / spring_length;
-      // If the n is the unit vector point from P0 to P1,
-      // the spring elastic force = k * (current_length - rest_length) * n
-      const Vector3<T> f = param.k() * (spring_length - s.rest_length) * n;
-      accumulate_particle_state(p0, f, elastic_force);
-      accumulate_particle_state(p1, -f, elastic_force);
-    }
-  }
+                              const Eigen::Ref<const VectorX<T>>& x,
+                              EigenPtr<VectorX<T>> elastic_force) const;
 
   // Calculates the damping force from springs given the positions and
   // velocities of the particles and add to the output damping_force. The values
   // contained in damping_force should be set to zero outside this function if
   // fresh values are required.
   void AccumulateDampingForce(const ClothSpringModelParams<T>& param,
-                              const Eigen::VectorBlock<const VectorX<T>>& x,
-                              const Eigen::VectorBlock<const VectorX<T>>& v,
-                              EigenPtr<VectorX<T>> damping_force) const {
-    for (const Spring& s : springs_) {
-      // Get the positions and velocities of the two particles connected by
-      // the spring.
-      const int p0 = s.particle0;
-      const int p1 = s.particle1;
-      const Vector3<T> p_WP0 = particle_state(p0, x);
-      const Vector3<T> p_WP1 = particle_state(p1, x);
-      const Vector3<T> v_WP0 = particle_state(p0, v);
-      const Vector3<T> v_WP1 = particle_state(p1, v);
-      const Vector3<T> p_P0P1_W = p_WP1 - p_WP0;
-      const T spring_length = p_P0P1_W.norm();
-      ThrowIfInvalidSpringLength(spring_length, s.rest_length);
-      const Vector3<T> n = p_P0P1_W / spring_length;
-      // If the n is the unit vector point from x0 to x1,
-      // the damping force = (damping coefficient * velocity difference)
-      // projected in the direction of n.
-      const Vector3<T> f = param.d() * (v_WP1 - v_WP0).dot(n) * n;
-      accumulate_particle_state(p0, f, damping_force);
-      accumulate_particle_state(p1, -f, damping_force);
-    }
-  }
+                              const Eigen::Ref<const VectorX<T>>& x,
+                              const Eigen::Ref<const VectorX<T>>& v,
+                              EigenPtr<VectorX<T>> damping_force) const;
 
   // Calculates the change in discrete velocity, dv = vⁿ⁺¹ - v̂, induced by the
   // implicit damping force, where v̂ is the velocity after the contribution of
