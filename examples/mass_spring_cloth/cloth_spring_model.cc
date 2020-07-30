@@ -66,43 +66,43 @@ void ClothSpringModel<T>::InitializePositionAndVelocity(
     // Extract mutable position and velocity states and initialize.
     state_vector = &context->get_mutable_discrete_state().get_mutable_vector();
   } else {
-    state_vector = &static_cast<systems::BasicVector<T>&>(
-        context->get_mutable_continuous_state().get_mutable_vector());
+    state_vector = static_cast<systems::BasicVector<T>*>(
+        &context->get_mutable_continuous_state().get_mutable_vector());
   }
 
   auto state_values = state_vector->get_mutable_value();
   auto x = state_values.head(3 * nx_ * ny_);
   auto v = state_values.tail(3 * nx_ * ny_);
-    for (int i = 0; i < nx_; ++i) {
-        for (int j = 0; j < ny_; ++j) {
-            int particle_index = i * ny_ + j;
-            /* The particles are ordered in the following fashion:
-            +y
-              ^
-              ┊
-              ┊ny-1    2ny-1            nx*ny-1
-              ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
-              ┃       ┃        ┃       ┃
-              ┃ny-2   ┃2ny-2   ┃       ┃
-              ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
-              ┃       ┃        ┃       ┃
-              ┊       ┊        ┊       ┊
-              ┊       ┊        ┊       ┊
-              ┃       ┃        ┃       ┃
-              ┃1      ┃ny+1    ┃       ┃
-              ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
-              ┃       ┃        ┃       ┃
-              ┃0      ┃ny      ┃       ┃(nx-1)*ny
-            ┄┄●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●┄┄┄┄┄┄┄┄┄> +x
-              ┊
+  for (int i = 0; i < nx_; ++i) {
+    for (int j = 0; j < ny_; ++j) {
+      int particle_index = i * ny_ + j;
+      /* The particles are ordered in the following fashion:
+      +y
+        ^
+        ┊
+        ┊ny-1    2ny-1            nx*ny-1
+        ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
+        ┃       ┃        ┃       ┃
+        ┃ny-2   ┃2ny-2   ┃       ┃
+        ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
+        ┃       ┃        ┃       ┃
+        ┊       ┊        ┊       ┊
+        ┊       ┊        ┊       ┊
+        ┃       ┃        ┃       ┃
+        ┃1      ┃ny+1    ┃       ┃
+        ●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●
+        ┃       ┃        ┃       ┃
+        ┃0      ┃ny      ┃       ┃(nx-1)*ny
+      ┄┄●━━━━━━━●━━┄┄┄┄━━●━━━━━━━●┄┄┄┄┄┄┄┄┄> +x
+        ┊
 
-              Note that we replaced nx_/ny_ with nx/ny in the diagram above for more
-            readability.
-            */
-            this->set_particle_state(particle_index, {i * h_, j * h_, 0.0}, &x);
-            this->set_particle_state(particle_index, {0.0, 0.0, 0.0}, &v);
-        }
+        Note that we replaced nx_/ny_ with nx/ny in the diagram above for more
+      readability.
+      */
+      this->set_particle_state(particle_index, {i * h_, j * h_, 0.0}, &x);
+      this->set_particle_state(particle_index, {0.0, 0.0, 0.0}, &v);
     }
+  }
 }
 
 template <typename T>
@@ -172,8 +172,8 @@ void ClothSpringModel<T>::DoCalcTimeDerivatives(
   systems::VectorBase<T>& xdot =
       derivatives->get_mutable_generalized_position();
   xdot.SetFrom(v);
-  systems::BasicVector<T>& vdot =
-          static_cast<systems::BasicVector<T>&>(derivatives->get_mutable_generalized_velocity());
+  systems::BasicVector<T>& vdot = static_cast<systems::BasicVector<T>&>(
+      derivatives->get_mutable_generalized_velocity());
   // Store spring force in vdot and then divide by mass to get acceleration.
   vdot.SetZero();
   auto tmp_vdot = vdot.get_mutable_value();
@@ -199,8 +199,7 @@ void ClothSpringModel<T>::UpdateDiscreteState(
     systems::DiscreteValues<T>* next_states) const {
   const systems::BasicVector<T>& current_state =
       context.get_discrete_state().get_vector();
-  const VectorX<T>& current_state_values =
-      current_state.get_value();
+  const VectorX<T>& current_state_values = current_state.get_value();
   const auto& x_n = current_state_values.head(3 * num_particles_);
   const auto& v_n = current_state_values.tail(3 * num_particles_);
   // v_hat is the velocity of the particles after adding the effect of the
@@ -235,10 +234,11 @@ void ClothSpringModel<T>::UpdateDiscreteState(
   // which we abbreviate as H * dv = f * dt.
   VectorX<T> dv = VectorX<T>::Zero(v_hat.size());
   VectorX<T> damping_force = VectorX<T>::Zero(v_hat.size());
-  // Extract a const Eigen::VectorBlock<const VectorX<T>>& tmp_v_hat to comply with the API of AccumulateDampingForce.
+  // Extract a const Eigen::VectorBlock<const VectorX<T>>& tmp_v_hat to comply
+  // with the API of AccumulateDampingForce.
   const auto& tmp_v_hat = std::as_const(v_hat).head(v_hat.size());
   AccumulateDampingForce(p, x_n, tmp_v_hat, &damping_force);
-  CalcDiscreteDv(p, x_n, damping_force, &dv);
+  CalcDiscreteDv(p, x_n, &damping_force, &dv);
 
   // Write v_hat + dv into the velocity at the next time step.
   Eigen::VectorBlock<VectorX<T>> next_state_values =
@@ -246,6 +246,7 @@ void ClothSpringModel<T>::UpdateDiscreteState(
   auto next_x = next_state_values.head(3 * num_particles_);
   auto next_v = next_state_values.tail(3 * num_particles_);
   next_v = v_hat + dv;
+  // Apply BC again to prevent numerical drift.
   ApplyDirichletBoundary(&next_v);
   // Update position using velocity at time n+1.
   next_x = x_n + dt_ * next_v;
@@ -255,9 +256,11 @@ template <typename T>
 void ClothSpringModel<T>::AccumulateContinuousSpringForce(
     const systems::Context<T>& context, EigenPtr<VectorX<T>> forces) const {
   const systems::BasicVector<T>& x =
-          static_cast<const systems::BasicVector<T>&>(context.get_continuous_state().get_generalized_position());
-    const systems::BasicVector<T>& v =
-            static_cast<const systems::BasicVector<T>&>(context.get_continuous_state().get_generalized_velocity());
+      static_cast<const systems::BasicVector<T>&>(
+          context.get_continuous_state().get_generalized_position());
+  const systems::BasicVector<T>& v =
+      static_cast<const systems::BasicVector<T>&>(
+          context.get_continuous_state().get_generalized_velocity());
   const ClothSpringModelParams<T>& p = GetParameters(context);
   AccumulateElasticForce(p, x.get_value(), forces);
   AccumulateDampingForce(p, x.get_value(), v.get_value(), forces);
@@ -265,11 +268,10 @@ void ClothSpringModel<T>::AccumulateContinuousSpringForce(
 
 template <typename T>
 void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
-                                         const VectorX<T>& x,
-                                         const VectorX<T>& f,
+                                         const VectorX<T>& x, VectorX<T>* f,
                                          VectorX<T>* dv) const {
   DRAKE_DEMAND(x.size() == dv->size());
-  DRAKE_DEMAND(x.size() == f.size());
+  DRAKE_DEMAND(x.size() == f->size());
   const T mass_per_particle = param.mass() / static_cast<T>(num_particles_);
   // Here we construct the H matrix. Take extreme care to overwrite the stale
   // data from the previous time step. Initialize the diagonal of the matrix to
@@ -278,11 +280,12 @@ void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
     for (int j = 0; j < 3; ++j) {
       for (int k = 0; k < 3; ++k) {
         H_.coeffRef(3 * i + j, 3 * i + k) =
-            (j == k) ? mass_per_particle : static_cast<T>(0.0);
+            (j == k) ? mass_per_particle : T(0.0);
       }
     }
   }
-  // Extract a const Eigen::VectorBlock<const VectorX<T>>& to comply with the API of particle_state.
+  // Extract a const Eigen::VectorBlock<const VectorX<T>>& to comply with the
+  // API of particle_state.
   const auto& tmp_x = x.head(x.size());
   // Add in the contribution from damping force differential.
   for (const Spring& s : springs_) {
@@ -339,8 +342,12 @@ void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
           (j == k) ? 1.0 : 0.0;
     }
   }
+  // Set the right-hand-side entries corresponding to particles subject to
+  // boundary conditions to zero.
+  set_particle_state(bottom_left_corner_, {0.0, 0.0, 0.0}, f);
+  set_particle_state(top_left_corner_, {0.0, 0.0, 0.0}, f);
   cg_.compute(H_);
-  (*dv) = cg_.solve(f * dt_);
+  (*dv) = cg_.solve((*f) * dt_);
 }
 
 template <typename T>

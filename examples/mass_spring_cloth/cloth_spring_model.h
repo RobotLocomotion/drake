@@ -34,14 +34,23 @@ namespace mass_spring_cloth {
  The dynamics of the system is described by:
 
        ẋ = v,
-       Mv̇ = f(x,v).
+       Mv̇ = fe(x, v) + fd(x, v),
+
+ where ``fe`` contains the elastic spring force and ``fd`` contains the
+ dissipation terms.
 
  When the system is integrated discretely, the elastic force and gravity are
- integrated explicitly while the damping force is integrated implicitly to
- obtain a linear system as described in [Bridson, 2005]. One should be careful
- not to take too large a timestep when using the discrete system because it is
- conditionally stable, and large time steps can lead to an unstable numerical
- solution.
+ integrated explicitly while the damping force is integrated implicitly. In
+ particular, the discretization reads:
+
+       Mv̂ = Mvⁿ + dt*fe(xⁿ, vⁿ),
+       Mvⁿ⁺¹ = Mv̂ + dt*fd(xⁿ, vⁿ⁺¹),
+       xⁿ⁺¹ = xⁿ + dt*vⁿ⁺¹.
+
+ which is first order accurate, but similar in spirit to the scheme in [Bridson,
+ 2005]. One should be careful not to take too large a timestep when using the
+ discrete system because it is conditionally stable, and large time steps can
+ lead to an unstable numerical solution.
 
  Note that the spring energy is finite and thus the particles can overlap in
  certain scenarios. For both the discrete and the continuous system, when two
@@ -132,7 +141,8 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // particle indexed with particle_index from the vector of that quantity.
   // All per-particle quantities are elements of R³ and are aligned in each of
   // the quantity vectors.
-  static Vector3<T> particle_state(int particle_index, const Eigen::VectorBlock<const VectorX<T>>& vec) {
+  static Vector3<T> particle_state(
+      int particle_index, const Eigen::VectorBlock<const VectorX<T>>& vec) {
     const int p_index = particle_index * 3;
     return Vector3<T>{vec[p_index], vec[p_index + 1], vec[p_index + 2]};
   }
@@ -253,7 +263,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // elastic and gravity forces are added. This function overwrites the values
   // in dv.
   //
-  // The discrete momentum equation reads
+  // CalcDiscreteDv solves the equation
   //
   //      M * dv = f(xⁿ, vⁿ⁺¹) * dt,
   //
@@ -270,8 +280,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   //      H * dv = f * dt.
   // @pre @p x, @p f, and @p dv must be of the same size.
   void CalcDiscreteDv(const ClothSpringModelParams<T>& param,
-                      const VectorX<T>& x, const VectorX<T>& f,
-                      VectorX<T>* dv) const;
+                      const VectorX<T>& x, VectorX<T>* f, VectorX<T>* dv) const;
 
   /// Apply Dirichlet boundary conditions to the two corners of the rectangular
   /// grid.
