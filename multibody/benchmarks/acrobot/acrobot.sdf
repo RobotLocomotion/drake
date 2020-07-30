@@ -14,7 +14,7 @@
         <!-- This inertia is based on a solid cylinder with
              radius=0.001 meters and height=1.0 meters. -->
         <!-- For this model we could make izz = 0 however, sdformat will throw
-	     an exception. -->
+             an exception. -->
         <inertia>
           <ixx>0.083</ixx>
           <iyy>0.083</iyy>
