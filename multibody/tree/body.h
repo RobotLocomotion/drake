@@ -311,10 +311,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalSpatialAccelerationInWorld(
-      const systems::Context<T>& context) const {
-    const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
-    return parent_plant.EvalBodySpatialAccelerationInWorld(context, *this);
-  }
+      const systems::Context<T>& context) const;
 
   /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
   /// applied at body B's origin Bo and expressed in world world frame W.

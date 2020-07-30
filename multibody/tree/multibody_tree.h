@@ -1574,6 +1574,22 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       AccelerationKinematicsCache<T>* ac) const;
 
+  // For one point Bp fixed/welded to a frame B, calculates A_ABp_E, Bp's
+  // spatial acceleration in frame A, expressed in frame_E.
+  // @param[in] context The state of the multibody system.
+  // @param[in] frame_B The frame on which point Bp is affixed/welded.
+  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp,
+  //            expressed in frame_B.
+  // @param[in] frame_A The frame that measures A_ABp_E.
+  // @param[in] frame_E The frame in which A_ABp_E is expressed on output.
+  // @returns A_ABp_E Bp's spatial acceleration in frame A expressed in frame_E.
+  SpatialAcceleration<T> CalcSpatialAcceleration(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E) const;
+
   /// See MultibodyPlant method.
   /// @warning The output parameter `A_WB_array` is indexed by BodyNodeIndex,
   /// while MultibodyPlant's method returns accelerations indexed by BodyIndex.

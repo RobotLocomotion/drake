@@ -252,10 +252,28 @@ class Frame : public FrameBase<T> {
         body().EvalPoseInWorld(context).rotation();
     const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
     const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
+    const SpatialAcceleration<T>& A_WB_W =
+        body().EvalSpatialAccelerationInWorld(context);
     const Vector3<T>& w_WB_W =
         body().EvalSpatialVelocityInWorld(context).rotational();
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
     return A_WF_W;
+  }
+
+  /// Computes and returns the spatial acceleration A_MF_E of `this` frame_F in
+  /// frame_M expressed in frame_E as a function of the state stored in context.
+  /// @note Indirectly, this method calls MultibodyPlant::EvalForwardDynamics()
+  /// which can be computational intensive.
+  /// @see EvalSpatialAccelerationInWorld().
+  SpatialAcceleration<T> CalcSpatialAcceleration(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_M, const Frame<T>& frame_E) const {
+    // Form position vector from Bo (B's origin) to Fo (this frame F's origin).
+    const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
+
+    // Use a MultibodyTree method to finish the calculation.
+    return this->get_parent_tree().CalcSpatialAcceleration(context,
+        *this, p_BoFo_B, frame_M, frame_E);
   }
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the

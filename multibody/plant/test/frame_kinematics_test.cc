@@ -103,11 +103,45 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       V_WB_all[end_effector_link_->index()];
   EXPECT_EQ(V_WE.get_coeffs(), V_WE_from_port.get_coeffs());
 
+  // Verify a short-cut return from Frame::CalcSpatialAccelerationInWorld()
+  // when dealing with a body_frame (as opposed to a generic frame).
+  // Compare results with the A_WE_W from an associated plant method.
+  const Frame<double>& frame_E = end_effector_link_->body_frame();
+  const SpatialAcceleration<double> A_WE_W =
+      frame_E.CalcSpatialAccelerationInWorld(*context_);
+  const SpatialAcceleration<double> A_WE_W_alternate1 =
+     plant_->EvalBodySpatialAccelerationInWorld(*context_, *end_effector_link_);
+  EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_alternate1.get_coeffs());
+
+#if 0
+  // Also verify A_WE_W against Body::EvalSpatialAccelerationInWorld().
+  const SpatialAcceleration<double> A_WE_W_alternate2 =
+    end_effector_link_->EvalSpatialAccelerationInWorld(*context_);
+  EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_alternate2.get_coeffs());
+#endif
+  // Also verify A_WE_W from the plant's output port for spatial acceleration.
+  const auto& A_WB_all =
+    plant_->get_body_spatial_accelerations_output_port()
+        .Eval<std::vector<SpatialAcceleration<double>>>(*context_);
+  ASSERT_EQ(A_WB_all.size(), plant_->num_bodies());
+  const SpatialAcceleration<double>& A_WE_W_from_port =
+      A_WB_all[end_effector_link_->index()];
+  EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_from_port.get_coeffs());
+
+  // Verify frame_H's spatial acceleration in world W, expressed in W.
+  const SpatialAcceleration<double> A_WH_W =
+    frame_H_->CalcSpatialAccelerationInWorld(*context_);
+  const Vector3<double> w_WE_W = V_WH.rotational();
+  const SpatialAcceleration<double> A_WH_W_expected =
+      A_WE_W.Shift(p_EH_W, w_WE_W);
+  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+
   // Spatial velocity of link 3 measured in the H frame and expressed in the
   // end-effector frame E.
-  const SpatialVelocity<double> V_HL3_E =
-      link3.body_frame().CalcSpatialVelocity(
-          *context_, *frame_H_, end_effector_link_->body_frame());
+  const Frame<double>& frame_L3 = link3.body_frame();
+  const SpatialVelocity<double> V_HL3_E = frame_L3.CalcSpatialVelocity(
+          *context_, *frame_H_, frame_E);
   // Compute V_HL3_E_expected.
   const SpatialVelocity<double> V_WH_E = R_WE.transpose() * V_WH;
   const math::RotationMatrix<double> R_EH =
@@ -121,6 +155,20 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(
       V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+#if 0
+  // Ensure A_HH_E (frame_H's spatial acceleration in frame_H) is zero.
+  const SpatialAcceleration<double> A_HH_E = frame_H_->CalcSpatialAcceleration(
+      *context_, *frame_H_, frame_E);
+  EXPECT_EQ(A_HH_E.get_coeffs(), Vector6<double>::Zero());
+
+  // Compare A_WH_E (frame_H's spatial acceleration in world frame_W, expressed
+  // in end-effector frame_E) as calculated by Frame::CalcSpatialAcceleration()
+  // with results calculated by Frame::CalcSpatialAccelerationInWorld().
+  const Frame<double>& frame_W = plant_->world_frame();
+  const SpatialAcceleration<double> A_WE_W_alternate3 =
+      frame_H_->CalcSpatialAcceleration(*context_, frame_W, frame_W);
+  EXPECT_EQ(A_WE_W_alternate3.get_coeffs(), A_WH_W_expected.get_coeffs());
+#endif
 
   // Test for a simple identity case of CalcRelativeTransform().
   const RigidTransformd X_HH =
