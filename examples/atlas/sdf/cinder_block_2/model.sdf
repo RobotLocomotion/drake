@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <sdf version="1.5">
   <model name="cinder_block_2">
     <link name="link">
@@ -18,9 +18,9 @@
       </inertial>
       <visual name="visual">
         <geometry>
-	  <box>
-		<size>0.396875 0.19368008 0.146</size>
-	  </box>
+          <box>
+            <size>0.396875 0.19368008 0.146</size>
+          </box>
           <!--
           <mesh>
             <uri>model://cinder_block_2/meshes/cinder_block.dae</uri>

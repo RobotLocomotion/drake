@@ -40,7 +40,6 @@
           </box>
         </geometry>
       </collision>
-
       <visual name="visual_1">
         <pose frame="">-0.031 0.007 0.005 0 -0.05 0</pose>
         <geometry>
@@ -63,7 +62,6 @@
           <diffuse>0 1.00 0 1.0</diffuse>
         </material>
       </visual>
-
       <!-- Add spheres to the corners of the collision boxes, to avoid
       bouncing. -->
       <collision name="handle_corner_col_0">
@@ -114,8 +112,6 @@
           </sphere>
         </geometry>
       </collision>
-
-
       <!-- Add collision spheres along the handle-->
       <collision name="handle_sphere_col_0">
         <pose frame="">-0.080 0.007 0.005 0 0 0</pose>

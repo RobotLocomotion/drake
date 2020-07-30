@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <robot name="two_link_ball_joint_robot">
-
   <link name="link1">
     <inertial>
       <mass value="1"/>
@@ -12,9 +11,9 @@
       <geometry>
         <cylinder length="0.6" radius="0.1"/>
       </geometry>
-     <material name="Cyan">
-       <color rgba="0 1.0 1.0 1.0"/>
-     </material>
+      <material name="Cyan">
+        <color rgba="0 1.0 1.0 1.0"/>
+      </material>
     </visual>
     <collision>
       <geometry>
@@ -23,7 +22,6 @@
       <origin xyz="0 0 0.3"/>
     </collision>
   </link>
-
   <link name="link2">
     <inertial>
       <mass value="1"/>
@@ -35,9 +33,9 @@
       <geometry>
         <cylinder length="0.6" radius="0.1"/>
       </geometry>
-     <material name="Cyan">
-       <color rgba="0 1.0 1.0 1.0"/>
-     </material>
+      <material name="Cyan">
+        <color rgba="0 1.0 1.0 1.0"/>
+      </material>
     </visual>
     <collision>
       <geometry>
@@ -46,7 +44,6 @@
       <origin xyz="0 0 0.3"/>
     </collision>
   </link>
-
   <joint name="ball_joint" type="ball">
     <parent link="link1"/>
     <child link="link2"/>

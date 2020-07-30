@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0"?>
 <!--
 This URDF contains a robot-level material named "brown". The material is defined
 redundantly: once as a stand-alone material and once inside a particular visual

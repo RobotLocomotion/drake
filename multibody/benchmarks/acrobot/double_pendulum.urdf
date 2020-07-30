@@ -1,56 +1,43 @@
 <?xml version="1.0"?>
-<robot xmlns="https://drake.mit.edu"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       name="SimpleDoublePendulum">
-
+<robot xmlns="https://drake.mit.edu" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="SimpleDoublePendulum">
   <link name="base">
     <inertial>
-      <origin xyz="0 0.0 0" rpy="0 0 0" />
-      <mass value="1" />
+      <origin xyz="0 0.0 0" rpy="0 0 0"/>
+      <mass value="1"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
-
   <link name="link1">
-    <inertial> 
-      <origin xyz="0 -0.5 0" rpy="0 0 0" />
-      <mass value="1" />
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    <inertial>
+      <origin xyz="0 -0.5 0" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
-
   <link name="link2">
     <inertial>
-      <origin xyz="0 -0.5 0" rpy="0 0 0" />
-      <mass value="1" />
+      <origin xyz="0 -0.5 0" rpy="0 0 0"/>
+      <mass value="1"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
-
   <joint name="shaft1" type="continuous">
     <parent link="base"/>
     <child link="link1"/>
-    <origin xyz="0 0.0 0" rpy="0 0 0" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="0.1" />
+    <origin xyz="0 0.0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="0.1"/>
   </joint>
-
   <joint name="shaft2" type="continuous">
     <parent link="link1"/>
     <child link="link2"/>
-    <origin xyz="0 -1.0 0" rpy="0 0 0" />
-    <axis xyz="0 0 1" />
-    <dynamics damping="0.1" />
+    <origin xyz="0 -1.0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="0.1"/>
   </joint>
-  
-  <frame
-    link="link1" name="frame_on_link1" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
-  <frame
-    link="link2" name="frame_on_link2" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
-
+  <frame link="link1" name="frame_on_link1" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
+  <frame link="link2" name="frame_on_link2" rpy="-1 0.1 0.2" xyz="0.8 -0.2 0.3"/>
   <!-- Frames located at the COM of each link. -->
-  <frame
-    link="link1" name="link1_com" rpy="0 0 0" xyz="0 -0.5 0"/>
-  <frame
-    link="link2" name="link2_com" rpy="0 0 0" xyz="0 -0.5 0"/>
+  <frame link="link1" name="link1_com" rpy="0 0 0" xyz="0 -0.5 0"/>
+  <frame link="link2" name="link2_com" rpy="0 0 0" xyz="0 -0.5 0"/>
 </robot>

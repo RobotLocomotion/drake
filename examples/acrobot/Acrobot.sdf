@@ -1,16 +1,17 @@
-<sdf version='1.5'>
-  <model name='Acrobot'>
-    <link name='base_link'>
-      <collision name='base_link_collision'>
-        <pose frame=''>0 0 0 0 0 0</pose>
+<?xml version="1.0"?>
+<sdf version="1.5">
+  <model name="Acrobot">
+    <link name="base_link">
+      <collision name="base_link_collision">
+        <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.2 0.2 0.2</size>
           </box>
         </geometry>
       </collision>
-      <visual name='base_link_visual'>
-        <pose frame=''>0 0 0 0 0 0</pose>
+      <visual name="base_link_visual">
+        <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.2 0.2 0.2</size>
@@ -18,14 +19,14 @@
         </geometry>
       </visual>
     </link>
-    <joint name='base_weld' type='fixed'>
+    <joint name="base_weld" type="fixed">
       <child>base_link</child>
       <parent>world</parent>
     </joint>
-    <link name='upper_link'>
-      <pose frame=''>0 0.15 0 0 0 0</pose>
+    <link name="upper_link">
+      <pose frame="">0 0.15 0 0 0 0</pose>
       <inertial>
-        <pose frame=''>0 0 -0.5 0 0 0</pose>
+        <pose frame="">0 0 -0.5 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>1</ixx>
@@ -36,8 +37,8 @@
           <izz>1</izz>
         </inertia>
       </inertial>
-      <collision name='upper_link_collision'>
-        <pose frame=''>0 0 -0.5 0 0 0</pose>
+      <collision name="upper_link_collision">
+        <pose frame="">0 0 -0.5 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>1.1</length>
@@ -45,8 +46,8 @@
           </cylinder>
         </geometry>
       </collision>
-      <visual name='upper_link_visual'>
-        <pose frame=''>0 0 -0.5 0 0 0</pose>
+      <visual name="upper_link_visual">
+        <pose frame="">0 0 -0.5 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>1.1</length>
@@ -55,7 +56,7 @@
         </geometry>
       </visual>
     </link>
-    <joint name='shoulder' type='revolute'>
+    <joint name="shoulder" type="revolute">
       <child>upper_link</child>
       <parent>base_link</parent>
       <axis>
@@ -72,10 +73,10 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <link name='lower_link'>
-      <pose frame=''>0 0.25 -1 0 0 0</pose>
+    <link name="lower_link">
+      <pose frame="">0 0.25 -1 0 0 0</pose>
       <inertial>
-        <pose frame=''>0 0 -1 0 0 0</pose>
+        <pose frame="">0 0 -1 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>1</ixx>
@@ -86,8 +87,8 @@
           <izz>1</izz>
         </inertia>
       </inertial>
-      <collision name='lower_link_collision'>
-        <pose frame=''>0 0 -1 0 0 0</pose>
+      <collision name="lower_link_collision">
+        <pose frame="">0 0 -1 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>2.1</length>
@@ -95,8 +96,8 @@
           </cylinder>
         </geometry>
       </collision>
-      <visual name='lower_link_visual'>
-        <pose frame=''>0 0 -1 0 0 0</pose>
+      <visual name="lower_link_visual">
+        <pose frame="">0 0 -1 0 0 0</pose>
         <geometry>
           <cylinder>
             <length>2.1</length>
@@ -105,7 +106,7 @@
         </geometry>
       </visual>
     </link>
-    <joint name='elbow' type='revolute'>
+    <joint name="elbow" type="revolute">
       <child>lower_link</child>
       <parent>upper_link</parent>
       <axis>
