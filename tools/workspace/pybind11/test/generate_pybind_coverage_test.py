@@ -4,7 +4,7 @@ import sys
 import unittest
 import xml.etree.ElementTree as ET
 
-from drake.third_party.com_github_pybind_pybind11.mkdoc import prettify
+from drake.tools.workspace.pybind11.mkdoc import prettify
 
 
 def _read(filename):
