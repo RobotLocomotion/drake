@@ -219,6 +219,24 @@ class Frame : public FrameBase<T> {
     return R_WE.inverse() * V_MF_W;
   }
 
+  /// Computes and returns the spatial acceleration A_WF_W of `this` frame F in
+  /// the world frame W as a function of the state stored in context.
+  /// @note Body::EvalSpatialAccelerationInWorld() provides a more efficient way
+  /// to obtain the spatial acceleration for a body frame.
+  SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
+      const systems::Context<T>& context) const {
+    const math::RotationMatrix<T>& R_WB =
+        body().EvalPoseInWorld(context).rotation();
+    const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
+    const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
+    const SpatialAcceleration<T>& A_WB_W =
+        body().EvalSpatialAccelerationInWorld(context);
+    const Vector3<T>& w_WB_W =
+        body().EvalSpatialVelocityInWorld(context).rotational();
+    const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
+    return A_WF_W;
+  }
+
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
   /// new clone to be created. This method is mostly intended to be called by
   /// MultibodyTree::CloneToScalar(). Most users should not call this clone

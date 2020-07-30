@@ -2159,6 +2159,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().EvalBodySpatialVelocityInWorld(context, body_B);
   }
 
+  /// Evaluate the spatial acceleration A_WB_W of a body B in the world frame W.
+  /// @param[in] context
+  ///   The context storing the state of the model.
+  /// @param[in] body_B
+  ///   The body B for which the spatial acceleration is requested.
+  /// @returns A_WB_W
+  ///   The spatial acceleration of body B in the world frame W.
+  /// @throws std::exception if Finalize() was not called on `this` model or if
+  /// `body_B` does not belong to this model.
+  const SpatialAcceleration<T>& EvalBodySpatialAccelerationInWorld(
+      const systems::Context<T>& context,
+      const Body<T>& body_B) const;
+
   /// Evaluates all point pairs of contact for a given state of the model stored
   /// in `context`.
   /// Each entry in the returned vector corresponds to a single point pair
