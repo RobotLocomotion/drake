@@ -27,7 +27,7 @@
         </inertia>
       </inertial>
       <visual name="base_link_gelatin">
-        <pose frame="">-0.0029 0.024 -0.015 -0.0085 -0.002 1.34</pose>
+        <pose>-0.0029 0.024 -0.015 -0.0085 -0.002 1.34</pose>
         <geometry>
           <mesh>
             <uri>../meshes/009_gelatin_box_textured.obj</uri>
@@ -46,7 +46,6 @@
       case a deviation of 0.0005 m from the visual surface).
      -->
       <collision name="box_collision">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.083200 0.067100 0.024000</size>

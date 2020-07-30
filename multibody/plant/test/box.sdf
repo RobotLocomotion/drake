@@ -58,7 +58,7 @@
     </joint>
     <!-- Ghost body of negligible mass. -->
     <link name="ghost_body">
-      <pose frame="">0 0 0.5 0 0 0</pose>
+      <pose>0 0 0.5 0 0 0</pose>
       <inertial>
         <mass>1.0e-6</mass>
         <inertia>
@@ -77,7 +77,6 @@
     <joint name="x_slider" type="prismatic">
       <parent>world</parent>
       <child>ghost_body</child>
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <!-- Drake attaches an actuator to all joints with a non-zero effort
@@ -92,7 +91,6 @@
     <joint name="z_slider" type="prismatic">
       <parent>ghost_body</parent>
       <child>box</child>
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
         <!-- Drake attaches an actuator to all joints with a non-zero effort

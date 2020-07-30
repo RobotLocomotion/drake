@@ -5,7 +5,6 @@
          documented in cart_pole_params_named_vector.yaml.
          They MUST be kept in sync. -->
     <link name="Cart">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <mass>10.0</mass>
         <!-- For this model case, with the cart not having any rotational
@@ -23,7 +22,6 @@
         </inertia>
       </inertial>
       <visual name="cart_visual">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.24 0.12 0.12</size>
@@ -50,7 +48,6 @@
         </inertia>
       </inertial>
       <visual name="pole_point_mass">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.05</radius>

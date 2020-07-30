@@ -2,7 +2,6 @@
 <sdf version="1.6">
   <model name="cupboard">
     <link name="cupboard_body">
-      <pose> 0 0 0 0 0 0</pose>
       <visual name="right_wall">
         <pose> 0 0.292 0 0 0 0</pose>
         <geometry>
@@ -37,7 +36,6 @@
       </collision>
     </link>
     <link name="top_and_bottom">
-      <pose> 0 0 0 0 0 0</pose>
       <visual name="bottom">
         <pose> 0 0 -0.3995 0 0 0</pose>
         <geometry>
@@ -107,7 +105,6 @@
     <joint name="top_and_bottom_cupboard_body" type="fixed">
       <child>top_and_bottom</child>
       <parent>cupboard_body</parent>
-      <pose>0 0 0 0 0 0 </pose>
     </joint>
     <!-- joint between cupboard_body and left_door -->
     <joint name="left_door_hinge" type="revolute">
@@ -147,7 +144,6 @@
         </geometry>
       </visual>
       <visual name="slab">
-        <pose> 0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.016 0.279 0.815</size>
@@ -167,7 +163,6 @@
         </geometry>
       </collision>
       <collision name="slab">
-        <pose> 0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.016 0.279 0.815</size>
@@ -213,7 +208,6 @@
         </geometry>
       </visual>
       <visual name="slab">
-        <pose> 0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.016 0.279 0.815</size>
@@ -233,7 +227,6 @@
         </geometry>
       </collision>
       <collision name="slab">
-        <pose> 0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.016 0.279 0.815</size>

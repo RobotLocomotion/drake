@@ -22,7 +22,6 @@
       </geometry>
     </visual>
     <collision name="link1_collision1">
-      <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
       <geometry>
         <cylinder radius="0.5" length="2.0"/>
       </geometry>

@@ -39,7 +39,6 @@
       <!-- A visual to show the link's pivot point -->
       <visual name="Link1_pivot_visual">
         <!-- Pose of the sphere used for visual in Link1's frame -->
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <sphere>
             <radius>0.125</radius>
@@ -102,7 +101,6 @@
       <parent>Link1</parent>
       <child>Link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>

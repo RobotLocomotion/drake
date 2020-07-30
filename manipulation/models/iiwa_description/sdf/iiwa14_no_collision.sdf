@@ -10,9 +10,8 @@ Later edited by hand to:
 <sdf version="1.7">
   <model name="iiwa14">
     <link name="iiwa_link_0">
-      <pose>0 0 0 0 -0 0</pose>
       <inertial>
-        <pose>-0.1 0 0.07 0 -0 0</pose>
+        <pose>-0.1 0 0.07 0 0 0</pose>
         <mass>5</mass>
         <inertia>
           <ixx>0.05</ixx>
@@ -24,7 +23,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_0_fixed_joint_lump__iiwa_link_0_visual">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -40,9 +38,9 @@ Later edited by hand to:
       <self_collide>0</self_collide>
     </link>
     <link name="iiwa_link_1">
-      <pose relative_to="iiwa_joint_1">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_1"/>
       <inertial>
-        <pose>0 -0.03 0.12 0 -0 0</pose>
+        <pose>0 -0.03 0.12 0 0 0</pose>
         <mass>5.76</mass>
         <inertia>
           <ixx>0.033</ixx>
@@ -54,7 +52,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_1_visual">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -91,9 +88,9 @@ Later edited by hand to:
     </joint>
     <!-- SDFormat 1.7 -->
     <link name="iiwa_link_2">
-      <pose relative_to="iiwa_joint_2">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_2"/>
       <inertial>
-        <pose>0.0003 0.059 0.042 0 -0 0</pose>
+        <pose>0.0003 0.059 0.042 0 0 0</pose>
         <mass>6.35</mass>
         <inertia>
           <ixx>0.0305</ixx>
@@ -105,7 +102,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_2_visual_grey">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -117,7 +113,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_2_visual_orange">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -155,9 +150,9 @@ Later edited by hand to:
       </axis>
     </joint>
     <link name="iiwa_link_3">
-      <pose relative_to="iiwa_joint_3">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_3"/>
       <inertial>
-        <pose>0 0.03 0.13 0 -0 0</pose>
+        <pose>0 0.03 0.13 0 0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.025</ixx>
@@ -169,7 +164,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_3_visual">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -181,7 +175,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_3_visual_band">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -193,7 +186,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_3_visual_kuka">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -229,9 +221,9 @@ Later edited by hand to:
       </axis>
     </joint>
     <link name="iiwa_link_4">
-      <pose relative_to="iiwa_joint_4">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_4"/>
       <inertial>
-        <pose>0 0.067 0.034 0 -0 0</pose>
+        <pose>0 0.067 0.034 0 0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.017</ixx>
@@ -243,7 +235,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_4_visual_grey">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -255,7 +246,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_4_visual_orange">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -291,9 +281,9 @@ Later edited by hand to:
       </axis>
     </joint>
     <link name="iiwa_link_5">
-      <pose relative_to="iiwa_joint_5">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_5"/>
       <inertial>
-        <pose>0.0001 0.021 0.076 0 -0 0</pose>
+        <pose>0.0001 0.021 0.076 0 0 0</pose>
         <mass>3.5</mass>
         <inertia>
           <ixx>0.01</ixx>
@@ -305,7 +295,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_5_visual">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -317,7 +306,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_5_visual_band">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -329,7 +317,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_5_visual_kuka">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -365,9 +352,9 @@ Later edited by hand to:
       </axis>
     </joint>
     <link name="iiwa_link_6">
-      <pose relative_to="iiwa_joint_6">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_6"/>
       <inertial>
-        <pose>0 0.0006 0.0004 0 -0 0</pose>
+        <pose>0 0.0006 0.0004 0 0 0</pose>
         <mass>1.8</mass>
         <inertia>
           <ixx>0.0049</ixx>
@@ -379,7 +366,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_6_visual_grey">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -391,7 +377,6 @@ Later edited by hand to:
         </material>
       </visual>
       <visual name="iiwa_link_6_visual_orange">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -427,9 +412,9 @@ Later edited by hand to:
       </axis>
     </joint>
     <link name="iiwa_link_7">
-      <pose relative_to="iiwa_joint_7">0 0 0 0 0 0</pose>
+      <pose relative_to="iiwa_joint_7"/>
       <inertial>
-        <pose>0 0 0.02 0 -0 0</pose>
+        <pose>0 0 0.02 0 0 0</pose>
         <mass>1.2</mass>
         <inertia>
           <ixx>0.001</ixx>
@@ -441,7 +426,6 @@ Later edited by hand to:
         </inertia>
       </inertial>
       <visual name="iiwa_link_7_visual">
-        <pose>0 0 0 0 -0 0</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>

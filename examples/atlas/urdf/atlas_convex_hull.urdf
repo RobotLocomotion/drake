@@ -1183,7 +1183,6 @@
   </link>
   <gazebo reference="head_hokuyo_frame">
     <sensor name="head_hokuyo_sensor" type="ray">
-      <pose>0 0 0 0 0 0</pose>
       <visualize>false</visualize>
       <update_rate>40</update_rate>
       <ray>
@@ -1645,7 +1644,6 @@
     <sensor name="l_hand_camera_sensor" type="camera">
       <update_rate>10.0</update_rate>
       <camera name="l_hand_camera">
-        <pose>0 0 0 0 0 0</pose>
         <!-- m.antone estimate of 2.8mm tamron lense fov -->
         <horizontal_fov>1.7281</horizontal_fov>
         <image>
@@ -1714,7 +1712,6 @@
     <sensor name="r_hand_camera_sensor" type="camera">
       <update_rate>10.0</update_rate>
       <camera name="r_hand_camera">
-        <pose>0 0 0 0 0 0</pose>
         <!-- m.antone estimate of 2.8mm tamron lense fov -->
         <horizontal_fov>1.7281</horizontal_fov>
         <image>

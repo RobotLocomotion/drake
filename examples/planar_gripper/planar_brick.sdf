@@ -5,7 +5,6 @@
   </link>
     <link name="brick_dummy_link1">
       <inertial>
-        <pose frame="">0 0 0 0 0 0 </pose>
         <mass>1e-10</mass>
         <inertia>
           <ixx>1e-10</ixx>
@@ -30,7 +29,6 @@
     </joint>
     <link name="brick_dummy_link2">
       <inertial>
-        <pose frame="">0 0 0 0 0 0 </pose>
         <mass>1e-10</mass>
         <inertia>
           <ixx>1e-10</ixx>
@@ -55,7 +53,6 @@
     </joint>
     <link name="brick_link">
       <inertial>
-        <pose frame="">0 0 0 0 0 0 </pose>
         <mass>0.028</mass>
         <inertia>
           <ixx>1.17e-5</ixx>
@@ -67,7 +64,7 @@
         </inertia>
       </inertial>
       <visual name="brick_visual_1">
-        <pose frame="">0 0 0.025 0 0 0</pose>
+        <pose>0 0 0.025 0 0 0</pose>
         <geometry>
           <box>
             <size>0.07 0.1 0.05</size>
@@ -78,7 +75,7 @@
         </material>
       </visual>
       <visual name="brick_visual_2">
-        <pose frame="">0 0 -0.025 0 0 0</pose>
+        <pose>0 0 -0.025 0 0 0</pose>
         <geometry>
           <box>
             <size>0.07 0.1 0.05</size>
@@ -89,7 +86,6 @@
         </material>
       </visual>
       <collision name="box_collision">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.07 0.1 0.1</size>

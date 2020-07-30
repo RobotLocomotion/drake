@@ -2,7 +2,6 @@
 <sdf version="1.6">
   <model name="thin_cylinder">
     <link name="base_link">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0 0 0.00915 0 0 0</pose>
         <mass>0.375</mass>
