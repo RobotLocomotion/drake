@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.5">
+<sdf version="1.7">
   <model name="Acrobot">
     <link name="base_link">
       <collision name="base_link_collision">
@@ -58,7 +58,7 @@
       <child>upper_link</child>
       <parent>base_link</parent>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <effort>0</effort>
         </limit>
@@ -68,7 +68,6 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="lower_link">
@@ -108,7 +107,7 @@
       <child>lower_link</child>
       <parent>upper_link</parent>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
         </limit>
         <dynamics>
@@ -117,11 +116,10 @@
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <frame name="hand">
-      <pose frame="lower_link">0 0 -2.1 0 0 0</pose>
+      <pose relative_to="lower_link">0 0 -2.1 0 0 0</pose>
     </frame>
   </model>
 </sdf>

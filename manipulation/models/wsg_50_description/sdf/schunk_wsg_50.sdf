@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="Schunk_Gripper">
     <link name="body">
       <pose>0 -0.049133 0 0 0 0</pose>
@@ -95,7 +95,7 @@
       </collision>
     </link>
     <frame name="body_frame">
-      <pose frame="body"/>
+      <pose relative_to="body"/>
     </frame>
     <link name="left_finger">
       <pose>-0.008 0.025 0 0 0 0</pose>
@@ -288,7 +288,6 @@
       <child>left_finger</child>
       <axis>
         <xyz>1 0 0</xyz>
-        <use_parent_model_frame>0</use_parent_model_frame>
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
@@ -323,7 +322,6 @@
       <child>right_finger</child>
       <axis>
         <xyz>1 0 0</xyz>
-        <use_parent_model_frame>0</use_parent_model_frame>
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
