@@ -62,4 +62,12 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_googletest(
+    name = "cloth_spring_model_test",
+    deps = [
+        ":cloth_spring_model",
+		"//systems/analysis:simulator"
+    ],
+)
+
 add_lint_tests()
