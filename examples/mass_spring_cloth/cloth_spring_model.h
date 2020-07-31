@@ -33,8 +33,8 @@ namespace mass_spring_cloth {
 
  The dynamics of the system is described by:
 
-       ẋ = v,
-       Mv̇ = fe(x, v) + fd(x, v),
+       q̇ = v,
+       Mv̇ = fe(q) + fd(q, v),
 
  where ``fe`` contains the elastic spring force and ``fd`` contains the
  dissipation terms.
@@ -43,9 +43,9 @@ namespace mass_spring_cloth {
  integrated explicitly while the damping force is integrated implicitly. In
  particular, the discretization reads:
 
-       Mv̂ = Mvⁿ + dt*fe(xⁿ, vⁿ),
-       Mvⁿ⁺¹ = Mv̂ + dt*fd(xⁿ, vⁿ⁺¹),
-       xⁿ⁺¹ = xⁿ + dt*vⁿ⁺¹.
+       Mv̂ = Mvⁿ + dt*fe(qⁿ),
+       Mvⁿ⁺¹ = Mv̂ + dt*fd(qⁿ, vⁿ⁺¹),
+       qⁿ⁺¹ = qⁿ + dt*vⁿ⁺¹.
 
  which is first order accurate, but similar in spirit to the scheme in [Bridson,
  2005]. One should be careful not to take too large a timestep when using the
@@ -55,11 +55,15 @@ namespace mass_spring_cloth {
  Note that the spring energy is finite and thus the particles can overlap in
  certain scenarios. For both the discrete and the continuous system, when two
  particles overlap, the state is invalid and the system will throw a
- ``std::logic_error`` and cause the program to crash.
+ `std::runtime_error` and cause the program to crash.
 
  The system has a single output port that provides the positions of the
  particles. The 3*i-th, 3*i+1-th, and 3*i+2-th entry describe the position of
  the i-th particle.
+
+ Beware that the class `ClothSpringModel` is not thread-safe as it contains a
+ mutable `Eigen::SparseMatrix` and a mutable `Eigen::ConjugateGradient` as its
+ data members.
 
  @system
  name: ClothSpringModel
@@ -93,11 +97,6 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   */
   ClothSpringModel(int nx, int ny, T h, double dt);
 
-  /** Initialize the positions of the particles to be in a rectangular grid of
-    nx-by-ny particles with neighboring particles separated by h. The velocities
-    are initialized to zero. */
-  void InitializePositionAndVelocity(systems::Context<T>* context) const;
-
   /// This returns nx * ny.
   int num_particles() const { return num_particles_; }
 
@@ -110,32 +109,6 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
     int particle1{};
     T rest_length{};
   };
-  // Number of particles in the x direction.
-  const int nx_{};
-  // Number of particles in the y direction.
-  const int ny_{};
-  // Total number of mass particles.
-  const int num_particles_{};
-  // The distance between neighboring particles.
-  const T h_{};
-  // The time period between discrete updates.
-  const T dt_{};
-  // The index of the fixed particle at the top-left corner of the grid.
-  const int bottom_left_corner_{};
-  // The index of the fixed particle at the top-right corner of the grid.
-  const int top_left_corner_{};
-  // The starting index of the parameters of this system.
-  int param_index_{};
-  // Pre-allocated H matrix to prevent reallocations.
-  mutable Eigen::SparseMatrix<T> H_;
-  // A list of springs in the system. Indexing does not matter here.
-  std::vector<Spring> springs_;
-  // We use a CG solver for the symmetric positive definite matrix in the linear
-  // solve. We use the Lower|Upper flag for better performance per Eigen Doc:
-  // https://eigen.tuxfamily.org/dox/classEigen_1_1ConjugateGradient.html
-  mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
-                                   Eigen::Lower | Eigen::Upper>
-      cg_;
 
   // This function extracts the position/velocity/force corresponding to the
   // particle indexed with particle_index from the vector of that quantity.
@@ -171,6 +144,11 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
     (*vec)[p_index + 1] += state(1);
     (*vec)[p_index + 2] += state(2);
   }
+
+  /* Initialize the positions of the particles to be in a rectangular grid of
+    nx-by-ny particles with neighboring particles separated by h. The velocities
+    are initialized to zero. */
+  systems::BasicVector<T> InitializePositionAndVelocity() const;
 
   /* TODO(xuchenhan-tri) Expose the use_shearing_springs parameter in the
    constructor to give the user the ability to toggle the configuration. */
@@ -208,7 +186,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // elastic_force should be set to zero outside this function if fresh values
   // are required.
   void AccumulateElasticForce(const ClothSpringModelParams<T>& param,
-                              const Eigen::Ref<const VectorX<T>>& x,
+                              const Eigen::Ref<const VectorX<T>>& q,
                               EigenPtr<VectorX<T>> elastic_force) const;
 
   // Calculates the damping force from springs given the positions and
@@ -216,7 +194,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // contained in damping_force should be set to zero outside this function if
   // fresh values are required.
   void AccumulateDampingForce(const ClothSpringModelParams<T>& param,
-                              const Eigen::Ref<const VectorX<T>>& x,
+                              const Eigen::Ref<const VectorX<T>>& q,
                               const Eigen::Ref<const VectorX<T>>& v,
                               EigenPtr<VectorX<T>> damping_force) const;
 
@@ -227,25 +205,25 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   //
   // CalcDiscreteDv solves the equation
   //
-  //      M * dv = f(xⁿ, vⁿ⁺¹) * dt,
+  //      M * dv = f(qⁿ, vⁿ⁺¹) * dt,
   //
   // where f is the damping force, which is equivalent to
   //
-  //      M * dv = (f(xⁿ, v̂) + ∂f/∂v(xⁿ, v̂) * dv) * dt,
+  //      M * dv = (f(qⁿ, v̂) + ∂f/∂v(qⁿ, v̂) * dv) * dt,
   //
   // because damping force is linear in v. Moving terms we end up with
   //
-  //      (M - ∂f/∂v(xⁿ, v̂)) * dv = f(xⁿ, v̂) * dt
+  //      (M - ∂f/∂v(qⁿ, v̂)) * dv = f(qⁿ, v̂) * dt
   //
   // which we abbreviate as
   //
   //      H * dv = f * dt.
-  // @pre @p x, @p f, and @p dv must be of the same size.
+  // @pre q, f, and dv must be of the same size.
   void CalcDiscreteDv(const ClothSpringModelParams<T>& param,
-                      const VectorX<T>& x, VectorX<T>* f, VectorX<T>* dv) const;
+                      const VectorX<T>& q, VectorX<T>* f, VectorX<T>* dv) const;
 
-  /// Apply Dirichlet boundary conditions to the two corners of the rectangular
-  /// grid.
+  // Apply Dirichlet boundary conditions to the two corners of the rectangular
+  // grid.
   void ApplyDirichletBoundary(EigenPtr<VectorX<T>> state) const {
     set_particle_state(bottom_left_corner_, {0, 0, 0}, state);
     set_particle_state(top_left_corner_, {0, 0, 0}, state);
@@ -254,6 +232,39 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   // Customized throw to prevent invalid configuration of springs.
   void ThrowIfInvalidSpringLength(const T& spring_length,
                                   const T& rest_length) const;
+
+  // Return the number of degrees of freedoms corresponding to positions.
+  int num_positions() const { return num_particles_ * 3; }
+
+  // Return the number of degrees of freedoms corresponding to velocities.
+  int num_velocities() const { return num_particles_ * 3; }
+
+  // Number of particles in the x direction.
+  const int nx_{};
+  // Number of particles in the y direction.
+  const int ny_{};
+  // Total number of mass particles.
+  const int num_particles_{};
+  // The distance between neighboring particles.
+  const T h_{};
+  // The time period between discrete updates.
+  const T dt_{};
+  // The index of the fixed particle at the bottom-left corner of the grid.
+  const int bottom_left_corner_{};
+  // The index of the fixed particle at the top-left corner of the grid.
+  const int top_left_corner_{};
+  // The starting index of the parameters of this system.
+  int param_index_{};
+  // A list of springs in the system. Indexing does not matter here.
+  std::vector<Spring> springs_;
+  // Pre-allocated H matrix to prevent reallocations.
+  mutable Eigen::SparseMatrix<T> H_;
+  // We use a CG solver for the symmetric positive definite matrix in the linear
+  // solve. We use the Lower|Upper flag for better performance per Eigen Doc:
+  // https://eigen.tuxfamily.org/dox/classEigen_1_1ConjugateGradient.html
+  mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
+                                   Eigen::Lower | Eigen::Upper>
+      cg_;
 };
 }  // namespace mass_spring_cloth
 }  // namespace examples

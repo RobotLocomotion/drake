@@ -12,8 +12,8 @@ tuned to exhibit cloth-like behaviors without considerations of environmental
 forces or collisions and contact. In particular, it does not indicate that Drake
 supports cloth simulation at this point.
 
-The system runs in discrete mode when the timestep ``h `` is set to be positive,
-and it runs in continuous mode when the timestep ``h`` is set to be zero or
+The system runs in discrete mode when the timestep `dt ` is set to be positive,
+and it runs in continuous mode when the timestep `dt` is set to be zero or
 negative. As the discrete and the continuous mode share many common features, we
 implement them in a single system to minimize code duplication. Alternatively,
 one could implement them as two separate systems.
@@ -40,7 +40,7 @@ bazel build //tools:drake_visualizer
 
 Ensure that you have built the mass spring cloth with
 ```
-bazel build //examples:mass_spring_cloth
+bazel build //examples/mass_spring_cloth:run_cloth_spring_model
 ```
 
 
@@ -57,6 +57,12 @@ Launch the mass spring cloth simulation
 ```
 bazel-bin/examples/mass_spring_cloth/run_cloth_spring_model
 ```
+
+The discrete mode is run by default. To switch to the continuous mode, add the
+flag `-dt=0`. The number of particles in the x-direction and the y-direction
+can be configured with the flag `-nx` and `-ny` respectively, and the
+separation between particles can be set with the flag `-h`. Use `--help` to
+get the full list of flags.
 
 References
 -------------------------------------------------
