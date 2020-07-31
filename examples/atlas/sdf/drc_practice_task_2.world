@@ -27,7 +27,6 @@
     <!-- A ground plane -->
     <include>
       <uri>model://ground_plane</uri>
-      <pose>0 0 0 0 0 0</pose>
     </include>
     <model name="green_tape">
       <static>true</static>

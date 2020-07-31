@@ -6,9 +6,7 @@
   -->
   <model name="two_bodies">
     <link name="body1">
-      <pose> 0 0 0 0 0 0</pose>
       <inertial>
-        <pose> 0 0 0 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.001</ixx>
@@ -28,9 +26,7 @@
       </collision>
     </link>
     <link name="body2">
-      <pose> 0 0 0 0 0 0</pose>
       <inertial>
-        <pose> 0 0 0 0 0 0</pose>
         <mass>1</mass>
         <inertia>
           <ixx>0.001</ixx>

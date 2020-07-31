@@ -29,7 +29,6 @@
         </geometry>
       </visual>
       <collision name="collision_box">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.396875 0.19368008 0.146</size>

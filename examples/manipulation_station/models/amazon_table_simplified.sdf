@@ -2,7 +2,6 @@
 <sdf version="1.6">
   <model name="amazon_table">
     <link name="amazon_table">
-      <pose>0 0 0 0 0 0 </pose>
       <inertial>
         <mass>1</mass>
         <inertia>

@@ -3,7 +3,6 @@
   <model name="box">
     <pose>0 0 0.5 0 0 0</pose>
     <link name="box">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <mass>1.</mass>
         <inertia>
@@ -16,7 +15,6 @@
         </inertia>
       </inertial>
       <visual name="box">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>10. 10. 1.</size>

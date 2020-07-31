@@ -22,7 +22,6 @@
     <xacro:macro name="finger" params="fnum">
       <link name="finger${fnum}_base">
         <visual name="base_visual">
-          <pose>0 0 0 0 0 0</pose>
           <geometry>
             <box>
               <size>${base_dim} ${base_dim} ${base_dim/10}</size>
@@ -34,7 +33,6 @@
         </visual>
       </link>
       <link name="finger${fnum}_link1">
-        <pose>0 0 0 0 0 0</pose>
         <inertial>
           <pose>0 0 -${l1_length/2} 0 0 0</pose>
           <mass>${l1_mass}</mass>
@@ -144,7 +142,6 @@
         <parent>finger${fnum}_link1</parent>
         <child>finger${fnum}_link2</child>
         <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
-        <pose>0 0 0 0 0 0</pose>
         <axis>
           <xyz>1 0 0</xyz>
           <limit>
@@ -227,7 +224,6 @@
       <joint name="finger${fnum}_sensor_weldjoint" type="fixed">
         <parent>finger${fnum}_link2</parent>
         <child>finger${fnum}_tip_link</child>
-        <pose>0 0 0 0 0 0</pose>
       </joint>
     </xacro:macro>
     <xacro:finger fnum="1"/>

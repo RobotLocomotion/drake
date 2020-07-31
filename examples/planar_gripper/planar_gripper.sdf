@@ -7,7 +7,6 @@
   <model name="planar_gripper">
     <link name="finger1_base">
       <visual name="base_visual">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.08 0.08 0.008</size>
@@ -19,7 +18,6 @@
       </visual>
     </link>
     <link name="finger1_link1">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
@@ -129,7 +127,6 @@
       <parent>finger1_link1</parent>
       <child>finger1_link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
@@ -212,11 +209,9 @@
     <joint name="finger1_sensor_weldjoint" type="fixed">
       <parent>finger1_link2</parent>
       <child>finger1_tip_link</child>
-      <pose>0 0 0 0 0 0</pose>
     </joint>
     <link name="finger2_base">
       <visual name="base_visual">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.08 0.08 0.008</size>
@@ -228,7 +223,6 @@
       </visual>
     </link>
     <link name="finger2_link1">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
@@ -338,7 +332,6 @@
       <parent>finger2_link1</parent>
       <child>finger2_link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
@@ -421,11 +414,9 @@
     <joint name="finger2_sensor_weldjoint" type="fixed">
       <parent>finger2_link2</parent>
       <child>finger2_tip_link</child>
-      <pose>0 0 0 0 0 0</pose>
     </joint>
     <link name="finger3_base">
       <visual name="base_visual">
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
             <size>0.08 0.08 0.008</size>
@@ -437,7 +428,6 @@
       </visual>
     </link>
     <link name="finger3_link1">
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0 0 -0.0425 0 0 0</pose>
         <mass>0.1</mass>
@@ -547,7 +537,6 @@
       <parent>finger3_link1</parent>
       <child>finger3_link2</child>
       <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
-      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
@@ -630,7 +619,6 @@
     <joint name="finger3_sensor_weldjoint" type="fixed">
       <parent>finger3_link2</parent>
       <child>finger3_tip_link</child>
-      <pose>0 0 0 0 0 0</pose>
     </joint>
   </model>
 </sdf>

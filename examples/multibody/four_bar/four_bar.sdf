@@ -76,7 +76,6 @@
     <link name="A">
       <!-- The frame A measured in the world frame, X_WA is the identity. This 
       link is also called 'Crank' in the diagram in README.md -->
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <!-- Acm (A's center of mass) is located at the midpoint of the 4 meter long link. -->
         <pose>2 0 0 0 0 0</pose>
