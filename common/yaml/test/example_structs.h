@@ -46,6 +46,10 @@ struct StringStruct {
   std::string value = "kNominalDouble";
 };
 
+bool operator==(const StringStruct& a, const StringStruct& b) {
+  return a.value == b.value;
+}
+
 struct ArrayStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -143,15 +147,17 @@ struct OptionalStruct {
   std::optional<double> value;
 };
 
-using Variant3 = std::variant<std::string, double, DoubleStruct>;
+using Variant4 = std::variant<std::string, double, DoubleStruct, StringStruct>;
 
-std::ostream& operator<<(std::ostream& os, const Variant3& value) {
+std::ostream& operator<<(std::ostream& os, const Variant4& value) {
   if (value.index() == 0) {
     os << "std::string{" << std::get<0>(value) << "}";
   } else if (value.index() == 1) {
     os << "double{" << std::get<1>(value) << "}";
-  } else {
+  } else if (value.index() == 2) {
     os << "DoubleStruct{" << std::get<2>(value).value << "}";
+  } else {
+    os << "StringStruct{" << std::get<3>(value).value << "}";
   }
   return os;
 }
@@ -166,10 +172,10 @@ struct VariantStruct {
     value = kNominalDouble;
   }
 
-  explicit VariantStruct(const Variant3& value_in)
+  explicit VariantStruct(const Variant4& value_in)
       : value(value_in) {}
 
-  Variant3 value;
+  Variant4 value;
 };
 
 struct VariantWrappingStruct {
