@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="bin_model">
     <!--
     Axes:
@@ -119,7 +119,7 @@
       </collision>
     </link>
     <frame name="bin_front_top_center">
-      <pose frame="bin_base">0.22 0 0.21 0 0 0</pose>
+      <pose relative_to="bin_base">0.22 0 0.21 0 0 0</pose>
     </frame>
   </model>
 </sdf>

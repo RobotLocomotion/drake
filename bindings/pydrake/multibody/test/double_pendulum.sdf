@@ -4,7 +4,7 @@
 <!-- Provided SDF model originally taken from
      https://bitbucket.org/osrf/sdformat/src/deca28cd6cd5/test/integration/model/double_pendulum.sdf
      has undergone modifications -->
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="double_pendulum_with_base">
     <link name="base">
       <inertial>
@@ -153,25 +153,21 @@
         </geometry>
       </collision>
     </link>
-    <!-- pin joint for upper link, at origin of upper link -->
     <joint name="upper_joint" type="revolute">
       <parent>base</parent>
       <child>upper_link</child>
       <axis>
-        <xyz>1.0 0 0</xyz>
-        <use_parent_model_frame>true</use_parent_model_frame>
+        <xyz expressed_in="__model__">1 0 0</xyz>
         <limit>
           <effort>0.0</effort>
         </limit>
       </axis>
     </joint>
-    <!-- pin joint for lower link, at origin of child link -->
     <joint name="lower_joint" type="revolute">
       <parent>upper_link</parent>
       <child>lower_link</child>
       <axis>
-        <xyz>1.0 0 0</xyz>
-        <use_parent_model_frame>true</use_parent_model_frame>
+        <xyz expressed_in="__model__">1 0 0</xyz>
         <limit>
           <effort>0.0</effort>
         </limit>
