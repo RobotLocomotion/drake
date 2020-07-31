@@ -122,7 +122,14 @@ BENCHMARK_F(AutodiffFixture, AutodiffMassMatrix)(benchmark::State& state) {
   MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
   int i = 0;
   for (auto _ : state) {
+    // According to research from @sherm1, the caching system has some
+    // debug-only asserts that allocate memory. Hence there are two different
+    // ceilings for allocations until that is addressed.
+#ifdef NDEBUG
     drake::test::LimitMalloc guard({.max_num_allocations = 53438});
+#else
+    drake::test::LimitMalloc guard({.max_num_allocations = 59897});
+#endif
     x_(0) = i;
     plant_autodiff_->SetPositionsAndVelocities(
         context_autodiff_.get(), math::initializeAutoDiff(x_));
