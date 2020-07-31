@@ -140,6 +140,12 @@ drake_cc_library(
     ],
 )
 
+drake_py_library(
+    name = "jupyter_py",
+    srcs = ["jupyter.py"],
+    imports = PACKAGE_INFO.py_imports,
+)
+
 drake_pybind_library(
     name = "value_py",
     cc_deps = [
@@ -328,6 +334,7 @@ PY_LIBRARIES = [
     ":cpp_param_py",
     ":cpp_template_py",
     ":deprecation_py",
+    ":jupyter_py",
     ":module_py",
     ":pybind11_version_py",
 ]
