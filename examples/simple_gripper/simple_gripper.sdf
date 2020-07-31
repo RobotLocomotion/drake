@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <!-- Note: This is the accompaning SDF file for the example demo in
        simple_gripper.cc and therefore these two files must be kept in sync.
 
@@ -37,8 +37,7 @@
       <parent>y_translate_link</parent>
       <child>body</child>
       <axis>
-        <xyz>0 0 1</xyz>
-        <use_parent_model_frame>1</use_parent_model_frame>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <!-- Drake attaches an actuator to all joints with a non-zero effort
              limit. We do want an actuator for this joint. -->
         <limit>
@@ -118,7 +117,6 @@
       <child>left_finger</child>
       <axis>
         <xyz>1 0 0</xyz>
-        <use_parent_model_frame>0</use_parent_model_frame>
         <!-- Drake attaches an actuator to all joints with a non-zero effort
              limit. We do want an actuator for this joint. -->
         <limit>

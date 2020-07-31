@@ -86,7 +86,6 @@ Later edited by hand to:
         </dynamics>
       </axis>
     </joint>
-    <!-- SDFormat 1.7 -->
     <link name="iiwa_link_2">
       <pose relative_to="iiwa_joint_2"/>
       <inertial>

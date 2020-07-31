@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="brick">
-    <link name="brick_base">
-  </link>
+    <link name="brick_base"/>
     <link name="brick_dummy_link1">
       <inertial>
         <mass>1e-10</mass>
