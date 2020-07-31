@@ -50,6 +50,11 @@ class Frame : public FrameBase<T> {
     return body_;
   }
 
+  /// Returns true if `this` is the world frame.
+  bool is_world_frame() const {
+    return this->index() == FrameIndex(0);
+  }
+
   /// Returns the name of this frame. It may be empty if unnamed.
   const std::string& name() const {
     return name_;
@@ -245,6 +250,28 @@ class Frame : public FrameBase<T> {
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
     return A_WF_W;
   }
+
+#if 0
+  /// Computes and returns the spatial acceleration A_MF_E of `this` frame_F in
+  /// frame_M expressed in frame_E as a function of the state stored in context.
+  /// @note Indirectly, this method calls MultibodyPlant::EvalForwardDynamics()
+  /// which can be computational intensive.
+  /// @see EvalSpatialAccelerationInWorld().
+  SpatialAcceleration<T> CalcSpatialAcceleration(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_M, const Frame<T>& frame_E) const {
+
+    // Form position vector from Bo (B's origin) to Fo (this frame F's origin).
+    const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
+
+    // Use a more efficient body-centric method to finish the calculations.
+    const Body<T>& body_B = body();  // Body that `this` frame is fixed to.
+    const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
+    return parent_plant.tree().CalcSpatialAcceleration(context,
+        body_B, p_BoFo_B, frame_M, frame_E);
+  }
+#endif
+
 
   /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
   /// new clone to be created. This method is mostly intended to be called by

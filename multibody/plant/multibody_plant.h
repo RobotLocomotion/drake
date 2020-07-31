@@ -2661,7 +2661,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
   /// (regarded as affixed/welded to B), expressed in frame_B.
   /// @param[in] frame_A The frame that measures A𝑠Bias_ABp.
-  /// Currently, an exception is thrown if frame_A is not the World frame.
   /// @param[in] frame_E The frame in which A𝑠Bias_ABp is expressed on output.
   /// @returns A𝑠Bias_ABp_E Point Bp's spatial acceleration bias in frame A
   /// with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in frame E.
@@ -2673,7 +2672,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see CalcJacobianSpatialVelocity() to compute J𝑠_V_ABp, point Bp's
   /// translational velocity Jacobian in frame A with respect to 𝑠.
   /// @throws std::exception if with_respect_to is not JacobianWrtVariable::kV
-  /// @throws std::exception if frame_A is not the world frame.
   SpatialAcceleration<T> CalcBiasSpatialAcceleration(
       const systems::Context<T>& context,
       JacobianWrtVariable with_respect_to,

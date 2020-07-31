@@ -2521,20 +2521,43 @@ class MultibodyTree {
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // Shift bias spatial acceleration from the origin Ao of body A to a
-  // point Bp of (fixed to) a frame B, where frame B is fixed/welded to body A.
+  // For a point Bp fixed/welded to a frame_B, this method helps calculate
+  // A_ABp_E, Bp's spatial acceleration in frame A, expressed in a frame_E.
+  // @param[in] context The state of the multibody system.
+  // @param[in] frame_B The frame on which point Bp is fixed/welded.
+  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to point Bp
+  //            expressed in frame_B.
+  // @param[in] frame_A The frame that measures A_ABp_E.
+  // @param[in] frame_E The frame in which A_ABp_E is expressed on output.
+  // @return A_ABp_E Bp's spatial acceleration in frame_A, expressed in frame_E.
+  // @note To use this method for a bias spatial acceleration, instead pass
+  // A𝑠Bias_WBodyB_W (BodyB is the body to which frame_B is fixed/welded) and
+  // A𝑠Bias_WBodyA_W (BodyA is the body to which frame_A is fixed/welded). Then
+  // the method returns A𝑠Bias_ABp_E (Bp's bias spatial acceleration in frame_A,
+  // expressed in frame_E).
+  SpatialAcceleration<T> CalcSpatialAccelerationHelper(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B,
+      const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+      const Frame<T>& frame_A,
+      const Frame<T>& frame_E,
+      const SpatialAcceleration<T>& A_WBodyB_W,
+      const SpatialAcceleration<T>& A_WBodyA_W) const;
+
+  // For a frame_B that is fixed/welded to a body A, shift spatial acceleration
+  // from Ao (body A's origin) to a point Bp of (fixed to) frame B.
   // @param[in] context The state of the multibody system.
   // @param[in] frame_B The frame on which point Bp is fixed/welded.
   // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to a point
-  // Bp (regarded as fixed to B), expressed in frame_B.
-  // @param[in] body_A The body on which frame_B is fixed/welded.
-  // @param[in] A𝑠Bias_WA_W Point Ao's spatial acceleration bias in frame W
-  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
-  // @returns  A𝑠Bias_WBp_W Point Bp's spatial acceleration bias in frame W
-  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
-  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
+  //            Bp (regarded as fixed to both A and B), expressed in frame_B.
+  // @param[in] A_WAo_W Point Ao's spatial acceleration in the world frame W,
+  //            expressed in W.
+  // @returns A_WBp_W Bp's spatial acceleration in frame W, expressed in W.
+  // @note To use this method for a bias spatial acceleration, instead pass
+  // A𝑠Bias_WAo_W (Ao's bias spatial acceleration in W, expressed in W).  It
+  // returns A𝑠Bias_WBp_W (Bp's bias spatial acceleration in W, expressed in W).
+  SpatialAcceleration<T> ShiftSpatialAccelerationInWorld(
       const systems::Context<T>& context,
-      const Body<T>& body_A,
       const Frame<T>& frame_B,
       const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
       const SpatialAcceleration<T>& AsBias_WA_W) const;
