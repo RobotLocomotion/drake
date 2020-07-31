@@ -6,6 +6,7 @@ load(
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_test",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -30,6 +31,17 @@ drake_cc_googletest(
     deps = [
         ":cassie_benchmark",
         "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_test(
+    name = "cassie_bench",
+    srcs = ["test/cassie_bench.cc"],
+    data = ["cassie_v2.urdf"],
+    deps = [
+        ":cassie_benchmark",
+        "//common/test_utilities:limit_malloc",
+        "@googlebenchmark//:benchmark",
     ],
 )
 
