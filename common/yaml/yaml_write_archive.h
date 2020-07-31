@@ -100,7 +100,7 @@ class YamlWriteArchive final {
 
   /// (Advanced.)  Remove from this archive any map entries that are identical
   /// to an entry in `other`, iff they reside at the same location within the
-  /// node tree hierarchy, and iff their parent notes (and grandparent, etc.,
+  /// node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
   /// all the way up to the root) are also all maps.  This enables emitting a
   /// minimal YAML representation when the output will be later loaded using
   /// YamlReadArchive's option to retain_map_defaults; the "all parents are
