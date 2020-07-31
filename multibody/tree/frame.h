@@ -220,17 +220,26 @@ class Frame : public FrameBase<T> {
   }
 
   /// Computes and returns the spatial acceleration A_WF_W of `this` frame F in
-  /// the world frame W as a function of the state stored in context.
+  /// world frame W expressed in W as a function of the state stored in context.
+  /// @note Indirectly, this method calls MultibodyPlant::EvalForwardDynamics()
+  /// which can be computational intensive.
   /// @note Body::EvalSpatialAccelerationInWorld() provides a more efficient way
   /// to obtain the spatial acceleration for a body frame.
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
+    // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial
+    // acceleration in thw world frame W, expressed in W.
+    const SpatialAcceleration<T>& A_WB_W =
+        body().EvalSpatialAccelerationInWorld(context);
+
+    // Optimize for the common case that `this` is body B's frame.
+    if (body().body_frame().index() == this->index()) return A_WB_W;
+
+    // Shift spatial acceleration A_WB_W from Bo to Fp.
     const math::RotationMatrix<T>& R_WB =
         body().EvalPoseInWorld(context).rotation();
     const Vector3<T> p_BoFo_B = CalcPoseInBodyFrame(context).translation();
     const Vector3<T> p_BoFo_W = R_WB * p_BoFo_B;
-    const SpatialAcceleration<T>& A_WB_W =
-        body().EvalSpatialAccelerationInWorld(context);
     const Vector3<T>& w_WB_W =
         body().EvalSpatialVelocityInWorld(context).rotational();
     const SpatialAcceleration<T> A_WF_W = A_WB_W.Shift(p_BoFo_W, w_WB_W);
