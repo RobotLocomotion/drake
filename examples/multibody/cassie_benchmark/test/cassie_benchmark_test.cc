@@ -32,8 +32,13 @@ namespace {
 typedef std::chrono::steady_clock my_clock;
 
 int do_main() {
+#ifdef NDEBUG
   const int num_reps = 100000;
   const int num_autodiff_reps = 1000;
+#else
+  const int num_reps = 10;
+  const int num_autodiff_reps = 10;
+#endif
 
   //
   // Build and test multibody plant
@@ -53,6 +58,7 @@ int do_main() {
   int nq = multibody_plant.num_positions();
   int nv = multibody_plant.num_velocities();
   int nu = multibody_plant.num_actuators();
+  std::cerr << fmt::format("nq {} nv {} nu {}\n", nq, nv, nu);
 
   VectorXd x = VectorXd::Zero(nq + nv);
   VectorXd u = VectorXd::Zero(nu);
@@ -132,7 +138,7 @@ int do_main() {
       *multibody_plant_autodiff);
 
   for (int i = 0; i < num_autodiff_reps; i++) {
-    x = VectorXd::Constant(2 * nq, i);
+    x = VectorXd::Constant(nq + nv, i);
     desired_vdot = VectorXd::Constant(nv, i);
     multibody_plant_autodiff->SetPositionsAndVelocities(
         multibody_context_autodiff.get(), math::initializeAutoDiff(x));
@@ -173,7 +179,7 @@ int do_main() {
   auto derivatives_autodiff =
       multibody_plant_autodiff->AllocateTimeDerivatives();
   for (int i = 0; i < num_autodiff_reps; i++) {
-    x = VectorXd::Constant(2 * nq, i);
+    x = VectorXd::Constant(nq + nv, i);
     u = VectorXd::Constant(nu, i);
 
     multibody_context_autodiff->FixInputPort(
