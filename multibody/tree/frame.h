@@ -221,10 +221,10 @@ class Frame : public FrameBase<T> {
 
   /// Computes and returns the spatial acceleration A_WF_W of `this` frame F in
   /// world frame W expressed in W as a function of the state stored in context.
-  /// @note Indirectly, this method calls MultibodyPlant::EvalForwardDynamics()
-  /// which can be computational intensive.
   /// @note Body::EvalSpatialAccelerationInWorld() provides a more efficient way
   /// to obtain the spatial acceleration for a body frame.
+  /// @note Indirectly, this method calls MultibodyPlant::EvalForwardDynamics()
+  /// which can be computational intensive.
   SpatialAcceleration<T> CalcSpatialAccelerationInWorld(
       const systems::Context<T>& context) const {
     // `this` frame_F is fixed to a body B.  Calculate A_WB_W, body B's spatial

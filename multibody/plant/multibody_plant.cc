@@ -2917,7 +2917,7 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
 template <typename T>
 const SpatialAcceleration<T>&
 MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
-    const systems::Context<T>& context,
+    const Context<T>& context,
     const Body<T>& body_B) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   const AccelerationKinematicsCache<T>& ac = EvalForwardDynamics(context);
