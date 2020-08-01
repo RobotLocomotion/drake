@@ -4,12 +4,17 @@
 #include <memory>
 #include <mutex>
 
+// clang-format off to disable clang-format-includes
+// N.B. text-logging.h must be included before spdlog headers
+// to avoid "SPDLOG_ACTIVE_LEVEL" redefined warning (#13771).
+#include "drake/common/text_logging.h"
+// clang-format on
+
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/text_logging.h"
 #endif
 
 namespace drake {
