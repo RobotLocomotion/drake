@@ -166,8 +166,8 @@ void ClothSpringModel<T>::DoCalcTimeDerivatives(
   systems::VectorBase<T>& qdot =
       derivatives->get_mutable_generalized_position();
   qdot.SetFrom(v);
-  systems::Subvector<T>& vdot = dynamic_cast<systems::Subvector<T>&>(
-      derivatives->get_mutable_generalized_velocity());
+  systems::VectorBase<T>& vdot =
+      derivatives->get_mutable_generalized_velocity();
   // Store spring force in vdot and then divide by mass to get acceleration.
   VectorX<T> tmp_vdot = VectorX<T>::Zero(vdot.size());
   AccumulateContinuousSpringForce(context, &tmp_vdot);
