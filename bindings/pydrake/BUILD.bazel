@@ -210,13 +210,11 @@ drake_pybind_library(
     cc_deps = [
         ":polynomial_types_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["polynomial_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/common:deprecation_py",
     ],
 )
 

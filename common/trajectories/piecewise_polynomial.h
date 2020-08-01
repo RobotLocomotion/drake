@@ -8,7 +8,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
@@ -81,9 +80,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   // We are final, so this is okay.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
-
-  DRAKE_DEPRECATED("2020-08-01", "Use Polynomial<T> instead of PolynomialType.")
-  typedef Polynomial<T> PolynomialType;
 
   typedef MatrixX<Polynomial<T>> PolynomialMatrix;
 

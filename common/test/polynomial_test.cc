@@ -550,12 +550,6 @@ GTEST_TEST(PolynomialTest, CoefficientsAlmostEqualTest) {
   EXPECT_FALSE(x.CoefficientsAlmostEqual(y));
   EXPECT_TRUE((x + y).CoefficientsAlmostEqual(y + x));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_FALSE(x.IsApprox(y, 0.0));
-  EXPECT_TRUE((x + y).IsApprox(y + x, 0.0));
-#pragma GCC diagnostic pop
-
   EXPECT_TRUE((x + x * x + 3 * pow(x, 3))
                   .CoefficientsAlmostEqual(3 * pow(x, 3) + x + x * x));
 
