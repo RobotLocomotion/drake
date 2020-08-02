@@ -21,6 +21,7 @@ from pydrake.systems.framework import (
     Diagram,
     DiagramBuilder,
     DiscreteStateIndex,
+    EventStatus,
     InputPortIndex,
     LeafSystem, LeafSystem_,
     NumericParameterIndex,
@@ -225,6 +226,7 @@ class TestCustom(unittest.TestCase):
             def __init__(self):
                 LeafSystem.__init__(self)
                 self.called_publish = False
+                self.called_mypublish = False
                 self.called_continuous = False
                 self.called_discrete = False
                 self.called_initialize = False
@@ -238,6 +240,8 @@ class TestCustom(unittest.TestCase):
                 self.DeclarePeriodicPublish(1.0)
                 self.DeclarePeriodicPublish(1.0, 0)
                 self.DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
+                self.DeclarePeriodicPublishEvent(
+                    period_sec=1.0, offset_sec=0., publish=self.MyPublish)
                 self.DeclarePeriodicDiscreteUpdate(
                     period_sec=1.0, offset_sec=0.)
                 self.DeclareInitializationEvent(
@@ -273,7 +277,8 @@ class TestCustom(unittest.TestCase):
                     self._guard, UnrestrictedUpdateEvent(self._reset))
 
             def DoPublish(self, context, events):
-                # Call base method to ensure we do not get recursion.
+                # Call base method to ensure we do not get recursion (and to
+                # ensure that MyPublish gets called).
                 LeafSystem.DoPublish(self, context, events)
                 # N.B. We do not test for a singular call to `DoPublish`
                 # (checking `assertFalse(self.called_publish)` first) because
@@ -282,6 +287,10 @@ class TestCustom(unittest.TestCase):
                 # `Simulator::Initialize` from `call_leaf_system_overrides`,
                 # even when we explicitly say not to publish at initialize.
                 self.called_publish = True
+
+            def MyPublish(self, context):
+                self.called_mypublish = True
+                return EventStatus.DidNothing()
 
             def DoCalcTimeDerivatives(self, context, derivatives):
                 # Note:  Don't call base method here; it would abort because
@@ -335,6 +344,7 @@ class TestCustom(unittest.TestCase):
 
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
+        self.assertFalse(system.called_mypublish)
         self.assertFalse(system.called_continuous)
         self.assertFalse(system.called_discrete)
         self.assertFalse(system.called_initialize)

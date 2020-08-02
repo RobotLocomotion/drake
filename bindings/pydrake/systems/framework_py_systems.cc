@@ -553,6 +553,25 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DeclarePeriodicPublish, py::arg("period_sec"),
             py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicPublish.doc)
+        .def("DeclarePeriodicPublishEvent",
+            WrapCallbacks(
+                [](PyLeafSystem* self, double period_sec, double offset_sec,
+                    std::function<EventStatus(const Context<T>&)> publish) {
+                  self->DeclarePeriodicEvent(period_sec, offset_sec,
+                      PublishEvent<T>(TriggerType::kPeriodic,
+                          [publish](const Context<T>& context,
+                              const PublishEvent<T>&) {
+                            return publish(context);
+                          }));
+                }),
+            py_rvp::reference_internal, py::arg("period_sec"),
+            py::arg("offset_sec"), py::arg("publish"), R"""(
+            Declares that a Publish event should occur periodically and that it
+            should invoke the given event handler method.  Your publish method
+            *must* return an EventStatus; you will obtain unfortunately obscure
+            error messages (about incompatible function arguments to DoPublish)
+            if it does not.
+            )""")
         .def("DeclarePeriodicDiscreteUpdate",
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
