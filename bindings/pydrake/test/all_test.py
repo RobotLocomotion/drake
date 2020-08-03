@@ -19,6 +19,9 @@ class TestAll(unittest.TestCase):
             warnings.filterwarnings(
                 "ignore", message="Matplotlib is building the font cache",
                 category=UserWarning)
+            warnings.filterwarnings(
+                "ignore", message=".* from 'collections.abc' is deprecated",
+                category=DeprecationWarning)
             import pydrake.all
             self.assertEqual(len(w), 0, [x.message for x in w])
 
