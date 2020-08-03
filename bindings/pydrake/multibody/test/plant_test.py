@@ -26,6 +26,7 @@ from pydrake.multibody.tree import (
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
+    PlanarJoint_,
     PrismaticJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
@@ -1229,6 +1230,14 @@ class TestPlant(unittest.TestCase):
                 damping=damping,
             )
 
+        def make_planar_joint(plant, P, C):
+            return PlanarJoint_[T](
+                name="planar",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=[1., 2., 3.],
+            )
+
         def make_prismatic_joint(plant, P, C):
             return PrismaticJoint_[T](
                 name="prismatic",
@@ -1267,6 +1276,7 @@ class TestPlant(unittest.TestCase):
 
         make_joint_list = [
             make_ball_rpy_joint,
+            make_planar_joint,
             make_prismatic_joint,
             make_revolute_joint,
             make_universal_joint,
@@ -1301,6 +1311,26 @@ class TestPlant(unittest.TestCase):
                 joint.set_angular_velocity(context=context, w_FM=set_point)
                 self.assertEqual(
                     len(joint.get_angular_velocity(context=context)), 3)
+            elif joint.name() == "planar":
+                self.assertEqual(len(joint.damping()), 3)
+                set_translation = np.array([1., 2.])
+                set_angle = 3.
+                joint.set_translation(context=context,
+                                      p_FoMo_F=set_translation)
+                self.assertEqual(
+                    len(joint.get_translation(context=context)), 2)
+                joint.set_rotation(context=context, theta=set_angle)
+                self.assertIsInstance(joint.get_rotation(context=context), T)
+                joint.set_pose(context=context, p_FoMo_F=set_translation,
+                               theta=set_angle)
+                joint.set_translational_velocity(context=context,
+                                                 v_FoMo_F=set_translation)
+                self.assertEqual(
+                    len(joint.get_translational_velocity(context=context)), 2)
+                joint.set_angular_velocity(context=context,
+                                           theta_dot=set_angle)
+                self.assertIsInstance(
+                    joint.get_angular_velocity(context=context), T)
             elif joint.name() == "prismatic":
                 self.assertEqual(joint.damping(), damping)
                 numpy_compare.assert_equal(joint.translation_axis(), x_axis)
