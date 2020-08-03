@@ -69,8 +69,6 @@ decltype(auto) WrapDeprecatedImpl(py::str message,
 
 }  // namespace internal
 
-// TODO(eric.cousineau): Expose `dae
-
 /// Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
 /// a deprecation message.
 template <typename Func>
