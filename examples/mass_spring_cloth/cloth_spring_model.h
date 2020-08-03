@@ -36,7 +36,7 @@ namespace mass_spring_cloth {
        q̇ = v,
        Mv̇ = fe(q) + fd(q, v),
 
- where ``fe`` contains the elastic spring force and ``fd`` contains the
+ where `fe` contains the elastic spring force and `fd` contains the
  dissipation terms.
 
  When the system is integrated discretely, the elastic force and gravity are
@@ -61,9 +61,9 @@ namespace mass_spring_cloth {
  particles. The 3*i-th, 3*i+1-th, and 3*i+2-th entry describe the position of
  the i-th particle.
 
- Beware that the class `ClothSpringModel` is not thread-safe as it contains a
- mutable `Eigen::SparseMatrix` and a mutable `Eigen::ConjugateGradient` as its
- data members.
+ Beware that this class is not thread-safe as it contains mutable data storing
+ the state of the discrete solver. This mutable data has no effect on the
+ simulation results and therefore it is not part of the system's states.
 
  @system
  name: ClothSpringModel
@@ -97,10 +97,24 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   */
   ClothSpringModel(int nx, int ny, T h, double dt);
 
-  /// This returns nx * ny.
+  /** This returns nx * ny. */
   int num_particles() const { return num_particles_; }
 
   T h() const { return h_; }
+
+  Eigen::ComputationInfo linear_solver_info() const {
+    return linear_solver_info_;
+  }
+
+  /** For discrete mode only: set the max number of iterations for the Conjugate
+   * Gradient solve for the implicit damping force. */
+  void SetLinearSolveMaxIterations(int max_iterations) {
+    cg_.setMaxIterations(max_iterations);
+  }
+
+  /** For discrete mode only: set the tolerance for the Conjugate Gradient solve
+   * for the implicit damping force. */
+  void SetLinearSolveTolerance(T tolerance) { cg_.setTolerance(tolerance); }
 
  private:
   struct Spring {
@@ -110,20 +124,20 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
     T rest_length{};
   };
 
-  // This function extracts the position/velocity/force corresponding to the
-  // particle indexed with particle_index from the vector of that quantity.
-  // All per-particle quantities are elements of R³ and are aligned in each of
-  // the quantity vectors.
+  /* This function extracts the position/velocity/force corresponding to the
+   particle indexed with particle_index from the vector of that quantity.
+   All per-particle quantities are elements of R³ and are aligned in each of
+   the quantity vectors.*/
   static Vector3<T> particle_state(int particle_index,
                                    const Eigen::Ref<const VectorX<T>>& vec) {
     const int p_index = particle_index * 3;
     return Vector3<T>{vec[p_index], vec[p_index + 1], vec[p_index + 2]};
   }
 
-  // The setter corresponding to particle_state. Set position/velocity/force the
-  // particle indexed with particle_index to the state parameter.
-  // All per-particle quantities are elements of R³ and are aligned in each of
-  // the quantity vectors.
+  /* The setter corresponding to particle_state. Set position/velocity/force the
+   particle indexed with particle_index to the state parameter.
+   All per-particle quantities are elements of R³ and are aligned in each of
+   the quantity vectors.*/
   static void set_particle_state(int particle_index, const Vector3<T>& state,
                                  EigenPtr<VectorX<T>> vec) {
     const int p_index = particle_index * 3;
@@ -132,10 +146,10 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
     (*vec)[p_index + 2] = state(2);
   }
 
-  // Similar to set_particle_state, but add state into the corresponding
-  // position in vec without zeroing out the old value.
-  // All per-particle quantities are elements of R³ and are aligned in each of
-  // the quantity vectors..
+  /* Similar to set_particle_state, but add state into the corresponding
+   position in vec without zeroing out the old value.
+   All per-particle quantities are elements of R³ and are aligned in each of
+   the quantity vectors.*/
   static void accumulate_particle_state(int particle_index,
                                         const Vector3<T>& state,
                                         EigenPtr<VectorX<T>> vec) {
@@ -152,7 +166,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   /* TODO(xuchenhan-tri) Expose the use_shearing_springs parameter in the
    constructor to give the user the ability to toggle the configuration. */
-  // Generates the connectivity of the mesh of springs.
+  /* Generates the connectivity of the mesh of springs. */
   void BuildConnectingSprings(bool use_shearing_springs);
 
   void CopyContinuousStateOut(const systems::Context<T>& context,
@@ -168,10 +182,10 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   void UpdateDiscreteState(const systems::Context<T>& context,
                            systems::DiscreteValues<T>* next_states) const;
 
-  // Calculates the spring (elastic and damping combined) forces given the
-  // context. This is only used for computing forces in the continuous
-  // integration. The values contained in forces should be set to zero outside
-  // this function if fresh values are required.
+  /* Calculates the spring (elastic and damping combined) forces given the
+   context. This is only used for computing forces in the continuous
+   integration. The values contained in forces should be set to zero outside
+   this function if fresh values are required. */
   void AccumulateContinuousSpringForce(const systems::Context<T>& context,
                                        EigenPtr<VectorX<T>> forces) const;
 
@@ -181,90 +195,96 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
         context, param_index_);
   }
 
-  // Calculates the elastic force from springs given the positions of the
-  // particles and add to the output elastic_force. The values contained in
-  // elastic_force should be set to zero outside this function if fresh values
-  // are required.
+  /* Calculates the elastic force from springs given the positions of the
+   particles and add to the output elastic_force. The values contained in
+   elastic_force should be set to zero outside this function if fresh values
+   are required. */
   void AccumulateElasticForce(const ClothSpringModelParams<T>& param,
                               const Eigen::Ref<const VectorX<T>>& q,
                               EigenPtr<VectorX<T>> elastic_force) const;
 
-  // Calculates the damping force from springs given the positions and
-  // velocities of the particles and add to the output damping_force. The values
-  // contained in damping_force should be set to zero outside this function if
-  // fresh values are required.
+  /* Calculates the damping force from springs given the positions and
+   velocities of the particles and add to the output damping_force. The values
+   contained in damping_force should be set to zero outside this function if
+   fresh values are required. */
   void AccumulateDampingForce(const ClothSpringModelParams<T>& param,
                               const Eigen::Ref<const VectorX<T>>& q,
                               const Eigen::Ref<const VectorX<T>>& v,
                               EigenPtr<VectorX<T>> damping_force) const;
 
-  // Calculates the change in discrete velocity, dv = vⁿ⁺¹ - v̂, induced by the
-  // implicit damping force, where v̂ is the velocity after the contribution of
-  // elastic and gravity forces are added. This function overwrites the values
-  // in dv.
-  //
-  // CalcDiscreteDv solves the equation
-  //
-  //      M * dv = f(qⁿ, vⁿ⁺¹) * dt,
-  //
-  // where f is the damping force, which is equivalent to
-  //
-  //      M * dv = (f(qⁿ, v̂) + ∂f/∂v(qⁿ, v̂) * dv) * dt,
-  //
-  // because damping force is linear in v. Moving terms we end up with
-  //
-  //      (M - ∂f/∂v(qⁿ, v̂)) * dv = f(qⁿ, v̂) * dt
-  //
-  // which we abbreviate as
-  //
-  //      H * dv = f * dt.
-  // @pre q, f, and dv must be of the same size.
+  /* Calculates the change in discrete velocity, dv = vⁿ⁺¹ - v̂, induced by the
+   implicit damping force, where v̂ is the velocity after the contribution of
+   elastic and gravity forces are added. This function overwrites the values
+   in dv.
+
+   CalcDiscreteDv solves the equation
+
+        M * dv = f(qⁿ, vⁿ⁺¹) * dt,
+
+   where f is the damping force, which is equivalent to
+
+        M * dv = (f(qⁿ, v̂) + ∂f/∂v(qⁿ, v̂) * dv) * dt,
+
+   because damping force is linear in v. Moving terms we end up with
+
+        (M - ∂f/∂v(qⁿ, v̂)) * dv = f(qⁿ, v̂) * dt
+
+   which we abbreviate as
+
+        H * dv = f * dt.
+   @pre q, f, and dv must be of the same size.
+   */
   void CalcDiscreteDv(const ClothSpringModelParams<T>& param,
                       const VectorX<T>& q, VectorX<T>* f, VectorX<T>* dv) const;
 
-  // Apply Dirichlet boundary conditions to the two corners of the rectangular
-  // grid.
+  /*
+  Apply Dirichlet boundary conditions to the two corners of the rectangular
+  grid.
+  */
   void ApplyDirichletBoundary(EigenPtr<VectorX<T>> state) const {
     set_particle_state(bottom_left_corner_, {0, 0, 0}, state);
     set_particle_state(top_left_corner_, {0, 0, 0}, state);
   }
 
-  // Customized throw to prevent invalid configuration of springs.
+  /* Customized throw to prevent invalid configuration of springs. */
   void ThrowIfInvalidSpringLength(const T& spring_length,
                                   const T& rest_length) const;
 
-  // Return the number of degrees of freedoms corresponding to positions.
+  /* Return the number of degrees of freedoms corresponding to positions. */
   int num_positions() const { return num_particles_ * 3; }
 
-  // Return the number of degrees of freedoms corresponding to velocities.
+  /* Return the number of degrees of freedoms corresponding to velocities. */
   int num_velocities() const { return num_particles_ * 3; }
 
-  // Number of particles in the x direction.
+  /* Number of particles in the x direction. */
   const int nx_{};
-  // Number of particles in the y direction.
+  /* Number of particles in the y direction.*/
   const int ny_{};
-  // Total number of mass particles.
+  /* Total number of mass particles.*/
   const int num_particles_{};
-  // The distance between neighboring particles.
+  /* The distance between neighboring particles.*/
   const T h_{};
-  // The time period between discrete updates.
+  /* The time period between discrete updates.*/
   const T dt_{};
-  // The index of the fixed particle at the bottom-left corner of the grid.
+  /* The index of the fixed particle at the bottom-left corner of the grid.*/
   const int bottom_left_corner_{};
-  // The index of the fixed particle at the top-left corner of the grid.
+  /* The index of the fixed particle at the top-left corner of the grid.*/
   const int top_left_corner_{};
-  // The starting index of the parameters of this system.
+  /* The starting index of the parameters of this system.*/
   int param_index_{};
-  // A list of springs in the system. Indexing does not matter here.
+  /* A list of springs in the system. Indexing does not matter here.*/
   std::vector<Spring> springs_;
-  // Pre-allocated H matrix to prevent reallocations.
+  /* Pre-allocated H matrix to prevent reallocations.*/
   mutable Eigen::SparseMatrix<T> H_;
-  // We use a CG solver for the symmetric positive definite matrix in the linear
-  // solve. We use the Lower|Upper flag for better performance per Eigen Doc:
-  // https://eigen.tuxfamily.org/dox/classEigen_1_1ConjugateGradient.html
+  /* We use a CG solver for the symmetric positive definite matrix in the linear
+   solve. We use the Lower|Upper flag for better performance per Eigen Doc:
+   https://eigen.tuxfamily.org/dox/classEigen_1_1ConjugateGradient.html
+  */
   mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
                                    Eigen::Lower | Eigen::Upper>
       cg_;
+  /* Solver info for the Conjugate Gradient solver. */
+  mutable Eigen::ComputationInfo linear_solver_info_;
 };
 }  // namespace mass_spring_cloth
 }  // namespace examples

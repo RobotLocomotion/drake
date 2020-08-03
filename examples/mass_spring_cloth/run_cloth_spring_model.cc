@@ -24,8 +24,6 @@ DEFINE_double(dt, 0.01,
               "scheme described in Bridson et.al. will be used if dt > 0. The "
               "discrete scheme runs faster but is not error controlled. If dt "
               "<= 0, the system will be continuous");
-DEFINE_double(realtime_rate, 1.0,
-              "Rate at which to run the simulation, relative to realtime");
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
               "How long to simulate the system");
 
@@ -46,7 +44,6 @@ int DoMain() {
   auto context = diagram->CreateDefaultContext();
   auto simulator =
       systems::MakeSimulatorFromGflags(*diagram, std::move(context));
-  simulator->set_target_realtime_rate(FLAGS_realtime_rate);
   simulator->Initialize();
   simulator->AdvanceTo(FLAGS_simulation_time);
   return 0;

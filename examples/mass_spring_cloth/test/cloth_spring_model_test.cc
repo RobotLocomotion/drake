@@ -25,8 +25,8 @@ class ContinuousClothSpringModelTest : public ::testing::Test {
 };
 
 TEST_F(ContinuousClothSpringModelTest, Simulate) {
-  // Simulate to t_final = 10.0 and make sure sim does not crash.
-  const double t_final = 10.0;
+  // Simulate to t_final = 0.01 and make sure sim does not crash.
+  const double t_final = 0.01;
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.Initialize();
   simulator.AdvanceTo(t_final);
@@ -49,12 +49,22 @@ class DiscreteClothSpringModelTest : public ::testing::Test {
 };
 
 TEST_F(DiscreteClothSpringModelTest, Simulate) {
-  // Simulate to t_final = 10.0 and make sure sim does not crash.
-  const double t_final = 10.0;
+  // Simulate to t_final = 10 time steps and make sure sim does not crash and
+  // that the solver is converging. Advance to a few time steps away from
+  // initial condition for a more non-trivial setup.
+  const double t_final = 0.1;
+  dut_->SetLinearSolveTolerance(std::numeric_limits<double>::epsilon());
+  // Conjugate Gradient should solve the system exactly with iteration count
+  // equal to the size of the system.
+  dut_->SetLinearSolveMaxIterations(3 * nx * ny);
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.Initialize();
   simulator.AdvanceTo(t_final);
+  // The sim should not crash.
   EXPECT_EQ(simulator.get_context().get_time(), t_final);
+  // Conjugate Gradient should have converged as the max number of iterations is
+  // equal to the size of the system.
+  EXPECT_EQ(dut_->linear_solver_info(), Eigen::ComputationInfo::Success);
 }
 }  // namespace
 }  // namespace mass_spring_cloth

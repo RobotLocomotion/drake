@@ -15,7 +15,8 @@ ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
       dt_(dt),
       bottom_left_corner_(0),
       top_left_corner_(ny_ - 1),
-      H_(3 * num_particles_, 3 * num_particles_) {
+      H_(3 * num_particles_, 3 * num_particles_),
+      linear_solver_info_(Eigen::ComputationInfo::Success) {
   systems::BasicVector<T> initial_state = InitializePositionAndVelocity();
   if (dt > 0) {
     // Discrete system.
@@ -56,6 +57,11 @@ ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
     }
     H_.reserve(num_nonzero_entries);
     H_.setZero();
+    // CG is guaranteed to converge when iteration reaches the number of DOFs.
+    // It usually takes far fewer iterations to converge.
+    cg_.setMaxIterations(num_particles_ * 3);
+    // Set a tight tolerance for convergence.
+    cg_.setTolerance(Eigen::NumTraits<T>::epsilon());
   }
 }
 
@@ -386,6 +392,7 @@ void ClothSpringModel<T>::CalcDiscreteDv(const ClothSpringModelParams<T>& param,
   set_particle_state(top_left_corner_, {0.0, 0.0, 0.0}, f);
   cg_.compute(H_);
   (*dv) = cg_.solve((*f) * dt_);
+  linear_solver_info_ = cg_.info();
 }
 
 template <typename T>
