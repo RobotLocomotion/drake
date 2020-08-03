@@ -10,7 +10,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -70,6 +69,14 @@ class PolynomialBasis {
   bool operator==(const PolynomialBasis& other) const;
 
   bool operator!=(const PolynomialBasis& other) const;
+
+ protected:
+  /**
+   * Compares two PolynomialBasis using lexicographical order. This function
+   * is meant to be called by the derived class, to compare two polynomial basis
+   * of the same derived class.
+   */
+  bool lexicographical_compare(const PolynomialBasis& other) const;
 
  private:
   // This function evaluates the polynomial basis for a univariate polynomial at

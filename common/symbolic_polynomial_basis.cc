@@ -1,5 +1,7 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 
+#include <queue>
+
 #include <fmt/format.h>
 
 #include "drake/common/symbolic.h"
@@ -54,6 +56,34 @@ bool PolynomialBasis::operator==(const PolynomialBasis& other) const {
 
 bool PolynomialBasis::operator!=(const PolynomialBasis& other) const {
   return !(*this == other);
+}
+
+bool PolynomialBasis::lexicographical_compare(
+    const PolynomialBasis& other) const {
+  DRAKE_ASSERT(typeid(*this) == typeid(other));
+  return std::lexicographical_compare(
+      var_to_degree_map_.begin(), var_to_degree_map_.end(),
+      other.var_to_degree_map_.begin(), other.var_to_degree_map_.end(),
+      [](const std::pair<const Variable, int>& p1,
+         const std::pair<const Variable, int>& p2) {
+        const Variable& v1{p1.first};
+        const int i1{p1.second};
+        const Variable& v2{p2.first};
+        const int i2{p2.second};
+        if (v1.less(v2)) {
+          // m2 does not have the variable v1 explicitly, so we treat it as if
+          // it has (v1)⁰. That is, we need "return i1 < 0", but i1 should be
+          // positive, so this case always returns false.
+          return false;
+        }
+        if (v2.less(v1)) {
+          // m1 does not have the variable v2 explicitly, so we treat it as
+          // if it has (v2)⁰. That is, we need "return 0 < i2", but i2 should
+          // be positive, so it always returns true.
+          return true;
+        }
+        return i1 < i2;
+      });
 }
 }  // namespace symbolic
 }  // namespace drake

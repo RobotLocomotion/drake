@@ -39,6 +39,7 @@
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_polynomial_basis.h"
+#include "drake/common/symbolic_chebyshev_basis.h"
 #include "drake/common/symbolic_chebyshev_polynomial.h"
 #include "drake/common/symbolic_rational_function.h"
 #include "drake/common/symbolic_formula.h"

@@ -15,6 +15,10 @@ class DerivedBasisA : public PolynomialBasis {
   explicit DerivedBasisA(const std::map<Variable, int>& var_to_degree_map)
       : PolynomialBasis(var_to_degree_map) {}
 
+  bool operator<(const DerivedBasisA& other) const {
+    return this->lexicographical_compare(other);
+  }
+
  private:
   double DoEvaluate(double variable_val, int degree) const override {
     return std::pow(variable_val, degree);
@@ -27,6 +31,10 @@ class DerivedBasisB : public PolynomialBasis {
 
   explicit DerivedBasisB(const std::map<Variable, int>& var_to_degree_map)
       : PolynomialBasis(var_to_degree_map) {}
+
+  bool operator<(const DerivedBasisB& other) const {
+    return this->lexicographical_compare(other);
+  }
 
  private:
   double DoEvaluate(double variable_val, int degree) const override {
@@ -112,6 +120,16 @@ TEST_F(SymbolicPolynomialBasisTest, Evaluate) {
   // p2=xy², but env2 does not contain value for x.
   DRAKE_EXPECT_THROWS_MESSAGE(p2.Evaluate(env2), std::invalid_argument,
                               ".* x is not in env");
+}
+
+TEST_F(SymbolicPolynomialBasisTest, less_than) {
+  const DerivedBasisA p1({{x_, 1}, {y_, 2}});
+  const DerivedBasisA p2({{y_, 3}});
+  const DerivedBasisA p3({{x_, 2}});
+
+  EXPECT_LT(p2, p1);
+  EXPECT_LT(p1, p3);
+  EXPECT_LT(p2, p3);
 }
 }  // namespace symbolic
 }  // namespace drake
