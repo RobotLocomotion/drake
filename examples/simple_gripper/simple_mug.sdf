@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="simple_mug">
     <link name="main_body">
       <inertial>

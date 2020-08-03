@@ -2,7 +2,7 @@
 <!--
 Defines an SDF model with various types of joints used for testing the parser.
 -->
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="joint_parsing_test">
     <link name="link1">
       <inertial>
@@ -34,7 +34,7 @@ Defines an SDF model with various types of joints used for testing the parser.
       <child>link2</child>
       <parent>link1</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-1</lower>
           <upper>2</upper>
@@ -46,7 +46,6 @@ Defines an SDF model with various types of joints used for testing the parser.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link3">
@@ -66,7 +65,7 @@ Defines an SDF model with various types of joints used for testing the parser.
       <child>link3</child>
       <parent>link2</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-2</lower>
           <upper>1</upper>
@@ -78,7 +77,6 @@ Defines an SDF model with various types of joints used for testing the parser.
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link4">
@@ -98,12 +96,11 @@ Defines an SDF model with various types of joints used for testing the parser.
       <child>link4</child>
       <parent>link3</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <dynamics>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link5">
@@ -126,7 +123,7 @@ Defines an SDF model with various types of joints used for testing the parser.
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
+        <xyz expressed_in="__model__">0 0 1</xyz>
       </axis>
     </joint>
     <link name="link6">
@@ -149,7 +146,7 @@ Defines an SDF model with various types of joints used for testing the parser.
         <dynamics>
           <damping>0.1</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
+        <xyz expressed_in="__model__">0 0 1</xyz>
       </axis>
     </joint>
   </model>

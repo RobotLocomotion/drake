@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="extra_heavy_duty_table_surface_only_collision">
     <!--
     This model is identical to the extra heavy duty table in nearly
@@ -305,7 +305,7 @@
       causes RBT SDFormat parsing code to segfault. Remove this once RBT is
       removed.
       -->
-      <pose frame="link">0 0 0.7645 0 0 0</pose>
+      <pose relative_to="link">0 0 0.7645 0 0 0</pose>
     </frame>
     <!--
     N.B. This model used to have <static>true</static>, but this creates

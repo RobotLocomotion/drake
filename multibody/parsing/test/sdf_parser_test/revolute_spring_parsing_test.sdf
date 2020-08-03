@@ -7,7 +7,7 @@ default value of zero when the tag is not present. This is an accompanying
 file to detail_sdf_parser_test.cc and therefore they must be kept in sync
 with each other.
 -->
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="revolute_spring_parsing_test">
     <link name="link1">
       <inertial>
@@ -39,12 +39,11 @@ with each other.
       <child>link2</child>
       <parent>link1</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <dynamics>
           <spring_reference>1</spring_reference>
           <spring_stiffness>5</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link3">
@@ -64,12 +63,11 @@ with each other.
       <child>link3</child>
       <parent>link2</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <dynamics>
           <spring_reference>1</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link4">
@@ -89,12 +87,11 @@ with each other.
       <child>link4</child>
       <parent>link3</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <dynamics>
           <spring_reference>0</spring_reference>
           <spring_stiffness>5</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link5">
@@ -114,12 +111,11 @@ with each other.
       <child>link5</child>
       <parent>link4</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <dynamics>
           <spring_reference>0</spring_reference>
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
   </model>

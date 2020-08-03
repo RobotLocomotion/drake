@@ -5,7 +5,7 @@
   origin.
   This box is *not* the same size as box.sdf.
 -->
-<sdf version="1.4">
+<sdf version="1.7">
   <model name="box">
     <pose>0 0 0.5 0 0 0</pose>
     <link name="box">

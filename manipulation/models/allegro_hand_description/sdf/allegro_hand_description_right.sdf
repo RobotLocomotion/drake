@@ -25,7 +25,7 @@
   omission is justified because it is small enough that its removal is
   unlikely to cause us to miss meaningful collisions.
 -->
-<sdf version="1.6">
+<sdf version="1.7">
   <model name="allegro_hand_right">
     <link name="hand_root">
       <inertial>
@@ -91,7 +91,7 @@
       <child>link_0</child>
       <parent>hand_root</parent>
       <axis>
-        <xyz>0 0.087156 0.996195</xyz>
+        <xyz expressed_in="__model__">0 0.087156 0.996195</xyz>
         <limit>
           <lower>-0.47</lower>
           <upper>0.47</upper>
@@ -100,7 +100,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_1">
@@ -137,7 +136,7 @@
       <child>link_1</child>
       <parent>link_0</parent>
       <axis>
-        <xyz>0 0.996195 -0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 -0.087156</xyz>
         <limit>
           <lower>-0.196</lower>
           <upper>1.61</upper>
@@ -146,7 +145,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_2">
@@ -183,7 +181,7 @@
       <child>link_2</child>
       <parent>link_1</parent>
       <axis>
-        <xyz>0 0.996195 -0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 -0.087156</xyz>
         <limit>
           <lower>-0.174</lower>
           <upper>1.709</upper>
@@ -192,7 +190,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_3">
@@ -246,7 +243,7 @@
       <child>link_3</child>
       <parent>link_2</parent>
       <axis>
-        <xyz>0 0.996195 -0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 -0.087156</xyz>
         <limit>
           <lower>-0.227</lower>
           <upper>1.618</upper>
@@ -255,7 +252,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_12">
@@ -292,7 +288,7 @@
       <child>link_12</child>
       <parent>hand_root</parent>
       <axis>
-        <xyz>0 -0.087156 -0.996195</xyz>
+        <xyz expressed_in="__model__">0 -0.087156 -0.996195</xyz>
         <limit>
           <lower>0.263</lower>
           <upper>1.396</upper>
@@ -301,7 +297,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_13">
@@ -340,7 +335,7 @@
       <child>link_13</child>
       <parent>link_12</parent>
       <axis>
-        <xyz>0 0.996195 -0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 -0.087156</xyz>
         <limit>
           <lower>-0.105</lower>
           <upper>1.163</upper>
@@ -349,7 +344,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_14">
@@ -386,7 +380,7 @@
       <child>link_14</child>
       <parent>link_13</parent>
       <axis>
-        <xyz>1 0 0</xyz>
+        <xyz expressed_in="__model__">1 0 0</xyz>
         <limit>
           <lower>-0.189</lower>
           <upper>1.644</upper>
@@ -395,7 +389,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_15">
@@ -450,7 +443,7 @@
       <child>link_15</child>
       <parent>link_14</parent>
       <axis>
-        <xyz>1 0 0</xyz>
+        <xyz expressed_in="__model__">1 0 0</xyz>
         <limit>
           <lower>-0.162</lower>
           <upper>1.719</upper>
@@ -459,7 +452,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_4">
@@ -496,7 +488,7 @@
       <child>link_4</child>
       <parent>hand_root</parent>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz expressed_in="__model__">0 0 1</xyz>
         <limit>
           <lower>-0.47</lower>
           <upper>0.47</upper>
@@ -505,7 +497,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_5">
@@ -542,7 +533,7 @@
       <child>link_5</child>
       <parent>link_4</parent>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <lower>-0.196</lower>
           <upper>1.61</upper>
@@ -551,7 +542,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_6">
@@ -588,7 +578,7 @@
       <child>link_6</child>
       <parent>link_5</parent>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <lower>-0.174</lower>
           <upper>1.709</upper>
@@ -597,7 +587,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_7">
@@ -651,7 +640,7 @@
       <child>link_7</child>
       <parent>link_6</parent>
       <axis>
-        <xyz>0 1 0</xyz>
+        <xyz expressed_in="__model__">0 1 0</xyz>
         <limit>
           <lower>-0.227</lower>
           <upper>1.618</upper>
@@ -660,7 +649,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_8">
@@ -697,7 +685,7 @@
       <child>link_8</child>
       <parent>hand_root</parent>
       <axis>
-        <xyz>0 -0.087156 0.996195</xyz>
+        <xyz expressed_in="__model__">0 -0.087156 0.996195</xyz>
         <limit>
           <lower>-0.47</lower>
           <upper>0.47</upper>
@@ -706,7 +694,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_9">
@@ -743,7 +730,7 @@
       <child>link_9</child>
       <parent>link_8</parent>
       <axis>
-        <xyz>0 0.996195 0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 0.087156</xyz>
         <limit>
           <lower>-0.196</lower>
           <upper>1.61</upper>
@@ -752,7 +739,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_10">
@@ -789,7 +775,7 @@
       <child>link_10</child>
       <parent>link_9</parent>
       <axis>
-        <xyz>0 0.996195 0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 0.087156</xyz>
         <limit>
           <lower>-0.174</lower>
           <upper>1.709</upper>
@@ -798,7 +784,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     <link name="link_11">
@@ -852,7 +837,7 @@
       <child>link_11</child>
       <parent>link_10</parent>
       <axis>
-        <xyz>0 0.996195 0.087156</xyz>
+        <xyz expressed_in="__model__">0 0.996195 0.087156</xyz>
         <limit>
           <lower>-0.227</lower>
           <upper>1.618</upper>
@@ -861,7 +846,6 @@
         <dynamics>
           <damping>1.5e-2</damping>
         </dynamics>
-        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
   </model>

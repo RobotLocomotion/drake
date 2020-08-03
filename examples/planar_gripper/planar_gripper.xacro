@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<sdf xmlns:xacro="http://www.ros.org/wiki/xacro" version="1.6">
+<sdf xmlns:xacro="http://www.ros.org/wiki/xacro" version="1.7">
   <model name="planar_gripper">
     <!-- Link mass and inertia values are guesses (currently), calculated using
          a uniform rod model, rotating about its center of mass. -->
@@ -73,7 +73,7 @@
         <child>finger${fnum}_link1</child>
         <parent>finger${fnum}_base</parent>
         <axis>
-          <xyz>1 0 0</xyz>
+          <xyz expressed_in="__model__">1 0 0</xyz>
           <limit>
             <!-- Drake parses a zero effort joint as an un-actuated joint. -->
             <effort>75</effort>
@@ -83,7 +83,6 @@
           <dynamics>
             <damping>0.1</damping>
           </dynamics>
-          <use_parent_model_frame>1</use_parent_model_frame>
         </axis>
       </joint>
       <link name="finger${fnum}_link2">
@@ -143,7 +142,7 @@
         <child>finger${fnum}_link2</child>
         <!-- Pose X_CJ of the joint frame J in the frame C of the child link -->
         <axis>
-          <xyz>1 0 0</xyz>
+          <xyz expressed_in="__model__">1 0 0</xyz>
           <limit>
             <effort>75</effort>
             <lower>-1.57</lower>
@@ -152,7 +151,6 @@
           <dynamics>
             <damping>0.1</damping>
           </dynamics>
-          <use_parent_model_frame>1</use_parent_model_frame>
         </axis>
       </joint>
       <!-- The tip link's mass/inertia values are already included in link 2,

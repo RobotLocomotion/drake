@@ -35,10 +35,9 @@ LOG: 2     | 2083.457031  2370.329590  1879.999878 |
         mass_kg = 0.321
         expected = """
 <?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version='1.7'>
   <model name='myfile'>
     <link name='myfile'>
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0.00421 0 0.0438 0 0 0</pose>
         <mass>0.321</mass>
@@ -52,7 +51,6 @@ LOG: 2     | 2083.457031  2370.329590  1879.999878 |
         </inertia>
       </inertial>
       <visual name='visual'>
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
             <uri>myfile.obj</uri>
