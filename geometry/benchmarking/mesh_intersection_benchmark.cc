@@ -61,36 +61,35 @@ CPU Caches:
   L2 Unified 256K (x28)
   L3 Unified 35840K (x2)
 Load Average: 21.52, 41.04, 26.99
-***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
-----------------------------------------------------------------------------------------------------
-Benchmark                                                          Time             CPU   Iterations   Line Number
-----------------------------------------------------------------------------------------------------
-MeshIntersectionBenchmark/WithoutBVH/0/4/0/min_time:2.000      0.903 ms        0.903 ms         3297   [1]
-MeshIntersectionBenchmark/WithoutBVH/1/4/0/min_time:2.000       5.74 ms         5.74 ms          456   [2]
-MeshIntersectionBenchmark/WithoutBVH/2/4/0/min_time:2.000       19.1 ms         19.1 ms          129   [3]
-MeshIntersectionBenchmark/WithoutBVH/3/4/0/min_time:2.000        530 ms          530 ms            5   [4]
-MeshIntersectionBenchmark/WithoutBVH/2/0/0/min_time:2.000       15.1 ms         15.1 ms          189   [5]
-MeshIntersectionBenchmark/WithoutBVH/2/1/0/min_time:2.000       15.4 ms         15.4 ms          178   [6]
-MeshIntersectionBenchmark/WithoutBVH/2/2/0/min_time:2.000       15.9 ms         15.9 ms          176   [7]
-MeshIntersectionBenchmark/WithoutBVH/2/3/0/min_time:2.000       18.3 ms         18.3 ms          150   [8]
-MeshIntersectionBenchmark/WithoutBVH/2/4/1/min_time:2.000       19.1 ms         19.1 ms          147   [9]
-MeshIntersectionBenchmark/WithoutBVH/2/4/2/min_time:2.000       19.0 ms         19.0 ms          147   [10]
-MeshIntersectionBenchmark/WithoutBVH/2/4/3/min_time:2.000       19.2 ms         19.2 ms          145   [11]
-MeshIntersectionBenchmark/WithoutBVH/2/3/1/min_time:2.000       17.9 ms         17.9 ms          156   [12]
-MeshIntersectionBenchmark/WithoutBVH/2/2/2/min_time:2.000       15.6 ms         15.6 ms          180   [13]
-MeshIntersectionBenchmark/___WithBVH/0/4/0/min_time:2.000      0.629 ms        0.629 ms         4408   [14]
-MeshIntersectionBenchmark/___WithBVH/1/4/0/min_time:2.000       2.15 ms         2.15 ms         1328   [15]
-MeshIntersectionBenchmark/___WithBVH/2/4/0/min_time:2.000       3.14 ms         3.14 ms          893   [16]
-MeshIntersectionBenchmark/___WithBVH/3/4/0/min_time:2.000       14.3 ms         14.3 ms          192   [17]
-MeshIntersectionBenchmark/___WithBVH/2/0/0/min_time:2.000      0.000 ms        0.000 ms     54932081   [18]
-MeshIntersectionBenchmark/___WithBVH/2/1/0/min_time:2.000      0.023 ms        0.023 ms       119450   [19]
-MeshIntersectionBenchmark/___WithBVH/2/2/0/min_time:2.000      0.119 ms        0.119 ms        23142   [20]
-MeshIntersectionBenchmark/___WithBVH/2/3/0/min_time:2.000       1.87 ms         1.87 ms         1486   [21]
-MeshIntersectionBenchmark/___WithBVH/2/4/1/min_time:2.000       2.95 ms         2.95 ms          944   [22]
-MeshIntersectionBenchmark/___WithBVH/2/4/2/min_time:2.000       3.15 ms         3.15 ms          894   [23]
-MeshIntersectionBenchmark/___WithBVH/2/4/3/min_time:2.000       3.21 ms         3.21 ms          871   [24]
-MeshIntersectionBenchmark/___WithBVH/2/3/1/min_time:2.000       1.94 ms         1.94 ms         1448   [25]
-MeshIntersectionBenchmark/___WithBVH/2/2/2/min_time:2.000      0.127 ms        0.127 ms        22007   [26]
+----------------------------------------------------------------------------------------------------                // NOLINT(*)
+Benchmark                                                          Time             CPU   Iterations   Line Number  // NOLINT(*)
+----------------------------------------------------------------------------------------------------                // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/0/4/0/min_time:2.000      0.903 ms        0.903 ms         3297   [1]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/1/4/0/min_time:2.000       5.74 ms         5.74 ms          456   [2]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/4/0/min_time:2.000       19.1 ms         19.1 ms          129   [3]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/3/4/0/min_time:2.000        530 ms          530 ms            5   [4]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/0/0/min_time:2.000       15.1 ms         15.1 ms          189   [5]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/1/0/min_time:2.000       15.4 ms         15.4 ms          178   [6]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/2/0/min_time:2.000       15.9 ms         15.9 ms          176   [7]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/3/0/min_time:2.000       18.3 ms         18.3 ms          150   [8]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/4/1/min_time:2.000       19.1 ms         19.1 ms          147   [9]          // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/4/2/min_time:2.000       19.0 ms         19.0 ms          147   [10]         // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/4/3/min_time:2.000       19.2 ms         19.2 ms          145   [11]         // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/3/1/min_time:2.000       17.9 ms         17.9 ms          156   [12]         // NOLINT(*)
+MeshIntersectionBenchmark/WithoutBVH/2/2/2/min_time:2.000       15.6 ms         15.6 ms          180   [13]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/0/4/0/min_time:2.000      0.629 ms        0.629 ms         4408   [14]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/1/4/0/min_time:2.000       2.15 ms         2.15 ms         1328   [15]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/4/0/min_time:2.000       3.14 ms         3.14 ms          893   [16]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/3/4/0/min_time:2.000       14.3 ms         14.3 ms          192   [17]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/0/0/min_time:2.000      0.000 ms        0.000 ms     54932081   [18]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/1/0/min_time:2.000      0.023 ms        0.023 ms       119450   [19]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/2/0/min_time:2.000      0.119 ms        0.119 ms        23142   [20]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/3/0/min_time:2.000       1.87 ms         1.87 ms         1486   [21]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/4/1/min_time:2.000       2.95 ms         2.95 ms          944   [22]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/4/2/min_time:2.000       3.15 ms         3.15 ms          894   [23]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/4/3/min_time:2.000       3.21 ms         3.21 ms          871   [24]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/3/1/min_time:2.000       1.94 ms         1.94 ms         1448   [25]         // NOLINT(*)
+MeshIntersectionBenchmark/___WithBVH/2/2/2/min_time:2.000      0.127 ms        0.127 ms        22007   [26]         // NOLINT(*)
 Resulting contact surface sizes:
  - WithoutBVH/0/4/0: 93.76 m^2, 448 triangles
  - WithoutBVH/1/4/0: 93.76 m^2, 1592 triangles

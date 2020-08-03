@@ -51,34 +51,33 @@ CPU Caches:
   L2 Unified 256K (x6)
   L3 Unified 12288K (x1)
 Load Average: 9.75, 4.65, 3.26
-***WARNING*** CPU scaling is enabled, the benchmark real time measurements may be noisy and will incur extra overhead.
-------------------------------------------------------------------------------------------------------
-Benchmark                                                            Time             CPU   Iterations
-------------------------------------------------------------------------------------------------------
-RenderEngineBenchmark/VtkColor/1/1/640/480                        1.11 ms         1.08 ms          514
-RenderEngineBenchmark/VtkColor/4/1/640/480                        1.05 ms         1.05 ms          684
-RenderEngineBenchmark/VtkColor/8/1/640/480                        1.10 ms         1.09 ms          610
-RenderEngineBenchmark/VtkColor/1/10/640/480                       10.5 ms         10.1 ms           67
-RenderEngineBenchmark/VtkColor/1/1/320/240                       0.391 ms        0.390 ms         1567
-RenderEngineBenchmark/VtkColor/1/1/1280/960                       3.13 ms         3.13 ms          223
-RenderEngineBenchmark/VtkColor/1/1/2560/1920                      12.2 ms         12.2 ms           49
-RenderEngineBenchmark/VtkDepth/1/1/640/480                        1.35 ms         1.35 ms          484
-RenderEngineBenchmark/VtkDepth/1/10/640/480                       13.0 ms         13.0 ms           50
-RenderEngineBenchmark/VtkLabel/1/1/640/480                        1.45 ms         1.45 ms          464
-RenderEngineBenchmark/VtkLabel/1/10/640/480                       26.1 ms         25.3 ms           37
-RenderEngineBenchmark/OsprayRayColor/1/1/640/480                  23.4 ms         22.7 ms           33
-RenderEngineBenchmark/OsprayRayColor/4/1/640/480                  28.8 ms         27.4 ms           23
-RenderEngineBenchmark/OsprayRayColor/8/1/640/480                  34.4 ms         32.9 ms           17
-RenderEngineBenchmark/OsprayRayColor/1/10/640/480                  193 ms          174 ms            3
-RenderEngineBenchmark/OsprayRayColor/1/1/320/240                  5.16 ms         5.09 ms          120
-RenderEngineBenchmark/OsprayRayColor/1/1/1280/960                 67.9 ms         65.2 ms           11
-RenderEngineBenchmark/OsprayRayColor/1/1/2560/1920                 283 ms          267 ms            2
-RenderEngineBenchmark/OsprayRayColorShadowsOff/1/1/640/480        15.7 ms         15.7 ms           43
-RenderEngineBenchmark/OsprayRayColorShadowsOff/4/1/640/480        20.0 ms         19.6 ms           30
-RenderEngineBenchmark/OsprayRayColorShadowsOff/8/1/640/480        25.2 ms         25.2 ms           28
-RenderEngineBenchmark/OsprayRayColorShadowsOff/1/10/640/480        162 ms          159 ms            4
-RenderEngineBenchmark/OsprayPathColor/1/1/640/480                 36.2 ms         35.3 ms           20
-RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms          345 ms            2
+------------------------------------------------------------------------------------------------------  // NOLINT(*)
+Benchmark                                                            Time             CPU   Iterations  // NOLINT(*)
+------------------------------------------------------------------------------------------------------  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/640/480                        1.11 ms         1.08 ms          514  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/4/1/640/480                        1.05 ms         1.05 ms          684  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/8/1/640/480                        1.10 ms         1.09 ms          610  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/10/640/480                       10.5 ms         10.1 ms           67  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/320/240                       0.391 ms        0.390 ms         1567  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/1280/960                       3.13 ms         3.13 ms          223  // NOLINT(*)
+RenderEngineBenchmark/VtkColor/1/1/2560/1920                      12.2 ms         12.2 ms           49  // NOLINT(*)
+RenderEngineBenchmark/VtkDepth/1/1/640/480                        1.35 ms         1.35 ms          484  // NOLINT(*)
+RenderEngineBenchmark/VtkDepth/1/10/640/480                       13.0 ms         13.0 ms           50  // NOLINT(*)
+RenderEngineBenchmark/VtkLabel/1/1/640/480                        1.45 ms         1.45 ms          464  // NOLINT(*)
+RenderEngineBenchmark/VtkLabel/1/10/640/480                       26.1 ms         25.3 ms           37  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/1/1/640/480                  23.4 ms         22.7 ms           33  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/4/1/640/480                  28.8 ms         27.4 ms           23  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/8/1/640/480                  34.4 ms         32.9 ms           17  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/1/10/640/480                  193 ms          174 ms            3  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/1/1/320/240                  5.16 ms         5.09 ms          120  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/1/1/1280/960                 67.9 ms         65.2 ms           11  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColor/1/1/2560/1920                 283 ms          267 ms            2  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColorShadowsOff/1/1/640/480        15.7 ms         15.7 ms           43  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColorShadowsOff/4/1/640/480        20.0 ms         19.6 ms           30  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColorShadowsOff/8/1/640/480        25.2 ms         25.2 ms           28  // NOLINT(*)
+RenderEngineBenchmark/OsprayRayColorShadowsOff/1/10/640/480        162 ms          159 ms            4  // NOLINT(*)
+RenderEngineBenchmark/OsprayPathColor/1/1/640/480                 36.2 ms         35.3 ms           20  // NOLINT(*)
+RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms          345 ms            2  // NOLINT(*)
  ```
 
  Additional configuration is possible via the following flags:
@@ -91,7 +90,8 @@ RenderEngineBenchmark/OsprayPathColor/1/10/640/480                 351 ms       
 
  For example:
  ```
- bazel run //geometry/benchmarking:render_benchmark -- --save_image_path="/tmp" --show_window=true --samples_per_pixel=100
+ bazel run //geometry/benchmarking:render_benchmark -- \
+    --save_image_path="/tmp" --show_window=true --samples_per_pixel=100
  ```
 
  <h4>Interpreting the benchmark</h4>
