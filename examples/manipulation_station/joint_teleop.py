@@ -86,6 +86,8 @@ def main():
                     open_browser=args.open_browser))
             builder.Connect(station.GetOutputPort("pose_bundle"),
                             meshcat.get_input_port(0))
+            if args.setup == 'planar':
+                meshcat.set_planar_viewpoint()
         if args.setup == 'planar':
             pyplot_visualizer = builder.AddSystem(PlanarSceneGraphVisualizer(
                 station.get_scene_graph()))
