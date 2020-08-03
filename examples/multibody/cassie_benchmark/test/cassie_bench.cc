@@ -6,7 +6,6 @@ See https://github.com/DAIRLab/dairlib/issues/181 for the original benchmark.
 */
 
 #include <benchmark/benchmark.h>
-#include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/limit_malloc.h"
@@ -28,17 +27,17 @@ namespace {
 
 class DoubleFixture : public benchmark::Fixture {
  public:
+  // This apparently futile using statement works around "overloaded virtual"
+  // errors in g++. All of this is a consequence of the weird deprecation of
+  // const-ref State versions of SetUp() and TearDown() in benchmark.h.
   using benchmark::Fixture::SetUp;
-  void SetUp(const benchmark::State&) override {
+  void SetUp(benchmark::State&) override {
     plant_ = builder_.AddSystem<MultibodyPlant>(0);
 
     multibody::Parser parser(plant_);
     const auto& model =
         "drake/examples/multibody/cassie_benchmark/cassie_v2.urdf";
     parser.AddModelFromFile(FindResourceOrThrow(model));
-
-    plant_->WeldFrames(plant_->world_frame(),
-                       plant_->GetFrameByName("pelvis"));
     plant_->Finalize();
 
     nq_ = plant_->num_positions();
@@ -95,7 +94,8 @@ BENCHMARK_F(DoubleFixture, DoubleForwardDynamics)(benchmark::State& state) {
   auto derivatives = plant_->AllocateTimeDerivatives();
   int i = 0;
   for (auto _ : state) {
-    x = VectorXd::Constant(nq_ + nv_, i);
+    // Add one to i here to avoid the 0-inertia singularity.
+    x = VectorXd::Constant(nq_ + nv_, i + 1);
     u = VectorXd::Constant(nu_, i);
     context_->FixInputPort(plant_->get_actuation_input_port().get_index(), u);
     plant_->SetPositionsAndVelocities(context_.get(), x);
@@ -104,10 +104,11 @@ BENCHMARK_F(DoubleFixture, DoubleForwardDynamics)(benchmark::State& state) {
   }
 }
 
+
 class AutodiffFixture : public DoubleFixture {
  public:
   using DoubleFixture::SetUp;
-  void SetUp(const benchmark::State& state) override {
+  void SetUp(benchmark::State& state) override {
     DoubleFixture::SetUp(state);
     plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
@@ -117,19 +118,22 @@ class AutodiffFixture : public DoubleFixture {
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 };
 
+// According to research from @sherm1, the caching system has some
+// debug-only asserts that allocate memory. Hence there are two different
+// ceilings for allocations until that is addressed.
+#ifdef NDEBUG
+#define RELEASE_LIMIT_MALLOC(x) \
+  drake::test::LimitMalloc guard({.max_num_allocations = (x)});
+#else
+#define RELEASE_LIMIT_MALLOC(x) /* empty */
+#endif
+
 // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
 BENCHMARK_F(AutodiffFixture, AutodiffMassMatrix)(benchmark::State& state) {
   MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
   int i = 0;
   for (auto _ : state) {
-    // According to research from @sherm1, the caching system has some
-    // debug-only asserts that allocate memory. Hence there are two different
-    // ceilings for allocations until that is addressed.
-#ifdef NDEBUG
-    drake::test::LimitMalloc guard({.max_num_allocations = 53438});
-#else
-    drake::test::LimitMalloc guard({.max_num_allocations = 59897});
-#endif
+    RELEASE_LIMIT_MALLOC(62567);
     x_(0) = i;
     plant_autodiff_->SetPositionsAndVelocities(
         context_autodiff_.get(), math::initializeAutoDiff(x_));
@@ -146,6 +150,7 @@ BENCHMARK_F(AutodiffFixture, AutodiffInverseDynamics)(benchmark::State& state) {
       *plant_autodiff_);
   int i = 0;
   for (auto _ : state) {
+    RELEASE_LIMIT_MALLOC(70438);
     x = VectorXd::Constant(nq_ + nv_, i);
     desired_vdot = VectorXd::Constant(nv_, i);
     plant_autodiff_->SetPositionsAndVelocities(
@@ -166,6 +171,7 @@ BENCHMARK_F(AutodiffFixture, AutodiffForwardDynamics)(benchmark::State& state) {
   auto derivatives_autodiff = plant_autodiff_->AllocateTimeDerivatives();
   int i = 0;
   for (auto _ : state) {
+    RELEASE_LIMIT_MALLOC(105834);
     i++;
     x = VectorXd::Constant(nq_ + nv_, i);
     u = VectorXd::Constant(nu_, i);
@@ -180,6 +186,8 @@ BENCHMARK_F(AutodiffFixture, AutodiffForwardDynamics)(benchmark::State& state) {
                                          derivatives_autodiff.get());
   }
 }
+
+#undef RELEASE_LIMIT_MALLOC
 
 }  // namespace
 }  // namespace examples
