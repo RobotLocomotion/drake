@@ -218,6 +218,20 @@ class TestCustom(unittest.TestCase):
                 ]:
             self.assertIsInstance(func(arg), DependencyTicket, func)
 
+    def test_leaf_system_issue13792(self):
+        """
+        Ensures that users get a better error when forgetting to explicitly
+        call the C++ superclass's __init__.
+        """
+
+        class Oops(LeafSystem):
+            def __init__(self):
+                pass
+
+        with self.assertRaises(TypeError) as cm:
+            Oops()
+        self.assertIn("LeafSystem_[float].__init__", str(cm.exception))
+
     def test_all_leaf_system_overrides(self):
         test = self
 
