@@ -3,8 +3,6 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_test",
 )
@@ -22,15 +20,6 @@ drake_cc_library(
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
         "@gflags",
-    ],
-)
-
-drake_cc_googletest(
-    name = "cassie_benchmark_test",
-    data = ["cassie_v2.urdf"],
-    deps = [
-        ":cassie_benchmark",
-        "//common/test_utilities:limit_malloc",
     ],
 )
 
