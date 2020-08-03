@@ -657,3 +657,6 @@ using RollPitchYawd = RollPitchYaw<double>;
 
 }  // namespace math
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::math::RollPitchYaw)
