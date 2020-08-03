@@ -56,7 +56,6 @@ TEST_F(DiscreteClothSpringModelTest, Simulate) {
   dut_->SetLinearSolveTolerance(std::numeric_limits<double>::epsilon());
   // Conjugate Gradient should solve the system exactly with iteration count
   // equal to the size of the system.
-  dut_->SetLinearSolveMaxIterations(3 * nx * ny);
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.Initialize();
   simulator.AdvanceTo(t_final);

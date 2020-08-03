@@ -47,7 +47,7 @@ In one terminal, launch the visualizer
 bazel-bin/tools/drake_visualizer
 ```
 
-launch the mass spring cloth simulation
+In another terminal, launch the mass spring cloth simulation
 ```
 bazel-bin/examples/mass_spring_cloth/run_cloth_spring_model
 ```
@@ -57,10 +57,10 @@ conditionally stable time integration scheme. Using too large a `dt`
 may lead to instability. Usually, you will need to decrease `dt` when you:
 
  1. increase the elastic stiffness (accessible via the parameter file 
- `drake/examples/mass_spring_cloth/cloth_spring_model_params_named_vector.yaml`), 
- 2. decrease `h`, or 
- 3. decrease the mass of the particles. 
-    
+ `drake/examples/mass_spring_cloth/cloth_spring_model_params_named_vector.yaml`),
+ 2. decrease `h`, or
+ 3. decrease the mass of the particles.
+ 
 To switch to the continuous mode, add the flag `--dt=0`. The number
 of particles in the x-direction and the y-direction can be configured
 with the flag `--nx` and `--ny` respectively, and the separation

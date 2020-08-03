@@ -107,13 +107,13 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   }
 
   /** For discrete mode only: set the max number of iterations for the Conjugate
-   * Gradient solve for the implicit damping force. */
+    Gradient solve for the implicit damping force. */
   void SetLinearSolveMaxIterations(int max_iterations) {
     cg_.setMaxIterations(max_iterations);
   }
 
   /** For discrete mode only: set the tolerance for the Conjugate Gradient solve
-   * for the implicit damping force. */
+    for the implicit damping force. */
   void SetLinearSolveTolerance(T tolerance) { cg_.setTolerance(tolerance); }
 
  private:
