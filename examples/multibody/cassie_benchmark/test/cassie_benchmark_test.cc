@@ -141,9 +141,11 @@ int do_main() {
     x = VectorXd::Constant(nq + nv, i);
     desired_vdot = VectorXd::Constant(nv, i);
     multibody_plant_autodiff->SetPositionsAndVelocities(
-        multibody_context_autodiff.get(), math::initializeAutoDiff(x));
+        multibody_context_autodiff.get(),
+        math::initializeAutoDiff(x, 2 * nq + nv));
     multibody_plant_autodiff->CalcInverseDynamics(
-        *multibody_context_autodiff, math::initializeAutoDiff(desired_vdot),
+        *multibody_context_autodiff,
+        math::initializeAutoDiff(desired_vdot, 2 * nq + nv, 2 * nq),
         external_forces_autodiff);
   }
   stop = my_clock::now();
@@ -184,9 +186,10 @@ int do_main() {
 
     multibody_context_autodiff->FixInputPort(
         multibody_plant_autodiff->get_actuation_input_port().get_index(),
-        math::initializeAutoDiff(u));
+        math::initializeAutoDiff(u, nq + nv + nu, nq + nv));
     multibody_plant_autodiff->SetPositionsAndVelocities(
-        multibody_context_autodiff.get(), math::initializeAutoDiff(x));
+        multibody_context_autodiff.get(),
+        math::initializeAutoDiff(x, nq + nv + nu));
     multibody_plant_autodiff->CalcTimeDerivatives(*multibody_context_autodiff,
                                                   derivatives_autodiff.get());
   }
