@@ -19,6 +19,7 @@
 #include "drake/multibody/parsing/detail_scene_graph.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -416,6 +417,75 @@ void AddJointFromSpecification(
   joint_types->insert(joint_spec.Type());
 }
 
+void AddCustomJointFromSpecification(const sdf::ElementPtr node,
+                                     ModelInstanceIndex model_instance,
+                                     MultibodyPlant<double>* plant) {
+  const std::string joint_type = node->Get<std::string>("type");
+  const std::string joint_name = node->Get<std::string>("name");
+
+  const std::string parent_body_name = node->Get<std::string>("parent");
+  if (!plant->HasBodyNamed(parent_body_name)) {
+    throw std::runtime_error(
+        fmt::format("Link: {} specified for <{}> does not exist in the model.",
+                    parent_body_name, "parent"));
+  }
+  const Body<double>& parent_body =
+      plant->GetBodyByName(parent_body_name, model_instance);
+
+  const std::string child_body_name = node->Get<std::string>("child");
+  if (!plant->HasBodyNamed(child_body_name)) {
+    throw std::runtime_error(
+        fmt::format("Link: {} specified for <{}> does not exist in the model.",
+                    child_body_name, "parent"));
+  }
+  const Body<double>& child_body =
+      plant->GetBodyByName(child_body_name, model_instance);
+
+  // // Get the pose of frame J in the frame of the child link C, as specified
+  // // in <joint> <pose> ... </pose></joint>. The default `relative_to` pose of
+  // // a joint will be the child link.
+  // const RigidTransformd X_CJ =
+  //     ResolveRigidTransform(joint_spec.SemanticPose());
+
+  // // Pose of the frame J in the parent body frame P.
+  // std::optional<RigidTransformd> X_PJ;
+  // // We need to treat the world case separately since sdformat does not
+  // // create a "world" link from which we can request its pose (which in that
+  // // case would be the identity).
+  // if (parent_body.index() == world_index()) {
+  //   const RigidTransformd X_MJ =
+  //       ResolveRigidTransform(joint_spec.SemanticPose(), "__model__");
+  //   X_PJ = X_WM * X_MJ;  // Since P == W.
+  // } else {
+  //   X_PJ = ResolveRigidTransform(
+  //       joint_spec.SemanticPose(), joint_spec.ParentLinkName());
+  // }
+
+  // // If P and J are coincident, we won't create a new frame for J, but use
+  // // P directly. We indicate that by passing a nullopt.
+  // if (X_PJ.value().IsExactlyIdentity()) X_PJ = std::nullopt;
+
+  if (joint_type.compare("planar") == 0) {
+    Vector3d damping(0, 0, 0);
+    if (node->HasElement("axis") &&
+        node->GetElement("axis")->HasElement("dynamics")) {
+      sdf::ElementPtr dyn_node =
+          node->GetElement("axis")->GetElement("dynamics");
+      auto [value, successful] = dyn_node->Get<ignition::math::Vector3d>(
+          "damping", ignition::math::Vector3d() /* default value. not used */);
+      if (successful) {
+        damping = ToVector3(value);
+      }
+    }
+
+    plant->AddJoint<PlanarJoint>(joint_name, parent_body, std::nullopt,
+                                 child_body, std::nullopt, damping);
+  } else {
+    throw std::runtime_error("ERROR: Joint " + joint_name +
+                             " has unrecognized type: " + joint_type);
+  }
+}
+
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 std::string LoadSdf(
@@ -684,6 +754,15 @@ ModelInstanceIndex AddModelFromSpecification(
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(
         model, X_WM, joint, model_instance, plant, &joint_types);
+  }
+
+  drake::log()->trace("sdf_parser: Add custom joints");
+  if (model.Element()->HasElement("drake:joint")) {
+    for (sdf::ElementPtr joint_node =
+             model.Element()->GetElement("drake:joint");
+         joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
+      AddCustomJointFromSpecification(joint_node, model_instance, plant);
+    }
   }
 
   drake::log()->trace("sdf_parser: Add explicit frames");
