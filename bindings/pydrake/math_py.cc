@@ -119,37 +119,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.operator_mul.doc_1args_constEigenMatrixBase);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // N.B. clang-format does weird stuff here.
-    // clang-format off
-    py::str linear_deprecation = FormatDeprecationMessage(py::str(R"""(
-The RigidTransform::linear() method was added for compatibility with
-Eigen::Isometry3, and is now deprecated. Use RigidTransform::GetAsMatrix4()
-instead.
-)""").attr("strip")(),
-        "2020-11-01");
-    py::str matrix_deprecation = FormatDeprecationMessage(py::str(R"""(
-The RigidTransform::matrix() method was added for compatibility with
-Eigen::Isometry3, and is now deprecated. Use RigidTransform::GetAsMatrix4()
-instead.
-)""").attr("strip")(),
-        "2020-11-01");
-    // clang-format on
 
     cls  // BR
         .def(
             "matrix",
-            [matrix_deprecation](RigidTransform<T>* self) {
-              WarnDeprecated(matrix_deprecation);
-              return self->GetAsMatrix4();
-            },
-            std::string(matrix_deprecation).c_str())
+            WrapDeprecated(cls_doc.matrix.doc_deprecated, &Class::matrix),
+            cls_doc.matrix.doc_deprecated)
         .def(
             "linear",
-            [linear_deprecation](RigidTransform<T>* self) {
-              WarnDeprecated(linear_deprecation);
-              return self->rotation().matrix();
-            },
-            std::string(linear_deprecation).c_str());
+            WrapDeprecated(cls_doc.linear.doc_deprecated, &Class::linear),
+            cls_doc.linear.doc_deprecated);
 #pragma GCC diagnostic pop
     cls  // BR
         .def(py::pickle([](const Class& self) { return self.GetAsMatrix34(); },
@@ -295,21 +274,9 @@ instead.
   auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
   // Install constructor to Isometry3 to permit `implicitly_convertible` to
   // work.
-  // N.B. clang-format does weird stuff here.
-  // clang-format off
-  py::str isometry_deprecation = FormatDeprecationMessage(py::str(R"""(
-Implicit conversion from RigidTransform to Eigen::Isometry3 is deprecated. You
-may convert explicitly by calling GetAsIsometry3(), or try to avoid using
-Eigen::Isometry3 in the first place.
-)""").attr("strip")(),
-      "2020-11-01");
-  // clang-format on
   py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
-      .def(py::init([isometry_deprecation](const RigidTransform<T>& X) {
-        WarnDeprecated(isometry_deprecation);
-        return X.GetAsIsometry3();
-      }),
-          std::string(isometry_deprecation).c_str());
+      .def(py_init_deprecated<Isometry3<T>, const RigidTransform<T>&>(
+          doc.RigidTransform.operator_Transform.doc_deprecated));
   py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 }
 

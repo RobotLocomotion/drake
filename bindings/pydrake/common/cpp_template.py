@@ -45,7 +45,7 @@ def get_or_init(scope, name, template_cls, *args, **kwargs):
 
 class _Deprecation:
     # Denotes a (message, date) tuple.
-    def __init__(self, message, date):
+    def __init__(self, *, message, date):
         self.message = message
         self.date = date
 
@@ -221,7 +221,7 @@ class TemplateBase:
         Args:
             param: Parameters for an instantiation that is already registered.
             message: Message to be shown when issuing a deprecation warning.
-            date: Date for deprecation message (see ``deprecated``).
+            date: (Optional) Date for deprecation message (see ``deprecated``).
         Returns:
             (instantiation, param), where ``param`` is the resolved parameters.
         """
