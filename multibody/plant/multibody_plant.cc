@@ -2057,7 +2057,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   if (info != TamsiSolverResult::kSuccess) {
     const std::string msg = fmt::format(
         "MultibodyPlant's discrete update solver failed to converge at "
-        "simulation time = {:7.3f} with discrete update period = {:7.3f}. This "
+        "simulation time = {:7.3g} with discrete update period = {:7.3g}. This "
         "usually means that the plant's discrete update period is too large to "
         "resolve the system's dynamics for the given simulation conditions. "
         "This is often the case during abrupt collisions or during complex "
