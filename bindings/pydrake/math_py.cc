@@ -121,12 +121,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
     cls  // BR
-        .def(
-            "matrix",
+        .def("matrix",
             WrapDeprecated(cls_doc.matrix.doc_deprecated, &Class::matrix),
             cls_doc.matrix.doc_deprecated)
-        .def(
-            "linear",
+        .def("linear",
             WrapDeprecated(cls_doc.linear.doc_deprecated, &Class::linear),
             cls_doc.linear.doc_deprecated);
 #pragma GCC diagnostic pop

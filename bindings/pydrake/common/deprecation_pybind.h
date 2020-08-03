@@ -68,10 +68,10 @@ auto WrapDeprecatedImpl(py::str message,
 }
 
 template <typename Func, typename Return, typename... Args>
-auto WrapDeprecatedImpl(py::str message,
+decltype(auto) WrapDeprecatedImpl(py::str message,
     function_info<Func, Return, Args...>&& info,
     std::enable_if_t<!std::is_same<Return, void>::value, void*> = {}) {
-  return [info = std::move(info), message](Args... args) -> Return {
+  return [info = std::move(info), message](Args... args) -> decltype(auto) {
     WarnDeprecated(message);
     return info.func(std::forward<Args>(args)...);
   };
