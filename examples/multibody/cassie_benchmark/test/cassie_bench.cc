@@ -148,11 +148,13 @@ BENCHMARK_F(AutodiffFixture, AutodiffInverseDynamics)(benchmark::State& state) {
   for (auto _ : state) {
     x = VectorXd::Constant(2 * nq_, i);
     desired_vdot = VectorXd::Constant(nv_, i);
-    plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-                                               math::initializeAutoDiff(x));
-    plant_autodiff_->CalcInverseDynamics(*context_autodiff_,
-                                         math::initializeAutoDiff(desired_vdot),
-                                         external_forces_autodiff);
+    plant_autodiff_->SetPositionsAndVelocities(
+        context_autodiff_.get(),
+        math::initializeAutoDiff(x, 2 * nq_ + nv_));
+    plant_autodiff_->CalcInverseDynamics(
+        *context_autodiff_,
+        math::initializeAutoDiff(desired_vdot, 2 * nq_ + nv_, 2 * nq_),
+        external_forces_autodiff);
     i++;
   }
 }
@@ -170,9 +172,10 @@ BENCHMARK_F(AutodiffFixture, AutodiffForwardDynamics)(benchmark::State& state) {
 
     context_autodiff_->FixInputPort(
         plant_autodiff_->get_actuation_input_port().get_index(),
-        math::initializeAutoDiff(u));
-    plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-                                               math::initializeAutoDiff(x));
+        math::initializeAutoDiff(u, 2 * nq_ + nu_, 2 * nq_));
+    plant_autodiff_->SetPositionsAndVelocities(
+        context_autodiff_.get(),
+        math::initializeAutoDiff(x, 2 * nq_ + nu_));
     plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
                                          derivatives_autodiff.get());
   }
