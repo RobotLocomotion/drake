@@ -20,6 +20,7 @@
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
@@ -445,6 +446,15 @@ void ParseJoint(ModelInstanceIndex model_instance,
     ParseJointDynamics(name, node, &damping);
     plant->AddJoint<BallRpyJoint>(name, parent_body, X_PJ,
                                   child_body, std::nullopt, damping);
+  } else if (type.compare("planar") == 0) {
+    throw_on_custom_joint(true);
+    Vector3d damping_vec(0, 0, 0);
+    XMLElement* dynamics_node = node->FirstChildElement("dynamics");
+    if (dynamics_node) {
+      ParseVectorAttribute(dynamics_node, "damping", &damping_vec);
+    }
+    plant->AddJoint<PlanarJoint>(name, parent_body, X_PJ,
+                                 child_body, std::nullopt, damping_vec);
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(name, node, &damping);
