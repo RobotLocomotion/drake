@@ -98,6 +98,15 @@ class YamlWriteArchive final {
   /// key-value entries within it.
   std::string EmitString(const std::string& root_name = "root") const;
 
+  /// (Advanced.)  Remove from this archive any map entries that are identical
+  /// to an entry in `other`, iff they reside at the same location within the
+  /// node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
+  /// all the way up to the root) are also all maps.  This enables emitting a
+  /// minimal YAML representation when the output will be later loaded using
+  /// YamlReadArchive's option to retain_map_defaults; the "all parents are
+  /// maps" condition is the complement to what retain_map_defaults admits.
+  void EraseMatchingMaps(const YamlWriteArchive& other);
+
   /// (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
   /// object.  Most users should should call Accept, not Visit.
   template <typename NameValuePair>

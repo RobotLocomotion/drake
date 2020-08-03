@@ -171,13 +171,13 @@ TEST_F(YamlWriteArchiveTest, Optional) {
 }
 
 TEST_F(YamlWriteArchiveTest, Variant) {
-  const auto test = [](const Variant3& value, const std::string& expected) {
+  const auto test = [](const Variant4& value, const std::string& expected) {
     const VariantStruct x{value};
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
-  test(Variant3(std::string("foo")), "foo");
-  test(Variant3(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
+  test(Variant4(std::string("foo")), "foo");
+  test(Variant4(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
 
   // TODO(jwnimmer-tri) We'd like to see "!!float 1.0" here, but our writer
   // does not yet support that output syntax.

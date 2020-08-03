@@ -89,4 +89,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "yaml_write_archive_defaults_test",
+    deps = [
+        ":example_structs",
+        ":yaml_write_archive",
+    ],
+)
+
 add_lint_tests()

@@ -381,7 +381,7 @@ TEST_P(YamlReadArchiveTest, Optional) {
 
 TEST_P(YamlReadArchiveTest, Variant) {
   const auto test = [](const std::string& doc,
-                       const Variant3& expected) {
+                       const Variant4& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));
     EXPECT_EQ(x.value, expected) << doc;
   };
@@ -734,7 +734,7 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
   // std::string values should load correctly even without a YAML type tag.
   const auto& str = AcceptNoThrow<VariantWrappingStruct>(
       Load("doc:\n  inner:\n    value: foo"));
-  EXPECT_EQ(str.inner.value, Variant3("foo"));
+  EXPECT_EQ(str.inner.value, Variant4("foo"));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
@@ -763,8 +763,8 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\) "
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
-      "std::variant<std::string,double,drake::yaml::test::DoubleStruct> "
-      "value.");
+      "std::variant<std::string,double,drake::yaml::test::DoubleStruct,"
+      "drake::yaml::test::StringStruct> value.");
 }
 
 // This finds nothing when an Eigen::Vector or Eigen::Matrix was wanted.

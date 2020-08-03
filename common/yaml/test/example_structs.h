@@ -33,6 +33,7 @@ struct DoubleStruct {
   double value = kNominalDouble;
 };
 
+// This is used only for EXPECT_EQ, not by any YAML operations.
 bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
   return a.value == b.value;
 }
@@ -45,6 +46,11 @@ struct StringStruct {
 
   std::string value = "kNominalDouble";
 };
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+bool operator==(const StringStruct& a, const StringStruct& b) {
+  return a.value == b.value;
+}
 
 struct ArrayStruct {
   template <typename Archive>
@@ -143,15 +149,17 @@ struct OptionalStruct {
   std::optional<double> value;
 };
 
-using Variant3 = std::variant<std::string, double, DoubleStruct>;
+using Variant4 = std::variant<std::string, double, DoubleStruct, StringStruct>;
 
-std::ostream& operator<<(std::ostream& os, const Variant3& value) {
+std::ostream& operator<<(std::ostream& os, const Variant4& value) {
   if (value.index() == 0) {
     os << "std::string{" << std::get<0>(value) << "}";
   } else if (value.index() == 1) {
     os << "double{" << std::get<1>(value) << "}";
-  } else {
+  } else if (value.index() == 2) {
     os << "DoubleStruct{" << std::get<2>(value).value << "}";
+  } else {
+    os << "StringStruct{" << std::get<3>(value).value << "}";
   }
   return os;
 }
@@ -166,10 +174,10 @@ struct VariantStruct {
     value = kNominalDouble;
   }
 
-  explicit VariantStruct(const Variant3& value_in)
+  explicit VariantStruct(const Variant4& value_in)
       : value(value_in) {}
 
-  Variant3 value;
+  Variant4 value;
 };
 
 struct VariantWrappingStruct {
@@ -224,6 +232,18 @@ struct OuterStruct {
 
   double outer_value = kNominalDouble;
   InnerStruct inner_struct;
+};
+
+struct OuterStructOpposite {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(inner_struct));
+    a->Visit(DRAKE_NVP(outer_value));
+  }
+
+  // N.B. The opposite member order of OuterStruct.
+  OuterStruct::InnerStruct inner_struct;
+  double outer_value = kNominalDouble;
 };
 
 struct OuterWithBlankInner {
