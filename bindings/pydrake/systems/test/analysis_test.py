@@ -9,6 +9,7 @@ from pydrake.systems.primitives import (
 from pydrake.systems.framework import EventStatus
 from pydrake.systems.analysis import (
     RungeKutta2Integrator_,
+    RungeKutta2Integrator, RungeKutta3Integrator,
     RegionOfAttraction,
     RegionOfAttractionOptions,
     Simulator,
@@ -26,6 +27,15 @@ class TestAnalysis(unittest.TestCase):
         options.lyapunov_candidate = x*x
         options.state_variables = [x]
         V = RegionOfAttraction(system=sys, context=context, options=options)
+
+    def test_integrator_constructors(self):
+        """Test all constructors for all integrator types."""
+        sys = ConstantVectorSource([1])
+        con = sys.CreateDefaultContext()
+        RungeKutta2Integrator(system=sys, max_step_size=0.01)
+        RungeKutta2Integrator(system=sys, max_step_size=0.01, context=con)
+        RungeKutta3Integrator(system=sys)
+        RungeKutta3Integrator(system=sys, context=con)
 
     def test_symbolic_integrators(self):
         x = Variable("x")

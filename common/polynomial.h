@@ -15,7 +15,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -403,13 +402,6 @@ class Polynomial {
   boolean<T> CoefficientsAlmostEqual(
       const Polynomial<T>& other, const RealScalar& tol = 0.0,
       const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
-
-  DRAKE_DEPRECATED("2020-08-01",
-                   "Use CoefficientsAlmostEqual with tol_type=kRelative "
-                   "instead of IsApprox.")
-  boolean<T> IsApprox(const Polynomial<T>& other, const RealScalar& tol) const {
-    return CoefficientsAlmostEqual(other, tol, ToleranceType::kRelative);
-  }
 
   /** Constructs a Polynomial representing the symbolic expression `e`.
    * Note that the ID of a variable is preserved in this translation.

@@ -11,7 +11,7 @@ import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.value import AbstractValue, Value
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import Expression
@@ -20,7 +20,7 @@ from pydrake.systems.analysis import (
     IntegratorBase, IntegratorBase_,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
-    RungeKutta2Integrator, RungeKutta3Integrator,
+    RungeKutta2Integrator,
     SimulatorStatus, Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
@@ -63,9 +63,6 @@ from pydrake.systems.primitives import (
     SignalLogger,
     ZeroOrderHold,
     )
-
-with catch_drake_warnings(expected_count=2):
-    from pydrake.systems.framework import AbstractValue, Value
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -570,29 +567,6 @@ class TestGeneral(unittest.TestCase):
 
         const_integrator = simulator.get_integrator()
         self.assertTrue(const_integrator is integrator)
-
-        # Test context-less constructors for
-        # integrator types.
-        test_integrator = RungeKutta2Integrator(
-            system=system, max_step_size=0.01)
-        test_integrator = RungeKutta3Integrator(system=system)
-
-        # Test simulator's reset_integrator, and also the full constructors for
-        # all integrator types.
-        rk2 = RungeKutta2Integrator(
-            system=system,
-            max_step_size=0.01,
-            context=simulator.get_mutable_context())
-        with catch_drake_warnings(expected_count=1):
-            # TODO(12873) We need an API for this that isn't deprecated.
-            simulator.reset_integrator(rk2)
-
-        rk3 = RungeKutta3Integrator(
-            system=system,
-            context=simulator.get_mutable_context())
-        with catch_drake_warnings(expected_count=1):
-            # TODO(12873) We need an API for this that isn't deprecated.
-            simulator.reset_integrator(rk3)
 
     def test_simulator_flags(self):
         # TODO(eric.cousineau): Move this to `analysis_test.py`.

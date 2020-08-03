@@ -2,7 +2,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -174,23 +173,6 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.ResetStatistics.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const char* const reset_integrator_doc =
-        "(Deprecated.) pydrake.systems.Simulator.reset_integrator is "
-        "deprecated and will be removed from Drake on or after 2020-08-01. "
-        "Use pydrake.systems.ResetIntegratorFromFlags instead.";
-    cls  // BR
-        .def("reset_integrator",
-            WrapDeprecated(reset_integrator_doc,
-                [](Simulator<T>* self,
-                    std::unique_ptr<IntegratorBase<T>> integrator) {
-                  return self->reset_integrator(std::move(integrator));
-                }),
-            py::arg("integrator"),
-            // Keep alive, ownership: `integrator` keeps `self` alive.
-            py::keep_alive<2, 1>(), reset_integrator_doc);
-#pragma GCC diagnostic pop
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 

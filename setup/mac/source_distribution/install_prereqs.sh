@@ -19,15 +19,6 @@ fi
 
 /usr/local/bin/brew update
 
-# TODO(jamiesnape): Remove the lines uninstalling llvm@6 and llvm@9 on or after
-# 2020-08-01.
-if [[ -z "$(/usr/local/bin/brew uses --include-optional --installed llvm@6)" ]]; then
-  /usr/local/bin/brew uninstall --force llvm@6
-fi
-if [[ -z "$(/usr/local/bin/brew uses --include-optional --installed llvm@9)" ]]; then
-  /usr/local/bin/brew uninstall --force llvm@9
-fi
-
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
 if ! command -v /usr/local/opt/python@3.8/bin/pip3  &>/dev/null; then

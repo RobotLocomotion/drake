@@ -19,13 +19,6 @@
 # PyPI, etc.) to CloudFront backed by an S3 bucket.
 #
 DEFAULT_MIRRORS = {
-    # TODO(jwnimmer-tri) Remove the entire "bitbucket" stanza here on
-    # 2020-08-01 when bitbucket.bzl is removed.
-    "bitbucket": [
-        "https://bitbucket.org/{repository}/get/{commit}.tar.gz",
-        "https://drake-mirror.csail.mit.edu/bitbucket/{repository}/{commit}.tar.gz",  # noqa
-        "https://s3.amazonaws.com/drake-mirror/bitbucket/{repository}/{commit}.tar.gz",  # noqa
-    ],
     "buildifier": [
         "https://drake-mirror.csail.mit.edu/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
         "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
