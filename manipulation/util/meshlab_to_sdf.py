@@ -31,10 +31,9 @@ import re
 import sys
 
 _TEMPLATE = """<?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version='1.7'>
   <model name='{name}'>
     <link name='{name}'>
-      <pose>0 0 0 0 0 0</pose>
       <inertial>
         <pose>{inertial_pose}</pose>
         <mass>{mass}</mass>
@@ -48,7 +47,6 @@ _TEMPLATE = """<?xml version='1.0'?>
         </inertia>
       </inertial>
       <visual name='visual'>
-        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
             <uri>{mesh_uri}</uri>

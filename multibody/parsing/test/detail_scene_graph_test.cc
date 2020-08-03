@@ -64,7 +64,7 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
     const std::string& geometry_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-      "<sdf version='1.6'>"
+      "<sdf version='1.7'>"
       "  <model name='my_model'>"
       "    <link name='link'>"
       "      <visual name='link_visual'>"
@@ -101,7 +101,7 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
     const std::string& visual_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-      "<sdf version='1.6'>"
+      "<sdf version='1.7'>"
       "  <model name='my_model'>"
       "    <link name='link'>"
       + visual_spec +
@@ -138,7 +138,7 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
     const std::string& collision_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
-          "<sdf version='1.6'>"
+          "<sdf version='1.7'>"
           "  <model name='my_model'>"
           "    <link name='link'>"
           + collision_spec +
@@ -406,7 +406,7 @@ GTEST_TEST(SceneGraphParserDetail, VisualGeometryNameRequirements) {
   auto valid_parse = [](const std::string& visual_str) -> bool {
     const std::string sdf_str = fmt::format(
         "<?xml version='1.0'?>"
-        "<sdf version='1.6'>"
+        "<sdf version='1.7'>"
         "  <model name='my_model'>"
         "    <link name='link'>{}"
         "    </link>"
