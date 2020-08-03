@@ -21,6 +21,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -595,6 +596,19 @@ GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_lower_limits(),
                               neg_inf2));
   EXPECT_TRUE(CompareMatrices(universal_joint.velocity_upper_limits(), inf2));
+
+  // Planar joint
+  DRAKE_EXPECT_NO_THROW(plant.GetJointByName<PlanarJoint>("planar_joint"));
+  const PlanarJoint<double>& planar_joint =
+      plant.GetJointByName<PlanarJoint>("planar_joint");
+  EXPECT_EQ(planar_joint.name(), "planar_joint");
+  EXPECT_EQ(planar_joint.parent_body().name(), "link6");
+  EXPECT_EQ(planar_joint.child_body().name(), "link7");
+  EXPECT_TRUE(CompareMatrices(planar_joint.damping(), Vector3d::Constant(0.1)));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.position_upper_limits(), inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_lower_limits(), neg_inf3));
+  EXPECT_TRUE(CompareMatrices(planar_joint.velocity_upper_limits(), inf3));
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
