@@ -60,7 +60,7 @@ may lead to instability. Usually, you will need to decrease `dt` when you:
  `drake/examples/mass_spring_cloth/cloth_spring_model_params_named_vector.yaml`),
  2. decrease `h`, or
  3. decrease the mass of the particles.
- 
+
 To switch to the continuous mode, add the flag `--dt=0`. The number
 of particles in the x-direction and the y-direction can be configured
 with the flag `--nx` and `--ny` respectively, and the separation
