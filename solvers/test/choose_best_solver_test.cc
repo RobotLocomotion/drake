@@ -17,6 +17,7 @@
 
 namespace drake {
 namespace solvers {
+
 class ChooseBestSolverTest : public ::testing::Test {
  public:
   ChooseBestSolverTest()
@@ -175,5 +176,15 @@ TEST_F(ChooseBestSolverTest, MakeSolver) {
                               std::invalid_argument,
                               "MakeSolver: no matching solver foo");
 }
+
+// Checks that all of the known solvers can be instantiated.
+TEST_F(ChooseBestSolverTest, KnownSolvers) {
+  const std::set<SolverId>& ids = GetKnownSolvers();
+  EXPECT_GT(ids.size(), 5);
+  for (const auto& id : ids) {
+    EXPECT_EQ(MakeSolver(id)->solver_id(), id);
+  }
+}
+
 }  // namespace solvers
 }  // namespace drake
