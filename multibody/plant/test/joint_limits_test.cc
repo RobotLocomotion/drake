@@ -105,6 +105,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     // Set the force to be positive and re-start the simulation.
     plant.get_actuation_input_port().FixValue(&context, 10.0);
     context.SetTime(0.0);
+    simulator.Initialize();
     simulator.AdvanceTo(simulation_time);
 
     // Verify we are at rest near the upper limit.
@@ -177,6 +178,7 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     // Set the torque to be negative and re-start the simulation.
     plant.get_actuation_input_port().FixValue(&context, -1.5);
     context.SetTime(0.0);
+    simulator.Initialize();
     simulator.AdvanceTo(simulation_time);
 
     // Verify we are at rest near the lower limit.
@@ -278,6 +280,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
       &context, VectorX<double>::Constant(nq, -0.4));
   plant.SetDefaultContext(&context);
   context.SetTime(0.0);
+  simulator.Initialize();
   simulator.AdvanceTo(simulation_time);
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
