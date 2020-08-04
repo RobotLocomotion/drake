@@ -31,7 +31,10 @@ Mathematical Program
 
 New features
 
-* TBD
+* TBD Add examples on sum-of-squares (`#13719`_)
+* TBD Add two more examples on SOS optimization (`#13746`_, `#13759`_, `#13765`_)
+* TBD Fix a bug when customizing the quadratic cost (`#13752`_)
+* TBD MPResult::GetSolution also works for a polynomial (`#13748`_)
 
 Fixes
 
@@ -126,12 +129,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
 * geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
 * math: math: Declare explicit class instantiations for SO(3) and SE(3) (`#13798`_)
-* solvers: Add examples on sum-of-squares (`#13719`_)  # Test sum-of-squares programming with CSDP, Mosek and SCS.
-* solvers: Add two more examples on SOS optimization (`#13746`_)
-* solvers: CSDP on mac should have a different numerical tolerance (`#13759`_)  # One possible explanation is that they use different BLAS.
-* solvers: Fix a bug when customizing the quadratic cost (`#13752`_)
-* solvers: MPResult::GetSolution also works for a polynomial (`#13748`_)
-* solvers: Relax the tolerance on the Motzkin example for mosek test (`#13765`_)
 * third_party,tools: Move `mkdoc.py` from `third_party` (`#13769`_)  # Relocate `mkdoc.py` to the same directory as `mkdoc_comment.py`. Remove the LICENSE file and (now empty) `third_party/com_github_pybind_pybind11` directory. Add copyright information to the two files that are derived from original `mkdoc.py` in pybind11. Resolves #13726
 * tools: Add support in one tutorial for Google Colab (`#13697`_)  # * Add setup script to provision colab notebooks Towards #13683
 * tools: Reformat text in mkdoc comment text (`#13740`_)  # Follow-up to #13651
