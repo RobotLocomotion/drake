@@ -101,12 +101,12 @@ class TestCppTemplate(unittest.TestCase):
         template.add_instantiation(int, 1)
         template.add_instantiation(float, 2)
         instantiation, param = template.deprecate_instantiation(
-            int, "Example deprecation")
+            int, "Example deprecation", date="2038-01-19")
         self.assertEqual(instantiation, 1)
         self.assertEqual(param, (int,))
         with catch_drake_warnings(expected_count=1) as w:
             self.assertEqual(template[int], 1)
-        self.assertEqual(str(w[0].message), "Example deprecation")
+        self.assertIn("Example deprecation", str(w[0].message))
         # There should be no deprecations for other types.
         self.assertEqual(template[float], 2)
         # Double-deprecating should raise an error.

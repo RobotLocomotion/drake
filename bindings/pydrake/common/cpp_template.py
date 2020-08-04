@@ -43,6 +43,13 @@ def get_or_init(scope, name, template_cls, *args, **kwargs):
     return template
 
 
+class _Deprecation:
+    # Denotes a (message, date) tuple.
+    def __init__(self, *, message, date):
+        self.message = message
+        self.date = date
+
+
 class TemplateBase:
     """Provides a mechanism to map parameters (types or literals) to
     instantiations, following C++ mechanics.
@@ -153,7 +160,7 @@ class TemplateBase:
                 self._instantiation_name(param)))
         deprecation = self._deprecation_map.get(param)
         if deprecation is not None:
-            _warn_deprecated(deprecation)
+            _warn_deprecated(deprecation.message, date=deprecation.date)
         return (instantiation, param)
 
     def add_instantiation(self, param, instantiation):
@@ -205,7 +212,7 @@ class TemplateBase:
         for param in param_list:
             self.add_instantiation(param, TemplateBase._deferred)
 
-    def deprecate_instantiation(self, param, message):
+    def deprecate_instantiation(self, param, message, *, date=None):
         """Deprecates an instantiation for the given set of parameters.
 
         Note:
@@ -214,6 +221,11 @@ class TemplateBase:
         Args:
             param: Parameters for an instantiation that is already registered.
             message: Message to be shown when issuing a deprecation warning.
+            date: (Optional) String of the form "YYYY-MM-DD".
+                If supplied, will reformat the message to add the date as is
+                done with DRAKE_DEPRECATED and its processing in mkdoc.py. This
+                must be present if ``message`` does not contain the date
+                itself.
         Returns:
             (instantiation, param), where ``param`` is the resolved parameters.
         """
@@ -223,7 +235,7 @@ class TemplateBase:
                 f"Deprecation already registered: "
                 f"{self._instantiation_name(param)}")
         instantiation, param = self.get_instantiation(param)
-        self._deprecation_map[param] = message
+        self._deprecation_map[param] = _Deprecation(message=message, date=date)
         return (instantiation, param)
 
     def get_param_set(self, instantiation):

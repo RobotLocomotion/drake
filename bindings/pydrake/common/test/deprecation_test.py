@@ -136,7 +136,11 @@ class TestDeprecation(unittest.TestCase):
     def _check_warning(self, item, message_expected, check_full=True):
         self.assertEqual(item.category, DrakeDeprecationWarning)
         if check_full:
-            self.assertEqual(message_expected, str(item.message))
+            full_message_expected = (
+                f"{message_expected} The deprecated code will be removed "
+                f"from Drake on or after 2038-01-19."
+            )
+            self.assertEqual(full_message_expected, str(item.message))
         else:
             self.assertIn(message_expected, str(item.message))
 
@@ -257,14 +261,13 @@ class TestDeprecation(unittest.TestCase):
         import deprecation_example.cc_module as m_new
         # Spoof module name.
         var_dict = dict(__name__="fake_module")
-        _forward_callables_as_deprecated(var_dict, m_new, "2050-01-01")
+        _forward_callables_as_deprecated(var_dict, m_new, date="2038-01-19")
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("once", DrakeDeprecationWarning)
             obj = var_dict["ExampleCppClass"]()
             self.assertIsInstance(obj, m_new.ExampleCppClass)
             message_expected = (
-                "``fake_module.ExampleCppClass`` is deprecated and will be "
-                "removed on or around 2050-01-01; please use "
-                "``deprecation_example.cc_module.ExampleCppClass`` instead.")
+                "Please use ``deprecation_example.cc_module.ExampleCppClass`` "
+                "instead of ``fake_module.ExampleCppClass``.")
             self.assertEqual(len(w), 1)
             self._check_warning(w[0], message_expected)
