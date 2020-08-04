@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -10,6 +11,13 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+struct DataSource {
+  const std::string* file_name{};
+  const std::string* file_contents{};
+
+  void CheckExactlyOne() const;
+};
 
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:

@@ -14,7 +14,6 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
@@ -727,8 +726,8 @@ ModelInstanceIndex ParseUrdf(
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromUrdf(
+    const DataSource& data_source,
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
@@ -736,7 +735,13 @@ ModelInstanceIndex AddModelFromUrdfFile(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
-  const std::string full_path = GetFullPath(file_name);
+  data_source.CheckExactlyOne();
+  if (data_source.file_contents) {
+    throw std::runtime_error(
+        "AddModelFromString does not yet support URDF files");
+  }
+
+  const std::string full_path = GetFullPath(*data_source.file_name);
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
