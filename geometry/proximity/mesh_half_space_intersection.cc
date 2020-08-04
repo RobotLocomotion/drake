@@ -337,7 +337,7 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const Bvh<SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR) {
   std::vector<SurfaceFaceIndex> tri_indices;
   tri_indices.reserve(mesh_R.num_elements());
@@ -454,15 +454,14 @@ template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<double>& X_WS,
     double pressure_scale, GeometryId id_R, const SurfaceMesh<double>& field_R,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
+    const Bvh<SurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<double>& X_WR);
 
 template <>
 std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId, const math::RigidTransform<AutoDiffXd>&, double, GeometryId,
-    const SurfaceMesh<double>&,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
+    const SurfaceMesh<double>&, const Bvh<SurfaceMesh<double>>&,
     const math::RigidTransform<AutoDiffXd>&) {
   throw std::logic_error(
       "AutoDiff-valued ContactSurface calculations are not currently "

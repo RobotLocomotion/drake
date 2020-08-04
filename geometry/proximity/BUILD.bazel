@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":bounding_volume_hierarchy",
+        ":bvh",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
         ":contact_surface_utility",
@@ -53,9 +54,16 @@ drake_cc_package_library(
 
 drake_cc_library(
     name = "bounding_volume_hierarchy",
-    srcs = ["bounding_volume_hierarchy.cc"],
     hdrs = ["bounding_volume_hierarchy.h"],
+    deps = [":bvh"],
+)
+
+drake_cc_library(
+    name = "bvh",
+    srcs = ["bvh.cc"],
+    hdrs = ["bvh.h"],
     deps = [
+        ":obb",
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
@@ -176,7 +184,7 @@ drake_cc_library(
     srcs = ["hydroelastic_internal.cc"],
     hdrs = ["hydroelastic_internal.h"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_cylinder_field",
@@ -318,7 +326,7 @@ drake_cc_library(
         "mesh_half_space_intersection.h",
     ],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":contact_surface_utility",
         ":posed_half_space",
         ":surface_mesh",
@@ -334,7 +342,7 @@ drake_cc_library(
     srcs = ["mesh_intersection.cc"],
     hdrs = ["mesh_intersection.h"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":contact_surface_utility",
         ":mesh_field",
         ":posed_half_space",
@@ -351,7 +359,7 @@ drake_cc_library(
     srcs = ["mesh_plane_intersection.cc"],
     hdrs = ["mesh_plane_intersection.h"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":contact_surface_utility",
         ":mesh_field",
         ":plane",
@@ -497,9 +505,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "bounding_volume_hierarchy_test",
+    name = "bvh_test",
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
         ":surface_mesh",
