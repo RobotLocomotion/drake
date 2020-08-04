@@ -221,7 +221,11 @@ class TemplateBase:
         Args:
             param: Parameters for an instantiation that is already registered.
             message: Message to be shown when issuing a deprecation warning.
-            date: (Optional) Date for deprecation message (see ``deprecated``).
+            date: (Optional) String of the form "YYYY-MM-DD".
+                If supplied, will reformat the message to add the date as is
+                done with DRAKE_DEPRECATED and its processing in mkdoc.py. This
+                must be present if ``message`` does not contain the date
+                itself.
         Returns:
             (instantiation, param), where ``param`` is the resolved parameters.
         """

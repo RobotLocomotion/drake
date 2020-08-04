@@ -178,8 +178,10 @@ def deprecated(message, *, date=None):
 
     Args:
         message: Warning message when member is accessed.
-        date: (Optional) If supplied, will preformat the message as is done
-            with DRAKE_DEPRECATED and in mkdoc.py.
+        date: (Optional) String of the form "YYYY-MM-DD".
+            If supplied, will reformat the message to add the date as is done
+            with DRAKE_DEPRECATED and its processing in mkdoc.py. This must be
+            present if ``message`` does not contain the date itself.
 
     Note:
         This differs from other implementations in that it warns on access,
@@ -258,5 +260,5 @@ else:
     warnings.simplefilter('once', DrakeDeprecationWarning)
 _installed_numpy_warning_filters = False
 
-# Used to enforce presence of yyyy-mm-dd timestamp for deprecation.
+# Used to enforce presence of YYYY-MM-DD timestamp for deprecation.
 _date_pattern = re.compile(r"\d\d\d\d\-\d\d\-\d\d")

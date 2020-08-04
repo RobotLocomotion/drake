@@ -57,6 +57,8 @@ auto WrapDeprecatedImpl(py::str message,
   };
 }
 
+// N.B. `decltype(auto)` is used in both places to (easily) achieve perfect
+// forwarding of the return type.
 template <typename Func, typename Return, typename... Args>
 decltype(auto) WrapDeprecatedImpl(py::str message,
     function_info<Func, Return, Args...>&& info,
