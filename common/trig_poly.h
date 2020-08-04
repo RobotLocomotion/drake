@@ -14,8 +14,7 @@
 
 namespace drake {
 
-/**
-A scalar multi-variate polynomial containing sines and cosines.
+/** A scalar multi-variate polynomial containing sines and cosines.
 
 TrigPoly represents a Polynomial some of whose variables actually represent
 the sines or cosines of other variables.  Sines and cosines of first-order
@@ -74,13 +73,11 @@ class TrigPoly final {
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   TrigPoly(const T& scalar) : poly_(scalar) {}
 
-  /**
-  Constructs a TrigPoly on the associated Polynomial p with no associated
+  /** Constructs a TrigPoly on the associated Polynomial p with no associated
   trigonometric correspondences. */
   explicit TrigPoly(const PolyType& p) : poly_(p) {}
 
-  /**
-  Constructs a TrigPoly on the associated Polynomial p, but with the
+  /** Constructs a TrigPoly on the associated Polynomial p, but with the
   additional information about sin and cos relations in _sin_cos_map. */
   TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map)
       : poly_(p), sin_cos_map_(_sin_cos_map) {
@@ -102,8 +99,7 @@ class TrigPoly final {
     }
   }
 
-  /**
-  Constructs a TrigPoly version of q, but with the additional information
+  /** Constructs a TrigPoly version of q, but with the additional information
   that the variables s and c represent the sine and cosine of q. */
   TrigPoly(const PolyType& q, const PolyType& s, const PolyType& c) {
     if ((q.GetDegree() != 1) || (s.GetDegree() != 1) || (c.GetDegree() != 1))
@@ -125,8 +121,7 @@ class TrigPoly final {
   /** Returns the SinCosMap for this TrigPoly. */
   const SinCosMap& sin_cos_map(void) const { return sin_cos_map_; }
 
-  /**
-  A version of sin that handles TrigPoly arguments through ADL.
+  /** A version of sin that handles TrigPoly arguments through ADL.
 
   Implements sin(x) for a TrigPoly x.
 
@@ -185,8 +180,7 @@ class TrigPoly final {
   }
 
   /** A version of cos that handles TrigPoly arguments through ADL. */
-  /**
-  Implements cos(x) for a TrigPoly x.
+  /** Implements cos(x) for a TrigPoly x.
 
   x must be of degree 0 or 1, and must contain only variables that have
   entries in its SinCosMap. */
@@ -256,8 +250,7 @@ class TrigPoly final {
     return vars;
   }
 
-  /**
-  Given a value for every variable in this expression, evaluates it.
+  /** Given a value for every variable in this expression, evaluates it.
 
   By analogy with Polynomial::EvaluateMultivariate().  Values must be
   supplied for all base variables; supplying values for sin/cos variables
@@ -277,8 +270,7 @@ class TrigPoly final {
     return poly_.EvaluateMultivariate(all_var_values);
   }
 
-  /**
-  Partially evaluates this expression, returning the resulting expression.
+  /** Partially evaluates this expression, returning the resulting expression.
 
   By analogy with Polynomial::evaluatePartial.  Values must be supplied for
   all base variables only; supplying values for sin/cos variables is an
@@ -302,8 +294,7 @@ class TrigPoly final {
   }
 
   /** Compares two TrigPolys for equality. */
-  /**
-  Note that the question of equality of TrigPolys is a bit subtle.  It is
+  /** Note that the question of equality of TrigPolys is a bit subtle.  It is
   not immediately clear if two TrigPolys whose poly and sin_cos_map members
   differ equivalently (eg, a + b (b = cos(a)) and a + c (c = cos(a))) should
   be considered equal.

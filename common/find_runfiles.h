@@ -2,8 +2,7 @@
 
 #include <string>
 
-/**
-@file
+/** @file
 This file contains helpers to work with Bazel-declared runfiles -- declared
 data dependencies used by C++ code.  The functions in this file only succeed
 when used within a Bazel build.
@@ -18,8 +17,7 @@ relatively complicated logic within these routines during source builds. */
 
 namespace drake {
 
-/**
-(Advanced.) Returns true iff this process has Bazel runfiles available.
+/** (Advanced.) Returns true iff this process has Bazel runfiles available.
 For both C++ and Python programs, and no matter what workspace a program
 resides in (`@drake` or otherwise), this will be true when running
 `bazel-bin/pkg/program` or `bazel test //pkg:program` or `bazel run
@@ -35,8 +33,7 @@ struct RlocationOrError {
   std::string error;
 };
 
-/**
-(Advanced.) Returns the absolute path to the given resource_path from Bazel
+/** (Advanced.) Returns the absolute path to the given resource_path from Bazel
 runfiles, or else an error message when not found.  When HasRunfiles() is
 false, returns an error. The `resource_path` looks like
 `workspace/pkg/subpkg/file.ext`, e.g., "drake/common/foo.txt". */

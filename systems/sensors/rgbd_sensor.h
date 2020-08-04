@@ -25,8 +25,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-A meta-sensor that houses RGB, depth, and label cameras, producing their
+/** A meta-sensor that houses RGB, depth, and label cameras, producing their
 corresponding images based on the contents of the geometry::SceneGraph.
 
 @system
@@ -100,20 +99,17 @@ class RgbdSensor final : public LeafSystem<double> {
 
   /** Specifies poses of cameras with respect ot the sensor base `B`. */
   struct CameraPoses {
-    /**
-    Pose of color camera `C` with respect to sensor base `B`. Defaults to
+    /** Pose of color camera `C` with respect to sensor base `B`. Defaults to
     the identity matrix. */
     math::RigidTransformd X_BC;
 
-    /**
-    Pose of depth camera `D` with respect to sensor base `B`. Defaults to
+    /** Pose of depth camera `D` with respect to sensor base `B`. Defaults to
     the identity matrix. */
     math::RigidTransformd X_BD;
   };
 
   // TODO(SeanCurtis-TRI): Deprecate the CameraProperties constructors.
-  /**
-  Constructs an %RgbdSensor whose frame `B` is rigidly affixed to the frame
+  /** Constructs an %RgbdSensor whose frame `B` is rigidly affixed to the frame
   P, indicated by `parent_id`, and with the given "simple" camera properties.
   The camera is "simple" in the sense that it models a camera with a radially
   symmetric lens and a principal point that projects onto the center of the
@@ -141,8 +137,7 @@ class RgbdSensor final : public LeafSystem<double> {
              const CameraPoses& camera_poses = {},
              bool show_window = false);
 
-  /**
-  Constructs an %RgbdSensor in the same way as the above overload, but
+  /** Constructs an %RgbdSensor in the same way as the above overload, but
   using the `CameraProperties` portion of `properties` for color (and label)
   properties, and all of `properties` for depth properties.
   @pydrake_mkdoc_identifier{legacy_combined_intrinsics} */
@@ -150,8 +145,7 @@ class RgbdSensor final : public LeafSystem<double> {
              const geometry::render::DepthCameraProperties& properties,
              const CameraPoses& camera_poses = {}, bool show_window = false);
 
-  /**
-  Constructs an %RgbdSensor with fully specified render camera models for
+  /** Constructs an %RgbdSensor with fully specified render camera models for
   both color/label and depth cameras.
   @pydrake_mkdoc_identifier{individual_intrinsics} */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
@@ -212,8 +206,7 @@ class RgbdSensor final : public LeafSystem<double> {
   /** Returns the abstract-valued output port that contains an ImageLabel16I. */
   const OutputPort<double>& label_image_output_port() const;
 
-  /**
-  Returns the abstract-valued output port that contains a RigidTransform
+  /** Returns the abstract-valued output port that contains a RigidTransform
   for `X_WB`. */
   const OutputPort<double>& X_WB_output_port() const;
 
@@ -259,8 +252,7 @@ class RgbdSensor final : public LeafSystem<double> {
   const math::RigidTransformd X_PB_;
 };
 
-/**
-Wraps a continuous %RgbdSensor with a zero-order hold to create a discrete
+/** Wraps a continuous %RgbdSensor with a zero-order hold to create a discrete
 sensor.
 
 @system
@@ -280,8 +272,7 @@ class RgbdSensorDiscrete final : public systems::Diagram<double> {
 
   static constexpr double kDefaultPeriod = 1. / 30;
 
-  /**
-  Constructs a diagram containing a (non-registered) RgbdSensor that will
+  /** Constructs a diagram containing a (non-registered) RgbdSensor that will
   update at a given rate.
   @param sensor               The continuous sensor used to generate periodic
                               images.

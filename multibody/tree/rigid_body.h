@@ -17,8 +17,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-The term **rigid body** implies that the deformations of the body under
+/** The term **rigid body** implies that the deformations of the body under
 consideration are so small that they have no significant effect on the
 overall motions of the body and therefore deformations can be neglected.
 If deformations are neglected, the distance between any two points on the
@@ -45,8 +44,7 @@ class RigidBody : public Body<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBody)
 
-  /**
-  Constructs a %RigidBody with the given default SpatialInertia.
+  /** Constructs a %RigidBody with the given default SpatialInertia.
   @param[in] M_BBo_B
     Spatial inertia of `this` body B about the frame's origin `Bo` and
     expressed in the body frame B.
@@ -54,8 +52,7 @@ class RigidBody : public Body<T> {
   notation used for spatial inertia quantities. */
   explicit RigidBody(const SpatialInertia<double>& M_BBo_B);
 
-  /**
-  Constructs a %RigidBody named `body_name` with the given default
+  /** Constructs a %RigidBody named `body_name` with the given default
   SpatialInertia.
 
   @param[in] body_name
@@ -68,8 +65,7 @@ class RigidBody : public Body<T> {
   RigidBody(const std::string& body_name,
             const SpatialInertia<double>& M_BBo_B);
 
-  /**
-  Constructs a %RigidBody named `body_name` with the given default
+  /** Constructs a %RigidBody named `body_name` with the given default
   SpatialInertia.
 
   @param[in] body_name
@@ -85,28 +81,24 @@ class RigidBody : public Body<T> {
             ModelInstanceIndex model_instance,
             const SpatialInertia<double>& M_BBo_B);
 
-  /**
-  There are no flexible degrees of freedom associated with a rigid body and
+  /** There are no flexible degrees of freedom associated with a rigid body and
   therefore this method returns zero. By definition, a rigid body has no
   state associated with flexible deformations. */
   int get_num_flexible_positions() const final { return 0; }
 
-  /**
-  There are no flexible degrees of freedom associated with a rigid body and
+  /** There are no flexible degrees of freedom associated with a rigid body and
   therefore this method returns zero. By definition, a rigid body has no
   state associated with flexible deformations. */
   int get_num_flexible_velocities() const final { return 0; }
 
-  /**
-  Returns the default value of this body's mass.  This value is initially
+  /** Returns the default value of this body's mass.  This value is initially
   supplied at construction when specifying this body's SpatialInertia.
   @returns This body's default mass. */
   double default_mass() const {
     return default_spatial_inertia_.get_mass();
   }
 
-  /**
-  Returns the default value of this rigid body's center of mass as measured
+  /** Returns the default value of this rigid body's center of mass as measured
   and expressed in this body's frame. This value is initially supplied at
   construction when specifying this body's SpatialInertia.
   @retval p_BoBcm_B The position of this rigid body B's center of mass `Bcm`
@@ -115,8 +107,7 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_com();
   }
 
-  /**
-  Returns the default value of this body B's unit inertia about Bo (body B's
+  /** Returns the default value of this body B's unit inertia about Bo (body B's
   origin), expressed in B (this body's frame). This value is initially
   supplied at construction when specifying this body's SpatialInertia.
   @retval G_BBo_B rigid body B's unit inertia about Bo, expressed in B. */
@@ -124,8 +115,7 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.get_unit_inertia();
   }
 
-  /**
-  Gets the default value of this body B's rotational inertia about Bo
+  /** Gets the default value of this body B's rotational inertia about Bo
   (B's origin), expressed in B (this body's frame). This value is calculated
   from the SpatialInertia supplied at construction of this body.
   @retval I_BBo_B body B's rotational inertia about Bo, expressed in B. */
@@ -134,8 +124,7 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.CalcRotationalInertia();
   }
 
-  /**
-  Gets the default value of this body B's spatial inertia about Bo
+  /** Gets the default value of this body B's spatial inertia about Bo
   (B's origin) and expressed in B (this body's frame).
   @retval M_BBo_B body B's spatial inertia about Bo, expressed in B. */
   const SpatialInertia<double>& default_spatial_inertia() const {
@@ -156,8 +145,7 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_.cast<T>();
   }
 
-  /**
-  @name Methods to access position kinematics quantities.
+  /** @name Methods to access position kinematics quantities.
   The input PositionKinematicsCache to these methods must be in sync with
   context.  These method's APIs will be deprecated when caching arrives.
   @{ */
@@ -165,8 +153,7 @@ class RigidBody : public Body<T> {
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_pose_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
-  /**
-  (Advanced) Extract this body's pose in world (from the position
+  /** (Advanced) Extract this body's pose in world (from the position
   kinematics).
   @param[in] pc position kinematics cache.
   @retval X_WB pose of rigid body B in world frame W. */
@@ -175,8 +162,7 @@ class RigidBody : public Body<T> {
     return pc.get_X_WB(this->node_index());
   }
 
-  /**
-  (Advanced) Extract the rotation matrix relating the world frame to this
+  /** (Advanced) Extract the rotation matrix relating the world frame to this
   body's frame.
   @param[in] pc position kinematics cache.
   @retval R_WB rotation matrix relating rigid body B in world frame W. */
@@ -185,8 +171,7 @@ class RigidBody : public Body<T> {
     return get_pose_in_world(pc).rotation();
   }
 
-  /**
-  (Advanced) Extract the position vector from world origin to this body's
+  /** (Advanced) Extract the position vector from world origin to this body's
   origin, expressed in world.
   @param[in] pc position kinematics cache.
   @retval p_WoBo_W position vector from Wo (world origin) to
@@ -197,8 +182,7 @@ class RigidBody : public Body<T> {
   }
   /** @} */
 
-  /**
-  @name Methods to access velocity kinematics quantities.
+  /** @name Methods to access velocity kinematics quantities.
   The input VelocityKinematicsCache to these methods must be in sync with
   context.  These method's APIs will be deprecated when caching arrives.
   @{ */
@@ -206,8 +190,7 @@ class RigidBody : public Body<T> {
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
-  /**
-  (Advanced) Extract this body spatial velocity in world, expressed in
+  /** (Advanced) Extract this body spatial velocity in world, expressed in
   world.
   @param[in] vc velocity kinematics cache.
   @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W. */
@@ -216,8 +199,7 @@ class RigidBody : public Body<T> {
     return vc.get_V_WB(this->node_index());
   }
 
-  /**
-  (Advanced) Extract this body angular velocity in world, expressed in
+  /** (Advanced) Extract this body angular velocity in world, expressed in
   world.
   @param[in] vc velocity kinematics cache.
   @retval w_WB_W rigid body B's angular velocity in world W, expressed in W. */
@@ -226,8 +208,7 @@ class RigidBody : public Body<T> {
     return get_spatial_velocity_in_world(vc).rotational();
   }
 
-  /**
-  (Advanced) Extract the velocity of this body's origin in world, expressed
+  /** (Advanced) Extract the velocity of this body's origin in world, expressed
   in world.
   @param[in] vc velocity kinematics cache.
   @retval v_WBo_W velocity of Bo (body origin) in world W, expressed in W. */
@@ -237,8 +218,7 @@ class RigidBody : public Body<T> {
   }
   /** @} */
 
-  /**
-  @name Methods to access acceleration kinematics quantities.
+  /** @name Methods to access acceleration kinematics quantities.
   The input AccelerationKinematicsCache to these methods must be in sync
   with context.  These method APIs will be deprecated when caching arrives.
   @{ */
@@ -246,8 +226,7 @@ class RigidBody : public Body<T> {
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
-  /**
-  (Advanced) Extract this body spatial acceleration in world, expressed in
+  /** (Advanced) Extract this body spatial acceleration in world, expressed in
   world.
   @param[in] ac acceleration kinematics cache.
   @retval A_WB_W body B's spatial acceleration in world W, expressed in W. */
@@ -256,8 +235,7 @@ class RigidBody : public Body<T> {
     return ac.get_A_WB(this->node_index());
   }
 
-  /**
-  (Advanced) Extract this body's angular acceleration in world, expressed
+  /** (Advanced) Extract this body's angular acceleration in world, expressed
   in world.
   @param[in] ac velocity kinematics cache.
   @retval alpha_WB_W B's angular acceleration in world W, expressed in W. */
@@ -266,8 +244,7 @@ class RigidBody : public Body<T> {
     return get_spatial_acceleration_in_world(ac).rotational();
   }
 
-  /**
-  (Advanced) Extract acceleration of this body's origin in world, expressed
+  /** (Advanced) Extract acceleration of this body's origin in world, expressed
   in world.
   @param[in] vc velocity kinematics cache.
   @retval a_WBo_W acceleration of body origin Bo in world W, expressed in W. */

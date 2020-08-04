@@ -16,8 +16,7 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/**
-The Spong acrobot swing-up controller as described in:
+/** The Spong acrobot swing-up controller as described in:
   Spong, Mark W. "Swing up control of the acrobot." Robotics and Automation,
   1994. Proceedings., 1994 IEEE International Conference on. IEEE, 1994.
 

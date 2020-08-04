@@ -13,8 +13,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-Stores options for multiple solvers.  This interface does not
+/** Stores options for multiple solvers.  This interface does not
 do any verification of solver parameters. It does not even verify that
 the specified solver exists.  Use this only when you have
 particular knowledge of what solver is being invoked, and exactly
@@ -58,8 +57,7 @@ class SolverOptions {
   void SetOption(const SolverId& solver_id, const std::string& solver_option,
                  const std::string& option_value);
 
-  /**
-  Set common options for all solvers supporting that option (for example,
+  /** Set common options for all solvers supporting that option (for example,
   printing the progress in each iteration). If the solver doesn't support
   the option, the option is ignored. */
   void SetOption(CommonSolverOption key,
@@ -74,8 +72,7 @@ class SolverOptions {
   const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
-  /**
-  Gets the common options for all solvers. Refer to CommonSolverOption for
+  /** Gets the common options for all solvers. Refer to CommonSolverOption for
   more details. */
   const std::unordered_map<CommonSolverOption,
                            std::variant<double, int, std::string>>&
@@ -99,22 +96,19 @@ class SolverOptions {
   /** Returns the IDs that have any option set. */
   std::unordered_set<SolverId> GetSolverIds() const;
 
-  /**
-  Merges the other solver options into this. If `other` and `this` option
+  /** Merges the other solver options into this. If `other` and `this` option
   both define the same option for the same solver, we ignore then one from
   `other` and keep the one from `this`. */
   void Merge(const SolverOptions& other);
 
-  /**
-  Returns true if `this` and `other` have exactly the same solvers, with
+  /** Returns true if `this` and `other` have exactly the same solvers, with
   exactly the same keys and values for the options for each solver. */
   bool operator==(const SolverOptions& other) const;
 
   /** Negate operator==. */
   bool operator!=(const SolverOptions& other) const;
 
-  /**
-  Check if for a given solver_id, the option keys are included in
+  /** Check if for a given solver_id, the option keys are included in
   double_keys, int_keys and str_keys.
   @param solver_id If this SolverOptions has set options for this solver_id,
   then we check if the option keys are a subset of `double_keys`, `int_keys`

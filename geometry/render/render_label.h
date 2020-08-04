@@ -13,8 +13,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/**
-Class representing object "labels" for rendering.
+/** Class representing object "labels" for rendering.
 
 In a "label image" (see RenderEngine::RenderLabelImage() for details) each
 pixel value indicates the classification of the object that rendered into that
@@ -79,28 +78,24 @@ class RenderLabel {
   /** Constructs a label with the reserved `unspecified` value. */
   RenderLabel() = default;
 
-  /**
-  Constructs a label with the given `value`.
+  /** Constructs a label with the given `value`.
   @throws std::logic_error if a) is negative, or b) the `value` is one of the
                               reserved values. */
   explicit RenderLabel(int value) : RenderLabel(value, true) {}
 
-  /**
-  Compares this label with the `other` label. Reports true if they have the
+  /** Compares this label with the `other` label. Reports true if they have the
   same value. */
   bool operator==(const RenderLabel& other) const {
     return value_ == other.value_;
   }
 
-  /**
-  Compares this label with the `other` label. Reports true if they have
+  /** Compares this label with the `other` label. Reports true if they have
   different values. */
   bool operator!=(const RenderLabel& other) const {
     return value_ != other.value_;
   }
 
-  /**
-  Allows the labels to be compared to imply a total ordering -- facilitates
+  /** Allows the labels to be compared to imply a total ordering -- facilitates
   use in data structures which require ordering (e.g., std::set). The ordering
   has no particular meaning for applications. */
   bool operator<(const RenderLabel& other) const {
@@ -115,8 +110,7 @@ class RenderLabel {
     hash_append(hasher, item.value_);
   }
 
-  /**
-  @name  The reserved render labels
+  /** @name  The reserved render labels
 
   See class documentation on
   @ref reserved_render_label "reserved labels" for details. */
@@ -180,8 +174,7 @@ class RenderLabel {
 
 namespace std {
 
-/**
-Enables use of the label to serve as a key in STL containers.
+/** Enables use of the label to serve as a key in STL containers.
 @relates RenderLabel */
 template <>
 struct hash<drake::geometry::render::RenderLabel>

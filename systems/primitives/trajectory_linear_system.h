@@ -11,8 +11,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A continuous- or discrete-time Linear Time-Varying system with system
+/** A continuous- or discrete-time Linear Time-Varying system with system
 matrices described by trajectories.
 
 @tparam_nonsymbolic_scalar
@@ -22,8 +21,7 @@ class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryLinearSystem)
 
-  /**
-  Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
+  /** Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
   structure.
 
   @param time_period Defines the period of the discrete time system; use
@@ -38,8 +36,7 @@ class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
   template <typename U>
   explicit TrajectoryLinearSystem(const TrajectoryLinearSystem<U>& other);
 
-  /**
-  @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
+  /** @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
   methods.
   @{ */
   MatrixX<T> A(const T& t) const final {

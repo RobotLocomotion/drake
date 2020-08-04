@@ -13,8 +13,7 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial velocity.
 template <typename T> class SpatialVelocity;
 
-/**
-This class is used to represent the _spatial momentum_ of a particle, system
+/** This class is used to represent the _spatial momentum_ of a particle, system
 of particles or body (whether rigid or soft.)
 The linear momentum `l_NS` of a system of particles S in a reference frame
 N is defined by: <pre>
@@ -72,22 +71,19 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialMomentum)
 
-  /**
-  Default constructor. In Release builds the elements of the newly
+  /** Default constructor. In Release builds the elements of the newly
   constructed spatial momentum are left uninitialized resulting in a zero
   cost operation. However in Debug builds those entries are set to NaN so
   that operations using this uninitialized spatial momentum fail fast,
   allowing fast bug detection. */
   SpatialMomentum() : Base() {}
 
-  /**
-  SpatialMomentum constructor from an angular momentum h and a linear
+  /** SpatialMomentum constructor from an angular momentum h and a linear
   momentum l. */
   SpatialMomentum(const Eigen::Ref<const Vector3<T>>& h,
                   const Eigen::Ref<const Vector3<T>>& l) : Base(h, l) {}
 
-  /**
-  SpatialMomentum constructor from an Eigen expression that represents a
+  /** SpatialMomentum constructor from an Eigen expression that represents a
   six-dimensional vector.
   This constructor will assert the size of L is six (6) at compile-time
   for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
@@ -95,8 +91,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   template <typename Derived>
   explicit SpatialMomentum(const Eigen::MatrixBase<Derived>& L) : Base(L) {}
 
-  /**
-  In-place shift of a %SpatialMomentum from one "about-point" to another.
+  /** In-place shift of a %SpatialMomentum from one "about-point" to another.
   `this` spatial momentum `L_NSp_E` for a system S in a reference frame N
   about a point P, and expressed in frame E, is modified to become the
   equivalent spatial momentum `L_NSq_E` of the same system about another
@@ -148,8 +143,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     return *this;
   }
 
-  /**
-  Shift of a %SpatialMomentum from one application point to another.
+  /** Shift of a %SpatialMomentum from one application point to another.
   This is an alternate signature for shifting a spatial momentum's
   about-point that does not change the original object. See
   ShiftInPlace() for more information.
@@ -166,8 +160,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
     return SpatialMomentum<T>(*this).ShiftInPlace(p_PQ_E);
   }
 
-  /**
-  Given `this` spatial momentum `L_NBp_E` of a rigid body B, about point P
+  /** Given `this` spatial momentum `L_NBp_E` of a rigid body B, about point P
   and, expressed in a frame E, this method computes the dot
   product with the spatial velocity `V_NBp_E` of body B frame shifted to
   point P, measured in an inertial (or Newtonian) frame N and expressed in
@@ -186,8 +179,7 @@ class SpatialMomentum : public SpatialVector<SpatialMomentum, T> {
   T dot(const SpatialVelocity<T>& V_NBp_E) const;
 };
 
-/**
-Computes the resultant spatial momentum as the addition of two spatial
+/** Computes the resultant spatial momentum as the addition of two spatial
 momenta `L1_NSp_E` and `L2_NSp_E` on a same system S, about the same point P
 and expressed in the same frame E.
 @retval Lc_NSp_E
@@ -204,8 +196,7 @@ inline SpatialMomentum<T> operator+(const SpatialMomentum<T>& L1_NSp_E,
   return SpatialMomentum<T>(L1_NSp_E) += L2_NSp_E;
 }
 
-/**
-Spatial momentum is additive, see
+/** Spatial momentum is additive, see
 operator+(const SpatialMomentum<T>&, const SpatialMomentum<T>&). This
 operator subtracts L2_NSp_E from the total momentum in L1_NSp_E. The momenta
 in both operands as well as the result are for the same system S, about the

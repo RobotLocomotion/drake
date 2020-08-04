@@ -15,8 +15,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A LeafSystem that is defined by vectors of symbolic::Expression
+/** A LeafSystem that is defined by vectors of symbolic::Expression
 representing the dynamics and output.  The resulting system has only zero
 or one vector input ports, zero or one vector of continuous or discrete
 state (depending on the specified time_period), zero or one vector of
@@ -42,8 +41,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicVectorSystem)
 
-  /**
-  Construct the SymbolicVectorSystem.
+  /** Construct the SymbolicVectorSystem.
 
   @param time an (optional) Variable used to represent time in the dynamics.
 
@@ -84,8 +82,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
           Vector0<symbolic::Expression>{},
       double time_period = 0.0);
 
-  /**
-  Construct the SymbolicVectorSystem.
+  /** Construct the SymbolicVectorSystem.
 
   @param time an (optional) Variable used to represent time in the dynamics.
 
@@ -146,8 +143,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
     return LeafSystem<T>::get_output_port(0);
   }
 
-  /**
-  @name Accessor methods.
+  /** @name Accessor methods.
   @{ */
   const std::optional<symbolic::Variable>& time_var() const {
     return time_var_;
@@ -159,8 +155,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   }
   const VectorX<symbolic::Expression>& dynamics() const { return dynamics_; }
 
-  /**
-  Returns the dynamics for the variable @p var. That is, it returns the
+  /** Returns the dynamics for the variable @p var. That is, it returns the
   scalar expression corresponding to either `\dot{var}` (continuous case) or
   `var[n+1]` (discrete case).
 
@@ -229,8 +224,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   friend class SymbolicVectorSystem;
 };
 
-/**
-Builder design pattern to help with all of the optional arguments in the
+/** Builder design pattern to help with all of the optional arguments in the
 constructor of SymbolicVectorSystem.
 
 For example, to define the system: ẋ = -x + x³, y = x, we could write
@@ -352,8 +346,7 @@ class SymbolicVectorSystemBuilder {
         Eigen::Map<const VectorX<symbolic::Expression>>(e.data(), e.size()));
   }
 
-  /**
-  Linearizes the system dynamics around `(x0, u0)` using the first-order
+  /** Linearizes the system dynamics around `(x0, u0)` using the first-order
   Taylor Series expansion.
 
   @pre The length of @p x0 should be the length of `state()`.
@@ -374,8 +367,7 @@ class SymbolicVectorSystemBuilder {
     return result;
   }
 
-  /**
-  Dispatches to the SymbolicVectorSystem constructor with our accumulated
+  /** Dispatches to the SymbolicVectorSystem constructor with our accumulated
   arguments. */
   template <typename T = double>
   std::unique_ptr<SymbolicVectorSystem<T>> Build() {
@@ -384,8 +376,7 @@ class SymbolicVectorSystemBuilder {
         output_, time_period_);
   }
 
-  /**
-  @name Accessor methods.
+  /** @name Accessor methods.
   @{
   Returns the time variable if exists. */
   const std::optional<symbolic::Variable>& time() const { return time_var_; }
@@ -399,8 +390,7 @@ class SymbolicVectorSystemBuilder {
   }
   /** Returns the dynamics. */
   const VectorX<symbolic::Expression>& dynamics() const { return dynamics_; }
-  /**
-  Returns the dynamics for the variable @p var. That is, it returns the
+  /** Returns the dynamics for the variable @p var. That is, it returns the
   scalar expression corresponding to either `\dot{var}` (continuous case) or
   `var[n+1]` (discrete case).
 

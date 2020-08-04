@@ -8,8 +8,7 @@
 
 namespace drake {
 namespace test {
-/**
-Checks if @p value of @p T type is movable via memcpy. That is, it tests
+/** Checks if @p value of @p T type is movable via memcpy. That is, it tests
 memcpy on @p value keeps a given invariant between @p value and a copy of
 it. It uses a binary function object @p invariant_pred to check for
 invariance.

@@ -13,8 +13,7 @@ namespace drake {
 namespace systems {
 namespace internal {
 
-/**
-Represents models for a sequence of AbstractValues (usually a sequence of
+/** Represents models for a sequence of AbstractValues (usually a sequence of
 either input or output ports).  The models are the "prototype" design
 pattern (https://en.wikipedia.org/wiki/Prototype_pattern).  When creating
 elements in new Context, these models' values are cloned to establish the
@@ -30,19 +29,16 @@ class ModelValues {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelValues);
   ModelValues() = default;
 
-  /**
-  Returns one greater than the largest index passed to AddModel or
+  /** Returns one greater than the largest index passed to AddModel or
   AddVectorModel. */
   int size() const;
 
-  /**
-  Sets @p model_value to be the model value for @p index.
+  /** Sets @p model_value to be the model value for @p index.
 
   @pre index >= size() */
   void AddModel(int index, std::unique_ptr<AbstractValue> model_value);
 
-  /**
-  Wraps @p model_vector in a Value and sets that to be the model value for
+  /** Wraps @p model_vector in a Value and sets that to be the model value for
   @p index.
 
   @pre index >= size() */
@@ -61,8 +57,7 @@ class ModelValues {
     return ret;
   }
 
-  /**
-  Returns a clone of the vector within the model value at @p index, which
+  /** Returns a clone of the vector within the model value at @p index, which
   may be nullptr.
 
   @throws std::exception if the index has a model but the model's type does

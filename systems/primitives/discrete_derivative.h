@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-System that outputs the discrete-time derivative of its input:
+/** System that outputs the discrete-time derivative of its input:
   y(t) = (u[n] - u[n-1])/h,
 where n = floor(t/h), where h is the time period.
 
@@ -55,8 +54,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteDerivative)
 
-  /**
-  Constructor taking @p num_inputs, the size of the vector to be
+  /** Constructor taking @p num_inputs, the size of the vector to be
   differentiated, and @p time_step, the sampling interval. */
   DiscreteDerivative(int num_inputs, double time_step,
                      bool suppress_initial_transient = false);
@@ -68,8 +66,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
                               other.time_step(),
                               other.suppress_initial_transient()) {}
 
-  /**
-  Sets the input history so that the initial output is fully specified.
+  /** Sets the input history so that the initial output is fully specified.
   This is useful during initialization to avoid large derivative outputs if
   u[0] ≠ 0.  @p u_n and @ u_n_minus_1 must be the same size as the
   input/output ports.  If suppress_initial_transient() is true, then also
@@ -78,8 +75,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
                          const Eigen::Ref<const VectorX<T>>& u_n,
                          const Eigen::Ref<const VectorX<T>>& u_n_minus_1) const;
 
-  /**
-  Sets the input history so that the initial output is fully specified.
+  /** Sets the input history so that the initial output is fully specified.
   This is useful during initialization to avoid large derivative outputs if
   u[0] ≠ 0.  @p u_n and @ u_n_minus_1 must be the same size as the
   input/output ports.  If suppress_initial_transient() is true, then also
@@ -91,8 +87,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
     set_input_history(&context->get_mutable_state(), u_n, u_n_minus_1);
   }
 
-  /**
-  Convenience method that sets the entire input history to a constant
+  /** Convenience method that sets the entire input history to a constant
   vector value (x₀ = x₁ = u,resulting in a derivative = 0).  This is
   useful during initialization to avoid large derivative outputs if
   u[0] ≠ 0.  @p u must be the same size as the input/output ports.
@@ -130,8 +125,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
   const bool suppress_initial_transient_;
 };
 
-/**
-Supports the common pattern of combining a (feed-through) position with
+/** Supports the common pattern of combining a (feed-through) position with
 a velocity estimated with the DiscreteDerivative into a single output
 vector with positions and velocities stacked.  This assumes that the
 number of positions == the number of velocities.
@@ -161,8 +155,7 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateInterpolatorWithDiscreteDerivative)
 
-  /**
-  Constructor taking @p num_positions, the size of the position vector
+  /** Constructor taking @p num_positions, the size of the position vector
   to be differentiated, and @p time_step, the sampling interval. */
   StateInterpolatorWithDiscreteDerivative(
       int num_positions, double time_step,
@@ -179,8 +172,7 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
     return System<T>::get_output_port(0);
   }
 
-  /**
-  Convenience method that sets the entire position history for the
+  /** Convenience method that sets the entire position history for the
   discrete-time derivative to a constant vector value (resulting in
   velocity estimate of zero). This is useful during initialization to
   avoid large derivative outputs.  @p position must be the same
@@ -191,8 +183,7 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
   void set_initial_position(systems::State<T>* state,
                             const Eigen::Ref<const VectorX<T>>& position) const;
 
-  /**
-  Convenience method that sets the entire position history for the
+  /** Convenience method that sets the entire position history for the
   discrete-time derivative as if the most recent input was @p position,
   and the input before that was whatever was required to produce the
   output velocity @p velocity.  @p position and @p velocity must be the
@@ -204,8 +195,7 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
                          const Eigen::Ref<const VectorX<T>>& position,
                          const Eigen::Ref<const VectorX<T>>& velocity) const;
 
-  /**
-  Convenience method that sets the entire position history for the
+  /** Convenience method that sets the entire position history for the
   discrete-time derivative to a constant vector value (resulting in
   velocity estimate of zero). This is useful during initialization to
   avoid large derivative outputs.  @p position must be the same
@@ -219,8 +209,7 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
     set_initial_position(&context->get_mutable_state(), position);
   }
 
-  /**
-  Convenience method that sets the entire position history for the
+  /** Convenience method that sets the entire position history for the
   discrete-time derivative as if the most recent input was @p position,
   and the input before that was whatever was required to produce the
   output velocity @p velocity.  @p position and @p velocity must be the

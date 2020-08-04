@@ -6,8 +6,7 @@ namespace drake {
 namespace examples {
 namespace van_der_pol {
 
-/**
-van der Pol oscillator
+/** van der Pol oscillator
 
 The van der Pol oscillator, governed by the following equations:
   q̈ + μ(q² - 1)q̇ + q = 0, μ > 0
@@ -40,8 +39,7 @@ class VanDerPolOscillator final : public systems::LeafSystem<T> {
     return this->get_output_port(0);
   }
 
-  /**
-  Returns the output port containing the full state.  This is
+  /** Returns the output port containing the full state.  This is
   provided primarily as a tool for debugging/visualization. */
   const systems::OutputPort<T>& get_full_state_output_port() const {
     return this->get_output_port(1);
@@ -49,8 +47,7 @@ class VanDerPolOscillator final : public systems::LeafSystem<T> {
 
   // TODO(russt): generalize this to any mu using trajectory optimization
   //  (this could also improve the numerical accuracy).
-  /**
-  Returns a 2-row matrix containing the result of simulating the oscillator
+  /** Returns a 2-row matrix containing the result of simulating the oscillator
   with the default mu=1 from (approximately) one point on the limit cycle
   for (approximately) one period.  The first row is q, and the second row
   is q̇. */

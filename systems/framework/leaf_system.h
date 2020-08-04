@@ -32,8 +32,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A superclass template that extends System with some convenience utilities
+/** A superclass template that extends System with some convenience utilities
 that are not applicable to Diagrams.
 
 @tparam_default_scalar */
@@ -45,14 +44,12 @@ class LeafSystem : public System<T> {
 
   ~LeafSystem() override;
 
-  /**
-  Allocates a CompositeEventCollection object for this system.
+  /** Allocates a CompositeEventCollection object for this system.
   @sa System::AllocateCompositeEventCollection(). */
   std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const final;
 
-  /**
-  Shadows System<T>::AllocateContext to provide a more concrete return
+  /** Shadows System<T>::AllocateContext to provide a more concrete return
   type LeafContext<T>. */
   std::unique_ptr<LeafContext<T>> AllocateContext() const;
 
@@ -76,16 +73,14 @@ class LeafSystem : public System<T> {
 
   // TODO(sherm/russt): Initialize the discrete state from the model vector
   // pending resolution of #7058.
-  /**
-  Default implementation: sets all continuous state to the model vector
+  /** Default implementation: sets all continuous state to the model vector
   given in DeclareContinuousState (or zero if no model vector was given) and
   discrete states to zero. Overrides must not change the number of state
   variables. */
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override;
 
-  /**
-  Default implementation: sets all numeric parameters to the model vector
+  /** Default implementation: sets all numeric parameters to the model vector
   given to DeclareNumericParameter, or else if no model was provided sets
   the numeric parameter to one.  It sets all abstract parameters to the
   model value given to DeclareAbstractParameter.  Overrides must not change
@@ -103,14 +98,12 @@ class LeafSystem : public System<T> {
   // Promote so we don't need "this->" in defaults which show up in Doxygen.
   using SystemBase::all_sources_ticket;
 
-  /**
-  Default constructor that declares no inputs, outputs, state, parameters,
+  /** Default constructor that declares no inputs, outputs, state, parameters,
   events, nor scalar-type conversion support (AutoDiff, etc.).  To enable
   AutoDiff support, use the SystemScalarConverter-based constructor. */
   LeafSystem();
 
-  /**
-  Constructor that declares no inputs, outputs, state, parameters, or
+  /** Constructor that declares no inputs, outputs, state, parameters, or
   events, but allows subclasses to declare scalar-type conversion support
   (AutoDiff, etc.).
 
@@ -122,8 +115,7 @@ class LeafSystem : public System<T> {
   related to scalar-type conversion support. */
   explicit LeafSystem(SystemScalarConverter converter);
 
-  /**
-  Provides a new instance of the leaf context for this system. Derived
+  /** Provides a new instance of the leaf context for this system. Derived
   leaf systems with custom derived leaf system contexts should override this
   to provide a context of the appropriate type. The returned context should
   be "empty"; invoked by AllocateContext(), the caller will take the
@@ -131,8 +123,7 @@ class LeafSystem : public System<T> {
   implementation provides a default-constructed `LeafContext<T>`. */
   virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const;
 
-  /**
-  Derived classes that impose restrictions on what resources are permitted
+  /** Derived classes that impose restrictions on what resources are permitted
   should check those restrictions by implementing this. For example, a
   derived class might require a single input and single output. Note that
   the supplied Context will be complete except that input and output
@@ -154,8 +145,7 @@ class LeafSystem : public System<T> {
       Event<T>* event,
       CompositeEventCollection<T>* events) const final;
 
-  /**
-  Computes the next update time based on the configured periodic events, for
+  /** Computes the next update time based on the configured periodic events, for
   scalar types that are arithmetic, or aborts for scalar types that are not
   arithmetic. Subclasses that require aperiodic events should override, but
   be sure to invoke the parent class implementation at the start of the
@@ -172,8 +162,7 @@ class LeafSystem : public System<T> {
                             CompositeEventCollection<T>* events,
                             T* time) const override;
 
-  /**
-  Emits a graphviz fragment for this System. Leaf systems are visualized as
+  /** Emits a graphviz fragment for this System. Leaf systems are visualized as
   records. For instance, a leaf system with 2 inputs and 1 output is:
 
   @verbatim
@@ -202,8 +191,7 @@ class LeafSystem : public System<T> {
   // =========================================================================
   // Allocation helper utilities.
 
-  /**
-  Returns a copy of the state declared in the most recent
+  /** Returns a copy of the state declared in the most recent
   DeclareContinuousState() call, or else a zero-sized state if that method
   has never been called. */
   std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const;
@@ -214,16 +202,14 @@ class LeafSystem : public System<T> {
   /** Returns a copy of the states declared in DeclareAbstractState() calls. */
   std::unique_ptr<AbstractValues> AllocateAbstractState() const;
 
-  /**
-  Returns a copy of the parameters declared in DeclareNumericParameter()
+  /** Returns a copy of the parameters declared in DeclareNumericParameter()
   and DeclareAbstractParameter() calls. */
   std::unique_ptr<Parameters<T>> AllocateParameters() const;
 
   // =========================================================================
   // New methods for subclasses to use
 
-  /**
-  Declares a numeric parameter using the given @p model_vector.
+  /** Declares a numeric parameter using the given @p model_vector.
   LeafSystem's default implementation of SetDefaultParameters() will reset
   parameters to their model vectors.  If the @p model_vector declares any
   VectorBase::GetElementBounds() constraints, they will be re-declared as
@@ -231,8 +217,7 @@ class LeafSystem : public System<T> {
   DeclareInequalityConstraint()).  Returns the index of the new parameter. */
   int DeclareNumericParameter(const BasicVector<T>& model_vector);
 
-  /**
-  Extracts the numeric parameters of type U from the @p context at @p index.
+  /** Extracts the numeric parameters of type U from the @p context at @p index.
   Asserts if the context is not a LeafContext, or if it does not have a
   vector-valued parameter of type U at @p index. */
   template <template <typename> class U = BasicVector>
@@ -248,8 +233,7 @@ class LeafSystem : public System<T> {
     return *params;
   }
 
-  /**
-  Extracts the numeric parameters of type U from the @p context at @p index.
+  /** Extracts the numeric parameters of type U from the @p context at @p index.
   Asserts if the context is not a LeafContext, or if it does not have a
   vector-valued parameter of type U at @p index. */
   template <template <typename> class U = BasicVector>
@@ -265,16 +249,14 @@ class LeafSystem : public System<T> {
     return *params;
   }
 
-  /**
-  Declares an abstract parameter using the given @p model_value.
+  /** Declares an abstract parameter using the given @p model_value.
   LeafSystem's default implementation of SetDefaultParameters() will reset
   parameters to their model values.  Returns the index of the new
   parameter. */
   int DeclareAbstractParameter(const AbstractValue& model_value);
 
   // =========================================================================
-  /**
-  @anchor declare_periodic_events
+  /** @anchor declare_periodic_events
   @name                  Declare periodic events
   Methods in this group declare that this System has an event that
   is triggered periodically. The first periodic trigger will occur at
@@ -295,8 +277,7 @@ class LeafSystem : public System<T> {
   @pre `period_sec` > 0 and `offset_sec` ≥ 0. */
   /** @{ */
 
-  /**
-  Declares that a Publish event should occur periodically and that it should
+  /** Declares that a Publish event should occur periodically and that it should
   invoke the given event handler method. The handler should be a class
   member function (method) with this signature:
   @code
@@ -334,8 +315,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  This variant accepts a handler that is assumed to succeed rather than
+  /** This variant accepts a handler that is assumed to succeed rather than
   one that returns an EventStatus result. The handler signature is:
   @code
     void MySystem::MyPublish(const Context<T>&) const;
@@ -361,8 +341,7 @@ class LeafSystem : public System<T> {
                         }));
   }
 
-  /**
-  Declares that a DiscreteUpdate event should occur periodically and that it
+  /** Declares that a DiscreteUpdate event should occur periodically and that it
   should invoke the given event handler method. The handler should be a
   class member function (method) with this signature:
   @code
@@ -405,8 +384,7 @@ class LeafSystem : public System<T> {
                                }));
   }
 
-  /**
-  This variant accepts a handler that is assumed to succeed rather than
+  /** This variant accepts a handler that is assumed to succeed rather than
   one that returns an EventStatus result. The handler signature is:
   @code
     void MySystem::MyUpdate(const Context<T>&,
@@ -434,8 +412,7 @@ class LeafSystem : public System<T> {
                                }));
   }
 
-  /**
-  Declares that an UnrestrictedUpdate event should occur periodically and
+  /** Declares that an UnrestrictedUpdate event should occur periodically and
   that it should invoke the given event handler method. The handler should
   be a class member function (method) with this signature:
   @code
@@ -475,8 +452,7 @@ class LeafSystem : public System<T> {
             }));
   }
 
-  /**
-  This variant accepts a handler that is assumed to succeed rather than
+  /** This variant accepts a handler that is assumed to succeed rather than
   one that returns an EventStatus result. The handler signature is:
   @code
     void MySystem::MyUpdate(const Context<T>&, State<T>*) const;
@@ -503,8 +479,7 @@ class LeafSystem : public System<T> {
             }));
   }
 
-  /**
-  (Advanced) Declares that a particular Event object should be dispatched
+  /** (Advanced) Declares that a particular Event object should be dispatched
   periodically. This is the most general form for declaring periodic events
   and most users should use one of the other methods in this group instead.
 
@@ -542,24 +517,21 @@ class LeafSystem : public System<T> {
         std::make_pair(periodic_data, std::move(event_copy)));
   }
 
-  /**
-  (To be deprecated) Declares a periodic publish event that invokes the
+  /** (To be deprecated) Declares a periodic publish event that invokes the
   Publish() dispatcher but does not provide a handler function. This does
   guarantee that a Simulator step will end exactly at the publish time,
   but otherwise has no effect unless the DoPublish() dispatcher has been
   overloaded (not recommended). */
   void DeclarePeriodicPublish(double period_sec, double offset_sec = 0);
 
-  /**
-  (To be deprecated) Declares a periodic discrete update event that invokes
+  /** (To be deprecated) Declares a periodic discrete update event that invokes
   the DiscreteUpdate() dispatcher but does not provide a handler
   function. This does guarantee that a Simulator step will end exactly at
   the update time, but otherwise has no effect unless the
   DoDiscreteUpdate() dispatcher has been overloaded (not recommended). */
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0);
 
-  /**
-  (To be deprecated) Declares a periodic unrestricted update event that
+  /** (To be deprecated) Declares a periodic unrestricted update event that
   invokes the UnrestrictedUpdate() dispatcher but does not provide a handler
   function. This does guarantee that a Simulator step will end exactly at
   the update time, but otherwise has no effect unless the
@@ -569,8 +541,7 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @anchor declare_per-step_events
+  /** @anchor declare_per-step_events
   @name                 Declare per-step events
   These methods are used to declare events that are triggered whenever the
   Drake Simulator advances the simulated trajectory. Note that each call to
@@ -607,8 +578,7 @@ class LeafSystem : public System<T> {
   and need not be specified explicitly. */
   /** @{ */
 
-  /**
-  Declares that a Publish event should occur at initialization and at the
+  /** Declares that a Publish event should occur at initialization and at the
   end of every trajectory-advancing step and that it should invoke the
   given event handler method. The handler should be a class member function
   (method) with this signature:
@@ -651,8 +621,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  Declares that a DiscreteUpdate event should occur at the start of every
+  /** Declares that a DiscreteUpdate event should occur at the start of every
   trajectory-advancing step and that it should invoke the given event
   handler method. The handler should be a class member function (method)
   with this signature:
@@ -691,8 +660,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  Declares that an UnrestrictedUpdate event should occur at the start of
+  /** Declares that an UnrestrictedUpdate event should occur at the start of
   every trajectory-advancing step and that it should invoke the given
   event handler method. The handler should be a class member function
   (method) with this signature:
@@ -731,8 +699,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  (Advanced) Declares that a particular Event object should be dispatched at
+  /** (Advanced) Declares that a particular Event object should be dispatched at
   every trajectory-advancing step. Publish events are dispatched at
   the end of initialization and at the end of each step. Discrete- and
   unrestricted update events are dispatched at the start of each step.
@@ -768,8 +735,7 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @anchor declare_initialization_events
+  /** @anchor declare_initialization_events
   @name                 Declare initialization events
   These methods are used to declare events that occur when the Drake
   Simulator::Initialize() method is invoked.
@@ -786,8 +752,7 @@ class LeafSystem : public System<T> {
   and need not be specified explicitly. */
   /** @{ */
 
-  /**
-  Declares that a Publish event should occur at initialization and that it
+  /** Declares that a Publish event should occur at initialization and that it
   should invoke the given event handler method. The handler should be a
   class member function (method) with this signature:
   @code
@@ -823,8 +788,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  Declares that a DiscreteUpdate event should occur at initialization
+  /** Declares that a DiscreteUpdate event should occur at initialization
   and that it should invoke the given event handler method. The handler
   should be a class member function (method) with this signature:
   @code
@@ -864,8 +828,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  Declares that an UnrestrictedUpdate event should occur at initialization
+  /** Declares that an UnrestrictedUpdate event should occur at initialization
   and that it should invoke the given event handler method. The handler
   should be a class member function (method) with this signature:
   @code
@@ -904,8 +867,7 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /**
-  (Advanced) Declares that a particular Event object should be dispatched at
+  /** (Advanced) Declares that a particular Event object should be dispatched at
   initialization. This is the most general form for declaring initialization
   events and most users should use one of the other methods in this group
   instead.
@@ -939,8 +901,7 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @anchor declare_forced_events
+  /** @anchor declare_forced_events
   @name                  Declare forced events
   Forced events are those that are triggered through invocation of
   System::Publish(const Context&),
@@ -965,8 +926,7 @@ class LeafSystem : public System<T> {
   @see Simulator::set_publish_every_time_step() */
   /** @{ */
 
-  /**
-  Declares a function that is called whenever a user directly calls
+  /** Declares a function that is called whenever a user directly calls
   Publish(const Context&). Multiple calls to
   DeclareForcedPublishEvent() will cause multiple handlers to be called
   upon a call to Publish(); these handlers which will be called with the
@@ -1003,8 +963,7 @@ class LeafSystem : public System<T> {
     this->get_mutable_forced_publish_events().add_event(std::move(forced));
   }
 
-  /**
-  Declares a function that is called whenever a user directly calls
+  /** Declares a function that is called whenever a user directly calls
   CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*). Multiple
   calls to DeclareForcedDiscreteUpdateEvent() will cause multiple handlers
   to be called upon a call to CalcDiscreteVariableUpdates(); these handlers
@@ -1046,8 +1005,7 @@ class LeafSystem : public System<T> {
         std::move(forced));
   }
 
-  /**
-  Declares a function that is called whenever a user directly calls
+  /** Declares a function that is called whenever a user directly calls
   CalcUnrestrictedUpdate(const Context&, State<T>*). Multiple calls to
   DeclareForcedUnrestrictedUpdateEvent() will cause multiple handlers to be
   called upon a call to CalcUnrestrictedUpdate(); these handlers which will
@@ -1088,8 +1046,7 @@ class LeafSystem : public System<T> {
   }
   /** @} */
 
-  /**
-  @name          Declare continuous state variables
+  /** @name          Declare continuous state variables
   Continuous state consists of up to three kinds of variables: generalized
   coordinates q, generalized velocities v, and miscellaneous continuous
   variables z. Methods in this section provide different ways to declare
@@ -1102,26 +1059,22 @@ class LeafSystem : public System<T> {
   last call has any effect. */
   /** @{ */
 
-  /**
-  Declares that this System should reserve continuous state with
+  /** Declares that this System should reserve continuous state with
   @p num_state_variables state variables, which have no second-order
   structure. */
   void DeclareContinuousState(int num_state_variables);
 
-  /**
-  Declares that this System should reserve continuous state with @p num_q
+  /** Declares that this System should reserve continuous state with @p num_q
   generalized positions, @p num_v generalized velocities, and @p num_z
   miscellaneous state variables. */
   void DeclareContinuousState(int num_q, int num_v, int num_z);
 
-  /**
-  Declares that this System should reserve continuous state with
+  /** Declares that this System should reserve continuous state with
   @p model_vector.size() miscellaneous state variables, stored in a
   vector cloned from @p model_vector. */
   void DeclareContinuousState(const BasicVector<T>& model_vector);
 
-  /**
-  Declares that this System should reserve continuous state with @p num_q
+  /** Declares that this System should reserve continuous state with @p num_q
   generalized positions, @p num_v generalized velocities, and @p num_z
   miscellaneous state variables, stored in a vector cloned from
   @p model_vector. Aborts if @p model_vector has the wrong size. If the
@@ -1132,8 +1085,7 @@ class LeafSystem : public System<T> {
                               int num_v, int num_z);
   /** @} */
 
-  /**
-  @name            Declare discrete state variables
+  /** @name            Declare discrete state variables
   Discrete state consists of any number of discrete state "groups", each
   of which is a vector of discrete state variables. Methods in this section
   provide different ways to declare these, and offer the ability to provide
@@ -1145,20 +1097,17 @@ class LeafSystem : public System<T> {
   discrete state group, and the group index is returned. */
   /** @{ */
 
-  /**
-  Declares a discrete state group with @p model_vector.size() state
+  /** Declares a discrete state group with @p model_vector.size() state
   variables, stored in a vector cloned from @p model_vector (preserving the
   concrete type and value). */
   DiscreteStateIndex DeclareDiscreteState(const BasicVector<T>& model_vector);
 
-  /**
-  Declares a discrete state group with @p vector.size() state variables,
+  /** Declares a discrete state group with @p vector.size() state variables,
   stored in a BasicVector initialized with the contents of @p vector. */
   DiscreteStateIndex DeclareDiscreteState(
       const Eigen::Ref<const VectorX<T>>& vector);
 
-  /**
-  Declares a discrete state group with @p num_state_variables state
+  /** Declares a discrete state group with @p num_state_variables state
   variables, stored in a BasicVector initialized to be all-zero. If you want
   non-zero initial values, use an alternate DeclareDiscreteState() signature
   that accepts a `model_vector` parameter.
@@ -1166,16 +1115,14 @@ class LeafSystem : public System<T> {
   DiscreteStateIndex DeclareDiscreteState(int num_state_variables);
   /** @} */
 
-  /**
-  @name            Declare abstract state variables
+  /** @name            Declare abstract state variables
   Abstract state consists of any number of arbitrarily-typed variables, each
   represented by an AbstractValue. Each call to the DeclareAbstractState()
   method produces another abstract state variable, and the abstract state
   variable index is returned. */
   /** @{ */
 
-  /**
-  Declares an abstract state.
+  /** Declares an abstract state.
   @param abstract_state The abstract state, its ownership is transferred.
   @return index of the declared abstract state. */
   AbstractStateIndex DeclareAbstractState(
@@ -1183,15 +1130,13 @@ class LeafSystem : public System<T> {
   /** @} */
 
 
-  /**
-  @name    (Advanced) Declare size of implicit time derivatives residual
+  /** @name    (Advanced) Declare size of implicit time derivatives residual
   for use with System::CalcImplicitTimeDerivativeResidual(). Most commonly
   the default value, same as num_continuous_states(), will be the correct
   size for the residual. */
   /** @{ */
 
-  /**
-  (Advanced) Overrides the default size for the implicit time
+  /** (Advanced) Overrides the default size for the implicit time
   derivatives residual. If no value is set, the default size is
   n=num_continuous_states().
 
@@ -1207,8 +1152,7 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @name                    Declare input ports
+  /** @name                    Declare input ports
   Methods in this section are used by derived classes to declare their
   input ports, which may be vector valued or abstract valued.
 
@@ -1220,8 +1164,7 @@ class LeafSystem : public System<T> {
   permitted. */
   /** @{ */
 
-  /**
-  Declares a vector-valued input port using the given @p model_vector.
+  /** Declares a vector-valued input port using the given @p model_vector.
   This is the best way to declare LeafSystem input ports that require
   subclasses of BasicVector.  The port's size and type will be the same as
   model_vector. If the port is intended to model a random noise or
@@ -1237,8 +1180,7 @@ class LeafSystem : public System<T> {
       const BasicVector<T>& model_vector,
       std::optional<RandomDistribution> random_type = std::nullopt);
 
-  /**
-  Declares an abstract-valued input port using the given @p model_value.
+  /** Declares an abstract-valued input port using the given @p model_value.
   This is the best way to declare LeafSystem abstract input ports.
 
   Any port connected to this input, and any call to FixInputPort for this
@@ -1251,24 +1193,21 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @name          To-be-deprecated input port declarations
+  /** @name          To-be-deprecated input port declarations
   Methods in this section leave out the name parameter and are the same
   as invoking the corresponding method with `kUseDefaultName` as the name.
   We intend to make specifying the name required and will deprecate these
   soon. Don't use them. */
   /** @{ */
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   InputPort<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector,
       std::optional<RandomDistribution> random_type = std::nullopt);
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   InputPort<T>& DeclareAbstractInputPort(
@@ -1276,8 +1215,7 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @name                    Declare output ports
+  /** @name                    Declare output ports
   @anchor DeclareLeafOutputPort_documentation
 
   Methods in this section are used by derived classes to declare their
@@ -1375,8 +1313,7 @@ class LeafSystem : public System<T> {
   related methods. */
   /** @{ */
 
-  /**
-  Declares a vector-valued output port by specifying (1) a model vector of
+  /** Declares a vector-valued output port by specifying (1) a model vector of
   type BasicVectorSubtype derived from BasicVector and initialized to the
   correct size and desired initial value, and (2) a calculator function that
   is a class member function (method) with signature:
@@ -1425,8 +1362,7 @@ class LeafSystem : public System<T> {
     return port;
   }
 
-  /**
-  Declares a vector-valued output port by specifying _only_ a calculator
+  /** Declares a vector-valued output port by specifying _only_ a calculator
   function that is a class member function (method) with signature:
   @code
   void MySystem::CalcOutputVector(const Context<T>&,
@@ -1461,8 +1397,7 @@ class LeafSystem : public System<T> {
                                    std::move(prerequisites_of_calc));
   }
 
-  /**
-  (Advanced) Declares a vector-valued output port using the given
+  /** (Advanced) Declares a vector-valued output port using the given
   `model_vector` and a function for calculating the port's value at runtime.
   The port's size will be model_vector.size(), and the default allocator for
   the port will be model_vector.Clone(). Note that this takes the calculator
@@ -1476,8 +1411,7 @@ class LeafSystem : public System<T> {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
-  /**
-  Declares an abstract-valued output port by specifying a model value of
+  /** Declares an abstract-valued output port by specifying a model value of
   concrete type `OutputType` and a calculator function that is a class
   member function (method) with signature:
   @code
@@ -1507,8 +1441,7 @@ class LeafSystem : public System<T> {
     return port;
   }
 
-  /**
-  Declares an abstract-valued output port by specifying only a calculator
+  /** Declares an abstract-valued output port by specifying only a calculator
   function that is a class member function (method) with signature:
   @code
   void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
@@ -1543,8 +1476,7 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
-  /**
-  Declares an abstract-valued output port by specifying member functions to
+  /** Declares an abstract-valued output port by specifying member functions to
   use both for the allocator and calculator. The signatures are:
   @code
   OutputType MySystem::MakeOutputValue() const;
@@ -1576,8 +1508,7 @@ class LeafSystem : public System<T> {
     return port;
   }
 
-  /**
-  (Advanced) Declares an abstract-valued output port using the given
+  /** (Advanced) Declares an abstract-valued output port using the given
   allocator and calculator functions provided in their most generic forms.
   If you have a member function available use one of the other signatures.
   @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback */
@@ -1590,16 +1521,14 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @name          To-be-deprecated output port declarations
+  /** @name          To-be-deprecated output port declarations
   Methods in this section leave out the name parameter and are the same
   as invoking the corresponding method with `kUseDefaultName` as the name.
   We intend to make specifying the name required and will deprecate these
   soon. Don't use them. */
   /** @{ */
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   template <class MySystem, typename BasicVectorSubtype>
@@ -1612,8 +1541,7 @@ class LeafSystem : public System<T> {
                                    std::move(prerequisites_of_calc));
   }
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   template <class MySystem, typename BasicVectorSubtype>
@@ -1625,8 +1553,7 @@ class LeafSystem : public System<T> {
                                    std::move(prerequisites_of_calc));
   }
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   LeafOutputPort<T>& DeclareVectorOutputPort(
@@ -1635,8 +1562,7 @@ class LeafSystem : public System<T> {
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. Note that the deprecated method is not available for
   `OutputType` std::string as that would create an ambiguity. In that
@@ -1653,8 +1579,7 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   template <class MySystem, typename OutputType>
@@ -1666,8 +1591,7 @@ class LeafSystem : public System<T> {
         kUseDefaultName, calc, std::move(prerequisites_of_calc));
   }
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   template <class MySystem, typename OutputType>
@@ -1680,8 +1604,7 @@ class LeafSystem : public System<T> {
                                      std::move(prerequisites_of_calc));
   }
 
-  /**
-  See the nearly identical signature with an additional (first) argument
+  /** See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   LeafOutputPort<T>& DeclareAbstractOutputPort(
@@ -1692,8 +1615,7 @@ class LeafSystem : public System<T> {
   /** @} */
 
   // =========================================================================
-  /**
-  @name                    Make witness functions
+  /** @name                    Make witness functions
   Methods in this section are used by derived classes to make any
   witness functions useful for ensuring that integration ends a step upon
   entering particular times or states.
@@ -1706,8 +1628,7 @@ class LeafSystem : public System<T> {
   System::DoGetWitnessFunctions(). */
   /** @{ */
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, and calculator function; and
   with no event object.
   @note Constructing a witness function with no corresponding event forces
@@ -1729,8 +1650,7 @@ class LeafSystem : public System<T> {
         this, this, description, direction_type, calc);
   }
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, and calculator function; and
   with no event object.
 
@@ -1741,8 +1661,7 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       std::function<T(const Context<T>&)> calc) const;
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, calculator function, and
   publish event callback function for when this triggers.
 
@@ -1770,8 +1689,7 @@ class LeafSystem : public System<T> {
         this, this, description, direction_type, calc, publish_event.Clone());
   }
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, calculator function, and
   discrete update event callback function for when this triggers.
 
@@ -1799,8 +1717,7 @@ class LeafSystem : public System<T> {
         this, this, description, direction_type, calc, du_event.Clone());
   }
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, calculator function, and
   unrestricted update event callback function for when this triggers.
 
@@ -1828,8 +1745,7 @@ class LeafSystem : public System<T> {
         this, this, description, direction_type, calc, uu_event.Clone());
   }
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, and calculator
   function, and with an object corresponding to the event that is to be
   dispatched when this witness function triggers. Example types of event
@@ -1852,8 +1768,7 @@ class LeafSystem : public System<T> {
         this, this, description, direction_type, calc, e.Clone());
   }
 
-  /**
-  Constructs the witness function with the given description (used primarily
+  /** Constructs the witness function with the given description (used primarily
   for debugging and logging), direction type, and calculator
   function, and with an object corresponding to the event that is to be
   dispatched when this witness function triggers. Example types of event
@@ -1870,8 +1785,7 @@ class LeafSystem : public System<T> {
       const Event<T>& e) const;
   /** @} */
 
-  /**
-  Declares a system constraint of the form
+  /** Declares a system constraint of the form
     f(context) = 0
   by specifying a member function to use to calculate the (VectorX)
   constraint value with a signature:
@@ -1900,8 +1814,7 @@ class LeafSystem : public System<T> {
         count, std::move(description));
   }
 
-  /**
-  Declares a system constraint of the form
+  /** Declares a system constraint of the form
     f(context) = 0
   by specifying a std::function to use to calculate the (Vector) constraint
   value with a signature:
@@ -1919,8 +1832,7 @@ class LeafSystem : public System<T> {
       ContextConstraintCalc<T> calc, int count,
       std::string description);
 
-  /**
-  Declares a system constraint of the form
+  /** Declares a system constraint of the form
     bounds.lower() <= calc(context) <= bounds.upper()
   by specifying a member function to use to calculate the (VectorX)
   constraint value with a signature:
@@ -1949,8 +1861,7 @@ class LeafSystem : public System<T> {
         std::move(bounds), std::move(description));
   }
 
-  /**
-  Declares a system constraint of the form
+  /** Declares a system constraint of the form
     bounds.lower() <= calc(context) <= bounds.upper()
   by specifying a std::function to use to calculate the (Vector) constraint
   value with a signature:
@@ -1968,8 +1879,7 @@ class LeafSystem : public System<T> {
       SystemConstraintBounds bounds,
       std::string description);
 
-  /**
-  Derived-class event dispatcher for all simultaneous publish events
+  /** Derived-class event dispatcher for all simultaneous publish events
   in @p events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
   The default behavior is to traverse events in the arbitrary order they
@@ -1990,8 +1900,7 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
-  /**
-  Derived-class event dispatcher for all simultaneous discrete update
+  /** Derived-class event dispatcher for all simultaneous discrete update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
   The default behavior is to traverse events in the arbitrary order they
@@ -2024,8 +1933,7 @@ class LeafSystem : public System<T> {
   // TODO(sherm1) Shouldn't require preloading of the output state; better to
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
-  /**
-  Derived-class event dispatcher for all simultaneous unrestricted update
+  /** Derived-class event dispatcher for all simultaneous unrestricted update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
   The default behavior is to traverse events in the arbitrary order they

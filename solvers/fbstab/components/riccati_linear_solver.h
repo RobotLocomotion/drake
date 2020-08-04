@@ -18,8 +18,7 @@ namespace test {
 class MpcComponentUnitTests;
 }  // namespace test
 
-/**
-Implements a Riccati recursion based method for solving linear systems of
+/** Implements a Riccati recursion based method for solving linear systems of
 equations that arise when solving MPC form QPs (see mpc_data.h) using FBstab.
 The equations are of the form
 
@@ -51,8 +50,7 @@ thread safe. */
 class RiccatiLinearSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RiccatiLinearSolver);
-  /**
-  Allocates workspace memory.
+  /** Allocates workspace memory.
 
   @param[in] N  horizon length
   @param[in] nx number of states
@@ -62,14 +60,12 @@ class RiccatiLinearSolver {
   Throws a runtime_error if any of the inputs are non-positive. */
   RiccatiLinearSolver(int N, int nx, int nu, int nc);
 
-  /**
-  Sets a parameter used in the algorithm, see (19)
+  /** Sets a parameter used in the algorithm, see (19)
   in https://arxiv.org/pdf/1901.04046.pdf.
   @param[in] alpha */
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
-  /**
-  Computes then factors the matrix V(x,xbar,sigma) using a Riccati
+  /** Computes then factors the matrix V(x,xbar,sigma) using a Riccati
   recursion.
 
   The matrix V is computed as described in
@@ -84,8 +80,7 @@ class RiccatiLinearSolver {
   sigma is negative or the problem data isn't linked. */
   bool Initialize(const MpcVariable& x, const MpcVariable& xbar, double sigma);
 
-  /**
-  Solves the system V*x = r and stores the result in x.
+  /** Solves the system V*x = r and stores the result in x.
   This method assumes that the Factor routine was run to
   compute then factor the matrix V.
 

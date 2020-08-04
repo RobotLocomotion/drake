@@ -49,8 +49,7 @@ template <typename A, typename B>
 struct is_convertible_workaround<std::unique_ptr<A>, std::shared_ptr<B>>
     : std::is_convertible<A*, B*> {};
 
-/**
-Enables us to catch and provide a meaningful assertion if a Constraint is
+/** Enables us to catch and provide a meaningful assertion if a Constraint is
 passed in, when we should have a Cost.
 @tparam F The class to test if it is convertible to variants of C.
 @tparam C Intended to be either Cost or Constraint. */
@@ -62,8 +61,7 @@ struct is_binding_compatible
                     (is_convertible_workaround<F, std::unique_ptr<C>>::value) ||
                     (is_convertible_workaround<F, Binding<C>>::value)> {};
 
-/**
-Template condition to check if @p F is a candidate to be used to construct a
+/** Template condition to check if @p F is a candidate to be used to construct a
 FunctionCost object for generic costs.
 @tparam T The type to be tested.
 @note Constraint is used to ensure that we do not preclude cost objects

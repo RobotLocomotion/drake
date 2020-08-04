@@ -15,8 +15,7 @@ namespace schunk_wsg {
 // which is not going to be sufficient to capture the entire control
 // state of the gripper (particularly the maximum force).
 
-/**
-This system defines input ports for the desired finger position
+/** This system defines input ports for the desired finger position
 represented as the desired distance between the fingers in
 meters and the desired force limit in newtons, and emits target
 position/velocity for the actuated finger to reach the commanded target,
@@ -29,8 +28,7 @@ desired_position and force_limit are scalars (BasicVector<double> of size
 @ingroup manipulation_systems */
 class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
  public:
-  /**
-  @param input_size The size of the state input port to create
+  /** @param input_size The size of the state input port to create
   (one reason this may vary is passing in the entire state of a
   rigid body tree vs. having already demultiplexed the actuated
   finger).
@@ -73,8 +71,7 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
 
   void UpdateTrajectory(double cur_position, double target_position) const;
 
-  /**
-  The minimum change between the last received command and the
+  /** The minimum change between the last received command and the
   current command to trigger a trajectory update.  Based on
   manually driving the actual gripper using the web interface, it
   appears that it will at least attempt to respond to commands as

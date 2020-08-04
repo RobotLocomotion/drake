@@ -9,8 +9,7 @@ namespace drake {
 namespace examples {
 namespace compass_gait {
 
-/**
-Expresses a CompassGait's geometry to a SceneGraph.
+/** Expresses a CompassGait's geometry to a SceneGraph.
 
 @system
 name: CompassGaitGeometry
@@ -27,8 +26,7 @@ class CompassGaitGeometry final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompassGaitGeometry);
   ~CompassGaitGeometry() final;
 
-  /**
-  Creates, adds, and connects a CompassGaitGeometry system into the given
+  /** Creates, adds, and connects a CompassGaitGeometry system into the given
   `builder`.  Both the `floating_base_state_port.get_system()`
   and `scene_graph` systems must have been added to the given `builder`
   already.  The `compass_gait_params` sets the parameters of the
@@ -45,8 +43,7 @@ class CompassGaitGeometry final : public systems::LeafSystem<double> {
       const CompassGaitParams<double>& compass_gait_params,
       geometry::SceneGraph<double>* scene_graph);
 
-  /**
-  Creates, adds, and connects a CompassGaitGeometry system into the given
+  /** Creates, adds, and connects a CompassGaitGeometry system into the given
   `builder`.  Both the `floating_base_state_port.get_system()` and
   `scene_graph` systems must have been added to the given `builder` already.
   CompassGaitParams are set to their default values.

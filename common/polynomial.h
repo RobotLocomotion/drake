@@ -18,8 +18,7 @@
 #include "drake/common/symbolic.h"
 
 namespace drake {
-/**
-A scalar multi-variate polynomial, modeled after the msspoly in spotless.
+/** A scalar multi-variate polynomial, modeled after the msspoly in spotless.
 
 Polynomial represents a list of additive Monomials, each one of which is a
 product of a constant coefficient (of T, which by default is double) and any
@@ -45,8 +44,7 @@ class Polynomial {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polynomial);
 
   typedef unsigned int VarType;
-  /**
-  This should be 'unsigned int' but MSVC considers a call to std::pow(...,
+  /** This should be 'unsigned int' but MSVC considers a call to std::pow(...,
   unsigned int) ambiguous because it won't cast unsigned int to int. */
   typedef int PowerType;
   typedef typename Eigen::NumTraits<T>::Real RealScalar;
@@ -68,8 +66,7 @@ class Polynomial {
       return (var == other.var) && (power == other.power);
     }
 
-    /**
-    A comparison to allow std::lexicographical_compare on this class; does
+    /** A comparison to allow std::lexicographical_compare on this class; does
     not reflect any sort of mathematical total order. */
     bool operator<(const Term& other) const {
       return ((var < other.var) ||
@@ -77,8 +74,7 @@ class Polynomial {
     }
   };
 
-  /**
-  An additive atom of a Polynomial: The product of any number of
+  /** An additive atom of a Polynomial: The product of any number of
   Terms and a coefficient. */
   class Monomial {
    public:
@@ -89,8 +85,7 @@ class Polynomial {
       return (coefficient == other.coefficient) && (terms == other.terms);
     }
 
-    /**
-    A comparison to allow std::lexicographical_compare on this class; does
+    /** A comparison to allow std::lexicographical_compare on this class; does
     not reflect any sort of mathematical total order. */
     bool operator<(const Monomial& other) const {
       return ((coefficient < other.coefficient)  ||
@@ -122,8 +117,7 @@ class Polynomial {
   Polynomial(typename std::vector<Monomial>::const_iterator start,
              typename std::vector<Monomial>::const_iterator finish);
 
-  /**
-  Constructs a polynomial consisting of a single Monomial of the variable
+  /** Constructs a polynomial consisting of a single Monomial of the variable
   named `varname1`.
 
   @note: This constructor is only provided for T = double. For the other
@@ -141,16 +135,14 @@ class Polynomial {
     // consistent for different scalar types.
   }
 
-  /**
-  Construct a polynomial consisting of a single Monomial of the variable
+  /** Construct a polynomial consisting of a single Monomial of the variable
   named varname + num. */
   Polynomial(const std::string& varname, unsigned int num);
 
   /** Construct a single Monomial of the given coefficient and variable. */
   Polynomial(const T& coeff, const VarType& v);
 
-  /**
-  A legacy constructor for univariate polynomials:  Takes a vector
+  /** A legacy constructor for univariate polynomials:  Takes a vector
   of coefficients for the constant, x, x**2, x**3... Monomials. */
   template <typename Derived>
   explicit Polynomial(Eigen::MatrixBase<Derived> const& coefficients) {
@@ -169,13 +161,11 @@ class Polynomial {
     is_univariate_ = true;
   }
 
-  /**
-  Returns the number of unique Monomials (and thus the number of
+  /** Returns the number of unique Monomials (and thus the number of
   coefficients) in this Polynomial. */
   int GetNumberOfCoefficients() const;
 
-  /**
-  Returns the highest degree of any Monomial in this Polynomial.
+  /** Returns the highest degree of any Monomial in this Polynomial.
 
   The degree of a multivariate Monomial is the product of the degrees of
   each of its terms. */
@@ -184,8 +174,7 @@ class Polynomial {
   /** Returns true iff this is a sum of terms of degree 1, plus a constant. */
   bool IsAffine() const;
 
-  /**
-  If the polynomial is "simple" -- e.g. just a single term with
+  /** If the polynomial is "simple" -- e.g. just a single term with
   coefficient 1 -- then returns that variable; otherwise returns 0. */
   VarType GetSimpleVariable() const;
 
@@ -196,8 +185,7 @@ class Polynomial {
   /** Returns a set of all of the variables present in this Polynomial. */
   std::set<VarType> GetVariables() const;
 
-  /**
-  Evaluate a univariate Polynomial at a specific point.
+  /** Evaluate a univariate Polynomial at a specific point.
 
   Evaluates a univariate Polynomial at the given x.
   @throws std::runtime_error if this Polynomial is not univariate.
@@ -246,8 +234,7 @@ class Polynomial {
     return value;
   }
 
-  /**
-  Evaluate a multivariate Polynomial at a specific point.
+  /** Evaluate a multivariate Polynomial at a specific point.
 
   Evaluates a Polynomial with the given values for each variable.
   @throws std::out_of_range if the Polynomial contains variables for which
@@ -274,8 +261,7 @@ class Polynomial {
     return value;
   }
 
-  /**
-  Substitute values for some but not necessarily all variables of a
+  /** Substitute values for some but not necessarily all variables of a
   Polynomial.
 
   Analogous to EvaluateMultivariate, but:
@@ -294,8 +280,7 @@ class Polynomial {
   Polynomial Substitute(const VarType& orig,
                         const Polynomial& replacement) const;
 
-  /**
-  Takes the derivative of this (univariate) Polynomial.
+  /** Takes the derivative of this (univariate) Polynomial.
 
   Returns a new Polynomial that is the derivative of this one in its sole
   variable.
@@ -305,8 +290,7 @@ class Polynomial {
   Polynomial. */
   Polynomial Derivative(int derivative_order = 1) const;
 
-  /**
-  Takes the integral of this (univariate, non-constant) Polynomial.
+  /** Takes the integral of this (univariate, non-constant) Polynomial.
 
   Returns a new Polynomial that is the indefinite integral of this one in
   its sole variable.
@@ -384,24 +368,21 @@ class Polynomial {
 
   const Polynomial operator/(const T& scalar) const;
 
-  /**
-  A comparison to allow std::lexicographical_compare on this class; does
+  /** A comparison to allow std::lexicographical_compare on this class; does
   not reflect any sort of mathematical total order. */
   bool operator<(const Polynomial& other) const {
     // Just delegate to the default vector std::lexicographical_compare.
     return monomials_ < other.monomials_;
   }
 
-  /**
-  Returns the roots of this (univariate) Polynomial.
+  /** Returns the roots of this (univariate) Polynomial.
 
   Returns the roots of a univariate Polynomial as an Eigen column vector of
   complex numbers whose components are of the RealScalar type.
   @throws std::exception of this Polynomial is not univariate. */
   RootsType Roots() const;
 
-  /**
-  Checks if a Polynomial is approximately equal to this one.
+  /** Checks if a Polynomial is approximately equal to this one.
 
   Checks that every coefficient of `other` is within `tol` of the
   corresponding coefficient of this Polynomial.
@@ -414,8 +395,7 @@ class Polynomial {
       const Polynomial<T>& other, const RealScalar& tol = 0.0,
       const ToleranceType& tol_type = ToleranceType::kAbsolute) const;
 
-  /**
-  Constructs a Polynomial representing the symbolic expression `e`.
+  /** Constructs a Polynomial representing the symbolic expression `e`.
   Note that the ID of a variable is preserved in this translation.
 
   @throw std::runtime_error if `e` is not polynomial-convertible.

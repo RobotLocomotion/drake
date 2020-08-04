@@ -11,31 +11,26 @@
 
 namespace drake {
 namespace solvers {
-/**
-The Mosek solver details after calling Solve() function. The user can call
+/** The Mosek solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<MosekSolver>() to obtain the
 details. */
 struct MosekSolverDetails {
-  /**
-  The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
+  /** The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
   https://docs.mosek.com/9.0/capi/constants.html?highlight=msk_dinf_optimizer_time
    */
   double optimizer_time{};
-  /**
-  The response code returned from mosek solver. Check
+  /** The response code returned from mosek solver. Check
   https://docs.mosek.com/9.0/capi/response-codes.html for the meaning on the
   response code. */
   int rescode{};
-  /**
-  The solution status after solving the problem. Check
+  /** The solution status after solving the problem. Check
   https://docs.mosek.com/9.0/capi/accessing-solution.html and
   https://docs.mosek.com/9.0/capi/constants.html#mosek.solsta for the
   meaning on the solution status. */
   int solution_status{};
 };
 
-/**
-@note Mosek only cares about the initial guess of integer variables. The
+/** @note Mosek only cares about the initial guess of integer variables. The
 initial guess of continuous variables are not passed to MOSEK. If all the
 integer variables are set to some integer values, then MOSEK will be forced
 to compute the remaining continuous variable values as the initial guess.
@@ -53,8 +48,7 @@ class MosekSolver final : public SolverBase {
   MosekSolver();
   ~MosekSolver() final;
 
-  /**
-  Control stream logging. Refer to
+  /** Control stream logging. Refer to
   https://docs.mosek.com/9.0/capi/solver-io.html for more details.
   @param flag Set to true if the user want to turn on stream logging.
   @param log_file If the user wants to output the logging to a file, then
@@ -65,13 +59,11 @@ class MosekSolver final : public SolverBase {
     log_file_ = log_file;
   }
 
-  /**
-  This type contains a valid MOSEK license environment, and is only to be
+  /** This type contains a valid MOSEK license environment, and is only to be
   used from AcquireLicense(). */
   class License;
 
-  /**
-  This acquires a MOSEK license environment shared among all MosekSolver
+  /** This acquires a MOSEK license environment shared among all MosekSolver
   instances; the environment will stay valid as long as at least one
   shared_ptr returned by this function is alive.
   Call this ONLY if you must use different MathematicalProgram
@@ -84,13 +76,11 @@ class MosekSolver final : public SolverBase {
   obtained. */
   static std::shared_ptr<License> AcquireLicense();
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();
-  /**
-  Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
+  /** Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
   set to a non-empty value. */
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);

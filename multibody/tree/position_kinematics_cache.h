@@ -17,8 +17,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This class is one of the cache entries in the Context. It holds the
+/** This class is one of the cache entries in the Context. It holds the
 kinematics results of computations that only depend on the generalized
 positions of the system.
 Kinematics results include:
@@ -39,16 +38,14 @@ class PositionKinematicsCache {
   template <typename U>
   using RigidTransform = drake::math::RigidTransform<U>;
 
-  /**
-  Constructs a position kinematics cache entry for the given
+  /** Constructs a position kinematics cache entry for the given
   MultibodyTreeTopology. */
   explicit PositionKinematicsCache(const MultibodyTreeTopology& topology)
       : num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 
-  /**
-  Returns a const reference to pose `X_WB` of the body B (associated with
+  /** Returns a const reference to pose `X_WB` of the body B (associated with
   node @p body_node_index) as measured and expressed in the world frame W.
   @param[in] body_node_index The unique index for the computational
                              BodyNode object associated with body B.
@@ -65,8 +62,7 @@ class PositionKinematicsCache {
     return X_WB_pool_[body_node_index];
   }
 
-  /**
-  Returns a const reference to the rotation matrix `R_WB` that relates the
+  /** Returns a const reference to the rotation matrix `R_WB` that relates the
   orientation of the world frame W with the body frame B.
   @param[in] body_node_index The unique index for the computational
                              BodyNode object associated with body B. */
@@ -75,8 +71,7 @@ class PositionKinematicsCache {
     return X_WB.rotation();
   }
 
-  /**
-  Returns a const reference to the pose `X_PB` of the body frame B
+  /** Returns a const reference to the pose `X_PB` of the body frame B
   as measured and expressed in its parent body frame P.
   @param[in] body_node_id The unique identifier for the computational
                           BodyNode object associated with body B.
@@ -93,8 +88,7 @@ class PositionKinematicsCache {
     return X_PB_pool_[body_node_id];
   }
 
-  /**
-  For the mobilizer associated with the body node indexed by
+  /** For the mobilizer associated with the body node indexed by
   `body_node_index`, this method returns a const reference to the pose
   `X_FM` of the outboard frame M as measured and expressed in the inboard
   frame F.
@@ -115,8 +109,7 @@ class PositionKinematicsCache {
     return X_FM_pool_[body_node_index];
   }
 
-  /**
-  Position of node B, with index `body_node_index`, measured in the inboard
+  /** Position of node B, with index `body_node_index`, measured in the inboard
   body frame P, expressed in the world frame W. */
   const Vector3<T>& get_p_PoBo_W(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);

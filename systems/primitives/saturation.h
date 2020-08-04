@@ -7,8 +7,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An element-wise hard saturation block with inputs signal `u`,
+/** An element-wise hard saturation block with inputs signal `u`,
 saturation values @f$ u_{min} @f$ and/or @f$ u_{max} @f$, and output
 `y` respectively as in:
 
@@ -40,8 +39,7 @@ class Saturation final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Saturation)
 
-  /**
-  Constructs a variable %Saturation system where the upper and lower values
+  /** Constructs a variable %Saturation system where the upper and lower values
   are represented by vectors of identical size and can be supplied via the
   max_value_port and min_value_port respectively.
 
@@ -51,8 +49,7 @@ class Saturation final : public LeafSystem<T> {
   @p u_min and @p u_max to be supplied via the corresponding ports. */
   explicit Saturation(int input_size);
 
-  /**
-  Constructs a constant %Saturation system where the upper and lower
+  /** Constructs a constant %Saturation system where the upper and lower
   values are represented by vectors of identical size supplied via this
   constructor.
 

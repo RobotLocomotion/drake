@@ -14,8 +14,7 @@ namespace drake {
 namespace examples {
 namespace rimless_wheel {
 
-/**
-Dynamical representation of the idealized hybrid dynamics of a "rimless
+/** Dynamical representation of the idealized hybrid dynamics of a "rimless
 wheel", as described in
   http://underactuated.mit.edu/underactuated.html?chapter=simple_legs
 In addition, this model has two additional (discrete) state variables that
@@ -52,15 +51,13 @@ class RimlessWheel final : public systems::LeafSystem<T> {
   template <typename U>
   explicit RimlessWheel(const RimlessWheel<U>&) : RimlessWheel<T>() {}
 
-  /**
-  Return reference to the output port that publishes only [theta,
+  /** Return reference to the output port that publishes only [theta,
   thetatdot]. */
   const systems::OutputPort<T>& get_minimal_state_output_port() {
     return this->get_output_port(0);
   }
 
-  /**
-  Returns reference to the output port that provides a 12 dimensional state
+  /** Returns reference to the output port that provides a 12 dimensional state
   (FloatingBaseType::kRollPitchYaw positions then velocities).  This is
   useful, e.g., for visualization.  θ of the rimless wheel is the pitch
   of the floating base (rotation around global y), and downhill moves toward

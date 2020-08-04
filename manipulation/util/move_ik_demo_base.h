@@ -17,8 +17,7 @@ namespace drake {
 namespace manipulation {
 namespace util {
 
-/**
-This class provides some common functionality for generating IK plans for
+/** This class provides some common functionality for generating IK plans for
 robot arms, including things like creating a MultibodyPlant, setting joint
 velocity limits, implementing a robot status update handler suitable for
 invoking from an LCM callback, and generating plans to move a specified
@@ -33,8 +32,7 @@ class MoveIkDemoBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MoveIkDemoBase);
 
-  /**
-  @param robot_description A description file to load of the robot to
+  /** @param robot_description A description file to load of the robot to
   plan.
 
   @param base_link Name of the base link of the robot, will be welded to
@@ -54,8 +52,7 @@ class MoveIkDemoBase {
   /** @return a reference to the internal plant. */
   const multibody::MultibodyPlant<double>& plant() const { return plant_; }
 
-  /**
-  Set the joint velocity limts when building the plan.  The default
+  /** Set the joint velocity limts when building the plan.  The default
   velocity limits from the robot description will be used if this isn't
   set.
 
@@ -63,15 +60,13 @@ class MoveIkDemoBase {
   velocities in the MultibodyPlant (see plant()). */
   void set_joint_velocity_limits(const Eigen::Ref<const Eigen::VectorXd>&);
 
-  /**
-  Update the current robot status.
+  /** Update the current robot status.
 
   @param q must be equal to the number of positions in the MultibodyPlant
   (see plant()). */
   void HandleStatus(const Eigen::Ref<const Eigen::VectorXd>& q);
 
-  /**
-  Attempt to generate a plan moving ik_link (specified at construction
+  /** Attempt to generate a plan moving ik_link (specified at construction
   time) from the joint configuration specified in the last call to
   `HandleStatus` to a configuration with ik_link at @p goal_pose.  Returns
   nullopt if planning failed.

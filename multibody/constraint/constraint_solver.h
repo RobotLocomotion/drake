@@ -15,8 +15,7 @@ namespace drake {
 namespace multibody {
 namespace constraint {
 
-/**
-Solves constraint problems for constraint forces. Specifically, given
+/** Solves constraint problems for constraint forces. Specifically, given
 problem data corresponding to a rigid or multi-body system constrained
 bilaterally and/or unilaterally and acted upon by friction, this class
 computes the constraint forces.
@@ -72,22 +71,18 @@ class ConstraintSolver {
   ConstraintSolver() = default;
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
 
-  /**
-  Structure used to convert a mixed linear complementarity problem to a
+  /** Structure used to convert a mixed linear complementarity problem to a
   pure linear complementarity problem (by solving for free variables). */
   struct MlcpToLcpData {
-    /**
-    Decomposition of the Delassus matrix GM⁻¹Gᵀ, where G is the bilateral
+    /** Decomposition of the Delassus matrix GM⁻¹Gᵀ, where G is the bilateral
     constraint matrix and M is the system generalized inertia matrix. */
     Eigen::CompleteOrthogonalDecomposition<MatrixX<T>> delassus_QTZ;
 
-    /**
-    A function pointer for solving linear systems using MLCP "A" matrix
+    /** A function pointer for solving linear systems using MLCP "A" matrix
     (see @ref Velocity-level-MLCPs). */
     std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
 
-    /**
-    A function pointer for solving linear systems using only the upper left
+    /** A function pointer for solving linear systems using only the upper left
     block of A⁺ in the MLCP (see @ref Velocity-level-MLCPs), where A⁺ is
     a singularity-robust pseudo-inverse of A, toward exploiting operations
     with zero blocks. For example:<pre>
@@ -108,8 +103,7 @@ class ConstraintSolver {
   // to make it consistent with the rest of Drake's multibody dynamics
   // documentation (see Issue #9080).
 
-  /**
-  @name Velocity-level constraint problems formulated as MLCPs.
+  /** @name Velocity-level constraint problems formulated as MLCPs.
   @anchor Velocity-level-MLCPs
   Constraint problems can be posed as mixed linear complementarity problems
   (MLCP), which are problems that take the form:<pre>
@@ -279,8 +273,7 @@ class ConstraintSolver {
   are non-impulsive), the generalized forces/impulses due to the constraints
   can then be acquired via ComputeGeneralizedForceFromConstraintForces(). */
   // @{
-  /**
-  Computes the base time-discretization of the system using the problem
+  /** Computes the base time-discretization of the system using the problem
   data, resulting in the `MM` and `qq` described in
   @ref velocity-level-MLCPs; if `MM` and `qq` are modified no further, the
   LCP corresponds to an impact problem (i.e., the multibody dynamics problem
@@ -307,8 +300,7 @@ class ConstraintSolver {
       MatrixX<T>* MM,
       VectorX<T>* qq);
 
-  /**
-  Updates the time-discretization of the LCP initially computed in
+  /** Updates the time-discretization of the LCP initially computed in
   ConstructBaseDiscretizedTimeLcp() using the problem data and time step
   `h`. Solving the resulting pure LCP yields non-impulsive constraint forces
   that can be obtained from PopulatePackedConstraintForcesFromLcpSolution().
@@ -329,8 +321,7 @@ class ConstraintSolver {
       MatrixX<T>* MM,
       VectorX<T>* qq);
 
-  /**
-  Solves the impact problem described above.
+  /** Solves the impact problem described above.
   @param problem_data The data used to compute the impulsive constraint
              forces.
   @param cf The computed impulsive forces, on return, in a packed storage
@@ -358,8 +349,7 @@ class ConstraintSolver {
   void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
-  /**
-  Populates the packed constraint force vector from the solution to the
+  /** Populates the packed constraint force vector from the solution to the
   linear complementarity problem (LCP) constructed using
   ConstructBaseDiscretizedTimeLcp() and UpdateDiscretizedTimeLcp().
   @param problem_data the constraint problem data.
@@ -392,8 +382,7 @@ class ConstraintSolver {
       VectorX<T>* cf);
   /** @} */
 
-  /**
-  Solves the appropriate constraint problem at the acceleration level.
+  /** Solves the appropriate constraint problem at the acceleration level.
   @param problem_data The data used to compute the constraint forces.
   @param cf The computed constraint forces, on return, in a packed storage
             format. The first `nc` elements of `cf` correspond to the
@@ -419,8 +408,7 @@ class ConstraintSolver {
   void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
                               VectorX<T>* cf) const;
 
-  /**
-  Computes the generalized force on the system from the constraint forces
+  /** Computes the generalized force on the system from the constraint forces
   given in packed storage.
   @param problem_data The data used to compute the contact forces.
   @param cf The computed constraint forces, in the packed storage
@@ -437,8 +425,7 @@ class ConstraintSolver {
       const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
-  /**
-  Computes the generalized force on the system from the constraint forces
+  /** Computes the generalized force on the system from the constraint forces
   given in packed storage.
   @param problem_data The data used to compute the contact forces.
   @param cf The computed constraint forces, in the packed storage
@@ -456,8 +443,7 @@ class ConstraintSolver {
       const VectorX<T>& cf,
       VectorX<T>* generalized_force);
 
-  /**
-  Computes the system generalized acceleration due to both external forces
+  /** Computes the system generalized acceleration due to both external forces
   and constraint forces.
   @param problem_data The acceleration-level constraint data.
   @param cf The computed constraint forces, in the packed storage
@@ -476,8 +462,7 @@ class ConstraintSolver {
         problem_data.tau);
   }
 
-  /**
-  Computes a first-order approximation of generalized acceleration due
+  /** Computes a first-order approximation of generalized acceleration due
   *only* to constraint forces.
   @param problem_data The velocity-level constraint data.
   @param cf The computed constraint forces, in the packed storage
@@ -502,8 +487,7 @@ class ConstraintSolver {
       double dt,
       VectorX<T>* generalized_acceleration);
 
-  /**
-  Computes the system generalized acceleration due *only* to constraint
+  /** Computes the system generalized acceleration due *only* to constraint
   forces.
   @param cf The computed constraint forces, in the packed storage
             format described in documentation for SolveConstraintProblem.
@@ -514,8 +498,7 @@ class ConstraintSolver {
       const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
 
-  /**
-  Computes the system generalized acceleration due *only* to constraint
+  /** Computes the system generalized acceleration due *only* to constraint
   forces.
   @param cf The computed constraint forces, in the packed storage
             format described in documentation for SolveConstraintProblem.
@@ -526,8 +509,7 @@ class ConstraintSolver {
     const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration);
 
-  /**
-  Computes the change to the system generalized velocity from constraint
+  /** Computes the change to the system generalized velocity from constraint
   impulses.
   @param cf The computed constraint impulses, in the packed storage
             format described in documentation for SolveImpactProblem.
@@ -538,8 +520,7 @@ class ConstraintSolver {
       const VectorX<T>& cf,
       VectorX<T>* generalized_delta_v);
 
-  /**
-  Gets the contact forces expressed in each contact frame *for 2D contact
+  /** Gets the contact forces expressed in each contact frame *for 2D contact
   problems* from the "packed" solution returned by SolveConstraintProblem().
   @param cf the output from SolveConstraintProblem()
   @param problem_data the problem data input to SolveConstraintProblem()
@@ -568,8 +549,7 @@ class ConstraintSolver {
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
-  /**
-  Gets the contact forces expressed in each contact frame *for 2D contact
+  /** Gets the contact forces expressed in each contact frame *for 2D contact
   problems* from a "packed" solution returned by, e.g.,
   SolveImpactProblem().  If the constraint forces are impulsive, the contact
   forces are impulsive (with units of Ns); similarly, if the constraint

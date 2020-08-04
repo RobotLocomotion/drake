@@ -13,8 +13,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A thin wrapper of the InitialValueProblem class to provide a simple
+/** A thin wrapper of the InitialValueProblem class to provide a simple
 interface when solving scalar initial value problems i.e. when evaluating
 the x(t; 𝐤) solution function to the given ODE dx/dt = f(t, x; 𝐤),
 where f : t ⨯ x →  ℝ , t ∈ ℝ, x ∈ ℝ, 𝐤 ∈ ℝᵐ, along with an initial
@@ -53,8 +52,7 @@ class ScalarInitialValueProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarInitialValueProblem);
 
-  /**
-  Scalar ODE dx/dt = f(t, x; 𝐤) function type.
+  /** Scalar ODE dx/dt = f(t, x; 𝐤) function type.
 
   @param t The independent variable t ∈ ℝ .
   @param x The dependent variable x ∈ ℝ .
@@ -63,16 +61,14 @@ class ScalarInitialValueProblem {
   using ScalarOdeFunction =
       std::function<T(const T& t, const T& x, const VectorX<T>& k)>;
 
-  /**
-  A collection of values i.e. initial time t₀, initial state x₀
+  /** A collection of values i.e. initial time t₀, initial state x₀
   and parameter vector 𝐤 to further specify the ODE system (in
   order to become a scalar initial value problem). */
   struct ScalarOdeContext {
     /** Default constructor, leaving all values unspecified. */
     ScalarOdeContext() = default;
 
-    /**
-    Constructor specifying all values.
+    /** Constructor specifying all values.
 
     @param t0_in Specified initial time t₀.
     @param x0_in Specified initial state x₀.
@@ -87,8 +83,7 @@ class ScalarInitialValueProblem {
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
 
-  /**
-  Constructs an scalar IVP described by the given @p scalar_ode_function,
+  /** Constructs an scalar IVP described by the given @p scalar_ode_function,
   using given @p default_values.t0 and @p default_values.x0 as initial
   conditions, and parameterized with @p default_values.k by default.
 
@@ -114,8 +109,7 @@ class ScalarInitialValueProblem {
         ode_function, ToVectorIVPOdeContext(default_values));
   }
 
-  /**
-  Solves the IVP for time @p tf, using the initial time t₀, initial state
+  /** Solves the IVP for time @p tf, using the initial time t₀, initial state
   x₀ and parameter vector 𝐤 present in @p values, falling back to the ones
   given on construction if not given.
 
@@ -132,8 +126,7 @@ class ScalarInitialValueProblem {
     return this->vector_ivp_->Solve(tf, ToVectorIVPOdeContext(values))[0];
   }
 
-  /**
-  Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
+  /** Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
   closed time interval between the initial time t₀ and the given final
   time @p tf, using initial state x₀ and parameter vector 𝐤 present in
   @p values (falling back to the ones given on construction if not given).
@@ -173,8 +166,7 @@ class ScalarInitialValueProblem {
         std::move(vector_dense_output), kDimension);
   }
 
-  /**
-  Resets the internal integrator instance by in-place
+  /** Resets the internal integrator instance by in-place
   construction of the given integrator type.
 
   A usage example is shown below.

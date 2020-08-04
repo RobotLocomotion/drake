@@ -42,8 +42,7 @@ class GeometryId : public drake::Identifier<class GeometryTag> {
 
 namespace std {
 
-/**
-Enables use of the identifier to serve as a key in STL containers.
+/** Enables use of the identifier to serve as a key in STL containers.
 @relates GeometryId */
 template <>
 struct hash<drake::geometry::GeometryId> {

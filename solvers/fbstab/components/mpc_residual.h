@@ -15,8 +15,7 @@ namespace test {
 class MpcComponentUnitTests;
 }  // namespace test
 
-/**
-This class computes and stores residuals for MPC QPs. See mpc_data.h
+/** This class computes and stores residuals for MPC QPs. See mpc_data.h
 for the mathematical description.
 
 Residuals have 3 components:
@@ -26,8 +25,7 @@ Residuals have 3 components:
 class MpcResidual {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcResidual)
-  /**
-  Allocates memory for the residual.
+  /** Allocates memory for the residual.
 
   @param[in] N  horizon length
   @param[in] nx number of states
@@ -38,14 +36,12 @@ class MpcResidual {
   are non-positive. */
   MpcResidual(int N, int nx, int nu, int nc);
 
-  /**
-  Sets the value of alpha used in residual computations,
+  /** Sets the value of alpha used in residual computations,
   see (19) in https://arxiv.org/pdf/1901.04046.pdf.
   @param[in] alpha */
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
-  /**
-  Fills the storage with all a.
+  /** Fills the storage with all a.
   @param[in] a */
   void Fill(double a);
 
@@ -58,8 +54,7 @@ class MpcResidual {
   /** @return 0.5*Norm()^2 */
   double Merit() const;
 
-  /**
-  Computes R(x,xbar,sigma), the residual of a proximal subproblem
+  /** Computes R(x,xbar,sigma), the residual of a proximal subproblem
   and stores the result internally.
   R(x,xbar,sigma) = 0 if and only if x = P(xbar,sigma)
   where P is the proximal operator.
@@ -76,8 +71,7 @@ class MpcResidual {
   void InnerResidual(const MpcVariable& x, const MpcVariable& xbar,
                      double sigma);
 
-  /**
-  Computes π(x): the natural residual of the QP
+  /** Computes π(x): the natural residual of the QP
   at the primal-dual point x and stores the result internally.
   See (17) in https://arxiv.org/pdf/1901.04046.pdf
   for a mathematical definition.
@@ -85,8 +79,7 @@ class MpcResidual {
   @param[in] x Evaluation point. */
   void NaturalResidual(const MpcVariable& x);
 
-  /**
-  Computes the natural residual function augmented with
+  /** Computes the natural residual function augmented with
   penalty terms, it is analogous to (18) in
   https://arxiv.org/pdf/1901.04046.pdf,
   and stores the result internally.

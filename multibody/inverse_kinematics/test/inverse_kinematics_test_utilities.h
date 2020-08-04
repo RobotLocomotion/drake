@@ -30,8 +30,7 @@ std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant();
 std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& file_path, double time_step);
 
-/**
-Compares if two eigen matrices of AutoDiff have the same values and
+/** Compares if two eigen matrices of AutoDiff have the same values and
 gradients. */
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
@@ -126,8 +125,7 @@ class TwoFreeSpheresTest : public ::testing::Test {
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
 };
 
-/**
-Compute the signed distance between a box and a sphere.
+/** Compute the signed distance between a box and a sphere.
 @param box_size The size of the box.
 @param radius The radius of the sphere.
 @param X_WB the pose of the box (B) in the world frame (W).
@@ -163,8 +161,7 @@ class BoxSphereTest : public ::testing::Test {
   geometry::GeometryId box_geometry_id_{};
 };
 
-/**
-Since we can construct the kinematic constraint using both
+/** Since we can construct the kinematic constraint using both
 MultibodyPlant<double> (as @p constraint_from_double) and
 MultibodyPlant<AutoDiffXd> (as @p constraint_from_autodiff), and evaluate the
 constraint with both VectorX<double> and VectorX<AutoDiffXd>, we check if the

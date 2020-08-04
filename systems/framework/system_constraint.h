@@ -32,8 +32,7 @@ enum class SystemConstraintType {
       1,  ///< The constraint is of the form lower_bound <= f(x) <= upper_bound.
 };
 
-/**
-The bounds of a SystemConstraint.  This also encompasses the form of the
+/** The bounds of a SystemConstraint.  This also encompasses the form of the
 constraint: equality constraints occur when both the lower and upper bounds
 are all zeros. */
 class SystemConstraintBounds final {
@@ -43,16 +42,14 @@ class SystemConstraintBounds final {
   /** Creates constraint bounds with zero size. */
   SystemConstraintBounds() : SystemConstraintBounds(0) {}
 
-  /**
-  Creates constraint of type SystemConstraintType::kEquality, with the
+  /** Creates constraint of type SystemConstraintType::kEquality, with the
   given size for `f(x)`. */
   static SystemConstraintBounds Equality(int size) {
     DRAKE_THROW_UNLESS(size >= 0);
     return SystemConstraintBounds(size);
   }
 
-  /**
-  Creates a constraint with the given upper and lower bounds for `f(x)`.
+  /** Creates a constraint with the given upper and lower bounds for `f(x)`.
   The type() of this constraint will be kInequality, except in the unusual
   case where both lower and upper are all zeros (in which case it is
   kEquality).  It is not currently allowed to set lower == upper (creating
@@ -62,15 +59,13 @@ class SystemConstraintBounds final {
       const Eigen::Ref<const Eigen::VectorXd>& lower,
       const Eigen::Ref<const Eigen::VectorXd>& upper);
 
-  /**
-  Creates an inequality constraint with the given lower bounds for `f(x)`.
+  /** Creates an inequality constraint with the given lower bounds for `f(x)`.
   The upper bounds are all positive infinity. */
   SystemConstraintBounds(
       const Eigen::Ref<const Eigen::VectorXd>& lower,
       std::nullopt_t);
 
-  /**
-  Creates an inequality constraint with the given upper bounds for `f(x)`.
+  /** Creates an inequality constraint with the given upper bounds for `f(x)`.
   The lower bounds are all negative infinity. */
   SystemConstraintBounds(
       std::nullopt_t,
@@ -90,8 +85,7 @@ class SystemConstraintBounds final {
   Eigen::VectorXd upper_;
 };
 
-/**
-This is the signature of a stateless function that evaluates the value of
+/** This is the signature of a stateless function that evaluates the value of
 the constraint function f:
   value = f(context)
 
@@ -103,8 +97,7 @@ template <typename T>
 using ContextConstraintCalc =
     std::function<void(const Context<T>&, VectorX<T>* value)>;
 
-/**
-This is the signature of a stateless function that evaluates the value of
+/** This is the signature of a stateless function that evaluates the value of
 the constraint function f:
   value = f(system, context)
 
@@ -123,8 +116,7 @@ template <typename T>
 using SystemConstraintCalc =
     std::function<void(const System<T>&, const Context<T>&, VectorX<T>* value)>;
 
-/**
-A SystemConstraint is a generic base-class for constraints on Systems.
+/** A SystemConstraint is a generic base-class for constraints on Systems.
 
 A SystemConstraint is a means to inform our algorithms *about*
 the implemented system behavior -- declaring the constraint does not
@@ -153,8 +145,7 @@ class SystemConstraint final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
 
-  /**
-  (Advanced) Constructs a default (zero-sized) SystemConstraint.
+  /** (Advanced) Constructs a default (zero-sized) SystemConstraint.
 
   Most users should call a LeafSystem method like DeclareEqualityConstraint
   to create (and add) constraints, not call this constructor directly.
@@ -166,8 +157,7 @@ class SystemConstraint final {
         system, &NoopSystemConstraintCalc, SystemConstraintBounds{},
         std::move(description)) {}
 
-  /**
-  (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
+  /** (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
   could be an equality constraint f(x) = 0, or an inequality constraint
   lower_bound <= f(x) <= upper_bound.
 
@@ -187,8 +177,7 @@ class SystemConstraint final {
     DRAKE_DEMAND(system != nullptr);
   }
 
-  /**
-  (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
+  /** (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
   could be an equality constraint f(x) = 0, or an inequality constraint
   lower_bound <= f(x) <= upper_bound.
 
@@ -208,8 +197,7 @@ class SystemConstraint final {
     DRAKE_DEMAND(system != nullptr);
   }
 
-  /**
-  Evaluates the function pointer passed in through the constructor,
+  /** Evaluates the function pointer passed in through the constructor,
   writing the output to @p value.  @p value will be (non-conservatively)
   resized to match the constraint function output. */
   void Calc(const Context<T>& context, VectorX<T>* value) const {
@@ -222,8 +210,7 @@ class SystemConstraint final {
     DRAKE_DEMAND(value->size() == size());
   }
 
-  /**
-  Evaluates the function pointer, and check if all of the outputs
+  /** Evaluates the function pointer, and check if all of the outputs
   are within the desired bounds. */
   boolean<T> CheckSatisfied(const Context<T>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
@@ -250,8 +237,7 @@ class SystemConstraint final {
     }
   }
 
-  /**
-  Returns a reference to the System that owns this constraint.  Note that
+  /** Returns a reference to the System that owns this constraint.  Note that
   for a constraint on a diagram this will be the diagram itself, never a
   leaf system whose constraint was re-expressed. */
   const System<T>& get_system() const {
@@ -280,8 +266,7 @@ class SystemConstraint final {
   const std::string description_;
 };
 
-/**
-An "external" constraint on a System.  This class is intended for use by
+/** An "external" constraint on a System.  This class is intended for use by
 applications that are examining a System by adding additional constraints
 based on their particular situation (e.g., that a velocity state element
 has an upper bound); it is not intended for declaring intrinsic constraints
@@ -295,8 +280,7 @@ class ExternalSystemConstraint final {
   ExternalSystemConstraint()
       : ExternalSystemConstraint("empty", {}, {}) {}
 
-  /**
-  Creates a constraint with the given arguments.
+  /** Creates a constraint with the given arguments.
   The calc functions (other than calc_double) may be omitted. */
   ExternalSystemConstraint(
       std::string description,
@@ -310,8 +294,7 @@ class ExternalSystemConstraint final {
         calc_autodiffxd_(std::move(calc_autodiffxd)),
         calc_expression_(std::move(calc_expression)) {}
 
-  /**
-  Creates a constraint based on generic lambda.  This constraint will
+  /** Creates a constraint based on generic lambda.  This constraint will
   supply Calc functions for Drake's default scalar types. */
   template <typename GenericSystemConstraintCalc>
   static ExternalSystemConstraint MakeForAllScalars(
@@ -324,8 +307,7 @@ class ExternalSystemConstraint final {
         calc, calc, calc);
   }
 
-  /**
-  Creates a constraint based on generic lambda.  This constraint will
+  /** Creates a constraint based on generic lambda.  This constraint will
   supply Calc functions for Drake's non-symbolic default scalar types. */
   template <typename GenericSystemConstraintCalc>
   static ExternalSystemConstraint MakeForNonsymbolicScalars(
@@ -341,13 +323,11 @@ class ExternalSystemConstraint final {
   /** Returns a human-readable description of this constraint. */
   const std::string& description() const { return description_; }
 
-  /**
-  Returns the bounds of this constraint (and whether it is an equality or
+  /** Returns the bounds of this constraint (and whether it is an equality or
   inequality constraint.) */
   const SystemConstraintBounds& bounds() const { return bounds_; }
 
-  /**
-  Retrieves the evaluation function `value = f(system, context)` for this
+  /** Retrieves the evaluation function `value = f(system, context)` for this
   constraint.  The result may be a default-constructed (missing) function,
   if the scalar type T is not supported by this constraint instance.
 

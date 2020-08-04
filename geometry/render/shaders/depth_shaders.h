@@ -8,8 +8,7 @@ namespace shaders {
 // NOTE: For the VTK infrastructure, the shader should always start with the
 // line:
 //   //VTK::System::Dec
-/**
-A vertex shader program for rendering depth images, which computes vertices
+/** A vertex shader program for rendering depth images, which computes vertices
 and normals for the fragment shader program coming after. */
 constexpr char kDepthVS[] = R"""(
     //VTK::System::Dec
@@ -33,8 +32,7 @@ constexpr char kDepthVS[] = R"""(
 // lines:
 //   //VTK::System::Dec
 //   //VTK::Output::Dec
-/**
-A fragment shader program for rendering depth images, which computes depth
+/** A fragment shader program for rendering depth images, which computes depth
 values for each pixel in depth images, converts them to be in range [0, 1]
 and packs those values to three color channels. In other words, we encode
 a depth image into a color image and output the color image. For the detail

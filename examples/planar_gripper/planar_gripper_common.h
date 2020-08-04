@@ -35,8 +35,7 @@ constexpr int kNumJoints = kNumFingers * 2;
 // planar-gripper is welded via WeldGripperFrames(), the coordinate frame G
 // perfectly coincides with the world coordinate frame W.
 
-/**
-Welds each finger's base frame to the world. The planar-gripper is made up of
+/** Welds each finger's base frame to the world. The planar-gripper is made up of
 three 2-DOF fingers, whose bases are fixed equidistant along the perimeter of
 a circle. The origin (Go) of the planar gripper is located at the center of
 the workspace, i.e., if all joints are set to zero and all fingers are
@@ -49,8 +48,7 @@ coincides with the world coordinate frame W when welded via this method.
 template <typename T>
 void WeldGripperFrames(MultibodyPlant<T>* plant);
 
-/**
-Parses a text file containing keyframe joint positions for the planar gripper
+/** Parses a text file containing keyframe joint positions for the planar gripper
 and the planar brick (the object being manipulated).
 @param[in] name The file name to parse.
 @param[out] brick_initial_pose A vector containing the initial brick pose,
@@ -75,8 +73,7 @@ std::pair<MatrixX<double>, std::map<std::string, int>> ParseKeyframes(
     const std::string& name, EigenPtr<Vector3<double>> brick_initial_pose =
                                  EigenPtr<Vector3<double>>(nullptr));
 
-/**
-Reorders the joint keyframe matrix data contained in `keyframes` such that
+/** Reorders the joint keyframe matrix data contained in `keyframes` such that
 joint keyframes (rows) are ordered according to the `plant`'s joint velocity
 index ordering, making it compatible with the inverse dynamics controller's
 desired state input port ordering. The incoming `plant` is the MultibodyPlant

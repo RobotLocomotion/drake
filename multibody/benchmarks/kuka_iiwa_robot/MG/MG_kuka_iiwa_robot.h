@@ -15,8 +15,7 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 namespace MG {
 
-/**
-This class is Drake's interface to the MotionGenesis solution for a
+/** This class is Drake's interface to the MotionGenesis solution for a
 7-DOF KUKA LBR iiwa robot (14 kg payload) which is described at:
 https://www.kuka.com/en-de/products/robot-systems/industrial-robots/lbr-iiwa
 Geometry, joint-types, and mass/inertia properties are contained in:
@@ -50,8 +49,7 @@ class MGKukaIIwaRobot {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MGKukaIIwaRobot)
 
-  /**
-  Constructs an object that serves as Drake's interface to a Motion Genesis
+  /** Constructs an object that serves as Drake's interface to a Motion Genesis
   model of the aforementioned KUKA robot.  All model parameters are from:
   drake/multibody/benchmarks/kuka_iiwa_robot/kuka_iiwa_robot.urdf
   @param[in] gravity Earth's gravitational acceleration in m/s².  The world
@@ -64,8 +62,7 @@ class MGKukaIIwaRobot {
     set_gravity(gravity);
   }
 
-  /**
-  This method calculates kinematic properties of the robot's end-effector
+  /** This method calculates kinematic properties of the robot's end-effector
   (herein denoted as rigid body G) -- described above.
 
   @param[in] q robot's joint angles (generalized coordinates).
@@ -85,8 +82,7 @@ class MGKukaIIwaRobot {
       const Eigen::Ref<const VectorX<T>>& qDt,
       const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /**
-  This method calculates joint reaction force/torques for the 7 joints
+  /** This method calculates joint reaction force/torques for the 7 joints
   that connect frames Na to A, Ab to B, Bc to C, ... Fg to G.
 
   For example, there is a revolute joint (with motor actuation) between
@@ -135,8 +131,7 @@ class MGKukaIIwaRobot {
                           const Eigen::Ref<const VectorX<T>>& qDt,
                           const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /**
-  @see CalcJointReactionForcesExpressedInMobilizerFrame.
+  /** @see CalcJointReactionForcesExpressedInMobilizerFrame.
   @returns Machine-precision values as defined below.
   --------|-------------------------------------------------
   F_Ao_W  | Spatial force on Ao from N, expressed in world frame W.
@@ -154,8 +149,7 @@ class MGKukaIIwaRobot {
                           const Eigen::Ref<const VectorX<T>>& qDt,
                           const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /**
-  This method calculates the torques for the 7 revolute motors that connect
+  /** This method calculates the torques for the 7 revolute motors that connect
   frames Na to A, Ab to B, Bc to C, ... Fg to G.  These torques arise from
   an inverse dynamics problem, namely each revolute motor specifies how its
   outboard mobilizer frame moves relative to its inboard mobilizer frame.
@@ -177,16 +171,14 @@ class MGKukaIIwaRobot {
                             const Eigen::Ref<const VectorX<T>>& qDt,
                             const Eigen::Ref<const VectorX<T>>& qDDt) const;
 
-  /**
-  This method sets Earth's (or astronomical body's) uniform gravitational
+  /** This method sets Earth's (or astronomical body's) uniform gravitational
   acceleration ("little g").  By default, little g is initialized to
   0.0 m/s² (not 9.81 m/s²).  Right-handed orthogonal unit vectors Nx, Ny, Nz
   are fixed in N (Earth) with Nz vertically upward (so gravity is in -Nz).
   @param[in] gravity Earth's gravitational acceleration in m/s². */
   void set_gravity(double gravity) { MG_kuka_auto_generated_.g = gravity; }
 
-  /**
-  @name Methods for returning mass
+  /** @name Methods for returning mass
   These methods return the mass of robot links A, B, C, D, E, F, G (in kg). */
   /** @{ */
   double get_mass_of_link_A() const  { return MG_kuka_auto_generated_.mA; }

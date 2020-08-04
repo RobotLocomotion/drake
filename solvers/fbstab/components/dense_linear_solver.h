@@ -16,8 +16,7 @@ namespace test {
 class DenseComponentUnitTests;
 }  // namespace test
 
-/**
-A class for computing the search directions used by the FBstab QP Solver.
+/** A class for computing the search directions used by the FBstab QP Solver.
 It solves systems of linear equations of the form
 
      [Hs   A'] dz = rz  <==>  V*dx = r
@@ -43,14 +42,12 @@ solver.Solve(r,&dx,sigma);
 class DenseLinearSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseLinearSolver)
-  /**
-  Allocates workspace memory.
+  /** Allocates workspace memory.
   @param [nz] Number of decision variables.
   @param [nv] Number of inequality constraints. */
   DenseLinearSolver(int nz, int nv);
 
-  /**
-  Factors the matrix V(x,xbar,sigma) using a Schur complement approach
+  /** Factors the matrix V(x,xbar,sigma) using a Schur complement approach
   followed by a Cholesky factorization and stores the factorization
   internally.
 
@@ -67,8 +64,7 @@ class DenseLinearSolver {
   bool Initialize(const DenseVariable& x, const DenseVariable& xbar,
                   double sigma);
 
-  /**
-  Solves the system V*x = r and stores the result in x.
+  /** Solves the system V*x = r and stores the result in x.
   This method assumes that the Factor routine was run to
   compute then factor the matrix V.
 
@@ -80,8 +76,7 @@ class DenseLinearSolver {
   if x is null or if the problem data isn't linked. */
   bool Solve(const DenseResidual& r, DenseVariable* x) const;
 
-  /**
-  Sets the alpha parameter defined in (19)
+  /** Sets the alpha parameter defined in (19)
   of https://arxiv.org/pdf/1901.04046.pdf. */
   void SetAlpha(double alpha);
 

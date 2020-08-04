@@ -10,8 +10,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This ForceElement allows modeling the effect of a uniform gravity field as
+/** This ForceElement allows modeling the effect of a uniform gravity field as
 felt by bodies on the surface of the Earth.
 This gravity field acts on all bodies in the MultibodyTree model.
 
@@ -23,35 +22,29 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
   // TODO(sherm1) Switch to the NIST standard 9.80665 value but be sure that's
   // used consistently throughout the code, SDFs, etc.
-  /**
-  The strength used by our class's default constructor (i.e., on the
+  /** The strength used by our class's default constructor (i.e., on the
   earth's surface).  This is an unsigned (positive) value in m/s². */
   static constexpr double kDefaultStrength = 9.81;
 
-  /**
-  Constructs a uniform gravity field element with a default strength (on
+  /** Constructs a uniform gravity field element with a default strength (on
   the earth's surface) and direction (-z). */
   UniformGravityFieldElement();
 
-  /**
-  Constructs a uniform gravity field element with a strength given by the
+  /** Constructs a uniform gravity field element with a strength given by the
   acceleration of gravity vector `g_W`, expressed in the world frame W. */
   explicit UniformGravityFieldElement(Vector3<double> g_W);
 
-  /**
-  Returns the acceleration of the gravity vector in m/s², expressed in the
+  /** Returns the acceleration of the gravity vector in m/s², expressed in the
   world frame W. */
   const Vector3<double>& gravity_vector() const { return g_W_; }
 
-  /**
-  Sets the acceleration of gravity vector, expressed in the world frame
+  /** Sets the acceleration of gravity vector, expressed in the world frame
   W in m/s². */
   void set_gravity_vector(const Vector3<double>& g_W) {
     g_W_ = g_W;
   }
 
-  /**
-  Computes the generalized forces `tau_g(q)` due to `this` gravity field
+  /** Computes the generalized forces `tau_g(q)` due to `this` gravity field
   element as a function of the generalized positions `q` stored in the input
   `context`, for the multibody model to which `this` element belongs.
   `tau_g(q)` is defined such that it appears on the right hand side of the
@@ -77,8 +70,7 @@ class UniformGravityFieldElement : public ForceElement<T> {
   VectorX<T> CalcGravityGeneralizedForces(
       const systems::Context<T>& context) const;
 
-  /**
-  Computes the total potential energy of all bodies in the model in this
+  /** Computes the total potential energy of all bodies in the model in this
   uniform gravity field. The definition of potential energy allows to
   arbitrarily choose the zero energy height. This element takes the zero
   energy height to be the same as the world's height. That is, a body

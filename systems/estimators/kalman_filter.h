@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace estimators {
 
-/**
-Computes the optimal observer gain, L, for the linear system defined by
+/** Computes the optimal observer gain, L, for the linear system defined by
   @f[ \dot{x} = Ax + Bu + w, @f]
   @f[ y = Cx + Du + v. @f]
 The resulting observer is of the form
@@ -40,8 +39,7 @@ Eigen::MatrixXd SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& W,
     const Eigen::Ref<const Eigen::MatrixXd>& V);
 
-/**
-Creates a Luenberger observer system using the optimal steady-state Kalman
+/** Creates a Luenberger observer system using the optimal steady-state Kalman
 filter gain matrix, L, as described above.
 
 @param system A unique_ptr to a LinearSystem describing the system to be
@@ -59,8 +57,7 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     const Eigen::Ref<const Eigen::MatrixXd>& W,
     const Eigen::Ref<const Eigen::MatrixXd>& V);
 
-/**
-Creates a Luenberger observer system using the steady-state Kalman filter
+/** Creates a Luenberger observer system using the steady-state Kalman filter
 observer gain.
 
 Assuming @p system has the (continuous-time) dynamics:

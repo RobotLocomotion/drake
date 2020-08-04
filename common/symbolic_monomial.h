@@ -20,8 +20,7 @@ namespace drake {
 
 namespace symbolic {
 
-/**
-Represents a monomial, a product of powers of variables with non-negative
+/** Represents a monomial, a product of powers of variables with non-negative
 integer exponents. Note that it does not include the coefficient part of a
 monomial. */
 class Monomial {
@@ -31,18 +30,15 @@ class Monomial {
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
   Monomial() = default;
 
-  /**
-  Constructs a default value.  This overload is used by Eigen when
+  /** Constructs a default value.  This overload is used by Eigen when
   EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled. */
   explicit Monomial(std::nullptr_t) : Monomial() {}
 
-  /**
-  Constructs a Monomial from @p powers.
+  /** Constructs a Monomial from @p powers.
   @throws std::logic_error if `powers` includes a negative exponent. */
   explicit Monomial(const std::map<Variable, int>& powers);
 
-  /**
-  Constructs a Monomial from a vector of variables `vars` and their
+  /** Constructs a Monomial from a vector of variables `vars` and their
   corresponding integer exponents `exponents`.
   For example, `Monomial([x, y, z], [2, 0, 1])` constructs a Monomial `x²z`.
 
@@ -51,8 +47,7 @@ class Monomial {
   Monomial(const Eigen::Ref<const VectorX<Variable>>& vars,
            const Eigen::Ref<const Eigen::VectorXi>& exponents);
 
-  /**
-  Converts an expression to a monomial if the expression is written as
+  /** Converts an expression to a monomial if the expression is written as
   ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
   @pre is_polynomial(e) should be true. */
   explicit Monomial(const Expression& e);
@@ -72,20 +67,17 @@ class Monomial {
   /** Returns the set of variables in this monomial. */
   Variables GetVariables() const;
 
-  /**
-  Returns the internal representation of Monomial, the map from a base
+  /** Returns the internal representation of Monomial, the map from a base
   (Variable) to its exponent (int). */
   const std::map<Variable, int>& get_powers() const { return powers_; }
 
-  /**
-  Evaluates under a given environment @p env.
+  /** Evaluates under a given environment @p env.
 
   @throws std::out_of_range exception if there is a variable in this monomial
   whose assignment is not provided by @p env. */
   double Evaluate(const Environment& env) const;
 
-  /**
-  Partially evaluates using a given environment @p env. The evaluation
+  /** Partially evaluates using a given environment @p env. The evaluation
   result is of type pair<double, Monomial>. The first component (: double)
   represents the coefficient part while the second component represents the
   remaining parts of the Monomial which was not evaluated.
@@ -102,8 +94,7 @@ class Monomial {
   /** Returns a symbolic expression representing this monomial. */
   Expression ToExpression() const;
 
-  /**
-  Checks if this monomial and @p m represent the same monomial. Two
+  /** Checks if this monomial and @p m represent the same monomial. Two
   monomials are equal iff they contain the same variable raised to the same
   exponent. */
   bool operator==(const Monomial& m) const;
@@ -114,8 +105,7 @@ class Monomial {
   /** Returns this monomial multiplied by @p m. */
   Monomial& operator*=(const Monomial& m);
 
-  /**
-  Returns this monomial raised to @p p.
+  /** Returns this monomial raised to @p p.
   @throws std::runtime_error if @p p is negative. */
   Monomial& pow_in_place(int p);
 
@@ -140,8 +130,7 @@ std::ostream& operator<<(std::ostream& out, const Monomial& m);
 /** Returns a multiplication of two monomials, @p m1 and @p m2. */
 Monomial operator*(Monomial m1, const Monomial& m2);
 
-/**
-Returns @p m1 raised to @p p.
+/** Returns @p m1 raised to @p p.
 @throws std::runtime_error if @p p is negative. */
 Monomial pow(Monomial m, int p);
 }  // namespace symbolic

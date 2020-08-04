@@ -3,8 +3,7 @@
 
 namespace drake {
 namespace math {
-/**
-Deterministically generates approximate evenly distributed points on a unit
+/** Deterministically generates approximate evenly distributed points on a unit
 sphere. This method uses Fibonacci number. For the detailed math, please
 refer to
 http://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere

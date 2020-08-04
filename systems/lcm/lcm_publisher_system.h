@@ -26,8 +26,7 @@ namespace lcm {
 
 using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
 
-/**
-Publishes an LCM message containing information from its input port.
+/** Publishes an LCM message containing information from its input port.
 Optionally sends a one-time initialization message. Publishing can be set up
 to happen on a per-step or periodic basis. Publishing "by force", through
 `LcmPublisherSystem::Publish(const Context&)`, is also enabled.
@@ -49,8 +48,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmPublisherSystem)
 
-  /**
-  A factory method that returns an %LcmPublisherSystem that takes
+  /** A factory method that returns an %LcmPublisherSystem that takes
   Value<LcmMessage> message objects on its sole abstract-valued input port.
 
   Sets the default set of publish triggers:
@@ -81,8 +79,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
         publish_period);
   }
 
-  /**
-  A factory method for an %LcmPublisherSystem that takes LCM message objects
+  /** A factory method for an %LcmPublisherSystem that takes LCM message objects
   on its sole abstract-valued input port. The LCM message type is determined
   by the provided `serializer`.
 
@@ -118,8 +115,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
         publish_triggers, publish_period);
   }
 
-  /**
-  A constructor for an %LcmPublisherSystem that takes LCM message objects on
+  /** A constructor for an %LcmPublisherSystem that takes LCM message objects on
   its sole abstract-valued input port. The LCM message type is determined by
   the provided `serializer`. Will publish on forced events and either
   periodic or per-step events, as determined by publish_period.
@@ -144,8 +140,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
                      drake::lcm::DrakeLcmInterface* lcm,
                      double publish_period = 0.0);
 
-  /**
-  A constructor for an %LcmPublisherSystem that takes LCM message objects on
+  /** A constructor for an %LcmPublisherSystem that takes LCM message objects on
   its sole abstract-valued input port. The LCM message type is determined by
   the provided `serializer`.
 
@@ -178,14 +173,12 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   ~LcmPublisherSystem() override;
 
-  /**
-  This is the type of an initialization message publisher that can be
+  /** This is the type of an initialization message publisher that can be
   provided via AddInitializationMessage(). */
   using InitializationPublisher = std::function<void(
       const Context<double>& context, drake::lcm::DrakeLcmInterface* lcm)>;
 
-  /**
-  Specifies a message-publishing function to be invoked once from an
+  /** Specifies a message-publishing function to be invoked once from an
   initialization event. If this method is not called, no initialization event
   will be created.
 
@@ -202,8 +195,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   /** Returns the default name for a system that publishes @p channel. */
   static std::string make_name(const std::string& channel);
 
-  /**
-  Returns a mutable reference to the LCM object in use by this publisher.
+  /** Returns a mutable reference to the LCM object in use by this publisher.
   This may have been supplied in the constructor or may be an
   internally-maintained object of type drake::lcm::DrakeLcm. */
   drake::lcm::DrakeLcmInterface& lcm() {

@@ -8,8 +8,7 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 
-/**
-A templated traits class for whether an `S<U>` can be converted into an
+/** A templated traits class for whether an `S<U>` can be converted into an
 `S<T>`; the default value is true for all values of `S`, `T`, and `U`.
 Particular scalar-dependent classes (`S`) may specialize this template to
 indicate whether the framework should support conversion for any given
@@ -38,15 +37,13 @@ values of `T` and `U`.
 @tparam S is the scalar-templated type to copy */
 template <template <typename> class S>
 struct Traits {
-  /**
-  @tparam T is the resulting scalar type (to convert into)
+  /** @tparam T is the resulting scalar type (to convert into)
   @tparam U is the donor scalar type (to convert from) */
   template <typename T, typename U>
   using supported = std::true_type;
 };
 
-/**
-A concrete traits class providing sugar to disable support for symbolic
+/** A concrete traits class providing sugar to disable support for symbolic
 evaluation (i.e., the symbolic::Expression scalar type).
 
 For example, if MySystem does not support the symbolic expression scalar
@@ -70,8 +67,7 @@ struct NonSymbolicTraits {
     std::true_type, std::false_type>::type;
 };
 
-/**
-A concrete traits class providing sugar to support for converting only from
+/** A concrete traits class providing sugar to support for converting only from
 the `double` scalar type.  For example, if a MySystem<symbolic::Expression>
 cannot be converted into a MySystem<double>, it could specialize Traits as
 follows:
@@ -93,8 +89,7 @@ struct FromDoubleTraits {
     std::true_type, std::false_type>::type;
 };
 
-/**
-Converts a scalar `U u` to its corresponding scalar `T t`.  When U == T,
+/** Converts a scalar `U u` to its corresponding scalar `T t`.  When U == T,
 the scalar is unchanged.  When demoting Expression to non-Expression,
 throws when there are unbound variables.  In all other cases, information
 beyond the double value (e.g., possible derivatives) might be discarded. */

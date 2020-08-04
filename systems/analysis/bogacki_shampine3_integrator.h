@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A third-order, four-stage, first-same-as-last (FSAL) Runge-Kutta integrator
+/** A third-order, four-stage, first-same-as-last (FSAL) Runge-Kutta integrator
 with a second order error estimate.
 
 For a discussion of this Runge-Kutta method, see [Hairer, 1993].

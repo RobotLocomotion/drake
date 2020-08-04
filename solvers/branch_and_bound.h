@@ -11,8 +11,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-A node in the branch-and-bound (bnb) tree.
+/** A node in the branch-and-bound (bnb) tree.
 The whole branch-and-bound tree solves the mixed-integer problem
 min f(x)         (1)
 s.t g(x) ≤ 0
@@ -37,8 +36,7 @@ class MixedIntegerBranchAndBoundNode {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundNode)
 
-  /**
-  Construct the root node from an optimization program.
+  /** Construct the root node from an optimization program.
   For the mixed-integer optimization program
   min f(x)         (1)
   s.t g(x) ≤ 0
@@ -68,8 +66,7 @@ class MixedIntegerBranchAndBoundNode {
       std::unordered_map<symbolic::Variable::Id, symbolic::Variable>>
   ConstructRootNode(const MathematicalProgram& prog, const SolverId& solver_id);
 
-  /**
-  Branches on @p binary_variable, and creates two child nodes. In the left
+  /** Branches on @p binary_variable, and creates two child nodes. In the left
   child node, the binary variable is fixed to 0. In the right node, the
   binary variable is fixed to 1. Solves the optimization program in each
   child node.
@@ -79,13 +76,11 @@ class MixedIntegerBranchAndBoundNode {
   @throws std::runtime_error if the preconditions are not met. */
   void Branch(const symbolic::Variable& binary_variable);
 
-  /**
-  Returns true if a node is the root.
+  /** Returns true if a node is the root.
   A root node has no parent. */
   bool IsRoot() const;
 
-  /**
-  Determine if a node is a leaf or not.
+  /** Determine if a node is a leaf or not.
   A leaf node has no child nodes. */
   bool IsLeaf() const { return !left_child_ && !right_child_; }
 
@@ -123,15 +118,13 @@ class MixedIntegerBranchAndBoundNode {
   /** Getter for the mutable parent node. */
   MixedIntegerBranchAndBoundNode* mutable_parent() { return parent_; }
 
-  /**
-  Getter for the binary variable, whose value was not fixed in
+  /** Getter for the binary variable, whose value was not fixed in
   the parent node, but is fixed to either 0 or 1 in this node. */
   const symbolic::Variable& fixed_binary_variable() const {
     return fixed_binary_variable_;
   }
 
-  /**
-  Getter for the value of the binary variable, which was not fixed in the
+  /** Getter for the value of the binary variable, which was not fixed in the
   parent node, but is fixed to either 0 or 1 in this node. */
   int fixed_binary_value() const { return fixed_binary_value_; }
 
@@ -143,8 +136,7 @@ class MixedIntegerBranchAndBoundNode {
   /** Getter for the solution result when solving the optimization program. */
   SolutionResult solution_result() const { return solution_result_; }
 
-  /**
-  Getter for optimal_solution_is_integral.
+  /** Getter for optimal_solution_is_integral.
   @pre The optimization problem is solved successfully.
   @throws std::runtime_error if the precondition is not satisfied. */
   bool optimal_solution_is_integral() const;
@@ -153,8 +145,7 @@ class MixedIntegerBranchAndBoundNode {
   const SolverId& solver_id() const { return solver_id_; }
 
  private:
-  /**
-  If the solution to a binary variable is either less than integral_tol or
+  /** If the solution to a binary variable is either less than integral_tol or
   larger than 1 - integral_tol, then we regard the solution to be binary.
   This method set this tolerance. */
   void set_integral_tolerance(double integral_tol) {
@@ -191,8 +182,7 @@ class MixedIntegerBranchAndBoundNode {
     kFalse,  ///< The program in this node has been solved, and the solution to
     /** some binary variables does not satisfy the integral constraints. */
     kUnknown,  ///< Either the program in this node has not been solved, or we
-               /**
-               have not checked if the solution satisfy the integral
+               /** have not checked if the solution satisfy the integral
                constraints yet. */
   };
 
@@ -230,8 +220,7 @@ class MixedIntegerBranchAndBoundNode {
   double integral_tol_{1E-5};
 };
 
-/**
-Given a mixed-integer optimization problem (MIP) (or more accurately, mixed
+/** Given a mixed-integer optimization problem (MIP) (or more accurately, mixed
 binary problem), solve this problem through branch-and-bound process. We will
 first replace all the binary variables with continuous variables, and relax
 the integral constraint on the binary variables z ∈ {0, 1} with continuous
@@ -257,8 +246,7 @@ class MixedIntegerBranchAndBound {
     kMinLowerBound,  ///< Pick the node with the smallest optimal cost.
   };
 
-  /**
-  The function signature for the user defined method to pick a branching node
+  /** The function signature for the user defined method to pick a branching node
   or a branching variable. */
   using NodeSelectFun = std::function<MixedIntegerBranchAndBoundNode*(
       const MixedIntegerBranchAndBound&)>;
@@ -268,16 +256,14 @@ class MixedIntegerBranchAndBound {
   using NodeCallbackFun = std::function<void(
       const MixedIntegerBranchAndBoundNode&, MixedIntegerBranchAndBound* bnb)>;
 
-  /**
-  Construct a branch-and-bound tree from a mixed-integer optimization
+  /** Construct a branch-and-bound tree from a mixed-integer optimization
   program.
   @param prog A mixed-integer optimization program.
   @param solver_id The ID of the solver for the optimization. */
   explicit MixedIntegerBranchAndBound(const MathematicalProgram& prog,
                                       const SolverId& solver_id);
 
-  /**
-  Solve the mixed-integer problem (MIP) through a branch and bound process.
+  /** Solve the mixed-integer problem (MIP) through a branch and bound process.
   @retval solution_result If solution_result=SolutionResult::kSolutionFound,
   then the best solutions are stored inside solutions(). The user
   can access the value of each variable(s) through GetSolution(...).
@@ -290,8 +276,7 @@ class MixedIntegerBranchAndBound {
   /** Get the optimal cost. */
   double GetOptimalCost() const;
 
-  /**
-  Get the n'th sub-optimal cost.
+  /** Get the n'th sub-optimal cost.
   The costs are sorted in the ascending order. The sub-optimal costs do not
   include the optimal cost.
   @param nth_suboptimal_cost The n'th sub-optimal cost.
@@ -299,8 +284,7 @@ class MixedIntegerBranchAndBound {
   @throws std::runtime_error if the precondition is not satisfied. */
   double GetSubOptimalCost(int nth_suboptimal_cost) const;
 
-  /**
-  Get the n'th best integral solution for a variable.
+  /** Get the n'th best integral solution for a variable.
   The best solutions are sorted in the ascending order based on their costs.
   Each solution is found in a separate node in the branch-and-bound tree, so
   the values of the binary variables are different in each solution.
@@ -312,8 +296,7 @@ class MixedIntegerBranchAndBound {
   double GetSolution(const symbolic::Variable& mip_var,
                      int nth_best_solution = 0) const;
 
-  /**
-  Get the n'th best integral solution for some variables.
+  /** Get the n'th best integral solution for some variables.
   The best solutions are sorted in the ascending order based on their costs.
   Each solution is found in a separate node in the branch-and-bound tree, so
   @param mip_vars Variables in the original MIP.
@@ -339,8 +322,7 @@ class MixedIntegerBranchAndBound {
     return value;
   }
 
-  /**
-  Given an old variable in the original mixed-integer program, return the
+  /** Given an old variable in the original mixed-integer program, return the
   corresponding new variable in the branch-and-bound process.
   @param old_variable A variable in the original mixed-integer program.
   @retval new_variable The corresponding variable in the branch-and-bound
@@ -351,8 +333,7 @@ class MixedIntegerBranchAndBound {
   const symbolic::Variable& GetNewVariable(
       const symbolic::Variable& old_variable) const;
 
-  /**
-  Given a matrix of old variables in the original mixed-integer program,
+  /** Given a matrix of old variables in the original mixed-integer program,
   return a matrix of corresponding new variables in the branch-and-bound
   process.
   @param old_variables Variables in the original mixed-integer program.
@@ -374,8 +355,7 @@ class MixedIntegerBranchAndBound {
     return new_variables;
   }
 
-  /**
-  The user can choose the method to pick a node for branching. We provide
+  /** The user can choose the method to pick a node for branching. We provide
   options such as "depth first" or "min lower bound".
   @param node_selection_method The option to pick a node. If the option is
   NodeSelectionMethod::kUserDefined, then the user should also provide the
@@ -384,8 +364,7 @@ class MixedIntegerBranchAndBound {
     node_selection_method_ = node_selection_method;
   }
 
-  /**
-  Set the user-defined method to pick the branching node. This method is
+  /** Set the user-defined method to pick the branching node. This method is
   used if the user calls
   SetNodeSelectionMethod(NodeSelectionMethod::kUserDefined).
 
@@ -420,8 +399,7 @@ class MixedIntegerBranchAndBound {
     node_selection_userfun_ = fun;
   }
 
-  /**
-  The user can choose the method to pick a variable for branching in each
+  /** The user can choose the method to pick a variable for branching in each
   node. We provide options such as "most ambivalent" or "least ambivalent".
   @param variable_selection_method The option to pick a variable. If the
   option is VariableSelectionMethod::kUserDefined, then the user should also
@@ -432,8 +410,7 @@ class MixedIntegerBranchAndBound {
     variable_selection_method_ = variable_selection_method;
   }
 
-  /**
-  Set the user-defined method to pick the branching variable. This method is
+  /** Set the user-defined method to pick the branching variable. This method is
   used if the user calls
   SetVariableSelectionMethod(VariableSelectionMethod::kUserDefined).
 
@@ -458,8 +435,7 @@ class MixedIntegerBranchAndBound {
     variable_selection_userfun_ = fun;
   }
 
-  /**
-  Set the flag to true if the user wants to search an integral solution
+  /** Set the flag to true if the user wants to search an integral solution
   in each node, after the optimization problem in that node is solved.
   The program can search for an integral solution based on the solution to
   the optimization program in the node, by rounding the binary variables
@@ -470,15 +446,13 @@ class MixedIntegerBranchAndBound {
     search_integral_solution_by_rounding_ = flag;
   }
 
-  /**
-  The user can set a defined callback function in each node. This function is
+  /** The user can set a defined callback function in each node. This function is
   called after the optimization is solved in each node. */
   void SetUserDefinedNodeCallbackFunction(NodeCallbackFun fun) {
     node_callback_userfun_ = fun;
   }
 
-  /**
-  If a leaf node is fathomed, then there is no need to branch on this node
+  /** If a leaf node is fathomed, then there is no need to branch on this node
   any more. A leaf node is fathomed is any of the following conditions are
   satisfied:
 
@@ -493,8 +467,7 @@ class MixedIntegerBranchAndBound {
   bool IsLeafNodeFathomed(
       const MixedIntegerBranchAndBoundNode& leaf_node) const;
 
-  /**
-  Getter for the root node. Note that this is aliased for the lifetime of
+  /** Getter for the root node. Note that this is aliased for the lifetime of
   this object. */
   const MixedIntegerBranchAndBoundNode* root() const { return root_.get(); }
 
@@ -504,8 +477,7 @@ class MixedIntegerBranchAndBound {
   /** Getter for the best lower bound. */
   double best_lower_bound() const { return best_lower_bound_; }
 
-  /**
-  Getter for the solutions.
+  /** Getter for the solutions.
   Returns a list of solutions, together with the costs evaluated at the
   solutions. The solutions are sorted in the ascending order based on the
   cost. */
@@ -513,8 +485,7 @@ class MixedIntegerBranchAndBound {
     return solutions_;
   }
 
-  /**
-  Setter for the absolute gap tolerance.
+  /** Setter for the absolute gap tolerance.
   The branch-and-bound will terminate if its difference between its best
   upper bound and best lower bound is below this gap tolerance. */
   void set_absolute_gap_tol(double tol) { absolute_gap_tol_ = tol; }
@@ -522,8 +493,7 @@ class MixedIntegerBranchAndBound {
   /** Getter for the absolute gap tolerance. */
   double absolute_gap_tol() const { return absolute_gap_tol_; }
 
-  /**
-  Setter for the relative gap tolerance.
+  /** Setter for the relative gap tolerance.
   The branch-and-bound will terminate if
   (best_upper_bound() - best_lower_bound()) / abs(best_lower_bound())
   is smaller than this tolerance. */
@@ -549,32 +519,28 @@ class MixedIntegerBranchAndBound {
   const symbolic::Variable* PickBranchingVariable(
       const MixedIntegerBranchAndBoundNode& node) const;
 
-  /**
-  Branch on a node, solves the optimization, and update the best lower and
+  /** Branch on a node, solves the optimization, and update the best lower and
   upper bounds.
   @param node. The node to be branched.
   @param branching_variable. Branch on this variable in the node. */
   void BranchAndUpdate(MixedIntegerBranchAndBoundNode* node,
                        const symbolic::Variable& branching_variable);
 
-  /**
-  Update the solutions (solutions_) and the best upper bound, with an
+  /** Update the solutions (solutions_) and the best upper bound, with an
   integral solution and its cost.
   @param solution. The integral solution.
   @param cost. The cost evaluated at this integral solution. */
   void UpdateIntegralSolution(const Eigen::Ref<const Eigen::VectorXd>& solution,
                               double cost);
 
-  /**
-  The branch-and-bound has converged if the gap between the best upper bound
+  /** The branch-and-bound has converged if the gap between the best upper bound
   and the best lower bound is less than the tolerance. */
   bool HasConverged() const;
 
   /** Call the callback function in each node. */
   void NodeCallback(const MixedIntegerBranchAndBoundNode& node);
 
-  /**
-  Search for an integral solution satisfying all the constraints in this
+  /** Search for an integral solution satisfying all the constraints in this
   node, together with the integral constraints in the original mixed-integer
   program. It will construct a new optimization program, same as the one
   in this node, but the remaining binary variables are all rounded to

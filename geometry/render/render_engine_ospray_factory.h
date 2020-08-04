@@ -9,8 +9,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/**
-The mode in which the RenderEngineOspray performs.
+/** The mode in which the RenderEngineOspray performs.
 
 The ray tracer can produce hard shadows and doesn't depend on the samples per
 pixel value. Ray tracing produces *simple* illumination effects at a relatively
@@ -33,33 +32,28 @@ struct RenderEngineOsprayParams {
   /** The rendering mode to use. */
   OsprayMode mode{OsprayMode::kPathTracer};
 
-  /**
-  The (optional) rgba color to apply to the (phong, diffuse) property when
+  /** The (optional) rgba color to apply to the (phong, diffuse) property when
   none is otherwise specified. Note: currently the alpha channel is unused
   by RenderEngineOspray. */
   std::optional<Eigen::Vector4d> default_diffuse{};
 
   // TODO(SeanCurtis-TRI): Reconcile this with a specified background image.
-  /**
-  The rgb color for the environment background (each channel in the range
+  /** The rgb color for the environment background (each channel in the range
   [0, 1]). The default value is the same color as in the equivalent byte-valued
   rgb triple [204, 229, 255]. */
   std::optional<Eigen::Vector3d> background_color{};
 
-  /**
-  The number of illumination samples per pixel. Higher numbers introduce
+  /** The number of illumination samples per pixel. Higher numbers introduce
   higher quality at increased cost. Only has an effect if mode is
   OsprayMode::kPathTracer. */
   int samples_per_pixel{1};
 
-  /**
-  Whether to turn on shadows when in the `OsprayMode::kRayTracer` rendering
+  /** Whether to turn on shadows when in the `OsprayMode::kRayTracer` rendering
   mode. It is ignored in other modes. */
   bool use_shadows{true};
 };
 
-/**
-Constructs a RenderEngine implementation which uses an OSPRay-based
+/** Constructs a RenderEngine implementation which uses an OSPRay-based
 renderer.
 
 @anchor render_engine_ospray_properties

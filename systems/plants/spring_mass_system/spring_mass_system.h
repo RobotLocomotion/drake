@@ -10,8 +10,7 @@
 namespace drake {
 namespace systems {
 
-/**
-The state of a one-dimensional spring-mass system, consisting of the
+/** The state of a one-dimensional spring-mass system, consisting of the
 position and velocity of the mass, in meters and meters/s.
 
 @tparam_default_scalar */
@@ -20,16 +19,14 @@ class SpringMassStateVector : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassStateVector)
 
-  /**
-  @param initial_position The position of the mass in meters.
+  /** @param initial_position The position of the mass in meters.
   @param initial_velocity The velocity of the mass in meters / second. */
   SpringMassStateVector(const T& initial_position, const T& initial_velocity);
   /** Creates a state with position and velocity set to zero. */
   SpringMassStateVector();
   ~SpringMassStateVector() override;
 
-  /**
-  Returns the position of the mass in meters, where zero is the point
+  /** Returns the position of the mass in meters, where zero is the point
   where the spring exerts no force. */
   T get_position() const;
 
@@ -52,8 +49,7 @@ class SpringMassStateVector : public BasicVector<T> {
   [[nodiscard]] SpringMassStateVector<T>* DoClone() const override;
 };
 
-/**
-A model of a one-dimensional spring-mass system.
+/** A model of a one-dimensional spring-mass system.
 
 @verbatim
 |-----\/\/ k /\/\----( m )  +x
@@ -67,8 +63,7 @@ class SpringMassSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassSystem)
 
-  /**
-  Constructs a spring-mass system with a fixed spring constant and given
+  /** Constructs a spring-mass system with a fixed spring constant and given
   mass. Subclasses must use the protected constructor, not this one.
   @param[in] spring_constant_N_per_m The spring constant in N/m.
   @param[in] mass_Kg The actual value in Kg of the mass attached to the
@@ -120,8 +115,7 @@ class SpringMassSystem : public LeafSystem<T> {
     return external_force;
   }
 
-  /**
-  Gets the current value of the conservative power integral in the given
+  /** Gets the current value of the conservative power integral in the given
   Context. */
   T get_conservative_work(const Context<T>& context) const {
     return get_state(context).get_conservative_work();
@@ -137,22 +131,19 @@ class SpringMassSystem : public LeafSystem<T> {
     get_mutable_state(context).set_velocity(velocity);
   }
 
-  /**
-  Sets the initial value of the conservative power integral in the given
+  /** Sets the initial value of the conservative power integral in the given
   Context. */
   void set_conservative_work(Context<T>* context, const T& energy) const {
     get_mutable_state(context).set_conservative_work(energy);
   }
 
-  /**
-  Returns the force being applied by the spring to the mass in the given
+  /** Returns the force being applied by the spring to the mass in the given
   Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   opposite force -f to the world attachment point at the other end. The
   force is in newtons N (kg-m/s^2). */
   T EvalSpringForce(const Context<T>& context) const;
 
-  /**
-  Returns the potential energy currently stored in the spring in the given
+  /** Returns the potential energy currently stored in the spring in the given
   Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring
   force `f = -k (x-x0)` is the negative gradient of pe. The rate of change
   of potential energy (that is, power that adding to potential energy) is
@@ -164,8 +155,7 @@ class SpringMassSystem : public LeafSystem<T> {
   Energy is in joules J (N-m). */
   T DoCalcPotentialEnergy(const Context<T>& context) const override;
 
-  /**
-  Returns the current kinetic energy of the moving mass in the given
+  /** Returns the current kinetic energy of the moving mass in the given
   Context. This is `ke = m v^2 / 2` for this system. The rate of change of
   kinetic energy (that is, power that adding to kinetic energy) is
   @verbatim
@@ -179,8 +169,7 @@ class SpringMassSystem : public LeafSystem<T> {
   @see EvalSpringForce(), EvalPotentialEnergy() */
   T DoCalcKineticEnergy(const Context<T>& context) const override;
 
-  /**
-  Returns the rate at which mechanical energy is being converted from
+  /** Returns the rate at which mechanical energy is being converted from
   potential energy in the spring to kinetic energy of the mass by this
   spring-mass system in the given Context. For this
   system, we have conservative power @verbatim
@@ -197,16 +186,14 @@ class SpringMassSystem : public LeafSystem<T> {
   // make this more interesting. Russ suggests adding an Input which is a
   // horizontal control force on the mass.
 
-  /**
-  Returns power that doesn't involve the conservative spring element. (There
+  /** Returns power that doesn't involve the conservative spring element. (There
   is none in this system.) */
   T DoCalcNonConservativePower(const Context<T>& context) const override;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
 
-  /**
-  Returns the closed-form position and velocity solution for this system
+  /** Returns the closed-form position and velocity solution for this system
   from the given initial conditions.
   @param x0 the position of the spring at time t = 0.
   @param v0 the velocity of the spring at time t = 0.

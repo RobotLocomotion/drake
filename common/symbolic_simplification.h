@@ -8,13 +8,11 @@
 namespace drake {
 namespace symbolic {
 
-/**
-A pattern is an expression which possibly includes variables which represent
+/** A pattern is an expression which possibly includes variables which represent
 placeholders. It is used to construct a `RewritingRule`. */
 using Pattern = Expression;
 
-/**
-A `RewritingRule`, `lhs => rhs`, consists of two Patterns `lhs` and `rhs`. A
+/** A `RewritingRule`, `lhs => rhs`, consists of two Patterns `lhs` and `rhs`. A
 rewriting rule instructs a rewriter how to transform a given expression `e`.
 First, the rewriter tries to find a match between the expression `e` and the
 pattern `lhs`. If such a match is found, it applies the match result

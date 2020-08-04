@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Utilities that relate simultaneously to both autodiff matrices and
 gradient matrices. */
 
@@ -63,8 +62,7 @@ typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
   return gradient;
 }
 
-/**
-\brief Initializes an autodiff matrix given a matrix of values and gradient
+/** \brief Initializes an autodiff matrix given a matrix of values and gradient
 matrix
 \param[in] val value matrix
 \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
@@ -104,8 +102,7 @@ void initializeAutoDiffGivenGradientMatrix(
   }
 }
 
-/**
-\brief Creates and initializes an autodiff matrix given a matrix of values
+/** \brief Creates and initializes an autodiff matrix given a matrix of values
 and gradient matrix
 \param[in] val value matrix
 \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
@@ -139,8 +136,7 @@ void gradientMatrixToAutoDiff(
   }
 }
 
-/**
-`B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
+/** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
 AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
 the gradient matrix is empty or zero.  For a matrix of type, e.g.
 `MatrixX<AutoDiffXd> A`, the comparable operation

@@ -14,8 +14,7 @@
 
 namespace drake {
 namespace multibody {
-/**
-Finds the static equilibrium pose of a multibody system through optimization.
+/** Finds the static equilibrium pose of a multibody system through optimization.
 The constraints are
 1. 0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ) (generalized force equals to 0).
 2. Fᵢ_AB_W(λᵢ) is within the admissible contact wrench (for example, contact
@@ -31,8 +30,7 @@ class StaticEquilibriumProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumProblem)
 
-  /**
-  @param plant The plant for which the static equilibrium posture is
+  /** @param plant The plant for which the static equilibrium posture is
   computed. @p plant should remain alive as long as this
   StaticEquilibriumProblem exists.
   @param context The context for `plant`. @p context should remain alive as
@@ -60,14 +58,12 @@ class StaticEquilibriumProblem {
   /** Getter for u, the decision variable for the input. */
   const VectorX<symbolic::Variable>& u_vars() const { return u_vars_; }
 
-  /**
-  Retrieve the solution to all contact wrenches.
+  /** Retrieve the solution to all contact wrenches.
   @param result The result of solving prog(). */
   std::vector<ContactWrench> GetContactWrenchSolution(
       const solvers::MathematicalProgramResult& result);
 
-  /**
-  Updates the tolerance on all the complementarity constraints α * β = 0.
+  /** Updates the tolerance on all the complementarity constraints α * β = 0.
   The complementarity constraint is relaxed as 0 ≤ α * β ≤ tol.
   See AddStaticFrictionConeComplementarityConstraint() for more details. */
   void UpdateComplementarityTolerance(double tol);

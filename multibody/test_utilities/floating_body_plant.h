@@ -14,8 +14,7 @@ namespace multibody {
 namespace test {
 
 // TODO(eric.cousineau): Change this to not inherit from `MultibodyPlant`.
-/**
-This plant models the free motion of a torque free body in space.
+/** This plant models the free motion of a torque free body in space.
 This body is axially symmetric with rotational inertia about its axis of
 revolution J and with a rotational inertia I about any axis perpendicular to
 its axis of revolution. This particular case has a nice closed form
@@ -28,8 +27,7 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant)
 
-  /**
-  Constructor from known rotational inertia values.
+  /** Constructor from known rotational inertia values.
   Rotational inertia values have units of kg⋅m².
   @param mass
     The mass of the body.
@@ -48,8 +46,7 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
   explicit AxiallySymmetricFreeBodyPlant(
       const AxiallySymmetricFreeBodyPlant<U>&);
 
-  /**
-  Sets `state` to a default value corresponding to a configuration in which
+  /** Sets `state` to a default value corresponding to a configuration in which
   the free body frame B is coincident with the world frame W and the angular
   and translational velocities have a value as returned by
   get_default_initial_angular_velocity() and
@@ -57,13 +54,11 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
-  /**
-  Returns the angular velocity `w_WB` stored in `context` of the free body B
+  /** Returns the angular velocity `w_WB` stored in `context` of the free body B
   in the world frame W. */
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  /**
-  Returns the translational velocity `v_WB` stored in `context` of the free
+  /** Returns the translational velocity `v_WB` stored in `context` of the free
   body B in the world frame W. */
   Vector3<T> get_translational_velocity(
       const systems::Context<T>& context) const;
@@ -76,13 +71,11 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
 
-  /**
-  Returns the default value of the angular velocity set by default by
+  /** Returns the default value of the angular velocity set by default by
   SetDefaultState(). Currently a non-zero value. */
   static Vector3<double> get_default_initial_angular_velocity();
 
-  /**
-  Returns the default value of the translational velocity set by default by
+  /** Returns the default value of the translational velocity set by default by
   SetDefaultState(). Currently a non-zero value. */
   static Vector3<double> get_default_initial_translational_velocity();
 

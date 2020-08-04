@@ -1,6 +1,5 @@
 #pragma once
-/**
-@file This header provides a single inclusion point for autodiff-related
+/** @file This header provides a single inclusion point for autodiff-related
 header files in the `drake/common` directory. Users should include this
 file. Including other individual headers such as `drake/common/autodiffxd.h`
 will generate a compile-time warning. */

@@ -13,8 +13,7 @@ namespace drake {
 namespace systems {
 namespace internal {
 
-/**
-Checks some BasicVector invariants on @p basic_vector.
+/** Checks some BasicVector invariants on @p basic_vector.
 
 Because this function uses shady implementation tricks, it should ONLY be
 called from within DRAKE_ASSERT_VOID or unit test code.
@@ -41,8 +40,7 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
   }
 }
 
-/**
-If @p abstract_value is a Value<BasicVector<T>>, then checks some
+/** If @p abstract_value is a Value<BasicVector<T>>, then checks some
 BasicVector invariants.  Otherwise, does nothing.
 
 Because this function uses shady implementation tricks, it should ONLY be

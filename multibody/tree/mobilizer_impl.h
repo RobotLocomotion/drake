@@ -20,8 +20,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-Base class for specific Mobilizer implementations with the number of
+/** Base class for specific Mobilizer implementations with the number of
 generalized positions and velocities resolved at compile time as template
 parameters. This allows specific mobilizer implementations to only work on
 fixed-size Eigen expressions therefore allowing for optimized operations on
@@ -41,8 +40,7 @@ class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
 
-  /**
-  As with Mobilizer this the only constructor available for this base class.
+  /** As with Mobilizer this the only constructor available for this base class.
   The minimum amount of information that we need to define a mobilizer is
   the knowledge of the inboard and outboard frames it connects.
   Subclasses of %MobilizerImpl are therefore forced to provide this
@@ -58,8 +56,7 @@ class MobilizerImpl : public Mobilizer<T> {
   /** Returns the number of generalized velocities granted by this mobilizer. */
   int num_velocities() const final { return kNv;}
 
-  /**
-  Sets the elements of the `state` associated with this Mobilizer to the
+  /** Sets the elements of the `state` associated with this Mobilizer to the
   _zero_ state.  See Mobilizer::set_zero_state(). */
   void set_zero_state(const systems::Context<T>&,
                       systems::State<T>* state) const final {
@@ -67,8 +64,7 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_velocities(&*state).setZero();
   };
 
-  /**
-  Sets the elements of the `state` associated with this Mobilizer to the
+  /** Sets the elements of the `state` associated with this Mobilizer to the
   _default_ state.  See Mobilizer::set_default_state(). */
   void set_default_state(const systems::Context<T>&,
                          systems::State<T>* state) const final {
@@ -76,16 +72,14 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_velocities(&*state).setZero();
   };
 
-  /**
-  Sets the default position of this Mobilizer to be used in subsequent
+  /** Sets the default position of this Mobilizer to be used in subsequent
   calls to set_default_state(). */
   void set_default_position(const Eigen::Ref<const Vector<double,
       compile_time_num_positions>>& position) {
     default_position_.emplace(position);
   }
 
-  /**
-  Sets the elements of the `state` associated with this Mobilizer to a
+  /** Sets the elements of the `state` associated with this Mobilizer to a
   _random_ state.  If no random distribution has been set, then `state` is
   set to the _default_ state. */
   void set_random_state(const systems::Context<T>& context,
@@ -101,8 +95,7 @@ class MobilizerImpl : public Mobilizer<T> {
     }
   }
 
-  /**
-  Defines the distribution used to draw random samples from this
+  /** Defines the distribution used to draw random samples from this
   mobilizer, using a symbolic::Expression that contains random variables. */
   void set_random_position_distribution(
       const Eigen::Ref<const Vector<symbolic::Expression,
@@ -119,8 +112,7 @@ class MobilizerImpl : public Mobilizer<T> {
     random_state_distribution_->template head<kNq>() = position;
   }
 
-  /**
-  Defines the distribution used to draw random samples from this
+  /** Defines the distribution used to draw random samples from this
   mobilizer, using a symbolic::Expression that contains random variables. */
   void set_random_velocity_distribution(
       const Eigen::Ref<const Vector<symbolic::Expression,
@@ -155,8 +147,7 @@ class MobilizerImpl : public Mobilizer<T> {
     return Vector<double, kNq>::Zero();
   }
 
-  /**
-  Returns the default configuration for the mobilizer.  The default
+  /** Returns the default configuration for the mobilizer.  The default
   configuration is the configuration used to populate the context in
   MultibodyPlant::SetDefaultContext(). */
   Vector<double, kNq> get_default_position() const {
@@ -166,16 +157,14 @@ class MobilizerImpl : public Mobilizer<T> {
     return get_zero_position();
   }
 
-  /**
-  Returns the current distribution governing the random samples drawn
+  /** Returns the current distribution governing the random samples drawn
   for this mobilizer if one has been set. */
   const std::optional<Vector<symbolic::Expression, kNx>>&
   get_random_state_distribution() const {
     return random_state_distribution_;
   }
 
-  /**
-  @name    Helper methods to retrieve entries from the Context.
+  /** @name    Helper methods to retrieve entries from the Context.
   @{
   Helper to return a const fixed-size Eigen::VectorBlock referencing the
   segment in the state vector corresponding to `this` mobilizer's state. */
@@ -185,8 +174,7 @@ class MobilizerImpl : public Mobilizer<T> {
         context, this->get_positions_start());
   }
 
-  /**
-  Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
+  /** Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   segment in the state vector corresponding to `this` mobilizer's state. */
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
       systems::Context<T>* context) const {
@@ -194,8 +182,7 @@ class MobilizerImpl : public Mobilizer<T> {
         &*context, this->get_positions_start());
   }
 
-  /**
-  Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  /** Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   the segment in the `state` corresponding to `this` mobilizer's generalized
   positions. */
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
@@ -204,8 +191,7 @@ class MobilizerImpl : public Mobilizer<T> {
         &*state, this->get_positions_start());
   }
 
-  /**
-  Helper variant to return a const fixed-size Eigen::VectorBlock referencing
+  /** Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   the segment in the `state` corresponding to `this` mobilizer's generalized
   velocities. */
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
@@ -214,8 +200,7 @@ class MobilizerImpl : public Mobilizer<T> {
         &*state, this->get_velocities_start());
   }
 
-  /**
-  Helper to return a const fixed-size Eigen::VectorBlock referencing the
+  /** Helper to return a const fixed-size Eigen::VectorBlock referencing the
   segment in the state vector corresponding to `this` mobilizer's state. */
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
@@ -223,8 +208,7 @@ class MobilizerImpl : public Mobilizer<T> {
         this->get_velocities_start());
   }
 
-  /**
-  Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
+  /** Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   segment in the state vector corresponding to `this` mobilizer's state. */
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::Context<T>* context) const {

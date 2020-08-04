@@ -9,8 +9,7 @@ namespace systems {
 namespace analysis {
 namespace test {
 
-/**
-A coupled, mass spring system taken from the SD/FAST user's manual.
+/** A coupled, mass spring system taken from the SD/FAST user's manual.
 This simple example is used to provide a stiff system for testing
 implicit integration. Mass cannot be set, nor can spring and damping
 constants be set.
@@ -41,8 +40,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
     this->DeclareContinuousState(2 /* num_q */, 2 /* num_v */, 0 /* num_z */);
   }
 
-  /**
-  Evaluates the spring and damping forces, returning the forces on each
+  /** Evaluates the spring and damping forces, returning the forces on each
   body. */
   Vector2<T> EvalSpringDamperForces(const Context<T>& context) const {
     const Eigen::Vector2d k = get_spring_constants();
@@ -113,8 +111,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
   /** Gets the end time for integration. */
   T get_end_time() const { return 1e1; }
 
-  /**
-  Sets the initial conditions for the system.
+  /** Sets the initial conditions for the system.
   The first mass will be located at x1 = 0.5 and second will be located at
   x2 = 1.5. No initial velocity is present. */
   void SetDefaultState(const Context<T>&,
@@ -130,8 +127,7 @@ class StiffDoubleMassSpringSystem : public LeafSystem<T> {
         SetFromVector(xd);
   }
 
-  /**
-  Gets the solution for the system with initial state defined at @p context,
+  /** Gets the solution for the system with initial state defined at @p context,
   returning the solution at time @p t, in @p state. Aside from the
   assumption that there is zero initial stretching between the two point
   masses, initial conditions are arbitrary. The solution is predicated

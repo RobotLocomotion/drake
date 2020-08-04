@@ -25,8 +25,7 @@ extern "C" {
 namespace drake {
 namespace solvers {
 namespace internal {
-/**
-For a problem
+/** For a problem
 max tr(C * X)
 s.t tr(Ai * X) = rhs_i
     X ≽ 0
@@ -41,8 +40,7 @@ void ConvertSparseMatrixFormatToCsdpProblemData(
     const Eigen::VectorXd& rhs, csdp::blockmatrix* C_csdp, double** rhs_csdp,
     csdp::constraintmatrix** constraints);
 
-/**
-Converts to a CSDP problem data if `sdpa_free_format` has no free variables.
+/** Converts to a CSDP problem data if `sdpa_free_format` has no free variables.
 @throw a runtime error if sdpa_free_format has free variables. */
 void GenerateCsdpProblemDataWithoutFreeVariables(
     const SdpaFreeFormat& sdpa_free_format, csdp::blockmatrix* C, double** b,
@@ -54,8 +52,7 @@ void ConvertCsdpBlockMatrixtoEigen(const csdp::blockmatrix& X_csdp,
 void FreeCsdpProblemData(int num_constraints, csdp::blockmatrix C_csdp,
                          double* rhs_csdp, csdp::constraintmatrix* constraints);
 
-/**
-Csdp internally stores each block of the matrix as an array. This function
+/** Csdp internally stores each block of the matrix as an array. This function
 takes the row and column index inside this block (the row/column indices are
 0-indexed), and return the index of the entry in the array. */
 int CsdpMatrixIndex(int row, int col, int num_rows);

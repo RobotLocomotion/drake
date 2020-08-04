@@ -7,13 +7,11 @@
 
 namespace drake {
 namespace solvers {
-/**
-The NLopt solver details after calling Solve() function. The user can call
+/** The NLopt solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<NloptSolver>() to obtain the
 details. */
 struct NloptSolverDetails {
-  /**
-  The return status of NLopt solver. Please refer to
+  /** The return status of NLopt solver. Please refer to
   https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values. */
   int status{};
 };
@@ -40,8 +38,7 @@ class NloptSolver final : public SolverBase {
   /** The key name for int-valued maximum number of evaluations. */
   static std::string MaxEvalName();
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

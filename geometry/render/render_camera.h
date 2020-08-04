@@ -11,15 +11,13 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/**
-Defines the near and far clipping planes for frustum-based (e.g. OpenGL)
+/** Defines the near and far clipping planes for frustum-based (e.g. OpenGL)
 RenderEngine cameras. */
 class ClippingRange {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ClippingRange);
 
-  /**
-  Constructs the %ClippingRange.
+  /** Constructs the %ClippingRange.
   @throws std::runtime_error if either value isn't positive, or if
                              `near >= far`. */
   ClippingRange(double near, double far);
@@ -32,8 +30,7 @@ class ClippingRange {
   double far_{};
 };
 
-/**
-Collection of core parameters for modeling a pinhole-model camera in a
+/** Collection of core parameters for modeling a pinhole-model camera in a
 RenderEngine. These parameters are applicable to both depth and color/label
 renderings. Parameters specific to those output image types can be found
 below.
@@ -46,8 +43,7 @@ class RenderCameraCore {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
 
-  /**
-  Fully-specified constructor. See the documentation on the member getter
+  /** Fully-specified constructor. See the documentation on the member getter
   methods for documentation of parameters. */
   RenderCameraCore(std::string renderer_name,
                    systems::sensors::CameraInfo intrinsics,
@@ -60,18 +56,15 @@ class RenderCameraCore {
   /** The name of the render engine this camera should be used with. */
   const std::string& renderer_name() const { return renderer_name_; }
 
-  /**
-  The camera's intrinsic properties (e.g., focal length, sensor size, etc.)
+  /** The camera's intrinsic properties (e.g., focal length, sensor size, etc.)
   See systems::sensors::CameraInfo for details. */
   const systems::sensors::CameraInfo& intrinsics() const { return intrinsics_; }
 
-  /**
-  The near and far clipping planes for this camera. This property is ignored
+  /** The near and far clipping planes for this camera. This property is ignored
   by RenderEngine implementations that don't use a clipping frustum. */
   const ClippingRange& clipping() const { return clipping_; }
 
-  /**
-  The pose of the sensor frame (S) in the camera's body frame (B). This is
+  /** The pose of the sensor frame (S) in the camera's body frame (B). This is
   the "imager" referred to in systems::sensors::CameraInfo's documentation. */
   const math::RigidTransformd& sensor_pose_in_camera_body() const {
     return X_BS_;
@@ -89,15 +82,13 @@ class RenderCameraCore {
   //  RenderEngine implementations.
 };
 
-/**
-Collection of camera properties for cameras to be used with color/label
+/** Collection of camera properties for cameras to be used with color/label
 images. */
 class ColorRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorRenderCamera);
 
-  /**
-  Fully-specified constructor. See the documentation on the member getter
+  /** Fully-specified constructor. See the documentation on the member getter
   methods for documentation of parameters. */
   explicit ColorRenderCamera(RenderCameraCore core, bool show_window = false)
       : core_(std::move(core)), show_window_(show_window) {}
@@ -114,8 +105,7 @@ class ColorRenderCamera {
   bool show_window_{false};
 };
 
-/**
-Defines a depth sensor's functional range. Only points that lie within the
+/** Defines a depth sensor's functional range. Only points that lie within the
 range `[min_depth, max_depth]` will register meaningful values.
 
 @note It's important to carefully coordinate depth range and clipping planes.
@@ -134,8 +124,7 @@ class DepthRange {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRange);
 
-  /**
-  Constructs the %DepthRange.
+  /** Constructs the %DepthRange.
   @throws std::runtime_error if either value isn't positive, or if
                              `min_in >= max_in`. */
   DepthRange(double min_in, double max_in);
@@ -153,8 +142,7 @@ class DepthRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRenderCamera);
 
-  /**
-  Fully-specified constructor. See the documentation on the member getter
+  /** Fully-specified constructor. See the documentation on the member getter
   methods for documentation of parameters.
 
   @throws std::runtime_error if the depth_range is not fully contained within

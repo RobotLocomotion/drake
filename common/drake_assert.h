@@ -2,15 +2,13 @@
 
 #include <type_traits>
 
-/**
-@file
+/** @file
 Provides Drake's assertion implementation.  This is intended to be used
 both within Drake and by other software.  Drake's asserts can be armed
 and disarmed independently from the system-wide asserts. */
 
 #ifdef DRAKE_DOXYGEN_CXX
-/**
-@p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
+/** @p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
 from the C++ system header @p <cassert>.  Unless Drake's assertions are
 disarmed by the pre-processor definitions listed below, @p DRAKE_ASSERT
 will evaluate @p condition and iff the value is false will trigger an
@@ -41,18 +39,15 @@ Drake's assertions are disarmed.
 Treat @p DRAKE_ASSERT like a statement -- it must always be used
 in block scope, and must always be followed by a semicolon. */
 #define DRAKE_ASSERT(condition)
-/**
-Like @p DRAKE_ASSERT, except that the expression must be void-valued; this
+/** Like @p DRAKE_ASSERT, except that the expression must be void-valued; this
 allows for guarding expensive assertion-checking subroutines using the same
 macros as stand-alone assertions. */
 #define DRAKE_ASSERT_VOID(expression)
-/**
-Evaluates @p condition and iff the value is false will trigger an assertion
+/** Evaluates @p condition and iff the value is false will trigger an assertion
 failure with a message showing at least the condition text, function name,
 file, and line. */
 #define DRAKE_DEMAND(condition)
-/**
-Silences a "no return value" compiler warning by calling a function that
+/** Silences a "no return value" compiler warning by calling a function that
 always raises an exception or aborts (i.e., a function marked noreturn).
 Only use this macro at a point where (1) a point in the code is truly
 unreachable, (2) the fact that it's unreachable is knowable from only

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file This file contains classes dealing with sending/receiving
+/** @file This file contains classes dealing with sending/receiving
 LCM messages related to the allegro hand. */
 
 #include <memory>
@@ -24,8 +23,7 @@ namespace allegro_hand {
 // rate.
 const double kLcmStatusPeriod = 0.003;
 
-/**
-Handles lcmt_allegro_command messages from a LcmSubscriberSystem.
+/** Handles lcmt_allegro_command messages from a LcmSubscriberSystem.
 Has two output ports: one for the commanded position for each joint along
 with a zero velocity for each joint, and another for commanded additional
 feedforward joint torque. The joint torque command is currently not used. */
@@ -35,8 +33,7 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
 
   explicit AllegroCommandReceiver(int num_joints = kAllegroNumJoints);
 
-  /**
-  Sets the initial position of the controlled hand prior to any
+  /** Sets the initial position of the controlled hand prior to any
   commands being received.  @param x contains the starting position.
   This position will be the commanded position (with zero
   velocity) until a position message is received.  If this
@@ -69,8 +66,7 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
   const int num_joints_ = 16;
 };
 
-/**
-Creates and outputs lcmt_allegro_status messages.
+/** Creates and outputs lcmt_allegro_status messages.
 
 This system has three vector-valued input ports, one for the plant's
 current state, one for the most recently received position command, and one

@@ -15,8 +15,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-A class containing information regarding contact and contact response between
+/** A class containing information regarding contact and contact response between
 two geometries attached to a pair of bodies. This class provides the output
 from the Hydroelastic contact model and includes:
 
@@ -35,8 +34,7 @@ bodies A and B, respectively.
 template <typename T>
 class HydroelasticContactInfo {
  public:
-  /**
-  @name                 Construction
+  /** @name                 Construction
   The constructors below adhere to a number of invariants. The
   geometry::ContactSurface defines contact between two geometries M and N (via
   contact_surface().id_M() and contact_surface().id_N(), respectively).
@@ -51,8 +49,7 @@ class HydroelasticContactInfo {
   HydroelasticQuadraturePointData. */
   // @{
 
-  /**
-  @anchor hydro_contact_info_non_owning_ctor
+  /** @anchor hydro_contact_info_non_owning_ctor
   Constructs this structure using the given contact surface, traction field,
   and slip field. This constructor does not own the ContactSurface; it points
   to a ContactSurface that another owns, see contact_surface().
@@ -77,8 +74,7 @@ class HydroelasticContactInfo {
     DRAKE_DEMAND(contact_surface);
   }
 
-  /**
-  This constructor takes ownership of `contact_surface` via a
+  /** This constructor takes ownership of `contact_surface` via a
   std::unique_ptr, instead of aliasing a pre-existing contact surface. In all
   other respects, it is identical to the @ref
   hydro_contact_info_non_owning_ctor "other overload" that takes
@@ -96,13 +92,11 @@ class HydroelasticContactInfo {
   }
   // @}
 
-  /**
-  @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
   MoveAssignable.
   @{ */
 
-  /**
-  Clones this data structure, making deep copies of all underlying data.
+  /** Clones this data structure, making deep copies of all underlying data.
   @note The new object will contain a cloned ContactSurface even if the
         original was constructed using a raw pointer referencing an existing
         ContactSurface. */
@@ -110,8 +104,7 @@ class HydroelasticContactInfo {
     *this = info;
   }
 
-  /**
-  Clones this object in the same manner as the copy constructor.
+  /** Clones this object in the same manner as the copy constructor.
   @see HydroelasticContactInfo(const HydroelasticContactInfo&) */
   HydroelasticContactInfo& operator=(const HydroelasticContactInfo& info) {
     contact_surface_ =
@@ -126,8 +119,7 @@ class HydroelasticContactInfo {
 
   /** @} */
 
-  /**
-  Returns a reference to the ContactSurface data structure. Note that
+  /** Returns a reference to the ContactSurface data structure. Note that
   the mesh and gradient vector fields are expressed in the world frame. */
   const geometry::ContactSurface<T>& contact_surface() const {
     if (std::holds_alternative<const geometry::ContactSurface<T>*>(
@@ -139,16 +131,14 @@ class HydroelasticContactInfo {
     }
   }
 
-  /**
-  Gets the intermediate data, including tractions, computed by the
+  /** Gets the intermediate data, including tractions, computed by the
   quadrature process. */
   const std::vector<HydroelasticQuadraturePointData<T>>& quadrature_point_data()
       const {
     return quadrature_point_data_;
   }
 
-  /**
-  Gets the spatial force applied on body A, at the centroid point C of the
+  /** Gets the spatial force applied on body A, at the centroid point C of the
   surface mesh M, and expressed in the world frame W. The position `p_WC` of
   the centroid point C in the world frame W can be obtained with
   `contact_surface().mesh_W().centroid()`. */

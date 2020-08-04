@@ -10,8 +10,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A third-order Runge Kutta integrator with a third order error estimate.
+/** A third-order Runge Kutta integrator with a third order error estimate.
 
 For a discussion of this Runge-Kutta method, see [Butcher, 1987]. The
 embedded error estimate was derived using the method mentioned in

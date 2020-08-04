@@ -9,15 +9,13 @@
 
 namespace drake {
 namespace multibody {
-/**
-Constrains the distance between a pair of geometries to be within a range
+/** Constrains the distance between a pair of geometries to be within a range
 [distance_lower, distance_upper]. */
 class DistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceConstraint)
 
-  /**
-  @param plant The plant to which the pair of geometries belong. @p plant
+  /** @param plant The plant to which the pair of geometries belong. @p plant
   should outlive this DistanceConstraint object.
   @param geometry_pair The pair of geometries between which the distance is
   constrained. Notice that we only consider the distance between a static
@@ -32,8 +30,7 @@ class DistanceConstraint : public solvers::Constraint {
                      systems::Context<double>* plant_context,
                      double distance_lower, double distance_upper);
 
-  /**
-  Overloaded constructor. Constructs the constraint with
+  /** Overloaded constructor. Constructs the constraint with
   MultibodyPlant<AutoDiffXd>.
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
   Documentation string is manually recreated in Python.} */

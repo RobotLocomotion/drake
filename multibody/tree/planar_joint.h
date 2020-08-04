@@ -14,8 +14,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This joint models a planar joint allowing two bodies to translate and rotate
+/** This joint models a planar joint allowing two bodies to translate and rotate
 relative to one another in a plane with three degrees of freedom.
 That is, given a frame F attached to the parent body P and a frame M
 attached to the child body B (see the Joint class's documentation), this
@@ -41,8 +40,7 @@ class PlanarJoint final : public Joint<T> {
   /** The name for this Joint type. */
   static constexpr char kTypeName[] = "planar";
 
-  /**
-  Constructor to create a planar joint between two bodies so that frame F
+  /** Constructor to create a planar joint between two bodies so that frame F
   attached to the parent body P and frame M attached to the child body B
   translate and rotate as described in the class's documentation.
   This constructor signature creates a joint with no joint limits, i.e. the
@@ -81,8 +79,7 @@ class PlanarJoint final : public Joint<T> {
     return name.access();
   }
 
-  /**
-  Returns `this` joint's damping constant in N⋅s/m for the translational
+  /** Returns `this` joint's damping constant in N⋅s/m for the translational
   degrees and N⋅m⋅s for the rotational degree. The damping force (in N) is
   modeled as `fᵢ = -dampingᵢ⋅vᵢ, i = 1, 2` i.e. opposing motion, with vᵢ
   the translation rates along the i-th axis for `this` joint (see
@@ -93,12 +90,10 @@ class PlanarJoint final : public Joint<T> {
   child body B expressed in frame F as t_B_F = τ⋅Fz_F. */
   Vector3<double> damping() const { return damping_; }
 
-  /**
-  @name Context-dependent value access
+  /** @name Context-dependent value access
   @{ */
 
-  /**
-  Gets the position of `this` joint from `context`.
+  /** Gets the position of `this` joint from `context`.
 
   @param[in] context The context of the model this joint belongs to.
   @retval p_FoMo_F The position of `this` joint stored in the `context`
@@ -107,8 +102,7 @@ class PlanarJoint final : public Joint<T> {
     return get_mobilizer()->get_translations(context);
   }
 
-  /**
-  Sets the `context` so that the position of `this` joint equals `p_FoMo_F`.
+  /** Sets the `context` so that the position of `this` joint equals `p_FoMo_F`.
 
   @param[in] context The context of the model this joint belongs to.
   @param[in] p_FoMo_F The desired position in meters to be stored in
@@ -121,8 +115,7 @@ class PlanarJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Gets the angle θ of `this` joint from `context`.
+  /** Gets the angle θ of `this` joint from `context`.
 
   @param[in] context The context of the model this joint belongs to.
   @retval theta The angle of `this` joint stored in the `context`. See class
@@ -131,8 +124,7 @@ class PlanarJoint final : public Joint<T> {
     return get_mobilizer()->get_angle(context);
   }
 
-  /**
-  Sets the `context` so that the angle θ of `this` joint equals `theta`.
+  /** Sets the `context` so that the angle θ of `this` joint equals `theta`.
 
   @param[in] context The context of the model this joint belongs to.
   @param[in] theta The desired angle in radians to be stored in `context`.
@@ -144,8 +136,7 @@ class PlanarJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Sets the `context` so that the position of `this` joint equals `p_FoMo_F`
+  /** Sets the `context` so that the position of `this` joint equals `p_FoMo_F`
   and its angle equals `theta`.
 
   @param[in] context The context of the model this joint belongs to.
@@ -163,8 +154,7 @@ class PlanarJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Gets the translational velocity v_FoMo_F, in meters per second, of `this`
+  /** Gets the translational velocity v_FoMo_F, in meters per second, of `this`
   joint's Mo measured and expressed in frame F from `context`.
   @param[in] context The context of the model this joint belongs to.
   @retval v_FoMo_F The translational velocity of `this` joint as stored in
@@ -174,8 +164,7 @@ class PlanarJoint final : public Joint<T> {
     return get_mobilizer()->get_translation_rates(context);
   }
 
-  /**
-  Sets the translational velocity, in meters per second, of this `this`
+  /** Sets the translational velocity, in meters per second, of this `this`
   joint's Mo measured and expressed in frame F  to `v_FoMo_F`. The new
   translational velocity gets stored in `context`.
   @param[in] context The context of the model this joint belongs to.
@@ -188,8 +177,7 @@ class PlanarJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Gets the rate of change, in radians per second, of `this` joint's angle
+  /** Gets the rate of change, in radians per second, of `this` joint's angle
   θ from `context`.  See class documentation for the definition of this
   angle.
 
@@ -200,8 +188,7 @@ class PlanarJoint final : public Joint<T> {
     return get_mobilizer()->get_angular_rate(context);
   }
 
-  /**
-  Sets the rate of change, in radians per second, of `this` joint's angle
+  /** Sets the rate of change, in radians per second, of `this` joint's angle
   θ (see class documentation) to `theta_dot`. The new rate of change gets
   stored in `context`.
 
@@ -217,15 +204,13 @@ class PlanarJoint final : public Joint<T> {
 
   /** @} */
 
-  /**
-  Gets the default position for `this` joint.
+  /** Gets the default position for `this` joint.
   @retval p_FoMo_F The default position of `this` joint. */
   Vector2<double> get_default_translation() const {
     return this->default_positions().head(2);
   }
 
-  /**
-  Sets the default position of this joint.
+  /** Sets the default position of this joint.
   @param[in] p_FoMo_F The desired default position of the joint */
   void set_default_translation(const Vector2<double>& p_FoMo_F) {
     Vector3<double> state(p_FoMo_F[0], p_FoMo_F[1],
@@ -233,13 +218,11 @@ class PlanarJoint final : public Joint<T> {
     this->set_default_positions(state);
   }
 
-  /**
-  Gets the default angle for `this` joint.
+  /** Gets the default angle for `this` joint.
   @retval theta The default angle of `this` joint. */
   double get_default_rotation() const { return this->default_positions()[2]; }
 
-  /**
-  Sets the default angle of this joint.
+  /** Sets the default angle of this joint.
   @param[in] theta The desired default angle of the joint */
   void set_default_rotation(const double& theta) {
     Vector3<double> state = this->default_positions();
@@ -247,8 +230,7 @@ class PlanarJoint final : public Joint<T> {
     this->set_default_positions(state);
   }
 
-  /**
-  Sets the default position and angle of this joint.
+  /** Sets the default position and angle of this joint.
   @param[in] p_FoMo_F The desired default position of the joint
   @param[in] theta The desired default angle of the joint */
   void set_default_pose(const Vector2<double>& p_FoMo_F, const double& theta) {
@@ -256,8 +238,7 @@ class PlanarJoint final : public Joint<T> {
     this->set_default_positions(state);
   }
 
-  /**
-  Sets the random distribution that the position and angle of this
+  /** Sets the random distribution that the position and angle of this
   joint will be randomly sampled from. See class documentation for details
   on the definition of the position and angle. */
   void set_random_pose_distribution(
@@ -268,8 +249,7 @@ class PlanarJoint final : public Joint<T> {
   }
 
  private:
-  /**
-  Joint<T> override called through public NVI, Joint::AddInForce().
+  /** Joint<T> override called through public NVI, Joint::AddInForce().
   Therefore arguments were already checked to be valid.
   For a PlanarJoint, we must always have `joint_dof < 3` since there are
   three degrees of freedom (num_velocities() == 3). `joint_tau` is the force
@@ -293,8 +273,7 @@ class PlanarJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
-  /**
-  Joint<T> override called through public NVI, Joint::AddInDamping().
+  /** Joint<T> override called through public NVI, Joint::AddInDamping().
   Therefore arguments were already checked to be valid.
   This method adds into `forces` a dissipative force according to the
   viscous law `f = -d⋅v`, with d the damping coefficient (see damping()). */

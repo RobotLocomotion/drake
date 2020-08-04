@@ -96,8 +96,7 @@ class LinearSystemExample1 {
   std::shared_ptr<LinearEqualityConstraint> con_;
 };
 
-/**
-Simple linear system
+/** Simple linear system
     x    = b
 2 * y(0) = b(0)
 2 * y(1) = b(1) */
@@ -118,8 +117,7 @@ class LinearSystemExample2 : public LinearSystemExample1 {
   VectorDecisionVariable<2> y_;
 };
 
-/**
-Simple linear system
+/** Simple linear system
 3 * x    = b
 2 * y(0) = b(0)
 2 * y(1) = b(1) */
@@ -134,8 +132,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
 };
 
 
-/**
-For a stable linear system ẋ = A x, find its Lyapunov function by solving
+/** For a stable linear system ẋ = A x, find its Lyapunov function by solving
 the Lyapunov equality on the symmetric matrix X
 Aᵀ * X + X * A = -E */
 class LinearMatrixEqualityExample {
@@ -154,14 +151,12 @@ class LinearMatrixEqualityExample {
   Eigen::Matrix3d A_;
 };
 
-/**
-This test comes from Section 2.2 of
+/** This test comes from Section 2.2 of
 Handbook of Test Problems in Local and Global Optimization.
 © 1999
 ISBN 978-1-4757-3040-1 */
 class NonConvexQPproblem1 {
-  /**
-  This is a non-convex quadratic program with inequality constraints.
+  /** This is a non-convex quadratic program with inequality constraints.
   We choose to add the cost and constraints through different forms,
   to test different solvers, and whether MathematicalProgram can parse
   constraints in different forms. */
@@ -220,8 +215,7 @@ class NonConvexQPproblem1 {
   Eigen::Matrix<double, 5, 1> x_expected_;
 };
 
-/**
-This test comes from Section 2.3 of
+/** This test comes from Section 2.3 of
 Handbook of Test Problems in Local and Global Optimization.
 © 1999
 ISBN 978-1-4757-3040-1 */
@@ -281,8 +275,7 @@ class NonConvexQPproblem2 {
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
-/**
-This test comes from Section 3.4 of
+/** This test comes from Section 3.4 of
 Handbook of Test Problems in Local and Global Optimization.
 © 1999
 ISBN 978-1-4757-3040-1 */
@@ -379,8 +372,7 @@ class LowerBoundedProblem {
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
-/**
-gloptiPolyConstrainedMinimization
+/** gloptiPolyConstrainedMinimization
 @brief From section 5.8.2 of the gloptipoly3 documentation.
 
 Which is from section 3.5 in
@@ -491,8 +483,7 @@ class GloptiPolyConstrainedMinimizationProblem {
   Eigen::Vector3d expected_;
 };
 
-/**
-An SOCP with Lorentz cone and rotated Lorentz cone constraints.
+/** An SOCP with Lorentz cone and rotated Lorentz cone constraints.
 The objective is to find the smallest distance from a hyperplane
 A * x = b to the origin.
 We can solve the following SOCP with Lorentz cone constraint
@@ -557,8 +548,7 @@ class MinDistanceFromPlaneToOrigin {
   Eigen::VectorXd x_expected_;
 };
 
-/**
-A simple convex optimization program
+/** A simple convex optimization program
 min -12 * x + x³
 s.t  x >= 0
 Notice the objective function is convex in the feasible region x >= 0
@@ -577,8 +567,7 @@ class ConvexCubicProgramExample : public MathematicalProgram {
   VectorDecisionVariable<1> x_;
 };
 
-/**
-A simple non-convex problem with a quadratic equality constraint
+/** A simple non-convex problem with a quadratic equality constraint
 min 0
 s.t xᵀx = 1
 This test is meant to verify that we can add a quadratic constraint to a
@@ -713,8 +702,7 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
   Eigen::Vector4d b_tetrahedron_;
 };
 
-/**
-This problem is taken from Pseudo-complementary algorithms for mathematical
+/** This problem is taken from Pseudo-complementary algorithms for mathematical
 programming by U. Eckhardt in Numerical Methods for Nonlinear Optimization,
 1972. This problem has a sparse gradient.
 max x0
@@ -773,8 +761,7 @@ void TestEckhardtDualSolution(const SolverInterface& solver,
                               const Eigen::Ref<const Eigen::VectorXd>& x_init,
                               double tol = 1e-6);
 
-/**
-This is problem 106 from  Test examples for Nonlinear Programming
+/** This is problem 106 from  Test examples for Nonlinear Programming
 Codes by Will Hock and Klaus Schittkowski, Springer. The constraint of this
 problem has sparse gradient. */
 class HeatExchangerDesignProblem {
@@ -850,8 +837,7 @@ class HeatExchangerDesignProblem {
   Eigen::Matrix<symbolic::Variable, 8, 1> x_;
 };
 
-/**
-In Eigen's autodiff, when the derivatives() vector has empty size, it is
+/** In Eigen's autodiff, when the derivatives() vector has empty size, it is
 interpreted as 0 gradient (i.e., the gradient has value 0, with the size of
 the gradient matrix being arbitrary). On the other hand, many solvers
 interpret empty size gradient in a different way, that the variable to be

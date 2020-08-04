@@ -6,13 +6,11 @@
 
 namespace drake {
 namespace solvers {
-/**
-The CSDP solver details after calling Solve() function. The user can call
+/** The CSDP solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<CsdpSolver>() to obtain the
 details. */
 struct CsdpSolverDetails {
-  /**
-  Refer to the Return Codes section of CSDP 6.2.0 User's Guide for
+  /** Refer to the Return Codes section of CSDP 6.2.0 User's Guide for
   explanation on the return code. Some of the common return codes are
 
       0 Problem is solved to optimality.
@@ -25,8 +23,7 @@ struct CsdpSolverDetails {
   double primal_objective{};
   /** The dual objective value. */
   double dual_objective{};
-  /**
-  CSDP solves a primal problem of the form
+  /** CSDP solves a primal problem of the form
 
       max tr(C*X)
       s.t tr(Aᵢ*X) = aᵢ
@@ -53,8 +50,7 @@ class CsdpSolver final : public SolverBase {
 
   ~CsdpSolver() final;
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

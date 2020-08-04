@@ -8,15 +8,13 @@
 
 namespace drake {
 namespace multibody {
-/**
-Constrain that the distance between a point P1 on frame B1 and another point
+/** Constrain that the distance between a point P1 on frame B1 and another point
 P2 on frame B2 is within a range [distance_lower, distance_upper]. */
 class PointToPointDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointToPointDistanceConstraint)
 
-  /**
-  Constrain that the distance between a point P1 attached to frame B1 and
+  /** Constrain that the distance between a point P1 attached to frame B1 and
   another point P2 attached to frame B2 is within the range [distance_lower,
   distance_upper].
   Mathematically, we impose the constraint
@@ -45,8 +43,7 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
       const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
       double distance_upper, systems::Context<double>* plant_context);
 
-  /**
-  Overloaded constructor. Same as the constructor with the double version
+  /** Overloaded constructor. Same as the constructor with the double version
   (using MultibodyPlant<double> and Context<double>), except the gradient of
   the constraint is computed from autodiff.
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.

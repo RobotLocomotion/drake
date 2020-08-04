@@ -8,8 +8,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-min 2x0 + x2
+/** min 2x0 + x2
 s.t ⎡x0 x1⎤ is psd,
     ⎣x1 x0⎦
     ⎡x0 x2⎤ is psd, and
@@ -27,8 +26,7 @@ class SDPwithOverlappingVariables1 : public ::testing::Test {
   Vector3<symbolic::Variable> x_;
 };
 
-/**
-min 2x0 + x1
+/** min 2x0 + x1
 s.t ⎡x0 x1⎤ is psd,
     ⎣x1 x0⎦
     2 <= x0 <= 3
@@ -43,8 +41,7 @@ class SDPwithOverlappingVariables2 : public ::testing::Test {
   Vector2<symbolic::Variable> x_;
 };
 
-/**
-This is the example in CSDP 6.2.0 User's Guide
+/** This is the example in CSDP 6.2.0 User's Guide
 max tr(C1 * X1) + tr(C2 * X2)
 s.t tr(A1 * X1) + y(0) = 1
     tr(A2 * X2) + y(1) = 2
@@ -71,8 +68,7 @@ class CsdpDocExample : public ::testing::Test {
   Vector2<symbolic::Variable> y_;
 };
 
-/**
-A simple linear program withou only bounding box constraint.
+/** A simple linear program withou only bounding box constraint.
 max -x(0) + x(1) - 2 *x(2) + 3 * x(3) + x(4) + 1
 0 ≤ x(0)
 0 ≤ x(1) ≤ 5;
@@ -91,8 +87,7 @@ class LinearProgramBoundingBox1 : public ::testing::Test {
   Eigen::Matrix<symbolic::Variable, 8, 1> x_;
 };
 
-/**
-A simple linear program.
+/** A simple linear program.
 min x(0) + 2x(1) +  3x(2)
 s.t 2x(0) + 3x(1) + x(2) = 1
     -2x(2) + x(0) ≤ -1
@@ -110,8 +105,7 @@ class CsdpLinearProgram2 : public ::testing::Test {
   Vector3<symbolic::Variable> x_;
 };
 
-/**
-A linear program with both linear (in)equality constraints and bounding box
+/** A linear program with both linear (in)equality constraints and bounding box
 constraint.
 max 2x(0) + 3x(1) + 4x(2) + 3
 s.t x(0) + 2x(1) + 3x(2) = 3
@@ -130,8 +124,7 @@ class CsdpLinearProgram3 : public ::testing::Test {
   Vector3<symbolic::Variable> x_;
 };
 
-/**
-A trivial SDP
+/** A trivial SDP
 max X1(0, 1) + X1(1, 2)
 s.t X1 ∈ ℝ³ˣ³ is psd
     X1(0, 0) + X1(1, 1) + X1(2, 2) = 1
@@ -145,8 +138,7 @@ class TrivialSDP1 : public ::testing::Test {
   Matrix3<symbolic::Variable> X1_;
 };
 
-/**
-max y
+/** max y
 X1 ∈ ℝ²ˣ² is psd
 I + F1 * y + F2 * X1(0, 0) is psd.
 X1(0, 0) + 2 * X1(1, 1) + 3 * y = 1
@@ -162,8 +154,7 @@ class TrivialSDP2 : public ::testing::Test {
   symbolic::Variable y_;
 };
 
-/**
-Test a problem with LorentzConeConstraint
+/** Test a problem with LorentzConeConstraint
 max x(0)
 s.t 2x(0) + 1 >= sqrt((3x(1)+2)² + (x(2)+x(0)+3)²)
     x(0) + x(1) + x(2) = 10
@@ -179,8 +170,7 @@ class TrivialSOCP1 : public ::testing::Test {
   Vector3<symbolic::Variable> x_;
 };
 
-/**
-max x(1)
+/** max x(1)
 s.t x(0) + 2 >= sqrt((x(0) + x(1) + 1)² + (x(0) - x(1) + 1)²)
 The optimal solution is (0, 1) */
 class TrivialSOCP2 : public ::testing::Test {
@@ -192,8 +182,7 @@ class TrivialSOCP2 : public ::testing::Test {
   Vector2<symbolic::Variable> x_;
 };
 
-/**
-max -x(1)
+/** max -x(1)
 s.t (2x(0) + 2)(3x(1) + 4) >= sqrt((x(0) + 2)² + (3x(0) + x(1) + 1)²)
      2x(0) + 2 >= 0
      3x(1) + 4 >= 0

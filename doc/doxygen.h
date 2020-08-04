@@ -1,6 +1,5 @@
 
-/**
-@mainpage
+/** @mainpage
 <h3>Overview</h3>
 
 <p>Drake's C++ library is composed primarily of an interface for solving
@@ -34,8 +33,7 @@ out the Doxygen C++ documentation</a></p>
 <a href="https://drake.mit.edu">hosted online</a> for the master branch, but is
 only updated nightly.</p> */
 // Define groups here so we can control the ordering.
-/**
-@defgroup terminology_and_notation Drake Terminology and Notation
+/** @defgroup terminology_and_notation Drake Terminology and Notation
 @defgroup solvers Formulating and Solving Optimization Problems
 @defgroup systems Modeling Dynamical Systems
 @defgroup multibody Multibody Kinematics and Dynamics
@@ -43,23 +41,19 @@ only updated nightly.</p> */
 @defgroup geometry Geometric Representations
 @defgroup technical_notes Technical Notes */
 
-/**
-@defgroup accuracy_and_tolerance Accuracy, Tolerance, and Precision
+/** @defgroup accuracy_and_tolerance Accuracy, Tolerance, and Precision
 @ingroup terminology_and_notation */
 
-/**
-@defgroup multibody_notation Multibody Terminology and Notation
+/** @defgroup multibody_notation Multibody Terminology and Notation
 @ingroup terminology_and_notation */
 
-/**
-@defgroup constraint_overview Multibody Dynamics Constraints
+/** @defgroup constraint_overview Multibody Dynamics Constraints
 @ingroup multibody */
 
 // TODO(russt): Take a thorough pass through the algorithms group
 // documentation, adding brief descriptions of each and tagging the relevant
 // algorithms throughout the code.
-/**
-@addtogroup algorithms
+/** @addtogroup algorithms
 @{
   @defgroup simulation Simulation
   @defgroup analysis Analysis
@@ -69,8 +63,7 @@ only updated nightly.</p> */
   @defgroup identification System Identification
 @} */
 
-/**
-@addtogroup technical_notes
+/** @addtogroup technical_notes
 
 @{
 
@@ -85,8 +78,7 @@ only updated nightly.</p> */
 
 @} */
 
-/**
-@addtogroup accuracy_and_tolerance
+/** @addtogroup accuracy_and_tolerance
 @{
 Most numerical methods are approximate, and many can trade speed for quality
 under user control. We need standard, unambiguous terminology in Drake for

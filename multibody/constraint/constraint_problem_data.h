@@ -10,8 +10,7 @@ namespace drake {
 namespace multibody {
 namespace constraint {
 
-/**
-Structure for holding constraint data for computing forces due to
+/** Structure for holding constraint data for computing forces due to
 constraints and the resulting multibody accelerations.
 
 The Newton-Euler equations (essentially F = ma) coupled with constraints
@@ -34,8 +33,7 @@ definitions).
            that nc = ns + nns. */
 template <class T>
 struct ConstraintAccelProblemData {
-  /**
-  Constructs acceleration problem data for a system with a @p gv_dim
+  /** Constructs acceleration problem data for a system with a @p gv_dim
   dimensional generalized velocity. */
   explicit ConstraintAccelProblemData(int gv_dim) {
     // Set default for non-transpose operators- returns an empty vector.
@@ -58,8 +56,7 @@ struct ConstraintAccelProblemData {
     G_transpose_mult = zero_gv_dim_fn;
   }
 
-  /**
-  Flag for whether the complementarity problem solver should be used to
+  /** Flag for whether the complementarity problem solver should be used to
   solve this particular problem instance. If every constraint in the problem
   data is active, using the linear system solver
   (`use_complementarity_problem_solver=false`) will yield a solution much
@@ -69,22 +66,19 @@ struct ConstraintAccelProblemData {
   (and slower) value of `true` is the default. */
   bool use_complementarity_problem_solver{true};
 
-  /**
-  The indices of the sliding contacts (those contacts at which there is
+  /** The indices of the sliding contacts (those contacts at which there is
   non-zero relative velocity between bodies in the plane tangent to the
   point of contact), out of the set of all contact indices (0...nc-1).
   This vector must be in sorted order. */
   std::vector<int> sliding_contacts;
 
-  /**
-  The indices of the non-sliding contacts (those contacts at which there
+  /** The indices of the non-sliding contacts (those contacts at which there
   is zero relative velocity between bodies in the plane tangent to the
   point of contact), out of the set of all contact indices (0...nc-1).
   This vector must be in sorted order. */
   std::vector<int> non_sliding_contacts;
 
-  /**
-  The number of spanning vectors in the contact tangents (used to linearize
+  /** The number of spanning vectors in the contact tangents (used to linearize
   the friction cone) at the n *non-sliding* contact points. For contact
   problems in two dimensions, each element of r will be one. For contact
   problems in three dimensions, a friction pyramid (for example), for a
@@ -96,20 +90,17 @@ struct ConstraintAccelProblemData {
   approximation. */
   std::vector<int> r;
 
-  /**
-  Coefficients of friction for the ns = nc - nns sliding contacts (where
+  /** Coefficients of friction for the ns = nc - nns sliding contacts (where
   `nns` is the number of non-sliding contacts). The size of this vector
   should be equal to `sliding_contacts.size()`. */
   VectorX<T> mu_sliding;
 
-  /**
-  Coefficients of friction for the nns = nc - ns non-sliding contacts (where
+  /** Coefficients of friction for the nns = nc - ns non-sliding contacts (where
   `ns` is the number of sliding contacts). The size of this vector should be
   equal to `non_sliding_contacts.size()`. */
   VectorX<T> mu_non_sliding;
 
-  /**
-  @name Data for bilateral constraints at the acceleration level
+  /** @name Data for bilateral constraints at the acceleration level
   Problem data for bilateral constraints of functions of system
   acceleration, where the constraint can be formulated as:<pre>
   0 = G(q)⋅v̇ + kᴳ(t,q,v)
@@ -133,13 +124,11 @@ struct ConstraintAccelProblemData {
   g(q) ≡ qᵢ - rqⱼ, yielding ̈g(q, v, v̇) = v̇ᵢ - rv̇ⱼ.
   @{ */
 
-  /**
-  An operator that performs the multiplication G⋅v. The default operator
+  /** An operator that performs the multiplication G⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> G_mult;
 
-  /**
-  An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝⁿᵇ are the
+  /** An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝⁿᵇ are the
   magnitudes of the constraint forces. The default operator returns a
   zero vector of dimension equal to that of the generalized forces. */
   std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult;
@@ -148,8 +137,7 @@ struct ConstraintAccelProblemData {
   VectorX<T> kG;
   /** @} */
 
-  /**
-  @name Data for constraints on accelerations along the contact normal
+  /** @name Data for constraints on accelerations along the contact normal
   Problem data for constraining the acceleration of two bodies projected
   along the contact surface normal, for n point contacts.
   These data center around two Jacobian matrices, N and Q. N is the ℝⁿᶜˣⁿᵛ
@@ -181,13 +169,11 @@ struct ConstraintAccelProblemData {
   </pre>
   @{ */
 
-  /**
-  An operator that performs the multiplication N⋅v.
+  /** An operator that performs the multiplication N⋅v.
   The default operator returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
-  /**
-  An operator that performs the multiplication (Nᵀ - μQᵀ)⋅f, where μ is a
+  /** An operator that performs the multiplication (Nᵀ - μQᵀ)⋅f, where μ is a
   diagonal matrix with nonzero entries corresponding to the coefficients of
   friction at the s sliding contact points, and (Nᵀ - μQᵀ) transforms forces
   (f ∈ ℝⁿᶜ) applied along the contact normals at the nc point contacts into
@@ -199,8 +185,7 @@ struct ConstraintAccelProblemData {
   VectorX<T> kN;
   /** @} */
 
-  /**
-  @name Data for non-sliding contact friction constraints
+  /** @name Data for non-sliding contact friction constraints
   Problem data for constraining the tangential acceleration of two bodies
   projected along the contact surface tangents, for nc point contacts.
   These data center around the Jacobian matrix, F ∈ ℝⁿⁿʳˣⁿᵛ, that
@@ -230,13 +215,11 @@ struct ConstraintAccelProblemData {
   constraint stabilization.
   @{ */
 
-  /**
-  An operator that performs the multiplication F⋅v. The default operator
+  /** An operator that performs the multiplication F⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
-  /**
-  An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿⁿˢʳ
+  /** An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿⁿˢʳ
   corresponds to frictional force magnitudes. The default operator returns
   a zero vector of dimension equal to that of the generalized forces. */
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
@@ -245,8 +228,7 @@ struct ConstraintAccelProblemData {
   VectorX<T> kF;
   /** @} */
 
-  /**
-  @name Data for unilateral constraints at the acceleration level
+  /** @name Data for unilateral constraints at the acceleration level
   Problem data for unilateral constraints of functions of system
   acceleration, where the constraint can be formulated as:<pre>
   0 ≤ L(q)⋅v̇ + kᴸ(t,q,v)  ⊥  fᶜ ≥ 0
@@ -275,13 +257,11 @@ struct ConstraintAccelProblemData {
   yielding ̈g(q, v, v̇) = -v̇ⱼ + r.
   @{ */
 
-  /**
-  An operator that performs the multiplication L⋅v. The default operator
+  /** An operator that performs the multiplication L⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> L_mult;
 
-  /**
-  An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝⁿᵘ are the
+  /** An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝⁿᵘ are the
   magnitudes of the constraint forces. The default operator returns a
   zero vector of dimension equal to that of the generalized forces. */
   std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
@@ -290,35 +270,30 @@ struct ConstraintAccelProblemData {
   VectorX<T> kL;
   /** @} */
 
-  /**
-  The ℝⁿᵛ vector tau, the generalized external force vector that
+  /** The ℝⁿᵛ vector tau, the generalized external force vector that
   comprises gravitational, centrifugal, Coriolis, actuator, etc. forces
   applied to the rigid body system at q. m is the dimension of the
   generalized force, which is also equal to the dimension of the
   generalized velocity. */
   VectorX<T> tau;
 
-  /**
-  A function for solving the equation MX = B for matrix X, given input
+  /** A function for solving the equation MX = B for matrix X, given input
   matrix B, where M is the generalized inertia matrix for the rigid body
   system. */
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
 };
 
-/**
-Structure for holding constraint data for computing constraint forces
+/** Structure for holding constraint data for computing constraint forces
 at the velocity-level (i.e., impact problems). */
 template <class T>
 struct ConstraintVelProblemData {
-  /**
-  Constructs velocity problem data for a system with a @p gv_dim dimensional
+  /** Constructs velocity problem data for a system with a @p gv_dim dimensional
   generalized velocity. */
   explicit ConstraintVelProblemData(int gv_dim) {
     Reinitialize(gv_dim);
   }
 
-  /**
-  Reinitializes the constraint problem data using the specified dimension
+  /** Reinitializes the constraint problem data using the specified dimension
   of the generalized velocities. */
   void Reinitialize(int gv_dim) {
     // Set default for non-transpose operators- returns an empty vector.
@@ -340,8 +315,7 @@ struct ConstraintVelProblemData {
     G_transpose_mult = zero_gv_dim_fn;
   }
 
-  /**
-  The number of spanning vectors in the contact tangents (used to linearize
+  /** The number of spanning vectors in the contact tangents (used to linearize
   the friction cone) at the nc contact points. For contact
   problems in two dimensions, each element of r will be one. For contact
   problems in three dimensions, a friction pyramid (for example), for a
@@ -353,13 +327,11 @@ struct ConstraintVelProblemData {
   approximation. */
   std::vector<int> r;
 
-  /**
-  Coefficients of friction for the nc contacts. This problem specification
+  /** Coefficients of friction for the nc contacts. This problem specification
   does not distinguish between static and dynamic friction coefficients. */
   VectorX<T> mu;
 
-  /**
-  @name Data for bilateral constraints at the velocity level
+  /** @name Data for bilateral constraints at the velocity level
   Problem data for bilateral constraints of functions of system
   velocity, where the constraint can be formulated as:<pre>
   0 = G(q)⋅v + kᴳ(t,q)
@@ -383,13 +355,11 @@ struct ConstraintVelProblemData {
   g(q) ≡ qᵢ - rqⱼ, yielding ġ(q, v) = vᵢ - rvⱼ.
   @{ */
 
-  /**
-  An operator that performs the multiplication G⋅v. The default operator
+  /** An operator that performs the multiplication G⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> G_mult;
 
-  /**
-  An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝⁿᵇ are the
+  /** An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝⁿᵇ are the
   magnitudes of the constraint forces. The default operator returns a
   zero vector of dimension equal to that of the generalized forces. */
   std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult;
@@ -398,8 +368,7 @@ struct ConstraintVelProblemData {
   VectorX<T> kG;
   /** @} */
 
-  /**
-  @name Data for constraints on velocities along the contact normal
+  /** @name Data for constraints on velocities along the contact normal
   Problem data for constraining the velocity of two bodies projected
   along the contact surface normal, for n point contacts.
   These data center around the Jacobian matrix N, the ℝⁿᶜˣⁿᵛ
@@ -418,13 +387,11 @@ struct ConstraintVelProblemData {
   if it is inactive (i.e., if ġ(q,v) is strictly greater than zero).
   @{ */
 
-  /**
-  An operator that performs the multiplication N⋅v. The default operator
+  /** An operator that performs the multiplication N⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
-  /**
-  An operator that performs the multiplication Nᵀ⋅f, where f ∈ ℝⁿᶜ are the
+  /** An operator that performs the multiplication Nᵀ⋅f, where f ∈ ℝⁿᶜ are the
   the magnitudes of the impulsive forces applied along the contact normals
   at the nc point contacts. The default operator returns a zero vector of
   dimension equal to that of the generalized velocities (which should be
@@ -438,8 +405,7 @@ struct ConstraintVelProblemData {
   VectorX<T> gammaN;
   /** @} */
 
-  /**
-  @name Data for constraints on contact friction
+  /** @name Data for constraints on contact friction
   Problem data for constraining the tangential velocity of two bodies
   projected along the contact surface tangents, for n point contacts.
   These data center around the Jacobian matrix, F ∈ ℝⁿⁿʳˣⁿᵛ, that
@@ -469,13 +435,11 @@ struct ConstraintVelProblemData {
   the purpose of the kᶠ term.
   @{ */
 
-  /**
-  An operator that performs the multiplication F⋅v. The default operator
+  /** An operator that performs the multiplication F⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
-  /**
-  An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿᶜʳ
+  /** An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿᶜʳ
   corresponds to frictional impulsive force magnitudes. The default
   operator returns a zero vector of dimension equal to that of the
   generalized forces. */
@@ -492,8 +456,7 @@ struct ConstraintVelProblemData {
 
   /** @} */
 
-  /**
-  @name Data for unilateral constraints at the velocity level
+  /** @name Data for unilateral constraints at the velocity level
   Problem data for unilateral constraints of functions of system
   velocity, where the constraint can be formulated as:<pre>
   0 ≤ L(q)⋅v + kᴸ(t,q)  ⊥  fᶜ ≥ 0
@@ -520,13 +483,11 @@ struct ConstraintVelProblemData {
   function is g(t,q) ≡ qⱼ + rt, yielding ġ(q, v) = -vⱼ + r.
   @{ */
 
-  /**
-  An operator that performs the multiplication L⋅v. The default operator
+  /** An operator that performs the multiplication L⋅v. The default operator
   returns an empty vector. */
   std::function<VectorX<T>(const VectorX<T>&)> L_mult;
 
-  /**
-  An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝᵗ are the
+  /** An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝᵗ are the
   magnitudes of the impulsive constraint forces. The default operator
   returns a zero vector of dimension equal to that of the generalized
   forces. */
@@ -539,13 +500,11 @@ struct ConstraintVelProblemData {
   VectorX<T> gammaL;
   /** @} */
 
-  /**
-  The ℝⁿᵛ generalized momentum immediately before any impulsive
+  /** The ℝⁿᵛ generalized momentum immediately before any impulsive
   forces (from impact) are applied. */
   VectorX<T> Mv;
 
-  /**
-  A function for solving the equation MX = B for matrix X, given input
+  /** A function for solving the equation MX = B for matrix X, given input
   matrix B, where M is the generalized inertia matrix for the rigid body
   system. */
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;

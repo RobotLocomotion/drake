@@ -13,8 +13,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-_Articulated %Body Inertia_ is the inertia that a body appears to have when
+/** _Articulated %Body Inertia_ is the inertia that a body appears to have when
 it is the base (or root) of a rigid-body system, also referred to as
 _Articulated %Body_ in the context of articulated body algorithms.
 The _Articulated %Body Inertia_ is a very useful multibody dynamics concept
@@ -96,13 +95,11 @@ class ArticulatedBodyInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertia)
 
-  /**
-  Default ArticulatedBodyInertia constructor initializes all matrix values
+  /** Default ArticulatedBodyInertia constructor initializes all matrix values
   to NaN for a quick detection of uninitialized values. */
   ArticulatedBodyInertia() = default;
 
-  /**
-  Constructs an articulated body inertia for an articulated body consisting
+  /** Constructs an articulated body inertia for an articulated body consisting
   of a single rigid body given its spatial inertia. From an input spatial
   inertia `M_SQ_E` for a body or composite body S, about point Q, and
   expressed in a frame E, this constructor creates an articulated body
@@ -115,8 +112,7 @@ class ArticulatedBodyInertia {
         M_SQ_E.CopyToFullMatrix6();
   }
 
-  /**
-  Constructs an articulated body inertia from an input matrix.
+  /** Constructs an articulated body inertia from an input matrix.
 
   In Debug, this constructor checks for the physical validity of the
   resulting %ArticulatedBodyInertia with IsPhysicallyValid() and throws a
@@ -135,8 +131,7 @@ class ArticulatedBodyInertia {
     DRAKE_ASSERT_VOID(CheckInvariants());
   }
 
-  /**
-  Returns a new %ArticulatedBodyInertia object templated on `Scalar` with
+  /** Returns a new %ArticulatedBodyInertia object templated on `Scalar` with
   casted values of `this` articulated body inertia.
 
   @tparam Scalar The scalar type on which the new articulated body inertia
@@ -156,8 +151,7 @@ class ArticulatedBodyInertia {
     return P;
   }
 
-  /**
-  Performs a number of checks to verify that this is a physically valid
+  /** Performs a number of checks to verify that this is a physically valid
   articulated body inertia.
 
   The checks performed are:
@@ -206,8 +200,7 @@ class ArticulatedBodyInertia {
     return P;
   }
 
-  /**
-  Given `this` articulated body inertia `P_AQ_E` for some articulated body
+  /** Given `this` articulated body inertia `P_AQ_E` for some articulated body
   A, computed about point Q, and expressed in frame E, this method uses the
   rigid body shift operator to compute the same articulated body inertia
   about a new point R. The result still is expressed in frame E.
@@ -281,8 +274,7 @@ class ArticulatedBodyInertia {
     return *this;
   }
 
-  /**
-  Given `this` articulated body inertia `P_AQ_E` for some articulated body
+  /** Given `this` articulated body inertia `P_AQ_E` for some articulated body
   A, computed about point Q, and expressed in frame E, this method uses the
   rigid body shift operator to compute the same articulated body inertia
   about a new point R. The result still is expressed in frame E.
@@ -298,8 +290,7 @@ class ArticulatedBodyInertia {
     return ArticulatedBodyInertia<T>(*this).ShiftInPlace(p_QR_E);
   }
 
-  /**
-  Adds in to this articulated body inertia `P_AQ_E` for an articulated body
+  /** Adds in to this articulated body inertia `P_AQ_E` for an articulated body
   A about a point Q and expressed in a frame E the articulated body inertia
   `P_BQ_E` for a second articulated body B about the same point Q and
   expressed in the same frame E. The result is equivalent to the articulated
@@ -325,8 +316,7 @@ class ArticulatedBodyInertia {
     return *this;
   }
 
-  /**
-  Subtracts `P_BQ_E` from `this` articulated body inertia. `P_BQ_E` must be
+  /** Subtracts `P_BQ_E` from `this` articulated body inertia. `P_BQ_E` must be
   for the same articulated body B as this ABI (about the same point Q and
   expressed in the same frame E). The resulting inertia will have the same
   properties. */
@@ -336,8 +326,7 @@ class ArticulatedBodyInertia {
     return *this;
   }
 
-  /**
-  Multiplies `this` articulated body inertia on the right by a matrix or
+  /** Multiplies `this` articulated body inertia on the right by a matrix or
   vector.
 
   @note This method does not evaluate the product immediately. Instead, it
@@ -350,15 +339,13 @@ class ArticulatedBodyInertia {
     return matrix_.template selfadjointView<Eigen::Lower>() * rhs;
   }
 
-  /**
-  Multiplies `this` articulated body inertia on the right by a spatial
+  /** Multiplies `this` articulated body inertia on the right by a spatial
   acceleration. See @ref abi_eq_definition "Eq. (2)" for an example. */
   SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
     return SpatialForce<T>((*this) * A_WB_E.get_coeffs());
   }
 
-  /**
-  Multiplies `this` articulated body inertia on the left by a matrix or
+  /** Multiplies `this` articulated body inertia on the left by a matrix or
   vector.
 
   @note This method does not evaluate the product immediately. Instead, it

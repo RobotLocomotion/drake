@@ -13,8 +13,7 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
-/**
-A wrapper class around the IK planner. This class improves IK's usability by
+/** A wrapper class around the IK planner. This class improves IK's usability by
 handling constraint relaxing and multiple initial guesses internally. */
 class ConstraintRelaxingIk {
  public:
@@ -26,8 +25,7 @@ class ConstraintRelaxingIk {
     math::RigidTransformd pose;
     /** Bounding box for the end effector in the world frame. */
     Vector3<double> pos_tol{Vector3<double>(0.005, 0.005, 0.005)};
-    /**
-    Max angle difference (in radians) between solved end effector's
+    /** Max angle difference (in radians) between solved end effector's
     orientation and the desired. */
     double rot_tol{0.05};
     /** Signals if orientation constraint is enabled. */
@@ -36,8 +34,7 @@ class ConstraintRelaxingIk {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  /**
-  Constructor. Instantiates an internal MultibodyPlant from @p model_path.
+  /** Constructor. Instantiates an internal MultibodyPlant from @p model_path.
   @param model_path Path to the model file.
   @param end_effector_link_name Link name of the end effector. */
   ConstraintRelaxingIk(const std::string& model_path,
@@ -48,8 +45,7 @@ class ConstraintRelaxingIk {
     end_effector_body_idx_ = plant_.GetBodyByName(link_name).index();
   }
 
-  /**
-  Generates IK solutions for each waypoint sequentially. For waypoint wp_i,
+  /** Generates IK solutions for each waypoint sequentially. For waypoint wp_i,
   the IK tries to solve q_i that satisfies the end effector constraints in
   wp_i and minimizes the squared difference to q_{i-1}, where q_{i-1} is the
   solution to the previous wp_{i-1}. q_{i-1} = @p q_current when i = 0. This

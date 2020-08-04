@@ -12,57 +12,48 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-A structure to facilitate passing the myriad of optional arguments to the
+/** A structure to facilitate passing the myriad of optional arguments to the
 FiniteHorizonLinearQuadraticRegulator algorithms. */
 struct FiniteHorizonLinearQuadraticRegulatorOptions {
   FiniteHorizonLinearQuadraticRegulatorOptions() = default;
 
-  /**
-  A num_states x num_states positive semi-definite matrix which specified the
+  /** A num_states x num_states positive semi-definite matrix which specified the
   cost at the final time. If unset, then Qf will be set to the zero matrix. */
   std::optional<Eigen::MatrixXd> Qf;
 
-  /**
-  A num_states x num_inputs matrix that describes the running cost
+  /** A num_states x num_inputs matrix that describes the running cost
   2(x-xd(t))'N(u-ud(t)).  If unset, then N will be set to the zero matrix. */
   std::optional<Eigen::MatrixXd> N;
 
-  /**
-  A nominal state trajectory.  The system is linearized about this trajectory.
+  /** A nominal state trajectory.  The system is linearized about this trajectory.
   x0 must be defined over the entire interval [t0, tf].  If null, then x0 is
   taken to be a constant trajectory (whose value is specified by the context
   passed into the LQR method). */
   const trajectories::Trajectory<double>* x0{nullptr};
 
-  /**
-  A nominal input trajectory.  The system is linearized about this trajectory.
+  /** A nominal input trajectory.  The system is linearized about this trajectory.
   u0 must be defined over the entire interval, [t0, tf].  If null, then u0 is
   taken to be a constant trajectory (whose value is specified by the context
   passed into the LQR method). */
   const trajectories::Trajectory<double>* u0{nullptr};
 
-  /**
-  A desired state trajectory.  The objective is to regulate to this trajectory
+  /** A desired state trajectory.  The objective is to regulate to this trajectory
   -- the state component of the quadratic running cost is (x-xd(t))'*Q*(x-xd(t))
   and the final cost is (x-xd(t))'Qf(x-xd(t)).  If null, then xd(t) = x0(t). */
   const trajectories::Trajectory<double>* xd{nullptr};
 
-  /**
-  A desired input trajectory.  The objective is to regulate to this trajectory
+  /** A desired input trajectory.  The objective is to regulate to this trajectory
   -- the input component of the quadratic running cost is
   (u-ud(t))'*R*(u-ud(t)).  If null, then ud(t) = u0(t). */
   const trajectories::Trajectory<double>* ud{nullptr};
 
-  /**
-  For systems with multiple input ports, we must specify which input port is
+  /** For systems with multiple input ports, we must specify which input port is
   being used in the control design.  @see systems::InputPortSelection. */
   std::variant<systems::InputPortSelection, InputPortIndex> input_port_index{
       systems::InputPortSelection::kUseFirstInputIfItExists};
 };
 
-/**
-A structure that contains the basic FiniteHorizonLinearQuadraticRegulator
+/** A structure that contains the basic FiniteHorizonLinearQuadraticRegulator
 results. The finite-horizon cost-to-go is given by (x-x0(t))'*S(t)*(x-x0(t)) +
 2*(x-x₀(t))'sₓ(t) + s₀(t) and the optimal controller is given by u-u0(t) =
 -K(t)*(x-x₀(t)) - k₀(t).  Please don't overlook the factor of 2 in front of the
@@ -89,8 +80,7 @@ struct FiniteHorizonLinearQuadraticRegulatorResult {
 // std::function cost l(t,x,u) whose's Hessian is evaluated via autodiff to give
 // the terms.
 
-/**
-Solves the differential Riccati equation to compute the optimal controller and
+/** Solves the differential Riccati equation to compute the optimal controller and
 optimal cost-to-go for the finite-horizon linear quadratic regulator:
 
 @f[\min_u (x(t_f)-x_d(t_f))'Q_f(x(t_f)-x_d(t_f)) + \int_{t_0}^{t_f}
@@ -134,8 +124,7 @@ FiniteHorizonLinearQuadraticRegulator(
     const FiniteHorizonLinearQuadraticRegulatorOptions& options =
         FiniteHorizonLinearQuadraticRegulatorOptions());
 
-/**
-Variant of FiniteHorizonLinearQuadraticRegulator that returns a System
+/** Variant of FiniteHorizonLinearQuadraticRegulator that returns a System
 implementing the regulator (controller) as a System, with a single
 "plant_state" input for the estimated plant state, and a single "control"
 output for the regulator control output.

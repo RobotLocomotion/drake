@@ -12,8 +12,7 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 namespace internal {
-/**
-Represents a collection of sequential expression vectors (expression vectors
+/** Represents a collection of sequential expression vectors (expression vectors
 that take on different values for each index in {0, ..., `num_samples` - 1}).
 Each sequential expression vector is identified by a name and has an
 associated vector of placeholder variables. These placeholder variables can
@@ -29,8 +28,7 @@ class SequentialExpressionManager {
 
   ~SequentialExpressionManager() = default;
 
-  /**
-  Registers a sequential expression vector and returns a vector of
+  /** Registers a sequential expression vector and returns a vector of
   placeholder variables.
   @param sequential_expressions [num_expressions x num_samples] matrix of
   symbolic expressions. sequential_expressions(i, j) is the value of the i-th
@@ -47,8 +45,7 @@ class SequentialExpressionManager {
           sequential_expressions,
       const std::string& name);
 
-  /**
-  Registers a placeholder variables and the associated sequential expression
+  /** Registers a placeholder variables and the associated sequential expression
   vector.
 
   @param placeholders Placeholder variables.
@@ -69,27 +66,23 @@ class SequentialExpressionManager {
           sequential_expressions,
       const std::string& name);
 
-  /**
-  Returns a symbolic::Substitution for replacing all placeholder variables
+  /** Returns a symbolic::Substitution for replacing all placeholder variables
   with their respective `index`-th expression.
   @pre 0 <= index < num_samples() */
   symbolic::Substitution ConstructPlaceholderVariableSubstitution(
       int index) const;
 
-  /**
-  Returns the `index`-th vector of expressions for `name`.
+  /** Returns the `index`-th vector of expressions for `name`.
   @pre `name` is associated with a registered sequential expression vector.
   @pre 0 <= index < num_samples() */
   VectorX<symbolic::Expression> GetSequentialExpressionsByName(
       const std::string& name, int index) const;
 
-  /**
-  Returns the number of samples for the sequential expressions managed by
+  /** Returns the number of samples for the sequential expressions managed by
   `this`. */
   int num_samples() const { return num_samples_; }
 
-  /**
-  Returns the number of rows for the sequential expression vector `name`.
+  /** Returns the number of rows for the sequential expression vector `name`.
   @pre `name` is associated with a registered sequential expression vector. */
   int num_rows(const std::string& name) const;
 

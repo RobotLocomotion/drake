@@ -6,8 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_call_python.hpp"
 
-/**
-@file
+/** @file
 Utilities for calling Python from C++ over an RPC.
 
 For command-line examples, see the documentation in `call_python_client.py`.
@@ -16,8 +15,7 @@ For C++ examples, see `call_python_test.cc`. */
 namespace drake {
 namespace common {
 
-/**
-Initializes `CallPython` for a given file.  If this function is not called,
+/** Initializes `CallPython` for a given file.  If this function is not called,
 then the filename defaults to `/tmp/python_rpc`.
 @throws std::runtime_error If either this function or `CallPython` have
 already been called. */
@@ -26,8 +24,7 @@ void CallPythonInit(const std::string& filename);
 /** A proxy to a variable stored in Python side. */
 class PythonRemoteVariable;
 
-/**
-Calls a Python client with a given function and arguments, returning
+/** Calls a Python client with a given function and arguments, returning
 a handle to the result.  For example uses, see `call_python_test.cc`. */
 template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
@@ -37,8 +34,7 @@ PythonRemoteVariable CallPython(const std::string& function_name,
 template <typename... Types>
 PythonRemoteVariable ToPythonTuple(Types... args);
 
-/**
-Creates a keyword-argument list to be unpacked.
+/** Creates a keyword-argument list to be unpacked.
 @param args Argument list in the form of (key1, value1, key2, value2, ...). */
 template <typename... Types>
 PythonRemoteVariable ToPythonKwargs(Types... args);

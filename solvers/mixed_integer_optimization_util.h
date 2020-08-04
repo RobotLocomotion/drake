@@ -7,15 +7,13 @@
 
 namespace drake {
 namespace solvers {
-/**
-Return ⌈log₂(n)⌉, namely the minimal integer no smaller than log₂(n), with
+/** Return ⌈log₂(n)⌉, namely the minimal integer no smaller than log₂(n), with
 base 2.
 @param n A positive integer.
 @return The minimal integer no smaller than log₂(n). */
 constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
 
-/**
-The size of the new binary variables in the compile time, for Special Ordered
+/** The size of the new binary variables in the compile time, for Special Ordered
 Set of type 2 (SOS2) constraint. The SOS2 constraint says that
 <pre>
   λ(0) + ... + λ(n) = 1
@@ -35,8 +33,7 @@ struct LogarithmicSos2NewBinaryVariables<Eigen::Dynamic> {
   static const int Rows = Eigen::Dynamic;
 };
 
-/**
-Adds the special ordered set 2 (SOS2) constraint,
+/** Adds the special ordered set 2 (SOS2) constraint,
 <pre>
   λ(0) + ... + λ(n) = 1
   ∀i. λ(i) ≥ 0
@@ -77,16 +74,14 @@ AddLogarithmicSos2Constraint(MathematicalProgram* prog,
   return y;
 }
 
-/**
-Adds the special ordered set 2 (SOS2) constraint,
+/** Adds the special ordered set 2 (SOS2) constraint,
 @see AddLogarithmicSos2Constraint. */
 void AddLogarithmicSos2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& y);
 
-/**
-Adds the special ordered set 2 (SOS2) constraint. y(i) takes binary values
+/** Adds the special ordered set 2 (SOS2) constraint. y(i) takes binary values
 (either 0 or 1).
 <pre>
   y(i) = 1 => λ(i) + λ(i + 1) = 1.
@@ -104,8 +99,7 @@ void AddSos2Constraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& y);
 
-/**
-Adds the special ordered set of type 1 (SOS1) constraint. Namely
+/** Adds the special ordered set of type 1 (SOS1) constraint. Namely
 <pre>
   λ(0) + ... + λ(n-1) = 1
   λ(i) ≥ 0 ∀i
@@ -133,8 +127,7 @@ void AddLogarithmicSos1Constraint(
     const Eigen::Ref<const VectorXDecisionVariable>& y,
     const Eigen::Ref<const Eigen::MatrixXi>& binary_encoding);
 
-/**
-Adds the special ordered set of type 1 (SOS1) constraint. Namely
+/** Adds the special ordered set of type 1 (SOS1) constraint. Namely
 <pre>
   λ(0) + ... + λ(n-1) = 1
   λ(i) ≥ 0 ∀i
@@ -158,8 +151,7 @@ of y is (1, 1, 0) which equals to 5 according to reflected Gray code. */
 std::pair<VectorX<symbolic::Variable>, VectorX<symbolic::Variable>>
 AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda);
 
-/**
-For a continuous variable whose range is cut into small intervals, we will
+/** For a continuous variable whose range is cut into small intervals, we will
 use binary variables to represent which interval the continuous variable is
 in. We support two representations, either using logarithmic number of binary
 variables, or linear number of binary variables. For more details, @see
@@ -173,8 +165,7 @@ std::string to_string(IntervalBinning interval_binning);
 
 std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning);
 
-/**
-Add constraints to the optimization program, such that the bilinear product
+/** Add constraints to the optimization program, such that the bilinear product
 x * y is approximated by w, using Special Ordered Set of Type 2 (sos2)
 constraint.
 To do so, we assume that the range of x is [x_min, x_max], and the range of y
@@ -303,8 +294,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
   return lambda;
 }
 
-/**
-Add constraints to the optimization program, such that the bilinear product
+/** Add constraints to the optimization program, such that the bilinear product
 x * y is approximated by w, using Mixed Integer constraint with "Multiple
 Choice" model.
 To do so, we assume that the range of x is [x_min, x_max], and the range of y

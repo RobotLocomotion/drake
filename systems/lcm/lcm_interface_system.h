@@ -12,8 +12,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-/**
-%LcmInterfaceSystem acts within a Diagram to allow LcmSubscriberSystem
+/** %LcmInterfaceSystem acts within a Diagram to allow LcmSubscriberSystem
 instances to receive data from the network during a simulation.  When its
 parent Diagram is run via the Simulator, the %LcmSubscriberSystem sources
 will output new values based on new data received over LCM.
@@ -40,13 +39,11 @@ class LcmInterfaceSystem final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmInterfaceSystem)
 
-  /**
-  Constructs using the given URL.  With no URL, uses the LCM_DEFAULT_URL
+  /** Constructs using the given URL.  With no URL, uses the LCM_DEFAULT_URL
   environment variable iff it is set or else the default hard-coded URL. */
   explicit LcmInterfaceSystem(std::string lcm_url = {});
 
-  /**
-  Constructs using the given LCM service.  The pointer is aliased by this
+  /** Constructs using the given LCM service.  The pointer is aliased by this
   class and must remain valid for the lifetime of this object.  Users MUST
   NOT start the receive thread on this object. */
   explicit LcmInterfaceSystem(drake::lcm::DrakeLcmInterface* lcm);

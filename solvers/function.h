@@ -15,8 +15,7 @@ using VecIn = Eigen::Ref<const VectorX<ScalarType>>;
 template <typename ScalarType>
 using VecOut = VectorX<ScalarType>;
 
-/**
-FunctionTraits
+/** FunctionTraits
 @brief Define interface to a function of the form y = f(x). */
 template <typename F>
 struct FunctionTraits {

@@ -12,8 +12,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-For internal use only of the MultibodyTree implementation.
+/** For internal use only of the MultibodyTree implementation.
 While all code that is common to any node can be placed in the BodyNode
 class, %BodyNodeImpl provides compile-time fixed-size BodyNode
 implementations so that all operations can be performed with fixed-size
@@ -31,8 +30,7 @@ class BodyNodeImpl : public BodyNode<T> {
   // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {nq = num_positions, nv = num_velocities};
 
-  /**
-  Given a body and its inboard mobilizer in a MultibodyTree this constructor
+  /** Given a body and its inboard mobilizer in a MultibodyTree this constructor
   creates the corresponding %BodyNode. See the BodyNode class documentation
   for details on how a BodyNode is defined.
   @param[in] parent_node

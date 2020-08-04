@@ -14,8 +14,7 @@
 namespace drake {
 namespace math {
 
-/**
-Represents a multi-linear function (from vector inputs to vector outputs) by
+/** Represents a multi-linear function (from vector inputs to vector outputs) by
 interpolating between points on a mesh using (triangular) barycentric
 interpolation.
 
@@ -47,8 +46,7 @@ class BarycentricMesh {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BarycentricMesh);
 
-  /**
-  The mesh is represented by a std::set (to ensure uniqueness and provide
+  /** The mesh is represented by a std::set (to ensure uniqueness and provide
   logarithmic lookups) of coordinates in each input dimension. Note: The
   values are type double, not T (We do not plan to take gradients, etc w/
   respect to them). */
@@ -70,15 +68,13 @@ class BarycentricMesh {
   }
   int get_num_interpolants() const { return num_interpolants_; }
 
-  /**
-  Writes the position of a mesh point in the input space referenced by its
+  /** Writes the position of a mesh point in the input space referenced by its
   scalar index to @p point.
   @param index must be in [0, get_num_mesh_points).
   @param point is set to the num_inputs-by-1 location of the mesh point. */
   void get_mesh_point(int index, EigenPtr<Eigen::VectorXd> point) const;
 
-  /**
-  Returns the position of a mesh point in the input space referenced by its
+  /** Returns the position of a mesh point in the input space referenced by its
   scalar index to @p point.
   @param index must be in [0, get_num_mesh_points). */
   VectorX<T> get_mesh_point(int index) const;
@@ -86,8 +82,7 @@ class BarycentricMesh {
   /** Returns a matrix with all of the mesh points, one per column. */
   MatrixX<T> get_all_mesh_points() const;
 
-  /**
-  Writes the mesh indices used for interpolation to @p mesh_indices, and the
+  /** Writes the mesh indices used for interpolation to @p mesh_indices, and the
   interpolating coefficients to @p weights.  Inputs that are outside the
   bounding box of the input_grid are interpolated as though they were
   projected (elementwise) to the closest face of the defined mesh.
@@ -101,8 +96,7 @@ class BarycentricMesh {
                               EigenPtr<Eigen::VectorXi> mesh_indices,
                               EigenPtr<VectorX<T>> weights) const;
 
-  /**
-  Evaluates the function at the @p input values, by interpolating between
+  /** Evaluates the function at the @p input values, by interpolating between
   the values at @p mesh_values.  Inputs that are outside the
   bounding box of the input_grid are interpolated as though they were
   projected (elementwise) to the closest face of the defined mesh.
@@ -125,8 +119,7 @@ class BarycentricMesh {
   VectorX<T> Eval(const Eigen::Ref<const MatrixX<T>>& mesh_values,
                   const Eigen::Ref<const VectorX<T>>& input) const;
 
-  /**
-  Performs Eval, but with the possibility of the values on the mesh
+  /** Performs Eval, but with the possibility of the values on the mesh
   having a different scalar type than the values defining the mesh
   (symbolic::Expression containing decision variables for an optimization
   problem is an important example)
@@ -161,8 +154,7 @@ class BarycentricMesh {
     return output;
   }
 
-  /**
-  Evaluates @p vector_func at all input mesh points and extracts the mesh
+  /** Evaluates @p vector_func at all input mesh points and extracts the mesh
   value matrix that should be used to approximate the function with this
   barycentric interpolation.
 

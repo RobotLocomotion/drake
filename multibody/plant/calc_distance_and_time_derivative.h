@@ -7,16 +7,14 @@
 namespace drake {
 namespace multibody {
 
-/**
-The struct containing the signed distance and its time derivative between
+/** The struct containing the signed distance and its time derivative between
 a pair of geometries. */
 struct SignedDistanceWithTimeDerivative {
   double distance;
   double distance_time_derivative;
 };
 
-/**
-Given a pair of geometries and the generalized position/velocity of the
+/** Given a pair of geometries and the generalized position/velocity of the
 plant, compute the signed distance between the pair of geometries and the
 time derivative of the signed distance.
 This function is similar to

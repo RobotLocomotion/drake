@@ -9,8 +9,7 @@ namespace drake {
 namespace multibody {
 namespace benchmarks {
 
-/**
-This class provides an analytical solution to a mass-damper-spring system.
+/** This class provides an analytical solution to a mass-damper-spring system.
 The system consists of a particle Q of mass m that can only move left/right
 on flat Earth (frame N).  Particle Q is connected by an ideal translational
 spring/damper. The other end of the spring/damper is welded to point No
@@ -30,8 +29,7 @@ class MassDamperSpringAnalyticalSolution {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MassDamperSpringAnalyticalSolution);
 
-  /**
-  This constructs the aforementioned mass-damper-spring system.
+  /** This constructs the aforementioned mass-damper-spring system.
 
   @param[in] mass Mass of system (particle Q).
   @param[in] b Linear damping constant.
@@ -39,15 +37,13 @@ class MassDamperSpringAnalyticalSolution {
   MassDamperSpringAnalyticalSolution(const T& mass, const T& b, const T& k) :
                                      m_(mass), b_(b), k_(k) {}
 
-  /**
-  Sets the initial values of x and ẋ for `this` system.
+  /** Sets the initial values of x and ẋ for `this` system.
 
   @param[in] x0 Initial value of x (value of x at time t = 0).
   @param[in] xDt0 Initial value of ẋ (value of ẋ at time t = 0). */
   void SetInitialValue(const T& x0, const T& xDt0)  { x0_ = x0;  xDt0_ = xDt0; }
 
-  /**
-  For `this` mass-damper-spring system, and with the given initial
+  /** For `this` mass-damper-spring system, and with the given initial
   values, this method calculates the values of x, ẋ, ẍ at time t.
 
   @param[in] t The value of time at which output is requested.

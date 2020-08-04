@@ -1,12 +1,10 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref geometry_infrastructure. */
 
 namespace drake {
 namespace geometry {
 
-/**
-@addtogroup geometry_infrastructure
+/** @addtogroup geometry_infrastructure
 
 SceneGraph serves as the nexus for all geometry (and geometry-based operations)
 in a Diagram.

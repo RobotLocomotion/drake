@@ -14,8 +14,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-A binding on constraint type C is a mapping of the decision
+/** A binding on constraint type C is a mapping of the decision
 variables onto the inputs of C.  This allows the constraint to operate
 on a vector made up of different elements of the decision variables. */
 template <typename C>
@@ -29,8 +28,7 @@ class Binding {
     DRAKE_DEMAND(c->num_vars() == v.rows() || c->num_vars() == Eigen::Dynamic);
   }
 
-  /**
-  Concatenates each VectorDecisionVariable object in @p v into a single
+  /** Concatenates each VectorDecisionVariable object in @p v into a single
   column vector, binds this column vector of decision variables with
   the constraint @p c. */
   Binding(const std::shared_ptr<C>& c, const VariableRefList& v)
@@ -73,8 +71,7 @@ class Binding {
     return os.str();
   }
 
-  /**
-  Compare two bindings based on their evaluator pointers and the bound
+  /** Compare two bindings based on their evaluator pointers and the bound
   variables. */
   bool operator==(const Binding<C>& other) const {
     if (this->evaluator().get() != other.evaluator().get()) {

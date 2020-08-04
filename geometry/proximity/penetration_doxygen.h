@@ -1,13 +1,11 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref module_penetration_queries. */
 
 namespace drake {
 namespace geometry {
 namespace proximity {
 
-/**
-@addtogroup module_penetration_queries
+/** @addtogroup module_penetration_queries
 Penetration queries report all pairs of intersecting geometries and differ
 in how they characterize the penetration. They include:
 

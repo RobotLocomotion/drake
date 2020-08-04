@@ -18,8 +18,7 @@
 namespace drake {
 namespace systems {
 
-/**
-BasicVector is a semantics-free wrapper around an Eigen vector that
+/** BasicVector is a semantics-free wrapper around an Eigen vector that
 satisfies VectorBase. Once constructed, its size is fixed.
 
 @tparam_default_scalar */
@@ -34,8 +33,7 @@ class BasicVector : public VectorBase<T> {
   /** Constructs an empty BasicVector. */
   BasicVector() = default;
 
-  /**
-  Initializes with the given @p size using the drake::dummy_value<T>, which
+  /** Initializes with the given @p size using the drake::dummy_value<T>, which
   is NaN when T = double. */
   explicit BasicVector(int size)
       : values_(VectorX<T>::Constant(size, dummy_value<T>::get())) {}
@@ -58,8 +56,7 @@ class BasicVector : public VectorBase<T> {
     return std::make_unique<BasicVector<T>>(init);
   }
 
-  /**
-  Constructs a BasicVector where each element is constructed using the
+  /** Constructs a BasicVector where each element is constructed using the
   placewise-corresponding member of @p args as the sole constructor
   argument.  For instance:
     BasicVector<symbolic::Expression>::Make("x", "y", "z"); */
@@ -72,8 +69,7 @@ class BasicVector : public VectorBase<T> {
 
   int size() const final { return static_cast<int>(values_.rows()); }
 
-  /**
-  Sets the vector to the given value. After a.set_value(b.get_value()), a
+  /** Sets the vector to the given value. After a.set_value(b.get_value()), a
   must be identical to b.
   @throws std::out_of_range if the new value has different dimensions. */
   void set_value(const Eigen::Ref<const VectorX<T>>& value) {
@@ -90,8 +86,7 @@ class BasicVector : public VectorBase<T> {
     return values_.head(values_.rows());
   }
 
-  /**
-  Returns the entire vector as a mutable Eigen::VectorBlock, which allows
+  /** Returns the entire vector as a mutable Eigen::VectorBlock, which allows
   mutation of the values, but does not allow resizing the vector itself. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     return values_.head(values_.rows());
@@ -114,8 +109,7 @@ class BasicVector : public VectorBase<T> {
 
   void SetZero() final { values_.setZero(); }
 
-  /**
-  Copies the entire vector to a new BasicVector, with the same concrete
+  /** Copies the entire vector to a new BasicVector, with the same concrete
   implementation type.
 
   Uses the Non-Virtual Interface idiom because smart pointers do not have
@@ -137,8 +131,7 @@ class BasicVector : public VectorBase<T> {
     return values_[index];
   }
 
-  /**
-  Returns a new BasicVector containing a copy of the entire vector.
+  /** Returns a new BasicVector containing a copy of the entire vector.
   Caller must take ownership, and may rely on the NVI wrapper to initialize
   the clone elementwise.
 
@@ -148,8 +141,7 @@ class BasicVector : public VectorBase<T> {
     return new BasicVector<T>(this->size());
   }
 
-  /**
-  Sets @p data at @p index to an object of type T, which must have a
+  /** Sets @p data at @p index to an object of type T, which must have a
   single-argument constructor invoked via @p constructor_arg, and then
   recursively invokes itself on the next index with @p recursive args.
   Helper for BasicVector<T>::Make. */

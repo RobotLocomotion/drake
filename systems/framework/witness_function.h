@@ -22,26 +22,22 @@ enum class WitnessFunctionDirection {
   /** This witness function will never be triggered. */
   kNone,
 
-  /**
-  Witness function triggers when the function crosses or touches zero
+  /** Witness function triggers when the function crosses or touches zero
   after an initial positive evaluation. */
   kPositiveThenNonPositive,
 
-  /**
-  Witness function triggers when the function crosses or touches zero
+  /** Witness function triggers when the function crosses or touches zero
   after an initial negative evaluation. */
   kNegativeThenNonNegative,
 
-  /**
-  Witness function triggers *any time* the function crosses/touches zero,
+  /** Witness function triggers *any time* the function crosses/touches zero,
   *except* when the witness function evaluates to zero at the beginning
   of the interval. Conceptually equivalent to kPositiveThenNonNegative OR
   kNegativeThenNonNegative. */
   kCrossesZero,
 };
 
-/**
-Class that stores a function that is able to help determine the time and
+/** Class that stores a function that is able to help determine the time and
 state at which a step of the initial value problem integration of a System
 should end, which may be done for any number of purposes, including
 publishing or state reinitialization (i.e., event handling). System authors
@@ -99,8 +95,7 @@ class WitnessFunction final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction)
 
-  /**
-  Signature of a function suitable for calculating a value of a particular
+  /** Signature of a function suitable for calculating a value of a particular
   witness function. */
   using CalcCallback = std::function<T(const Context<T>&)>;
 
@@ -167,8 +162,7 @@ class WitnessFunction final {
   }
 #endif
 
-  /**
-  Gets the description of this witness function (used primarily for logging
+  /** Gets the description of this witness function (used primarily for logging
   and debugging). */
   const std::string& description() const { return description_; }
 
@@ -184,8 +178,7 @@ class WitnessFunction final {
   /** Gets a reference to the System used by this witness function. */
   const System<T>& get_system() const { return *system_; }
 
-  /**
-  Checks whether the witness function should trigger using given
+  /** Checks whether the witness function should trigger using given
   values at w0 and wf. Note that this function is not specific to a
   particular witness function. */
   boolean<T> should_trigger(const T& w0, const T& wf) const {
@@ -209,13 +202,11 @@ class WitnessFunction final {
     DRAKE_UNREACHABLE();
   }
 
-  /**
-  Gets the event that will be dispatched when the witness function
+  /** Gets the event that will be dispatched when the witness function
   triggers. A null pointer indicates that no event will be dispatched. */
   const Event<T>* get_event() const { return event_.get(); }
 
-  /**
-  Gets a mutable pointer to the event that will occur when the witness
+  /** Gets a mutable pointer to the event that will occur when the witness
   function triggers. */
   Event<T>* get_mutable_event() { return event_.get(); }
 

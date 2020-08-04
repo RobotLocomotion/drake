@@ -25,8 +25,7 @@ class SystemBaseContextBaseAttorney;
 }  // namespace internal
 #endif
 
-/**
-Provides non-templatized Context functionality shared by the templatized
+/** Provides non-templatized Context functionality shared by the templatized
 derived classes. That includes caching, dependency tracking, and management
 of local values for fixed input ports.
 
@@ -48,15 +47,13 @@ class ContextBase : public internal::ContextMessageInterface {
   ContextBase& operator=(ContextBase&&) = delete;
   /** @} */
 
-  /**
-  Creates an identical copy of the concrete context object.
+  /** Creates an identical copy of the concrete context object.
   @throws std::logic_error if this is not the root context. */
   std::unique_ptr<ContextBase> Clone() const;
 
   ~ContextBase() override;
 
-  /**
-  (Debugging) Disables caching recursively for this context
+  /** (Debugging) Disables caching recursively for this context
   and all its subcontexts. Disabling forces every `Eval()` method to perform a
   full calculation rather than returning the cached one. Results should be
   identical with or without caching, except for performance. If they are not,
@@ -69,8 +66,7 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::DisableCaching);
   }
 
-  /**
-  (Debugging) Re-enables caching recursively for this context and all its
+  /** (Debugging) Re-enables caching recursively for this context and all its
   subcontexts. The `is_disabled` flags are independent of the `out_of_date`
   flags, which continue to be maintained even when caching is disabled (though
   they are ignored). Hence re-enabling the cache with this method may result in
@@ -83,8 +79,7 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::EnableCaching);
   }
 
-  /**
-  (Debugging) Marks all cache entries out of date, recursively for this
+  /** (Debugging) Marks all cache entries out of date, recursively for this
   context and all its subcontexts. This forces the next `Eval()` request for
   each cache entry to perform a full calculation rather than returning the
   cached one. After that first recalculation, normal caching behavior resumes
@@ -96,8 +91,7 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::SetAllEntriesOutOfDate);
   }
 
-  /**
-  (Advanced) Freezes the cache at its current contents, preventing any
+  /** (Advanced) Freezes the cache at its current contents, preventing any
   further cache updates. When frozen, accessing an out-of-date cache entry
   causes an exception to be throw. This is applied recursively to this
   %Context and all its subcontexts, but _not_ to its parent or siblings so
@@ -107,8 +101,7 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::freeze_cache);
   }
 
-  /**
-  (Advanced) Unfreezes the cache if it was previously frozen. This is
+  /** (Advanced) Unfreezes the cache if it was previously frozen. This is
   applied recursively to this %Context and all its subcontexts, but _not_
   to its parent or siblings. If the cache was not frozen, this does nothing
   but waste a little time. */
@@ -116,16 +109,14 @@ class ContextBase : public internal::ContextMessageInterface {
     PropagateCachingChange(*this, &Cache::unfreeze_cache);
   }
 
-  /**
-  (Advanced) Reports whether this %Context's cache is currently frozen.
+  /** (Advanced) Reports whether this %Context's cache is currently frozen.
   This checks only locally; it is possible that parent, child, or sibling
   subcontext caches are in a different state than this one. */
   bool is_cache_frozen() const final {
     return get_cache().is_cache_frozen();
   }
 
-  /**
-  Returns the local name of the subsystem for which this is the Context.
+  /** Returns the local name of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemName() for details.
   @see GetSystemPathname() if you want the full name. */
@@ -137,8 +128,7 @@ class ContextBase : public internal::ContextMessageInterface {
   /** (Internal) Gets the id of the subsystem that created this context. */
   internal::SystemId get_system_id() const { return system_id_; }
 
-  /**
-  Returns the full pathname of the subsystem for which this is the Context.
+  /** Returns the full pathname of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemPathname() for details. */
   std::string GetSystemPathname() const final;
@@ -148,8 +138,7 @@ class ContextBase : public internal::ContextMessageInterface {
     return cache_;
   }
 
-  /**
-  (Advanced) Returns a mutable reference to this subcontext's cache. Note
+  /** (Advanced) Returns a mutable reference to this subcontext's cache. Note
   that this method is const because the cache is always writable.
   @warning Writing directly to the cache does not automatically propagate
   invalidations to downstream dependents of a contained cache entry, because
@@ -161,23 +150,20 @@ class ContextBase : public internal::ContextMessageInterface {
     return cache_;
   }
 
-  /**
-  Returns a const reference to a DependencyTracker in this subcontext.
+  /** Returns a const reference to a DependencyTracker in this subcontext.
   Advanced users and internal code can use the returned reference to issue value
   change notifications -- mutable access is not required for that purpose. */
   const DependencyTracker& get_tracker(DependencyTicket ticket) const {
     return graph_.get_tracker(ticket);
   }
 
-  /**
-  Returns a mutable reference to a DependencyTracker in this subcontext.
+  /** Returns a mutable reference to a DependencyTracker in this subcontext.
   (You do not need mutable access just to issue value change notifications.) */
   DependencyTracker& get_mutable_tracker(DependencyTicket ticket) {
     return graph_.get_mutable_tracker(ticket);
   }
 
-  /**
-  Returns a const reference to the collection of value trackers within
+  /** Returns a const reference to the collection of value trackers within
   this subcontext. Together these form the dependency subgraph for the values
   in this subcontext, plus edges leading to neighboring trackers. */
   const DependencyGraph& get_dependency_graph() const {
@@ -212,8 +198,7 @@ class ContextBase : public internal::ContextMessageInterface {
     return output_port_tickets_[port_num];
   }
 
-  /**
-  Connects the input port at `index` to a FixedInputPortValue with
+  /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value
   source is replaced or the Context is destroyed. You may use that reference to
@@ -233,8 +218,7 @@ class ContextBase : public internal::ContextMessageInterface {
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
 
-  /**
-  Same as above method but the value is passed by const reference instead
+  /** Same as above method but the value is passed by const reference instead
   of by unique_ptr. The port will contain a copy of the `value` (not retain a
   pointer to the `value`).
 
@@ -250,8 +234,7 @@ class ContextBase : public internal::ContextMessageInterface {
     return FixInputPort(index, value.Clone());
   }
 
-  /**
-  For input port `index`, returns a const FixedInputPortValue if the port is
+  /** For input port `index`, returns a const FixedInputPortValue if the port is
   fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
   const FixedInputPortValue* MaybeGetFixedInputPortValue(int index) const {
@@ -259,8 +242,7 @@ class ContextBase : public internal::ContextMessageInterface {
     return input_port_values_[index].get();
   }
 
-  /**
-  For input port `index`, returns a mutable FixedInputPortValue if the port
+  /** For input port `index`, returns a mutable FixedInputPortValue if the port
   is fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue* MaybeGetMutableFixedInputPortValue(int index) {
@@ -268,8 +250,7 @@ class ContextBase : public internal::ContextMessageInterface {
     return input_port_values_[index].get_mutable();
   }
 
-  /**
-  (Internal use only) Returns the next change event serial number that is
+  /** (Internal use only) Returns the next change event serial number that is
   unique for this entire Context tree, not just this subcontext. This number
   is not reset after a Context is copied but continues to count up. */
   int64_t start_new_change_event() {
@@ -289,8 +270,7 @@ class ContextBase : public internal::ContextMessageInterface {
   bool is_root_context() const { return parent_ == nullptr; }
 
  protected:
-  /**
-  Default constructor creates an empty ContextBase but initializes all the
+  /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
   q, all states, all inputs, etc.). We can't allocate trackers for individual
   discrete & abstract states, parameters, or input ports since we don't yet
@@ -299,24 +279,21 @@ class ContextBase : public internal::ContextMessageInterface {
     CreateBuiltInTrackers();
   }
 
-  /**
-  Copy constructor takes care of base class data members, but _does not_ fix
+  /** Copy constructor takes care of base class data members, but _does not_ fix
   up base class pointers. Derived classes must implement copy constructors that
   delegate to this one for use in their DoCloneWithoutPointers()
   implementations. The cache and dependency graph are copied, but any pointers
   contained in the source are left null in the copy. */
   ContextBase(const ContextBase&) = default;
 
-  /**
-  @name      Add dependency tracking resources (Internal use only)
+  /** @name      Add dependency tracking resources (Internal use only)
   Methods in this group are used by SystemBase and unit testing while creating
   a Context that can track dependencies for a given System. Although these
   methods are protected, SystemBase is granted permission to invoke them (via
   an attorney class). */
   /** @{ */
 
-  /**
-  Adds the next input port. Expected index is supplied along with the
+  /** Adds the next input port. Expected index is supplied along with the
   assigned ticket. Subscribes the "all input ports" tracker to this one.
   The fixed_input_type_checker will be used for validation when setting a fixed
   input, or may be null when no validation should be performed.  Typically the
@@ -328,8 +305,7 @@ class ContextBase : public internal::ContextMessageInterface {
       InputPortIndex expected_index, DependencyTicket ticket,
       std::function<void(const AbstractValue&)> fixed_input_type_checker);
 
-  /**
-  Adds the next output port. Expected index is supplied along with the
+  /** Adds the next output port. Expected index is supplied along with the
   assigned ticket. */
   void AddOutputPort(
       OutputPortIndex expected_index, DependencyTicket ticket,
@@ -357,8 +333,7 @@ class ContextBase : public internal::ContextMessageInterface {
   /** @} */
 
   /** @anchor context_base_change_notification_methods */
-  /**
-  @name         Change notification methods (Internal use only)
+  /** @name         Change notification methods (Internal use only)
   These "Note" methods are used by framework-internal derived classes to effect
   change notifications that propagate down from a DiagramContext (where the
   change is initiated) through all its subcontexts, recursively. Such
@@ -375,16 +350,14 @@ class ContextBase : public internal::ContextMessageInterface {
         .NoteValueChange(change_event);
   }
 
-  /**
-  Notifies the local accuracy tracker that the accuracy setting
+  /** Notifies the local accuracy tracker that the accuracy setting
   may have changed. */
   void NoteAccuracyChanged(int64_t change_event) {
     get_tracker(DependencyTicket(internal::kAccuracyTicket))
         .NoteValueChange(change_event);
   }
 
-  /**
-  Notifies the local continuous, discrete, and abstract state trackers that
+  /** Notifies the local continuous, discrete, and abstract state trackers that
   each of them may have changed, likely because someone has asked to modify the
   whole state x. */
   void NoteAllStateChanged(int64_t change_event) {
@@ -393,16 +366,14 @@ class ContextBase : public internal::ContextMessageInterface {
     NoteAllAbstractStateChanged(change_event);
   }
 
-  /**
-  Notifies the local q, v, and z trackers that each of them may have
+  /** Notifies the local q, v, and z trackers that each of them may have
   changed, likely because someone has asked to modify continuous state xc. */
   void NoteAllContinuousStateChanged(int64_t change_event) {
     NoteAllQChanged(change_event);
     NoteAllVZChanged(change_event);
   }
 
-  /**
-  Notifies the local v and z trackers that each of them may have
+  /** Notifies the local v and z trackers that each of them may have
   changed, likely because someone has asked to modify just the first-order
   state variables in xc. */
   void NoteAllVZChanged(int64_t change_event) {
@@ -428,8 +399,7 @@ class ContextBase : public internal::ContextMessageInterface {
         .NoteValueChange(change_event);
   }
 
-  /**
-  Notifies each local discrete state group tracker that the value of
+  /** Notifies each local discrete state group tracker that the value of
   the discrete state group it manages may have changed. If there are no discrete
   state groups owned by this context, nothing happens. A DiagramContext does
   not own any discrete state groups. */
@@ -438,8 +408,7 @@ class ContextBase : public internal::ContextMessageInterface {
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /**
-  Notifies each local abstract state variable tracker that the value of the
+  /** Notifies each local abstract state variable tracker that the value of the
   abstract state variable it manages may have changed. If there are no abstract
   state variables owned by this context, nothing happens. A DiagramContext does
   not own any abstract state variables. */
@@ -448,8 +417,7 @@ class ContextBase : public internal::ContextMessageInterface {
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /**
-  Notifies the local numeric and abstract parameter trackers that each of
+  /** Notifies the local numeric and abstract parameter trackers that each of
   them may have changed, likely because someone asked to modify all the
   parameters. */
   void NoteAllParametersChanged(int64_t change_event) {
@@ -457,8 +425,7 @@ class ContextBase : public internal::ContextMessageInterface {
     NoteAllAbstractParametersChanged(change_event);
   }
 
-  /**
-  Notifies each local numeric parameter tracker that the value of the
+  /** Notifies each local numeric parameter tracker that the value of the
   parameter it manages may have changed. If there are no numeric parameters
   owned by this context, nothing happens. A DiagramContext does not own any
   parameters. */
@@ -467,8 +434,7 @@ class ContextBase : public internal::ContextMessageInterface {
       get_tracker(ticket).NoteValueChange(change_event);
   }
 
-  /**
-  Notifies each local abstract parameter tracker that the value of the
+  /** Notifies each local abstract parameter tracker that the value of the
   parameter it manages may have changed. If there are no abstract parameters
   owned by this context, nothing happens. A DiagramContext does not own any
   parameters. */
@@ -478,8 +444,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
   /** @} */
 
-  /**
-  (Internal use only) Returns true if this context provides resources for
+  /** (Internal use only) Returns true if this context provides resources for
   its own individual state variables or parameters. That means those variables
   or parameters were declared by this context's corresponding System. Currently
   only leaf systems may declare variables and parameters; diagram contexts
@@ -493,8 +458,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected function on its children.
-  /**
-  (Internal use only) Clones a context but without copying any of its
+  /** (Internal use only) Clones a context but without copying any of its
   internal pointers; the clone's pointers are set to null. */
   static std::unique_ptr<ContextBase> CloneWithoutPointers(
       const ContextBase& source) {
@@ -510,8 +474,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected function on its children.
-  /**
-  (Internal use only) Given a new context `clone` containing an
+  /** (Internal use only) Given a new context `clone` containing an
   identically-structured dependency graph as the one in `source`, creates a
   mapping of all tracker memory addresses from `source` to `clone`. This must be
   done for the whole Context tree because pointers can point outside of their
@@ -522,8 +485,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected function on its children.
-  /**
-  (Internal use only) Assuming `clone` is a recently-cloned Context that
+  /** (Internal use only) Assuming `clone` is a recently-cloned Context that
   has yet to have its internal pointers updated, sets those pointers now. The
   given map is used to update tracker pointers. */
   static void FixContextPointers(
@@ -533,8 +495,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected method on its children.
-  /**
-  (Internal use only) Applies the given caching-change notification method
+  /** (Internal use only) Applies the given caching-change notification method
   to `context`, and propagates the notification to subcontexts if `context` is
   a DiagramContext. Used, for example, to enable and disable the cache. The
   supplied `context` is const so depends on the cache being mutable. */
@@ -546,8 +507,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected method on its children.
-  /**
-  (Internal use only) Applies the given bulk-change notification method
+  /** (Internal use only) Applies the given bulk-change notification method
   to the given `context`, and propagates the notification to subcontexts if this
   is a DiagramContext. */
   static void PropagateBulkChange(
@@ -557,8 +517,7 @@ class ContextBase : public internal::ContextMessageInterface {
     context->DoPropagateBulkChange(change_event, note_bulk_change);
   }
 
-  /**
-  (Internal use only) This is a convenience method for invoking the
+  /** (Internal use only) This is a convenience method for invoking the
   eponymous static method on `this` context (which occurs frequently). */
   void PropagateBulkChange(
       int64_t change_event,
@@ -569,8 +528,7 @@ class ContextBase : public internal::ContextMessageInterface {
   // Use static method so DiagramContext can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
-  /**
-  Declares that `parent` is the context of the enclosing Diagram.
+  /** Declares that `parent` is the context of the enclosing Diagram.
   Aborts if the parent has already been set or is null. */
   static void set_parent(ContextBase* child, ContextBase* parent) {
     DRAKE_DEMAND(child != nullptr);
@@ -582,8 +540,7 @@ class ContextBase : public internal::ContextMessageInterface {
     child->current_change_event_ = -1;
   }
 
-  /**
-  Derived classes must implement this so that it performs the complete
+  /** Derived classes must implement this so that it performs the complete
   deep copy of the context, including all base class members but not fixing
   up base class pointers. To do that, implement a protected copy constructor
   that inherits from the base class copy constructor (which doesn't repair the
@@ -591,8 +548,7 @@ class ContextBase : public internal::ContextMessageInterface {
   `return std::unique_ptr<ContextBase>(new DerivedType(*this));`. */
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
-  /**
-  DiagramContext must implement this to invoke BuildTrackerPointerMap() on
+  /** DiagramContext must implement this to invoke BuildTrackerPointerMap() on
   each of its subcontexts. The default implementation does nothing which is
   fine for a LeafContext. */
   virtual void DoPropagateBuildTrackerPointerMap(
@@ -601,8 +557,7 @@ class ContextBase : public internal::ContextMessageInterface {
     unused(clone, tracker_map);
   }
 
-  /**
-  DiagramContext must implement this to invoke FixContextPointers() on
+  /** DiagramContext must implement this to invoke FixContextPointers() on
   each of its subcontexts. The default implementation does nothing which is
   fine for a LeafContext. */
   virtual void DoPropagateFixContextPointers(
@@ -611,16 +566,14 @@ class ContextBase : public internal::ContextMessageInterface {
     unused(source, tracker_map);
   }
 
-  /**
-  DiagramContext must implement this to invoke a caching behavior change on
+  /** DiagramContext must implement this to invoke a caching behavior change on
   each of its subcontexts. The default implementation does nothing which is
   fine for a LeafContext. */
   virtual void DoPropagateCachingChange(void (Cache::*caching_change)()) const {
     unused(caching_change);
   }
 
-  /**
-  DiagramContext must implement this to invoke PropagateBulkChange()
+  /** DiagramContext must implement this to invoke PropagateBulkChange()
   on its subcontexts, passing along the indicated method that specifies the
   particular bulk change (e.g. whole state, all parameters, all discrete state
   variables, etc.). The default implementation does nothing which is fine for

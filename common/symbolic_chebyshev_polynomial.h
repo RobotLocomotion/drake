@@ -16,8 +16,7 @@
 
 namespace drake {
 namespace symbolic {
-/**
-Represents the Chebyshev polynomial of the first kind Tₙ(x).
+/** Represents the Chebyshev polynomial of the first kind Tₙ(x).
 One definition of Chebyshev polynomial of the first kind is
 Tₙ(cos(θ)) = cos(nθ)
 It can also be defined recursively as
@@ -29,8 +28,7 @@ class ChebyshevPolynomial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ChebyshevPolynomial)
 
-  /**
-  Constructs a Chebyshev polynomial Tₙ(x)
+  /** Constructs a Chebyshev polynomial Tₙ(x)
   @param var The variable x
   @param degree The Chebyshev polynomial is of degree n.
   @pre degree >= 0. */
@@ -48,20 +46,17 @@ class ChebyshevPolynomial {
   /** Evaluates this Chebyshev polynomial at @p var_val. */
   double Evaluate(double var_val) const;
 
-  /**
-  Checks if this and @p other represent the same Chebyshev polynomial. Two
+  /** Checks if this and @p other represent the same Chebyshev polynomial. Two
   Chebyshev polynomials are equal iff their variable and degree are the same,
   or they both have degree 0.
   @note T₀(x) = T₀(y) = 1 */
   bool operator==(const ChebyshevPolynomial& other) const;
 
-  /**
-  Checks if this and @p other do not represent the same Chebyshev
+  /** Checks if this and @p other do not represent the same Chebyshev
   polynomial. */
   bool operator!=(const ChebyshevPolynomial& other) const;
 
-  /**
-  Compare this to another Chebyshev polynomial, returns True if this is
+  /** Compare this to another Chebyshev polynomial, returns True if this is
   regarded as less than the other, otherwise returns false.
 
      If this.var() < other.var(), return True.
@@ -74,8 +69,7 @@ class ChebyshevPolynomial {
   < other.degree(). */
   bool operator<(const ChebyshevPolynomial& other) const;
 
-  /**
-  Computes the differentiation of a Chebyshev polynomial
+  /** Computes the differentiation of a Chebyshev polynomial
   dTₙ(x)/dx = nUₙ₋₁(x)
   where Uₙ₋₁(x) is a Chebyshev polynomial of the second kind. Uₙ₋₁(x) can
   be written as a summation of Chebyshev polynomials of the first kind

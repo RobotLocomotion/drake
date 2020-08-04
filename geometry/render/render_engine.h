@@ -26,8 +26,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/**
-The engine for performing rasterization operations on geometry. This
+/** The engine for performing rasterization operations on geometry. This
 includes rgb images and depth images. The coordinate system of
 %RenderEngine's viewpoint `R` is `X-right`, `Y-down` and `Z-forward`
 with respect to the rendered images.
@@ -84,8 +83,7 @@ the documented @ref reserved_render_label "RenderLabel semantics"; see
 GetRenderLabelOrThrow(). */
 class RenderEngine : public ShapeReifier {
  public:
-  /**
-  Constructs a %RenderEngine with the given default render label. The
+  /** Constructs a %RenderEngine with the given default render label. The
   default render label is applied to geometries that have not otherwise
   specified a (label, id) property. The value _must_ be either
   RenderLabel::kUnspecified or RenderLabel::kDontCare. (See
@@ -106,13 +104,11 @@ class RenderEngine : public ShapeReifier {
 
   virtual ~RenderEngine() = default;
 
-  /**
-  Clones the render engine -- making the %RenderEngine compatible with
+  /** Clones the render engine -- making the %RenderEngine compatible with
   copyable_unique_ptr. */
   std::unique_ptr<RenderEngine> Clone() const;
 
-  /**
-  Requests registration of the given shape with this render engine. The
+  /** Requests registration of the given shape with this render engine. The
   geometry is uniquely identified by the given `id`. The renderer is allowed to
   examine the given `properties` and choose to _not_ register the geometry.
 
@@ -140,20 +136,17 @@ class RenderEngine : public ShapeReifier {
       const Shape& shape, const PerceptionProperties& properties,
       const math::RigidTransformd& X_WG, bool needs_updates = true);
 
-  /**
-  Removes the geometry indicated by the given `id` from the engine.
+  /** Removes the geometry indicated by the given `id` from the engine.
   @param id    The id of the geometry to remove.
   @returns True if the geometry was removed (false implies that this id wasn't
            registered with this engine). */
   bool RemoveGeometry(GeometryId id);
 
-  /**
-  Reports true if a geometry with the given `id` has been registered with
+  /** Reports true if a geometry with the given `id` has been registered with
   `this` engine. */
   bool has_geometry(GeometryId id) const;
 
-  /**
-  Updates the poses of all geometries marked as "needing update" (see
+  /** Updates the poses of all geometries marked as "needing update" (see
   RegisterVisual()).
 
   @param X_WGs  The poses of *all* geometries in SceneGraph (measured and
@@ -169,15 +162,13 @@ class RenderEngine : public ShapeReifier {
     }
   }
 
-  /**
-  Updates the renderer's viewpoint with given pose X_WR.
+  /** Updates the renderer's viewpoint with given pose X_WR.
 
   @param X_WR  The pose of renderer's viewpoint in the world coordinate
                system. */
   virtual void UpdateViewpoint(const math::RigidTransformd& X_WR) = 0;
 
-  /**
-  @name Rendering using simple camera models
+  /** @name Rendering using simple camera models
 
   These methods use a simplified camera model. They allow specification of the
   camera image size and the the focal length in the y-direction (via the
@@ -194,8 +185,7 @@ class RenderEngine : public ShapeReifier {
 
   // TODO(SeanCurtis-TRI): Deprecate these (Depth)CameraProperties variants
   //  of the render functions.
-  /**
-  Renders the registered geometry into the given color (rgb) image based on
+  /** Renders the registered geometry into the given color (rgb) image based on
   a simplified camera model.
 
   @param camera                The intrinsic properties of the camera.
@@ -205,8 +195,7 @@ class RenderEngine : public ShapeReifier {
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const = 0;
 
-  /**
-  Renders the registered geometry into the given depth image based on
+  /** Renders the registered geometry into the given depth image based on
   a simplified camera model. In contrast to the other rendering operations,
   depth images don't have an option to display the window; generally, basic
   depth images are not readily communicative to humans.
@@ -217,8 +206,7 @@ class RenderEngine : public ShapeReifier {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const = 0;
 
-  /**
-  Renders the registered geometry into the given label image based on
+  /** Renders the registered geometry into the given label image based on
   a simplified camera model.
 
   @param camera                The intrinsic properties of the camera.
@@ -231,16 +219,14 @@ class RenderEngine : public ShapeReifier {
 
   /** @} */
 
-  /**
-  @name Rendering using fully-specified camera models
+  /** @name Rendering using fully-specified camera models
 
   These methods allow for full specification of the camera model -- its
   intrinsics and render engine parameters. See the documentation of
   ColorRenderCamera and DepthRenderCamera for the full details. */
   /** @{ */
 
-  /**
-  Renders the registered geometry into the given color (rgb) image based on
+  /** Renders the registered geometry into the given color (rgb) image based on
   a _fully_ specified camera.
 
   @param camera                The _render engine_ camera properties.
@@ -254,8 +240,7 @@ class RenderEngine : public ShapeReifier {
     DoRenderColorImage(camera, color_image_out);
   }
 
-  /**
-  Renders the registered geometry into the given depth image based on
+  /** Renders the registered geometry into the given depth image based on
   a _fully_ specified camera. In contrast to the other rendering operations,
   depth images don't have an option to display the window; generally, basic
   depth images are not readily communicative to humans.
@@ -272,8 +257,7 @@ class RenderEngine : public ShapeReifier {
     DoRenderDepthImage(camera, depth_image_out);
   }
 
-  /**
-  Renders the registered geometry into the given label image based on
+  /** Renders the registered geometry into the given label image based on
   a _fully_ specified camera.
 
   @note This uses the ColorRenderCamera as label images are typically rendered
@@ -293,8 +277,7 @@ class RenderEngine : public ShapeReifier {
 
   /** @} */
 
-  /**
-  Reports the render label value this render engine has been configured to
+  /** Reports the render label value this render engine has been configured to
   use. */
   RenderLabel default_render_label() const { return default_render_label_; }
 
@@ -302,8 +285,7 @@ class RenderEngine : public ShapeReifier {
   // Allow derived classes to implement Cloning via copy-construction.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)
 
-  /**
-  The NVI-function for sub-classes to implement actual geometry
+  /** The NVI-function for sub-classes to implement actual geometry
   registration. If the derived class chooses not to register this particular
   shape, it should return false.
 
@@ -323,8 +305,7 @@ class RenderEngine : public ShapeReifier {
       GeometryId id, const Shape& shape, const PerceptionProperties& properties,
       const math::RigidTransformd& X_WG) = 0;
 
-  /**
-  The NVI-function for updating the pose of a render geometry (identified
+  /** The NVI-function for updating the pose of a render geometry (identified
   by `id`) to the given pose X_WG.
 
   @param id       The id of the render geometry whose pose is being set.
@@ -332,8 +313,7 @@ class RenderEngine : public ShapeReifier {
   virtual void DoUpdateVisualPose(GeometryId id,
                                   const math::RigidTransformd& X_WG) = 0;
 
-  /**
-  The NVI-function for removing the geometry with the given `id`.
+  /** The NVI-function for removing the geometry with the given `id`.
   @param id  The id of the geometry to remove.
   @return  True if the geometry was registered with this %RenderEngine and
            removed, false if it wasn't registered in the first place. */
@@ -342,8 +322,7 @@ class RenderEngine : public ShapeReifier {
   /** The NVI-function for cloning this render engine. */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
 
-  /**
-  The NVI-function for rendering color with a fully-specified camera.
+  /** The NVI-function for rendering color with a fully-specified camera.
   When RenderColorImage calls this, it has already confirmed that
   `color_image_out` is not `nullptr` and its size is consistent with the
   camera intrinsics.
@@ -354,8 +333,7 @@ class RenderEngine : public ShapeReifier {
       const ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const;
 
-  /**
-  The NVI-function for rendering depth with a fully-specified camera.
+  /** The NVI-function for rendering depth with a fully-specified camera.
   When RenderDepthImage calls this, it has already confirmed that
   `depth_image_out` is not `nullptr` and its size is consistent with the
   camera intrinsics.
@@ -366,8 +344,7 @@ class RenderEngine : public ShapeReifier {
       const DepthRenderCamera& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const;
 
-  /**
-  The NVI-function for rendering label with a fully-specified camera.
+  /** The NVI-function for rendering label with a fully-specified camera.
   When RenderLabelImage calls this, it has already confirmed that
   `label_image_out` is not `nullptr` and its size is consistent with the
   camera intrinsics.
@@ -378,8 +355,7 @@ class RenderEngine : public ShapeReifier {
       const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const;
 
-  /**
-  Extracts the `(label, id)` RenderLabel property from the given
+  /** Extracts the `(label, id)` RenderLabel property from the given
   `properties` and validates it (or the configured default if no such
   property is defined).
   @throws std::logic_error If the tested render label value is deemed invalid.
@@ -387,8 +363,7 @@ class RenderEngine : public ShapeReifier {
   RenderLabel GetRenderLabelOrThrow(
       const PerceptionProperties& properties) const;
 
-  /**
-  @name   RenderLabel-Color Utilities
+  /** @name   RenderLabel-Color Utilities
 
   Some rasterization pipelines don't support channels of
   RenderLabel::ValueType; typically, they operate in RGB color space. The
@@ -408,8 +383,7 @@ class RenderEngine : public ShapeReifier {
   values. */
   /** @{ */
 
-  /**
-  Transforms the given byte-valued RGB color value into its corresponding
+  /** Transforms the given byte-valued RGB color value into its corresponding
   RenderLabel. */
   static RenderLabel LabelFromColor(const systems::sensors::ColorI& color) {
     return RenderLabel(color.r | (color.g << 8), false);
@@ -430,8 +404,7 @@ class RenderEngine : public ShapeReifier {
 
   /** @} */
 
-  /**
-  Provides access to the light for manual configuration since it's currently
+  /** Provides access to the light for manual configuration since it's currently
   bound to the camera position. This is a temporary measure to facilitate
   benchmarking and create visible shadows, and should not be used publicly.
   @param X_DL The pose of the light in a frame D that is attached to the camera

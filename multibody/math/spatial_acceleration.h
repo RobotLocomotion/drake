@@ -12,8 +12,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This class is used to represent a _spatial acceleration_ that combines
+/** This class is used to represent a _spatial acceleration_ that combines
 rotational (angular acceleration) and translational (linear acceleration)
 components.
 While a SpatialVelocity `V_XY` represents the motion of a "moving frame"
@@ -60,22 +59,19 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialAcceleration)
 
-  /**
-  Default constructor. In Release builds the elements of the newly
+  /** Default constructor. In Release builds the elements of the newly
   constructed spatial acceleration are left uninitialized resulting in a
   zero cost operation. However in Debug builds those entries are set to NaN
   so that operations using this uninitialized spatial acceleration fail
   fast, allowing fast bug detection. */
   SpatialAcceleration() : Base() {}
 
-  /**
-  SpatialAcceleration constructor from an angular acceleration `alpha` and
+  /** SpatialAcceleration constructor from an angular acceleration `alpha` and
   a linear acceleration `a`. */
   SpatialAcceleration(const Eigen::Ref<const Vector3<T>>& alpha,
                       const Eigen::Ref<const Vector3<T>>& a) : Base(alpha, a) {}
 
-  /**
-  SpatialAcceleration constructor from an Eigen expression that represents a
+  /** SpatialAcceleration constructor from an Eigen expression that represents a
   six-dimensional vector.
   Under the hood, spatial accelerations are 6-element quantities that are
   pairs of ordinary 3-vectors. Elements 0-2 constitute the angular
@@ -89,8 +85,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   template <typename Derived>
   explicit SpatialAcceleration(const Eigen::MatrixBase<Derived>& A) : Base(A) {}
 
-  /**
-  In-place shift of `this` spatial acceleration `A_WP` of a frame P into the
+  /** In-place shift of `this` spatial acceleration `A_WP` of a frame P into the
   spatial acceleration `A_WPq` of a frame `Pq` which is an offset frame
   rigidly aligned with P, but with its origin shifted to a point Q by an
   offset `p_PoQ`. Frame `Pq` is instantaneously moving together with frame P
@@ -205,8 +200,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     return *this;
   }
 
-  /**
-  Shifts `this` spatial acceleration `A_WP` of a frame P into the
+  /** Shifts `this` spatial acceleration `A_WP` of a frame P into the
   spatial acceleration `A_WPq` of a frame `Pq` which is an offset frame
   rigidly aligned with P, but with its origin shifted to a point Q by an
   offset p_PoQ. Frame `Pq` is instantaneously moving together with frame P
@@ -224,8 +218,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     return SpatialAcceleration<T>(*this).ShiftInPlace(p_PoQ_E, w_WP_E);
   }
 
-  /**
-  (Advanced) Given `this` spatial acceleration `A_WP` of a frame P in a
+  /** (Advanced) Given `this` spatial acceleration `A_WP` of a frame P in a
   second frame W, this operation is only valid when the angular velocity
   `w_WP` of P in W is zero.
   Refer to Shift(const Vector3<T>&, const Vector3<T>&) for the full version
@@ -243,8 +236,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
                                   a_WPo_E + alpha_WP_E.cross(p_PoQ_E));
   }
 
-  /**
-  This method composes `this` spatial acceleration `A_WP` of a frame P
+  /** This method composes `this` spatial acceleration `A_WP` of a frame P
   measured in a frame W, with that of a third frame B moving in P with
   spatial acceleration `A_PB`. The result is the spatial acceleration
   `A_WB` of frame B measured in W. At the instant in which the accelerations
@@ -426,8 +418,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   }
 };
 
-/**
-(Advanced) Addition operator. Implements the addition of A1 and A2 as
+/** (Advanced) Addition operator. Implements the addition of A1 and A2 as
 elements in ℝ⁶.
 @warning Composing spatial accelerations A1 and A2 cannot be simply
 accomplished by adding them with this operator. The composition of
@@ -442,8 +433,7 @@ inline SpatialAcceleration<T> operator+(const SpatialAcceleration<T>& A1,
   return SpatialAcceleration<T>(A1) += A2;
 }
 
-/**
-(Advanced) Subtraction operator. Implements the subtraction of A1 and A2 as
+/** (Advanced) Subtraction operator. Implements the subtraction of A1 and A2 as
 elements in ℝ⁶.
 @warning With `As = A1 - A2`, `A1 = As + A2` does not correspond to the
 physical composition of spatial accelerations As and A2. Please refere to

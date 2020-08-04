@@ -14,8 +14,7 @@ namespace drake {
 namespace systems {
 namespace estimators {
 
-/**
-A simple state observer for a dynamical system of the form:
+/** A simple state observer for a dynamical system of the form:
 @f[\dot{x} = f(x,u) @f]
 @f[y = g(x,u) @f]
 the observer dynamics takes the form
@@ -40,8 +39,7 @@ class LuenbergerObserver final: public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LuenbergerObserver)
 
-  /**
-  Constructs the observer.
+  /** Constructs the observer.
 
   @param observed_system  The forward model for the observer.  Currently,
   this system must have a maximum of one input port and exactly one output

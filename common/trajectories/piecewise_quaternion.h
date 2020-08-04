@@ -11,8 +11,7 @@ namespace drake {
 namespace trajectories {
 
 // TODO(siyuan.feng): check if this works for AutoDiffScalar.
-/**
-A class representing a trajectory for quaternions that are interpolated
+/** A class representing a trajectory for quaternions that are interpolated
 using piecewise slerp (spherical linear interpolation).
 All the orientation samples are expected to be with respect to the same
 parent reference frame, i.e. q_i represents the rotation R_PBi for the
@@ -35,24 +34,21 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   /** Builds an empty PiecewiseQuaternionSlerp. */
   PiecewiseQuaternionSlerp() = default;
 
-  /**
-  Builds a PiecewiseQuaternionSlerp.
+  /** Builds a PiecewiseQuaternionSlerp.
   @throws std::logic_error if breaks and quaternions have different length,
   or breaks have length < 2. */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
       const std::vector<Quaternion<T>>& quaternions);
 
-  /**
-  Builds a PiecewiseQuaternionSlerp.
+  /** Builds a PiecewiseQuaternionSlerp.
   @throws std::logic_error if breaks and rot_matrices have different length,
   or breaks have length < 2. */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
       const std::vector<Matrix3<T>>& rot_matrices);
 
-  /**
-  Builds a PiecewiseQuaternionSlerp.
+  /** Builds a PiecewiseQuaternionSlerp.
   @throws std::logic_error if breaks and ang_axes have different length,
   or breaks have length < 2. */
   PiecewiseQuaternionSlerp(
@@ -67,8 +63,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
   Eigen::Index cols() const override { return 1; }
 
-  /**
-  Interpolates orientation.
+  /** Interpolates orientation.
   @param t Time for interpolation.
   @return The interpolated quaternion at `t`. */
   Quaternion<T> orientation(double t) const;
@@ -77,22 +72,19 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
     return orientation(t).matrix();
   }
 
-  /**
-  Interpolates angular velocity.
+  /** Interpolates angular velocity.
   @param t Time for interpolation.
   @return The interpolated angular velocity at `t`,
   which is constant per segment. */
   Vector3<T> angular_velocity(double t) const;
 
-  /**
-  Interpolates angular acceleration.
+  /** Interpolates angular acceleration.
   @param t Time for interpolation.
   @return The interpolated angular acceleration at `t`,
   which is always zero for slerp. */
   Vector3<T> angular_acceleration(double t) const;
 
-  /**
-  Getter for the internal quaternion samples.
+  /** Getter for the internal quaternion samples.
 
   @note The returned quaternions might be different from the ones used for
   construction because the internal representations are set to always be
@@ -103,8 +95,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
     return quaternions_;
   }
 
-  /**
-  Returns true if all the corresponding segment times are within
+  /** Returns true if all the corresponding segment times are within
   @p tol seconds, and the angle difference between the corresponding
   quaternion sample points are within @p tol. */
   bool is_approx(const PiecewiseQuaternionSlerp<T>& other,

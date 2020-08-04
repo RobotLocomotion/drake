@@ -14,8 +14,7 @@ namespace multibody {
 namespace benchmarks {
 namespace pendulum {
 
-/**
-This class is used to store the numerical parameters defining the model of
+/** This class is used to store the numerical parameters defining the model of
 a simple pendulum with the method MakePendulumPlant().
 Refer to this the documentation of this class's constructor for further
 details on the parameters stored by this class and their default values. */
@@ -23,8 +22,7 @@ class PendulumParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PendulumParameters)
 
-  /**
-  Constructor used to initialize the physical parameters for a simple
+  /** Constructor used to initialize the physical parameters for a simple
   pendulum model.
 
   @param mass
@@ -79,8 +77,7 @@ class PendulumParameters {
   std::string actuator_name_{"PinJointActuator"};
 };
 
-/**
-This method makes a MultibodyPlant model of an idealized pendulum with a
+/** This method makes a MultibodyPlant model of an idealized pendulum with a
 point mass at the end of a massless rigid rod.
 The pendulum oscillates in the x-z plane with its revolute axis coincident
 with the y-axis. Gravity points downwards in the -z axis direction.

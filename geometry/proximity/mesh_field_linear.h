@@ -18,8 +18,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-%MeshFieldLinear represents a continuous piecewise-linear scalar field f
+/** %MeshFieldLinear represents a continuous piecewise-linear scalar field f
 defined on a (triangular or tetrahedral) mesh; the field value changes
 linearly within each element E (triangle or tetrahedron), and the gradient
 ∇f is constant within each element. The field is continuous across adjacent
@@ -98,8 +97,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   //  documentation of MeshFieldLinear about the choice of calculating
   //  gradient."
 
-  /**
-  Constructs a MeshFieldLinear.
+  /** Constructs a MeshFieldLinear.
   @param name    The name of the field variable.
   @param values  The field value at each vertex of the mesh.
   @param mesh    The mesh M to which this MeshField refers.
@@ -142,8 +140,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return value;
   }
 
-  /**
-  Evaluates the field at a point Qp on an element. If the element is a
+  /** Evaluates the field at a point Qp on an element. If the element is a
   tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
   projection of Q on the triangle's plane.
 
@@ -164,8 +161,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     }
   }
 
-  /**
-  Evaluates the gradient in the domain of the element indicated by `e`.
+  /** Evaluates the gradient in the domain of the element indicated by `e`.
   The gradient is a vector in R³ expressed in frame M. For surface meshes, it
   will particularly lie parallel to the plane of the corresponding triangle.
   @throw std::runtime_error if the gradient vector was not calculated. */
@@ -176,8 +172,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return gradients_[e];
   }
 
-  /**
-  Transforms the gradient vectors of this field from its initial frame M
+  /** Transforms the gradient vectors of this field from its initial frame M
   to the new frame N.
   @warning Use this function when the reference mesh of this field changes
   its frame in the same way. */
@@ -195,8 +190,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   // TODO(DamrongGuoy): Change the type of parameter `field` from MeshField
   //  to MeshFieldLinear. We will need to change the callers of this function
   //  too.
-  /**
-  Checks to see whether the given MeshFieldLinear object is equal via deep
+  /** Checks to see whether the given MeshFieldLinear object is equal via deep
   exact comparison. The name of the objects are exempt from this comparison.
   NaNs are treated as not equal as per the IEEE standard.
   @param field The field for comparison.
@@ -250,8 +244,7 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   std::vector<T> values_at_Mo_;
 };
 
-/**
-@tparam FieldValue  a valid Eigen scalar for field values.
+/** @tparam FieldValue  a valid Eigen scalar for field values.
 @tparam T  a valid Eigen scalar for coordinates. */
 template <typename FieldValue, typename T>
 using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;

@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A simple subclass of BasicVector<T> for testing, particularly for cases
+/** A simple subclass of BasicVector<T> for testing, particularly for cases
 where BasicVector subtyping must be preserved through the framework. */
 template <typename T, int N>
 class MyVector : public BasicVector<T> {
@@ -32,8 +31,7 @@ class MyVector : public BasicVector<T> {
   explicit MyVector(const Eigen::Matrix<T, N, 1>& data)
       : BasicVector<T>(data) {}
 
-  /**
-  Constructs a MyVector where each element is constructed using the
+  /** Constructs a MyVector where each element is constructed using the
   placewise-corresponding member of @p args as the sole constructor
   argument.  For instance: `MyVector<2, double>::Make(1.1, 2.2)`. */
   template<typename... Fargs>
@@ -50,8 +48,7 @@ class MyVector : public BasicVector<T> {
   // AbstractValue; we should not pun away from BasicVector, since many methods
   // in the leaf system and context code assumes that BasicVector is what gets
   // type-erased!
-  /**
-  Shadows the base class Clone() method to change the return type, so that
+  /** Shadows the base class Clone() method to change the return type, so that
   this can be used in `copyable_unique_ptr<MyVector>` and `Value<MyVector>`. */
   std::unique_ptr<MyVector<T, N>> Clone() const {
     return dynamic_pointer_cast_or_throw<MyVector<T, N>>(

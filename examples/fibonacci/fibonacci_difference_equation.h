@@ -10,8 +10,7 @@ namespace drake {
 namespace examples {
 namespace fibonacci {
 
-/**
-A pure discrete system that generates the Fibonacci sequence F_n using
+/** A pure discrete system that generates the Fibonacci sequence F_n using
 a difference equation.
 
 @system

@@ -44,16 +44,14 @@ inline std::string GetInstantiationName(
 
 }  // namespace internal
 
-/**
-Provides a temporary, unique name for a class instantiation that
+/** Provides a temporary, unique name for a class instantiation that
 will be passed to `AddTemplateClass`. */
 template <typename T>
 std::string TemporaryClassName(const std::string& name = "TemporaryName") {
   return "_" + name + "_" + typeid(T).name();
 }
 
-/**
-Adds a template class instantiation.
+/** Adds a template class instantiation.
 @param scope Parent scope of the template.
 @param name Name of the template.
 @param py_class Class instantiation to be added.
@@ -70,8 +68,7 @@ inline py::object AddTemplateClass(  // BR
   return py_template;
 }
 
-/**
-Provides a convenience wrapper for defining a template class instantiation
+/** Provides a convenience wrapper for defining a template class instantiation
 and a default instantiation (if not already defined).
 The default instantiation is named `default_name`, while the template is
 named `default_name + template_suffix`.
@@ -93,8 +90,7 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
   return py_class;
 }
 
-/**
-Declares a template function.
+/** Declares a template function.
 @param scope Parent scope of the template.
 @param name Name of the template.
 @param func Function to be added.
@@ -114,8 +110,7 @@ py::object AddTemplateFunction(py::handle scope, const std::string& name,
   return py_template;
 }
 
-/**
-Declares a template method.
+/** Declares a template method.
 @param scope Parent scope of the template. This should be a class.
 @param name Name of the template.
 @param method Method to be added.

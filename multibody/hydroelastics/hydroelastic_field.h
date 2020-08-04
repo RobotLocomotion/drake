@@ -13,16 +13,14 @@ namespace multibody {
 namespace hydroelastics {
 namespace internal {
 
-/**
-This class stores the tetrahedral mesh, scalar, and vector fields for the
+/** This class stores the tetrahedral mesh, scalar, and vector fields for the
 hydroelastic model. */
 template <typename T>
 class HydroelasticField {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HydroelasticField)
 
-  /**
-  Constructor of a HydroelasticField.
+  /** Constructor of a HydroelasticField.
   @param[in] mesh_M
     The tetrahedral mesh representation of the geometry, with position
     vectors measured and expressed in the frame M of the model.
@@ -54,8 +52,7 @@ class HydroelasticField {
   std::unique_ptr<geometry::VolumeMesh<T>> mesh_M_;
   /** Represents the scalar field eₘ on the surface mesh. */
   std::unique_ptr<geometry::VolumeMeshFieldLinear<T, T>> e_m_;
-  /**
-  Represents the vector field ∇eₘ on the surface mesh, expressed in M's
+  /** Represents the vector field ∇eₘ on the surface mesh, expressed in M's
   frame */
   std::unique_ptr<geometry::VolumeMeshFieldLinear<Vector3<T>, T>> grad_e_m_M_;
 };

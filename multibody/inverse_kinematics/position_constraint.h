@@ -8,16 +8,14 @@
 
 namespace drake {
 namespace multibody {
-/**
-Constrains the position of a point Q, rigidly attached to a frame B, to be
+/** Constrains the position of a point Q, rigidly attached to a frame B, to be
 within a bounding box measured and expressed in frame A. Namely
 p_AQ_lower <= p_AQ <= p_AQ_upper. */
 class PositionConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositionConstraint)
 
-  /**
-  Constructs PositionConstraint object.
+  /** Constructs PositionConstraint object.
   @param plant The MultibodyPlant on which the constraint is imposed. `plant`
     should be alive during the lifetime of this constraint.
   @param frameA The frame in which point Q's position is measured.
@@ -43,8 +41,7 @@ class PositionConstraint : public solvers::Constraint {
                      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                      systems::Context<double>* plant_context);
 
-  /**
-  Overloaded constructor. Same as the constructor with the double version
+  /** Overloaded constructor. Same as the constructor with the double version
   (using MultibodyPlant<double> and Context<double>. Except the gradient of
   the constraint is computed from autodiff.
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.

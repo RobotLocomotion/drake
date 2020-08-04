@@ -8,8 +8,7 @@
 
 namespace drake {
 namespace multibody {
-/**
-Constrains that the angle difference θ between the orientation of frame A
+/** Constrains that the angle difference θ between the orientation of frame A
 and the orientation of frame B to satisfy θ ≤ θ_bound. The angle
 difference between frame A's orientation R_WA and B's orientation R_WB is θ
   (θ ∈ [0, π]), if there exists a rotation axis a, such that rotating frame
@@ -31,8 +30,7 @@ class OrientationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OrientationConstraint)
 
-  /**
-  Constructs an OrientationConstraint object.
+  /** Constructs an OrientationConstraint object.
   The frame A is fixed to a frame A̅, with orientatation `R_AbarA` measured
   in frame A̅. The frame B is fixed to a frame B̅, with orientation `R_BbarB`
   measured in frame B. We constrain the angle between frame A and B to be
@@ -62,8 +60,7 @@ class OrientationConstraint : public solvers::Constraint {
       const math::RotationMatrix<double>& R_BbarB, double theta_bound,
       systems::Context<double>* plant_context);
 
-  /**
-  Overloaded constructor.
+  /** Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
   Documentation string is manually recreated in Python.} */

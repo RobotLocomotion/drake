@@ -8,8 +8,7 @@
 
 namespace drake {
 
-/**
-Helper class to create a scope exit guard -- an object that when destroyed
+/** Helper class to create a scope exit guard -- an object that when destroyed
 runs `func`.  This is useful to apply RAII to third-party code that only
 supports manual acquire and release operations.
 
@@ -34,8 +33,7 @@ class ScopeExit final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScopeExit);
 
-  /**
-  Creates a resource that will call `func` when destroyed.  Note that
+  /** Creates a resource that will call `func` when destroyed.  Note that
   `func()` should not throw an exception, since it will typically be
   invoked during stack unwinding. */
   explicit ScopeExit(std::function<void()> func)
@@ -43,8 +41,7 @@ class ScopeExit final {
     DRAKE_THROW_UNLESS(func_ != nullptr);
   }
 
-  /**
-  Invokes the `func` that was passed into the constructor, unless this has
+  /** Invokes the `func` that was passed into the constructor, unless this has
   been disarmed. */
   ~ScopeExit() {
     if (func_) {

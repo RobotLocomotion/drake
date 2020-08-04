@@ -7,8 +7,7 @@
 
 namespace drake {
 namespace multibody {
-/**
-Formulates the nonlinear friction cone constraint |fₜ| ≤ μ*fₙ, where fₜ is
+/** Formulates the nonlinear friction cone constraint |fₜ| ≤ μ*fₙ, where fₜ is
 the tangential contact force, fₙ is the normal contact force, and μ is the
 friction coefficient.
 
@@ -27,8 +26,7 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticFrictionConeConstraint)
 
-  /**
-  @param contact_wrench_evaluator. The evaluator takes in the generalized
+  /** @param contact_wrench_evaluator. The evaluator takes in the generalized
   position q, and a parameterization of the contact wrench λ, and evaluates
   the contact wrench from body A to body B applied at the witness point of
   geometry B expressed in the world frame, i.e., computes the contact wrench
@@ -43,8 +41,7 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
 
   ~StaticFrictionConeConstraint() override {}
 
-  /**
-  Given the bound variable @p x, decompose it into the generalized position
+  /** Given the bound variable @p x, decompose it into the generalized position
   q, and λ as a parameterization of the contact wrench. x = [q; λ]. */
   template <typename T>
   void DecomposeX(const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* q,

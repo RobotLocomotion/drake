@@ -14,8 +14,7 @@ namespace drake {
 namespace examples {
 namespace compass_gait {
 
-/**
-Dynamical representation of the idealized hybrid dynamics of a "compass
+/** Dynamical representation of the idealized hybrid dynamics of a "compass
 gait", as described in
   http://underactuated.mit.edu/underactuated.html?chapter=simple_legs .
 This implementation has two additional state variables that are not
@@ -59,15 +58,13 @@ class CompassGait final : public systems::LeafSystem<T> {
   template <typename U>
   explicit CompassGait(const CompassGait<U>&) : CompassGait<T>() {}
 
-  /**
-  Returns reference to the output port that publishes only
+  /** Returns reference to the output port that publishes only
   [theta_stance, theta_swing, thetatdot_stance, thetadot_swing]. */
   const systems::OutputPort<T>& get_minimal_state_output_port() const {
     return this->get_output_port(0);
   }
 
-  /**
-  Returns reference to the output port that provides the state in the
+  /** Returns reference to the output port that provides the state in the
   floating-base coordinates (described via left leg xyz & rpy + hip angle +
   derivatives). */
   const systems::OutputPort<T>& get_floating_base_state_output_port() const {
@@ -110,8 +107,7 @@ class CompassGait final : public systems::LeafSystem<T> {
     return this->template GetNumericParameter<CompassGaitParams>(context, 0);
   }
 
-  /**
-  @{
+  /** @{
   Manipulator equation of CompassGait: M(q)v̇ + bias(q,v) = 0.
 
   - M is the 2x2 mass matrix.

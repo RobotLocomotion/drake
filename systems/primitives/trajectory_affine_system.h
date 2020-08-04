@@ -11,8 +11,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A continuous- or discrete-time Affine Time-Varying system with system
+/** A continuous- or discrete-time Affine Time-Varying system with system
 matrices described by trajectories.
 
 @tparam_nonsymbolic_scalar
@@ -22,8 +21,7 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryAffineSystem)
 
-  /**
-  Constructs a TrajectoryAffineSystem from trajectories of matrices.
+  /** Constructs a TrajectoryAffineSystem from trajectories of matrices.
 
   @param time_period Defines the period of the discrete time system; use
    time_period=0.0 to denote a continuous time system.  @default 0.0 */
@@ -39,8 +37,7 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
   template <typename U>
   explicit TrajectoryAffineSystem(const TrajectoryAffineSystem<U>& other);
 
-  /**
-  @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
+  /** @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
   methods.
   @{ */
   MatrixX<T> A(const T& t) const final {

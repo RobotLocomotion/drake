@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This file contains classes dealing with sending/receiving
 LCM messages related to the planar manipuland. */
 
@@ -16,8 +15,7 @@ namespace examples {
 namespace planar_gripper {
 // This should be the update frequency of the mocap system.
 
-/**
-Handles lcmt_planar_manipuland_status messages from a LcmSubscriberSystem.
+/** Handles lcmt_planar_manipuland_status messages from a LcmSubscriberSystem.
 
 This system has one abstract valued input port which expects a
 Value object templated on type `lcmt_planar_manipuland_status`.
@@ -48,8 +46,7 @@ class PlanarManipulandStatusDecoder : public systems::LeafSystem<double> {
       systems::DiscreteValues<double>* discrete_state) const;
 };
 
-/**
-Creates and outputs lcmt_planar_manipuland_status messages.
+/** Creates and outputs lcmt_planar_manipuland_status messages.
 
 This system has one vector-valued input port containing the current pose
 (y, z, theta) and velocity (ẏ, ż, thetadot) of the manipuland, in the order

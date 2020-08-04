@@ -14,8 +14,7 @@
 namespace drake {
 namespace symbolic {
 
-/**
-Calls visitor object @p v with a polynomial symbolic-expression @p e, and
+/** Calls visitor object @p v with a polynomial symbolic-expression @p e, and
 arguments @p args. Visitor object is expected to implement the following
 methods which take @p f and @p args: `VisitConstant`, `VisitVariable`,
 `VisitAddition`, `VisitMultiplication`, `VisitDivision`, `VisitPow`.
@@ -79,8 +78,7 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
   DRAKE_UNREACHABLE();
 }
 
-/**
-Calls visitor object @p v with a symbolic-expression @p e, and arguments @p
+/** Calls visitor object @p v with a symbolic-expression @p e, and arguments @p
 args. Visitor object is expected to implement the following methods which
 take @p f and @p args: `VisitConstant`, `VisitVariable`, `VisitAddition`,
 `VisitMultiplication`, `VisitDivision`, `VisitLog`, `VisitAbs`, `VisitExp`,

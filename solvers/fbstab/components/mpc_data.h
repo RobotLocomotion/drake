@@ -15,8 +15,7 @@ namespace test {
 class MpcComponentUnitTests;
 }  // namespace test
 
-/**
-This class represents data for quadratic programming problems of the
+/** This class represents data for quadratic programming problems of the
 following type (1):
 
     min.  \sum_{i=0}^N 1/2 [x(i)]' * [Q(i) S(i)'] [x(i)] + [q(i)]'*[x(i)]
@@ -43,8 +42,7 @@ compact representation (2) in an efficient manner. */
 class MpcData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcData)
-  /**
-  Creates problem data and performs input validation. Throws
+  /** Creates problem data and performs input validation. Throws
   a runtime_error if the problem data aren't consistently sized.
 
   This class assumes that the pointers to the data remain valid.
@@ -63,8 +61,7 @@ class MpcData {
           const std::vector<Eigen::MatrixXd>* L,
           const std::vector<Eigen::VectorXd>* d, const Eigen::VectorXd* x0);
 
-  /**
-  Computes the operation y <- a*H*x + b*y without forming H explicitly.
+  /** Computes the operation y <- a*H*x + b*y without forming H explicitly.
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
 
@@ -77,8 +74,7 @@ class MpcData {
   void gemvH(const Eigen::VectorXd& x, double a, double b,
              Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*A*x + b*y without forming A explicitly.
+  /** Computes y <- a*A*x + b*y without forming A explicitly.
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] x Input vector, length(x) = (nx+nu)*(N+1)
@@ -90,8 +86,7 @@ class MpcData {
   void gemvA(const Eigen::VectorXd& x, double a, double b,
              Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*G*x + b*y without forming G explicitly
+  /** Computes y <- a*G*x + b*y without forming G explicitly
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] x Input vector, length(x) = (nx+nu)*(N+1)
@@ -103,8 +98,7 @@ class MpcData {
   void gemvG(const Eigen::VectorXd& x, double a, double b,
              Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*A'*x + b*y without forming A explicitly
+  /** Computes y <- a*A'*x + b*y without forming A explicitly
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] x Input vector, length(x) = nc*(N+1)
@@ -116,8 +110,7 @@ class MpcData {
   void gemvAT(const Eigen::VectorXd& x, double a, double b,
               Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*G'*x + b*y without forming G explicitly
+  /** Computes y <- a*G'*x + b*y without forming G explicitly
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] x Input vector, length(x) = (nx)*(N+1)
@@ -129,8 +122,7 @@ class MpcData {
   void gemvGT(const Eigen::VectorXd& x, double a, double b,
               Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*f + y without forming f explicitly.
+  /** Computes y <- a*f + y without forming f explicitly.
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] a Scaling factor
@@ -139,8 +131,7 @@ class MpcData {
   Throws a runtime_error if sizes aren't consistent or y is null. */
   void axpyf(double a, Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*h + y without forming h explicitly.
+  /** Computes y <- a*h + y without forming h explicitly.
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] a Scaling factor
@@ -149,8 +140,7 @@ class MpcData {
   Throws a runtime_error if sizes aren't consistent or y is null. */
   void axpyh(double a, Eigen::VectorXd* y) const;
 
-  /**
-  Computes y <- a*b + y without forming b explicitly.
+  /** Computes y <- a*b + y without forming b explicitly.
   This implements a BLAS operation, see
   http://www.netlib.org/blas/blasqr.pdf.
   @param[in] a Scaling factor

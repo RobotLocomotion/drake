@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A first-order, fully implicit integrator optimized for second-order systems,
+/** A first-order, fully implicit integrator optimized for second-order systems,
 with a second-order error estimate.
 
 The velocity-implicit Euler integrator is a variant of the first-order
@@ -143,8 +142,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /** Returns true, because this integrator supports error estimation. */
   bool supports_error_estimation() const final { return true; }
 
-  /**
-  Returns the asymptotic order of the difference between the large and small
+  /** Returns the asymptotic order of the difference between the large and small
   steps (from which the error estimate is computed), which is 2. That is, the
   error estimate, `ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
   and it deviates from the true error, `ε`, by `‖ε - ε*‖ = O(h³)`.

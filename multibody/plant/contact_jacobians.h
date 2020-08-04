@@ -10,8 +10,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-Stores the computed contact Jacobians when a point contact model is used.
+/** Stores the computed contact Jacobians when a point contact model is used.
 At a given state of the multibody system, there will be `nc` contact pairs.
 For each penetration pair involving bodies A and B a contact frame C is
 defined by the rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where
@@ -23,15 +22,13 @@ Below, v denotes the vector of generalized velocities, of size `nv`.
 @see MultibodyPlant::EvalContactJacobians(). */
 template <class T>
 struct ContactJacobians {
-  /**
-  Normal contact Jacobian.
+  /** Normal contact Jacobian.
   `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the separation
   speed for each contact point, defined to be positive when bodies are
   moving away from each other. */
   MatrixX<T> Jn;
 
-  /**
-  Tangential contact forces Jacobian.
+  /** Tangential contact forces Jacobian.
   `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v` concatenates
   the tangential components of the relative velocity vector `v_AcBc`
   in the frame C of contact, for each pair. That is, for the k-th contact
@@ -39,8 +36,7 @@ struct ContactJacobians {
   `Cx` and `Cy` directions. */
   MatrixX<T> Jt;
 
-  /**
-  List of contact frames orientation R_WC in the world frame W for each
+  /** List of contact frames orientation R_WC in the world frame W for each
   contact pair. */
   std::vector<drake::math::RotationMatrix<T>> R_WC_list;
 };

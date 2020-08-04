@@ -16,8 +16,7 @@ enum class NumericalGradientMethod {
 
 class NumericalGradientOption {
  public:
-  /**
-  @param function_accuracy The accuracy of evaluating function f(x). For
+  /** @param function_accuracy The accuracy of evaluating function f(x). For
   double-valued functions (with magnitude around 1), the accuracy is usually
   about 1E-15. */
   explicit NumericalGradientOption(NumericalGradientMethod method,
@@ -35,8 +34,7 @@ class NumericalGradientOption {
  private:
   NumericalGradientMethod method_{NumericalGradientMethod::kCentral};
 
-  /**
-  The step length Δx is max(|x(i)| * perturbation_size, perturbation_size)
+  /** The step length Δx is max(|x(i)| * perturbation_size, perturbation_size)
   in each dimension. If function f is evaluated with accuracy 10⁻¹⁵, then
   a first-order method (forward or backward difference) should use a
   perturbation of √10⁻¹⁵ ≈ 10⁻⁷, a second-order method (central
@@ -46,8 +44,7 @@ class NumericalGradientOption {
   double perturbation_size_{NAN};
 };
 
-/**
-Compute the gradient of a function f(x) through numerical difference.
+/** Compute the gradient of a function f(x) through numerical difference.
 @param calc_fun calc_fun(x, &y) computes the value of f(x), and stores the
 value in y. `calc_fun` is responsible for properly resizing the output `y`
 when it consists of an Eigen vector of Eigen::Dynamic size.

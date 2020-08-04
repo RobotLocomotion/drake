@@ -17,8 +17,7 @@
 namespace drake {
 namespace perception {
 
-/**
-Converts a depth image to a point cloud.
+/** Converts a depth image to a point cloud.
 
 @system
 name: DepthImageToPointCloud
@@ -50,8 +49,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DepthImageToPointCloud)
 
-  /**
-  Constructs the converter.
+  /** Constructs the converter.
 
   @param[in] camera_info The camera info.
   @param[in] depth_pixel_type The pixel type of the depth image input.
@@ -66,8 +64,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
           systems::sensors::PixelType::kDepth32F,
       float scale = 1.0, pc_flags::BaseFieldT fields = pc_flags::kXYZs);
 
-  /**
-  Returns the abstract valued input port that expects either an
+  /** Returns the abstract valued input port that expects either an
   ImageDepth16U or ImageDepth32F (depending on the constructor argument). */
   const systems::InputPort<double>& depth_image_input_port() const {
     return this->get_input_port(depth_image_input_port_);
@@ -78,24 +75,21 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
     return this->get_input_port(color_image_input_port_);
   }
 
-  /**
-  Returns the abstract valued input port that expects X_PC as a
+  /** Returns the abstract valued input port that expects X_PC as a
   RigidTransformd.  (This input port does not necessarily need to be
   connected; refer to the class overview for details.) */
   const systems::InputPort<double>& camera_pose_input_port() const {
     return this->get_input_port(camera_pose_input_port_);
   }
 
-  /**
-  Returns the abstract valued output port that provides a PointCloud.
+  /** Returns the abstract valued output port that provides a PointCloud.
   Only the channels passed into the constructor argument "fields" are
   present. */
   const systems::OutputPort<double>& point_cloud_output_port() const {
     return LeafSystem<double>::get_output_port(0);
   }
 
-  /**
-  Converts a depth image to a point cloud using direct arguments instead of
+  /** Converts a depth image to a point cloud using direct arguments instead of
   System input and output ports.  The semantics are the same as documented
   in the class overview and constructor.
 
@@ -109,8 +103,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
       const std::optional<systems::sensors::ImageRgba8U>& color_image,
       const std::optional<float>& scale, PointCloud* cloud);
 
-  /**
-  Converts a depth image to a point cloud using direct arguments instead of
+  /** Converts a depth image to a point cloud using direct arguments instead of
   System input and output ports.  The semantics are the same as documented
   in the class overview and constructor.
 

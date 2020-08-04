@@ -96,8 +96,7 @@ class RenderEngineVtk : public RenderEngine,
   RenderEngineVtk& operator=(RenderEngineVtk&&) = delete;
   //@}}
 
-  /**
-  Constructs the render engine from the given `parameters`.
+  /** Constructs the render engine from the given `parameters`.
 
   When one of the optional parameters is omitted, the constructed value will be
   as documented elsewhere in @ref render_engine_vtk_properties "this class". */
@@ -139,8 +138,7 @@ class RenderEngineVtk : public RenderEngine,
   void ImplementGeometry(const Convex& convex, void* user_data) override;
   /** @} */
 
-  /**
-  @name    Access the default properties
+  /** @name    Access the default properties
 
   Provides access to the default values this instance of the render engine is
   using. These values must be set at construction. */
@@ -152,8 +150,7 @@ class RenderEngineVtk : public RenderEngine,
   /** @} */
 
  protected:
-  /**
-  Returns all actors registered with the engine, keyed by the SceneGraph
+  /** Returns all actors registered with the engine, keyed by the SceneGraph
   GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
   label. */
   const std::unordered_map<GeometryId,

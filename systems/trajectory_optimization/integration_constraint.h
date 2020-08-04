@@ -5,8 +5,7 @@
 namespace drake {
 namespace systems {
 namespace trajectory_optimization {
-/**
-Implements the midpoint integration
+/** Implements the midpoint integration
 
     (ẋₗ + ẋᵣ)/2  * dt = xᵣ - xₗ
 where the bounded variables are (xᵣ, xₗ, ẋᵣ, ẋₗ, dt) */

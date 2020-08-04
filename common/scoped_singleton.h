@@ -10,8 +10,7 @@
 
 namespace drake {
 
-/**
-Provides thread-safe, global-safe access to a shared resource. When
+/** Provides thread-safe, global-safe access to a shared resource. When
 all references are gone, the resource will be freed due to using a weak_ptr.
 @tparam T Class of the resource. Must be default-constructible.
 @tparam Unique Optional class, meant to make a unique specialization, such

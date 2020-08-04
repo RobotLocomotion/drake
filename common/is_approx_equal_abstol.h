@@ -6,8 +6,7 @@
 
 namespace drake {
 
-/**
-Returns true if and only if the two matrices are equal to within a certain
+/** Returns true if and only if the two matrices are equal to within a certain
 absolute elementwise @p tolerance.  Special values (infinities, NaN, etc.)
 do not compare as equal elements. */
 template <typename DerivedA, typename DerivedB>
@@ -20,8 +19,7 @@ bool is_approx_equal_abstol(const Eigen::MatrixBase<DerivedA>& m1,
       ((m1 - m2).template lpNorm<Eigen::Infinity>() <= tolerance));
 }
 
-/**
-Returns true if and only if a simple greedy search reveals a permutation
+/** Returns true if and only if a simple greedy search reveals a permutation
 of the columns of m2 to make the matrix equal to m1 to within a certain
 absolute elementwise @p tolerance. E.g., there exists a P such that
 <pre>

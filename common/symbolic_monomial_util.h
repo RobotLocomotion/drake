@@ -20,8 +20,7 @@
 namespace drake {
 namespace symbolic {
 
-/**
-Implements Graded reverse lexicographic order.
+/** Implements Graded reverse lexicographic order.
 
 @tparam VariableOrder VariableOrder{}(v1, v2) is true if v1 < v2.
 
@@ -97,8 +96,7 @@ struct GradedReverseLexOrder {
 };
 
 namespace internal {
-/**
-Generates [b * m for m in MonomialBasis(vars, degree)] and push them to
+/** Generates [b * m for m in MonomialBasis(vars, degree)] and push them to
 bin. Used as a helper function to implement MonomialBasis.
 
 @tparam MonomialOrder provides a monomial ordering. */
@@ -127,8 +125,7 @@ enum class DegreeType {
   kAny,   ///< Any degree
 };
 
-/**
-Returns all monomials up to a given degree under the graded reverse
+/** Returns all monomials up to a given degree under the graded reverse
 lexicographic order. This is called by MonomialBasis functions defined below.
 
 @tparam rows Number of rows or Dynamic
@@ -178,8 +175,7 @@ Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(
 }
 }  // namespace internal
 
-/**
-Returns all monomials up to a given degree under the graded reverse
+/** Returns all monomials up to a given degree under the graded reverse
 lexicographic order. Note that graded reverse lexicographic order uses the
 total order among Variable which is based on a variable's unique ID. For
 example, for a given variable ordering x > y > z, `MonomialBasis({x, y, z},
@@ -197,8 +193,7 @@ constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 
-/**
-Returns all monomials up to a given degree under the graded reverse
+/** Returns all monomials up to a given degree under the graded reverse
 lexicographic order.
 
 @tparam n      number of variables.
@@ -216,8 +211,7 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
                                                                       degree);
 }
 
-/**
-Returns all even degree monomials up to a given degree under the graded
+/** Returns all even degree monomials up to a given degree under the graded
 reverse lexicographic order. A monomial has an even degree if its total
 degree is even. So xy is an even degree monomial (degree 2) while x²y is not
 (degree 3). Note that graded reverse lexicographic order uses the total order
@@ -230,8 +224,7 @@ returns a column vector `[x², xy, y², xz, yz, z², 1]`.
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> EvenDegreeMonomialBasis(
     const Variables& vars, int degree);
 
-/**
-Returns all odd degree monomials up to a given degree under the graded
+/** Returns all odd degree monomials up to a given degree under the graded
 reverse lexicographic order. A monomial has an odd degree if its total
 degree is odd. So x²y is an odd degree monomial (degree 3) while xy is not
 (degree 2). Note that graded reverse lexicographic order uses the total order

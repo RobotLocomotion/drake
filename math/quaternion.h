@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Utilities for arithmetic on quaternions. */
 // @internal Eigen's 4-argument Quaternion constructor uses (w, x, y, z) order.
 // HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
@@ -26,8 +25,7 @@ Utilities for arithmetic on quaternions. */
 namespace drake {
 namespace math {
 
-/**
-Returns a unit quaternion that represents the same orientation as `q1`,
+/** Returns a unit quaternion that represents the same orientation as `q1`,
 and has the "shortest" geodesic distance on the unit sphere to `q0`. */
 template <typename Scalar> Eigen::Quaternion<Scalar> ClosestQuaternion(
     const Eigen::Quaternion<Scalar>& q0,
@@ -110,8 +108,7 @@ typename Derived1::Scalar quatDiffAxisInvar(
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
 }
 
-/**
-Q = Slerp(q1, q2, f) Spherical linear interpolation between two quaternions
+/** Q = Slerp(q1, q2, f) Spherical linear interpolation between two quaternions
   This function uses the implementation given in Algorithm 8 of [1].
 
 @param q1   Initial quaternion (w, x, y, z)
@@ -165,8 +162,7 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
-/**
-This function tests whether a quaternion is in "canonical form" meaning that
+/** This function tests whether a quaternion is in "canonical form" meaning that
 it tests whether the quaternion [w, x, y, z] has a non-negative w value.
 Example: [-0.3, +0.4, +0.5, +0.707] is not in canonical form.
 Example: [+0.3, -0.4, -0.5, -0.707] is in canonical form.
@@ -180,8 +176,7 @@ bool is_quaternion_in_canonical_form(const Eigen::Quaternion<T>& quat) {
 }
 
 
-/**
-This function returns a quaternion in its "canonical form" meaning that
+/** This function returns a quaternion in its "canonical form" meaning that
 it returns a quaternion [w, x, y, z] with a non-negative w.
 For example, if passed a quaternion [-0.3, +0.4, +0.5, +0.707], the function
 returns the quaternion's canonical form [+0.3, -0.4, -0.5, -0.707].
@@ -199,8 +194,7 @@ Eigen::Quaternion<T> QuaternionToCanonicalForm(
 }
 
 
-/**
-This function tests whether two quaternions represent the same orientation.
+/** This function tests whether two quaternions represent the same orientation.
 This function converts each quaternion to its canonical form and tests
 whether the absolute value of the difference in corresponding elements of
 these canonical quaternions is within tolerance.
@@ -225,8 +219,7 @@ bool AreQuaternionsEqualForOrientation(
 // Note: To avoid dependence on Eigen's internal ordering of elements in its
 // Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
 // Return value `quatDt` *does* have a specific order as defined above.
-/**
-This function calculates a quaternion's time-derivative from its quaternion
+/** This function calculates a quaternion's time-derivative from its quaternion
 and angular velocity. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
 
 - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
@@ -257,8 +250,7 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 // Note: To avoid dependence on Eigen's internal ordering of elements in its
 // Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
 // Parameter `quatDt` *does* have a specific order as defined above.
-/**
-This function calculates angular velocity from a quaternion and its time-
+/** This function calculates angular velocity from a quaternion and its time-
 derivative. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
 
 - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
@@ -286,8 +278,7 @@ Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
 }
 
 
-/**
-This function calculates how well a quaternion and its time-derivative
+/** This function calculates how well a quaternion and its time-derivative
 satisfy the quaternion time-derivative constraint specified in [Kane, 1983]
 Section 1.13, equations 12-13, page 59.  For a quaternion [w, x, y, z],
 the quaternion must satisfy:  w^2 + x^2 + y^2 + z^2 = 1,   hence its
@@ -313,8 +304,7 @@ T CalculateQuaternionDtConstraintViolation(const Eigen::Quaternion<T>& quat,
   return quaternionDt_constraint_violation;
 }
 
-/**
-This function tests if a quaternion satisfies the quaternion constraint
+/** This function tests if a quaternion satisfies the quaternion constraint
 specified in [Kane, 1983] Section 1.3, equation 4, page 12, i.e., a
 quaternion [w, x, y, z] must satisfy:  w^2 + x^2 + y^2 + z^2 = 1.
 
@@ -337,8 +327,7 @@ bool IsQuaternionValid(const Eigen::Quaternion<T>& quat,
 }
 
 
-/**
-This function tests if a quaternion satisfies the time-derivative constraint
+/** This function tests if a quaternion satisfies the time-derivative constraint
 specified in [Kane, 1983] Section 1.13, equation 13, page 59.  A quaternion
 [w, x, y, z] must satisfy  w^2 + x^2 + y^2 + z^2 = 1,   hence its
 time-derivative must satisfy  2*(w*ẇ + x*ẋ + y*ẏ + z*ż) = 0.
@@ -369,8 +358,7 @@ bool IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
 }
 
 
-/**
-This function tests if a quaternion and a quaternions time-derivative
+/** This function tests if a quaternion and a quaternions time-derivative
 can calculate and match an angular velocity to within a tolerance.
 Note: This function first tests if the quaternion [w, x, y, z] satisfies
 w^2 + x^2 + y^2 + z^2 = 1 (to within tolerance) and if its time-derivative
@@ -400,8 +388,7 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
 }
 
 namespace internal {
-/**
-Given a unit-length quaternion, convert this quaternion to angle-axis
+/** Given a unit-length quaternion, convert this quaternion to angle-axis
 representation. Note that we always choose the angle to be within [0, pi].
 This function is the same as Eigen::AngleAxis<T>(Eigen::Quaternion<T> z),
 but it works for T=symbolic::Expression.

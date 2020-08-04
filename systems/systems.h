@@ -1,6 +1,5 @@
 
-/**
-@addtogroup systems
+/** @addtogroup systems
 @{
 @brief Drake uses a Simulink-inspired description of dynamical systems.
 
@@ -23,8 +22,7 @@ see simple_car.h .
 @} */
 
 // Define systems here so that we can control the order in which they appear
-/**
-@addtogroup systems
+/** @addtogroup systems
 @{
   @defgroup primitive_systems Primitives
   @defgroup control_systems Controllers
@@ -40,29 +38,25 @@ see simple_car.h .
   @defgroup rigid_body_systems (Attic) Rigid-Body Systems
 @} */
 
-/**
-@addtogroup primitive_systems
+/** @addtogroup primitive_systems
 @{
   @brief General-purpose Systems such as Gain, Multiplexer, Integrator,
 and LinearSystem.
 @} */
 
-/**
-@addtogroup control_systems
+/** @addtogroup control_systems
 @{
 Implementations of controllers that operate as Systems in a block diagram.
 Algorithms that synthesize controllers are located in @ref control.
 @} */
 
-/**
-@addtogroup estimator_systems
+/** @addtogroup estimator_systems
 @{
 Implementations of estimators that operate as Systems in a block diagram.
 Algorithms that synthesize controllers are located in @ref estimation.
 @} */
 
-/**
-@addtogroup sensor_systems
+/** @addtogroup sensor_systems
 @{
 Drake provides a variety of capabilities for sensor modeling. Some sensors
 are offered as Systems in a block diagram. These sensors are listed in the
@@ -84,15 +78,13 @@ This joint will then serve as the Force/Torque sensor. You can also
 refer to *planar_gripper* for an example.
 @} */
 
-/**
-@addtogroup manipulation_systems
+/** @addtogroup manipulation_systems
 @{
 @brief Systems implementations that specifically support dexterous
 manipulation capabilities in robotics.
 @} */
 
-/**
-@addtogroup message_passing
+/** @addtogroup message_passing
 @{
 @brief Systems for publishing/subscribing to popular message passing
 ecosystems.
@@ -100,15 +92,13 @@ ecosystems.
 // TODO(russt): Add pointers to / recommendations for connecting to ROS.
 // TODO(russt): Add ZMQ.
 
-/**
-@addtogroup perception_systems
+/** @addtogroup perception_systems
 @{
 @brief Systems for dealing with perception data and/or wrapping basic
 perception algorithms.
 @} */
 
-/**
-@addtogroup visualization
+/** @addtogroup visualization
 @{
 @brief Systems for connecting to external visualization tools/GUIs.
 
@@ -126,8 +116,7 @@ visualization hook=ups:
 @} */
 // TODO(russt): Add pointers to / support for for RViz.
 
-/**
-@addtogroup example_systems
+/** @addtogroup example_systems
 @{
 @brief The examples contain a number of useful System implementations.
 @} */

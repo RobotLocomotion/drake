@@ -14,8 +14,7 @@ namespace multibody {
 namespace benchmarks {
 namespace free_body {
 
-/**
-The purpose of the %FreeBody class is to provide the data (initial values
+/** The purpose of the %FreeBody class is to provide the data (initial values
 and gravity) and methods for calculating the exact analytical solution for
 the translational and rotational motion of a torque-free rigid body B with
 axially symmetric inertia, in a Newtonian frame (World) N. Examples of
@@ -37,8 +36,7 @@ class FreeBody {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FreeBody)
 
-  /**
-  Constructs a class that can be queried for exact values of orientation,
+  /** Constructs a class that can be queried for exact values of orientation,
   position, and motion of a torque-free rigid body at time t.
   @param[in] initial_quat_NB  Value at time t = 0 of the quaternion
   relating right-handed orthonormal vectors Nx, Ny, Nz fixed in N (world)
@@ -65,16 +63,14 @@ class FreeBody {
 
   ~FreeBody() = default;
 
-  /**
-  Returns body B's moment of inertia about any axis that passes through Bcm
+  /** Returns body B's moment of inertia about any axis that passes through Bcm
   (B's center of mass) and is perpendicular to B's inertia symmetry axis.
   For example, for a cylinder of radius r, length h and uniformly
   distributed mass m with its cylindrical axis aligned along its body frame
   z-axis this would be: I = Ixx = Iyy = m / 12 (3 r² + h²) */
   double get_I() const { return 0.04; }
 
-  /**
-  Returns body's moment of inertia about the axis that passes through Bcm
+  /** Returns body's moment of inertia about the axis that passes through Bcm
   (B's center of mass) and is parallel to B's inertia symmetry axis.
   For example, for a cylinder of radius r, length h and uniformly
   distributed mass  m with its cylindrical axis aligned along its body frame
@@ -118,8 +114,7 @@ class FreeBody {
     uniform_gravity_expressed_in_world_ = gravity;
   }
 
-  /**
-  Calculates exact solutions for quaternion and angular velocity expressed
+  /** Calculates exact solutions for quaternion and angular velocity expressed
   in body-frame, and their time derivatives for torque-free rotational
   motion of axis-symmetric rigid body B in Newtonian frame (World) N,
   where torque-free means the moment of forces about B's mass center is
@@ -153,8 +148,7 @@ class FreeBody {
              Eigen::Vector3d>
   CalculateExactRotationalSolutionNB(const double t) const;
 
-  /**
-  Calculates exact solutions for translational motion of an arbitrary rigid
+  /** Calculates exact solutions for translational motion of an arbitrary rigid
   body B in a Newtonian frame (world) N.  Algorithm from high-school
   physics.
 
@@ -170,8 +164,7 @@ class FreeBody {
   std::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d>
   CalculateExactTranslationalSolution(const double t) const;
 
-  /**
-  Returns angular rates associated with spin `s` and precession `p` from the
+  /** Returns angular rates associated with spin `s` and precession `p` from the
   analytical solution [Kane, 1983] for rotational motion (angular velocity
   and quaternion) for torque-free motion of an axis-symmetric rigid body B
   in a Newtonian frame (World).  Kane's solution for B's angular velocity

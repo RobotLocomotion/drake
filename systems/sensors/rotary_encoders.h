@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-Simple model to capture the quantization and calibration offset effects
+/** Simple model to capture the quantization and calibration offset effects
 of a rotary encoder.  Consider combining this with a ZeroOrderHold system
 to capture the sampled-data effects.
 
@@ -25,13 +24,11 @@ class RotaryEncoders final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
 
-  /**
-  Quantization-only constructor.  Specifies one ticks_per_revolution count
+  /** Quantization-only constructor.  Specifies one ticks_per_revolution count
   for every element of the input port. */
   explicit RotaryEncoders(const std::vector<int>& ticks_per_revolution);
 
-  /**
-  Selector-only constructor.  Provides arguments to select particular
+  /** Selector-only constructor.  Provides arguments to select particular
   indices from the input signal to use in the output.  Since
   ticks_per_revolution is not being set, the outputs will NOT be quantized.
   @param input_port_size Dimension of the expected input signal

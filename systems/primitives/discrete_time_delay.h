@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A discrete time delay block with input u, which is vector-valued (discrete
+/** A discrete time delay block with input u, which is vector-valued (discrete
 or continuous) or abstract, and output delayed_u which is previously
 received input, delayed by the given amount.  The initial output will be a
 vector of zeros for vector-valued or a given value for abstract-valued
@@ -54,15 +53,13 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeDelay)
 
-  /**
-  Constructs a DiscreteTimeDelay system updating every `update_sec` and
+  /** Constructs a DiscreteTimeDelay system updating every `update_sec` and
   delaying a vector-valued input of size `vector_size` for
   `delay_timesteps` number of updates. */
   DiscreteTimeDelay(double update_sec, int delay_timesteps, int vector_size)
       : DiscreteTimeDelay(update_sec, delay_timesteps, vector_size, nullptr) {}
 
-  /**
-  Constructs a DiscreteTimeDelay system updating every `update_sec` and
+  /** Constructs a DiscreteTimeDelay system updating every `update_sec` and
   delaying an abstract-valued input of type `abstract_model_value` for
   `delay_timesteps` number of updates. */
   DiscreteTimeDelay(double update_sec, int delay_timesteps,
@@ -70,8 +67,7 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
       : DiscreteTimeDelay(update_sec, delay_timesteps, -1,
                           abstract_model_value.Clone()) {}
 
-  /**
-  Scalar-type converting copy constructor.
+  /** Scalar-type converting copy constructor.
   See @ref system_scalar_conversion. */
   template <typename U>
   explicit DiscreteTimeDelay(const DiscreteTimeDelay<U>& other);
@@ -88,8 +84,7 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
     return LeafSystem<T>::get_output_port(0);
   }
 
-  /**
-  (Advanced) Manually samples the input port and updates the state of the
+  /** (Advanced) Manually samples the input port and updates the state of the
   block, sliding the delay buffer forward and placing the sampled input at
   the end. This emulates an update event and is mostly useful for testing. */
   void SaveInputToBuffer(Context<T>* context) const {

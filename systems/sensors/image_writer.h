@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file Provides utilities for writing images to disk.
+/** @file Provides utilities for writing images to disk.
 
 This file provides two sets of utilities: stand alone methods that can be
 invoked in any context and a System that can be connected into a diagram to
@@ -20,8 +19,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-@name     Utility functions for writing common image types to disk.
+/** @name     Utility functions for writing common image types to disk.
 
 Given a fully-specified path to the file to write and corresponding image data,
 these functions will _attempt_ to write the image data to the file. The
@@ -38,8 +36,7 @@ have done so. */
 /** Writes the color (8-bit, RGBA) image data to disk. */
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path);
 
-/**
-Writes the depth (32-bit) image data to disk. Png files do not support
+/** Writes the depth (32-bit) image data to disk. Png files do not support
 channels larger than 16-bits and its support for floating point values is
 also limited at best. So, depth images can only be written as tiffs. */
 void SaveToTiff(const ImageDepth32F& image, const std::string& file_path);
@@ -49,8 +46,7 @@ void SaveToPng(const ImageLabel16I& image, const std::string& file_path);
 
 /** @} */
 
-/**
-A system for periodically writing images to the file system. The system does
+/** A system for periodically writing images to the file system. The system does
 not have a fixed set of input ports; the system can have an arbitrary number of
 image input ports. Each input port is independently configured with respect to:
 
@@ -91,8 +87,7 @@ class ImageWriter : public LeafSystem<double> {
   /** Constructs default instance with no image ports. */
   ImageWriter();
 
-  /**
-  Declares and configures a new image input port. A port is configured by
+  /** Declares and configures a new image input port. A port is configured by
   providing:
 
     - a unique port name,

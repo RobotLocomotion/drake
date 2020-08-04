@@ -9,8 +9,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 
-/**
-@file
+/** @file
 @anchor sliding_friction_complementarity_constraint
 Impose the complementarity constraint on the sliding friction using a Coulomb
 friction cone model. If the contact is sliding, then the tangential
@@ -52,8 +51,7 @@ doesn't know if the contact has to occur. */
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
-Impose the nonlinear constraints in @ref
+/** Impose the nonlinear constraints in @ref
 sliding_friction_complementarity_constraint, namely constraint (1) - (4).
 Notice that we will relax the complementarity constraint (2) as
 
@@ -68,8 +66,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
       SlidingFrictionComplementarityNonlinearConstraint)
 
-  /**
-  @param contact_wrench_evaluator An evaluator that computes the contact
+  /** @param contact_wrench_evaluator An evaluator that computes the contact
   wrench between a pair of geometries. We will only impose the constraint on
   the contact force, the contact torque is unconstrained.
   @param complementarity_tolerance The small constant ε for relaxing the
@@ -82,10 +79,9 @@ class SlidingFrictionComplementarityNonlinearConstraint
 
   void UpdateComplementarityTolerance(double complementarity_tolerance);
 
-  /**
-  Getter for the slack variable c, used in the constraint
+  /** Getter for the slack variable c, used in the constraint
 
-      f_sliding_tangential = -c * v_sliding */
+  f_sliding_tangential = -c * v_sliding */
   const symbolic::Variable& c_var() const { return c_var_; }
 
   template <typename T>
@@ -113,8 +109,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
     *x << q, v, lambda, f_static, f_sliding, c;
   }
 
-  /**
-  Return the sparsity pattern of the constraint, when we compute the gradient
+  /** Return the sparsity pattern of the constraint, when we compute the gradient
   of the constraint w.r.t the variable itself (namely when
   autoDiffToGradientMatrix(x) = Identity in DoEval(x, y)).
   @return gradient_sparsity_pattern. The pairs
@@ -136,8 +131,7 @@ class SlidingFrictionComplementarityNonlinearConstraint
 };
 }  // namespace internal
 
-/**
-For a pair of geometries in explicit contact, adds the sliding friction
+/** For a pair of geometries in explicit contact, adds the sliding friction
 complementarity constraint explained in @ref
 sliding_friction_complementarity_constraint to an optimization program. This
 function adds the slack variables (f_static, f_sliding, c), and impose all
@@ -166,8 +160,7 @@ AddSlidingFrictionComplementarityExplicitContactConstraint(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& lambda_vars,
     solvers::MathematicalProgram* prog);
 
-/**
-For a pair of geometries in implicit contact (they may or may not be in
+/** For a pair of geometries in implicit contact (they may or may not be in
 contact, adds the sliding friction complementarity constraint explained in
 @ref sliding_friction_complementarity_constraint. The input arguments are the
 same as those in

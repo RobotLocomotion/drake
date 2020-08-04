@@ -3,15 +3,13 @@
 #include "drake/examples/planar_gripper/gripper_brick.h"
 #include "drake/solvers/mathematical_program.h"
 
-/**
-@file This file contains the utility function to add constraint in
+/** @file This file contains the utility function to add constraint in
 gripper/brick motion planning. */
 
 namespace drake {
 namespace examples {
 namespace planar_gripper {
-/**
-Adds the friction cone as linear constraints on the contact force f_Cb_B (the
+/** Adds the friction cone as linear constraints on the contact force f_Cb_B (the
 contact force applied on the brick contact point Cb, expressed in the brick
 frame B). Notice that since the example is planar, we can write this friction
 cone as linear constraints, as opposed to the general nonlinear constraint in
@@ -31,8 +29,7 @@ void AddFrictionConeConstraint(
     const Eigen::Ref<const Vector2<symbolic::Variable>>& f_Cb_B,
     double friction_cone_shrink_factor, solvers::MathematicalProgram* prog);
 
-/**
-Add the kinematic constraint that the finger tip (the sphere collision
+/** Add the kinematic constraint that the finger tip (the sphere collision
 geometry in the tip of the finger) is in contact with a shrunk region on the
 brick face.
 @param gripper_brick_system The gripper brick system on which the constraint
@@ -64,8 +61,7 @@ Vector3<AutoDiffXd> ComputeFingerTipInBrickFrame(
     const systems::Context<double>& plant_context,
     const Eigen::Ref<const AutoDiffVecXd>& q);
 
-/**
-Impose a kinematic constraint which prohibits the fingertip sphere from
+/** Impose a kinematic constraint which prohibits the fingertip sphere from
 sliding on the brick's face. That is, the fingertip sphere is only allowed to
 roll on the brick's surface. Note that zero rolling (i.e., sticking) is also
 allowed.
@@ -90,8 +86,7 @@ void AddFingerNoSlidingConstraint(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_to,
     double face_shrink_factor, double depth);
 
-/**
-Impose the kinematic constraint that the finger can only roll (or stick)
+/** Impose the kinematic constraint that the finger can only roll (or stick)
 starting from a given fixed posture. The angle of the finger is defined as
 the pitch angle of the finger link 2 (about +x axis). The change of finger
 angles from the starting posture to the ending posture is limited to be
@@ -121,8 +116,7 @@ void AddFingerNoSlidingFromFixedPostureConstraint(
     double face_shrink_factor, double depth);
 
 namespace internal {
-/**
-Impose the constraint that the finger rolls along the line (coinciding with
+/** Impose the constraint that the finger rolls along the line (coinciding with
 the face).
 The formulation of the constraint is
 
@@ -169,8 +163,7 @@ class FingerNoSlidingConstraint : public solvers::Constraint {
   systems::Context<double>* to_context_;
 };
 
-/**
-Same as FingerNoSlidingConstraint, except the "from posture" is fixed, so the
+/** Same as FingerNoSlidingConstraint, except the "from posture" is fixed, so the
 decision variables are only q_to. */
 class FingerNoSlidingFromFixedPostureConstraint : public solvers::Constraint {
  public:

@@ -14,21 +14,18 @@ struct RenderEngineVtkParams  {
   /** The (optional) label to apply when none is otherwise specified. */
   std::optional<RenderLabel> default_label{};
 
-  /**
-  The (optional) rgba color to apply to the (phong, diffuse) property when
+  /** The (optional) rgba color to apply to the (phong, diffuse) property when
   none is otherwise specified. Note: currently the alpha channel is unused
   by RenderEngineVtk. */
   std::optional<Eigen::Vector4d> default_diffuse{};
 
-  /**
-  The rgb color to which the color buffer is cleared (each
+  /** The rgb color to which the color buffer is cleared (each
   channel in the range [0, 1]). The default value (in byte values) would be
   [204, 229, 255]. */
   Eigen::Vector3d default_clear_color{204 / 255., 229 / 255., 255 / 255.};
 };
 
-/**
-Constructs a RenderEngine implementation which uses a VTK-based OpenGL
+/** Constructs a RenderEngine implementation which uses a VTK-based OpenGL
 renderer.
 
 @anchor render_engine_vtk_properties

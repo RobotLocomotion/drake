@@ -6,8 +6,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
-@param plant The plant for which the distance is computed.
+/** @param plant The plant for which the distance is computed.
 @param context The context containing the generalized position for computing
 the distance.
 @param frameA The frame to which geometry A is attached.
@@ -30,8 +29,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
                              const Eigen::Ref<const AutoDiffVecXd>& q,
                              AutoDiffXd* distance_autodiff);
 
-/**
-This is the overloaded version of CalcDistanceDerivatives for plant being
+/** This is the overloaded version of CalcDistanceDerivatives for plant being
 MultibodyPlant<AutoDiffXd> instead of MultibodyPlant<double>. */
 void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>& plant,
                              const systems::Context<AutoDiffXd>& context,
@@ -43,8 +41,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>& plant,
                              const Eigen::Ref<const Eigen::VectorXd>& q,
                              double* distance);
 
-/**
-This is the overloaded version of CalcDistanceDerivatives for the input q of
+/** This is the overloaded version of CalcDistanceDerivatives for the input q of
 double scalar type, it just copies @p distance_in to @p distance_out. */
 template <typename T>
 void CalcDistanceDerivatives(const MultibodyPlant<T>&,

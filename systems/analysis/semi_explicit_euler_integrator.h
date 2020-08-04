@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A first-order, semi-explicit Euler integrator. State is updated in the
+/** A first-order, semi-explicit Euler integrator. State is updated in the
 following manner: <pre>
     v(t₀+h) = v(t₀) + dv/dt(t₀) * h
       dq/dt = N(q(t₀)) * v(t₀+h)
@@ -73,8 +72,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
 
   // TODO(edrumwri): update documentation to account for stretching (after
   //                 stretching has become a user settable).
-  /**
-  Constructs a fixed-step integrator for a given system using the given
+  /** Constructs a fixed-step integrator for a given system using the given
   context for initial conditions.
   @param system A reference to the system to be simulated.
   @param max_step_size The maximum (fixed) step size; the integrator will
@@ -90,8 +88,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
   }
 
-  /**
-  Gets the error estimate order (returns zero, since error estimation is
+  /** Gets the error estimate order (returns zero, since error estimation is
   not provided). */
   int get_error_estimate_order() const override { return 0; }
 
@@ -105,8 +102,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
   BasicVector<T> qdot_;
 };
 
-/**
-Integrates the system forward in time by h. This value is determined
+/** Integrates the system forward in time by h. This value is determined
 by IntegratorBase::StepOnce(). */
 template <class T>
 bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {

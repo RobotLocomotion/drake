@@ -15,8 +15,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-A system that encapsulates a PidController and a controlled System (a.k.a
+/** A system that encapsulates a PidController and a controlled System (a.k.a
 the "plant").
 
 The passed in plant must meet the following properties:
@@ -61,8 +60,7 @@ class PidControlledSystem : public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSystem)
 
-  /**
-  @p plant full state is used for feedback control, and all the dimensions
+  /** @p plant full state is used for feedback control, and all the dimensions
   have homogeneous gains specified by @p Kp, @p Kd and @p Ki.
 
   @param[in] plant The system to be controlled. This must not be `nullptr`.
@@ -76,8 +74,7 @@ class PidControlledSystem : public Diagram<T> {
   PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
                       double Kd, int state_output_port_index = 0);
 
-  /**
-  @p plant full state is used for feedback control, and the vectorized gains
+  /** @p plant full state is used for feedback control, and the vectorized gains
   are specified by @p Kp, @p Kd and @p Ki.
 
   @param[in] plant The system to be controlled. This must not be `nullptr`.
@@ -93,8 +90,7 @@ class PidControlledSystem : public Diagram<T> {
                       const Eigen::VectorXd& Kd,
                       int state_output_port_index = 0);
 
-  /**
-  A constructor where the gains are scalar values and some of the plant's
+  /** A constructor where the gains are scalar values and some of the plant's
   output is part of the feedback signal as specified by
   @p feedback_selector.
 
@@ -113,8 +109,7 @@ class PidControlledSystem : public Diagram<T> {
                       const MatrixX<double>& feedback_selector, double Kp,
                       double Ki, double Kd, int state_output_port_index = 0);
 
-  /**
-  A constructor where the gains are vector values and some of the plant's
+  /** A constructor where the gains are vector values and some of the plant's
   output is part of the feedback signal as specified by
   @p feedback_selector.
 
@@ -161,8 +156,7 @@ class PidControlledSystem : public Diagram<T> {
     const InputPort<T>& state_input_port;
   };
 
-  /**
-  Creates a PidController and uses @p builder to connect @p plant_input and
+  /** Creates a PidController and uses @p builder to connect @p plant_input and
   @p plant_output from an existing plant. The controlled states are selected
   by @p feedback_selector. */
   static ConnectResult ConnectController(
@@ -172,8 +166,7 @@ class PidControlledSystem : public Diagram<T> {
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
 
-  /**
-  Creates a PidController and uses @p builder to connect @p plant_input and
+  /** Creates a PidController and uses @p builder to connect @p plant_input and
   @p plant_output from an existing plant. The plant's full state is used for
   feedback. */
   static ConnectResult ConnectController(
@@ -182,8 +175,7 @@ class PidControlledSystem : public Diagram<T> {
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
 
-  /**
-  Creates a PidController with input saturation and uses @p builder to
+  /** Creates a PidController with input saturation and uses @p builder to
   connect @p plant_input and @p plant_output from an existing plant. The
   controlled states are selected by @p feedback_selector. The output of
   the PidController is clipped to be within the specified bounds. Note
@@ -197,8 +189,7 @@ class PidControlledSystem : public Diagram<T> {
       const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
       const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);
 
-  /**
-  Creates a PidController with input saturation and uses @p builder to
+  /** Creates a PidController with input saturation and uses @p builder to
   connect @p plant_input and @p plant_output from an existing plant. The
   plant's full state is used for feedback. The output of the PidController
   is clipped to be within the specified bounds. Note that using input

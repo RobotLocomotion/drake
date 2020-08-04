@@ -19,8 +19,7 @@ namespace geometry {
 // TODO(DamrongGuoy): Update the reference to the "pressure field model"
 //  paper when it is accepted to the conference.
 
-/**
-The %ContactSurface characterizes the intersection of two geometries M
+/** The %ContactSurface characterizes the intersection of two geometries M
 and N as a contact surface with a scalar field and a vector field, whose
 purpose is to support the hydroelastic pressure field contact model as
 described in:
@@ -152,8 +151,7 @@ class ContactSurface {
   ContactSurface(ContactSurface&&) = default;
   ContactSurface& operator=(ContactSurface&&) = default;
 
-  /**
-  Constructs a ContactSurface.
+  /** Constructs a ContactSurface.
   @param id_M         The id of the first geometry M.
   @param id_N         The id of the second geometry N.
   @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
@@ -183,8 +181,7 @@ class ContactSurface {
   // TODO(damrongguoy) Consider removing these evaluation methods and instead
   // make the fields accessible, and then evaluate the fields directly.
 
-  /**
-  Evaluates the scalar field eₘₙ at Point Q in a triangle.
+  /** Evaluates the scalar field eₘₙ at Point Q in a triangle.
   Point Q is specified by its barycentric coordinates.
   @param face         The face index of the triangle.
   @param barycentric  The barycentric coordinates of Q on the triangle. */
@@ -194,16 +191,14 @@ class ContactSurface {
     return e_MN_->Evaluate(face, barycentric);
   }
 
-  /**
-  Evaluates the scalar field eₘₙ at the given vertex on the contact surface
+  /** Evaluates the scalar field eₘₙ at the given vertex on the contact surface
   mesh.
   @param vertex       The index of the vertex in the mesh. */
   T EvaluateE_MN(SurfaceVertexIndex vertex) const {
     return e_MN_->EvaluateAtVertex(vertex);
   }
 
-  /**
-  Returns a reference to the surface mesh whose vertex
+  /** Returns a reference to the surface mesh whose vertex
   positions are measured and expressed in the world frame. */
   const SurfaceMesh<T>& mesh_W() const {
     DRAKE_DEMAND(mesh_W_ != nullptr);
@@ -214,8 +209,7 @@ class ContactSurface {
   const MeshField<T, SurfaceMesh<T>>& e_MN() const { return *e_MN_; }
 
   // TODO(#12173): Consider NaN==NaN to be true in equality tests.
-  /**
-  Checks to see whether the given ContactSurface object is equal via deep
+  /** Checks to see whether the given ContactSurface object is equal via deep
   exact comparison. NaNs are treated as not equal as per the IEEE standard.
   @note Currently requires the fields of the objects to be of type
   MeshFieldLinear, otherwise the current simple checking of equal values at

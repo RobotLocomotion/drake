@@ -13,8 +13,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-A class containing information regarding contact response between two bodies
+/** A class containing information regarding contact response between two bodies
 including:
 
    - The pair of bodies that are contacting, referenced by their BodyIndex.
@@ -28,8 +27,7 @@ template <typename T>
 class PointPairContactInfo {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointPairContactInfo)
-  /**
-  Constructs the contact information for a given pair of two colliding bodies.
+  /** Constructs the contact information for a given pair of two colliding bodies.
   @param bodyA_index
     Index that references body A in `this` contact pair.
   @param bodyB_index
@@ -62,8 +60,7 @@ class PointPairContactInfo {
   /** Returns the index of body B in the contact pair. */
   BodyIndex bodyB_index() const { return bodyB_index_; }
 
-  /**
-  Returns the contact force `f_Bc_W` on B at contact point C expressed in
+  /** Returns the contact force `f_Bc_W` on B at contact point C expressed in
   the world frame W. */
   const Vector3<T>& contact_force() const { return f_Bc_W_; }
 
@@ -74,14 +71,12 @@ class PointPairContactInfo {
   /** Returns the slip speed between body A and B at contact point C. */
   const T& slip_speed() const { return slip_speed_; }
 
-  /**
-  Returns the separation speed between body A and B along the normal
+  /** Returns the separation speed between body A and B along the normal
   direction (see PenetrationAsPointPair::nhat_BA_W) at the contact point.
   It is defined positive for bodies moving apart in the normal direction. */
   const T& separation_speed() const { return separation_speed_; }
 
-  /**
-  Returns additional information for the geometric contact query for `this`
+  /** Returns additional information for the geometric contact query for `this`
   pair as a PenetrationAsPointPair. */
   const drake::geometry::PenetrationAsPointPair<T>& point_pair() const {
     return point_pair_;

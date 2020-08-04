@@ -18,8 +18,7 @@ namespace internal {
 /** Used for resolving URIs / filenames. */
 using ResolveFilename = std::function<std::string (std::string)>;
 
-/**
-Given an sdf::Geometry object representing a <geometry> element from an SDF
+/** Given an sdf::Geometry object representing a <geometry> element from an SDF
 file, this method makes a new drake::geometry::Shape object from this
 specification.
 If no recognizable geometry is specified, nullptr is returned. If the geometry
@@ -27,8 +26,7 @@ is recognized, but malformed, an exception is thrown. */
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename);
 
-/**
-Given an sdf::Visual object representing a <visual> element from an SDF
+/** Given an sdf::Visual object representing a <visual> element from an SDF
 file, this method makes a new drake::geometry::GeometryInstance object from
 this specification at a pose `X_LG` relatve to its parent link.
 This method returns nullptr when the given SDF specification corresponds
@@ -65,8 +63,7 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
     const math::RigidTransformd& X_LG);
 
-/**
-Extracts the material properties from the given sdf::Visual object.
+/** Extracts the material properties from the given sdf::Visual object.
 The sdf::Visual object represents a corresponding <visual> tag from an SDF
 file. The material properties are placed into both a
 geometry::IllustrationProperties and geometry::PerceptionProperties as follows:
@@ -115,8 +112,7 @@ parsed material property tags, the property set will be empty. */
 geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
 
-/**
-Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
+/** Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
 relative to the link L containing the collision, given an `sdf_collision`
 stemming from the parsing of a `<collision>` element in an SDF file and its
 pose `X_LG`, where `G` represents the frame for the geometry of that collision
@@ -124,8 +120,7 @@ element. */
 math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision, const math::RigidTransformd& X_LG);
 
-/**
-@anchor sdf_contact_material
+/** @anchor sdf_contact_material
 Parses the drake-relevant collision properties from a <collision> element.
 
 Specifically, looks for <drake:proximity_properties> tag to find drake-specific
@@ -178,8 +173,7 @@ the ('material', 'coulomb_friction') property. */
 geometry::ProximityProperties MakeProximityPropertiesForCollision(
         const sdf::Collision& sdf_collision);
 
-/**
-Parses friction coefficients from `sdf_collision`.
+/** Parses friction coefficients from `sdf_collision`.
 This method looks for the definitions specific to ODE, as given by the SDF
 specification in `<collision><surface><friction><ode>`. Drake understands
 `<mu>` as the static coefficient of friction and `<mu2>` as the dynamic

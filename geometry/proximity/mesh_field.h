@@ -9,8 +9,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-%MeshField is an abstract class that represents a field variable defined
+/** %MeshField is an abstract class that represents a field variable defined
 on a mesh M. It can evaluate the field value at any location on any element
 of the mesh.
 
@@ -23,22 +22,19 @@ template <class FieldValue, class MeshType>
 class MeshField {
  public:
   virtual ~MeshField() = default;
-  /**
-  Evaluates the field value at a vertex.
+  /** Evaluates the field value at a vertex.
   @param v The index of the vertex. */
   virtual FieldValue EvaluateAtVertex(
       typename MeshType::VertexIndex e) const = 0;
 
-  /**
-  Evaluates the field value at a location on an element.
+  /** Evaluates the field value at a location on an element.
   @param e The index of the element.
   @param b The barycentric coordinates. */
   virtual FieldValue Evaluate(
       typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
-  /**
-  Evaluates the field at a point Qp on an element. If the element is a
+  /** Evaluates the field at a point Qp on an element. If the element is a
   tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
   projection of Q on the triangle's plane.
   @param e The index of the element.
@@ -48,8 +44,7 @@ class MeshField {
       typename MeshType::ElementIndex e,
       const typename MeshType::Cartesian& p_MQ) const = 0;
 
-  /**
-  Copy to a new %MeshField and set the new %MeshField to use a new
+  /** Copy to a new %MeshField and set the new %MeshField to use a new
   compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
   does not own the mesh. In fact, several %MeshField objects can use the same
   mesh. */
@@ -76,8 +71,7 @@ class MeshField {
   [[nodiscard]] std::unique_ptr<MeshField> CloneWithNullMesh() const {
     return DoCloneWithNullMesh();
   }
-  /**
-  Derived classes must implement this method to clone themselves given
+  /** Derived classes must implement this method to clone themselves given
   that the pointer to the mesh is null. */
   [[nodiscard]] virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
       const = 0;
@@ -88,8 +82,7 @@ class MeshField {
   reset_on_copy<const MeshType*> mesh_;
 };
 
-/**
-@tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
+/** @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
                     the field value.
 @tparam T  a valid Eigen scalar for coordinates. */
 template <typename FieldValue, typename T>

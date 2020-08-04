@@ -10,8 +10,7 @@
 namespace drake {
 namespace math {
 
-/**
-Computes a matrix of AutoDiffScalars from which both the value and
+/** Computes a matrix of AutoDiffScalars from which both the value and
 the Jacobian of a function
 @f[
 f:\mathbb{R}^{n\times m}\rightarrow\mathbb{R}^{p\times q}
@@ -136,8 +135,7 @@ decltype(auto) jacobian(F &&f, Arg &&x) {
   return ret;
 }
 
-/**
-Computes a matrix of AutoDiffScalars from which the value, Jacobian,
+/** Computes a matrix of AutoDiffScalars from which the value, Jacobian,
 and Hessian of a function
 @f[
 f:\mathbb{R}^{n\times m}\rightarrow\mathbb{R}^{p\times q}

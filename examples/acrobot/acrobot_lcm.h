@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file This file contains classes dealing with sending/receiving
+/** @file This file contains classes dealing with sending/receiving
 LCM messages related to acrobot. The classes in this file are based on
 iiwa_lcm.h */
 
@@ -17,8 +16,7 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/**
-Receives the output of an LcmSubsriberSystem that subsribes to the
+/** Receives the output of an LcmSubsriberSystem that subsribes to the
 acrobot state channel with LCM type lcmt_acrobot_x, and outputs the
 acrobot states as an AcrobotState.
 
@@ -40,8 +38,7 @@ class AcrobotStateReceiver : public systems::LeafSystem<double> {
                     AcrobotState<double>* output) const;
 };
 
-/**
-Receives the output of an acrobot controller, and outputs it as an LCM
+/** Receives the output of an acrobot controller, and outputs it as an LCM
 message with type lcm_acrobot_u. Its output port is usually connected to
 an LcmPublisherSystem to publish the messages it generates.
 
@@ -63,8 +60,7 @@ class AcrobotCommandSender : public systems::LeafSystem<double> {
                      lcmt_acrobot_u* output) const;
 };
 
-/**
-Receives the output of an LcmSubscriberSystem that subscribes to the
+/** Receives the output of an LcmSubscriberSystem that subscribes to the
 acrobot input channel with LCM type lcmt_acrobot_u, and outputs the
 acrobot input as a BasicVector.
 
@@ -86,8 +82,7 @@ class AcrobotCommandReceiver : public systems::LeafSystem<double> {
                              systems::BasicVector<double>* output) const;
 };
 
-/**
-Receives the output of an acrobot_plant, and outputs it as an LCM
+/** Receives the output of an acrobot_plant, and outputs it as an LCM
 message with type lcm_acrobot_x. Its output port is usually connected to
 an LcmPublisherSystem to publish the messages it generates.
 

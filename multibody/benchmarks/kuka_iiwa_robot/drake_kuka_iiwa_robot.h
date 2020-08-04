@@ -42,8 +42,7 @@ class MultibodyPlantTester {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
 
-/**
-Utility struct to assist with returning joint torques/forces.
+/** Utility struct to assist with returning joint torques/forces.
 --------|----------------------------------------------------------
 F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
 F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
@@ -63,8 +62,7 @@ struct KukaRobotJointReactionForces {
   SpatialForce<T> F_Go_W;
 };
 
-/**
-This class is a MultibodyTree model for a 7-DOF Kuka iiwa robot arm.
+/** This class is a MultibodyTree model for a 7-DOF Kuka iiwa robot arm.
 It is used to compare Drake results for the robot end-effector (rigid linkG)
 relative to world (Newtonian frame linkN) versus MotionGenesis solution.
 This class takes input values for each of the 7 joint angles (q) as well as
@@ -77,8 +75,7 @@ class DrakeKukaIIwaRobot {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot)
 
-  /**
-  Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
+  /** Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   The robot is constructed with 7 revolute joints.
   @param[in] gravity Earth's gravitational acceleration in m/s².  The world
   z-unit vector is vertically upward.  If a gravity value of 9.8 is passed
@@ -122,13 +119,11 @@ class DrakeKukaIIwaRobot {
     context_ = plant_->CreateDefaultContext();
   }
 
-  /**
-  This method gets the number of rigid bodies in this robot.
+  /** This method gets the number of rigid bodies in this robot.
   @returns the number of rigid bodies in this robot. */
   int get_number_of_rigid_bodies() const  { return tree().num_bodies(); }
 
-  /**
-  This method calculates kinematic properties of the end-effector (herein
+  /** This method calculates kinematic properties of the end-effector (herein
   denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
   Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
   with Nz vertically upward and right-handed orthogonal unit vectors
@@ -172,8 +167,7 @@ class DrakeKukaIIwaRobot {
     return test_utilities::SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
-  /**
-  This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
+  /** This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
   robot, from known joint angles and their 1st and 2nd time-derivatives.
 
   @param[in] q robot's joint angles (generalized coordinates).

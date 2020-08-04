@@ -8,8 +8,7 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-/**
-Expresses a PendulumPlants's geometry to a SceneGraph.
+/** Expresses a PendulumPlants's geometry to a SceneGraph.
 
 @system
 name: PendulumGeometry
@@ -26,8 +25,7 @@ class PendulumGeometry final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumGeometry);
   ~PendulumGeometry() final;
 
-  /**
-  Creates, adds, and connects a PendulumGeometry system into the given
+  /** Creates, adds, and connects a PendulumGeometry system into the given
   `builder`.  Both the `pendulum_state.get_system()` and `scene_graph`
   systems must have been added to the given `builder` already.
 

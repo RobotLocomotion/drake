@@ -6,8 +6,7 @@
 namespace drake {
 namespace lcm {
 
-/**
-An implementation of DrakeLcmInterface that manipulates LCM messages in
+/** An implementation of DrakeLcmInterface that manipulates LCM messages in
 memory, not on the wire. Other than the class name, it is identical to a
 `DrakeLcm("memq://")`, i.e., an object constructed with the <a
 href="https://lcm-proj.github.io/group__LcmC__lcm__t.html#gaf29963ef43edadf45296d5ad82c18d4b">memq

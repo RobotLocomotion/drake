@@ -13,8 +13,7 @@
 namespace drake {
 namespace systems {
 
-/**
-@defgroup events_description System Events
+/** @defgroup events_description System Events
    @ingroup systems
 
 This page describes how Drake Systems can respond (through an Event) to changes
@@ -242,8 +241,7 @@ class EventData {
   [[nodiscard]] virtual EventData* DoClone() const = 0;
 };
 
-/**
-A token describing an event that recurs on a fixed period. The events are
+/** A token describing an event that recurs on a fixed period. The events are
 triggered at time = offset_sec + i * period_sec, where i is a non-negative
 integer. */
 class PeriodicEventData : public EventData {
@@ -275,8 +273,7 @@ class PeriodicEventData : public EventData {
   double offset_sec_{0.0};
 };
 
-/**
-Class for storing data from a witness function triggering to be passed
+/** Class for storing data from a witness function triggering to be passed
 to event handlers. A witness function isolates the time to a (typically
 small) window during which the witness function crosses zero. The time and
 state at both sides of this window are passed to the event handler so that
@@ -298,43 +295,35 @@ class WitnessTriggeredEventData : public EventData {
     triggered_witness_ = triggered_witness;
   }
 
-  /**
-  Gets the time at the left end of the window. Default is NaN (which
+  /** Gets the time at the left end of the window. Default is NaN (which
   indicates that the value is invalid). */
   const T& t0() const { return t0_; }
 
-  /**
-  Sets the time at the left end of the window. Note that `t0` should be
+  /** Sets the time at the left end of the window. Note that `t0` should be
   smaller than `tf` after both values are set. */
   void set_t0(const T& t0) { t0_ = t0; }
 
-  /**
-  Gets the time at the right end of the window. Default is NaN (which
+  /** Gets the time at the right end of the window. Default is NaN (which
   indicates that the value is invalid). */
   const T& tf() const { return tf_; }
 
-  /**
-  Sets the time at the right end of the window. Note that `tf` should be
+  /** Sets the time at the right end of the window. Note that `tf` should be
   larger than `t0` after both values are set. */
   void set_tf(const T& tf) { tf_ = tf; }
 
-  /**
-  Gets a pointer to the continuous state at the left end of the isolation
+  /** Gets a pointer to the continuous state at the left end of the isolation
   window. */
   const ContinuousState<T>* xc0() const { return xc0_; }
 
-  /**
-  Sets a pointer to the continuous state at the left end of the isolation
+  /** Sets a pointer to the continuous state at the left end of the isolation
   window. */
   void set_xc0(const ContinuousState<T>* xc0) { xc0_ = xc0; }
 
-  /**
-  Gets a pointer to the continuous state at the right end of the isolation
+  /** Gets a pointer to the continuous state at the right end of the isolation
   window. */
   const ContinuousState<T>* xcf() const { return xcf_; }
 
-  /**
-  Sets a pointer to the continuous state at the right end of the isolation
+  /** Sets a pointer to the continuous state at the right end of the isolation
   window. */
   void set_xcf(const ContinuousState<T>* xcf) { xcf_ = xcf; }
 
@@ -356,38 +345,32 @@ class WitnessTriggeredEventData : public EventData {
   const ContinuousState<T>* xcf_{nullptr};
 };
 
-/**
-Predefined types of triggers for events. Used at run time to determine why
+/** Predefined types of triggers for events. Used at run time to determine why
 the associated event has occurred. */
 enum class TriggerType {
   kUnknown,
 
-  /**
-  This trigger indicates that an associated event is triggered at system
+  /** This trigger indicates that an associated event is triggered at system
   initialization. */
   kInitialization,
 
-  /**
-  This trigger indicates that an associated event is triggered by directly
+  /** This trigger indicates that an associated event is triggered by directly
   calling the corresponding public system API for event handling (e.g.
   Publish(context)). */
   kForced,
 
-  /**
-  This trigger indicates that an associated event is triggered by the
+  /** This trigger indicates that an associated event is triggered by the
   system proceeding to a single, arbitrary time. Timed events are commonly
   created in System::CalcNextUpdateTime(). */
   kTimed,
 
-  /**
-  This type indicates that an associated event is triggered by the system
+  /** This type indicates that an associated event is triggered by the system
   proceeding to a time t ∈ {tᵢ = t₀ + p * i} for some period p, time
   offset t₀, and i is a non-negative integer. @see PeriodicEventData.
   Periodic events are commonly created in System::CalcNextUpdateTime(). */
   kPeriodic,
 
-  /**
-  This trigger indicates that an associated event is triggered whenever a
+  /** This trigger indicates that an associated event is triggered whenever a
   `solver` takes a `step`. A `solver` is an abstract construct that
   controls or tracks the time and state evolution of a System. A simulator is
   a `solver`- it advances time a finite duration by integrating a system,
@@ -407,14 +390,12 @@ enum class TriggerType {
   correspond to receiving sensory data from the hardware. */
   kPerStep,
 
-  /**
-  This trigger indicates that an associated event is triggered by the zero
+  /** This trigger indicates that an associated event is triggered by the zero
   crossing of a witness function. */
   kWitness,
 };
 
-/**
-Abstract base class that represents an event. The base event contains two
+/** Abstract base class that represents an event. The base event contains two
 main pieces of information: an enum trigger type and an optional attribute
 of AbstractValue that can be used to explain why the event is triggered.
 Derived classes should contain a function pointer to an optional callback
@@ -459,14 +440,12 @@ class Event {
   /** Returns true if this event has associated data. */
   bool has_event_data() const { return event_data_ != nullptr; }
 
-  /**
-  Returns a const pointer to the event data. The returned value
+  /** Returns a const pointer to the event data. The returned value
   can be nullptr, which means this event does not have any associated
   data. */
   const EventData* get_event_data() const { return event_data_.get(); }
 
-  /**
-  Returns a mutable pointer to the event data. The returned value
+  /** Returns a mutable pointer to the event data. The returned value
   can be nullptr, which means this event does not have any associated
   data. */
   EventData* get_mutable_event_data() { return event_data_.get(); }
@@ -483,8 +462,7 @@ class Event {
   }
   #endif
 
-  /**
-  Adds a clone of `this` event to the event collection `events`, with
+  /** Adds a clone of `this` event to the event collection `events`, with
   the given trigger type. If `this` event has an unknown trigger type, then
   any trigger type is acceptable. Otherwise the given trigger type must
   match match the trigger type stored in `this` event.
@@ -499,8 +477,7 @@ class Event {
     DoAddToComposite(trigger_type, &*events);
   }
 
-  /**
-  Provides an alternate signature for adding an Event that already has the
+  /** Provides an alternate signature for adding an Event that already has the
   correct trigger type set. Must not have an unknown trigger type. */
   void AddToComposite(CompositeEventCollection<T>* events) const {
     DRAKE_DEMAND(events != nullptr);
@@ -520,14 +497,12 @@ class Event {
   explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
   #endif
 
-  /**
-  Derived classes must implement this to add a clone of this Event to
+  /** Derived classes must implement this to add a clone of this Event to
   the event collection and unconditionally set its trigger type. */
   virtual void DoAddToComposite(TriggerType trigger_type,
                                 CompositeEventCollection<T>* events) const = 0;
 
-  /**
-  Derived classes must implement this method to clone themselves. Any
+  /** Derived classes must implement this method to clone themselves. Any
   Event-specific data is cloned using the Clone() method. Data specific
   to the class derived from Event must be cloned by the implementation. */
   [[nodiscard]] virtual Event* DoClone() const = 0;
@@ -537,8 +512,7 @@ class Event {
   std::unique_ptr<EventData> event_data_{nullptr};
 };
 
-/**
-Structure for comparing two PeriodicEventData objects for use in a map
+/** Structure for comparing two PeriodicEventData objects for use in a map
 container, using an arbitrary comparison method. */
 struct PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
@@ -549,8 +523,7 @@ struct PeriodicEventDataComparator {
   }
 };
 
-/**
-This class represents a publish event. It has an optional callback function
+/** This class represents a publish event. It has an optional callback function
 to do custom handling of this event given const Context and const
 PublishEvent object references. @see System::Publish for more details. */
 template <typename T>
@@ -565,13 +538,11 @@ class PublishEvent final : public Event<T> {
   typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
       PublishCallback;
 
-  /**
-  Makes a PublishEvent with no trigger type, no event data, and
+  /** Makes a PublishEvent with no trigger type, no event data, and
   no specified callback function. */
   PublishEvent() : Event<T>() {}
 
-  /**
-  Makes a PublishEvent with no trigger type, no event data, and
+  /** Makes a PublishEvent with no trigger type, no event data, and
   the specified callback function. */
   explicit PublishEvent(const PublishCallback& callback)
       : Event<T>(), callback_(callback) {}
@@ -590,8 +561,7 @@ class PublishEvent final : public Event<T> {
       : Event<T>(trigger_type) {}
   #endif
 
-  /**
-  Calls the optional callback function, if one exists, with @p context and
+  /** Calls the optional callback function, if one exists, with @p context and
   `this`. */
   void handle(const Context<T>& context) const {
     if (callback_ != nullptr) callback_(context, *this);
@@ -616,8 +586,7 @@ class PublishEvent final : public Event<T> {
   PublishCallback callback_{nullptr};
 };
 
-/**
-This class represents a discrete update event. It has an optional callback
+/** This class represents a discrete update event. It has an optional callback
 function to do custom handling of this event given const Context and
 const DiscreteUpdateEvent references, and writes the updates to a mutable,
 non-null DiscreteValues object. */
@@ -634,13 +603,11 @@ class DiscreteUpdateEvent final : public Event<T> {
                              DiscreteValues<T>*)>
       DiscreteUpdateCallback;
 
-  /**
-  Makes a DiscreteUpdateEvent with no trigger type, no event data, and
+  /** Makes a DiscreteUpdateEvent with no trigger type, no event data, and
   no specified callback function. */
   DiscreteUpdateEvent() : Event<T>() {}
 
-  /**
-  Makes a DiscreteUpdateEvent with no trigger type, no event data, and
+  /** Makes a DiscreteUpdateEvent with no trigger type, no event data, and
   the specified callback function. */
   explicit DiscreteUpdateEvent(const DiscreteUpdateCallback& callback)
       : Event<T>(), callback_(callback) {}
@@ -661,8 +628,7 @@ class DiscreteUpdateEvent final : public Event<T> {
       : DiscreteUpdateEvent(trigger_type, nullptr) {}
   #endif
 
-  /**
-  Calls the optional callback function, if one exists, with @p context,
+  /** Calls the optional callback function, if one exists, with @p context,
   'this' and @p discrete_state. */
   void handle(const Context<T>& context,
               DiscreteValues<T>* discrete_state) const {
@@ -688,8 +654,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   DiscreteUpdateCallback callback_{nullptr};
 };
 
-/**
-This class represents an unrestricted update event. It has an optional
+/** This class represents an unrestricted update event. It has an optional
 callback function to do custom handling of this event given const Context and
 const UnrestrictedUpdateEvent object references, and writes the updates to a
 mutable, non-null State object. */
@@ -706,13 +671,11 @@ class UnrestrictedUpdateEvent final : public Event<T> {
                              const UnrestrictedUpdateEvent<T>&, State<T>*)>
       UnrestrictedUpdateCallback;
 
-  /**
-  Makes an UnrestrictedUpdateEvent with no trigger type, no event data, and
+  /** Makes an UnrestrictedUpdateEvent with no trigger type, no event data, and
   no specified callback function. */
   UnrestrictedUpdateEvent() : Event<T>() {}
 
-  /**
-  Makes a UnrestrictedUpdateEvent with no trigger type, no event data, and
+  /** Makes a UnrestrictedUpdateEvent with no trigger type, no event data, and
   the specified callback function. */
   explicit UnrestrictedUpdateEvent(const UnrestrictedUpdateCallback& callback)
       : Event<T>(), callback_(callback) {}
@@ -732,8 +695,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
       : UnrestrictedUpdateEvent(trigger_type, nullptr) {}
   #endif
 
-  /**
-  Calls the optional callback function, if one exists, with @p context,
+  /** Calls the optional callback function, if one exists, with @p context,
   `this` and @p discrete_state. */
   void handle(const Context<T>& context, State<T>* state) const {
     if (callback_ != nullptr) callback_(context, *this, state);

@@ -41,13 +41,11 @@ using ImageLabel16I = Image<PixelType::kLabel16I>;
 /** The type for greyscale image where the channel has the type of uint8_t. */
 using ImageGrey8U = Image<PixelType::kGrey8U>;
 
-/**
-The type for symbolic image where the channel has the type of
+/** The type for symbolic image where the channel has the type of
 symbolic::Expression. */
 using ImageExpr = Image<PixelType::kExpr>;
 
-/**
-Simple data format for Image. For the complex calculation with the image,
+/** Simple data format for Image. For the complex calculation with the image,
 consider converting this to other libaries' Matrix data format, i.e.,
 MatrixX in Eigen, Mat in OpenCV, and so on.
 
@@ -60,14 +58,12 @@ class Image {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Image)
 
-  /**
-  This is used by generic helpers such as drake::Value to deduce a non-type
+  /** This is used by generic helpers such as drake::Value to deduce a non-type
   template argument. */
   using NonTypeTemplateParameter =
       std::integral_constant<PixelType, kPixelType>;
 
-  /**
-  An alias for ImageTraits that contains the data type for a channel,
+  /** An alias for ImageTraits that contains the data type for a channel,
   the number of channels and the pixel format in it. */
   using Traits = ImageTraits<kPixelType>;
 
@@ -83,16 +79,14 @@ class Image {
   /** The format for pixels. */
   static constexpr PixelFormat kPixelFormat = Traits::kPixelFormat;
 
-  /**
-  Image size only constructor.  Specifies a width and height for the image.
+  /** Image size only constructor.  Specifies a width and height for the image.
   All the channel values in all the pixels are initialized with zero.
   @param width Size of width for image which should be greater than zero
   @param height Size of height for image which should be greater than zero */
   Image(int width, int height)
       : Image(width, height, 0) {}
 
-  /**
-  Image size and initial value constructor.  Specifies a
+  /** Image size and initial value constructor.  Specifies a
   width, height and an initial value for all the channels in all the pixels.
   @param width Size of width for image which should be greater than zero.
   @param height Size of height for image which should be greater than zero.
@@ -113,13 +107,11 @@ class Image {
   /** Returns the size of height for the image */
   int height() const { return height_; }
 
-  /**
-  Returns the result of the number of pixels in a image by the number of
+  /** Returns the result of the number of pixels in a image by the number of
   channels in a pixel */
   int size() const { return width_ * height_ * kNumChannels; }
 
-  /**
-  Changes the sizes of the width and height for the image.  The values for
+  /** Changes the sizes of the width and height for the image.  The values for
   them should be greater than zero.  (To resize to zero, assign a default-
   constructed Image into this; do not use this method.)  All the values in
   the pixels become zero after resize. */
@@ -133,8 +125,7 @@ class Image {
     height_ = height;
   }
 
-  /**
-  Access to the pixel located at (x, y) in image coordinate system where x
+  /** Access to the pixel located at (x, y) in image coordinate system where x
   is the variable for horizontal direction and y is one for vertical
   direction.  To access to the each channel value in the pixel (x, y),
   you can do:
@@ -150,8 +141,7 @@ class Image {
     return data_.data() + (x + y * width_) * kNumChannels;
   }
 
-  /**
-  Const version of at() method.  See the document for the non-const version
+  /** Const version of at() method.  See the document for the non-const version
   for the detail. */
   const T* at(int x, int y) const {
     DRAKE_ASSERT(x >= 0 && x < width_);
@@ -167,8 +157,7 @@ class Image {
 
 // TODO(jwnimmer-tri) Deprecate these float-only constants; code should be
 // using ImageTraits exclusively (i.e., based on the pixel type).
-/**
-Set of constants used to represent invalid depth values.
+/** Set of constants used to represent invalid depth values.
 Note that in the case that a depth is not measurable, the constants defined
 here are not used. Instead we set the depth to NaN. */
 class InvalidDepth {

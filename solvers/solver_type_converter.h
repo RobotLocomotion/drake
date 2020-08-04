@@ -19,8 +19,7 @@ class SolverTypeConverter {
   /** Converts the given type to its matching ID. */
   static SolverId TypeToId(SolverType);
 
-  /**
-  Converts the given ID to its matching type, iff the type matches one of
+  /** Converts the given ID to its matching type, iff the type matches one of
   SolverType's known values. */
   static std::optional<SolverType> IdToType(SolverId);
 };

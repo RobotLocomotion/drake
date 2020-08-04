@@ -2,8 +2,7 @@
 namespace drake {
 namespace systems {
 
-/**
-@addtogroup stochastic_systems
+/** @addtogroup stochastic_systems
 @brief This page describes the implementation details of modeling a
 stochastic system in Drake and writing algorithms that explicitly
 leverage the stochastic modeling framework.

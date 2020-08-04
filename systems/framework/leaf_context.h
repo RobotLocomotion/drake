@@ -18,8 +18,7 @@
 namespace drake {
 namespace systems {
 
-/**
-%LeafContext contains all prerequisite data necessary to uniquely determine
+/** %LeafContext contains all prerequisite data necessary to uniquely determine
 the results of computations performed by the associated LeafSystem.
 @see Context for more information.
 
@@ -28,8 +27,7 @@ template <typename T>
 class LeafContext : public Context<T> {
  public:
   // Copy constructor is protected for use in implementing Clone().
-  /**
-  @name  Does not allow copy, move, or assignment.
+  /** @name  Does not allow copy, move, or assignment.
   @{ */
   LeafContext(LeafContext&&) = delete;
   LeafContext& operator=(const LeafContext&) = delete;
@@ -54,8 +52,7 @@ class LeafContext : public Context<T> {
 #endif
 
  protected:
-  /**
-  Protected copy constructor takes care of the local data members and
+  /** Protected copy constructor takes care of the local data members and
   all base class members, but doesn't update base class pointers so is
   not a complete copy. */
   LeafContext(const LeafContext& source) : Context<T>(source) {
@@ -65,8 +62,7 @@ class LeafContext : public Context<T> {
     // Everything else was handled by the Context<T> copy constructor.
   }
 
-  /**
-  Derived classes should reimplement and replace this; don't recursively
+  /** Derived classes should reimplement and replace this; don't recursively
   invoke it. */
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const override {
     return std::unique_ptr<ContextBase>(new LeafContext<T>(*this));
@@ -111,8 +107,7 @@ class LeafContext : public Context<T> {
     return *state_;
   }
 
-  /**
-  Returns a partial textual description of the Context, intended to be
+  /** Returns a partial textual description of the Context, intended to be
   human-readable.  It is not guaranteed to be unambiguous nor complete. */
   std::string do_to_string() const final {
     std::ostringstream os;

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 A benchmarking helper. */
 
 #include <chrono>

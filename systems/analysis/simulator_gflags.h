@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This file defines gflags settings to control Simulator settings.
 Only include this from translation units that declare a `main` function. */
 
@@ -25,8 +24,7 @@ DECLARE_bool(simulator_publish_every_time_step);
 namespace drake {
 namespace systems {
 
-/**
-Resets the integrator used to advanced the continuous time dynamics of the
+/** Resets the integrator used to advanced the continuous time dynamics of the
 system associated with `simulator` according to the gflags declared in this
 file.
 @param[in,out] simulator
@@ -37,8 +35,7 @@ file.
 `simulator`. */
 IntegratorBase<double>& ResetIntegratorFromGflags(Simulator<double>* simulator);
 
-/**
-Makes a new simulator according to the gflags declared in this file.
+/** Makes a new simulator according to the gflags declared in this file.
 @param[in] system
   The System to be associated with the newly crated Simulator. You must
   ensure that `system` has a longer lifetime than the new Simulator.

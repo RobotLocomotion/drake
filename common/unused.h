@@ -2,8 +2,7 @@
 
 namespace drake {
 
-/**
-Documents the argument(s) as unused, placating GCC's -Wunused-parameter
+/** Documents the argument(s) as unused, placating GCC's -Wunused-parameter
 warning.  This can be called within function bodies to mark that certain
 parameters are unused.
 

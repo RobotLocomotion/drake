@@ -13,8 +13,7 @@
 namespace drake {
 namespace math {
 
-/**
-Generates a rotation (in the quaternion representation) that rotates a
+/** Generates a rotation (in the quaternion representation) that rotates a
 point on the unit sphere to another point on the unit sphere with a uniform
 distribution over the sphere.
 This method is briefly explained in
@@ -39,8 +38,7 @@ Eigen::Quaternion<T> UniformlyRandomQuaternion(Generator* generator) {
                               sqrt_u1 * cos(2 * M_PI * u3));
 }
 
-/**
-Generates a rotation (in the axis-angle representation) that rotates a
+/** Generates a rotation (in the axis-angle representation) that rotates a
 point on the unit sphere to another point on the unit sphere with a uniform
 distribution over the sphere. */
 template <typename T = double, class Generator = RandomGenerator>
@@ -51,8 +49,7 @@ Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   return internal::QuaternionToAngleAxisLikeEigen(quaternion);
 }
 
-/**
-Generates a rotation (in the rotation matrix representation) that rotates a
+/** Generates a rotation (in the rotation matrix representation) that rotates a
 point on the unit sphere to another point on the unit sphere with a uniform
 distribution over the sphere. */
 template <typename T = double, class Generator = RandomGenerator>
@@ -63,8 +60,7 @@ RotationMatrix<T> UniformlyRandomRotationMatrix(Generator* generator) {
   return RotationMatrix<T>(quaternion);
 }
 
-/**
-Generates a rotation (in the roll-pitch-yaw representation) that rotates a
+/** Generates a rotation (in the roll-pitch-yaw representation) that rotates a
 point on the unit sphere to another point on the unit sphere with a uniform
 distribution over the sphere. */
 template <typename T = double, class Generator = RandomGenerator>

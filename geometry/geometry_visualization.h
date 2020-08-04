@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Provides a set of functions to facilitate visualization operations based on
 SceneGraph system state. */
 
@@ -32,8 +31,7 @@ class GeometryVisualizationImpl {
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
 
-/**
-Extends a Diagram with the required components to interface with
+/** Extends a Diagram with the required components to interface with
 drake_visualizer. This must be called _during_ Diagram building and
 uses the given `builder` to add relevant subsystems and connections.
 
@@ -96,8 +94,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const SceneGraph<double>& scene_graph,
     lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
 
-/**
-Implements ConnectDrakeVisualizer, but using @p pose_bundle_output_port to
+/** Implements ConnectDrakeVisualizer, but using @p pose_bundle_output_port to
 explicitly specify the output port used to get pose bundles for
 @p scene_graph.  This is required, for instance, when the SceneGraph is
 inside a Diagram, and the Diagram exports the pose bundle port.
@@ -112,8 +109,7 @@ systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
     const systems::OutputPort<double>& pose_bundle_output_port,
     lcm::DrakeLcmInterface* lcm = nullptr, Role role = Role::kIllustration);
 
-/**
-(Advanced) Explicitly dispatches an LCM load message based on the registered
+/** (Advanced) Explicitly dispatches an LCM load message based on the registered
 geometry. Normally this is done automatically at Simulator initialization. But
 if you have to do it yourself (likely because you are not using a Simulator),
 it should be invoked _after_ registration is complete. Typically this is used

@@ -16,8 +16,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-Sensor to represent an ideal accelerometer sensor. Currently does not
+/** Sensor to represent an ideal accelerometer sensor. Currently does not
 represent noise or bias, but this could and should be added at a later
 date. This sensor measures the proper acceleration of a point on a given
 body B. Proper acceleration subtracts gravity from the coordinate
@@ -56,8 +55,7 @@ class Accelerometer final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Accelerometer)
 
-  /**
-  @param body the body B to which the sensor is affixed
+  /** @param body the body B to which the sensor is affixed
   @param X_BS the pose of sensor frame S in body B
   @param gravity_vector the constant acceleration due to gravity
      expressed in world coordinates */
@@ -97,8 +95,7 @@ class Accelerometer final : public LeafSystem<T> {
     return X_BS_;
   }
 
-  /**
-  Static factory method that creates an Accelerometer object and connects
+  /** Static factory method that creates an Accelerometer object and connects
   it to the given plant. Modifies a Diagram by connecting the input ports
   of the new Accelerometer to the appropriate output ports of a
   MultibodyPlant. Must be called during Diagram building and given the

@@ -7,8 +7,7 @@
 namespace drake {
 namespace systems {
 
-/**
-Generates an html string to "render" the @p system, with collapsible
+/** Generates an html string to "render" the @p system, with collapsible
 diagrams.  Use @p initial_depth to set the depth to which the subdiagrams are
 expanded by default (0 for all collapsed, +∞ for all expanded).
 

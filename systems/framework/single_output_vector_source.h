@@ -13,8 +13,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A base class that specializes LeafSystem for use with no input ports, and
+/** A base class that specializes LeafSystem for use with no input ports, and
 only a single, vector output port. Subclasses should override the protected
 method
 @code
@@ -27,8 +26,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SingleOutputVectorSource)
 
-  /**
-  Deleted default constructor.  Child classes must either supply the
+  /** Deleted default constructor.  Child classes must either supply the
   vector size to the single-argument constructor of `int`, or supply a model
   vector to the single-argument constructor of `const BasicVector<T>&`. */
   SingleOutputVectorSource() = delete;
@@ -44,8 +42,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   void get_output_port(int) = delete;
 
  protected:
-  /**
-  Creates a source with the given sole output port configuration.
+  /** Creates a source with the given sole output port configuration.
 
   @note Objects created using this constructor overload do not support
   system scalar conversion.  See @ref system_scalar_conversion.  Use a
@@ -53,8 +50,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   explicit SingleOutputVectorSource(int size)
       : SingleOutputVectorSource({}, size) {}
 
-  /**
-  Creates a source with output type and dimension of the @p model_vector.
+  /** Creates a source with output type and dimension of the @p model_vector.
 
   @note Objects created using this constructor overload do not support
   system scalar conversion.  See @ref system_scalar_conversion.  Use a
@@ -62,8 +58,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   explicit SingleOutputVectorSource(const BasicVector<T>& model_vector)
       : SingleOutputVectorSource({}, model_vector) {}
 
-  /**
-  Creates a source with the given sole output port configuration.
+  /** Creates a source with the given sole output port configuration.
 
   @note objects created using this constructor may support system scalar
   conversion. See @ref system_scalar_conversion.
@@ -73,8 +68,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   SingleOutputVectorSource(SystemScalarConverter converter, int size)
       : SingleOutputVectorSource(std::move(converter), BasicVector<T>(size)) {}
 
-  /**
-  Creates a source with output type and dimension of the @p model_vector.
+  /** Creates a source with output type and dimension of the @p model_vector.
 
   @note objects created using this constructor may support system scalar
   conversion. See @ref system_scalar_conversion.
@@ -89,8 +83,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
         &SingleOutputVectorSource<T>::CalcVectorOutput);
   }
 
-  /**
-  Provides a convenience method for %SingleOutputVectorSource subclasses.
+  /** Provides a convenience method for %SingleOutputVectorSource subclasses.
   This method performs the same logical operation as System::DoCalcOutput
   but provides the single output's VectorBlock instead.  Subclasses should
   override this method, and not the base class method (which is `final`). */

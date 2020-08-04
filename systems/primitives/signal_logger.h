@@ -17,8 +17,7 @@ namespace systems {
 
 // TODO(sherm1) This System has problems as discussed in issue #10228 that
 //              should be fixed.
-/**
-A discrete sink block which logs its input to memory (not thread safe). This
+/** A discrete sink block which logs its input to memory (not thread safe). This
 data is then retrievable (e.g. after a simulation) via a handful of accessor
 methods. This system holds a large, mutable Eigen matrix for data storage,
 where each column corresponds to a data point. It saves a data point and
@@ -58,8 +57,7 @@ class SignalLogger final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLogger)
 
-  /**
-  Constructs the signal logger system.
+  /** Constructs the signal logger system.
 
   @warning %SignalLogger may become slower and slower as the number of
   log entries increases due to memory reallocations. You can avoid that by
@@ -77,8 +75,7 @@ class SignalLogger final : public LeafSystem<T> {
   template <typename U>
   explicit SignalLogger(const SignalLogger<U>&);
 
-  /**
-  Sets the publishing period of this system to specify periodic sampling
+  /** Sets the publishing period of this system to specify periodic sampling
   and disables the default per-step sampling. This method can only be called
   once and only if set_forced_publish_only() hasn't been called.
   @throws std::logic_error if called more than once, or if
@@ -86,8 +83,7 @@ class SignalLogger final : public LeafSystem<T> {
   @pre `period` must be greater than zero. */
   void set_publish_period(double period);
 
-  /**
-  Limits logging to forced publish calls only, that is, explicit calls
+  /** Limits logging to forced publish calls only, that is, explicit calls
   to System::Publish() issued directly or by the Simulator and disables the
   default per-step sampling. This method cannot be called if
   set_publish_period() has been called.
@@ -97,8 +93,7 @@ class SignalLogger final : public LeafSystem<T> {
   /** Returns the number of samples taken since construction or last reset(). */
   int num_samples() const { return log_.num_samples(); }
 
-  /**
-  Provides access to the sample times of the logged data. Time is taken
+  /** Provides access to the sample times of the logged data. Time is taken
   from the Context when the log entry is added. */
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {
     return log_.sample_times();
@@ -113,8 +108,7 @@ class SignalLogger final : public LeafSystem<T> {
   /** Clears the logged data. */
   void reset() { log_.reset(); }
 
-  /**
-  Returns the only input port. The port's name is "data" so you can also
+  /** Returns the only input port. The port's name is "data" so you can also
   access this with GetInputPort("data"). */
   const InputPort<T>& get_input_port() const;
 
@@ -138,8 +132,7 @@ class SignalLogger final : public LeafSystem<T> {
   mutable SignalLog<T> log_;  // TODO(sherm1) Not thread safe :(
 };
 
-/**
-Provides a convenience function for adding a SignalLogger, initialized to
+/** Provides a convenience function for adding a SignalLogger, initialized to
 the correct size, and connected to an output in a DiagramBuilder.
 
 @code

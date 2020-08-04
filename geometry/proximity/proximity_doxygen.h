@@ -1,13 +1,11 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref proximity_queries. */
 
 namespace drake {
 namespace geometry {
 namespace proximity {
 
-/**
-@addtogroup proximity_queries
+/** @addtogroup proximity_queries
 Proximity queries span a range of types, including:
 
   - @ref module_penetration_queries "penetration"

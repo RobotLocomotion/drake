@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This is the entry point for all text logging within Drake.
 Once you've included this file, the suggested ways you
 should write log messages include:
@@ -93,13 +92,11 @@ namespace drake {
 namespace logging {
 
 // If we have spdlog, just alias logger into our namespace.
-/**
-The drake::logging::logger class provides text logging methods.
+/** The drake::logging::logger class provides text logging methods.
 See the text_logging.h documentation for a short tutorial. */
 using logger = spdlog::logger;
 
-/**
-When spdlog is enabled in this build, drake::logging::sink is an alias for
+/** When spdlog is enabled in this build, drake::logging::sink is an alias for
 spdlog::sinks::sink.  When spdlog is disabled, it is an empty class. */
 using spdlog::sinks::sink;
 
@@ -158,8 +155,7 @@ class sink {
 
 #endif  // HAVE_SPDLOG
 
-/**
-Retrieve an instance of a logger to use for logging; for example:
+/** Retrieve an instance of a logger to use for logging; for example:
 <pre>
   drake::log()->info("potato!")
 </pre>
@@ -169,16 +165,14 @@ logging::logger* log();
 
 namespace logging {
 
-/**
-(Advanced) Retrieves the default sink for all Drake logs.  When spdlog is
+/** (Advanced) Retrieves the default sink for all Drake logs.  When spdlog is
 enabled, the return value can be cast to spdlog::sinks::dist_sink_mt and
 thus allows consumers of Drake to redirect Drake's text logs to locations
 other than the default of stderr.  When spdlog is disabled, the return
 value is an empty class. */
 sink* get_dist_sink();
 
-/**
-When constructed, logs a message (at "warn" severity); the destructor is
+/** When constructed, logs a message (at "warn" severity); the destructor is
 guaranteed to be trivial.  This is useful for declaring an instance of this
 class as a function-static global, so that a warning is logged the first
 time the program encounters some code, but does not repeat the warning on
@@ -202,8 +196,7 @@ struct Warn {
   }
 };
 
-/**
-Invokes `drake::log()->set_level(level)`.
+/** Invokes `drake::log()->set_level(level)`.
 @param level Must be a string from spdlog enumerations: `trace`, `debug`,
 `info`, `warn`, `err`, `critical`, `off`, or `unchanged` (not an enum, but
 useful for command-line).

@@ -8,8 +8,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-A structure for storing trajectories from simulating a linear inverted
+/** A structure for storing trajectories from simulating a linear inverted
 pendulum model (LIPM) using the policy from a ZMPPlanner. */
 struct ZMPTestTraj {
   explicit ZMPTestTraj(int N) {
@@ -29,8 +28,7 @@ struct ZMPTestTraj {
   Eigen::Matrix<double, 2, Eigen::Dynamic> cop;
 };
 
-/**
-Forward simulation using the linear policy from `zmp_planner` starting from
+/** Forward simulation using the linear policy from `zmp_planner` starting from
 the initial condition `x0` using explicit Euler integration.
 @param zmp_planner, Contains planned center of mass trajectory,
 value function, and linear policy.
@@ -43,8 +41,7 @@ ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end);
 
-/**
-Generates desired ZMP trajectories as piecewise polynomials given the
+/** Generates desired ZMP trajectories as piecewise polynomials given the
 desired footsteps. The knot points are generated as follows:
 <pre>
 T: 0, knots: fs[0]

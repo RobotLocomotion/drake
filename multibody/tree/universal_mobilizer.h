@@ -15,8 +15,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This mobilizer models a universal joint between an inboard frame F and an
+/** This mobilizer models a universal joint between an inboard frame F and an
 outboard frame M that enables rotation about F's x-axis followed by rotation
 about M's y-axis. No translational motion of M in F is allowed and the
 inboard frame origin `Fo` and the outboard frame origin `Mo` are coincident
@@ -49,8 +48,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalMobilizer)
 
-  /**
-  Constructor for a %UniversalMobilizer between an inboard frame F
+  /** Constructor for a %UniversalMobilizer between an inboard frame F
   `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
   two rotational degrees of freedom corresponding to angles θ₁, θ₂ as
   described in this class's documentation. */
@@ -58,8 +56,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                      const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  /**
-  Retrieves from `context` the two angles, (θ₁, θ₂) which describe the state
+  /** Retrieves from `context` the two angles, (θ₁, θ₂) which describe the state
   for `this` mobilizer as documented in this class's documentation.
 
   @param[in] context The context of the model this mobilizer belongs to.
@@ -67,8 +64,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                   with entries `angles(0) = θ₁`, `angles(1) = θ₂`. */
   Vector2<T> get_angles(const systems::Context<T>& context) const;
 
-  /**
-  Sets in `context` the state for `this` mobilizer to the angles (θ₁, θ₂)
+  /** Sets in `context` the state for `this` mobilizer to the angles (θ₁, θ₂)
   provided in the input argument `angles`, which stores them with the format
   `angles = [θ₁, θ₂]`.
 
@@ -80,16 +76,14 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   const UniversalMobilizer<T>& set_angles(systems::Context<T>* context,
                                           const Vector2<T>& angles) const;
 
-  /**
-  Retrieves from `context` the rate of change, in radians per second, of
+  /** Retrieves from `context` the rate of change, in radians per second, of
   `this` mobilizer's angles (see get_angles()).
   @param[in] context The context of the model this mobilizer belongs to.
   @returns angles_dot The rate of change of the two angles (ω₁, ω₂) returned
                       as the vector [ω₁, ω₂]. */
   Vector2<T> get_angular_rates(const systems::Context<T>& context) const;
 
-  /**
-  Sets in `context` the rate of change, in radians per second, of this
+  /** Sets in `context` the rate of change, in radians per second, of this
   `this` mobilizer's angles (see get_angles()) to `angles_dot`.
   @param[in] context The context of the model this mobilizer belongs to.
   @param[in] angles_dot The desired rate of change, ω₁, ω₂, packed as the
@@ -98,15 +92,13 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   const UniversalMobilizer<T>& set_angular_rates(
       systems::Context<T>* context, const Vector2<T>& angles_dot) const;
 
-  /**
-  Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /** Computes the across-mobilizer transform `X_FM(q)` between the inboard
   frame F and the outboard frame M as a function of the angles (θ₁, θ₂)
   stored in `context`. */
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
-  /**
-  Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
+  /** Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   M measured and expressed in frame F as a function of the angles (θ₁, θ₂)
   stored in `context` and of the input angular rates v, formatted as
   in get_angular_rates().
@@ -115,8 +107,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
-  /**
-  Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
+  /** Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   outboard frame M in the inboard frame F.
   By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
   The acceleration `A_FM` will be a function of the rotation angles q (θ₁,
@@ -127,8 +118,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  /**
-  Projects the spatial force `F_Mo = [τ_Mo, f_Mo]` on `this` mobilizer's
+  /** Projects the spatial force `F_Mo = [τ_Mo, f_Mo]` on `this` mobilizer's
   outboard frame M onto the axes of rotation, x and y. Mathematically:
   <pre>
      tau = [τ_Mo⋅Fx]
@@ -141,15 +131,13 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                            const SpatialForce<T>& F_Mo_F,
                            Eigen::Ref<VectorX<T>> tau) const override;
 
-  /**
-  Performs the identity mapping from v to qdot since, for this mobilizer,
+  /** Performs the identity mapping from v to qdot since, for this mobilizer,
   v = q̇. */
   void MapVelocityToQDot(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& v,
                          EigenPtr<VectorX<T>> qdot) const override;
 
-  /**
-  Performs the identity mapping from qdot to v since, for this mobilizer,
+  /** Performs the identity mapping from qdot to v since, for this mobilizer,
   v = q̇. */
   void MapQDotToVelocity(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,

@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A first-order, explicit Euler integrator. State is updated in the following
+/** A first-order, explicit Euler integrator. State is updated in the following
 manner:
 <pre>
 x(t+h) = x(t) + dx/dt * h
@@ -25,8 +24,7 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
 
   ~ExplicitEulerIntegrator() override = default;
 
-  /**
-  Constructs a fixed-step integrator for a given system using the given
+  /** Constructs a fixed-step integrator for a given system using the given
   context for initial conditions.
   @param system A reference to the system to be simulated
   @param max_step_size The maximum (fixed) step size; the integrator will
@@ -51,8 +49,7 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
   bool DoStep(const T& h) override;
 };
 
-/**
-Integrates the system forward in time by h, starting at the current time t₀.
+/** Integrates the system forward in time by h, starting at the current time t₀.
 This value of h is determined by IntegratorBase::Step(). */
 template <class T>
 bool ExplicitEulerIntegrator<T>::DoStep(const T& h) {

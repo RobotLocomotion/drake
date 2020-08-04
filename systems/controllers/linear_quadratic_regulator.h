@@ -13,8 +13,7 @@ struct LinearQuadraticRegulatorResult {
   Eigen::MatrixXd S;
 };
 
-/**
-Computes the optimal feedback controller, u=-Kx, and the optimal
+/** Computes the optimal feedback controller, u=-Kx, and the optimal
 cost-to-go J = x'Sx for the problem:
 
   @f[ \dot{x} = Ax + Bu @f]
@@ -43,8 +42,7 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
 
 // TODO(russt): Consider implementing the optional N argument as in the
 // continuous-time formulation.
-/**
-Computes the optimal feedback controller, u=-Kx, and the optimal
+/** Computes the optimal feedback controller, u=-Kx, and the optimal
 cost-to-go J = x'Sx for the problem:
 
   @f[ x[n+1] = Ax[n] + Bu[n] @f]
@@ -67,8 +65,7 @@ LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
 
-/**
-Creates a system that implements the optimal time-invariant linear quadratic
+/** Creates a system that implements the optimal time-invariant linear quadratic
 regulator (LQR).  If @p system is a continuous-time system, then solves
 the continuous-time LQR problem:
 
@@ -97,8 +94,7 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& N =
         Eigen::Matrix<double, 0, 0>::Zero());
 
-/**
-Linearizes the System around the specified Context, computes the optimal
+/** Linearizes the System around the specified Context, computes the optimal
 time-invariant linear quadratic regulator (LQR), and returns a System which
 implements that regulator in the original System's coordinates.  If
 @p system is a continuous-time system, then solves

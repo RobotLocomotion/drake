@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Defines convenience utilities to wrap pybind11 methods and classes. */
 
 #pragma once
@@ -117,8 +116,7 @@ struct type_caster_wrapped {
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
 
-/**
-Ensures that any `std::function<>` arguments are wrapped such that any `T&`
+/** Ensures that any `std::function<>` arguments are wrapped such that any `T&`
 (which can infer for `T = const U`) is wrapped as `U*` (and conversely
 unwrapped when returned).
 Use this when you have a callback in C++ that has a lvalue reference (const
@@ -132,8 +130,7 @@ auto WrapCallbacks(Func&& func) {
   return WrapFunction<internal::wrap_callback, false>(std::forward<Func>(func));
 }
 
-/**
-Idempotent to pybind11's `def_readwrite()`, with the exception that the
+/** Idempotent to pybind11's `def_readwrite()`, with the exception that the
 setter is protected with keep_alive on a `member` variable that is a bare
 pointer.  Should not be used for unique_ptr members.
 
@@ -153,8 +150,7 @@ void DefReadWriteKeepAlive(
       doc);
 }
 
-/**
-Idempotent to pybind11's `def_readonly()`, which works for unique_ptr
+/** Idempotent to pybind11's `def_readonly()`, which works for unique_ptr
 elements; the getter is protected with keep_alive on a `member` variable
 that is a unique_ptr.
 

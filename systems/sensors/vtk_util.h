@@ -15,16 +15,14 @@ namespace drake {
 namespace systems {
 namespace sensors {
 namespace vtk_util {
-/**
-An array type for vtkSmartPointer.
+/** An array type for vtkSmartPointer.
 
 @tparam T The VTK class type stored in vtkSmartPointer.
 @tparam N The size of array. */
 template <typename T, size_t N>
 using vtkPointerArray = std::array<vtkSmartPointer<T>, N>;
 
-/**
-Creates a square plane of the given size.  The plane's z axis is its
+/** Creates a square plane of the given size.  The plane's z axis is its
 normal and is coincident with the z axis of the world coordinate system.
 The plane's center is at (0, 0, 0) of both the world coordinate system and
 plane's coordinate system.  The ranges of the plane's x and y are
@@ -33,8 +31,7 @@ plane's coordinate system.  The ranges of the plane's x and y are
 @param size The size of the plane. */
 vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size);
 
-/**
-Converts the provided `Eigen::Isometry3d` to a `vtkTransform`.
+/** Converts the provided `Eigen::Isometry3d` to a `vtkTransform`.
 
 @param transform The transform to convert into a `vtkTransform`. */
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
@@ -44,8 +41,7 @@ vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
     const math::RigidTransformd& transform);
 
-/**
-Makes vtkPointerArray from one or multiple pointer(s) for VTK objects
+/** Makes vtkPointerArray from one or multiple pointer(s) for VTK objects
 wrapped by vtkNew.
 
 @tparam transform The transform to convert into a `vtkTransform`. */

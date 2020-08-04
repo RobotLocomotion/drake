@@ -15,33 +15,26 @@ namespace multibody {
 struct DoorHingeConfig {
   /** qs₀ measured outward from the closed position [radian]. */
   double spring_zero_angle_rad{};
-  /**
-  k_ts torsional spring constant measured toward the spring zero angle
+  /** k_ts torsional spring constant measured toward the spring zero angle
   [Nm/rad]. It should be non-negative. */
   double spring_constant{};
-  /**
-  k_df maximum dynamic friction torque measured opposite direction of motion
+  /** k_df maximum dynamic friction torque measured opposite direction of motion
   [Nm]. It should be non-negative. */
   double dynamic_friction_torque{};
-  /**
-  k_sf maximum static friction measured opposite direction of motion [Nm].
+  /** k_sf maximum static friction measured opposite direction of motion [Nm].
   It should be non-negative. */
   double static_friction_torque{};
-  /**
-  k_vf viscous friction measured opposite direction of motion [Nm]. It
+  /** k_vf viscous friction measured opposite direction of motion [Nm]. It
   should be non-negative. */
   double viscous_friction{};
-  /**
-  qc₀ measured from closed (q=0) position [radian]. It should be
+  /** qc₀ measured from closed (q=0) position [radian]. It should be
   non-negative. */
   double catch_width{};
-  /**
-  k_c maximum catch torque applied over `catch_width` [Nm]. It should be
+  /** k_c maximum catch torque applied over `catch_width` [Nm]. It should be
   non-negative. */
   double catch_torque{};
 
-  /**
-  k_q̇₀ motion threshold to start to apply friction torques [rad/s]. It
+  /** k_q̇₀ motion threshold to start to apply friction torques [rad/s]. It
   should be non-negative. Realistic frictional force is very stiff,
   reversing entirely over zero change in position or velocity, which kills
   integrators.  We approximate it with a continuous function.  This constant
@@ -51,8 +44,7 @@ struct DoorHingeConfig {
   vibrates or explodes. */
   double motion_threshold{};
 
-  /**
-  Initialize to empirically reasonable values measured approximately by
+  /** Initialize to empirically reasonable values measured approximately by
   banging on the door of a dishwasher with a force gauge. */
   DoorHingeConfig()
       : spring_zero_angle_rad(-1.5),
@@ -65,8 +57,7 @@ struct DoorHingeConfig {
         motion_threshold(0.001) {}
 };
 
-/**
-This %ForceElement models a revolute DoorHinge joint that could exhibit
+/** This %ForceElement models a revolute DoorHinge joint that could exhibit
 different force/torque characteristics at different states due to the
 existence of different type of torques on the joint. This class implements
 a "christmas tree" accumulation of these different torques in an empirical
@@ -134,8 +125,7 @@ class DoorHinge final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoorHinge)
 
-  /**
-  Constructs a hinge force element with parameters @p config applied to the
+  /** Constructs a hinge force element with parameters @p config applied to the
   specified @p joint. It will throw an exception if the DoorHingeConfig is
   invalid. */
   DoorHinge(const RevoluteJoint<T>& joint, const DoorHingeConfig& config);
@@ -158,40 +148,33 @@ class DoorHinge final : public ForceElement<T> {
       const internal::PositionKinematicsCache<T>&,
       const internal::VelocityKinematicsCache<T>&) const override;
 
-  /**
-  @anchor door_hinge_advanced
+  /** @anchor door_hinge_advanced
   @name Advanced Functions
    Convenience functions for evaluating %DoorHinge operations without worrying
    about context-related issues.
   @{ */
 
-  /**
-  Calculates the total frictional torque with the given @p angular_rate
+  /** Calculates the total frictional torque with the given @p angular_rate
   and the internal DoorHingeConfig. */
   T CalcHingeFrictionalTorque(const T& angular_rate) const;
 
-  /**
-  Calculate the total spring related torque with the given @p angle
+  /** Calculate the total spring related torque with the given @p angle
   and the internal DoorHingeConfig. */
   T CalcHingeSpringTorque(const T& angle) const;
 
-  /**
-  Calculate the total torque with the given @p angle and
+  /** Calculate the total torque with the given @p angle and
   @p angular_rate and the internal DoorHingeConfig. */
   T CalcHingeTorque(const T& angle, const T& angular_rate) const;
 
-  /**
-  Calculate the total conservative power with the given @p angle,
+  /** Calculate the total conservative power with the given @p angle,
   @p angular_rate, and the internal DoorHingeConfig. */
   T CalcHingeConservativePower(const T& angle, const T& angular_rate) const;
 
-  /**
-  Calculate the total non-conservative power with the given
+  /** Calculate the total non-conservative power with the given
   @p angular_rate and the internal DoorHingeConfig. */
   T CalcHingeNonConservativePower(const T& angular_rate) const;
 
-  /**
-  Calculate the total potential energy of the DoorHinge ForceElement with
+  /** Calculate the total potential energy of the DoorHinge ForceElement with
   the given @p angle and the internal DoorHingeConfig. */
   T CalcHingeStoredEnergy(const T& angle) const;
   /** @} */

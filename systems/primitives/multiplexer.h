@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-This system combines multiple vector-valued inputs into a vector-valued
+/** This system combines multiple vector-valued inputs into a vector-valued
 output.  The input to this system directly feeds through to its output.
 
 @tparam_default_scalar
@@ -20,19 +19,16 @@ class Multiplexer : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Multiplexer)
 
-  /**
-  Constructs a %Multiplexer with `num_scalar_inputs` scalar-valued input
+  /** Constructs a %Multiplexer with `num_scalar_inputs` scalar-valued input
   ports, and one vector-valued output port of size `num_scalar_inputs`. */
   explicit Multiplexer(int num_scalar_inputs);
 
-  /**
-  Constructs a %Multiplexer with `input_sizes.size()` vector-valued input
+  /** Constructs a %Multiplexer with `input_sizes.size()` vector-valued input
   ports where the i-th input has size `input_sizes[i]`, and one vector-
   valued output port of size `sum(input_sizes)`. */
   explicit Multiplexer(std::vector<int> input_sizes);
 
-  /**
-  Constructs a %Multiplexer with model_vector.size() scalar-valued inputs
+  /** Constructs a %Multiplexer with model_vector.size() scalar-valued inputs
   and one vector-valued output port whose size equals the size of
   `model_vector`.  In addition, the output type derives from that of
   `model_vector`.

@@ -12,8 +12,7 @@ namespace drake {
 namespace solvers {
 namespace fbstab {
 
-/**
-This class computes and stores residuals for inequality constrained dense
+/** This class computes and stores residuals for inequality constrained dense
 QPs. See dense_data.h for a description of the QP.
 
 Residuals have 2 components:
@@ -22,8 +21,7 @@ Residuals have 2 components:
 class DenseResidual {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseResidual)
-  /**
-  Allocates memory for computing and storing residual vectors.
+  /** Allocates memory for computing and storing residual vectors.
   Uses alpha = 0.95 (see (19) in https://arxiv.org/pdf/1901.04046.pdf)
   by default.
 
@@ -33,14 +31,12 @@ class DenseResidual {
   Throws an exception if any inputs aren't positive. */
   DenseResidual(int nz, int nv);
 
-  /**
-  Performs the operation
+  /** Performs the operation
   y <- -1*y (y is this object). */
   void Negate();
   // TODO(dliaomcp@umich.edu): Add is_negated_ field
 
-  /**
-  Computes R(x,xbar,sigma), the residual of a proximal subproblem
+  /** Computes R(x,xbar,sigma), the residual of a proximal subproblem
   and stores the result internally.
   R(x,xbar,sigma) = 0 if and only if x = P(xbar,sigma)
   where P is the proximal operator.
@@ -57,8 +53,7 @@ class DenseResidual {
   void InnerResidual(const DenseVariable& x, const DenseVariable& xbar,
                      double sigma);
 
-  /**
-  Computes π(x): the natural residual of the QP
+  /** Computes π(x): the natural residual of the QP
   at the primal-dual point x and stores the result internally.
   See (17) in https://arxiv.org/pdf/1901.04046.pdf
   for a mathematical definition.
@@ -68,8 +63,7 @@ class DenseResidual {
   Throws a runtime_error if problem data isn't linked. */
   void NaturalResidual(const DenseVariable& x);
 
-  /**
-  Computes the natural residual function augmented with
+  /** Computes the natural residual function augmented with
   penalty terms, it is analogous to (18) in
   https://arxiv.org/pdf/1901.04046.pdf,
   and stores the result internally.
@@ -79,19 +73,16 @@ class DenseResidual {
   Throws a runtime_error if problem data isn't linked. */
   void PenalizedNaturalResidual(const DenseVariable& x);
 
-  /**
-  Fills the storage with a
+  /** Fills the storage with a
   i.e., r <- a*ones.
   @param[in] a */
   void Fill(double a);
 
-  /**
-  Computes the Euclidean norm of the current stored residuals.
+  /** Computes the Euclidean norm of the current stored residuals.
   @return sqrt(|z|^2 + |v|^2) */
   double Norm() const;
 
-  /**
-  Computes the merit function of the current stored residuals.
+  /** Computes the merit function of the current stored residuals.
   @return 0.5*(|z|^2 + |v|^2) */
   double Merit() const;
 
@@ -105,8 +96,7 @@ class DenseResidual {
   /** Accessor for complementarity residual. */
   const Eigen::VectorXd& v() const { return v_; }
 
-  /**
-  Sets the alpha parameter defined in (19)
+  /** Sets the alpha parameter defined in (19)
   of https://arxiv.org/pdf/1901.04046.pdf. */
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
@@ -115,8 +105,7 @@ class DenseResidual {
   /** Norm of the complementarity residual. */
   double v_norm() const { return vnorm_; }
 
-  /**
-  The dense QP we consider has no equality constraints
+  /** The dense QP we consider has no equality constraints
   so this methods returns 0.
   It's needed by the printing routines of the FBstabAlgorithm class. */
   double l_norm() const { return 0.0; }

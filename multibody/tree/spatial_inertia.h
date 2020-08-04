@@ -20,8 +20,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This class represents the physical concept of a _Spatial Inertia_. A
+/** This class represents the physical concept of a _Spatial Inertia_. A
 spatial inertia (or spatial mass matrix) encapsulates the mass, center of
 mass, and rotational inertia of the mass distribution of a body or composite
 body S, where with "composite body" we mean a collection of bodies welded
@@ -94,8 +93,7 @@ class SpatialInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
 
-  /**
-  Creates a spatial inertia for a physical body or composite body S about a
+  /** Creates a spatial inertia for a physical body or composite body S about a
   point P from a given mass, center of mass, and central rotational inertia.
   For example, this method creates a body's SpatialInertia about its body
   origin Bo from the body's mass, position vector from Bo to the body's
@@ -120,14 +118,12 @@ class SpatialInertia {
     return SpatialInertia(mass, p_PScm_E, G_SP_E);
   }
 
-  /**
-  Default SpatialInertia constructor initializes mass, center of mass and
+  /** Default SpatialInertia constructor initializes mass, center of mass and
   rotational inertia to invalid NaN's for a quick detection of
   uninitialized values. */
   SpatialInertia() {}
 
-  /**
-  Constructs a spatial inertia for a physical body or composite body S about
+  /** Constructs a spatial inertia for a physical body or composite body S about
   a point P from a given mass, center of mass and rotational inertia. The
   center of mass is specified by the position vector `p_PScm_E` from point P
   to the center of mass point `Scm`, expressed in a frame E.
@@ -162,8 +158,7 @@ class SpatialInertia {
     }
   }
 
-  /**
-  Returns a new %SpatialInertia object templated on `Scalar` initialized
+  /** Returns a new %SpatialInertia object templated on `Scalar` initialized
   from the value of `this` spatial inertia.
 
   @tparam Scalar The scalar type on which the new spatial inertia will
@@ -187,33 +182,28 @@ class SpatialInertia {
   /** Get a constant reference to the mass of this spatial inertia. */
   const T& get_mass() const { return mass_;}
 
-  /**
-  Get a constant reference to the position vector `p_PScm_E` from the
+  /** Get a constant reference to the position vector `p_PScm_E` from the
   _about point_ P to the center of mass `Scm` of the body or composite body
   S, expressed in frame E. See the documentation of this class for details. */
   const Vector3<T>& get_com() const { return p_PScm_E_;}
 
-  /**
-  Computes the center of mass moment vector `mass * p_PScm_E` given the
+  /** Computes the center of mass moment vector `mass * p_PScm_E` given the
   position vector `p_PScm_E` from the _about point_ P to the center of mass
   `Scm` of the body or composite body S, expressed in frame E. See the
   documentation of this class for details. */
   Vector3<T> CalcComMoment() const { return mass_ * p_PScm_E_;}
 
-  /**
-  Get a constant reference to the unit inertia `G_SP_E` of this
+  /** Get a constant reference to the unit inertia `G_SP_E` of this
   spatial inertia, computed about point P and expressed in frame E. See the
   documentation of this class for details. */
   const UnitInertia<T>& get_unit_inertia() const { return G_SP_E_;}
 
-  /**
-  Computes the rotational inertia `I_SP_E = mass * G_SP_E` of this
+  /** Computes the rotational inertia `I_SP_E = mass * G_SP_E` of this
   spatial inertia, computed about point P and expressed in frame E. See the
   documentation of this class for details. */
   RotationalInertia<T> CalcRotationalInertia() const { return mass_ * G_SP_E_;}
 
-  /**
-  Returns `true` if any of the elements in this spatial inertia is NaN
+  /** Returns `true` if any of the elements in this spatial inertia is NaN
   and `false` otherwise. */
   boolean<T> IsNaN() const {
     using std::isnan;
@@ -221,8 +211,7 @@ class SpatialInertia {
         any_of(p_PScm_E_, [](auto x){ return isnan(x); });
   }
 
-  /**
-  Performs a number of checks to verify that this is a physically valid
+  /** Performs a number of checks to verify that this is a physically valid
   spatial inertia.
   The checks performed are:
 
@@ -258,8 +247,7 @@ class SpatialInertia {
     return M;
   }
 
-  /**
-  Sets `this` spatial inertia to have NaN entries. Typically used for quick
+  /** Sets `this` spatial inertia to have NaN entries. Typically used for quick
   detection of uninitialized values. */
   void SetNaN() {
     mass_ = nan();
@@ -267,8 +255,7 @@ class SpatialInertia {
     G_SP_E_.SetToNaN();
   }
 
-  /**
-  Adds in a spatial inertia to `this` spatial inertia.
+  /** Adds in a spatial inertia to `this` spatial inertia.
   @param[in] M_BP_E A spatial inertia of some body B to be added to
                    `this` spatial inertia. It must be defined about the
                     same point P as `this` inertia, and expressed in the
@@ -309,8 +296,7 @@ class SpatialInertia {
     return *this;
   }
 
-  /**
-  Given `this` spatial inertia `M_SP_E` for some body or composite body S,
+  /** Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   taken about a point P and expressed in frame E, this method computes the
   same inertia re-expressed in another frame A.
   This operation is performed in-place modifying the original object.
@@ -323,8 +309,7 @@ class SpatialInertia {
     return *this;                    // Now M_SP_A
   }
 
-  /**
-  Given `this` spatial inertia `M_SP_E` for some body or composite body S,
+  /** Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   taken about a point P and expressed in frame E, this method computes the
   same inertia re-expressed in another frame A.
   @param[in] R_AE RotationMatrix relating frames A and E.
@@ -335,8 +320,7 @@ class SpatialInertia {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /**
-  Given `this` spatial inertia `M_SP_E` for some body or composite body S,
+  /** Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   computed about point P, and expressed in frame E, this method uses
   the _Parallel Axis Theorem_ for spatial inertias to compute the same
   spatial inertia about a new point Q. The result still is expressed in
@@ -365,8 +349,7 @@ class SpatialInertia {
     return *this;
   }
 
-  /**
-  Given `this` spatial inertia `M_SP_E` for some body or composite body S,
+  /** Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   computed about point P, and expressed in frame E, this method uses
   the _Parallel Axis Theorem_ for spatial inertias to compute the same
   spatial inertia about a new point Q. The result still is expressed in
@@ -382,8 +365,7 @@ class SpatialInertia {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
 
-  /**
-  Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
+  /** Multiplies `this` spatial inertia `M_Bo_E` of a body B about its frame
   origin `Bo` by the spatial acceleration of the body frame B in a frame W.
   Mathematically: <pre>
     F_Bo_E = M_Bo_E * A_WB_E
@@ -423,8 +405,7 @@ class SpatialInertia {
         alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
   }
 
-  /**
-  Multiplies `this` spatial inertia `M_BP_E` of a body B about a point P
+  /** Multiplies `this` spatial inertia `M_BP_E` of a body B about a point P
   by the spatial velocity `V_WBp`, in a frame W, of the body frame B shifted
   to point P. Mathematically: <pre>
     L_WBp_E = M_BP_E * V_WBp_E
@@ -458,8 +439,7 @@ class SpatialInertia {
         w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
   }
 
-  /**
-  Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
+  /** Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
   as columns of input matrix `Mmatrix`. The top three rows of Mmatrix are
   expected to store the rotational components while the bottom three rows
   are expected to store the translational components.
@@ -531,8 +511,7 @@ class SpatialInertia {
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 };
 
-/**
-Insertion operator to write SpatialInertia objects into a `std::ostream`.
+/** Insertion operator to write SpatialInertia objects into a `std::ostream`.
 Especially useful for debugging.
 @relates SpatialInertia */
 template <typename T> inline

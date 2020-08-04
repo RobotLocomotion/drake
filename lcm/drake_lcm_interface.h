@@ -27,8 +27,7 @@ void OnHandleSubscriptionsError(
     const std::string& error_message);
 }  // namespace internal
 
-/**
-A pure virtual interface that enables LCM to be mocked.
+/** A pure virtual interface that enables LCM to be mocked.
 
 Because it must be pure, in general it will receive breaking API changes
 without notice.  Users should not subclass this interface directly, but
@@ -42,8 +41,7 @@ class DrakeLcmInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmInterface)
   virtual ~DrakeLcmInterface();
 
-  /**
-  A callback used by DrakeLcmInterface::Subscribe(), with arguments:
+  /** A callback used by DrakeLcmInterface::Subscribe(), with arguments:
   - `message_buffer` A pointer to the byte vector that is the serial
     representation of the LCM message.
   - `message_size` The size of `message_buffer`.
@@ -52,8 +50,7 @@ class DrakeLcmInterface {
   called from C functions. */
   using HandlerFunction = std::function<void(const void*, int)>;
 
-  /**
-  Most users should use the drake::lcm::Publish() free function, instead of
+  /** Most users should use the drake::lcm::Publish() free function, instead of
   this interface method.
 
   Publishes an LCM message on channel @p channel.
@@ -71,8 +68,7 @@ class DrakeLcmInterface {
   virtual void Publish(const std::string& channel, const void* data,
                        int data_size, std::optional<double> time_sec) = 0;
 
-  /**
-  Most users should use the drake::lcm::Subscribe() free function or the
+  /** Most users should use the drake::lcm::Subscribe() free function or the
   drake::lcm::Subscriber wrapper class, instead of this interface method.
 
   Subscribes to an LCM channel without automatic message decoding. The
@@ -94,8 +90,7 @@ class DrakeLcmInterface {
   virtual std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string& channel, HandlerFunction) = 0;
 
-  /**
-  Invokes the HandlerFunction callbacks for all subscriptions' pending
+  /** Invokes the HandlerFunction callbacks for all subscriptions' pending
   messages.  If @p timeout_millis is >0, blocks for up to that long until at
   least one message is handled.
   @return the number of messages handled, or 0 on timeout.
@@ -113,8 +108,7 @@ class DrakeLcmInterface {
   virtual void OnHandleSubscriptionsError(const std::string& error_message) = 0;
 };
 
-/**
-A helper class returned by DrakeLcmInterface::Subscribe() that allows for
+/** A helper class returned by DrakeLcmInterface::Subscribe() that allows for
 (possibly automatic) unsubscription and/or queue capacity control.  Refer to
 that method for additional details.
 
@@ -137,14 +131,12 @@ class DrakeSubscriptionInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeSubscriptionInterface)
   virtual ~DrakeSubscriptionInterface();
 
-  /**
-  Sets whether or not the subscription on DrakeLcmInterface will be
+  /** Sets whether or not the subscription on DrakeLcmInterface will be
   terminated when this object is deleted.  It is permitted to call this
   method many times, with a new `enabled` value each time. */
   virtual void set_unsubscribe_on_delete(bool enabled) = 0;
 
-  /**
-  Sets this subscription's queue depth to store messages inbetween calls to
+  /** Sets this subscription's queue depth to store messages inbetween calls to
   DrakeLcmInterface::HandleSubscriptions.  When the queue becomes full, new
   received messages will be discarded.  The default depth is 1.
 
@@ -156,8 +148,7 @@ class DrakeSubscriptionInterface {
   DrakeSubscriptionInterface();
 };
 
-/**
-Publishes an LCM message on channel @p channel.
+/** Publishes an LCM message on channel @p channel.
 
 @param lcm The LCM service on which to publish the message.
 Must not be null.
@@ -177,8 +168,7 @@ void Publish(DrakeLcmInterface* lcm, const std::string& channel,
   lcm->Publish(channel, bytes.data(), bytes.size(), time_sec);
 }
 
-/**
-Subscribes to an LCM channel named @p channel and decodes messages of type
+/** Subscribes to an LCM channel named @p channel and decodes messages of type
 @p Message.  See also drake::lcm::Subscriber for a simple way to passively
 observe received messages, without the need to write a handler function.
 
@@ -224,8 +214,7 @@ std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
   return result;
 }
 
-/**
-Subscribes to and stores a copy of the most recent message on a given
+/** Subscribes to and stores a copy of the most recent message on a given
 channel, for some @p Message type.  All copies of a given Subscriber share
 the same underlying data.  This class does NOT provide any mutex behavior
 for multi-threaded locking; it should only be used in cases where the
@@ -237,8 +226,7 @@ class Subscriber final {
   // Intentionally copyable so that it can be returned and stored by-value.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Subscriber)
 
-  /**
-  Subscribes to the (non-empty) @p channel on the given (non-null)
+  /** Subscribes to the (non-empty) @p channel on the given (non-null)
   @p lcm instance.  The `lcm` pointer is only used during construction; it
   is not retained by this object.  When a undecodable message is received,
   @p on_error handler is invoked; when `on_error` is not provided, an
@@ -255,8 +243,7 @@ class Subscriber final {
     }
   }
 
-  /**
-  Returns the most recently received message, or a value-initialized (zeros)
+  /** Returns the most recently received message, or a value-initialized (zeros)
   message otherwise. */
   const Message& message() const { return data_->message; }
   Message& message() { return data_->message; }
@@ -285,8 +272,7 @@ class Subscriber final {
   std::shared_ptr<DrakeSubscriptionInterface> subscription_;
 };
 
-/**
-Convenience function that repeatedly calls `lcm->HandleSubscriptions()`
+/** Convenience function that repeatedly calls `lcm->HandleSubscriptions()`
 with a timeout value of `timeout_millis`, until `finished()` returns true.
 Returns the total number of messages handled. */
 int LcmHandleSubscriptionsUntil(

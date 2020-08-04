@@ -7,8 +7,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-Class that turns a Shape into a std::string representation. This reifier has
+/** Class that turns a Shape into a std::string representation. This reifier has
 a string() member that gets updated for each shape reified. The expected
 workflow would be:
 

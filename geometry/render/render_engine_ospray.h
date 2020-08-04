@@ -98,8 +98,7 @@ class RenderEngineOspray final
   void ImplementGeometry(const Convex& convex, void* user_data) final;
   /** @} */
 
-  /**
-  @name    Access the default properties
+  /** @name    Access the default properties
 
   Provides access to the default values this instance of the render engine is
   using. These values must be set at construction. */

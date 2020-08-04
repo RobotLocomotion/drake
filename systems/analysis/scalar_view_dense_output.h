@@ -13,8 +13,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A ScalarDenseOutput class implementation that wraps a
+/** A ScalarDenseOutput class implementation that wraps a
 DenseOutput class instance and behaves as a view to one of
 its elements.
 
@@ -24,8 +23,7 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarViewDenseOutput)
 
-  /**
-  Constructs a view of another DenseOutput instance.
+  /** Constructs a view of another DenseOutput instance.
   @param base_output Base dense output to operate with.
   @param n The nth scalar element (0-indexed) of the output value
            to view.
@@ -46,8 +44,7 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
     }
   }
 
-  /**
-  Returns the base dense output upon which the
+  /** Returns the base dense output upon which the
   view operates. */
   const DenseOutput<T>* get_base_output() const {
     return base_output_.get();

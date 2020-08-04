@@ -8,8 +8,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A PortBase is base class for System ports; users will typically use the the
+/** A PortBase is base class for System ports; users will typically use the the
 InputPort<T> or OutputPort<T> types, not this base class. */
 class PortBase {
  public:
@@ -20,16 +19,14 @@ class PortBase {
   /** Get port name. */
   const std::string& get_name() const { return name_; }
 
-  /**
-  Returns a verbose human-readable description of port. This is useful for
+  /** Returns a verbose human-readable description of port. This is useful for
   error messages or debugging. */
   std::string GetFullDescription() const;
 
   /** Returns the port data type. */
   PortDataType get_data_type() const { return data_type_; }
 
-  /**
-  Returns the fixed size expected for a vector-valued port. Not
+  /** Returns the fixed size expected for a vector-valued port. Not
   meaningful for abstract-valued ports. */
   int size() const { return size_; }
 
@@ -42,16 +39,14 @@ class PortBase {
   }
 #endif
 
-  /**
-  (Advanced.) Returns the DependencyTicket for this port within the owning
+  /** (Advanced.) Returns the DependencyTicket for this port within the owning
   System. */
   DependencyTicket ticket() const {
     return ticket_;
   }
 
  protected:
-  /**
-  Provides derived classes the ability to set the base
+  /** Provides derived classes the ability to set the base
   class members at construction.
 
   @param kind_string
@@ -77,8 +72,7 @@ class PortBase {
       std::string name, int index, DependencyTicket ticket,
       PortDataType data_type, int size);
 
-  /**
-  Returns the index of this port within the owning System (i.e., an
+  /** Returns the index of this port within the owning System (i.e., an
   InputPortIndex or OutputPortIndex, but as a bare integer). For a Diagram,
   this will be the index within the Diagram, _not_ the index within the
   LeafSystem whose output port was forwarded. */
@@ -89,14 +83,12 @@ class PortBase {
     return owning_system_;
   }
 
-  /**
-  Pull a value of a given type from an abstract value or issue a nice
+  /** Pull a value of a given type from an abstract value or issue a nice
   message if the type is not correct. */
   template <typename ValueType>
   const ValueType& PortEvalCast(const AbstractValue& abstract) const;
 
-  /**
-  Downcast a basic vector to a more specific subclass (e.g., as generated
+  /** Downcast a basic vector to a more specific subclass (e.g., as generated
   by //tools/vector_gen) or issue a nice message if the type is not correct. */
   template <typename ValueType, typename T>
   const ValueType& PortEvalCast(const BasicVector<T>& basic) const;
@@ -115,8 +107,7 @@ class PortBase {
     ThrowBadCast(NiceTypeName::Get(basic), NiceTypeName::Get<ValueType>());
   }
 
-  /**
-  Reports that the user provided a bad ValueType argument to Eval.  The
+  /** Reports that the user provided a bad ValueType argument to Eval.  The
   value_typename is the type of the port's current value; the eval_typename is
   the type the user asked for. */
   [[noreturn]] void ThrowBadCast(

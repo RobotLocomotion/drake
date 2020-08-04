@@ -10,8 +10,7 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-/**
-Creates and outputs lcmt_iiwa_command messages.
+/** Creates and outputs lcmt_iiwa_command messages.
 
 Note that this system does not actually send the message an LCM channel. To
 send the message, the output of this system should be connected to a
@@ -40,8 +39,7 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
 
   explicit IiwaCommandSender(int num_joints = kIiwaArmNumJoints);
 
-  /**
-  @name Named accessors for this System's input and output ports.
+  /** @name Named accessors for this System's input and output ports.
   @{ */
   const systems::InputPort<double>& get_position_input_port() const;
   const systems::InputPort<double>& get_torque_input_port() const;

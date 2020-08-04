@@ -9,8 +9,7 @@ namespace drake {
 namespace examples {
 namespace bead_on_a_wire {
 
-/**
-Dynamical system of a point (unit) mass constrained to lie on a wire. The
+/** Dynamical system of a point (unit) mass constrained to lie on a wire. The
 system is currently frictionless. The equation for the wire can be provided
 parametrically by the user. Dynamics equations can be computed in both
 minimal coordinates or absolute coordinates (with Lagrange Multipliers).
@@ -80,16 +79,14 @@ Outputs: same as state.
 template <typename T>
 class BeadOnAWire : public systems::LeafSystem<T> {
  public:
-  /**
-  AutoDiff scalar used for constraint function automatic differentiation.
+  /** AutoDiff scalar used for constraint function automatic differentiation.
   The constraint function maps from an arc length (s) to a point in
   three-dimensional Cartesian space. This type represents the input
   variable s and- on return from that constraint function- would hold the
   first derivative of the constraint function computed with respect to s. */
   typedef Eigen::AutoDiffScalar<drake::Vector1d> AScalar;
 
-  /**
-  AutoDiff scalar used for computing the second derivative of the constraint
+  /** AutoDiff scalar used for computing the second derivative of the constraint
   function using automatic differentiation. The constraint function maps
   from an arc length (s) to a point in three-dimensional Cartesian space.
   This type represents the input variable s and- on return from that
@@ -107,24 +104,20 @@ class BeadOnAWire : public systems::LeafSystem<T> {
     kAbsoluteCoordinates
   };
 
-  /**
-  Constructs the object using either minimal or absolute coordinates (the
+  /** Constructs the object using either minimal or absolute coordinates (the
   latter uses the method of Lagrange Multipliers to compute the time
   derivatives). */
   explicit BeadOnAWire(CoordinateType type);
 
-  /**
-  Sets the acceleration (with respect to the positive y-axis) due to
+  /** Sets the acceleration (with respect to the positive y-axis) due to
   gravity (i.e., this number should generally be negative). */
   void set_gravitational_acceleration(double g) { g_ = g; }
 
-  /**
-  Gets the acceleration (with respect to the positive y-axis) due to
+  /** Gets the acceleration (with respect to the positive y-axis) due to
   gravity (i.e., this number should generally be negative). */
   double get_gravitational_acceleration() const { return g_; }
 
-  /**
-  Allows the user to reset the wire parameter function and its inverse
+  /** Allows the user to reset the wire parameter function and its inverse
   (which points to helix_function and inverse_helix_function by
   default.
   @param f The pointer to a function that takes a wire parameter
@@ -141,8 +134,7 @@ class BeadOnAWire : public systems::LeafSystem<T> {
     inv_f_ = inv_f;
   }
 
-  /**
-  Example wire parametric function for the bead on a wire example. The
+  /** Example wire parametric function for the bead on a wire example. The
   exact function definition is:
   <pre>
          | cos(s) |
@@ -152,45 +144,38 @@ class BeadOnAWire : public systems::LeafSystem<T> {
    */
   static Eigen::Matrix<ArcLength, 3, 1> helix_function(const ArcLength &s);
 
-  /**
-  Inverse parametric function for the bead on a wire system that uses the
+  /** Inverse parametric function for the bead on a wire system that uses the
   helix parametric example function. */
   static ArcLength inverse_helix_function(const Vector3<ArcLength> &v);
 
-  /**
-  Gets the output from the parametric function in Vector3d form.
+  /** Gets the output from the parametric function in Vector3d form.
   @param m the output from the parametric wire function. */
   static Eigen::Vector3d get_pfunction_output(
       const Eigen::Matrix<ArcLength, 3, 1>& m);
 
-  /**
-  Gets the first derivative from the parametric function, in Vector3d form,
+  /** Gets the first derivative from the parametric function, in Vector3d form,
   using the output from that parametric function.
   @param m the output from the parametric wire function. */
   static Eigen::Vector3d get_pfunction_first_derivative(
       const Eigen::Matrix<ArcLength, 3, 1>& m);
 
-  /**
-  Gets the second derivative from the parametric function, in Vector3d form,
+  /** Gets the second derivative from the parametric function, in Vector3d form,
   using the output from that parametric function.
   @param m the output from the parametric wire function. */
   static Eigen::Vector3d get_pfunction_second_derivative(
       const Eigen::Matrix<ArcLength, 3, 1>& m);
 
-  /**
-  Gets the output from the inverse parametric function as a double, using
+  /** Gets the output from the inverse parametric function as a double, using
   the output from that inverse parametric function.
   @param m the output from the inverse parametric wire function. */
   static double get_inv_pfunction_output(const ArcLength& m);
 
-  /**
-  Gets the first derivative from the inverse parametric function as a
+  /** Gets the first derivative from the inverse parametric function as a
   double, using the output from that inverse parametric function.
   @param m the output from the inverse parametric wire function. */
   static double get_inv_pfunction_first_derivative(const ArcLength& m);
 
-  /**
-  Gets the second derivative from the inverse parametric function as a
+  /** Gets the second derivative from the inverse parametric function as a
   double, using the output from that inverse parametric function.
   @param m the output from the inverse parametric wire function. */
   static double get_inv_pfunction_second_derivative(const ArcLength& m);
@@ -198,21 +183,18 @@ class BeadOnAWire : public systems::LeafSystem<T> {
   /** Gets the number of constraint equations used for dynamics. */
   int get_num_constraint_equations(const systems::Context<T>& context) const;
 
-  /**
-  Evaluates the constraint equations for a bead represented in absolute
+  /** Evaluates the constraint equations for a bead represented in absolute
   coordinates (no constraint equations are used for a bead represented in
   minimal coordinates). */
   Eigen::VectorXd EvalConstraintEquations(
       const systems::Context<T>& context) const;
 
-  /**
-  Computes the time derivative of the constraint equations, evaluated at
+  /** Computes the time derivative of the constraint equations, evaluated at
   the current generalized coordinates and generalized velocity. */
   Eigen::VectorXd EvalConstraintEquationsDot(
       const systems::Context<T>& context) const;
 
-  /**
-  Computes the change in generalized velocity from applying constraint
+  /** Computes the change in generalized velocity from applying constraint
   impulses @p lambda.
   @param context The current state of the system.
   @param lambda The vector of constraint forces.

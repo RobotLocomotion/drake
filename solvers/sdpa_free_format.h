@@ -15,8 +15,7 @@
 namespace drake {
 namespace solvers {
 namespace internal {
-/**
-X is a block diagonal matrix in SDPA format. EntryInX stores the information
+/** X is a block diagonal matrix in SDPA format. EntryInX stores the information
 of one entry in this block-diagonal matrix X. */
 struct EntryInX {
   EntryInX(int block_index_in, int row_index_in_block_in,
@@ -48,8 +47,7 @@ struct BlockInX {
   int num_rows;
 };
 
-/**
-Refer to @ref map_decision_variable_to_sdpa
+/** Refer to @ref map_decision_variable_to_sdpa
 When the decision variable either (or both) finite lower or upper bound (with
 the two bounds not equal), we need to record the sign of the coefficient
 before y. */
@@ -58,8 +56,7 @@ enum class Sign {
   kNegative,
 };
 
-/**
-@anchor map_decision_variable_to_sdpa Map decision variable to SDPA
+/** @anchor map_decision_variable_to_sdpa Map decision variable to SDPA
 When MathematicalProgram formulates a semidefinite program (SDP), we can
 convert MathematicalProgram to a standard format for SDP, namely the SDPA
 format. Each of the variable x in MathematicalProgram might be mapped to a
@@ -97,13 +94,12 @@ struct DecisionVariableInSdpaX {
   EntryInX entry_in_X;
 };
 
-/**
-SDPA format with free variables.
+/** SDPA format with free variables.
 
-    max tr(C * X) + dᵀs
-    s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
-        X ≽ 0
-        s is free. */
+max tr(C * X) + dᵀs
+s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
+    X ≽ 0
+    s is free. */
 class SdpaFreeFormat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdpaFreeFormat)
@@ -153,13 +149,11 @@ class SdpaFreeFormat {
 
   const Eigen::SparseMatrix<double>& d() const { return d_; }
 
-  /**
-  The SDPA format doesn't include the constant term in the cost, but
+  /** The SDPA format doesn't include the constant term in the cost, but
   MathematicalProgram does. We store the constant cost term here. */
   double constant_min_cost_term() const { return constant_min_cost_term_; }
 
-  /**
-  For the following problem
+  /** For the following problem
 
       max tr(C * X) + dᵀs
       s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
@@ -188,8 +182,7 @@ class SdpaFreeFormat {
       Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>*
           QR_B) const;
 
-  /**
-  For the problem
+  /** For the problem
 
       max tr(C * X) + dᵀs
       s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
@@ -215,8 +208,7 @@ class SdpaFreeFormat {
       std::vector<Eigen::SparseMatrix<double>>* A_hat,
       Eigen::SparseMatrix<double>* C_hat) const;
 
-  /**
-  For the problem
+  /** For the problem
 
       max tr(C * X) + dᵀs
       s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
@@ -381,8 +373,7 @@ class SdpaFreeFormat {
   // bᵢ is the i-th column of B. B_triplets records the nonzero entries in B.
   std::vector<Eigen::Triplet<double>> B_triplets_;
 
-  /**
-  Depending on the bounds and whether the variable appears in a PSD cone, a
+  /** Depending on the bounds and whether the variable appears in a PSD cone, a
   MathematicalProgram decision variable can be either an entry in X, a free
   variable, or a double constant in SDPA free format.
   We use std::nullptr_t to indicate that this variable hasn't been registered
@@ -402,8 +393,7 @@ class SdpaFreeFormat {
 };
 }  // namespace internal
 
-/**
-SDPA format doesn't accept free variables, namely the problem it solves is
+/** SDPA format doesn't accept free variables, namely the problem it solves is
 in this form P1
 
     max tr(C * X)
@@ -457,8 +447,7 @@ enum class RemoveFreeVariableMethod {
                       /** < cone constraint t ≥ sqrt(sᵀs). */
 };
 
-/**
-SDPA is a format to record an SDP problem
+/** SDPA is a format to record an SDP problem
 
     max tr(C*X)
     s.t tr(Aᵢ*X) = gᵢ

@@ -23,8 +23,7 @@ namespace systems {
 // TODO(sherm1) The ordering of the composite xc is useless and prevents us
 //              from describing every xc as a sequence [q v z]. Consider
 //              reimplementing so that xc=[q₁q₂ v₁v₂ z₁z₂].
-/**
-%ContinuousState is a view of, and optionally a container for, all the
+/** %ContinuousState is a view of, and optionally a container for, all the
 continuous state variables `xc` of a Drake System. Continuous state
 variables are those whose values are defined by differential equations,
 so we expect there to be a well-defined time derivative `xcdot` ≜ `d/dt xc`.
@@ -85,8 +84,7 @@ class ContinuousState {
   // caveats.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContinuousState)
 
-  /**
-  Constructs a ContinuousState for a system that does not have second-order
+  /** Constructs a ContinuousState for a system that does not have second-order
   structure. The `q` and `v` partitions are empty; all of the state `xc` is
   miscellaneous continuous state `z`. */
   explicit ContinuousState(std::unique_ptr<VectorBase<T>> state) {
@@ -98,8 +96,7 @@ class ContinuousState {
     DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
-  /**
-  Constructs a ContinuousState that exposes second-order structure.
+  /** Constructs a ContinuousState that exposes second-order structure.
 
   @param state The source xc of continuous state information.
   @param num_q The number of position variables q.
@@ -136,8 +133,7 @@ class ContinuousState {
 
   virtual ~ContinuousState() {}
 
-  /**
-  Creates a deep copy of this object with the same substructure but with all
+  /** Creates a deep copy of this object with the same substructure but with all
   data owned by the copy. That is, if the original was a Diagram continuous
   state that merely referenced substates, the clone will not include any
   references to the original substates and is thus decoupled from the
@@ -150,8 +146,7 @@ class ContinuousState {
     return result;
   }
 
-  /**
-  Returns the size of the entire continuous state vector, which is
+  /** Returns the size of the entire continuous state vector, which is
   necessarily `num_q + num_v + num_z`. */
   int size() const { return get_vector().size(); }
 
@@ -161,8 +156,7 @@ class ContinuousState {
   /** Returns the number of generalized velocities v in this state vector. */
   int num_v() const { return get_generalized_velocity().size(); }
 
-  /**
-  Returns the number of miscellaneous continuous state variables z
+  /** Returns the number of miscellaneous continuous state variables z
   in this state vector. */
   int num_z() const { return get_misc_continuous_state().size(); }
 
@@ -181,50 +175,43 @@ class ContinuousState {
     return *state_.get();
   }
 
-  /**
-  Returns a const reference to the subset of the state vector that is
+  /** Returns a const reference to the subset of the state vector that is
   generalized position `q`. May be zero length. */
   const VectorBase<T>& get_generalized_position() const {
     return *generalized_position_;
   }
 
-  /**
-  Returns a mutable reference to the subset of the state vector that is
+  /** Returns a mutable reference to the subset of the state vector that is
   generalized position `q`. May be zero length. */
   VectorBase<T>& get_mutable_generalized_position() {
     return *generalized_position_.get();
   }
 
-  /**
-  Returns a const reference to the subset of the continuous state vector
+  /** Returns a const reference to the subset of the continuous state vector
   that is generalized velocity `v`. May be zero length. */
   const VectorBase<T>& get_generalized_velocity() const {
     return *generalized_velocity_;
   }
 
-  /**
-  Returns a mutable reference to the subset of the continuous state vector
+  /** Returns a mutable reference to the subset of the continuous state vector
   that is generalized velocity `v`. May be zero length. */
   VectorBase<T>& get_mutable_generalized_velocity() {
     return *generalized_velocity_.get();
   }
 
-  /**
-  Returns a const reference to the subset of the continuous state vector
+  /** Returns a const reference to the subset of the continuous state vector
   that is other continuous state `z`. May be zero length. */
   const VectorBase<T>& get_misc_continuous_state() const {
     return *misc_continuous_state_;
   }
 
-  /**
-  Returns a mutable reference to the subset of the continuous state vector
+  /** Returns a mutable reference to the subset of the continuous state vector
   that is other continuous state `z`. May be zero length. */
   VectorBase<T>& get_mutable_misc_continuous_state() {
     return *misc_continuous_state_.get();
   }
 
-  /**
-  Copies the values from `other` into `this`, converting the scalar type as
+  /** Copies the values from `other` into `this`, converting the scalar type as
   necessary. */
   template <typename U>
   void SetFrom(const ContinuousState<U>& other) {
@@ -253,8 +240,7 @@ class ContinuousState {
   void set_system_id(internal::SystemId id) { system_id_ = id; }
 
  protected:
-  /**
-  Constructs a continuous state that exposes second-order structure, with
+  /** Constructs a continuous state that exposes second-order structure, with
   no particular constraints on the layout.
 
   @pre The q, v, z are all views into the same storage as @p state.
@@ -274,8 +260,7 @@ class ContinuousState {
     DRAKE_ASSERT_VOID(DemandInvariants());
   }
 
-  /**
-  DiagramContinuousState must override this to maintain the necessary
+  /** DiagramContinuousState must override this to maintain the necessary
   internal substructure, and to perform a deep copy so that the result
   owns all its own data. The default implementation here requires that the
   full state is a BasicVector (that is, this is a leaf continuous state).

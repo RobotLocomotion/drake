@@ -13,8 +13,7 @@ namespace geometry {
 template <typename T>
 class GeometryState;
 
-/**
-The %GeometrySet, as its name implies, is a convenience class for defining a
+/** The %GeometrySet, as its name implies, is a convenience class for defining a
 set of geometries. What makes it unique from a simple `std::set<GeometryId>`
 instance is that membership doesn't require explicit GeometryId enumeration;
 GeometryId values can be added to the set by adding the `FrameId` for the
@@ -40,8 +39,7 @@ class GeometrySet {
 
   GeometrySet() = default;
 
-  /**
-  @name    Explicit constructors
+  /** @name    Explicit constructors
 
   Various workflows may arise for operating on %GeometrySet instances, e.g.:
 
@@ -148,8 +146,7 @@ class GeometrySet {
 
   /** @} */
 
-  /**
-  @name    Methods for adding to the set
+  /** @name    Methods for adding to the set
 
   The interface for adding geometries to the set is simply an overload of the
   Add() method. For maximum flexibility, the Add method can take:

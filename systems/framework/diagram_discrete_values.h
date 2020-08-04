@@ -16,8 +16,7 @@
 namespace drake {
 namespace systems {
 
-/**
-DiagramDiscreteValues is a DiscreteValues container comprised recursively of
+/** DiagramDiscreteValues is a DiscreteValues container comprised recursively of
 a sequence of child DiscreteValues objects. The API allows this to be
 treated as though it were a single DiscreteValues object whose groups are
 the concatenation of the groups in each child.
@@ -30,8 +29,7 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteValues)
 
-  /**
-  Constructs a DiagramDiscreteValues object that is composed of other
+  /** Constructs a DiagramDiscreteValues object that is composed of other
   DiscreteValues, which are not owned by this object and must outlive it.
 
   The DiagramDiscreteValues vector xd = [xd₁ xd₂ ...] where each of the xdᵢ
@@ -45,8 +43,7 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
     DRAKE_ASSERT(internal::IsNonNull(subdiscretes_));
   }
 
-  /**
-  Constructs a DiagramDiscreteValues object that is composed (recursively)
+  /** Constructs a DiagramDiscreteValues object that is composed (recursively)
   of other DiscreteValues objects, ownership of which is transferred here. */
   explicit DiagramDiscreteValues(
       std::vector<std::unique_ptr<DiscreteValues<T>>> owned_subdiscretes)
@@ -55,13 +52,11 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
     DRAKE_ASSERT(internal::IsNonNull(owned_subdiscretes_));
   }
 
-  /**
-  Destructor deletes any owned DiscreteValues objects but does nothing if
+  /** Destructor deletes any owned DiscreteValues objects but does nothing if
   the referenced DiscreteValues objects are unowned. */
   ~DiagramDiscreteValues() override {}
 
-  /**
-  Creates a deep copy of this %DiagramDiscreteValues object, with the same
+  /** Creates a deep copy of this %DiagramDiscreteValues object, with the same
   substructure but with new, owned data. Intentionally shadows the
   DiscreteValues::Clone() method but with a more-specific return type so
   you don't have to downcast. */
@@ -71,16 +66,14 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
     return static_pointer_cast<DiagramDiscreteValues>(DoClone());
   }
 
-  /**
-  Returns the number of DiscreteValues objects referenced by this
+  /** Returns the number of DiscreteValues objects referenced by this
   %DiagramDiscreteValues object, necessarily the same as the number of
   subcontexts in the containing DiagramContext. */
   int num_subdiscretes() const {
     return static_cast<int>(subdiscretes_.size());
   }
 
-  /**
-  Returns a const reference to one of the referenced DiscreteValues
+  /** Returns a const reference to one of the referenced DiscreteValues
   objects which may or may not be owned locally. */
   const DiscreteValues<T>& get_subdiscrete(SubsystemIndex index) const {
     DRAKE_DEMAND(0 <= index && index < num_subdiscretes());
@@ -88,8 +81,7 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
     return *subdiscretes_[index];
   }
 
-  /**
-  Returns a mutable reference to one of the referenced DiscreteValues
+  /** Returns a mutable reference to one of the referenced DiscreteValues
   objects which may or may not be owned locally. */
   DiscreteValues<T>& get_mutable_subdiscrete(SubsystemIndex index) {
     return const_cast<DiscreteValues<T>&>(get_subdiscrete(index));

@@ -19,8 +19,7 @@ namespace systems {
 
 namespace internal {
 
-/**
-Returns @p input_matrix as an Eigen::Matrix<double, ...> with the same size
+/** Returns @p input_matrix as an Eigen::Matrix<double, ...> with the same size
 allocation as @p input_matrix.  Calls ExtractDoubleOrThrow on each element
 of the matrix, and therefore throws if any one of the extractions fail.
 @see ExtractDoubleOrThrow(const T&) */
@@ -32,8 +31,7 @@ MatrixX<double> ExtractDoublesOrThrow(
   });
 }
 
-/**
-Converts an STL vector of scalar type `S` elements to an STL vector
+/** Converts an STL vector of scalar type `S` elements to an STL vector
 of double type elements, failing at runtime if the type cannot be
 converted.
 @see ExtractDoubleOrThrow(const T&)
@@ -50,8 +48,7 @@ std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
   return output_vector;
 }
 
-/**
-Converts an STL vector of matrices with scalar type `S` elements to an STL
+/** Converts an STL vector of matrices with scalar type `S` elements to an STL
 vector of matrices with double type elements, failing at runtime if the type
 cannot be converted.
 @see ExtractDoublesOrThrow(const MatrixX<T>&)
@@ -71,8 +68,7 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 
 }  // namespace internal
 
-/**
-A StepwiseDenseOutput class implementation using Hermitian interpolators,
+/** A StepwiseDenseOutput class implementation using Hermitian interpolators,
 and therefore a _continuous extension_ of the solution 𝐱(t) (see
 [Engquist, 2105]). This concept can be recast as a type of dense output that
 is continuous.
@@ -101,8 +97,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HermitianDenseOutput)
 
-  /**
-  An integration step representation class, holding just enough
+  /** An integration step representation class, holding just enough
   for Hermitian interpolation: three (3) related sets containing
   step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
   {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ ∈ ℝⁿ, and state derivatives
@@ -121,8 +116,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /** Constructs an empty step. */
     IntegrationStep() = default;
 
-    /**
-    Constructs a zero length step (i.e. a step containing a single time,
+    /** Constructs a zero length step (i.e. a step containing a single time,
     state and state derivative triplet) from column matrices.
 
     @param initial_time Initial time t₀ where the step starts.
@@ -146,8 +140,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       state_derivatives_.push_back(std::move(initial_state_derivative));
     }
 
-    /**
-    Extends the step forward in time from column matrices.
+    /** Extends the step forward in time from column matrices.
 
     Provided @p time, @p state and @p state_derivative are appended
     to the current step, effectively increasing its time length.
@@ -172,15 +165,13 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       state_derivatives_.push_back(std::move(state_derivative));
     }
 
-    /**
-    Returns step start time t₀ (that of the first time, state and state
+    /** Returns step start time t₀ (that of the first time, state and state
     derivative triplet), which may coincide with its end time tᵢ (that of
     the last time, state and state derivative triplet) if the step has zero
     length (that is, it contains a single triplet). */
     const T& start_time() const { return times_.front(); }
 
-    /**
-    Returns step end time tᵢ (that of the first time, state and state
+    /** Returns step end time tᵢ (that of the first time, state and state
     derivative triplet), which may coincide with its start time t₀ (that of
     the last time, state and state derivative triplet) if the step has zero
     length (that is, it contains a single triplet). */
@@ -197,8 +188,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     /** Returns step states {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} as column matrices. */
     const std::vector<MatrixX<T>>& get_states() const { return states_; }
 
-    /**
-    Gets step state derivatives {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}
+    /** Gets step state derivatives {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}
     as column matrices. */
     const std::vector<MatrixX<T>>& get_state_derivatives() const {
       return state_derivatives_;
@@ -277,8 +267,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     }
   }
 
-  /**
-  Update output with the given @p step.
+  /** Update output with the given @p step.
 
   Provided @p step is queued for later consolidation. Note that
   the time the @p step extends cannot be readily evaluated (see

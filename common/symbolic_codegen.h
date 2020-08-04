@@ -22,8 +22,7 @@ class CodeGenVisitor {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CodeGenVisitor)
 
-  /**
-  Constructs an instance of this visitor class using the vector of
+  /** Constructs an instance of this visitor class using the vector of
   variables, @p parameters. This visitor will map a symbolic variable `var`
   into `p[n]` where `n` is the index of the variable `var` in the given @p
   parameters. */
@@ -71,8 +70,7 @@ class CodeGenVisitor {
   IdToIndexMap id_to_idx_map_;
 };
 
-/**
-@defgroup codegen Code Generation
+/** @defgroup codegen Code Generation
 @ingroup technical_notes
 @{
 Provides `CodeGen` functions which generate C99 code to evaluate symbolic
@@ -83,8 +81,7 @@ math functions defined in `<math.h>` such as `sin`, `cos`, `exp`, and `log`.
 A user of generated code is responsible to include `<math.h>` if needed to
 compile generated code. */
 
-/**
-For a given symbolic expression @p e, generates two C functions,
+/** For a given symbolic expression @p e, generates two C functions,
 `<function_name>` and `<function_name>_meta`. The generated
 `<function_name>` function takes an array of doubles for parameters and
 returns an evaluation result. `<function_name>_meta` returns a nested struct
@@ -138,8 +135,7 @@ void CodeGenDenseMeta(const std::string& function_name, int parameter_size,
                       int rows, int cols, std::ostream* os);
 }  // namespace internal
 
-/**
-For a given symbolic dense matrix @p M, generates two C functions,
+/** For a given symbolic dense matrix @p M, generates two C functions,
 `<function_name>` and `<function_name>_meta`. The generated
 `<function_name>` takes two parameters:
 
@@ -214,8 +210,7 @@ std::string CodeGen(const std::string& function_name,
   return oss.str();
 }
 
-/**
-For a given symbolic column-major sparse matrix @p M, generates two C
+/** For a given symbolic column-major sparse matrix @p M, generates two C
 functions, `<function_name>` and `<function_name>_meta`. The generated
 `<function_name>` is used to construct a sparse matrix of double which
 stores the evaluation result of the symbolic matrix @p M for a given
@@ -247,8 +242,7 @@ obtain the following information:
 
 @throw std::runtime_error if @p M is not compressed. */
 // TODO(soonho-tri): Support row-major sparse matrices.
-/**
-Please consider the following example which generates code for a 3x6
+/** Please consider the following example which generates code for a 3x6
 sparse matrix.
 
 @code

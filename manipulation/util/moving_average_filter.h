@@ -10,8 +10,7 @@ namespace drake {
 namespace manipulation {
 namespace util {
 
-/**
-The implementation of a Moving Average Filter. This discrete time filter
+/** The implementation of a Moving Average Filter. This discrete time filter
 outputs the average of the last n samples i.e.
  y[k] = 1/n ∑ⱼ x[k-j] ∀ j = 0..n-1, when n<k and,
       = 1/k ∑ⱼ x[j] ∀ j = 0..k otherwise;
@@ -32,14 +31,12 @@ template <typename T>
 class MovingAverageFilter {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MovingAverageFilter)
-  /**
-  Constructs the filter with the specified `window_size`.
+  /** Constructs the filter with the specified `window_size`.
   @param window_size The size of the window.
   @throws std::runtime_error when window_size <= 0. */
   explicit MovingAverageFilter(int window_size);
 
-  /**
-  Updates the average filter result. Every call to this method modifies
+  /** Updates the average filter result. Every call to this method modifies
   the internal state of this filter thus resulting in a computation of
   the moving average of the data present within the filter window.
 

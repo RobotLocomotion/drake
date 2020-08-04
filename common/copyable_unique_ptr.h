@@ -20,8 +20,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 namespace drake {
 
 // TODO(SeanCurtis-TRI): Consider extending this to add the Deleter as well.
-/**
-A smart pointer with deep copy semantics.
+/** A smart pointer with deep copy semantics.
 
 This is _similar_ to `std::unique_ptr` in that it does not permit shared
 ownership of the contained object. However, unlike `std::unique_ptr`,
@@ -111,27 +110,23 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   /** @name                    Constructors */
   /** @{ */
 
-  /**
-  Default constructor stores a `nullptr`. No heap allocation is performed.
+  /** Default constructor stores a `nullptr`. No heap allocation is performed.
   The empty() method will return true when called on a default-constructed
   %copyable_unique_ptr. */
   copyable_unique_ptr() noexcept : std::unique_ptr<T>() {}
 
-  /**
-  Given a pointer to a writable heap-allocated object, take over
+  /** Given a pointer to a writable heap-allocated object, take over
   ownership of that object. No copying occurs. */
   explicit copyable_unique_ptr(T* ptr) noexcept : std::unique_ptr<T>(ptr) {}
 
-  /**
-  Copy constructor is deep; the new %copyable_unique_ptr object contains a
+  /** Copy constructor is deep; the new %copyable_unique_ptr object contains a
   new copy of the object in the source, created via the source object's
   copy constructor or `Clone()` method. If the source container is empty this
   one will be empty also. */
   copyable_unique_ptr(const copyable_unique_ptr& cu_ptr)
       : std::unique_ptr<T>(CopyOrNull(cu_ptr.get())) {}
 
-  /**
-  Copy constructor from a standard `unique_ptr` of _compatible_ type. The
+  /** Copy constructor from a standard `unique_ptr` of _compatible_ type. The
   copy is deep; the new %copyable_unique_ptr object contains a new copy of the
   object in the source, created via the source object's copy constructor or
   `Clone()` method. If the source container is empty this one will be empty
@@ -140,23 +135,20 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   explicit copyable_unique_ptr(const std::unique_ptr<U>& u_ptr)
       : std::unique_ptr<T>(CopyOrNull(u_ptr.get())) {}
 
-  /**
-  Move constructor is very fast and leaves the source empty. Ownership
+  /** Move constructor is very fast and leaves the source empty. Ownership
   is transferred from the source to the new %copyable_unique_ptr. If the source
   was empty this one will be empty also. No heap activity occurs. */
   copyable_unique_ptr(copyable_unique_ptr&& cu_ptr) noexcept
       : std::unique_ptr<T>(cu_ptr.release()) {}
 
-  /**
-  Move constructor from a standard `unique_ptr`. The move is very fast and
+  /** Move constructor from a standard `unique_ptr`. The move is very fast and
   leaves the source empty. Ownership is transferred from the source to the new
   %copyable_unique_ptr. If the source was empty this one will be empty also. No
   heap activity occurs. */
   explicit copyable_unique_ptr(std::unique_ptr<T>&& u_ptr) noexcept
       : std::unique_ptr<T>(u_ptr.release()) {}
 
-  /**
-  Move construction from a compatible standard `unique_ptr`. Type `U*` must
+  /** Move construction from a compatible standard `unique_ptr`. Type `U*` must
   be implicitly convertible to type `T*`. Ownership is transferred from the
   source to the new %copyable_unique_ptr. If the source was empty this one will
   be empty also. No heap activity occurs. */
@@ -169,8 +161,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   /** @name                   Assignment */
   /** @{ */
 
-  /**
-  This form of assignment replaces the currently-held object by
+  /** This form of assignment replaces the currently-held object by
   the given source object and takes over ownership of the source object. The
   currently-held object (if any) is deleted. */
   copyable_unique_ptr& operator=(T* ptr) noexcept {
@@ -178,8 +169,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  This form of assignment replaces the currently-held object by a
+  /** This form of assignment replaces the currently-held object by a
   heap-allocated copy of the source object, created using its copy
   constructor or `Clone()` method. The currently-held object (if any) is
   deleted. */
@@ -188,8 +178,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  Copy assignment from %copyable_unique_ptr replaces the currently-held
+  /** Copy assignment from %copyable_unique_ptr replaces the currently-held
   object by a copy of the object held in the source container, created using
   the source object's copy constructor or `Clone()` method. The currently-held
   object (if any) is deleted. If the source container is empty this one will be
@@ -199,8 +188,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return operator=(static_cast<const std::unique_ptr<T>&>(cu_ptr));
   }
 
-  /**
-  Copy assignment from a compatible %copyable_unique_ptr replaces the
+  /** Copy assignment from a compatible %copyable_unique_ptr replaces the
   currently-held object by a copy of the object held in the source container,
   created using the source object's copy constructor or `Clone()` method. The
   currently-held object (if any) is deleted. If the source container is empty
@@ -211,8 +199,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return operator=(static_cast<const std::unique_ptr<U>&>(cu_ptr));
   }
 
-  /**
-  Copy assignment from a standard `unique_ptr` replaces the
+  /** Copy assignment from a standard `unique_ptr` replaces the
   currently-held object by a copy of the object held in the source container,
   created using the source object's copy constructor or `Clone()` method. The
   currently-held object (if any) is deleted. If the source container is empty
@@ -227,8 +214,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  Copy assignment from a compatible standard `unique_ptr` replaces the
+  /** Copy assignment from a compatible standard `unique_ptr` replaces the
   currently-held object by a copy of the object held in the source container,
   created using the source object's copy constructor or `Clone()` method. The
   currently-held object (if any) is deleted. If the source container is empty
@@ -242,8 +228,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  Move assignment replaces the currently-held object by the source object,
+  /** Move assignment replaces the currently-held object by the source object,
   leaving the source empty. The currently-held object (if any) is deleted.
   The instance is _not_ copied. Nothing happens if the source and destination
   are the same containers. */
@@ -252,8 +237,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  Move assignment replaces the currently-held object by the compatible
+  /** Move assignment replaces the currently-held object by the compatible
   source object, leaving the source empty. The currently-held object (if any)
   is deleted. The instance is _not_ copied. Nothing happens if the source and
   destination are the same containers. */
@@ -263,8 +247,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  Move assignment replaces the currently-held object by the source object,
+  /** Move assignment replaces the currently-held object by the source object,
   leaving the source empty. The currently-held object (if any) is deleted.
   The instance is _not_ copied. Nothing happens if the source and destination
   are the same containers. */
@@ -273,8 +256,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     return *this;
   }
 
-  /**
-  Move assignment replaces the currently-held object by the compatible
+  /** Move assignment replaces the currently-held object by the compatible
   source object, leaving the source empty. The currently-held object (if
   any) is deleted. The instance is _not_ copied. Nothing happens if the source
   and destination are the same containers. */
@@ -289,21 +271,18 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   /** @name                   Observers */
   /** @{ */
 
-  /**
-  Return true if this container is empty, which is the state the container
+  /** Return true if this container is empty, which is the state the container
   is in immediately after default construction and various other
   operations. */
   bool empty() const noexcept { return !(*this); }
 
-  /**
-  Return a const pointer to the contained object if any, or `nullptr`.
+  /** Return a const pointer to the contained object if any, or `nullptr`.
   Note that this is different than `%get()` for the standard smart pointers
   like `std::unique_ptr` which return a writable pointer. Use get_mutable()
   here for that purpose. */
   const T* get() const noexcept { return std::unique_ptr<T>::get(); }
 
-  /**
-  Return a writable pointer to the contained object if any, or `nullptr`.
+  /** Return a writable pointer to the contained object if any, or `nullptr`.
   Note that you need write access to this container in order to get write
   access to the object it contains.
 
@@ -396,8 +375,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   }
 };
 
-/**
-Output the system-dependent representation of the pointer contained
+/** Output the system-dependent representation of the pointer contained
 in a copyable_unique_ptr object. This is equivalent to `os << p.get();`.
 @relates copyable_unique_ptr */
 template <class charT, class traits, class T>

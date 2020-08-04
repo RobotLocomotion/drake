@@ -10,8 +10,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
+/** A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
 with a fourth order error estimate.
 
 For a discussion of this Runge-Kutta method, see [Hairer, 1993]. The

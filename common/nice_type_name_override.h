@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 (Advanced) Provides the ability to override NiceTypeName::Get(T*) so that
 Python objects can have human-readable names. */
 

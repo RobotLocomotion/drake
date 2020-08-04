@@ -20,8 +20,7 @@ namespace fbstab {
 using FBstabAlgoDense = FBstabAlgorithm<DenseVariable, DenseResidual, DenseData,
                                         DenseLinearSolver, DenseFeasibility>;
 
-/**
-FBstabDense implements the Proximally Stabilized Semismooth Algorithm
+/** FBstabDense implements the Proximally Stabilized Semismooth Algorithm
 for solving convex quadratic programs of the following form (1):
 
     min.    1/2  z'Hz + f'z
@@ -89,8 +88,7 @@ class FBstabDense {
     const Eigen::VectorXd* b = nullptr;
   };
 
-  /**
-  Structure to hold the initial guess.
+  /** Structure to hold the initial guess.
   The vectors pointed to by z, v, and y WILL BE OVERWRITTEN
   with the solution. */
   struct QPVariable {
@@ -101,16 +99,14 @@ class FBstabDense {
     /** Constraint margin, i.e., y = b-Az, in \reals^nv. */
     Eigen::VectorXd* y = nullptr;
   };
-  /**
-  Allocates needed workspace given the dimensions of the QPs to
+  /** Allocates needed workspace given the dimensions of the QPs to
   be solved. Throws a runtime_error if any inputs are non-positive.
 
   @param[in] num_variables
   @param[in] num_constraints */
   FBstabDense(int num_variables, int num_constraints);
 
-  /**
-  Solves an instance of (1)
+  /** Solves an instance of (1)
 
   @param[in]   qp  problem data
 
@@ -123,8 +119,7 @@ class FBstabDense {
   SolverOut Solve(const QPData& qp, const QPVariable* x,
                   bool use_initial_guess = true);
 
-  /**
-  Allows for setting of solver options. See fbstab_algorithm.h for
+  /** Allows for setting of solver options. See fbstab_algorithm.h for
   a list of adjustable options.
   @param[in] option Option name
   @param[in] value  New value */
@@ -132,8 +127,7 @@ class FBstabDense {
   void UpdateOption(const char* option, int value);
   void UpdateOption(const char* option, bool value);
 
-  /**
-  Controls the verbosity of the algorithm.
+  /** Controls the verbosity of the algorithm.
   See fbstab_algorithm.h for details.
   @param[in] level new display level */
   void SetDisplayLevel(FBstabAlgoDense::Display level);

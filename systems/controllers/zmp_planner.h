@@ -9,8 +9,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
+/** Given a desired two dimensional (X and Y) zero-moment point (ZMP) trajectory
 parameterized as a piecewise polynomial, an optimal center of mass (CoM)
 trajectory is planned using a linear inverted pendulum model (LIPM).
 A second order value function (optimal cost-to-go) and a linear policy are
@@ -72,8 +71,7 @@ class ZMPPlanner {
 
   ZMPPlanner() {}
 
-  /**
-  Implements the algorithm in [1] that computes a nominal CoM trajectory,
+  /** Implements the algorithm in [1] that computes a nominal CoM trajectory,
   and the corresponding second order value function and linear policy.
 
   None of the other public methods should be called until Plan is called.
@@ -96,8 +94,7 @@ class ZMPPlanner {
   /** Returns true if Plan has been called. */
   bool has_planned() const { return planned_; }
 
-  /**
-  Computes the optimal control (CoM acceleration) at `time` given CoM state
+  /** Computes the optimal control (CoM acceleration) at `time` given CoM state
   `x` using the linear policy.
   Should only be called after Plan is called.
   @param time, Current time.
@@ -106,8 +103,7 @@ class ZMPPlanner {
   Eigen::Vector2d ComputeOptimalCoMdd(double time,
                                       const Eigen::Vector4d& x) const;
 
-  /**
-  Converts CoM acceleration to center of pressure (CoP) using
+  /** Converts CoM acceleration to center of pressure (CoP) using
      cop = C * x + D * u, which is equivalent to
      cop = com - z / g * comdd
   Should only be called after Plan is called.
@@ -212,16 +208,14 @@ class ZMPPlanner {
     return comdd_;
   }
 
-  /**
-  Returns the time invariant second order term (S1 in [1]) of the value
+  /** Returns the time invariant second order term (S1 in [1]) of the value
   function. */
   const Eigen::Matrix<double, 4, 4>& get_Vxx() const {
     DRAKE_DEMAND(planned_);
     return S1_;
   }
 
-  /**
-  Returns the time varying first order term (s2 in [1]) of the value
+  /** Returns the time varying first order term (s2 in [1]) of the value
   function. */
   const trajectories::ExponentialPlusPiecewisePolynomial<double>& get_Vx()
       const {
@@ -229,8 +223,7 @@ class ZMPPlanner {
     return s2_;
   }
 
-  /**
-  Returns the time varying first order term (s2 in [1]) of the value
+  /** Returns the time varying first order term (s2 in [1]) of the value
   function. */
   const Eigen::Vector4d get_Vx(double time) const {
     DRAKE_DEMAND(planned_);

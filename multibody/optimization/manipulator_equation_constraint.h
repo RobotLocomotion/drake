@@ -14,16 +14,14 @@
 namespace drake {
 namespace multibody {
 
-/**
-A Constraint to impose the manipulator equation:
+/** A Constraint to impose the manipulator equation:
 0 = (Buₙ₊₁ + ∑ᵢ (Jᵢ_WBᵀ(qₙ₊₁)ᵀ * Fᵢ_AB_W(λᵢ,ₙ₊₁))
     + tau_g(qₙ₊₁) - C(qₙ₊₁, Vₙ₊₁)) * dt - M(qₙ₊₁) * (Vₙ₊₁ - Vₙ) */
 class ManipulatorEquationConstraint final : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulatorEquationConstraint)
 
-  /**
-  This constraint depends on the decision variable vector:
+  /** This constraint depends on the decision variable vector:
   {vₙ, qₙ₊₁, vₙ₊₁, uₙ₊₁, λₙ₊₁, dt}.
   @param plant The plant on which the constraint is imposed.
   @param context The context for the subsystem @p plant. This context stores
@@ -69,8 +67,7 @@ class ManipulatorEquationConstraint final : public solvers::Constraint {
   }
 
  private:
-  /**
-  Users do not call this constructor explicitly, and will instead call
+  /** Users do not call this constructor explicitly, and will instead call
   MakeBinding() to construct a ManipulatorEquationConstraint. */
   ManipulatorEquationConstraint(
       const MultibodyPlant<AutoDiffXd>* plant,

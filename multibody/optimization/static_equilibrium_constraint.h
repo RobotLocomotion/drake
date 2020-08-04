@@ -20,8 +20,7 @@ class StaticEquilibriumConstraint final : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticEquilibriumConstraint)
 
-  /**
-  Create a static equilibrium constraint
+  /** Create a static equilibrium constraint
   0 = g(q) + Bu + ∑ᵢ JᵢᵀFᵢ_AB_W(λᵢ)
   This constraint depends on the variables q, u and λ.
   @param plant The plant on which the constraint is imposed.
@@ -60,8 +59,7 @@ class StaticEquilibriumConstraint final : public solvers::Constraint {
   }
 
  private:
-  /**
-  The user cannot call this constructor, as it is inconvenient to do so.
+  /** The user cannot call this constructor, as it is inconvenient to do so.
   The user must call MakeBinding() to construct a
   StaticEquilibriumConstraint. */
   StaticEquilibriumConstraint(

@@ -9,8 +9,7 @@ namespace systems {
 namespace sensors {
 
 // TODO(russt): Add support for symbolic.
-/**
-Implements the "Beam Models of Range Finders" from section 6.3 of
+/** Implements the "Beam Models of Range Finders" from section 6.3 of
   Probabilistic Robotics (2006), by Thrun, Burgard, and Fox
 
 This system takes a depth measurement signal as input, and outputs a noisy

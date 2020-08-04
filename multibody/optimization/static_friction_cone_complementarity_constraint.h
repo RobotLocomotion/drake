@@ -11,8 +11,7 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-/**
-The nonlinear constraints to be imposed for static friction force. See
+/** The nonlinear constraints to be imposed for static friction force. See
 AddStaticFrictionConeComplementarityConstraint() for more details. The
 nonlinear constraints are (1) - (4) in
 AddStaticFrictionConeComplementarityConstraint()
@@ -30,13 +29,11 @@ class StaticFrictionConeComplementarityNonlinearConstraint
 
   ~StaticFrictionConeComplementarityNonlinearConstraint() override {}
 
-  /**
-  The slack variable for n_Wᵀ * f_W. See
+  /** The slack variable for n_Wᵀ * f_W. See
   AddStaticFrictionConeComplementarityConstraint(). */
   const symbolic::Variable& alpha_var() const { return alpha_var_; }
 
-  /**
-  The slack variable for sdf. See
+  /** The slack variable for sdf. See
   AddStaticFrictionConeComplementarityConstraint(). */
   const symbolic::Variable& beta_var() const { return beta_var_; }
 
@@ -55,8 +52,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
     *beta = x(x.rows() - 1);
   }
 
-  /**
-  Create a binding of the constraint, together with the bound variables
+  /** Create a binding of the constraint, together with the bound variables
   q, λ, α and β. See AddStaticFrictionConeComplementarityConstraint()
   for more details. */
   static solvers::Binding<
@@ -82,8 +78,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
 };
 };  // namespace internal
 
-/**
-Adds the complementarity constraint on the static friction force
+/** Adds the complementarity constraint on the static friction force
 between a pair of contacts
 |ft_W| <= μ * n_Wᵀ * f_W  (static friction force in the friction cone).
 fn_W * sdf = 0 (complementarity condition)

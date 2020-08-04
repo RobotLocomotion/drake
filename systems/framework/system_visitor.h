@@ -11,8 +11,7 @@ class System;
 template <typename T>
 class Diagram;
 
-/**
-Provides a "Visitor Pattern" for System and Diagram.  Rather than adding
+/** Provides a "Visitor Pattern" for System and Diagram.  Rather than adding
 more virtual methods to the System base class, or performing a dynamic_cast to
 test if a System is a Diagram, you may use the visitor pattern enabled by this
 class, e.g.:
@@ -40,13 +39,11 @@ class SystemVisitor {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemVisitor)
   virtual ~SystemVisitor() = default;
 
-  /**
-  This method will be called by System<T>::accept() if the System *is not* a
+  /** This method will be called by System<T>::accept() if the System *is not* a
   Diagram<T>. */
   virtual void VisitSystem(const System<T>& system) = 0;
 
-  /**
-  This method will be called by System<T>::accept() if the System *is* a
+  /** This method will be called by System<T>::accept() if the System *is* a
   Diagram<T>. */
   virtual void VisitDiagram(const Diagram<T>& diagram) = 0;
 

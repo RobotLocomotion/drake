@@ -20,8 +20,7 @@ class Cost : public EvaluatorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost)
 
  protected:
-  /**
-  Constructs a cost evaluator.
+  /** Constructs a cost evaluator.
   @param num_vars Number of input variables.
   @param description Human-friendly description. */
   explicit Cost(int num_vars, const std::string& description = "")
@@ -33,8 +32,7 @@ class LinearCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
 
-  /**
-  Construct a linear cost of the form @f[ a'x + b @f].
+  /** Construct a linear cost of the form @f[ a'x + b @f].
   @param a Linear term.
   @param b (optional) Constant term. */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
@@ -53,8 +51,7 @@ class LinearCost : public Cost {
 
   double b() const { return b_; }
 
-  /**
-  Updates the linear term, upper and lower bounds in the linear constraint.
+  /** Updates the linear term, upper and lower bounds in the linear constraint.
   The updated constraint is @f[ a_new' x + b_new @f].
   Note that the number of variables (number of cols) cannot change.
   @param new_a New linear term.
@@ -95,8 +92,7 @@ class QuadraticCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost)
 
-  /**
-  Constructs a cost of the form @f[ .5 x'Qx + b'x + c @f].
+  /** Constructs a cost of the form @f[ .5 x'Qx + b'x + c @f].
   @param Q Quadratic term.
   @param b Linear term.
   @param c (optional) Constant term. */
@@ -117,8 +113,7 @@ class QuadraticCost : public Cost {
 
   double c() const { return c_; }
 
-  /**
-  Updates the quadratic and linear term of the constraint. The new
+  /** Updates the quadratic and linear term of the constraint. The new
   matrices need to have the same dimension as before.
   @param new_Q New quadratic term.
   @param new_b New linear term.
@@ -172,8 +167,7 @@ std::shared_ptr<QuadraticCost> MakeL2NormCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b);
 
-/**
-A cost that may be specified using another (potentially nonlinear)
+/** A cost that may be specified using another (potentially nonlinear)
 evaluator.
 @tparam EvaluatorType The nested evaluator. */
 template <typename EvaluatorType = EvaluatorBase>
@@ -206,8 +200,7 @@ class EvaluatorCost : public Cost {
   std::shared_ptr<EvaluatorType> evaluator_;
 };
 
-/**
-Implements a cost of the form P(x, y...) where P is a multivariate
+/** Implements a cost of the form P(x, y...) where P is a multivariate
 polynomial in x, y, ...
 
 The Polynomial class uses a different variable naming scheme; thus the
@@ -218,8 +211,7 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialCost)
 
-  /**
-  Constructs a polynomial cost
+  /** Constructs a polynomial cost
   @param polynomials Polynomial vector, a 1 x 1 vector.
   @param poly_vars Polynomial variables, a `num_vars` x 1 vector. */
   PolynomialCost(const VectorXPoly& polynomials,
@@ -234,8 +226,7 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
   }
 };
 
-/**
-Converts an input of type @p F to a nonlinear cost.
+/** Converts an input of type @p F to a nonlinear cost.
 @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
 The class `F` should have functions numInputs(), numOutputs(), and
 eval(x, y). */

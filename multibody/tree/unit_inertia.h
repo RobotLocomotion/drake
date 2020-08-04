@@ -12,8 +12,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This class is used to represent rotational inertias for unit mass bodies.
+/** This class is used to represent rotational inertias for unit mass bodies.
 Therefore, unlike RotationalInertia whose units are kg⋅m², the units of a
 %UnitInertia are those of length squared. A unit inertia is a useful concept
 to represent the geometric distribution of mass in a body regardless of the
@@ -41,21 +40,18 @@ class UnitInertia : public RotationalInertia<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UnitInertia)
 
-  /**
-  Default %UnitInertia constructor sets all entries to NaN for quick
+  /** Default %UnitInertia constructor sets all entries to NaN for quick
   detection of uninitialized values. */
   UnitInertia() {}
 
-  /**
-  Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /** Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   and with each product of inertia set to zero.
   In debug builds, throws std::logic_error if unit inertia constructed from
   these arguments violates RotationalInertia::CouldBePhysicallyValid(). */
   UnitInertia(const T& Ixx, const T& Iyy, const T& Izz)
       : RotationalInertia<T>(Ixx, Iyy, Izz) {}
 
-  /**
-  Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /** Creates a unit inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   and with products of inertia `Ixy`, `Ixz`, `Iyz`.
   In debug builds, throws std::logic_error if unit inertia constructed from
   these arguments violates RotationalInertia::CouldBePhysicallyValid(). */
@@ -63,8 +59,7 @@ class UnitInertia : public RotationalInertia<T> {
               const T& Ixy, const T& Ixz, const T& Iyz)
       : RotationalInertia<T>(Ixx, Iyy, Izz, Ixy, Ixz, Iyz) {}
 
-  /**
-  Constructs a %UnitInertia from a RotationalInertia. This constructor has
+  /** Constructs a %UnitInertia from a RotationalInertia. This constructor has
   no way to verify that the input rotational inertia actually is a unit
   inertia. But the construction will nevertheless succeed, and the values of
   the input rotational inertia will henceforth be considered a valid unit
@@ -73,8 +68,7 @@ class UnitInertia : public RotationalInertia<T> {
   explicit UnitInertia(const RotationalInertia<T>& I)
       : RotationalInertia<T>(I) {}
 
-  /**
-  Returns a new %UnitInertia object templated on `Scalar` initialized
+  /** Returns a new %UnitInertia object templated on `Scalar` initialized
   from the value of `this` unit inertia.
 
   @tparam Scalar The scalar type on which the new unit inertia will
@@ -91,8 +85,7 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<Scalar>(RotationalInertia<T>::template cast<Scalar>());
   }
 
-  /**
-  Sets `this` unit inertia from a generally non-unit inertia I corresponding
+  /** Sets `this` unit inertia from a generally non-unit inertia I corresponding
   to a body with a given `mass`.
   @note In Debug builds, this operation aborts if the provided `mass` is
         not strictly positive. */
@@ -103,16 +96,14 @@ class UnitInertia : public RotationalInertia<T> {
     return *this;
   }
 
-  /**
-  Re-express a unit inertia in a different frame, performing the operation
+  /** Re-express a unit inertia in a different frame, performing the operation
   in place and modifying the original object. @see ReExpress() for details. */
   UnitInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_FE) {
     RotationalInertia<T>::ReExpressInPlace(R_FE);
     return *this;
   }
 
-  /**
-  Given `this` unit inertia `G_BP_E` of a body B about a point P and
+  /** Given `this` unit inertia `G_BP_E` of a body B about a point P and
   expressed in frame E, this method computes the same unit inertia
   re-expressed in another frame F as `G_BP_F = R_FE * G_BP_E * (R_FE)ᵀ`.
   @param[in] R_FE RotationMatrix relating frames F and E.
@@ -122,8 +113,7 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(RotationalInertia<T>::ReExpress(R_FE));
   }
 
-  /**
-  For a central unit inertia `G_Bcm_E` computed about a body's center of
+  /** For a central unit inertia `G_Bcm_E` computed about a body's center of
   mass (or centroid) `Bcm` and expressed in a frame E, this method shifts
   this inertia using the parallel axis theorem to be computed about a
   point Q. This operation is performed in place, modifying the original
@@ -138,8 +128,7 @@ class UnitInertia : public RotationalInertia<T> {
     return *this;
   }
 
-  /**
-  Shifts this central unit inertia to a different point, and returns the
+  /** Shifts this central unit inertia to a different point, and returns the
   result. See ShiftFromCenterOfMassInPlace() for details.
   @param[in] p_BcmQ_E A vector from the body's centroid `Bcm` to point Q
                       expressed in the same frame E in which `this`
@@ -152,8 +141,7 @@ class UnitInertia : public RotationalInertia<T> {
   }
 
   // TODO(mitiguy) Issue #6147.  If invalid inertia, should throw exception.
-  /**
-  For the unit inertia `G_BQ_E` of a body or composite body B computed about
+  /** For the unit inertia `G_BQ_E` of a body or composite body B computed about
   a point Q and expressed in a frame E, this method shifts this inertia
   using the parallel axis theorem to be computed about the center of mass
   `Bcm` of B. This operation is performed in place, modifying the original
@@ -177,8 +165,7 @@ class UnitInertia : public RotationalInertia<T> {
     return *this;
   }
 
-  /**
-  For the unit inertia `G_BQ_E` of a body or composite body B computed about
+  /** For the unit inertia `G_BQ_E` of a body or composite body B computed about
   a point Q and expressed in a frame E, this method shifts this inertia
   using the parallel axis theorem to be computed about the center of mass
   `Bcm` of B. See ShiftToCenterOfMassInPlace() for details.
@@ -195,8 +182,7 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
   }
 
-  /**
-  @name            Unit inertia for common 3D objects
+  /** @name            Unit inertia for common 3D objects
   The following methods assist in the construction of %UnitInertia instances
   for common 3D objects such as boxes, spheres, rods and others.
   This method computes a %UnitInertia for body with unit mass, typically
@@ -208,8 +194,7 @@ class UnitInertia : public RotationalInertia<T> {
   %UnitInertia by a non-unit mass value.
   @{ */
 
-  /**
-  Construct a unit inertia for a point mass of unit mass located at point Q,
+  /** Construct a unit inertia for a point mass of unit mass located at point Q,
   whose location in a frame F is given by the position vector `p_FQ`
   (that is, p_FoQ_F).
   The unit inertia `G_QFo_F` of point mass Q about the origin `Fo` of
@@ -242,23 +227,20 @@ class UnitInertia : public RotationalInertia<T> {
         mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
   }
 
-  /**
-  Computes the unit inertia for a unit-mass solid sphere of uniform density
+  /** Computes the unit inertia for a unit-mass solid sphere of uniform density
   and radius `r` taken about its center. */
   static UnitInertia<T> SolidSphere(const T& r) {
     return UnitInertia<T>::TriaxiallySymmetric(T(0.4) * r * r);
   }
 
-  /**
-  Computes the unit inertia for a unit-mass hollow sphere of radius `r`
+  /** Computes the unit inertia for a unit-mass hollow sphere of radius `r`
   consisting of an infinitesimally thin shell of uniform density.
   The unit inertia is taken about the center of the sphere. */
   static UnitInertia<T> HollowSphere(const T& r) {
     return UnitInertia<T>::TriaxiallySymmetric(T(2)/T(3) * r * r);
   }
 
-  /**
-  Computes the unit inertia for a unit-mass solid box of uniform density
+  /** Computes the unit inertia for a unit-mass solid box of uniform density
   taken about its geometric center. If one length is zero the inertia
   corresponds to that of a thin rectangular sheet. If two lengths are zero
   the inertia corresponds to that of a thin rod in the remaining direction.
@@ -274,16 +256,14 @@ class UnitInertia : public RotationalInertia<T> {
         one_twelfth * (Lx2 + Ly2));
   }
 
-  /**
-  Computes the unit inertia for a unit-mass solid cube (a box with
+  /** Computes the unit inertia for a unit-mass solid cube (a box with
   equal-sized sides) of uniform density taken about its geometric center.
   @param[in] L The length of each of the cube's sides. */
   static UnitInertia<T> SolidCube(const T& L) {
     return SolidBox(L, L, L);
   }
 
-  /**
-  Computes the unit inertia for a unit-mass cylinder B, of uniform density,
+  /** Computes the unit inertia for a unit-mass cylinder B, of uniform density,
   having its axis of revolution along input vector `b_E`. The resulting unit
   inertia is computed about the cylinder's center of mass `Bcm` and is
   expressed in the same frame E as the input axis of revolution `b_E`.
@@ -316,8 +296,7 @@ class UnitInertia : public RotationalInertia<T> {
     return AxiallySymmetric(J, K, b_E);
   }
 
-  /**
-  Computes the unit inertia for a unit-mass cylinder of uniform density
+  /** Computes the unit inertia for a unit-mass cylinder of uniform density
   oriented along the z-axis computed about a point at the center of
   its base.
   @param[in] r The radius of the cylinder.
@@ -328,8 +307,7 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia(Ix, Ix, Iz);
   }
 
-  /**
-  Returns the unit inertia for a unit-mass body B for which there exists a
+  /** Returns the unit inertia for a unit-mass body B for which there exists a
   line L passing through the body's center of mass `Bcm` having the property
   that the body's moment of inertia about all lines perpendicular to L are
   equal. Examples of bodies with an axially symmetric inertia include
@@ -383,8 +361,7 @@ class UnitInertia : public RotationalInertia<T> {
                           G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
   }
 
-  /**
-  Computes the unit inertia for a body B of unit-mass uniformly distributed
+  /** Computes the unit inertia for a body B of unit-mass uniformly distributed
   along a straight, finite, line L with direction `b_E` and with moment of
   inertia K about any axis perpendicular to this line. Since the mass of the
   body is uniformly distributed on this line L, its center of mass is
@@ -413,8 +390,7 @@ class UnitInertia : public RotationalInertia<T> {
     return AxiallySymmetric(0.0, K, b_E);
   }
 
-  /**
-  Computes the unit inertia for a unit mass rod B of length L, about its
+  /** Computes the unit inertia for a unit mass rod B of length L, about its
   center of mass, with its mass uniformly distributed along a line parallel
   to vector `b_E`.
 
@@ -435,8 +411,7 @@ class UnitInertia : public RotationalInertia<T> {
   }
 
   // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
-  /**
-  Constructs a unit inertia with equal moments of inertia along its
+  /** Constructs a unit inertia with equal moments of inertia along its
   diagonal and with each product of inertia set to zero. This factory
   is useful for the unit inertia of a uniform-density sphere or cube.
   In debug builds, throws std::logic_error if I_triaxial is negative/NaN.
@@ -457,8 +432,7 @@ class UnitInertia : public RotationalInertia<T> {
   // or documented why they are allowable.
   // TODO(mitiguy) See issue #6109.  These deleted operators do not really
   //         protect a unit inertia from being non-unit. This code is broken.
-  /**
-  @name  Disable operators that may result in non-unit inertias.
+  /** @name  Disable operators that may result in non-unit inertias.
   @{ */
   UnitInertia<T>& operator+=(const RotationalInertia<T>&) = delete;
   UnitInertia<T>& operator-=(const RotationalInertia<T>&) = delete;

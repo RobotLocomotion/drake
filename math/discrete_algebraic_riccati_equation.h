@@ -8,8 +8,7 @@
 namespace drake {
 namespace math {
 
-/**
-Computes the unique stabilizing solution X to the discrete-time algebraic
+/** Computes the unique stabilizing solution X to the discrete-time algebraic
 Riccati equation:
 
 @f[

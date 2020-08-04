@@ -12,8 +12,7 @@ namespace multibody {
 
 template <typename T> class Body;
 
-/**
-This %ForceElement models a spring-damper attached between two points on
+/** This %ForceElement models a spring-damper attached between two points on
 two different bodies.
 Given a point P on a body A and a point Q on a body B with positions
 p_AP and p_BQ, respectively, this spring-damper applies equal and
@@ -45,8 +44,7 @@ class LinearSpringDamper final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSpringDamper)
 
-  /**
-  Constructor for a spring-damper between a point P on `bodyA` and a
+  /** Constructor for a spring-damper between a point P on `bodyA` and a
   point Q on `bodyB`. Point P is defined by its position `p_AP` as
   measured and expressed in the body frame A and similarly, point Q is
   defined by its position p_BQ as measured and expressed in body frame B.
@@ -72,13 +70,11 @@ class LinearSpringDamper final : public ForceElement<T> {
 
   const Body<T>& bodyB() const { return bodyB_; }
 
-  /**
-  The position p_AP of point P on body A as measured and expressed in body
+  /** The position p_AP of point P on body A as measured and expressed in body
   frame A. */
   const Vector3<double> p_AP() const { return p_AP_; }
 
-  /**
-  The position p_BQ of point Q on body B as measured and expressed in body
+  /** The position p_BQ of point Q on body B as measured and expressed in body
   frame B. */
   const Vector3<double> p_BQ() const { return p_BQ_; }
 

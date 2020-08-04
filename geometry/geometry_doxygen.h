@@ -1,12 +1,10 @@
 // Define groups here so we can control the ordering.
 
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref geometry. */
 namespace drake {
 namespace geometry {
-/**
-@addtogroup geometry
+/** @addtogroup geometry
 @{
   @defgroup geometry_infrastructure SceneGraph, SceneGraphInspector, QueryObject
   @defgroup geometry_roles Geometry Queries and Roles

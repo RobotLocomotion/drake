@@ -43,8 +43,7 @@ static constexpr bool is_eigen_refable() {
   return is_eigen_refable_helper<ValueType>(1);  // Any int will do here.
 }
 
-/**
-Implements Drake policy for taking a concrete value object and storing it in
+/** Implements Drake policy for taking a concrete value object and storing it in
 a Drake abstract object (for example, an abstract-valued port) as a type-erased
 AbstractValue. We call this "AbstractPolicy" to distinguish it from the
 "VectorPolicy" implemented by ValueToVectorValue.
@@ -202,8 +201,7 @@ class ValueToAbstractValue {
   }
 };
 
-/**
-Implements Drake policy for taking a concrete vector type and storing it in
+/** Implements Drake policy for taking a concrete vector type and storing it in
 a Drake numerical vector object as an AbstractValue of concrete type
 `Value<BasicVector<T>>`. We call this "VectorPolicy" to distinguish it from
 the "AbstractPolicy" implemented by ValueToAbstractValue.

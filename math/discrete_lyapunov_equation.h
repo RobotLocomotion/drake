@@ -11,8 +11,7 @@ namespace math {
 // TODO(FischerGundlach) Reserve memory and pass it to recursive function
 // calls.
 
-/**
-@param A A user defined real square matrix.
+/** @param A A user defined real square matrix.
 @param Q A user defined real symmetric matrix.
 
 @pre Q is a symmetric matrix.

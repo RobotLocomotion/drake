@@ -13,8 +13,7 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
-/**
-DirectCollocation implements the approach to trajectory optimization as
+/** DirectCollocation implements the approach to trajectory optimization as
 described in
   C. R. Hargraves and S. W. Paris. Direct trajectory optimization using
    nonlinear programming and collocation. J Guidance, 10(4):338-342,
@@ -29,8 +28,7 @@ class DirectCollocation : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)
 
-  /**
-  Constructs the %MathematicalProgram% and adds the collocation constraints.
+  /** Constructs the %MathematicalProgram% and adds the collocation constraints.
 
   @param system A dynamical system to be used in the dynamic constraints.
   This system must support System::ToAutoDiffXd. Note that this is aliased
@@ -89,8 +87,7 @@ class DirectCollocation : public MultipleShooting {
   FixedInputPortValue* input_port_value_{nullptr};
 };
 
-/**
-Implements the direct collocation constraints for a first-order hold on
+/** Implements the direct collocation constraints for a first-order hold on
 the input and a cubic polynomial representation of the state trajectories.
 
 Note that the DirectCollocation implementation allocates only ONE of
@@ -146,8 +143,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
 // Note: The order of arguments is a compromise between GSG and the desire to
 // match the AddConstraint interfaces in MathematicalProgram.
-/**
-Helper method to add a DirectCollocationConstraint to the @p prog,
+/** Helper method to add a DirectCollocationConstraint to the @p prog,
 ensuring that the order of variables in the binding matches the order
 expected by the constraint. */
 solvers::Binding<solvers::Constraint> AddDirectCollocationConstraint(

@@ -12,8 +12,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-Parses a `<model>` element from the SDF file specified by `file_name` and
+/** Parses a `<model>` element from the SDF file specified by `file_name` and
 adds it to `plant`. The SDF file can only contain a single `<model>`
 element. `<world>` elements (used for instance to specify gravity) are
 ignored by this method.  A new model instance will be added to @p plant.
@@ -47,8 +46,7 @@ ModelInstanceIndex AddModelFromSdfFile(
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
-/**
-Parses all `<model>` elements from the SDF file specified by `file_name`
+/** Parses all `<model>` elements from the SDF file specified by `file_name`
 and adds them to `plant`. The SDF file can contain multiple `<model>`
 elements. New model instances will be added to @p plant for each
 `<model>` tag in the SDF file.

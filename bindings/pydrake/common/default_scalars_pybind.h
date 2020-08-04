@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Helpers for defining scalars and values. */
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
@@ -30,8 +29,7 @@ using NonSymbolicScalarPack = type_pack<  // BR
     AutoDiffXd>;
 
 // TODO(eric.cousineau): Simplify this (#8116).
-/**
-Permits referencing for builtin dtypes (e.g. T = double), but then switches
+/** Permits referencing for builtin dtypes (e.g. T = double), but then switches
 to copying for custom dtypes (T = {AutoDiffXd, Expression}). */
 template <typename T>
 py::return_value_policy return_value_policy_for_scalar_type() {

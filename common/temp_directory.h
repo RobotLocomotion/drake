@@ -4,8 +4,7 @@
 
 namespace drake {
 
-/**
-Returns a directory location suitable for temporary files.
+/** Returns a directory location suitable for temporary files.
 @return The value of the environment variable TEST_TMPDIR if defined or
 otherwise ${TMPDIR:-/tmp}/robotlocomotion_drake_XXXXXX where each X is
 replaced by a character from the portable filename character set. Any

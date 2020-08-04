@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Hopf coodinates parameterizes SO(3) locally as the Cartesian product of a
 one-sphere and a two-sphere S¹ x S². Computationally, each rotation in the
 Hopf coordinates can be written as (θ, φ, ψ), in which ψ parameterizes the
@@ -18,8 +17,7 @@ coordinates for S², with the range of π and 2π respectively. */
 
 namespace drake {
 namespace math {
-/**
-Transforms Hopf coordinates to a quaternion w, x, y, z as
+/** Transforms Hopf coordinates to a quaternion w, x, y, z as
 w = cos(θ/2)cos(ψ/2)
 x = cos(θ/2)sin(ψ/2)
 y = sin(θ/2)cos(φ+ψ/2)
@@ -45,8 +43,7 @@ const Eigen::Quaternion<T> HopfCoordinateToQuaternion(const T& theta,
                            sin_half_theta * sin(phi_plus_half_psi));
 }
 
-/**
-Convert a unit-length quaternion (w, x, y, z) to Hopf coordinate as
+/** Convert a unit-length quaternion (w, x, y, z) to Hopf coordinate as
 if w >= 0
   ψ = 2*atan2(x, w)
 else

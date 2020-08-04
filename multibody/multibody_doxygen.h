@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref multibody_notation,
 @ref multibody_spatial_inertia. */
 
@@ -12,8 +11,7 @@ Doxygen-only documentation for @ref multibody_notation,
 
 
 //------------------------------------------------------------------------------
-/**
-@addtogroup multibody_notation
+/** @addtogroup multibody_notation
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -91,8 +89,7 @@ Next topic: @ref multibody_notation_basics */
 // formatting here. But that doesn't mean you should write this way in your
 // code comments if you can express the same thing in a more readable way!
 
-/**
-@defgroup multibody_notation_basics Notation Basics
+/** @defgroup multibody_notation_basics Notation Basics
 @ingroup multibody_notation
 
 We are interested in representing physical quantities like position,
@@ -177,8 +174,7 @@ typeset and code representations.
 
 Next topic: @ref multibody_frames_and_bodies */
 
-/**
-@defgroup multibody_frames_and_bodies Frames and Bodies
+/** @defgroup multibody_frames_and_bodies Frames and Bodies
 @ingroup multibody_notation
 
 The most fundamental object in multibody mechanics is the _coordinate frame_, or
@@ -264,8 +260,7 @@ notation.
 
 Next topic: @ref multibody_quantities */
 
-/**
-@defgroup multibody_quantities Multibody Quantities
+/** @defgroup multibody_quantities Multibody Quantities
 @ingroup multibody_notation
 
 Quantities of interest in multibody dynamics have distinct types. For example,
@@ -380,8 +375,7 @@ point_cloud_B             || A point cloud whose underlying points' positions ar
  Next topic: @ref Dt_multibody_quantities */
 
 //------------------------------------------------------------------------------
-/**
-@defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
+/** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
 @ingroup multibody_notation
 
 <b>Scalar quantities</b>: The ordinary first time-derivative of the scalar x is
@@ -431,8 +425,7 @@ frame names to accommodate this strange quirk in unicode.
 Next topic: @ref multibody_spatial_algebra */
 
 //------------------------------------------------------------------------------
-/**
-@defgroup multibody_spatial_algebra Spatial Algebra
+/** @defgroup multibody_spatial_algebra Spatial Algebra
 @ingroup multibody_notation
 
 Multibody dynamics involves both rotational and translational quantities, for
@@ -446,8 +439,7 @@ and their physical representations in code, typically as %Eigen objects.
 
 Next topic: @ref multibody_spatial_pose */
 
-/**
-@defgroup multibody_spatial_pose Spatial Pose and Transform
+/** @defgroup multibody_spatial_pose Spatial Pose and Transform
 @ingroup multibody_spatial_algebra
 
 A _spatial pose_, more commonly just _pose_, provides the location and
@@ -572,8 +564,7 @@ frame symbols: <pre>
 
 Next topic: @ref multibody_spatial_vectors */
 
-/**
-@defgroup multibody_spatial_vectors Spatial Vectors
+/** @defgroup multibody_spatial_vectors Spatial Vectors
 @ingroup multibody_spatial_algebra
 
 Spatial vectors are 6-element quantities that are pairs of ordinary 3-vectors.
@@ -648,8 +639,7 @@ symbols, and helpful comments, if there is any chance of confusion.
 
 Next topic: @ref multibody_spatial_inertia */
 
-/**
-@defgroup multibody_spatial_inertia Spatial Mass Matrix (Spatial Inertia)
+/** @defgroup multibody_spatial_inertia Spatial Mass Matrix (Spatial Inertia)
 @ingroup multibody_spatial_algebra
 
 A _Spatial Mass Matrix_ (also called _Spatial Inertia_) M represents the mass,

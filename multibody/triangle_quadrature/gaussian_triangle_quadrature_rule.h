@@ -10,8 +10,7 @@ namespace multibody {
 
 class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
  public:
-  /**
-  Constructs the Gaussian quadrature rule of the specified order, which
+  /** Constructs the Gaussian quadrature rule of the specified order, which
   must be between 1 and 5. */
   explicit GaussianTriangleQuadratureRule(int order) : order_(order) {
     DRAKE_DEMAND(order >= 1);

@@ -10,8 +10,7 @@ namespace drake {
 namespace solvers {
 namespace fbstab {
 
-/**
-This class detects infeasibility in quadratic programs, see
+/** This class detects infeasibility in quadratic programs, see
 mpc_data.h for a description of the QPs.
 It contains methods for determining if a primal-dual variable
 is a certificate of either unboundedness (dual infeasibility)
@@ -20,8 +19,7 @@ Algorithm 3 of https://arxiv.org/pdf/1901.04046.pdf. */
 class MpcFeasibility {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcFeasibility)
-  /**
-  Allocates workspace memory.
+  /** Allocates workspace memory.
 
   @param[in] N  horizon length
   @param[in] nx number of states
@@ -31,8 +29,7 @@ class MpcFeasibility {
   Throws a runtime_error if any inputs are non-positive. */
   MpcFeasibility(int N, int nx, int nu, int nc);
 
-  /**
-  Checks to see if x is an infeasibility certificate for the QP and stores
+  /** Checks to see if x is an infeasibility certificate for the QP and stores
   the result internally.
   @param[in] x   infeasibility certificate candidate
   @param[in] tol numerical tolerance
@@ -41,13 +38,11 @@ class MpcFeasibility {
   or if the problem data hasn't been linked. */
   void ComputeFeasibility(const MpcVariable& x, double tol);
 
-  /**
-  Retrieves the result of the last infeasibility check.
+  /** Retrieves the result of the last infeasibility check.
   @return false if a dual infeasibility certificate was found, true otherwise */
   bool IsDualFeasible() const { return dual_feasible_; }
 
-  /**
-  Retrieves the result of the last infeasibility check.
+  /** Retrieves the result of the last infeasibility check.
   @return false if a primal infeasibility certificate was found, true
   otherwise */
   bool IsPrimalFeasible() const { return primal_feasible_; }

@@ -12,8 +12,7 @@ namespace test {
 
 using Vector2d = Vector2<double>;
 
-/**
-A system of ODEs that can be used to test performance of the initial value
+/** A system of ODEs that can be used to test performance of the initial value
 problem (IVP) solvers. This problem corresponds to the "n-body-problem"
 (where n = 7); in short, given initial positions and velocities of seven
 particles that move according to Newtonian Mechanics (F=ma) and subject to

@@ -8,8 +8,7 @@
 namespace drake {
 namespace solvers {
 
-/**
-Solves a quadratic program with equality constraint.
+/** Solves a quadratic program with equality constraint.
 
 This program doesn't depend on the initial guess.
 
@@ -28,8 +27,7 @@ class EqualityConstrainedQPSolver final : public SolverBase {
   /** @returns string key for SolverOptions to set the feasibility tolerance. */
   static std::string FeasibilityTolOptionName();
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

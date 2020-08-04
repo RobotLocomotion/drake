@@ -19,8 +19,7 @@ namespace multibody {
 // Forward declaration for JointActuator<T>.
 template<typename T> class Joint;
 
-/**
-The %JointActuator class is mostly a simple bookkeeping structure to
+/** The %JointActuator class is mostly a simple bookkeeping structure to
 represent an actuator acting on a given Joint.
 It helps to flag whether a given Joint is actuated or not so that
 MultibodyTree clients can apply forces on actuated joints through their
@@ -33,8 +32,7 @@ class JointActuator final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
 
-  /**
-  Creates an actuator for `joint` with the given `name`.
+  /** Creates an actuator for `joint` with the given `name`.
   The name must be unique within the given multibody model. This is
   enforced by MultibodyPlant::AddJointActuator().
   @param[in] name
@@ -57,8 +55,7 @@ class JointActuator final
   /** Returns a reference to the joint actuated by this %JointActuator. */
   const Joint<T>& joint() const;
 
-  /**
-  Adds into `forces` a force along one of the degrees of freedom of the
+  /** Adds into `forces` a force along one of the degrees of freedom of the
   Joint actuated by `this` actuator.
   The meaning for this degree of freedom, sign conventions and even its
   dimensional units depend on the specific joint sub-class being actuated.
@@ -92,8 +89,7 @@ class JointActuator final
       const T& tau,
       MultibodyForces<T>* forces) const;
 
-  /**
-  Gets the actuation values for `this` actuator from the actuation vector u
+  /** Gets the actuation values for `this` actuator from the actuation vector u
   for the entire model.
   @return a reference to a nv-dimensional vector, where nv is the number
           of velocity variables of joint(). */
@@ -103,8 +99,7 @@ class JointActuator final
     return u.segment(topology_.actuator_index_start, joint().num_velocities());
   }
 
-  /**
-  Given the actuation values u_instance for `this` actuator, this method
+  /** Given the actuation values u_instance for `this` actuator, this method
   sets the actuation vector u for the entire MultibodyTree model
   to which this actuator belongs to.
   @param[in] u_instance

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file This file contains classes dealing with sending/receiving
+/** @file This file contains classes dealing with sending/receiving
 LCM messages related to the Schunk WSG gripper. */
 
 #include <memory>
@@ -15,8 +14,7 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-/**
-Handles the command for the Schunk WSG gripper from a LcmSubscriberSystem.
+/** Handles the command for the Schunk WSG gripper from a LcmSubscriberSystem.
 
 It has one input port: "command_message" for lcmt_schunk_wsg_command
 abstract values.
@@ -38,8 +36,7 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
 
-  /**
-  @param initial_position the commanded position to output if no LCM
+  /** @param initial_position the commanded position to output if no LCM
   message has been received yet.
 
   @param initial_force the commanded force limit to output if no LCM
@@ -67,8 +64,7 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
 };
 
 
-/**
-Send lcmt_schunk_wsg_command messages for a Schunk WSG gripper.  Has
+/** Send lcmt_schunk_wsg_command messages for a Schunk WSG gripper.  Has
 two input ports: one for the commanded finger position represented as the
 desired signed distance between the fingers in meters, and one for the
 commanded force limit.  The commanded position and force limit are
@@ -113,8 +109,7 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
 };
 
 
-/**
-Handles lcmt_schunk_wsg_status messages from a LcmSubscriberSystem.  Has
+/** Handles lcmt_schunk_wsg_status messages from a LcmSubscriberSystem.  Has
 two output ports: one for the measured state of the gripper, represented as
 the signed distance between the fingers in meters and its corresponding
 velocity, and one for the measured force.
@@ -162,8 +157,7 @@ class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
 };
 
 
-/**
-Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
+/** Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
 system has one input port for the current state of the WSG, and one
 optional input port for the measured gripping force.
 

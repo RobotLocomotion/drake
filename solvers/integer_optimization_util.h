@@ -5,8 +5,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-Adds linear constraints, such that when b1, b2, b1_and_b2 satisfy the
+/** Adds linear constraints, such that when b1, b2, b1_and_b2 satisfy the
 constraints, and b1, b2 take binary values, it is guaranteed that
 b1_and_b2 = b1 ∧ b2 (b1 and b2).
 The constraints are
@@ -26,8 +25,7 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_and_b2);
 
-/**
-Adds linear constraints, such that when b1, b2, b1_or_b2 satisfy the
+/** Adds linear constraints, such that when b1, b2, b1_or_b2 satisfy the
 constraints, and b1, b2 take binary values, it is guaranteed that
 b1_or_b2 = b1 ∨ b2 (b1 or b2).
 The constraints are
@@ -47,8 +45,7 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_or_b2);
 
-/**
-Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
+/** Add linear constraints, such that when b1, b2, b1_xor_b2 satisfy the
 constraints, and b1, b2 take binary values, it is guaranteed that
 b1_xor_b2 = b1 ⊕ b2 (b1 exclusive xor b2).
 The constraints are
@@ -69,8 +66,7 @@ Binding<LinearConstraint> CreateLogicalXorConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_xor_b2);
 
-/**
-Create linear constraints such that, when these constraints are satisfied,
+/** Create linear constraints such that, when these constraints are satisfied,
 match = 1 if and only if code == expected, otherwise match = 0
 @param code code(i) should only take binary values.
 @param expected The expected matched value for code.

@@ -16,8 +16,7 @@ namespace multibody {
 
 template <typename T> class Body;
 
-/**
-This ForceElement models a massless flexible bushing that connects a frame A
+/** This ForceElement models a massless flexible bushing that connects a frame A
 of a link (body) L0 to a frame C of a link (body) L1.  The bushing can apply
 a torque and force due to stiffness (spring) and dissipation (damper)
 properties.
@@ -324,8 +323,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearBushingRollPitchYaw)
 
-  /**
-  Construct a LinearBushingRollPitchYaw B that connects frames A and C,
+  /** Construct a LinearBushingRollPitchYaw B that connects frames A and C,
   where frame A is welded to a link L0 and frame C is welded to a link L1.
   @param[in] frameA frame A of link (body) L0 that connects to bushing B.
   @param[in] frameC frame C of link (body) L1 that connects to bushing B.
@@ -362,54 +360,47 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /** Returns link (body) L1 (frame C is welded to link L1). */
   const Body<T>& link1() const { return frameC().body(); }
 
-  /**
-  Returns frame A, which is the frame that is welded to link (body) L0 and
+  /** Returns frame A, which is the frame that is welded to link (body) L0 and
   attached to the bushing. */
   const Frame<T>& frameA() const {
     return this->get_parent_tree().get_frame(frameA_index_);
   }
 
-  /**
-  Returns frame C, which is the frame that is welded to link (body) L1 and
+  /** Returns frame C, which is the frame that is welded to link (body) L1 and
   attached to the bushing. */
   const Frame<T>& frameC() const {
     return this->get_parent_tree().get_frame(frameC_index_);
   }
 
-  /**
-  Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
+  /** Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
   Refer to @ref Basic_bushing_torque_stiffness_and_damping
     "How to choose torque stiffness and damping constants" for more details. */
   const Vector3<double>& torque_stiffness_constants() const {
     return torque_stiffness_constants_;
   }
 
-  /**
-  Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
+  /** Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
   Refer to @ref Basic_bushing_torque_stiffness_and_damping
     "How to choose torque stiffness and damping constants" for more details. */
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
   }
 
-  /**
-  Returns the force stiffness constants `[kx ky kz]` (units of N/m).
+  /** Returns the force stiffness constants `[kx ky kz]` (units of N/m).
   Refer to @ref Basic_bushing_force_stiffness_and_damping
     "How to choose force stiffness and damping constants" for more details. */
   const Vector3<double>& force_stiffness_constants() const {
     return force_stiffness_constants_;
   }
 
-  /**
-  Returns the force damping constants `[dx dy dz]` (units of N*s/m).
+  /** Returns the force damping constants `[dx dy dz]` (units of N*s/m).
   Refer to @ref Basic_bushing_force_stiffness_and_damping
     "How to choose force stiffness and damping constants" for more details. */
   const Vector3<double>& force_damping_constants() const {
     return force_damping_constants_;
   }
 
-  /**
-  Calculate F_A_A, the bushing's spatial force on frame A expressed in A.
+  /** Calculate F_A_A, the bushing's spatial force on frame A expressed in A.
   F_A_A contains two vectors: the moment of all bushing forces on A about Ao
   (−𝐭 + p_AoAp × −𝐟) and the net bushing force on A (−𝐟 expressed in A).
   @param[in] context The state of the multibody system.
@@ -417,8 +408,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   SpatialForce<T> CalcBushingSpatialForceOnFrameA(
       const systems::Context<T>& context) const;
 
-  /**
-  Calculate F_C_C, the bushing's spatial force on frame C expressed in C.
+  /** Calculate F_C_C, the bushing's spatial force on frame C expressed in C.
   F_C_C contains two vectors: the moment of all bushing forces on C about Co
   (𝐭 + p_CoCp × 𝐟) and the resultant bushing force on C (𝐟 expressed in C).
   @param[in] context The state of the multibody system.

@@ -14,8 +14,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This Joint allows two bodies to translate relative to one another along a
+/** This Joint allows two bodies to translate relative to one another along a
 common axis.
 That is, given a frame F attached to the parent body P and a frame M
 attached to the child body B (see the Joint class's documentation),
@@ -36,8 +35,7 @@ class PrismaticJoint final : public Joint<T> {
 
   static const char kTypeName[];
 
-  /**
-  Constructor to create a prismatic joint between two bodies so that
+  /** Constructor to create a prismatic joint between two bodies so that
   frame F attached to the parent body P and frame M attached to the child
   body B, translate relatively to one another along a common axis. See this
   class's documentation for further details on the definition of these
@@ -95,8 +93,7 @@ class PrismaticJoint final : public Joint<T> {
     return name.access();
   }
 
-  /**
-  Returns the axis of translation for `this` joint as a unit vector.
+  /** Returns the axis of translation for `this` joint as a unit vector.
   Since the measures of this axis in either frame F or M are the same (see
   this class's documentation for frames's definitions) then,
   `axis = axis_F = axis_M`. */
@@ -127,26 +124,22 @@ class PrismaticJoint final : public Joint<T> {
     return this->velocity_upper_limits()[0];
   }
 
-  /**
-  Returns the acceleration lower limit for `this` joint in meters per second
+  /** Returns the acceleration lower limit for `this` joint in meters per second
   squared. */
   double acceleration_lower_limit() const {
     return this->acceleration_lower_limits()[0];
   }
 
-  /**
-  Returns the acceleration upper limit for `this` joint in meters per second
+  /** Returns the acceleration upper limit for `this` joint in meters per second
   squared. */
   double acceleration_upper_limit() const {
     return this->acceleration_upper_limits()[0];
   }
 
-  /**
-  @name Context-dependent value access
+  /** @name Context-dependent value access
   @{ */
 
-  /**
-  Gets the translation distance of `this` mobilizer from `context`.
+  /** Gets the translation distance of `this` mobilizer from `context`.
   @param[in] context
     The context of the MultibodyTree this joint belongs to.
   @returns The translation coordinate of `this` joint read from `context`. */
@@ -154,8 +147,7 @@ class PrismaticJoint final : public Joint<T> {
     return get_mobilizer()->get_translation(context);
   }
 
-  /**
-  Sets `context` so that the generalized coordinate corresponding to the
+  /** Sets `context` so that the generalized coordinate corresponding to the
   translation distance of `this` joint equals `translation`.
   @param[in] context
     The context of the MultibodyTree this joint belongs to.
@@ -168,8 +160,7 @@ class PrismaticJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Gets the rate of change, in meters per second, of `this` joint's
+  /** Gets the rate of change, in meters per second, of `this` joint's
   translation distance (see get_translation()) from `context`.
   @param[in] context
     The context of the MultibodyTree this joint belongs to.
@@ -179,8 +170,7 @@ class PrismaticJoint final : public Joint<T> {
     return get_mobilizer()->get_translation_rate(context);
   }
 
-  /**
-  Sets the rate of change, in meters per second, of `this` joint's
+  /** Sets the rate of change, in meters per second, of `this` joint's
   translation distance to `translation_dot`. The new rate of change
   `translation_dot` gets stored in `context`.
   @param[in] context
@@ -197,16 +187,14 @@ class PrismaticJoint final : public Joint<T> {
 
   /** @} */
 
-  /**
-  Gets the default translation. Wrapper for the more general
+  /** Gets the default translation. Wrapper for the more general
   `Joint::default_positions()`.
   @returns The default translation of `this` stored in `default_positions_`. */
   double get_default_translation() const {
     return this->default_positions()[0];
   }
 
-  /**
-  Sets the `default_positions` of this joint (in this case a single
+  /** Sets the `default_positions` of this joint (in this case a single
   translation)
   @param[in] translation
     The desired default translation of the joint */
@@ -220,8 +208,7 @@ class PrismaticJoint final : public Joint<T> {
         Vector1<symbolic::Expression>{translation});
   }
 
-  /**
-  Adds into `multibody_forces` a given `force`, in Newtons, for `this` joint
+  /** Adds into `multibody_forces` a given `force`, in Newtons, for `this` joint
   that is to be applied along the joint's axis. The force is defined to be
   positive in the direction along this joint's axis.
   That is, a positive force causes a positive translational acceleration
@@ -237,8 +224,7 @@ class PrismaticJoint final : public Joint<T> {
   }
 
  protected:
-  /**
-  Joint<T> virtual override called through public NVI, Joint::AddInForce().
+  /** Joint<T> virtual override called through public NVI, Joint::AddInForce().
   Therefore arguments were already checked to be valid.
   For a %PrismaticJoint, we must always have `joint_dof = 0` since there is
   only a single degree of freedom (num_velocities() == 1). `joint_tau` is
@@ -259,8 +245,7 @@ class PrismaticJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
-  /**
-  Joint<T> override called through public NVI, Joint::AddInDamping().
+  /** Joint<T> override called through public NVI, Joint::AddInDamping().
   Therefore arguments were already checked to be valid.
   This method adds into `forces` a dissipative force according to the
   viscous law `f = -d⋅v`, with d the damping coefficient (see damping()). */

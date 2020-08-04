@@ -11,8 +11,7 @@ namespace drake {
 namespace solvers {
 namespace fbstab {
 
-/**
-Implements primal-dual variables for inequality constrained QPs,
+/** Implements primal-dual variables for inequality constrained QPs,
 see dense_data.h for a mathematical description.
 This class stores variables and defines methods implementing useful
 operations.
@@ -30,15 +29,13 @@ class DenseVariable {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseVariable)
 
-  /**
-  Allocates memory for a primal-dual variables.
+  /** Allocates memory for a primal-dual variables.
 
   @param[in] nz Number of decision variables > 0
   @param[in] nv Number of inequality constraints > 0 */
   DenseVariable(int nz, int nv);
 
-  /**
-  Creates a primal-dual variable using preallocated memory.
+  /** Creates a primal-dual variable using preallocated memory.
   @param[in] z    A vector to store the decision variables.
   @param[in] v    A vector to store the dual variables.
   @param[in] y    A vector to store the inequality margin.
@@ -46,27 +43,23 @@ class DenseVariable {
   Throws an exception if any inputs are null or have mismatched or zero size. */
   DenseVariable(Eigen::VectorXd* z, Eigen::VectorXd* v, Eigen::VectorXd* y);
 
-  /**
-  Links to problem data needed to perform calculations,
+  /** Links to problem data needed to perform calculations,
   Calculations cannot be performed until a data object is provided.
   @param[in] data Pointer to the problem data */
   void LinkData(const DenseData* data) { data_ = data; }
 
-  /**
-  Fills the variable with one value,
+  /** Fills the variable with one value,
   i.e., x <- a * ones.
   @param[in] a
 
   Throws an exception if problem data has not been linked. */
   void Fill(double a);
 
-  /**
-  Sets the field x.y = b - A* x.z.
+  /** Sets the field x.y = b - A* x.z.
   Throws an exception if problem data has not been linked. */
   void InitializeConstraintMargin();
 
-  /**
-  Performs the operation *this <- a*x + *this
+  /** Performs the operation *this <- a*x + *this
   (where u is this object).
   This is a level 1 BLAS operation for this object;
   see http://www.netlib.org/blas/blasqr.pdf.
@@ -79,20 +72,17 @@ class DenseVariable {
   Throws an exception if problem data has not been linked. */
   void axpy(double a, const DenseVariable& x);
 
-  /**
-  Performs a deep copy operation.
+  /** Performs a deep copy operation.
   @param[in] x variable to be copied
 
   Throws an exception if sizes are mismatched. */
   void Copy(const DenseVariable& x);
 
-  /**
-  Projects the inequality duals onto the non-negative orthant,
+  /** Projects the inequality duals onto the non-negative orthant,
   i.e., v <- max(0,v). */
   void ProjectDuals();
 
-  /**
-  Computes the Euclidean norm.
+  /** Computes the Euclidean norm.
   @return sqrt(|z|^2 + |v|^2) */
   double Norm() const;
 

@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace analysis {
 
-/**
-Sets up a linear program to search for the coefficients of a
+/** Sets up a linear program to search for the coefficients of a
 Lyapunov function that satisfies the Lyapunov conditions at a set
 of sample points.
   ∀xᵢ, V(xᵢ) ≥ 0,

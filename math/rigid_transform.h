@@ -14,8 +14,7 @@
 namespace drake {
 namespace math {
 
-/**
-This class represents a proper rigid transform between two frames which can
+/** This class represents a proper rigid transform between two frames which can
 be regarded in two ways.  A rigid transform describes the "pose" between two
 frames A and B (i.e., the relative orientation and position of A to B).
 Alternately, it can be regarded as a distance-preserving operator that can
@@ -72,8 +71,7 @@ class RigidTransform {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidTransform)
 
-  /**
-  Constructs the %RigidTransform that corresponds to aligning the two frames
+  /** Constructs the %RigidTransform that corresponds to aligning the two frames
   so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
   Bo.  Hence, the constructed %RigidTransform contains an identity
   RotationMatrix and a zero position vector. */
@@ -82,15 +80,13 @@ class RigidTransform {
     set_translation(Vector3<T>::Zero());
   }
 
-  /**
-  Constructs a %RigidTransform from a rotation matrix and a position vector.
+  /** Constructs a %RigidTransform from a rotation matrix and a position vector.
   @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   @param[in] p position vector from frame A's origin to frame B's origin,
   expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`. */
   RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p) { set(R, p); }
 
-  /**
-  Constructs a %RigidTransform from a RollPitchYaw and a position vector.
+  /** Constructs a %RigidTransform from a RollPitchYaw and a position vector.
   @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
   rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
   fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
@@ -100,8 +96,7 @@ class RigidTransform {
   RigidTransform(const RollPitchYaw<T>& rpy, const Vector3<T>& p)
       : RigidTransform(RotationMatrix<T>(rpy), p) {}
 
-  /**
-  Constructs a %RigidTransform from a Quaternion and a position vector.
+  /** Constructs a %RigidTransform from a Quaternion and a position vector.
   @param[in] quaternion a non-zero, finite quaternion which may or may not
   have unit length [i.e., `quaternion.norm()` does not have to be 1].
   @param[in] p position vector from frame A's origin to frame B's origin,
@@ -112,8 +107,7 @@ class RigidTransform {
   RigidTransform(const Eigen::Quaternion<T>& quaternion, const Vector3<T>& p)
       : RigidTransform(RotationMatrix<T>(quaternion), p) {}
 
-  /**
-  Constructs a %RigidTransform from an AngleAxis and a position vector.
+  /** Constructs a %RigidTransform from an AngleAxis and a position vector.
   @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   direction herein called `lambda`) is non-zero and finite, but which may or
   may not have unit length [i.e., `lambda.norm()` does not have to be 1].
@@ -125,23 +119,20 @@ class RigidTransform {
   RigidTransform(const Eigen::AngleAxis<T>& theta_lambda, const Vector3<T>& p)
       : RigidTransform(RotationMatrix<T>(theta_lambda), p) {}
 
-  /**
-  Constructs a %RigidTransform with a given RotationMatrix and a zero
+  /** Constructs a %RigidTransform with a given RotationMatrix and a zero
   position vector.
   @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`). */
   explicit RigidTransform(const RotationMatrix<T>& R) {
     set(R, Vector3<T>::Zero());
   }
 
-  /**
-  Constructs a %RigidTransform that contains an identity RotationMatrix and
+  /** Constructs a %RigidTransform that contains an identity RotationMatrix and
   a given position vector `p`.
   @param[in] p position vector from frame A's origin to frame B's origin,
   expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`. */
   explicit RigidTransform(const Vector3<T>& p) { set_translation(p); }
 
-  /**
-  Constructs a %RigidTransform that contains an identity RotationMatrix and
+  /** Constructs a %RigidTransform that contains an identity RotationMatrix and
   the position vector underlying the given `translation`.
   @param[in] translation translation-only transform that stores p_AoQ_A, the
   position vector from frame A's origin to a point Q, expressed in frame A.
@@ -155,8 +146,7 @@ class RigidTransform {
     set_translation(translation.translation());
   }
 
-  /**
-  Constructs a %RigidTransform from an Eigen Isometry3.
+  /** Constructs a %RigidTransform from an Eigen Isometry3.
   @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
@@ -166,8 +156,7 @@ class RigidTransform {
   `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix(). */
   explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
-  /**
-  Constructs a %RigidTransform from a 3x4 matrix whose structure is below.
+  /** Constructs a %RigidTransform from a 3x4 matrix whose structure is below.
   @param[in] pose 3x4 matrix that contains an allegedly valid 3x3 rotation
   matrix `R_AB` and also a 3x1 position vector `p_AoBo_A` (the position
   vector from frame A's origin to frame B's origin, expressed in frame A).
@@ -186,8 +175,7 @@ class RigidTransform {
     set_translation(pose.template block<3, 1>(0, 3));
   }
 
-  /**
-  Constructs a %RigidTransform from a 4x4 matrix whose structure is below.
+  /** Constructs a %RigidTransform from a 4x4 matrix whose structure is below.
   @param[in] pose 4x4 matrix that contains an allegedly valid 3x3 rotation
   matrix `R_AB` and also a 3x1 position vector `p_AoBo_A` (the position
   vector from frame A's origin to frame B's origin, expressed in frame A).
@@ -210,8 +198,7 @@ class RigidTransform {
     set_translation(pose.template block<3, 1>(0, 3));
   }
 
-  /**
-  Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
+  /** Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
   @param[in] pose Generic Eigen matrix <b>expression</b>.
   @throws std::logic_error if the Eigen <b>expression</b> in pose does not
   resolve to a Vector3 or 3x4 matrix or 4x4 matrix or if the rotational part
@@ -263,8 +250,7 @@ class RigidTransform {
     }
   }
 
-  /**
-  Sets `this` %RigidTransform from a RotationMatrix and a position vector.
+  /** Sets `this` %RigidTransform from a RotationMatrix and a position vector.
   @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   @param[in] p position vector from frame A's origin to frame B's origin,
   expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`. */
@@ -273,8 +259,7 @@ class RigidTransform {
     set_translation(p);
   }
 
-  /**
-  Sets `this` %RigidTransform from an Eigen Isometry3.
+  /** Sets `this` %RigidTransform from an Eigen Isometry3.
   @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
@@ -286,8 +271,7 @@ class RigidTransform {
     set(RotationMatrix<T>(pose.linear()), pose.translation());
   }
 
-  /**
-  Creates a %RigidTransform templatized on a scalar type U from a
+  /** Creates a %RigidTransform templatized on a scalar type U from a
   %RigidTransform templatized on scalar type T.  For example,
   ```
   RigidTransform<double> source = RigidTransform<double>::Identity();
@@ -307,8 +291,7 @@ class RigidTransform {
     return RigidTransform<U>(R, p);
   }
 
-  /**
-  Returns the identity %RigidTransform (corresponds to coincident frames).
+  /** Returns the identity %RigidTransform (corresponds to coincident frames).
   @return the %RigidTransform that corresponds to aligning the two frames so
   unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
   Hence, the returned %RigidTransform contains a 3x3 identity matrix and a
@@ -319,18 +302,15 @@ class RigidTransform {
     return kIdentity.access();
   }
 
-  /**
-  Returns R_AB, the rotation matrix portion of `this` %RigidTransform.
+  /** Returns R_AB, the rotation matrix portion of `this` %RigidTransform.
   @retval R_AB the rotation matrix portion of `this` %RigidTransform. */
   const RotationMatrix<T>& rotation() const { return R_AB_; }
 
-  /**
-  Sets the %RotationMatrix portion of `this` %RigidTransform.
+  /** Sets the %RotationMatrix portion of `this` %RigidTransform.
   @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`). */
   void set_rotation(const RotationMatrix<T>& R) { R_AB_ = R; }
 
-  /**
-  Sets the rotation part of `this` %RigidTransform from a RollPitchYaw.
+  /** Sets the rotation part of `this` %RigidTransform from a RollPitchYaw.
   @param[in] rpy "roll-pitch-yaw" angles.
   @see RotationMatrix::RotationMatrix(const RollPitchYaw<T>&) which
   describes the parameter, preconditions, etc. */
@@ -338,8 +318,7 @@ class RigidTransform {
     set_rotation(RotationMatrix<T>(rpy));
   }
 
-  /**
-  Sets the rotation part of `this` %RigidTransform from a Quaternion.
+  /** Sets the rotation part of `this` %RigidTransform from a Quaternion.
   @param[in] quaternion a quaternion which may or may not have unit length.
   @see RotationMatrix::RotationMatrix(const Eigen::Quaternion<T>&) which
   describes the parameter, preconditions, exception conditions, etc. */
@@ -347,8 +326,7 @@ class RigidTransform {
     set_rotation(RotationMatrix<T>(quaternion));
   }
 
-  /**
-  Sets the rotation part of `this` %RigidTransform from an AngleAxis.
+  /** Sets the rotation part of `this` %RigidTransform from an AngleAxis.
   @param[in] theta_lambda an angle `theta` (in radians) and vector `lambda`.
   @see RotationMatrix::RotationMatrix(const Eigen::AngleAxis<T>&) which
   describes the parameter, preconditions, exception conditions, etc. */
@@ -356,19 +334,16 @@ class RigidTransform {
     set_rotation(RotationMatrix<T>(theta_lambda));
   }
 
-  /**
-  Returns `p_AoBo_A`, the position vector portion of `this` %RigidTransform,
+  /** Returns `p_AoBo_A`, the position vector portion of `this` %RigidTransform,
   i.e., position vector from Ao (frame A's origin) to Bo (frame B's origin). */
   const Vector3<T>& translation() const { return p_AoBo_A_; }
 
-  /**
-  Sets the position vector portion of `this` %RigidTransform.
+  /** Sets the position vector portion of `this` %RigidTransform.
   @param[in] p position vector from Ao (frame A's origin) to Bo (frame B's
   origin) expressed in frame A.  In monogram notation p is denoted p_AoBo_A. */
   void set_translation(const Vector3<T>& p) { p_AoBo_A_ = p; }
 
-  /**
-  Returns the 4x4 matrix associated with this %RigidTransform, i.e., X_AB.
+  /** Returns the 4x4 matrix associated with this %RigidTransform, i.e., X_AB.
   <pre>
    ┌                ┐
    │ R_AB  p_AoBo_A │
@@ -385,8 +360,7 @@ class RigidTransform {
     return pose;
   }
 
-  /**
-  Returns the 3x4 matrix associated with this %RigidTransform, i.e., X_AB.
+  /** Returns the 3x4 matrix associated with this %RigidTransform, i.e., X_AB.
   <pre>
    ┌                ┐
    │ R_AB  p_AoBo_A │
@@ -412,8 +386,7 @@ class RigidTransform {
     return pose;
   }
 
-  /**
-  Sets `this` %RigidTransform so it corresponds to aligning the two frames
+  /** Sets `this` %RigidTransform so it corresponds to aligning the two frames
   so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
   Bo.  Hence, `this` %RigidTransform contains a 3x3 identity matrix and a
   zero position vector. */
@@ -422,16 +395,14 @@ class RigidTransform {
     return *this;
   }
 
-  /**
-  Returns `true` if `this` is exactly the identity %RigidTransform.
+  /** Returns `true` if `this` is exactly the identity %RigidTransform.
   @see IsIdentityToEpsilon(). */
   boolean<T> IsExactlyIdentity() const {
     const boolean<T> is_position_zero = (translation() == Vector3<T>::Zero());
     return is_position_zero && rotation().IsExactlyIdentity();
   }
 
-  /**
-  Return true if `this` is within tolerance of the identity %RigidTransform.
+  /** Return true if `this` is within tolerance of the identity %RigidTransform.
   @returns `true` if the RotationMatrix portion of `this` satisfies
   RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
   portion of `this` is equal to zero vector within `translation_tolerance`.
@@ -446,8 +417,7 @@ class RigidTransform {
         rotation().IsIdentityToInternalTolerance();
   }
 
-  /**
-  Returns X_BA = X_AB⁻¹, the inverse of `this` %RigidTransform.
+  /** Returns X_BA = X_AB⁻¹, the inverse of `this` %RigidTransform.
   @note The inverse of %RigidTransform X_AB is X_BA, which contains the
   rotation matrix R_BA = R_AB⁻¹ = R_ABᵀ and the position vector `p_BoAo_B_`
   (position from B's origin Bo to A's origin Ao, expressed in frame B).
@@ -485,8 +455,7 @@ class RigidTransform {
   Matrix4<T> matrix() const { return GetAsMatrix4(); }
 #endif
 
-  /**
-  In-place multiply of `this` %RigidTransform `X_AB` by `other`
+  /** In-place multiply of `this` %RigidTransform `X_AB` by `other`
   %RigidTransform `X_BC`.
   @param[in] other %RigidTransform that post-multiplies `this`.
   @returns `this` %RigidTransform which has been multiplied by `other`.
@@ -497,16 +466,14 @@ class RigidTransform {
     return *this;
   }
 
-  /**
-  Multiplies `this` %RigidTransform `X_AB` by the `other` %RigidTransform
+  /** Multiplies `this` %RigidTransform `X_AB` by the `other` %RigidTransform
   `X_BC` and returns the %RigidTransform `X_AC = X_AB * X_BC`. */
   RigidTransform<T> operator*(const RigidTransform<T>& other) const {
     const Vector3<T> p_AoCo_A = *this * other.translation();
     return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
   }
 
-  /**
-  Multiplies `this` %RigidTransform `X_AB` by the translation-only transform
+  /** Multiplies `this` %RigidTransform `X_AB` by the translation-only transform
   `X_BBq` and returns the %RigidTransform `X_ABq = X_AB * X_BBq`.
   @note The rotation matrix in the returned %RigidTransform `X_ABq` is equal
   to the rotation matrix in `X_AB`.  `X_ABq` and `X_AB` only differ by
@@ -517,8 +484,7 @@ class RigidTransform {
     return RigidTransform<T>(rotation(), p_ABq_A);
   }
 
-  /**
-  Multiplies the translation-only transform `X_AAq` by the %RigidTransform
+  /** Multiplies the translation-only transform `X_AAq` by the %RigidTransform
   `X_AqB` and returns the %RigidTransform `X_AB = X_AAq * X_AqB`.
   @note The rotation matrix in the returned %RigidTransform `X_AB` is equal
   to the rotation matrix in `X_AqB`.  `X_AB` and `X_AqB` only differ by
@@ -532,8 +498,7 @@ class RigidTransform {
     return RigidTransform<T>(R_AB, p_AB_A);
   }
 
-  /**
-  Multiplies `this` %RigidTransform `X_AB` by the position vector
+  /** Multiplies `this` %RigidTransform `X_AB` by the position vector
   `p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
   @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
   @retval p_AoQ_A position vector from Ao to Q, expressed in frame A. */
@@ -541,8 +506,7 @@ class RigidTransform {
     return p_AoBo_A_ + R_AB_ * p_BoQ_B;
   }
 
-  /**
-  Multiplies `this` %RigidTransform `X_AB` by the n position vectors
+  /** Multiplies `this` %RigidTransform `X_AB` by the n position vectors
   `p_BoQ1_B` ... `p_BoQn_B`, where `p_BoQi_B` is the iᵗʰ position vector
   from Bo (frame B's origin) to an arbitrary point Qi, expressed in frame B.
   @param[in] p_BoQ_B `3 x n` matrix with n position vectors `p_BoQi_B` or
@@ -589,8 +553,7 @@ class RigidTransform {
     return p_AoQ_A;
   }
 
-  /**
-  Compares each element of `this` to the corresponding element of `other`
+  /** Compares each element of `this` to the corresponding element of `other`
   to check if they are the same to within a specified `tolerance`.
   @param[in] other %RigidTransform to compare to `this`.
   @param[in] tolerance maximum allowable absolute difference between the
@@ -604,8 +567,7 @@ class RigidTransform {
     return GetMaximumAbsoluteDifference(other) <= tolerance;
   }
 
-  /**
-  Returns true if `this` is exactly equal to `other`.
+  /** Returns true if `this` is exactly equal to `other`.
   @param[in] other %RigidTransform to compare to `this`.
   @returns `true` if each element of `this` is exactly equal to the
   corresponding element of `other`. */
@@ -614,8 +576,7 @@ class RigidTransform {
            translation() == other.translation();
   }
 
-  /**
-  Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
+  /** Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   value of the difference between the elements of `this` and `other`).
   @param[in] other %RigidTransform to subtract from `this`.
   @returns ‖`this` - `other`‖∞ */
@@ -624,8 +585,7 @@ class RigidTransform {
     return diff.template lpNorm<Eigen::Infinity>();
   }
 
-  /**
-  Returns the maximum absolute value of the difference in the position
+  /** Returns the maximum absolute value of the difference in the position
   vectors (translation) in `this` and `other`.  In other words, returns
   the infinity norm of the difference in the position vectors.
   @param[in] other %RigidTransform whose position vector is subtracted from
@@ -672,8 +632,7 @@ class RigidTransform {
   Vector3<T> p_AoBo_A_;
 };
 
-/**
-Abbreviation (alias/typedef) for a RigidTransform double scalar type.
+/** Abbreviation (alias/typedef) for a RigidTransform double scalar type.
 @relates RigidTransform */
 using RigidTransformd = RigidTransform<double>;
 

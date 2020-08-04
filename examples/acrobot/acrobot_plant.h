@@ -14,15 +14,13 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/**
-@defgroup acrobot_systems Acrobot
+/** @defgroup acrobot_systems Acrobot
 @{
 @brief Systems related to the Acrobot example.
 @ingroup example_systems
 @} */
 
-/**
-The Acrobot - a canonical underactuated system as described in <a
+/** The Acrobot - a canonical underactuated system as described in <a
 href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 of Underactuated Robotics</a>.
 
@@ -41,8 +39,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotPlant)
 
-  /**
-  Constructs the plant.  The parameters of the system are stored as
+  /** Constructs the plant.  The parameters of the system are stored as
   Parameters in the Context (see acrobot_params_named_vector.yaml). */
   AcrobotPlant();
 
@@ -50,14 +47,12 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   template <typename U>
   explicit AcrobotPlant(const AcrobotPlant<U>&);
 
-  /**
-  Sets the parameters to describe MIT Robot Locomotion Group's hardware
+  /** Sets the parameters to describe MIT Robot Locomotion Group's hardware
   acrobot. */
   void SetMITAcrobotParameters(systems::Parameters<T>* parameters) const;
 
   // TODO(russt): Update this to the newest conventions.
-  /**
-  @{
+  /** @{
   Manipulator equation of Acrobot: M(q)q̈ + bias(q,q̇) = B*u.
 
   - M[2x2] is the mass matrix.
@@ -67,8 +62,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
   Matrix2<T> MassMatrix(const systems::Context<T> &context) const;
   /** @} */
 
-  /**
-  Evaluates the input port and returns the scalar value
+  /** Evaluates the input port and returns the scalar value
   of the commanded torque. */
   const T& get_tau(const systems::Context<T>& context) const {
     return this->EvalVectorInput(context, 0)->GetAtIndex(0);
@@ -120,8 +114,7 @@ class AcrobotPlant : public systems::LeafSystem<T> {
     EigenPtr<VectorX<T>> residual) const override;
 };
 
-/**
-Constructs the Acrobot with (only) encoder outputs.
+/** Constructs the Acrobot with (only) encoder outputs.
 
 @system
 name: AcrobotWEncoder
@@ -147,8 +140,7 @@ class AcrobotWEncoder : public systems::Diagram<T> {
   AcrobotPlant<T>* acrobot_plant_{nullptr};
 };
 
-/**
-Constructs the LQR controller for stabilizing the upright fixed point using
+/** Constructs the LQR controller for stabilizing the upright fixed point using
 default LQR cost matrices which have been tested for this system.
 @ingroup acrobot_systems */
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(

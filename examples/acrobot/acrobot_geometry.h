@@ -9,8 +9,7 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/**
-Expresses an AcrobotPlant's geometry to a SceneGraph.
+/** Expresses an AcrobotPlant's geometry to a SceneGraph.
 
 @system
 name: AcrobotGeometry
@@ -29,8 +28,7 @@ class AcrobotGeometry final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotGeometry);
   ~AcrobotGeometry() final;
 
-  /**
-  Creates, adds, and connects an AcrobotGeometry system into the given
+  /** Creates, adds, and connects an AcrobotGeometry system into the given
   `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
   systems must have been added to the given `builder` already.
 
@@ -46,8 +44,7 @@ class AcrobotGeometry final : public systems::LeafSystem<double> {
       const AcrobotParams<double>& acrobot_params,
       geometry::SceneGraph<double>* scene_graph);
 
-  /**
-  Creates, adds, and connects an AcrobotGeometry system into the given
+  /** Creates, adds, and connects an AcrobotGeometry system into the given
   `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
   systems must have been added to the given `builder` already.
 

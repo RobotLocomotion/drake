@@ -23,8 +23,7 @@ class SolverBase : public SolverInterface {
 
   ~SolverBase() override;
 
-  /**
-  Like SolverInterface::Solve(), but the result is a
+  /** Like SolverInterface::Solve(), but the result is a
   return value instead of an output argument. */
   MathematicalProgramResult Solve(
       const MathematicalProgram& prog,
@@ -41,8 +40,7 @@ class SolverBase : public SolverInterface {
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
 
  protected:
-  /**
-  Constructs a SolverBase with the given default implementations of the
+  /** Constructs a SolverBase with the given default implementations of the
   solver_id(), available(), enabled(), and AreProgramAttributesSatisfied()
   methods.  (Typically, the subclass will just pass the address of its
   static method, e.g. `&id`, for these functors.)  Any of the functors can
@@ -60,8 +58,7 @@ class SolverBase : public SolverInterface {
       std::function<bool()> available,
       std::function<bool(const MathematicalProgram&)> satisfied);
 
-  /**
-  Hook for subclasses to implement Solve.  Prior to the SolverBase's call
+  /** Hook for subclasses to implement Solve.  Prior to the SolverBase's call
   to this method, the solver's availability and capabilities vs the program
   attributes have already been checked, and the result's set_solver_id()
   and set_decision_variable_index() have already been set. The options and

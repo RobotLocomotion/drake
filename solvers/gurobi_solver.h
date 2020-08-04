@@ -12,29 +12,24 @@
 namespace drake {
 namespace solvers {
 
-/**
-The Gurobi solver details after calling Solve() function. The user can call
+/** The Gurobi solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<GurobiSolver>() to obtain the
 details. */
 struct GurobiSolverDetails {
-  /**
-  The gurobi optimization time. Please refer to
+  /** The gurobi optimization time. Please refer to
   https://www.gurobi.com/documentation/9.0/refman/runtime.html */
   double optimizer_time{};
 
-  /**
-  The error message returned from Gurobi call. Please refer to
+  /** The error message returned from Gurobi call. Please refer to
   https://www.gurobi.com/documentation/9.0/refman/error_codes.html */
   int error_code{};
 
-  /**
-  The status code when the optimize call has returned. Please refer to
+  /** The status code when the optimize call has returned. Please refer to
   https://www.gurobi.com/documentation/9.0/refman/optimization_status_codes.html
    */
   int optimization_status{};
 
-  /**
-  The best known bound on the optimal objective. This is used in mixed
+  /** The best known bound on the optimal objective. This is used in mixed
   integer optimization. Please refer to
   https://www.gurobi.com/documentation/9.0/refman/objbound.html */
   double objective_bound{NAN};
@@ -50,8 +45,7 @@ class GurobiSolver final : public SolverBase {
   GurobiSolver();
   ~GurobiSolver() final;
 
-  /**
-  Contains info returned to a user function that handles
+  /** Contains info returned to a user function that handles
   a Node or Solution callback.
   @see MipNodeCallbackFunction
   @see MipSolCallbackFunction */
@@ -70,8 +64,7 @@ class GurobiSolver final : public SolverBase {
     int feasible_solutions_count{};
   };
 
-  /**
-  Users can supply a callback to be called when the Gurobi solver
+  /** Users can supply a callback to be called when the Gurobi solver
   finds an intermediate solution node, which may not be feasible.
   See Gurobi reference manual for more detail on callbacks:
   https://www.gurobi.com/documentation/9.0/refman/callback_codes.html.
@@ -97,8 +90,7 @@ class GurobiSolver final : public SolverBase {
                              Eigen::VectorXd*, VectorXDecisionVariable*)>
       MipNodeCallbackFunction;
 
-  /**
-  Registers a callback to be called at intermediate solutions
+  /** Registers a callback to be called at intermediate solutions
   during the solve.
   @param callback User callback function.
   @param user_data Arbitrary data that will be passed to the user
@@ -107,8 +99,7 @@ class GurobiSolver final : public SolverBase {
     mip_node_callback_ = callback;
   }
 
-  /**
-  Users can supply a callback to be called when the Gurobi solver
+  /** Users can supply a callback to be called when the Gurobi solver
   finds a feasible solution.
   See Gurobi reference manual for more detail on callbacks:
   https://www.gurobi.com/documentation/9.0/refman/callback_codes.html.
@@ -126,8 +117,7 @@ class GurobiSolver final : public SolverBase {
                              const SolveStatusInfo& callback_info)>
       MipSolCallbackFunction;
 
-  /**
-  Registers a callback to be called at feasible solutions
+  /** Registers a callback to be called at feasible solutions
   during the solve.
   @param callback User callback function.
   @param usrdata Arbitrary data that will be passed to the user
@@ -136,14 +126,12 @@ class GurobiSolver final : public SolverBase {
     mip_sol_callback_ = callback;
   }
 
-  /**
-  This type contains a valid Gurobi license environment, and is only to be
+  /** This type contains a valid Gurobi license environment, and is only to be
   used from AcquireLicense(). */
   class License;
 
 
-  /**
-  This acquires a Gurobi license environment shared among all GurobiSolver
+  /** This acquires a Gurobi license environment shared among all GurobiSolver
   instances; the environment will stay valid as long as at least one
   shared_ptr returned by this function is alive.
   Call this ONLY if you must use different MathematicalProgram
@@ -156,13 +144,11 @@ class GurobiSolver final : public SolverBase {
   obtained. */
   static std::shared_ptr<License> AcquireLicense();
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();
-  /**
-  Returns true iff the environment variable GRB_LICENSE_FILE has been set
+  /** Returns true iff the environment variable GRB_LICENSE_FILE has been set
   to a non-empty value. */
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);

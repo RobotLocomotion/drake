@@ -12,8 +12,7 @@
 namespace drake {
 namespace solvers {
 
-/**
-We relax the non-convex SO(3) constraint on rotation matrix R to
+/** We relax the non-convex SO(3) constraint on rotation matrix R to
 mixed-integer linear constraints. The formulation of these constraints are
 described in
 Global Inverse Kinematics via Mixed-integer Convex Optimization
@@ -53,22 +52,19 @@ class MixedIntegerRotationConstraintGenerator {
 
   enum class Approach {
     kBoxSphereIntersection,  ///< Relax SO(3) constraint by considering the
-                             /**
-                             < intersection between boxes and the unit sphere
+                             /** < intersection between boxes and the unit sphere
                              < surface. */
     kBilinearMcCormick,      ///< Relax SO(3) constraint by considering the
                              /** < McCormick envelope on the bilinear product.
                               */
     kBoth,                   ///< Relax SO(3) constraint by considering both the
-                             /**
-                             < intersection between boxes and the unit sphere
+                             /** < intersection between boxes and the unit sphere
                              < surface, and the McCormick envelope on the
                              < bilinear product. */
   };
 
   struct ReturnType {
-    /**
-    B_ contains the new binary variables added to the program.
+    /** B_ contains the new binary variables added to the program.
     B_[i][j] represents in which interval R(i, j) lies. If we use linear
     binning, then B_[i][j] is of length 2 * num_intervals_per_half_axis_.
     B_[i][j](k) = 1 => φ(k) ≤ R(i, j) ≤ φ(k + 1)
@@ -77,8 +73,7 @@ class MixedIntegerRotationConstraintGenerator {
     1 + log₂(num_intervals_per_half_axis_). If B_[i][j] represents integer
     k in reflected Gray code, then R(i, j) is in the interval [φ(k), φ(k+1)]. */
     std::array<std::array<VectorXDecisionVariable, 3>, 3> B_;
-    /**
-    λ contains part of the new continuous variables added to the program.
+    /** λ contains part of the new continuous variables added to the program.
     λ_[i][j] is of length 2 * num_intervals_per_half_axis_ + 1, such that
     R(i, j) = φᵀ * λ_[i][j]. Notice that λ_[i][j] satisfies the special
     ordered set of type 2 (SOS2) constraint. Namely at most two entries in
@@ -92,8 +87,7 @@ class MixedIntegerRotationConstraintGenerator {
     std::array<std::array<VectorXDecisionVariable, 3>, 3> lambda_;
   };
 
-  /**
-  Constructor
+  /** Constructor
   @param approach Refer to MixedIntegerRotationConstraintGenerator::Approach
   for the details.
   @param num_intervals_per_half_axis We will cut the range [-1, 1] evenly
@@ -109,8 +103,7 @@ class MixedIntegerRotationConstraintGenerator {
                                           int num_intervals_per_half_axis,
                                           IntervalBinning interval_binning);
 
-  /**
-  Add the mixed-integer linear constraints to the optimization program, as
+  /** Add the mixed-integer linear constraints to the optimization program, as
   a relaxation of SO(3) constraint on the rotation matrix `R`.
   @param R The rotation matrix on which the SO(3) constraint is imposed.
   @param prog The optimization program to which the mixed-integer constraints
@@ -163,8 +156,7 @@ std::ostream& operator<<(
     std::ostream& os,
     const MixedIntegerRotationConstraintGenerator::Approach& type);
 
-/**
-Some of the newly added variables in function
+/** Some of the newly added variables in function
 AddRotationMatrixBoxSphereIntersectionMilpConstraints.
 CRpos, CRneg, BRpos and BRneg can only take value 0 or 1. `CRpos` and `CRneg`
 are declared as continuous variables, while `BRpos` and `BRneg` are declared
@@ -184,8 +176,7 @@ struct AddRotationMatrixBoxSphereIntersectionReturn {
   std::vector<Matrix3<symbolic::Variable>> BRneg;
 };
 
-/**
-Adds binary variables that constrain the value of the column *and* row
+/** Adds binary variables that constrain the value of the column *and* row
 vectors of R, in order to add the following (in some cases non-convex)
 constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
 

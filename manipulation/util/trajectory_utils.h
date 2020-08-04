@@ -10,8 +10,7 @@
 namespace drake {
 namespace manipulation {
 
-/**
-A wrapper class that stores a PiecewisePolynomial and its first and second
+/** A wrapper class that stores a PiecewisePolynomial and its first and second
 derivatives. This class is supposed to represent position, velocity and
 acceleration. Thus, when the interpolating time is beyond the time bounds,
 the interpolated velocity and acceleration will be set to zero, and the
@@ -24,8 +23,7 @@ class PiecewiseCubicTrajectory {
 
   PiecewiseCubicTrajectory() {}
 
-  /**
-  Constructor.
+  /** Constructor.
   @param position_traj PiecewisePolynomial that represents the position
   trajectory. Its first and second derivatives are computed and stored. */
   explicit PiecewiseCubicTrajectory(
@@ -38,8 +36,7 @@ class PiecewiseCubicTrajectory {
   /** Returns the interpolated position at @p time. */
   MatrixX<T> get_position(double time) const { return q_.value(time); }
 
-  /**
-  Returns the interpolated velocity at @p time or zero if @p time is out of
+  /** Returns the interpolated velocity at @p time or zero if @p time is out of
   the time bounds. */
   MatrixX<T> get_velocity(double time) const {
     MatrixX<T> ret = qd_.value(time);
@@ -47,8 +44,7 @@ class PiecewiseCubicTrajectory {
     return ret;
   }
 
-  /**
-  Returns the interpolated acceleration at @p time or zero if @p time is out
+  /** Returns the interpolated acceleration at @p time or zero if @p time is out
   of the time bounds. */
   MatrixX<T> get_acceleration(double time) const {
     MatrixX<T> ret = qdd_.value(time);
@@ -62,8 +58,7 @@ class PiecewiseCubicTrajectory {
   /** Returns the end time of this trajectory. */
   double get_end_time() const { return q_.end_time(); }
 
-  /**
-  Returns true if the position trajectory and its first and second
+  /** Returns true if the position trajectory and its first and second
   derivatives are all within @p tol to @p other. */
   bool is_approx(const PiecewiseCubicTrajectory<T>& other, const T& tol) const {
     bool ret = q_.isApprox(other.q_, tol);
@@ -94,8 +89,7 @@ class PiecewiseCubicTrajectory {
   trajectories::PiecewisePolynomial<T> qdd_;
 };
 
-/**
-A wrapper class that represents a Cartesian trajectory, whose position part
+/** A wrapper class that represents a Cartesian trajectory, whose position part
 is a PiecewiseCubicTrajectory, and the rotation part is a
 PiecewiseQuaternionSlerp. */
 template <typename T>
@@ -105,8 +99,7 @@ class PiecewiseCartesianTrajectory {
 
   PiecewiseCartesianTrajectory() {}
 
-  /**
-  Constructs a PiecewiseCartesianTrajectory from given @p time and @p poses.
+  /** Constructs a PiecewiseCartesianTrajectory from given @p time and @p poses.
   A cubic polynomial with zero end velocities is used to construct the
   position part. There must be at least two elements in @p times and
   @p poses.
@@ -131,8 +124,7 @@ class PiecewiseCartesianTrajectory {
         trajectories::PiecewiseQuaternionSlerp<T>(times, rot_knots));
   }
 
-  /**
-  Constructor.
+  /** Constructor.
   @param pos_traj Position trajectory.
   @param rot_traj Orientation trajectory. */
   PiecewiseCartesianTrajectory(
@@ -141,8 +133,7 @@ class PiecewiseCartesianTrajectory {
       : PiecewiseCartesianTrajectory(PiecewiseCubicTrajectory<T>(pos_traj),
                                      rot_traj) {}
 
-  /**
-  Constructor.
+  /** Constructor.
   @param pos_traj Position trajectory.
   @param rot_traj Orientation trajectory. */
   PiecewiseCartesianTrajectory(
@@ -164,8 +155,7 @@ class PiecewiseCartesianTrajectory {
     return pose;
   }
 
-  /**
-  Returns the interpolated velocity at @p time or zero if @p time is before
+  /** Returns the interpolated velocity at @p time or zero if @p time is before
   this trajectory's start time or after its end time. */
   Vector6<T> get_velocity(double time) const {
     Vector6<T> velocity;
@@ -178,8 +168,7 @@ class PiecewiseCartesianTrajectory {
     return velocity;
   }
 
-  /**
-  Returns the interpolated acceleration at @p time or zero if @p time is
+  /** Returns the interpolated acceleration at @p time or zero if @p time is
   before this trajectory's start time or after its end time. */
   Vector6<T> get_acceleration(double time) const {
     Vector6<T> acceleration;
@@ -192,8 +181,7 @@ class PiecewiseCartesianTrajectory {
     return acceleration;
   }
 
-  /**
-  Returns true if the position and orientation trajectories are both
+  /** Returns true if the position and orientation trajectories are both
   within @p tol from the other's. */
   bool is_approx(const PiecewiseCartesianTrajectory<T>& other,
                  const T& tol) const {

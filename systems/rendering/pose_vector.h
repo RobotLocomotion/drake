@@ -10,8 +10,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/**
-A 7-vector representing the transform of frame A in the world frame, X_WA,
+/** A 7-vector representing the transform of frame A in the world frame, X_WA,
 in the form `{p_WA, R_WA}`, where `p` is represented as an x-y-z
 translation, and `R` is represented as a quaternion. The exact order of
 elements is `{x, y, z, qw, qx, qy, qz}`.
@@ -24,8 +23,7 @@ class PoseVector : public BasicVector<T> {
   PoseVector();
   ~PoseVector() override;
 
-  /**
-  Fully-parameterized constructor.
+  /** Fully-parameterized constructor.
   @param rotation the orientation R_WA of frame A in the world frame W.
   @param translation the position vector p_WA giving A's origin measured
   from W's origin, expressed in W. */

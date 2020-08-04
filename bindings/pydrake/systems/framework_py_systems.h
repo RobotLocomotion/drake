@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Provides the Python bindings for the core system classes of the systems
 framework. */
 

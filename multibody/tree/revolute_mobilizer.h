@@ -16,8 +16,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This Mobilizer allows two frames to rotate relatively to one another around
+/** This Mobilizer allows two frames to rotate relatively to one another around
 an axis that is constant when measured in either this mobilizer's inboard or
 outboard frames, while the distance between the two frames does not vary.
 To fully specify this mobilizer a user must provide the inboard frame F,
@@ -38,8 +37,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer)
 
-  /**
-  Constructor for a %RevoluteMobilizer between the inboard frame F
+  /** Constructor for a %RevoluteMobilizer between the inboard frame F
   `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
   single rotational degree of freedom about axis `axis_F` expressed in the
   inboard frame F.
@@ -57,21 +55,18 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
     axis_F_.normalize();
   }
 
-  /**
-  @retval axis_F The rotation axis as a unit vector expressed in the inboard
-                 frame F. */
+  /** @retval axis_F The rotation axis as a unit vector expressed in the inboard
+  frame F. */
   const Vector3<double>& revolute_axis() const { return axis_F_; }
 
-  /**
-  Gets the rotation angle of `this` mobilizer from `context`. See class
+  /** Gets the rotation angle of `this` mobilizer from `context`. See class
   documentation for sign convention.
   @param[in] context The context of the MultibodyTree this mobilizer
                      belongs to.
   @returns The angle coordinate of `this` mobilizer in the `context`. */
   const T& get_angle(const systems::Context<T>& context) const;
 
-  /**
-  Sets the `context` so that the generalized coordinate corresponding to the
+  /** Sets the `context` so that the generalized coordinate corresponding to the
   rotation angle of `this` mobilizer equals `angle`.
   @param[in] context The context of the MultibodyTree this mobilizer
                      belongs to.
@@ -80,8 +75,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angle(
       systems::Context<T>* context, const T& angle) const;
 
-  /**
-  Gets the rate of change, in radians per second, of `this` mobilizer's
+  /** Gets the rate of change, in radians per second, of `this` mobilizer's
   angle (see get_angle()) from `context`. See class documentation for the
   angle sign convention.
   @param[in] context The context of the MultibodyTree this mobilizer
@@ -89,8 +83,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   @returns The rate of change of `this` mobilizer's angle in the `context`. */
   const T& get_angular_rate(const systems::Context<T> &context) const;
 
-  /**
-  Sets the rate of change, in radians per second, of this `this` mobilizer's
+  /** Sets the rate of change, in radians per second, of this `this` mobilizer's
   angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
   `context`.
   See class documentation for the angle sign convention.
@@ -102,8 +95,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   const RevoluteMobilizer<T>& set_angular_rate(
       systems::Context<T> *context, const T& theta_dot) const;
 
-  /**
-  Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /** Computes the across-mobilizer transform `X_FM(q)` between the inboard
   frame F and the outboard frame M as a function of the rotation angle
   about this mobilizer's axis (@see revolute_axis().)
   The generalized coordinate q for `this` mobilizer (the rotation angle) is
@@ -112,8 +104,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
-  /**
-  Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
+  /** Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   M measured and expressed in frame F as a function of the rotation angle
   and input angular velocity `v` about this mobilizer's axis
   (@see revolute_axis()).
@@ -124,8 +115,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
-  /**
-  Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
+  /** Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   outboard frame M in the inboard frame F.
   By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
   The acceleration `A_FM` will be a function of the rotation angle q, its
@@ -137,8 +127,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  /**
-  Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
+  /** Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
   frame M onto its rotation axis (@see revolute_axis().) Mathematically:
   <pre>
      tau = F_Mo_F.rotational().dot(axis_F)

@@ -12,8 +12,7 @@
 namespace drake {
 namespace trajectories {
 
-/**
-A Trajectory represents a time-varying matrix, indexed by a single scalar
+/** A Trajectory represents a time-varying matrix, indexed by a single scalar
 time.
 
 @tparam_default_scalars */
@@ -25,14 +24,12 @@ class Trajectory {
   /** @return A deep copy of this Trajectory. */
   virtual std::unique_ptr<Trajectory<T>> Clone() const = 0;
 
-  /**
-  Evaluates the trajectory at the given time \p t.
+  /** Evaluates the trajectory at the given time \p t.
   @param t The time at which to evaluate the trajectory.
   @return The matrix of evaluated values. */
   virtual MatrixX<T> value(const T& t) const = 0;
 
-  /**
-  If cols()==1, then evaluates the trajectory at each time @p t, and returns
+  /** If cols()==1, then evaluates the trajectory at each time @p t, and returns
   the results as a Matrix with the ith column corresponding to the ith time.
   Otherwise, if rows()==1, then evaluates the trajectory at each time @p t,
   and returns the results as a Matrix with the ith row corresponding to
@@ -40,22 +37,19 @@ class Trajectory {
   @throws std::runtime_error if both cols and rows are not equal to 1. */
   MatrixX<T> vector_values(const std::vector<T>& t) const;
 
-  /**
-  Returns true iff the Trajectory provides and implementation for
+  /** Returns true iff the Trajectory provides and implementation for
   EvalDerivative() and MakeDerivative().  The derivative need not be
   continuous, but should return a result for all t for which value(t) returns
   a result. */
   bool has_derivative() const;
 
-  /**
-  Evaluates the derivative of `this` at the given time @p t.
+  /** Evaluates the derivative of `this` at the given time @p t.
   Returns the nth derivative, where `n` is the value of @p derivative_order.
 
   @pre derivative_order must be non-negative. */
   MatrixX<T> EvalDerivative(const T& t, int derivative_order = 1) const;
 
-  /**
-  Takes the derivative of this Trajectory.
+  /** Takes the derivative of this Trajectory.
   @param derivative_order The number of times to take the derivative before
   returning.
   @return The nth derivative of this object. */

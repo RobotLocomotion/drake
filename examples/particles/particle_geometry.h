@@ -8,8 +8,7 @@ namespace drake {
 namespace examples {
 namespace particles {
 
-/**
-Expresses a Particle system's visualization geometry to a SceneGraph.
+/** Expresses a Particle system's visualization geometry to a SceneGraph.
 
 @system
 name: ParticleGeometry
@@ -27,8 +26,7 @@ class ParticleGeometry final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParticleGeometry);
 
-  /**
-  Creates, adds, and connects a ParticleGeometry system into the given
+  /** Creates, adds, and connects a ParticleGeometry system into the given
   `builder`.  Both the `particle_state_port.get_system()` and `scene_graph`
   systems must have been added to the given `builder` already.
 

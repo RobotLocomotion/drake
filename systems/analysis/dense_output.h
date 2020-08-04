@@ -10,8 +10,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An interface for dense output of ODE solutions, to efficiently approximate
+/** An interface for dense output of ODE solutions, to efficiently approximate
 them at arbitrarily many points when solving them numerically (see
 IntegratorBase class documentation).
 
@@ -50,8 +49,7 @@ class DenseOutput {
 
   virtual ~DenseOutput() = default;
 
-  /**
-  Evaluates the output at the given time @p t.
+  /** Evaluates the output at the given time @p t.
   @param t Time at which to evaluate output.
   @returns Output vector value.
   @pre Output is not empty i.e. is_empty() equals false.
@@ -64,8 +62,7 @@ class DenseOutput {
     return this->DoEvaluate(t);
   }
 
-  /**
-  Evaluates the output value's `n`th scalar element (0-indexed) at the
+  /** Evaluates the output value's `n`th scalar element (0-indexed) at the
   given time @p t.
   @note On some implementations, the computational cost of this
         method may be lower than that of indexing an Evaluate(const T&)
@@ -88,8 +85,7 @@ class DenseOutput {
     return this->DoEvaluateNth(t, n);
   }
 
-  /**
-  Returns the output size (i.e. the number of elements in an
+  /** Returns the output size (i.e. the number of elements in an
   output value).
   @pre Output is not empty i.e. is_empty() equals false.
   @throws std::logic_error if any of the preconditions is not met. */
@@ -101,8 +97,7 @@ class DenseOutput {
   /** Checks whether the output is empty or not. */
   bool is_empty() const { return this->do_is_empty(); }
 
-  /**
-  Returns output's start time, or in other words, the oldest time
+  /** Returns output's start time, or in other words, the oldest time
   `t` that it can be evaluated at e.g. via Evaluate().
   @pre Output is not empty i.e. is_empty() equals false.
   @throws std::logic_error if any of the preconditions is not met. */
@@ -111,8 +106,7 @@ class DenseOutput {
     return this->do_start_time();
   }
 
-  /**
-  Returns output's end time, or in other words, the newest time
+  /** Returns output's end time, or in other words, the newest time
   `t` that it can be evaluated at e.g. via Evaluate().
   @pre Output is not empty i.e. is_empty() equals false.
   @throws std::logic_error if any of the preconditions is not met. */

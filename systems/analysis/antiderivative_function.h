@@ -15,8 +15,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A thin wrapper of the ScalarInitialValueProblem class that, in concert with
+/** A thin wrapper of the ScalarInitialValueProblem class that, in concert with
 Drake's ODE initial value problem solvers ("integrators"), provide the
 ability to perform quadrature on an arbitrary scalar integrable function.
 That is, it allows the evaluation of an antiderivative function F(u; 𝐤),
@@ -53,16 +52,14 @@ class AntiderivativeFunction {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AntiderivativeFunction);
 
-  /**
-  Scalar integrable function f(x; 𝐤) type.
+  /** Scalar integrable function f(x; 𝐤) type.
 
   @param x The variable of integration x ∈ ℝ .
   @param k The parameter vector 𝐤 ∈ ℝᵐ.
   @return The function value f(@p x; @p k). */
   using IntegrableFunction = std::function<T(const T& x, const VectorX<T>& k)>;
 
-  /**
-  The set of values that, along with the function being integrated,
+  /** The set of values that, along with the function being integrated,
   partially specify the definite integral i.e. providing the lower
   integration bound v and the parameter vector 𝐤, leaving the upper
   integration bound u to be specified on evaluation. */
@@ -70,8 +67,7 @@ class AntiderivativeFunction {
     /** Default constructor that leaves all values unspecified. */
     IntegrableFunctionContext() = default;
 
-    /**
-    Constructor that specifies all values.
+    /** Constructor that specifies all values.
     @param v_in Specified lower integration bound v.
     @param k_in Specified parameter vector 𝐤. */
     IntegrableFunctionContext(const std::optional<T>& v_in,
@@ -82,8 +78,7 @@ class AntiderivativeFunction {
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤.
   };
 
-  /**
-  Constructs the antiderivative function of the given
+  /** Constructs the antiderivative function of the given
   @p integrable_function, using @p default_values.v as lower integration
   bound if given (0 if not) and parameterized with @p default_values.k if
   given (an empty vector if not) by default.
@@ -119,8 +114,7 @@ class AntiderivativeFunction {
         scalar_ode_function, scalar_ivp_default_values);
   }
 
-  /**
-  Evaluates the definite integral F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx from the lower
+  /** Evaluates the definite integral F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx from the lower
   integration bound v (see definition in class documentation) to @p u using
   the parameter vector 𝐤 (see definition in class documentation) if present
   in @p values, falling back to the ones given on construction if missing.
@@ -140,8 +134,7 @@ class AntiderivativeFunction {
     return scalar_ivp_->Solve(u, scalar_ivp_values);
   }
 
-  /**
-  Evaluates and yields an approximation of the definite integral
+  /** Evaluates and yields an approximation of the definite integral
   F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx for v ≤ u ≤ w, i.e. the closed interval
   that goes from the lower integration bound v (see definition in
   class documentation) to the uppermost integration bound @p w, using
@@ -178,8 +171,7 @@ class AntiderivativeFunction {
     return this->scalar_ivp_->DenseSolve(w, scalar_ivp_values);
   }
 
-  /**
-  Resets the internal integrator instance.
+  /** Resets the internal integrator instance.
 
   A usage example is shown below.
   @code{.cpp}

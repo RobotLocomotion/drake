@@ -27,8 +27,7 @@ class UnrevisedLemkeSolverId {
   static SolverId id();
 };
 
-/**
-A class for the Unrevised Implementation of Lemke Algorithm's for solving
+/** A class for the Unrevised Implementation of Lemke Algorithm's for solving
 Linear Complementarity Problems (LCPs). See MobyLcpSolver for a description
 of LCPs. This code makes extensive use of the following document:
 [Dai 2018]  Dai, H. and Drumwright, E. Computing the Principal Pivoting
@@ -42,8 +41,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
   UnrevisedLemkeSolver();
   ~UnrevisedLemkeSolver() final;
 
-  /**
-  Calculates the zero tolerance that the solver would compute if the user
+  /** Calculates the zero tolerance that the solver would compute if the user
   does not specify a tolerance. */
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
@@ -51,16 +49,14 @@ class UnrevisedLemkeSolver final : public SolverBase {
         (2 * std::numeric_limits<double>::epsilon());
   }
 
-  /**
-  Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
+  /** Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
   w ≥ 0, zᵀw = 0 is satisfied to a given tolerance. If the tolerance is
   non-positive, this method computes a reasonable tolerance using M. */
   static bool IsSolution(
       const MatrixX<T>& M, const VectorX<T>& q, const VectorX<T>& z,
       T zero_tol = -1);
 
-  /**
-  Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+  /** Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   all strictly semimonotone matrices, all P-matrices, and all strictly
   copositive matrices. The solver can be applied with occasional success to
   problems outside of its guaranteed matrix classes. Lemke's Algorithm is
@@ -93,8 +89,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
                      VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

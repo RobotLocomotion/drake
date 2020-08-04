@@ -19,8 +19,7 @@
 namespace drake {
 namespace systems {
 
-/**
-%DiscreteValues is a container for numerical but non-continuous state
+/** %DiscreteValues is a container for numerical but non-continuous state
 and parameters. It may own its underlying data, for use with leaf Systems,
 or not, for use with Diagrams.
 
@@ -45,8 +44,7 @@ class DiscreteValues {
   /** Constructs an empty %DiscreteValues object containing no groups. */
   DiscreteValues() {}
 
-  /**
-  Constructs a %DiscreteValues that does not own the underlying @p data.
+  /** Constructs a %DiscreteValues that does not own the underlying @p data.
   The referenced data must outlive this DiscreteValues. Every entry must be
   non-null. */
   explicit DiscreteValues(const std::vector<BasicVector<T>*>& data)
@@ -57,8 +55,7 @@ class DiscreteValues {
     }
   }
 
-  /**
-  Constructs a %DiscreteValues that owns the underlying @p data. Every entry
+  /** Constructs a %DiscreteValues that owns the underlying @p data. Every entry
   must be non-null. */
   explicit DiscreteValues(std::vector<std::unique_ptr<BasicVector<T>>>&& data)
       : owned_data_(std::move(data)) {
@@ -70,15 +67,13 @@ class DiscreteValues {
     }
   }
 
-  /**
-  Constructs a one-group %DiscreteValues object that owns a single @p datum
+  /** Constructs a one-group %DiscreteValues object that owns a single @p datum
   vector which may not be null. */
   explicit DiscreteValues(std::unique_ptr<BasicVector<T>> datum) {
     AppendGroup(std::move(datum));
   }
 
-  /**
-  Adds an additional group that owns the given @p datum, which must be
+  /** Adds an additional group that owns the given @p datum, which must be
   non-null. Returns the assigned group number, counting up from 0 for the
   first group. */
   int AppendGroup(std::unique_ptr<BasicVector<T>> datum) {
@@ -99,8 +94,7 @@ class DiscreteValues {
   const std::vector<BasicVector<T>*>& get_data() const { return data_; }
 
   //----------------------------------------------------------------------------
-  /**
-  @name Convenience accessors for %DiscreteValues with just one group.
+  /** @name Convenience accessors for %DiscreteValues with just one group.
   These will throw if there is not exactly one group in this %DiscreteValues
   object.
   @{ */
@@ -120,16 +114,14 @@ class DiscreteValues {
     return get_vector()[idx];
   }
 
-  /**
-  Returns a const reference to the BasicVector containing the values for
+  /** Returns a const reference to the BasicVector containing the values for
   the _only_ group. */
   const BasicVector<T>& get_vector() const {
     ThrowUnlessExactlyOneGroup();
     return get_vector(0);
   }
 
-  /**
-  Returns a mutable reference to the BasicVector containing the values for
+  /** Returns a mutable reference to the BasicVector containing the values for
   the _only_ group. */
   BasicVector<T>& get_mutable_vector() {
     ThrowUnlessExactlyOneGroup();
@@ -137,24 +129,21 @@ class DiscreteValues {
   }
   /** @} */
 
-  /**
-  Returns a const reference to the vector holding data for the indicated
+  /** Returns a const reference to the vector holding data for the indicated
   group. */
   const BasicVector<T>& get_vector(int index) const {
     DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
     return *data_[index];
   }
 
-  /**
-  Returns a mutable reference to the vector holding data for the indicated
+  /** Returns a mutable reference to the vector holding data for the indicated
   group. */
   BasicVector<T>& get_mutable_vector(int index) {
     DRAKE_THROW_UNLESS(index >= 0 && index < num_groups());
     return *data_[index];
   }
 
-  /**
-  Resets the values in this DiscreteValues from the values in @p other,
+  /** Resets the values in this DiscreteValues from the values in @p other,
   possibly writing through to unowned data. Throws if the dimensions don't
   match. */
   template <typename U>
@@ -167,8 +156,7 @@ class DiscreteValues {
     }
   }
 
-  /**
-  Creates a deep copy of this object with the same substructure but with all
+  /** Creates a deep copy of this object with the same substructure but with all
   data owned by the copy. That is, if the original was a
   DiagramDiscreteValues object that maintains a tree of substates, the clone
   will not include any references to the original substates and is thus

@@ -16,8 +16,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-A %FrameKinematicsVector is used to report kinematics data for registered
+/** A %FrameKinematicsVector is used to report kinematics data for registered
 frames (identified by unique FrameId values) to SceneGraph.
 It serves as the basis of FramePoseVector, FrameVelocityVector, and
 FrameAccelerationVector.
@@ -98,8 +97,7 @@ class FrameKinematicsVector {
   /** Initializes the vector using an invalid SourceId with no frames . */
   FrameKinematicsVector();
 
-  /**
-  Initializes the vector using an invalid SourceId and the given frames and
+  /** Initializes the vector using an invalid SourceId and the given frames and
   kinematics values. */
   FrameKinematicsVector(
       std::initializer_list<std::pair<const FrameId, KinematicsValue>> init);
@@ -120,16 +118,14 @@ class FrameKinematicsVector {
     return size_;
   }
 
-  /**
-  Returns the value associated with the given `id`.
+  /** Returns the value associated with the given `id`.
   @throws std::runtime_error if `id` is not in the specified set of ids. */
   const KinematicsValue& value(FrameId id) const;
 
   /** Reports true if the given id is a member of this data. */
   bool has_id(FrameId id) const;
 
-  /**
-  Provides a range object for all of the frame ids in the vector.
+  /** Provides a range object for all of the frame ids in the vector.
   This is intended to be used as:
   @code
   for (FrameId id : this_vector.frame_ids()) {
@@ -159,8 +155,7 @@ class FrameKinematicsVector {
   int size_{0};
 };
 
-/**
-Class for communicating _pose_ information to SceneGraph for registered
+/** Class for communicating _pose_ information to SceneGraph for registered
 frames.
 
 @tparam_default_scalar */

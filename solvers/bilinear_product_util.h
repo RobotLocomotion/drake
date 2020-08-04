@@ -6,8 +6,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-Replaces all the bilinear product terms in the expression `e`, with the
+/** Replaces all the bilinear product terms in the expression `e`, with the
 corresponding terms in `W`, where `W` represents the matrix x * yᵀ, such that
 after replacement, `e` does not have bilinear terms involving `x` and `y`.
 For example, if e = x(0)*y(0) + 2 * x(0)*y(1) + x(1) * y(1) + 3 * x(1), `e`

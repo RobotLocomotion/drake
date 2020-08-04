@@ -8,8 +8,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An element-wise wrapping block that transforms the specified indices
+/** An element-wise wrapping block that transforms the specified indices
 of the input signal `u` into the interval `[low, high)`.  Precisely, the
 output element `i` is given the value:
 @code
@@ -25,14 +24,12 @@ class WrapToSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WrapToSystem)
 
-  /**
-  Constructs a system to pass through a fixed-size input vector to the
+  /** Constructs a system to pass through a fixed-size input vector to the
   output.  Additional calls to set_interval() are required to produce any
   wrapping behavior. */
   explicit WrapToSystem(int input_size);
 
-  /**
-  Sets the system to wrap the @p index element of the input vector to the
+  /** Sets the system to wrap the @p index element of the input vector to the
   interval `[low, high)`.  If this method is called multiple times for
   the same index, then only the last interval will be used.
   @p low and @p high should be finite, and low < high. */

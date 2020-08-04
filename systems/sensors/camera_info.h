@@ -11,8 +11,7 @@ namespace sensors {
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
 // TODO(SeanCurtis-TRI) Deprecate the name CameraInfo in favor of Intrinsics.
-/**
-Simple class for characterizing the Drake camera model. The camera model is
+/** Simple class for characterizing the Drake camera model. The camera model is
 based on the
 [pinhole _model_](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html)
 , which is related to but distinct from an actual
@@ -135,8 +134,7 @@ class CameraInfo final {
   // TODO(SeanCurtis-TRI): Add constructor from Matrix3<double> -- an intrinsic
   //  matrix.
 
-  /**
-  Constructor that directly sets the image size, principal point, and focal
+  /** Constructor that directly sets the image size, principal point, and focal
   lengths.
 
   @param width    The image width in pixels, must be greater than zero.
@@ -150,8 +148,7 @@ class CameraInfo final {
   CameraInfo(int width, int height, double focal_x, double focal_y,
              double center_x, double center_y);
 
-  /**
-  Constructs this instance from image size and vertical field of view. We
+  /** Constructs this instance from image size and vertical field of view. We
   assume the principal point is in the center of the image;
   `(center x, center_y)` is equal to `(width / 2.0 - 0.5, height / 2.0 - 0.5)`.
   We also assume the focal lengths `focal_x` and `focal_y` are identical

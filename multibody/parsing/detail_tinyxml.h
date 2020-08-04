@@ -11,16 +11,14 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-Parses a string attribute of @p node named @p attribute_name into @p val.
+/** Parses a string attribute of @p node named @p attribute_name into @p val.
 If the attribute is not present, @p val will be cleared.
 
 @returns false if the attribute is not present */
 bool ParseStringAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, std::string* val);
 
-/**
-Parses a scalar attribute of @p node named @p attribute_name into @p val.
+/** Parses a scalar attribute of @p node named @p attribute_name into @p val.
 
 @returns false if the attribute is not present
 
@@ -29,8 +27,7 @@ single numeric value. */
 bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, double* val);
 
-/**
-Parses an attribute of @p node named @p attribute_name consisting of 3
+/** Parses an attribute of @p node named @p attribute_name consisting of 3
 scalar values into @p val.
 
 @returns false if the attribute is not present
@@ -41,8 +38,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name,
                           Eigen::Vector3d* val);
 
-/**
-Parses an attribute of @p node named @p attribute_name consisting of 4
+/** Parses an attribute of @p node named @p attribute_name consisting of 4
 scalar values into @p val.
 
 @returns false if the attribute is not present
@@ -53,8 +49,7 @@ bool ParseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name,
                           Eigen::Vector4d* val);
 
-/**
-Parses "xyz" and "rpy" attributes from @p node and returns a
+/** Parses "xyz" and "rpy" attributes from @p node and returns a
 RigidTransformd created from them.  If either the "xyz" or "rpy"
 attributes are omitted they will be initialized with zero values.
 
@@ -63,8 +58,7 @@ malformed. */
 math::RigidTransformd OriginAttributesToTransform(
     const tinyxml2::XMLElement* node);
 
-/**
-Parses a three vector value from parameter @p node, which is an
+/** Parses a three vector value from parameter @p node, which is an
 XML node. The value is specified by an attribute within the XML
 whose name is apecified by parameter @p attribute_name.  This
 method also supports a three vector specified by a single scalar

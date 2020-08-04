@@ -21,8 +21,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-Retrieve the value of a single variable @p var from @p variable_values.
+/** Retrieve the value of a single variable @p var from @p variable_values.
 @param var The variable whose value is going to be retrieved. @p var.get_id()
 must be a key in @p variable_index.
 @param variable_index maps the variable ID to its index in @p
@@ -40,8 +39,7 @@ double GetVariableValue(
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values);
 
-/**
-Overload GetVariableValue() function, but for an Eigen matrix of decision
+/** Overload GetVariableValue() function, but for an Eigen matrix of decision
 variables. */
 template <typename Derived>
 typename std::enable_if_t<
@@ -64,8 +62,7 @@ GetVariableValue(
   return value;
 }
 
-/**
-The result returned by MathematicalProgram::Solve(). It stores the
+/** The result returned by MathematicalProgram::Solve(). It stores the
 solvers::SolutionResult (whether the program is solved to optimality,
 detected infeasibility, etc), the optimal value for the decision variables,
 the optimal cost, and solver specific details. */
@@ -73,20 +70,17 @@ class MathematicalProgramResult final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramResult)
 
-  /**
-  Constructs the result.
+  /** Constructs the result.
   @note The solver_details is set to nullptr. */
   MathematicalProgramResult();
 
-  /**
-  Returns true if the optimization problem is solved successfully; false
+  /** Returns true if the optimization problem is solved successfully; false
   otherwise.
   For more information on the solution status, the user could call
   get_solver_details() to obtain the solver-specific solution status. */
   bool is_success() const;
 
-  /**
-  Sets decision_variable_index mapping, that maps each decision variable to
+  /** Sets decision_variable_index mapping, that maps each decision variable to
   its index in the aggregated vector containing all decision variables in
   MathematicalProgram. Initialize x_val to NAN. */
   void set_decision_variable_index(
@@ -133,8 +127,7 @@ class MathematicalProgramResult final {
   /** Sets the solver ID. */
   void set_solver_id(const SolverId& solver_id) { solver_id_ = solver_id; }
 
-  /**
-  Gets the solver details for the `Solver` that solved the program. Throws
+  /** Gets the solver details for the `Solver` that solved the program. Throws
   an error if the solver_details has not been set. */
   template <typename Solver>
   const typename Solver::Details& get_solver_details() const {
@@ -142,14 +135,12 @@ class MathematicalProgramResult final {
         template get_value<typename Solver::Details>();
   }
 
-  /**
-  (Advanced.) Gets the type-erased solver details. Most users should use
+  /** (Advanced.) Gets the type-erased solver details. Most users should use
   get_solver_details() instead. Throws an error if the solver_details has
   not been set. */
   const AbstractValue& get_abstract_solver_details() const;
 
-  /**
-  (Advanced.) Forces the solver_details to be stored using the given
+  /** (Advanced.) Forces the solver_details to be stored using the given
   type `T`.  Typically, only an implementation of SolverInterface will
   call this method.
   If the storage was already typed as T, this is a no-op.
@@ -171,8 +162,7 @@ class MathematicalProgramResult final {
   /** Gets the solution of all decision variables. */
   const Eigen::VectorXd& GetSolution() const { return x_val_; }
 
-  /**
-  Gets the solution of an Eigen matrix of decision variables.
+  /** Gets the solution of an Eigen matrix of decision variables.
   @tparam Derived An Eigen matrix containing Variable.
   @param var The decision variables.
   @return The value of the decision variable after solving the problem. */
@@ -185,8 +175,7 @@ class MathematicalProgramResult final {
     return GetVariableValue(var, decision_variable_index_, x_val_);
   }
 
-  /**
-  Gets the solution of a single decision variable.
+  /** Gets the solution of a single decision variable.
   @param var The decision variable.
   @return The value of the decision variable after solving the problem.
   @throws invalid_argument if `var` is not captured in the mapping @p
@@ -194,14 +183,12 @@ class MathematicalProgramResult final {
   set_decision_variable_index(). */
   double GetSolution(const symbolic::Variable& var) const;
 
-  /**
-  Substitutes the value of all decision variables into the Expression.
+  /** Substitutes the value of all decision variables into the Expression.
   @param e The decision variable.
   @return the Expression that is the result of the substitution. */
   symbolic::Expression GetSolution(const symbolic::Expression& e) const;
 
-  /**
-  Substitutes the value of all decision variables into the coefficients of
+  /** Substitutes the value of all decision variables into the coefficients of
   the symbolic polynomial.
   @param p A symbolic polynomial. Its indeterminates can't intersect with the
   set of decision variables of the MathematicalProgram from which this result
@@ -209,8 +196,7 @@ class MathematicalProgramResult final {
   @return the symbolic::Polynomial as the result of the substitution. */
   symbolic::Polynomial GetSolution(const symbolic::Polynomial& p) const;
 
-  /**
-  Substitutes the value of all decision variables into the
+  /** Substitutes the value of all decision variables into the
   Matrix<Expression>.
   @tparam Derived An Eigen matrix containing Expression.
   @return the Matrix<Expression> that is the result of the substitution.
@@ -236,8 +222,7 @@ class MathematicalProgramResult final {
 
   // TODO(hongkai.dai): add the interpretation for other type of constraints
   // when we implement them.
-  /**
-  Gets the dual solution associated with a constraint.
+  /** Gets the dual solution associated with a constraint.
 
   We interpret the dual variable value as the "shadow price" of the original
   problem. Namely if we change the constraint bound by one unit (each unit is
@@ -319,8 +304,7 @@ class MathematicalProgramResult final {
     }
   }
 
-  /**
-  Evaluate a Binding at the solution.
+  /** Evaluate a Binding at the solution.
   @param binding A binding between a constraint/cost and the variables.
   @pre The binding.variables() must be the within the decision variables in
   the MathematicalProgram that generated this %MathematicalProgramResult.
@@ -338,14 +322,12 @@ class MathematicalProgramResult final {
     return binding_y;
   }
 
-  /**
-  @anchor solution_pools
+  /** @anchor solution_pools
   @name Solution Pools
   Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
   solutions for mixed integer programming model.
   @{ */
-  /**
-  Gets the suboptimal solution corresponding to a matrix of decision
+  /** Gets the suboptimal solution corresponding to a matrix of decision
   variables. See @ref solution_pools "solution pools"
   @param var The decision variables.
   @param solution_number The index of the sub-optimal solution.
@@ -364,8 +346,7 @@ class MathematicalProgramResult final {
                             suboptimal_x_val_[solution_number]);
   }
 
-  /**
-  Gets the suboptimal solution of a decision variable. See @ref
+  /** Gets the suboptimal solution of a decision variable. See @ref
   solution_pools "solution pools"
   @param var The decision variable.
   @param solution_number The index of the sub-optimal solution.
@@ -376,15 +357,13 @@ class MathematicalProgramResult final {
   double GetSuboptimalSolution(const symbolic::Variable& var,
                                int solution_number) const;
 
-  /**
-  Number of suboptimal solutions stored inside MathematicalProgramResult.
+  /** Number of suboptimal solutions stored inside MathematicalProgramResult.
   See @ref solution_pools "solution pools". */
   int num_suboptimal_solution() const {
     return static_cast<int>(suboptimal_x_val_.size());
   }
 
-  /**
-  Gets the suboptimal objective value. See @ref solution_pools "solution
+  /** Gets the suboptimal objective value. See @ref solution_pools "solution
   pools".
   @param solution_number The index of the sub-optimal solution. @pre @p
   solution_number should be in the range [0, num_suboptimal_solution()). */
@@ -392,8 +371,7 @@ class MathematicalProgramResult final {
     return suboptimal_objectives_[solution_number];
   }
 
-  /**
-  Adds the suboptimal solution to the result. See @ref solution_pools
+  /** Adds the suboptimal solution to the result. See @ref solution_pools
   "solution pools".
   @param suboptimal_objective The objective value computed from this
   suboptimal solution.
@@ -403,8 +381,7 @@ class MathematicalProgramResult final {
                              const Eigen::VectorXd& suboptimal_x);
   /** @} */
 
-  /**
-  @anchor get_infeasible_constraints
+  /** @anchor get_infeasible_constraints
   @name Get infeasible constraints
   Some solvers (e.g. SNOPT) provide a "best-effort solution" even when they
   determine that a problem is infeasible.  This method will return the
@@ -417,8 +394,7 @@ class MathematicalProgramResult final {
   feature is hence unavailable. */
   /** @{ */
 
-  /**
-  See @ref get_infeasible_constraints for more information.
+  /** See @ref get_infeasible_constraints for more information.
   @param prog The MathematicalProgram that was solved to obtain `this`
   MathematicalProgramResult.
   @param tolerance A positive tolerance to check the constraint violation.
@@ -435,8 +411,7 @@ class MathematicalProgramResult final {
       const MathematicalProgram& prog,
       std::optional<double> tolerance = std::nullopt) const;
 
-  /**
-  See @ref get_infeasible_constraints for more information.
+  /** See @ref get_infeasible_constraints for more information.
   @param prog The MathematicalProgram that was solved to obtain `this`
   MathematicalProgramResult.
   @param tolerance A positive tolerance to check the constraint violation.

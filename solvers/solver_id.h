@@ -11,8 +11,7 @@
 namespace drake {
 namespace solvers {
 
-/**
-Identifies a SolverInterface implementation.
+/** Identifies a SolverInterface implementation.
 
 A moved-from instance is guaranteed to be empty and will not compare equal
 to any non-empty ID. */
@@ -21,8 +20,7 @@ class SolverId {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverId)
   ~SolverId() = default;
 
-  /**
-  Constructs a specific, known solver type.  Internally, a hidden
+  /** Constructs a specific, known solver type.  Internally, a hidden
   identifier is allocated and assigned to this instance; all instances that
   share an identifier (including copies of this instance) are considered
   equal.  The solver names are not enforced to be unique, though we

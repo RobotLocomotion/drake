@@ -7,8 +7,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An integrator for a continuous vector input.
+/** An integrator for a continuous vector input.
 
 @tparam_default_scalar
 @ingroup primitive_systems */
@@ -17,8 +16,7 @@ class Integrator final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator)
 
-  /**
-  Constructs an %Integrator system.
+  /** Constructs an %Integrator system.
   @param size number of elements in the signal to be processed. */
   explicit Integrator(int size);
 
@@ -28,8 +26,7 @@ class Integrator final : public VectorSystem<T> {
 
   ~Integrator() final;
 
-  /**
-  Sets the value of the integral modifying the state in the context.
+  /** Sets the value of the integral modifying the state in the context.
   @p value must be a column vector of the appropriate size. */
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;

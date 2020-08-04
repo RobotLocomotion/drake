@@ -16,8 +16,7 @@ namespace test {
 class MpcComponentUnitTests;
 }  // namespace test
 
-/**
-This class implements primal-dual variables for model predictive
+/** This class implements primal-dual variables for model predictive
 control QPs. See mpc_data.h for the mathematical description.
 Stores variables and defines methods implementing useful operations.
 
@@ -34,8 +33,7 @@ length(y) = nv = nc*(N+1) */
 class MpcVariable {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcVariable)
-  /**
-  Allocates memory for a primal-dual variable.
+  /** Allocates memory for a primal-dual variable.
 
   @param[in] N  horizon length
   @param[in] nx number of states
@@ -45,8 +43,7 @@ class MpcVariable {
   Throws a runtime_error if any of the inputs are non-positive. */
   MpcVariable(int N, int nx, int nu, int nc);
 
-  /**
-  Creates a primal-dual variable using preallocated memory.
+  /** Creates a primal-dual variable using preallocated memory.
 
   @param[in] z    A vector to store the decision variables.
   @param[in] l    A vector to store the co-states/equality duals.
@@ -58,24 +55,20 @@ class MpcVariable {
   MpcVariable(Eigen::VectorXd* z, Eigen::VectorXd* l, Eigen::VectorXd* v,
               Eigen::VectorXd* y);
 
-  /**
-  Links to problem data needed to perform calculations.
+  /** Links to problem data needed to perform calculations.
   Calculations cannot be performed until a data object is provided.
   @param[in] data pointer to the problem data */
   void LinkData(const MpcData* data) { data_ = data; }
 
-  /**
-  Fills the variable with one value.
+  /** Fills the variable with one value.
   @param[in] a */
   void Fill(double a);
 
-  /**
-  Sets the constraint margin to y = b - Az.
+  /** Sets the constraint margin to y = b - Az.
   Throws a runtime_error if problem data hasn't been provided. */
   void InitializeConstraintMargin();
 
-  /**
-  Performs the operation *this <- a*x + *this.
+  /** Performs the operation *this <- a*x + *this.
   This is a level 1 BLAS operation for this object;
   see http://www.netlib.org/blas/blasqr.pdf.
 
@@ -88,18 +81,15 @@ class MpcVariable {
   Throws a runtime_error if problem data hasn't been provided. */
   void axpy(double a, const MpcVariable& x);
 
-  /**
-  Deep copies x into this.
+  /** Deep copies x into this.
   @param[in] x variable to be copied. */
   void Copy(const MpcVariable& x);
 
-  /**
-  Projects the inequality duals onto the non-negative orthant,
+  /** Projects the inequality duals onto the non-negative orthant,
   i.e., v <- max(0,v). */
   void ProjectDuals();
 
-  /**
-  Computes the Euclidean norm.
+  /** Computes the Euclidean norm.
   @return sqrt(|z|^2 + |l|^2 + |v|^2) */
   double Norm() const;
 

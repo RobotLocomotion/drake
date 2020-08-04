@@ -11,8 +11,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-Parses a `<robot>` element from the URDF file specified by @p file_name and
+/** Parses a `<robot>` element from the URDF file specified by @p file_name and
 adds it to @p plant.  A new model instance will be added to @p plant.
 
 @throws std::runtime_error if the file is not in accordance with the URDF

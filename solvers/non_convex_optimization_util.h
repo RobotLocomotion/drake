@@ -12,8 +12,7 @@ namespace drake {
 namespace solvers {
 // TODO(hongkai.dai): templatize this function, to avoid dynamic memory
 // allocation.
-/**
-For a non-convex homogeneous quadratic form xᵀQx, where Q is not necessarily
+/** For a non-convex homogeneous quadratic form xᵀQx, where Q is not necessarily
 a positive semidefinite matrix, we decompose it as a difference between two
 convex homogeneous quadratic forms
 xᵀQx = xᵀQ₁x - xᵀQ₂x,
@@ -42,8 +41,7 @@ decomposition, for example
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
     const Eigen::Ref<const Eigen::MatrixXd>& Q);
 
-/**
-For a non-convex quadratic constraint
+/** For a non-convex quadratic constraint
   lb ≤ xᵀQ₁x - xᵀQ₂x + pᵀy ≤ ub
 where Q₁, Q₂ are both positive semidefinite matrices. `y` is a vector that
 can overlap with `x`. We relax this non-convex constraint by several convex

@@ -12,8 +12,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/**
-PoseBundleToDrawMessage converts a PoseBundle on its single abstract-valued
+/** PoseBundleToDrawMessage converts a PoseBundle on its single abstract-valued
 input port to a Drake Visualizer Interface LCM draw message,
 lcmt_viewer_draw, on its single abstract-valued output port.
 

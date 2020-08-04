@@ -6,8 +6,7 @@
 
 namespace drake {
 namespace math {
-/**
-For a symmetric positive semidefinite matrix Y, decompose it into XᵀX, where
+/** For a symmetric positive semidefinite matrix Y, decompose it into XᵀX, where
 the number of rows in X equals to the rank of Y.
 Notice that this decomposition is not unique. For any orthonormal matrix U,
 s.t UᵀU = identity, X_prime = UX also satisfies X_primeᵀX_prime = Y. Here
@@ -23,8 +22,7 @@ we deem that value as 0.
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
     const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol);
 
-/**
-Rewrite a quadratic form xᵀQx + bᵀx + c to
+/** Rewrite a quadratic form xᵀQx + bᵀx + c to
 (Rx+d)ᵀ(Rx+d)
 where
 RᵀR = Q
@@ -62,8 +60,7 @@ DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
                                const Eigen::Ref<const Eigen::VectorXd>& b,
                                double c, double tol = 0);
 
-/**
-Given two quadratic forms, x'Sx > 0 and x'Px, (with P symmetric and full
+/** Given two quadratic forms, x'Sx > 0 and x'Px, (with P symmetric and full
 rank), finds a change of variables x = Ty, which simultaneously diagonalizes
 both forms (as inspired by "balanced truncation" in model-order reduction
 [1]).  In this note, we use abs(M) to indicate the elementwise absolute

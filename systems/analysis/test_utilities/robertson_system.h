@@ -9,8 +9,7 @@ namespace systems {
 namespace analysis {
 namespace test {
 
-/**
-Robertson's stiff chemical reaction problem. This example is taken from
+/** Robertson's stiff chemical reaction problem. This example is taken from
 [Hairer, 1996] and is described in more detail in:
 http://www.radford.edu/~thompson/vodef90web/problems/demosnodislin/Single/DemoRobertson/demorobertson.pdf
 The original system is described in:

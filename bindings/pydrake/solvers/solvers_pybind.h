@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Helper methods for binding solvers. */
 
 #include <memory>

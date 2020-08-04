@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Provides a mechanism to map C++ types to canonical Python types. */
 
 #include <string>
@@ -18,8 +17,7 @@ Provides a mechanism to map C++ types to canonical Python types. */
 namespace drake {
 namespace pydrake {
 
-/**
-Provides a publicly visible, but minimal, re-implementation of `py::object`
+/** Provides a publicly visible, but minimal, re-implementation of `py::object`
 so that a public type can be used with `drake::Value<T>`, while still
 maintaining the revelant semantics with its generic implementation (#13207).
 This should *only* be used in place of `py::object` for public APIs that
@@ -32,8 +30,7 @@ class Object {
   /** Decrements reference count (if pointing to a real object). */
   ~Object();
 
-  /**
-  Constructs from raw pointer, incrementing the reference count.
+  /** Constructs from raw pointer, incrementing the reference count.
   @note This does not implement any of the `py::reinterpret_borrow<>`
   semantics. */
   explicit Object(::PyObject* ptr);
@@ -131,8 +128,7 @@ inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
 
 }  // namespace internal
 
-/**
-Gets the canonical Python parameters for each C++ type.
+/** Gets the canonical Python parameters for each C++ type.
 @returns Python tuple of canonical parameters.
 @throws std::runtime_error on the first type it encounters that is neither
 aliased nor registered in `pybind11`.

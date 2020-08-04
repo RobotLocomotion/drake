@@ -7,8 +7,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An element-wise first order low pass filter system that filters the i-th
+/** An element-wise first order low pass filter system that filters the i-th
 input uᵢ into the i-th output zᵢ. This system has one continuous state per
 filtered input signal. Therefore, the i-th state of the system zᵢ evolves
 according to: <pre>
@@ -36,8 +35,7 @@ class FirstOrderLowPassFilter final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FirstOrderLowPassFilter)
 
-  /**
-  Constructs a %FirstOrderLowPassFilter system that filters all input
+  /** Constructs a %FirstOrderLowPassFilter system that filters all input
   signals with the same time constant, i.e. τᵢ = τ, ∀ i.
 
   @param[in] time_constant the time constant τ of the filter.
@@ -45,8 +43,7 @@ class FirstOrderLowPassFilter final : public VectorSystem<T> {
   @param[in] size number of elements in the signal to be processed. */
   explicit FirstOrderLowPassFilter(double time_constant, int size = 1);
 
-  /**
-  Constructs a %FirstOrderLowPassFilter so that the i-th component of the
+  /** Constructs a %FirstOrderLowPassFilter so that the i-th component of the
   input signal vector is low pass filtered with a time constant given in the
   i-th component τᵢ of the input `time_constants` vector.
 
@@ -58,8 +55,7 @@ class FirstOrderLowPassFilter final : public VectorSystem<T> {
   template <typename U>
   explicit FirstOrderLowPassFilter(const FirstOrderLowPassFilter<U>&);
 
-  /**
-  Returns the time constant of the filter for filters that have the same
+  /** Returns the time constant of the filter for filters that have the same
   time constant τ for all signals.
   This method aborts if called on filters if with different time constants
   per input signal. @see get_time_constants_vector(). */
@@ -68,8 +64,7 @@ class FirstOrderLowPassFilter final : public VectorSystem<T> {
   /** Returns the vector of time constants for `this` filter. */
   const VectorX<double>& get_time_constants_vector() const;
 
-  /**
-  Sets the initial conditions on the output value of the filtered signal.
+  /** Sets the initial conditions on the output value of the filtered signal.
   @param[in] context The current system context.
   @param[in] z0 The vector on initial conditions on the output value. */
   void set_initial_output_value(Context<T>* context,

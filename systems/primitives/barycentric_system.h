@@ -10,8 +10,7 @@ namespace systems {
 // function approximators if/when that set of tools comes online (see
 // corresponding TODO in drake/math/barycentric.h).
 
-/**
-A (stateless) vector system implemented as a multi-linear (barycentric)
+/** A (stateless) vector system implemented as a multi-linear (barycentric)
 interpolation on a mesh over the inputs.
 
 This has many potential uses, including representing the policies that are
@@ -27,8 +26,7 @@ class BarycentricMeshSystem final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BarycentricMeshSystem);
 
-  /**
-  Constructs the system from a mesh and the associated mesh values.
+  /** Constructs the system from a mesh and the associated mesh values.
   @p output_values is a matrix with each column representing the value to
   output if the input is the associated mesh point.  It must have the same
   number of columns as mesh.get_num_mesh_points();

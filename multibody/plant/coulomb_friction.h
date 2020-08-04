@@ -7,8 +7,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-Parameters for Coulomb's Law of Friction, namely:
+/** Parameters for Coulomb's Law of Friction, namely:
 
 - Static friction coefficient, for a pair of surfaces at rest relative to
   each other.
@@ -64,13 +63,11 @@ class CoulombFriction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
 
-  /**
-  Default constructor for a frictionless surface, i.e. with zero static and
+  /** Default constructor for a frictionless surface, i.e. with zero static and
   dynamic coefficients of friction. */
   CoulombFriction() = default;
 
-  /**
-  Specifies both the static and dynamic friction coefficients for a given
+  /** Specifies both the static and dynamic friction coefficients for a given
   surface.
   @throws std::logic_error if any of the friction coefficients are
   negative or if `dynamic_friction > static_friction` (they can be equal.) */
@@ -98,8 +95,7 @@ class CoulombFriction {
   T dynamic_friction_{0.0};
 };
 
-/**
-Given the surface properties of two different surfaces, this method computes
+/** Given the surface properties of two different surfaces, this method computes
 the Coulomb's law coefficients of friction characterizing the interaction by
 friction of the given surface pair.
 The surface properties are specified by individual Coulomb's law

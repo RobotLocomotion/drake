@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This file contains abbreviated definitions for certain specializations of
 Eigen::Matrix that are commonly used in Drake.
 These convenient definitions are templated on the scalar type of the Eigen
@@ -56,8 +55,7 @@ using Vector = Eigen::Matrix<Scalar, Rows, 1>;
 template <typename Scalar>
 using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
-/**
-A vector of dynamic size templated on scalar type, up to a maximum of 6
+/** A vector of dynamic size templated on scalar type, up to a maximum of 6
 elements. */
 template <typename Scalar>
 using VectorUpTo6 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 6, 1>;
@@ -123,16 +121,14 @@ using Matrix6X = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
 template <typename Scalar>
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
-/**
-A matrix of dynamic size templated on scalar type, up to a maximum of 6 rows
+/** A matrix of dynamic size templated on scalar type, up to a maximum of 6 rows
 and 6 columns. Rectangular matrices, with different number of rows and
 columns, are allowed. */
 template <typename Scalar>
 using MatrixUpTo6 =
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 6>;
 
-/**
-A matrix of 6 rows and dynamic column size up to a maximum of 6, templated
+/** A matrix of 6 rows and dynamic column size up to a maximum of 6, templated
 on scalar type. */
 template <typename Scalar>
 using Matrix6xUpTo6 = Eigen::Matrix<Scalar, 6, Eigen::Dynamic, 0, 6, 6>;
@@ -165,16 +161,14 @@ using TwistMatrix = Eigen::Matrix<Scalar, kTwistSize, Eigen::Dynamic>;
 template <typename Scalar>
 using SquareTwistMatrix = Eigen::Matrix<Scalar, kTwistSize, kTwistSize>;
 
-/**
-A column vector consisting of one wrench (spatial force) = `[r X f; f]`,
+/** A column vector consisting of one wrench (spatial force) = `[r X f; f]`,
 where f is a force (translational force) applied at a point `P` and `r` is
 the position vector from a point `O` (called the "moment center") to point
 `P`. */
 template <typename Scalar>
 using WrenchVector = Eigen::Matrix<Scalar, 6, 1>;
 
-/**
-EigenSizeMinPreferDynamic<a, b>::value gives the min between compile-time
+/** EigenSizeMinPreferDynamic<a, b>::value gives the min between compile-time
 sizes @p a and @p b. 0 has absolute priority, followed by 1, followed by
 Dynamic, followed by other finite values.
 
@@ -190,8 +184,7 @@ struct EigenSizeMinPreferDynamic {
   // clang-format on
 };
 
-/**
-EigenSizeMinPreferFixed is a variant of EigenSizeMinPreferDynamic. The
+/** EigenSizeMinPreferFixed is a variant of EigenSizeMinPreferDynamic. The
 difference is that finite values now have priority over Dynamic, so that
 EigenSizeMinPreferFixed<3, Dynamic>::value gives 3.
 
@@ -209,8 +202,7 @@ struct EigenSizeMinPreferFixed {
   // clang-format on
 };
 
-/**
-MultiplyEigenSizes<a, b> gives a * b if both of a and b are fixed
+/** MultiplyEigenSizes<a, b> gives a * b if both of a and b are fixed
 sizes. Otherwise it gives Eigen::Dynamic. */
 template <int a, int b>
 struct MultiplyEigenSizes {
@@ -272,8 +264,7 @@ struct is_eigen_nonvector_of
 // TODO(eric.cousineau): Add alias is_eigen_matrix_of = is_eigen_scalar_same if
 // appropriate.
 
-/**
-This wrapper class provides a way to write non-template functions taking raw
+/** This wrapper class provides a way to write non-template functions taking raw
 pointers to Eigen objects as parameters while limiting the number of copies,
 similar to `Eigen::Ref`. Internally, it keeps an instance of `Eigen::Ref<T>`
 and provides access to it via `operator*` and `operator->`.
@@ -344,8 +335,7 @@ class EigenPtr {
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   EigenPtr(const EigenPtr& other) { assign(other); }
 
-  /**
-  Constructs with a reference to another matrix type.
+  /** Constructs with a reference to another matrix type.
   May be `nullptr`. */
   template <typename PlainObjectTypeIn>
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.

@@ -8,8 +8,7 @@
 
 namespace drake {
 namespace systems {
-/**
-Given the decision variable values x (as in
+/** Given the decision variable values x (as in
 `SystemConstraintWrapper.Eval(x, &y)`), update part of the context with the
 value of x.
 The user could define either a generic functor or using a generic lambda as
@@ -32,8 +31,7 @@ template <typename T>
 using UpdateContextFromDecisionVariablesFunction = std::function<void(
     const System<T>&, const Eigen::Ref<const VectorX<T>>&, Context<T>*)>;
 
-/**
-This wrapper class wraps a SystemConstraint object to the format of
+/** This wrapper class wraps a SystemConstraint object to the format of
 solvers::Constraint.
 The constraint is
 lower <= SystemConstraint.Calc(UpdateContextFromDecisionVaraibles(x)) <=
@@ -45,8 +43,7 @@ class SystemConstraintWrapper : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintWrapper)
 
-  /**
-  Wraps a single SystemConstraint of the given system into a
+  /** Wraps a single SystemConstraint of the given system into a
   solvers::Constraint.
   Note that this constraint doesn't require the System to support symbolic
   expressions. The wrapped solvers::Constraint is a generic nonlinear

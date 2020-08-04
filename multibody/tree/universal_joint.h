@@ -14,8 +14,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This joint models a universal joint allowing two bodies to rotate relative
+/** This joint models a universal joint allowing two bodies to rotate relative
 to one another with two degrees of freedom.
 A universal joint can be thought of as a mechanism consisting of three
 bodies; the parent body P, an intermediate cross-shaped body I, and the
@@ -53,8 +52,7 @@ class UniversalJoint final : public Joint<T> {
   /** The name for this Joint type.  It resolves to "universal". */
   static const char kTypeName[];
 
-  /**
-  Constructor to create a universal joint between two bodies so that frame F
+  /** Constructor to create a universal joint between two bodies so that frame F
   attached to the parent body P and frame M attached to the child body B
   rotate as described in the class's documentation. See class documentation
   for details on the angles defining orientation.
@@ -94,20 +92,17 @@ class UniversalJoint final : public Joint<T> {
     return name.access();
   }
 
-  /**
-  Returns `this` joint's damping constant in N⋅m⋅s. The damping torque
+  /** Returns `this` joint's damping constant in N⋅m⋅s. The damping torque
   (in N⋅m) is modeled as `τᵢ = -damping⋅ωᵢ, i = 1, 2` i.e. opposing motion,
   with ωᵢ the angular rates about the i-th axis for `this` joint (see
   get_angular_rates())and τᵢ the torque on child body B about the same i-th
   axis. */
   double damping() const { return damping_; }
 
-  /**
-  @name Context-dependent value access
+  /** @name Context-dependent value access
   @{ */
 
-  /**
-  Gets the rotation angles of `this` joint from `context`. See class
+  /** Gets the rotation angles of `this` joint from `context`. See class
   documentation for the definition of these angles.
 
   @param[in] context The context of the model this joint belongs to.
@@ -117,8 +112,7 @@ class UniversalJoint final : public Joint<T> {
     return get_mobilizer()->get_angles(context);
   }
 
-  /**
-  Sets the `context` so that the generalized coordinates corresponding to
+  /** Sets the `context` so that the generalized coordinates corresponding to
   the rotation angles of `this` joint equals `angles`.
   @param[in] context The context of the model this joint belongs to.
   @param[in] angles The desired angles in radians to be stored in `context`
@@ -131,8 +125,7 @@ class UniversalJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Gets the rates of change, in radians per second, of `this` joint's
+  /** Gets the rates of change, in radians per second, of `this` joint's
   angles (see class documentation) from `context`.
   @param[in] context The context of the model this joint belongs to.
   @returns The rates of change of `this` joint's angles as stored in the
@@ -141,8 +134,7 @@ class UniversalJoint final : public Joint<T> {
     return get_mobilizer()->get_angular_rates(context);
   }
 
-  /**
-  Sets the rates of change, in radians per second, of this `this` joint's
+  /** Sets the rates of change, in radians per second, of this `this` joint's
   angles (see class documentation) to `theta_dot`. The new rates of change
   get stored in `context`.
   @param[in] context The context of the model this joint belongs to.
@@ -157,23 +149,20 @@ class UniversalJoint final : public Joint<T> {
 
   /** @} */
 
-  /**
-  Gets the default angles for `this` joint. Wrapper for the more general
+  /** Gets the default angles for `this` joint. Wrapper for the more general
   `Joint::default_positions()`.
   @returns The default angles of `this` stored in `default_positions_` */
   Vector2<double> get_default_angles() const {
     return this->default_positions();
   }
 
-  /**
-  Sets the default angles of this joint.
+  /** Sets the default angles of this joint.
   @param[in] angles The desired default angles of the joint */
   void set_default_angles(const Vector2<double>& angles) {
     this->set_default_positions(angles);
   }
 
-  /**
-  Sets the random distribution that angles of this joint will be randomly
+  /** Sets the random distribution that angles of this joint will be randomly
   sampled from. See class documentation for details on the definition of the
   angles. */
   void set_random_angles_distribution(
@@ -183,8 +172,7 @@ class UniversalJoint final : public Joint<T> {
   }
 
  protected:
-  /**
-  Joint<T> override called through public NVI, Joint::AddInForce().
+  /** Joint<T> override called through public NVI, Joint::AddInForce().
   Therefore arguments were already checked to be valid.
   For a UniversalJoint, we must always have `joint_dof < 2` since there are
   two degrees of freedom (num_velocities() == 2). `joint_tau` is the torque
@@ -207,8 +195,7 @@ class UniversalJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
-  /**
-  Joint<T> override called through public NVI, Joint::AddInDamping().
+  /** Joint<T> override called through public NVI, Joint::AddInDamping().
   Therefore arguments were already checked to be valid.
   This method adds into `forces` a dissipative torque according to the
   viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()). */

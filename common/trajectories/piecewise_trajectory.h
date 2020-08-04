@@ -13,8 +13,7 @@
 namespace drake {
 namespace trajectories {
 
-/**
-Abstract class that implements the basic logic of maintaining consequent
+/** Abstract class that implements the basic logic of maintaining consequent
 segments of time (delimited by `breaks`) to implement a trajectory that
 is represented by simpler logic in each segment or "piece".
 

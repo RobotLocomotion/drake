@@ -8,8 +8,7 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/**
-System where the state at (scalar) time t corresponds to the cubic equation
+/** System where the state at (scalar) time t corresponds to the cubic equation
 t³ + t² + 12t + 5. */
 class CubicScalarSystem : public LeafSystem<double> {
  public:

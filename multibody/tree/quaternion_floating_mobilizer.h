@@ -15,8 +15,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This Mobilizer allows two frames to move freely relatively to one another.
+/** This Mobilizer allows two frames to move freely relatively to one another.
 To fully specify this mobilizer a user must provide an inboard frame F and
 an outboard frame M. This mobilizer introduces six degrees of freedom which
 allow frame M to freely move with respect to frame F. This mobilizer
@@ -33,8 +32,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer)
 
-  /**
-  Constructor for a %QuaternionFloatingMobilizer granting six degrees of
+  /** Constructor for a %QuaternionFloatingMobilizer granting six degrees of
   freedom to an outboard frame M with respect to an inboard frame F. The
   orientation of frame M in F is represented by a quaternion `q_FM` while
   the position of F in M is given by a position vector `p_FM` expressed in
@@ -51,12 +49,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   bool has_quaternion_dofs() const override { return true; }
 
-  /**
-  @name Methods to get and set the state for a QuaternionFloatingMobilizer
+  /** @name Methods to get and set the state for a QuaternionFloatingMobilizer
   @{ */
 
-  /**
-  Gets the quaternion `q_FM` that represents the orientation of outboard
+  /** Gets the quaternion `q_FM` that represents the orientation of outboard
   frame M in the inboard frame F. Refer to the documentation for this class
   for details.
   @param[in] context
@@ -66,8 +62,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     The quaternion representing the orientation of frame M in F. */
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
-  /**
-  Returns the position `p_FM` of the outboard frame M's origin as measured
+  /** Returns the position `p_FM` of the outboard frame M's origin as measured
   and expressed in the inboard frame F. Refer to the documentation for this
   class for details.
   @param[in] context
@@ -77,8 +72,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     The position vector of frame M's origin in frame F. */
   Vector3<T> get_position(const systems::Context<T>& context) const;
 
-  /**
-  Sets `context` so that the orientation of frame M in F is given by the
+  /** Sets `context` so that the orientation of frame M in F is given by the
   input quaternion `q_FM`.
   @param[out] context
     The context storing the state of the MultibodyTree this mobilizer
@@ -89,21 +83,18 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& set_quaternion(
       systems::Context<T>* context, const Quaternion<T>& q_FM) const;
 
-  /**
-  Alternative signature to set_quaternion(context, q_FM) to set `state` to
+  /** Alternative signature to set_quaternion(context, q_FM) to set `state` to
   store the orientation of M in F given by the quaternion `q_FM`. */
   const QuaternionFloatingMobilizer<T>& set_quaternion(
       const systems::Context<T>& context,
       const Quaternion<T>& q_FM, systems::State<T>* state) const;
 
-  /**
-  Sets the distribution governing the random samples of the rotation
+  /** Sets the distribution governing the random samples of the rotation
   component of the mobilizer state. */
   void set_random_quaternion_distribution(
       const Eigen::Quaternion<symbolic::Expression>& q_FM);
 
-  /**
-  Sets `context` to store the position `p_FM` of frame M's origin `Mo`
+  /** Sets `context` to store the position `p_FM` of frame M's origin `Mo`
   measured and expressed in frame F.
   @param[out] context
     The context storing the state of the MultibodyTree this mobilizer
@@ -114,21 +105,18 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& set_position(
       systems::Context<T>* context, const Vector3<T>& p_FM) const;
 
-  /**
-  Alternative signature to set_position(context, p_FM) to set `state` to
+  /** Alternative signature to set_position(context, p_FM) to set `state` to
   store the position `p_FM` of M in F. */
   const QuaternionFloatingMobilizer<T>& set_position(
       const systems::Context<T>& context, const Vector3<T>& p_FM,
       systems::State<T>* state) const;
 
-  /**
-  Sets the distribution governing the random samples of the position
+  /** Sets the distribution governing the random samples of the position
   component of the mobilizer state. */
   void set_random_position_distribution(const Vector3<symbolic::Expression>&
       position);
 
-  /**
-  Sets `context` so this mobilizer's generalized coordinates (its quaternion
+  /** Sets `context` so this mobilizer's generalized coordinates (its quaternion
   q_FM) are consistent with the given `R_FM` rotation matrix.
   @param[in] context
     The context of the MultibodyTree that this mobilizer belongs to.
@@ -147,16 +135,14 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
     return set_quaternion(context, q_FM);
   }
 
-  /**
-  Returns the angular velocity `w_FM` of frame M in F stored in `context`.
+  /** Returns the angular velocity `w_FM` of frame M in F stored in `context`.
   @param[in] context
     The context of the MultibodyTree this mobilizer belongs to.
   @retval w_FM
     The angular velocity of the outboard frame M in the inboard frame F. */
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  /**
-  Sets `context` to store the angular velocity `w_FM` of frame M in frame F.
+  /** Sets `context` to store the angular velocity `w_FM` of frame M in frame F.
   @param[out] context
     The context of the MultibodyTree this mobilizer belongs to.
   @param[in] w_FM
@@ -165,15 +151,13 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
-  /**
-  Alternative signature to set_angular_velocity(context, w_FM) to set
+  /** Alternative signature to set_angular_velocity(context, w_FM) to set
   `state` to store the angular velocity `w_FM` of M in F. */
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
       const systems::Context<T>&, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
-  /**
-  Retrieves and returns from `context` the translational velocity `v_FM` of
+  /** Retrieves and returns from `context` the translational velocity `v_FM` of
   frame M's origin as measured and expressed in frame F.
   @param[in] context
     The context of the MultibodyTree to which this mobilizer belongs to.
@@ -183,8 +167,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   Vector3<T> get_translational_velocity(
       const systems::Context<T>& context) const;
 
-  /**
-  Sets `context` to store the translational velocity `v_FM` of frame M in
+  /** Sets `context` to store the translational velocity `v_FM` of frame M in
   frame F.
   @param[out] context
     The context of the MultibodyTree this mobilizer belongs to.
@@ -194,8 +177,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const;
 
-  /**
-  Alternative signature to set_translational_velocity(context, v_FM) to set
+  /** Alternative signature to set_translational_velocity(context, v_FM) to set
   `state` to store the translational velocity `v_FM` of M in F. */
   const QuaternionFloatingMobilizer<T>& set_translational_velocity(
       const systems::Context<T>&, const Vector3<T>& v_FM,
@@ -204,8 +186,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /** @} */
   // End of Doxygen section on methods to get/set from a context.
 
-  /**
-  @name Mobilizer overrides
+  /** @name Mobilizer overrides
   Refer to the Mobilizer class documentation for details.
   @{ */
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
@@ -236,8 +217,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /** @} */
 
  protected:
-  /**
-  Sets `state` to store a configuration in which M coincides with F (i.e.
+  /** Sets `state` to store a configuration in which M coincides with F (i.e.
   q_FM is the identity quaternion). */
   Vector<double, 7> get_zero_position() const override;
 

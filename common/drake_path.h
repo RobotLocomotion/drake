@@ -7,8 +7,7 @@
 
 namespace drake {
 
-/**
-(Advanced) Returns the fully-qualified path to the first folder containing
+/** (Advanced) Returns the fully-qualified path to the first folder containing
 Drake resources as located by FindResource, or nullopt if none is found.
 For example `${result}/examples/pendulum/Pendulum.urdf` would be the path
 to the Pendulum example's URDF resource.

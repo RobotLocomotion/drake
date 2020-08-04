@@ -20,8 +20,7 @@
 namespace drake {
 namespace math {
 
-/**
-This class represents a 3x3 rotation matrix between two arbitrary frames
+/** This class represents a 3x3 rotation matrix between two arbitrary frames
 A and B and helps ensure users create valid rotation matrices.  This class
 relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
 to right-handed orthogonal unit vectors Bx, By, Bz fixed in frame B.
@@ -52,19 +51,16 @@ class RotationMatrix {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
 
-  /**
-  Constructs a 3x3 identity %RotationMatrix -- which corresponds to
+  /** Constructs a 3x3 identity %RotationMatrix -- which corresponds to
   aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz). */
   RotationMatrix() : R_AB_(Matrix3<T>::Identity()) {}
 
-  /**
-  Constructs a %RotationMatrix from a Matrix3.
+  /** Constructs a %RotationMatrix from a Matrix3.
   @param[in] R an allegedly valid rotation matrix.
   @throws std::logic_error in debug builds if R fails IsValid(R). */
   explicit RotationMatrix(const Matrix3<T>& R) { set(R); }
 
-  /**
-  Constructs a %RotationMatrix from an Eigen::Quaternion.
+  /** Constructs a %RotationMatrix from an Eigen::Quaternion.
   @param[in] quaternion a non-zero, finite quaternion which may or may not
   have unit length [i.e., `quaternion.norm()` does not have to be 1].
   @throws std::logic_error in debug builds if the rotation matrix
@@ -90,8 +86,7 @@ class RotationMatrix {
   // `lambda` to this method is different than the %RotationMatrix produced by
   // converting `lambda` to an un-normalized quaternion and calling the
   // %RotationMatrix constructor (above) with that un-normalized quaternion.
-  /**
-  Constructs a %RotationMatrix from an Eigen::AngleAxis.
+  /** Constructs a %RotationMatrix from an Eigen::AngleAxis.
   @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   direction herein called `lambda`) is non-zero and finite, but which may or
   may not have unit length [i.e., `lambda.norm()` does not have to be 1].
@@ -108,8 +103,7 @@ class RotationMatrix {
     set(Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix());
   }
 
-  /**
-  Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
+  /** Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
   makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
   (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
@@ -166,8 +160,7 @@ class RotationMatrix {
                            Vector3<T>(Rzx, Rzy, Rzz));
   }
 
-  /**
-  (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
+  /** (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
   unit vectors `Bx`, `By`, `Bz` so the columns of `R_AB` are `[Bx, By, Bz]`.
   @param[in] Bx first unit vector in right-handed orthogonal set.
   @param[in] By second unit vector in right-handed orthogonal set.
@@ -187,8 +180,7 @@ class RotationMatrix {
     return R;
   }
 
-  /**
-  (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
+  /** (Advanced) Makes the %RotationMatrix `R_AB` from right-handed orthogonal
   unit vectors `Ax`, `Ay`, `Az` so the rows of `R_AB` are `[Ax, Ay, Az]`.
   @param[in] Ax first unit vector in right-handed orthogonal set.
   @param[in] Ay second unit vector in right-handed orthogonal set.
@@ -208,8 +200,7 @@ class RotationMatrix {
     return R;
   }
 
-  /**
-  Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /** Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   @param[in] theta radian measure of rotation angle about Ax.
   @note Orientation is same as Eigen::AngleAxis<T>(theta, Vector3d::UnitX().
@@ -234,8 +225,7 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
-  /**
-  Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /** Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   relative to a frame A by an angle `theta` about unit vector `Ay = By`.
   @param[in] theta radian measure of rotation angle about Ay.
   @note Orientation is same as Eigen::AngleAxis<T>(theta, Vector3d::UnitY().
@@ -260,8 +250,7 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
-  /**
-  Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /** Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
   @param[in] theta radian measure of rotation angle about Az.
   @note Orientation is same as Eigen::AngleAxis<T>(theta, Vector3d::UnitZ().
@@ -286,8 +275,7 @@ class RotationMatrix {
     return RotationMatrix(R);
   }
 
-  /**
-  Creates a %RotationMatrix templatized on a scalar type U from a
+  /** Creates a %RotationMatrix templatized on a scalar type U from a
   %RotationMatrix templatized on scalar type T.  For example,
   ```
   RotationMatrix<double> source = RotationMatrix<double>::Identity();
@@ -317,8 +305,7 @@ class RotationMatrix {
     return RotationMatrix<U>(m, true);
   }
 
-  /**
-  Sets `this` %RotationMatrix from a Matrix3.
+  /** Sets `this` %RotationMatrix from a Matrix3.
   @param[in] R an allegedly valid rotation matrix.
   @throws std::logic_error in debug builds if R fails IsValid(R). */
   void set(const Matrix3<T>& R) {
@@ -334,28 +321,24 @@ class RotationMatrix {
   }
 
   // @internal This method's name was chosen to mimic Eigen's inverse().
-  /**
-  Returns `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
+  /** Returns `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
   @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`. */
   RotationMatrix<T> inverse() const {
     return RotationMatrix<T>(R_AB_.transpose());
   }
 
   // @internal This method's name was chosen to mimic Eigen's transpose().
-  /**
-  Returns `R_BA = R_AB⁻¹`, the transpose of this %RotationMatrix.
+  /** Returns `R_BA = R_AB⁻¹`, the transpose of this %RotationMatrix.
   @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`. */
   RotationMatrix<T> transpose() const {
     return RotationMatrix<T>(R_AB_.transpose());
   }
 
-  /**
-  Returns the Matrix3 underlying a %RotationMatrix.
+  /** Returns the Matrix3 underlying a %RotationMatrix.
   @see col(), row() */
   const Matrix3<T>& matrix() const { return R_AB_; }
 
-  /**
-  Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
+  /** Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
   For `this` rotation matrix R_AB (which relates right-handed
   sets of orthogonal unit vectors Ax, Ay, Az to Bx, By, Bz),
   - row(0) returns Ax_B (Ax expressed in terms of Bx, By, Bz).
@@ -377,8 +360,7 @@ class RotationMatrix {
     return R_AB_.row(index);
   }
 
-  /**
-  Returns `this` rotation matrix's iᵗʰ column (i = 0, 1, 2).
+  /** Returns `this` rotation matrix's iᵗʰ column (i = 0, 1, 2).
   For `this` rotation matrix R_AB (which relates right-handed
   sets of orthogonal unit vectors Ax, Ay, Az to Bx, By, Bz),
   - col(0) returns Bx_A (Bx expressed in terms of Ax, Ay, Az).
@@ -400,8 +382,7 @@ class RotationMatrix {
     return R_AB_.col(index);
   }
 
-  /**
-  In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
+  /** In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
   matrix `R_BC`.  On return, `this` is set to equal `R_AB * R_BC`.
   @param[in] other %RotationMatrix that post-multiplies `this`.
   @returns `this` rotation matrix which has been multiplied by `other`.
@@ -412,8 +393,7 @@ class RotationMatrix {
     return *this;
   }
 
-  /**
-  Calculates `this` rotation matrix `R_AB` multiplied by `other` rotation
+  /** Calculates `this` rotation matrix `R_AB` multiplied by `other` rotation
   matrix `R_BC`, returning the composition `R_AB * R_BC`.
   @param[in] other %RotationMatrix that post-multiplies `this`.
   @returns rotation matrix that results from `this` multiplied by `other`.
@@ -423,8 +403,7 @@ class RotationMatrix {
     return RotationMatrix<T>(matrix() * other.matrix(), true);
   }
 
-  /**
-  Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
+  /** Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
   Vector3 expressed in the B frame.
   @param[in] v_B 3x1 vector that post-multiplies `this`.
   @returns 3x1 vector `v_A = R_AB * v_B`. */
@@ -432,8 +411,7 @@ class RotationMatrix {
     return Vector3<T>(matrix() * v_B);
   }
 
-  /**
-  Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
+  /** Multiplies `this` %RotationMatrix `R_AB` by the n vectors `v1`, ... `vn`,
   where each vector has 3 elements and is expressed in frame B.
   @param[in] v_B `3 x n` matrix whose n columns are regarded as arbitrary
   vectors `v1`, ... `vn` expressed in frame B.
@@ -459,8 +437,7 @@ class RotationMatrix {
     return matrix() * v_B;
   }
 
-  /**
-  Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
+  /** Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
   computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
   difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).
   @param[in] R matrix being checked for orthonormality.
@@ -470,8 +447,7 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
   }
 
-  /**
-  Tests if a generic Matrix3 has orthonormal vectors to within the threshold
+  /** Tests if a generic Matrix3 has orthonormal vectors to within the threshold
   specified by `tolerance`.
   @param[in] R an allegedly orthonormal rotation matrix.
   @param[in] tolerance maximum allowable absolute difference between R * Rᵀ
@@ -481,8 +457,7 @@ class RotationMatrix {
     return GetMeasureOfOrthonormality(R) <= tolerance;
   }
 
-  /**
-  Tests if a generic Matrix3 seems to be a proper orthonormal rotation
+  /** Tests if a generic Matrix3 seems to be a proper orthonormal rotation
   matrix to within the threshold specified by `tolerance`.
   @param[in] R an allegedly valid rotation matrix.
   @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
@@ -492,8 +467,7 @@ class RotationMatrix {
     return IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
-  /**
-  Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
+  /** Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
   within the threshold of get_internal_tolerance_for_orthonormality().
   @param[in] R an allegedly valid rotation matrix.
   @returns `true` if R is a valid rotation matrix. */
@@ -501,8 +475,7 @@ class RotationMatrix {
     return IsValid(R, get_internal_tolerance_for_orthonormality());
   }
 
-  /**
-  Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
+  /** Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
   to within the threshold of get_internal_tolerance_for_orthonormality().
   @returns `true` if `this` is a valid rotation matrix. */
   boolean<T> IsValid() const { return IsValid(matrix()); }
@@ -512,16 +485,14 @@ class RotationMatrix {
     return matrix() == Matrix3<T>::Identity();
   }
 
-  /**
-  Returns true if `this` is equal to the identity matrix to within the
+  /** Returns true if `this` is equal to the identity matrix to within the
   threshold of get_internal_tolerance_for_orthonormality(). */
   boolean<T> IsIdentityToInternalTolerance() const {
     return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
                            get_internal_tolerance_for_orthonormality());
   }
 
-  /**
-  Compares each element of `this` to the corresponding element of `other`
+  /** Compares each element of `this` to the corresponding element of `other`
   to check if they are the same to within a specified `tolerance`.
   @param[in] other %RotationMatrix to compare to `this`.
   @param[in] tolerance maximum allowable absolute difference between the
@@ -532,8 +503,7 @@ class RotationMatrix {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
   }
 
-  /**
-  Compares each element of `this` to the corresponding element of `other`
+  /** Compares each element of `this` to the corresponding element of `other`
   to check if they are exactly the same.
   @param[in] other %RotationMatrix to compare to `this`.
   @returns true if each element of `this` is exactly equal to the
@@ -542,8 +512,7 @@ class RotationMatrix {
     return matrix() == other.matrix();
   }
 
-  /**
-  Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
+  /** Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   value of the difference between the elements of `this` and `other`).
   @param[in] other %RotationMatrix to subtract from `this`.
   @returns `‖this - other‖∞` */
@@ -551,8 +520,7 @@ class RotationMatrix {
     return GetMaximumAbsoluteDifference(matrix(), other.matrix());
   }
 
-  /**
-  Given an approximate rotation matrix M, finds the %RotationMatrix R
+  /** Given an approximate rotation matrix M, finds the %RotationMatrix R
   closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
   with a Frobenius norm).  Hence, this method creates a %RotationMatrix R
   from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
@@ -593,8 +561,7 @@ class RotationMatrix {
     return RotationMatrix<T>(M_orthonormalized, true);
   }
 
-  /**
-  Returns an internal tolerance that checks rotation matrix orthonormality.
+  /** Returns an internal tolerance that checks rotation matrix orthonormality.
   @returns internal tolerance (small multiplier of double-precision epsilon)
   used to check whether or not a rotation matrix is orthonormal.
   @note The tolerance is chosen by developers to ensure a reasonably
@@ -604,16 +571,14 @@ class RotationMatrix {
     return kInternalToleranceForOrthonormality;
   }
 
-  /**
-  Returns a quaternion q that represents `this` %RotationMatrix.  Since the
+  /** Returns a quaternion q that represents `this` %RotationMatrix.  Since the
   quaternion `q` and `-q` represent the same %RotationMatrix, this method
   chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   @note There is a constructor in the RollPitchYaw class that converts
   a rotation matrix to roll-pitch-yaw angles. */
   Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
 
-  /**
-  Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
+  /** Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
   quaternion `q` and `-q` represent the same %RotationMatrix, this method
   chooses to return a canonical quaternion, i.e., with q(0) >= 0.
   @param[in] M 3x3 matrix to be made into a quaternion.
@@ -640,15 +605,13 @@ class RotationMatrix {
     return q;
   }
 
-  /**
-  Utility method to return the Vector4 associated with ToQuaternion().
+  /** Utility method to return the Vector4 associated with ToQuaternion().
   @see ToQuaternion(). */
   Vector4<T> ToQuaternionAsVector4() const {
     return ToQuaternionAsVector4(R_AB_);
   }
 
-  /**
-  Utility method to return the Vector4 associated with ToQuaternion(M).
+  /** Utility method to return the Vector4 associated with ToQuaternion(M).
   @param[in] M 3x3 matrix to be made into a quaternion.
   @see ToQuaternion(). */
   static Vector4<T> ToQuaternionAsVector4(const Matrix3<T>& M)  {
@@ -656,8 +619,7 @@ class RotationMatrix {
     return Vector4<T>(q.w(), q.x(), q.y(), q.z());
   }
 
-  /**
-  Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
+  /** Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
   vector (axis direction) `lambda` that represents `this` %RotationMatrix.
   @note The orientation and %RotationMatrix associated with `theta * lambda`
   is identical to that of `(-theta) * (-lambda)`.  The AngleAxis returned by
@@ -972,13 +934,11 @@ class RotationMatrix {
   Matrix3<T> R_AB_;
 };
 
-/**
-Abbreviation (alias/typedef) for a RotationMatrix double scalar type.
+/** Abbreviation (alias/typedef) for a RotationMatrix double scalar type.
 @relates RotationMatrix */
 using RotationMatrixd = RotationMatrix<double>;
 
-/**
-Projects an approximate 3 x 3 rotation matrix M onto an orthonormal matrix R
+/** Projects an approximate 3 x 3 rotation matrix M onto an orthonormal matrix R
 so that R is a rotation matrix associated with a angle-axis rotation by an
 angle θ about a vector direction `axis`, with `angle_lb <= θ <= angle_ub`.
 @tparam Derived A 3 x 3 matrix

@@ -1,9 +1,7 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref solvers. */
 
-/**
-@addtogroup solvers
+/** @addtogroup solvers
 @{
 Drake's MathematicalProgram class is used to solve the mathematical
 optimization problem in the following form

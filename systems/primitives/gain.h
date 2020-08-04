@@ -8,8 +8,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An element-wise gain block with input `u` and output `y = k * u` with `k` a
+/** An element-wise gain block with input `u` and output `y = k * u` with `k` a
 constant vector.  The input to this system directly feeds through to its
 output.
 
@@ -20,16 +19,14 @@ class Gain final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gain)
 
-  /**
-  Constructs a %Gain system where the same gain is applied to every input
+  /** Constructs a %Gain system where the same gain is applied to every input
   value.
 
   @param[in] k the gain constant so that `y = k * u`.
   @param[in] size number of elements in the signal to be processed. */
   Gain(double k, int size);
 
-  /**
-  Constructs a %Gain system where different gains can be applied to each
+  /** Constructs a %Gain system where different gains can be applied to each
   input value.
 
   @param[in] k the gain vector constants so that `y_i = k_i * u_i` where
@@ -40,8 +37,7 @@ class Gain final : public VectorSystem<T> {
   template <typename U>
   explicit Gain(const Gain<U>&);
 
-  /**
-  Returns the gain constant. This method should only be called if the gain
+  /** Returns the gain constant. This method should only be called if the gain
   can be represented as a scalar value, i.e., every element in the gain
   vector is the same. It will throw an exception if the gain cannot be
   represented as a single scalar value. */

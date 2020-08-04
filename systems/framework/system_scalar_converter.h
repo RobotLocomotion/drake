@@ -20,8 +20,7 @@ namespace systems {
 
 template <typename T> class System;
 
-/**
-Helper class to convert a System<U> into a System<T>, intended for internal
+/** Helper class to convert a System<U> into a System<T>, intended for internal
 use by the System framework, not directly by users.
 
 For user-facing documentation see @ref system_scalar_conversion.
@@ -37,14 +36,12 @@ class SystemScalarConverter {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemScalarConverter);
 
-  /**
-  Creates an object that returns nullptr for all Convert() requests.  The
+  /** Creates an object that returns nullptr for all Convert() requests.  The
   single-argument constructor below is the typical way to create a useful
   instance of this type. */
   SystemScalarConverter();
 
-  /**
-  Creates an object that uses S's scalar-type converting copy constructor.
+  /** Creates an object that uses S's scalar-type converting copy constructor.
   That constructor takes the form of, e.g.:
 
   @code
@@ -76,25 +73,21 @@ class SystemScalarConverter {
   SystemScalarConverter(SystemTypeTag<S> tag)
       : SystemScalarConverter(tag, GuaranteedSubtypePreservation::kEnabled) {}
 
-  /**
-  A configuration option for our constructor, controlling whether or not
+  /** A configuration option for our constructor, controlling whether or not
   the Convert implementation requires that the System subclass type is
   preserved. */
   enum class GuaranteedSubtypePreservation {
-    /**
-    The argument to Convert must be of the exact type S that was used to
+    /** The argument to Convert must be of the exact type S that was used to
     populate the SystemScalarConverter. */
     kEnabled,
-    /**
-    The argument to Convert need not be the exact type S that was used to
+    /** The argument to Convert need not be the exact type S that was used to
     populate the SystemScalarConverter -- it can be either exactly that S,
     or a subtype of that S.  This permits subtype information to be lost
     across conversion. */
     kDisabled,
   };
 
-  /**
-  (Advanced)  Creates using S's scalar-type converting copy constructor.
+  /** (Advanced)  Creates using S's scalar-type converting copy constructor.
   Behaves exactly like SystemScalarConverter(SystemTypeTag<S>), but with
   the additional option to turn off guaranteed subtype preservation of the
   System being converted.  In general, subtype preservation is an important
@@ -117,8 +110,7 @@ class SystemScalarConverter {
     AddIfSupported<S, AutoDiffXd, Expression>(subtype_preservation);
   }
 
-  /**
-  Returns true iff no conversions are supported.  (In other words, whether
+  /** Returns true iff no conversions are supported.  (In other words, whether
   this is a default-constructed object.) */
   bool empty() const { return funcs_.empty(); }
 
@@ -127,14 +119,12 @@ class SystemScalarConverter {
   using ConverterFunction =
       std::function<std::unique_ptr<System<T>>(const System<U>&)>;
 
-  /**
-  Registers the std::function to be used to convert a System<U> into a
+  /** Registers the std::function to be used to convert a System<U> into a
   System<T>.  A pair of types can be registered (added) at most once. */
   template <typename T, typename U>
   void Add(const ConverterFunction<T, U>&);
 
-  /**
-  Adds converter for an S<U> into an S<T>, iff scalar_conversion::Traits
+  /** Adds converter for an S<U> into an S<T>, iff scalar_conversion::Traits
   says its supported.  The converter uses S's scalar-type converting copy
   constructor. */
   template <template <typename> class S, typename T, typename U>
@@ -142,13 +132,11 @@ class SystemScalarConverter {
     AddIfSupported<S, T, U>(GuaranteedSubtypePreservation::kEnabled);
   }
 
-  /**
-  Removes from this converter all pairs where `other.IsConvertible<T, U>`
+  /** Removes from this converter all pairs where `other.IsConvertible<T, U>`
   is false.  The subtype `S` need not be the same between this and `other`. */
   void RemoveUnlessAlsoSupportedBy(const SystemScalarConverter& other);
 
-  /**
-  Returns true iff this object can convert a System<U> into a System<T>,
+  /** Returns true iff this object can convert a System<U> into a System<T>,
   i.e., whether Convert() will return non-null.
 
   @tparam U the donor scalar type (to convert from)
@@ -156,8 +144,7 @@ class SystemScalarConverter {
   template <typename T, typename U>
   bool IsConvertible() const;
 
-  /**
-  Converts a System<U> into a System<T>.  This is the API that LeafSystem
+  /** Converts a System<U> into a System<T>.  This is the API that LeafSystem
   uses to provide a default implementation of DoToAutoDiffXd, etc.
 
   @tparam U the donor scalar type (to convert from)

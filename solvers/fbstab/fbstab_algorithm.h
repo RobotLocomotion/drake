@@ -25,8 +25,7 @@ enum class ExitFlag {
   PRIMAL_DUAL_INFEASIBLE = 5
 };
 
-/**
-Packages the exit flag, overall residual, solve time,
+/** Packages the exit flag, overall residual, solve time,
 and iteration counts.
 
 A negative valuve for solve_time indicates that no timing data is available. */
@@ -39,8 +38,7 @@ struct SolverOut {
 };
 
 using clock = std::chrono::high_resolution_clock;
-/**
-This class implements the FBstab solver for
+/** This class implements the FBstab solver for
 convex quadratic programs, see
 https://arxiv.org/pdf/1901.04046.pdf for more details.
 
@@ -78,8 +76,7 @@ class FBstabAlgorithm {
     ITER_DETAILED = 3  ///< print detailed inner loop information
   };
 
-  /**
-  Saves the components objects needed by the solver.
+  /** Saves the components objects needed by the solver.
 
   @param[in] x1,x2,x3,x4 Variable objects used by the solver
   @param[in] r1,r2 Residual objects used by the solver
@@ -117,8 +114,7 @@ class FBstabAlgorithm {
     feasibility_ = fcheck;
   }
 
-  /**
-  Attempts to solve the QP for the given
+  /** Attempts to solve the QP for the given
   data starting from the supplied initial guess.
 
   @param[in] qp_data problem data
@@ -128,8 +124,7 @@ class FBstabAlgorithm {
   @return Details on the solver output */
   SolverOut Solve(const Data* qp_data, Variable* x0);
 
-  /**
-  Allows setting of algorithm options.
+  /** Allows setting of algorithm options.
   @param[in] option option name
   @param[in] value  new value
 
@@ -332,8 +327,7 @@ class FBstabAlgorithm {
     return output;
   }
 
-  /**
-  Checks if x certifies primal or dual infeasibility.
+  /** Checks if x certifies primal or dual infeasibility.
   @param[in]  x
   @return feasibility status */
   InfeasibilityStatus CheckInfeasibility(const Variable& x) {
@@ -352,8 +346,7 @@ class FBstabAlgorithm {
     return status;
   }
 
-  /**
-  Shifts all elements in merit_buffer_ up one spot then inserts at [0].
+  /** Shifts all elements in merit_buffer_ up one spot then inserts at [0].
   @param[in] x value to be inserted at merit_buffer_[0] */
   void InsertMerit(double x) {
     for (int i = static_cast<int>(merit_buffer_.size()) - 1; i > 0; i--) {

@@ -1,9 +1,7 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref constraint_overview */
 
-/**
-@addtogroup constraint_overview
+/** @addtogroup constraint_overview
 
 This documentation describes the types of multibody constraints supported in
 Drake, including specialized constraint types- namely point-based contact
@@ -49,8 +47,7 @@ and will delve into the constraint solver functionality in:
  References for this discussion will be provided in @ref constraint_references.
  */
 
-/**
-@defgroup constraint_variable_defs Variable definitions
+/** @defgroup constraint_variable_defs Variable definitions
 @ingroup constraint_overview
 - nb      The number of bilateral constraint equations (nb ≥ 0)
 - nk      The number of edges in a polygonal approximation to a friction
@@ -83,8 +80,7 @@ and will delve into the constraint solver functionality in:
           Stabilization) that uses α.
 - γ       Non-negative, real valued scalar used to regularize constraints. */
 
-/**
-@defgroup constraint_types Constraint types
+/** @defgroup constraint_types Constraint types
 @ingroup constraint_overview
 
 Constraints can be categorized as either bilateral ("two-sided" constraints,
@@ -173,8 +169,7 @@ apparent: (1) when the constraint is inactive (gₐ > 0), the constraint force
 must be zero (λ = 0) and (2) the constraint force can only act in one
 direction (λ ≥ 0). This triplet is known as a *complementarity constraint*. */
 
-/**
-@defgroup constraint_stabilization Constraint stabilization
+/** @defgroup constraint_stabilization Constraint stabilization
 @ingroup constraint_overview
 
 Both truncation and rounding errors can prevent constraints from being
@@ -217,8 +212,7 @@ avoid computational stiffness. Picking that parameter is considered to be more
 art than science (see @ref Ascher1995 "[Ascher 1995]"). Given desired ω₀ and ζ,
 α and β are set using the equations above. */
 
-/**
-@defgroup constraint_Jacobians Constraint Jacobian matrices
+/** @defgroup constraint_Jacobians Constraint Jacobian matrices
 @ingroup constraint_overview
 
 Much of the problem data necessary to account for constraints in dynamical
@@ -247,8 +241,7 @@ completely by the equation `ġₚ = ∂gₚ/∂q⋅N(q)⋅v + ∂c/∂t`, one c
 evaluate `ġₚ - ∂g/∂t` for a given `v`; no Jacobian matrix need be formed
 explicitly. */
 
-/**
-@defgroup contact_surface_constraints Contact surface constraints
+/** @defgroup contact_surface_constraints Contact surface constraints
 @ingroup constraint_overview
 
 Consider two points pᵢ and pⱼ on rigid bodies i and j, respectively, and
@@ -320,8 +313,7 @@ constraint problem data</h4>
     @ref drake::multibody::constraint::ConstraintVelProblemData
     "ConstraintVelProblemData") */
 
-/**
-@defgroup constraint_references References
+/** @defgroup constraint_references References
 @ingroup constraint_overview
 
 Sources referenced within the multibody constraint documentation.

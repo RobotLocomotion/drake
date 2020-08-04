@@ -1,13 +1,11 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref render_engines. */
 
 namespace drake {
 namespace geometry {
 namespace render {
 
-/**
-@addtogroup render_engines
+/** @addtogroup render_engines
 
 Rendering engines are used to enable simulation of the perception stack.
 
@@ -89,8 +87,7 @@ terms. Instead, Drake includes a simple @ref render_engine_benchmarks
 "benchmark" which can be run locally to assess the actual performance the end
 user will experience. */
 
-/**
-@defgroup render_benchmarks Render Benchmarks
+/** @defgroup render_benchmarks Render Benchmarks
 @ingroup render_engines
 
 Benchmarks for assessing rendering performance and comparing implementations. */

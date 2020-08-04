@@ -16,15 +16,13 @@ namespace internal {
 // http://drake.mit.edu/styleguide/cppguide.html#Static_and_Global_Variables
 // For this reason, we create and return an instance of CoulombFriction
 // instead of using a static variable.
-/**
-Default value of the Coulomb's law coefficients of friction for when they
+/** Default value of the Coulomb's law coefficients of friction for when they
 are not specified in the URDF/SDF file. */
 inline CoulombFriction<double> default_friction() {
   return CoulombFriction<double>(1.0, 1.0);
 }
 
-/**
-Populates an instance of geometry::ProximityProperties from a reading
+/** Populates an instance of geometry::ProximityProperties from a reading
 interface in a URDF/SDF agnostic manner. This unifies the URDF and SDF
 parsing logic and eliminates code redundancy. The individual URDF and SDF
 parsers have the following responsibilities (based on the simple fact that
@@ -55,8 +53,7 @@ geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,
     bool is_rigid, bool is_soft);
 
-/**
-Populates a LinearBushingRollPitchYaw from a reading interface in a URDF/SDF
+/** Populates a LinearBushingRollPitchYaw from a reading interface in a URDF/SDF
 agnostic manner. This function does no semantic parsing and leaves the
 responsibility of handling errors or missing values to the individual
 parsers. All values are expected to exist and be well formed. Through this,

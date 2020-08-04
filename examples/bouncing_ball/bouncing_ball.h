@@ -11,8 +11,7 @@ namespace drake {
 namespace examples {
 namespace bouncing_ball {
 
-/**
-Dynamical representation of the idealized hybrid dynamics
+/** Dynamical representation of the idealized hybrid dynamics
 of a ball dropping from a height and bouncing on a surface.
 
 Inputs: no inputs.
@@ -48,8 +47,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
   template <typename U>
   explicit BouncingBall(const BouncingBall<U>&) : BouncingBall<T>() {}
 
-  /**
-  Gets the signed acceleration due to gravity. Since initial positions
+  /** Gets the signed acceleration due to gravity. Since initial positions
   correspond to heights, acceleration should be negative. */
   double get_gravitational_acceleration() const { return -9.81; }
 

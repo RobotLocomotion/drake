@@ -20,8 +20,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A base class that specializes LeafSystem for use with only zero or one
+/** A base class that specializes LeafSystem for use with only zero or one
 vector input ports, and only zero or one vector output ports.
 
 By default, this base class does not declare any state; subclasses may
@@ -55,8 +54,7 @@ class VectorSystem : public LeafSystem<T> {
   void get_output_port(int) = delete;
 
  protected:
-  /**
-  Creates a system with one input port and one output port of the given
+  /** Creates a system with one input port and one output port of the given
   sizes, when the sizes are non-zero.  Either size can be zero, in which
   case no input (or output) port is created.
 
@@ -74,8 +72,7 @@ class VectorSystem : public LeafSystem<T> {
       : VectorSystem(SystemScalarConverter{}, input_size, output_size,
                      direct_feedthrough) {}
 
-  /**
-  Creates a system with one input port and one output port of the given
+  /** Creates a system with one input port and one output port of the given
   sizes, when the sizes are non-zero.  Either size can be zero, in which
   case no input (or output) port is created.  This constructor allows
   subclasses to declare scalar-type conversion support (AutoDiff, etc.).
@@ -121,8 +118,7 @@ class VectorSystem : public LeafSystem<T> {
     }
   }
 
-  /**
-  Causes the vector-valued input port to become up-to-date, and returns
+  /** Causes the vector-valued input port to become up-to-date, and returns
   the port's value as an %Eigen vector.  If the system has zero inputs,
   then returns an empty vector. */
   Eigen::VectorBlock<const VectorX<T>> EvalVectorInput(
@@ -135,8 +131,7 @@ class VectorSystem : public LeafSystem<T> {
     return empty_vector.access().segment(0, 0);
   }
 
-  /**
-  Returns a reference to an %Eigen vector version of the state from within
+  /** Returns a reference to an %Eigen vector version of the state from within
   the %Context. */
   Eigen::VectorBlock<const VectorX<T>> GetVectorState(
       const Context<T>& context) const {
@@ -154,8 +149,7 @@ class VectorSystem : public LeafSystem<T> {
     return state_vector->get_value();
   }
 
-  /**
-  Converts the parameters to Eigen::VectorBlock form, then delegates to
+  /** Converts the parameters to Eigen::VectorBlock form, then delegates to
   DoCalcVectorTimeDerivatives(). */
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final {
@@ -183,8 +177,7 @@ class VectorSystem : public LeafSystem<T> {
                                 &derivatives_block);
   }
 
-  /**
-  Converts the parameters to Eigen::VectorBlock form, then delegates to
+  /** Converts the parameters to Eigen::VectorBlock form, then delegates to
   DoCalcVectorDiscreteVariableUpdates(). */
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
@@ -216,8 +209,7 @@ class VectorSystem : public LeafSystem<T> {
                                         &discrete_update_block);
   }
 
-  /**
-  Converts the parameters to Eigen::VectorBlock form, then delegates to
+  /** Converts the parameters to Eigen::VectorBlock form, then delegates to
   DoCalcVectorOutput(). */
   void CalcVectorOutput(const Context<T>& context,
                         BasicVector<T>* output) const {
@@ -281,8 +273,7 @@ class VectorSystem : public LeafSystem<T> {
     DoCalcVectorOutput(context, input_block, state_block, &output_block);
   }
 
-  /**
-  Provides a convenience method for %VectorSystem subclasses.  This
+  /** Provides a convenience method for %VectorSystem subclasses.  This
   method performs the same logical operation as System::DoCalcOutput but
   provides VectorBlocks to represent the input, state, and output.
   Subclasses with outputs should override this method, and not the base
@@ -306,8 +297,7 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(output->size() == 0);
   }
 
-  /**
-  Provides a convenience method for %VectorSystem subclasses.  This
+  /** Provides a convenience method for %VectorSystem subclasses.  This
   method performs the same logical operation as
   System::DoCalcTimeDerivatives but provides VectorBlocks to represent the
   input, continuous state, and derivatives.  Subclasses should override
@@ -326,8 +316,7 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(derivatives->size() == 0);
   }
 
-  /**
-  Provides a convenience method for %VectorSystem subclasses.  This
+  /** Provides a convenience method for %VectorSystem subclasses.  This
   method performs the same logical operation as
   System::DoCalcDiscreteVariableUpdates but provides VectorBlocks to
   represent the input, discrete state, and discrete updates.  Subclasses

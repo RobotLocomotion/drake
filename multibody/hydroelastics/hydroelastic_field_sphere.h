@@ -14,8 +14,7 @@ namespace internal {
 
 // TODO(SeanCurtis-TRI): This appears to be unused and untested. Delete me!
 
-/**
-Creates a HydroelasticField for a sphere of a given radius.
+/** Creates a HydroelasticField for a sphere of a given radius.
 The input parameter `refinement_level`, ℓ ∈ ℕ₀, controls the resolution of
 the mesh generated. The resulting number of tetrahedra nₜ can
 be predicted according to: nₜ = 8ˡ⁺¹. A characteristic tetrahedron length

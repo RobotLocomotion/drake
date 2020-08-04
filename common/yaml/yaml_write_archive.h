@@ -21,8 +21,7 @@
 namespace drake {
 namespace yaml {
 
-/**
-Saves data from a C++ structure into a YAML file, using the Serialize /
+/** Saves data from a C++ structure into a YAML file, using the Serialize /
 Archive pattern.
 
 Sample code:
@@ -72,13 +71,11 @@ class YamlWriteArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlWriteArchive)
 
-  /**
-  Creates an archive.  See the %YamlWriteArchive class overview for
+  /** Creates an archive.  See the %YamlWriteArchive class overview for
   details. */
   YamlWriteArchive() {}
 
-  /**
-  Copies the contents of `serializable` into the YAML object associated
+  /** Copies the contents of `serializable` into the YAML object associated
   with this archive.  See the %YamlWriteArchive class overview for details. */
   template <typename Serializable>
   void Accept(const Serializable& serializable) {
@@ -95,15 +92,13 @@ class YamlWriteArchive final {
     }
   }
 
-  /**
-  Returns the YAML string for whatever Serializable was most recently
+  /** Returns the YAML string for whatever Serializable was most recently
   passed into Accept.  The returned document will be a single Map node
   named using `root_name` with the Serializable's visited fields as
   key-value entries within it. */
   std::string EmitString(const std::string& root_name = "root") const;
 
-  /**
-  (Advanced.)  Remove from this archive any map entries that are identical
+  /** (Advanced.)  Remove from this archive any map entries that are identical
   to an entry in `other`, iff they reside at the same location within the
   node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
   all the way up to the root) are also all maps.  This enables emitting a
@@ -112,8 +107,7 @@ class YamlWriteArchive final {
   maps" condition is the complement to what retain_map_defaults admits. */
   void EraseMatchingMaps(const YamlWriteArchive& other);
 
-  /**
-  (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
+  /** (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
   object.  Most users should should call Accept, not Visit. */
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {

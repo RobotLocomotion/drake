@@ -9,8 +9,7 @@
 
 namespace drake {
 
-/**
-Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
+/** Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
 no runtime type checking is performed.
 
 This method is analogous to the built-in std::static_pointer_cast that
@@ -22,8 +21,7 @@ std::unique_ptr<T> static_pointer_cast(std::unique_ptr<U>&& other) noexcept {
   return std::unique_ptr<T>(static_cast<T*>(other.release()));
 }
 
-/**
-Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
+/** Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
 if the cast fails, returns nullptr.  Casting is performed using
 `dynamic_cast` on the managed value (i.e., the result of `other.get()`).
 On success, `other`'s managed value is transferred to the result and
@@ -44,8 +42,7 @@ std::unique_ptr<T> dynamic_pointer_cast(std::unique_ptr<U>&& other) noexcept {
   return std::unique_ptr<T>(result);
 }
 
-/**
-Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
+/** Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
 if `other` is nullptr or the cast fails, throws a std::logic_error.
 Casting is performed using `dynamic_cast` on the managed value (i.e., the
 result of `other.get()`).  On success, `other`'s managed value is

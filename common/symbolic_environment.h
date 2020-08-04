@@ -17,8 +17,7 @@
 
 namespace drake {
 namespace symbolic {
-/**
-Represents a symbolic environment (mapping from a variable to a value).
+/** Represents a symbolic environment (mapping from a variable to a value).
 
 This class is used when we evaluate symbolic expressions or formulas which
 include unquantified (free) variables. Here are examples:
@@ -69,23 +68,20 @@ class Environment {
   /** Default constructor. */
   Environment() = default;
 
-  /**
-  List constructor. Constructs an environment from a list of (Variable *
+  /** List constructor. Constructs an environment from a list of (Variable *
   double).
 
   @throws std::runtime_error if @p init include a dummy variable or a NaN
   value. */
   Environment(std::initializer_list<value_type> init);
 
-  /**
-  List constructor. Constructs an environment from a list of
+  /** List constructor. Constructs an environment from a list of
   Variable. Initializes the variables with 0.0.
 
   @throws std::runtime_error if @p vars include a dummy variable. */
   Environment(std::initializer_list<key_type> vars);
 
-  /**
-  Constructs an environment from @p m (of `map` type, which is
+  /** Constructs an environment from @p m (of `map` type, which is
   `std::unordered_map`).
 
   @throws std::runtime_error if @p m include a dummy variable or a NaN value. */
@@ -107,8 +103,7 @@ class Environment {
   /** Inserts a pair (@p key, @p elem). */
   void insert(const key_type& key, const mapped_type& elem);
 
-  /**
-  Given a matrix of symbolic variables @p keys and a matrix of values @p
+  /** Given a matrix of symbolic variables @p keys and a matrix of values @p
   elements, inserts each pair (keys(i, j), elements(i, j)) into the
   environment.
 
@@ -133,13 +128,11 @@ class Environment {
   /** Returns string representation. */
   std::string to_string() const;
 
-  /**
-  Returns a reference to the value that is mapped to a key equivalent to
+  /** Returns a reference to the value that is mapped to a key equivalent to
   @p key, performing an insertion if such key does not already exist. */
   mapped_type& operator[](const key_type& key);
 
-  /**
-  As above, but returns a constref and does not perform an insertion
+  /** As above, but returns a constref and does not perform an insertion
   (throwing a runtime error instead) if the key does not exist. */
   const mapped_type& operator[](const key_type& key) const;
 
@@ -149,8 +142,7 @@ class Environment {
   map map_;
 };
 
-/**
-Populates the environment @p env by sampling values for the unassigned
+/** Populates the environment @p env by sampling values for the unassigned
 random variables in @p variables using @p random_generator. */
 Environment PopulateRandomVariables(Environment env, const Variables& variables,
                                     RandomGenerator* random_generator);

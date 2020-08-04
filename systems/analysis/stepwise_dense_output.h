@@ -7,8 +7,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A DenseOutput class interface extension, geared towards step-wise
+/** A DenseOutput class interface extension, geared towards step-wise
 construction procedures. Outputs of this kind are to be built
 incrementally by means of discrete updates that extend its domain.
 Nature of an update remains implementation specific.
@@ -30,16 +29,14 @@ class StepwiseDenseOutput : public DenseOutput<T> {
 
   ~StepwiseDenseOutput() override = default;
 
-  /**
-  Rolls back (drops) the last update.
+  /** Rolls back (drops) the last update.
   @remarks This process is irreversible.
   @pre Updates have taken place since instantiation or last
        consolidation (via Consolidate()).
   @throws std::logic_error if any of the preconditions is not met. */
   virtual void Rollback() = 0;
 
-  /**
-  Consolidates latest updates.
+  /** Consolidates latest updates.
 
   All updates since last call or construction are put into a form
   that is suitable for evaluation.

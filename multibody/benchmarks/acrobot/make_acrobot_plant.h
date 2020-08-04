@@ -14,8 +14,7 @@ namespace multibody {
 namespace benchmarks {
 namespace acrobot {
 
-/**
-This class is used to store the numerical parameters defining the model of
+/** This class is used to store the numerical parameters defining the model of
 an acrobot with the method MakeAcrobotPlant().
 Refer to this the documentation of this class's constructor for further
 details on the parameters stored by this class and their default values.
@@ -27,8 +26,7 @@ class AcrobotParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
 
-  /**
-  Constructor used to initialize the physical parameters for an acrobot
+  /** Constructor used to initialize the physical parameters for an acrobot
   model. The parameters are defaulted to values in Spong's paper
   [Spong 1994].
 
@@ -134,8 +132,7 @@ class AcrobotParameters {
   std::string actuator_name_{"ElbowActuator"};
 };
 
-/**
-This method makes a MultibodyPlant model of the Acrobot - a canonical
+/** This method makes a MultibodyPlant model of the Acrobot - a canonical
 underactuated system as described in <a
 href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 of Underactuated Robotics</a>.

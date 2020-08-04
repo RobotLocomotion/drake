@@ -9,8 +9,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/**
-A 6-vector representing the derivatives of the position transform of frame A
+/** A 6-vector representing the derivatives of the position transform of frame A
 in the world frame, Xdot_WA, in the form `{R_WA, p_WA}`, where `p` is
 the derivatives of x-y-z translation, and `R` is the derivatives of x-y-z
 rotation.
@@ -25,8 +24,7 @@ class FrameVelocity final : public BasicVector<T> {
   FrameVelocity();
   ~FrameVelocity() override;
 
-  /**
-  Fully-parameterized constructor.
+  /** Fully-parameterized constructor.
   @param velocity the entire spatial velocity V_WA. */
   explicit FrameVelocity(const multibody::SpatialVelocity<T>& velocity);
 

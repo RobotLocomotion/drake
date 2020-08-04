@@ -16,8 +16,7 @@ class LinearSystemSolver final : public SolverBase {
   LinearSystemSolver();
   ~LinearSystemSolver() final;
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

@@ -34,8 +34,7 @@ const char* const kDefaultIntegratorName = "runge_kutta3";
 const bool kDefaultPublishEveryTimeStep = false;
 }  // namespace internal
 
-/**
-@ingroup simulation
+/** @ingroup simulation
 A class for advancing the state of hybrid dynamic systems, represented by
 `System<T>` objects, forward in time. Starting with an initial Context for a
 given System, %Simulator advances time and produces a series of Context
@@ -213,8 +212,7 @@ class Simulator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Simulator)
 
-  /**
-  Create a %Simulator that can advance a given System through time to
+  /** Create a %Simulator that can advance a given System through time to
   produce a trajectory consisting of a sequence of Context values. The
   System must not have unresolved input ports if the values of those ports
   are necessary for computations performed during simulation (see class
@@ -229,8 +227,7 @@ class Simulator {
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
-  /**
-  Create a %Simulator which additionally maintains ownership of the System.
+  /** Create a %Simulator which additionally maintains ownership of the System.
 
   @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and
   we only need one of the two -- overloading on ownership doesn't make
@@ -241,8 +238,7 @@ class Simulator {
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
   // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
   //              automatically by AdvanceTo() if the Context has changed.
-  /**
-  Prepares the %Simulator for a simulation. In order, the sequence of
+  /** Prepares the %Simulator for a simulation. In order, the sequence of
   actions taken here are:
   - The active integrator's Initialize() method is invoked.
   - Statistics are reset.
@@ -282,8 +278,7 @@ class Simulator {
   @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus */
   SimulatorStatus Initialize();
 
-  /**
-  Advances the System's trajectory until `boundary_time` is reached in
+  /** Advances the System's trajectory until `boundary_time` is reached in
   the context or some other termination condition occurs. A variety of
   `std::runtime_error` conditions are possible here, as well as error
   conditions that may be thrown by the System when it is asked to perform
@@ -314,8 +309,7 @@ class Simulator {
   @see Initialize(), AdvancePendingEvents(), SimulatorStatus */
   SimulatorStatus AdvanceTo(const T& boundary_time);
 
-  /**
-  (Advanced) Handles discrete and abstract state update events that are
+  /** (Advanced) Handles discrete and abstract state update events that are
   pending from the previous AdvanceTo() call, without advancing time.
   See the %Simulator class description for details about how %Simulator
   advances time and handles events. In the terminology used there, this
@@ -340,8 +334,7 @@ class Simulator {
     return AdvanceTo(get_context().get_time());
   }
 
-  /**
-  Provides a monitoring function that will be invoked at the end of
+  /** Provides a monitoring function that will be invoked at the end of
   every step. (See the Simulator class documentation for a precise
   definition of "step".) A monitor() function can be used to capture the
   trajectory, to terminate the simulation, or to detect error conditions.
@@ -417,13 +410,11 @@ class Simulator {
     monitor_ = std::move(monitor);
   }
 
-  /**
-  Removes the monitoring function if there is one.
+  /** Removes the monitoring function if there is one.
   @see set_monitor() */
   void clear_monitor() { monitor_ = nullptr; }
 
-  /**
-  Obtains a reference to the monitoring function, which may be empty.
+  /** Obtains a reference to the monitoring function, which may be empty.
   @see set_monitor() */
   const std::function<EventStatus(const Context<T>&)>& get_monitor() const {
     return monitor_;
@@ -431,8 +422,7 @@ class Simulator {
 
   // TODO(sherm1): Provide options for issuing a warning or aborting the
   // simulation if the desired rate cannot be achieved.
-  /**
-  Slow the simulation down to *approximately* synchronize with real time
+  /** Slow the simulation down to *approximately* synchronize with real time
   when it would otherwise run too fast. Normally the %Simulator takes steps
   as quickly as it can. You can request that it slow down to synchronize
   with real time by providing a realtime rate greater than zero here.
@@ -459,16 +449,14 @@ class Simulator {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
 
-  /**
-  Return the real time rate target currently in effect. The default is
+  /** Return the real time rate target currently in effect. The default is
   zero, meaning the %Simulator runs as fast as possible. You can change the
   target with set_target_realtime_rate(). */
   double get_target_realtime_rate() const {
     return target_realtime_rate_;
   }
 
-  /**
-  Return the rate that simulated time has progressed relative to real time.
+  /** Return the rate that simulated time has progressed relative to real time.
   A return of 1 means the simulation just matched real
   time, 2 means the simulation was twice as fast as real time, 0.5 means
   it was running in 2X slow motion, etc.
@@ -489,8 +477,7 @@ class Simulator {
   @see set_target_realtime_rate() */
   double get_actual_realtime_rate() const;
 
-  /**
-  Sets whether the simulation should trigger a forced-Publish event on the
+  /** Sets whether the simulation should trigger a forced-Publish event on the
   System under simulation at the end of every trajectory-advancing step.
   Specifically, that means the System::Publish() event dispatcher will be
   invoked on each subsystem of the System and passed the current Context
@@ -509,21 +496,18 @@ class Simulator {
     publish_every_time_step_ = publish;
   }
 
-  /**
-  Sets whether the simulation should trigger a forced-Publish at the end
+  /** Sets whether the simulation should trigger a forced-Publish at the end
   of Initialize(). See set_publish_every_time_step() documentation for
   more information. */
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
 
-  /**
-  Returns true if the set_publish_every_time_step() option has been
+  /** Returns true if the set_publish_every_time_step() option has been
   enabled. By default, returns false. */
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
-  /**
-  Returns a const reference to the internally-maintained Context holding the
+  /** Returns a const reference to the internally-maintained Context holding the
   most recent step in the trajectory. This is suitable for publishing or
   extracting information about this trajectory step. Do not call this method
   if there is no Context. */
@@ -532,8 +516,7 @@ class Simulator {
     return *context_;
   }
 
-  /**
-  Returns a mutable reference to the internally-maintained Context holding
+  /** Returns a mutable reference to the internally-maintained Context holding
   the most recent step in the trajectory. This is suitable for use in
   updates, sampling operations, event handlers, and constraint projection.
   You can also modify this prior to calling Initialize() to set initial
@@ -543,13 +526,11 @@ class Simulator {
     return *context_;
   }
 
-  /**
-  Returns `true` if this Simulator has an internally-maintained Context.
+  /** Returns `true` if this Simulator has an internally-maintained Context.
   This is always true unless `reset_context()` has been called. */
   bool has_context() const { return context_ != nullptr; }
 
-  /**
-  Replace the internally-maintained Context with a different one. The
+  /** Replace the internally-maintained Context with a different one. The
   current Context is deleted. This is useful for supplying a new set of
   initial conditions. You should invoke Initialize() after replacing the
   Context.
@@ -562,8 +543,7 @@ class Simulator {
     initialization_done_ = false;
   }
 
-  /**
-  Transfer ownership of this %Simulator's internal Context to the caller.
+  /** Transfer ownership of this %Simulator's internal Context to the caller.
   The %Simulator will no longer contain a Context. The caller must not
   attempt to advance the simulator in time after that point.
   @sa reset_context() */
@@ -573,45 +553,37 @@ class Simulator {
     return std::move(context_);
   }
 
-  /**
-  Forget accumulated statistics. Statistics are reset to the values they
+  /** Forget accumulated statistics. Statistics are reset to the values they
   have post construction or immediately after `Initialize()`. */
   void ResetStatistics();
 
-  /**
-  Gets the number of publishes made since the last Initialize() or
+  /** Gets the number of publishes made since the last Initialize() or
   ResetStatistics() call. */
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /**
-  Gets the number of steps since the last Initialize() call. (We're
+  /** Gets the number of steps since the last Initialize() call. (We're
   not counting the Initialize() 0-length "step".) Note that every
   AdvanceTo() call can potentially take many steps. */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /**
-  Gets the number of discrete variable updates performed since the last
+  /** Gets the number of discrete variable updates performed since the last
   Initialize() call. */
   int64_t get_num_discrete_updates() const { return num_discrete_updates_; }
 
-  /**
-  Gets the number of "unrestricted" updates performed since the last
+  /** Gets the number of "unrestricted" updates performed since the last
   Initialize() call. */
   int64_t get_num_unrestricted_updates() const {
     return num_unrestricted_updates_; }
 
-  /**
-  Gets a reference to the integrator used to advance the continuous aspects
+  /** Gets a reference to the integrator used to advance the continuous aspects
   of the system. */
   const IntegratorBase<T>& get_integrator() const { return *integrator_.get(); }
 
-  /**
-  Gets a reference to the mutable integrator used to advance the continuous
+  /** Gets a reference to the mutable integrator used to advance the continuous
   state of the system. */
   IntegratorBase<T>& get_mutable_integrator() { return *integrator_.get(); }
 
-  /**
-  Resets the integrator with a new one using factory construction.
+  /** Resets the integrator with a new one using factory construction.
   @code
   simulator.reset_integrator<RungeKutta3Integrator<double>>().
   @endcode
@@ -633,8 +605,7 @@ class Simulator {
     return *static_cast<Integrator*>(integrator_.get());
   }
 
-  /**
-  Resets the integrator with a new one using factory construction and a
+  /** Resets the integrator with a new one using factory construction and a
   maximum step size argument (which is required for constructing fixed-step
   integrators).
   @code
@@ -660,8 +631,7 @@ class Simulator {
     return *static_cast<Integrator*>(integrator_.get());
   }
 
-  /**
-  Gets the length of the interval used for witness function time isolation.
+  /** Gets the length of the interval used for witness function time isolation.
   The length of the interval is computed differently, depending on context,
   to support multiple applications, as described below:
 
@@ -691,8 +661,7 @@ class Simulator {
           IntegratorBase::get_fixed_step_mode(). */
   std::optional<T> GetCurrentWitnessTimeIsolation() const;
 
-  /**
-  Gets a constant reference to the system.
+  /** Gets a constant reference to the system.
   @note a mutable reference is not available. */
   const System<T>& get_system() const { return system_; }
 

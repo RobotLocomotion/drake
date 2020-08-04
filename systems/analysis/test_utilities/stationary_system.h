@@ -9,8 +9,7 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/**
-System with no state evolution for testing numerical differencing in
+/** System with no state evolution for testing numerical differencing in
 integrators that use it.
 @tparam_default_scalar */
 template <typename T>

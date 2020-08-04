@@ -11,8 +11,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An InputPort is a System resource that describes the kind of input a
+/** An InputPort is a System resource that describes the kind of input a
 System accepts, on a given port. It does not directly contain any runtime
 input port data; that is always contained in a Context. The actual value will
 be either the value of an OutputPort to which this is connected, or a fixed
@@ -25,8 +24,7 @@ class InputPortBase : public PortBase {
 
   ~InputPortBase() override;
 
-  /**
-  Returns the index of this input port within the owning System. For a
+  /** Returns the index of this input port within the owning System. For a
   Diagram, this will be the index within the Diagram, _not_ the index within
   a LeafSystem whose input port was exported. */
   InputPortIndex get_index() const { return InputPortIndex(get_int_index()); }
@@ -48,14 +46,12 @@ class InputPortBase : public PortBase {
   using PortBase::ticket;
 
  protected:
-  /**
-  Signature of a function suitable for returning the cached value of a
+  /** Signature of a function suitable for returning the cached value of a
   particular input port. Will return nullptr if the port is not connected. */
   using EvalAbstractCallback =
       std::function<const AbstractValue*(const ContextBase&)>;
 
-  /**
-  Provides derived classes the ability to set the base class members at
+  /** Provides derived classes the ability to set the base class members at
   construction.
 
   @param owning_system
@@ -93,8 +89,7 @@ class InputPortBase : public PortBase {
     return eval_(context);
   }
 
-  /**
-  Throws an exception that this port is not connected, but was expected to
+  /** Throws an exception that this port is not connected, but was expected to
   be connected (i.e., an Eval caller expected that it was always connected). */
   [[noreturn]] void ThrowRequiredMissing() const;
 

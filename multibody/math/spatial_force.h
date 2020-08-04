@@ -13,8 +13,7 @@ namespace multibody {
 // Forward declaration to define dot product with a spatial velocity.
 template <typename T> class SpatialVelocity;
 
-/**
-This class is used to represent a _spatial force_ (also called a _wrench_)
+/** This class is used to represent a _spatial force_ (also called a _wrench_)
 that combines both rotational (torque) and translational force components.
 Spatial forces are 6-element quantities that are pairs of ordinary
 3-vectors. Elements 0-2 are the torque component while elements 3-5 are the
@@ -48,8 +47,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialForce)
 
-  /**
-  Default constructor. In Release builds the elements of the newly
+  /** Default constructor. In Release builds the elements of the newly
   constructed spatial force are left uninitialized resulting in a zero
   cost operation. However in Debug builds those entries are set to NaN so
   that operations using this uninitialized spatial force fail fast,
@@ -60,8 +58,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   SpatialForce(const Eigen::Ref<const Vector3<T>>& tau,
                const Eigen::Ref<const Vector3<T>>& f) : Base(tau, f) {}
 
-  /**
-  SpatialForce constructor from an Eigen expression that represents a
+  /** SpatialForce constructor from an Eigen expression that represents a
   six-dimensional vector.
   This constructor will assert the size of F is six (6) at compile-time
   for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
@@ -69,8 +66,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   template <typename Derived>
   explicit SpatialForce(const Eigen::MatrixBase<Derived>& F) : Base(F) {}
 
-  /**
-  In-place shift of a %SpatialForce from one application point to another.
+  /** In-place shift of a %SpatialForce from one application point to another.
   `this` spatial force `F_Bp_E`, which applies its translational force
   component to point P of body B, is modified to become the equivalent
   spatial force `F_Bq_E` that considers the force to be applied to point
@@ -125,8 +121,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return *this;
   }
 
-  /**
-  Shift of a %SpatialForce from one application point to another.
+  /** Shift of a %SpatialForce from one application point to another.
   This is an alternate signature for shifting a spatial force's
   application point that does not change the original object. See
   ShiftInPlace() for more information.
@@ -147,8 +142,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /**
-  Performs a rigid shift of each column of `F_P_E` as if they contained the
+  /** Performs a rigid shift of each column of `F_P_E` as if they contained the
   6 components of a spatial force. It is assumed the first three elements of
   each column store the rotational component while the last three elements
   store the translational component.
@@ -169,8 +163,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     F_Q_E->template bottomRows<3>() = F_P_E.template bottomRows<3>();
   }
 
-  /**
-  Given `this` spatial force `F_Bp_E` applied at point P of body B and
+  /** Given `this` spatial force `F_Bp_E` applied at point P of body B and
   expressed in a frame E, this method computes the 6-dimensional dot
   product with the spatial velocity `V_IBp_E` of body B at point P,
   measured in an inertial frame I and expressed in the same frame E
@@ -185,8 +178,7 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   T dot(const SpatialVelocity<T>& V_IBp_E) const;
 };
 
-/**
-Computes the resultant spatial force as the addition of two spatial forces
+/** Computes the resultant spatial force as the addition of two spatial forces
 `F1_Sp_E` and `F2_Sp_E` on a same system or body S, at the same point P and
 expressed in the same frame E.
 @retval Fr_Sp_E
@@ -203,8 +195,7 @@ inline SpatialForce<T> operator+(const SpatialForce<T>& F1_Sp_E,
   return SpatialForce<T>(F1_Sp_E) += F2_Sp_E;
 }
 
-/**
-Subtracts spatial force `F2_Sp_E ` from `F1_Sp_E`. Both spatial forces act
+/** Subtracts spatial force `F2_Sp_E ` from `F1_Sp_E`. Both spatial forces act
 on the same system or body S, at point P and are expressed in the same frame
 E.
 

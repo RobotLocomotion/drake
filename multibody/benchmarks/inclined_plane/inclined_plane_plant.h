@@ -10,8 +10,7 @@ namespace multibody {
 namespace benchmarks {
 namespace inclined_plane {
 
-/**
-@name Inclined plane with a rigid body.
+/** @name Inclined plane with a rigid body.
 These functions create an inclined plane A and possibly a uniform-density
 rigid body B with user-defined geometry and surface friction properties and
 adds them to an existing plant.
@@ -45,8 +44,7 @@ with user-defined mass.
 @pre plant must be registered with a scene graph.
 @{ */
 
-/**
-Creates an inclined plane A and adds it to an existing plant.
+/** Creates an inclined plane A and adds it to an existing plant.
 @see @ref inclined_plane_parameters "Description of parameters" */
 void AddInclinedPlaneAndGravityToPlant(
     double gravity, double inclined_plane_angle,
@@ -54,8 +52,7 @@ void AddInclinedPlaneAndGravityToPlant(
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant);
 
-/**
-Creates an inclined plane A and a uniform-density block (body B), optionally
+/** Creates an inclined plane A and a uniform-density block (body B), optionally
 with 4 spheres welded to it, and adds them to an existing plant.
 @param[in] block_dimensions Dimensions (lengths) of block in the Bx, By, Bz
   directions (meters). To be valid data, these dimensions must be positive.
@@ -72,8 +69,7 @@ void AddInclinedPlaneWithBlockToPlant(
     double massB, const Vector3<double>& block_dimensions,
     bool is_block_with_4Spheres, MultibodyPlant<double>* plant);
 
-/**
-Creates an inclined plane A and a uniform-density sphere (body B) and adds
+/** Creates an inclined plane A and a uniform-density sphere (body B) and adds
 them to an existing plant.
 @param[in] radiusB The radius of sphere B (meters), which must be positive.
 @see @ref inclined_plane_parameters "Description of other parameters"

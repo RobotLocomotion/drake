@@ -11,15 +11,13 @@
 namespace drake {
 namespace multibody {
 
-/**
-Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
+/** Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
 SceneGraph. */
 class Parser final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser)
 
-  /**
-  Creates a Parser that adds models to the given plant and (optionally)
+  /** Creates a Parser that adds models to the given plant and (optionally)
   scene_graph.
 
   @param plant A pointer to a mutable MultibodyPlant object to which parsed
@@ -35,8 +33,7 @@ class Parser final {
   /** Gets a mutable reference to the PackageMap used by this parser. */
   PackageMap& package_map() { return package_map_; }
 
-  /**
-  Parses the SDF or URDF file named in @p file_name and adds all of its
+  /** Parses the SDF or URDF file named in @p file_name and adds all of its
   model(s) to @p plant.
 
   SDF files may contain multiple `<model>` elements.  New model instances
@@ -52,8 +49,7 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
-  /**
-  Parses the SDF or URDF file named in @p file_name and adds one model to
+  /** Parses the SDF or URDF file named in @p file_name and adds one model to
   @p plant.  It is an error to call this using an SDF file with more than
   one `<model>` element.
 

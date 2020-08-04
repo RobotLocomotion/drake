@@ -27,8 +27,7 @@ namespace multibody {
 // Forward declaration for BodyFrame<T>.
 template<typename T> class Body;
 
-/**
-A %BodyFrame is a material Frame that serves as the unique reference frame
+/** A %BodyFrame is a material Frame that serves as the unique reference frame
 for a Body.
 
 Each Body B, regardless of whether it represents a rigid body or a
@@ -168,8 +167,7 @@ class BodyAttorney {
 }  // namespace internal
 /** @endcond */
 
-/**
-%Body provides the general abstraction of a body with an API that
+/** %Body provides the general abstraction of a body with an API that
 makes no assumption about whether a body is rigid or deformable and neither
 does it make any assumptions about the underlying physical model or
 approximation.
@@ -186,8 +184,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /**
-  Creates a %Body named `name` in model instance `model_instance`
+  /** Creates a %Body named `name` in model instance `model_instance`
   with a given `default_mass` and a BodyFrame associated with it. */
   Body(const std::string& name, ModelInstanceIndex model_instance,
        double default_mass)
@@ -198,13 +195,11 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /** Gets the `name` associated with `this` body. */
   const std::string& name() const { return name_; }
 
-  /**
-  Returns the number of generalized positions q describing flexible
+  /** Returns the number of generalized positions q describing flexible
   deformations for this body. A rigid body will therefore return zero. */
   virtual int get_num_flexible_positions() const = 0;
 
-  /**
-  Returns the number of generalized velocities v describing flexible
+  /** Returns the number of generalized velocities v describing flexible
   deformations for this body. A rigid body will therefore return zero. */
   virtual int get_num_flexible_velocities() const = 0;
 
@@ -213,15 +208,13 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return body_frame_;
   }
 
-  /**
-  (Advanced) Returns the index of the node in the underlying tree structure
+  /** (Advanced) Returns the index of the node in the underlying tree structure
   of the parent MultibodyTree to which this body belongs. */
   internal::BodyNodeIndex node_index() const {
     return topology_.body_node;
   }
 
-  /**
-  (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
+  /** (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
   @note A floating body is not necessarily modeled with a quaternion
   mobilizer, see has_quaternion_dofs(). Alternative options include a space
   XYZ parametrization of rotations, see SpaceXYZMobilizer.
@@ -232,8 +225,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.is_floating;
   }
 
-  /**
-  (Advanced) If `true`, this body is a floating body modeled with a
+  /** (Advanced) If `true`, this body is a floating body modeled with a
   quaternion floating mobilizer. By implication, is_floating() is also
   `true`.
   @see floating_positions_start(), floating_velocities_start().
@@ -244,8 +236,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.has_quaternion_dofs;
   }
 
-  /**
-  (Advanced) For floating bodies (see is_floating()) this method returns the
+  /** (Advanced) For floating bodies (see is_floating()) this method returns the
   index of the first generalized position in the state vector for a
   MultibodyPlant model.
   Positions for this body are then contiguous starting at this index.
@@ -260,8 +251,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.floating_positions_start;
   }
 
-  /**
-  (Advanced) For floating bodies (see is_floating()) this method returns the
+  /** (Advanced) For floating bodies (see is_floating()) this method returns the
   index of the first generalized velocity in the state vector for a
   MultibodyPlant model.
   Velocities for this body are then contiguous starting at this index.
@@ -272,8 +262,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return topology_.floating_velocities_start;
   }
 
-  /**
-  Returns the default mass (not Context dependent) for `this` body.
+  /** Returns the default mass (not Context dependent) for `this` body.
   In general, the mass for a body can be a parameter of the model that can
   be retrieved with the method get_mass(). When the mass of a body is a
   parameter, the value returned by get_default_mass() is used to initialize
@@ -284,15 +273,13 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   virtual T get_mass(
       const systems::Context<T> &context)const = 0;
 
-  /**
-  (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
+  /** (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   of this body measured from this body's frame origin `Bo` and expressed in
   the body frame B. */
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /**
-  (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
+  /** (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
   frame origin `Bo` (not necessarily its center of mass) and expressed in
   its body frame `B`.
   In general, the spatial inertia of a body is a function of state.
@@ -303,16 +290,14 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /**
-  Returns the pose `X_WB` of this body B in the world frame W as a function
+  /** Returns the pose `X_WB` of this body B in the world frame W as a function
   of the state of the model stored in `context`. */
   const math::RigidTransform<T>& EvalPoseInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
   }
 
-  /**
-  Returns the spatial velocity `V_WB` of this body B in the world frame W
+  /** Returns the spatial velocity `V_WB` of this body B in the world frame W
   as a function of the state of the model stored in `context`. */
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
@@ -320,8 +305,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
         context, *this);
   }
 
-  /**
-  Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
+  /** Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
   applied at body B's origin Bo and expressed in world world frame W. */
   const SpatialForce<T>& GetForceInWorld(
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {
@@ -330,8 +314,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return forces.body_forces()[node_index()];
   }
 
-  /**
-  Adds the spatial force on `this` body B, applied at body B's origin Bo and
+  /** Adds the spatial force on `this` body B, applied at body B's origin Bo and
   expressed in the world frame W into `forces`. */
   void AddInForceInWorld(const systems::Context<T>&,
                          const SpatialForce<T>& F_Bo_W,
@@ -342,8 +325,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     forces->mutable_body_forces()[node_index()] += F_Bo_W;
   }
 
-  /**
-  Adds the spatial force on `this` body B, applied at point P and
+  /** Adds the spatial force on `this` body B, applied at point P and
   expressed in a frame E into `forces`.
   @param[in] context
     The context containing the current state of the model.
@@ -372,8 +354,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     AddInForceInWorld(context, F_Bo_W, forces);
   }
 
-  /**
-  NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
+  /** NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
   type of the new clone to be created. This method is mostly intended to be
   called by MultibodyTree::CloneToScalar(). Most users should not call this
   clone method directly but rather clone the entire parent MultibodyTree if
@@ -386,8 +367,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
  protected:
-  /**
-  @name Methods to make a clone templated on different scalar types.
+  /** @name Methods to make a clone templated on different scalar types.
 
   These methods are meant to be called by MultibodyTree::CloneToScalar()
   when making a clone of the entire tree or a new instance templated on a

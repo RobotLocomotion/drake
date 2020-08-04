@@ -9,8 +9,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-A class for integrating a function using numerical quadrature over
+/** A class for integrating a function using numerical quadrature over
 triangular domains.
 
 @tparam NumericReturnType the output type of the function being integrated.
@@ -25,8 +24,7 @@ triangular domains.
 template <typename NumericReturnType, typename T>
 class TriangleQuadrature {
  public:
-  /**
-  Numerically integrates the function f over a triangle using the given
+  /** Numerically integrates the function f over a triangle using the given
   quadrature rule and the initial value.
   @param f(p) a function that returns a numerical value for point p in the
          domain of the triangle, specified in barycentric coordinates.
@@ -38,8 +36,7 @@ class TriangleQuadrature {
       const TriangleQuadratureRule& rule,
       const T& area);
 
-  /**
-  Alternative signature for Integrate() that uses three-dimensional
+  /** Alternative signature for Integrate() that uses three-dimensional
   barycentric coordinates.
   @param f(p) a function that returns a numerical value for point p in the
          domain of the triangle, specified in barycentric coordinates.

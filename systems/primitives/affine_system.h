@@ -11,8 +11,7 @@
 namespace drake {
 namespace systems {
 
-/**
-Base class for a discrete- or continuous-time, time-varying affine
+/** Base class for a discrete- or continuous-time, time-varying affine
 system, with potentially time-varying coefficients.
 
 @system
@@ -49,8 +48,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   /** Returns the output port containing the output state. */
   const OutputPort<T>& get_output_port() const;
 
-  /**
-  @name Methods To Be Implemented by Subclasses
+  /** @name Methods To Be Implemented by Subclasses
 
   Implementations must define these, and the returned matrices must
   be sized to match the `num_states`, `num_inputs`, and `num_outputs`
@@ -64,13 +62,11 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   virtual VectorX<T> y0(const T& t) const = 0;
   /** @} */
 
-  /**
-  Configures the value that will be assigned to the state vector in
+  /** Configures the value that will be assigned to the state vector in
   `SetDefaultContext`. `x0` must be a vector of length `num_states`. */
   void configure_default_state(const Eigen::Ref<const VectorX<T>>& x0);
 
-  /**
-  Configures the Gaussian distribution over state vectors used in the
+  /** Configures the Gaussian distribution over state vectors used in the
   `SetRandomContext` methods.  The mean of the distribution will be the
   default state (@see configure_default_state()). `covariance` must have
   size `num_states` by `num_states` and must be symmetric and positive
@@ -92,8 +88,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   int num_outputs() const { return num_outputs_; }
 
  protected:
-  /**
-  Constructor.
+  /** Constructor.
 
   @param converter scalar-type conversion support helper (i.e., AutoDiff,
   etc.); pass a default-constructed object if such support is not desired.
@@ -122,22 +117,19 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
     this->configure_random_state(other.get_random_state_covariance());
   }
 
-  /**
-  Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
+  /** Computes @f[ y(t) = C(t) x(t) + D(t) u(t) + y_0(t), @f] with by calling
   `C(t)`, `D(t)`, and `y0(t)` with runtime size checks.  Derived classes
   may override this for performance reasons. */
   virtual void CalcOutputY(const Context<T>& context,
                            BasicVector<T>* output_vector) const;
 
-  /**
-  Computes @f[ \dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f] with by
+  /** Computes @f[ \dot{x}(t) = A(t) x(t) + B(t) u(t) + f_0(t), @f] with by
   calling `A(t)`, `B(t)`, and `f0(t)` with runtime size checks.  Derived
   classes may override this for performance reasons. */
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
 
-  /**
-  Computes @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f] with by calling
+  /** Computes @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f] with by calling
   `A(t)`, `B(t)`, and `f0(t)` with runtime size checks.  Derived classes
   may override this for performance reasons. */
   void DoCalcDiscreteVariableUpdates(
@@ -163,8 +155,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   Eigen::MatrixXd Sqrt_Sigma_x0_;  // Square root of state covariance matrix.
 };
 
-/**
-A discrete OR continuous affine system (with constant coefficients).
+/** A discrete OR continuous affine system (with constant coefficients).
 
 @system
 name: AffineSystem
@@ -199,8 +190,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AffineSystem)
 
-  /**
-  Constructs an Affine system with a fixed set of coefficient matrices `A`,
+  /** Constructs an Affine system with a fixed set of coefficient matrices `A`,
   `B`,`C`, and `D` as well as fixed initial velocity offset `xDot0` and
   output offset `y0`.
   The coefficient matrices must obey the following dimensions :
@@ -227,8 +217,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   template <typename U>
   explicit AffineSystem(const AffineSystem<U>&);
 
-  /**
-  Creates a unique pointer to AffineSystem<T> by decomposing @p dynamics and
+  /** Creates a unique pointer to AffineSystem<T> by decomposing @p dynamics and
   @p outputs using @p state_vars and @p input_vars.
 
   @throws std::runtime_error if either @p dynamics or @p outputs is not
@@ -240,8 +229,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
       double time_period = 0.0);
 
-  /**
-  @name Helper getter methods.
+  /** @name Helper getter methods.
   @{ */
   const Eigen::MatrixXd& A() const { return A_; }
   const Eigen::MatrixXd& B() const { return B_; }
@@ -251,8 +239,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   const Eigen::VectorXd& y0() const { return y0_; }
   /** @} */
 
-  /**
-  @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
+  /** @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
   methods.
   @{ */
   MatrixX<T> A(const T&) const final { return MatrixX<T>(A_); }
@@ -264,8 +251,7 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /** @} */
 
  protected:
-  /**
-  Constructor that specifies scalar-type conversion support.
+  /** Constructor that specifies scalar-type conversion support.
   @param converter scalar-type conversion support helper (i.e., AutoDiff,
   etc.); pass a default-constructed object if such support is not desired.
   See @ref system_scalar_conversion for detailed background and examples

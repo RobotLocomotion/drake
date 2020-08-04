@@ -11,13 +11,11 @@
 namespace drake {
 namespace solvers {
 
-/**
-The Ipopt solver details after calling Solve() function. The user can call
+/** The Ipopt solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<IpoptSolver>() to obtain the
 details. */
 struct IpoptSolverDetails {
-  /**
-  The final status of the solver. Please refer to section 6 in
+  /** The final status of the solver. Please refer to section 6 in
   Introduction to Ipopt: A tutorial for downloading, installing, and using
   Ipopt.
   You could also find the meaning of the status as Ipopt::SolverReturn
@@ -32,8 +30,7 @@ struct IpoptSolverDetails {
   /** The final value for the constraint multiplier. */
   Eigen::VectorXd lambda;
 
-  /**
-  Convert status field to string. This function is useful if you want to
+  /** Convert status field to string. This function is useful if you want to
   interpret the meaning of status. */
   const char* ConvertStatusToString() const;
 };
@@ -48,8 +45,7 @@ class IpoptSolver final : public SolverBase {
   IpoptSolver();
   ~IpoptSolver() final;
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

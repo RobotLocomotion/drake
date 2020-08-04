@@ -16,8 +16,7 @@
 namespace drake {
 namespace systems {
 
-/**
-%Context is an abstract class template that represents all the typed values
+/** %Context is an abstract class template that represents all the typed values
 that are used in a System's computations: time, numeric-valued input ports,
 numerical state, and numerical parameters. There are also type-erased
 abstract state variables, abstract-valued input ports, abstract parameters,
@@ -35,16 +34,14 @@ template <typename T>
 class Context : public ContextBase {
  public:
   // Copy constructor is protected for use in implementing Clone().
-  /**
-  @name  Does not allow copy, move, or assignment.
+  /** @name  Does not allow copy, move, or assignment.
   @{ */
   Context(Context&&) = delete;
   Context& operator=(const Context&) = delete;
   Context& operator=(Context&&) = delete;
   /** @} */
 
-  /**
-  @name           Accessors for locally-stored values
+  /** @name           Accessors for locally-stored values
   Methods in this group provide `const` access to values stored locally in
   this %Context. The available values are:
 
@@ -61,8 +58,7 @@ class Context : public ContextBase {
   @see FixInputPort()
   @{ */
 
-  /**
-  Returns the current time in seconds.
+  /** Returns the current time in seconds.
   @see SetTime() */
   const T& get_time() const { return time_; }
 
@@ -79,8 +75,7 @@ class Context : public ContextBase {
     return nxc == 0 && nxd == 0 && nxa == 0;
   }
 
-  /**
-  Returns true if the Context has continuous state, but no discrete or
+  /** Returns true if the Context has continuous state, but no discrete or
   abstract state. */
   bool has_only_continuous_state() const {
     const int nxc = num_continuous_states();
@@ -89,8 +84,7 @@ class Context : public ContextBase {
     return nxc > 0 && nxd == 0 && nxa == 0;
   }
 
-  /**
-  Returns true if the Context has discrete state, but no continuous or
+  /** Returns true if the Context has discrete state, but no continuous or
   abstract state. */
   bool has_only_discrete_state() const {
     const int nxc = num_continuous_states();
@@ -99,8 +93,7 @@ class Context : public ContextBase {
     return nxd > 0 && nxc == 0 && nxa == 0;
   }
 
-  /**
-  Returns the total dimension of all of the basic vector states (as if they
+  /** Returns the total dimension of all of the basic vector states (as if they
   were muxed).
   @throws std::runtime_error if the system contains any abstract state. */
   int num_total_states() const {
@@ -116,15 +109,13 @@ class Context : public ContextBase {
     return get_continuous_state().size();
   }
 
-  /**
-  Returns a const reference to the continuous component of the state,
+  /** Returns a const reference to the continuous component of the state,
   which may be of size zero. */
   const ContinuousState<T>& get_continuous_state() const {
     return get_state().get_continuous_state();
   }
 
-  /**
-  Returns a reference to the continuous state vector, devoid of second-order
+  /** Returns a reference to the continuous state vector, devoid of second-order
   structure. The vector may be of size zero. */
   const VectorBase<T>& get_continuous_state_vector() const {
     return get_continuous_state().get_vector();
@@ -135,23 +126,20 @@ class Context : public ContextBase {
     return get_state().get_discrete_state().num_groups();
   }
 
-  /**
-  Returns a reference to the entire discrete state, which may consist of
+  /** Returns a reference to the entire discrete state, which may consist of
   multiple discrete state vectors (groups). */
   const DiscreteValues<T>& get_discrete_state() const {
     return get_state().get_discrete_state();
   }
 
-  /**
-  Returns a reference to the _only_ discrete state vector. The vector may be
+  /** Returns a reference to the _only_ discrete state vector. The vector may be
   of size zero.
   @pre There is only one discrete state group. */
   const BasicVector<T>& get_discrete_state_vector() const {
     return get_discrete_state().get_vector();
   }
 
-  /**
-  Returns a const reference to group (vector) @p index of the discrete
+  /** Returns a const reference to group (vector) @p index of the discrete
   state.
   @pre @p index must identify an existing group. */
   const BasicVector<T>& get_discrete_state(int index) const {
@@ -164,15 +152,13 @@ class Context : public ContextBase {
     return get_state().get_abstract_state().size();
   }
 
-  /**
-  Returns a const reference to the abstract component of the state, which
+  /** Returns a const reference to the abstract component of the state, which
   may be of size zero. */
   const AbstractValues& get_abstract_state() const {
     return get_state().get_abstract_state();
   }
 
-  /**
-  Returns a const reference to the abstract component of the
+  /** Returns a const reference to the abstract component of the
   state at @p index.
   @pre @p index must identify an existing element.
   @pre the abstract state's type must match the template argument. */
@@ -182,8 +168,7 @@ class Context : public ContextBase {
     return xa.get_value(index).get_value<U>();
   }
 
-  /**
-  Returns the accuracy setting (if any). Note that the return type is
+  /** Returns the accuracy setting (if any). Note that the return type is
   `optional<double>` rather than the double value itself.
   @see SetAccuracy() for details. */
   const std::optional<double>& get_accuracy() const { return accuracy_; }
@@ -196,8 +181,7 @@ class Context : public ContextBase {
     return parameters_->num_numeric_parameter_groups();
   }
 
-  /**
-  Returns a const reference to the vector-valued parameter at @p index.
+  /** Returns a const reference to the vector-valued parameter at @p index.
   @pre @p index must identify an existing parameter. */
   const BasicVector<T>& get_numeric_parameter(int index) const {
     return parameters_->get_numeric_parameter(index);
@@ -208,8 +192,7 @@ class Context : public ContextBase {
     return get_parameters().num_abstract_parameters();
   }
 
-  /**
-  Returns a const reference to the abstract-valued parameter at @p index.
+  /** Returns a const reference to the abstract-valued parameter at @p index.
   @pre @p index must identify an existing parameter. */
   const AbstractValue& get_abstract_parameter(int index) const {
     return get_parameters().get_abstract_parameter(index);
@@ -217,8 +200,7 @@ class Context : public ContextBase {
 
   /** @} */
 
-  /**
-  @anchor context_value_change_methods
+  /** @anchor context_value_change_methods
   @name           Methods for changing locally-stored values
   Methods in this group allow changes to the values of quantities stored
   locally in this %Context. The changeable quantities are:
@@ -343,8 +325,7 @@ class Context : public ContextBase {
 
   // TODO(sherm1) Consider whether this should avoid the notification sweep
   // if the new time is the same as the old time.
-  /**
-  Sets the current time in seconds. Sends out of date notifications for all
+  /** Sets the current time in seconds. Sends out of date notifications for all
   time-dependent computations (at least if the time has actually changed).
   Time must have the same value in every subcontext within the same Diagram
   context tree so may only be modified at the root context of the tree.
@@ -358,8 +339,7 @@ class Context : public ContextBase {
   // TODO(sherm1) Add more-specific state "set" methods for smaller
   // state groupings (issue #9205).
 
-  /**
-  Sets the continuous state to @p xc, including q, v, and z partitions.
+  /** Sets the continuous state to @p xc, including q, v, and z partitions.
   The supplied vector must be the same size as the existing continuous
   state. Sends out of date notifications for all continuous-state-dependent
   computations. */
@@ -369,8 +349,7 @@ class Context : public ContextBase {
 
   // TODO(sherm1) Consider whether this should avoid invalidation of
   // time-dependent quantities if the new time is the same as the old time.
-  /**
-  Sets time to @p time_sec and continuous state to @p xc. Performs a single
+  /** Sets time to @p time_sec and continuous state to @p xc. Performs a single
   notification sweep to avoid duplicate notifications for computations that
   depend on both time and state.
   @throws std::logic_error if this is not the root context. */
@@ -382,8 +361,7 @@ class Context : public ContextBase {
     xc_vector.SetFromVector(xc);
   }
 
-  /**
-  Sets the discrete state to @p xd, assuming there is just one discrete
+  /** Sets the discrete state to @p xd, assuming there is just one discrete
   state group. The supplied vector must be the same size as the existing
   discrete state. Sends out of date notifications for all
   discrete-state-dependent computations. Use the other signature for this
@@ -400,8 +378,7 @@ class Context : public ContextBase {
   }
 
   // TODO(sherm1) Invalidate only dependents of this one discrete group.
-  /**
-  Sets the discrete state group indicated by @p group_index to @p xd.
+  /** Sets the discrete state group indicated by @p group_index to @p xd.
   The supplied vector @p xd must be the same size as the existing discrete
   state group. Sends out of date notifications for all computations that
   depend on this discrete state group.
@@ -414,8 +391,7 @@ class Context : public ContextBase {
   }
 
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
-  /**
-  Sets the value of the abstract state variable selected by @p index. Sends
+  /** Sets the value of the abstract state variable selected by @p index. Sends
   out of date notifications for all computations that depend on that
   abstract state variable. The template type will be inferred and need not
   be specified explicitly.
@@ -432,8 +408,7 @@ class Context : public ContextBase {
   // TODO(sherm1) Change the name of this method to be more inclusive since it
   //              also copies accuracy (now) and fixed input port values
   //              (pending above TODO).
-  /**
-  Sets this context's time, accuracy, state, and parameters from the
+  /** Sets this context's time, accuracy, state, and parameters from the
   `double` values in @p source, regardless of this context's scalar type.
   Sends out of date notifications for all dependent computations in this
   context.
@@ -465,8 +440,7 @@ class Context : public ContextBase {
   // Allow access to the base class method (takes an AbstractValue).
   using ContextBase::FixInputPort;
 
-  /**
-  Connects the input port at @p index to a FixedInputPortValue with
+  /** Connects the input port at @p index to a FixedInputPortValue with
   the given vector @p vec. Aborts if @p index is out of range.
   Returns a reference to the allocated FixedInputPortValue. The
   reference will remain valid until this input port's value source is
@@ -483,8 +457,7 @@ class Context : public ContextBase {
         index, std::make_unique<Value<BasicVector<T>>>(vec.Clone()));
   }
 
-  /**
-  Same as above method but starts with an Eigen vector whose contents are
+  /** Same as above method but starts with an Eigen vector whose contents are
   used to initialize a BasicVector in the FixedInputPortValue.
   @note Calling this method on an already connected input port, i.e., an
   input port that has previously been passed into a call to
@@ -495,8 +468,7 @@ class Context : public ContextBase {
     return FixInputPort(index, BasicVector<T>(data));
   }
 
-  /**
-  Same as the above method that takes a `const BasicVector<T>&`, but here
+  /** Same as the above method that takes a `const BasicVector<T>&`, but here
   the vector is passed by unique_ptr instead of by const reference.  The
   caller must not retain any aliases to `vec`; within this method, `vec`
   is cloned and then deleted.
@@ -518,8 +490,7 @@ class Context : public ContextBase {
 
   // TODO(sherm1) Consider whether to avoid invalidation if the new value is
   // the same as the old one.
-  /**
-  Records the user's requested accuracy, which is a unit-less quantity
+  /** Records the user's requested accuracy, which is a unit-less quantity
   designed for use with simulation and other numerical studies. Since
   accuracy is unit-less, algorithms and systems are free to interpret this
   quantity as they wish. The intention is that more computational work is
@@ -565,8 +536,7 @@ class Context : public ContextBase {
 
   /** @} */
 
-  /**
-  @anchor dangerous_context_value_change_methods
+  /** @anchor dangerous_context_value_change_methods
   @name    Dangerous methods for changing locally-stored values
   Methods in this group return mutable references into the state and
   parameters in the %Context. Although they do issue out-of-date
@@ -580,8 +550,7 @@ class Context : public ContextBase {
   // TODO(sherm1) All these methods perform invalidation sweeps so aren't
   // entitled to lower_case_names. Deprecate and replace (see #9205).
 
-  /**
-  Returns a mutable reference to the whole State, potentially invalidating
+  /** Returns a mutable reference to the whole State, potentially invalidating
   _all_ state-dependent computations so requiring out of date notifications
   to be made for all such computations. If you don't mean to change the
   whole state, use more focused methods to modify only a portion of the
@@ -592,8 +561,7 @@ class Context : public ContextBase {
     return do_access_mutable_state();
   }
 
-  /**
-  Returns a mutable reference to the continuous component of the state,
+  /** Returns a mutable reference to the continuous component of the state,
   which may be of size zero. Sends out of date notifications for all
   continuous-state-dependent computations. */
   ContinuousState<T>& get_mutable_continuous_state() {
@@ -603,16 +571,14 @@ class Context : public ContextBase {
     return do_access_mutable_state().get_mutable_continuous_state();
   }
 
-  /**
-  Returns a mutable reference to the continuous state vector, devoid
+  /** Returns a mutable reference to the continuous state vector, devoid
   of second-order structure. The vector may be of size zero. Sends out of
   date notifications for all continuous-state-dependent computations. */
   VectorBase<T>& get_mutable_continuous_state_vector() {
     return get_mutable_continuous_state().get_mutable_vector();
   }
 
-  /**
-  Returns a mutable reference to the discrete component of the state,
+  /** Returns a mutable reference to the discrete component of the state,
   which may be of size zero. Sends out of date notifications for all
   discrete-state-dependent computations. */
   DiscreteValues<T>& get_mutable_discrete_state() {
@@ -622,8 +588,7 @@ class Context : public ContextBase {
     return do_access_mutable_state().get_mutable_discrete_state();
   }
 
-  /**
-  Returns a mutable reference to the _only_ discrete state vector.
+  /** Returns a mutable reference to the _only_ discrete state vector.
   Sends out of date notifications for all discrete-state-dependent
   computations.
   @sa get_discrete_state_vector().
@@ -633,8 +598,7 @@ class Context : public ContextBase {
   }
 
   // TODO(sherm1) Invalidate only dependents of this one discrete group.
-  /**
-  Returns a mutable reference to group (vector) @p index of the discrete
+  /** Returns a mutable reference to group (vector) @p index of the discrete
   state. Sends out of date notifications for all computations that depend
   on this discrete state group.
   @pre @p index must identify an existing group.
@@ -644,8 +608,7 @@ class Context : public ContextBase {
     return xd.get_mutable_vector(index);
   }
 
-  /**
-  Returns a mutable reference to the abstract component of the state,
+  /** Returns a mutable reference to the abstract component of the state,
   which may be of size zero. Sends out of date notifications for all
   abstract-state-dependent computations. */
   AbstractValues& get_mutable_abstract_state() {
@@ -656,8 +619,7 @@ class Context : public ContextBase {
   }
 
   // TODO(sherm1) Invalidate only dependents of this one abstract variable.
-  /**
-  Returns a mutable reference to element @p index of the abstract state.
+  /** Returns a mutable reference to element @p index of the abstract state.
   Sends out of date notifications for all computations that depend on this
   abstract state variable.
   @pre @p index must identify an existing element.
@@ -669,8 +631,7 @@ class Context : public ContextBase {
     return xa.get_mutable_value(index).get_mutable_value<U>();
   }
 
-  /**
-  Returns a mutable reference to this %Context's parameters. Sends out of
+  /** Returns a mutable reference to this %Context's parameters. Sends out of
   date notifications for all parameter-dependent computations. If you don't
   mean to change all the parameters, use the indexed methods to modify only
   some of the parameters so that fewer computations are invalidated and
@@ -682,8 +643,7 @@ class Context : public ContextBase {
   }
 
   // TODO(sherm1) Invalidate only dependents of this one parameter.
-  /**
-  Returns a mutable reference to element @p index of the vector-valued
+  /** Returns a mutable reference to element @p index of the vector-valued
   (numeric) parameters. Sends out of date notifications for all computations
   dependent on this parameter.
   @pre @p index must identify an existing numeric parameter.
@@ -696,8 +656,7 @@ class Context : public ContextBase {
   }
 
   // TODO(sherm1) Invalidate only dependents of this one parameter.
-  /**
-  Returns a mutable reference to element @p index of the abstract-valued
+  /** Returns a mutable reference to element @p index of the abstract-valued
   parameters. Sends out of date notifications for all computations dependent
   on this parameter.
   @pre @p index must identify an existing abstract parameter.
@@ -710,8 +669,7 @@ class Context : public ContextBase {
   }
   /** @} */
 
-  /**
-  @anchor advanced_context_value_change_methods
+  /** @anchor advanced_context_value_change_methods
   @name    Advanced methods for changing locally-stored values
   Methods in this group are specialized for expert users writing numerical
   integrators and other context-modifying solvers where careful cache
@@ -721,8 +679,7 @@ class Context : public ContextBase {
   unless you _really_ know what you're doing!
   @{ */
 
-  /**
-  (Advanced) Sets time and returns a mutable reference to the continuous
+  /** (Advanced) Sets time and returns a mutable reference to the continuous
   state xc (including q, v, z) as a VectorBase. Performs a single
   notification sweep to avoid duplicate notifications for computations that
   depend on both time and state.
@@ -734,8 +691,7 @@ class Context : public ContextBase {
         .get_mutable_vector();
   }
 
-  /**
-  (Advanced) Sets time and returns a mutable reference to the second-order
+  /** (Advanced) Sets time and returns a mutable reference to the second-order
   continuous state partition q from xc. Performs a single notification sweep
   to avoid duplicate notifications for computations that depend on both time
   and q.
@@ -752,8 +708,7 @@ class Context : public ContextBase {
         .get_mutable_generalized_position();
   }
 
-  /**
-  (Advanced) Returns mutable references to the first-order continuous
+  /** (Advanced) Returns mutable references to the first-order continuous
   state partitions v and z from xc. Performs a single notification sweep
   to avoid duplicate notifications for computations that depend on both
   v and z. Does _not_ invalidate computations that depend on time or
@@ -768,8 +723,7 @@ class Context : public ContextBase {
             &xc.get_mutable_misc_continuous_state()};
   }
 
-  /**
-  (Advanced) Sets time and registers an intention to modify the continuous
+  /** (Advanced) Sets time and registers an intention to modify the continuous
   state xc. Intended use is for integrators that are already holding a
   mutable reference to xc which they are going to modify. Performs a single
   notification sweep to avoid duplicate notifications for computations that
@@ -780,8 +734,7 @@ class Context : public ContextBase {
     SetTimeAndNoteContinuousStateChangeHelper(__func__, time_sec);
   }
 
-  /**
-  (Advanced) Registers an intention to modify the continuous
+  /** (Advanced) Registers an intention to modify the continuous
   state xc. Intended use is for integrators that are already holding a
   mutable reference to xc which they are going to modify. Performs a
   notification sweep to invalidate computations that depend on any
@@ -796,14 +749,12 @@ class Context : public ContextBase {
   }
   /** @} */
 
-  /**
-  @name             Miscellaneous public methods
+  /** @name             Miscellaneous public methods
   @{ */
 
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
-  /**
-  Returns a deep copy of this Context.
+  /** Returns a deep copy of this Context.
   @throws std::logic_error if this is not the root context. */
   std::unique_ptr<Context<T>> Clone() const {
     return dynamic_pointer_cast_or_throw<Context<T>>(ContextBase::Clone());
@@ -816,8 +767,7 @@ class Context : public ContextBase {
     return result;
   }
 
-  /**
-  Returns a partial textual description of the Context, intended to be
+  /** Returns a partial textual description of the Context, intended to be
   human-readable.  It is not guaranteed to be unambiguous nor complete. */
   std::string to_string() const {
     return do_to_string();
@@ -854,8 +804,7 @@ class Context : public ContextBase {
 
   // Default implementation invokes the base class copy constructor and then
   // the local member copy constructors.
-  /**
-  Copy constructor takes care of base class and `Context<T>` data members.
+  /** Copy constructor takes care of base class and `Context<T>` data members.
   Derived classes must implement copy constructors that delegate to this
   one for use in their DoCloneWithoutPointers() implementations. */
   Context(const Context<T>&) = default;
@@ -863,8 +812,7 @@ class Context : public ContextBase {
   // Structuring these methods as statics permits a DiagramContext to invoke
   // the protected functionality on its children.
 
-  /**
-  (Internal use only) Sets a new time and notifies time-dependent
+  /** (Internal use only) Sets a new time and notifies time-dependent
   quantities that they are now invalid, as part of a given change event. */
   static void PropagateTimeChange(Context<T>* context, const T& time,
                                   const std::optional<T>& true_time,
@@ -876,8 +824,7 @@ class Context : public ContextBase {
     context->DoPropagateTimeChange(time, true_time, change_event);
   }
 
-  /**
-  (Internal use only) Sets a new accuracy and notifies accuracy-dependent
+  /** (Internal use only) Sets a new accuracy and notifies accuracy-dependent
   quantities that they are now invalid, as part of a given change event. */
   static void PropagateAccuracyChange(Context<T>* context,
                                       const std::optional<double>& accuracy,
@@ -888,8 +835,7 @@ class Context : public ContextBase {
     context->DoPropagateAccuracyChange(accuracy, change_event);
   }
 
-  /**
-  (Internal use only) Returns a reference to mutable parameters _without_
+  /** (Internal use only) Returns a reference to mutable parameters _without_
   invalidation notifications. Use get_mutable_parameters() instead for
   normal access. */
   static Parameters<T>& access_mutable_parameters(Context<T>* context) {
@@ -897,8 +843,7 @@ class Context : public ContextBase {
     return *context->parameters_;
   }
 
-  /**
-  (Internal use only) Returns a reference to a mutable state _without_
+  /** (Internal use only) Returns a reference to a mutable state _without_
   invalidation notifications. Use get_mutable_state() instead for normal
   access. */
   static State<T>& access_mutable_state(Context<T>* context) {
@@ -908,8 +853,7 @@ class Context : public ContextBase {
 
   // This is just an intentional shadowing of the base class method to return a
   // more convenient type.
-  /**
-  (Internal use only) Clones a context but without any of its internal
+  /** (Internal use only) Clones a context but without any of its internal
   pointers. */
   static std::unique_ptr<Context<T>> CloneWithoutPointers(
       const Context<T>& source) {
@@ -920,25 +864,21 @@ class Context : public ContextBase {
   /** Returns a const reference to its concrete State object. */
   virtual const State<T>& do_access_state() const = 0;
 
-  /**
-  Returns a mutable reference to its concrete State object _without_ any
+  /** Returns a mutable reference to its concrete State object _without_ any
   invalidation. We promise not to allow user access to this object without
   invalidation. */
   virtual State<T>& do_access_mutable_state() = 0;
 
-  /**
-  Returns the appropriate concrete State object to be returned by
+  /** Returns the appropriate concrete State object to be returned by
   CloneState().  The implementation should not set_system_id on the result,
   the caller will set an id on the state after this method returns. */
   virtual std::unique_ptr<State<T>> DoCloneState() const = 0;
 
-  /**
-  Returns a partial textual description of the Context, intended to be
+  /** Returns a partial textual description of the Context, intended to be
   human-readable.  It is not guaranteed to be unambiguous nor complete. */
   virtual std::string do_to_string() const = 0;
 
-  /**
-  Invokes PropagateTimeChange() on all subcontexts of this Context. The
+  /** Invokes PropagateTimeChange() on all subcontexts of this Context. The
   default implementation does nothing, which is suitable for leaf contexts.
   Diagram contexts must override. */
   virtual void DoPropagateTimeChange(const T& time_sec,
@@ -946,8 +886,7 @@ class Context : public ContextBase {
     unused(time_sec, true_time, change_event);
   }
 
-  /**
-  Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
+  /** Invokes PropagateAccuracyChange() on all subcontexts of this Context. The
   default implementation does nothing, which is suitable for leaf contexts.
   Diagram contexts must override. */
   virtual void DoPropagateAccuracyChange(const std::optional<double>& accuracy,
@@ -955,32 +894,28 @@ class Context : public ContextBase {
     unused(accuracy, change_event);
   }
 
-  /**
-  (Internal use only) Sets the continuous state to @p xc, deleting whatever
+  /** (Internal use only) Sets the continuous state to @p xc, deleting whatever
   was there before.
   @warning Does _not_ invalidate state-dependent computations. */
   void init_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
     do_access_mutable_state().set_continuous_state(std::move(xc));
   }
 
-  /**
-  (Internal use only) Sets the discrete state to @p xd, deleting whatever
+  /** (Internal use only) Sets the discrete state to @p xd, deleting whatever
   was there before.
   @warning Does _not_ invalidate state-dependent computations. */
   void init_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
     do_access_mutable_state().set_discrete_state(std::move(xd));
   }
 
-  /**
-  (Internal use only) Sets the abstract state to @p xa, deleting whatever
+  /** (Internal use only) Sets the abstract state to @p xa, deleting whatever
   was there before.
   @warning Does _not_ invalidate state-dependent computations. */
   void init_abstract_state(std::unique_ptr<AbstractValues> xa) {
     do_access_mutable_state().set_abstract_state(std::move(xa));
   }
 
-  /**
-  (Internal use only) Sets the parameters to @p params, deleting whatever
+  /** (Internal use only) Sets the parameters to @p params, deleting whatever
   was there before. You must supply a Parameters object; null is not
   acceptable.
   @warning Does _not_ invalidate parameter-dependent computations. */

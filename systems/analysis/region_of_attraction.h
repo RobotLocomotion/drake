@@ -8,28 +8,24 @@ namespace drake {
 namespace systems {
 namespace analysis {
 
-/**
-Consolidates the many possible options to be passed to the region of
+/** Consolidates the many possible options to be passed to the region of
 attraction algorithm. */
 struct RegionOfAttractionOptions {
   RegionOfAttractionOptions() = default;
 
-  /**
-  A candidate Lyapunov function using the symbolic Variables named
+  /** A candidate Lyapunov function using the symbolic Variables named
   x0, x1, ..., where the order matches the continuous state vector of the
   system being evaluated (or the vector state_variables). */
   symbolic::Expression lyapunov_candidate{};
 
-  /**
-  If non-empty, a list of Variable that associates the variable name with
+  /** If non-empty, a list of Variable that associates the variable name with
   the elements of the System's continuous state vector.  Must be empty
   or have size equal to the number of continuous state variables in the
   system. */
   VectorX<symbolic::Variable> state_variables{};
 };
 
-/**
-Estimates the region of attraction of the time-invariant @p system at the
+/** Estimates the region of attraction of the time-invariant @p system at the
 fixed point defined by @p context.
 
 This implementation only searches for the largest level set of the

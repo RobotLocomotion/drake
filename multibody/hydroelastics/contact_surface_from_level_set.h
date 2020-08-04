@@ -232,8 +232,7 @@ int IntersectTetWithLevelSet(
 //  edge -- if the level set function itself is not linear, it will have a
 //  different zero point along the edge.
 
-/**
-Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
+/** Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
 method computes a triangulation of the zero level set of `φ(V)` in the
 volume defined by `mesh_M`.
 

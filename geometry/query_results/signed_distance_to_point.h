@@ -9,8 +9,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-The data for reporting the signed distance from a query point to a geometry.
+/** The data for reporting the signed distance from a query point to a geometry.
 Reports the result of a signed distance query between a query point Q and
 geometry G. This includes G's id, the signed distance, the nearest point N
 on the surface of G, and the gradient of the signed distance with respect to
@@ -26,8 +25,7 @@ struct SignedDistanceToPoint{
 
   SignedDistanceToPoint() = default;
 
-  /**
-  Constructs SignedDistanceToPoint struct from calculated results.
+  /** Constructs SignedDistanceToPoint struct from calculated results.
   @param id_G_in     The id of the geometry G to which we measure distance from
                      the query point Q.
   @param p_GN_in     The position of the nearest point N on G's surface from
@@ -61,26 +59,21 @@ struct SignedDistanceToPoint{
     DRAKE_ASSERT(!(isnan(grad_W(0)) || isnan(grad_W(1)) || isnan(grad_W(2))));
   }
 
-  /**
-  The id of the geometry G to which we measure distance from the query
+  /** The id of the geometry G to which we measure distance from the query
   point Q. */
   GeometryId id_G;
-  /**
-  The position of the nearest point N on G's surface from the query
+  /** The position of the nearest point N on G's surface from the query
   point Q, expressed in G's frame. */
   Vector3<T> p_GN;
-  /**
-  The signed distance from the query point Q to the nearest point N on the
+  /** The signed distance from the query point Q to the nearest point N on the
   surface of geometry G. It is positive if Q is outside G. It is negative
   if Q is inside G. It is zero if Q is on the boundary of G. */
   T distance{};
-  /**
-  The gradient vector of the distance function with respect to the query
+  /** The gradient vector of the distance function with respect to the query
   point Q, expressed in world frame W. */
   Vector3<T> grad_W;
 
-  /**
-  Whether grad_W is well defined.
+  /** Whether grad_W is well defined.
   Ref to the constructor SignedDistanceToPoint() for an explanation. */
   bool is_grad_W_unique;
 };

@@ -7,8 +7,7 @@ namespace systems {
 
 template <typename T> class System;
 
-/**
-A tag object that denotes a System subclass `S` in function signatures.
+/** A tag object that denotes a System subclass `S` in function signatures.
 
 For example, `SystemTypeTag<MySystem>{}` will create a dummy object that
 can be used to call functions that look like:

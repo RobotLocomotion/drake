@@ -10,8 +10,7 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
 
-/**
-@file Functions for reasoning about 3D rotations in a @MathematicalProgram.
+/** @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
 
 There are a number of choices for representing 3D rotations in a
 mathematical program -- many of these choices involve using more than
@@ -40,8 +39,7 @@ of these non-convex constraints. */
 namespace drake {
 namespace solvers {
 
-/**
-Allocates a 3x3 matrix of decision variables with the trivial bounding
+/** Allocates a 3x3 matrix of decision variables with the trivial bounding
 box constraint ensuring all elements are [-1,1], and the linear constraint
 imposing -1 <= trace(R) <= 3. */
 MatrixDecisionVariable<3, 3> NewRotationMatrixVars(
@@ -62,8 +60,7 @@ enum RollPitchYawLimitOptions {
 };
 typedef uint32_t RollPitchYawLimits;
 
-/**
-Applies *very conservative* limits on the entries of R for the cases when
+/** Applies *very conservative* limits on the entries of R for the cases when
 rotations can be limited (for instance, if you want to search over
 rotations, but there is an obvious symmetry in the problem so that e.g.
 0 < pitch < PI need not be considered).  A matrix so constrained may still
@@ -79,15 +76,13 @@ void AddBoundingBoxConstraintsImpliedByRollPitchYawLimits(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     RollPitchYawLimits limits = kNoLimits);
 
-/**
-Adds constraint (10) from https://arxiv.org/pdf/1403.4914.pdf ,
+/** Adds constraint (10) from https://arxiv.org/pdf/1403.4914.pdf ,
 which exactly represents the convex hull of all rotation matrices in 3D. */
 void AddRotationMatrixSpectrahedralSdpConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
-/**
-Adds a set of convex constraints which approximate the set of orthogonal
+/** Adds a set of convex constraints which approximate the set of orthogonal
 matrices, O(3).  Adds the bilinear constraints that the each column Ri has
 length <= 1 and that Ri'Rj approx 0 via
    -2 + |Ri|^2 + |Rj|^2 <= 2Ri'Rj <= 2 - |Ri|^2 - |Rj|^2 (for all i!=j),

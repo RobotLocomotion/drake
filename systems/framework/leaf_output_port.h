@@ -20,8 +20,7 @@ namespace systems {
 // TODO(sherm1) Output ports that simply expose existing Context objects
 // should not require a cache entry. Add provision for that to avoid the
 // unnecessary copying currently done by Eval() for those.
-/**
-(Advanced.) Implements an output port whose value is managed by a cache
+/** (Advanced.) Implements an output port whose value is managed by a cache
 entry in the same LeafSystem as the port. This is intended for internal use in
 implementing the DeclareOutputPort() variants in LeafSystem.
 
@@ -36,20 +35,17 @@ class LeafOutputPort final : public OutputPort<T> {
   // TODO(sherm1) These callbacks should not be specific to this class. Move
   // elsewhere, e.g. framework_common.h so they can be shared with cache entry.
 
-  /**
-  Signature of a function suitable for allocating an object that can hold
+  /** Signature of a function suitable for allocating an object that can hold
   a value of a particular output port. The result is returned as an
   AbstractValue even if this is a vector-valued port. */
   using AllocCallback = std::function<std::unique_ptr<AbstractValue>()>;
 
-  /**
-  Signature of a function suitable for calculating a value of a particular
+  /** Signature of a function suitable for calculating a value of a particular
   output port, given a place to put the value. */
   using CalcCallback =
   std::function<void(const Context<T>&, AbstractValue*)>;
 
-  /**
-  Signature of a function suitable for calculating a value of a particular
+  /** Signature of a function suitable for calculating a value of a particular
   vector-valued output port, given a place to put the value. */
   using CalcVectorCallback =
   std::function<void(const Context<T>&, BasicVector<T>*)>;
@@ -60,8 +56,7 @@ class LeafOutputPort final : public OutputPort<T> {
     return *cache_entry_;
   }
 
-  /**
-  (Debugging) Specifies that caching should be disabled for this output
+  /** (Debugging) Specifies that caching should be disabled for this output
   port when a Context is first allocated. This is useful if you have observed
   different behavior with caching on or off and would like to determine if
   the problem is caused by this port.

@@ -9,8 +9,7 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-/**
-This class implements a controller for a Schunk WSG gripper in position
+/** This class implements a controller for a Schunk WSG gripper in position
 control mode.  It assumes that the gripper is modeled in the plant as two
 independent prismatic joints for the fingers.
 
@@ -63,8 +62,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   // the controller, except that kp_command is decreased by 10x.  Setting
   // kd_constraint = 50.0 resulted in some numerical instability in existing
   // kuka tests.  They could be tuned in better with more simulation effort.
-  /**
-  Initialize the controller.  The gain parameters are set based
+  /** Initialize the controller.  The gain parameters are set based
   limited tuning in simulation with a kuka picking up small objects. */
   SchunkWsgPdController(double kp_command = 200.0, double kd_command = 5.0,
                         double kp_constraint = 2000.0,
@@ -113,8 +111,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   systems::OutputPortIndex grip_force_output_port_{};
 };
 
-/**
-This class implements a controller for a Schunk WSG gripper in position
+/** This class implements a controller for a Schunk WSG gripper in position
 control mode adding a discrete-derivative to estimate the desired
 velocity from the desired position commands.  It is a thin wrapper
 around SchunkWsgPdController.
@@ -135,8 +132,7 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
 
-  /**
-  Initialize the controller.  The default @p time_step is set to match
+  /** Initialize the controller.  The default @p time_step is set to match
   the update rate of the wsg firmware.  The gain parameters are set based
   limited tuning in simulation with a kuka picking up small objects.
   @see SchunkWsgPdController::SchunkWsgPdController() */

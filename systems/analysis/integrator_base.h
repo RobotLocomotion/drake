@@ -20,8 +20,7 @@
 namespace drake {
 namespace systems {
 
-/**
-@addtogroup simulation
+/** @addtogroup simulation
 @{
 @defgroup integrators Integrators
 
@@ -105,8 +104,7 @@ of these outputs may vary with each integration scheme implementation.
                     Springer, 1996.
 @} */
 
-/**
-An abstract class for an integrator for ODEs and DAEs as represented by a
+/** An abstract class for an integrator for ODEs and DAEs as represented by a
 Drake System. Integrators solve initial value problems of the form:<pre>
 ẋ(t) = f(t, x(t)) with f : ℝ × ℝⁿ → ℝⁿ
 </pre>
@@ -125,8 +123,7 @@ class IntegratorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IntegratorBase)
 
   // TODO(edrumwri): incorporate kReachedZeroCrossing into the simulator.
-  /**
-  Status returned by StepOnceAtMost().
+  /** Status returned by StepOnceAtMost().
   When a step is successful, it will return an indication of what caused it
   to stop where it did. When unsuccessful it will throw an exception so you
   won't see any return value. When return of control is due ONLY to reaching
@@ -146,14 +143,12 @@ class IntegratorBase {
     kTimeHasAdvanced = 4,
     /** Reached the desired integration time without reaching an update time. */
     kReachedBoundaryTime = 5,
-    /**
-    Took maximum number of steps without finishing integrating over the
+    /** Took maximum number of steps without finishing integrating over the
     interval. */
     kReachedStepLimit = 6,
   };
 
-  /**
-  Maintains references to the system being integrated and the context used
+  /** Maintains references to the system being integrated and the context used
   to specify the initial conditions for that system (if any).
   @param system A reference to the system to be integrated; the integrator
                 will maintain a reference to the system in perpetuity, so
@@ -172,8 +167,7 @@ class IntegratorBase {
 
   virtual ~IntegratorBase() = default;
 
-  /**
-  @anchor integrator-accuracy
+  /** @anchor integrator-accuracy
   @name Methods for getting and setting integrator accuracy
   The precise meaning of *accuracy* is a complicated discussion, but it
   translates roughly to the number of significant digits you want in the
@@ -202,8 +196,7 @@ class IntegratorBase {
   @{ */
   // TODO(edrumwri): complain if integrator with error estimation wants to drop
   //                 below the minimum step size
-  /**
-  Request that the integrator attempt to achieve a particular accuracy for
+  /** Request that the integrator attempt to achieve a particular accuracy for
   the continuous portions of the simulation. Otherwise a default accuracy is
   chosen for you. This may be ignored for fixed-step integration since
   accuracy control requires variable step sizes. You should call
@@ -222,20 +215,17 @@ class IntegratorBase {
     accuracy_in_use_ = accuracy;
   }
 
-  /**
-  Gets the target accuracy.
+  /** Gets the target accuracy.
   @sa get_accuracy_in_use() */
   double get_target_accuracy() const { return target_accuracy_; }
 
-  /**
-  Gets the accuracy in use by the integrator. This number may differ from
+  /** Gets the accuracy in use by the integrator. This number may differ from
   the target accuracy if, for example, the user has requested an accuracy
   not attainable or not recommended for the particular integrator. */
   double get_accuracy_in_use() const { return accuracy_in_use_; }
   // @}
 
-  /**
-  @anchor error-estimation-and-control
+  /** @anchor error-estimation-and-control
   @name Methods related to error estimation and control
   Established methods for integrating ordinary differential equations
   invariably make provisions for estimating the "local error" (i.e., the
@@ -248,15 +238,13 @@ class IntegratorBase {
   direct transcription methods for trajectory optimization- error estimation
   allows the user to assess the accuracy of the solution.
   @{ */
-  /**
-  Derived classes must override this function to indicate whether the
+  /** Derived classes must override this function to indicate whether the
   integrator supports error estimation. Without error estimation, the target
   accuracy setting (see @ref integrator-accuracy "accuracy settings") will be
   unused. */
   virtual bool supports_error_estimation() const = 0;
 
-  /**
-  Derived classes must override this function to return the order of the
+  /** Derived classes must override this function to return the order of the
   asymptotic term in the integrator's error estimate. An error estimator
   approximates the truncation error in an integrator's solution. That
   truncation error e(.) is approximated by a Taylor Series expansion in the
@@ -283,23 +271,20 @@ class IntegratorBase {
   implementation should return 0. */
   virtual int get_error_estimate_order() const = 0;
 
-  /**
-  Gets the error estimate (used only for integrators that support error
+  /** Gets the error estimate (used only for integrators that support error
   estimation). If the integrator does not support error estimation, nullptr
   is returned. */
   const ContinuousState<T>* get_error_estimate() const {
     return err_est_.get();
   }
 
-  /**
-  Return the step size the integrator would like to take next, based
+  /** Return the step size the integrator would like to take next, based
   primarily on the integrator's accuracy prediction. This value will not
   be computed for integrators that do not support error estimation and
   NaN will be returned. */
   const T& get_ideal_next_step_size() const { return ideal_next_step_size_; }
 
-  /**
-  Sets an integrator with error control to fixed step mode. If the integrator
+  /** Sets an integrator with error control to fixed step mode. If the integrator
   runs in fixed step mode, it will always take the maximum step size
   directed (which may be that determined by get_maximum_step_size(), or may
   be smaller, as directed by, e.g., Simulator for event handling purposes).
@@ -315,8 +300,7 @@ class IntegratorBase {
     fixed_step_mode_ = flag;
   }
 
-  /**
-  Gets whether an integrator is running in fixed step mode. If the integrator
+  /** Gets whether an integrator is running in fixed step mode. If the integrator
   does not support error estimation, this function will always return `true`.
   @sa set_fixed_step_mode() */
   bool get_fixed_step_mode() const {
@@ -324,8 +308,7 @@ class IntegratorBase {
   }
   // @}
 
-  /**
-  @name Methods for weighting state variable errors \
+  /** @name Methods for weighting state variable errors \
         (in the context of error control)
   @anchor weighting-state-errors
   @{
@@ -520,8 +503,7 @@ class IntegratorBase {
                      http://dx.doi.org/10.1016/j.piutam.2011.04.023
 
   @sa CalcStateChangeNorm() */
-  /**
-  Gets the weighting vector (equivalent to a diagonal matrix) applied to
+  /** Gets the weighting vector (equivalent to a diagonal matrix) applied to
   weighting both generalized coordinate and velocity state variable errors,
   as described in the group documentation. Only used for integrators that
   support error estimation. */
@@ -529,8 +511,7 @@ class IntegratorBase {
     return qbar_weight_;
   }
 
-  /**
-  Gets a mutable weighting vector (equivalent to a diagonal matrix) applied
+  /** Gets a mutable weighting vector (equivalent to a diagonal matrix) applied
   to weighting both generalized coordinate and velocity state variable
   errors, as described in the group documentation. Only used for
   integrators that support error estimation. Returns a VectorBlock
@@ -546,16 +527,14 @@ class IntegratorBase {
     return qbar_weight_.head(qbar_weight_.rows());
   }
 
-  /**
-  Gets the weighting vector (equivalent to a diagonal matrix) for
+  /** Gets the weighting vector (equivalent to a diagonal matrix) for
   weighting errors in miscellaneous continuous state variables `z`. Only used
   for integrators that support error estimation. */
   const Eigen::VectorXd& get_misc_state_weight_vector() const {
     return z_weight_;
   }
 
-  /**
-  Gets a mutable weighting vector (equivalent to a diagonal matrix) for
+  /** Gets a mutable weighting vector (equivalent to a diagonal matrix) for
   weighting errors in miscellaneous continuous state variables `z`. Only used
   for integrators that support error estimation. Returns a VectorBlock
   to make the values mutable without permitting changing the size of
@@ -570,8 +549,7 @@ class IntegratorBase {
   }
   // @}
 
-  /**
-  @anchor integrator-initial-step-size
+  /** @anchor integrator-initial-step-size
   @name Methods related to initial step size
   From [Watts 1983], "One of the more critical issues in solving ordinary
   differential equations by a step-by-step process occurs in the starting
@@ -621,8 +599,7 @@ class IntegratorBase {
                      Appl. Math., Vol. 8, pp. 177-191, 1983.
   @{ */
 
-  /**
-  Request that the first attempted integration step have a particular size.
+  /** Request that the first attempted integration step have a particular size.
   If no request is made, the integrator will estimate a suitable size
   for the initial step attempt. *If the integrator does not support error
   control*, this method will throw a std::logic_error (call
@@ -642,8 +619,7 @@ class IntegratorBase {
     req_initial_step_size_ = step_size;
   }
 
-  /**
-  Gets the target size of the first integration step. You can find out what
+  /** Gets the target size of the first integration step. You can find out what
   step size was *actually* used for the first integration step with
   `get_actual_initial_step_size_taken()`.
   @see request_initial_step_size_target() */
@@ -652,8 +628,7 @@ class IntegratorBase {
   }
   // @}
 
-  /**
-  @anchor integrator-maxstep
+  /** @anchor integrator-maxstep
   @name Methods related to maximum integration step size
 
   Sets the _nominal_ maximum step size- the actual maximum step size taken
@@ -662,8 +637,7 @@ class IntegratorBase {
   default maximum step size, which might be infinite.
   @{ */
   // TODO(edrumwri): Update this comment when stretch size is configurable.
-  /**
-  Sets the maximum step size that may be taken by this integrator. This setting
+  /** Sets the maximum step size that may be taken by this integrator. This setting
   should be used if you know the maximum time scale of your problem. The
   integrator may stretch the maximum step size by as much as 1% to reach a
   discrete event. For fixed step integrators, all steps will be taken at the
@@ -676,15 +650,13 @@ class IntegratorBase {
   }
 
   // TODO(edrumwri): Update this comment when stretch size is configurable.
-  /**
-  Gets the maximum step size that may be taken by this integrator. This is
+  /** Gets the maximum step size that may be taken by this integrator. This is
   a soft maximum: the integrator may stretch it by as much as 1% to hit a
   discrete event.
   @sa set_requested_minimum_step_size() */
   const T& get_maximum_step_size() const { return max_step_size_; }
 
-  /**
-  Gets the stretch factor (> 1), which is multiplied by the maximum
+  /** Gets the stretch factor (> 1), which is multiplied by the maximum
   (typically user-designated) integration step size to obtain the amount
   that the integrator is able to stretch the maximum time step toward
   hitting an upcoming publish or update event in
@@ -693,8 +665,7 @@ class IntegratorBase {
   double get_stretch_factor() const { return 1.01; }
   // @}
 
-  /**
-  @anchor integrator-minstep
+  /** @anchor integrator-minstep
   @name Methods related to minimum integration step size selection and behavior
 
   Variable step integrators reduce their step sizes as needed to achieve
@@ -756,8 +727,7 @@ class IntegratorBase {
   of these cases. */
 
   /** @{ */
-  /**
-  Sets the requested minimum step size `h_min` that may be taken by this
+  /** Sets the requested minimum step size `h_min` that may be taken by this
   integrator. No step smaller than this will be taken except under
   circumstances as described @ref integrator-minstep "above". This setting will
   be ignored if it is smaller than the absolute minimum `h_floor` also
@@ -772,15 +742,13 @@ class IntegratorBase {
     req_min_step_size_ = min_step_size;
   }
 
-  /**
-  Gets the requested minimum step size `h_min` for this integrator.
+  /** Gets the requested minimum step size `h_min` for this integrator.
   @sa set_requested_minimum_step_size()
   @sa get_working_minimum_step_size(T) */
   const T& get_requested_minimum_step_size() const {
     return req_min_step_size_; }
 
-  /**
-  Sets whether the integrator should throw a std::runtime_error exception
+  /** Sets whether the integrator should throw a std::runtime_error exception
   when the integrator's step size selection algorithm determines that it
   must take a step smaller than the minimum step size (for, e.g., purposes
   of error control). Default is `true`. If `false`, the integrator will
@@ -790,16 +758,14 @@ class IntegratorBase {
     min_step_exceeded_throws_ = throws;
   }
 
-  /**
-  Reports the current setting of the throw_on_minimum_step_size_violation
+  /** Reports the current setting of the throw_on_minimum_step_size_violation
   flag.
   @sa set_throw_on_minimum_step_size_violation(). */
   bool get_throw_on_minimum_step_size_violation() const {
     return min_step_exceeded_throws_;
   }
 
-  /**
-  Gets the current value of the working minimum step size `h_work(t)` for
+  /** Gets the current value of the working minimum step size `h_work(t)` for
   this integrator, which may vary with the current time t as stored in the
   integrator's context.
   See @ref integrator-minstep "this section" for more detail. */
@@ -814,8 +780,7 @@ class IntegratorBase {
   }
   // @}
 
-  /**
-  Resets the integrator to initial values, i.e., default construction
+  /** Resets the integrator to initial values, i.e., default construction
   values. */
   void Reset() {
     // Kill the error estimate and weighting matrices.
@@ -851,8 +816,7 @@ class IntegratorBase {
     initialization_done_ = false;
   }
 
-  /**
-  An integrator must be initialized before being used. The pointer to the
+  /** An integrator must be initialized before being used. The pointer to the
   context must be set before Initialize() is called (or an std::logic_error
   will be thrown). If Initialize() is not called, an exception will be
   thrown when attempting to call StepOnceAtMost(). To reinitialize the
@@ -912,8 +876,7 @@ class IntegratorBase {
   }
 
   // TODO(edrumwri): Make the stretch size configurable.
-  /**
-  (Internal use only) Integrates the system forward in time by a single step
+  /** (Internal use only) Integrates the system forward in time by a single step
   with step size subject to integration error tolerances (assuming that the
   integrator supports error estimation). The integrator must already have
   been initialized or an exception will be thrown. The context will be
@@ -946,8 +909,7 @@ class IntegratorBase {
   StepResult IntegrateNoFurtherThanTime(
     const T& publish_time, const T& update_time, const T& boundary_time);
 
-  /**
-  Stepping function for integrators operating outside of Simulator that
+  /** Stepping function for integrators operating outside of Simulator that
   advances the continuous state exactly to `t_final`. This method is
   designed for integrator users that do not wish to consider publishing or
   discontinuous, mid-interval updates. This method will step the integrator
@@ -982,8 +944,7 @@ class IntegratorBase {
     } while (context.get_time() < t_final);
   }
 
-  /**
-  Stepping function for integrators operating outside of Simulator that
+  /** Stepping function for integrators operating outside of Simulator that
   advances the continuous state *using a single step* to `t_target`.
   This method is designed for integrator users that do not wish to
   consider publishing or discontinuous, mid-interval updates. One such
@@ -1047,16 +1008,14 @@ class IntegratorBase {
     return true;
   }
 
-  /**
-  @name Integrator statistics methods
+  /** @name Integrator statistics methods
   @{
   These methods allow the caller to manipulate and query integrator
   statistics. Generally speaking, the larger the integration step taken, the
   faster a simulation will run. These methods allow querying (and resetting)
   the integrator statistics as one means of determining how to make
   a simulation run faster. */
-  /**
-  Forget accumulated statistics. These are reset to the values they have
+  /** Forget accumulated statistics. These are reset to the values they have
   post construction or immediately after `Initialize()`. */
   void ResetStatistics() {
     actual_initial_step_size_taken_ = nan();
@@ -1070,31 +1029,27 @@ class IntegratorBase {
     DoResetStatistics();
   }
 
-  /**
-  Gets the number of failed sub-steps (implying one or more step size
+  /** Gets the number of failed sub-steps (implying one or more step size
   reductions was required to permit solving the necessary nonlinear system
   of equations). */
   int64_t get_num_substep_failures() const {
     return num_substep_failures_;
   }
 
-  /**
-  Gets the number of step size shrinkages due to sub-step failures (e.g.,
+  /** Gets the number of step size shrinkages due to sub-step failures (e.g.,
   integrator convergence failures) since the last call to ResetStatistics()
   or Initialize(). */
   int64_t get_num_step_shrinkages_from_substep_failures() const {
     return num_shrinkages_from_substep_failures_;
   }
 
-  /**
-  Gets the number of step size shrinkages due to failure to meet targeted
+  /** Gets the number of step size shrinkages due to failure to meet targeted
   error tolerances, since the last call to ResetStatistics or Initialize(). */
   int64_t get_num_step_shrinkages_from_error_control() const {
     return num_shrinkages_from_error_control_;
   }
 
-  /**
-  Returns the number of ODE function evaluations (calls to
+  /** Returns the number of ODE function evaluations (calls to
   CalcTimeDerivatives()) since the last call to ResetStatistics() or
   Initialize(). This count includes *all* such calls including (1)
   those necessary to compute Jacobian matrices; (2) those used in rejected
@@ -1108,8 +1063,7 @@ class IntegratorBase {
     return actual_initial_step_size_taken_;
   }
 
-  /**
-  The size of the smallest step taken *as the result of a controlled
+  /** The size of the smallest step taken *as the result of a controlled
   integration step adjustment* since the last Initialize() or
   ResetStatistics() call. This value will be NaN for integrators without
   error estimation. */
@@ -1117,20 +1071,17 @@ class IntegratorBase {
     return smallest_adapted_step_size_taken_;
   }
 
-  /**
-  The size of the largest step taken since the last Initialize() or
+  /** The size of the largest step taken since the last Initialize() or
   ResetStatistics() call. */
   const T& get_largest_step_size_taken() const {
     return largest_step_size_taken_;
   }
 
-  /**
-  The number of integration steps taken since the last Initialize()
+  /** The number of integration steps taken since the last Initialize()
   or ResetStatistics() call. */
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /**
-  Manually increments the statistic for the number of ODE evaluations.
+  /** Manually increments the statistic for the number of ODE evaluations.
   @warning Implementations should generally avoid calling this method;
            evaluating the ODEs using EvalTimeDerivatives() updates this
            statistic automatically and intelligently (by leveraging the
@@ -1139,19 +1090,16 @@ class IntegratorBase {
   void add_derivative_evaluations(double evals) { num_ode_evals_ += evals; }
   // @}
 
-  /**
-  Returns a const reference to the internally-maintained Context holding
+  /** Returns a const reference to the internally-maintained Context holding
   the most recent state in the trajectory. This is suitable for publishing or
   extracting information about this trajectory step. */
   const Context<T>& get_context() const { return *context_; }
 
-  /**
-  Returns a mutable pointer to the internally-maintained Context holding
+  /** Returns a mutable pointer to the internally-maintained Context holding
   the most recent state in the trajectory. */
   Context<T>* get_mutable_context() { return context_; }
 
-  /**
-  Replace the pointer to the internally-maintained Context with a different
+  /** Replace the pointer to the internally-maintained Context with a different
   one. This is useful for supplying a new set of initial conditions or
   wiping out the current context (by passing in a null pointer). You
   should invoke Initialize() after replacing the Context unless the
@@ -1164,8 +1112,7 @@ class IntegratorBase {
   }
 
 
-  /**
-  @name               Methods for dense output computation
+  /** @name               Methods for dense output computation
   @anchor dense_output_computation
   @{
 
@@ -1179,8 +1126,7 @@ class IntegratorBase {
   Once dense integration is started, and until it is stopped, all subsequent
   integration steps taken will update the allocated dense output. */
 
-  /**
-  Starts dense integration, allocating a new dense output for this integrator
+  /** Starts dense integration, allocating a new dense output for this integrator
   to use.
 
   @pre The integrator has been initialized.
@@ -1203,8 +1149,7 @@ class IntegratorBase {
     dense_output_ = std::make_unique<trajectories::PiecewisePolynomial<T>>();
   }
 
-  /**
-  Returns a const pointer to the integrator's current PiecewisePolynomial
+  /** Returns a const pointer to the integrator's current PiecewisePolynomial
   instance, holding a representation of the continuous state trajectory since
   the last StartDenseIntegration() call. This is suitable to query the
   integrator's current dense output, if any (may be nullptr). */
@@ -1212,8 +1157,7 @@ class IntegratorBase {
     return dense_output_.get();
   }
 
-  /**
-  Stops dense integration, yielding ownership of the current dense output
+  /** Stops dense integration, yielding ownership of the current dense output
   to the caller.
 
   @remarks This process is irreversible.
@@ -1236,39 +1180,34 @@ class IntegratorBase {
   }
   // @}
 
-  /**
-  Gets a constant reference to the system that is being integrated (and
+  /** Gets a constant reference to the system that is being integrated (and
   was provided to the constructor of the integrator). */
   const System<T>& get_system() const { return system_; }
 
   /** Indicates whether the integrator has been initialized. */
   bool is_initialized() const { return initialization_done_; }
 
-  /**
-  Gets the size of the last (previous) integration step. If no integration
+  /** Gets the size of the last (previous) integration step. If no integration
   steps have been taken, value will be NaN. */
   const T& get_previous_integration_step_size() const {
     return prev_step_size_;
   }
 
  protected:
-  /**
-  Resets any statistics particular to a specific integrator. The default
+  /** Resets any statistics particular to a specific integrator. The default
   implementation of this function does nothing. If your integrator
   collects its own statistics, you should re-implement this method and
   reset them there. */
   virtual void DoResetStatistics() {}
 
-  /**
-  Evaluates the derivative function and updates call statistics.
+  /** Evaluates the derivative function and updates call statistics.
   Subclasses should call this function rather than calling
   system.EvalTimeDerivatives() directly. */
   const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
     return EvalTimeDerivatives(get_system(), context);  // See below.
   }
 
-  /**
-  Evaluates the derivative function (and updates call statistics).
+  /** Evaluates the derivative function (and updates call statistics).
   Subclasses should call this function rather than calling
   system.EvalTimeDerivatives() directly. This version of this function
   exists to allow integrators to include AutoDiff'd systems in derivative
@@ -1287,16 +1226,14 @@ class IntegratorBase {
     return derivs;
   }
 
-  /**
-  Sets the working ("in use") accuracy for this integrator. The working
+  /** Sets the working ("in use") accuracy for this integrator. The working
   accuracy may not be equivalent to the target accuracy when the latter is
   too loose or tight for an integrator's capabilities.
   @sa get_accuracy_in_use()
   @sa get_target_accuracy() */
   void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
 
-  /**
-  Default code for advancing the continuous state of the system by a single
+  /** Default code for advancing the continuous state of the system by a single
   step of @p h_max (or smaller, depending on error control). This particular
   function is designed to be called directly by an error estimating
   integrator's DoStep() method to effect error-controlled integration.
@@ -1316,16 +1253,14 @@ class IntegratorBase {
            otherwise (i.e., a smaller step than @p h_max was taken). */
   bool StepOnceErrorControlledAtMost(const T& h_max);
 
-  /**
-  Computes the infinity norm of a change in continuous state. We use the
+  /** Computes the infinity norm of a change in continuous state. We use the
   infinity norm to capture the idea that, by providing accuracy requirements,
   the user can indirectly specify error tolerances that act to limit the
   largest error in any state vector component.
   @returns the norm (a non-negative value) */
   T CalcStateChangeNorm(const ContinuousState<T>& dx_state) const;
 
-  /**
-  Calculates adjusted integrator step sizes toward keeping state variables
+  /** Calculates adjusted integrator step sizes toward keeping state variables
   within error bounds on the next integration step. Note that it is not
   guaranteed that the (possibly) reduced step size will keep state variables
   within error bounds; however, the process of (1) taking a trial
@@ -1356,19 +1291,16 @@ class IntegratorBase {
       const T& attempted_step_size,
       bool* at_minimum_step_size) const;
 
-  /**
-  Derived classes can override this method to perform special
+  /** Derived classes can override this method to perform special
   initialization. This method is called during the Initialize() method. This
   default method does nothing. */
   virtual void DoInitialize() {}
 
-  /**
-  Derived classes can override this method to perform routines when
+  /** Derived classes can override this method to perform routines when
   Reset() is called. This default method does nothing. */
   virtual void DoReset() {}
 
-  /**
-  Returns a mutable pointer to the internally-maintained PiecewisePolynomial
+  /** Returns a mutable pointer to the internally-maintained PiecewisePolynomial
   instance, holding a representation of the continuous state trajectory since
   the last time StartDenseIntegration() was called. This is useful for
   derived classes to update the integrator's current dense output, if any
@@ -1377,8 +1309,7 @@ class IntegratorBase {
     return dense_output_.get();
   }
 
-  /**
-  Derived classes must implement this method to (1) integrate the continuous
+  /** Derived classes must implement this method to (1) integrate the continuous
   portion of this system forward by a single step of size @p h and
   (2) set the error estimate (via get_mutable_error_estimate()). This
   method is called during the integration process (via
@@ -1401,8 +1332,7 @@ class IntegratorBase {
   // TODO(russt): Allow subclasses to override the interpolation scheme used, as
   // the 'optimal' dense output scheme is only known by the specific integration
   // scheme being implemented.
-  /**
-  Calls DoStep(h) while recording the resulting step in the dense output.  If
+  /** Calls DoStep(h) while recording the resulting step in the dense output.  If
   the current dense output is already non-empty, then the time in the current
   context must match either the final segment time of the dense output, or the
   penultimate segment time (to support the case where the same integration step
@@ -1451,8 +1381,7 @@ class IntegratorBase {
     return true;
   }
 
-  /**
-  Gets an error estimate of the state variables recorded by the last call
+  /** Gets an error estimate of the state variables recorded by the last call
   to StepOnceFixedSize(). If the integrator does not support error
   estimation, this function will return nullptr. */
   ContinuousState<T>* get_mutable_error_estimate() { return err_est_.get(); }
@@ -1462,8 +1391,7 @@ class IntegratorBase {
     actual_initial_step_size_taken_ = h;
   }
 
-  /**
-  Sets the size of the smallest-step-taken statistic as the result of a
+  /** Sets the size of the smallest-step-taken statistic as the result of a
   controlled integration step adjustment. */
   void set_smallest_adapted_step_size_taken(const T& h) {
     smallest_adapted_step_size_taken_ = h;

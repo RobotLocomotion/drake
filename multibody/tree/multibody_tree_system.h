@@ -21,8 +21,7 @@ namespace internal {
 
 template<typename T> class MultibodyTree;
 
-/**
-This is a bare Drake System providing just enough functionality to allow
+/** This is a bare Drake System providing just enough functionality to allow
 standalone exercise of a MultibodyTree. MultibodyTree requires a few System
 services to allocate and access the resources it needs in a Context.
 
@@ -57,8 +56,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystem)
 
-  /**
-  Takes ownership of the given `tree`, finalizes it if it hasn't already
+  /** Takes ownership of the given `tree`, finalizes it if it hasn't already
   been finalized, and then allocates the resources it needs. You cannot modify
   the tree after that. The `tree` cannot be null.
 
@@ -78,8 +76,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   bool is_discrete() const { return is_discrete_; }
 
-  /**
-  Returns a reference to the up to date PositionKinematicsCache in the
+  /** Returns a reference to the up to date PositionKinematicsCache in the
   given Context, recalculating it first if necessary. */
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const {
@@ -87,8 +84,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
-  /**
-  Returns a reference to the up to date VelocityKinematicsCache in the
+  /** Returns a reference to the up to date VelocityKinematicsCache in the
   given Context, recalculating it first if necessary. Also if necessary, the
   PositionKinematicsCache will be recalculated as well. */
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
@@ -97,8 +93,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
-  /**
-  Returns a reference to the up to date ArticulatedBodyInertiaCache stored
+  /** Returns a reference to the up to date ArticulatedBodyInertiaCache stored
   in the given context, recalculating it first if necessary.
   See @ref internal_forward_dynamics
   "Articulated Body Algorithm Forward Dynamics" for further details. */
@@ -108,8 +103,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<ArticulatedBodyInertiaCache<T>>(context);
   }
 
-  /**
-  Returns a reference to the up to date cache of per-body spatial inertias
+  /** Returns a reference to the up to date cache of per-body spatial inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalSpatialInertiaInWorldCache(
       const systems::Context<T>& context) const {
@@ -117,8 +111,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
-  /**
-  Returns a reference to the up to date cache of per-body bias terms in
+  /** Returns a reference to the up to date cache of per-body bias terms in
   the given Context, recalculating it first if necessary.
   For a body B, this is the bias term `Fb_Bo_W(q, v)` in the equation
   `F_Bo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
@@ -130,8 +123,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /**
-  Returns a reference to the up to date cache of per-body spatial
+  /** Returns a reference to the up to date cache of per-body spatial
   acceleration bias terms in the given Context, recalculating it first if
   necessary. For a body B, this is the spatial acceleration bias term
   `Ab_WB(q, v)`, function of both q and v, as it appears in the acceleration
@@ -147,8 +139,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialAcceleration<T>>>(context);
   }
 
-  /**
-  For a body B, this evaluates the articulated body force bias
+  /** For a body B, this evaluates the articulated body force bias
   `Zb_Bo_W(q, v) = Pplus_PB_W(q) * Ab_WB(q, v)`. This computation is
   particularly expensive when performing O(n) forward dynamics with different
   applied forces but with the same multibody state x = [q, v] and therefore it
@@ -160,8 +151,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /**
-  For a body B connected to its parent P, returns a reference to the up to
+  /** For a body B connected to its parent P, returns a reference to the up to
   date cached value for H_PB_W, where H_PB_W is the `6 x nm` body-node hinge
   matrix that relates `V_PB_W` (body B's spatial velocity in its parent body P,
   expressed in world W) to this node's `nm` generalized velocities
@@ -182,21 +172,18 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // TODO(sherm1) Add ArticulatedBodyInertiaCache.
 
  protected:
-  /**
-  @name        Alternate API for derived classes
+  /** @name        Alternate API for derived classes
   Derived classes may use these methods to create a MultibodyTreeSystem
   that owns an empty MultibodyTree, then incrementally build it, and finalize
   it when done. See MultibodyPlant for a working example. */
   /** @{ */
 
-  /**
-  Default constructor allocates a MultibodyTree, with the intent that it
+  /** Default constructor allocates a MultibodyTree, with the intent that it
   will be filled in later, using mutable_tree() for access. You must call
   Finalize() when done before performing any computations. */
   explicit MultibodyTreeSystem(bool is_discrete = false);
 
-  /**
-  Constructor that specifies scalar-type conversion support.
+  /** Constructor that specifies scalar-type conversion support.
   If `tree` is given, we'll finalize it. Otherwise, we'll allocate an
   empty one and leave it not finalized.
   @param[in] converter Scalar-type conversion support helper.
@@ -221,8 +208,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   /** Returns a mutable reference to the MultibodyTree owned by this class. */
   MultibodyTree<T>& mutable_tree() const;
 
-  /**
-  Finalize the tree if that hasn't already been done, complete System
+  /** Finalize the tree if that hasn't already been done, complete System
   construction, and declare any needed Context resources for the tree. You must
   call this before performing any computation. */
   void Finalize();

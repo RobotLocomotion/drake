@@ -8,15 +8,13 @@
 #include "drake/common/hash.h"
 #include "drake/common/is_less_than_comparable.h"
 
-/**
-@file
+/** @file
 Provides drake::MakeSortedPair and drake::SortedPair for storing two
 values of a certain type in sorted order. */
 
 namespace drake {
 
-/**
-This class is similar to the std::pair class. However, this class uses a
+/** This class is similar to the std::pair class. However, this class uses a
 pair of homogeneous types (std::pair can use heterogeneous types) and sorts
 the first and second values such that the first value is less than or equal
 to the second one). Note that the sort is a stable one. Thus the SortedPair
@@ -32,13 +30,11 @@ struct SortedPair {
       "with types that can be compared using the less-than operator "
       "(operator<).");
 
-  /**
-  The default constructor creates `first()` and `second()` using their
+  /** The default constructor creates `first()` and `second()` using their
   respective default constructors. */
   SortedPair() = default;
 
-  /**
-  Rvalue reference constructor, permits constructing with std::unique_ptr
+  /** Rvalue reference constructor, permits constructing with std::unique_ptr
   types, for example. */
   SortedPair(T&& a, T&& b) {
     if (b < a) {
@@ -95,8 +91,7 @@ struct SortedPair {
   T second_{};         // The second of the two objects, according to operator<.
 };
 
-/**
-Support writing a SortedPair to a stream (conditional on the support of
+/** Support writing a SortedPair to a stream (conditional on the support of
 writing the underlying type T to a stream). */
 template <typename T>
 inline std::ostream& operator<<(std::ostream& out, const SortedPair<T>& pair) {
@@ -104,8 +99,7 @@ inline std::ostream& operator<<(std::ostream& out, const SortedPair<T>& pair) {
   return out;
 }
 
-/**
-Two pairs of the same type are equal iff their members are equal after
+/** Two pairs of the same type are equal iff their members are equal after
 sorting. */
 template <class T>
 inline bool operator==(const SortedPair<T>& x, const SortedPair<T>& y) {
@@ -145,8 +139,7 @@ operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
   return !(x < y);
 }
 
-/**
-@brief A convenience wrapper for creating a sorted pair from two objects.
+/** @brief A convenience wrapper for creating a sorted pair from two objects.
 @param x  The first_ object.
 @param y  The second_ object.
 @return A newly-constructed SortedPair object. */

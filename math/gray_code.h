@@ -6,8 +6,7 @@
 
 namespace drake {
 namespace math {
-/**
-GrayCodesMatrix::type returns an Eigen matrix of integers. The size of this
+/** GrayCodesMatrix::type returns an Eigen matrix of integers. The size of this
 matrix is determined by the number of digits in the Gray code. */
 template<int NumDigits>
 struct GrayCodesMatrix {
@@ -22,8 +21,7 @@ struct GrayCodesMatrix<Eigen::Dynamic> {
   typedef typename Eigen::MatrixXi type;
 };
 
-/**
-Returns a matrix whose i'th row is the Gray code for integer i.
+/** Returns a matrix whose i'th row is the Gray code for integer i.
 @tparam NumDigits The number of digits in the Gray code.
 @param num_digits The number of digits in the Gray code.
 @return M. M is a matrix of size 2ᵏ x k, where `k` is `num_digits`.
@@ -45,8 +43,7 @@ CalculateReflectedGrayCodes(int num_digits = NumDigits) {
   return gray_codes;
 }
 
-/**
-Converts the Gray code to an integer. For example
+/** Converts the Gray code to an integer. For example
 (0, 0) -> 0
 (0, 1) -> 1
 (1, 1) -> 2

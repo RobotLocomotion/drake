@@ -6,8 +6,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A system that specializes LinearSystem by setting coefficient matrices `A`,
+/** A system that specializes LinearSystem by setting coefficient matrices `A`,
 `B`, and `C` to all be zero. Thus, the only non-zero coefficient matrix is
 `D`. Specifically, given an input signal `u` and a state `x`, the output of
 this system, `y`, is:
@@ -26,8 +25,7 @@ class MatrixGain final : public LinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MatrixGain)
 
-  /**
-  A constructor where the gain matrix `D` is a square identity matrix of
+  /** A constructor where the gain matrix `D` is a square identity matrix of
   size @p size. */
   explicit MatrixGain(int size);
 

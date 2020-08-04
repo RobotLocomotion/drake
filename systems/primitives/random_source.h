@@ -11,8 +11,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A source block which generates random numbers at a fixed sampling interval,
+/** A source block which generates random numbers at a fixed sampling interval,
 with a zero-order hold between samples.  For continuous-time systems, this
 can be interpreted as a band-limited approximation of continuous white noise
 (with a power-spectral density of the form Ts * sinc^2( omega * Ts ), where
@@ -77,8 +76,7 @@ class RandomSource final : public LeafSystem<double> {
   /** An integer type for a random seed. */
   using Seed = RandomGenerator::result_type;
 
-  /**
-  Constructs the RandomSource system.
+  /** Constructs the RandomSource system.
   @param distribution The RandomDistribution used for each of the outputs.
   @param num_outputs The dimension of the (single) vector output port.
   @param sampling_interval_sec The sampling interval in seconds. */
@@ -93,13 +91,11 @@ class RandomSource final : public LeafSystem<double> {
   /** Returns the value of the `seed` parameter in the given context. */
   Seed get_seed(const Context<double>& context) const;
 
-  /**
-  Gets this system's fixed random seed (or else nullopt when the seed is
+  /** Gets this system's fixed random seed (or else nullopt when the seed is
   not fixed).  Refer to the class overview documentation for details. */
   std::optional<Seed> get_fixed_seed() const { return fixed_seed_; }
 
-  /**
-  Sets (or clears) this system's fixed random seed.  Refer to the class
+  /** Sets (or clears) this system's fixed random seed.  Refer to the class
   overview documentation for details. */
   void set_fixed_seed(const std::optional<Seed>& seed) { fixed_seed_ = seed; }
 
@@ -115,8 +111,7 @@ class RandomSource final : public LeafSystem<double> {
   std::optional<Seed> fixed_seed_;
 };
 
-/**
-For each subsystem input port in @p builder that is (a) not yet connected
+/** For each subsystem input port in @p builder that is (a) not yet connected
 and (b) labeled as random in the InputPort, this method will add a
 new RandomSource system of the appropriate type and connect it to the
 subsystem input port.

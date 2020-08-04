@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This file defines the topological structures which represent the logical
 connectivities between multibody tree elements. For instance, the
 BodyTopology for a Body will contain the topological information  specifying
@@ -46,14 +45,12 @@ struct BodyTopology {
   /** Default construction to invalid configuration. */
   BodyTopology() {}
 
-  /**
-  Constructs a body topology struct with index `body_index` and a body frame
+  /** Constructs a body topology struct with index `body_index` and a body frame
   with index `frame_index`. */
   BodyTopology(BodyIndex body_index, FrameIndex frame_index) :
       index(body_index), body_frame(frame_index) {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const BodyTopology& other) const {
     if (index != other.index) return false;
@@ -76,31 +73,27 @@ struct BodyTopology {
   /** Unique index in the MultibodyTree. */
   BodyIndex index{0};
 
-  /**
-  Unique index to the one and only inboard mobilizer a body can have.
+  /** Unique index to the one and only inboard mobilizer a body can have.
   By default this is initialized to "invalid" so that we can detect
   graph loops within add_mobilizer().
   This will remain "invalid" for the world body. */
   MobilizerIndex inboard_mobilizer{};
 
-  /**
-  Within the tree structure of a MultibodyTree, the immediate inboard (or
+  /** Within the tree structure of a MultibodyTree, the immediate inboard (or
   "parent") body connected by the Mobilizer indexed by `inboard_mobilizer`.
   By default this is initialized to "invalid" so that we can assert
   (from within add_mobilizer()) that each body can have only one parent
   body. Also, this will remain "invalid" for the world body. */
   BodyIndex parent_body{};
 
-  /**
-  Within the tree structure of a MultibodyTree, the immediate outboard (or
+  /** Within the tree structure of a MultibodyTree, the immediate outboard (or
   "child") bodies to this Body. */
   std::vector<BodyIndex> child_bodies;
 
   /** Unique index to the frame associated with this body. */
   FrameIndex body_frame{0};
 
-  /**
-  Depth level in the MultibodyTree, level = 0 for the world.
+  /** Depth level in the MultibodyTree, level = 0 for the world.
   Initialized to an invalid negative value so that we can detect at
   Finalize() when a user forgets to connect a body with a mobilizer. */
   int level{-1};
@@ -111,8 +104,7 @@ struct BodyTopology {
   /** `true` if this topology corresponds to a floating body in space. */
   bool is_floating{false};
 
-  /**
-  `true` if this topology corresponds to a floating body with rotations
+  /** `true` if this topology corresponds to a floating body with rotations
   parametrized by a quaternion. */
   bool has_quaternion_dofs{false};
 
@@ -120,8 +112,7 @@ struct BodyTopology {
   int floating_velocities_start{-1};
 };
 
-/**
-Data structure to store the topological information associated with a
+/** Data structure to store the topological information associated with a
 Frame. */
 struct FrameTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameTopology);
@@ -129,14 +120,12 @@ struct FrameTopology {
   // Default construction to invalid configuration.
   FrameTopology() {}
 
-  /**
-  Constructs a frame topology for a frame with index `frame_index`
+  /** Constructs a frame topology for a frame with index `frame_index`
   associated with a body with index `body_index`. */
   FrameTopology(FrameIndex frame_index, BodyIndex body_index) :
       index(frame_index), body(body_index) {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const FrameTopology& other) const {
     if (index != other.index) return false;
@@ -151,8 +140,7 @@ struct FrameTopology {
   BodyIndex body{0};
 };
 
-/**
-Data structure to store the topological information associated with a
+/** Data structure to store the topological information associated with a
 Mobilizer object. It stores:
 
 - Indexes to the inboard/outboard frames of this mobilizer.
@@ -169,8 +157,7 @@ struct MobilizerTopology {
   /** Default construction to invalid configuration. */
   MobilizerTopology() {}
 
-  /**
-  Constructs a %MobilizerTopology by specifying the the index
+  /** Constructs a %MobilizerTopology by specifying the the index
   `mobilizer_index` for `this` new topology, the indexes to the inboard and
   outboard frames the Mobilizer will connect, given by `in_frame` and
   `out_frame` respectively, and similarly the inboard and outboard bodies
@@ -188,8 +175,7 @@ struct MobilizerTopology {
       inboard_body(in_body), outboard_body(out_body),
       num_positions(num_positions_in), num_velocities(num_velocities_in) {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const MobilizerTopology& other) const {
     if (index != other.index) return false;
@@ -209,24 +195,21 @@ struct MobilizerTopology {
     return true;
   }
 
-  /**
-  Returns `true` if this %MobilizerTopology connects frames identified by
+  /** Returns `true` if this %MobilizerTopology connects frames identified by
   indexes `frame1` and `frame2`. */
   bool connects_frames(FrameIndex frame1, FrameIndex frame2) const {
     return (inboard_frame == frame1 && outboard_frame == frame2) ||
            (inboard_frame == frame2 && outboard_frame == frame1);
   }
 
-  /**
-  Returns `true` if this %MobilizerTopology connects bodies identified by
+  /** Returns `true` if this %MobilizerTopology connects bodies identified by
   indexes `body1` and `body2`. */
   bool connects_bodies(BodyIndex body1, BodyIndex body2) const {
     return (inboard_body == body1 && outboard_body == body2) ||
            (inboard_body == body2 && outboard_body == body1);
   }
 
-  /**
-  Returns `true` if this mobilizer topology corresponds to that of a weld
+  /** Returns `true` if this mobilizer topology corresponds to that of a weld
   mobilizer. */
   bool is_weld_mobilizer() const {
     return num_velocities == 0;
@@ -242,43 +225,36 @@ struct MobilizerTopology {
   BodyIndex inboard_body;
   /** Index to the outboard body. */
   BodyIndex outboard_body;
-  /**
-  Index to the tree node in the MultibodyTree responsible for this
+  /** Index to the tree node in the MultibodyTree responsible for this
   mobilizer's computations. See the documentation for BodyNodeTopology for
   further details on how these computations are organized. */
   BodyNodeIndex body_node;
 
-  /**
-  Mobilizer indexing info: Set at Finalize() time.
+  /** Mobilizer indexing info: Set at Finalize() time.
   Number of generalized coordinates granted by this mobilizer. */
   int num_positions{0};
-  /**
-  First entry in the global array of states, `x = [q v z]`, for the parent
+  /** First entry in the global array of states, `x = [q v z]`, for the parent
   MultibodyTree. */
   int positions_start{0};
   /** Number of generalized velocities granted by this mobilizer. */
   int num_velocities{0};
-  /**
-  First entry in the global array of states, `x = [q v z]`, for the parent
+  /** First entry in the global array of states, `x = [q v z]`, for the parent
   MultibodyTree. */
   int velocities_start{0};
 
-  /**
-  Start index in a vector containing only generalized velocities.
+  /** Start index in a vector containing only generalized velocities.
   It is also a valid index into a vector of generalized accelerations (which
   are the time derivatives of the generalized velocities) and into a vector
   of generalized forces. */
   int velocities_start_in_v{0};
 };
 
-/**
-Data structure to store the topological information associated with a
+/** Data structure to store the topological information associated with a
 ForceElement. */
 struct ForceElementTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ForceElementTopology);
 
-  /**
-  Default construction to an invalid configuration. This only exists to
+  /** Default construction to an invalid configuration. This only exists to
   satisfy demands of working with various container classes. */
   ForceElementTopology() {}
 
@@ -286,8 +262,7 @@ struct ForceElementTopology {
   explicit ForceElementTopology(ForceElementIndex force_element_index) :
       index(force_element_index) {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const ForceElementTopology& other) const {
     if (index != other.index) return false;
@@ -298,14 +273,12 @@ struct ForceElementTopology {
   ForceElementIndex index{0};
 };
 
-/**
-Data structure to store the topological information associated with a
+/** Data structure to store the topological information associated with a
 JointActuator. */
 struct JointActuatorTopology {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JointActuatorTopology);
 
-  /**
-  Default construction to an invalid configuration. This only exists to
+  /** Default construction to an invalid configuration. This only exists to
   satisfy demands of working with various container classes. */
   JointActuatorTopology() {}
 
@@ -317,8 +290,7 @@ struct JointActuatorTopology {
       actuator_index_start(start_index),
       num_dofs(ndofs) {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const JointActuatorTopology& other) const {
     if (index != other.index) return false;
@@ -329,8 +301,7 @@ struct JointActuatorTopology {
 
   /** Unique index in the MultibodyTree. */
   JointActuatorIndex index{0};
-  /**
-  For an actuator in a MultibodyTree model, this index corresponds to the
+  /** For an actuator in a MultibodyTree model, this index corresponds to the
   first entry in the global array u containing all actuation values for the
   entire model. */
   int actuator_index_start{-1};
@@ -338,8 +309,7 @@ struct JointActuatorTopology {
   int num_dofs{-1};
 };
 
-/**
-Data structure to store the topological information associated with a tree
+/** Data structure to store the topological information associated with a tree
 node. A tree node essentially consists of a body and its inboard mobilizer.
 A body node is in charge of the computations associated to that body and
 mobilizer, especially within a base-to-tip or tip-to-base recursion.
@@ -352,8 +322,7 @@ struct BodyNodeTopology {
   /** Default construction to invalid configuration. */
   BodyNodeTopology() {}
 
-  /**
-  Constructor specifying the topological information for a tree node.
+  /** Constructor specifying the topological information for a tree node.
   A tree node is instantiated for each body in the multibody system and it
   contains, in addition to that particular body, the inboard mobilizer
   connecting the body to the rest of the tree inwards (i.e. towards the
@@ -376,8 +345,7 @@ struct BodyNodeTopology {
       parent_body_node(parent_node_in),
       body(body_in), parent_body(parent_body_in), mobilizer(mobilizer_in) {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const BodyNodeTopology& other) const {
     if (index != other.index) return false;
@@ -459,23 +427,20 @@ struct BodyNodeTopology {
   int flexible_velocities_start{0};
 };
 
-/**
-Data structure to store the topological information associated with an
+/** Data structure to store the topological information associated with an
 entire MultibodyTree. */
 class MultibodyTreeTopology {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyTreeTopology);
 
-  /**
-  Default constructor creates an empty, invalid topology. The minimum valid
+  /** Default constructor creates an empty, invalid topology. The minimum valid
   topology for a minimum valid MultibodyTree contains at least the
   BodyTopology for the world. The topology for the _world_ body does not get
   added until MultibodyTree construction, which creates a _world_ body
   and adds it to the tree. */
   MultibodyTreeTopology() {}
 
-  /**
-  Returns `true` if all members of `this` topology are exactly equal to the
+  /** Returns `true` if all members of `this` topology are exactly equal to the
   members of `other`. */
   bool operator==(const MultibodyTreeTopology& other) const {
     if (is_valid_ != other.is_valid_) return false;
@@ -495,8 +460,7 @@ class MultibodyTreeTopology {
     return true;
   }
 
-  /**
-  Returns the number of bodies in the multibody tree. This includes the
+  /** Returns the number of bodies in the multibody tree. This includes the
   "world" body and therefore the minimum number of bodies after
   MultibodyTree::Finalize() will always be one, not zero. */
   int num_bodies() const { return static_cast<int>(bodies_.size()); }
@@ -506,8 +470,7 @@ class MultibodyTreeTopology {
     return static_cast<int>(frames_.size());
   }
 
-  /**
-  Returns the number of mobilizers in the multibody tree. Since the "world"
+  /** Returns the number of mobilizers in the multibody tree. Since the "world"
   body does not have a mobilizer, the number of mobilizers will always equal
   the number of bodies minus one. */
   int num_mobilizers() const {
@@ -534,16 +497,14 @@ class MultibodyTreeTopology {
     return tree_height_;
   }
 
-  /**
-  Returns a constant reference to the corresponding FrameTopology given the
+  /** Returns a constant reference to the corresponding FrameTopology given the
   FrameIndex. */
   const FrameTopology& get_frame(FrameIndex index) const {
     DRAKE_ASSERT(index < num_frames());
     return frames_[index];
   }
 
-  /**
-  Returns a constant reference to the corresponding BodyTopology given a
+  /** Returns a constant reference to the corresponding BodyTopology given a
   BodyIndex. */
   const BodyTopology& get_body(BodyIndex index) const {
     DRAKE_ASSERT(index < num_bodies());
@@ -556,16 +517,14 @@ class MultibodyTreeTopology {
     return bodies_[index];
   }
 
-  /**
-  Returns a constant reference to the corresponding BodyTopology given a
+  /** Returns a constant reference to the corresponding BodyTopology given a
   BodyIndex. */
   const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
     DRAKE_ASSERT(index < num_mobilizers());
     return mobilizers_[index];
   }
 
-  /**
-  Returns a constant reference to the corresponding JointActuatorTopology
+  /** Returns a constant reference to the corresponding JointActuatorTopology
   given a JointActuatorIndex. */
   const JointActuatorTopology& get_joint_actuator(
       JointActuatorIndex index) const {
@@ -573,16 +532,14 @@ class MultibodyTreeTopology {
     return joint_actuators_[index];
   }
 
-  /**
-  Returns a constant reference to the corresponding BodyNodeTopology given
+  /** Returns a constant reference to the corresponding BodyNodeTopology given
   a BodyNodeIndex. */
   const BodyNodeTopology& get_body_node(BodyNodeIndex index) const {
     DRAKE_ASSERT(index < get_num_body_nodes());
     return body_nodes_[index];
   }
 
-  /**
-  Creates and adds a new BodyTopology to this MultibodyTreeTopology.
+  /** Creates and adds a new BodyTopology to this MultibodyTreeTopology.
   The BodyTopology will be assigned a new, unique BodyIndex and FrameIndex
   values.
 
@@ -603,8 +560,7 @@ class MultibodyTreeTopology {
     return std::make_pair(body_index, body_frame_index);
   }
 
-  /**
-  Creates and adds a new FrameTopology, associated with the given
+  /** Creates and adds a new FrameTopology, associated with the given
   body_index, to this MultibodyTreeTopology.
 
   @throws std::logic_error if Finalize() was already called on `this`
@@ -622,8 +578,7 @@ class MultibodyTreeTopology {
     return frame_index;
   }
 
-  /**
-  Creates and adds a new MobilizerTopology connecting the inboard and
+  /** Creates and adds a new MobilizerTopology connecting the inboard and
   outboard multibody frames identified by indexes `in_frame` and
   `out_frame`, respectively. The created topology will correspond to that of
   a Mobilizer with `num_positions` and `num_velocities`.
@@ -701,8 +656,7 @@ class MultibodyTreeTopology {
     return mobilizer_index;
   }
 
-  /**
-  Creates and adds a new ForceElementTopology, associated with the given
+  /** Creates and adds a new ForceElementTopology, associated with the given
   force_index, to this MultibodyTreeTopology.
 
   @throws std::logic_error if Finalize() was already called on `this`
@@ -721,8 +675,7 @@ class MultibodyTreeTopology {
     return force_index;
   }
 
-  /**
-  Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
+  /** Creates and adds a new JointActuatorTopology for a joint with `num_dofs`
   degrees of freedom.
   @param[in] num_dofs
     The number of joint dofs actuated by this actuator.
@@ -747,8 +700,7 @@ class MultibodyTreeTopology {
     return actuator_index;
   }
 
-  /**
-  This method must be called by MultibodyTree::Finalize() after all
+  /** This method must be called by MultibodyTree::Finalize() after all
   topological elements in the tree (corresponding to joints, bodies, force
   elements, constraints) were added and before any computations are
   performed.
@@ -927,8 +879,7 @@ class MultibodyTreeTopology {
     is_valid_ = true;
   }
 
-  /**
-  Returns `true` if Finalize() was already called on `this` topology.
+  /** Returns `true` if Finalize() was already called on `this` topology.
   @see Finalize() */
   bool is_valid() const { return is_valid_; }
 
@@ -944,8 +895,7 @@ class MultibodyTreeTopology {
   /** Returns the total number of actuated joint dofs in the model. */
   int num_actuated_dofs() const { return num_actuated_dofs_; }
 
-  /**
-  Given a node in `this` topology, specified by its BodyNodeIndex `from`,
+  /** Given a node in `this` topology, specified by its BodyNodeIndex `from`,
   this method computes the kinematic path formed by all the nodes in the
   tree that connect `from` with the root (corresponding to the world).
 
@@ -981,8 +931,7 @@ class MultibodyTreeTopology {
     DRAKE_DEMAND(get_body_node((*path_to_world)[1]).level == 1);
   }
 
-  /**
-  Returns `true` if the body with index `body_index` is anchored to the
+  /** Returns `true` if the body with index `body_index` is anchored to the
   world.
   A body is said to be "anchored" if its kinematics path to the world only
   contains weld mobilizers.
@@ -1006,8 +955,7 @@ class MultibodyTreeTopology {
     return true;
   }
 
-  /**
-  This method partitions the tree topology into sub-graphs such that two
+  /** This method partitions the tree topology into sub-graphs such that two
   bodies are in the same sub-graph if there is a path between them which
   includes only welded-mobilizer.
   Each sub-graph of welded bodies is represented as a set of body indices.

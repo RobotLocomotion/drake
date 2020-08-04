@@ -9,8 +9,7 @@ namespace drake {
 namespace examples {
 namespace rimless_wheel {
 
-/**
-Expresses a RimlessWheel's geometry to a SceneGraph.
+/** Expresses a RimlessWheel's geometry to a SceneGraph.
 
 @system
 name: RimlessWheelGeometry
@@ -27,8 +26,7 @@ class RimlessWheelGeometry final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RimlessWheelGeometry);
   ~RimlessWheelGeometry() final;
 
-  /**
-  Creates, adds, and connects a RimlessWheelGeometry system into the given
+  /** Creates, adds, and connects a RimlessWheelGeometry system into the given
   `builder`.  Both the `floating_base_state_port.get_system()`
   and `scene_graph` systems must have been added to the given `builder`
   already.  The `rimless_wheel_params` sets the parameters of the
@@ -43,8 +41,7 @@ class RimlessWheelGeometry final : public systems::LeafSystem<double> {
       const RimlessWheelParams<double>& rimless_wheel_params,
       geometry::SceneGraph<double>* scene_graph);
 
-  /**
-  Creates, adds, and connects a RimlessWheelGeometry system into the given
+  /** Creates, adds, and connects a RimlessWheelGeometry system into the given
   `builder`.  Both the `floating_base_state_port.get_system()` and
   `scene_graph` systems must have been added to the given `builder` already.
   RimlessWheelParams are set to their default values.

@@ -4,8 +4,7 @@
 
 namespace drake {
 
-/**
-Provides a "dummy" value for a ScalarType -- a value that is unlikely to be
+/** Provides a "dummy" value for a ScalarType -- a value that is unlikely to be
 mistaken for a purposefully-computed value, useful for initializing a value
 before the true result is available.
 

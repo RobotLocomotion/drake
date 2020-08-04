@@ -7,8 +7,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-%VolumeMeshField is an abstract class that represents a field variable
+/** %VolumeMeshField is an abstract class that represents a field variable
 defined on a volume mesh.
 @tparam FieldValue  A valid Eigen scalar or vector of valid Eigen scalars for
                     the field value.
@@ -16,8 +15,7 @@ defined on a volume mesh.
 template <typename FieldValue, typename T>
 using VolumeMeshField = MeshField<FieldValue, VolumeMesh<T>>;
 
-/**
-%VolumeMeshFieldLinear is a concrete subclass of VolumeMeshField.
+/** %VolumeMeshFieldLinear is a concrete subclass of VolumeMeshField.
 @tparam FieldValue  A valid Eigen scalar or vector of valid Eigen scalars for
                     the field value.
 @tparam T  A valid Eigen scalar for coordinates. */

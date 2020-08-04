@@ -19,8 +19,7 @@
 namespace drake {
 namespace symbolic {
 
-/**
-Represents a set of variables.
+/** Represents a set of variables.
 
 This class is based on std::set<Variable>. The intent is to add things that
 we need including set-union (Variables::insert, operator+, operator+=),
@@ -102,8 +101,7 @@ class Variables {
   /** Erases @p key from a set. Return number of erased elements (0 or 1). */
   size_type erase(const Variable& key) { return vars_.erase(key); }
 
-  /**
-  Erases variables in @p vars from a set. Return number of erased
+  /** Erases variables in @p vars from a set. Return number of erased
   elements ([0, vars.size()]). */
   size_type erase(const Variables& vars);
 
@@ -162,8 +160,7 @@ Variables operator-(Variables vars1, const Variables& vars2);
 /** Returns set-minus(@p vars, { @p var }). */
 Variables operator-(Variables vars, const Variable& var);
 
-/**
-Returns the intersection of @p vars1 and @p vars2.
+/** Returns the intersection of @p vars1 and @p vars2.
 
 This function has a time complexity of `O(N₁ + N₂)` where `N₁` and `N₂` are
 the size of @p vars1 and @p vars2 respectively. */

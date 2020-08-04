@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Helpers for defining C++ LCM type serializers. */
 
 #include <string>
@@ -16,8 +15,7 @@ namespace pydrake {
 namespace pysystems {
 namespace pylcm {
 
-/**
-Provides a Python binding of C++ LCM type serializers. This registers the
+/** Provides a Python binding of C++ LCM type serializers. This registers the
 binding using the Python LCM type in `pydrake.systems.lcm.CppSerializer`,
 so that the type is easily indexed.
 @tparam CppType C++ message type.

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This is the entry point for all operations with spatial vectors.
 Spatial vectors represent spatial physical quantities such as spatial
 velocities, spatial accelerations and spatial forces. Spatial vectors are

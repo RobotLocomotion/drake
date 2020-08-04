@@ -201,8 +201,7 @@ struct wrap_function_impl {
 
 }  // namespace internal
 
-/**
-Wraps the types used in a function signature to produce a new function with
+/** Wraps the types used in a function signature to produce a new function with
 wrapped arguments and return value (if non-void). The wrapping is based on
 `wrap_arg_policy`.
 Any types that are of the form `std::function<F>` will be recursively
@@ -237,8 +236,7 @@ auto WrapFunction(Func&& func) {
       internal::infer_function_info(std::forward<Func>(func)));
 }
 
-/**
-Default case for argument wrapping, with pure pass-through. Consider
+/** Default case for argument wrapping, with pure pass-through. Consider
 inheriting from this for base cases.
 N.B. `Wrapped` is not necessary, but is used for demonstration purposes. */
 template <typename T>

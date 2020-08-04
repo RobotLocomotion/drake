@@ -17,8 +17,7 @@ typedef int BaseFieldT;
 /** Indicates the data the point cloud stores. */
 enum BaseField : int {
   kNone = 0,
-  /**
-  Inherit other fields. May imply an intersection of all
+  /** Inherit other fields. May imply an intersection of all
   compatible descriptors. */
   kInherit = 1 << 0,
   /** XYZ point in Cartesian space. */
@@ -36,8 +35,7 @@ constexpr BaseField kMaxBitInUse = kRGBs;
 
 }  // namespace internal
 
-/**
-Describes an descriptor field with a name and the descriptor's size.
+/** Describes an descriptor field with a name and the descriptor's size.
 
 @note This is defined as follows to enable an open set of descriptors, but
 ensure that these descriptor types are appropriately matched.
@@ -74,8 +72,7 @@ constexpr DescriptorType kDescriptorCurvature(1, "kDescriptorCurvature");
 /** Point-feature-histogram. */
 constexpr DescriptorType kDescriptorFPFH(33, "kDescriptorFPFH");
 
-/**
-Allows combination of `BaseField` and `DescriptorType` for a `PointCloud`.
+/** Allows combination of `BaseField` and `DescriptorType` for a `PointCloud`.
 You may combine multiple `BaseField`s, but you may have only zero or one
 `DescriptorType`.
 
@@ -85,15 +82,13 @@ class Fields {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Fields)
 
-  /**
-  @throws std::runtime_error if `base_fields` is not composed of valid
+  /** @throws std::runtime_error if `base_fields` is not composed of valid
   `BaseField`s. */
   Fields(BaseFieldT base_fields, DescriptorType descriptor_type)
       : base_fields_(base_fields),
         descriptor_type_(descriptor_type) {}
 
-  /**
-  @throws std::runtime_error if `base_fields` is not composed of valid
+  /** @throws std::runtime_error if `base_fields` is not composed of valid
   `BaseField`s. */
   Fields(BaseFieldT base_fields)  // NOLINT(runtime/explicit)
       : base_fields_(base_fields) {
@@ -122,8 +117,7 @@ class Fields {
     return descriptor_type_ != kDescriptorNone;
   }
 
-  /**
-  Provides in-place union.
+  /** Provides in-place union.
   @throws std::runtime_error if multiple non-None `DescriptorType`s are
   specified. */
   Fields& operator|=(const Fields& rhs) {
@@ -136,8 +130,7 @@ class Fields {
     return *this;
   }
 
-  /**
-  Provides union.
+  /** Provides union.
   @see operator|= for preconditions. */
   Fields operator|(const Fields& rhs) const {
     return Fields(*this) |= rhs;
@@ -186,15 +179,13 @@ class Fields {
 };
 
 // Do not use implicit conversion because it becomes ambiguous.
-/**
-Makes operator| compatible for `BaseField` + `DescriptorType`.
+/** Makes operator| compatible for `BaseField` + `DescriptorType`.
 @see Fields::operator|= for preconditions. */
 inline Fields operator|(const BaseFieldT& lhs, const DescriptorType& rhs) {
   return Fields(lhs) | Fields(rhs);
 }
 
-/**
-Makes operator| compatible for `DescriptorType` + `Fields`
+/** Makes operator| compatible for `DescriptorType` + `Fields`
 (`DescriptorType` or `BaseFields`).
 @see Fields::operator|= for preconditions. */
 inline Fields operator|(const DescriptorType& lhs, const Fields& rhs) {

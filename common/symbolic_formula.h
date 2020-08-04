@@ -66,8 +66,7 @@ class FormulaForall;                // In drake/common/symbolic_formula_cell.h
 class FormulaIsnan;                 // In drake/common/symbolic_formula_cell.h
 class FormulaPositiveSemidefinite;  // In drake/common/symbolic_formula_cell.h
 
-/**
-Represents a symbolic form of a first-order logic formula.
+/** Represents a symbolic form of a first-order logic formula.
 
 It has the following grammar:
 
@@ -115,20 +114,17 @@ class Formula {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
 
-  /**
-  Default constructor.  Sets the value to Formula::False, to be consistent
+  /** Default constructor.  Sets the value to Formula::False, to be consistent
   with value-initialized `bool`s. */
   Formula() : Formula(False()) {}
 
-  /**
-  Constructs from a `bool`.  This overload is also used by Eigen when
+  /** Constructs from a `bool`.  This overload is also used by Eigen when
   EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled. */
   explicit Formula(bool value) : Formula(value ? True() : False()) {}
 
   explicit Formula(std::shared_ptr<const FormulaCell> ptr);
 
-  /**
-  Constructs a formula from @p var.
+  /** Constructs a formula from @p var.
   @pre @p var is of BOOLEAN type and not a dummy variable. */
   explicit Formula(const Variable& var);
 
@@ -137,8 +133,7 @@ class Formula {
   Variables GetFreeVariables() const;
   /** Checks structural equality. */
   bool EqualTo(const Formula& f) const;
-  /**
-  Checks lexicographical ordering between this and @p e.
+  /** Checks lexicographical ordering between this and @p e.
 
   If the two formulas f1 and f2 have different kinds k1 and k2 respectively,
   f1.Less(f2) is equal to k1 < k2. If f1 and f2 are expressions of the same
@@ -162,8 +157,7 @@ class Formula {
   std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
 
-  /**
-  Evaluates using a given environment (by default, an empty environment) and
+  /** Evaluates using a given environment (by default, an empty environment) and
   a random number generator. If there is a random variable in this formula
   which is unassigned in @p env, it uses @p random_generator to sample a
   value and use it to substitute all occurrences of the random variable in
@@ -176,20 +170,17 @@ class Formula {
   bool Evaluate(const Environment& env = Environment{},
                 RandomGenerator* random_generator = nullptr) const;
 
-  /**
-  Evaluates using an empty environment and a random number generator.
+  /** Evaluates using an empty environment and a random number generator.
 
   See the above overload for the exceptions that it might throw. */
   bool Evaluate(RandomGenerator* random_generator) const;
 
-  /**
-  Returns a copy of this formula replacing all occurrences of @p var
+  /** Returns a copy of this formula replacing all occurrences of @p var
   with @p e.
   @throws std::runtime_error if NaN is detected during substitution. */
   Formula Substitute(const Variable& var, const Expression& e) const;
 
-  /**
-  Returns a copy of this formula replacing all occurrences of the
+  /** Returns a copy of this formula replacing all occurrences of the
   variables in @p s with corresponding expressions in @p s. Note that the
   substitutions occur simultaneously. For example, (x / y >
   0).Substitute({{x, y}, {y, x}}) gets (y / x > 0).
@@ -272,8 +263,7 @@ class Formula {
 /** Returns a formula @p f, universally quantified by variables @p vars. */
 Formula forall(const Variables& vars, const Formula& f);
 
-/**
-Returns a conjunction of @p formulas. It performs the following
+/** Returns a conjunction of @p formulas. It performs the following
 simplification:
 
 - make_conjunction({}) returns True.
@@ -288,8 +278,7 @@ Formula operator&&(const Variable& v, const Formula& f);
 Formula operator&&(const Formula& f, const Variable& v);
 Formula operator&&(const Variable& v1, const Variable& v2);
 
-/**
-Returns a disjunction of @p formulas. It performs the following
+/** Returns a disjunction of @p formulas. It performs the following
 simplification:
 
 - make_disjunction({}) returns False.
@@ -312,27 +301,23 @@ Formula operator<=(const Expression& e1, const Expression& e2);
 Formula operator>(const Expression& e1, const Expression& e2);
 Formula operator>=(const Expression& e1, const Expression& e2);
 
-/**
-Returns a Formula for the predicate isnan(e) to the given expression. This
+/** Returns a Formula for the predicate isnan(e) to the given expression. This
 serves as the argument-dependent lookup related to std::isnan(double). When
 evaluated, this Formula will return false when the e.Evaluate() is not NaN.
 @throws std::runtime_error if NaN is detected during evaluation. */
 Formula isnan(const Expression& e);
 
-/**
-Returns a Formula determining if the given expression @p e is a
+/** Returns a Formula determining if the given expression @p e is a
 positive or negative infinity.
 @throws std::runtime_error if NaN is detected during evaluation. */
 Formula isinf(const Expression& e);
 
-/**
-Returns a Formula determining if the given expression @p e has a finite
+/** Returns a Formula determining if the given expression @p e has a finite
 value.
 @throws std::runtime_error if NaN is detected during evaluation. */
 Formula isfinite(const Expression& e);
 
-/**
-Returns a symbolic formula constraining @p m to be a positive-semidefinite
+/** Returns a symbolic formula constraining @p m to be a positive-semidefinite
 matrix. By definition, a symmetric matrix @p m is positive-semidefinte if xᵀ
 m x ≥ 0 for all vector x ∈ ℝⁿ.
 
@@ -345,8 +330,7 @@ want to avoid it, please consider using
 `positive_semidefinite(m)`. */
 Formula positive_semidefinite(const Eigen::Ref<const MatrixX<Expression>>& m);
 
-/**
-Constructs and returns a symbolic positive-semidefinite formula from @p
+/** Constructs and returns a symbolic positive-semidefinite formula from @p
 m. If @p mode is Eigen::Lower, it's using the lower-triangular part of @p m
 to construct a positive-semidefinite formula. If @p mode is Eigen::Upper, the
 upper-triangular part of @p m is used. It throws std::runtime_error if @p has
@@ -369,8 +353,7 @@ const Formula psd_u{positive_semidefinite(m, Eigen::Upper)};
 Formula positive_semidefinite(const MatrixX<Expression>& m,
                               Eigen::UpLoType mode);
 
-/**
-Constructs and returns a symbolic positive-semidefinite formula from a lower
+/** Constructs and returns a symbolic positive-semidefinite formula from a lower
 triangular-view @p l. See the following code snippet.
 
 @code
@@ -393,8 +376,7 @@ positive_semidefinite(const Eigen::TriangularView<Derived, Eigen::Lower>& l) {
   return positive_semidefinite(l, Eigen::Lower);
 }
 
-/**
-Constructs and returns a symbolic positive-semidefinite formula from an
+/** Constructs and returns a symbolic positive-semidefinite formula from an
 upper triangular-view @p u. See the following code snippet.
 
 @code
@@ -454,50 +436,41 @@ bool is_isnan(const Formula& f);
 /** Checks if @p f is a positive-semidefinite formula. */
 bool is_positive_semidefinite(const Formula& f);
 
-/**
-Returns the embedded variable in the variable formula @p f.
+/** Returns the embedded variable in the variable formula @p f.
 @pre @p f is a variable formula. */
 const Variable& get_variable(const Formula& f);
 
-/**
-Returns the lhs-argument of a relational formula @p f.
+/** Returns the lhs-argument of a relational formula @p f.
 \pre{@p f is a relational formula.} */
 const Expression& get_lhs_expression(const Formula& f);
 
-/**
-Returns the rhs-argument of a relational formula @p f.
+/** Returns the rhs-argument of a relational formula @p f.
 \pre{@p f is a relational formula.} */
 const Expression& get_rhs_expression(const Formula& f);
 
-/**
-Returns the set of formulas in a n-ary formula @p f.
+/** Returns the set of formulas in a n-ary formula @p f.
 \pre{@p f is a n-ary formula.} */
 const std::set<Formula>& get_operands(const Formula& f);
 
-/**
-Returns the formula in a negation formula @p f.
+/** Returns the formula in a negation formula @p f.
 \pre{@p f is a negation formula.} */
 const Formula& get_operand(const Formula& f);
 
-/**
-Returns the quantified variables in a forall formula @p f.
+/** Returns the quantified variables in a forall formula @p f.
 \pre{@p f is a forall formula.} */
 const Variables& get_quantified_variables(const Formula& f);
 
-/**
-Returns the quantified formula in a forall formula @p f.
+/** Returns the quantified formula in a forall formula @p f.
 \pre{@p f is a forall formula.} */
 const Formula& get_quantified_formula(const Formula& f);
 
-/**
-Returns the matrix in a positive-semidefinite formula @p f.
+/** Returns the matrix in a positive-semidefinite formula @p f.
 \pre{@p f is a positive-semidefinite formula.} */
 const MatrixX<Expression>& get_matrix_in_positive_semidefinite(
     const Formula& f);
 
 namespace internal {
-/**
-Provides a return type of relational operations (=, ≠, ≤, <, ≥, >) between
+/** Provides a return type of relational operations (=, ≠, ≤, <, ≥, >) between
 `Eigen::Array`s.
 
 @tparam DerivedA A derived type of Eigen::ArrayBase.
@@ -521,16 +494,14 @@ struct RelationalOpTraits {
                    EigenSizeMinPreferFixed<DerivedA::ColsAtCompileTime,
                                            DerivedB::ColsAtCompileTime>::value>;
 };
-/**
-Returns @p f1 ∧ @p f2.
+/** Returns @p f1 ∧ @p f2.
 Note that this function returns a `Formula` while
 `std::logical_and<Formula>{}` returns a bool. */
 inline Formula logic_and(const Formula& f1, const Formula& f2) {
   return f1 && f2;
 }
 
-/**
-Returns @p f1 ∨ @p f2.
+/** Returns @p f1 ∨ @p f2.
 Note that this function returns a `Formula` while
 `std::logical_or<Formula>{}` returns a bool. */
 inline Formula logic_or(const Formula& f1, const Formula& f2) {
@@ -538,8 +509,7 @@ inline Formula logic_or(const Formula& f1, const Formula& f2) {
 }
 }  // namespace internal
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise symbolic-equality of two arrays @p m1 and @p m2.
 
 The following table describes the return type of @p m1 == @p m2.
@@ -572,8 +542,7 @@ operator==(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::equal_to<void>());
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between an array @p a and a scalar @p v using
 equal-to operator (==). That is, for all i and j, the (i, j)-th entry of `(a
 == v)` has a symbolic formula `a(i, j) == v`.
@@ -601,8 +570,7 @@ operator==(const Derived& a, const ScalarType& v) {
       [&v](const typename Derived::Scalar& x) { return x == v; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between a scalar @p v and an array @p using equal-to
 operator (==). That is, for all i and j, the (i, j)-th entry of `(v == a)`
 has a symbolic formula `v == a(i, j)`.
@@ -630,8 +598,7 @@ operator==(const ScalarType& v, const Derived& a) {
       [&v](const typename Derived::Scalar& x) { return v == x; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison of two arrays @p a1 and @p a2 using
 less-than-or-equal operator (<=). */
 template <typename DerivedA, typename DerivedB>
@@ -650,8 +617,7 @@ operator<=(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::less_equal<void>());
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between an array @p a and a scalar @p v using
 less-than-or-equal operator (<=). That is, for all i and j, the (i, j)-th
 entry of `(a <= v)` has a symbolic formula `a(i, j) <= v`. */
@@ -668,8 +634,7 @@ operator<=(const Derived& a, const ScalarType& v) {
       [&v](const typename Derived::Scalar& x) { return x <= v; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between a scalar @p v and an array @p using
 less-than-or-equal operator (<=). That is, for all i and j, the (i, j)-th
 entry of `(v <= a)` has a symbolic formula `v <= a(i, j)`. */
@@ -686,8 +651,7 @@ operator<=(const ScalarType& v, const Derived& a) {
       [&v](const typename Derived::Scalar& x) { return v <= x; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison of two arrays @p a1 and @p a2 using less-than
 operator (<). */
 template <typename DerivedA, typename DerivedB>
@@ -706,8 +670,7 @@ operator<(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::less<void>());
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between an array @p a and a scalar @p v using
 less-than operator (<). That is, for all i and j, the (i, j)-th
 entry of `(a < v)` has a symbolic formula `a(i, j) < v`. */
@@ -723,8 +686,7 @@ operator<(const Derived& a, const ScalarType& v) {
   return a.unaryExpr([&v](const typename Derived::Scalar& x) { return x < v; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between a scalar @p v and an array @p using
 less-than operator (<). That is, for all i and j, the (i, j)-th
 entry of `(v < a)` has a symbolic formula `v < a(i, j)`. */
@@ -740,8 +702,7 @@ operator<(const ScalarType& v, const Derived& a) {
   return a.unaryExpr([&v](const typename Derived::Scalar& x) { return v < x; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison of two arrays @p a1 and @p a2 using
 greater-than-or-equal operator (>=). */
 template <typename DerivedA, typename DerivedB>
@@ -760,8 +721,7 @@ operator>=(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::greater_equal<void>());
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between an array @p a and a scalar @p v using
 greater-than-or-equal operator (>=). That is, for all i and j, the (i, j)-th
 entry of `(a >= v)` has a symbolic formula `a(i, j) >= v`. */
@@ -778,8 +738,7 @@ operator>=(const Derived& a, const ScalarType& v) {
       [&v](const typename Derived::Scalar& x) { return x >= v; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between a scalar @p v and an array @p using
 less-than-or-equal operator (<=) instead of greater-than-or-equal operator
 (>=). That is, for all i and j, the (i, j)-th entry of `(v >= a)` has a
@@ -802,8 +761,7 @@ operator>=(const ScalarType& v, const Derived& a) {
   return a <= v;
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison of two arrays @p a1 and @p a2 using greater-than
 operator (>). */
 template <typename DerivedA, typename DerivedB>
@@ -822,8 +780,7 @@ operator>(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::greater<void>());
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between an array @p a and a scalar @p v using
 greater-than operator (>). That is, for all i and j, the (i, j)-th
 entry of `(a > v)` has a symbolic formula `a(i, j) > v`. */
@@ -839,8 +796,7 @@ operator>(const Derived& a, const ScalarType& v) {
   return a.unaryExpr([&v](const typename Derived::Scalar& x) { return x > v; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between a scalar @p v and an array @p using
 less-than operator (<) instead of greater-than operator (>). That is, for
 all i and j, the (i, j)-th entry of `(v > a)` has a symbolic formula `a(i,
@@ -863,8 +819,7 @@ operator>(const ScalarType& v, const Derived& a) {
   return a < v;
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison of two arrays @p a1 and @p a2 using not-equal
 operator (!=). */
 template <typename DerivedA, typename DerivedB>
@@ -883,8 +838,7 @@ operator!=(const DerivedA& a1, const DerivedB& a2) {
   return a1.binaryExpr(a2, std::not_equal_to<void>());
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between an array @p a and a scalar @p v using
 not-equal operator (!=). That is, for all i and j, the (i, j)-th
 entry of `(a != v)` has a symbolic formula `a(i, j) != v`. */
@@ -901,8 +855,7 @@ operator!=(const Derived& a, const ScalarType& v) {
       [&v](const typename Derived::Scalar& x) { return x != v; });
 }
 
-/**
-Returns an Eigen array of symbolic formulas where each element includes
+/** Returns an Eigen array of symbolic formulas where each element includes
 element-wise comparison between a scalar @p v and an array @p using
 not-equal operator (!=). That is, for all i and j, the (i, j)-th
 entry of `(v != a)` has a symbolic formula `v != a(i, j)`. */
@@ -919,8 +872,7 @@ operator!=(const ScalarType& v, const Derived& a) {
       [&v](const typename Derived::Scalar& x) { return v != x; });
 }
 
-/**
-Returns a symbolic formula checking if two matrices @p m1 and @p m2 are
+/** Returns a symbolic formula checking if two matrices @p m1 and @p m2 are
 equal.
 
 The following table describes the return type of @p m1 == @p m2.
@@ -979,8 +931,7 @@ operator==(const DerivedA& m1, const DerivedB& m2) {
   return m1.binaryExpr(m2, std::equal_to<void>()).redux(internal::logic_and);
 }
 
-/**
-Returns a symbolic formula representing the condition whether @p m1 and @p
+/** Returns a symbolic formula representing the condition whether @p m1 and @p
 m2 are not the same.
 
 The following table describes the return type of @p m1 != @p m2.
@@ -1013,8 +964,7 @@ operator!=(const DerivedA& m1, const DerivedB& m2) {
   return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(internal::logic_or);
 }
 
-/**
-Returns a symbolic formula representing element-wise comparison between two
+/** Returns a symbolic formula representing element-wise comparison between two
 matrices @p m1 and @p m2 using less-than (<) operator.
 
 The following table describes the return type of @p m1 < @p m2.
@@ -1042,8 +992,7 @@ operator<(const DerivedA& m1, const DerivedB& m2) {
   return m1.binaryExpr(m2, std::less<void>()).redux(internal::logic_and);
 }
 
-/**
-Returns a symbolic formula representing element-wise comparison between two
+/** Returns a symbolic formula representing element-wise comparison between two
 matrices @p m1 and @p m2 using less-than-or-equal operator (<=).
 
 The following table describes the return type of @p m1 <= @p m2.
@@ -1071,8 +1020,7 @@ operator<=(const DerivedA& m1, const DerivedB& m2) {
   return m1.binaryExpr(m2, std::less_equal<void>()).redux(internal::logic_and);
 }
 
-/**
-Returns a symbolic formula representing element-wise comparison between two
+/** Returns a symbolic formula representing element-wise comparison between two
 matrices @p m1 and @p m2 using greater-than operator (>).
 
 The following table describes the return type of @p m1 > @p m2.
@@ -1100,8 +1048,7 @@ operator>(const DerivedA& m1, const DerivedB& m2) {
   return m1.binaryExpr(m2, std::greater<void>()).redux(internal::logic_and);
 }
 
-/**
-Returns a symbolic formula representing element-wise comparison between two
+/** Returns a symbolic formula representing element-wise comparison between two
 matrices @p m1 and @p m2 using greater-than-or-equal operator (>=).
 
 The following table describes the return type of @p m1 >= @p m2.

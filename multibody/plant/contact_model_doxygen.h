@@ -1,9 +1,7 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref drake_contacts. */
 
-/**
-@defgroup drake_contacts   Contact Modeling in Drake
+/** @defgroup drake_contacts   Contact Modeling in Drake
     @ingroup multibody
 
 Drake is concerned with the simulation of _physical_ phenomena, including
@@ -145,8 +143,7 @@ be sufficient for most users.
 
 Next topic: @ref contact_geometry */
 
-/**
-@defgroup contact_geometry Detecting Contact
+/** @defgroup contact_geometry Detecting Contact
     @ingroup drake_contacts
 
 Given two posed geometric shapes in a common frame, the collision detection
@@ -176,8 +173,7 @@ for a demonstration of this strategy.
 the contacting surfaces at the contact point.
 Next topic: @ref contact_engineering */
 
-/**
-@defgroup contact_engineering Working with Contacts in Drake
+/** @defgroup contact_engineering Working with Contacts in Drake
 @ingroup drake_contacts
 
 The behavior of a simulation with contact will depend on three factors:
@@ -312,8 +308,7 @@ implications:
 
 Next topic: @ref stribeck_approximation */
 
-/**
-@defgroup stribeck_approximation Continuous Approximation of Coulomb
+/** @defgroup stribeck_approximation Continuous Approximation of Coulomb
 Friction
 @ingroup drake_contacts
 

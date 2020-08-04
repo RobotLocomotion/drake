@@ -9,8 +9,7 @@
 namespace drake {
 
 // The above examples are repeated in the unit test; keep them in sync.
-/**
-Wraps an underlying type T such that its storage is a direct member field
+/** Wraps an underlying type T such that its storage is a direct member field
 of this object (i.e., without any indirection into the heap), but *unlike*
 most member fields T's destructor is never invoked.
 

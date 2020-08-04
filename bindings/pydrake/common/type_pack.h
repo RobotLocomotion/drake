@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Basic meta-programming utilities for types, focused on template parameter
 packs. */
 
@@ -83,8 +82,7 @@ struct type_tag {
   using type = T;
 };
 
-/**
-Provides a tag for single-parameter templates.
+/** Provides a tag for single-parameter templates.
 @note Single-parameter is specialized because `using` aliases are picky
 about how template parameters are passed.
 @see https://stackoverflow.com/a/33131008/7829525
@@ -112,20 +110,17 @@ struct type_pack {
   using type_at = typename drake::type_at<I, Ts...>::type;
 };
 
-/**
-Returns an expression (only to be used in `decltype`) for inferring
+/** Returns an expression (only to be used in `decltype`) for inferring
 and binding a parameter pack to a template. */
 template <template <typename...> class Tpl, typename... Ts>
 Tpl<Ts...> type_bind(type_pack<Ts...>);
 
-/**
-Extracts the inner template arguments (typename only) for a typename which
+/** Extracts the inner template arguments (typename only) for a typename which
 is a template instantiation. */
 template <typename T>
 using type_pack_extract = typename internal::type_pack_extract_impl<T>::type;
 
-/**
-Visit a type by constructing its default value.
+/** Visit a type by constructing its default value.
 Useful for iterating over `type_tag`, `type_pack`, `std::integral_constant`,
 etc. */
 struct type_visit_with_default {
@@ -165,8 +160,7 @@ struct type_check_different_from {
 
 /** Visits each type in a type pack. This effectively implements a */
 // `constexpr for` loops. See `type_pack_test.cc` for usages.
-/**
-@tparam VisitWith
+/** @tparam VisitWith
   Visit helper. @see `type_visit_with_default`, `type_visit_with_tag`.
 @tparam Predicate Predicate operating on the type dictated by `VisitWith`.
 @param visitor Lambda or functor for visiting a type. */

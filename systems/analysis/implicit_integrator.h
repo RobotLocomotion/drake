@@ -15,8 +15,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An abstract class providing methods shared by implicit integrators.
+/** An abstract class providing methods shared by implicit integrators.
 @tparam_nonsymbolic_scalar */
 template <class T>
 class ImplicitIntegrator : public IntegratorBase<T> {
@@ -27,8 +26,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
                                    Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {}
 
-  /**
-  The maximum number of Newton-Raphson iterations to take before the
+  /** The maximum number of Newton-Raphson iterations to take before the
   Newton-Raphson process decides that convergence will not be attained. This
   number affects the speed with which a solution is found. If the number is
   too small, Jacobian/iteration matrix reformations and refactorizations will
@@ -53,8 +51,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     kAutomatic
   };
 
-  /**
-  @name Methods for getting and setting the Jacobian scheme.
+  /** @name Methods for getting and setting the Jacobian scheme.
 
   Methods for getting and setting the scheme used to determine the
   Jacobian matrix necessary for solving the requisite nonlinear system
@@ -76,8 +73,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
                    Springer, 2004.
   @{ */
 
-  /**
-  Sets whether the integrator attempts to reuse Jacobian matrices and
+  /** Sets whether the integrator attempts to reuse Jacobian matrices and
   iteration matrix factorizations (default is `true`). Forming Jacobian
   matrices and factorizing iteration matrices are generally the two most
   expensive operations performed by this integrator. For small systems
@@ -91,28 +87,24 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   @see set_use_full_newton() */
   void set_reuse(bool reuse) { reuse_ = reuse; }
 
-  /**
-  Gets whether the integrator attempts to reuse Jacobian matrices and
+  /** Gets whether the integrator attempts to reuse Jacobian matrices and
   iteration matrix factorizations.
   @see set_reuse()
   @note This method always returns `false` when full-Newton mode is on. */
   bool get_reuse() const { return !use_full_newton_ && reuse_; }
 
-  /**
-  Sets whether the method operates in "full Newton" mode, in which case
+  /** Sets whether the method operates in "full Newton" mode, in which case
   Jacobian and iteration matrices are freshly computed on every
   Newton-Raphson iteration. When set to `true`, this mode overrides
   the reuse mode.
   @see set_reuse() */
   void set_use_full_newton(bool flag) { use_full_newton_ = flag; }
 
-  /**
-  Gets whether this method is operating in "full Newton" mode.
+  /** Gets whether this method is operating in "full Newton" mode.
   @see set_use_full_newton() */
   bool get_use_full_newton() const { return use_full_newton_; }
 
-  /**
-  Sets the Jacobian computation scheme. This function can be safely called
+  /** Sets the Jacobian computation scheme. This function can be safely called
   at any time (i.e., the integrator need not be re-initialized afterward).
   @note Discards any already-computed Jacobian matrices if the scheme
         changes. */
@@ -130,14 +122,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   }
   /** @} */
 
-  /**
-  @name Cumulative statistics functions.
+  /** @name Cumulative statistics functions.
   The functions return statistics specific to the implicit integration
   process.
   @{ */
 
-  /**
-  Gets the number of ODE function evaluations
+  /** Gets the number of ODE function evaluations
   (calls to EvalTimeDerivatives()) *used only for computing
   the Jacobian matrices* since the last call to ResetStatistics(). This
   count includes those derivative calculations necessary for computing
@@ -146,8 +136,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     return num_jacobian_function_evaluations_;
   }
 
-  /**
-  Gets the number of Jacobian computations (i.e., the number of times
+  /** Gets the number of Jacobian computations (i.e., the number of times
   that the Jacobian matrix was reformed) since the last call to
   ResetStatistics(). This count includes those evaluations necessary
   during error estimation processes. */
@@ -155,8 +144,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
         num_jacobian_evaluations_;
   }
 
-  /**
-  Gets the number of iterations used in the Newton-Raphson nonlinear systems
+  /** Gets the number of iterations used in the Newton-Raphson nonlinear systems
   of equation solving process since the last call to ResetStatistics(). This
   count includes those Newton-Raphson iterations used during error
   estimation processes. */
@@ -164,16 +152,14 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     return do_get_num_newton_raphson_iterations();
   }
 
-  /**
-  Gets the number of factorizations of the iteration matrix since the last
+  /** Gets the number of factorizations of the iteration matrix since the last
   call to ResetStatistics(). This count includes those refactorizations
   necessary during error estimation processes. */
   int64_t get_num_iteration_matrix_factorizations() const {
     return num_iter_factorizations_;
   }
 
-  /**
-  Gets the number of ODE function evaluations
+  /** Gets the number of ODE function evaluations
   (calls to EvalTimeDerivatives()) *used only for the error estimation
   process* since the last call to ResetStatistics(). This count
   includes those needed to compute Jacobian matrices. */
@@ -182,8 +168,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   }
   /** @} */
 
-  /**
-  @name Error-estimation statistics functions.
+  /** @name Error-estimation statistics functions.
   The functions return statistics specific to the error estimation
   process.
   @{
@@ -195,23 +180,20 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     return do_get_num_error_estimator_derivative_evaluations_for_jacobian();
   }
 
-  /**
-  Gets the number of iterations *used in the Newton-Raphson nonlinear
+  /** Gets the number of iterations *used in the Newton-Raphson nonlinear
   systems of equation solving process for the error estimation process*
   since the last call to ResetStatistics(). */
   int64_t get_num_error_estimator_newton_raphson_iterations() const { return
         do_get_num_error_estimator_newton_raphson_iterations();
   }
 
-  /**
-  Gets the number of Jacobian matrix computations *used only during
+  /** Gets the number of Jacobian matrix computations *used only during
   the error estimation process* since the last call to ResetStatistics(). */
   int64_t get_num_error_estimator_jacobian_evaluations() const {
     return do_get_num_error_estimator_jacobian_evaluations();
   }
 
-  /**
-  Gets the number of factorizations of the iteration matrix *used only
+  /** Gets the number of factorizations of the iteration matrix *used only
   during the error estimation process* since the last call to
   ResetStatistics(). */
   int64_t get_num_error_estimator_iteration_matrix_factorizations() const {
@@ -220,28 +202,24 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /** @} */
 
  protected:
-  /**
-  Derived classes can override this method to change the number of
+  /** Derived classes can override this method to change the number of
   Newton-Raphson iterations (10 by default) to take before the
   Newton-Raphson process decides that convergence will not be attained. */
   virtual int do_max_newton_raphson_iterations() const { return 10; }
 
-  /**
-  A class for storing the factorization of an iteration matrix and using it
+  /** A class for storing the factorization of an iteration matrix and using it
   to solve linear systems of equations. This class exists simply because
   Eigen AutoDiff puts limitations on what kinds of factorizations can be
   used; encapsulating the iteration matrix factorizations like this frees
   the implementer of these kinds of details. */
   class IterationMatrix {
    public:
-    /**
-    Factors a dense matrix (the iteration matrix) using LU factorization,
+    /** Factors a dense matrix (the iteration matrix) using LU factorization,
     which should be faster than the QR factorization used in the specialized
     template method for AutoDiffXd below. */
     void SetAndFactorIterationMatrix(const MatrixX<T>& iteration_matrix);
 
-    /**
-    Solves a linear system Ax = b for x using the iteration matrix (A)
+    /** Solves a linear system Ax = b for x using the iteration matrix (A)
     factored using LU decomposition.
     @see Factor() */
     VectorX<T> Solve(const VectorX<T>& b) const;
@@ -264,8 +242,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     Eigen::HouseholderQR<MatrixX<AutoDiffXd>> QR_;
   };
 
-  /**
-  Computes necessary matrices (Jacobian and iteration matrix) for
+  /** Computes necessary matrices (Jacobian and iteration matrix) for
   Newton-Raphson (NR) iterations, as necessary. This method has been
   designed for use in DoImplicitIntegratorStep() processes that follow this
   model:
@@ -304,8 +281,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
-  /**
-  Computes necessary matrices (Jacobian and iteration matrix) for full
+  /** Computes necessary matrices (Jacobian and iteration matrix) for full
   Newton-Raphson (NR) iterations, if full Newton-Raphson method is activated
   (if it's not activated, this method is a no-op).
   @param t the time at which to compute the Jacobian.
@@ -323,8 +299,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
-  /**
-  Checks whether a proposed update is effectively zero, indicating that the
+  /** Checks whether a proposed update is effectively zero, indicating that the
   Newton-Raphson process converged.
   @param xc the continuous state.
   @param dxc the update to the continuous state.
@@ -367,8 +342,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
     kNotConverged,
   };
 
-  /**
-  Checks a Newton-Raphson iteration process for convergence. The logic
+  /** Checks a Newton-Raphson iteration process for convergence. The logic
   is based on the description on p. 121 from
   [Hairer, 1996] E. Hairer and G. Wanner. Solving Ordinary Differential
                  Equations II (Stiff and Differential-Algebraic Problems).
@@ -391,8 +365,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       const VectorX<T>& xtplus, const VectorX<T>& dx, const T& dx_norm,
       const T& last_dx_norm) const;
 
-  /**
-  Resets any statistics particular to a specific implicit integrator. The
+  /** Resets any statistics particular to a specific implicit integrator. The
   default implementation of this function does nothing. If your integrator
   collects its own statistics, you should re-implement this method and
   reset them there. */
@@ -402,14 +375,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /** @copydoc IntegratorBase::DoReset() */
   virtual void DoImplicitIntegratorReset() {}
 
-  /**
-  Resets any cached Jacobian or iteration matrices owned by child classes.
+  /** Resets any cached Jacobian or iteration matrices owned by child classes.
   This is called when the user changes the Jacobian computation scheme;
   the child class should use this to reset its cached matrices. */
   virtual void DoResetCachedJacobianRelatedMatrices() {}
 
-  /**
-  Checks to see whether a Jacobian matrix is "bad" (has any NaN or
+  /** Checks to see whether a Jacobian matrix is "bad" (has any NaN or
   Inf values) and needs to be recomputed. A divergent Newton-Raphson
   iteration can cause the state to overflow, which is how the Jacobian can
   become "bad". This is an O(n²) operation, where n is the state dimension. */

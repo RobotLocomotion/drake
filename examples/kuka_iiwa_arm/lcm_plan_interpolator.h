@@ -27,8 +27,7 @@ class LcmPlanInterpolator : public systems::Diagram<double> {
     return get_output_port(output_port_iiwa_command_);
   }
 
-  /**
-  Makes a plan to hold at the measured joint configuration @p q0 starting at
+  /** Makes a plan to hold at the measured joint configuration @p q0 starting at
   @p plan_start_time. This function needs to be explicitly called before any
   simulation. Otherwise this aborts in CalcOutput(). */
   void Initialize(double plan_start_time, const VectorX<double>& q0,

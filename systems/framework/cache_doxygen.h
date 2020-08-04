@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref cache_design_notes. */
 
 #pragma once
@@ -8,8 +7,7 @@ Doxygen-only documentation for @ref cache_design_notes. */
 namespace drake {
 namespace systems {
 
-/**
-@defgroup cache_design_notes System Cache Design and Implementation Notes
+/** @defgroup cache_design_notes System Cache Design and Implementation Notes
     @ingroup technical_notes
 
 <!-- Fluff needed to keep Doxygen from misformatting due to quotes and

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file This file implements a system which populates optitrack_frame_t
+/** @file This file implements a system which populates optitrack_frame_t
 messages for publishing over a message passing system. Currently we support
 publishing over LCM, and may support other messaging protocols in the
 future. */
@@ -20,8 +19,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-The system has one abstract-valued input port and one abstract-valued output
+/** The system has one abstract-valued input port and one abstract-valued output
 port. The one abstract input port accepts geometry::FramePoseVector.  The
 abstract output port produces `optitrack_frame_t`.
 
@@ -33,8 +31,7 @@ class OptitrackLcmFrameSender : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackLcmFrameSender)
 
   // TODO(sam.creasey) Support publising data description messages.
-  /**
-  Create an OptitrackLcmFrameSender.
+  /** Create an OptitrackLcmFrameSender.
 
   @param frame_map contains a map of geometry::FrameId to the rigid body
   name and id to be published in the resulting `optitrack_rigid_body_t` and

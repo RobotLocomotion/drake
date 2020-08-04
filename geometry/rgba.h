@@ -14,8 +14,7 @@ class Rgba {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rgba);
 
-  /**
-  Constructs with given (r, g, b, a) values.
+  /** Constructs with given (r, g, b, a) values.
   @pre All values are within the range of [0, 1]. */
   Rgba(double r, double g, double b, double a = 1.) {
     set(r, g, b, a);
@@ -33,8 +32,7 @@ class Rgba {
   /** Alpha. */
   double a() const { return a_; }
 
-  /**
-  Sets (r, g, b, a) values.
+  /** Sets (r, g, b, a) values.
   @pre All values are within the range of [0, 1]. The values are not updated
   if this precondition is not met. */
   void set(double r, double g, double b, double a = 1.) {

@@ -19,8 +19,7 @@ template <typename T>
 class JointImplementationBuilder;
 }  // namespace internal
 
-/**
-A class representing an element (subcomponent) of a MultibodyPlant or
+/** A class representing an element (subcomponent) of a MultibodyPlant or
 (internally) a MultibodyTree. Examples of multibody elements are bodies,
 joints, force elements, and actuators. After a Finalize() call, multibody
 elements get assigned an type-specific index that uniquely identifies them.
@@ -59,13 +58,11 @@ class MultibodyElement {
   /** Returns this element's unique index. */
   ElementIndexType index() const { return index_;}
 
-  /**
-  Returns the ModelInstanceIndex of the model instance to which this
+  /** Returns the ModelInstanceIndex of the model instance to which this
   element belongs. */
   ModelInstanceIndex model_instance() const { return model_instance_;}
 
-  /**
-  Returns the MultibodyPlant that owns this %MultibodyElement.
+  /** Returns the MultibodyPlant that owns this %MultibodyElement.
 
   @note You can only invoke this method if you have a definition of
   %MultibodyPlant available. That is, you must include
@@ -89,8 +86,7 @@ class MultibodyElement {
   }
 
  protected:
-  /**
-  Default constructor made protected so that sub-classes can still declare
+  /** Default constructor made protected so that sub-classes can still declare
   their default constructors if they need to. */
   MultibodyElement() {}
 
@@ -98,24 +94,21 @@ class MultibodyElement {
   explicit MultibodyElement(ModelInstanceIndex model_instance)
       : model_instance_(model_instance) {}
 
-  /**
-  Returns a constant reference to the parent MultibodyTree that
+  /** Returns a constant reference to the parent MultibodyTree that
   owns this element. */
   const internal::MultibodyTree<T>& get_parent_tree() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return *parent_tree_;
   }
 
-  /**
-  Gives MultibodyElement-derived objects the opportunity to retrieve their
+  /** Gives MultibodyElement-derived objects the opportunity to retrieve their
   topology after MultibodyTree::Finalize() is invoked.
   NVI to pure virtual method DoSetTopology(). */
   void SetTopology(const internal::MultibodyTreeTopology& tree) {
     DoSetTopology(tree);
   }
 
-  /**
-  Implementation of the NVI SetTopology(). For advanced use only for
+  /** Implementation of the NVI SetTopology(). For advanced use only for
   developers implementing new MultibodyTree components. */
   virtual void DoSetTopology(const internal::MultibodyTreeTopology& tree) = 0;
 

@@ -8,8 +8,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/**
-Compare the result between Eval<double>() and Eval<AutoDiffXd>(). Also
+/** Compare the result between Eval<double>() and Eval<AutoDiffXd>(). Also
 compare the gradient in Eval<AutoDiffXd>() with a finite difference
 approximation.
 @param constraint The constraint object to test.

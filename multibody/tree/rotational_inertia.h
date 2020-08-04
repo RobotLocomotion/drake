@@ -24,8 +24,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This class describes the mass distribution (inertia properties) of a
+/** This class describes the mass distribution (inertia properties) of a
 body or composite body about a particular point.  Herein, "composite body"
 means one body or a collection of bodies that are welded together.  In this
 documentation, "body" and "composite body" are used interchangeably.
@@ -166,20 +165,17 @@ class RotationalInertia {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
-  /**
-  Constructs a rotational inertia that has all its moments/products of
+  /** Constructs a rotational inertia that has all its moments/products of
   inertia equal to NaN (helps quickly detect uninitialized values). */
   RotationalInertia() {}
 
-  /**
-  Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /** Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   and with each product of inertia set to zero.
   @throws std::logic_error for Debug builds if not CouldBePhysicallyValid(). */
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz)
       : RotationalInertia(Ixx, Iyy, Izz, 0.0, 0.0, 0.0) {}
 
-  /**
-  Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
+  /** Creates a rotational inertia with moments of inertia `Ixx`, `Iyy`, `Izz`,
   and with products of inertia `Ixy`, `Ixz`, `Iyz`.
   @throws std::logic_error for Debug builds if not CouldBePhysicallyValid(). */
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz,
@@ -189,8 +185,7 @@ class RotationalInertia {
     DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid());
   }
 
-  /**
-  Constructs a rotational inertia for a particle Q of mass `mass`, whose
+  /** Constructs a rotational inertia for a particle Q of mass `mass`, whose
   position vector from about-point P is p_PQ_E (E is expressed-in frame).
   This std::logic_error exception only occurs if `mass` < 0.
   @param mass The mass of particle Q.
@@ -202,8 +197,7 @@ class RotationalInertia {
       : RotationalInertia(mass * p_PQ_E, p_PQ_E) {}
 
   // TODO(mitiguy) Per issue #6139  Update to ConstructTriaxiallySymmetric.
-  /**
-  Constructs a rotational inertia with equal moments of inertia along its
+  /** Constructs a rotational inertia with equal moments of inertia along its
   diagonal and with each product of inertia set to zero. This factory
   is useful for the rotational inertia of a uniform-density sphere or cube.
   In debug builds, throws std::logic_error if I_triaxial is negative/NaN. */
@@ -230,8 +224,7 @@ class RotationalInertia {
     return Vector3<T>(I_SP_E_(1, 0), I_SP_E_(2, 0), I_SP_E_(2, 1));
   }
 
-  /**
-  Returns a rotational inertia's trace (i.e., Ixx + Iyy + Izz, the sum of
+  /** Returns a rotational inertia's trace (i.e., Ixx + Iyy + Izz, the sum of
   the diagonal elements of the inertia matrix).  The trace happens to be
   invariant to its expressed-in frame (i.e., the trace does not depend
   on the frame in which it is expressed).  The trace is useful because the
@@ -241,8 +234,7 @@ class RotationalInertia {
   possible element that can be in a valid rotational inertia. */
   T Trace() const { return I_SP_E_.trace(); }
 
-  /**
-  Returns the maximum possible moment of inertia for `this` rotational
+  /** Returns the maximum possible moment of inertia for `this` rotational
   inertia about-point P for any expressed-in frame E.
   @remark The maximum moment Imax has range: trace / 3 <= Imax <= trace / 2.
   @see Trace() */
@@ -251,8 +243,7 @@ class RotationalInertia {
     return 0.5 * abs(Trace());
   }
 
-  /**
-  Const access to the `(i, j)` element of this rotational inertia.
+  /** Const access to the `(i, j)` element of this rotational inertia.
   @remark A mutable version of operator() is intentionally absent so as to
   prevent an end-user from directly setting elements.  This prevents the
   creation of a non-physical (or non-symmetric) rotational inertia. */
@@ -263,13 +254,11 @@ class RotationalInertia {
     return I_SP_E_(i, j);
   }
 
-  /**
-  Gets a full 3x3 matrix copy of this rotational inertia.  The returned copy
+  /** Gets a full 3x3 matrix copy of this rotational inertia.  The returned copy
   is symmetric and includes both lower and upper parts of the matrix. */
   Matrix3<T> CopyToFullMatrix3() const { return get_symmetric_matrix_view(); }
 
-  /**
-  Compares `this` rotational inertia to `other` rotional inertia within the
+  /** Compares `this` rotational inertia to `other` rotional inertia within the
   specified `precision` (which is a dimensionless number specifying
   the relative precision to which the comparison is performed).
   Denoting `I_maxA` as the largest element value that can appear in a valid
@@ -301,8 +290,7 @@ class RotationalInertia {
   }
 
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
-  /**
-  Adds a rotational inertia `I_BP_E` to `this` rotational inertia.
+  /** Adds a rotational inertia `I_BP_E` to `this` rotational inertia.
   This method requires both rotational inertias (`I_BP_E` and `this`)
   to have the same about-point P and the same expressed-in frame E.
   The += operator updates `this` so `I_BP_E` is added to `this`.
@@ -317,8 +305,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Adds a rotational inertia `I_BP_E` to `this` rotational inertia.
+  /** Adds a rotational inertia `I_BP_E` to `this` rotational inertia.
   This method requires both rotational inertias (`I_BP_E` and `this`)
   to have the same about-point P and the same expressed-in frame E.
   @param I_BP_E Rotational inertia of a body (or composite body) B to
@@ -330,8 +317,7 @@ class RotationalInertia {
     return RotationalInertia(*this) += I_BP_E;
   }
 
-  /**
-  Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
+  /** Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   This method requires both rotational inertias (`I_BP_E` and `this`)
   to have the same about-point P and the same expressed-in frame E.
   The -= operator updates `this` so `I_BP_E` is subtracted from `this`.
@@ -354,8 +340,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
+  /** Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   This method requires both rotational inertias (`I_BP_E` and `this`)
   to have the same about-point P and the same expressed-in frame E.
   @param I_BP_E Rotational inertia of a body (or composite body) B to
@@ -369,8 +354,7 @@ class RotationalInertia {
     return RotationalInertia(*this) -= I_BP_E;
   }
 
-  /**
-  Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
+  /** Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
   In debug builds, throws std::exception if `nonnegative_scalar` < 0.
   @param nonnegative_scalar Nonnegative scalar which multiplies `this`.
   @return A reference to `this` rotational inertia. `this` changes
@@ -383,8 +367,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
+  /** Multiplies `this` rotational inertia by a nonnegative scalar (>= 0).
   In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
   @param nonnegative_scalar Nonnegative scalar which multiplies `this`.
   @return `this` rotational inertia multiplied by `nonnegative_scalar`.
@@ -393,8 +376,7 @@ class RotationalInertia {
     return RotationalInertia(*this) *= nonnegative_scalar;
   }
 
-  /**
-  Multiplies a nonnegative scalar (>= 0) by the rotational inertia `I_BP_E`.
+  /** Multiplies a nonnegative scalar (>= 0) by the rotational inertia `I_BP_E`.
   In debug builds, throws std::logic_error if `nonnegative_scalar` < 0.
   @param nonnegative_scalar Nonnegative scalar which multiplies `I_BP_E`.
   @return `nonnegative_scalar` multiplied by rotational inertia `I_BP_E`.
@@ -406,8 +388,7 @@ class RotationalInertia {
   }
 
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
-  /**
-  Multiplies `this` rotational inertia about-point P, expressed-in frame E
+  /** Multiplies `this` rotational inertia about-point P, expressed-in frame E
   by the vector w_E (which *must* also have the same expressed-in frame E).
   @note This calculation is equivalent to regarding `this` rotational
         inertia as an inertia dyadic and dot-multiplying it by w_E.
@@ -417,8 +398,7 @@ class RotationalInertia {
     return Vector3<T>(get_symmetric_matrix_view() * w_E);
   }
 
-  /**
-  Divides `this` rotational inertia by a positive scalar (> 0).
+  /** Divides `this` rotational inertia by a positive scalar (> 0).
   In debug builds, throws std::exception if `positive_scalar` <= 0.
   @param positive_scalar Positive scalar (> 0) which divides `this`.
   @return A reference to `this` rotational inertia. `this` changes
@@ -431,8 +411,7 @@ class RotationalInertia {
   }
 
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
-  /**
-  Divides `this` rotational inertia by a positive scalar(> 0).
+  /** Divides `this` rotational inertia by a positive scalar(> 0).
   In debug builds, throws std::logic_error if `positive_scalar` <= 0.
   @param positive_scalar Positive scalar (> 0) which divides `this`.
   @return `this` rotational inertia divided by `positive_scalar`.
@@ -441,16 +420,14 @@ class RotationalInertia {
     return RotationalInertia(*this) /= positive_scalar;
   }
 
-  /**
-  Sets `this` rotational inertia so all its elements are equal to NaN.
+  /** Sets `this` rotational inertia so all its elements are equal to NaN.
   This helps quickly detect uninitialized moments/products of inertia. */
   void SetToNaN() {
     I_SP_E_.setConstant(std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   }
 
-  /**
-  Sets `this` rotational inertia so all its moments/products of inertia
+  /** Sets `this` rotational inertia so all its moments/products of inertia
   are zero, e.g., for convenient initialization before a computation or
   for inertia calculations involving a particle (point-mass).
   Note: Real 3D massive physical objects have non-zero moments of inertia. */
@@ -460,8 +437,7 @@ class RotationalInertia {
     I_SP_E_.template triangularView<Eigen::Lower>() = Matrix3<T>::Zero();
   }
 
-  /**
-  Returns `true` if any moment/product in `this` rotational inertia is NaN.
+  /** Returns `true` if any moment/product in `this` rotational inertia is NaN.
   Otherwise returns `false`. */
   boolean<T> IsNaN() const {
     using std::isnan;
@@ -478,8 +454,7 @@ class RotationalInertia {
         isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
   }
 
-  /**
-  Returns a new %RotationalInertia object templated on `Scalar` initialized
+  /** Returns a new %RotationalInertia object templated on `Scalar` initialized
   from the values of `this` rotational inertia's entries.
 
   @tparam Scalar The scalar type on which the new rotational inertia will
@@ -496,8 +471,7 @@ class RotationalInertia {
     return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>());
   }
 
-  /**
-  This method takes `this` rotational inertia about-point P, expressed-in
+  /** This method takes `this` rotational inertia about-point P, expressed-in
   frame E, and computes its principal moments of inertia about-point P, but
   expressed-in a frame aligned with the principal axes.
 
@@ -546,8 +520,7 @@ class RotationalInertia {
     return solver.eigenvalues();
   }
 
-  /**
-  Performs several necessary checks to verify whether `this` rotational
+  /** Performs several necessary checks to verify whether `this` rotational
   inertia *could* be physically valid, including:
 
   - No NaN moments or products of inertia.
@@ -593,8 +566,7 @@ class RotationalInertia {
             p(0), p(1), p(2), epsilon);
   }
 
-  /**
-  Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
+  /** Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
   In other words, starts with `this` rotational inertia of a body (or
   composite body) B about-point P expressed-in frame E and re-expresses
   to B's rotational inertia about-point P expressed-in frame A, i.e.,
@@ -630,8 +602,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
+  /** Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   i.e., re-expresses body B's rotational inertia from frame E to frame A.
   @param[in] R_AE RotationMatrix relating frames A and E.
   @retval I_BP_A Rotational inertia of B about-point P expressed-in frame A.
@@ -643,8 +614,7 @@ class RotationalInertia {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
-  /**
-  @name Shift methods
+  /** @name Shift methods
    Each shift method shifts a body's rotational inertia from one about-point
    to another about-point. The expressed-in frame is unchanged.
 
@@ -655,8 +625,7 @@ class RotationalInertia {
   ShiftToThenAwayFromCenterOfMassInPlace | ShiftToThenAwayFromCenterOfMass
   @{ */
 
-  /**
-  Shifts `this` rotational inertia for a body (or composite body) B
+  /** Shifts `this` rotational inertia for a body (or composite body) B
   from about-point Bcm (B's center of mass) to about-point Q.
   I.e., shifts `I_BBcm_E` to `I_BQ_E` (both are expressed-in frame E).
   @param mass The mass of body (or composite body) B.
@@ -675,8 +644,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Calculates the rotational inertia that results from shifting `this`
+  /** Calculates the rotational inertia that results from shifting `this`
   rotational inertia for a body (or composite body) B
   from about-point Bcm (B's center of mass) to about-point Q.
   I.e., shifts `I_BBcm_E` to `I_BQ_E` (both are expressed-in frame E).
@@ -693,8 +661,7 @@ class RotationalInertia {
            ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
   }
 
-  /**
-  Shifts `this` rotational inertia for a body (or composite body) B
+  /** Shifts `this` rotational inertia for a body (or composite body) B
   from about-point Q to about-point `Bcm` (B's center of mass).
   I.e., shifts `I_BQ_E` to `I_BBcm_E` (both are expressed-in frame E).
   @param mass The mass of body (or composite body) B.
@@ -713,8 +680,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Calculates the rotational inertia that results from shifting `this`
+  /** Calculates the rotational inertia that results from shifting `this`
   rotational inertia for a body (or composite body) B
   from about-point Q to about-point `Bcm` (B's center of mass).
   I.e., shifts `I_BQ_E` to `I_BBcm_E` (both are expressed-in frame E).
@@ -732,8 +698,7 @@ class RotationalInertia {
     return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
   }
 
-  /**
-  Shifts `this` rotational inertia for a body (or composite body) B
+  /** Shifts `this` rotational inertia for a body (or composite body) B
   from about-point P to about-point Q via Bcm (B's center of mass).
   I.e., shifts `I_BP_E` to `I_BQ_E` (both are expressed-in frame E).
   @param mass The mass of body (or composite body) B.
@@ -759,8 +724,7 @@ class RotationalInertia {
     return *this;
   }
 
-  /**
-  Calculates the rotational inertia that results from shifting `this`
+  /** Calculates the rotational inertia that results from shifting `this`
   rotational inertia for a body (or composite body) B
   from about-point P to about-point Q via Bcm (B's center of mass).
   I.e., shifts `I_BP_E` to `I_BQ_E` (both are expressed-in frame E).
@@ -782,8 +746,7 @@ class RotationalInertia {
   /** @} */
 
  protected:
-  /**
-  Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
+  /** Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   No check is done to determine if the result is physically valid.
   @param I_BP_E Rotational inertia of a body (or composite body) B to
          be subtracted from `this` rotational inertia.
@@ -1068,8 +1031,7 @@ class RotationalInertia {
       typename Eigen::NumTraits<T>::Literal>::quiet_NaN())};
 };
 
-/**
-Insertion operator to write %RotationalInertia's into a `std::ostream`.
+/** Insertion operator to write %RotationalInertia's into a `std::ostream`.
 Especially useful for debugging.
 @relates RotationalInertia */
 template <typename T> inline

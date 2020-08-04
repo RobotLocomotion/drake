@@ -30,8 +30,7 @@ class MobyLcpSolverId {
   static SolverId id();
 };
 
-/**
-A class for solving Linear Complementarity Problems (LCPs). Solving a LCP
+/** A class for solving Linear Complementarity Problems (LCPs). Solving a LCP
 requires finding a solution to the problem:<pre>
 Mz + q = w
 z ≥ 0
@@ -77,8 +76,7 @@ class MobyLCPSolver final : public SolverBase {
 
   void SetLoggingEnabled(bool enabled);
 
-  /**
-  Calculates the zero tolerance that the solver would compute if the user
+  /** Calculates the zero tolerance that the solver would compute if the user
   does not specify a tolerance. */
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
@@ -86,8 +84,7 @@ class MobyLCPSolver final : public SolverBase {
         (10 * std::numeric_limits<double>::epsilon());
   }
 
-  /**
-  Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where
+  /** Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where
   b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is positive definite). Therefore,
   q is in the range of P and M is positive semi-definite. An LCP of this
   form is also guaranteed to have a solution [Cottle 1992].
@@ -128,8 +125,7 @@ class MobyLCPSolver final : public SolverBase {
   bool SolveLcpFast(const MatrixX<T>& M, const VectorX<T>& q,
                     VectorX<T>* z, const T& zero_tol = T(-1)) const;
 
-  /**
-  Regularized version of the fast pivoting algorithm for LCPs of the form
+  /** Regularized version of the fast pivoting algorithm for LCPs of the form
   M = PAPᵀ, q = Pb, where b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is
   positive definite). Therefore, q is in the range of P and M is positive
   semi-definite. Please see SolveLcpFast() for more documentation about the
@@ -186,8 +182,7 @@ class MobyLCPSolver final : public SolverBase {
                                int max_exp = 20, const T& zero_tol = T(-1))
                                const;
 
-  /**
-  Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+  /** Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   all strictly semimonotone matrices, all P-matrices, and all strictly
   copositive matrices. Lemke's Algorithm is described in [Cottle 1992],
   Section 4.4. This implementation was adapted from the LEMKE Library
@@ -233,8 +228,7 @@ class MobyLCPSolver final : public SolverBase {
                      VectorX<T>* z, const T& piv_tol = T(-1),
                      const T& zero_tol = T(-1)) const;
 
-  /**
-  Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+  /** Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   all strictly semimonotone matrices, all P-matrices, and all strictly
   copositive matrices. Lemke's Algorithm is described in [Cottle 1992],
   Section 4.4.
@@ -275,13 +269,11 @@ class MobyLCPSolver final : public SolverBase {
   /** Returns the number of pivoting operations made by the last LCP solve. */
   int get_num_pivots() const { return pivots_; }
 
-  /**
-  Resets the number of pivoting operations made by the last LCP solver to
+  /** Resets the number of pivoting operations made by the last LCP solver to
   zero. */
   void reset_num_pivots() { pivots_ = 0; }
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

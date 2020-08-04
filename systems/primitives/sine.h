@@ -8,8 +8,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A sine system which outputs `y = a * sin(f * t + p)` and first and second
+/** A sine system which outputs `y = a * sin(f * t + p)` and first and second
 derivatives w.r.t. the time parameter `t`. The block parameters are:
 `a` the amplitude, `f` the frequency (radians/second), and `p` the phase
 (radians), all of which are constant vectors provided at construction time.
@@ -27,8 +26,7 @@ class Sine final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Sine)
 
-  /**
-  Constructs a %Sine system where the amplitude, frequency, and phase is
+  /** Constructs a %Sine system where the amplitude, frequency, and phase is
   applied to every input.
 
   @param[in] amplitude the sine wave amplitude
@@ -41,8 +39,7 @@ class Sine final : public LeafSystem<T> {
   Sine(double amplitude, double frequency, double phase, int size,
        bool is_time_based = true);
 
-  /**
-  Constructs a %Sine system where different amplitudes, frequencies, and
+  /** Constructs a %Sine system where different amplitudes, frequencies, and
   phases can be applied to each sine wave.
 
   @param[in] amplitudes the sine wave amplitudes
@@ -60,29 +57,25 @@ class Sine final : public LeafSystem<T> {
   template <typename U>
   explicit Sine(const Sine<U>&);
 
-  /**
-  Returns the amplitude constant. This method should only be called if the
+  /** Returns the amplitude constant. This method should only be called if the
   amplitude can be represented as a scalar value, i.e., every element in the
   amplitude vector is the same. It will abort if the amplitude cannot be
   represented as a single scalar value. */
   double amplitude() const;
 
-  /**
-  Returns the frequency constant. This method should only be called if the
+  /** Returns the frequency constant. This method should only be called if the
   frequency can be represented as a scalar value, i.e., every element in the
   frequency vector is the same. It will abort if the frequency cannot be
   represented as a single scalar value. */
   double frequency() const;
 
-  /**
-  Returns the phase constant. This method should only be called if the phase
+  /** Returns the phase constant. This method should only be called if the phase
   can be represented as a scalar value, i.e., every element in the phase
   vector is the same. It will abort if the phase cannot be represented as a
   single scalar value. */
   double phase() const;
 
-  /**
-  Returns a boolean indicting whether to use simulation time as the source
+  /** Returns a boolean indicting whether to use simulation time as the source
   of values for the time variable or an external source. Returns true if the
   simulation time is used as the source, and returns false otherwise. */
   bool is_time_based() const;

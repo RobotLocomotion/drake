@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Provides the semantics portion of Python bindings for the systems
 framework. */
 

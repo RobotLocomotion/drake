@@ -9,8 +9,7 @@
 
 namespace drake {
 
-/**
-Checks if @p ptr, a pointer to `FromType` class, can be safely converted to
+/** Checks if @p ptr, a pointer to `FromType` class, can be safely converted to
 a pointer to `ToType` class. Our motivation is to provide a good diagnostic
 for what @p ptr _actually_ was when the test fails.
 
@@ -54,8 +53,7 @@ template <typename ToType, typename FromType>
   return ::testing::AssertionSuccess();
 }
 
-/**
-Checks if @p ptr, a shared pointer to `FromType` class, can be safely
+/** Checks if @p ptr, a shared pointer to `FromType` class, can be safely
 converted to a shared pointer to `ToType` class. Our motivation is to
 provide a good diagnostic for what @p ptr _actually_ was when the test
 fails. */
@@ -65,8 +63,7 @@ template <typename ToType, typename FromType>
   return is_dynamic_castable<ToType, FromType>(ptr.get());
 }
 
-/**
-Checks if @p ptr, a shared pointer to `FromType` class, can be safely
+/** Checks if @p ptr, a shared pointer to `FromType` class, can be safely
 converted to a shared pointer to `ToType` class. Our motivation is to
 provide a good diagnostic for what @p ptr _actually_ was when the test
 fails. */

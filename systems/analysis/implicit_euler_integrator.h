@@ -15,8 +15,7 @@ namespace systems {
 // matrices near stiff steps is not overwhelmingly allocated into the error
 // estimator's statistics for Jacobian computations.
 
-/**
-A first-order, fully implicit integrator with second order error estimation.
+/** A first-order, fully implicit integrator with second order error estimation.
 
 This integrator uses the following update rule:<pre>
 x(t+h) = x(t) + h f(t+h,x(t+h))
@@ -123,8 +122,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   /** Returns true, because this integrator supports error estimation. */
   bool supports_error_estimation() const final { return true; }
 
-  /**
-  Returns the asymptotic order of the difference between the large and small
+  /** Returns the asymptotic order of the difference between the large and small
   steps (from which the error estimate is computed), which is 2. That is, the
   error estimate, `ε* = x̅ⁿ⁺¹ − x̃ⁿ⁺¹` has the property that `‖ε*‖ = O(h²)`,
   and it deviates from the true error, `ε`, by `‖ε − ε*‖ = O(h³)`.
@@ -272,16 +270,14 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       ε* = ε + O(h³).                                               (23) */
   int get_error_estimate_order() const final { return 2; }
 
-  /**
-  Set this to true to use implicit trapezoid for error estimation;
+  /** Set this to true to use implicit trapezoid for error estimation;
   otherwise this integrator will use step doubling for error estimation.
   By default this integrator will use step doubling. */
   void set_use_implicit_trapezoid_error_estimation(bool flag) {
     use_implicit_trapezoid_error_estimation_ = flag;
   }
 
-  /**
-  Returns true if the integrator will use implicit trapezoid for error
+  /** Returns true if the integrator will use implicit trapezoid for error
   estimation; otherwise it indicates the integrator will use step doubling
   for error estimation. */
   bool get_use_implicit_trapezoid_error_estimation() {

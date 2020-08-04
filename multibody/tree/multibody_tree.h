@@ -41,8 +41,7 @@ template <typename T> class JointActuator;
 template <typename T> class ForceElement;
 template <typename T> class UniformGravityFieldElement;
 
-/**
-Enumeration that indicates whether the Jacobian is partial differentiation
+/** Enumeration that indicates whether the Jacobian is partial differentiation
 with respect to q̇ (time-derivatives of generalized positions) or
 with respect to v (generalized velocities). */
 enum class JacobianWrtVariable {
@@ -67,8 +66,7 @@ template <typename T> class ModelInstance;
 template <typename T> class Mobilizer;
 template <typename T> class QuaternionFloatingMobilizer;
 
-/**
-%MultibodyTree provides a representation for a physical system consisting of
+/** %MultibodyTree provides a representation for a physical system consisting of
 a collection of interconnected rigid and deformable bodies. As such, it owns
 and manages each of the elements that belong to this physical system.
 Multibody dynamics elements include bodies, joints, force elements and
@@ -80,13 +78,11 @@ class MultibodyTree {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTree)
 
-  /**
-  Creates a MultibodyTree containing only a **world** body and a
+  /** Creates a MultibodyTree containing only a **world** body and a
   UniformGravityFieldElement. */
   MultibodyTree();
 
-  /**
-  @name Methods to add new MultibodyTree elements.
+  /** @name Methods to add new MultibodyTree elements.
 
   To create a %MultibodyTree users will add multibody elements like bodies,
   joints, force elements, constraints, etc, using one of these methods.
@@ -99,8 +95,7 @@ class MultibodyTree {
   // See this Reviewable comment:
   // https://reviewable.io/reviews/robotlocomotion/drake/5583#-KgGqGisnX9uMuYDkHpx
 
-  /**
-  Takes ownership of `body` and adds it to `this` %MultibodyTree. Returns a
+  /** Takes ownership of `body` and adds it to `this` %MultibodyTree. Returns a
   constant reference to the body just added, which will remain valid for the
   lifetime of `this` %MultibodyTree.
 
@@ -128,8 +123,7 @@ class MultibodyTree {
   template <template<typename Scalar> class BodyType>
   const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body);
 
-  /**
-  Constructs a new body with type `BodyType` with the given `args`, and adds
+  /** Constructs a new body with type `BodyType` with the given `args`, and adds
   it to `this` %MultibodyTree, which retains ownership. The `BodyType` will
   be specialized on the scalar type T of this %MultibodyTree.
 
@@ -164,8 +158,7 @@ class MultibodyTree {
   template<template<typename Scalar> class BodyType, typename... Args>
   const BodyType<T>& AddBody(Args&&... args);
 
-  /**
-  Creates a rigid body with the provided name, model instance, and spatial
+  /** Creates a rigid body with the provided name, model instance, and spatial
   inertia.  This method returns a constant reference to the body just added,
   which will remain valid for the lifetime of `this` %MultibodyTree.
 
@@ -197,8 +190,7 @@ class MultibodyTree {
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B);
 
-  /**
-  Creates a rigid body with the provided name, model instance, and spatial
+  /** Creates a rigid body with the provided name, model instance, and spatial
   inertia.  The newly created body will be placed in the default model
   instance.  This method returns a constant reference to the body just
   added, which will remain valid for the lifetime of `this` %MultibodyTree.
@@ -228,8 +220,7 @@ class MultibodyTree {
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B);
 
-  /**
-  Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns
+  /** Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns
   a constant reference to the frame just added, which will remain valid for
   the lifetime of `this` %MultibodyTree.
 
@@ -257,8 +248,7 @@ class MultibodyTree {
   template <template<typename Scalar> class FrameType>
   const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame);
 
-  /**
-  Constructs a new frame with type `FrameType` with the given `args`, and
+  /** Constructs a new frame with type `FrameType` with the given `args`, and
   adds it to `this` %MultibodyTree, which retains ownership. The `FrameType`
   will be specialized on the scalar type T of this %MultibodyTree.
 
@@ -296,8 +286,7 @@ class MultibodyTree {
   template<template<typename Scalar> class FrameType, typename... Args>
   const FrameType<T>& AddFrame(Args&&... args);
 
-  /**
-  Takes ownership of `mobilizer` and adds it to `this` %MultibodyTree.
+  /** Takes ownership of `mobilizer` and adds it to `this` %MultibodyTree.
   Returns a constant reference to the mobilizer just added, which will
   remain valid for the lifetime of `this` %MultibodyTree.
 
@@ -340,8 +329,7 @@ class MultibodyTree {
   const MobilizerType<T>& AddMobilizer(
       std::unique_ptr<MobilizerType<T>> mobilizer);
 
-  /**
-  Constructs a new mobilizer with type `MobilizerType` with the given
+  /** Constructs a new mobilizer with type `MobilizerType` with the given
   `args`, and adds it to `this` %MultibodyTree, which retains ownership.
   The `MobilizerType` will be specialized on the scalar type T of this
   %MultibodyTree.
@@ -381,8 +369,7 @@ class MultibodyTree {
   template<template<typename Scalar> class MobilizerType, typename... Args>
   const MobilizerType<T>& AddMobilizer(Args&&... args);
 
-  /**
-  Creates and adds to `this` %MultibodyTree (which retains ownership) a new
+  /** Creates and adds to `this` %MultibodyTree (which retains ownership) a new
   `ForceElement` member with the specific type `ForceElementType`. The
   arguments to this method `args` are forwarded to `ForceElementType`'s
   constructor.
@@ -398,8 +385,7 @@ class MultibodyTree {
   const ForceElementType<T>& AddForceElement(
       std::unique_ptr<ForceElementType<T>> force_element);
 
-  /**
-  Adds a new force element model of type `ForceElementType` to `this`
+  /** Adds a new force element model of type `ForceElementType` to `this`
   %MultibodyTree.  The arguments to this method `args` are forwarded to
   `ForceElementType`'s constructor.
   @param[in] args
@@ -427,8 +413,7 @@ class MultibodyTree {
   const JointType<T>& AddJoint(
       std::unique_ptr<JointType<T>> joint);
 
-  /**
-  This method helps to create a Joint of type `JointType` between two
+  /** This method helps to create a Joint of type `JointType` between two
   bodies.
   The two bodies connected by this Joint object are referred to as the
   _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
@@ -507,8 +492,7 @@ class MultibodyTree {
 
   // TODO(amcastro-tri): consider adding sugar method to declare an actuated
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
-  /**
-  Creates and adds a JointActuator model for an actuator acting on a given
+  /** Creates and adds a JointActuator model for an actuator acting on a given
   `joint`.
   This method returns a constant reference to the actuator just added, which
   will remain valid for the lifetime of `this` %MultibodyTree.
@@ -532,8 +516,7 @@ class MultibodyTree {
       const std::string& name, const Joint<T>& joint,
       double effort_limit = std::numeric_limits<double>::infinity());
 
-  /**
-  Creates a new model instance.  Returns the index for a new model
+  /** Creates a new model instance.  Returns the index for a new model
   instance (as there is no concrete object beyond the index).
 
   @param[in] name
@@ -551,8 +534,7 @@ class MultibodyTree {
     return static_cast<int>(frames_.size());
   }
 
-  /**
-  Returns the number of bodies in the %MultibodyTree including the *world*
+  /** Returns the number of bodies in the %MultibodyTree including the *world*
   body. Therefore the minimum number of bodies in a MultibodyTree is one. */
   int num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
 
@@ -560,8 +542,7 @@ class MultibodyTree {
    */
   int num_joints() const { return static_cast<int>(owned_joints_.size()); }
 
-  /**
-  Returns the number of actuators in the model.
+  /** Returns the number of actuators in the model.
   @see AddJointActuator(). */
   int num_actuators() const {
     return static_cast<int>(owned_actuators_.size());
@@ -630,8 +611,7 @@ class MultibodyTree {
     return model_instances_.at(model_instance)->num_actuated_dofs();
   }
 
-  /**
-  Returns the height of the tree data structure of `this` %MultibodyTree.
+  /** Returns the height of the tree data structure of `this` %MultibodyTree.
   That is, the number of bodies in the longest kinematic path between the
   world and any other leaf body. For a model that only contains the _world_
   body, the height of the tree is one.
@@ -744,8 +724,7 @@ class MultibodyTree {
     return it->second;
   }
 
-  /**
-  @name Querying for multibody elements by name
+  /** @name Querying for multibody elements by name
   These methods allow a user to query whether a given multibody element is
   part of `this` model. These queries can be performed at any time during
   the lifetime of a %MultibodyTree model, i.e. there is no restriction on
@@ -754,8 +733,7 @@ class MultibodyTree {
   the model.
   @{ */
 
-  /**
-  @returns `true` if a body named `name` was added to the model.
+  /** @returns `true` if a body named `name` was added to the model.
   @see AddRigidBody().
 
   @throws std::logic_error if the body name occurs in multiple model
@@ -769,8 +747,7 @@ class MultibodyTree {
     return count > 0;
   }
 
-  /**
-  @returns `true` if a body named `name` was added to @p model_instance.
+  /** @returns `true` if a body named `name` was added to @p model_instance.
   @see AddRigidBody().
 
   @throws std::exception if @p model_instance is not valid for this model. */
@@ -1052,31 +1029,27 @@ class MultibodyTree {
   }
   /** @} */
 
-  /**
-  Returns `true` if this %MultibodyTree was finalized with Finalize() after
+  /** Returns `true` if this %MultibodyTree was finalized with Finalize() after
   all multibody elements were added, and `false` otherwise.
   When a %MultibodyTree is instantiated, its topology remains invalid until
   Finalize() is called, which validates the topology.
   @see Finalize(). */
   bool topology_is_valid() const { return topology_.is_valid(); }
 
-  /**
-  Returns the topology information for this multibody tree. Users should not
+  /** Returns the topology information for this multibody tree. Users should not
   need to call this method since MultibodyTreeTopology is an internal
   bookkeeping detail. Used at Finalize() stage by multibody elements to
   retrieve a local copy of their topology. */
   const MultibodyTreeTopology& get_topology() const { return topology_; }
 
-  /**
-  Returns the mobilizer model for joint with index `joint_index`. The index
+  /** Returns the mobilizer model for joint with index `joint_index`. The index
   is invalid if the joint is not modeled with a mobilizer. */
   MobilizerIndex get_joint_mobilizer(JointIndex joint_index) const {
     DRAKE_DEMAND(joint_index < num_joints());
     return joint_to_mobilizer_[joint_index];
   }
 
-  /**
-  @name Model instance accessors
+  /** @name Model instance accessors
   Many functions on %MultibodyTree expect vectors of tree state or
   joint actuator inputs which encompass the entire tree.  Methods
   in this section are convenience accessors for the portion of
@@ -1110,8 +1083,7 @@ class MultibodyTree {
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v) const;
 
-  /**
-  Sets the vector of generalized velocities for `model_instance` in
+  /** Sets the vector of generalized velocities for `model_instance` in
   `v` using `v_instance`, leaving all other elements in the array
   untouched. This method throws an exception if `v` is not of size
   MultibodyTree::num_velocities() or `v_instance` is not of size
@@ -1126,8 +1098,7 @@ class MultibodyTree {
 
   // TODO(amcastro-tri): Consider making this method private and calling it
   // automatically when CreateDefaultContext() is called.
-  /**
-  This method must be called after all elements in the tree (joints, bodies,
+  /** This method must be called after all elements in the tree (joints, bodies,
   force elements, constraints) were added and before any computations are
   performed.
   It essentially compiles all the necessary "topological information", i.e.
@@ -1142,8 +1113,7 @@ class MultibodyTree {
   @throws std::exception if called post-finalize. */
   void Finalize();
 
-  /**
-  (Advanced) Allocates a new context for this %MultibodyTree uniquely
+  /** (Advanced) Allocates a new context for this %MultibodyTree uniquely
   identifying the state of the multibody system.
 
   @throws std::runtime_error if this is not owned by a MultibodyPlant /
@@ -1168,8 +1138,7 @@ class MultibodyTree {
                       systems::State<T>* state,
                       RandomGenerator* generator) const;
 
-  /**
-  Returns a const Eigen vector reference containing the vector
+  /** Returns a const Eigen vector reference containing the vector
   `[q; v]` of the model with `q` the vector of generalized positions and
   `v` the vector of generalized velocities.
   @note This method returns a reference to existing data, exhibits constant
@@ -1179,8 +1148,7 @@ class MultibodyTree {
   Eigen::VectorBlock<const VectorX<T>> GetPositionsAndVelocities(
       const systems::Context<T>& context) const;
 
-  /**
-  Returns a Eigen vector containing the multibody state `x = [q; v]`
+  /** Returns a Eigen vector containing the multibody state `x = [q; v]`
   of the model with `q` the vector of generalized positions and `v` the
   vector of generalized velocities for model instance `model_instance`.
   @throws std::exception if the `context` does not correspond to the context
@@ -1191,8 +1159,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
-  /**
-  Returns a mutable Eigen vector containing the vector `[q; v]`
+  /** Returns a mutable Eigen vector containing the vector `[q; v]`
   of the model with `q` the vector of generalized positions and `v` the
   vector of generalized velocities.
   @throws std::exception if the `context` is nullptr or if it does not
@@ -1210,8 +1177,7 @@ class MultibodyTree {
                                             &context->get_mutable_state());
   }
 
-  /**
-  Sets `context` to store the vector `[q; v]`
+  /** Sets `context` to store the vector `[q; v]`
   with `q` the vector of generalized positions and `v` the vector
   of generalized velocities for model instance `model_instance`.
   @throws std::exception if the `context` does not correspond to the context
@@ -1257,8 +1223,7 @@ class MultibodyTree {
       const Body<T>& body,
       const Eigen::Quaternion<symbolic::Expression>& rotation);
 
-  /**
-  @name Kinematic computations
+  /** @name Kinematic computations
   Kinematics computations are concerned with the motion of bodies in the
   model without regard to their mass or the forces and moments that cause
   the motion. Methods in this category include the computation of poses and
@@ -1303,8 +1268,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
-  /**
-  This method computes the center of mass position p_WCcm of specified
+  /** This method computes the center of mass position p_WCcm of specified
   bodies measured and expressed in world frame W. The specified bodies
   are considered as a single composite body C, whose center of mass
   `composite_mass` is located at Ccm. The bodies are selected by a vector of
@@ -1341,8 +1305,7 @@ class MultibodyTree {
   /** @} */
   // End of "Kinematic computations" section.
 
-  /**
-  @name Methods to compute multibody Jacobians.
+  /** @name Methods to compute multibody Jacobians.
   @{ */
 
   /** See MultibodyPlant method. */
@@ -1399,8 +1362,7 @@ class MultibodyTree {
                                    const Frame<T>& frame_E,
                                    EigenPtr<Matrix3X<T>> Js_w_AB_E) const;
 
-  /**
-  Return a point's translational velocity Jacobian in a frame A with respect
+  /** Return a point's translational velocity Jacobian in a frame A with respect
   to "speeds" 𝑠, where 𝑠 is either q̇ ≜ [q̇₁ ... q̇ⱼ]ᵀ (time-derivatives of
   j generalized positions) or v ≜ [v₁ ... vₖ]ᵀ (k generalized velocities).
   For each point Bi of (fixed to) a frame B whose translational velocity
@@ -1476,8 +1438,7 @@ class MultibodyTree {
   /** @} */
   // End of multibody Jacobian methods section.
 
-  /**
-  @name Computational methods
+  /** @name Computational methods
   These methods expose the computational capabilities of MultibodyTree to
   compute kinematics, forward and inverse dynamics, and Jacobian matrices,
   among others.
@@ -1488,8 +1449,7 @@ class MultibodyTree {
   system.
   @{ */
 
-  /**
-  Computes into the position kinematics `pc` all the kinematic quantities
+  /** Computes into the position kinematics `pc` all the kinematic quantities
   that depend on the generalized positions only. These include:
 
   - For each body B, the pose `X_BF` of each of the frames F attached to
@@ -1504,8 +1464,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const;
 
-  /**
-  Computes all the kinematic quantities that depend on the generalized
+  /** Computes all the kinematic quantities that depend on the generalized
   velocities and stores them in the velocity kinematics cache `vc`.
   These include:
   - Spatial velocity `V_WB` for each body B in the model as measured and
@@ -1522,8 +1481,7 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const;
 
-  /**
-  Computes the spatial inertia M_Bo_W(q) for each body B in the model about
+  /** Computes the spatial inertia M_Bo_W(q) for each body B in the model about
   its frame origin Bo and expressed in the world frame W.
   @param[in] context
     The context storing the state of the model.
@@ -1537,8 +1495,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* M_B_W_cache) const;
 
-  /**
-  Computes the bias term `Fb_Bo_W(q, v)` for each body in the model.
+  /** Computes the bias term `Fb_Bo_W(q, v)` for each body in the model.
   For a body B, this is the bias term `Fb_Bo_W` in the equation
   `F_BBo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
@@ -1554,8 +1511,7 @@ class MultibodyTree {
   void CalcDynamicBiasCache(const systems::Context<T>& context,
                             std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const;
 
-  /**
-  Computes all the kinematic quantities that depend on the generalized
+  /** Computes all the kinematic quantities that depend on the generalized
   accelerations that is, the generalized velocities' time derivatives, and
   stores them in the acceleration kinematics cache `ac`.
   These include:
@@ -1588,8 +1544,7 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       AccelerationKinematicsCache<T>* ac) const;
 
-  /**
-  See MultibodyPlant method.
+  /** See MultibodyPlant method.
   @warning The output parameter `A_WB_array` is indexed by BodyNodeIndex,
   while MultibodyPlant's method returns accelerations indexed by BodyIndex. */
   void CalcSpatialAccelerationsFromVdot(
@@ -1605,8 +1560,7 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       const MultibodyForces<T>& external_forces) const;
 
-  /**
-  (Advanced) Given the state of `this` %MultibodyTree in `context` and a
+  /** (Advanced) Given the state of `this` %MultibodyTree in `context` and a
   known vector of generalized accelerations `vdot`, this method computes the
   set of generalized forces `tau` that would need to be applied at each
   Mobilizer in order to attain the specified generalized accelerations.
@@ -1720,8 +1674,7 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
-  /**
-  Given the state stored in `context` and a
+  /** Given the state stored in `context` and a
   known vector of generalized accelerations `vdot`, this method computes the
   set of generalized forces `tau_id` that would need to be applied at each
   Mobilizer in order to attain the specified generalized accelerations.
@@ -1752,8 +1705,7 @@ class MultibodyTree {
 
   // TODO(sherm1) Revise the comments below as #12942 is addressed.
 
-  /**
-  See System method. Currently includes only gravity and explicit
+  /** See System method. Currently includes only gravity and explicit
   ForceElement sources; potential energy of contact is ignored.
   See issue #12942. */
   T CalcPotentialEnergy(const systems::Context<T>& context) const;
@@ -1761,14 +1713,12 @@ class MultibodyTree {
   /** See System method. */
   T CalcKineticEnergy(const systems::Context<T>& context) const;
 
-  /**
-  See System method. Currently includes only gravity and explicit
+  /** See System method. Currently includes only gravity and explicit
   ForceElement sources; potential energy of contact is ignored.
   See issue #12942. */
   T CalcConservativePower(const systems::Context<T>& context) const;
 
-  /**
-  See System method. Currently includes only explicit ForceElement sources.
+  /** See System method. Currently includes only explicit ForceElement sources.
   Power from joint dampers, actuators, input ports, and contact are
   not included.
   See issue #12942. */
@@ -1802,8 +1752,7 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
-  /**
-  @anchor internal_forward_dynamics
+  /** @anchor internal_forward_dynamics
   @name Articulated Body Algorithm Forward Dynamics.
   The Articulated %Body Algorithm (ABA) implements a forward dynamics
   computation with O(n) complexity. The algorithm is implemented in terms of
@@ -2051,8 +2000,7 @@ class MultibodyTree {
                         Springer.
    @{ */
 
-  /**
-  Performs a tip-to-base pass to compute the ArticulatedBodyInertia for each
+  /** Performs a tip-to-base pass to compute the ArticulatedBodyInertia for each
   body as a function of the configuration q stored in `context`. The
   computation is stored in `abic` along with other Articulated Body
   Algorithm (ABA) quantities. */
@@ -2060,8 +2008,7 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ArticulatedBodyInertiaCache<T>* abic) const;
 
-  /**
-  Performs a tip-to-base pass which essentially computes the force bias
+  /** Performs a tip-to-base pass which essentially computes the force bias
   terms in the ABA equations. These are a function of the full state
   `x = [q; v]`, stored in `context`, and externally applied `forces`.
   Refer to @ref abi_and_bias_force "Articulated Body Inertia and Force Bias"
@@ -2070,8 +2017,7 @@ class MultibodyTree {
       const systems::Context<T>& context, const MultibodyForces<T>& forces,
       ArticulatedBodyForceCache<T>* aba_force_cache) const;
 
-  /**
-  Performs the final base-to-tip pass of ABA to compute the acceleration of
+  /** Performs the final base-to-tip pass of ABA to compute the acceleration of
   each body in the model into output `ac`.
   Refer to @ref abi_computing_accelerations "Computing Accelerations" for
   further details. */
@@ -2080,8 +2026,7 @@ class MultibodyTree {
     const ArticulatedBodyForceCache<T>& aba_force_cache,
     AccelerationKinematicsCache<T>* ac) const;
 
-  /**
-  For a body B, computes the spatial acceleration bias term `Ab_WB` as it
+  /** For a body B, computes the spatial acceleration bias term `Ab_WB` as it
   appears in the acceleration level motion constraint imposed by body B's
   mobilizer `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`, with `Aplus_WB =
   Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
@@ -2094,8 +2039,7 @@ class MultibodyTree {
       std::vector<SpatialAcceleration<T>>* Ab_WB_cache)
       const;
 
-  /**
-  Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
+  /** Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
   for each articulated body B. On output `Zb_Bo_W_cache[body_node_index]`
   contains `Zb_Bo_W` for the body B with node index `body_node_index`. */
   void CalcArticulatedBodyForceBiasCache(
@@ -2111,8 +2055,7 @@ class MultibodyTree {
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 
-  /**
-  Alternative signature to build a state selector matrix from a std::vector
+  /** Alternative signature to build a state selector matrix from a std::vector
   of joint names.
   See MakeStateSelectorMatrixFromJointNames(const std::vector<JointIndex>&)
   for details.
@@ -2158,8 +2101,7 @@ class MultibodyTree {
   /** See MultibodyPlant method. */
   VectorX<double> GetAccelerationUpperLimits() const;
 
-  /**
-  @name Methods to retrieve multibody element variants
+  /** @name Methods to retrieve multibody element variants
 
   Given two variants of the same %MultibodyTree, these methods map an
   element in one variant, to its corresponding element in the other variant.
@@ -2234,8 +2176,7 @@ class MultibodyTree {
   }
   /** @} */
 
-  /**
-  Creates a deep copy of `this` %MultibodyTree templated on the same
+  /** Creates a deep copy of `this` %MultibodyTree templated on the same
   scalar type T as `this` tree. */
   std::unique_ptr<MultibodyTree<T>> Clone() const {
     return CloneToScalar<T>();
@@ -2246,8 +2187,7 @@ class MultibodyTree {
     return CloneToScalar<AutoDiffXd>();
   }
 
-  /**
-  Creates a deep copy of `this` %MultibodyTree templated on the scalar type
+  /** Creates a deep copy of `this` %MultibodyTree templated on the scalar type
   `ToScalar`.
   The new deep copy is guaranteed to have exactly the same
   MultibodyTreeTopology as the original tree the method is called on.
@@ -2357,8 +2297,7 @@ class MultibodyTree {
     return tree_clone;
   }
 
-  /**
-  Evaluates position kinematics cached in context.
+  /** Evaluates position kinematics cached in context.
   @param context A Context whose position kinematics cache will be
                  updated and returned.
   @return Reference to the PositionKinematicsCache of context. */
@@ -2368,8 +2307,7 @@ class MultibodyTree {
     return tree_system_->EvalPositionKinematics(context);
   }
 
-  /**
-  Evaluates velocity kinematics cached in context. This will also
+  /** Evaluates velocity kinematics cached in context. This will also
   force position kinematics to be updated if it hasn't already.
   @param context A Context whose velocity kinematics cache will be
                  updated and returned.
@@ -2393,79 +2331,67 @@ class MultibodyTree {
     return tree_system_->EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
   }
 
-  /**
-  @name                 State access methods
+  /** @name                 State access methods
   These methods use information in the MultibodyTree to determine how to
   locate the tree's state variables in a given Context or State.
   @{ */
 
-  /**
-  Returns true if we are using discrete state for positions and velocities;
+  /** Returns true if we are using discrete state for positions and velocities;
   otherwise we're using continuous state. */
   bool is_state_discrete() const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->is_discrete();
   }
 
-  /**
-  Returns a const reference to the kinematic state vector stored in the
+  /** Returns a const reference to the kinematic state vector stored in the
   given Context as an `Eigen::VectorBlock<const VectorX<T>>`. This will
   consist only of q and v partitions in that order. */
   Eigen::VectorBlock<const VectorX<T>> get_state_vector(
       const systems::Context<T>& context) const;
 
-  /**
-  This is a mutable-Context version of `get_state_vector()`.
+  /** This is a mutable-Context version of `get_state_vector()`.
   @note Invalidates all q- or v-dependent cache entries. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
       systems::Context<T>* context) const;
 
-  /**
-  This is a mutable-State version of `get_state_vector()`.
+  /** This is a mutable-State version of `get_state_vector()`.
   @note This does not cause cache invalidation. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
       systems::State<T>* state) const;
 
-  /**
-  Returns a const reference to the position state vector q stored in the
+  /** Returns a const reference to the position state vector q stored in the
   given Context as an `Eigen::VectorBlock<const VectorX<T>>`. */
   Eigen::VectorBlock<const VectorX<T>> get_positions(
       const systems::Context<T>& context) const;
 
-  /**
-  This is a mutable-Context version of `get_positions()`.
+  /** This is a mutable-Context version of `get_positions()`.
   @note Invalidates all q-dependent cache entries. (May also invalidate
         v-dependent cache entries.) */
   Eigen::VectorBlock<VectorX<T>> get_mutable_positions(
       systems::Context<T>* context) const;
 
-  /**
-  This is a mutable-State version of `get_positions()`.
+  /** This is a mutable-State version of `get_positions()`.
   @note This does not cause cache invalidation. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_positions(
       systems::State<T>* state) const;
 
-  /**
-  Returns a const reference to the velcoity state vector v stored in the
+  /** Returns a const reference to the velcoity state vector v stored in the
   given Context as an `Eigen::VectorBlock<const VectorX<T>>`. */
   Eigen::VectorBlock<const VectorX<T>> get_velocities(
       const systems::Context<T>& context) const;
 
-  /**
-  This is a mutable-Context version of `get_velocities()`.
+  /** This is a mutable-Context version of `get_velocities()`.
   @note Invalidates all v-dependent cache entries. (May also invalidate
         q-dependent cache entries.) */
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities(
       systems::Context<T>* context) const;
 
-  /**
-  This is a mutable-State version of `get_velocities()`.
+  /** This is a mutable-State version of `get_velocities()`.
   @note This does not cause cache invalidation. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities(
       systems::State<T>* state) const;
 
-  /**
-  Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  /** Returns a const fixed-size Eigen::VectorBlock of `count` elements
   referencing a segment in the state vector with its first element
   at `start`. */
   template <int count>
@@ -2484,8 +2410,7 @@ class MultibodyTree {
     return x.nestedExpression().template segment<count>(start);
   }
 
-  /**
-  This is a mutable-Context version of `get_state_segment<count>(start)`.
+  /** This is a mutable-Context version of `get_state_segment<count>(start)`.
   @note Invalidates all q- or v-dependent cache entries. */
   template <int count>
   Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(
@@ -2494,8 +2419,7 @@ class MultibodyTree {
     return x.nestedExpression().template segment<count>(start);
   }
 
-  /**
-  This is a mutable-State version of `get_state_segment<count>(start)`.
+  /** This is a mutable-State version of `get_state_segment<count>(start)`.
   @note This does not cause cache invalidation. */
   template <int count>
   Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(
@@ -2504,8 +2428,7 @@ class MultibodyTree {
     return x.nestedExpression().template segment<count>(start);
   }
 
-  /**
-  Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  /** Returns a const fixed-size Eigen::VectorBlock of `count` elements
   referencing a segment in the Context's state vector with its first element
   at `start`. */
   Eigen::VectorBlock<const VectorX<T>> get_state_segment(
@@ -2514,8 +2437,7 @@ class MultibodyTree {
     return x.nestedExpression().segment(start, count);
   }
 
-  /**
-  This is a mutable-Context version of `get_state_segment(start, count)`.
+  /** This is a mutable-Context version of `get_state_segment(start, count)`.
   @note Invalidates all q- or v-dependent cache entries. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
       systems::Context<T>* context, int start, int count) const {
@@ -2523,8 +2445,7 @@ class MultibodyTree {
     return x.nestedExpression().segment(start, count);
   }
 
-  /**
-  This is a mutable-State version of `get_state_segment(start, count)`.
+  /** This is a mutable-State version of `get_state_segment(start, count)`.
   @note This does not cause cache invalidation. */
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
       systems::State<T>* state, int start, int count) const {
@@ -2533,24 +2454,21 @@ class MultibodyTree {
   }
   /** @} */
 
-  /**
-  Returns the MultibodyTreeSystem that owns this MultibodyTree.
+  /** Returns the MultibodyTreeSystem that owns this MultibodyTree.
   @pre There is an owning MultibodyTreeSystem. */
   const MultibodyTreeSystem<T>& tree_system() const {
     DRAKE_DEMAND(tree_system_ != nullptr);
     return *tree_system_;
   }
 
-  /**
-  (Internal use only) Informs the MultibodyTree how to access its resources
+  /** (Internal use only) Informs the MultibodyTree how to access its resources
   within a Context. */
   void set_tree_system(MultibodyTreeSystem<T>* tree_system) {
     DRAKE_DEMAND(tree_system != nullptr && tree_system_ == nullptr);
     tree_system_ = tree_system;
   }
 
-  /**
-  (Internal) For a body B, calculates the cache entry associated with
+  /** (Internal) For a body B, calculates the cache entry associated with
   H_PB_W for each node, where H_PB_W is
   the `6 x nm` hinge matrix that relates `V_PB_W` (body B's spatial
   velocity in its parent body P, expressed in world W) to this node's `nm`

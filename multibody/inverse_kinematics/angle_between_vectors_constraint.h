@@ -7,8 +7,7 @@
 
 namespace drake {
 namespace multibody {
-/**
-Constrains that the angle between a vector `a` and another vector `b` is
+/** Constrains that the angle between a vector `a` and another vector `b` is
 between [θ_lower, θ_upper]. `a` is fixed to a frame A, while `b` is fixed to
 a frame B.
 Mathematically, if we denote a_unit_A as `a` expressed in frame A after
@@ -19,8 +18,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AngleBetweenVectorsConstraint)
 
-  /**
-  Constructs an AngleBetweenVectorsConstraint.
+  /** Constructs an AngleBetweenVectorsConstraint.
   @param plant The MultibodyPlant on which the constraint is imposed. `plant`
     should be alive during the lifetime of this constraint.
   @param frameA The Frame object for frame A.
@@ -49,8 +47,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
                                 double angle_lower, double angle_upper,
                                 systems::Context<double>* plant_context);
 
-  /**
-  Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
+  /** Overloaded constructor. Use MultibodyPlant<AutoDiffXd> instead of
   MultibodyPlant<double>.
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
   Documentation string is manually recreated in Python.} */

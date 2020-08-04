@@ -5,8 +5,7 @@
 
 namespace drake {
 
-/**
-Expects that a rotation matrix belongs to SO(3):
+/** Expects that a rotation matrix belongs to SO(3):
    R ∈ SO(3) =>
      Rᵀ R = I (orthonormal)
      det(R) = 1 (right-hand rule)
@@ -16,8 +15,7 @@ the orthonormal and right-hand rule cases. */
 [[nodiscard]] ::testing::AssertionResult ExpectRotMat(
     const Eigen::Matrix3d& R, double tolerance);
 
-/**
-Compares two SE(3) Transforms.
+/** Compares two SE(3) Transforms.
 @param X_expected Expected SE(3) transform.
 @param X_actual Actual SE(3) transform.
 @param tolerance The tolerance for determining equivalence for the

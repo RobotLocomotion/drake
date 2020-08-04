@@ -13,8 +13,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-Holds r, g, b values to represent a color pixel.
+/** Holds r, g, b values to represent a color pixel.
 
 @tparam T A type for each color channel. */
 template <typename T>
@@ -57,20 +56,17 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-Defines a color based on its three primary additive colors: red, green, and
+/** Defines a color based on its three primary additive colors: red, green, and
 blue. Each of these primary additive colors are in the range of [0, 255]. */
 using ColorI = Color<int>;
 
-/**
-Defines a color based on its three primary additive colors: red, green, and
+/** Defines a color based on its three primary additive colors: red, green, and
 blue. Each of these primary additive colors are in the range of [0, 1]. */
 using ColorD = Color<double>;
 
 // TODO(SeanCurtis-TRI): As indicated in #9628, provide unit tests for the
 // contents of this file.
-/**
-Creates and holds a palette of colors for visualizing different objects in a
+/** Creates and holds a palette of colors for visualizing different objects in a
 scene (the intent is for a different color to be applied to each identified
 object). The colors are chosen so as to be easily distinguishable. In other
 words, the intensities are spaced as widely as possible given the number of
@@ -84,8 +80,7 @@ class ColorPalette {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ColorPalette)
 
-  /**
-  A constructor for %ColorPalette.
+  /** A constructor for %ColorPalette.
 
   @param num_colors The number of colors that you want ColorPalette to hold.
   We assume this will be the number of rigid bodies in rendering scene.
@@ -130,8 +125,7 @@ class ColorPalette {
     color_id_map_[kSkyColor] = no_body_id;
   }
 
-  /**
-  Takes ColorI whose pixel range is [0, 255] and returns ColorD whose pixel
+  /** Takes ColorI whose pixel range is [0, 255] and returns ColorD whose pixel
   range is [0, 1].
 
   @param color An input color to be normalized. */
@@ -143,8 +137,7 @@ class ColorPalette {
     return normalized;
   }
 
-  /**
-  Returns a color of type ColorI which corresponds to given index.
+  /** Returns a color of type ColorI which corresponds to given index.
   The pixel range of returned color is [0, 255].
 
   @param index An index that corresponds to the color to be returned. */
@@ -159,8 +152,7 @@ class ColorPalette {
     }
   }
 
-  /**
-  Returns a color of type ColorD which corresponds to given index.
+  /** Returns a color of type ColorD which corresponds to given index.
   The pixel range of returned color is [0, 1].
 
   @param index An index that corresponds to the color to be returned. */
@@ -169,22 +161,19 @@ class ColorPalette {
     return color;
   }
 
-  /**
-  Returns the color of type ColorI which corresponds to sky.
+  /** Returns the color of type ColorI which corresponds to sky.
   The pixel range of returned color is [0, 255]. */
   const ColorI& get_sky_color() const {
     return kSkyColor;
   }
 
-  /**
-  Returns the color of type ColorI which corresponds to flat terrain.
+  /** Returns the color of type ColorI which corresponds to flat terrain.
   The pixel range of returned color is [0, 255]. */
   const ColorI& get_terrain_color() const {
     return kTerrainColor;
   }
 
-  /**
-  Looks up the ID which corresponds to the given color.
+  /** Looks up the ID which corresponds to the given color.
 
   @param color The color you want to know the corresponding ID. */
   IdType LookUpId(const ColorI& color) const {

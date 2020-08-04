@@ -4,8 +4,7 @@
 namespace drake {
 namespace solvers {
 
-/**
-Finds all integer solutions x to the linear inequalities
+/** Finds all integer solutions x to the linear inequalities
 <pre>
                    Ax <= b,
                    x <= upper_bound,

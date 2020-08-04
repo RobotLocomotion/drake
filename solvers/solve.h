@@ -10,8 +10,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-Solves an optimization program, with optional initial guess and solver
+/** Solves an optimization program, with optional initial guess and solver
 options. This function first chooses the best solver depending on the
 availability of the solver and the program formulation; it then constructs
 that solver and call the Solve function of that solver. The optimization
@@ -33,8 +32,7 @@ MathematicalProgramResult Solve(
 
 MathematicalProgramResult Solve(const MathematicalProgram& prog);
 
-/**
-Some solvers (e.g. SNOPT) provide a "best-effort solution" even when they
+/** Some solvers (e.g. SNOPT) provide a "best-effort solution" even when they
 determine that a problem is infeasible.  This method will return the
 descriptions corresponding to the constraints for which `CheckSatisfied`
 evaluates to false given the reported solution.  This can be very useful

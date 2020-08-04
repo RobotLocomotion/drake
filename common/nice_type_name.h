@@ -10,8 +10,7 @@
 
 namespace drake {
 
-/**
-@brief Obtains canonicalized, platform-independent, human-readable names for
+/** @brief Obtains canonicalized, platform-independent, human-readable names for
 arbitrarily-complicated C++ types.
 
 Usage: @code
@@ -44,8 +43,7 @@ This class exists only to group type name-related static methods; don't try
 to construct an object of this type. */
 class NiceTypeName {
  public:
-  /**
-  Attempts to return a nicely demangled and canonicalized type name that is
+  /** Attempts to return a nicely demangled and canonicalized type name that is
   the same on all platforms, using Canonicalize(). This is an expensive
   operation but is only done once per instantiation of NiceTypeName::Get<T>()
   for a given type `T`. The returned reference will not be deleted even at
@@ -58,8 +56,7 @@ class NiceTypeName {
     return canonical.access();
   }
 
-  /**
-  Returns the type name of the most-derived type of an object of type T,
+  /** Returns the type name of the most-derived type of an object of type T,
   typically but not necessarily polymorphic. This must be calculated on the fly
   so is expensive whenever called, though very reasonable for use in error
   messages. For non-polymorphic types this produces the same result as would
@@ -70,23 +67,20 @@ class NiceTypeName {
     return GetWithPossibleOverride(&thing, typeid(thing));
   }
 
-  /**
-  Returns the nicely demangled and canonicalized type name of `info`. This
+  /** Returns the nicely demangled and canonicalized type name of `info`. This
   must be calculated on the fly so is expensive whenever called, though very
   reasonable for use in error messages. */
   static std::string Get(const std::type_info& info) {
     return Canonicalize(Demangle(info.name()));
   }
 
-  /**
-  Using the algorithm appropriate to the current compiler, demangles a type
+  /** Using the algorithm appropriate to the current compiler, demangles a type
   name as returned by `typeid(T).name()`, with the result hopefully suitable for
   meaningful display to a human. The result is compiler-dependent.
   @see Canonicalize() */
   static std::string Demangle(const char* typeid_name);
 
-  /**
-  Given a compiler-dependent demangled type name string as returned by
+  /** Given a compiler-dependent demangled type name string as returned by
   Demangle(), attempts to form a canonicalized representation that will be
   the same for any compiler. Unnecessary spaces and superfluous keywords like
   "class" and "struct" are removed. The NiceTypeName::Get<T>() method
@@ -94,8 +88,7 @@ class NiceTypeName {
   any platform. */
   static std::string Canonicalize(const std::string& demangled_name);
 
-  /**
-  Given a canonical type name that may include leading namespaces, attempts
+  /** Given a canonical type name that may include leading namespaces, attempts
   to remove those namespaces. For example,
   `drake::systems::MyThing<internal::type>` becomes `MyThing<internal::type>`.
   If the last segment ends in `::`, the original string is returned unprocessed.

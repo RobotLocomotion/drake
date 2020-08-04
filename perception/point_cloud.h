@@ -15,8 +15,7 @@
 namespace drake {
 namespace perception {
 
-/**
-Implements a point cloud (with contiguous storage), whose main goal is to
+/** Implements a point cloud (with contiguous storage), whose main goal is to
 offer a convenient, synchronized interface to commonly used fields and
 data types applicable for basic 3D perception.
 
@@ -83,8 +82,7 @@ class PointCloud final {
   static inline bool IsDefaultValue(T value) { return std::isnan(value); }
   static inline bool IsInvalidValue(T value) { return !std::isfinite(value); }
 
-  /**
-  Constructs a point cloud of a given `new_size`, with the prescribed
+  /** Constructs a point cloud of a given `new_size`, with the prescribed
   `fields`. If `kDescriptors` is one of the fields, then
   `descriptor` should be included and should not be `kNone`.
   @param new_size
@@ -106,8 +104,7 @@ class PointCloud final {
 
   // Do not define a default argument for `copy_fields` so that this is
   // not ambiguous w.r.t. the copy constructor.
-  /**
-  Copies another point cloud's fields and data.
+  /** Copies another point cloud's fields and data.
   @param copy_fields
     Fields to copy. If this is `kInherit`, then `other`s fields will be
     copied. Otherwise, only the specified fields will be copied; the
@@ -128,8 +125,7 @@ class PointCloud final {
   /** Returns the number of points in this point cloud. */
   int size() const { return size_; }
 
-  /**
-  Conservative resize; will maintain existing data, and initialize new
+  /** Conservative resize; will maintain existing data, and initialize new
   data to their invalid values.
   @param new_size
      The new size of the value. If less than the present `size()`, then
@@ -140,30 +136,25 @@ class PointCloud final {
      Do not default-initialize new values. */
   void resize(int new_size, bool skip_initialize = false);
 
-  /**
-  @name Geometric Descriptors - XYZs
+  /** @name Geometric Descriptors - XYZs
   @{ */
 
   /** Returns if this cloud provides XYZ values. */
   bool has_xyzs() const;
 
-  /**
-  Returns access to XYZ values.
+  /** Returns access to XYZ values.
   @pre `has_xyzs()` must be true. */
   Eigen::Ref<const Matrix3X<T>> xyzs() const;
 
-  /**
-  Returns mutable access to XYZ values.
+  /** Returns mutable access to XYZ values.
   @pre `has_xyzs()` must be true. */
   Eigen::Ref<Matrix3X<T>> mutable_xyzs();
 
-  /**
-  Returns access to an XYZ value.
+  /** Returns access to an XYZ value.
   @pre `has_xyzs()` must be true. */
   Vector3<T> xyz(int i) const { return xyzs().col(i); }
 
-  /**
-  Returns mutable access to an XYZ value.
+  /** Returns mutable access to an XYZ value.
   @pre `has_xyzs()` must be true. */
   Eigen::Ref<Vector3<T>> mutable_xyz(int i) {
     return mutable_xyzs().col(i);
@@ -171,30 +162,25 @@ class PointCloud final {
 
   /** @} */
 
-  /**
-  @name Geometric Descriptors - Normals
+  /** @name Geometric Descriptors - Normals
   @{ */
 
   /** Returns if this cloud provides normals. */
   bool has_normals() const;
 
-  /**
-  Returns access to normals.
+  /** Returns access to normals.
   @pre `has_normals()` must be true. */
   Eigen::Ref<const Matrix3X<T>> normals() const;
 
-  /**
-  Returns mutable access to normals.
+  /** Returns mutable access to normals.
   @pre `has_normals()` must be true. */
   Eigen::Ref<Matrix3X<T>> mutable_normals();
 
-  /**
-  Returns access to a normal.
+  /** Returns access to a normal.
   @pre `has_normals()` must be true. */
   Vector3<T> normal(int i) const { return normals().col(i); }
 
-  /**
-  Returns mutable access to a normal.
+  /** Returns mutable access to a normal.
   @pre `has_normals()` must be true. */
   Eigen::Ref<Vector3<T>> mutable_normal(int i) {
     return mutable_normals().col(i);
@@ -202,30 +188,25 @@ class PointCloud final {
 
   /** @} */
 
-  /**
-  @name Geometric Descriptors - RGBs
+  /** @name Geometric Descriptors - RGBs
   @{ */
 
   /** Returns if this cloud provides RGB colors. */
   bool has_rgbs() const;
 
-  /**
-  Returns access to RGB colors.
+  /** Returns access to RGB colors.
   @pre `has_rgbs()` must be true. */
   Eigen::Ref<const Matrix3X<C>> rgbs() const;
 
-  /**
-  Returns mutable access to RGB colors.
+  /** Returns mutable access to RGB colors.
   @pre `has_rgbs()` must be true. */
   Eigen::Ref<Matrix3X<C>> mutable_rgbs();
 
-  /**
-  Returns access to an RGB color.
+  /** Returns access to an RGB color.
   @pre `has_rgbs()` must be true. */
   Vector3<C> rgb(int i) const { return rgbs().col(i); }
 
-  /**
-  Returns mutable access to an RGB color.
+  /** Returns mutable access to an RGB color.
   @pre `has_rgbs()` must be true. */
   Eigen::Ref<Vector3<C>> mutable_rgb(int i) {
     return mutable_rgbs().col(i);
@@ -233,8 +214,7 @@ class PointCloud final {
 
   /** @} */
 
-  /**
-  @name Run-Time Descriptors
+  /** @name Run-Time Descriptors
   @{ */
 
   /** Returns if this point cloud provides descriptor values. */
@@ -248,23 +228,19 @@ class PointCloud final {
     return fields_.descriptor_type();
   }
 
-  /**
-  Returns access to descriptor values.
+  /** Returns access to descriptor values.
   @pre `has_descriptors()` must be true. */
   Eigen::Ref<const MatrixX<D>> descriptors() const;
 
-  /**
-  Returns mutable access to descriptor values.
+  /** Returns mutable access to descriptor values.
   @pre `has_descriptors()` must be true. */
   Eigen::Ref<MatrixX<D>> mutable_descriptors();
 
-  /**
-  Returns access to a descriptor value.
+  /** Returns access to a descriptor value.
   @pre `has_descriptors()` must be true. */
   VectorX<T> descriptor(int i) const { return descriptors().col(i); }
 
-  /**
-  Returns mutable access to a descriptor value.
+  /** Returns mutable access to a descriptor value.
   @pre `has_descriptors()` must be true. */
   Eigen::Ref<VectorX<T>> mutable_descriptor(int i) {
     return mutable_descriptors().col(i);
@@ -272,12 +248,10 @@ class PointCloud final {
 
   /** @} */
 
-  /**
-  @name Container Manipulation
+  /** @name Container Manipulation
   @{ */
 
-  /**
-  Copies all points from another point cloud.
+  /** Copies all points from another point cloud.
   @param other
      Other point cloud.
   @param fields_in
@@ -293,8 +267,7 @@ class PointCloud final {
 
   // TODO(eric.cousineau): Add indexed version.
 
-  /**
-  Adds `add_size` default-initialized points.
+  /** Adds `add_size` default-initialized points.
   @param add_size
      Number of points to add.
   @param skip_initialization
@@ -303,27 +276,23 @@ class PointCloud final {
 
   /** @} */
 
-  /**
-  @name Fields
+  /** @name Fields
   @{ */
 
   /** Returns if a point cloud has a given set of fields. */
   bool HasFields(pc_flags::Fields fields_in) const;
 
-  /**
-  Requires a given set of fields.
+  /** Requires a given set of fields.
   @see HasFields for preconditions.
   @throws std::runtime_error if this point cloud does not have these
   fields. */
   void RequireFields(pc_flags::Fields fields_in) const;
 
-  /**
-  Returns if a point cloud has exactly a given set of fields.
+  /** Returns if a point cloud has exactly a given set of fields.
   @see HasFields for preconditions. */
   bool HasExactFields(pc_flags::Fields fields_in) const;
 
-  /**
-  Requires the exact given set of fields.
+  /** Requires the exact given set of fields.
   @see HasFields for preconditions.
   @throws std::runtime_error if this point cloud does not have exactly
   these fields. */

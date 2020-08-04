@@ -26,8 +26,7 @@ class StatelessSystem final : public LeafSystem<T> {
         &StatelessSystem::InvokePublishCallback);
   }
 
-  /**
-  Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion.
   @note This function does not preserve the publish callback because
         this is test code for which it is expected that no one will care
         whether the publish callback survives transmogrification. */

@@ -11,8 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
-/**
-@file
+/** @file
 Provides the classes through which geometric shapes are introduced into
 SceneGraph. This includes the specific classes which specify shapes as well
 as an interface for _processing_ those specifications. */
@@ -22,15 +21,13 @@ namespace geometry {
 
 class ShapeReifier;
 
-/**
-Simple struct for instantiating the type-specific Shape functionality.
+/** Simple struct for instantiating the type-specific Shape functionality.
 A class derived from the Shape class will invoke the parent's constructor as
 Shape(ShapeTag<DerivedShape>()). */
 template <typename ShapeType>
 struct ShapeTag{};
 
-/**
-The base interface for all shape specifications. It has no public
+/** The base interface for all shape specifications. It has no public
 constructor and cannot be instantiated directly. The Shape class has two
 key properties:
 
@@ -54,8 +51,7 @@ class Shape {
  public:
   virtual ~Shape();
 
-  /**
-  Causes this description to be reified in the given `reifier`. Each
+  /** Causes this description to be reified in the given `reifier`. Each
   concrete subclass must invoke the single, matching method on the reifier.
   Provides optional user-data (cast as a void*) for the reifier to consume. */
   void Reify(ShapeReifier* reifier, void* user_data = nullptr) const;
@@ -69,8 +65,7 @@ class Shape {
   // slicing Shapes.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Shape)
 
-  /**
-  Constructor available for derived class construction. A derived class
+  /** Constructor available for derived class construction. A derived class
   should invoke this in its initialization list, passing a ShapeTag
   instantiated on its derived type, e.g.:
 
@@ -102,15 +97,13 @@ class Shape {
   std::function<void(const Shape&, ShapeReifier*, void*)> reifier_;
 };
 
-/**
-Definition of sphere. It is centered in its canonical frame with the
+/** Definition of sphere. It is centered in its canonical frame with the
 given radius. */
 class Sphere final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere)
 
-  /**
-  Constructs a sphere with the given `radius`.
+  /** Constructs a sphere with the given `radius`.
   @throws std::logic_error if `radius` is negative. Note that a zero radius is
   is considered valid. */
   explicit Sphere(double radius);
@@ -121,15 +114,13 @@ class Sphere final : public Shape {
   double radius_{};
 };
 
-/**
-Definition of a cylinder. It is centered in its canonical frame with the
+/** Definition of a cylinder. It is centered in its canonical frame with the
 length of the cylinder parallel with the frame's z-axis. */
 class Cylinder final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder)
 
-  /**
-  Constructs a cylinder with the given `radius` and `length`.
+  /** Constructs a cylinder with the given `radius` and `length`.
   @throws std::logic_error if `radius` or `length` are not strictly positive. */
   Cylinder(double radius, double length);
 
@@ -141,24 +132,21 @@ class Cylinder final : public Shape {
   double length_{};
 };
 
-/**
-Definition of a box. The box is centered on the origin of its canonical
+/** Definition of a box. The box is centered on the origin of its canonical
 frame with its dimensions aligned with the frame's axes. The size of the box
 is given by three sizes. */
 class Box final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Box)
 
-  /**
-  Constructs a box with the given `width`, `depth`, and `height`, which
+  /** Constructs a box with the given `width`, `depth`, and `height`, which
   specify the box's dimension along the canonical x-, y-, and z-axes,
   respectively.
   @throws std::logic_error if `width`, `depth` or `height` are not strictly
   positive. */
   Box(double width, double depth, double height);
 
-  /**
-  Constructs a cube with the given `edge_size` for its width, depth, and
+  /** Constructs a cube with the given `edge_size` for its width, depth, and
   height. */
   static Box MakeCube(double edge_size);
 
@@ -178,15 +166,13 @@ class Box final : public Shape {
   Vector3<double> size_;
 };
 
-/**
-Definition of a capsule. It is centered in its canonical frame with the
+/** Definition of a capsule. It is centered in its canonical frame with the
 length of the capsule parallel with the frame's z-axis. */
 class Capsule final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule)
 
-  /**
-  Constructs a capsule with the given `radius` and `length`.
+  /** Constructs a capsule with the given `radius` and `length`.
   @throws std::logic_error if `radius` or `length` are not strictly positive. */
   Capsule(double radius, double length);
 
@@ -198,8 +184,7 @@ class Capsule final : public Shape {
   double length_{};
 };
 
-/**
-Definition of an ellipsoid. It is centered on the origin of its canonical
+/** Definition of an ellipsoid. It is centered on the origin of its canonical
 frame with its dimensions aligned with the frame's axes. The standard
 equation for the ellipsoid is:
 
@@ -210,8 +195,7 @@ class Ellipsoid final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Ellipsoid)
 
-  /**
-  Constructs an ellipsoid with the given lengths of its principal
+  /** Constructs an ellipsoid with the given lengths of its principal
   semi-axes.
   @throws std::logic_error if `a`, `b`, or `c` are not strictly positive. */
   Ellipsoid(double a, double b, double c);
@@ -224,8 +208,7 @@ class Ellipsoid final : public Shape {
   Vector3<double> radii_;
 };
 
-/**
-Definition of a half space. In its canonical frame, the plane defining the
+/** Definition of a half space. In its canonical frame, the plane defining the
 boundary of the half space is that frame's z = 0 plane. By implication, the
 plane's normal points in the +z direction and the origin lies on the plane.
 Other shapes are considered to be penetrating the half space if there exists
@@ -237,8 +220,7 @@ class HalfSpace final : public Shape {
 
   HalfSpace();
 
-  /**
-  Creates the pose of a canonical half space in frame F.
+  /** Creates the pose of a canonical half space in frame F.
   The half space's normal is aligned to the positive z-axis of its canonical
   frame H. Given a vector that points in the same direction, measured in the
   F frame (Hz_dir_F) and a position vector to a point on the half space's
@@ -258,8 +240,7 @@ class HalfSpace final : public Shape {
 
 // TODO(DamrongGuoy): Update documentation when the level of support for
 //  meshes extends to more collision and rendering.
-/**
-Limited support for meshes. Meshes are supported in Rendering and
+/** Limited support for meshes. Meshes are supported in Rendering and
 Illustration roles. For Proximity role, Meshes are supported in
 ComputeContactSurfaces() query only. No other proximity queries are supported.
  */
@@ -267,8 +248,7 @@ class Mesh final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
 
-  /**
-  Constructs a mesh specification from the mesh file located at the given
+  /** Constructs a mesh specification from the mesh file located at the given
   _absolute_ file path. Optionally uniformly scaled by the given scale factor.
   @throws std::logic_error if |scale| < 1e-8. Note that a negative scale is
   considered valid. We want to preclude scales near zero but recognise that
@@ -290,8 +270,7 @@ class Convex final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
 
-  /**
-  Constructs a convex shape specification from the file located at the
+  /** Constructs a convex shape specification from the file located at the
   given _absolute_ file path. Optionally uniformly scaled by the given scale
   factor.
   @param absolute_filename     The file name with absolute path. We only
@@ -320,8 +299,7 @@ class Convex final : public Shape {
   double scale_;
 };
 
-/**
-The interface for converting shape descriptions to real shapes. Any entity
+/** The interface for converting shape descriptions to real shapes. Any entity
 that consumes shape descriptions _must_ implement this interface.
 
 This class explicitly enumerates all concrete shapes in its methods. The
@@ -387,8 +365,7 @@ class ShapeReifier {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
 
-  /**
-  Derived ShapeReifiers can replace the default message for unsupported
+  /** Derived ShapeReifiers can replace the default message for unsupported
   geometries by overriding this method. The name of the unsupported shape type
   is given as the single parameter. */
   virtual void ThrowUnsupportedGeometry(const std::string& shape_name);
@@ -413,15 +390,13 @@ Shape::Shape(ShapeTag<S>) {
 
 // TODO(SeanCurtis-TRI): Merge this into shape_to_string.h so that there's a
 //  single utility for getting a string from a shape.
-/**
-Class that reports the name of the type of shape being reified (e.g.,
+/** Class that reports the name of the type of shape being reified (e.g.,
 Sphere, Box, etc.) */
 class ShapeName final : public ShapeReifier {
  public:
   ShapeName() = default;
 
-  /**
-  Constructs a %ShapeName from the given `shape` such that `string()`
+  /** Constructs a %ShapeName from the given `shape` such that `string()`
   already contains the string representation of `shape`. */
   explicit ShapeName(const Shape& shape) {
     shape.Reify(this);
@@ -459,8 +434,7 @@ class ShapeName final : public ShapeReifier {
 
   /** @} */
 
-  /**
-  Returns the name of the last shape reified. Empty if no shape has been
+  /** Returns the name of the last shape reified. Empty if no shape has been
   reified yet. */
   std::string name() const { return string_; }
 

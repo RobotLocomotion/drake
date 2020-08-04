@@ -15,8 +15,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
-/**
-@defgroup hash_append hash_append generic hashing
+/** @defgroup hash_append hash_append generic hashing
 @{
 @ingroup cxx
 @brief Drake uses the hash_append pattern as described by N3980.
@@ -106,8 +105,7 @@ hash_append(
   }
 }
 
-/**
-Provides @ref hash_append for std::string.
+/** Provides @ref hash_append for std::string.
 (Technically, any string based on `CharT = char`.) */
 template <class HashAlgorithm, class Traits, class Allocator>
 void hash_append(
@@ -129,8 +127,7 @@ void hash_append(
   hash_append(hasher, item.second);
 }
 
-/**
-Provides @ref hash_append for std::optional.
+/** Provides @ref hash_append for std::optional.
 
 Note that `std::hash<std::optional<T>>` provides the peculiar invariant
 that the hash of an `optional` bearing a value `v` shall evaluate to the
@@ -160,8 +157,7 @@ void hash_append_range(
   hash_append(hasher, count);
 }
 
-/**
-Provides @ref hash_append for std::map.
+/** Provides @ref hash_append for std::map.
 
 Note that there is no `hash_append` overload for `std::unordered_map`, and
 such an overload must never appear.  See n3980.html#unordered for details. */
@@ -177,8 +173,7 @@ void hash_append(
   return hash_append_range(hasher, item.begin(), item.end());
 };
 
-/**
-Provides @ref hash_append for std::set.
+/** Provides @ref hash_append for std::set.
 
 Note that there is no `hash_append` overload for `std::unordered_set`, and
 such an overload must never appear.  See n3980.html#unordered for details. */
@@ -193,8 +188,7 @@ void hash_append(
   return hash_append_range(hasher, item.begin(), item.end());
 };
 
-/**
-A hashing functor, somewhat like `std::hash`.  Given an item of type @p T,
+/** A hashing functor, somewhat like `std::hash`.  Given an item of type @p T,
 applies @ref hash_append to it, directing the bytes to append into the
 given @p HashAlgorithm, and then finally returning the algorithm's result. */
 template <class HashAlgorithm>
@@ -211,8 +205,7 @@ struct uhash {
 };
 
 namespace internal {
-/**
-The FNV1a hash algorithm, used for @ref hash_append.
+/** The FNV1a hash algorithm, used for @ref hash_append.
 https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function */
 class FNV1aHasher {
  public:
@@ -244,16 +237,14 @@ class FNV1aHasher {
 };
 }  // namespace internal
 
-/**
-The default HashAlgorithm concept implementation across Drake.  This is
+/** The default HashAlgorithm concept implementation across Drake.  This is
 guaranteed to have a result_type of size_t to be compatible with std::hash. */
 using DefaultHasher = internal::FNV1aHasher;
 
 /** The default hashing functor, akin to std::hash. */
 using DefaultHash = drake::uhash<DefaultHasher>;
 
-/**
-An adapter that forwards the HashAlgorithm::operator(data, length) function
+/** An adapter that forwards the HashAlgorithm::operator(data, length) function
 concept into a runtime-provided std::function of the same signature.  This
 is useful for passing a concrete HashAlgorithm implementation through into
 non-templated code, such as with an Impl or Cell pattern. */

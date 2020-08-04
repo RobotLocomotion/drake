@@ -13,8 +13,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This struct implements the Transition-Aware Line Search (TALS) algorithm as
+/** This struct implements the Transition-Aware Line Search (TALS) algorithm as
 described in @ref castro_etal_2019 "[Castro et al., 2019]".
 TamsiSolver performs a Newton-Raphson iteration, and at each kth iteration,
 it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
@@ -121,8 +120,7 @@ inside a struct so that we can use Eigen::Ref arguments allowing different
 scalar types T. */
 template <typename T>
 struct TalsLimiter {
-  /**
-  Implements the limiting algorithm described in the documentation above.
+  /** Implements the limiting algorithm described in the documentation above.
   @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
   @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
   @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
@@ -140,8 +138,7 @@ struct TalsLimiter {
                      double cos_theta_max, double v_stiction,
                      double relative_tolerance);
 
-  /**
-  Helper method for detecting when the line connecting v with v1 = v + dv
+  /** Helper method for detecting when the line connecting v with v1 = v + dv
   crosses the stiction region, a circle of radius `v_stiction`.
   All other input arguments are quantities already precomputed by
   CalcAlpha() and thus we reuse them.
@@ -156,8 +153,7 @@ struct TalsLimiter {
       const T& v_dot_dv, const T& dv_norm, const T& dv_norm2,
       double epsilon_v, double v_stiction, T* alpha);
 
-  /**
-  Helper method to solve the quadratic equation aα² + bα + c = 0 for the
+  /** Helper method to solve the quadratic equation aα² + bα + c = 0 for the
   very particular case we know we have real roots (Δ = b² - 4ac > 0) and we
   are interested in the smallest positive root. */
   static T SolveQuadraticForTheSmallestPositiveRoot(
@@ -165,8 +161,7 @@ struct TalsLimiter {
 };
 }  // namespace internal
 
-/**
-The result from TamsiSolver::SolveWithGuess() used to report the
+/** The result from TamsiSolver::SolveWithGuess() used to report the
 success or failure of the solver. */
 enum class TamsiSolverResult {
   /** Successful computation. */
@@ -175,19 +170,16 @@ enum class TamsiSolverResult {
   /** The maximum number of iterations was reached. */
   kMaxIterationsReached = 1,
 
-  /**
-  The linear solver used within the Newton-Raphson loop failed.
+  /** The linear solver used within the Newton-Raphson loop failed.
   This might be caused by a divergent iteration that led to an invalid
   Jacobian matrix. */
   kLinearSolverFailed = 2
 };
 
-/**
-These are the parameters controlling the iteration process of the
+/** These are the parameters controlling the iteration process of the
 TamsiSolver solver. */
 struct TamsiSolverParameters {
-  /**
-  The stiction tolerance vₛ for the slip velocity in the regularized
+  /** The stiction tolerance vₛ for the slip velocity in the regularized
   friction function, in m/s. Roughly, for an externally applied tangential
   forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
   be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
@@ -198,13 +190,11 @@ struct TamsiSolverParameters {
   regularizing friction when in stiction. */
   double stiction_tolerance{1.0e-4};  // 0.1 mm/s
 
-  /**
-  The maximum number of iterations allowed for the Newton-Raphson
+  /** The maximum number of iterations allowed for the Newton-Raphson
   iterative solver. */
   int max_iterations{100};
 
-  /**
-  The tolerance to monitor the convergence of the tangential velocities.
+  /** The tolerance to monitor the convergence of the tangential velocities.
   This number specifies a tolerance relative to the value of the
   stiction_tolerance and thus it is dimensionless. Using a tolerance
   relative to the value of the stiction_tolerance is necessary in order
@@ -218,8 +208,7 @@ struct TamsiSolverParameters {
   Typical values lie within the 10⁻³ - 10⁻² range. */
   double relative_tolerance{1.0e-2};
 
-  /**
-  (Advanced) TamsiSolver limits large angular changes between
+  /** (Advanced) TamsiSolver limits large angular changes between
   tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
   change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
   To aid convergence, TamsiSolver, limits this angular change to
@@ -236,8 +225,7 @@ struct TamsiSolverParameters {
   double theta_max{M_PI / 3.0};
 };
 
-/**
-Struct used to store information about the iteration process performed by
+/** Struct used to store information about the iteration process performed by
 TamsiSolver. */
 struct TamsiSolverIterationStats {
   /** (Internal) Used by TamsiSolver to reset statistics. */
@@ -254,19 +242,16 @@ struct TamsiSolverIterationStats {
     residuals.push_back(iteration_residual);
   }
 
-  /**
-  The number of iterations performed by the last TamsiSolver
+  /** The number of iterations performed by the last TamsiSolver
   solve. */
   int num_iterations{0};
 
-  /**
-  Returns the residual in the tangential velocities, in m/s. Upon
+  /** Returns the residual in the tangential velocities, in m/s. Upon
   convergence of the solver this value should be smaller than
   Parameters::tolerance times Parameters::stiction_tolerance. */
   double vt_residual() const { return residuals.back();}
 
-  /**
-  (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
+  /** (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
   in this vector corresponds to the residual for the k-th Newton-Raphson
   iteration performed by the solver.
   After TamsiSolver solved a problem, this vector will have size
@@ -276,8 +261,7 @@ struct TamsiSolverIterationStats {
   std::vector<double> residuals;
 };
 
-/**
-@anchor tamsi_class_intro
+/** @anchor tamsi_class_intro
 %TamsiSolver uses the Transition-Aware Modified Semi-Implicit (TAMSI) method,
 @ref castro_etal_2019 "[Castro et al., 2019]", to solve the equations below for
 mechanical systems in contact with regularized friction:
@@ -522,14 +506,12 @@ class TamsiSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TamsiSolver)
 
-  /**
-  Instantiates a solver for a problem with `nv` generalized velocities.
+  /** Instantiates a solver for a problem with `nv` generalized velocities.
   @throws std::exception if nv is non-positive. */
   explicit TamsiSolver(int nv);
 
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
-  /**
-  Sets data for the problem to be solved as outlined by Eq. (3) in this
+  /** Sets data for the problem to be solved as outlined by Eq. (3) in this
   class's documentation: <pre>
     (3)  M v = p* + δt Jₙᵀ fₙ +  δt Jₜᵀ fₜ(v)
   </pre>
@@ -575,8 +557,7 @@ class TamsiSolver {
 
   // TODO(amcastro-tri): rework the entire math again to make phi to actually be
   // the signed distance function (instead of the signed penetration distance).
-  /**
-  Sets the problem data to solve the problem outlined in Eq. (10) in this
+  /** Sets the problem data to solve the problem outlined in Eq. (10) in this
   class's documentation using a two-way coupled approach: <pre>
     (10)  M(qˢ) vˢ⁺¹ = p* + δt [Jₙᵀ(qˢ) fₙ(vˢ⁺¹) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
   </pre>
@@ -627,8 +608,7 @@ class TamsiSolver {
       EigenPtr<const VectorX<T>> fn0, EigenPtr<const VectorX<T>> stiffness,
       EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu);
 
-  /**
-  Given an initial guess `v_guess`, this method uses a Newton-Raphson
+  /** Given an initial guess `v_guess`, this method uses a Newton-Raphson
   iteration to find a solution for the generalized velocities satisfying
   either Eq. (3) when one-way coupling is used or Eq. (10) when two-way
   coupling is used. See this class's documentation for further details.
@@ -648,52 +628,45 @@ class TamsiSolver {
   TamsiSolverResult SolveWithGuess(
       double dt, const VectorX<T>& v_guess) const;
 
-  /**
-  @anchor retrieving_the_solution
+  /** @anchor retrieving_the_solution
   @name Retrieving the solution
   This methods allow to retrieve the solution stored in the solver after
   the last call to SolveWithGuess().
   @{ */
 
-  /**
-  Returns a constant reference to the most recent  vector of generalized
+  /** Returns a constant reference to the most recent  vector of generalized
   friction forces. */
   const VectorX<T>& get_generalized_friction_forces() const {
     return fixed_size_workspace_.mutable_tau_f();
   }
 
-  /**
-  Returns a constant reference to the most recent solution vector for normal
+  /** Returns a constant reference to the most recent solution vector for normal
   separation velocities. This method returns an `Eigen::VectorBlock`
   referencing a vector of size `nc`. */
   Eigen::VectorBlock<const VectorX<T>> get_normal_velocities() const {
     return variable_size_workspace_.vn();
   }
 
-  /**
-  Returns a constant reference to the most recent vector of generalized
+  /** Returns a constant reference to the most recent vector of generalized
   contact forces, including both friction and normal forces. */
   const VectorX<T>& get_generalized_contact_forces() const {
     return fixed_size_workspace_.mutable_tau();
   }
 
-  /**
-  Returns a constant reference to the most recent vector of tangential
+  /** Returns a constant reference to the most recent vector of tangential
   forces. This method returns an `Eigen::VectorBlock` referencing a vector
   of size `nc`. */
   Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
     return variable_size_workspace_.vt();
   }
 
-  /**
-  Returns a constant reference to the most recent vector of generalized
+  /** Returns a constant reference to the most recent vector of generalized
   velocities. */
   const VectorX<T>& get_generalized_velocities() const {
     return fixed_size_workspace_.mutable_v();
   }
 
-  /**
-  Returns a constant reference to the most recent vector of (repulsive)
+  /** Returns a constant reference to the most recent vector of (repulsive)
   forces in the normal direction. That is, the normal force is positive when
   the bodies push each other apart. Otherwise the normal force is zero,
   since contact forces can only be repulsive. */
@@ -701,8 +674,7 @@ class TamsiSolver {
     return variable_size_workspace_.fn();
   }
 
-  /**
-  Returns a constant reference to the most recent vector of friction forces.
+  /** Returns a constant reference to the most recent vector of friction forces.
   These friction forces are defined in accordance to the tangential
   velocities Jacobian Jₜ as documented in
   @ref tamsi_class_intro "this class's documentation". */
@@ -712,22 +684,19 @@ class TamsiSolver {
 
   /** @} */
 
-  /**
-  Returns statistics recorded during the last call to SolveWithGuess().
+  /** Returns statistics recorded during the last call to SolveWithGuess().
   See IterationStats for details. */
   const TamsiSolverIterationStats& get_iteration_statistics() const {
     return statistics_;
   }
 
-  /**
-  Returns the current set of parameters controlling the iteration process.
+  /** Returns the current set of parameters controlling the iteration process.
   See Parameters for details. */
   const TamsiSolverParameters& get_solver_parameters() const {
     return parameters_;
   }
 
-  /**
-  Sets the parameters to be used by the solver.
+  /** Sets the parameters to be used by the solver.
   See Parameters for details. */
   void set_solver_parameters(
       const TamsiSolverParameters& parameters) {

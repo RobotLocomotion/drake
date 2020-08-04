@@ -16,8 +16,7 @@ namespace multibody {
 
 namespace internal {
 
-/**
-A class for computing the spatial forces and related reporting data (like
+/** A class for computing the spatial forces and related reporting data (like
 pressure, traction, and slip) on rigid bodies under the hydroelastic contact
 model, as described in:
 
@@ -28,8 +27,7 @@ Intelligent Robots and Systems (IROS), 2019. */
 template <typename T>
 class HydroelasticTractionCalculator {
  public:
-  /**
-  Set of common quantities used through hydroelastic traction calculations.
+  /** Set of common quantities used through hydroelastic traction calculations.
   Documentation for parameter names (minus the `_in`
   suffixes) can be found in the corresponding member documentation. */
   struct Data {
@@ -45,35 +43,29 @@ class HydroelasticTractionCalculator {
       DRAKE_DEMAND(surface_in);
     }
 
-    /**
-    The pose of Body A (the body that Geometry `surface.M_id()` in the
+    /** The pose of Body A (the body that Geometry `surface.M_id()` in the
     contact surface is affixed to) in the world frame. */
     const math::RigidTransform<T> X_WA;
 
-    /**
-    The pose of Body B (the body that Geometry `surface.N_id()` in the
+    /** The pose of Body B (the body that Geometry `surface.N_id()` in the
     contact surface is affixed to) in the world frame. */
     const math::RigidTransform<T> X_WB;
 
-    /**
-    The spatial velocity of Body A (the body that Geometry
+    /** The spatial velocity of Body A (the body that Geometry
     `surface.M_id()` in the contact surface is affixed to) at the origin of
     A's frame, measured and expressed in the world frame. */
     const SpatialVelocity<T> V_WA;
 
-    /**
-    The spatial velocity of Body B (the body that Geometry
+    /** The spatial velocity of Body B (the body that Geometry
     `surface.N_id()` in the contact surface is affixed to) at the origin of
     B's frame, measured and expressed in the world frame. */
     const SpatialVelocity<T> V_WB;
 
-    /**
-    A reference to the ContactSurface that must be maintained for the life
+    /** A reference to the ContactSurface that must be maintained for the life
     of this object. */
     const geometry::ContactSurface<T>& surface;
 
-    /**
-    The traction computation needs a point C near the contact surface at
+    /** The traction computation needs a point C near the contact surface at
     which to accumulate forces in a numerically robust way. Our calculations
     define C to be the centroid of the contact surface, and measure and
     express this point in the world frame. */
@@ -85,14 +77,12 @@ class HydroelasticTractionCalculator {
   explicit HydroelasticTractionCalculator(double vslip_regularizer = 1e-6)
       : vslip_regularizer_(vslip_regularizer) {}
 
-  /**
-  Gets the regularization parameter used for friction (in m/s). The closer
+  /** Gets the regularization parameter used for friction (in m/s). The closer
   that this parameter is to zero, the closer that the regularized friction
   model will approximate Coulomb friction. */
   double regularization_scalar() const { return vslip_regularizer_; }
 
-  /**
-  Applies the hydroelastic model to two geometries defined in `surface`,
+  /** Applies the hydroelastic model to two geometries defined in `surface`,
   resulting in a spatial force applied at the centroid of the contact surface.
   This method also provides the data output by the quadrature routine.
   The body frames, A and B, are those to which `surface.M_id()` and
@@ -113,8 +103,7 @@ class HydroelasticTractionCalculator {
           quadrature_point_data,
       multibody::SpatialForce<T>* F_Ac_W) const;
 
-  /**
-  Shifts the spatial force applied at the centroid of the contact surface
+  /** Shifts the spatial force applied at the centroid of the contact surface
   to equivalent spatial forces applied at the center of the body frames of
   the two interacting bodies. The body frames, A and B, are those to which
   `surface.M_id()` and `surface.N_id()` are affixed, respectively.

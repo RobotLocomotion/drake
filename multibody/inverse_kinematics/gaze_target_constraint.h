@@ -7,8 +7,7 @@
 
 namespace drake {
 namespace multibody {
-/**
-Constrains a target point T to be within a cone K. The point T ("T" stands
+/** Constrains a target point T to be within a cone K. The point T ("T" stands
 for "target") is fixed in a frame B, with position p_BT. The cone
 originates from a point S ("S" stands for "source"), fixed in frame A with
 position p_AS, with the axis of the cone being n, also fixed
@@ -25,8 +24,7 @@ class GazeTargetConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GazeTargetConstraint)
 
-  /**
-  @param plant The MultibodyPlant on which the constraint is imposed.
+  /** @param plant The MultibodyPlant on which the constraint is imposed.
     `plant` should be alive during the lifetime of this constraint.
   @param frameA The frame to which the gaze cone is fixed.
   @param p_AS The position of the cone source point S, measured and expressed
@@ -55,8 +53,7 @@ class GazeTargetConstraint : public solvers::Constraint {
                        double cone_half_angle,
                        systems::Context<double>* plant_context);
 
-  /**
-  Overloaded constructor.
+  /** Overloaded constructor.
   Construct from MultibodyPlant<AutoDiffXd> instead of
   MultibodyPlant<double>.
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.

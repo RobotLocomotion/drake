@@ -22,8 +22,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassDamperSystem);
 
-  /**
-  Constructs an unforced spring-mass-damper system.
+  /** Constructs an unforced spring-mass-damper system.
   Subclasses must use the protected constructor, not this one. */
   SpringMassDamperSystem(double spring_constant_N_per_m,
                          double damping_constant_Ns_per_m,
@@ -43,8 +42,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   /** Returns the damping constant that was provided at construction in Ns/m */
   double get_damping_constant() const { return damping_constant_Ns_per_m_; }
 
-  /**
-  Returns the closed-form position and velocity solution for the unforced
+  /** Returns the closed-form position and velocity solution for the unforced
   spring-mass-damper from the given initial conditions *for the case that
   the spring-mass-damper is not underdamped*. In other words, this function
   requires that `c² - 4⋅m⋅k ≥ 0`, where c is the damping coefficient,

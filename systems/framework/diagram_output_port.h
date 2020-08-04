@@ -16,8 +16,7 @@
 namespace drake {
 namespace systems {
 
-/**
-(Advanced.) Holds information about a subsystem output port that has been
+/** (Advanced.) Holds information about a subsystem output port that has been
 exported to become one of this Diagram's output ports. The actual methods for
 determining the port's value are supplied by the LeafOutputPort that ultimately
 underlies the source port, although that may be any number of levels down.
@@ -31,8 +30,7 @@ class DiagramOutputPort final : public OutputPort<T> {
 
   ~DiagramOutputPort() final = default;
 
-  /**
-  Obtains a reference to the subsystem output port that was exported to
+  /** Obtains a reference to the subsystem output port that was exported to
   create this diagram port. Note that the source may itself be a diagram
   output port. */
   const OutputPort<T>& get_source_output_port() const {

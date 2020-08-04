@@ -8,8 +8,7 @@ namespace kuka_iiwa {
 
 constexpr int kIiwaArmNumJoints = 7;
 
-/**
-Returns the maximum joint velocities provided by Kuka.
+/** Returns the maximum joint velocities provided by Kuka.
 @return Maximum joint velocities (rad/s). */
 VectorX<double> get_iiwa_max_joint_velocities();
 

@@ -9,25 +9,21 @@
 namespace drake {
 namespace solvers {
 
-/**
-The SNOPT solver details after calling Solve() function. The user can call
+/** The SNOPT solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<SnoptSolver>() to obtain the
 details. */
 struct SnoptSolverDetails {
-  /**
-  The exit condition of the solver. Please refer to section "EXIT conditions"
+  /** The exit condition of the solver. Please refer to section "EXIT conditions"
   in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
   Programming" by Philip E. Gill to interpret the exit condition. */
   int info{};
 
-  /**
-  The final value of the dual variables for the bound constraint x_lower <=
+  /** The final value of the dual variables for the bound constraint x_lower <=
   x <= x_upper. */
   Eigen::VectorXd xmul;
   /** The final value of the vector of problem functions F(x). */
   Eigen::VectorXd F;
-  /**
-  The final value of the dual variables (Lagrange multipliers) for the
+  /** The final value of the dual variables (Lagrange multipliers) for the
   general constraints F_lower <= F(x) <= F_upper. */
   Eigen::VectorXd Fmul;
 };
@@ -45,8 +41,7 @@ class SnoptSolver final : public SolverBase  {
   /** For some reason, SNOPT 7.4 fails to detect a simple LP being unbounded. */
   static bool is_bounded_lp_broken();
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

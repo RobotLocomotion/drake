@@ -20,8 +20,7 @@ namespace test {
 using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
-/**
-This class implements unit tests for the following classes
+/** This class implements unit tests for the following classes
 DenseData
 DenseVariable
 DenseResidual
@@ -43,8 +42,7 @@ class DenseComponentUnitTests {
     b_ << 0, -1;
   }
 
-  /**
-  This methods implements a unit test for the variable object.
+  /** This methods implements a unit test for the variable object.
   It checks the computation of the constraint margin y = b - A*z against
   Eigen and operations of the form y <- a*x + y
   where x and y are DenseVariables. */
@@ -212,8 +210,7 @@ class DenseComponentUnitTests {
     EXPECT_NEAR(residual.norm(), 0, 1e-12);
   }
 
-  /**
-  This test checks that the infeasibility checker class correctly
+  /** This test checks that the infeasibility checker class correctly
   identifies certificates of primal infeasibility.
   The QP used in this example has no solution
   and the vector [1 0 0 1 1] is a certificate of
@@ -252,8 +249,7 @@ class DenseComponentUnitTests {
     ASSERT_FALSE(feas.IsPrimalFeasible());
   }
 
-  /**
-  This test checks that the infeasibility checker class correctly
+  /** This test checks that the infeasibility checker class correctly
   identifies certificates of dual infeasibility.
   The QP used in this example has a direction of infinite descent
   given by [0 1].

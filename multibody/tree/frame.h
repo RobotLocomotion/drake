@@ -17,8 +17,7 @@ namespace multibody {
 // Forward declarations.
 template<typename T> class Body;
 
-/**
-%Frame is an abstract class representing a _material frame_ (also called a
+/** %Frame is an abstract class representing a _material frame_ (also called a
 _physical frame_), meaning that it is associated with a material point of a
 Body. A material frame can be used to apply forces and torques to a
 multibody system, and can be used as an attachment point for force-producing
@@ -56,16 +55,14 @@ class Frame : public FrameBase<T> {
     return name_;
   }
 
-  /**
-  Returns the pose `X_BF` of `this` frame F in the body frame B associated
+  /** Returns the pose `X_BF` of `this` frame F in the body frame B associated
   with this frame.
   In particular, if `this` **is** the body frame B, this method directly
   returns the identity transformation. */
   virtual math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /**
-  Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /** Returns the rotation matrix `R_BF` that relates body frame B to `this`
   frame F (B is the body frame to which `this` frame F is attached).
   @note If `this` is B, this method returns the identity RotationMatrix. */
   virtual math::RotationMatrix<T> CalcRotationMatrixInBodyFrame(
@@ -76,8 +73,7 @@ class Frame : public FrameBase<T> {
   // An example of a frame sub-class not implementing this method would be that
   // of a frame on a soft body, for which its pose in the body frame depends
   // on the state of deformation of the body.
-  /**
-  Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
+  /** Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
   `this` frame F in the body frame B associated with this frame.
   @throws std::logic_error if called on a %Frame that does not have a
   fixed offset in the body frame. */
@@ -88,8 +84,7 @@ class Frame : public FrameBase<T> {
             "', which does not support this operation.");
   }
 
-  /**
-  Returns the rotation matrix `R_BF` that relates body frame B to `this`
+  /** Returns the rotation matrix `R_BF` that relates body frame B to `this`
   frame F (B is the body frame to which `this` frame F is attached).
   @throws std::logic_error if `this` frame F is a %Frame that does not have
   a fixed offset in the body frame B (i.e., `R_BF` is not constant).
@@ -104,8 +99,7 @@ class Frame : public FrameBase<T> {
             "', which does not support this method.");
   }
 
-  /**
-  Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
+  /** Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   computes the pose `X_BQ` of frame Q in the body frame B to which this
   frame is attached.
   In other words, if the pose of `this` frame F in the body frame B is
@@ -121,8 +115,7 @@ class Frame : public FrameBase<T> {
     return CalcPoseInBodyFrame(context) * X_FQ;
   }
 
-  /**
-  Calculates and returns the rotation matrix `R_BQ` that relates body frame
+  /** Calculates and returns the rotation matrix `R_BQ` that relates body frame
   B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   (B is the body frame to which `this` frame F is attached).
   @param[in] R_FQ rotation matrix that relates frame F to frame Q. */
@@ -132,8 +125,7 @@ class Frame : public FrameBase<T> {
     return CalcRotationMatrixInBodyFrame(context) * R_FQ;
   }
 
-  /**
-  Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
+  /** Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
   frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
   frame B to which this frame is attached.
   @throws std::logic_error if called on a %Frame that does not have a
@@ -143,8 +135,7 @@ class Frame : public FrameBase<T> {
     return GetFixedPoseInBodyFrame() * X_FQ;
   }
 
-  /**
-  Calculates and returns the rotation matrix `R_BQ` that relates body frame
+  /** Calculates and returns the rotation matrix `R_BQ` that relates body frame
   B to frame Q via `this` intermediate frame F, i.e., `R_BQ = R_BF * R_FQ`
   (B is the body frame to which `this` frame F is attached).
   @param[in] R_FQ rotation matrix that relates frame F to frame Q.
@@ -155,8 +146,7 @@ class Frame : public FrameBase<T> {
     return GetFixedRotationMatrixInBodyFrame() * R_FQ;
   }
 
-  /**
-  Computes and returns the pose `X_WF` of `this` frame F in the world
+  /** Computes and returns the pose `X_WF` of `this` frame F in the world
   frame W as a function of the state of the model stored in `context`.
   @note Body::EvalPoseInWorld() provides a more efficient way to obtain
   the pose for a body frame. */
@@ -166,8 +156,7 @@ class Frame : public FrameBase<T> {
         context, this->get_parent_tree().world_frame(), *this);
   }
 
-  /**
-  Computes and returns the pose `X_MF` of `this` frame F in measured in
+  /** Computes and returns the pose `X_MF` of `this` frame F in measured in
   `frame_M` as a function of the state of the model stored in `context`.
   @see CalcPoseInWorld(). */
   math::RigidTransform<T> CalcPose(
@@ -176,8 +165,7 @@ class Frame : public FrameBase<T> {
         context, frame_M, *this);
   }
 
-  /**
-  Calculates and returns the rotation matrix `R_MF` that relates `frame_M`
+  /** Calculates and returns the rotation matrix `R_MF` that relates `frame_M`
   and `this` frame F as a function of the state stored in `context`. */
   math::RotationMatrix<T> CalcRotationMatrix(
       const systems::Context<T>& context, const Frame<T>& frame_M) const {
@@ -185,8 +173,7 @@ class Frame : public FrameBase<T> {
         context, frame_M, *this);
   }
 
-  /**
-  Calculates and returns the rotation matrix `R_WF` that relates the world
+  /** Calculates and returns the rotation matrix `R_WF` that relates the world
   frame W and `this` frame F as a function of the state stored in `context`. */
   math::RotationMatrix<T> CalcRotationMatrixInWorld(
       const systems::Context<T>& context) const {
@@ -194,8 +181,7 @@ class Frame : public FrameBase<T> {
         context, this->get_parent_tree().world_frame(), *this);
   }
 
-  /**
-  Computes and returns the spatial velocity `V_WF` of `this` frame F in the
+  /** Computes and returns the spatial velocity `V_WF` of `this` frame F in the
   world frame W as a function of the state of the model stored in `context`.
   @note Body::EvalSpatialVelocityInWorld() provides a more efficient way to
   obtain the spatial velocity for a body frame. */
@@ -210,8 +196,7 @@ class Frame : public FrameBase<T> {
     return V_WF;
   }
 
-  /**
-  Computes and returns the spatial velocity `V_MF_E` of `this` frame F
+  /** Computes and returns the spatial velocity `V_MF_E` of `this` frame F
   measured in `frame_M` and expressed in `frame_E` as a function of the
   state of the model stored in `context`.
   @see CalcSpatialVelocityInWorld(). */
@@ -234,8 +219,7 @@ class Frame : public FrameBase<T> {
     return R_WE.inverse() * V_MF_W;
   }
 
-  /**
-  (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
+  /** (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
   new clone to be created. This method is mostly intended to be called by
   MultibodyTree::CloneToScalar(). Most users should not call this clone
   method directly but rather clone the entire parent MultibodyTree if
@@ -248,8 +232,7 @@ class Frame : public FrameBase<T> {
   }
 
  protected:
-  /**
-  Only derived classes can use this constructor. It creates a %Frame
+  /** Only derived classes can use this constructor. It creates a %Frame
   object attached to `body` and puts the frame in the body's model
   instance. */
   explicit Frame(
@@ -262,8 +245,7 @@ class Frame : public FrameBase<T> {
   explicit Frame(const Body<T>& body)
       : Frame("", body) {}
 
-  /**
-  @name Methods to make a clone templated on different scalar types.
+  /** @name Methods to make a clone templated on different scalar types.
 
   These methods are meant to be called by MultibodyTree::CloneToScalar()
   when making a clone of the entire tree or a new instance templated on a

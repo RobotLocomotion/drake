@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A source block that always outputs a constant value.
+/** A source block that always outputs a constant value.
 
 @tparam_default_scalar
 @ingroup primitive_systems */

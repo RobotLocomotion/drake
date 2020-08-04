@@ -14,8 +14,7 @@ std::unique_ptr<AbstractValue> PackValue(T value) {
   return std::make_unique<Value<T>>(value);
 }
 
-/**
-Extracts data of type T from the given @p value, or aborts if the
+/** Extracts data of type T from the given @p value, or aborts if the
 @p value does not contain type T. */
 template <typename T>
 T UnpackValue(const AbstractValue& value) {
@@ -24,15 +23,13 @@ T UnpackValue(const AbstractValue& value) {
   return unpacked->get_value();
 }
 
-/**
-Extracts an integer from the given @p value, or aborts if the
+/** Extracts an integer from the given @p value, or aborts if the
 @p value does not contain an integer. */
 int UnpackIntValue(const AbstractValue* value) {
   return UnpackValue<int>(*value);
 }
 
-/**
-Extracts an integer from the given @p value, or aborts if the
+/** Extracts an integer from the given @p value, or aborts if the
 @p value does not contain an integer. */
 int UnpackIntValue(const AbstractValue& value) {
   return UnpackValue<int>(value);

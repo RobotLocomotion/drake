@@ -14,8 +14,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This class is one of the cache entries in the Context. It stores the force
+/** This class is one of the cache entries in the Context. It stores the force
 and acceleration bias terms needed by the ABA forward dynamics. Please refer
 to @ref internal_forward_dynamics
 "Articulated Body Algorithm Forward Dynamics" for further mathematical
@@ -29,8 +28,7 @@ class ArticulatedBodyForceCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyForceCache)
 
-  /**
-  Constructs an %ArticulatedBodyForceCache object properly sized to
+  /** Constructs an %ArticulatedBodyForceCache object properly sized to
   store the force bias terms for a model with the given `topology`. */
   explicit ArticulatedBodyForceCache(
       const MultibodyTreeTopology& topology) :
@@ -38,8 +36,7 @@ class ArticulatedBodyForceCache {
     Allocate();
   }
 
-  /**
-  The articulated body inertia residual force `Zplus_PB_W` for this body
+  /** The articulated body inertia residual force `Zplus_PB_W` for this body
   projected across its inboard mobilizer to frame P. */
   const SpatialForce<T>& get_Zplus_PB_W(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);
@@ -52,8 +49,7 @@ class ArticulatedBodyForceCache {
     return Zplus_PB_W_[body_node_index];
   }
 
-  /**
-  The articulated body inertia innovations generalized force `e_B` for this
+  /** The articulated body inertia innovations generalized force `e_B` for this
   body's mobilizer. */
   const VectorUpTo6<T>& get_e_B(BodyNodeIndex body_node_index) const {
     DRAKE_ASSERT(0 <= body_node_index && body_node_index < num_nodes_);

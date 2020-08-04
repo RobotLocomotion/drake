@@ -26,8 +26,7 @@ namespace internal {
 
 template<typename T> class BodyNode;
 
-/**
-%Mobilizer is a fundamental object within Drake's multibody engine used to
+/** %Mobilizer is a fundamental object within Drake's multibody engine used to
 specify the allowed motions between two Frame objects within a
 MultibodyTree. Specifying the allowed motions between two Frame objects
 effectively also specifies a kinematic relationship between the two bodies
@@ -215,8 +214,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
 
-  /**
-  The minimum amount of information that we need to define a %Mobilizer is
+  /** The minimum amount of information that we need to define a %Mobilizer is
   the knowledge of the inboard and outboard frames it connects.
   Subclasses of %Mobilizer are therefore required to provide this
   information in their respective constructors.
@@ -232,8 +230,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     }
   }
 
-  /**
-  Returns the number of generalized coordinates granted by this mobilizer.
+  /** Returns the number of generalized coordinates granted by this mobilizer.
   As an example, consider RevoluteMobilizer, for which
   `num_positions() == 1` since RevoluteMobilizer adds a single
   generalized coordinate representing the rotational degree of freedom about
@@ -245,8 +242,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   @see num_velocities() */
   virtual int num_positions() const = 0;
 
-  /**
-  Returns the number of generalized velocities granted by this mobilizer.
+  /** Returns the number of generalized velocities granted by this mobilizer.
   Given that all physics occurs in the generalized velocities space, the
   number of generalized velocities exactly matches the number of degrees of
   freedom granted by the mobilizer.
@@ -257,8 +253,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   @see num_positions() */
   virtual int num_velocities() const = 0;
 
-  /**
-  Returns the index to the first generalized position for this mobilizer
+  /** Returns the index to the first generalized position for this mobilizer
   within the vector q of generalized positions for the full multibody
   system. */
   int position_start_in_q() const {
@@ -266,8 +261,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     return topology_.positions_start;
   }
 
-  /**
-  Returns the index to the first generalized velocity for this mobilizer
+  /** Returns the index to the first generalized velocity for this mobilizer
   within the vector v of generalized velocities for the full multibody
   system. */
   int velocity_start_in_v() const {
@@ -285,15 +279,13 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     return outboard_frame_;
   }
 
-  /**
-  Returns a constant reference to the body associated with `this`
+  /** Returns a constant reference to the body associated with `this`
   mobilizer's inboard frame. */
   const Body<T>& inboard_body() const {
     return inboard_frame().body();
   }
 
-  /**
-  Returns a constant reference to the body associated with `this`
+  /** Returns a constant reference to the body associated with `this`
   mobilizer's outboard frame. */
   const Body<T>& outboard_body() const {
     return outboard_frame().body();
@@ -306,18 +298,15 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
    */
   virtual bool has_quaternion_dofs() const { return false; }
 
-  /**
-  Returns the topology information for this mobilizer. Users should not
+  /** Returns the topology information for this mobilizer. Users should not
   need to call this method since MobilizerTopology is an internal
   bookkeeping detail. */
   const MobilizerTopology& get_topology() const { return topology_; }
 
-  /**
-  @name Methods that define a %Mobilizer
+  /** @name Methods that define a %Mobilizer
   @{ */
 
-  /**
-  Sets the `state` to what will be considered to be the _zero_ state
+  /** Sets the `state` to what will be considered to be the _zero_ state
   (position and velocity) for `this` mobilizer. For most mobilizers the
   _zero_ position corresponds to the value of generalized positions at
   which the inboard frame F and the outboard frame coincide or, in other
@@ -345,8 +334,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   virtual void set_zero_state(const systems::Context<T>& context,
                               systems::State<T>* state) const = 0;
 
-  /**
-  Sets the `state` to the _default_ state (position and velocity) for
+  /** Sets the `state` to the _default_ state (position and velocity) for
   `this` mobilizer.  For example, the zero state for our standard IIWA
   model has the arm pointing directly up; this is the correct definition of
   the zero state (it is where our joint angles measure zero).  But we also
@@ -356,8 +344,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   virtual void set_default_state(const systems::Context<T>& context,
                                  systems::State<T>* state) const = 0;
 
-  /**
-  Sets the `state` to a (potentially) random position and velocity, by
+  /** Sets the `state` to a (potentially) random position and velocity, by
   evaluating any random distributions that were declared (via e.g.
   MobilizerImpl::set_random_position_distribution() and/or
   MobilizerImpl::set_random_velocity_distribution(), or calling
@@ -370,8 +357,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
                                 systems::State<T>* state,
                                 RandomGenerator* generator) const = 0;
 
-  /**
-  Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /** Computes the across-mobilizer transform `X_FM(q)` between the inboard
   frame F and the outboard frame M as a function of the vector of
   generalized positions `q`.
   %Mobilizer subclasses implementing this method can retrieve the fixed-size
@@ -386,8 +372,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   virtual math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const = 0;
 
-  /**
-  Computes the across-mobilizer spatial velocity `V_FM(q, v)` of the
+  /** Computes the across-mobilizer spatial velocity `V_FM(q, v)` of the
   outboard frame M in the inboard frame F.
   This method can be thought of as the application of the operator `H_FM(q)`
   to the input vector of generalized velocities `v`, i.e. the output of this
@@ -411,8 +396,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const = 0;
 
-  /**
-  Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
+  /** Computes the across-mobilizer spatial accelerations `A_FM(q, v, v̇)` of the
   outboard frame M in the inboard frame F.
   This method can be thought of as the application of the operation
   `v̇ ∈ ℝⁿᵛ → M⁶: A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q) * v`, where
@@ -439,8 +423,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const = 0;
 
-  /**
-  Calculates a mobilizer's generalized forces `tau = H_FMᵀ(q) ⋅ F_Mo_F`,
+  /** Calculates a mobilizer's generalized forces `tau = H_FMᵀ(q) ⋅ F_Mo_F`,
   where `H_FMᵀ` is the transpose of frame M's mobilizer hinge matrix and
   `F_Mo_F` is the spatial force on frame M at Mo, expressed in F.
   @see CalcAcrossMobilizerSpatialVelocity() and this class' documentation
@@ -471,8 +454,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const = 0;
 
-  /**
-  Computes the kinematic mapping matrix `N(q)` that maps generalized
+  /** Computes the kinematic mapping matrix `N(q)` that maps generalized
   velocities for this mobilizer to time derivatives of the generalized
   positions for this mobilizer according to `q̇ = N(q)⋅v`.
   @param[in] context
@@ -491,8 +473,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     DoCalcNMatrix(context, N);
   }
 
-  /**
-  Computes the kinematic mapping matrix `N⁺(q)` that maps time
+  /** Computes the kinematic mapping matrix `N⁺(q)` that maps time
   derivatives of the generalized positions to generalized velocities
   according to `v = N⁺(q)⋅q̇`. `N⁺(q)` is the left pseudoinverse of the
   kinematic mapping `N(q)`, see CalcNMatrix().
@@ -513,8 +494,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     DoCalcNplusMatrix(context, Nplus);
   }
 
-  /**
-  Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
+  /** Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   velocities v and time derivatives of the generalized positions `qdot`.
   The generalized positions vector is stored in `context`. */
   virtual void MapVelocityToQDot(
@@ -522,8 +502,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const = 0;
 
-  /**
-  Computes the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
+  /** Computes the mapping `v = N⁺(q)⋅q̇` from time derivatives of the
   generalized positions `qdot` to generalized velocities v, where `N⁺(q)` is
   the left pseudo-inverse of `N(q)` defined by MapVelocityToQDot().
   The generalized positions vector is stored in `context`. */
@@ -533,8 +512,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       EigenPtr<VectorX<T>> v) const = 0;
   /** @} */
 
-  /**
-  Returns a const Eigen expression of the vector of generalized positions
+  /** Returns a const Eigen expression of the vector of generalized positions
   for `this` mobilizer from a vector `q_array` of generalized positions for
   the entire MultibodyTree model.
   @pre @p q_array is of size MultibodyTree::num_positions(). */
@@ -556,8 +534,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
                             topology_.num_positions);
   }
 
-  /**
-  Returns a const Eigen expression of the vector of generalized velocities
+  /** Returns a const Eigen expression of the vector of generalized velocities
   for `this` mobilizer from a vector `v_array` of generalized velocities for
   the entire MultibodyTree model.
   @pre @p v_array is of size MultibodyTree::num_velocities(). */
@@ -579,8 +556,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
                             topology_.num_velocities);
   }
 
-  /**
-  Returns a const Eigen expression of the vector of generalized
+  /** Returns a const Eigen expression of the vector of generalized
   accelerations for `this` mobilizer from a vector `vdot_array` of
   generalized accelerations for the entire MultibodyTree model.
   This method aborts if the input array is not of size
@@ -598,8 +574,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     return get_mutable_velocities_from_array(vdot_array);
   }
 
-  /**
-  Returns a const Eigen expression of the vector of generalized forces
+  /** Returns a const Eigen expression of the vector of generalized forces
   for `this` mobilizer from a vector of generalized forces for the
   entire MultibodyTree model.
   This method aborts if the input array is not of size
@@ -617,8 +592,7 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
     return get_mutable_velocities_from_array(tau_array);
   }
 
-  /**
-  NVI to DoCloneToScalar() templated on the scalar type of the new clone to
+  /** NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   be created. This method is mostly intended to be called by
   MultibodyTree::CloneToScalar(). Most users should not call this clone
   method directly but rather clone the entire parent MultibodyTree if
@@ -636,37 +610,32 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
  protected:
-  /**
-  NVI to CalcNMatrix(). Implementations can safely assume that N is not the
+  /** NVI to CalcNMatrix(). Implementations can safely assume that N is not the
   nullptr and that N has the proper size. */
   virtual void DoCalcNMatrix(
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const = 0;
 
-  /**
-  NVI to CalcNplusMatrix(). Implementations can safely assume that Nplus is
+  /** NVI to CalcNplusMatrix(). Implementations can safely assume that Nplus is
   not the nullptr and that Nplus has the proper size. */
   virtual void DoCalcNplusMatrix(
       const systems::Context<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const = 0;
 
-  /**
-  @name Methods to make a clone templated on different scalar types.
+  /** @name Methods to make a clone templated on different scalar types.
 
   The only const argument to these methods is the new MultibodyTree clone
   under construction, which is required to already own the clones of the
   inboard and outboard frames of the mobilizer being cloned.
   @{ */
 
-  /**
-  Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /** Clones this %Mobilizer (templated on T) to a mobilizer templated on
   `double`.
   @pre Inboard and outboard frames for this mobilizer already have a clone
   in `tree_clone`. */
   virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const = 0;
 
-  /**
-  Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  /** Clones this %Mobilizer (templated on T) to a mobilizer templated on
   AutoDiffXd.
   @pre Inboard and outboard frames for this mobilizer already have a clone
   in `tree_clone`. */

@@ -13,8 +13,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-/**
-%SerializerInterface translates between LCM message bytes and
+/** %SerializerInterface translates between LCM message bytes and
 drake::AbstractValue objects that contain LCM messages, e.g., a
 Value<lcmt_drake_signal>.  See Serializer for a message-specific concrete
 subclass. */
@@ -24,8 +23,7 @@ class SerializerInterface {
 
   virtual ~SerializerInterface();
 
-  /**
-  Creates a value-initialized (zeroed) instance of the message object.
+  /** Creates a value-initialized (zeroed) instance of the message object.
   The result can be used as the output object filled in by Deserialize. */
   virtual std::unique_ptr<AbstractValue> CreateDefaultValue() const = 0;
 
@@ -42,8 +40,7 @@ class SerializerInterface {
   SerializerInterface() {}
 };
 
-/**
-%Serializer is specific to a single LcmMessage type, and translates between
+/** %Serializer is specific to a single LcmMessage type, and translates between
 LCM message bytes and drake::Value<LcmMessage> objects.
 
 @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal. */

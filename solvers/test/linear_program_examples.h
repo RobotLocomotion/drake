@@ -9,8 +9,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/**
-Test a simple linear programming problem with zero cost, i.e. a feasibility
+/** Test a simple linear programming problem with zero cost, i.e. a feasibility
 problem
    0 <= x0 + 2x1 + 3x2 <= 10
 -inf <=       x1 - 2x2 <= 3
@@ -30,8 +29,7 @@ class LinearFeasibilityProgram : public OptimizationProgram {
   VectorDecisionVariable<3> x_;
 };
 
-/**
-Adapt from the linear programming example
+/** Adapt from the linear programming example
 http://cvxopt.org/examples/tutorial/lp.html
 Solve the following linear program
 min     2x0 + x1
@@ -152,8 +150,7 @@ class LinearProgramTest
 
 std::vector<LinearProblems> linear_problems();
 
-/**
-An infeasible linear program.
+/** An infeasible linear program.
 max x0 + x1
 s.t x0 + 2 * x1 <= 3;
     2 * x0 + x1 == 4
@@ -170,8 +167,7 @@ class InfeasibleLinearProgramTest0 : public ::testing::Test {
   std::unique_ptr<MathematicalProgram> prog_;
 };
 
-/**
-An unbounded linear program.
+/** An unbounded linear program.
 max x0 + x1
 s.t 2 * x0 + x1 >= 4
     x0 >= 0, x1 >= 2 */
@@ -187,8 +183,7 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
   std::unique_ptr<MathematicalProgram> prog_;
 };
 
-/**
-An unbounded linear program.
+/** An unbounded linear program.
 min x0 + 2*x1 + 3*x2 + 2.5*x3 + 2
 s.t x0 + x1 - x2 + x3 <= 3
     1 <= x0 + 2 * x1 - 2 * x2 + 4 * x3 <= 3
@@ -205,16 +200,14 @@ class UnboundedLinearProgramTest1 : public ::testing::Test {
   std::unique_ptr<MathematicalProgram> prog_;
 };
 
-/**
-Test getting dual solution for LP.
+/** Test getting dual solution for LP.
 This LP has inequality constraints. */
 void TestLPDualSolution1(const SolverInterface& solver, double tol = 1e-6);
 
 /** This LP has only bounding box constraints. */
 void TestLPDualSolution2(const SolverInterface& solver, double tol = 1e-6);
 
-/**
-This LP has only bounding box constraints. The decision variable is
+/** This LP has only bounding box constraints. The decision variable is
 scaled. */
 void TestLPDualSolution2Scaled(const SolverInterface& solver,
                                double tol = 1e-6);

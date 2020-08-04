@@ -22,8 +22,7 @@ struct TimeStep {
   explicit TimeStep(double step) : value(step) {}
 };
 
-/**
-DirectTranscription is perhaps the simplest implementation of a multiple
+/** DirectTranscription is perhaps the simplest implementation of a multiple
 shooting method, where we have decision variables representing the
 control and input at every sample time in the trajectory, and one-step
 of numerical integration provides the dynamic constraints between those
@@ -32,8 +31,7 @@ class DirectTranscription : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectTranscription)
 
-  /**
-  Constructs the MathematicalProgram and adds the dynamic constraints.
+  /** Constructs the MathematicalProgram and adds the dynamic constraints.
   This version of the constructor is only for simple discrete-time systems
   (with a single periodic timestep update).  Continuous-time systems
   must call one of the constructors that takes bounds on the timestep as
@@ -62,8 +60,7 @@ class DirectTranscription : public MultipleShooting {
   // TODO(russt): Generalize the symbolic short-cutting to handle this case,
   //  and remove the special-purpose constructor (unless we want it for
   //  efficiency).
-  /**
-  Constructs the MathematicalProgram and adds the dynamic constraints.  This
+  /** Constructs the MathematicalProgram and adds the dynamic constraints.  This
   version of the constructor is only for *linear time-varying* discrete-time
   systems (with a single periodic timestep update).  This constructor adds
   value because the symbolic short-cutting does not yet support systems
@@ -95,8 +92,7 @@ class DirectTranscription : public MultipleShooting {
 
   // TODO(russt): Support more than just forward Euler integration
   //  (perhaps by taking IntegratorBase as an optional parameter?).
-  /**
-  Constructs the MathematicalProgram and adds the dynamic constraints.
+  /** Constructs the MathematicalProgram and adds the dynamic constraints.
   This version of the constructor is only for continuous-time systems;
   the dynamics constraints use explicit forward Euler integration.
 
@@ -127,15 +123,13 @@ class DirectTranscription : public MultipleShooting {
 
   ~DirectTranscription() override {}
 
-  /**
-  Get the input trajectory at the solution as a PiecewisePolynomial.  The
+  /** Get the input trajectory at the solution as a PiecewisePolynomial.  The
   order of the trajectory will be determined by the integrator used in
   the dynamic constraints. */
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
       const solvers::MathematicalProgramResult& result) const override;
 
-  /**
-  Get the state trajectory at the solution as a PiecewisePolynomial.  The
+  /** Get the state trajectory at the solution as a PiecewisePolynomial.  The
   order of the trajectory will be determined by the integrator used in
   the dynamic constraints. */
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(

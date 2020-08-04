@@ -26,8 +26,7 @@ namespace multibody {
 
 namespace internal {
 
-/**
-For internal use only of the MultibodyTree implementation.
+/** For internal use only of the MultibodyTree implementation.
 This is a base class representing a **node** in the tree structure of a
 MultibodyTree. %BodyNode provides implementations for convenience methods to
 be used in MultibodyTree recursive algorithms but that however should not
@@ -100,8 +99,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
-  /**
-  A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
+  /** A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
   that connects this body to the rest of tree. Given a body and its inboard
   mobilizer in a MultibodyTree this constructor creates the corresponding
   %BodyNode. See this class' documentation for details on how a %BodyNode is
@@ -130,8 +128,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
   }
 
-  /**
-  Method to update the list of child body nodes maintained by this node,
+  /** Method to update the list of child body nodes maintained by this node,
   outboard to this node. Recall a %BodyNode is a tree node within the tree
   structure of MultibodyTree. Therefore each %BodyNode has a unique parent
   %BodyNode, supplied at construction, and a set of child nodes, specified
@@ -148,8 +145,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return *body_;
   }
 
-  /**
-  Returns a constant reference to the unique parent body P of the body B
+  /** Returns a constant reference to the unique parent body P of the body B
   associated with this node. This method aborts in Debug builds if called on
   the root node corresponding to the _world_ body. */
   const Body<T>& parent_body() const {
@@ -157,15 +153,13 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return this->get_parent_tree().get_body(get_parent_body_index());
   }
 
-  /**
-  Returns a const pointer to the parent (inboard) body node or nullptr if
+  /** Returns a const pointer to the parent (inboard) body node or nullptr if
   `this` is the world node, which has no inboard parent node. */
   const BodyNode<T>* parent_body_node() const {
     return parent_node_;
   }
 
-  /**
-  Returns a constant reference to the mobilizer associated with this node.
+  /** Returns a constant reference to the mobilizer associated with this node.
   Aborts if called on the root node corresponding to the _world_ body, for
   which there is no mobilizer. */
   const Mobilizer<T>& get_mobilizer() const {
@@ -173,26 +167,22 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     return *mobilizer_;
   }
 
-  /**
-  @name Methods to retrieve BodyNode sizes
+  /** @name Methods to retrieve BodyNode sizes
   @{ */
 
-  /**
-  Returns the number of generalized positions for the Mobilizer in `this`
+  /** Returns the number of generalized positions for the Mobilizer in `this`
   node. */
   int get_num_mobilizer_positions() const {
     return topology_.num_mobilizer_positions;
   }
 
-  /**
-  Returns the number of generalized velocities for the Mobilizer in `this`
+  /** Returns the number of generalized velocities for the Mobilizer in `this`
   node. */
   int get_num_mobilizer_velocities() const {
     return topology_.num_mobilizer_velocities;
   }
 
-  /**
-  Returns the index to the first generalized velocity for this node
+  /** Returns the index to the first generalized velocity for this node
   within the vector v of generalized velocities for the full multibody
   system. */
   int velocity_start() const {
@@ -202,8 +192,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /** @} */
 
 
-  /**
-  This method is used by MultibodyTree within a base-to-tip loop to compute
+  /** This method is used by MultibodyTree within a base-to-tip loop to compute
   this node's kinematics that only depend on generalized positions.
   This method aborts in Debug builds when:
 
@@ -257,8 +246,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcVelocityKinematicsCache().
-  /**
-  This method is used by MultibodyTree within a base-to-tip loop to compute
+  /** This method is used by MultibodyTree within a base-to-tip loop to compute
   this node's kinematics that depend on the generalized velocities.
   This method aborts in Debug builds when:
   - Called on the _root_ node.
@@ -378,8 +366,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
-  /**
-  This method is used by MultibodyTree within a base-to-tip loop to compute
+  /** This method is used by MultibodyTree within a base-to-tip loop to compute
   this node's kinematics that depend on the generalized accelerations, i.e.
   the generalized velocities' time derivatives.
   This method aborts in Debug builds when:
@@ -568,8 +555,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
-  /**
-  Computes the generalized forces `tau` for a single BodyNode.
+  /** Computes the generalized forces `tau` for a single BodyNode.
   This method is used by MultibodyTree within a tip-to-base loop to compute
   the vector of generalized forces `tau` that would correspond with a known
   set of spatial accelerations `A_WB` for each body in the MultibodyTree.
@@ -802,8 +788,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /** Returns the topology information for this body node. */
   const BodyNodeTopology& get_topology() const { return topology_; }
 
-  /**
-  Calculates the hinge matrix H_PB_W.
+  /** Calculates the hinge matrix H_PB_W.
   @param[in] context
     The context with the state of the MultibodyTree model.
   @param[in] pc
@@ -864,8 +849,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /**
-  Helper method to retrieve a Jacobian matrix with respect to generalized
+  /** Helper method to retrieve a Jacobian matrix with respect to generalized
   velocities v for `this` node from an array storing the columns of a set of
   Jacobian matrices for each node.  This method is used by MultibodyTree
   implementations to retrieve per-node Jacobian matrices from a
@@ -913,8 +897,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   // - Revolute: [x y z 0 0 0]
   // - Prismatic: [0 0 0 x y z]
   // - Ball: 3x3 blocks of zeroes.
-  /**
-  This method is used by MultibodyTree within a tip-to-base loop to compute
+  /** This method is used by MultibodyTree within a tip-to-base loop to compute
   this node's articulated body inertia quantities that depend only on the
   generalized positions.
 
@@ -1094,8 +1077,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /**
-  This method is used by MultibodyTree within a tip-to-base loop to compute
+  /** This method is used by MultibodyTree within a tip-to-base loop to compute
   the force bias terms in the articulated body algorithm. Please refer to
   @ref internal_forward_dynamics
   "Articulated Body Algorithm Forward Dynamics" for further mathematical
@@ -1196,8 +1178,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /**
-  This method is used by MultibodyTree within a base-to-tip loop to compute
+  /** This method is used by MultibodyTree within a base-to-tip loop to compute
   the generalized accelerations `vdot` and the spatial accelerations `A_WB`.
   Please refer to @ref internal_forward_dynamics
   "Articulated Body Algorithm Forward Dynamics" for further mathematical
@@ -1279,8 +1260,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /**
-  This method is used by MultibodyTree within a tip-to-base loop to compute
+  /** This method is used by MultibodyTree within a tip-to-base loop to compute
   the composite body inertia of each body in the system.
 
   @param[in] M_B_W Spatial inertia for the body B associated with this node.
@@ -1321,8 +1301,7 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
     }
   }
 
-  /**
-  Computes the spatial acceleration bias `Ab_WB(q, v)` for `this` node, a
+  /** Computes the spatial acceleration bias `Ab_WB(q, v)` for `this` node, a
   function of both configuration q and velocities v. This term appears in
   the acceleration level motion constraint imposed by body B's mobilizer
   `A_WB = Aplus_WB + Ab_WB + H_PB_W * vdot_B`. Refer to
@@ -1424,16 +1403,14 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   }
 
  protected:
-  /**
-  Returns the inboard frame F of this node's mobilizer.
+  /** Returns the inboard frame F of this node's mobilizer.
   @throws std::runtime_error if called on the root node corresponding to
   the _world_ body. */
   const Frame<T>& inboard_frame() const {
     return get_mobilizer().inboard_frame();
   }
 
-  /**
-  Returns the outboard frame M of this node's mobilizer.
+  /** Returns the outboard frame M of this node's mobilizer.
   @throws std::runtime_error if called on the root node corresponding to
   the _world_ body. */
   const Frame<T>& outboard_frame() const {

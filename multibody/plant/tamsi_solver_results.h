@@ -7,8 +7,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This struct stores the results from a computation performed with
+/** This struct stores the results from a computation performed with
 TamsiSolver. See the TamsiSolver class's documentation
 for further details.
 We denote `nv` the size of the vector of generalized velocities and `nc` the
@@ -18,8 +17,7 @@ struct TamsiSolverResults {
   /** Vector of generalized velocities at the next time step. */
   VectorX<T> v_next;
 
-  /**
-  Vector storing the normal force (positive) at each contact point, of size
+  /** Vector storing the normal force (positive) at each contact point, of size
   `nc`. */
   VectorX<T> fn;
 

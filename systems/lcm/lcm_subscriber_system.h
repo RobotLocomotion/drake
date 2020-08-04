@@ -18,8 +18,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-/**
-Receives LCM messages from a given channel and outputs them to a
+/** Receives LCM messages from a given channel and outputs them to a
 System<double>'s port. This class stores the most recently processed LCM
 message in the State. When a LCM message arrives asynchronously, an update
 event is scheduled to process the message and store it in the State at the
@@ -42,8 +41,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
-  /**
-  Factory method that returns a subscriber System that provides
+  /** Factory method that returns a subscriber System that provides
   Value<LcmMessage> message objects on its sole abstract-valued output port.
 
   @tparam LcmMessage message type to deserialize, e.g., lcmt_drake_signal.
@@ -58,8 +56,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
 
-  /**
-  Constructor that returns a subscriber System that provides message objects
+  /** Constructor that returns a subscriber System that provides message objects
   on its sole abstract-valued output port.  The type of the message object is
   determined by the @p serializer.
 
@@ -92,8 +89,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   // This system has no input ports.
   void get_input_port(int) = delete;
 
-  /**
-  Blocks the caller until its internal message count exceeds
+  /** Blocks the caller until its internal message count exceeds
   `old_message_count` with an optional timeout.
   @param old_message_count Internal message counter.
 
@@ -109,8 +105,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   int WaitForMessage(int old_message_count, AbstractValue* message = nullptr,
                      double timeout = -1.) const;
 
-  /**
-  Returns the internal message counter. Meant to be used with
+  /** Returns the internal message counter. Meant to be used with
   `WaitForMessage`. */
   int GetInternalMessageCount() const;
 

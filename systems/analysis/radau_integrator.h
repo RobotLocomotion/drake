@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A selectable order (third- or first-order), fully implicit integrator with
+/** A selectable order (third- or first-order), fully implicit integrator with
 error estimation.
 
 @tparam_nonsymbolic_scalar
@@ -73,8 +72,7 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   bool supports_error_estimation() const final { return true; }
 
-  /**
-  This integrator uses embedded second order methods to compute estimates of
+  /** This integrator uses embedded second order methods to compute estimates of
   the local truncation error. The order of the asymptotic difference between
   the third-order Radau method and an embedded second order method is O(h³).
   The order of the asymptotic difference between the first-order Radau
@@ -299,15 +297,13 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_nr_iterations_{0};
 };
 
-/**
-A third-order fully implicit integrator with error estimation.
+/** A third-order fully implicit integrator with error estimation.
 See RadauIntegrator with `num_stages == 2` for details.
 @tparam_nonsymbolic_scalar */
 template <typename T>
 using Radau3Integrator = RadauIntegrator<T, 2>;
 
-/**
-A first-order fully implicit integrator with error estimation.
+/** A first-order fully implicit integrator with error estimation.
 See RadauIntegrator with `num_stages == 1` for details.
 @tparam_nonsymbolic_scalar */
 template <typename T>

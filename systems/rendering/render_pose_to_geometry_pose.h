@@ -8,8 +8,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/**
-A direct-feedthrough system that converts the C++ type of poses from
+/** A direct-feedthrough system that converts the C++ type of poses from
 rendering::PoseVector<T> on the input to geometry::FramePoseVector<T>
 on the output. */
 template <typename T>

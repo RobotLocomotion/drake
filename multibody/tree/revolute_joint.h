@@ -14,8 +14,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This Joint allows two bodies to rotate relatively to one another around a
+/** This Joint allows two bodies to rotate relatively to one another around a
 common axis.
 That is, given a frame F attached to the parent body P and a frame M
 attached to the child body B (see the Joint class's documentation),
@@ -37,8 +36,7 @@ class RevoluteJoint final : public Joint<T> {
 
   static const char kTypeName[];
 
-  /**
-  Constructor to create a revolute joint between two bodies so that
+  /** Constructor to create a revolute joint between two bodies so that
   frame F attached to the parent body P and frame M attached to the child
   body B, rotate relatively to one another about a common axis. See this
   class's documentation for further details on the definition of these
@@ -71,8 +69,7 @@ class RevoluteJoint final : public Joint<T> {
                        -std::numeric_limits<double>::infinity(),
                        std::numeric_limits<double>::infinity(), damping) {}
 
-  /**
-  Constructor to create a revolute joint between two bodies so that
+  /** Constructor to create a revolute joint between two bodies so that
   frame F attached to the parent body P and frame M attached to the child
   body B, rotate relatively to one another about a common axis. See this
   class's documentation for further details on the definition of these
@@ -129,8 +126,7 @@ class RevoluteJoint final : public Joint<T> {
     return name.access();
   }
 
-  /**
-  Returns the axis of revolution of `this` joint as a unit vector.
+  /** Returns the axis of revolution of `this` joint as a unit vector.
   Since the measures of this axis in either frame F or M are the same (see
   this class's documentation for frames's definitions) then,
   `axis = axis_F = axis_M`. */
@@ -171,12 +167,10 @@ class RevoluteJoint final : public Joint<T> {
     return this->acceleration_upper_limits()[0];
   }
 
-  /**
-  @name Context-dependent value access
+  /** @name Context-dependent value access
   @{ */
 
-  /**
-  Gets the rotation angle of `this` mobilizer from `context`.
+  /** Gets the rotation angle of `this` mobilizer from `context`.
   @param[in] context
     The context of the MultibodyTree this joint belongs to.
   @returns The angle coordinate of `this` joint stored in the `context`. */
@@ -184,8 +178,7 @@ class RevoluteJoint final : public Joint<T> {
     return get_mobilizer()->get_angle(context);
   }
 
-  /**
-  Sets the `context` so that the generalized coordinate corresponding to the
+  /** Sets the `context` so that the generalized coordinate corresponding to the
   rotation angle of `this` joint equals `angle`.
   @param[in] context
     The context of the MultibodyTree this joint belongs to.
@@ -203,8 +196,7 @@ class RevoluteJoint final : public Joint<T> {
         Vector1<symbolic::Expression>{angle});
   }
 
-  /**
-  Gets the rate of change, in radians per second, of `this` joint's
+  /** Gets the rate of change, in radians per second, of `this` joint's
   angle (see get_angle()) from `context`.
   @param[in] context
     The context of the MultibodyTree this joint belongs to.
@@ -214,8 +206,7 @@ class RevoluteJoint final : public Joint<T> {
     return get_mobilizer()->get_angular_rate(context);
   }
 
-  /**
-  Sets the rate of change, in radians per second, of this `this` joint's
+  /** Sets the rate of change, in radians per second, of this `this` joint's
   angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
   `context`.
   @param[in] context
@@ -232,22 +223,19 @@ class RevoluteJoint final : public Joint<T> {
 
   /** @} */
 
-  /**
-  Gets the default rotation angle. Wrapper for the more general
+  /** Gets the default rotation angle. Wrapper for the more general
   `Joint::default_positions()`.
   @returns The default angle of `this` stored in `default_positions_` */
   double get_default_angle() const { return this->default_positions()[0]; }
 
-  /**
-  Sets the `default_positions` of this joint (in this case a single angle).
+  /** Sets the `default_positions` of this joint (in this case a single angle).
   @param[in] angle
     The desired default angle of the joint */
   void set_default_angle(double angle) {
     this->set_default_positions(Vector1d{angle});
   }
 
-  /**
-  Adds into `forces` a given `torque` for `this` joint that is to be applied
+  /** Adds into `forces` a given `torque` for `this` joint that is to be applied
   about the joint's axis. The torque is defined to be positive according to
   the right-hand-rule with the thumb aligned in the direction of `this`
   joint's axis. That is, a positive torque causes a positive rotational
@@ -264,8 +252,7 @@ class RevoluteJoint final : public Joint<T> {
   }
 
  protected:
-  /**
-  Joint<T> override called through public NVI, Joint::AddInForce().
+  /** Joint<T> override called through public NVI, Joint::AddInForce().
   Therefore arguments were already checked to be valid.
   For a %RevoluteJoint, we must always have `joint_dof = 0` since there is
   only a single degree of freedom (num_velocities() == 1). `joint_tau` is
@@ -291,8 +278,7 @@ class RevoluteJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
-  /**
-  Joint<T> override called through public NVI, Joint::AddInDamping().
+  /** Joint<T> override called through public NVI, Joint::AddInDamping().
   Therefore arguments were already checked to be valid.
   This method adds into `forces` a dissipative torque according to the
   viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()). */

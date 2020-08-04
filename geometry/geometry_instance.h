@@ -16,8 +16,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-A geometry instance combines a geometry definition (i.e., a shape of some
+/** A geometry instance combines a geometry definition (i.e., a shape of some
 sort), a pose (relative to a parent "frame" P), material information, and an
 opaque collection of metadata. The parent frame can be a registered frame or
 another registered geometry.
@@ -83,8 +82,7 @@ class GeometryInstance {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryInstance)
 
-  /**
-  Constructs a geometry instance specification.
+  /** Constructs a geometry instance specification.
   @param X_PG   The pose of this geometry (`G`) in its parent's frame (`P`).
   @param shape  The underlying shape for this geometry instance.
   @param name   The name of the geometry (must satisfy the name requirements).
@@ -92,8 +90,7 @@ class GeometryInstance {
   GeometryInstance(const math::RigidTransform<double>& X_PG,
       std::unique_ptr<Shape> shape, const std::string& name);
 
-  /**
-  Returns the globally unique id for this geometry specification. Every
+  /** Returns the globally unique id for this geometry specification. Every
   instantiation of %GeometryInstance will contain a unique id value. The id
   value is preserved across copies. After successfully registering this
   %GeometryInstance, this id will serve as the identifier for the registered
@@ -114,13 +111,11 @@ class GeometryInstance {
   /** Releases the shape from the instance. */
   std::unique_ptr<Shape> release_shape() { return std::move(shape_); }
 
-  /**
-  Returns the *canonicalized* name for the instance.
+  /** Returns the *canonicalized* name for the instance.
   @sa @ref canonicalized_geometry_names "Canonicalized names" */
   const std::string& name() const { return name_; }
 
-  /**
-  Sets the *canonicalized* name for the instance.
+  /** Sets the *canonicalized* name for the instance.
   @sa @ref canonicalized_geometry_names "Canonicalized names" */
   void set_name(const std::string& name);
 
@@ -139,48 +134,42 @@ class GeometryInstance {
     perception_properties_ = std::move(properties);
   }
 
-  /**
-  Returns a pointer to the geometry's mutable proximity properties (if they
+  /** Returns a pointer to the geometry's mutable proximity properties (if they
   are defined). Nullptr otherwise. */
   ProximityProperties* mutable_proximity_properties() {
     if (proximity_properties_) return &*proximity_properties_;
     return nullptr;
   }
 
-  /**
-  Returns a pointer to the geometry's const proximity properties (if they
+  /** Returns a pointer to the geometry's const proximity properties (if they
   are defined). Nullptr otherwise. */
   const ProximityProperties* proximity_properties() const {
     if (proximity_properties_) return &*proximity_properties_;
     return nullptr;
   }
 
-  /**
-  Returns a pointer to the geometry's mutable illustration properties (if
+  /** Returns a pointer to the geometry's mutable illustration properties (if
   they are defined). Nullptr otherwise. */
   IllustrationProperties* mutable_illustration_properties() {
     if (illustration_properties_) return &*illustration_properties_;
     return nullptr;
   }
 
-  /**
-  Returns a pointer to the geometry's const illustration properties (if
+  /** Returns a pointer to the geometry's const illustration properties (if
   they are defined). Nullptr otherwise. */
   const IllustrationProperties* illustration_properties() const {
     if (illustration_properties_) return &*illustration_properties_;
     return nullptr;
   }
 
-  /**
-  Returns a pointer to the geometry's mutable perception properties (if
+  /** Returns a pointer to the geometry's mutable perception properties (if
   they are defined). Nullptr otherwise. */
   PerceptionProperties* mutable_perception_properties() {
     if (perception_properties_) return &*perception_properties_;
     return nullptr;
   }
 
-  /**
-  Returns a pointer to the geometry's const perception properties (if
+  /** Returns a pointer to the geometry's const perception properties (if
   they are defined). Nullptr otherwise. */
   const PerceptionProperties* perception_properties() const {
     if (perception_properties_) return &*perception_properties_;

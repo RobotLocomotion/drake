@@ -5,15 +5,13 @@
 
 namespace drake {
 namespace solvers {
-/**
-The OSQP solver details after calling Solve() function. The user can call
+/** The OSQP solver details after calling Solve() function. The user can call
 MathematicalProgramResult::get_solver_details<OsqpSolver>() to obtain the
 details. */
 struct OsqpSolverDetails {
   /** Number of iterations taken. */
   int iter{};
-  /**
-  Status of the solver at termination. Please refer to
+  /** Status of the solver at termination. Please refer to
   https://github.com/oxfordcontrol/osqp/blob/master/include/constants.h */
   int status_val{};
   /** Norm of primal residue. */
@@ -28,8 +26,7 @@ struct OsqpSolverDetails {
   double polish_time{};
   /** Total OSQP time (seconds). */
   double run_time{};
-  /**
-  y contains the solution for the Lagrangian multiplier associated with
+  /** y contains the solution for the Lagrangian multiplier associated with
   l <= Ax <= u. The Lagrangian multiplier is set only when OSQP solves
   the problem. Notice that the order of the linear constraints are linear
   inequality first, and then linear equality constraints. */
@@ -46,8 +43,7 @@ class OsqpSolver final : public SolverBase {
   OsqpSolver();
   ~OsqpSolver() final;
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

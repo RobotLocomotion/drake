@@ -7,8 +7,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-A characterization of the intersection of two penetrating geometries. The
+/** A characterization of the intersection of two penetrating geometries. The
 characterization consists of a pair of points and a normal. The points
 represent a point on each geometry that most deeply penetrates the other
 geometry (in the normal direction). For convenience, the penetration depth
@@ -29,16 +28,13 @@ struct PenetrationAsPointPair {
   GeometryId id_A;
   /** The id of the second geometry in the contact. */
   GeometryId id_B;
-  /**
-  The point on A that most deeply penetrates B, measured and expressed in
+  /** The point on A that most deeply penetrates B, measured and expressed in
   the world frame. */
   Vector3<T> p_WCa;
-  /**
-  The point on B that most deeply penetrates A, measured and expressed in
+  /** The point on B that most deeply penetrates A, measured and expressed in
   the world frame. */
   Vector3<T> p_WCb;
-  /**
-  The unit-length normal which defines the penetration direction, pointing
+  /** The unit-length normal which defines the penetration direction, pointing
   from geometry B into geometry A, measured and expressed in the world frame.
   It _approximates_ the normal to the plane on which the contact patch lies. */
   Vector3<T> nhat_BA_W;

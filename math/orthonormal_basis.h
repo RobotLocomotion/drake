@@ -7,8 +7,7 @@
 namespace drake {
 namespace math {
 
-/**
-Creates a right-handed local basis from a given axis. Defines two other
+/** Creates a right-handed local basis from a given axis. Defines two other
 arbitrary axes such that the basis is orthonormal. The basis is R_WL, where
 W is the frame in which the input axis is expressed and L is a local basis
 such that v_W = R_WL * v_L.

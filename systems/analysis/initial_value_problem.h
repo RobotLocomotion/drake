@@ -15,8 +15,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A general initial value problem (or IVP) representation class, that allows
+/** A general initial value problem (or IVP) representation class, that allows
 evaluating the 𝐱(t; 𝐤) solution function to the given ODE
 d𝐱/dt = f(t, 𝐱; 𝐤), where f : t ⨯ 𝐱 → ℝⁿ, t ∈ ℝ, 𝐱 ∈ ℝⁿ, 𝐤 ∈ ℝᵐ,
 provided an initial condition 𝐱(t₀; 𝐤) = 𝐱₀. The parameter vector 𝐤
@@ -68,8 +67,7 @@ class InitialValueProblem {
   /** Default maximum integration step size. */
   static const T kMaxStepSize;
 
-  /**
-  General ODE system d𝐱/dt = f(t, 𝐱; 𝐤) function type.
+  /** General ODE system d𝐱/dt = f(t, 𝐱; 𝐤) function type.
 
   @param t The independent scalar variable t ∈ ℝ.
   @param x The dependent vector variable 𝐱 ∈ ℝⁿ.
@@ -78,8 +76,7 @@ class InitialValueProblem {
   using OdeFunction = std::function<VectorX<T>(const T& t, const VectorX<T>& x,
                                                const VectorX<T>& k)>;
 
-  /**
-  A collection of values i.e. initial time t₀, initial state vector 𝐱₀
+  /** A collection of values i.e. initial time t₀, initial state vector 𝐱₀
   and parameters vector 𝐤.to further specify the ODE system (in order
   to become an initial value problem).  This places the same role as
   systems::Context, but is intentionally much simpler. */
@@ -87,8 +84,7 @@ class InitialValueProblem {
     /** Default constructor, leaving all values unspecified. */
     OdeContext() = default;
 
-    /**
-    Constructor specifying all values.
+    /** Constructor specifying all values.
 
     @param t0_in Specified initial time t₀.
     @param x0_in Specified initial state vector 𝐱₀.
@@ -109,8 +105,7 @@ class InitialValueProblem {
     std::optional<VectorX<T>> k;  ///< The parameter vector 𝐤 for the IVP.
   };
 
-  /**
-  Constructs an IVP described by the given @p ode_function, using
+  /** Constructs an IVP described by the given @p ode_function, using
   given @p default_values.t0 and @p default_values.x0 as initial
   conditions, and parameterized with @p default_values.k by default.
 
@@ -126,8 +121,7 @@ class InitialValueProblem {
   InitialValueProblem(const OdeFunction& ode_function,
                       const OdeContext& default_values);
 
-  /**
-  Solves the IVP for time @p tf, using the initial time t₀, initial state
+  /** Solves the IVP for time @p tf, using the initial time t₀, initial state
   vector 𝐱₀ and parameter vector 𝐤 present in @p values, falling back to
   the ones given on construction if not given.
 
@@ -145,8 +139,7 @@ class InitialValueProblem {
   @throws std::logic_error if preconditions are not met. */
   VectorX<T> Solve(const T& tf, const OdeContext& values = {}) const;
 
-  /**
-  Solves and yields an approximation of the IVP solution x(t; 𝐤) for
+  /** Solves and yields an approximation of the IVP solution x(t; 𝐤) for
   the closed time interval between the initial time t₀ and the given final
   time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 present in
   @p values (falling back to the ones given on construction if not given).
@@ -176,8 +169,7 @@ class InitialValueProblem {
   std::unique_ptr<DenseOutput<T>> DenseSolve(
       const T& tf, const OdeContext& values = {}) const;
 
-  /**
-  Resets the internal integrator instance by in-place
+  /** Resets the internal integrator instance by in-place
   construction of the given integrator type.
 
   A usage example is shown below.

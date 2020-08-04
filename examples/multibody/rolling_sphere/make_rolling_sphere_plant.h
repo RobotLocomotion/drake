@@ -10,8 +10,7 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
-/**
-This method makes a MultibodyPlant model of a ball falling into a plane.
+/** This method makes a MultibodyPlant model of a ball falling into a plane.
 MultibodyPlant models the contact of the ball with the ground as a perfectly
 inelastic collision (zero coefficient of restitution), i.e. energy is lost
 due to the collision.

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Provides the values portion of Python bindings for the systems framework. */
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"

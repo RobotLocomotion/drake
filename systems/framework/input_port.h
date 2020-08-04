@@ -25,8 +25,7 @@ namespace systems {
 template <typename T>
 class System;
 
-/**
-An InputPort is a System resource that describes the kind of input a
+/** An InputPort is a System resource that describes the kind of input a
 System accepts, on a given port. It does not directly contain any runtime
 input port data; that is always contained in a Context. The actual value will
 be either the value of an OutputPort to which this is connected, or a fixed
@@ -38,8 +37,7 @@ class InputPort final : public InputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPort)
 
-  /**
-  Returns a reference to the up-to-date value of this input port contained
+  /** Returns a reference to the up-to-date value of this input port contained
   in the given Context. This is the preferred way to obtain an input port's
   value since it will not be recalculated once up to date.
 
@@ -97,8 +95,7 @@ class InputPort final : public InputPortBase {
   }
 #endif  // DRAKE_DOXYGEN_CXX
 
-  /**
-  Provides a fixed value for this %InputPort in the given Context. If the
+  /** Provides a fixed value for this %InputPort in the given Context. If the
   port is already connected, this value will override the connected source
   value. (By "connected" we mean that the port appeared in a
   DiagramBuilder::Connect() call.)
@@ -149,8 +146,7 @@ class InputPort final : public InputPortBase {
     return context->FixInputPort(get_index(), std::move(abstract_value));
   }
 
-  /**
-  Returns true iff this port is connected or has had a fixed value provided
+  /** Returns true iff this port is connected or has had a fixed value provided
   in the given Context.  Beware that at the moment, this could be an expensive
   operation, because the value is brought up-to-date as part of this
   operation. */
@@ -159,8 +155,7 @@ class InputPort final : public InputPortBase {
     return DoEvalOptional(context);
   }
 
-  /**
-  Returns a reference to the System that owns this input port. Note that
+  /** Returns a reference to the System that owns this input port. Note that
   for a Diagram input port this will be the Diagram, not the LeafSystem whose
   input port was exported. */
   const System<T>& get_system() const { return system_; }

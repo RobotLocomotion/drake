@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A second-order, explicit Runge Kutta integrator.
+/** A second-order, explicit Runge Kutta integrator.
 @tparam_default_scalar
 @ingroup integrators */
 template <class T>
@@ -20,8 +19,7 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
 
   ~RungeKutta2Integrator() override = default;
 
-  /**
-  Constructs fixed-step integrator for a given system using the given
+  /** Constructs fixed-step integrator for a given system using the given
   context for initial conditions.
   @param system A reference to the system to be simulated
   @param max_step_size The maximum (fixed) step size; the integrator will
@@ -50,8 +48,7 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
   std::unique_ptr<ContinuousState<T>> derivs0_;
 };
 
-/**
-Integrates the system forward in time from the current time t₀ to
+/** Integrates the system forward in time from the current time t₀ to
 t₁ = t₀ + h. The value of h is determined by IntegratorBase::Step().
 
 The Butcher tableau for this integrator follows: <pre>

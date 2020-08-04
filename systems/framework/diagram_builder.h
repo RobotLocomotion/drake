@@ -22,8 +22,7 @@
 namespace drake {
 namespace systems {
 
-/**
-DiagramBuilder is a factory class for Diagram. It is single
+/** DiagramBuilder is a factory class for Diagram. It is single
 use: after calling Build or BuildInto, DiagramBuilder gives up ownership
 of the constituent systems, and should therefore be discarded.
 
@@ -41,8 +40,7 @@ class DiagramBuilder {
   // TODO(sherm1) The AddSystem methods (or some variant) should take the system
   // name as their first parameter. See discussion in issue #5895.
 
-  /**
-  Takes ownership of @p system and adds it to the builder. Returns a bare
+  /** Takes ownership of @p system and adds it to the builder. Returns a bare
   pointer to the System, which will remain valid for the lifetime of the
   Diagram built by this builder.
 
@@ -66,8 +64,7 @@ class DiagramBuilder {
     return raw_sys_ptr;
   }
 
-  /**
-  Constructs a new system with the given @p args, and adds it to the
+  /** Constructs a new system with the given @p args, and adds it to the
   builder, which retains ownership. Returns a bare pointer to the System,
   which will remain valid for the lifetime of the Diagram built by this
   builder.
@@ -96,8 +93,7 @@ class DiagramBuilder {
     return AddSystem(std::make_unique<S>(std::forward<Args>(args)...));
   }
 
-  /**
-  Constructs a new system with the given @p args, and adds it to the
+  /** Constructs a new system with the given @p args, and adds it to the
   builder, which retains ownership. Returns a bare pointer to the System,
   which will remain valid for the lifetime of the Diagram built by this
   builder.
@@ -140,8 +136,7 @@ class DiagramBuilder {
     return result;
   }
 
-  /**
-  Declares that input port @p dest is connected to output port @p src.
+  /** Declares that input port @p dest is connected to output port @p src.
   @note The connection created between @p src and @p dest via a call to
   this method can be effectively overridden by any subsequent call to
   Context::FixInputPort(). That is, calling Context::FixInputPort() on an
@@ -191,8 +186,7 @@ class DiagramBuilder {
     connection_map_[dest_id] = src_id;
   }
 
-  /**
-  Declares that sole input port on the @p dest system is connected to sole
+  /** Declares that sole input port on the @p dest system is connected to sole
   output port on the @p src system.
   @note The connection created between @p src and @p dest via a call to
   this method can be effectively overridden by any subsequent call to
@@ -211,8 +205,7 @@ class DiagramBuilder {
     Connect(src.get_output_port(0), dest.get_input_port(0));
   }
 
-  /**
-  Cascades @p src and @p dest.  The sole input port on the @p dest system
+  /** Cascades @p src and @p dest.  The sole input port on the @p dest system
   is connected to sole output port on the @p src system.
   @throws std::exception if the sole-port precondition is not met (i.e., if
   @p dest has no input ports, or @p dest has more than one input port, or
@@ -221,8 +214,7 @@ class DiagramBuilder {
     Connect(src, dest);
   }
 
-  /**
-  Declares that the given @p input port of a constituent system is an input
+  /** Declares that the given @p input port of a constituent system is an input
   to the entire Diagram.  @p name is an optional name for the input port;
   if it is unspecified, then a default name will be provided.
   @pre If supplied at all, @p name must not be empty.
@@ -249,8 +241,7 @@ class DiagramBuilder {
     return return_id;
   }
 
-  /**
-  Declares that the given @p output port of a constituent system is an
+  /** Declares that the given @p output port of a constituent system is an
   output of the entire diagram.  @p name is an optional name for the output
   port; if it is unspecified, then a default name will be provided.
   @pre If supplied at all, @p name must not be empty.
@@ -275,8 +266,7 @@ class DiagramBuilder {
     return return_id;
   }
 
-  /**
-  Builds the Diagram that has been described by the calls to Connect,
+  /** Builds the Diagram that has been described by the calls to Connect,
   ExportInput, and ExportOutput.
   @throws std::logic_error if the graph is not buildable. */
   std::unique_ptr<Diagram<T>> Build() {
@@ -284,8 +274,7 @@ class DiagramBuilder {
     return diagram;
   }
 
-  /**
-  Configures @p target to have the topology that has been described by
+  /** Configures @p target to have the topology that has been described by
   the calls to Connect, ExportInput, and ExportOutput.
   @throws std::logic_error if the graph is not buildable.
 

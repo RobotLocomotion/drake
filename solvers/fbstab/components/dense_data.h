@@ -8,8 +8,7 @@ namespace drake {
 namespace solvers {
 namespace fbstab {
 
-/**
-Represents data for quadratic programming problems of the following type (1):
+/** Represents data for quadratic programming problems of the following type (1):
 
 min.    1/2  z'Hz + f'z
 s.t.         Az <= b
@@ -18,8 +17,7 @@ where H is symmetric and positive semidefinite. */
 class DenseData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseData)
-  /**
-  Stores the problem data and performs input validation.
+  /** Stores the problem data and performs input validation.
   This class assumes that the pointers to the data remain valid.
 
   @param[in] H Hessian matrix

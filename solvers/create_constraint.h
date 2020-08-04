@@ -21,8 +21,7 @@ namespace internal {
 // TODO(eric.cousineau): Use Eigen::Ref more pervasively when no temporaries
 // are allocated (or if it doesn't matter if they are).
 
-/**
-The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
+/** The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
 LinearEqualityConstraint, or ExpressionConstraint, depending on the
 arguments.  Constraints of the form x == 1 (which could be created as a
 BoundingBoxConstraint or LinearEqualityConstraint) will be
@@ -41,8 +40,7 @@ inline Binding<Constraint> ParseConstraint(
                          Vector1<double>(ub));
 }
 
-/**
-Parses the constraint lb <= e <= ub to linear constraint types, including
+/** Parses the constraint lb <= e <= ub to linear constraint types, including
 BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
 e is not a linear expression, then return a null pointer.
 If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
@@ -218,8 +216,7 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
   }
 }
 
-/**
-Assists MathematicalProgram::AddConstraint(...) to create a quadratic
+/** Assists MathematicalProgram::AddConstraint(...) to create a quadratic
 constraint binding. */
 Binding<QuadraticConstraint> ParseQuadraticConstraint(
     const symbolic::Expression& e, double lower_bound, double upper_bound);

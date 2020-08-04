@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 A collection of data types and functions to help manage defining properties
 for geometries with the proximity role. These functions facilitate properties
 that are _explicitly_ known in Drake's core functionality. These functions in
@@ -88,8 +87,7 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
 
 }  // namespace internal
 
-/**
-@anchor contact_material_utility_functions
+/** @anchor contact_material_utility_functions
 @name         Contact Material Utility Functions
 AddContactMaterial() adds contact material properties to the given set of
 proximity `properties`. Only the parameters that carry values will be added
@@ -110,10 +108,9 @@ These functions will throw an error if:
 - Any of the contact material properties have already been defined in
   `properties`. */
 /** @{ */
-/**
-@throws std::logic_error if any parameter doesn't satisfy the requirements
-                         listed in @ref contact_material_utility_functions
-                         "Contact Material Utility Functions". */
+/** @throws std::logic_error if any parameter doesn't satisfy the requirements
+listed in @ref contact_material_utility_functions
+"Contact Material Utility Functions". */
 void AddContactMaterial(
     const std::optional<double>& elastic_modulus,
     const std::optional<double>& dissipation,
@@ -121,8 +118,7 @@ void AddContactMaterial(
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties);
 
-/**
-@warning Please use the overload of AddContactMaterial() that includes the
+/** @warning Please use the overload of AddContactMaterial() that includes the
 argument for `point_stiffness` rather than this one. */
 void AddContactMaterial(
     const std::optional<double>& elastic_modulus,
@@ -131,8 +127,7 @@ void AddContactMaterial(
     ProximityProperties* properties);
 /** @} */
 
-/**
-Adds properties to the given set of proximity properties sufficient to cause
+/** Adds properties to the given set of proximity properties sufficient to cause
 the associated geometry to generate a rigid hydroelastic representation.
 
 @param resolution_hint       If the geometry is to be tessellated, it is the
@@ -147,16 +142,14 @@ the associated geometry to generate a rigid hydroelastic representation.
 void AddRigidHydroelasticProperties(double resolution_hint,
                                     ProximityProperties* properties);
 
-/**
-Overload, intended for shapes that don't get tessellated in their
+/** Overload, intended for shapes that don't get tessellated in their
 hydroelastic representation (e.g., HalfSpace and Mesh).
 See @ref MODULE_NOT_WRITTEN_YET. */
 void AddRigidHydroelasticProperties(ProximityProperties* properties);
 
 // TODO(SeanCurtis-TRI): Add module that explains resolution hint and reference
 //  it in the documentation below.
-/**
-Adds properties to the given set of proximity properties sufficient to cause
+/** Adds properties to the given set of proximity properties sufficient to cause
 the associated geometry to generate a soft hydroelastic representation. The
 geometry's pressure field will be the function p(e) = Ee, where E is the
 elastic modulus stored in the given `properties`.
@@ -173,14 +166,12 @@ elastic modulus stored in the given `properties`.
 void AddSoftHydroelasticProperties(double resolution_hint,
                                    ProximityProperties* properties);
 
-/**
-Overload, intended for shapes that don't get tessellated in their
+/** Overload, intended for shapes that don't get tessellated in their
 hydroelastic representation (e.g., HalfSpace).
 See @ref MODULE_NOT_WRITTEN_YET. */
 void AddSoftHydroelasticProperties(ProximityProperties* properties);
 
-/**
-Soft half spaces are handled as a special case; they do not get tessellated.
+/** Soft half spaces are handled as a special case; they do not get tessellated.
 Instead, they are treated as infinite slabs with a finite thickness. This
 variant is required for hydroelastic half spaces.
 

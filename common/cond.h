@@ -6,8 +6,7 @@
 #include "drake/common/double_overloads.h"
 
 namespace drake {
-/**
-@name cond
+/** @name cond
 Constructs conditional expression (similar to Lisp's cond).
 
 @verbatim

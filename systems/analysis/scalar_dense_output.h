@@ -7,8 +7,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A DenseOutput class interface extension to deal with scalar ODE
+/** A DenseOutput class interface extension to deal with scalar ODE
 solutions. A ScalarDenseOutput instance is also a DenseOutput
 instance with single element vector values (i.e. size() == 1).
 As such, its value can evaluated in both scalar and vectorial
@@ -22,8 +21,7 @@ class ScalarDenseOutput : public DenseOutput<T> {
 
   virtual ~ScalarDenseOutput() = default;
 
-  /**
-  Evaluates output at the given time @p t.
+  /** Evaluates output at the given time @p t.
   @param t Time at which to evaluate output.
   @returns Output scalar value.
   @pre Output is not empty i.e. is_empty() is false.

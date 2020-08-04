@@ -20,8 +20,7 @@ std::vector<uint8_t> EncodeLcmMessage(const Message& message) {
   return bytes;
 }
 
-/**
-Decodes an LCM message from a series of bytes.
+/** Decodes an LCM message from a series of bytes.
 @throws std::runtime_error if decoding fails. */
 template <typename Message>
 Message DecodeLcmMessage(const std::vector<uint8_t>& bytes) {

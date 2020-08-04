@@ -5,8 +5,7 @@
 
 namespace drake {
 
-/**
-A basic implementation of the Name-Value Pair concept as used in the
+/** A basic implementation of the Name-Value Pair concept as used in the
 Serialize / Archive pattern.  See, for example:
 https://www.boost.org/doc/libs/release/libs/serialization/doc/wrappers.html#nvp
 
@@ -22,8 +21,7 @@ class NameValue {
   /** Type of the referenced value. */
   typedef T value_type;
 
-  /**
-  (Advanced.)  Constructs a %NameValue.  Prefer DRAKE_NVP instead of this
+  /** (Advanced.)  Constructs a %NameValue.  Prefer DRAKE_NVP instead of this
   constructor.  Both pointers are aliased and must remain valid for the
   lifetime of this object.  Neither pointer can be nullptr. */
   NameValue(const char* name_in, T* value_in)
@@ -32,8 +30,7 @@ class NameValue {
     DRAKE_ASSERT(value_in != nullptr);
   }
 
-  /**
-  @name Accessors to the raw pointers
+  /** @name Accessors to the raw pointers
   @{ */
   const char* name() const { return name_; }
   T* value() const { return value_; }
@@ -44,8 +41,7 @@ class NameValue {
   T* const value_;
 };
 
-/**
-(Advanced.)  Creates a NameValue. The conventional method for calling this
+/** (Advanced.)  Creates a NameValue. The conventional method for calling this
 function is the DRAKE_NVP sugar macro below.
 
 Both pointers are aliased for the lifetime of the return value. */

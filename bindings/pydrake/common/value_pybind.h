@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Helpers for defining instantiations of drake::Value<>. */
 
 #include <string>
@@ -18,8 +17,7 @@ Helpers for defining instantiations of drake::Value<>. */
 namespace drake {
 namespace pydrake {
 
-/**
-Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
+/** Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
 meant to bind `Value<T>` (or specializations thereof).
 @prereq `T` must have already been exposed to `pybind11`.
 @param scope Parent scope.

@@ -12,8 +12,7 @@
 
 namespace drake {
 namespace math {
-/**
-Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i, j),
+/** Determines if a matrix is symmetric. If std::equal_to<>()(matrix(i, j),
 matrix(j, i)) is true for all i, j, then the matrix is symmetric. */
 template <typename Derived>
 bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
@@ -31,8 +30,7 @@ bool IsSymmetric(const Eigen::MatrixBase<Derived>& matrix) {
   return true;
 }
 
-/**
-Determines if a matrix is symmetric based on whether the difference between
+/** Determines if a matrix is symmetric based on whether the difference between
 matrix(i, j) and matrix(j, i) is smaller than @p precision for all i, j.
 The precision is absolute.
 Matrix with nan or inf entries is not allowed. */
@@ -85,8 +83,7 @@ void to_symmetric_matrix_from_lower_triangular_columns_impl(
 }
 }  // namespace internal
 
-/**
-Given a column vector containing the stacked columns of the lower triangular
+/** Given a column vector containing the stacked columns of the lower triangular
 part of a square matrix, returning a symmetric matrix whose lower
 triangular part is the same as the original matrix. */
 template <typename Derived>
@@ -105,8 +102,7 @@ ToSymmetricMatrixFromLowerTriangularColumns(
   return symmetric_matrix;
 }
 
-/**
-Given a column vector containing the stacked columns of the lower triangular
+/** Given a column vector containing the stacked columns of the lower triangular
 part of a square matrix, returning a symmetric matrix whose lower
 triangular part is the same as the original matrix.
 @tparam rows The number of rows in the symmetric matrix. */
@@ -124,8 +120,7 @@ ToSymmetricMatrixFromLowerTriangularColumns(
   return symmetric_matrix;
 }
 
-/**
-Checks if a matrix is symmetric (with tolerance @p symmetry_tolerance --
+/** Checks if a matrix is symmetric (with tolerance @p symmetry_tolerance --
 @see IsSymmetric) and has all eigenvalues greater than @p
 eigenvalue_tolerance.  @p eigenvalue_tolerance must be >= 0 -- where 0
 implies positive semi-definite (but is of course subject to all of the

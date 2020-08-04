@@ -15,8 +15,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This mobilizer models a gimbal joint between an inboard frame F and an
+/** This mobilizer models a gimbal joint between an inboard frame F and an
 outboard frame M that allows frame M to rotate freely with respect to F (
 though a gimbal joint provides arbitrary orientation like a ball joint but
 with some restrictions, discussed below). No translational motion of M in F
@@ -66,8 +65,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpaceXYZMobilizer)
 
-  /**
-  Constructor for a %SpaceXYZMobilizer between an inboard frame F
+  /** Constructor for a %SpaceXYZMobilizer between an inboard frame F
   `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
   three rotational degree of freedom corresponding to angles θ₁, θ₂, θ₃ as
   described in this class's documentation. */
@@ -77,8 +75,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   bool has_quaternion_dofs() const override { return false; }
 
-  /**
-  Retrieves from `context` the three space x-y-z angles θ₁, θ₂, θ₃ which
+  /** Retrieves from `context` the three space x-y-z angles θ₁, θ₂, θ₃ which
   describe the state for `this` mobilizer as documented in this class's
   documentation.
 
@@ -91,8 +88,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
     `angles(2) = θ₃`. */
   Vector3<T> get_angles(const systems::Context<T>& context) const;
 
-  /**
-  Sets in `context` the state for `this` mobilizer to have the space x-y-z
+  /** Sets in `context` the state for `this` mobilizer to have the space x-y-z
   angles θ₁, θ₂, θ₃, provided in the input argument `angles`, which stores
   the with the format `angles = [θ₁, θ₂, θ₃]`.
 
@@ -107,8 +103,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       systems::Context<T>* context,
       const Vector3<T>& angles) const;
 
-  /**
-  Sets `context` so this mobilizer's generalized coordinates (space x-y-z
+  /** Sets `context` so this mobilizer's generalized coordinates (space x-y-z
   angles θ₁, θ₂, θ₃) are consistent with the given `R_FM` rotation matrix.
   @param[in] context
     The context of the MultibodyTree that this mobilizer belongs to.
@@ -122,8 +117,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   const SpaceXYZMobilizer<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const;
 
-  /**
-  Retrieves from `context` the angular velocity `w_FM` of the outboard frame
+  /** Retrieves from `context` the angular velocity `w_FM` of the outboard frame
   M in the inboard frame F, expressed in F.
 
   @param[in] context
@@ -137,8 +131,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   frame F. That is, this method returns `W_FM_F`. */
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  /**
-  Sets in `context` the state for `this` mobilizer so that the angular
+  /** Sets in `context` the state for `this` mobilizer so that the angular
   velocity of the outboard frame M in the inboard frame F is `w_FM`.
   @param[out] context
     The context of the MultibodyTree this mobilizer belongs to.
@@ -149,8 +142,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   const SpaceXYZMobilizer<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
-  /**
-  Stores in `state` the angular velocity `w_FM` of the outboard frame
+  /** Stores in `state` the angular velocity `w_FM` of the outboard frame
   M in the inboard frame F corresponding to `this` mobilizer.
 
   @param[in] context
@@ -166,15 +158,13 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
-  /**
-  Computes the across-mobilizer transform `X_FM(q)` between the inboard
+  /** Computes the across-mobilizer transform `X_FM(q)` between the inboard
   frame F and the outboard frame M as a function of the space x-y-z angles
   θ₁, θ₂, θ₃ stored in `context`. */
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
-  /**
-  Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
+  /** Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   M measured and expressed in frame F as a function of the space x-y-z
   angles θ₁, θ₂, θ₃ stored in `context` and of the input generalized
   velocity v which contains the components of the angular velocity `w_FM`
@@ -183,8 +173,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
-  /**
-  Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
+  /** Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   outboard frame M in the inboard frame F.
   The acceleration `A_FM` will be a function of the generalized positions q
   (space x-y-z angles) stored in `context`, of the generalized velocities
@@ -202,8 +191,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
-  /**
-  Maps the generalized velocity v, which corresponds to the angular velocity
+  /** Maps the generalized velocity v, which corresponds to the angular velocity
   `w_FM`, to time derivatives of space x-y-z angles θ₁, θ₂, θ₃ in `qdot`.
 
   @param[in] context
@@ -226,8 +214,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
 
-  /**
-  Maps time derivatives of the space x-y-z angles θ₁, θ₂, θ₃ in `qdot` to
+  /** Maps time derivatives of the space x-y-z angles θ₁, θ₂, θ₃ in `qdot` to
   the generalized velocity v, which corresponds to the angular velocity
   `w_FM`.
 

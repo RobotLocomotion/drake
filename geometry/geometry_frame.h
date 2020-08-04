@@ -11,8 +11,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-This simple class carries the definition of a frame used in the
+/** This simple class carries the definition of a frame used in the
 SceneGraph. To register moving frames with SceneGraph (see
 SceneGraph::RegisterFrame()), a geometry source (see
 SceneGraph::RegisterSource()) instantiates a frame and passes ownership
@@ -32,8 +31,7 @@ class GeometryFrame {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryFrame)
 
-  /**
-  Constructor.
+  /** Constructor.
   @param frame_name        The name of the frame.
   @param frame_group_id    The optional frame group identifier. If unspecified,
                            defaults to the common, 0 group. Must be
@@ -45,8 +43,7 @@ class GeometryFrame {
     ThrowIfInvalid();
   }
 
-  /**
-  Returns the globally unique id for this geometry specification. Every
+  /** Returns the globally unique id for this geometry specification. Every
   instantiation of %FrameInstance will contain a unique id value. The id
   value is preserved across copies. After successfully registering this
   %FrameInstance, this id will serve as the identifier for the registered

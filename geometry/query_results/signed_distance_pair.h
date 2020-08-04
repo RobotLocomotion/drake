@@ -9,8 +9,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-The data for reporting the signed distance between two geometries, A and B.
+/** The data for reporting the signed distance between two geometries, A and B.
 It provides the id's of the two geometries, the witness points Ca and Cb on
 the surfaces of A and B, the signed distance, and nhat_BA_W a direction of
 fastest increasing distance (always unit length and always point outward
@@ -34,8 +33,7 @@ struct SignedDistancePair{
 
   SignedDistancePair() {}
 
-  /**
-  Constructor
+  /** Constructor
   @param a             The id of the first geometry (A).
   @param b             The id of the second geometry (B).
   @param p_ACa_in      The witness point on geometry A's surface, in A's frame.
@@ -67,8 +65,7 @@ struct SignedDistancePair{
   //  need it.  The downside is that Python binder calls the doc for the
   //  above constructor ctor.doc_7args and this one ctor.doc_5args (see
   //  bindings/pydrake/geometry_py.cc).
-  /**
-  Constructor.
+  /** Constructor.
   We keep this constructor temporarily for backward compatibility.
   @param a         The id of the first geometry (A).
   @param b         The id of the second geometry (B).

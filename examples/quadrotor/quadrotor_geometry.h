@@ -8,8 +8,7 @@ namespace drake {
 namespace examples {
 namespace quadrotor {
 
-/**
-Expresses a QuadrotorPlant's geometry to a SceneGraph.
+/** Expresses a QuadrotorPlant's geometry to a SceneGraph.
 
 @system
 name: QuadrotorGeometry
@@ -26,8 +25,7 @@ class QuadrotorGeometry final : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadrotorGeometry);
   ~QuadrotorGeometry() final;
 
-  /**
-  Creates, adds, and connects a QuadrotorGeometry system into the given
+  /** Creates, adds, and connects a QuadrotorGeometry system into the given
   `builder`.  Both the `quadrotor_state.get_system()` and `scene_graph`
   systems must have been added to the given `builder` already.
 

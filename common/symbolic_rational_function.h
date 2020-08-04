@@ -11,8 +11,7 @@
 
 namespace drake {
 namespace symbolic {
-/**
-Represents symbolic rational function. A function f(x) is a rational
+/** Represents symbolic rational function. A function f(x) is a rational
 function, if f(x) = p(x) / q(x), where both p(x) and q(x) are polynomials of
 x. Note that rational functions are closed under (+, -, x, /). One
 application of rational function is in polynomial optimization, where we
@@ -33,8 +32,7 @@ class RationalFunction {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RationalFunction)
 
-  /**
-  Constructs the rational function: numerator / denominator.
+  /** Constructs the rational function: numerator / denominator.
   @param numerator The numerator of the fraction.
   @param denominator The denominator of the fraction.
   @pre denominator cannot be structurally equal to 0.
@@ -44,14 +42,12 @@ class RationalFunction {
   @throws std::logic_error if the precondition is not satisfied. */
   RationalFunction(const Polynomial& numerator, const Polynomial& denominator);
 
-  /**
-  Constructs the rational function: p / 1. Note that we use 1 as the
+  /** Constructs the rational function: p / 1. Note that we use 1 as the
   denominator.
   @param p The numerator of the rational function. */
   explicit RationalFunction(const Polynomial& p);
 
-  /**
-  Constructs the rational function: c / 1. Note that we use 1 as the
+  /** Constructs the rational function: c / 1. Note that we use 1 as the
   denominator.
   @param c The numerator of the rational function. */
   explicit RationalFunction(double c);
@@ -83,14 +79,12 @@ class RationalFunction {
   /** Returns true if this rational function and f are structurally equal. */
   bool EqualTo(const RationalFunction& f) const;
 
-  /**
-  Returns a symbolic formula representing the condition where this rational
+  /** Returns a symbolic formula representing the condition where this rational
   function and @p f are the same.
   If f1 = p1 / q1, f2 = p2 / q2, then f1 == f2 <=> p1 * q2 == p2 * q1 */
   Formula operator==(const RationalFunction& f) const;
 
-  /**
-  Returns a symbolic formula representing the condition where this rational
+  /** Returns a symbolic formula representing the condition where this rational
   function and @p f are not the same. */
   Formula operator!=(const RationalFunction& f) const;
 
@@ -104,8 +98,7 @@ class RationalFunction {
   Polynomial denominator_;
 };
 
-/**
-Unary minus operation for rational function.
+/** Unary minus operation for rational function.
 if f(x) = p(x) / q(x), then -f(x) = (-p(x)) / q(x) */
 RationalFunction operator-(RationalFunction f);
 
@@ -133,14 +126,12 @@ RationalFunction operator/(const Polynomial& p, const RationalFunction& f);
 RationalFunction operator/(RationalFunction f, double c);
 RationalFunction operator/(double c, const RationalFunction& f);
 
-/**
-Returns the rational function @p f raised to @p n.
+/** Returns the rational function @p f raised to @p n.
 If n is positive, (f/g)ⁿ = fⁿ / gⁿ;
 If n is negative, (f/g)ⁿ = g⁻ⁿ / f⁻ⁿ;
 (f/g)⁰ = 1 / 1. */
 RationalFunction pow(const RationalFunction& f, int n);
-/**
-Provides the following operations:
+/** Provides the following operations:
 
  - Matrix<RF>         * Matrix<Polynomial> => Matrix<RF>
  - Matrix<RF>         * Matrix<double>     => Matrix<RF>

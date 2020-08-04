@@ -8,8 +8,7 @@
 namespace drake {
 namespace systems {
 
-/**
-An adder for arbitrarily many inputs of equal size.
+/** An adder for arbitrarily many inputs of equal size.
 
 @system
 name: Adder
@@ -28,8 +27,7 @@ class Adder final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Adder)
 
-  /**
-  Construct an %Adder System.
+  /** Construct an %Adder System.
   @param num_inputs is the number of input ports to be added.
   @param size number of elements in each input and output signal. */
   Adder(int num_inputs, int size);

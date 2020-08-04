@@ -12,8 +12,7 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-/**
-Handles lcmt_iiwa_status messages from a LcmSubscriberSystem.
+/** Handles lcmt_iiwa_status messages from a LcmSubscriberSystem.
 
 Note that this system does not actually subscribe to an LCM channel. To
 receive the message, the input of this system should be connected to a
@@ -25,8 +24,7 @@ This system has many vector-valued output ports, each of which has exactly
 num_joints elements.  The ports will output zeros until an input message is
 received. */
 //
-/**
-@system
+/** @system
 name: IiwaStatusReceiver
 input_ports:
 - lcmt_iiwa_status
@@ -46,8 +44,7 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
 
-  /**
-  @name Named accessors for this System's input and output ports.
+  /** @name Named accessors for this System's input and output ports.
   @{ */
   const systems::InputPort<double>& get_input_port() const;
   const systems::OutputPort<double>& get_position_commanded_output_port() const;

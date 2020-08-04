@@ -10,16 +10,14 @@
 namespace drake {
 namespace systems {
 
-/**
-@addtogroup simulation
+/** @addtogroup simulation
 @{
 @defgroup simulator_configuration Simulator configuration
 
 Configuration helpers to control Simulator and IntegratorBase settings.
 @} */
 
-/**
-Resets the integrator used to advanced the continuous time dynamics of the
+/** Resets the integrator used to advanced the continuous time dynamics of the
 system associated with `simulator` according to the given arguments.
 
 @param[in,out] simulator On input, a valid pointer to a Simulator. On output
@@ -37,8 +35,7 @@ IntegratorBase<T>& ResetIntegratorFromFlags(
     const std::string& scheme,
     const T& max_step_size);
 
-/**
-Returns the allowed string values for the `scheme` parameter in
+/** Returns the allowed string values for the `scheme` parameter in
 ResetIntegratorFromFlags().
 
 @ingroup simulator_configuration */

@@ -16,19 +16,16 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-Consolidates the many possible options to be passed to the dynamic
+/** Consolidates the many possible options to be passed to the dynamic
 programming algorithms. */
 struct DynamicProgrammingOptions {
   DynamicProgrammingOptions() = default;
 
-  /**
-  A value between (0,1] that discounts future rewards.
+  /** A value between (0,1] that discounts future rewards.
   @see FittedValueIteration. */
   double discount_factor{1.};
 
-  /**
-  For algorithms that rely on approximations of the state-dynamics
+  /** For algorithms that rely on approximations of the state-dynamics
   (as in FittedValueIteration), this is a list of state dimensions for
   which the state space maximum value should be "wrapped around" to
   ensure that all values are in the range [low, high).  The classic example
@@ -41,14 +38,12 @@ struct DynamicProgrammingOptions {
   };
   std::list<struct PeriodicBoundaryCondition> periodic_boundary_conditions;
 
-  /**
-  Value iteration methods converge when the value function stops
+  /** Value iteration methods converge when the value function stops
   changing (typically evaluated with the l∞ norm).  This value sets that
   threshold. */
   double convergence_tol = 1e-4;
 
-  /**
-  If callable, this method is invoked during each major iteration of the
+  /** If callable, this method is invoked during each major iteration of the
   dynamic programming algorithm, in order to facilitate e.g. graphical
   inspection/debugging of the results.
 
@@ -59,14 +54,12 @@ struct DynamicProgrammingOptions {
       const Eigen::RowVectorXd& cost_to_go, const Eigen::MatrixXd& policy)>
       visualization_callback{nullptr};
 
-  /**
-  For systems with multiple input ports, we must specify which input port is
+  /** For systems with multiple input ports, we must specify which input port is
   being used in the control design.  @see systems::InputPortSelection. */
   std::variant<systems::InputPortSelection, InputPortIndex> input_port_index{
       systems::InputPortSelection::kUseFirstInputIfItExists};
 
-  /**
-  (Advanced) Boolean which, if true, allows this algorithm to optimize
+  /** (Advanced) Boolean which, if true, allows this algorithm to optimize
   without considering the dynamics of any non-continuous states. This is
   helpful for optimizing systems that might have some additional
   book-keeping variables in their state. Only use this if you are sure that
@@ -75,8 +68,7 @@ struct DynamicProgrammingOptions {
   bool assume_non_continuous_states_are_fixed{false};
 };
 
-/**
-Implements Fitted Value Iteration on a (triangulated) Barycentric Mesh,
+/** Implements Fitted Value Iteration on a (triangulated) Barycentric Mesh,
 which designs a state-feedback policy to minimize the infinite-horizon cost
  ∑ γⁿ g(x[n],u[n]), where γ is the discount factor in @p options.
 
@@ -128,8 +120,7 @@ FittedValueIteration(
 // function approximation tools become available.
 
 
-/**
-Implements the Linear Programming approach to approximate dynamic
+/** Implements the Linear Programming approach to approximate dynamic
 programming.  It optimizes the linear program
 
   maximize ∑ Jₚ(x).

@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 
 Constants defined in this file are for the Schunk WSG gripper modeled in
 models/schunk_wsg_50.sdf. */
@@ -32,8 +31,7 @@ constexpr int kSchunkWsgVelocityIndex =
 // TODO(sammy): need to double check this.
 constexpr double kSchunkWsgLcmStatusPeriod = 0.05;
 
-/**
-Returns the position vector corresponding to the open position of the
+/** Returns the position vector corresponding to the open position of the
 gripper. */
 template <typename T>
 VectorX<T> GetSchunkWsgOpenPosition() {
@@ -44,8 +42,7 @@ VectorX<T> GetSchunkWsgOpenPosition() {
   // clang-format on
 }
 
-/**
-Extract the distance between the fingers (and its time derivative) out
+/** Extract the distance between the fingers (and its time derivative) out
 of the plant model which pretends the two fingers are independent. */
 template <typename T>
 std::unique_ptr<systems::MatrixGain<T>>
@@ -83,8 +80,7 @@ class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
   }
 };
 
-/**
-Extract the gripper measured force from the generalized forces on the two
+/** Extract the gripper measured force from the generalized forces on the two
 fingers. */
 template <typename T>
 std::unique_ptr<systems::VectorSystem<T>>

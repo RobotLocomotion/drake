@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A pass through system with input `u` and output `y = u`. This is
+/** A pass through system with input `u` and output `y = u`. This is
 mathematically equivalent to a Gain system with its gain equal to one.
 However this system incurs no computational cost.
 The input to this system directly feeds through to its output.
@@ -32,20 +31,17 @@ class PassThrough final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PassThrough)
 
-  /**
-  Constructs a pass through system (`y = u`).
+  /** Constructs a pass through system (`y = u`).
   @param vector_size number of elements in the signal to be processed. */
   explicit PassThrough(int vector_size)
       : PassThrough(vector_size, nullptr) {}
 
-  /**
-  Constructs a pass through system (`y = u`).
+  /** Constructs a pass through system (`y = u`).
   @param abstract_model_value A model abstract value. */
   explicit PassThrough(const AbstractValue& abstract_model_value)
       : PassThrough(-1, abstract_model_value.Clone()) {}
 
-  /**
-  Scalar-type converting copy constructor.
+  /** Scalar-type converting copy constructor.
   See @ref system_scalar_conversion. */
   template <typename U>
   explicit PassThrough(const PassThrough<U>&);

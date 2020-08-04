@@ -10,8 +10,7 @@ namespace examples {
 namespace multibody {
 namespace cylinder_with_multicontact {
 
-/**
-This method makes a MultibodyPlant model of a cylinder free to fall onto the
+/** This method makes a MultibodyPlant model of a cylinder free to fall onto the
 ground.
 The model adds a fixed number of spheres (10) around each rim of the
 cylinder as a way of emulating multicontact so that we can evaluate

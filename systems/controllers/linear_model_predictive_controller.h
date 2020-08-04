@@ -10,8 +10,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-Implements a basic Model Predictive Controller that linearizes the system
+/** Implements a basic Model Predictive Controller that linearizes the system
 about an equilibrium condition and regulates to the same point by solving an
 optimal control problem over a finite time horizon.  In particular, MPC
 solves, at each time step k, the following problem to find an optimal u(k)
@@ -37,8 +36,7 @@ class LinearModelPredictiveController : public LeafSystem<T> {
 
   // TODO(jadecastro) Implement a version that regulates to an arbitrary
   // trajectory.
-  /**
-  Constructor for an unconstrained MPC formulation with linearization
+  /** Constructor for an unconstrained MPC formulation with linearization
   occurring about the provided base_context.  Since this formulation is
   devoid of any externally-imposed input/state constraints, the controller
   essentially behaves the same as a finite-time LQR.

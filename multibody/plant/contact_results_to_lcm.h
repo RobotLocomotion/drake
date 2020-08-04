@@ -19,8 +19,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-A System that encodes ContactResults into a lcmt_contact_results_for_viz
+/** A System that encodes ContactResults into a lcmt_contact_results_for_viz
 message. It has a single input port with type ContactResults<T> and a single
 output port with lcmt_contact_results_for_viz.
 
@@ -30,8 +29,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultsToLcmSystem)
 
-  /**
-  Constructs a ContactResultsToLcmSystem.
+  /** Constructs a ContactResultsToLcmSystem.
   @param plant The MultibodyPlant that the ContactResults are generated from.
   @pre The `plant` must be finalized already. The input port of this system
        must be connected to the corresponding output port of `plant`
@@ -66,8 +64,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   std::vector<std::string> body_names_;
 };
 
-/**
-Extends a Diagram with the required components to publish contact results
+/** Extends a Diagram with the required components to publish contact results
 to drake_visualizer. This must be called _during_ Diagram building and
 uses the given `builder` to add relevant subsystems and connections.
 
@@ -100,8 +97,7 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& multibody_plant,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
-/**
-Implements ConnectContactResultsToDrakeVisualizer, but using
+/** Implements ConnectContactResultsToDrakeVisualizer, but using
 explicitly specified `contact_results_port` and `geometry_input_port`
 arguments.  This call is required, for instance, when the MultibodyPlant is
 inside a Diagram, and the Diagram exports the pose bundle port.

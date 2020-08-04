@@ -11,8 +11,7 @@
 namespace drake {
 namespace solvers {
 namespace internal {
-/**
-Given an axis-aligned box in the first orthant, computes and returns all the
+/** Given an axis-aligned box in the first orthant, computes and returns all the
 intersecting points between the edges of the box and the unit sphere.
 @param bmin  The vertex of the box closest to the origin.
 @param bmax  The vertex of the box farthest from the origin. */
@@ -32,8 +31,7 @@ std::vector<Eigen::Vector3d> ComputeBoxEdgesAndSphereIntersection(
 void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
     const std::vector<Eigen::Vector3d>& pts, Eigen::Vector3d* n, double* d);
 
-/**
-For the vertices in `pts`, determine if these vertices are co-planar. If they
+/** For the vertices in `pts`, determine if these vertices are co-planar. If they
 are, then compute that plane nᵀ * x = d.
 @param pts The vertices to be checked.
 @param n The unit length normal vector of the plane, points outward from the
@@ -45,8 +43,7 @@ false. */
 bool AreAllVerticesCoPlanar(const std::vector<Eigen::Vector3d>& pts,
                             Eigen::Vector3d* n, double* d);
 
-/**
-For the intersection region between the surface of the unit sphere, and the
+/** For the intersection region between the surface of the unit sphere, and the
 interior of a box aligned with the axes, relax this nonconvex intersection
 region to its convex hull. This convex hull has some planar facets (formed
 by the triangles connecting the vertices of the intersection region). This

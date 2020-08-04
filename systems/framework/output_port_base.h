@@ -8,8 +8,7 @@
 namespace drake {
 namespace systems {
 
-/**
-%OutputPortBase handles the scalar type-independent aspects of an
+/** %OutputPortBase handles the scalar type-independent aspects of an
 OutputPort. An OutputPort belongs to a System and represents the properties of
 one of that System's output ports. */
 class OutputPortBase : public PortBase {
@@ -18,8 +17,7 @@ class OutputPortBase : public PortBase {
 
   ~OutputPortBase() override;
 
-  /**
-  Returns the index of this output port within the owning System. For a
+  /** Returns the index of this output port within the owning System. For a
   Diagram, this will be the index within the Diagram, _not_ the index within
   the LeafSystem whose output port was forwarded. */
   OutputPortIndex get_index() const {
@@ -43,8 +41,7 @@ class OutputPortBase : public PortBase {
 #endif
 
  protected:
-  /**
-  Provides derived classes the ability to set the base class members at
+  /** Provides derived classes the ability to set the base class members at
   construction.
 
   @param owning_system
@@ -66,8 +63,7 @@ class OutputPortBase : public PortBase {
       OutputPortIndex index, DependencyTicket ticket, PortDataType data_type,
       int size);
 
-  /**
-  Concrete output ports must implement this to return the prerequisite
+  /** Concrete output ports must implement this to return the prerequisite
   dependency ticket for this port, which may be in the current System or one
   of its immediate child subsystems. */
   virtual internal::OutputPortPrerequisite DoGetPrerequisite() const = 0;

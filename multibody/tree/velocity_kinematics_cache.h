@@ -15,8 +15,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This class is one of the cache entries in the Context. It holds the
+/** This class is one of the cache entries in the Context. It holds the
 kinematics results of computations that depend not only on the generalized
 positions of the system, but also on its generalized velocities.
 Velocity kinematics results include:
@@ -35,8 +34,7 @@ class VelocityKinematicsCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache)
 
-  /**
-  Constructs a velocity kinematics cache entry for the given
+  /** Constructs a velocity kinematics cache entry for the given
   MultibodyTreeTopology.
   In Release builds specific entries are left uninitialized resulting in a
   zero cost operation. However in Debug builds those entries are set to NaN
@@ -52,8 +50,7 @@ class VelocityKinematicsCache {
     V_PB_W_pool_[world_index()].SetNaN();  // It must never be used.
   }
 
-  /**
-  Initializes `this` %VelocityKinematicsCache as if all generalized
+  /** Initializes `this` %VelocityKinematicsCache as if all generalized
   velocities of the corresponding MultibodyTree model were zero. */
   void InitializeToZero() {
     for (BodyNodeIndex body_node_index(0); body_node_index < num_nodes_;
@@ -64,8 +61,7 @@ class VelocityKinematicsCache {
     }
   }
 
-  /**
-  Returns a constant reference to the spatial velocity `V_WB` of the body B
+  /** Returns a constant reference to the spatial velocity `V_WB` of the body B
   (associated with node `body_node_index`) as measured and expressed in the
   world frame W.
   @param[in] body_node_index The unique index for the computational
@@ -83,8 +79,7 @@ class VelocityKinematicsCache {
     return V_WB_pool_[body_node_index];
   }
 
-  /**
-  Returns a const reference to the across-mobilizer (associated with node
+  /** Returns a const reference to the across-mobilizer (associated with node
   `body_node_index`) spatial velocity `V_FM` of the outboard frame M in the
   inboard frame F. */
   const SpatialVelocity<T>& get_V_FM(BodyNodeIndex body_node_index) const {
@@ -98,8 +93,7 @@ class VelocityKinematicsCache {
     return V_FM_pool_[body_node_index];
   }
 
-  /**
-  Returns a const reference to the spatial velocity `V_PB_W` of the
+  /** Returns a const reference to the spatial velocity `V_PB_W` of the
   body B associated with node `body_node_index` in the parent node's body
   frame P, expressed in the world frame W. */
   const SpatialVelocity<T>& get_V_PB_W(BodyNodeIndex body_node_index) const {

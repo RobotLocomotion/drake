@@ -21,8 +21,7 @@ namespace fbstab {
 using FBstabAlgoMpc = FBstabAlgorithm<MpcVariable, MpcResidual, MpcData,
                                       RiccatiLinearSolver, MpcFeasibility>;
 
-/**
-FBstabMpc implements the Proximally Stabilized Semismooth Method for
+/** FBstabMpc implements the Proximally Stabilized Semismooth Method for
 solving the following quadratic programming problem (1):
 
     min.  \sum_{i=0}^N 1/2 [x(i)]' * [Q(i) S(i)'] [x(i)] + [q(i)]'*[x(i)]
@@ -61,8 +60,7 @@ and exploit arbitrary initial guesses. */
 class FBstabMpc {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FBstabMpc);
-  /**
-  Structure to hold the problem data.
+  /** Structure to hold the problem data.
   See the class documentation or (29) in https://arxiv.org/pdf/1901.04046.pdf
   for more details. */
   struct QPData {
@@ -92,8 +90,7 @@ class FBstabMpc {
     const Eigen::VectorXd* x0 = nullptr;
   };
 
-  /**
-  Structure to hold the initial guess and solution.
+  /** Structure to hold the initial guess and solution.
   These vectors will be overwritten by the solve routine. */
   struct QPVariable {
     /** decision variables in \reals^nz */
@@ -106,8 +103,7 @@ class FBstabMpc {
     Eigen::VectorXd* y = nullptr;
   };
 
-  /**
-  Allocates workspaces needed when solving (1).
+  /** Allocates workspaces needed when solving (1).
 
   @param[in] N Horizon length
   @param[in] nx number of states
@@ -117,8 +113,7 @@ class FBstabMpc {
   Throws a runtime_error if any inputs are nonpositive. */
   FBstabMpc(int N, int nx, int nu, int nc);
 
-  /**
-  Solves an instance of (1).
+  /** Solves an instance of (1).
 
   @param[in]     qp problem data
   @param[in,out] x  initial guess, overwritten with the solution
@@ -128,16 +123,14 @@ class FBstabMpc {
   SolverOut Solve(const QPData& qp, const QPVariable* x,
                   bool use_initial_guess = true);
 
-  /**
-  Allows for setting of solver options, see fbstab_algorithm.h for a list.
+  /** Allows for setting of solver options, see fbstab_algorithm.h for a list.
   @param option Option name
   @param value  New value */
   void UpdateOption(const char* option, double value);
   void UpdateOption(const char* option, int value);
   void UpdateOption(const char* option, bool value);
 
-  /**
-  Controls the verbosity of the algorithm,
+  /** Controls the verbosity of the algorithm,
   see fbstab_algorithm.h for details.
   @param level new display level */
   void SetDisplayLevel(FBstabAlgoMpc::Display level);

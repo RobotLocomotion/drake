@@ -11,8 +11,7 @@ namespace drake {
 namespace trajectories {
 namespace test {
 
-/**
-Obtains a random PiecewisePolynomial with the given @p segment_times.  Each
+/** Obtains a random PiecewisePolynomial with the given @p segment_times.  Each
 segment will have a matrix of random Polynomials of the specified size. */
 template<typename T = double>
 PiecewisePolynomial<T>

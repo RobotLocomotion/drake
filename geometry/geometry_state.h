@@ -52,8 +52,7 @@ using FrameIdSet = std::unordered_set<FrameId>;
 // TODO(SeanCurtis-TRI): Move GeometryState into `internal` namespace (and then
 //  I can kill the `@note` in the class documentation).
 
-/**
-The context-dependent state of SceneGraph. This serves as an AbstractValue
+/** The context-dependent state of SceneGraph. This serves as an AbstractValue
 in the context. SceneGraph's time-dependent state includes more than just
 values; objects can be added to or removed from the world over time. Therefore,
 SceneGraph's context-dependent state includes values (the poses) and
@@ -67,16 +66,14 @@ class GeometryState {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GeometryState)
 
-  /**
-  An object that represents the range of FrameId values in the state. It
+  /** An object that represents the range of FrameId values in the state. It
   is used in range-based for loops to iterate through registered frames. */
   using FrameIdRange = internal::MapKeyRange<FrameId, internal::InternalFrame>;
 
   /** Default constructor. */
   GeometryState();
 
-  /**
-  Allow assignment from a %GeometryState<double> to a %GeometryState<T>.
+  /** Allow assignment from a %GeometryState<double> to a %GeometryState<T>.
   @internal The SFINAE is required to prevent collision with the default
   defined assignment operator where T is double. */
   template <class T1 = T>
@@ -153,13 +150,11 @@ class GeometryState {
   /** @name              Frames and their properties */
   /** @{ */
 
-  /**
-  Implementation of
+  /** Implementation of
   SceneGraphInspector::BelongsToSource(FrameId, SourceId) const. */
   bool BelongsToSource(FrameId frame_id, SourceId source_id) const;
 
-  /**
-  Implementation of
+  /** Implementation of
   SceneGraphInspector::GetOwningSourceName(FrameId) const. */
   const std::string& GetOwningSourceName(FrameId id) const;
 
@@ -176,8 +171,7 @@ class GeometryState {
   int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const;
 
   // TODO(SeanCurtis-TRI): Redundant w.r.t. NumGeometriesForFrameWithRole().
-  /**
-  Reports the number of child geometries for this frame that have the
+  /** Reports the number of child geometries for this frame that have the
   indicated role assigned. This only includes the immediate child geometries of
   *this* frame, and not those of child frames.
   @throws std::logic_error if the `frame_id` does not map to a valid frame. */
@@ -192,13 +186,11 @@ class GeometryState {
   /** @name           Geometries and their properties */
   /** @{ */
 
-  /**
-  Implementation of
+  /** Implementation of
   SceneGraphInspector::BelongsToSource(GeometryId, SourceId) const. */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
 
-  /**
-  Implementation of
+  /** Implementation of
   SceneGraphInspector::GetOwningSourceName(GeometryId) const. */
   const std::string& GetOwningSourceName(GeometryId id) const;
 
@@ -233,8 +225,7 @@ class GeometryState {
 
   /** @} */
 
-  /**
-  @name                Pose-dependent queries
+  /** @name                Pose-dependent queries
 
   These quantities all depend on the most recent pose values assigned to the
   registered frames. */
@@ -252,15 +243,13 @@ class GeometryState {
 
   /** @} */
 
-  /**
-  @name        State management
+  /** @name        State management
 
   The methods that modify the state including: adding/removing entities from
   the state, modifying values in the state, etc. */
   /** @{ */
 
-  /**
-  Implementation of SceneGraph::RegisterSource().
+  /** Implementation of SceneGraph::RegisterSource().
   The default logic is to define name as "Source_##" where the number is the
   value of the returned SourceId. */
   SourceId RegisterNewSource(const std::string& name = "");
@@ -268,23 +257,20 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisterFrame(). */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::RegisterFrame(SourceId,FrameId,const GeometryFrame&)
   "SceneGraph::RegisterFrame()" with parent FrameId. */
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::RegisterGeometry(SourceId,FrameId,
   std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
   parent FrameId. */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::RegisterGeometry(SourceId,GeometryId,
   std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
   parent GeometryId. */
@@ -301,8 +287,7 @@ class GeometryState {
   /** Implementation of SceneGraph::RemoveGeometry(). */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
-  /**
-  Reports whether the canonicalized version of the given candidate geometry
+  /** Reports whether the canonicalized version of the given candidate geometry
   name is considered valid. This tests the requirements described in the
   documentation of @ref canonicalized_geometry_names "GeometryInstance". When
   adding a geometry to a frame, if there is doubt if a proposed name is valid,
@@ -317,38 +302,33 @@ class GeometryState {
   bool IsValidGeometryName(FrameId frame_id, Role role,
                            const std::string& candidate_name) const;
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::AssignRole(SourceId, GeometryId, ProximityProperties)
   "SceneGraph::AssignRole()". */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   ProximityProperties properties,
                   RoleAssign assign = RoleAssign::kNew);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::AssignRole(SourceId, GeometryId, PerceptionProperties)
   "SceneGraph::AssignRole()". */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   PerceptionProperties properties,
                   RoleAssign assign = RoleAssign::kNew);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::AssignRole(SourceId, GeometryId, IllustrationProperties)
   "SceneGraph::AssignRole()". */
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties,
                   RoleAssign assign = RoleAssign::kNew);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::RemoveRole(SourceId, FrameId, Role)
   "SceneGraph::RemoveRole()". */
   int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
 
-  /**
-  Implementation of
+  /** Implementation of
   @ref SceneGraph::RemoveRole(SourceId, GeometryId, Role)
   "SceneGraph::RemoveRole()". */
   int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
@@ -360,8 +340,7 @@ class GeometryState {
   // put them in the SceneGraph API or not, in which case I can remove them
   // entirely).
 
-  /**
-  For every geometry directly registered to the frame with the given
+  /** For every geometry directly registered to the frame with the given
   `frame_id`, if it has been added to the renderer with the given
   `renderer_name` it is removed from that renderer.
   @return The number of geometries affected by the removal.
@@ -374,8 +353,7 @@ class GeometryState {
   int RemoveFromRenderer(const std::string& renderer_name, SourceId source_id,
                          FrameId frame_id);
 
-  /**
-  Removes the geometry with the given `geometry_id` from the renderer with
+  /** Removes the geometry with the given `geometry_id` from the renderer with
   the given `renderer_name`, _if_ it has previously been added.
   @return The number of geometries affected by the removal (0 or 1).
   @throws std::logic_error if a) `source_id` does not map to a registered
@@ -390,8 +368,7 @@ class GeometryState {
   /** @} */
 
   //----------------------------------------------------------------------------
-  /**
-  @name                Collision Queries
+  /** @name                Collision Queries
   See @ref collision_queries "Collision Queries" for more details. */
   /** @{ */
 
@@ -428,8 +405,7 @@ class GeometryState {
 
   /** @} */
 
-  /**
-  @name               Proximity filters
+  /** @name               Proximity filters
 
   This interface allows control over which pairs of geometries can even be
   considered for proximity queries. This affects all queries that depend on
@@ -452,14 +428,12 @@ class GeometryState {
   /** @} */
 
   //---------------------------------------------------------------------------
-  /**
-  @name                Signed Distance Queries
+  /** @name                Signed Distance Queries
   See @ref signed_distance_query "Signed Distance Queries" for more details. */
 
   /** @{ */
 
-  /**
-  Implementation of
+  /** Implementation of
   QueryObject::ComputeSignedDistancePairwiseClosestPoints(). */
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       double max_distance) const {
@@ -467,8 +441,7 @@ class GeometryState {
         X_WGs_, max_distance);
   }
 
-  /**
-  Implementation of
+  /** Implementation of
   QueryObject::ComputeSignedDistancePairClosestPoints(). */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B) const {
@@ -486,8 +459,7 @@ class GeometryState {
   /** @} */
 
   //---------------------------------------------------------------------------
-  /**
-  @name                Render Queries
+  /** @name                Render Queries
   See @ref render_queries "Render Queries" for more details. */
   /** @{ */
 
@@ -515,45 +487,39 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisteredRendererNames(). */
   std::vector<std::string> RegisteredRendererNames() const;
 
-  /**
-  Implementation of QueryObject::RenderColorImage().
+  /** Implementation of QueryObject::RenderColorImage().
   @pre All poses have already been updated. */
   void RenderColorImage(const render::CameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
-  /**
-  Implementation of QueryObject::RenderDepthImage().
+  /** Implementation of QueryObject::RenderDepthImage().
   @pre All poses have already been updated. */
   void RenderDepthImage(const render::DepthCameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
-  /**
-  Implementation of QueryObject::RenderLabelImage().
+  /** Implementation of QueryObject::RenderLabelImage().
   @pre All poses have already been updated. */
   void RenderLabelImage(const render::CameraProperties& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         bool show_window,
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
-  /**
-  Implementation of QueryObject::RenderColorImage().
+  /** Implementation of QueryObject::RenderColorImage().
   @pre All poses have already been updated. */
   void RenderColorImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
-  /**
-  Implementation of QueryObject::RenderDepthImage().
+  /** Implementation of QueryObject::RenderDepthImage().
   @pre All poses have already been updated. */
   void RenderDepthImage(const render::DepthRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
-  /**
-  Implementation of QueryObject::RenderLabelImage().
+  /** Implementation of QueryObject::RenderLabelImage().
   @pre All poses have already been updated. */
   void RenderLabelImage(const render::ColorRenderCamera& camera,
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
@@ -564,8 +530,7 @@ class GeometryState {
   /** @name Scalar conversion */
   /** @{ */
 
-  /**
-  Returns a deep copy of this state using the AutoDiffXd scalar with all
+  /** Returns a deep copy of this state using the AutoDiffXd scalar with all
   scalar values initialized from the current values. If this is invoked on an
   instance already instantiated on AutoDiffXd, it is equivalent to cloning
   the instance. */

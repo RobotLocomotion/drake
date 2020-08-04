@@ -1,5 +1,4 @@
-/**
-@file
+/** @file
 Utilities for arithmetic on AutoDiffScalar. */
 
 // TODO(russt): rename methods to be GSG compliant.
@@ -37,8 +36,7 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
   return ret;
 }
 
-/**
-`B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
+/** `B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
 to AutoDiffScalar::Scalar type, explicitly throwing away any gradient
 information. For a matrix of type, e.g. `MatrixX<AutoDiffXd> A`, the
 comparable operation
@@ -92,8 +90,7 @@ DiscardGradient(
 }
 
 
-/**
-\brief Initialize a single autodiff matrix given the corresponding value
+/** \brief Initialize a single autodiff matrix given the corresponding value
 *matrix.
 *
 * Set the values of \p auto_diff_matrix to be equal to \p val, and for each
@@ -132,8 +129,7 @@ void initializeAutoDiff(const Eigen::MatrixBase<Derived>& val,
   }
 }
 
-/**
-\brief The appropriate AutoDiffScalar gradient type given the value type and
+/** \brief The appropriate AutoDiffScalar gradient type given the value type and
 the number of derivatives at compile time */
 template <typename Derived, int Nq>
 using AutoDiffMatrixType = Eigen::Matrix<
@@ -141,8 +137,7 @@ using AutoDiffMatrixType = Eigen::Matrix<
     Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
     Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
-/**
-\brief Initialize a single autodiff matrix given the corresponding value
+/** \brief Initialize a single autodiff matrix given the corresponding value
 *matrix.
 *
 * Create autodiff matrix that matches \p mat in size with derivatives of
@@ -194,8 +189,7 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
 };
 }  // namespace internal
 
-/**
-Resize derivatives vector of each element of a matrix to to match the size
+/** Resize derivatives vector of each element of a matrix to to match the size
 of the derivatives vector of a given scalar.
 \brief If the mat and scalar inputs are AutoDiffScalars, resize the
 derivatives vector of each element of the matrix mat to match
@@ -233,21 +227,18 @@ struct TotalSizeAtCompileTime<Head> {
   static constexpr int eval() { return Head::SizeAtCompileTime; }
 };
 
-/**
-\brief Determine the total size at compile time of a number of arguments
+/** \brief Determine the total size at compile time of a number of arguments
 based on their SizeAtCompileTime static members */
 template <typename... Args>
 constexpr int totalSizeAtCompileTime() {
   return TotalSizeAtCompileTime<Args...>::eval();
 }
 
-/**
-\brief Determine the total size at runtime of a number of arguments using
+/** \brief Determine the total size at runtime of a number of arguments using
 their size() methods (base case). */
 constexpr Eigen::DenseIndex totalSizeAtRunTime() { return 0; }
 
-/**
-\brief Determine the total size at runtime of a number of arguments using
+/** \brief Determine the total size at runtime of a number of arguments using
 their size() methods (recursive) */
 template <typename Head, typename... Tail>
 Eigen::DenseIndex totalSizeAtRunTime(const Eigen::MatrixBase<Head>& head,
@@ -287,8 +278,7 @@ struct InitializeAutoDiffTupleHelper<0> {
 };
 }  // namespace internal
 
-/**
-\brief Given a series of Eigen matrices, create a tuple of corresponding
+/** \brief Given a series of Eigen matrices, create a tuple of corresponding
 *AutoDiff matrices with values equal to the input matrices and properly
 *initialized derivative vectors.
 *

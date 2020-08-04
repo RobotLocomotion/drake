@@ -11,8 +11,7 @@
 
 namespace drake {
 
-/**
-A type-safe non-negative index class.
+/** A type-safe non-negative index class.
 
 @note This is *purposely* a separate class from @ref geometry::Identifier.
 For more information, see @ref TypeSafeIndexVsIndentifier "this section".
@@ -130,17 +129,14 @@ to TypeSafeIndex. Instead, the following pattern needs to be used:
 template <class Tag>
 class TypeSafeIndex {
  public:
-  /**
-  @name           Constructors
+  /** @name           Constructors
   @{ */
 
-  /**
-  Default constructor; the result is an _invalid_ index. This only
+  /** Default constructor; the result is an _invalid_ index. This only
   exists to serve applications which require a default constructor. */
   TypeSafeIndex() {}
 
-  /**
-  Construction from a non-negative `int` value. The value must lie in the
+  /** Construction from a non-negative `int` value. The value must lie in the
   range of [0, 2³¹). Constructor only promises to test validity in
   Debug build. */
   explicit TypeSafeIndex(int64_t index) : index_(static_cast<int>(index)) {
@@ -161,8 +157,7 @@ class TypeSafeIndex {
   }
   /** @} */
 
-  /**
-  @name       Assignment
+  /** @name       Assignment
   @{ */
 
   TypeSafeIndex& operator=(const TypeSafeIndex&) = default;
@@ -175,8 +170,7 @@ class TypeSafeIndex {
 
   /** @} */
 
-  /**
-  @name     Utility methods
+  /** @name     Utility methods
   @{ */
 
   /** Implicit conversion-to-int operator. */
@@ -185,8 +179,7 @@ class TypeSafeIndex {
     return index_;
   }
 
-  /**
-  Reports if the index is valid--the only operation on an invalid index
+  /** Reports if the index is valid--the only operation on an invalid index
   that doesn't throw an exception in Debug builds. */
   bool is_valid() const {
     // All other error testing, with assert armed, indirectly enforces the
@@ -198,8 +191,7 @@ class TypeSafeIndex {
 
   /** @} */
 
-  /**
-  @name Arithmetic operators
+  /** @name Arithmetic operators
   @{ */
 
   /** Prefix increment operator. */
@@ -222,8 +214,7 @@ class TypeSafeIndex {
     return TypeSafeIndex(index_ - 1);
   }
 
-  /**
-  Prefix decrement operator.
+  /** Prefix decrement operator.
   In Debug builds, this method asserts that the resulting index is
   non-negative. */
   const TypeSafeIndex& operator--() {
@@ -235,8 +226,7 @@ class TypeSafeIndex {
     return *this;
   }
 
-  /**
-  Postfix decrement operator.
+  /** Postfix decrement operator.
   In Debug builds, this method asserts that the resulting index is
   non-negative. */
   TypeSafeIndex operator--(int) {
@@ -249,12 +239,10 @@ class TypeSafeIndex {
   }
   /** @} */
 
-  /**
-  @name Compound assignment operators
+  /** @name Compound assignment operators
   @{ */
 
-  /**
-  Addition assignment operator.
+  /** Addition assignment operator.
   In Debug builds, this method asserts that the resulting index is
   non-negative. */
   TypeSafeIndex& operator+=(int i) {
@@ -289,8 +277,7 @@ class TypeSafeIndex {
   template <typename U>
   TypeSafeIndex<U>& operator+=(const TypeSafeIndex<U>& u) = delete;
 
-  /**
-  Subtraction assignment operator.
+  /** Subtraction assignment operator.
   In Debug builds, this method asserts that the resulting index is
   non-negative. */
   TypeSafeIndex& operator-=(int i) {
@@ -326,8 +313,7 @@ class TypeSafeIndex {
 
   /** @} */
 
-  /**
-  @name Exclusive comparison operators
+  /** @name Exclusive comparison operators
 
   In order to prevent indices _of different type_ being added together or
   compared against each other, we explicitly include indices of this type,
@@ -481,8 +467,7 @@ class TypeSafeIndex {
 
   /** @} */
 
-  /**
-  Implements the @ref hash_append concept. And invalid index will
+  /** Implements the @ref hash_append concept. And invalid index will
   successfully hash (in order to satisfy STL requirements), and it is up to
   the user to confirm it is valid before using it as a key (or other hashing
   application). */
@@ -581,8 +566,7 @@ operator>=(const U& value, const TypeSafeIndex<Tag>& tag) {
 
 namespace std {
 
-/**
-Enables use of the type-safe index to serve as a key in STL containers.
+/** Enables use of the type-safe index to serve as a key in STL containers.
 @relates TypeSafeIndex */
 template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};

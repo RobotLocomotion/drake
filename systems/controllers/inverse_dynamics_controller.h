@@ -17,8 +17,7 @@ namespace systems {
 namespace controllers {
 
 // N.B. Inheritance order must remain fixed for pydrake (#9243).
-/**
-A state feedback controller that uses a PidController to generate desired
+/** A state feedback controller that uses a PidController to generate desired
 accelerations, which are then converted into torques using InverseDynamics.
 More specifically, the output of this controller is:
 `torque = inverse_dynamics(q, v, vd_d)`,
@@ -51,8 +50,7 @@ class InverseDynamicsController : public Diagram<T>,
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
 
-  /**
-  Constructs an inverse dynamics controller for the given `plant` model.
+  /** Constructs an inverse dynamics controller for the given `plant` model.
   The %InverseDynamicsController holds an internal, non-owned reference to
   the MultibodyPlant object so you must ensure that `plant` has a longer
   lifetime than `this` %InverseDynamicsController.
@@ -80,8 +78,7 @@ class InverseDynamicsController : public Diagram<T>,
 
   ~InverseDynamicsController() override;
 
-  /**
-  Sets the integral part of the PidController to @p value.
+  /** Sets the integral part of the PidController to @p value.
   @p value must be a column vector of the appropriate size. */
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;

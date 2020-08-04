@@ -20,8 +20,7 @@ namespace geometry {
 template <typename T>
 class SceneGraph;
 
-/**
-The %QueryObject serves as a mechanism to perform geometry queries on the
+/** The %QueryObject serves as a mechanism to perform geometry queries on the
 world's geometry. The SceneGraph has an abstract-valued port that contains
 a  %QueryObject (i.e., a %QueryObject-valued output port).
 
@@ -69,8 +68,7 @@ class QueryObject {
   /** Constructs a default QueryObject (all pointers are null). */
   QueryObject() = default;
 
-  /**
-  @name Implements CopyConstructible, CopyAssignable, \
+  /** @name Implements CopyConstructible, CopyAssignable, \
                       MoveConstructible, MoveAssignable
 
   Calling the copy constructor or assignment will turn a _live_ %QueryObject
@@ -91,15 +89,13 @@ class QueryObject {
   //  query_object_test.cc in the DefaultQueryThrows test to confirm that the
   //  query *is* calling ThrowIfNotCallable().
 
-  /**
-  Provides an inspector for the topological structure of the underlying
+  /** Provides an inspector for the topological structure of the underlying
   scene graph data (see SceneGraphInspector for details). */
   const SceneGraphInspector<T>& inspector() const {
     return inspector_;
   }
 
-  /**
-  @name                Pose-dependent Introspection
+  /** @name                Pose-dependent Introspection
 
   These methods provide access to introspect geometry and frame quantities that
   directly depend on the poses of the frames.  For geometry and frame
@@ -109,14 +105,12 @@ class QueryObject {
 
   // TODO(SeanCurtis-TRI): When I have RigidTransform internally, make these
   // const references.
-  /**
-  Reports the position of the frame indicated by `id` relative to the world
+  /** Reports the position of the frame indicated by `id` relative to the world
   frame.
   @throws std::logic_error if the frame `id` is not valid. */
   const math::RigidTransform<T>& X_WF(FrameId id) const;
 
-  /**
-  Reports the position of the frame indicated by `id` relative to its parent
+  /** Reports the position of the frame indicated by `id` relative to its parent
   frame. If the frame was registered with the world frame as its parent frame,
   this value will be identical to that returned by X_WF().
   @note This is analogous to but distinct from SceneGraphInspector::X_PG().
@@ -124,16 +118,14 @@ class QueryObject {
   @throws std::logic_error if the frame `id` is not valid. */
   const math::RigidTransform<T>& X_PF(FrameId id) const;
 
-  /**
-  Reports the position of the geometry indicated by `id` relative to the
+  /** Reports the position of the geometry indicated by `id` relative to the
   world frame.
   @throws std::logic_error if the geometry `id` is not valid. */
   const math::RigidTransform<T>& X_WG(GeometryId id) const;
 
   /** @} */
 
-  /**
-  @anchor collision_queries
+  /** @anchor collision_queries
   @name                Collision Queries
 
   These queries detect _collisions_ between geometry. Two geometries collide
@@ -151,8 +143,7 @@ class QueryObject {
   geometry is penetrating. */
   /** @{ */
 
-  /**
-  Computes the penetrations across all pairs of geometries in the world
+  /** Computes the penetrations across all pairs of geometries in the world
   with the penetrations characterized by pairs of points (see
   PenetrationAsPointPair), providing some measure of the penetration "depth" of
   the two objects, but _not_ the overlapping volume.
@@ -190,8 +181,7 @@ class QueryObject {
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
       const;
 
-  /**
-  Reports pairwise intersections and characterizes each non-empty
+  /** Reports pairwise intersections and characterizes each non-empty
   intersection as a ContactSurface for hydroelastic contact model.
   The computation is subject to collision filtering.
 
@@ -237,8 +227,7 @@ class QueryObject {
            the same. */
   std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
 
-  /**
-  Reports pair-wise intersections and characterizes each non-empty
+  /** Reports pair-wise intersections and characterizes each non-empty
   intersection as a ContactSurface _where possible_ and as a
   PenetrationAsPointPair where not.
 
@@ -268,8 +257,7 @@ class QueryObject {
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
 
-  /**
-  Applies a conservative culling mechanism to create a subset of all
+  /** Applies a conservative culling mechanism to create a subset of all
   possible geometry pairs based on non-zero intersections. A geometry pair
   that is *absent* from the results is either a) culled by collision filters or
   b) *known* to be separated. The caller is responsible for confirming that
@@ -282,8 +270,7 @@ class QueryObject {
            are included). */
   std::vector<SortedPair<GeometryId>> FindCollisionCandidates() const;
 
-  /**
-  Reports true if there are _any_ collisions between unfiltered pairs in the
+  /** Reports true if there are _any_ collisions between unfiltered pairs in the
   world.
   @warning This silently ignores Mesh geometries (but Convex mesh geometries
            are included). */
@@ -294,8 +281,7 @@ class QueryObject {
   //---------------------------------------------------------------------------
   // TODO(DamrongGuoy): Write a better documentation for Signed Distance
   // Queries.
-  /**
-  @anchor signed_distance_query
+  /** @anchor signed_distance_query
   @name                   Signed Distance Queries
 
   These queries provide the signed distance between two objects. Each query
@@ -313,8 +299,7 @@ class QueryObject {
   // TODO(DamrongGuoy): Refactor documentation of
   // ComputeSignedDistancePairwiseClosestPoints(). Move the common sections
   // into Signed Distance Queries.
-  /**
-  Computes the signed distance together with the nearest points across all
+  /** Computes the signed distance together with the nearest points across all
   pairs of geometries in the world. Reports both the separating geometries
   and penetrating geometries.
 
@@ -376,8 +361,7 @@ class QueryObject {
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
 
-  /**
-  A variant of ComputeSignedDistancePairwiseClosestPoints() which computes
+  /** A variant of ComputeSignedDistancePairwiseClosestPoints() which computes
   the signed distance (and witnesses) between a specific pair of geometries
   indicated by id. This function has the same restrictions on scalar report
   as ComputeSignedDistancePairwiseClosestPoints().
@@ -391,8 +375,7 @@ class QueryObject {
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
   // Right now it only supports spheres and boxes.
-  /**
-  Computes the signed distances and gradients to a query point from each
+  /** Computes the signed distances and gradients to a query point from each
   geometry in the scene.
 
   @warning Currently supports spheres, boxes, and cylinders only. Silently
@@ -470,8 +453,7 @@ class QueryObject {
 
 
   //---------------------------------------------------------------------------
-  /**
-  @anchor render_queries
+  /** @anchor render_queries
   @name                Render Queries
 
   The methods support queries along the lines of "What do I see?" They support
@@ -485,8 +467,7 @@ class QueryObject {
   double-valued transform and the latter throws). --> */
   /** @{ */
 
-  /**
-  Renders an RGB image for the given `camera` posed with respect to the
+  /** Renders an RGB image for the given `camera` posed with respect to the
   indicated parent frame P.
 
   @param camera                The intrinsic properties of the camera.
@@ -504,8 +485,7 @@ class QueryObject {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageRgba8U* color_image_out) const;
 
-  /**
-  Renders a depth image for the given `camera` posed with respect to the
+  /** Renders a depth image for the given `camera` posed with respect to the
   indicated parent frame P.
 
   In contrast to the other rendering methods, rendering depth images doesn't
@@ -525,8 +505,7 @@ class QueryObject {
                         FrameId parent_frame, const math::RigidTransformd& X_PC,
                         systems::sensors::ImageDepth32F* depth_image_out) const;
 
-  /**
-  Renders a label image for the given `camera` posed with respect to the
+  /** Renders a label image for the given `camera` posed with respect to the
   indicated parent frame P.
 
   @param camera                The intrinsic properties of the camera.
@@ -545,8 +524,7 @@ class QueryObject {
                         systems::sensors::ImageLabel16I* label_image_out) const;
 
 
-  /**
-  Returns the named render engine, if it exists. The RenderEngine is
+  /** Returns the named render engine, if it exists. The RenderEngine is
   guaranteed to be up to date w.r.t. the poses and data in the context. */
   const render::RenderEngine* GetRenderEngineByName(
       const std::string& name) const;

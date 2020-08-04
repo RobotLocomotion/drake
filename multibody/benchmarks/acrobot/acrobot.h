@@ -9,8 +9,7 @@ namespace drake {
 namespace multibody {
 namespace benchmarks {
 
-/**
-The Acrobot - a canonical underactuated system as described in <a
+/** The Acrobot - a canonical underactuated system as described in <a
 href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 of Underactuated Robotics</a>.
 
@@ -23,8 +22,7 @@ parameterized by angle theta1 and Link 2 is connected to Link 1 by an
 template <typename T>
 class Acrobot {
  public:
-  /**
-  Creates an acrobot model in a plane passing through the world's origin
+  /** Creates an acrobot model in a plane passing through the world's origin
   and normal to @p normal. Vector @p up defines the upwards direction on
   this plane. Both @p normal and @p up are expressed in the world's frame.
   Essentially the two dimensional equations of the acrobot are described
@@ -62,20 +60,17 @@ class Acrobot {
           double b2 = 0.1,
           double g = 9.81);
 
-  /**
-  Computes the mass matrix `H(q)` for the double pendulum system. It turns
+  /** Computes the mass matrix `H(q)` for the double pendulum system. It turns
   out that for this system the mass matrix is independent of the shoulder
   angle `theta1`. */
   Matrix2<T> CalcMassMatrix(const T& theta2) const;
 
-  /**
-  Computes the bias term `C(q, v) * v` containing Coriolis and gyroscopic
+  /** Computes the bias term `C(q, v) * v` containing Coriolis and gyroscopic
   effects as a function of the state of the pendulum. */
   Vector2<T> CalcCoriolisVector(const T& theta1, const T& theta2,
                                 const T& theta1dot, const T& theta2dot) const;
 
-  /**
-  Computes the effective joint-space torques induced by gravity `tau_g(q)`
+  /** Computes the effective joint-space torques induced by gravity `tau_g(q)`
   containing the effect of gravity as a function of the configuration of
   the pendulum.
   Unlike http://underactuated.mit.edu/underactuated.html?chapter=3, cited in
@@ -83,8 +78,7 @@ class Acrobot {
   side of the equations of motion, that is, `Mv̇ + C(q, v)v = tau_g(q)`. */
   Vector2<T> CalcGravityVector(const T& theta1, const T& theta2) const;
 
-  /**
-  Computes the pose of the center of mass of link 1 measured and expressed
+  /** Computes the pose of the center of mass of link 1 measured and expressed
   in the world frame.
   @param theta1 The shoulder angle in radians.
   @param theta2 The elbow angle in radians.
@@ -92,8 +86,7 @@ class Acrobot {
   frame. */
   math::RigidTransform<T> CalcLink1PoseInWorldFrame(const T& theta1) const;
 
-  /**
-  Computes the pose of the center of mass of link 2 measured and expressed
+  /** Computes the pose of the center of mass of link 2 measured and expressed
   in the world frame.
   @param theta1 The shoulder angle in radians.
   @param theta2 The elbow angle in radians.
@@ -102,16 +95,14 @@ class Acrobot {
   math::RigidTransform<T> CalcLink2PoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
-  /**
-  Computes the pose of the elbow outboard frame `Eo` in the world frame W.
+  /** Computes the pose of the elbow outboard frame `Eo` in the world frame W.
   @param theta1 The shoulder angle in radians.
   @param theta2 The elbow angle in radians.
   @returns X_WEo the pose of the elbow frame Eo in the world frame W. */
   math::RigidTransform<T> CalcElbowOutboardFramePoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
-  /**
-  Computes the spatial velocity of the center of mass of link 1 expressed
+  /** Computes the spatial velocity of the center of mass of link 1 expressed
   in the world frame.
   @param theta1 The shoulder angle in radians.
   @param theta1dot The shoulder angular velocity in radians per second.
@@ -120,8 +111,7 @@ class Acrobot {
   Vector6<T> CalcLink1SpatialVelocityInWorldFrame(
       const T& theta1, const T& theta1dot) const;
 
-  /**
-  Computes the spatial velocity of the center of mass of link 2 expressed
+  /** Computes the spatial velocity of the center of mass of link 2 expressed
   in the world frame.
   @param theta1 The shoulder angle in radians.
   @param theta2 The elbow angle in radians.
@@ -133,8 +123,7 @@ class Acrobot {
       const T& theta1, const T& theta2,
       const T& theta1dot, const T& theta2dot) const;
 
-  /**
-  Computes the spatial acceleration of the center of mass of link 1
+  /** Computes the spatial acceleration of the center of mass of link 1
   expressed in the world frame.
   @param theta1
     The shoulder angle in radians.
@@ -148,8 +137,7 @@ class Acrobot {
   Vector6<T> CalcLink1SpatialAccelerationInWorldFrame(
       const T& theta1, const T& theta1dot, const T& theta1dotdot) const;
 
-  /**
-  Computes the spatial acceleration of the center of mass of link 2
+  /** Computes the spatial acceleration of the center of mass of link 2
   expressed in the world frame.
   @param theta1
     The shoulder angle in radians.
@@ -171,8 +159,7 @@ class Acrobot {
       const T& theta1dot, const T& theta2dot,
       const T& theta1dotdot, const T& theta2dotdot) const;
 
-  /**
-  Computes the total potential energy due to gravity of the acrobot system
+  /** Computes the total potential energy due to gravity of the acrobot system
   for the state given by angles `theta1` and `theta2`.
   The zero potential energy is defined for `y = 0`. */
   T CalcPotentialEnergy(const T& theta1, const T& theta2) const;

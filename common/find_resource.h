@@ -9,8 +9,7 @@
 
 namespace drake {
 
-/**
-Models the outcome of drake::FindResource.  After a call to FindResource,
+/** Models the outcome of drake::FindResource.  After a call to FindResource,
 typical calling code would use get_absolute_path_or_throw().
 Alternatively, get_absolute_path() will return an `optional<string>`, which
 can be manually checked to contain a value before using the path.  If the
@@ -26,31 +25,26 @@ class FindResourceResult {
   /** Returns the absolute path to the resource, iff the resource was found. */
   std::optional<std::string> get_absolute_path() const;
 
-  /**
-  Either returns the get_absolute_path() iff the resource was found,
+  /** Either returns the get_absolute_path() iff the resource was found,
   or else throws std::runtime_error. */
   std::string get_absolute_path_or_throw() const;
 
-  /**
-  Returns the error message, iff the resource was not found.
+  /** Returns the error message, iff the resource was not found.
   The string will never be empty; only the optional can be empty. */
   std::optional<std::string> get_error_message() const;
 
-  /**
-  Returns the resource_path asked of FindResource.
+  /** Returns the resource_path asked of FindResource.
   (This may be empty only in the make_empty() case.) */
   std::string get_resource_path() const;
 
-  /**
-  Returns a success result (the requested resource was found).
+  /** Returns a success result (the requested resource was found).
   @pre neither string parameter is empty
   @param resource_path the value passed to FindResource
   @param base_path an absolute base path that precedes resource_path */
   static FindResourceResult make_success(
       std::string resource_path, std::string absolute_path);
 
-  /**
-  Returns an error result (the requested resource was NOT found).
+  /** Returns an error result (the requested resource was NOT found).
   @pre neither string parameter is empty
   @param resource_path the value passed to FindResource */
   static FindResourceResult make_error(
@@ -78,8 +72,7 @@ class FindResourceResult {
   std::optional<std::string> error_message_;
 };
 
-/**
-Attempts to locate a Drake resource named by the given @p resource_path.
+/** Attempts to locate a Drake resource named by the given @p resource_path.
 The @p resource_path refers to the relative path within the Drake source
 repository, prepended with `drake/`.  For example, to find the source
 file `examples/pendulum/Pendulum.urdf`, the @p resource_path would be
@@ -101,13 +94,11 @@ to have the resource).  If all three roots are unavailable, then returns an
 error result. */
 FindResourceResult FindResource(const std::string& resource_path);
 
-/**
-Convenient wrapper for querying FindResource(resource_path) followed by
+/** Convenient wrapper for querying FindResource(resource_path) followed by
 FindResourceResult::get_absolute_path_or_throw(). */
 std::string FindResourceOrThrow(const std::string& resource_path);
 
-/**
-The name of the environment variable that provides the first place where
+/** The name of the environment variable that provides the first place where
 FindResource attempts to look.  The environment variable is allowed to be
 unset or empty; in that case, FindResource will attempt to use other
 locations without complaint.

@@ -14,8 +14,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-An ImageToLcmImageArrayT takes as input an ImageRgba8U, ImageDepth32F and
+/** An ImageToLcmImageArrayT takes as input an ImageRgba8U, ImageDepth32F and
 ImageLabel16I. This system outputs an AbstractValue containing a
 `Value<robotlocomotion::image_array_t>` LCM message that defines an array
 of images (image_t). This message can then be sent to other processes that
@@ -27,8 +26,7 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageToLcmImageArrayT)
 
-  /**
-  An %ImageToLcmImageArrayT constructor.  Declares three input ports --
+  /** An %ImageToLcmImageArrayT constructor.  Declares three input ports --
   one color image, one depth image, and one label image.
 
   @param color_frame_name The frame name used for color image.
@@ -41,28 +39,23 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
                         const std::string& label_frame_name,
                         bool do_compress = false);
 
-  /**
-  Returns the input port containing a color image.
+  /** Returns the input port containing a color image.
   Note: Only valid if the color/depth/label constructor is used. */
   const InputPort<double>& color_image_input_port() const;
 
-  /**
-  Returns the input port containing a depth image.
+  /** Returns the input port containing a depth image.
   Note: Only valid if the color/depth/label constructor is used. */
   const InputPort<double>& depth_image_input_port() const;
 
-  /**
-  Returns the input port containing a label image.
+  /** Returns the input port containing a label image.
   Note: Only valid if the color/depth/label constructor is used. */
   const InputPort<double>& label_image_input_port() const;
 
-  /**
-  Returns the abstract valued output port that contains a
+  /** Returns the abstract valued output port that contains a
   `Value<robotlocomotion::image_array_t>`. */
   const OutputPort<double>& image_array_t_msg_output_port() const;
 
-  /**
-  Default constructor doesn't declare any ports.  Use the Add*Input()
+  /** Default constructor doesn't declare any ports.  Use the Add*Input()
   methods to declare them. */
   explicit ImageToLcmImageArrayT(bool do_compress = false);
 

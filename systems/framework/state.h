@@ -14,8 +14,7 @@
 namespace drake {
 namespace systems {
 
-/**
-%State is a container for all the data comprising the
+/** %State is a container for all the data comprising the
 complete state of a particular System at a particular moment. Any field in
 %State may be empty if it is not applicable to the System in question.
 A System may not maintain state in any place other than a %State object.
@@ -94,8 +93,7 @@ class State {
     return *abstract_state_.get();
   }
 
-  /**
-  Returns a const pointer to the abstract component of the
+  /** Returns a const pointer to the abstract component of the
   state at @p index.  Asserts if @p index doesn't exist. */
   template <typename U>
   const U& get_abstract_state(int index) const {
@@ -103,8 +101,7 @@ class State {
     return xa.get_value(index).get_value<U>();
   }
 
-  /**
-  Returns a mutable pointer to element @p index of the abstract state.
+  /** Returns a mutable pointer to element @p index of the abstract state.
   Asserts if @p index doesn't exist. */
   template <typename U>
   U& get_mutable_abstract_state(int index) {

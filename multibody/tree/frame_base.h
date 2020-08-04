@@ -6,8 +6,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-%FrameBase is an abstract representation of the concept of a _frame_ in
+/** %FrameBase is an abstract representation of the concept of a _frame_ in
 multibody dynamics. A frame F is a mathematical object consisting of
 a set of three orthogonal unit vector axes Fx,Fy,Fz forming a right-handed
 orthogonal basis located at a point Fo called the frame's origin. If

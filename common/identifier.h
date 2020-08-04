@@ -12,8 +12,7 @@
 
 namespace drake {
 
-/**
-A simple identifier class.
+/** A simple identifier class.
 
 @note This is *purposely* a separate class from @ref TypeSafeIndex. For more
 explanatation, see @ref TypeSafeIndexVsIndentifier "this section".
@@ -137,13 +136,11 @@ class Identifier {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Identifier)
 
-  /**
-  Default constructor; the result is an _invalid_ identifier. This only
+  /** Default constructor; the result is an _invalid_ identifier. This only
   exists to satisfy demands of working with various container classes. */
   Identifier() : value_(0) {}
 
-  /**
-  Extracts the underlying representation from the identifier. This is
+  /** Extracts the underlying representation from the identifier. This is
   considered invalid for invalid ids and is strictly enforced in Debug builds.
    */
   int64_t get_value() const {
@@ -156,32 +153,28 @@ class Identifier {
   /** Reports if the id is valid. */
   bool is_valid() const { return value_ > 0; }
 
-  /**
-  Compares one identifier with another of the same type for equality. This
+  /** Compares one identifier with another of the same type for equality. This
   is considered invalid for invalid ids and is strictly enforced in Debug
   builds. */
   bool operator==(Identifier other) const {
     return this->get_value() == other.get_value();
   }
 
-  /**
-  Compares one identifier with another of the same type for inequality. This
+  /** Compares one identifier with another of the same type for inequality. This
   is considered invalid for invalid ids and is strictly enforced in Debug
   builds. */
   bool operator!=(Identifier other) const {
     return this->get_value() != other.get_value();
   }
 
-  /**
-  Compare two identifiers in order to define a total ordering among
+  /** Compare two identifiers in order to define a total ordering among
   identifiers. This makes identifiers compatible with data structures which
   require total ordering (e.g., std::set). */
   bool operator<(Identifier other) const {
     return this->get_value() < other.get_value();
   }
 
-  /**
-  Generates a new identifier for this id type. This new identifier will be
+  /** Generates a new identifier for this id type. This new identifier will be
   different from all previous identifiers created. This method does _not_
   make any guarantees about the values of ids from successive invocations.
   This method is guaranteed to be thread safe. */
@@ -193,8 +186,7 @@ class Identifier {
     return Identifier(next_index.access()++);
   }
 
-  /**
-  Implements the @ref hash_append concept. And invalid id will successfully
+  /** Implements the @ref hash_append concept. And invalid id will successfully
   hash (in order to satisfy STL requirements), and it is up to the user to
   confirm it is valid before using it as a key (or other hashing application).
    */
@@ -213,8 +205,7 @@ class Identifier {
   int64_t value_{};
 };
 
-/**
-Streaming output operator.   This is considered invalid for invalid ids and
+/** Streaming output operator.   This is considered invalid for invalid ids and
 is strictly enforced in Debug builds.
 @relates Identifier */
 template <typename Tag>
@@ -224,8 +215,7 @@ inline std::ostream& operator<<(std::ostream& out,
   return out;
 }
 
-/**
-Enables use of identifiers with to_string. It requires ADL to work. So,
+/** Enables use of identifiers with to_string. It requires ADL to work. So,
 it should be invoked as: `to_string(id);` and should be preceded by
 `using std::to_string`. */
 template <typename Tag> inline
@@ -237,8 +227,7 @@ std::string to_string(const drake::Identifier<Tag>& id) {
 
 namespace std {
 
-/**
-Enables use of the identifier to serve as a key in STL containers.
+/** Enables use of the identifier to serve as a key in STL containers.
 @relates Identifier */
 template <typename Tag>
 struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};

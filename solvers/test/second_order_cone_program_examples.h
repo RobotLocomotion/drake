@@ -21,8 +21,7 @@ enum class EllipsoidsSeparationProblem {
 
 std::vector<EllipsoidsSeparationProblem> GetEllipsoidsSeparationProblems();
 
-/**
-This test is taken from the course notes of EE127A from University of
+/** This test is taken from the course notes of EE127A from University of
 California, Berkeley
 The goal is to find a hyperplane, that separates two ellipsoids
 E₁ = x₁ + R₁ * u₁, |u₁| ≤ 1
@@ -62,8 +61,7 @@ enum class QPasSOCPProblem { kProblem0, kProblem1 };
 
 std::vector<QPasSOCPProblem> GetQPasSOCPProblems();
 
-/**
-This example is taken from the course notes of EE127A from University of
+/** This example is taken from the course notes of EE127A from University of
 California, Berkeley
 For a quadratic program
 0.5 * x' * Q * x + c' * x
@@ -100,8 +98,7 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
   VectorXDecisionVariable x_qp_;
 };
 
-/**
-This example is taken from the paper
+/** This example is taken from the paper
 Applications of second-order cone programming
 By M.S.Lobo, L.Vandenberghe, S.Boyd and H.Lebret,
 Section 3.6
@@ -150,8 +147,7 @@ class TestFindSpringEquilibrium
   symbolic::Variable z_;
 };
 
-/**
-Solve the following trivial problem
+/** Solve the following trivial problem
 max (2x+3)*(3x+2)
 s.t 2x+3 >= 0
     3x+2 >= 0
@@ -174,8 +170,7 @@ class MaximizeGeometricMeanTrivialProblem1 {
   symbolic::Variable x_;
 };
 
-/**
-Solve the following trivial problem
+/** Solve the following trivial problem
 max (2x+3)*(3x+2)*(4x+5)
 s.t 2x+3 >= 0
     3x+2 >= 0
@@ -199,8 +194,7 @@ class MaximizeGeometricMeanTrivialProblem2 {
   symbolic::Variable x_;
 };
 
-/**
-Tests maximizing geometric mean through second order cone constraint.
+/** Tests maximizing geometric mean through second order cone constraint.
 Given some points p₁, p₂, ..., pₖ ∈ ℝⁿ, find the smallest ellipsoid (centered
 at the origin, and aligned with the axes) such that the ellipsoid contains
 all these points.

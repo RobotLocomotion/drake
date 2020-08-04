@@ -12,8 +12,7 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
-/**
-This enum specifies the type of interpolator to use in constructing
+/** This enum specifies the type of interpolator to use in constructing
 the piece-wise polynomial. */
 enum class InterpolatorType {
   ZeroOrderHold,
@@ -22,8 +21,7 @@ enum class InterpolatorType {
   Cubic
 };
 
-/**
-This class implements a source of joint positions for a robot.
+/** This class implements a source of joint positions for a robot.
 It has one input port for robot_plan_t messages containing a
 plan to follow.
 
@@ -67,8 +65,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
     return this->get_output_port(acceleration_output_port_);
   }
 
-  /**
-  Makes a plan to hold at the measured joint configuration @p q0 starting at
+  /** Makes a plan to hold at the measured joint configuration @p q0 starting at
   @p plan_start_time. This function needs to be explicitly called before any
   simulation. Otherwise this aborts in CalcOutput(). */
   void Initialize(double plan_start_time, const VectorX<double>& q0,

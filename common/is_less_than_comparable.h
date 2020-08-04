@@ -26,8 +26,7 @@ struct is_less_than_comparable_helper<T, typename std::enable_if<true,
 
 /** @endcond */
 
-/**
-@anchor is_less_than_comparable_doc
+/** @anchor is_less_than_comparable_doc
 Provides method for determining at run time if a class is comparable using
 the less-than operator (<).
 

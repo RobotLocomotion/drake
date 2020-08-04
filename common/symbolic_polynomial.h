@@ -52,8 +52,7 @@ struct CompareMonomial {
 };
 }  // namespace internal
 
-/**
-Represents symbolic polynomials. A symbolic polynomial keeps a mapping from
+/** Represents symbolic polynomials. A symbolic polynomial keeps a mapping from
 a monomial of indeterminates to its coefficient in a symbolic expression.
 
 A polynomial `p` has to satisfy an invariant such that
@@ -72,16 +71,14 @@ class Polynomial {
   Polynomial() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polynomial)
 
-  /**
-  Constructs a default value.  This overload is used by Eigen when
+  /** Constructs a default value.  This overload is used by Eigen when
   EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled. */
   explicit Polynomial(std::nullptr_t) : Polynomial() {}
 
   /** Constructs a polynomial from a map, Monomial → Expression. */
   explicit Polynomial(MapType init);
 
-  /**
-  Constructs a polynomial from a monomial @p m. Note that all variables
+  /** Constructs a polynomial from a monomial @p m. Note that all variables
   in `m` are considered as indeterminates. */
   //
   // Note that this implicit conversion is desirable to have a dot product of
@@ -89,15 +86,13 @@ class Polynomial {
   // NOLINTNEXTLINE(runtime/explicit)
   Polynomial(const Monomial& m);
 
-  /**
-  Constructs a polynomial from an expression @p e. Note that all variables
+  /** Constructs a polynomial from an expression @p e. Note that all variables
   in `e` are considered as indeterminates.
 
   @throws std::runtime_error if @p e is not a polynomial. */
   explicit Polynomial(const Expression& e);
 
-  /**
-  Constructs a polynomial from an expression @p e by decomposing it with
+  /** Constructs a polynomial from an expression @p e by decomposing it with
   respect to @p indeterminates.
 
   @note It collects the intersection of the variables appeared in `e` and
@@ -113,8 +108,7 @@ class Polynomial {
   /** Returns the decision variables of this polynomial. */
   const Variables& decision_variables() const;
 
-  /**
-  Sets the indeterminates to `new_indeterminates`.
+  /** Sets the indeterminates to `new_indeterminates`.
 
   Changing the indeterminates would change `monomial_to_coefficient_map()`,
   and also potentially the degree of the polynomial. Here is an example.
@@ -139,21 +133,18 @@ class Polynomial {
   /** Returns the total degree of this polynomial. */
   int TotalDegree() const;
 
-  /**
-  Returns the mapping from a Monomial to its corresponding coefficient of
+  /** Returns the mapping from a Monomial to its corresponding coefficient of
   this polynomial. */
   const MapType& monomial_to_coefficient_map() const;
 
   /** Returns an equivalent symbolic expression of this polynomial. */
   Expression ToExpression() const;
 
-  /**
-  Differentiates this polynomial with respect to the variable @p x. Note
+  /** Differentiates this polynomial with respect to the variable @p x. Note
   that a variable @p x can be either a decision variable or an indeterminate. */
   Polynomial Differentiate(const Variable& x) const;
 
-  /**
-  Computes the Jacobian matrix J of the polynomial with respect to
+  /** Computes the Jacobian matrix J of the polynomial with respect to
   @p vars. J(0,i) contains ∂f/∂vars(i). */
   template <typename Derived>
   Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> Jacobian(
@@ -170,21 +161,18 @@ class Polynomial {
     return J;
   }
 
-  /**
-  Evaluates this polynomial under a given environment @p env.
+  /** Evaluates this polynomial under a given environment @p env.
 
   @throws std::out_of_range if there is a variable in this polynomial whose
   assignment is not provided by @p env. */
   double Evaluate(const Environment& env) const;
 
-  /**
-  Partially evaluates this polynomial using an environment @p env.
+  /** Partially evaluates this polynomial using an environment @p env.
 
   @throws std::runtime_error if NaN is detected during evaluation. */
   Polynomial EvaluatePartial(const Environment& env) const;
 
-  /**
-  Partially evaluates this polynomial by substituting @p var with @p c.
+  /** Partially evaluates this polynomial by substituting @p var with @p c.
 
   @throws std::runtime_error if NaN is detected at any point during
   evaluation. */
@@ -193,8 +181,7 @@ class Polynomial {
   /** Adds @p coeff * @p m to this polynomial. */
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
-  /**
-  Removes the terms whose absolute value of the coefficients are smaller
+  /** Removes the terms whose absolute value of the coefficients are smaller
   than or equal to @p coefficient_tol
   For example, if the polynomial is 2x² + 3xy + 10⁻⁴x - 10⁻⁵,
   then after calling RemoveTermsWithSmallCoefficients(1e-3), the returned
@@ -222,24 +209,20 @@ class Polynomial {
   /** Returns true if this polynomial and @p p are structurally equal. */
   bool EqualTo(const Polynomial& p) const;
 
-  /**
-  Returns true if this polynomial and @p p are equal, after expanding the
+  /** Returns true if this polynomial and @p p are equal, after expanding the
   coefficients. */
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
-  /**
-  Returns true if this polynomial and @p are almost equal (the difference
+  /** Returns true if this polynomial and @p are almost equal (the difference
   in the corresponding coefficients are all less than @p tol), after
   expanding the coefficients. */
   bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
 
-  /**
-  Returns a symbolic formula representing the condition where this
+  /** Returns a symbolic formula representing the condition where this
   polynomial and @p p are the same. */
   Formula operator==(const Polynomial& p) const;
 
-  /**
-  Returns a symbolic formula representing the condition where this
+  /** Returns a symbolic formula representing the condition where this
   polynomial and @p p are not the same. */
   Formula operator!=(const Polynomial& p) const;
 
@@ -310,8 +293,7 @@ Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
 
-/**
-Provides the following seven operations:
+/** Provides the following seven operations:
 
 - Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
 - Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
@@ -471,8 +453,7 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 
 namespace drake {
 namespace symbolic {
-/**
-Evaluates a matrix `m` of symbolic polynomials using `env`.
+/** Evaluates a matrix `m` of symbolic polynomials using `env`.
 
 @returns a matrix of double whose size is the size of @p m.
 @throws std::runtime_error if NaN is detected during evaluation.
@@ -487,8 +468,7 @@ Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
   return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
 }
 
-/**
-Computes the Jacobian matrix J of the vector function @p f with respect to
+/** Computes the Jacobian matrix J of the vector function @p f with respect to
 @p vars. J(i,j) contains ∂f(i)/∂vars(j).
 
 @pre {@p vars is non-empty}.

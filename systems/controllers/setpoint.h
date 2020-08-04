@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-This is used to compute target spatial acceleration, which is the input
+/** This is used to compute target spatial acceleration, which is the input
 to the inverse dynamics controller.
 The target acceleration is computed by:
 acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
@@ -41,8 +40,7 @@ class CartesianSetpoint {
     Kd_.setZero();
   }
 
-  /**
-  @param pose_d Desired pose
+  /** @param pose_d Desired pose
   @param vel_d Desired velocity
   @param acc_d Desired feedforward acceleration
   @param Kp Position gain
@@ -57,8 +55,7 @@ class CartesianSetpoint {
     Kd_ = Kd;
   }
 
-  /**
-  Computes target acceleration using PD feedback + feedfoward acceleration.
+  /** Computes target acceleration using PD feedback + feedfoward acceleration.
   @param pose Measured pose
   @param vel Measured velocity
   @return Computed spatial acceleration. */
@@ -176,8 +173,7 @@ class VectorSetpoint {
     Kd_ = VectorX<Scalar>::Zero(dim);
   }
 
-  /**
-  @param pos_d Desired position
+  /** @param pos_d Desired position
   @param vel_d Desired velocity
   @param acc_d Desired feedforward acceleration
   @param Kp Position gain
@@ -197,8 +193,7 @@ class VectorSetpoint {
     Kd_ = Kd;
   }
 
-  /**
-  Computes target acceleration using PD feedback + feedforward acceleration
+  /** Computes target acceleration using PD feedback + feedforward acceleration
   @param idx Index
   @param pos Measured position
   @param vel Measured velocity
@@ -212,8 +207,7 @@ class VectorSetpoint {
     return acc;
   }
 
-  /**
-  Computes target acceleration using PD feedback + feedforward acceleration
+  /** Computes target acceleration using PD feedback + feedforward acceleration
   @param idx Index
   @param pos Measured position
   @param vel Measured velocity

@@ -1,6 +1,5 @@
 #pragma once
-/**
-@file
+/** @file
 This file provides a set of predicates which can be used with GTEST's
 ASSERT/EXPECT_PRED{n} macros. The motivation is to provide better diagnostic
 information when the assertions fail. Please consider a scenario where a
@@ -129,8 +128,7 @@ template <typename F>
   return !FormulaLess(f1, f2);
 }
 
-/**
-Compare if two polynomials p1 and p2 are the same, by checking if all the
+/** Compare if two polynomials p1 and p2 are the same, by checking if all the
 coefficients in their difference p1 - p2 is no larger than tol.
 @param p1 A polynomial.
 @param p2 A polynomial.

@@ -16,36 +16,31 @@ namespace drake {
 namespace manipulation {
 namespace perception {
 
-/**
-Gets the pose of an Optitrack rigid body.
+/** Gets the pose of an Optitrack rigid body.
 @returns X_OB, the pose of the body `B` in the optitrack frame `O`. */
 Isometry3<double> ExtractOptitrackPose(
     const optitrack::optitrack_rigid_body_t& message);
 
-/**
-Extracts poses of all objects from an Optitrack message.
+/** Extracts poses of all objects from an Optitrack message.
 @returns Mapping from object ID to pose. */
 std::map<int, Isometry3<double>> ExtractOptitrackPoses(
     const optitrack::optitrack_frame_t& frame);
 
-/**
-Gets a rigid body from an optitrack frame message given an object ID.
+/** Gets a rigid body from an optitrack frame message given an object ID.
 @param message Optitrack message.
 @param object_id ID to be searched for in the frame message.
 @returns Rigid body object, or `nullopt` if not found. */
 std::optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
       const optitrack::optitrack_frame_t& message, int object_id);
 
-/**
-Gets the object ID from an Optitrack description message.
+/** Gets the object ID from an Optitrack description message.
 @param message Description message.
 @returns Object ID if found, or `nullopt` if not found. */
 std::optional<int> FindOptitrackObjectId(
     const optitrack::optitrack_data_descriptions_t& message,
     const std::string& object_name);
 
-/**
-Extracts and provides an output of the pose of a desired object as an
+/** Extracts and provides an output of the pose of a desired object as an
 Eigen::Isometry3d from an Optitrack LCM OPTITRACK_FRAME_T message, the
 pose transformed to a desired coordinate frame.
 
@@ -53,8 +48,7 @@ pose transformed to a desired coordinate frame.
 class OptitrackPoseExtractor : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackPoseExtractor)
-  /**
-  Constructs the OptitrackPoseExtractor.
+  /** Constructs the OptitrackPoseExtractor.
   @param object_id An ID of the object being tracked. This ID must
   correspond to the those present within the OPTITRACK_FRAME_T message or
   else a runtime exception is thrown.

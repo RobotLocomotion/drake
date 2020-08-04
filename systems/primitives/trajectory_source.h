@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A source block that generates the value of a Trajectory for a given time.
+/** A source block that generates the value of a Trajectory for a given time.
 The output is vector values, and may vary with the time (as reflected in
 the context) at which the output is evaluated.
 
@@ -24,8 +23,7 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectorySource)
 
-  /**
-  @param trajectory Trajectory used by the system.
+  /** @param trajectory Trajectory used by the system.
   @param output_derivative_order The number of times to take the derivative.
   Must be greater than or equal to zero.
   @param zero_derivatives_beyond_limits All derivatives will be zero before
@@ -37,8 +35,7 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
   ~TrajectorySource() final = default;
 
  private:
-  /**
-  Outputs a vector of values evaluated at the context time of the trajectory
+  /** Outputs a vector of values evaluated at the context time of the trajectory
   and up to its Nth derivatives, where the trajectory and N are passed to
   the constructor. The size of the vector is:
   (1 + output_derivative_order) * rows of the trajectory passed to the

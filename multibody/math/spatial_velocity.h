@@ -16,8 +16,7 @@ template <typename T> class SpatialForce;
 // Forward declaration to define dot product with a spatial momentum.
 template <typename T> class SpatialMomentum;
 
-/**
-This class is used to represent a _spatial velocity_ (also called a
+/** This class is used to represent a _spatial velocity_ (also called a
 _twist_) that combines rotational (angular) and translational
 (linear) velocity components. Spatial velocities are 6-element
 quantities that are pairs of ordinary 3-vectors. Elements 0-2 are
@@ -57,22 +56,19 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialVelocity)
 
-  /**
-  Default constructor. In Release builds the elements of the newly
+  /** Default constructor. In Release builds the elements of the newly
   constructed spatial velocity are left uninitialized resulting in a zero
   cost operation. However in Debug builds those entries are set to NaN so
   that operations using this uninitialized spatial velocity fail fast,
   allowing fast bug detection. */
   SpatialVelocity() : Base() {}
 
-  /**
-  SpatialVelocity constructor from an angular velocity @p w and a linear
+  /** SpatialVelocity constructor from an angular velocity @p w and a linear
   velocity @p v. */
   SpatialVelocity(const Eigen::Ref<const Vector3<T>>& w,
                   const Eigen::Ref<const Vector3<T>>& v) : Base(w, v) {}
 
-  /**
-  SpatialVelocity constructor from an Eigen expression that represents a
+  /** SpatialVelocity constructor from an Eigen expression that represents a
   six-dimensional vector.
   This constructor will assert the size of V is six (6) at compile-time
   for fixed sized Eigen expressions and at run-time for dynamic sized Eigen
@@ -80,8 +76,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   template <typename Derived>
   explicit SpatialVelocity(const Eigen::MatrixBase<Derived>& V) : Base(V) {}
 
-  /**
-  In-place shift of a %SpatialVelocity from one point on a rigid body
+  /** In-place shift of a %SpatialVelocity from one point on a rigid body
   or frame to another point on the same body or frame.
   `this` spatial velocity `V_ABp_E` of a frame B at a point P fixed
   on B, measured in a frame A, and expressed in a frame E, is
@@ -139,8 +134,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return *this;
   }
 
-  /**
-  Shift of a %SpatialVelocity from one point on a rigid body
+  /** Shift of a %SpatialVelocity from one point on a rigid body
   or frame to another point on the same body or frame.
   This is an alternate signature for shifting a spatial velocity's
   point that does not change the original object. See
@@ -163,8 +157,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return SpatialVelocity<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /**
-  This method composes `this` spatial velocity `V_WP` of a frame P measured
+  /** This method composes `this` spatial velocity `V_WP` of a frame P measured
   in a frame W, with that of a third frame B moving in P with spatial
   velocity `V_PB`. The result is the spatial velocity `V_WB` of frame B
   measured in W. At the instant in which the velocities are composed, frame
@@ -206,8 +199,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
     return this->Shift(p_PoBo_E) + V_PB_E;
   }
 
-  /**
-  Given `this` spatial velocity `V_IBp_E` of point P of body B,
+  /** Given `this` spatial velocity `V_IBp_E` of point P of body B,
   measured in an inertial frame I and expressed in a frame E,
   this method computes the 6-dimensional dot product with the spatial
   force `F_Bp_E` applied to point P, and expressed in the same
@@ -222,8 +214,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
            which cannot be enforced by this class. */
   T dot(const SpatialForce<T>& F_Q_E) const;
 
-  /**
-  Given `this` spatial velocity `V_NBp_E` of rigid body B frame shifted to
+  /** Given `this` spatial velocity `V_NBp_E` of rigid body B frame shifted to
   point P, measured in an inertial (or Newtonian) frame N and, expressed in
   a frame E this method computes the dot product with the spatial momentum
   `L_NBp_E` of rigid body B, about point P, and expressed in the same
@@ -242,8 +233,7 @@ class SpatialVelocity : public SpatialVector<SpatialVelocity, T> {
   T dot(const SpatialMomentum<T>& L_NBp_E) const;
 };
 
-/**
-Performs the addition of two spatial velocities. This operator
+/** Performs the addition of two spatial velocities. This operator
 returns the spatial velocity that results from adding the operands as if
 they were 6-dimensional vectors. In other words, the resulting spatial
 velocity contains a rotational component which is the 3-dimensional
@@ -286,8 +276,7 @@ inline SpatialVelocity<T> operator+(
   return SpatialVelocity<T>(V_MAb_E) += V_AB_E;
 }
 
-/**
-The addition of two spatial velocities relates to the composition of
+/** The addition of two spatial velocities relates to the composition of
 the spatial velocities for two frames given we know the relative spatial
 velocity between them, see
 operator+(const SpatialVelocity<T>&, const SpatialVelocity<T>&) for

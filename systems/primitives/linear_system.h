@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A discrete OR continuous linear system.
+/** A discrete OR continuous linear system.
 
 If time_period>0.0, then the linear system will have the following discrete-
 time state update:
@@ -38,8 +37,7 @@ class LinearSystem : public AffineSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystem)
 
-  /**
-  Constructs a %LinearSystem with a fixed set of coefficient matrices `A`,
+  /** Constructs a %LinearSystem with a fixed set of coefficient matrices `A`,
   `B`,`C`, and `D`.
   The coefficient matrices must obey the following dimensions:
   | Matrix  | Num Rows    | Num Columns |
@@ -60,8 +58,7 @@ class LinearSystem : public AffineSystem<T> {
   template <typename U>
   explicit LinearSystem(const LinearSystem<U>&);
 
-  /**
-  Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
+  /** Creates a unique pointer to LinearSystem<T> by decomposing @p dynamics and
   @p outputs using @p state_vars and @p input_vars.
 
   @throws std::runtime_error if either @p dynamics or @p outputs is not
@@ -74,8 +71,7 @@ class LinearSystem : public AffineSystem<T> {
       double time_period = 0.0);
 
  protected:
-  /**
-  Constructor that specifies scalar-type conversion support.
+  /** Constructor that specifies scalar-type conversion support.
   @param converter scalar-type conversion support helper (i.e., AutoDiff,
   etc.); pass a default-constructed object if such support is not desired.
   See @ref system_scalar_conversion for detailed background and examples
@@ -87,8 +83,7 @@ class LinearSystem : public AffineSystem<T> {
                const Eigen::Ref<const Eigen::MatrixXd>& D, double time_period);
 };
 
-/**
-Base class for a discrete or continuous linear time-varying (LTV) system.
+/** Base class for a discrete or continuous linear time-varying (LTV) system.
 
 If `time_period > 0.0`, the system will have the following discrete-time
 state update:
@@ -108,8 +103,7 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingLinearSystem)
 
  protected:
-  /**
-  Constructor.
+  /** Constructor.
 
   @param converter scalar-type conversion support helper (i.e., AutoDiff,
   etc.); pass a default-constructed object if such support is not desired.
@@ -135,8 +129,7 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   }
 };
 
-/**
-Takes the first-order Taylor expansion of a System around a nominal
+/** Takes the first-order Taylor expansion of a System around a nominal
 operating point (defined by the Context).
 
 This method currently supports linearizing around at most a single vector
@@ -190,8 +183,7 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
 // Note: The TypeSafeIndices (InputPortIndex and OutputPortIndex) didn't let
 // me handle the additional options without a lot of boilerplate.
-/**
-A first-order Taylor series approximation to a @p system in the neighborhood
+/** A first-order Taylor series approximation to a @p system in the neighborhood
 of an arbitrary point.  When Taylor-expanding a system at a non-equilibrium
 point, it may be represented either of the form:
   @f[ \dot{x} - \dot{x}_0 = A (x - x_0) + B (u - u_0), @f]
@@ -243,24 +235,20 @@ std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
     std::variant<OutputPortSelection, OutputPortIndex> output_port_index =
         OutputPortSelection::kUseFirstOutputIfItExists);
 
-/**
-Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
+/** Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 @ingroup control_systems */
 Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys);
 
-/**
-Returns true iff the controllability matrix is full row rank.
+/** Returns true iff the controllability matrix is full row rank.
 @ingroup control_systems */
 bool IsControllable(const LinearSystem<double>& sys,
                     std::optional<double> threshold = std::nullopt);
 
-/**
-Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
+/** Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 @ingroup estimator_systems */
 Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
 
-/**
-Returns true iff the observability matrix is full column rank.
+/** Returns true iff the observability matrix is full column rank.
 @ingroup estimator_systems */
 bool IsObservable(const LinearSystem<double>& sys,
                   std::optional<double> threshold = std::nullopt);

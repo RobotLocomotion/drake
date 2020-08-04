@@ -10,8 +10,7 @@
 namespace drake {
 namespace manipulation {
 namespace perception {
-/**
-This class accepts the pose of a rigid body (composed by a
+/** This class accepts the pose of a rigid body (composed by a
 Eigen::Isometry3d) and returns a smoothed pose by performing either the first
 or both of these processes :
  i. Rejecting outliers on the basis of user-defined linear/angular velocity
@@ -35,8 +34,7 @@ class PoseSmoother : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSmoother)
 
-  /**
-  Constructs the pose smoother with or without averaging - i.e. performs
+  /** Constructs the pose smoother with or without averaging - i.e. performs
   outlier rejection and smoothing of the input pose. Smoothing is disabled
   for a window size lesser than 1.
   @param desired_max_linear_velocity Upper threshold on linear velocity

@@ -6,8 +6,7 @@
 
 namespace drake {
 namespace math {
-/**
-For a sparse matrix, return a vector of triplets, such that we can
+/** For a sparse matrix, return a vector of triplets, such that we can
 reconstruct the matrix using setFromTriplet function
 @param matrix A sparse matrix
 @return A triplet with the row, column and value of the non-zero entries.
@@ -28,8 +27,7 @@ std::vector<Eigen::Triplet<typename Derived::Scalar>> SparseMatrixToTriplets(
   return triplets;
 }
 
-/**
-For a sparse matrix, return the row indices, the column indices, and value of
+/** For a sparse matrix, return the row indices, the column indices, and value of
 the non-zero entries.
 For example, the matrix
 <!--

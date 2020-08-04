@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-Solves inverse dynamics with no consideration for joint actuator force
+/** Solves inverse dynamics with no consideration for joint actuator force
 limits. The system also provides a pure gravity compensation mode. This
 system provides a BasicVector input port for the state `(q, v)`, where `q`
 is the generalized position and `v` is the generalized velocity, and a
@@ -46,8 +45,7 @@ class InverseDynamics : public LeafSystem<T> {
   // construction of this system: incorporating *no* external forces or all
   // forces on the plant. The current approach does neither: it only pledges to
   // account for exactly the forces that MultibodyPlant does.
-  /**
-  Computes the generalized force `tau_id` that needs to be applied so that
+  /** Computes the generalized force `tau_id` that needs to be applied so that
   the multibody system undergoes a desired acceleration `vd_d`. That is,
   `tau_id` is the result of an inverse dynamics computation according to:
   <pre>
@@ -82,8 +80,7 @@ class InverseDynamics : public LeafSystem<T> {
     return this->get_input_port(input_port_index_desired_acceleration_);
   }
 
-  /**
-  Returns the output port for the generalized forces that realize the desired
+  /** Returns the output port for the generalized forces that realize the desired
   acceleration. The dimension of that force vector will be identical to the
   dimensionality of the generalized velocities. */
   const OutputPort<T>& get_output_port_force() const {

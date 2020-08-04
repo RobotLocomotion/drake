@@ -10,8 +10,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-@addtogroup geometry_roles
+/** @addtogroup geometry_roles
 
 Geometry roles help define how a real-world object is modeled in Drake.
 
@@ -144,8 +143,7 @@ that role that it requires/prefers.
 
 Next topic: @ref proximity_queries */
 
-/**
-The set of properties for geometry used in a _proximity_ role.
+/** The set of properties for geometry used in a _proximity_ role.
 
 <!-- TODO(SeanCurtis-TRI): When the hydroelastic geometry module is written,
  put a reference to the discussion of ProximityProperties here.  -->
@@ -159,8 +157,7 @@ class ProximityProperties final : public GeometryProperties {
   ProximityProperties() = default;
 };
 
-/**
-The set of properties for geometry used in a "perception" role.
+/** The set of properties for geometry used in a "perception" role.
 
 Examples of functionality that depends on the perception role:
   - render::RenderEngineVtk
@@ -172,8 +169,7 @@ class PerceptionProperties final : public GeometryProperties{
   PerceptionProperties() = default;
 };
 
-/**
-The set of properties for geometry used in an "illustration" role.
+/** The set of properties for geometry used in an "illustration" role.
 
 Examples of functionality that depends on the illustration role:
   - @ref geometry_visualization_role_dependency
@@ -196,8 +192,7 @@ enum class Role {
 
 // NOTE: Currently this only includes new and replace; but someday it could also
 // include other operations: merge, subtract, etc.
-/**
-The operations that can be performed on the given properties when assigning
+/** The operations that can be performed on the given properties when assigning
 roles to geometry. */
 enum class RoleAssign {
   kNew,      ///< Assign the properties to a geometry that doesn't already have
@@ -205,8 +200,7 @@ enum class RoleAssign {
   kReplace   ///< Replace the existing role properties completely.
 };
 
-/**
-@name  Geometry role to string conversions
+/** @name  Geometry role to string conversions
 
 These are simply convenience functions for converting the Role enumeration into
 a human-readable string. */
@@ -218,14 +212,12 @@ std::ostream& operator<<(std::ostream& out, const Role& role);
 
 /** @} */
 
-/**
-@name  Convenience functions
+/** @name  Convenience functions
 
 A collection of functions to help facilitate working with properties. */
 /** @{ */
 
-/**
-Constructs an IllustrationProperties instance compatible with a simple
+/** Constructs an IllustrationProperties instance compatible with a simple
 "phong" material using only the given `diffuse` color. */
 IllustrationProperties MakePhongIllustrationProperties(
     const Vector4<double>& diffuse);

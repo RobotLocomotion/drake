@@ -20,20 +20,17 @@ class SolverInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface)
   virtual ~SolverInterface();
 
-  /**
-  Returns true iff this solver was enabled at compile-time. Certain solvers
+  /** Returns true iff this solver was enabled at compile-time. Certain solvers
   may be excluded at compile-time due to licensing or linking restrictions.
   When this method returns false, the Solve method will throw. */
   virtual bool available() const = 0;
 
-  /**
-  Returns true iff this solver is enabled at runtime. The toggle mechanism
+  /** Returns true iff this solver is enabled at runtime. The toggle mechanism
   is specific to the solver in question, but typically uses an environment
   variable. When this method returns false, the Solve method will throw. */
   virtual bool enabled() const = 0;
 
-  /**
-  Solves an optimization program with optional initial guess and solver
+  /** Solves an optimization program with optional initial guess and solver
   options. Note that these initial guess and solver options are not written
   to @p prog.
   If the @p prog has set an option for a solver, and @p solver_options
@@ -47,8 +44,7 @@ class SolverInterface {
   /** Returns the identifier of this solver. */
   virtual SolverId solver_id() const = 0;
 
-  /**
-  Returns true if the program attributes are satisfied by the solver's
+  /** Returns true if the program attributes are satisfied by the solver's
   capability. */
   virtual bool AreProgramAttributesSatisfied(
       const MathematicalProgram& prog) const = 0;

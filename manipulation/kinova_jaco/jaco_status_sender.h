@@ -9,8 +9,7 @@ namespace drake {
 namespace manipulation {
 namespace kinova_jaco {
 
-/**
-Creates and outputs lcmt_jaco_status messages.
+/** Creates and outputs lcmt_jaco_status messages.
 
 Note that this system does not actually send the message to an LCM
 channel. To send the message, the output of this system should be
@@ -48,8 +47,7 @@ class JacoStatusSender : public systems::LeafSystem<double> {
   JacoStatusSender(int num_joints = kJacoDefaultArmNumJoints,
                    int num_fingers = kJacoDefaultArmNumFingers);
 
-  /**
-  @name Named accessors for this System's input and output ports.
+  /** @name Named accessors for this System's input and output ports.
   @{ */
   const systems::InputPort<double>& get_state_input_port() const;
   const systems::InputPort<double>& get_torque_input_port() const;

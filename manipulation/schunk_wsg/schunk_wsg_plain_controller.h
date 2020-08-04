@@ -11,8 +11,7 @@ namespace schunk_wsg {
 enum class ControlMode { kPosition = 0, kForce = 1 };
 
 // N.B. Inheritance order must remain fixed for pydrake (#9243).
-/**
-This class implements a controller for a Schunk WSG gripper as a
+/** This class implements a controller for a Schunk WSG gripper as a
 `systems::Diagram`. The composition of this diagram is determined by the
 control mode specified for the controller, which can be either
 ControlMode::kPosition or ControlMode::kForce. In both cases, the overall
@@ -116,8 +115,7 @@ class SchunkWsgPlainController
       ControlMode control_mode = ControlMode::kPosition, double kp = 2000,
       double ki = 0, double kd = 5);
 
-  /**
-  Returns the feed-forward force input port.
+  /** Returns the feed-forward force input port.
   @pre `this` was constructed with `control_mode` set to
   `ControlMode::kForce`. */
   const systems::InputPort<double>&
@@ -136,8 +134,7 @@ class SchunkWsgPlainController
     return this->get_input_port(state_input_port_);
   }
 
-  /**
-  Returns the desired grip state input port.
+  /** Returns the desired grip state input port.
   @pre `this` was constructed with `control_mode` set to
   `ControlMode::kPosition`. */
   const systems::InputPort<double>& get_input_port_desired_state()

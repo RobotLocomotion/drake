@@ -5,8 +5,7 @@
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-/**
-Defines Drake's canonical implementation of the UniformRandomBitGenerator
+/** Defines Drake's canonical implementation of the UniformRandomBitGenerator
 C++ concept (as well as a few conventional extras beyond the concept, e.g.,
 seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and
 Nishimura, 1998.  For more information, see
@@ -30,8 +29,7 @@ class RandomGenerator {
   std::mt19937 generator_{};
 };
 
-/**
-Drake supports explicit reasoning about a few carefully chosen random
+/** Drake supports explicit reasoning about a few carefully chosen random
 distributions. */
 enum class RandomDistribution {
   kUniform = 0,   ///< Vector elements are independent and uniformly distributed

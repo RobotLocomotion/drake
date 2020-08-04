@@ -9,8 +9,7 @@
 
 namespace drake {
 namespace systems {
-/**
-This class is a factory class to generate SystemConstraintWrapper. Namely
+/** This class is a factory class to generate SystemConstraintWrapper. Namely
 this class helps to convert a SystemConstraint to a solvers::Constraint.
 Internally this class will convert a System<double> to System<AutoDiffXd>
 (and System<symbolic::Expression> if possible), and store these systems (of
@@ -22,8 +21,7 @@ class SystemConstraintAdapter {
 
   explicit SystemConstraintAdapter(const System<double>* system);
 
-  /**
-  This method creates a solvers::Constraint from a SystemConstraint.
+  /** This method creates a solvers::Constraint from a SystemConstraint.
   The newly created constraint represents
   lower <=
   system_constraint.Calc(UpdateContextFromDecisionVariablesGeneric(x)) <=
@@ -53,8 +51,7 @@ class SystemConstraintAdapter {
 
   // TODO(hongkai.dai): support parsing second-order-cone or quadratic
   // constraint.
-  /**
-  Given a SystemConstraint and the Context to evaluate this SystemConstraint,
+  /** Given a SystemConstraint and the Context to evaluate this SystemConstraint,
   parse the constraint in the symbolic forms. Currently we support parsing
   the following forms:
 
@@ -77,8 +74,7 @@ class SystemConstraintAdapter {
       SystemConstraintIndex index,
       const Context<symbolic::Expression>& context) const;
 
-  /**
-  Given a SystemConstraint and the Context to evaluate this SystemConstraint,
+  /** Given a SystemConstraint and the Context to evaluate this SystemConstraint,
   parses the constraint to a generic nonlinear constraint
   lower <= SystemConstraint.Calc(context) <= upper.
   If the SystemConstraint cannot be parsed to the form above, then returns
@@ -107,8 +103,7 @@ class SystemConstraintAdapter {
     return *system_autodiff_;
   }
 
-  /**
-  Returns the symbolic system. Throws a runtime error if the system cannot be
+  /** Returns the symbolic system. Throws a runtime error if the system cannot be
   instantiated with symbolic::Expression. */
   const System<symbolic::Expression>& system_symbolic() const;
 

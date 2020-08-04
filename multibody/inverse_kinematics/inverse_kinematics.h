@@ -11,8 +11,7 @@ namespace drake {
 namespace multibody {
 // TODO(hongkai.dai) The bounds on the generalized positions (i.e., joint
 // limits) should be imposed automatically.
-/**
-Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
+/** Solves an inverse kinematics (IK) problem on a MultibodyPlant, to find the
 postures of the robot satisfying certain constraints.
 The decision variables include the generalized position of the robot. */
 class InverseKinematics {
@@ -21,8 +20,7 @@ class InverseKinematics {
 
   ~InverseKinematics() {}
 
-  /**
-  Constructs an inverse kinematics problem for a MultibodyPlant.
+  /** Constructs an inverse kinematics problem for a MultibodyPlant.
   This constructor will create and own a context for @param plant.
   @param plant The robot on which the inverse kinematics problem will be
   solved.
@@ -38,8 +36,7 @@ class InverseKinematics {
   explicit InverseKinematics(const MultibodyPlant<double>& plant,
                              bool with_joint_limits = true);
 
-  /**
-  Constructs an inverse kinematics problem for a MultibodyPlant. If the user
+  /** Constructs an inverse kinematics problem for a MultibodyPlant. If the user
   wants to solve the problem with collision related constraint (like calling
   AddMinimumDistanceConstraint), please use this constructor.
   @param plant The robot on which the inverse kinematics problem will be
@@ -75,8 +72,7 @@ class InverseKinematics {
                     systems::Context<double>* plant_context,
                     bool with_joint_limits = true);
 
-  /**
-  Adds the kinematic constraint that a point Q, fixed in frame B, should lie
+  /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
   within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
   p_AQ_upper, where p_AQ is the position of point Q measured and expressed
   in frame A.
@@ -96,8 +92,7 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
       const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper);
 
-  /**
-  Constrains that the angle difference θ between the orientation of frame A
+  /** Constrains that the angle difference θ between the orientation of frame A
   and the orientation of frame B to satisfy θ ≤ θ_bound. Frame A is fixed to
   frame A_bar, with orientation R_AbarA measured in frame A_bar. Frame B is
   fixed to frame B_bar, with orientation R_BbarB measured in frame B_bar. The
@@ -130,8 +125,7 @@ class InverseKinematics {
       const Frame<double>& frameBbar,
       const math::RotationMatrix<double>& R_BbarB, double theta_bound);
 
-  /**
-  Constrains a target point T to be within a cone K. The point T ("T" stands
+  /** Constrains a target point T to be within a cone K. The point T ("T" stands
   for "target") is fixed in a frame B, with position p_BT. The cone
   originates from a point S ("S" stands for "source"), fixed in frame A with
   position p_AS, with the axis of the cone being n, also fixed
@@ -158,8 +152,7 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
       const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle);
 
-  /**
-  Constrains that the angle between a vector na and another vector nb is
+  /** Constrains that the angle between a vector na and another vector nb is
   between [θ_lower, θ_upper]. na is fixed to a frame A, while nb is fixed
   to a frame B.
   Mathematically, if we denote na_unit_A as na expressed in frame A after
@@ -193,8 +186,7 @@ class InverseKinematics {
       double angle_upper);
 
   // TODO(hongkai.dai): remove this documentation.
-  /**
-  Adds the constraint that the pairwise distance between objects should be no
+  /** Adds the constraint that the pairwise distance between objects should be no
   smaller than `minimum_distance`. We consider the distance between pairs
   of
   1. Anchored (static) object and a dynamic object.
@@ -216,8 +208,7 @@ class InverseKinematics {
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
       double minimum_distance, double influence_distance_offset = 1);
 
-  /**
-  Adds the constraint that the distance between a pair of geometries is
+  /** Adds the constraint that the distance between a pair of geometries is
   within some bounds.
   @param geometry_pair The pair of geometries between which the distance is
   constrained. Notice that we only consider the distance between a static
@@ -229,8 +220,7 @@ class InverseKinematics {
       const SortedPair<geometry::GeometryId>& geometry_pair,
       double distance_lower, double distance_upper);
 
-  /**
-  Add a constraint that the distance between point P1 attached to frame 1 and
+  /** Add a constraint that the distance between point P1 attached to frame 1 and
   point P2 attached to frame 2 is within the range [distance_lower,
   distance_upper].
   @param frame1 The frame to which P1 is attached.
@@ -246,8 +236,7 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& p_B2P2, double distance_lower,
       double distance_upper);
 
-  /**
-  Getter for q. q is the decision variable for the generalized positions of
+  /** Getter for q. q is the decision variable for the generalized positions of
   the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }
 

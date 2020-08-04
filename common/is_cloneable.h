@@ -28,8 +28,7 @@ struct is_cloneable_helper<
 
 /** @endcond */
 
-/**
-@anchor is_cloneable_doc
+/** @anchor is_cloneable_doc
 Provides method for determining at run time if a class is "cloneable".
 
 __Usage__

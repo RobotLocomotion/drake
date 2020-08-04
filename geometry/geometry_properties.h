@@ -17,8 +17,7 @@
 namespace drake {
 namespace geometry {
 
-/**
-The base class for defining a set of geometry properties.
+/** The base class for defining a set of geometry properties.
 
 Each property consists of a `(group, property)` name-pair and a typed value.
 The name pair allows for reuse of common property names (e.g., "diffuse") to be
@@ -237,8 +236,7 @@ class GeometryProperties {
   /** Reports the number of property groups in this set. */
   int num_groups() const { return static_cast<int>(values_.size()); }
 
-  /**
-  Retrieves the indicated property group. The returned group is valid for
+  /** Retrieves the indicated property group. The returned group is valid for
   as long as this instance.
   @throws std::logic_error if there is no group with the given name. */
   const Group& GetPropertiesInGroup(const std::string& group_name) const;
@@ -246,8 +244,7 @@ class GeometryProperties {
   /** Returns all of the defined group names. */
   std::set<std::string> GetGroupNames() const;
 
-  /**
-  Adds the named property (`group_name`, `name`) with the given `value`.
+  /** Adds the named property (`group_name`, `name`) with the given `value`.
   Adds the group if it doesn't already exist.
 
   @param group_name   The group name.
@@ -266,8 +263,7 @@ class GeometryProperties {
     }
   }
 
-  /**
-  Updates the named property (`group_name`, `name`) with the given `value`.
+  /** Updates the named property (`group_name`, `name`) with the given `value`.
   If the property doesn't already exist, it is equivalent to calling
   `AddProperty`. If the property does exist, its value (which must have the
   same type as `value`) will be replaced.
@@ -284,8 +280,7 @@ class GeometryProperties {
     UpdatePropertyAbstract(group_name, name, Value(value));
   }
 
-  /**
-  Adds the named property (`group_name`, `name`) with the given type-erased
+  /** Adds the named property (`group_name`, `name`) with the given type-erased
   `value`. Adds the group if it doesn't already exist.
 
   @param group_name   The group name.
@@ -295,8 +290,7 @@ class GeometryProperties {
   void AddPropertyAbstract(const std::string& group_name,
                            const std::string& name, const AbstractValue& value);
 
-  /**
-  Updates the named property (`group_name`, `name`) with the given
+  /** Updates the named property (`group_name`, `name`) with the given
   type-erased `value`. If the property doesn't already exist, it is equivalent
   to calling `AddPropertyAbstract`. If the property does exist, its value
   (which must have the same type as `value`) will be replaced.
@@ -309,8 +303,7 @@ class GeometryProperties {
                               const std::string& name,
                               const AbstractValue& value);
 
-  /**
-  Reports if the property (`group_name`, `name`) exists in the group.
+  /** Reports if the property (`group_name`, `name`) exists in the group.
 
   @param group_name  The name of the group to which the tested property should
                      belong.
@@ -320,8 +313,7 @@ class GeometryProperties {
   bool HasProperty(const std::string& group_name,
                    const std::string& name) const;
 
-  /**
-  Retrieves the typed value for the property (`group_name`, `name`) from
+  /** Retrieves the typed value for the property (`group_name`, `name`) from
   this set of properties.
 
   @param group_name  The name of the group to which the property belongs.
@@ -348,8 +340,7 @@ class GeometryProperties {
     }
   }
 
-  /**
-  Retrieves the type-erased value for the property (`group_name`, `name`)
+  /** Retrieves the type-erased value for the property (`group_name`, `name`)
   from this set of properties.
 
   @param group_name  The name of the group to which the property belongs.
@@ -359,8 +350,7 @@ class GeometryProperties {
   const AbstractValue& GetPropertyAbstract(const std::string& group_name,
                                            const std::string& name) const;
 
-  /**
-  Retrieves the typed value for the property (`group_name`, `name`) from the
+  /** Retrieves the typed value for the property (`group_name`, `name`) from the
   set of properties (if it exists), otherwise returns the given default value.
   The given `default_value` is returned only if the property is missing. If the
   property exists and is of a _different_ type, an exception will be thrown. If
@@ -406,8 +396,7 @@ class GeometryProperties {
     }
   }
 
-  /**
-  Returns the default group name. There is no guarantee as to _what_ string
+  /** Returns the default group name. There is no guarantee as to _what_ string
   corresponds to the default group. Therefore it should always be accessed via
   this method. */
   static const std::string& default_group_name() {
@@ -415,8 +404,7 @@ class GeometryProperties {
     return kDefaultGroup.access();
   }
 
-  /**
-  Removes the (`group_name`, `name`) property (if it exists). Upon
+  /** Removes the (`group_name`, `name`) property (if it exists). Upon
   completion the property will not be in the set.
   @returns `true` if the property existed prior to the call. */
   bool RemoveProperty(const std::string& group_name, const std::string& name);
@@ -447,8 +435,7 @@ class GeometryProperties {
 #endif
 
  protected:
-  /**
-  Constructs a property set with the default group. Only invoked by final
+  /** Constructs a property set with the default group. Only invoked by final
   subclasses. */
   GeometryProperties() { values_.emplace(default_group_name(), Group{}); }
 

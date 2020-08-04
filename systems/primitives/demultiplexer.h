@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-This system splits a vector valued signal on its input into multiple
+/** This system splits a vector valued signal on its input into multiple
 outputs.
 
 The input to this system directly feeds through to its output.
@@ -22,8 +21,7 @@ class Demultiplexer final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Demultiplexer)
 
-  /**
-  Constructs %Demultiplexer with one vector valued output ports with sizes
+  /** Constructs %Demultiplexer with one vector valued output ports with sizes
   specified as the vector @p output_ports_sizes. The number of output ports
   is the length of this vector. The size of each output port is the value of
   the corresponding element of the vector @p output_ports_sizes.
@@ -38,8 +36,7 @@ class Demultiplexer final : public LeafSystem<T> {
   output_ports_sizes will be the size of the input port. */
   explicit Demultiplexer(const std::vector<int>& output_ports_sizes);
 
-  /**
-  Constructs %Demultiplexer with one vector valued input port of size
+  /** Constructs %Demultiplexer with one vector valued input port of size
   @p size and vector valued output ports of size @p output_ports_size.
 
   @throws std::logic_error if output_ports_sizes can not exactly divide @p

@@ -18,8 +18,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-A %Joint models the kinematical relationship which characterizes the
+/** A %Joint models the kinematical relationship which characterizes the
 possible relative motion between two bodies.
 The two bodies connected by a %Joint object are referred to as the
 _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
@@ -74,8 +73,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
-  /**
-  Creates a joint between two Frame objects which imposes a given kinematic
+  /** Creates a joint between two Frame objects which imposes a given kinematic
   relation between frame F attached on the parent body P and frame M
   attached on the child body B. The joint will be initialized to the model
   instance from @p frame_on_child (this is the typical convention for joints
@@ -174,13 +172,11 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return frame_on_child_;
   }
 
-  /**
-  Returns a string identifying the type of `this` joint, such as "revolute"
+  /** Returns a string identifying the type of `this` joint, such as "revolute"
   or "prismatic". */
   virtual const std::string& type_name() const = 0;
 
-  /**
-  Returns the index to the first generalized velocity for this joint
+  /** Returns the index to the first generalized velocity for this joint
   within the vector v of generalized velocities for the full multibody
   system. */
   int velocity_start() const {
@@ -193,8 +189,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return do_get_num_velocities();
   }
 
-  /**
-  Returns the index to the first generalized position for this joint
+  /** Returns the index to the first generalized position for this joint
   within the vector q of generalized positions for the full multibody
   system. */
   int position_start() const {
@@ -207,8 +202,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return do_get_num_positions();
   }
 
-  /**
-  Returns the position coordinate for joints with a single degree of
+  /** Returns the position coordinate for joints with a single degree of
   freedom.
   @throws std::exception if the joint does not have a single degree of
   freedom. */
@@ -217,8 +211,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return DoGetOnePosition(context);
   }
 
-  /**
-  Returns the velocity coordinate for joints with a single degree of
+  /** Returns the velocity coordinate for joints with a single degree of
   freedom.
   @throws std::exception if the joint does not have a single degree of
   freedom. */
@@ -228,8 +221,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   }
 
   // NVI to DoAddInOneForce().
-  /**
-  Adds into `forces` a force along the one of the joint's degrees of
+  /** Adds into `forces` a force along the one of the joint's degrees of
   freedom indicated by index `joint_dof`.
   The meaning for this degree of freedom and even its dimensional units
   depend on the specific joint sub-class. For a RevoluteJoint for instance,
@@ -266,8 +258,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   }
 
   // NVI to DoAddInOneForce().
-  /**
-  Adds into `forces` the force due to damping within `this` joint.
+  /** Adds into `forces` the force due to damping within `this` joint.
 
   @param[in] context
     The context storing the state and parameters for the model to which
@@ -284,8 +275,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     DoAddInDamping(context, forces);
   }
 
-  /**
-  @name Methods to get and set the limits of `this` joint. For position
+  /** @name Methods to get and set the limits of `this` joint. For position
   limits, the layout is the same as the generalized position's. For
   velocity and acceleration limits, the layout is the same as the
   generalized velocity's. A limit with value +/- ∞ implies no upper or
@@ -326,8 +316,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return default_positions_;
   }
 
-  /**
-  Sets the position limits to @p lower_limits and @p upper_limits.
+  /** Sets the position limits to @p lower_limits and @p upper_limits.
   @throws std::exception if the dimension of @p lower_limits or
   @p upper_limits does not match num_positions().
   @throws std::exception if any of @p lower_limits is larger than the
@@ -344,8 +333,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     pos_upper_limits_ = upper_limits;
   }
 
-  /**
-  Sets the velocity limits to @p lower_limits and @p upper_limits.
+  /** Sets the velocity limits to @p lower_limits and @p upper_limits.
   @throws std::exception if the dimension of @p lower_limits or
   @p upper_limits does not match num_velocities().
   @throws std::exception if any of @p lower_limits is larger than the
@@ -359,8 +347,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     vel_upper_limits_ = upper_limits;
   }
 
-  /**
-  Sets the acceleration limits to @p lower_limits and @p upper_limits.
+  /** Sets the acceleration limits to @p lower_limits and @p upper_limits.
   @throws std::exception if the dimension of @p lower_limits or
   @p upper_limits does not match num_velocities().
   @throws std::exception if any of @p lower_limits is larger than the
@@ -374,8 +361,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     acc_upper_limits_ = upper_limits;
   }
 
-  /**
-  Sets the default positions to @p default_positions. Joint subclasses are
+  /** Sets the default positions to @p default_positions. Joint subclasses are
   expected to implement the do_set_default_positions().
   @throws std::exception if the dimension of @p default_positions does not
   match num_positions().
@@ -409,8 +395,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   // End of hidden Doxygen section.
 
  protected:
-  /**
-  (Advanced) Structure containing all the information needed to build the
+  /** (Advanced) Structure containing all the information needed to build the
   MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
   %Joint creates a BluePrint of its implementation with MakeModelBlueprint()
   so that MultibodyTree can build an implementation for it. */
@@ -419,8 +404,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     // TODO(amcastro-tri): add force elements, constraints, bodies.
   };
 
-  /**
-  (Advanced) A Joint is implemented in terms of MultibodyTree elements such
+  /** (Advanced) A Joint is implemented in terms of MultibodyTree elements such
   as bodies, mobilizers, force elements and constraints. This object
   contains the internal details of the MultibodyTree implementation for a
   joint. The implementation does not own the MBT elements, it just keeps
@@ -428,13 +412,11 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   This is intentionally made a protected member so that derived classes have
   access to its definition. */
   struct JointImplementation {
-    /**
-    Default constructor to create an empty implementation. Used by
+    /** Default constructor to create an empty implementation. Used by
     Joint::CloneToScalar(). */
     JointImplementation() {}
 
-    /**
-    This constructor creates an implementation for `this` joint from the
+    /** This constructor creates an implementation for `this` joint from the
     blueprint provided. */
     explicit JointImplementation(const BluePrint& blue_print) {
       DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) != 0);
@@ -467,43 +449,37 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 #endif
     // End of hidden Doxygen section.
 
-    /**
-    References (raw pointers) to the mobilizers that make part of this
+    /** References (raw pointers) to the mobilizers that make part of this
     implementation. */
     std::vector<internal::Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 
-  /**
-  Implementation to the NVI velocity_start(), see velocity_start() for
+  /** Implementation to the NVI velocity_start(), see velocity_start() for
   details.
   @note Implementations must meet the styleguide requirements for snake_case
   accessor methods. */
   virtual int do_get_velocity_start() const = 0;
 
-  /**
-  Implementation to the NVI num_velocities(), see num_velocities() for
+  /** Implementation to the NVI num_velocities(), see num_velocities() for
   details.
   @note Implementations must meet the styleguide requirements for snake_case
   accessor methods. */
   virtual int do_get_num_velocities() const = 0;
 
-  /**
-  Implementation to the NVI position_start(), see position_start() for
+  /** Implementation to the NVI position_start(), see position_start() for
   details.
   @note Implementations must meet the styleguide requirements for snake_case
   accessor methods. */
   virtual int do_get_position_start() const = 0;
 
-  /**
-  Implementation to the NVI num_positions(), see num_positions() for
+  /** Implementation to the NVI num_positions(), see num_positions() for
   details.
   @note Implementations must meet the styleguide requirements for
   snake_case accessor methods. */
   virtual int do_get_num_positions() const = 0;
 
-  /**
-  Implementation to the NVI set_default_positions(), see
+  /** Implementation to the NVI set_default_positions(), see
   set_default_positions() for details. It is the responsibility of the
   subclass to ensure that their joint implementation, should they have one,
   is updated with @p default_positions.
@@ -512,8 +488,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   virtual void do_set_default_positions(
       const VectorX<double>& default_positions) = 0;
 
-  /**
-  Implementation to the NVI GetOnePosition() that must only be implemented
+  /** Implementation to the NVI GetOnePosition() that must only be implemented
   by those joint subclasses that have a single degree of freedom.
   The default implementation for all other joints is to abort with an
   appropriate message.
@@ -524,8 +499,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         "GetOnePosition can only be called on single-dof joints.");
   }
 
-  /**
-  Implementation to the NVI GetOneVelocity() that must only be implemented
+  /** Implementation to the NVI GetOneVelocity() that must only be implemented
   by those joint subclasses that have a single degree of freedom.
   The default implementation for all other joints is to abort with an
   appropriate message.
@@ -536,8 +510,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         "GetOneVelocity can only be called on single-dof joints.");
   }
 
-  /**
-  Adds into `forces` a force along the one of the joint's degrees of
+  /** Adds into `forces` a force along the one of the joint's degrees of
   freedom given by `joint_dof`.
   How forces are added to a MultibodyTree model depends on the underlying
   implementation of a particular joint and therefore specific %Joint
@@ -555,8 +528,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
       const T& joint_tau,
       MultibodyForces<T>* forces) const = 0;
 
-  /**
-  Adds into MultibodyForces the forces due to damping within `this` joint.
+  /** Adds into MultibodyForces the forces due to damping within `this` joint.
   How forces are added to a MultibodyTree model depends on the underlying
   implementation of a particular joint (for instance, mobilizer vs.
   constraint) and therefore specific %Joint subclasses must provide a
@@ -569,8 +541,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   // though we could require them to have one in the future.
   void DoSetTopology(const internal::MultibodyTreeTopology&) {}
 
-  /**
-  @name Methods to make a clone templated on different scalar types.
+  /** @name Methods to make a clone templated on different scalar types.
   @{
   Clones this %Joint (templated on T) to a joint templated on `double`. */
   virtual std::unique_ptr<Joint<double>> DoCloneToScalar(
@@ -584,14 +555,12 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /** @} */
 
-  /**
-  This method must be implemented by derived classes in order to provide
+  /** This method must be implemented by derived classes in order to provide
   JointImplementationBuilder a BluePrint of their internal implementation
   JointImplementation. */
   virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint() const = 0;
 
-  /**
-  Returns a const reference to the internal implementation of `this` joint.
+  /** Returns a const reference to the internal implementation of `this` joint.
   @warning The MultibodyTree model must have already been finalized, or
   this method will abort. */
   const JointImplementation& get_implementation() const {
@@ -601,8 +570,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return *implementation_;
   }
 
-  /**
-  Returns whether `this` joint owns a particular implementation.
+  /** Returns whether `this` joint owns a particular implementation.
   If the MultibodyTree has been finalized, this will return true. */
   bool has_implementation() const { return implementation_ != nullptr; }
 

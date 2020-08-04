@@ -13,8 +13,7 @@
 namespace drake {
 namespace symbolic {
 
-/**
-Calls visitor object @p v with a symbolic formula @p f, and arguments @p
+/** Calls visitor object @p v with a symbolic formula @p f, and arguments @p
 args. Visitor object is expected to implement the following methods which
 take @p f and @p args: `VisitFalse`, `VisitTrue`, `VisitVariable`,
 `VisitEqualTo`, VisitNotEqualTo, VisitGreaterThan,

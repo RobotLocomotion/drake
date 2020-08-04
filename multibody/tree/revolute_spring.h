@@ -14,8 +14,7 @@ namespace multibody {
 template <typename T>
 class Body;
 
-/**
-This %ForceElement models a torsional spring attached to a RevoluteJoint
+/** This %ForceElement models a torsional spring attached to a RevoluteJoint
 and applies a torque to that joint
 <pre>
   τ = -k⋅(θ - θ₀)
@@ -29,8 +28,7 @@ class RevoluteSpring final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteSpring)
 
-  /**
-  Constructor for a spring attached to the given joint
+  /** Constructor for a spring attached to the given joint
   @param[in] nominal_angle
     The nominal angle of the spring  θ₀, in radians, at which the spring
     applies no moment.

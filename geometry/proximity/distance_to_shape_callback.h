@@ -17,8 +17,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
-/**
-@file Provides the structures and logic to support signed distance queries
+/** @file Provides the structures and logic to support signed distance queries
 between shapes. */
 
 namespace drake {

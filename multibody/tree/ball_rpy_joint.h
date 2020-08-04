@@ -14,8 +14,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This Joint allows two bodies to rotate freely relative to one another.
+/** This Joint allows two bodies to rotate freely relative to one another.
 That is, given a frame F attached to the parent body P and a frame M
 attached to the child body B (see the Joint class's documentation),
 this Joint allows frame M to rotate freely with respect to F, while the
@@ -35,8 +34,7 @@ class BallRpyJoint final : public Joint<T> {
   /** The name for this Joint type.  It resolves to "ball_rpy". */
   static const char kTypeName[];
 
-  /**
-  Constructor to create a ball rpy joint between two bodies so that frame F
+  /** Constructor to create a ball rpy joint between two bodies so that frame F
   attached to the parent body P and frame M attached to the child body B
   rotate freely relative to one another. See this class's documentation
   for further details on the definition of these frames, get_angles() for an
@@ -78,19 +76,16 @@ class BallRpyJoint final : public Joint<T> {
     return name.access();
   }
 
-  /**
-  Returns `this` joint's damping constant in N⋅m⋅s. The damping torque
+  /** Returns `this` joint's damping constant in N⋅m⋅s. The damping torque
   (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion, with ω the
   angular velocity of frame M in F (see get_angular_velocity()) and τ the
   torque on child body B (to which M is rigidly attached). */
   double damping() const { return damping_; }
 
-  /**
-  @name Context-dependent value access
+  /** @name Context-dependent value access
   @{ */
 
-  /**
-  Gets the rotation angles of `this` joint from `context`.
+  /** Gets the rotation angles of `this` joint from `context`.
 
   The orientation `R_FM` of the child frame M in parent frame F is
   parameterized with space `x-y-z` Euler angles (also known as extrinsic
@@ -123,8 +118,7 @@ class BallRpyJoint final : public Joint<T> {
     return get_mobilizer()->get_angles(context);
   }
 
-  /**
-  Sets the `context` so that the generalized coordinates corresponding to
+  /** Sets the `context` so that the generalized coordinates corresponding to
   the rotation angles of `this` joint equals `angles`.
   @param[in] context
     The context of the model this joint belongs to.
@@ -138,8 +132,7 @@ class BallRpyJoint final : public Joint<T> {
     return *this;
   }
 
-  /**
-  Sets the random distribution that angles of this joint will be randomly
+  /** Sets the random distribution that angles of this joint will be randomly
   sampled from. See get_angles() for details on the angle representation. */
   void set_random_angles_distribution(
       const Vector3<symbolic::Expression>& angles) {
@@ -147,8 +140,7 @@ class BallRpyJoint final : public Joint<T> {
         Vector3<symbolic::Expression>{angles});
   }
 
-  /**
-  Retrieves from `context` the angular velocity `w_FM` of the child frame
+  /** Retrieves from `context` the angular velocity `w_FM` of the child frame
   M in the parent frame F, expressed in F.
 
   @param[in] context
@@ -161,8 +153,7 @@ class BallRpyJoint final : public Joint<T> {
     return get_mobilizer()->get_angular_velocity(context);
   }
 
-  /**
-  Sets in `context` the state for `this` joint so that the angular velocity
+  /** Sets in `context` the state for `this` joint so that the angular velocity
   of the child frame M in the parent frame F is `w_FM`.
   @param[out] context
     The context of the model this joint belongs to.
@@ -179,16 +170,14 @@ class BallRpyJoint final : public Joint<T> {
 
   /** @} */
 
-  /**
-  Gets the default angles for `this` joint. Wrapper for the more general
+  /** Gets the default angles for `this` joint. Wrapper for the more general
   `Joint::default_positions()`.
   @returns The default angles of `this` stored in `default_positions_` */
   Vector3<double> get_default_angles() const {
     return this->default_positions();
   }
 
-  /**
-  Sets the default angles of this joint.
+  /** Sets the default angles of this joint.
   @param[in] angles
     The desired default angles of the joint */
   void set_default_angles(const Vector3<double>& angles) {
@@ -196,8 +185,7 @@ class BallRpyJoint final : public Joint<T> {
   }
 
  protected:
-  /**
-  Joint<T> override called through public NVI, Joint::AddInForce().
+  /** Joint<T> override called through public NVI, Joint::AddInForce().
   Adding forces per-dof makes no physical sense. Therefore, this method
   throws an exception if invoked. */
   void DoAddInOneForce(const systems::Context<T>&, int, const T&,
@@ -207,8 +195,7 @@ class BallRpyJoint final : public Joint<T> {
         "freedom.");
   }
 
-  /**
-  Joint<T> override called through public NVI, Joint::AddInDamping().
+  /** Joint<T> override called through public NVI, Joint::AddInDamping().
   Therefore arguments were already checked to be valid.
   This method adds into `forces` a dissipative torque according to the
   viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()). */

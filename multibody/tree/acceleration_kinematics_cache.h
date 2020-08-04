@@ -16,8 +16,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This class is one of the cache entries in the Context. It holds the
+/** This class is one of the cache entries in the Context. It holds the
 kinematics results of computations that depend not only on the generalized
 positions and generalized velocities, but also on the time derivatives of
 the generalized coordinates.
@@ -32,8 +31,7 @@ class AccelerationKinematicsCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationKinematicsCache)
 
-  /**
-  Constructs an acceleration kinematics cache entry for the given
+  /** Constructs an acceleration kinematics cache entry for the given
   MultibodyTreeTopology.
   In Release builds specific entries are left uninitialized resulting in a
   zero cost operation. However in Debug builds those entries are set to NaN
@@ -49,8 +47,7 @@ class AccelerationKinematicsCache {
     vdot_.setZero();
   }
 
-  /**
-  Returns a constant reference to the spatial acceleration `A_WB` of the
+  /** Returns a constant reference to the spatial acceleration `A_WB` of the
   body B (associated with node @p body_node_index) as measured and expressed
   in the world frame W.
   This method aborts in Debug builds if `body_node_index` does not
@@ -70,8 +67,7 @@ class AccelerationKinematicsCache {
     return A_WB_pool_[body_node_index];
   }
 
-  /**
-  Returns a const reference to the pool of body accelerations.
+  /** Returns a const reference to the pool of body accelerations.
   The pool is returned as a `std::vector` of SpatialAcceleration objects
   ordered by BodyNodeIndex.
   Most users should not need to call this method. */
@@ -84,8 +80,7 @@ class AccelerationKinematicsCache {
     return A_WB_pool_;
   }
 
-  /**
-  Returns a constant reference to the generalized accelerations `vdot` for
+  /** Returns a constant reference to the generalized accelerations `vdot` for
   the entire model. */
   const VectorX<T>& get_vdot() const {
     return vdot_;

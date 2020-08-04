@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 Provides pybind11 `type_caster`s for Eigen geometric types.
 N.B. This uses some of pybind's coding conventions.
 

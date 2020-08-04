@@ -9,8 +9,7 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-/**
-Provides the ability to publish any vector-valued output port to the LCM
+/** Provides the ability to publish any vector-valued output port to the LCM
 @p channel, using the drake::lcmt_drake_signal LCM message type, by adding
 an appropriate LcmPublisherSystem to the @p builder.  If @p lcm is
 null, then an LCM instance will be created automatically (but this is

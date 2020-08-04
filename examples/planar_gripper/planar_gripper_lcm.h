@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 This file contains classes dealing with sending/receiving
 LCM messages related to the planar gripper.
 TODO(rcory) Create doxygen system diagrams for the classes below.
@@ -33,8 +32,7 @@ constexpr int kGripperDefaultNumFingers = 3;
 // TODO(rcory) Refine this value once the planner comes online.
 constexpr double kGripperLcmStatusPeriod = 0.010;
 
-/**
-Handles lcmt_planar_gripper_command messages from a LcmSubscriberSystem.
+/** Handles lcmt_planar_gripper_command messages from a LcmSubscriberSystem.
 
 This system has one abstract valued input port which expects a
 Value object templated on type `lcmt_planar_gripper_command`.
@@ -46,13 +44,11 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandDecoder)
 
-  /**
-  Constructor.
+  /** Constructor.
   @param num_fingers The total number of fingers used on the planar-gripper. */
   explicit GripperCommandDecoder(int num_fingers = kGripperDefaultNumFingers);
 
-  /**
-  Sets the initial position of the controlled gripper prior to any
+  /** Sets the initial position of the controlled gripper prior to any
   commands being received.  @p x contains the starting position.
   This position will be the commanded position (with zero
   velocity) until a position message is received.  If this
@@ -90,8 +86,7 @@ class GripperCommandDecoder : public systems::LeafSystem<double> {
   const OutputPort<double>* torques_output_port_{};
 };
 
-/**
-Creates and outputs lcmt_planar_gripper_command messages.
+/** Creates and outputs lcmt_planar_gripper_command messages.
 
 This system has two vector-valued input ports containing the
 desired position and velocity in the first port, and commanded torque on the
@@ -108,8 +103,7 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandEncoder)
 
-  /**
-  Constructor.
+  /** Constructor.
   @param num_joints The total number of fingers used on the planar-gripper. */
   explicit GripperCommandEncoder(int num_fingers = kGripperDefaultNumFingers);
 
@@ -133,8 +127,7 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
   const InputPort<double>* torques_input_port_{};
 };
 
-/**
-Handles lcmt_planar_gripper_status messages from a LcmSubscriberSystem.
+/** Handles lcmt_planar_gripper_status messages from a LcmSubscriberSystem.
 
 This system has one abstract valued input port which expects a
 Value object templated on type `lcmt_planar_gripper_status`.
@@ -148,8 +141,7 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusDecoder)
 
-  /**
-  Constructor.
+  /** Constructor.
   @param num_fingers The total number of fingers used on the planar-gripper. */
   explicit GripperStatusDecoder(int num_fingers = kGripperDefaultNumFingers);
 
@@ -182,8 +174,7 @@ class GripperStatusDecoder : public systems::LeafSystem<double> {
   const OutputPort<double>* force_output_port_{};
 };
 
-/**
-Creates and outputs lcmt_planar_gripper_status messages.
+/** Creates and outputs lcmt_planar_gripper_status messages.
 
 This system has two vector-valued input ports containing the
 current position and velocity (state) as well as fingertip forces (fy, fz).
@@ -198,8 +189,7 @@ class GripperStatusEncoder : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusEncoder)
 
-  /**
-  Constructor.
+  /** Constructor.
   @param num_joints The total number of fingers used on the planar-gripper. */
   explicit GripperStatusEncoder(int num_fingers = kGripperDefaultNumFingers);
 

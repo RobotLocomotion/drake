@@ -13,8 +13,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/**
-This class is one of the cache entries in the Context. It is used
+/** This class is one of the cache entries in the Context. It is used
 to store the results from the first pass of the articulated body algorithm
 for the computation of articulated body inertias. Please refer to @ref
 internal_forward_dynamics "Articulated Body Algorithm Forward Dynamics" for
@@ -35,16 +34,14 @@ class ArticulatedBodyInertiaCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
 
-  /**
-  Constructs an articulated body cache entry for the given
+  /** Constructs an articulated body cache entry for the given
   MultibodyTreeTopology. */
   explicit ArticulatedBodyInertiaCache(const MultibodyTreeTopology& topology) :
       num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 
-  /**
-  Articulated body inertia `P_B_W` of the body taken about Bo and expressed
+  /** Articulated body inertia `P_B_W` of the body taken about Bo and expressed
   in W. */
   const ArticulatedBodyInertia<T>& get_P_B_W(
       BodyNodeIndex body_node_index) const {
@@ -59,8 +56,7 @@ class ArticulatedBodyInertiaCache {
     return P_B_W_[body_node_index];
   }
 
-  /**
-  Articulated body inertia `Pplus_PB_W`, which can be thought of as the
+  /** Articulated body inertia `Pplus_PB_W`, which can be thought of as the
   articulated body inertia of parent body P as though it were inertialess,
   but taken about Bo and expressed in W. */
   const ArticulatedBodyInertia<T>& get_Pplus_PB_W(

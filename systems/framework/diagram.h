@@ -24,8 +24,7 @@ namespace systems {
 
 namespace internal {
 
-/**
-Destroys owned systems in the reverse order they were added; this enables
+/** Destroys owned systems in the reverse order they were added; this enables
 Systems to refer to each other during destruction, in the usual "undo"
 resource order one would expect for C++. */
 template <typename T>
@@ -59,8 +58,7 @@ class OwnedSystems {
 template <typename T>
 class DiagramBuilder;
 
-/**
-Diagram is a System composed of one or more constituent Systems, arranged
+/** Diagram is a System composed of one or more constituent Systems, arranged
 in a directed graph where the vertices are the constituent Systems
 themselves, and the edges connect the output of one constituent System
 to the input of another. To construct a Diagram, use a DiagramBuilder.
@@ -93,22 +91,19 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /** Returns a reference to the map of connections between Systems. */
   const std::map<InputPortLocator, OutputPortLocator>& connection_map() const;
 
-  /**
-  Returns the "locator" for the subsystem input port that was exported as
+  /** Returns the "locator" for the subsystem input port that was exported as
   the @p port_index input port for the Diagram. */
   const InputPortLocator& get_input_port_locator(
       InputPortIndex port_index) const;
 
-  /**
-  Returns the "locator" for the subsystem output port that was exported as
+  /** Returns the "locator" for the subsystem output port that was exported as
   the @p port_index output port for the Diagram. */
   const OutputPortLocator& get_output_port_locator(
       OutputPortIndex port_index) const;
 
   std::multimap<int, int> GetDirectFeedthroughs() const final;
 
-  /**
-  Allocates a DiagramEventCollection for this Diagram.
+  /** Allocates a DiagramEventCollection for this Diagram.
   @sa System::AllocateCompositeEventCollection(). */
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const final;
@@ -149,23 +144,20 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
       EigenPtr<VectorX<T>> residual) const final;
 
-  /**
-  Retrieves a reference to the subsystem with name @p name returned by
+  /** Retrieves a reference to the subsystem with name @p name returned by
   get_name().
   @throws std::logic_error if a match cannot be found.
   @see System<T>::get_name() */
   const System<T>& GetSubsystemByName(const std::string& name) const;
 
-  /**
-  Retrieves the state derivatives for a particular subsystem from the
+  /** Retrieves the state derivatives for a particular subsystem from the
   derivatives for the entire diagram. Aborts if @p subsystem is not
   actually a subsystem of this diagram. Returns a 0-length ContinuousState
   if @p subsystem has none. */
   const ContinuousState<T>& GetSubsystemDerivatives(const System<T>& subsystem,
       const ContinuousState<T>& derivatives) const;
 
-  /**
-  Retrieves the discrete state values for a particular subsystem from the
+  /** Retrieves the discrete state values for a particular subsystem from the
   discrete values for the entire diagram. Aborts if @p subsystem is not
   actually a subsystem of this diagram. Returns an empty DiscreteValues
   if @p subsystem has none. */
@@ -173,16 +165,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const System<T>& subsystem,
       const DiscreteValues<T>& discrete_values) const;
 
-  /**
-  Returns the const subsystem composite event collection from @p events
+  /** Returns the const subsystem composite event collection from @p events
   that corresponds to @p subsystem. Aborts if @p subsystem is not a
   subsystem of this diagram. */
   const CompositeEventCollection<T>&
   GetSubsystemCompositeEventCollection(const System<T>& subsystem,
       const CompositeEventCollection<T>& events) const;
 
-  /**
-  Returns the mutable subsystem composite event collection that corresponds
+  /** Returns the mutable subsystem composite event collection that corresponds
   to @p subsystem. Aborts if @p subsystem is not a subsystem of this
   diagram. */
   CompositeEventCollection<T>& GetMutableSubsystemCompositeEventCollection(
@@ -190,35 +180,30 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // TODO(david-german-tri): Provide finer-grained accessors for finer-grained
   // invalidation.
-  /**
-  Retrieves the state for a particular subsystem from the context for the
+  /** Retrieves the state for a particular subsystem from the context for the
   entire diagram. Invalidates all entries in that subsystem's cache that
   depend on State. Aborts if @p subsystem is not actually a subsystem of
   this diagram. */
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      Context<T>* context) const;
 
-  /**
-  Retrieves the state for a particular subsystem from the @p state for the
+  /** Retrieves the state for a particular subsystem from the @p state for the
   entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   diagram. */
   State<T>& GetMutableSubsystemState(const System<T>& subsystem,
                                      State<T>* state) const;
 
-  /**
-  Retrieves the state for a particular subsystem from the @p state for the
+  /** Retrieves the state for a particular subsystem from the @p state for the
   entire diagram. Aborts if @p subsystem is not actually a subsystem of this
   diagram. */
   const State<T>& GetSubsystemState(const System<T>& subsystem,
                                     const State<T>& state) const;
 
   //----------------------------------------------------------------------------
-  /**
-  @name                      Graphviz methods
+  /** @name                      Graphviz methods
   @{ */
 
-  /**
-  Returns a Graphviz fragment describing this Diagram. To obtain a complete
+  /** Returns a Graphviz fragment describing this Diagram. To obtain a complete
   Graphviz graph, call System<T>::GetGraphvizString. */
   void GetGraphvizFragment(int max_depth,
                            std::stringstream* dot) const override;
@@ -233,13 +218,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /** @} */
 
-  /**
-  Returns the index of the given @p sys in this diagram, or aborts if @p sys
+  /** Returns the index of the given @p sys in this diagram, or aborts if @p sys
   is not a member of the diagram. */
   SubsystemIndex GetSystemIndexOrAbort(const System<T>* sys) const;
 
-  /**
-  Reports if the indicated `output` is connected to the `input` port.
+  /** Reports if the indicated `output` is connected to the `input` port.
   @pre the ports belong to systems that are direct children of this diagram. */
   bool AreConnected(const OutputPort<T>& output,
                     const InputPort<T>& input) const;
@@ -248,15 +231,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   using System<T>::GetMutableSubsystemContext;
 
  protected:
-  /**
-  Constructs an uninitialized Diagram. Subclasses that use this constructor
+  /** Constructs an uninitialized Diagram. Subclasses that use this constructor
   are obligated to call DiagramBuilder::BuildInto(this).  Provides scalar-
   type conversion support only if every contained subsystem provides the
   same support. */
   Diagram();
 
-  /**
-  (Advanced) Constructs an uninitialized Diagram.  Subclasses that use this
+  /** (Advanced) Constructs an uninitialized Diagram.  Subclasses that use this
   constructor are obligated to call DiagramBuilder::BuildInto(this).
 
   Declares scalar-type conversion support using @p converter.  Support for
@@ -267,16 +248,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   related to scalar-type conversion support. */
   explicit Diagram(SystemScalarConverter converter);
 
-  /**
-  For the subsystem associated with @p witness_func, gets its subcontext
+  /** For the subsystem associated with @p witness_func, gets its subcontext
   from @p context, passes the subcontext to @p witness_func' Evaluate
   method and returns the result. Aborts if the subsystem is not part of
   this Diagram. */
   T DoCalcWitnessValue(const Context<T>& context,
                        const WitnessFunction<T>& witness_func) const final;
 
-  /**
-  For the subsystem associated with `witness_func`, gets its mutable
+  /** For the subsystem associated with `witness_func`, gets its mutable
   sub composite event collection from `events`, and passes it to
   `witness_func`'s AddEventToCollection method. This method also modifies
   `event` by updating the pointers to "diagram" continuous state to point to
@@ -286,54 +265,46 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       Event<T>* event,
       CompositeEventCollection<T>* events) const final;
 
-  /**
-  Provides witness functions of subsystems that are active at the beginning
+  /** Provides witness functions of subsystems that are active at the beginning
   of a continuous time interval. The vector of witness functions is not
   ordered in a particular manner. */
   void DoGetWitnessFunctions(const Context<T>& context,
                 std::vector<const WitnessFunction<T>*>* witnesses) const final;
 
-  /**
-  Returns a pointer to const context if @p target_system is a subsystem
+  /** Returns a pointer to const context if @p target_system is a subsystem
   of this, nullptr is returned otherwise. */
   const Context<T>* DoGetTargetSystemContext(
       const System<T>& target_system, const Context<T>* context) const final;
 
-  /**
-  Returns a pointer to mutable state if @p target_system is a subsystem
+  /** Returns a pointer to mutable state if @p target_system is a subsystem
   of this, nullptr is returned otherwise. */
   State<T>* DoGetMutableTargetSystemState(
       const System<T>& target_system, State<T>* state) const final;
 
-  /**
-  Returns a pointer to const state if @p target_system is a subsystem
+  /** Returns a pointer to const state if @p target_system is a subsystem
   of this, nullptr is returned otherwise. */
   const ContinuousState<T>* DoGetTargetSystemContinuousState(
       const System<T>& target_system,
       const ContinuousState<T>* xc) const final;
 
-  /**
-  Returns a pointer to const state if @p target_system is a subsystem
+  /** Returns a pointer to const state if @p target_system is a subsystem
   of this, nullptr is returned otherwise. */
   const State<T>* DoGetTargetSystemState(
       const System<T>& target_system, const State<T>* state) const final;
 
-  /**
-  Returns a pointer to mutable composite event collection if
+  /** Returns a pointer to mutable composite event collection if
   @p target_system is a subsystem of this, nullptr is returned otherwise. */
   CompositeEventCollection<T>* DoGetMutableTargetSystemCompositeEventCollection(
       const System<T>& target_system,
       CompositeEventCollection<T>* events) const final;
 
-  /**
-  Returns a pointer to const composite event collection if
+  /** Returns a pointer to const composite event collection if
   @p target_system is a subsystem of this, nullptr is returned otherwise. */
   const CompositeEventCollection<T>* DoGetTargetSystemCompositeEventCollection(
       const System<T>& target_system,
       const CompositeEventCollection<T>* events) const final;
 
-  /**
-  The @p generalized_velocity vector must have the same size and ordering as
+  /** The @p generalized_velocity vector must have the same size and ordering as
   the generalized velocity in the ContinuousState that this Diagram reserves
   in its context. */
   void DoMapVelocityToQDot(
@@ -341,16 +312,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const override;
 
-  /**
-  The @p generalized_velocity vector must have the same size and ordering as
+  /** The @p generalized_velocity vector must have the same size and ordering as
   the generalized velocity in the ContinuousState that this Diagram reserves
   in its context. */
   void DoMapQDotToVelocity(const Context<T>& context,
                            const Eigen::Ref<const VectorX<T>>& qdot,
                            VectorBase<T>* generalized_velocity) const override;
 
-  /**
-  Computes the next update time based on the configured actions, for scalar
+  /** Computes the next update time based on the configured actions, for scalar
   types that are arithmetic, or aborts for scalar types that are not
   arithmetic. */
   void DoCalcNextUpdateTime(const Context<T>& context,

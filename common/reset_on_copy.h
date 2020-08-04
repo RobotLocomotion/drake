@@ -14,8 +14,7 @@ namespace drake {
 // below is more than we need with the std::is_scalar<T> restriction, but is
 // strictly necessary for class types if you want std::vector to choose move
 // construction (content-preserving) over copy construction (resetting).
-/**
-Type wrapper that performs value-initialization on copy construction or
+/** Type wrapper that performs value-initialization on copy construction or
 assignment.
 
 Rather than copying the source supplied for copy construction or copy
@@ -87,8 +86,7 @@ class reset_on_copy {
   /** Constructs a reset_on_copy<T> with a value-initialized wrapped value. */
   reset_on_copy() noexcept(std::is_nothrow_default_constructible<T>::value) {}
 
-  /**
-  Constructs a %reset_on_copy<T> with a copy of the given value. This is
+  /** Constructs a %reset_on_copy<T> with a copy of the given value. This is
   an implicit conversion, so that %reset_on_copy<T> behaves more like
   the unwrapped type. */
   // NOLINTNEXTLINE(runtime/explicit)
@@ -96,8 +94,7 @@ class reset_on_copy {
       std::is_nothrow_copy_constructible<T>::value)
       : value_(value) {}
 
-  /**
-  Constructs a %reset_on_copy<T> with the given wrapped value, by move
+  /** Constructs a %reset_on_copy<T> with the given wrapped value, by move
   construction if possible. This is an implicit conversion, so that
   %reset_on_copy<T> behaves more like the unwrapped type. */
   // NOLINTNEXTLINE(runtime/explicit)
@@ -105,8 +102,7 @@ class reset_on_copy {
       std::is_nothrow_move_constructible<T>::value)
       : value_(std::move(value)) {}
 
-  /**
-  @name Implements copy/move construction and assignment.
+  /** @name Implements copy/move construction and assignment.
   These make %reset_on_copy objects CopyConstructible, CopyAssignable,
   MoveConstructible, and MoveAssignable.
   @{ */
@@ -115,8 +111,7 @@ class reset_on_copy {
   reset_on_copy(const reset_on_copy&) noexcept(
       std::is_nothrow_default_constructible<T>::value) {}
 
-  /**
-  Copy assignment just destructs the contained value and then
+  /** Copy assignment just destructs the contained value and then
   value-initializes it, _except_ for self-assignment which does nothing.
   The source argument is otherwise ignored. */
   reset_on_copy& operator=(const reset_on_copy& source) noexcept(
@@ -126,8 +121,7 @@ class reset_on_copy {
     return *this;
   }
 
-  /**
-  Move construction uses T's move constructor, then destructs and
+  /** Move construction uses T's move constructor, then destructs and
   value initializes the source. */
   reset_on_copy(reset_on_copy&& source) noexcept(
       std::is_nothrow_move_constructible<T>::value &&
@@ -137,8 +131,7 @@ class reset_on_copy {
     source.destruct_and_reset_value();
   }
 
-  /**
-  Move assignment uses T's move assignment, then destructs and value
+  /** Move assignment uses T's move assignment, then destructs and value
   initializes the source, _except_ for self-assignment which does nothing.
   The source argument is otherwise ignored. */
   reset_on_copy& operator=(reset_on_copy&& source) noexcept(
@@ -153,16 +146,14 @@ class reset_on_copy {
   }
   /** @} */
 
-  /**
-  @name Implicit conversion operators to make reset_on_copy<T> act
+  /** @name Implicit conversion operators to make reset_on_copy<T> act
   as the wrapped type.
   @{ */
   operator T&() noexcept { return value_; }
   operator const T&() const noexcept { return value_; }
   /** @} */
 
-  /**
-  @name Dereference operators if T is a pointer type.
+  /** @name Dereference operators if T is a pointer type.
   If type T is a pointer, these exist and return the pointed-to object.
   For non-pointer types these methods are not instantiated.
   @{ */

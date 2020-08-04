@@ -13,8 +13,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-@file
+/** @file
 @anchor model_instance
 Model instance information for multibody trees.
 
@@ -80,16 +79,14 @@ class ModelInstance :
     joint_actuators_.push_back(joint_actuator);
   }
 
-  /**
-  Returns an Eigen vector of the actuation for `this` model instance from a
+  /** Returns an Eigen vector of the actuation for `this` model instance from a
   vector `u` of actuator forces for the entire model.
   @throws std::logic_error if `u` is not of size
           MultibodyTree::num_actuators(). */
   VectorX<T> GetActuationFromArray(
       const Eigen::Ref<const VectorX<T>>& u) const;
 
-  /**
-  Given the actuation values `u_instance` for all actuators in `this` model
+  /** Given the actuation values `u_instance` for all actuators in `this` model
   instance, this method sets the portion of the actuation vector `u` (which
   is the actuation vector for the entire MultibodyTree) corresponding to the
   actuators for this model instance.
@@ -110,8 +107,7 @@ class ModelInstance :
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
-  /**
-  Returns an Eigen vector of the generalized positions
+  /** Returns an Eigen vector of the generalized positions
   for `this` model instance from a vector `q` of generalized
   positions for the entire MultibodyTree model.
   @throws std::logic_error if `q` is not of size
@@ -119,8 +115,7 @@ class ModelInstance :
   VectorX<T> GetPositionsFromArray(
       const Eigen::Ref<const VectorX<T>>& q) const;
 
-  /**
-  Sets the vector of generalized positions for `this` model instance in
+  /** Sets the vector of generalized positions for `this` model instance in
   the relevant locations of an array that corresponds to the positions for
   the entire MultibodyTree model. Elements of the array that do not
   correspond to `this` are not altered. Note that calling
@@ -133,8 +128,7 @@ class ModelInstance :
       const Eigen::Ref<const VectorX <T>>& q_instance,
       EigenPtr<VectorX<T>> q) const;
 
-  /**
-  Returns an Eigen vector of the generalized velocities
+  /** Returns an Eigen vector of the generalized velocities
   for `this` mobilizer from a vector `v` of generalized velocities for
   the entire MultibodyTree model.
   @throws std::logic_error if `v` is not of size
@@ -142,8 +136,7 @@ class ModelInstance :
   VectorX<T> GetVelocitiesFromArray(
       const Eigen::Ref<const VectorX<T>>& v) const;
 
-  /**
-  Sets the vector of generalized velocities for `this` model instance in
+  /** Sets the vector of generalized velocities for `this` model instance in
   the relevant locations of an array corresponding to the velocities for the
   entire MultibodyTree model. Elements of the array that do not
   correspond to `this` are not altered. Note that calling

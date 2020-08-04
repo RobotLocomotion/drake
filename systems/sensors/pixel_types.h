@@ -10,8 +10,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-The enum class to be used for describing pixel type in Image class.
+/** The enum class to be used for describing pixel type in Image class.
 The naming rule for the enum members is:
 k + (pixel format) + (bit per a channel) + (data type for channels).
 For the type for channels, one of the following capital letters is used.
@@ -40,8 +39,7 @@ enum class PixelType {
   kExpr,
 };
 
-/**
-The enum class to be used to express semantic meaning of pixels.
+/** The enum class to be used to express semantic meaning of pixels.
 This also expresses the order of channels in a pixel if the pixel has
 multiple channels. */
 enum class PixelFormat {
@@ -63,8 +61,7 @@ enum class PixelFormat {
   kExpr,
 };
 
-/**
-Traits class for Image, specialized by PixelType.
+/** Traits class for Image, specialized by PixelType.
 
 All traits specialization should offer at least these two constants:
 - kNumChannels: The number of channels.

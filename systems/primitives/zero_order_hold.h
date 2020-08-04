@@ -9,8 +9,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A zero order hold block with input u, which may be vector-valued (discrete
+/** A zero order hold block with input u, which may be vector-valued (discrete
 or continuous) or abstract, and discrete output y, where the y is sampled
 from u with a fixed period.
 
@@ -51,24 +50,21 @@ class ZeroOrderHold final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
-  /**
-  Constructs a ZeroOrderHold system with the given `period_sec`, over a
+  /** Constructs a ZeroOrderHold system with the given `period_sec`, over a
   vector-valued input of size `vector_size`. The default initial
   value for this system will be zero. The offset is always zero, meaning
   that the first update occurs at t=0. */
   ZeroOrderHold(double period_sec, int vector_size)
       : ZeroOrderHold(period_sec, vector_size, nullptr) {}
 
-  /**
-  Constructs a ZeroOrderHold system with the given `period_sec`, over a
+  /** Constructs a ZeroOrderHold system with the given `period_sec`, over a
   abstract-valued input `abstract_model_value`. The default initial value
   for this system will be `abstract_model_value`. The offset is always
   zero, meaning that the first update occurs at t=0. */
   ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value)
       : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone()) {}
 
-  /**
-  Scalar-type converting copy constructor.
+  /** Scalar-type converting copy constructor.
   See @ref system_scalar_conversion. */
   template <typename U>
   explicit ZeroOrderHold(const ZeroOrderHold<U>& other);
@@ -88,8 +84,7 @@ class ZeroOrderHold final : public LeafSystem<T> {
   /** Reports the period of this hold (in seconds). */
   double period() const { return period_sec_; }
 
-  /**
-  (Advanced) Manually sample the input port and copy ("latch") the value
+  /** (Advanced) Manually sample the input port and copy ("latch") the value
   into the state. This emulates an update event and is mostly useful for
   testing. */
   void LatchInputPortToState(Context<T>* context) const {

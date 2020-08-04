@@ -7,8 +7,7 @@
 namespace drake {
 namespace math {
 
-/**
-Given ᴮd/dt(v) (the time derivative in frame B of an arbitrary 3D vector v)
+/** Given ᴮd/dt(v) (the time derivative in frame B of an arbitrary 3D vector v)
 and given ᴬωᴮ (frame B's angular velocity in another frame A), this method
 computes ᴬd/dt(v) (the time derivative in frame A of v) by:
 ᴬd/dt(v) = ᴮd/dt(v) + ᴬωᴮ x v

@@ -4,8 +4,7 @@
 
 namespace drake {
 namespace solvers {
-/**
-This is example 3.35 from Semidefinite Optimization and Convex Algebraic
+/** This is example 3.35 from Semidefinite Optimization and Convex Algebraic
 Geometry by G. Blekherman, P. Parrilo and R. Thomas. Solve a semidefinite
 programming problem to verify that the univariate quartic polynomial p(x)
 = x⁴+4x³+6x²+4x+5 is sum-of-squares (sos). */
@@ -26,8 +25,7 @@ class UnivariateQuarticSos {
   VectorX<symbolic::Monomial> monomial_basis_;
 };
 
-/**
-This is example 3.38 from Semidefinite Optimization and Convex Algebraic
+/** This is example 3.38 from Semidefinite Optimization and Convex Algebraic
 Geometry by G. Blekherman, P. Parrilo and R. Thomas. Solve a semidefinite
 programming problem to verify that the bivariate quartic polynomial p(x, y) =
 2x⁴+5y⁴−2x²y²+2x³y+2x+2 is sum-of-squares (sos). */
@@ -48,8 +46,7 @@ class BivariateQuarticSos {
   VectorX<symbolic::Monomial> monomial_basis_;
 };
 
-/**
-This is example 3.50 from Semidefinite Optimization and Convex Algebraic
+/** This is example 3.50 from Semidefinite Optimization and Convex Algebraic
 Geometry by G. Blekherman, P. Parrilo and R. Thomas. Solve a simple sos
 program
 max a + b
@@ -78,8 +75,7 @@ class SimpleSos1 {
   VectorX<symbolic::Monomial> monomial_basis2_;
 };
 
-/**
-Prove that the Motzkin polynomial m(x, y) = x⁴y² + x²y⁴ + 1 − 3x²y² is
+/** Prove that the Motzkin polynomial m(x, y) = x⁴y² + x²y⁴ + 1 − 3x²y² is
 always non-negative.
 One ceritificate for the proof is the existence of a polynomial r(x, y)
 satisfying r(x, y) being sos and r(x, y) > 0  for all x, y ≠ 0, such that
@@ -110,8 +106,7 @@ class MotzkinPolynomial {
   VectorX<symbolic::Monomial> monomial_basis2_;
 };
 
-/**
-Solve the following optimization problem for a univariate polynomial
+/** Solve the following optimization problem for a univariate polynomial
 max a + b + c
 s.t p(x) = x⁴+ax³+bx²+c+1>=0 for all x >= 0
     p(1) = 1

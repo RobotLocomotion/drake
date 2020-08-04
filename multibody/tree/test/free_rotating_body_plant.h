@@ -14,8 +14,7 @@ namespace drake {
 namespace multibody {
 namespace test {
 
-/**
-This plant models the rotational motion of a torque free body in space.
+/** This plant models the rotational motion of a torque free body in space.
 This body is axially symmetric with rotational inertia about its axis of
 revolution J and with a rotational inertia I about any axis perpendicular to
 its axis of revolution.
@@ -26,8 +25,7 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant)
 
-  /**
-  Constructor from known rotational inertia values.
+  /** Constructor from known rotational inertia values.
   Rotational inertia values have units of kg⋅m².
   @param I
     rotational inertia about any axis perpendicular to the axis of
@@ -40,21 +38,18 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   template <typename U>
   explicit FreeRotatingBodyPlant(const FreeRotatingBodyPlant<U>&);
 
-  /**
-  Sets `state` to a default value corresponding to a configuration in which
+  /** Sets `state` to a default value corresponding to a configuration in which
   the free body frame B is coincident with the world frame W and the angular
   velocity has a value as returned by
   get_default_initial_angular_velocity(). */
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
-  /**
-  Returns the angular velocity `w_WB` stored in `context` of the free body B
+  /** Returns the angular velocity `w_WB` stored in `context` of the free body B
   in the world frame W. */
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
-  /**
-  Stores in `context` the value of the angular velocity `w_WB` of the body
+  /** Stores in `context` the value of the angular velocity `w_WB` of the body
   in the world frame W. */
   void set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_WB) const;
@@ -67,8 +62,7 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   SpatialVelocity<T> CalcSpatialVelocityInWorldFrame(
       const systems::Context<T>& context) const;
 
-  /**
-  Returns the default value of the angular velocity set by default by
+  /** Returns the default value of the angular velocity set by default by
   SetDefaultState(). Currently a non-zero value. */
   Vector3<double> get_default_initial_angular_velocity() const;
 

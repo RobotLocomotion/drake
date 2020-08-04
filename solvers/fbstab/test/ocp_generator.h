@@ -12,8 +12,7 @@ namespace solvers {
 namespace fbstab {
 namespace test {
 
-/**
-This class is used to create optimal control problems (OCPs) in a format
+/** This class is used to create optimal control problems (OCPs) in a format
 FBstab accepts. It stores the problem data internally and only passes
 pointers to FBstab. Make sure these pointers are valid for the length of the
 solve. */
@@ -21,8 +20,7 @@ class OcpGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(OcpGenerator)
 
-  /**
-  Represents data needed to simulate the system
+  /** Represents data needed to simulate the system
 
       x(i+1) = Ax(i) + Bu(i)
       y(i) = Cx(i) + Du(i)
@@ -39,16 +37,14 @@ class OcpGenerator {
 
   OcpGenerator() = default;
 
-  /**
-  Returns problem data in the form accepted by FBstab.
+  /** Returns problem data in the form accepted by FBstab.
   @return problem data
 
   Throws a runtime_error if one of the problem creator methods hasn't been
   called first. */
   FBstabMpc::QPData GetFBstabInput() const;
 
-  /**
-  Returns the data needed to simulate the linear time invariant systems
+  /** Returns the data needed to simulate the linear time invariant systems
   used in the examples.
 
   @return simulation inputs
@@ -57,8 +53,7 @@ class OcpGenerator {
   called first. */
   SimulationInputs GetSimulationInputs() const;
 
-  /**
-  Fills internal storage with data
+  /** Fills internal storage with data
   for a copolymerization reactor control problem.
 
   The example is from:
@@ -72,8 +67,7 @@ class OcpGenerator {
   @param N prediction horizon length */
   void CopolymerizationReactor(int N = 70);
 
-  /**
-  Fills internal storage with data
+  /** Fills internal storage with data
   for a servo motor control problem.
 
   The example is from:
@@ -88,8 +82,7 @@ class OcpGenerator {
   Throws a runtime_error if N <= 0. */
   void ServoMotor(int N = 20);
 
-  /**
-  Fills internal storage with data
+  /** Fills internal storage with data
   for a spacecraft relative motion control problem with horizon N.
   The example is from:
 
@@ -104,8 +97,7 @@ class OcpGenerator {
   Throws a runtime_error if N <= 0. */
   void SpacecraftRelativeMotion(int N = 40);
 
-  /**
-  Fills internal storage with data
+  /** Fills internal storage with data
   for a constrained double integrator problem.
 
   @param[in] N prediction horizon length
@@ -116,8 +108,7 @@ class OcpGenerator {
   // TODO(dliaomcp@umich.edu) Add a random system generator.
   // i.e., void RandomSystem(int N = 10);
 
-  /**
-  Get a summary of the problem size,
+  /** Get a summary of the problem size,
   in the following order:
   - N:  horizon length
   - nx: number of states

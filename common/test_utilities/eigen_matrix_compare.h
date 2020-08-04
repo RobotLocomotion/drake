@@ -13,8 +13,7 @@ namespace drake {
 
 enum class MatrixCompareType { absolute, relative };
 
-/**
-Compares two matrices to determine whether they are equal to within a certain
+/** Compares two matrices to determine whether they are equal to within a certain
 threshold.
 
 @param m1 The first matrix to compare.

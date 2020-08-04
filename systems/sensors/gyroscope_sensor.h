@@ -16,8 +16,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-Sensor to represent an ideal gyroscopic sensor. Currently does not
+/** Sensor to represent an ideal gyroscopic sensor. Currently does not
 represent noise or bias, but this could and should be added at a later
 date. This sensor measures the angular velocity of a given body B relative
 to the world frame. The sensor frame S is rigidly affixed to the given
@@ -54,8 +53,7 @@ class Gyroscope final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Gyroscope)
 
-  /**
-  Constructor for %Gyroscope using full transform.
+  /** Constructor for %Gyroscope using full transform.
   @param body the body B to which the sensor is affixed
   @param X_BS the pose of sensor frame S in body B */
   Gyroscope(const multibody::Body<T>& body,
@@ -85,8 +83,7 @@ class Gyroscope final : public LeafSystem<T> {
     return X_BS_;
   }
 
-  /**
-  Static factory method that creates a %Gyroscope object and connects
+  /** Static factory method that creates a %Gyroscope object and connects
   it to the given plant. Modifies a Diagram by connecting the input ports
   of the new %Gyroscope to the appropriate output ports of a
   MultibodyPlant. Must be called during Diagram building and given the

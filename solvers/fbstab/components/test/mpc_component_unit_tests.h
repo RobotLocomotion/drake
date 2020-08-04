@@ -20,8 +20,7 @@ namespace test {
 using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
-/**
-This class implements unit tests for the following classes:
+/** This class implements unit tests for the following classes:
 MpcData
 MpcVariable
 MPCResidual
@@ -29,8 +28,7 @@ MPCFeasibiity
 RiccatiLinearSolver */
 class MpcComponentUnitTests {
  public:
-  /**
-  Sets up the optimal control problem
+  /** Sets up the optimal control problem
   that will be used to test the component objects.
 
   The mathematical format can be found in

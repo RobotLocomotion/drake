@@ -22,8 +22,7 @@ class KukaIiwaModelBuilder {
   template <typename U>
   using MultibodyTree = multibody::internal::MultibodyTree<U>;
 
-  /**
-  Instantiate a builder to make a MultibodyTree model of the KUKA iiwa arm
+  /** Instantiate a builder to make a MultibodyTree model of the KUKA iiwa arm
   as specified in this class' documentation.
   The world z-unit vector is vertically upward.
   @param[in] finalize_model
@@ -40,8 +39,7 @@ class KukaIiwaModelBuilder {
 
   // TODO(amcastro-tri): consider adding an input for the pose of the base in
   // the world.
-  /**
-  Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
+  /** Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
   The robot is constructed with 7 revolute joints.
   The world z-unit vector is vertically upward. The acceleration of gravity
   is of 9.81 m/s² directed opposite the world upward z-unit vector. */
@@ -142,8 +140,7 @@ class KukaIiwaModelBuilder {
 
 }  // namespace internal
 
-/**
-This method makes a MultibodyTree model for a Kuka Iiwa arm as specified
+/** This method makes a MultibodyTree model for a Kuka Iiwa arm as specified
 in the file kuka_iiwa_robot.urdf contained in this same directory.
 Links can be accessed by their name "iiwa_link_1" (base) through
 "iiwa_link_7" (end effector). The "world" body can be accessed with

@@ -1,7 +1,6 @@
 #pragma once
 
-/**
-@file
+/** @file
 LCM types in C++ and Python are implemented differently, and thus cannot simply
 be passed back and forth between the two languages. The simplest method to
 communicate the structures is to expose the serialization of C++ `Value<>`s to

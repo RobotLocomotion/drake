@@ -16,8 +16,7 @@ namespace solar_system {
 
 // TODO(SeanCurtis-TRI): When textures are available, modify this so that planet
 // rotations become apparent as well (and not just revolutions).
-/**
-A model of an orrery -- a simple mechanical model of the solar system.
+/** A model of an orrery -- a simple mechanical model of the solar system.
 
  The orrery contains one sun and multiple orbiting bodies: two planets (Earth
  and Mars) each with one moon and multiple satellites for Earth. The idea is

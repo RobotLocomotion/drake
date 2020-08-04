@@ -16,8 +16,7 @@ namespace drake {
 namespace solvers {
 
 /** Utility functions for system identification. */
-/**
-This class is a holder for templated utility methods.  It should not be
+/** This class is a holder for templated utility methods.  It should not be
 constructed.  It must be template-instantiated (in its cpp file) for each
 supported variant of Polynomial (currently only Polynomial<double>).
 
@@ -47,8 +46,7 @@ class SystemIdentification {
   typedef std::map<VarType, T> PartialEvalType;
 
   /** Extract lumped parameters from a given polynomial. */
-  /**
-  Given a Polynomial, poly, and a set of variables of poly that should be
+  /** Given a Polynomial, poly, and a set of variables of poly that should be
   treated as parameters (that is, variables eligible to be lumped), obtain
   all of the unique expressions by which combinations of the remaining
   active variables are multiplied to form the monomials of the Polynomial.
@@ -68,8 +66,7 @@ class SystemIdentification {
       const std::set<VarType>& parameter_vars);
 
   /** Same as GetLumpedParametersFromPolynomial but for multiple Polynomials. */
-  /**
-  It is preferable to use this if you have multiple Polynomials as it
+  /** It is preferable to use this if you have multiple Polynomials as it
   saves you from having to union the resulting LumpingMapType results
   together. */
   static LumpingMapType GetLumpedParametersFromPolynomials(
@@ -77,8 +74,7 @@ class SystemIdentification {
       const std::set<VarType>& parameter_vars);
 
   /** Rewrite a Polynomial in terms of lumped parameters. */
-  /**
-  For instance, if we have the polynomial:
+  /** For instance, if we have the polynomial:
     a*x + b*x + a*c*y + a*c*y**2
   And our lumped parameters are:
     lump1 == a+b ;  lump2 == a*c
@@ -88,8 +84,7 @@ class SystemIdentification {
       const PolyType& poly,
       const LumpingMapType& lumped_parameters);
 
-  /**
-  Estimate some parameters of a polynomial based on empirical data.
+  /** Estimate some parameters of a polynomial based on empirical data.
 
   Given one or more polynomial equations P[i](a, b, ... x, y, ...) = 0, and
   measured values of some its arguments (x, y, ..., referred to as the
@@ -111,16 +106,14 @@ class SystemIdentification {
     /** The lumped parameters that were used in system ID. */
     LumpingMapType lumped_parameters;
 
-    /**
-    The input polynomials, rewritten using the lumped parameters so that
+    /** The input polynomials, rewritten using the lumped parameters so that
     only active variable and first-order lumped variable terms remain. */
     VectorXTrigPoly lumped_polys;
 
     /** The estimated value for each lumped parameter. */
     PartialEvalType lumped_parameter_values;
 
-    /**
-    The input polynomials, with all estimates substituted in so that
+    /** The input polynomials, with all estimates substituted in so that
     only active variables remain. */
     VectorXTrigPoly partially_evaluated_polys;
 
@@ -128,8 +121,7 @@ class SystemIdentification {
     T rms_error;
   };
 
-  /**
-  Performs full lumped-parameter identification of a system of TrigPolys.
+  /** Performs full lumped-parameter identification of a system of TrigPolys.
 
   This is a convenience method meant to capture what is expected to be the
   most common usage pattern of system ID.
@@ -154,8 +146,7 @@ class SystemIdentification {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemIdentification)
 
   /** Return every combination of the given variables in the polynomials. */
-  /**
-  For instance, if we want combinations of x and y in the polynomial
+  /** For instance, if we want combinations of x and y in the polynomial
     a * x + b * x*y + b * y^2 + c * y^2,
   then return x, x*y, and y^2.
 
@@ -169,8 +160,7 @@ class SystemIdentification {
       const std::set<VarType>& vars);
 
   /** Test if one monomial is a product of parameters times another monomial. */
-  /**
-  Return true iff monomial "haystack" consists only of the monomial "needle"
+  /** Return true iff monomial "haystack" consists only of the monomial "needle"
   times variables not in "active_vars".
 
   For instance, with active vars x, y:
@@ -182,8 +172,7 @@ class SystemIdentification {
     const std::set<VarType>& active_vars);
 
   /** Factor out the smallest coefficient in a Polynomial. */
-  /**
-  The resulting pair is the factored coefficient and a polynomial whose
+  /** The resulting pair is the factored coefficient and a polynomial whose
   smallest coefficient is 1.  This allows lumped parameter polynomials to
   be compared to determine when they differ only by coefficient.
 
@@ -194,14 +183,12 @@ class SystemIdentification {
   static std::pair<T, PolyType>
   CanonicalizePolynomial(const PolyType& poly);
 
-  /**
-  Obtain a new variable ID not already in vars_in_use.  The string part of
+  /** Obtain a new variable ID not already in vars_in_use.  The string part of
   the variable's name will be prefix. */
   static VarType CreateUnusedVar(const std::string& prefix,
                                  const std::set<VarType>& vars_in_use);
 
-  /**
-  Classify the variables in a group of polynomials and measurements.
+  /** Classify the variables in a group of polynomials and measurements.
 
   Given a system of polynomials and a set of variable values, return the
   sets of all the values, the parameter values (ie those with values not

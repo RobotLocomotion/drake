@@ -24,8 +24,7 @@ namespace rendering {
 // TODO(david-german-tri): Consider renaming this to FrameKinematicsBundle,
 // since it contains both poses and velocities.
 
-/**
-PoseBundle is a container for a set of poses, represented by an Isometry3,
+/** PoseBundle is a container for a set of poses, represented by an Isometry3,
 and corresponding velocities, represented by a FrameVelocity. The poses and
 velocities are expressed in the world frame: X_WFi, V_WFi. Each pose has a
 name and a model instance ID.  If two poses in the bundle have the same

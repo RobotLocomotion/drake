@@ -9,8 +9,7 @@ namespace internal {
 // TODO(amcastro-tri): consider renaming this to WorldBodyNode since this node
 // already implies having a nullptr as a parent body, i.e. it can only be the
 // world's node.
-/**
-This class represents a BodyNode for nodes with zero degrees of freedom.
+/** This class represents a BodyNode for nodes with zero degrees of freedom.
 These include the world body and the WeldMobilzer.
 Overrides in this class of general BodyNode methods conveniently reduce to
 no-ops for body nodes with zero degrees of freedom. In addition, it also

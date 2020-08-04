@@ -1,10 +1,8 @@
-/**
-@file
+/** @file
 Doxygen-only documentation for @ref system_scalar_conversion. */
 
 //------------------------------------------------------------------------------
-/**
-@defgroup system_scalar_conversion System Scalar Conversion
+/** @defgroup system_scalar_conversion System Scalar Conversion
     @ingroup technical_notes
 
 System scalar conversion refers to cloning a System templatized by one scalar

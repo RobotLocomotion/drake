@@ -14,8 +14,7 @@ namespace drake {
 namespace manipulation {
 namespace kinova_jaco {
 
-/**
-Handles lcmt_jaco_command message from a LcmSubscriberSystem.
+/** Handles lcmt_jaco_command message from a LcmSubscriberSystem.
 
 Note that this system does not actually subscribe to an LCM channel. To
 receive the message, the input of this system should be connected to a
@@ -42,8 +41,7 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
   JacoCommandReceiver(int num_joints = kJacoDefaultArmNumJoints,
                       int num_fingers = kJacoDefaultArmNumFingers);
 
-  /**
-  Sets the initial commanded position of the controlled jaco prior to any
+  /** Sets the initial commanded position of the controlled jaco prior to any
   command messages being received.  If this function is not called, the
   starting position will be the zero configuration.  Finger positions
   should be specified as values appropriate for the Jaco description (see
@@ -52,8 +50,7 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
       systems::Context<double>* context,
       const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
-  /**
-  @name Named accessors for this System's input and output ports.
+  /** @name Named accessors for this System's input and output ports.
   @{ */
   const systems::InputPort<double>& get_input_port() const;
   const systems::OutputPort<double>& get_output_port() const;

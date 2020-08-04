@@ -37,8 +37,7 @@ struct DifferentialInverseKinematicsResult {
       DifferentialInverseKinematicsStatus::kNoSolutionFound};
 };
 
-/**
-Computes the pose "difference" between @p pose1 and @p pose0 s.t.
+/** Computes the pose "difference" between @p pose1 and @p pose0 s.t.
 the linear part equals p_C1 - p_C0, and the angular part equals
 R_C1 * R_C0.inv(), where p and R stand for the position and rotation parts,
 and C is the common frame. */
@@ -51,16 +50,14 @@ class DifferentialInverseKinematicsParameters {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       DifferentialInverseKinematicsParameters);
 
-  /**
-  Constructor. Initializes the nominal joint position to zeros of size
+  /** Constructor. Initializes the nominal joint position to zeros of size
   @p num_positions. Timestep is initialized to 1. The end effector gains are
   initialized to ones. All constraints are initialized to nullopt.
   @param num_positions Number of generalized positions.
   @param num_velocities Number of generalized velocities. */
   DifferentialInverseKinematicsParameters(int num_positions = 0,
                                           int num_velocities = 0);
-  /**
-  @name Getters.
+  /** @name Getters.
   @{ */
   double get_timestep() const { return dt_; }
 
@@ -100,19 +97,16 @@ class DifferentialInverseKinematicsParameters {
   get_linear_velocity_constraints() const;
   /** @} */
 
-  /**
-  @name Setters.
+  /** @name Setters.
   @{ */
-  /**
-  Sets timestep to @p dt.
+  /** Sets timestep to @p dt.
   @throws std::exception if dt <= 0. */
   void set_timestep(double dt) {
     DRAKE_THROW_UNLESS(dt > 0);
     dt_ = dt;
   }
 
-  /**
-  Sets the max magnitude of the velocity in the unconstrained degree of
+  /** Sets the max magnitude of the velocity in the unconstrained degree of
   freedom to @p limit.
   @throws std::exception if limit < 0. */
   void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
@@ -120,8 +114,7 @@ class DifferentialInverseKinematicsParameters {
     unconstrained_degrees_of_freedom_velocity_limit_ = limit;
   }
 
-  /**
-  Sets the nominal joint position.
+  /** Sets the nominal joint position.
   @throws std::exception if @p nominal_joint_position's dimension differs. */
   void set_nominal_joint_position(
       const Eigen::Ref<const VectorX<double>>& nominal_joint_position) {
@@ -129,8 +122,7 @@ class DifferentialInverseKinematicsParameters {
     nominal_joint_position_ = nominal_joint_position;
   }
 
-  /**
-  Sets the end effector gains in the body frame. Gains can be used to
+  /** Sets the end effector gains in the body frame. Gains can be used to
   specify relative importance among different dimensions.
   @throws std::exception if any element of @p gain_E is larger than 1 or
   smaller than 0. */
@@ -140,8 +132,7 @@ class DifferentialInverseKinematicsParameters {
     gain_E_ = gain_E;
   }
 
-  /**
-  Sets the joint position limits.
+  /** Sets the joint position limits.
   @param q_bounds The first element is the lower bound, and the second is
   the upper bound.
   @throws std::exception if the first or second element of @p q_bounds has
@@ -156,8 +147,7 @@ class DifferentialInverseKinematicsParameters {
     q_bounds_ = q_bounds;
   }
 
-  /**
-  Sets the joint velocity limits.
+  /** Sets the joint velocity limits.
   @param q_bounds The first element is the lower bound, and the second is
   the upper bound.
   @throws std::exception if the first or second element of @p q_bounds has
@@ -172,8 +162,7 @@ class DifferentialInverseKinematicsParameters {
     v_bounds_ = v_bounds;
   }
 
-  /**
-  Sets the joint acceleration limits.
+  /** Sets the joint acceleration limits.
   @param q_bounds The first element is the lower bound, and the second is
   the upper bound.
   @throws std::exception if the first or second element of @p q_bounds has
@@ -189,8 +178,7 @@ class DifferentialInverseKinematicsParameters {
   }
   /** @} */
 
-  /**
-  Adds a linear velocity constraint.
+  /** Adds a linear velocity constraint.
   @param linear_velocity_constraint A linear constraint on joint velocities.
   @throws std::invalid_argument if `constraint->num_vars !=
   this->get_num_velocities()`. */
@@ -214,8 +202,7 @@ class DifferentialInverseKinematicsParameters {
       linear_velocity_constraints_;
 };
 
-/**
-Computes a generalized velocity v_next, via the following
+/** Computes a generalized velocity v_next, via the following
 MathematicalProgram:
 
   min_{v_next,alpha}   100 * | alpha - |V| |^2
@@ -271,8 +258,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
-A wrapper over
+/** A wrapper over
 DoDifferentialInverseKinematics(q_current, v_current, V, J, params)
 that tracks frame E's spatial velocity.
 q_current and v_current are taken from @p context. V is computed by first
@@ -295,8 +281,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
-A wrapper over
+/** A wrapper over
 DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E,
 params) that tracks frame E's pose in the world frame.
 q_current and v_current are taken from @p cache. V_WE is computed by

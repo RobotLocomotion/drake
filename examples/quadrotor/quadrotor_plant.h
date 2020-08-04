@@ -12,8 +12,7 @@ namespace drake {
 namespace examples {
 namespace quadrotor {
 
-/**
-The Quadrotor - an underactuated aerial vehicle. This version of the
+/** The Quadrotor - an underactuated aerial vehicle. This version of the
 Quadrotor is implemented to match the dynamics of the plant specified in
 the `quadrotor.urdf` model file.
 
@@ -62,8 +61,7 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   const Eigen::Matrix3d I_;  // Moment of Inertia about the Center of Mass
 };
 
-/**
-Generates an LQR controller to move to @p nominal_position. Internally
+/** Generates an LQR controller to move to @p nominal_position. Internally
 computes the nominal input corresponding to a hover at position @p x0.
 @see systems::LinearQuadraticRegulator. */
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(

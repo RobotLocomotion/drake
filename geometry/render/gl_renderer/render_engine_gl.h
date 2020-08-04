@@ -44,8 +44,7 @@ class RenderEngineGl final : public RenderEngine {
   /** @see RenderEngine::UpdateViewpoint(). */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
-  /**
-  @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
+  /** @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
   this will throw an exception.
 
   Note that the display window triggered by `show_window` is shared with
@@ -60,8 +59,7 @@ class RenderEngineGl final : public RenderEngine {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const final;
 
-  /**
-  @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
+  /** @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
   this will throw an exception.
 
   Note that the display window triggered by `show_window` is shared with

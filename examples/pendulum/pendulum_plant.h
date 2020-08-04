@@ -9,8 +9,7 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-/**
-A model of a simple pendulum
+/** A model of a simple pendulum
 @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = \tau @f]
 
 @system
@@ -45,8 +44,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   /** Calculates the kinetic + potential energy. */
   T CalcTotalEnergy(const systems::Context<T>& context) const;
 
-  /**
-  Evaluates the input port and returns the scalar value
+  /** Evaluates the input port and returns the scalar value
   of the commanded torque. */
   T get_tau(const systems::Context<T>& context) const {
     return this->get_input_port().Eval(context)(0);

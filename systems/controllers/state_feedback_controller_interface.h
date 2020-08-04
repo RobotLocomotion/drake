@@ -8,8 +8,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
-/**
-Interface for state feedback controllers. This class needs to be extended by
+/** Interface for state feedback controllers. This class needs to be extended by
 concrete implementations. It provides named accessors to actual and desired
 state input ports and control output port. */
 template <typename T>

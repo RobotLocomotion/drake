@@ -24,8 +24,7 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 /** Determines which manipulation station is simulated. */
 enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 
-/**
-@defgroup manipulation_station_systems Manipulation Station
+/** @defgroup manipulation_station_systems Manipulation Station
 @{
 @brief Systems related to the "manipulation station" used in the <a
 href="https://manipulation.csail.mit.edu">MIT Intelligent Robot
@@ -33,8 +32,7 @@ Manipulation</a> class.
 @ingroup example_systems
 @} */
 
-/**
-A system that represents the complete manipulation station, including
+/** A system that represents the complete manipulation station, including
 exactly one robotic arm (a Kuka IIWA LWR), one gripper (a Schunk WSG 50),
 and anything a user might want to load into the model.
 SetupDefaultStation() provides the setup that is used in the MIT
@@ -133,16 +131,14 @@ class ManipulationStation : public systems::Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStation)
 
-  /**
-  Construct the EMPTY station model.
+  /** Construct the EMPTY station model.
 
   @param time_step The time step used by MultibodyPlant<T>, and by the
     discrete derivative used to approximate velocity from the position
     command inputs. */
   explicit ManipulationStation(double time_step = 0.002);
 
-  /**
-  Adds a default iiwa, wsg, two bins, and a camera, then calls
+  /** Adds a default iiwa, wsg, two bins, and a camera, then calls
   RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   the appropriate arguments.
   @note Must be called before Finalize().
@@ -153,8 +149,7 @@ class ManipulationStation : public systems::Diagram<T> {
       const std::optional<const math::RigidTransformd>& X_WCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  /**
-  Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
+  /** Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
   Intelligent Robot Manipulation class, then calls
   RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   the appropriate arguments.
@@ -164,8 +159,7 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetupManipulationClassStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  /**
-  Adds a version of the iiwa with joints that would result in
+  /** Adds a version of the iiwa with joints that would result in
   out-of-plane rotations welded in a fixed orientation, reducing the
   total degrees of freedom of the arm to 3.  This arm lives in the X-Z
   plane.  Also adds the WSG planar gripper and two tables to form the
@@ -175,8 +169,7 @@ class ManipulationStation : public systems::Diagram<T> {
   @note Only one of the `Setup___()` methods should be called. */
   void SetupPlanarIiwaStation();
 
-  /**
-  Sets the default State for the chosen setup.
+  /** Sets the default State for the chosen setup.
   @param context A const reference to the ManipulationStation context.
   @param state A pointer to the State of the ManipulationStation system.
   @pre `state` must be the systems::State<T> object contained in
@@ -184,8 +177,7 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetDefaultState(const systems::Context<T>& station_context,
                        systems::State<T>* state) const override;
 
-  /**
-  Sets a random State for the chosen setup.
+  /** Sets a random State for the chosen setup.
   @param context A const reference to the ManipulationStation context.
   @param state A pointer to the State of the ManipulationStation system.
   @param generator is the random number generator.
@@ -202,8 +194,7 @@ class ManipulationStation : public systems::Diagram<T> {
   // TODO(siyuan.feng@tri.global): Some of these information should be
   // retrievable from the MultibodyPlant directly or MultibodyPlant should
   // provide partial tree cloning.
-  /**
-  Notifies the ManipulationStation that the IIWA robot model instance can
+  /** Notifies the ManipulationStation that the IIWA robot model instance can
   be identified by @p iiwa_instance as well as necessary information to
   reload model for the internal controller's use. Assumes @p iiwa_instance
   has already been added to the MultibodyPlant.
@@ -231,8 +222,7 @@ class ManipulationStation : public systems::Diagram<T> {
   // provide partial tree cloning.
   // TODO(siyuan.feng@tri.global): throws meaningful errors earlier here,
   // rather than in Finalize() if the arguments are inconsistent with the plant.
-  /**
-  Notifies the ManipulationStation that the WSG gripper model instance can
+  /** Notifies the ManipulationStation that the WSG gripper model instance can
   be identified by @p wsg_instance, as well as necessary information to
   reload model for the internal controller's use. Assumes @p wsg_instance
   has already been added to the MultibodyPlant. The IIWA model needs to
@@ -255,8 +245,7 @@ class ManipulationStation : public systems::Diagram<T> {
       const multibody::Frame<T>& child_frame,
       const math::RigidTransform<double>& X_PC);
 
-  /**
-  Registers a RGBD sensor. Must be called before Finalize().
+  /** Registers a RGBD sensor. Must be called before Finalize().
   @param name Name for the camera.
   @param parent_frame The parent frame (frame P). The body that
   @p parent_frame is attached to must have a corresponding
@@ -270,8 +259,7 @@ class ManipulationStation : public systems::Diagram<T> {
       const math::RigidTransform<double>& X_PCameraBody,
       const geometry::render::DepthCameraProperties& properties);
 
-  /**
-  Adds a single object for the robot to manipulate
+  /** Adds a single object for the robot to manipulate
   @note Must be called before Finalize().
   @param model_file The path to the .sdf model file of the object.
   @param X_WObject The pose of the object in world frame. */
@@ -281,8 +269,7 @@ class ManipulationStation : public systems::Diagram<T> {
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
 
-  /**
-  Users *must* call Finalize() after making any additions to the
+  /** Users *must* call Finalize() after making any additions to the
   multibody plant and before using this class in the Systems framework.
   This should be called exactly once.
   This assumes an IIWA and WSG have been added to the MultibodyPlant, and
@@ -292,40 +279,35 @@ class ManipulationStation : public systems::Diagram<T> {
   @see multibody::MultibodyPlant<T>::Finalize() */
   void Finalize();
 
-  /**
-  Finalizes the station with the option of specifying the renderers the
+  /** Finalizes the station with the option of specifying the renderers the
   manipulation station uses. Calling this method with an empty map is
   equivalent to calling Finalize(). See Finalize() for more details. */
   void Finalize(std::map<std::string,
                          std::unique_ptr<geometry::render::RenderEngine>>
                     render_engines);
 
-  /**
-  Returns a reference to the main plant responsible for the dynamics of
+  /** Returns a reference to the main plant responsible for the dynamics of
   the robot and the environment.  This can be used to, e.g., add
   additional elements into the world before calling Finalize(). */
   const multibody::MultibodyPlant<T>& get_multibody_plant() const {
     return *plant_;
   }
 
-  /**
-  Returns a mutable reference to the main plant responsible for the
+  /** Returns a mutable reference to the main plant responsible for the
   dynamics of the robot and the environment.  This can be used to, e.g.,
   add additional elements into the world before calling Finalize(). */
   multibody::MultibodyPlant<T>& get_mutable_multibody_plant() {
     return *plant_;
   }
 
-  /**
-  Returns a reference to the SceneGraph responsible for all of the geometry
+  /** Returns a reference to the SceneGraph responsible for all of the geometry
   for the robot and the environment.  This can be used to, e.g., add
   additional elements into the world before calling Finalize(). */
   const geometry::SceneGraph<T>& get_scene_graph() const {
     return *scene_graph_;
   }
 
-  /**
-  Returns a mutable reference to the SceneGraph responsible for all of the
+  /** Returns a mutable reference to the SceneGraph responsible for all of the
   geometry for the robot and the environment.  This can be used to, e.g.,
   add additional elements into the world before calling Finalize(). */
   geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
@@ -333,28 +315,24 @@ class ManipulationStation : public systems::Diagram<T> {
   /** Returns the name of the station's default renderer. */
   static std::string default_renderer_name() { return default_renderer_name_; }
 
-  /**
-  Return a reference to the plant used by the inverse dynamics controller
+  /** Return a reference to the plant used by the inverse dynamics controller
   (which contains only a model of the iiwa + equivalent mass of the
   gripper). */
   const multibody::MultibodyPlant<T>& get_controller_plant() const {
     return *owned_controller_plant_;
   }
 
-  /**
-  Gets the number of joints in the IIWA (only -- does not include the
+  /** Gets the number of joints in the IIWA (only -- does not include the
   gripper).
   @pre must call one of the "setup" methods first to register an IIWA
   model. */
   int num_iiwa_joints() const;
 
-  /**
-  Convenience method for getting all of the joint angles of the Kuka IIWA.
+  /** Convenience method for getting all of the joint angles of the Kuka IIWA.
   This does not include the gripper. */
   VectorX<T> GetIiwaPosition(const systems::Context<T>& station_context) const;
 
-  /**
-  Convenience method for setting all of the joint angles of the Kuka IIWA.
+  /** Convenience method for setting all of the joint angles of the Kuka IIWA.
   Also sets the position history in the velocity command generator.
   @p q must have size num_iiwa_joints().
   @pre `state` must be the systems::State<T> object contained in
@@ -363,8 +341,7 @@ class ManipulationStation : public systems::Diagram<T> {
                        systems::State<T>* state,
                        const Eigen::Ref<const VectorX<T>>& q) const;
 
-  /**
-  Convenience method for setting all of the joint angles of the Kuka IIWA.
+  /** Convenience method for setting all of the joint angles of the Kuka IIWA.
   Also sets the position history in the velocity command generator.
   @p q must have size num_iiwa_joints(). */
   void SetIiwaPosition(systems::Context<T>* station_context,
@@ -376,8 +353,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /** Convenience method for getting all of the joint velocities of the Kuka */
   VectorX<T> GetIiwaVelocity(const systems::Context<T>& station_context) const;
 
-  /**
-  Convenience method for setting all of the joint velocities of the Kuka
+  /** Convenience method for setting all of the joint velocities of the Kuka
   IIWA. @v must have size num_iiwa_joints().
   @pre `state` must be the systems::State<T> object contained in
   `station_context`. */
@@ -385,16 +361,14 @@ class ManipulationStation : public systems::Diagram<T> {
                        systems::State<T>* state,
                        const Eigen::Ref<const VectorX<T>>& v) const;
 
-  /**
-  Convenience method for setting all of the joint velocities of the Kuka
+  /** Convenience method for setting all of the joint velocities of the Kuka
   IIWA. @v must have size num_iiwa_joints(). */
   void SetIiwaVelocity(systems::Context<T>* station_context,
                        const Eigen::Ref<const VectorX<T>>& v) const {
     SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
   }
 
-  /**
-  Convenience method for getting the position of the Schunk WSG. Note
+  /** Convenience method for getting the position of the Schunk WSG. Note
   that the WSG position is the signed distance between the two fingers
   (not the state of the fingers individually). */
   T GetWsgPosition(const systems::Context<T>& station_context) const;
@@ -402,8 +376,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /** Convenience method for getting the velocity of the Schunk WSG. */
   T GetWsgVelocity(const systems::Context<T>& station_context) const;
 
-  /**
-  Convenience method for setting the position of the Schunk WSG. Also
+  /** Convenience method for setting the position of the Schunk WSG. Also
   sets the position history in the velocity interpolator.  Note that the
   WSG position is the signed distance between the two fingers (not the
   state of the fingers individually).
@@ -412,8 +385,7 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetWsgPosition(const systems::Context<T>& station_context,
                       systems::State<T>* state, const T& q) const;
 
-  /**
-  Convenience method for setting the position of the Schunk WSG. Also
+  /** Convenience method for setting the position of the Schunk WSG. Also
   sets the position history in the velocity interpolator.  Note that the
   WSG position is the signed distance between the two fingers (not the
   state of the fingers individually). */
@@ -421,8 +393,7 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  /**
-  Convenience method for setting the velocity of the Schunk WSG.
+  /** Convenience method for setting the velocity of the Schunk WSG.
   @pre `state` must be the systems::State<T> object contained in
   `station_context`. */
   void SetWsgVelocity(const systems::Context<T>& station_context,
@@ -433,8 +404,7 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
   }
 
-  /**
-  Returns a map from camera name to X_WCameraBody for all the static
+  /** Returns a map from camera name to X_WCameraBody for all the static
   (rigidly attached to the world body) cameras that have been registered. */
   std::map<std::string, math::RigidTransform<double>>
   GetStaticCameraPosesInWorld() const;
@@ -442,29 +412,25 @@ class ManipulationStation : public systems::Diagram<T> {
   /** Get the camera names / unique ids. */
   std::vector<std::string> get_camera_names() const;
 
-  /**
-  Set the gains for the WSG controller.
+  /** Set the gains for the WSG controller.
   @throws exception if Finalize() has been called. */
   void SetWsgGains(double kp, double kd);
 
-  /**
-  Set the position gains for the IIWA controller.
+  /** Set the position gains for the IIWA controller.
   @throws exception if Finalize() has been called. */
   void SetIiwaPositionGains(const VectorX<double>& kp) {
     DRAKE_THROW_UNLESS(!plant_->is_finalized());
     iiwa_kp_ = kp;
   }
 
-  /**
-  Set the velocity gains for the IIWA controller.
+  /** Set the velocity gains for the IIWA controller.
   @throws exception if Finalize() has been called. */
   void SetIiwaVelocityGains(const VectorX<double>& kd) {
     DRAKE_THROW_UNLESS(!plant_->is_finalized());
     iiwa_kd_ = kd;
   }
 
-  /**
-  Set the integral gains for the IIWA controller.
+  /** Set the integral gains for the IIWA controller.
   @throws exception if Finalize() has been called. */
   void SetIiwaIntegralGains(const VectorX<double>& ki) {
     DRAKE_THROW_UNLESS(!plant_->is_finalized());

@@ -7,8 +7,7 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-/**
-This class implements a controller for a Schunk WSG gripper.  It
+/** This class implements a controller for a Schunk WSG gripper.  It
 has two input ports: lcmt_schunk_wsg_command message and the current
 state, and an output port which emits the target force for the actuated
 finger. Note, only one of the command input ports should be connected,

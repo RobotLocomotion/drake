@@ -15,8 +15,7 @@ namespace controllers {
 // TODO(siyuanfeng): Generalize "q_d - q", e.g. for rotation.
 
 // N.B. Inheritance order must remain fixed for pydrake (#9243).
-/**
-Implements the PID controller. Given estimated state `x_in = (q_in, v_in)`,
+/** Implements the PID controller. Given estimated state `x_in = (q_in, v_in)`,
 the controlled state `x_c = (q_c, v_c)` is computed by `x_c = P_x * x_in`,
 where `P_x` is a state projection matrix. The desired state
 `x_d = (q_d, v_d)`, is in the same space as `x_c`. The output of this
@@ -50,8 +49,7 @@ class PidController : public LeafSystem<T>,
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidController)
 
-  /**
-  Constructs a PID controller. `P_x` and `P_y` are identity
+  /** Constructs a PID controller. `P_x` and `P_y` are identity
   matrices of proper sizes. The estimated and desired state inputs are
   2 * @p kp's size, and the control output has @p kp's size.
   @param kp P gain.
@@ -63,8 +61,7 @@ class PidController : public LeafSystem<T>,
   PidController(const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
-  /**
-  Constructs a PID controller. Calls the full constructor, with the output
+  /** Constructs a PID controller. Calls the full constructor, with the output
   projection matrix `P_y` being the identity matrix.
   @param state_projection The state projection matrix `P_x`.
   @param kp P gain.
@@ -77,8 +74,7 @@ class PidController : public LeafSystem<T>,
                 const Eigen::VectorXd& kp, const Eigen::VectorXd& ki,
                 const Eigen::VectorXd& kd);
 
-  /**
-  Constructs a PID controller. This assumes that
+  /** Constructs a PID controller. This assumes that
   <pre>
     1. |kp| = |kd| = |ki| = |q_d| = |v_d|
     2. 2 * |q_d| = P_x.rows
@@ -103,24 +99,21 @@ class PidController : public LeafSystem<T>,
   template <typename U>
   explicit PidController(const PidController<U>&);
 
-  /**
-  Returns the proportional gain constant. This method should only be called
+  /** Returns the proportional gain constant. This method should only be called
   if the proportional gain can be represented as a scalar value, i.e., every
   element in the proportional gain vector is the same. It will throw a
   `std::runtime_error` if the proportional gain cannot be represented as a
   scalar value. */
   double get_Kp_singleton() const { return get_single_gain(kp_); }
 
-  /**
-  Returns the integral gain constant. This method should only be called if
+  /** Returns the integral gain constant. This method should only be called if
   the integral gain can be represented as a scalar value, i.e., every
   element in the integral gain vector is the same. It will throw a
   `std::runtime_error` if the integral gain cannot be represented as a
   scalar value. */
   double get_Ki_singleton() const { return get_single_gain(ki_); }
 
-  /**
-  Returns the derivative gain constant. This method should only be called if
+  /** Returns the derivative gain constant. This method should only be called if
   the derivative gain can be represented as a scalar value, i.e., every
   element in the derivative gain vector is the same. It will throw a
   `std::runtime_error` if the derivative gain cannot be represented as a
@@ -136,8 +129,7 @@ class PidController : public LeafSystem<T>,
   /** Returns the derivative gain vector. */
   const VectorX<double>& get_Kd_vector() const { return kd_; }
 
-  /**
-  Sets the integral part of the PidController to @p value.
+  /** Sets the integral part of the PidController to @p value.
   @p value must be a column vector of the appropriate size. */
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const {
@@ -162,8 +154,7 @@ class PidController : public LeafSystem<T>,
   }
 
  protected:
-  /**
-  Appends to @p dot a simplified Graphviz representation of the PID
+  /** Appends to @p dot a simplified Graphviz representation of the PID
   controller, since the internal wiring is unimportant and hard for human
   viewers to parse. */
   void GetGraphvizFragment(int max_depth,

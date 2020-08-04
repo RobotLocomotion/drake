@@ -16,8 +16,7 @@ namespace examples {
 namespace rod2d {
 
 // TODO(edrumwri): Track energy and add a test to check it.
-/**
-Dynamical system representation of a rod contacting a half-space in
+/** Dynamical system representation of a rod contacting a half-space in
 two dimensions.
 
 <h3>Notation</h3>
@@ -155,27 +154,23 @@ class Rod2D : public systems::LeafSystem<T> {
 
   /** System model and approach for simulating the system. */
   enum class SystemType {
-    /**
-    For modeling the system using rigid contact, Coulomb friction, and
+    /** For modeling the system using rigid contact, Coulomb friction, and
     hybrid mode variables and simulating the system through piecewise
     solutions of differential algebraic equations. */
     kPiecewiseDAE,
 
-    /**
-    For modeling the system using either rigid or compliant contact,
+    /** For modeling the system using either rigid or compliant contact,
     Coulomb friction, and a first-order time discretization (which can
     be applied to simulating the system without an integrator). */
     kDiscretized,
 
-    /**
-    For modeling the system using compliant contact, Coulomb friction,
+    /** For modeling the system using compliant contact, Coulomb friction,
     and ordinary differential equations and simulating the system
     through standard algorithms for solving initial value problems. */
     kContinuous
   };
 
-  /**
-  Constructor for the 2D rod system using the piecewise DAE (differential
+  /** Constructor for the 2D rod system using the piecewise DAE (differential
   algebraic equation) based approach, the discretization approach, or the
   continuous ordinary differential equation based approach.
   @param dt The integration step size. This step size cannot be reset
@@ -221,8 +216,7 @@ class Rod2D : public systems::LeafSystem<T> {
         half_length_;
   }
 
-  /**
-  Transforms damping (b) to dissipation (α) , given a characteristic
+  /** Transforms damping (b) to dissipation (α) , given a characteristic
   deformation. */
   double TransformDampingToDissipationAboutDeformation(
       double characteristic_deformation, double b) const {
@@ -232,8 +226,7 @@ class Rod2D : public systems::LeafSystem<T> {
         half_length_);
   }
 
-  /**
-  Gets the constraint force mixing parameter (CFM, used for discretized
+  /** Gets the constraint force mixing parameter (CFM, used for discretized
   systems only), which should lie in the interval [0, infinity]. */
   double get_cfm() const {
     return 1.0 /
@@ -241,8 +234,7 @@ class Rod2D : public systems::LeafSystem<T> {
         kCharacteristicDeformation));
   }
 
-  /**
-  Gets the error reduction parameter (ERP, used for discretized
+  /** Gets the error reduction parameter (ERP, used for discretized
   systems only), which should lie in the interval [0, 1]. */
   double get_erp() const {
     return dt_ * stiffness_ / (stiffness_ * dt_ +
@@ -250,8 +242,7 @@ class Rod2D : public systems::LeafSystem<T> {
         kCharacteristicDeformation));
   }
 
-  /**
-  Gets the generalized position of the rod, given a Context. The first two
+  /** Gets the generalized position of the rod, given a Context. The first two
   components represent the location of the rod's center-of-mass, expressed
   in the global frame. The third component represents the orientation of
   the rod, measured counter-clockwise with respect to the x-axis. */
@@ -260,8 +251,7 @@ class Rod2D : public systems::LeafSystem<T> {
         get_continuous_state().get_generalized_position().CopyToVector();
   }
 
-  /**
-  Gets the generalized velocity of the rod, given a Context. The first
+  /** Gets the generalized velocity of the rod, given a Context. The first
   two components represent the translational velocities of the
   center-of-mass. The third component represents the angular velocity of
   the rod. */
@@ -270,13 +260,11 @@ class Rod2D : public systems::LeafSystem<T> {
         get_continuous_state().get_generalized_velocity().CopyToVector();
   }
 
-  /**
-  Gets the acceleration (with respect to the positive y-axis) due to
+  /** Gets the acceleration (with respect to the positive y-axis) due to
   gravity (i.e., this number should generally be negative). */
   double get_gravitational_acceleration() const { return g_; }
 
-  /**
-  Sets the acceleration (with respect to the positive y-axis) due to
+  /** Sets the acceleration (with respect to the positive y-axis) due to
   gravity (i.e., this number should generally be negative). */
   void set_gravitational_acceleration(double g) { g_ = g; }
 
@@ -322,8 +310,7 @@ class Rod2D : public systems::LeafSystem<T> {
     dissipation_ = dissipation;
   }
 
-  /**
-  Sets stiffness and dissipation for the rod from cfm and erp values (used
+  /** Sets stiffness and dissipation for the rod from cfm and erp values (used
   for discretized system implementations). */
   void SetStiffnessAndDissipation(double cfm, double erp) {
     // These values were determined by solving the equations:
@@ -341,8 +328,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /** Get compliant contact static friction (stiction) coefficient `μ_s`. */
   double get_mu_static() const { return mu_s_; }
 
-  /**
-  Set contact stiction coefficient (>= mu_coulomb). This has no
+  /** Set contact stiction coefficient (>= mu_coulomb). This has no
   effect if the rod model is discretized. */
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
@@ -352,8 +338,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /** Get the stiction speed tolerance (m/s). */
   double get_stiction_speed_tolerance() const {return v_stick_tol_;}
 
-  /**
-  Set the stiction speed tolerance (m/s). This is the maximum slip
+  /** Set the stiction speed tolerance (m/s). This is the maximum slip
   speed that we are willing to consider as sticking. For a given normal
   force N this is the speed at which the friction force will be largest,
   at `μ_s*N` where `μ_s` is the static coefficient of friction. This has no
@@ -363,8 +348,7 @@ class Rod2D : public systems::LeafSystem<T> {
     v_stick_tol_ = v_stick_tol;
   }
 
-  /**
-  Gets the rotation matrix that transforms velocities from a sliding
+  /** Gets the rotation matrix that transforms velocities from a sliding
   contact frame to the global frame.
   @param xaxis_velocity The velocity of the rod at the point of contact,
          projected along the +x-axis.
@@ -376,8 +360,7 @@ class Rod2D : public systems::LeafSystem<T> {
   Matrix2<T> GetSlidingContactFrameToWorldTransform(
       const T& xaxis_velocity) const;
 
-  /**
-  Gets the rotation matrix that transforms velocities from a non-sliding
+  /** Gets the rotation matrix that transforms velocities from a non-sliding
   contact frame to the global frame. Note: all such non-sliding frames are
   identical for this example.
   @returns a 2x2 orthogonal matrix with first column set to the contact
@@ -386,8 +369,7 @@ class Rod2D : public systems::LeafSystem<T> {
            the global frame. */
   Matrix2<T> GetNonSlidingContactFrameToWorldTransform() const;
 
-  /**
-  Checks whether the system is in an impacting state, meaning that the
+  /** Checks whether the system is in an impacting state, meaning that the
   relative velocity along the contact normal between the rod and the
   halfspace is such that the rod will begin interpenetrating the halfspace
   at any time Δt in the future (i.e., Δt > 0). If the context does not
@@ -395,16 +377,14 @@ class Rod2D : public systems::LeafSystem<T> {
   this method returns `false`. */
   bool IsImpacting(const systems::Context<T>& context) const;
 
-  /**
-  Gets the integration step size for the discretized system.
+  /** Gets the integration step size for the discretized system.
   @returns 0 if this is a DAE-based system. */
   double get_integration_step_size() const { return dt_; }
 
   /** Gets the model and simulation type for this system. */
   SystemType get_system_type() const { return system_type_; }
 
-  /**
-  Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
+  /** Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
   translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
   and torque t_R=τ is the moment due to the contact forces actually being
   applied elsewhere. The returned spatial force may be the resultant of
@@ -413,8 +393,7 @@ class Rod2D : public systems::LeafSystem<T> {
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
 
-  /**
-  Gets the number of witness functions for the system active in the system
+  /** Gets the number of witness functions for the system active in the system
   for a given state (using @p context). */
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 
@@ -423,8 +402,7 @@ class Rod2D : public systems::LeafSystem<T> {
     return *pose_output_port_;
   }
 
-  /**
-  Utility method for determining the World frame location of one of three
+  /** Utility method for determining the World frame location of one of three
   points on the rod whose origin is Ro. Let r be the half-length of the rod.
   Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
   @param x The horizontal location of the rod center of mass (expressed in
@@ -446,8 +424,7 @@ class Rod2D : public systems::LeafSystem<T> {
                                     const T& ctheta, const T& stheta,
                                     double half_rod_len);
 
-  /**
-  Given a location p_WC of a point C in the World frame, define the point Rc
+  /** Given a location p_WC of a point C in the World frame, define the point Rc
   on the rod that is coincident with C, and report Rc's World frame velocity
   v_WRc. We're given p_WRo=(x,y) and V_WRo = (v_WRo,w_WR) =
   (xdot,ydot,thetadot).
@@ -462,8 +439,7 @@ class Rod2D : public systems::LeafSystem<T> {
       const T& w_WR,  // aka thetadot
       const Vector2<T>& p_WC);
 
-  /**
-  Gets the point(s) of contact for the 2D rod.
+  /** Gets the point(s) of contact for the 2D rod.
   @p context The context storing the current configuration and velocity of
              the rod.
   @p points Contains the contact points (those rod endpoints touching or
@@ -472,8 +448,7 @@ class Rod2D : public systems::LeafSystem<T> {
   void GetContactPoints(const systems::Context<T>& context,
                         std::vector<Vector2<T>>* points) const;
 
-  /**
-  Gets the tangent velocities for all contact points.
+  /** Gets the tangent velocities for all contact points.
   @p context The context storing the current configuration and velocity of
              the rod.
   @p points The set of context points.
@@ -485,8 +460,7 @@ class Rod2D : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
 
-  /**
-  Initializes the contact data for the rod, given a set of contact points.
+  /** Initializes the contact data for the rod, given a set of contact points.
   Aborts if data is null or if `points.size() != tangent_vels.size()`.
   @param points a vector of contact points, expressed in the world frame.
   @param tangent_vels a vector of tangent velocities at the contact points,
@@ -497,8 +471,7 @@ class Rod2D : public systems::LeafSystem<T> {
                                    const std::vector<T>& tangent_vels,
     multibody::constraint::ConstraintAccelProblemData<T>* data) const;
 
-  /**
-  Initializes the impacting contact data for the rod, given a set of contact
+  /** Initializes the impacting contact data for the rod, given a set of contact
   points. Aborts if data is null.
   @param points a vector of contact points, expressed in the world frame.
   @param[out] data the rigid impact problem data. */

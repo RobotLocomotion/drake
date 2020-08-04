@@ -5,8 +5,7 @@
 // file must be kept in sync!
 // ============================================================================
 
-/**
-@file
+/** @file
 Provides careful macros to selectively enable or disable the special member
 functions for copy-construction, copy-assignment, move-construction, and
 move-assignment.
@@ -16,8 +15,7 @@ http://en.cppreference.com/w/cpp/language/member_functions#Special_member_functi
 When enabled via these macros, the `= default` implementation is provided.
 Code that needs custom copy or move functions should not use these macros. */
 
-/**
-DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN deletes the special member functions for
+/** DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN deletes the special member functions for
 copy-construction, copy-assignment, move-construction, and move-assignment.
 Drake's Doxygen is customized to render the deletions in detail, with
 appropriate comments.  Invoke this this macro in the public section of the
@@ -37,8 +35,7 @@ class Foo {
   Classname(Classname&&) = delete;                      \
   void operator=(Classname&&) = delete;
 
-/**
-DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN defaults the special member
+/** DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN defaults the special member
 functions for copy-construction, copy-assignment, move-construction, and
 move-assignment.  This macro should be used only when copy-construction and
 copy-assignment defaults are well-formed.  Note that the defaulted move

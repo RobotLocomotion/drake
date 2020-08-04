@@ -14,8 +14,7 @@
 namespace drake {
 namespace systems {
 
-/**
-%DiagramContinuousState is a ContinuousState consisting of Supervectors
+/** %DiagramContinuousState is a ContinuousState consisting of Supervectors
 xc, q, v, z over the corresponding entries in a set of referenced
 ContinuousState objects, which may or may not be owned by this
 %DiagramContinuousState. This is done recursively since any of the
@@ -35,8 +34,7 @@ class DiagramContinuousState final: public ContinuousState<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState)
 
-  /**
-  Constructs a ContinuousState that is composed of other ContinuousStates,
+  /** Constructs a ContinuousState that is composed of other ContinuousStates,
   which are not owned by this object and must outlive it.
 
   The DiagramContinuousState vector xc = [q v z] will have the same
@@ -51,8 +49,7 @@ class DiagramContinuousState final: public ContinuousState<T> {
     DRAKE_ASSERT(internal::IsNonNull(substates_));
   }
 
-  /**
-  Constructs a ContinuousState that is composed (recursively) of other
+  /** Constructs a ContinuousState that is composed (recursively) of other
   ContinuousState objects, ownership of which is transferred here. */
   explicit DiagramContinuousState(
       std::vector<std::unique_ptr<ContinuousState<T>>> substates)
@@ -63,8 +60,7 @@ class DiagramContinuousState final: public ContinuousState<T> {
 
   ~DiagramContinuousState() override {}
 
-  /**
-  Creates a deep copy of this %DiagramContinuousState, with the same
+  /** Creates a deep copy of this %DiagramContinuousState, with the same
   substructure but with new, owned data. Intentionally shadows the
   ContinuousState::Clone() method but with a more-specific return type so
   you don't have to downcast. */
@@ -77,8 +73,7 @@ class DiagramContinuousState final: public ContinuousState<T> {
 
   int num_substates() const { return static_cast<int>(substates_.size()); }
 
-  /**
-  Returns the continuous state at the given `index`. Aborts if `index` is
+  /** Returns the continuous state at the given `index`. Aborts if `index` is
   out-of-bounds. */
   const ContinuousState<T>& get_substate(int index) const {
     DRAKE_DEMAND(0 <= index && index < num_substates());
@@ -86,8 +81,7 @@ class DiagramContinuousState final: public ContinuousState<T> {
     return *substates_[index];
   }
 
-  /**
-  Returns the continuous state at the given `index`. Aborts if `index` is
+  /** Returns the continuous state at the given `index`. Aborts if `index` is
   out-of-bounds. */
   ContinuousState<T>& get_mutable_substate(int index) {
     return const_cast<ContinuousState<T>&>(get_substate(index));

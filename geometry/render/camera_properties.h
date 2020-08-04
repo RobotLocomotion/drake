@@ -14,8 +14,7 @@ namespace render {
 // class outside of `drake::systems`, and possibly rename this class, in order
 // to decouple generic pinhole parameters from Drake-specific render engine
 // information.
-/**
-The intrinsic properties for a render camera. The render system
+/** The intrinsic properties for a render camera. The render system
 uses a reduced set of intrinsic parameters by making some simplifying
 assumptions:
 
@@ -38,8 +37,7 @@ struct CameraProperties {
   std::string renderer_name;  ///< The name of the renderer to use.
 };
 
-/**
-The intrinsic properties for a render _depth_ camera. Consists of all of the
+/** The intrinsic properties for a render _depth_ camera. Consists of all of the
 intrinsic properties of the render camera but extended with additional
 depth-specific parameters.
 @see CameraProperties */

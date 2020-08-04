@@ -8,12 +8,10 @@
 
 namespace drake {
 namespace multibody {
-/**
-Stores the contact wrench (spatial force) from Body A to Body B applied at
+/** Stores the contact wrench (spatial force) from Body A to Body B applied at
 point Cb. */
 struct ContactWrench {
-  /**
-  @param bodyA_index_in The index of Body A.
+  /** @param bodyA_index_in The index of Body A.
   @param bodyB_index_in The index of Body B.
   @param p_WCb_W_in The position of the point Cb (where the wrench is
   applied) expressed in the world frame W.

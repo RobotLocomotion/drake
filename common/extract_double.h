@@ -6,8 +6,7 @@
 
 namespace drake {
 
-/**
-Converts a ScalarType value to a double, failing at runtime (not compile
+/** Converts a ScalarType value to a double, failing at runtime (not compile
 time) if the type cannot be converted to a double.
 
 This function is useful for writing ScalarType-generic code that (1) can

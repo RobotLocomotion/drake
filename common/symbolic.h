@@ -1,6 +1,5 @@
 #pragma once
-/**
-@file
+/** @file
 Provides public header files of Drake's symbolic library.
 A user of the symbolic library should only include this header file.
 Including other individual headers such as symbolic_expression.h will

@@ -9,8 +9,7 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/**
-A direct-feedthrough system that converts a vector of joint positions
+/** A direct-feedthrough system that converts a vector of joint positions
 directly to a geometry::FramePoseVector<T> to behave like a
 MultibodyPlant::get_geometry_pose_output_port().
 
@@ -35,8 +34,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPositionToGeometryPose)
 
-  /**
-  The %MultibodyPositionToGeometryPose holds an internal, non-owned
+  /** The %MultibodyPositionToGeometryPose holds an internal, non-owned
   reference to the MultibodyPlant object so you must ensure that @p plant
   has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
 
@@ -50,8 +48,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
       const multibody::MultibodyPlant<T>& plant,
       bool input_multibody_state = false);
 
-  /**
-  The %MultibodyPositionToGeometryPose owns its internal plant.
+  /** The %MultibodyPositionToGeometryPose owns its internal plant.
 
   @param input_multibody_state If true, the vector input port will be the
   size of the `plant` *state* vector.  If false, it will be the size

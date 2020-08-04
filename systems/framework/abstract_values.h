@@ -11,8 +11,7 @@
 namespace drake {
 namespace systems {
 
-/**
-AbstractValues is a container for non-numerical state and parameters.
+/** AbstractValues is a container for non-numerical state and parameters.
 It may or may not own the underlying data, and therefore is suitable
 for both leaf Systems and diagrams. */
 class AbstractValues {
@@ -23,8 +22,7 @@ class AbstractValues {
   /** Constructs an empty AbstractValues. */
   AbstractValues();
 
-  /**
-  Constructs an AbstractValues that owns the underlying data.
+  /** Constructs an AbstractValues that owns the underlying data.
 
   @exclude_from_pydrake_mkdoc{The next overload's docstring is better, and
   we only need one of the two -- overloading on ownership doesn't make
@@ -34,8 +32,7 @@ class AbstractValues {
   /** Constructs an AbstractValues that does not own the underlying data. */
   explicit AbstractValues(const std::vector<AbstractValue*>& data);
 
-  /**
-  Constructs an AbstractValues that owns a single @p datum.
+  /** Constructs an AbstractValues that owns a single @p datum.
 
   @exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
   explicit AbstractValues(std::unique_ptr<AbstractValue> datum);
@@ -45,24 +42,20 @@ class AbstractValues {
   /** Returns the number of elements of AbstractValues. */
   int size() const;
 
-  /**
-  Returns the element of AbstractValues at the given @p index, or aborts if
+  /** Returns the element of AbstractValues at the given @p index, or aborts if
   the index is out-of-bounds. */
   const AbstractValue& get_value(int index) const;
 
-  /**
-  Returns the element of AbstractValues at the given @p index, or aborts if
+  /** Returns the element of AbstractValues at the given @p index, or aborts if
   the index is out-of-bounds. */
   AbstractValue& get_mutable_value(int index);
 
-  /**
-  Copies all of the AbstractValues in @p other into this. Asserts if the
+  /** Copies all of the AbstractValues in @p other into this. Asserts if the
   two are not equal in size.
   @throws std::exception if any of the elements are of incompatible type. */
   void SetFrom(const AbstractValues& other);
 
-  /**
-  Returns a deep copy of all the data in this AbstractValues. The clone
+  /** Returns a deep copy of all the data in this AbstractValues. The clone
   will own its own data. This is true regardless of whether the data being
   cloned had ownership of its data or not. */
   std::unique_ptr<AbstractValues> Clone() const;

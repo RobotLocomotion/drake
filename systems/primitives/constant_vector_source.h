@@ -10,8 +10,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A source block with a constant output port at all times. The value of the
+/** A source block with a constant output port at all times. The value of the
 output port is a parameter of the system (see Parameters).
 
 @tparam_default_scalar
@@ -21,16 +20,14 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantVectorSource)
 
-  /**
-  Constructs a system with a vector output that is constant and equals the
+  /** Constructs a system with a vector output that is constant and equals the
   supplied @p source_value at all times.
   @param source_value the constant value of the output so that
   `y = source_value` at all times. */
   explicit ConstantVectorSource(
       const Eigen::Ref<const VectorX<T>>& source_value);
 
-  /**
-  Constructs a system with a scalar-valued output of type T that is constant
+  /** Constructs a system with a scalar-valued output of type T that is constant
   and equals the supplied @p source_value at all times.
   @param source_value the constant value of the output so that
   `y = source_value` at all times.
@@ -38,8 +35,7 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   explicit ConstantVectorSource(const T& source_value);
 
-  /**
-  Constructs a system with a vector output that is constant, has the type of
+  /** Constructs a system with a vector output that is constant, has the type of
   the @p source_value, and equals the @p source_value at all times.
 
   @note Objects created using this constructor overload do not support
@@ -54,13 +50,11 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
 
   ~ConstantVectorSource() final;
 
-  /**
-  Return a read-only reference to the source value of this block in the
+  /** Return a read-only reference to the source value of this block in the
   given @p context. */
   const BasicVector<T>& get_source_value(const Context<T>& context) const;
 
-  /**
-  Return a mutable reference to the source value of this block in the given
+  /** Return a mutable reference to the source value of this block in the given
   @p context. */
   BasicVector<T>& get_mutable_source_value(Context<T>* context);
 

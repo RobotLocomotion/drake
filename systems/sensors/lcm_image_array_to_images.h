@@ -10,8 +10,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/**
-An LcmImageArrayToImages takes as input an AbstractValue containing a
+/** An LcmImageArrayToImages takes as input an AbstractValue containing a
 `Value<robotlocomotion::image_array_t>` LCM message that defines an array
 of images (image_t).  The system has output ports for one color image as
 an ImageRgba8U and one depth image as ImageDepth32F (intended to be
@@ -22,15 +21,13 @@ class LcmImageArrayToImages : public LeafSystem<double> {
 
   LcmImageArrayToImages();
 
-  /**
-  Returns the abstract valued input port that expects a
+  /** Returns the abstract valued input port that expects a
   `Value<robotlocomotion::image_array_t>`. */
   const InputPort<double>& image_array_t_input_port() const {
     return this->get_input_port(image_array_t_input_port_index_);
   }
 
-  /**
-  Returns the abstract valued output port that contains a RGBA image of
+  /** Returns the abstract valued output port that contains a RGBA image of
   the type ImageRgba8U.  The image will be empty if no color image was
   received in the most recent message (so, for example, sending color and
   depth in different messages will not produce useful results). */
@@ -38,8 +35,7 @@ class LcmImageArrayToImages : public LeafSystem<double> {
     return this->get_output_port(color_image_output_port_index_);
   }
 
-  /**
-  Returns the abstract valued output port that contains an ImageDepth32F.
+  /** Returns the abstract valued output port that contains an ImageDepth32F.
   The image will be empty if no color image was received in the most
   recent message (so, for example, sending color and depth in different
   messages will not produce useful results). */

@@ -16,8 +16,7 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-/**
-Handles lcmt_iiwa_command message from a LcmSubscriberSystem.
+/** Handles lcmt_iiwa_command message from a LcmSubscriberSystem.
 
 Note that this system does not actually subscribe to an LCM channel. To
 receive the message, the input of this system should be connected to a
@@ -54,8 +53,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaCommandReceiver(int num_joints = kIiwaArmNumJoints);
 
-  /**
-  Sets the initial commanded position of the controlled iiwa prior to any
+  /** Sets the initial commanded position of the controlled iiwa prior to any
   command messages being received.  If this function is not called, the
   starting position will be the zero configuration.  The initial commanded
   torque is always zero and cannot be set. */
@@ -65,8 +63,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
-  /**
-  (Advanced.) Copies the current "position_measured" input (or zero if not
+  /** (Advanced.) Copies the current "position_measured" input (or zero if not
   connected) into Context state, and changes the behavior of the "position"
   output to produce the latched state if no message has been received yet.
   The latching already happens automatically during the first discrete
@@ -74,8 +71,7 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   when not already using a Simulator or other special cases. */
   void LatchInitialPosition(systems::Context<double>* context) const;
 
-  /**
-  @name Named accessors for this System's input and output ports.
+  /** @name Named accessors for this System's input and output ports.
   @{ */
   const systems::InputPort<double>& get_message_input_port() const {
     return *message_input_;

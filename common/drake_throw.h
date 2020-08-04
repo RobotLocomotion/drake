@@ -4,8 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 
-/**
-@file
+/** @file
 Provides a convenient wrapper to throw an exception when a condition is
 unmet.  This is similar to an assertion, but uses exceptions instead of
 ::abort(), and cannot be disabled. */
@@ -18,8 +17,7 @@ void Throw(const char* condition, const char* func, const char* file, int line);
 }  // namespace internal
 }  // namespace drake
 
-/**
-Evaluates @p condition and iff the value is false will throw an exception
+/** Evaluates @p condition and iff the value is false will throw an exception
 with a message showing at least the condition text, function name, file,
 and line. */
 #define DRAKE_THROW_UNLESS(condition)                                        \

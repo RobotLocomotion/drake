@@ -8,8 +8,7 @@
 namespace drake {
 namespace math {
 
-/**
-For variables that are meant to be periodic, (e.g. over a 2π interval),
+/** For variables that are meant to be periodic, (e.g. over a 2π interval),
 wraps `value` into the interval `[low, high)`.  Precisely, `wrap_to`
 returns:
   value + k*(high-low)

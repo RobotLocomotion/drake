@@ -19,8 +19,7 @@ class DrealSolver final : public SolverBase {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Interval)
 
-    /**
-    Constructs an interval [low, high].
+    /** Constructs an interval [low, high].
 
     @pre Its lower bound @p low must be less than or equal to its upper
     bound @p high. */
@@ -58,8 +57,7 @@ class DrealSolver final : public SolverBase {
   DrealSolver();
   ~DrealSolver() final;
 
-  /**
-  Checks the satisfiability of a given formula @p f with a given precision
+  /** Checks the satisfiability of a given formula @p f with a given precision
   @p delta.
 
   @returns a model, a mapping from a variable to an interval, if @p f is
@@ -69,8 +67,7 @@ class DrealSolver final : public SolverBase {
       const symbolic::Formula& f,
       double delta);
 
-  /**
-  Finds a solution to minimize @p objective function while satisfying a
+  /** Finds a solution to minimize @p objective function while satisfying a
   given @p constraint using @p delta. When @p local_optimization is
   Localoptimization::kUse, enable "--local-optimization" dReal option which
   uses NLopt's local-optimization algorithms to refine counterexamples in
@@ -85,8 +82,7 @@ class DrealSolver final : public SolverBase {
       double delta,
       LocalOptimization local_optimization);
 
-  /**
-  @name Static versions of the instance methods with similar names.
+  /** @name Static versions of the instance methods with similar names.
   @{ */
   static SolverId id();
   static bool is_available();

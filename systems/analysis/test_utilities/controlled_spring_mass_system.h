@@ -12,8 +12,7 @@
 namespace drake {
 namespace systems {
 
-/**
-A model of a one-dimensional spring-mass system controlled to achieve a
+/** A model of a one-dimensional spring-mass system controlled to achieve a
 given target position using a PID controller.
 @see SpringMassSystem, PidController.
 
@@ -24,8 +23,7 @@ class PidControlledSpringMassSystem : public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PidControlledSpringMassSystem)
 
-  /**
-  Constructs a spring-mass system with a fixed spring constant and given
+  /** Constructs a spring-mass system with a fixed spring constant and given
   mass controlled by a PID controller to achieve a specified target
   position.
   @param[in] spring_stiffness The spring constant.

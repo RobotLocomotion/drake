@@ -11,8 +11,7 @@ namespace drake {
 namespace systems {
 namespace analysis {
 
-/**
-Defines a factory method that constructs a Simulator (with an owned System)
+/** Defines a factory method that constructs a Simulator (with an owned System)
 using the supplied RandomGenerator as the only source of randomness.
 
 Note that in many interesting cases, the SimulatorFactory may simply ignore
@@ -28,8 +27,7 @@ typedef std::function<std::unique_ptr<Simulator<double>>(
     RandomGenerator* generator)>
     SimulatorFactory;
 
-/**
-Defines an arbitrary scalar function of the Context.  This is used in the
+/** Defines an arbitrary scalar function of the Context.  This is used in the
 RandomSimulation and MonteCarloSimulation tools below as a way of
 defining the output random variable of interest -- the
 ScalarSystemFunction is evaluated with the final conditions of the
@@ -41,8 +39,7 @@ typedef std::function<double(const System<double>& system,
                              const Context<double>& context)>
     ScalarSystemFunction;
 
-/**
-Run a deterministic simulation of a (stochastic) System using the @p
+/** Run a deterministic simulation of a (stochastic) System using the @p
 generator to instantiate all "random" quantities.
 
 In pseudo-code, this algorithm implements:
@@ -83,8 +80,7 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
                         const ScalarSystemFunction& output, double final_time,
                         RandomGenerator* generator);
 
-/**
-A snapshot of the generator used to produce the random simulation.  Use,
+/** A snapshot of the generator used to produce the random simulation.  Use,
 e.g.,
 @code
   RandomGenerator generator(result.generator_snapshot)
@@ -110,8 +106,7 @@ struct RandomSimulationResult {
 // TODO(russt): Consider generalizing this with options (e.g. setting the
 // number of simulators, number of samples per simulator, number of parallel
 // threads, ...).
-/**
-Generate samples of a scalar random variable output by running many
+/** Generate samples of a scalar random variable output by running many
 random simulations drawn from independent samples of the
 distributions governing the stochastic simulation.
 

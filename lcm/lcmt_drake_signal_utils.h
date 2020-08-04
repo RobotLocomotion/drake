@@ -5,8 +5,7 @@
 namespace drake {
 namespace lcm {
 
-/**
-Compares two `drake::lcmt_drake_signal` messages are equal.
+/** Compares two `drake::lcmt_drake_signal` messages are equal.
 
 @param[in] actual_message The actual message to be compared against
 @p expected_message.

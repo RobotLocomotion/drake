@@ -17,8 +17,7 @@ template <typename T>
 class RotationMatrix;
 
 // TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-/**
-This class represents the orientation between two arbitrary frames A and D
+/** This class represents the orientation between two arbitrary frames A and D
 associated with a Space-fixed (extrinsic) X-Y-Z rotation by "roll-pitch-yaw"
 angles `[r, p, y]`, which is equivalent to a Body-fixed (intrinsic) Z-Y-X
 rotation by "yaw-pitch-roll" angles `[y, p, r]`.  The rotation matrix `R_AD`
@@ -59,14 +58,12 @@ class RollPitchYaw {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RollPitchYaw)
 
-  /**
-  Constructs a %RollPitchYaw from a 3x1 array of angles.
+  /** Constructs a %RollPitchYaw from a 3x1 array of angles.
   @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
   @throws std::logic_error in debug builds if !IsValid(rpy). */
   explicit RollPitchYaw(const Vector3<T>& rpy) { set(rpy); }
 
-  /**
-  Constructs a %RollPitchYaw from roll, pitch, yaw angles (radian units).
+  /** Constructs a %RollPitchYaw from roll, pitch, yaw angles (radian units).
   @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
@@ -76,8 +73,7 @@ class RollPitchYaw {
     set(roll, pitch, yaw);
   }
 
-  /**
-  Uses a %RotationMatrix to construct a %RollPitchYaw with
+  /** Uses a %RotationMatrix to construct a %RollPitchYaw with
   roll-pitch-yaw angles `[r, p, y]` in the range
   `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   @param[in] R a %RotationMatrix.
@@ -87,8 +83,7 @@ class RollPitchYaw {
     SetFromRotationMatrix(R);
   }
 
-  /**
-  Uses a %Quaternion to construct a %RollPitchYaw with
+  /** Uses a %Quaternion to construct a %RollPitchYaw with
   roll-pitch-yaw angles `[r, p, y]` in the range
   `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   @param[in] quaternion unit %Quaternion.
@@ -99,16 +94,14 @@ class RollPitchYaw {
     SetFromQuaternion(quaternion);
   }
 
-  /**
-  Sets `this` %RollPitchYaw from a 3x1 array of angles.
+  /** Sets `this` %RollPitchYaw from a 3x1 array of angles.
   @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
   @throws std::logic_error in debug builds if !IsValid(rpy). */
   RollPitchYaw<T>& set(const Vector3<T>& rpy) {
     return SetOrThrowIfNotValidInDebugBuild(rpy);
   }
 
-  /**
-  Sets `this` %RollPitchYaw from roll, pitch, yaw angles (units of radians).
+  /** Sets `this` %RollPitchYaw from roll, pitch, yaw angles (units of radians).
   @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
@@ -118,8 +111,7 @@ class RollPitchYaw {
     return set(Vector3<T>(roll, pitch, yaw));
   }
 
-  /**
-  Uses a %Quaternion to set `this` %RollPitchYaw with
+  /** Uses a %Quaternion to set `this` %RollPitchYaw with
   roll-pitch-yaw angles `[r, p, y]` in the range
   `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`.
   @param[in] quaternion unit %Quaternion.
@@ -128,8 +120,7 @@ class RollPitchYaw {
   @throws std::logic_error in debug builds if !IsValid(rpy). */
   void SetFromQuaternion(const Eigen::Quaternion<T>& quaternion);
 
-  /**
-  Uses a high-accuracy efficient algorithm to set the roll-pitch-yaw
+  /** Uses a high-accuracy efficient algorithm to set the roll-pitch-yaw
   angles `[r, p, y]` that underlie `this` @RollPitchYaw, even when the pitch
   angle p is very near a singularity (when p is within 1E-6 of π/2 or -π/2).
   After calling this method, the underlying roll-pitch-yaw `[r, p, y]` has
@@ -152,18 +143,15 @@ class RollPitchYaw {
   /** Returns the yaw-angle underlying `this` %RollPitchYaw. */
   const T& yaw_angle() const { return roll_pitch_yaw_(2); }
 
-  /**
-  Set the roll-angle underlying `this` %RollPitchYaw.
+  /** Set the roll-angle underlying `this` %RollPitchYaw.
   @param[in] r roll angle (in units of radians). */
   void set_roll_angle(const T& r)  { roll_pitch_yaw_(0) = r; }
 
-  /**
-  Set the pitch-angle underlying `this` %RollPitchYaw.
+  /** Set the pitch-angle underlying `this` %RollPitchYaw.
   @param[in] p pitch angle (in units of radians). */
   void set_pitch_angle(const T& p)  { roll_pitch_yaw_(1) = p; }
 
-  /**
-  Set the yaw-angle underlying `this` %RollPitchYaw.
+  /** Set the yaw-angle underlying `this` %RollPitchYaw.
   @param[in] y yaw angle (in units of radians). */
   void  set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
 
@@ -189,16 +177,14 @@ class RollPitchYaw {
   /** Returns the RotationMatrix representation of `this` %RollPitchYaw. */
   RotationMatrix<T> ToRotationMatrix() const;
 
-  /**
-  Returns the 3x3 matrix representation of the %RotationMatrix that
+  /** Returns the 3x3 matrix representation of the %RotationMatrix that
   corresponds to `this` %RollPitchYaw.  This is a convenient "sugar" method
   that is exactly equivalent to RotationMatrix(rpy).ToMatrix3(). */
   Matrix3<T> ToMatrix3ViaRotationMatrix() const {
     return ToRotationMatrix().matrix();
   }
 
-  /**
-  Compares each element of `this` to the corresponding element of `other`
+  /** Compares each element of `this` to the corresponding element of `other`
   to check if they are the same to within a specified `tolerance`.
   @param[in] other %RollPitchYaw to compare to `this`.
   @param[in] tolerance maximum allowable absolute difference between the
@@ -210,8 +196,7 @@ class RollPitchYaw {
     return difference.template lpNorm<Eigen::Infinity>() <= tolerance;
   }
 
-  /**
-  Compares each element of the %RotationMatrix R1 produced by `this` to the
+  /** Compares each element of the %RotationMatrix R1 produced by `this` to the
   corresponding element of the %RotationMatrix R2 produced by `other` to
   check if they are the same to within a specified `tolerance`.
   @param[in] other %RollPitchYaw to compare to `this`.
@@ -220,8 +205,7 @@ class RollPitchYaw {
   boolean<T> IsNearlySameOrientation(const RollPitchYaw<T>& other,
                                      double tolerance) const;
 
-  /**
-  Returns true if roll-pitch-yaw angles `[r, p, y]` are in the range
+  /** Returns true if roll-pitch-yaw angles `[r, p, y]` are in the range
   `-π <= r <= π`, `-π/2 <= p <= π/2`, `-π <= y <= π`. */
   boolean<T> IsRollPitchYawInCanonicalRange() const {
     const T& r = roll_angle();
@@ -231,8 +215,7 @@ class RollPitchYaw {
         (-M_PI <= y && y <= M_PI);
   }
 
-  /**
-  Returns true if the pitch-angle `p` is close to gimbal-lock, which means
+  /** Returns true if the pitch-angle `p` is close to gimbal-lock, which means
   `cos(p) ≈ 0` or `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
   More specifically, returns true if `abs(cos_pitch_angle)` is less than an
   internally-defined tolerance of gimbal-lock.
@@ -245,8 +228,7 @@ class RollPitchYaw {
     return abs(cos_pitch_angle) < kGimbalLockToleranceCosPitchAngle;
   }
 
-  /**
-  Returns true if the pitch-angle `p` is within an internally-defined
+  /** Returns true if the pitch-angle `p` is within an internally-defined
   tolerance of gimbal-lock.  In other words, this method returns true if
   `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
   @note To improve efficiency when cos(pitch_angle()) is already calculated,
@@ -257,16 +239,14 @@ class RollPitchYaw {
     return DoesCosPitchAngleViolateGimbalLockTolerance(cos(pitch_angle()));
   }
 
-  /**
-  Returns the internally-defined allowable closeness (in radians) of the
+  /** Returns the internally-defined allowable closeness (in radians) of the
   pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
   `(n*π + π/2)` where `n = 0, ±1, ±2, ...`. */
   static double GimbalLockPitchAngleTolerance() {
     return M_PI_2 - std::acos(kGimbalLockToleranceCosPitchAngle);
   }
 
-  /**
-  Returns true if `rpy` contains valid roll, pitch, yaw angles.
+  /** Returns true if `rpy` contains valid roll, pitch, yaw angles.
   @param[in] rpy allegedly valid roll, pitch, yaw angles.
   @note an angle is invalid if it is NaN or infinite. */
   static boolean<T> IsValid(const Vector3<T>& rpy) {
@@ -274,8 +254,7 @@ class RollPitchYaw {
     return isfinite(rpy[0]) && isfinite(rpy[1]) && isfinite(rpy[2]);
   }
 
-  /**
-  Forms Ṙ, the ordinary derivative of the %RotationMatrix `R` with respect
+  /** Forms Ṙ, the ordinary derivative of the %RotationMatrix `R` with respect
   to an independent variable `t` (`t` usually denotes time) and `R` is the
   %RotationMatrix formed by `this` %RollPitchYaw.  The roll-pitch-yaw angles
   r, p, y are regarded as functions of `t` [i.e., r(t), p(t), y(t)].
@@ -297,8 +276,7 @@ class RollPitchYaw {
     return R_r * rDt + R_p * pDt + R_y * yDt;
   }
 
-  /**
-  Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
+  /** Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
   angles `[r; p; y]` relate the orientation of two generic frames A and D.
   @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   @returns w_AD_A, frame D's angular velocity in frame A, expressed in A. */
@@ -311,8 +289,7 @@ class RollPitchYaw {
     return M * rpyDt;
   }
 
-  /**
-  Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
+  /** Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
   angles `[r; p; y]` relate the orientation of two generic frames A and D.
   @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   @returns w_AD_D, frame D's angular velocity in frame A, expressed in D. */
@@ -325,8 +302,7 @@ class RollPitchYaw {
     return M * rpyDt;
   }
 
-  /**
-  Uses angular velocity to compute the 1ˢᵗ time-derivative of `this`
+  /** Uses angular velocity to compute the 1ˢᵗ time-derivative of `this`
   %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
   @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
@@ -348,8 +324,7 @@ class RollPitchYaw {
     return M * w_AD_A;
   }
 
-  /**
-  For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
+  /** For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
   relate the orientation of two generic frames A and D, returns the 3x3
   matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
   to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
@@ -367,8 +342,7 @@ class RollPitchYaw {
     return M;
   }
 
-  /**
-  Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
+  /** Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
   %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   @param[in] rpyDt time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   @param[in] alpha_AD_A, frame D's angular acceleration in frame A,
@@ -392,8 +366,7 @@ class RollPitchYaw {
     return Minv * (alpha_AD_A - MDt * rpyDt);
   }
 
-  /**
-  Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
+  /** Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
   %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   @param[in] rpyDt time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   @param[in] alpha_AD_D, frame D's angular acceleration in frame A,
@@ -678,8 +651,7 @@ class RollPitchYaw {
   static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
 
-/**
-Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
+/** Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
 @relates RollPitchYaw */
 using RollPitchYawd = RollPitchYaw<double>;
 

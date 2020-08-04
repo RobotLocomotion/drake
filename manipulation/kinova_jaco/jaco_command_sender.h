@@ -11,8 +11,7 @@ namespace kinova_jaco {
 
 // TODO(sammy-tri) Add support for not sending finger commands.
 
-/**
-Creates and outputs lcmt_jaco_command messages.
+/** Creates and outputs lcmt_jaco_command messages.
 
 Note that this system does not actually send the message to an LCM
 channel. To send the message, the output of this system should be
@@ -42,8 +41,7 @@ class JacoCommandSender : public systems::LeafSystem<double> {
   JacoCommandSender(int num_joints = kJacoDefaultArmNumJoints,
                     int num_fingers = kJacoDefaultArmNumFingers);
 
-  /**
-  @name Named accessors for this System's input and output ports.
+  /** @name Named accessors for this System's input and output ports.
   @{ */
   const systems::InputPort<double>& get_input_port() const;
   const systems::OutputPort<double>& get_output_port() const;

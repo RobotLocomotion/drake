@@ -14,8 +14,7 @@
 namespace drake {
 namespace multibody {
 
-/**
-This Joint fixes the relative pose between two frames as if "welding" them
+/** This Joint fixes the relative pose between two frames as if "welding" them
 together.
 
 @tparam_default_scalar */
@@ -29,8 +28,7 @@ class WeldJoint final : public Joint<T> {
 
   static const char kTypeName[];
 
-  /**
-  Constructor for a %WeldJoint between a `parent_frame_P` and a
+  /** Constructor for a %WeldJoint between a `parent_frame_P` and a
   `child_frame_C` so that their relative pose `X_PC` is fixed as if they
   were "welded" together. */
   WeldJoint(const std::string& name, const Frame<T>& parent_frame_P,
@@ -56,8 +54,7 @@ class WeldJoint final : public Joint<T> {
   }
 
  protected:
-  /**
-  Joint<T> override called through public NVI, Joint::AddInForce().
+  /** Joint<T> override called through public NVI, Joint::AddInForce().
   Since frame P and C are welded together, it is physically not possible to
   apply forces between them. Therefore this method throws an exception if
   invoked. */

@@ -13,8 +13,7 @@
 namespace drake {
 namespace systems {
 
-/**
-Subvector is a concrete class template that implements
+/** Subvector is a concrete class template that implements
 VectorBase by providing a sliced view of a VectorBase.
 
 @tparam_default_scalar */
@@ -24,8 +23,7 @@ class Subvector : public VectorBase<T> {
   // Subvector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
 
-  /**
-  Constructs a subvector of vector that consists of num_elements starting
+  /** Constructs a subvector of vector that consists of num_elements starting
   at first_element.
   @param vector The vector to slice.  Must not be nullptr. Must remain
                 valid for the lifetime of this object. */
@@ -41,8 +39,7 @@ class Subvector : public VectorBase<T> {
     }
   }
 
-  /**
-  Constructs an empty subvector.
+  /** Constructs an empty subvector.
   @param vector The vector to slice.  Must not be nullptr. Must remain
                 valid for the lifetime of this object. */
   explicit Subvector(VectorBase<T>* vector) : Subvector(vector, 0, 0) {}

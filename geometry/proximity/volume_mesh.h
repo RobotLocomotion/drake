@@ -22,8 +22,7 @@ using VolumeVertexIndex = TypeSafeIndex<class VolumeVertexTag>;
 /** Index for identifying a tetrahedral element in a volume mesh. */
 using VolumeElementIndex = TypeSafeIndex<class VolumeElementTag>;
 
-/**
-%VolumeVertex represents a vertex in VolumeMesh.
+/** %VolumeVertex represents a vertex in VolumeMesh.
 @tparam T The underlying scalar type for coordinates, e.g., double or
           AutoDiffXd. Must be a valid Eigen scalar. */
 template <class T>
@@ -31,21 +30,18 @@ class VolumeVertex {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeVertex)
 
-  /**
-  Constructs VolumeVertex.
+  /** Constructs VolumeVertex.
   @param r_MV displacement vector from the origin of M's frame to this
               vertex, expressed in M's frame. */
   explicit VolumeVertex(const Vector3<T>& r_MV)
       : r_MV_(r_MV) {}
 
-  /**
-  Constructs VolumeVertex from the xyz components of a point V in a frame
+  /** Constructs VolumeVertex from the xyz components of a point V in a frame
   M. */
   VolumeVertex(const T& Vx_M, const T& Vy_M, const T& Vz_M)
       : r_MV_(Vx_M, Vy_M, Vz_M) {}
 
-  /**
-  Returns the displacement vector from the origin of M's frame to this
+  /** Returns the displacement vector from the origin of M's frame to this
   vertex, expressed in M's frame. */
   const Vector3<T>& r_MV() const { return r_MV_; }
 
@@ -55,16 +51,14 @@ class VolumeVertex {
   Vector3<T> r_MV_;
 };
 
-/**
-%VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
+/** %VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
 topological entity in the sense that it only knows the indices of its vertices
 but not their coordinates. */
 class VolumeElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeElement)
 
-  /**
-  Constructs VolumeElement.
+  /** Constructs VolumeElement.
   We follow the convention that the first three vertices define a triangle with
   its right-handed normal pointing inwards. The fourth vertex is then on the
   positive side of this first triangle.
@@ -78,16 +72,14 @@ class VolumeElement {
                 VolumeVertexIndex v2, VolumeVertexIndex v3)
       : vertex_({v0, v1, v2, v3}) {}
 
-  /**
-  Constructs VolumeElement.
+  /** Constructs VolumeElement.
   @param v  Array of four integer indices of the vertices of the element in
             VolumeMesh. */
   explicit VolumeElement(const int v[4])
       : vertex_({VolumeVertexIndex(v[0]), VolumeVertexIndex(v[1]),
                  VolumeVertexIndex(v[2]), VolumeVertexIndex(v[3])}) {}
 
-  /**
-  Returns the vertex index in VolumeMesh of the i-th vertex of this
+  /** Returns the vertex index in VolumeMesh of the i-th vertex of this
   element.
   @param i  The local index of the vertex in this element.
   @pre 0 <= i < 4 */
@@ -104,8 +96,7 @@ class VolumeElement {
 // friend access to VolumeMeshTester<T>.
 template <typename T> class VolumeMeshTester;
 
-/**
-%VolumeMesh represents a tetrahedral volume mesh.
+/** %VolumeMesh represents a tetrahedral volume mesh.
 @tparam T  The underlying scalar type for coordinates, e.g., double or
            AutoDiffXd. Must be a valid Eigen scalar. */
 template <class T>
@@ -113,8 +104,7 @@ class VolumeMesh {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
 
-  /**
-  @name Mesh type traits
+  /** @name Mesh type traits
 
   A collection of type traits to enable mesh consumers to be templated on
   mesh type. Each mesh type provides specific definitions of _vertex_,
@@ -139,8 +129,7 @@ class VolumeMesh {
   /** Index for identifying a tetrahedral element. */
   using ElementIndex = VolumeElementIndex;
 
-  /**
-  Type of barycentric coordinates on a tetrahedral element. Barycentric
+  /** Type of barycentric coordinates on a tetrahedral element. Barycentric
   coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds
   to a position in the space. If all bᵢ >= 0, it corresponds to a position
   inside the tetrahedron or on the faces of the tetrahedron. If some bᵢ < 0,
@@ -149,15 +138,13 @@ class VolumeMesh {
   standard way to omit one of the coordinates. */
   using Barycentric = Vector<T, kDim + 1>;
 
-  /**
-  Type of Cartesian coordinates. Mesh consumers can use it in conversion
+  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
   from Cartesian coordinates to barycentric coordinates. */
   using Cartesian = Vector<T, 3>;
 
   /** @} */
 
-  /**
-  Constructor from a vector of vertices and from a vector of elements.
+  /** Constructor from a vector of vertices and from a vector of elements.
   Each element must be a valid VolumeElement following the vertex ordering
   convention documented in the VolumeElement class. This class however does not
   enforce this convention and it is thus the responsibility of the user. */
@@ -174,8 +161,7 @@ class VolumeMesh {
     return elements_[e];
   }
 
-  /**
-  Returns the vertex identified by a given index.
+  /** Returns the vertex identified by a given index.
   @param v  The index of the vertex.
   @pre v ∈ {0, 1, 2,...,num_vertices()-1}. */
   const VolumeVertex<T>& vertex(VertexIndex v) const {
@@ -212,8 +198,7 @@ class VolumeMesh {
     return volume;
   }
 
-  /**
-  Calculate barycentric coordinates with respect to the tetrahedron `e`
+  /** Calculate barycentric coordinates with respect to the tetrahedron `e`
   of the point Q'. This operation is expensive compared with going from
   barycentric to Cartesian.
   @param p_MQ  A position expressed in the frame M of the mesh.
@@ -248,8 +233,7 @@ class VolumeMesh {
     return b_Q;
   }
 
-  /**
-  Checks to see whether the given VolumeMesh object is equal via deep
+  /** Checks to see whether the given VolumeMesh object is equal via deep
   exact comparison. NaNs are treated as not equal as per the IEEE standard.
   @param mesh The mesh for comparison.
   @returns `true` if the given mesh is equal. */
@@ -275,8 +259,7 @@ class VolumeMesh {
     return true;
   }
 
-  /**
-  Calculates the gradient ∇u of a linear field u on the tetrahedron `e`.
+  /** Calculates the gradient ∇u of a linear field u on the tetrahedron `e`.
   Field u is defined by the four field values `field_value[i]` at the i-th
   vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
   frame of this mesh M. */

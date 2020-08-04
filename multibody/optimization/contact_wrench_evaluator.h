@@ -20,8 +20,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchEvaluator)
 
-  /**
-  @anchor ComposeVariableValues
+  /** @anchor ComposeVariableValues
   @name compose variable values.
   Composes the value of the variable `x` in Eval(x, &y) function, based on
   the context and value of lambda, x = [q, λ].
@@ -42,8 +41,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     return x;
   }
 
-  /**
-  Overloads @ref ComposeVariableValues with q, λ as the input instead of
+  /** Overloads @ref ComposeVariableValues with q, λ as the input instead of
   context, λ. */
   template <typename DerivedQ, typename DerivedLambda>
   typename std::enable_if<std::is_same<typename DerivedQ::Scalar,
@@ -80,8 +78,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   systems::Context<AutoDiffXd>& get_mutable_context() { return *context_; }
 
  protected:
-  /**
-  Each derived class should call this constructor.
+  /** Each derived class should call this constructor.
   @param plant The MultibodyPlant on which the contact wrench is computed.
   The lifetime of plant should outlive this object.
   @param context The context of @p plant. The lifetime of context should
@@ -128,8 +125,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   int num_lambda_;
 };
 
-/**
-The contact wrench is τ_AB_W = 0, f_AB_W = λ
+/** The contact wrench is τ_AB_W = 0, f_AB_W = λ
 Namely we assume that λ is the contact force from A to B, applied directly
 at B's witness point. */
 class ContactWrenchFromForceInWorldFrameEvaluator final
@@ -137,8 +133,7 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchFromForceInWorldFrameEvaluator)
 
-  /**
-  @param plant The MultibodyPlant on which the contact wrench is computed.
+  /** @param plant The MultibodyPlant on which the contact wrench is computed.
   The lifetime of @p plant should outlive this object.
   @param context The context of the MultibodyPlant.
   The lifetime of @p context should outlive this object.
@@ -170,8 +165,7 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
 };
 
 namespace internal {
-/**
-This struct records the contact wrench evaluator, together with the indices
+/** This struct records the contact wrench evaluator, together with the indices
 of lambda used in this evaluator, among all lambda.
 
 The user is not supposed to use this struct directly. It is used internally

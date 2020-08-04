@@ -19,8 +19,7 @@ constexpr int kAllegroNumJoints = 16;
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd);
 
-/**
-Creates selector matrices which extract state xₛ in a known order from the
+/** Creates selector matrices which extract state xₛ in a known order from the
 plant's full x (`xₛ = Sx⋅x`) and promote the controller's ordered yₛ into
 the full plant's input actuation (`u = Su⋅uₛ`).
 The matrices are used to initialize the PID controller for the hand.
@@ -37,14 +36,12 @@ void GetControlPortMapping(
     const multibody::MultibodyPlant<double>& plant,
     MatrixX<double>* Sx, MatrixX<double>* Sy);
 
-/**
-Defines the desired ordering of the finger joints by name. The fingers are
+/** Defines the desired ordering of the finger joints by name. The fingers are
 ordered as [thumb, index, middle, ring] and the joints of each finger are
 ordered from most proximal to most distal (relative to the palm). */
 std::vector<std::string> GetPreferredJointOrdering();
 
-/**
-Detecting the state of the fingers: whether the joints are moving, or
+/** Detecting the state of the fingers: whether the joints are moving, or
 reached the destination, or got stuck by external collisions in the midway.
 The class uses only the hand status from the MBP as the input, and calculate
 the state according to the position, velocity, and command position of each
@@ -56,20 +53,17 @@ class AllegroHandMotionState {
 
   AllegroHandMotionState();
 
-  /**
-  Update the states of the joints and fingers upon receiving the new
+  /** Update the states of the joints and fingers upon receiving the new
   message about hand staties. */
   void Update(const lcmt_allegro_status& allegro_state_msg);
 
-  /**
-  Pre-set joint positions for grasping objects and open hands.
+  /** Pre-set joint positions for grasping objects and open hands.
   @param finger_index: the index of the fingers whose joint values are in
   request. */
   Eigen::Vector4d FingerGraspJointPosition(int finger_index) const;
   Eigen::Vector4d FingerOpenJointPosition(int finger_index) const;
 
-  /**
-  Returns true when the finger is stuck, which means the joints on the
+  /** Returns true when the finger is stuck, which means the joints on the
   finger stops moving or back driving, regardless of it having reached the
   target position or not. */
   bool IsFingerStuck(int finger_index) const {

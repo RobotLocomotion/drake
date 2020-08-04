@@ -15,8 +15,7 @@ namespace rendering {
 
 namespace internal { struct PoseAggregatorInputRecord; }
 
-/**
-A container with references to the input port for the pose input, and a
+/** A container with references to the input port for the pose input, and a
 reference to the input port for the velocity input. */
 template <typename T>
 struct PoseVelocityInputPorts {
@@ -31,8 +30,7 @@ struct PoseVelocityInputPorts {
 // TODO(david-german-tri): Rename PoseAggregator to KinematicsAggregator, since
 // it includes both poses and velocities now.
 
-/**
-PoseAggregator is a multiplexer for heterogeneous sources of poses and the
+/** PoseAggregator is a multiplexer for heterogeneous sources of poses and the
 velocities of those poses.
 Supported sources are:
 
@@ -89,14 +87,12 @@ class PoseAggregator : public LeafSystem<T> {
 
   ~PoseAggregator() override;
 
-  /**
-  Adds an input for a PoseVector. @p name must be unique for all inputs with
+  /** Adds an input for a PoseVector. @p name must be unique for all inputs with
   the same @p model_instance_id. */
   const InputPort<T>& AddSingleInput(const std::string& name,
                                                int model_instance_id);
 
-  /**
-  Adds an input for a PoseVector, and a corresponding input for a
+  /** Adds an input for a PoseVector, and a corresponding input for a
   FrameVelocity. @p name must be unique for all inputs with the same
   @p model_instance_id.
 

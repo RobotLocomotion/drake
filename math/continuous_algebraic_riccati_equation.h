@@ -5,8 +5,7 @@
 namespace drake {
 namespace math {
 
-/**
-Computes the unique stabilizing solution S to the continuous-time algebraic
+/** Computes the unique stabilizing solution S to the continuous-time algebraic
 Riccati equation:
 
 @f[
@@ -23,8 +22,7 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R);
 
-/**
-This is functionally the same as
+/** This is functionally the same as
 ContinuousAlgebraicRiccatiEquation(A, B, Q, R).
 The Cholesky decomposition of R is passed in instead of R. */
 Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(

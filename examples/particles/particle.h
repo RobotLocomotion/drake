@@ -7,8 +7,7 @@ namespace drake {
 namespace examples {
 namespace particles {
 
-/**
-A linear 1DOF particle system.
+/** A linear 1DOF particle system.
 
 With very simple dynamics @f$ \ddot x = a @f$, this system can be
 described in terms of its:
