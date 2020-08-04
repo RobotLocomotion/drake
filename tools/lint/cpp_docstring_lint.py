@@ -11,6 +11,7 @@ Implements a simple parser which:
 """
 
 import argparse
+from functools import partial
 import os
 from textwrap import dedent
 import sys
@@ -209,12 +210,22 @@ def remove_empty_leading_and_trailing_lines(raw_lines):
 
 
 class CommentMultilineToken(MultilineToken):
+    """Abstract base class for indicating docstring multiline tokens."""
+    def get_docstring_text(self):
+        """Gets the docstring text with all preceding "cruft" stripped out.
+        Preserves indicated whitespace."""
+        text_lines = [line.text for line in self.lines]
+        remove_empty_leading_and_trailing_lines(text_lines)
+        return dedent_lines(text_lines, self, require_nonragged=True).strip()
+
+
+class PrivateCommentMultilineToken(CommentMultilineToken):
     """Indicates a comment (non-docstring) multiline token.
     This is an abstract class."""
     pass
 
 
-class DoubleSlashMultilineToken(CommentMultilineToken):
+class DoubleSlashMultilineToken(PrivateCommentMultilineToken):
     """Indicates a block of comments starting with "//"."""
     def add_line(self, line):
         if line.start_token != "//":
@@ -222,7 +233,7 @@ class DoubleSlashMultilineToken(CommentMultilineToken):
         return super().add_line(line)
 
 
-class SingleStarMultilineToken(CommentMultilineToken):
+class SingleStarMultilineToken(PrivateCommentMultilineToken):
     """Indicates a comments of the form "/* ... */"."""
     def __init__(self):
         self._finished = False
@@ -244,14 +255,8 @@ class SingleStarMultilineToken(CommentMultilineToken):
             raise UserFormattingError(f"Not closed:\n{self}")
 
 
-class DocstringMultilineToken(MultilineToken):
-    """Abstract base class for indicating docstring multiline tokens."""
-    def get_docstring_text(self):
-        """Gets the docstring text with all preceding "cruft" stripped out.
-        Preserves indicated whitespace."""
-        text_lines = [line.text for line in self.lines]
-        remove_empty_leading_and_trailing_lines(text_lines)
-        return dedent_lines(text_lines, self, require_nonragged=True).strip()
+class DocstringMultilineToken(CommentMultilineToken):
+    pass
 
 
 class TripleSlashMultilineToken(DocstringMultilineToken):
@@ -371,7 +376,7 @@ def multiline_tokenize(filename, raw_lines):
     return tokens
 
 
-def reformat_docstring(docstring):
+def reformat_docstring(docstring, *, public):
     """Reformats a DocstringMultilineToken into a canonical form."""
     MAX_LEN = 80
     indent = docstring.lines[0].indent
@@ -395,13 +400,20 @@ def reformat_docstring(docstring):
         else:
             return [f"{new_line}{suffix}"]
 
+    if public:
+        new_start = "/**"
+        new_start_single = "///"
+    else:
+        new_start = "/*"
+        new_start_single = "//"
+
     if len(text_lines) == 1:
         if "://" in first_line:
             # Weird behavior with bogus lint?
-            return [f"{indent}/// {first_line}"]
-        new_lines = maybe_wrap(f"/** {first_line}", " */")
+            return [f"{indent}{new_start_single} {first_line}"]
+        new_lines = maybe_wrap(f"{new_start} {first_line}", " */")
     else:
-        new_lines = [f"{indent}/**"]
+        new_lines = [f"{indent}{new_start}"]
         for line in text_lines[:-1]:
             new_line = f"{indent}{spacing}{line}".rstrip()
             new_lines.append(new_line)
@@ -410,16 +422,20 @@ def reformat_docstring(docstring):
     return new_lines
 
 
-def reformat_multiline_token(token):
+def reformat_docstring_token(token, *, public):
     """Reformats a multiline token for applying / checking lint."""
-    if isinstance(token, DocstringMultilineToken):
+    if public:
+        cls = DocstringMultilineToken
+    else:
+        cls = PrivateCommentMultilineToken
+    if isinstance(token, cls):
         # Multi-pass for idempotent.
         # TODO(eric): Fix this.
         tokens = [token]
         first_line = token.lines[0]
         prev_lines = None
         for i in range(3):
-            new_lines = reformat_docstring(token)
+            new_lines = reformat_docstring(token, public=public)
             if prev_lines is not None:
                 if new_lines == prev_lines:
                     break
@@ -558,15 +574,41 @@ def reorder_multiline_tokens(tokens, lint_errors):
     return tokens
 
 
+def reformat_private_docstring_tokens(tokens, lint_errors):
+    maybe_private_docstring = AbstractRegex([
+        AbstractRegex.Single(partial(is_meaningful_docstring_token, public=False)),
+        AbstractRegex.Single(is_generic_token_but_not_macro),
+    ])
+    matches = maybe_private_docstring.find_all(tokens)
+    for match in matches:
+        (comment,), (generic,) = match.groups()
+        original = [comment, generic]
+        start = tokens.index(original[0])
+        for x in original:
+            tokens.remove(x)
+        old_first_line = comment.lines[0]
+        new_lines = reformat_docstring_token(comment, public=False)
+        new_comment = parse_single_multiline_token(
+            new_lines, old_first_line.filename, old_first_line.num)
+        new = [new_comment, generic]
+        for i, x in enumerate(new):
+            tokens.insert(start + i, x)
+    return tokens
+
+
 def is_whitespace_token(token):
     """Predicate for a whitespace token."""
     return isinstance(token, WhitespaceMultilineToken)
 
 
-def is_meaningful_docstring_token(token):
+def is_meaningful_docstring_token(token, *, public=True):
     """Predicate for a docstring token that isn't simply a doxygen
     directive."""
-    if isinstance(token, DocstringMultilineToken):
+    if public:
+        cls = DocstringMultilineToken
+    else:
+        cls = PrivateCommentMultilineToken
+    if isinstance(token, cls):
         if len(token.lines) == 1:
             if token.lines[0].text.strip().startswith("@"):
                 return False
@@ -576,7 +618,7 @@ def is_meaningful_docstring_token(token):
 
 def is_generic_token_but_not_macro(token):
     """Predicate for a generic token (possibly code) that is not a
-    macro."""
+    macro definition."""
     if isinstance(token, GenericMultilineToken):
         if not token.lines[0].text.startswith("#"):
             return True
@@ -585,7 +627,7 @@ def is_generic_token_but_not_macro(token):
 
 def is_comment_token_but_not_nolint(token):
     """Predicate for a comment token that is not a "nolint" directive."""
-    if isinstance(token, CommentMultilineToken):
+    if isinstance(token, PrivateCommentMultilineToken):
         # TODO(eric.cousineau): Figure out how to make cpplint play nicely with
         # mkdoc.py?
         if token.lines[-1].text.strip().startswith("NOLINTNEXTLINE"):
@@ -671,17 +713,25 @@ def is_ignored_file(relpath):
     return False
 
 
-def check_or_apply_lint_on_tokens(tokens, lint_errors, verbose=False):
+def check_or_apply_lint_on_tokens(
+        tokens, lint_errors, verbose=False, maybe_private=False):
     tokens = reorder_multiline_tokens(tokens, lint_errors)
     # Replace docstrings with "re-rendered" version.
     new_lines = []
     for token in tokens:
-        new_lines_i = reformat_multiline_token(token)
+        new_lines_i = reformat_docstring_token(token, public=True)
         if lint_errors is not None:
             lint_multiline_token(
                 lint_errors, token, new_lines_i, verbose=verbose)
         new_lines += new_lines_i
-    return new_lines
+    if maybe_private:
+        tokens = reformat_private_docstring_tokens(tokens, lint_errors)
+        new_lines_fin = []
+        for token in tokens:
+            new_lines_fin += token.to_raw_lines()
+        return new_lines_fin
+    else:
+        return new_lines
 
 
 def check_or_apply_lint_on_file(filename, check_lint, verbose=False):

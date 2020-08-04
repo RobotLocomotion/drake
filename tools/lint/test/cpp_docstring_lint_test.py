@@ -117,7 +117,7 @@ class TestCppDocstringLint(unittest.TestCase):
             jkl */
         """.rstrip())
 
-        # EXample inputs.
+        # Example inputs.
         tokens = make_tokens("""\
             /** abc
 
@@ -156,12 +156,12 @@ class TestCppDocstringLint(unittest.TestCase):
         self.assertEqual(len(tokens), 5)
 
         for token in tokens:
-            text = "\n".join(mut.reformat_docstring(token))
+            text = "\n".join(mut.reformat_docstring(token, public=True))
             self.assertEqual(expected_text, text, str(token))
 
         token, = make_tokens("/// This is code /* with a nested comment */")
         expected_text = "/** This is code /+ with a nested comment +/ */"
-        actual_text, = mut.reformat_docstring(token)
+        actual_text, = mut.reformat_docstring(token, public=True)
         self.assertEqual(expected_text, actual_text)
 
     def test_check_or_apply_lint(self):
@@ -205,3 +205,54 @@ class TestCppDocstringLint(unittest.TestCase):
         """.rstrip())
         actual_errors = "\n".join(str(x) for x in lint_errors).rstrip()
         self.assertEqual(expected_errors, actual_errors)
+
+    def test_private(self):
+        tokens_in = make_tokens("""\
+            // Private docstring
+            code;
+
+            // Private docstring
+            // with multiple lines.
+            MySymbol;
+
+            // Random docstring without symbols next to it.
+        """.rstrip())
+        text_out = "\n".join(
+            mut.check_or_apply_lint_on_tokens(tokens_in, lint_errors=None, maybe_private=True))
+        text_expected = dedent("""\
+            /* Private docstring */
+            code;
+
+            /*
+            Private docstring
+            with multiple lines. */
+            MySymbol;
+
+            // Random docstring without symbols next to it.
+        """.rstrip())
+        self.assertEqual(text_expected, text_out)
+
+    def test_edge_case(self):
+        tokens_in = make_tokens("""\
+            /* Adds constant to this factory.
+               Adding constant into an mul factory representing
+
+                   c * b1 ^ e1 * ... * bn ^ en
+
+               results in (constant * c) * b1 ^ e1 * ... * bn ^ en. */
+            symbol;
+        """.rstrip())
+        text_out = "\n".join(
+            mut.check_or_apply_lint_on_tokens(tokens_in, lint_errors=None, maybe_private=True))
+        print(text_out)
+        text_expected = dedent("""\
+            /*
+            Adds constant to this factory.
+            Adding constant into an mul factory representing
+
+                c * b1 ^ e1 * ... * bn ^ en
+
+            results in (constant * c) * b1 ^ e1 * ... * bn ^ en. */
+            symbol;
+        """.rstrip())
+        self.assertEqual(text_expected, text_out)
