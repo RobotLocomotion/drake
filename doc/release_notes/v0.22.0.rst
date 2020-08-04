@@ -95,7 +95,7 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* TBD Remove deprecated code (2020-08) (`#13785`_)
 
 Notes
 -----
@@ -116,7 +116,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current newest_commit 9d785bacce72f9a9c120dc3b8dc8db73ff957ef3 (inclusive).
 
 * attic,examples,manipulation,multibody,systems,tools: Mow over all XML files with xmllint (`#13768`_)
-* common,setup,solvers,systems,tools: Remove deprecated code (2020-08) (`#13785`_)
 * common: add symbolic ChebyshevPolynomial (`#13751`_)  # This only implements a univariate Chebyshev polynomial. We will implement the ChebyshevBasis class later, which handles multi-variate Chebyshev basis in the form of T0(x)*T1(y)*T3(z) etc.
 * common: yaml: Add EraseMatchingMaps to YamlWriteArchive (`#13699`_)  # This allows for emitting a minimal yaml representation when loaded with retain_map_defaults set on the eventual reader.  This is the minimal API to accomplish that; I intend to provide better usability shims for this in a future commit.
 * examples,manipulation,multibody,systems: Simplify SDFormat //pose elements (`#13774`_)  # - Remove `//pose/@frame` when empty - Collapse identity transforms (all zeros) - Remove purely identity transforms ("<pose/>") Script used: https://git.io/JJ2OQ
