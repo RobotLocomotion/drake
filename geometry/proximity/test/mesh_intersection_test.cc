@@ -791,10 +791,10 @@ VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
 
 GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   auto volume_M = TrivialVolumeMesh<double>();
-  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_M(*volume_M);
+  const Bvh<VolumeMesh<double>> bvh_M(*volume_M);
   auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
   auto rigid_N = TrivialSurfaceMesh<double>();
-  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_N(*rigid_N);
+  const Bvh<SurfaceMesh<double>> bvh_N(*rigid_N);
   // Transform the surface (single triangle) so that it intersects with *both*
   // tets in the volume mesh. The surface lies on the y = 0.75 plane.
   // Each tet gets intersected into a isosceles right triangle with a leg
@@ -1386,8 +1386,8 @@ GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidBVH) {
       id_S, *field_S, X_WS, id_R, *surface_R, X_WR);
 
   // Compute the contact surface using the BVHs.
-  auto bvh_S = BoundingVolumeHierarchy<VolumeMesh<double>>(*mesh_S);
-  auto bvh_R = BoundingVolumeHierarchy<SurfaceMesh<double>>(*surface_R);
+  auto bvh_S = Bvh<VolumeMesh<double>>(*mesh_S);
+  auto bvh_R = Bvh<SurfaceMesh<double>>(*surface_R);
   auto bvh_contact_SR = ComputeContactSurfaceFromSoftVolumeRigidSurface(
       id_S, *field_S, bvh_S, X_WS, id_R, *surface_R, bvh_R, X_WR);
 

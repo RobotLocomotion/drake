@@ -775,7 +775,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       Vector3<double>(1.0, 2.0, 3.0));
   const SurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB);
   const GeometryId mesh_id = GeometryId::get_new_id();
-  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_F(mesh_F);
+  const Bvh<SurfaceMesh<double>> bvh_F(mesh_F);
 
   // Construct the half-space.
   const GeometryId hs_id = GeometryId::get_new_id();
@@ -898,7 +898,7 @@ GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
 
   const SurfaceMesh<double> mesh_F = CreateBoxMesh(X_FB);
   const GeometryId mesh_id = GeometryId::get_new_id();
-  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_F(mesh_F);
+  const Bvh<SurfaceMesh<double>> bvh_F(mesh_F);
 
   // Construct the half-space.
   const GeometryId hs_id = GeometryId::get_new_id();
@@ -972,7 +972,7 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest,
   const SurfaceMesh<double> mesh_F =
       CreateOneTriangleMesh({0, 0, 0}, {1, 0, 0}, {0, 1, 0});
   const GeometryId mesh_id = GeometryId::get_new_id();
-  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_F(mesh_F);
+  const Bvh<SurfaceMesh<double>> bvh_F(mesh_F);
 
   // Construct the half-space.
   const RigidTransform<T> X_WH;

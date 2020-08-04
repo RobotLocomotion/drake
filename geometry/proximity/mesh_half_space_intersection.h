@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -143,8 +143,7 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const SurfaceMesh<double>& mesh_R,
-    const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR);
+    const Bvh<SurfaceMesh<double>>& bvh_R, const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
