@@ -15,17 +15,30 @@ load(
     "drake_cc_package_library_gl_per_os",
 )
 
-package(default_visibility = ["//geometry/render/gl_renderer:__subpackages__"])
+# This gl_renderer package is only implemented on Ubuntu.  For macOS, only the
+# render_engine_gl_factory is available and it will always throw an exception.
+# For Ubuntu, the factory is the sole public entry point, even though the
+# implementation is made up of several other distinct components.
+#
+# Because the components are only conditionally available, and because we do
+# not want Drake's installed headers to depend on GL headers, we only install
+# the header for render_engine_gl_factory and nothing else.
+#
+# Similarly, only the package-level library //geometry/render/gl_renderer is
+# public as a Bazel target; all of the other targets are private.
+
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library_gl_per_os(
     name = "gl_renderer",
     macos_deps = [
-        ":render_engine_gl",
+        ":render_engine_gl_factory",
     ],
     ubuntu_deps = [
         ":opengl_context",
         ":opengl_geometry",
         ":render_engine_gl",
+        ":render_engine_gl_factory",
         ":shader_program",
         ":shape_meshes",
     ],
@@ -58,35 +71,46 @@ drake_cc_library_gl_ubuntu_only(
     ],
 )
 
-# The pure OpenGL-based render engine implementation.
-drake_cc_library(
+drake_cc_library_gl_ubuntu_only(
     name = "render_engine_gl",
+    srcs = [
+        "render_engine_gl.cc",
+    ],
+    hdrs = [
+        "buffer_dim.h",
+        "render_engine_gl.h",
+    ],
+    deps = [
+        ":opengl_context",
+        ":opengl_geometry",
+        ":shader_program",
+        ":shape_meshes",
+        "//common:essential",
+        "//geometry/render:render_engine",
+        "//geometry/render:render_label",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library(
+    name = "render_engine_gl_factory",
     srcs = select({
-        "//tools/cc_toolchain:apple": ["no_render_engine_gl_factory.cc"],
+        "//tools/cc_toolchain:apple": [
+            "no_render_engine_gl_factory.cc",
+        ],
         "//conditions:default": [
-            "render_engine_gl.cc",
             "render_engine_gl_factory.cc",
         ],
     }),
-    hdrs = select({
-        "//tools/cc_toolchain:apple": ["render_engine_gl_factory.h"],
-        "//conditions:default": [
-            "buffer_dim.h",
-            "render_engine_gl.h",
-            "render_engine_gl_factory.h",
-        ],
-    }),
+    hdrs = [
+        "render_engine_gl_factory.h",
+    ],
     deps = select({
-        "//tools/cc_toolchain:apple": ["//geometry/render:render_engine"],
-        "//conditions:default": [
-            ":opengl_context",
-            ":opengl_geometry",
-            ":shader_program",
-            ":shape_meshes",
-            "//common:essential",
+        "//tools/cc_toolchain:apple": [
             "//geometry/render:render_engine",
-            "//geometry/render:render_label",
-            "//systems/sensors:image",
+        ],
+        "//conditions:default": [
+            ":render_engine_gl",
         ],
     }),
 )
@@ -168,7 +192,7 @@ drake_cc_googletest(
         "//conditions:default": [],
     }),
     deps = [
-        ":render_engine_gl",
+        ":render_engine_gl_factory",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -200,9 +224,6 @@ drake_cc_googletest_gl_ubuntu_only(
 add_lint_tests(
     cpplint_extra_srcs = [
         "no_render_engine_gl_factory.cc",
-        "render_engine_gl.cc",
-        "render_engine_gl.h",
         "render_engine_gl_factory.cc",
-        "render_engine_gl_factory.h",
     ],
 )
