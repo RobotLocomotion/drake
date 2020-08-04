@@ -61,7 +61,7 @@ Tutorials and examples
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* Reformat all XML files with xmllint (`#13768`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -81,6 +81,8 @@ Newly bound
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Add preliminary support for bootstrapping Google Colab (`#13697`_, `#13795`_)
+* Rename libspdlog.so to libdrake_spdlog.so (`#13698`_)
 * Upgrade recommended Bazel version to 3.4 (`#13743`_)
 * Upgrade buildifier to latest release 3.4.0 (`#13791`_)
 * Upgrade fcl to latest commit (`#13787`_)
@@ -120,7 +122,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
   Current newest_commit 9d785bacce72f9a9c120dc3b8dc8db73ff957ef3 (inclusive).
 
-* attic,examples,manipulation,multibody,systems,tools: Mow over all XML files with xmllint (`#13768`_)
 * common: add symbolic ChebyshevPolynomial (`#13751`_)  # This only implements a univariate Chebyshev polynomial. We will implement the ChebyshevBasis class later, which handles multi-variate Chebyshev basis in the form of T0(x)*T1(y)*T3(z) etc.
 * common: yaml: Add EraseMatchingMaps to YamlWriteArchive (`#13699`_)  # This allows for emitting a minimal yaml representation when loaded with retain_map_defaults set on the eventual reader.  This is the minimal API to accomplish that; I intend to provide better usability shims for this in a future commit.
 * examples,manipulation,multibody,systems: Simplify SDFormat //pose elements (`#13774`_)  # - Remove `//pose/@frame` when empty - Collapse identity transforms (all zeros) - Remove purely identity transforms ("<pose/>") Script used: https://git.io/JJ2OQ
@@ -129,9 +130,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
 * geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
 * math: math: Declare explicit class instantiations for SO(3) and SE(3) (`#13798`_)
-* third_party,tools: Move `mkdoc.py` from `third_party` (`#13769`_)  # Relocate `mkdoc.py` to the same directory as `mkdoc_comment.py`. Remove the LICENSE file and (now empty) `third_party/com_github_pybind_pybind11` directory. Add copyright information to the two files that are derived from original `mkdoc.py` in pybind11. Resolves #13726
-* tools: Add support in one tutorial for Google Colab (`#13697`_)  # * Add setup script to provision colab notebooks Towards #13683
-* tools: Reformat text in mkdoc comment text (`#13740`_)  # Follow-up to #13651
-* tools: Rename libspdlog.so to libdrake_spdlog.so (`#13698`_)
-* tools: sdformat: Add simple interface to `ign sdf` tool (`#13767`_)
-* tools: setup_drake_colab avoids reinstall if version info is unchanged (`#13795`_)
