@@ -423,6 +423,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   while (accuracy > 1e-8) {
     // (Re)set the time and initial state.
     context.SetTime(0);
+    simulator.Initialize();
 
     // Simulate to h.
     simulator.AdvanceTo(h);
