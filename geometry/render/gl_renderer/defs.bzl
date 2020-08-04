@@ -13,9 +13,17 @@ def drake_cc_googletest_gl_ubuntu_only(**kwargs):
     if DISTRIBUTION == "ubuntu":
         drake_cc_googletest(**kwargs)
 
-def drake_cc_library_gl_ubuntu_only(**kwargs):
+def drake_cc_library_gl_ubuntu_only(name, hdrs = [], **kwargs):
     if DISTRIBUTION == "ubuntu":
-        drake_cc_library(**kwargs)
+        # Because this library is not cross-platform, we must use default
+        # visibility (i.e., private) and not install its private headers.
+        drake_cc_library(
+            name = name,
+            hdrs = hdrs,
+            install_hdrs_exclude = hdrs,
+            visibility = None,
+            **kwargs
+        )
 
 def drake_cc_package_library_gl_per_os(
         macos_deps = [],
