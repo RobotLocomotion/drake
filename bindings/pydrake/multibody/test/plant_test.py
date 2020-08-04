@@ -6,7 +6,7 @@ import numpy as np
 import warnings
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import Expression
+from pydrake.symbolic import Expression, Variable
 from pydrake.multibody.tree import (
     BallRpyJoint_,
     Body_,
@@ -1217,6 +1217,7 @@ class TestPlant(unittest.TestCase):
         Tests joint constructors, `AddJoint`, `AddJointActuator` and
         `HasJointActuatorNamed`.
         """
+        array_T = np.vectorize(T)
         damping = 2.
         x_axis = [1., 0., 0.]
         X_PC = RigidTransform_[float](p=[1., 2., 3.])
@@ -1293,39 +1294,59 @@ class TestPlant(unittest.TestCase):
             plant.Finalize()
             self._test_joint_api(T, joint)
 
+            uniform_random = Variable(
+                name="uniform_random",
+                type=Variable.Type.RANDOM_UNIFORM)
+
             context = plant.CreateDefaultContext()
             if joint.name() == "ball_rpy":
-                set_point = np.array([1., 2., 3.])
+                set_point = array_T([1., 2., 3.])
                 joint.set_angles(context=context, angles=set_point)
-                self.assertEqual(len(joint.get_angles(context=context)), 3)
+                numpy_compare.assert_equal(
+                    joint.get_angles(context=context),
+                    set_point)
                 joint.set_angular_velocity(context=context, w_FM=set_point)
-                self.assertEqual(
-                    len(joint.get_angular_velocity(context=context)), 3)
+                numpy_compare.assert_equal(
+                    joint.get_angular_velocity(context=context),
+                    set_point)
+                joint.set_random_angles_distribution(
+                    uniform_random * np.array([1., 1., 1.]))
             elif joint.name() == "prismatic":
                 self.assertEqual(joint.damping(), damping)
                 numpy_compare.assert_equal(joint.translation_axis(), x_axis)
-                set_point = 1.
+                set_point = T(1.)
                 joint.set_translation(context=context, translation=set_point)
-                self.assertIsInstance(
-                    joint.get_translation(context=context), T)
-                joint.set_translation_rate(context=context,
-                                           translation_dot=set_point)
-                self.assertIsInstance(
-                    joint.get_translation_rate(context=context), T)
+                numpy_compare.assert_equal(
+                    joint.get_translation(context=context),
+                    set_point)
+                joint.set_translation_rate(
+                    context=context, translation_dot=set_point)
+                numpy_compare.assert_equal(
+                    joint.get_translation_rate(context=context),
+                    set_point)
+                joint.set_random_translation_distribution(uniform_random)
             elif joint.name() == "revolute":
                 numpy_compare.assert_equal(joint.revolute_axis(), x_axis)
                 self.assertEqual(joint.damping(), damping)
-                set_point = 1.
+                set_point = T(1.)
                 joint.set_angle(context=context, angle=set_point)
-                self.assertIsInstance(joint.get_angle(context=context), T)
+                numpy_compare.assert_equal(
+                    joint.get_angle(context=context),
+                    set_point)
+                joint.set_random_angle_distribution(uniform_random)
             elif joint.name() == "universal":
                 self.assertEqual(joint.damping(), damping)
-                set_point = np.array([1., 2.])
+                set_point = array_T([1., 2.])
                 joint.set_angles(context=context, angles=set_point)
-                self.assertEqual(len(joint.get_angles(context=context)), 2)
+                numpy_compare.assert_equal(
+                    joint.get_angles(context=context),
+                    set_point)
                 joint.set_angular_rates(context=context, theta_dot=set_point)
-                self.assertEqual(
-                    len(joint.get_angular_rates(context=context)), 2)
+                numpy_compare.assert_equal(
+                    joint.get_angular_rates(context=context),
+                    set_point)
+                joint.set_random_angles_distribution(
+                    uniform_random * np.array([1., 1.]))
             elif joint.name() == "weld":
                 numpy_compare.assert_float_equal(
                     joint.X_PC().GetAsMatrix4(),
