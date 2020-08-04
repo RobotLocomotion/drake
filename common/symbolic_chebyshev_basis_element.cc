@@ -6,14 +6,17 @@
 
 namespace drake {
 namespace symbolic {
-ChebyshevBasis::ChebyshevBasis(const std::map<Variable, int>& var_to_degree_map)
-    : PolynomialBasis(var_to_degree_map) {}
+ChebyshevBasisElement::ChebyshevBasisElement(
+    const std::map<Variable, int>& var_to_degree_map)
+    : PolynomialBasisElement(var_to_degree_map) {}
 
-bool ChebyshevBasis::operator<(const ChebyshevBasis& other) const {
+bool ChebyshevBasisElement::operator<(
+    const ChebyshevBasisElement& other) const {
   return this->lexicographical_compare(other);
 }
 
-double ChebyshevBasis::DoEvaluate(double variable_val, int degree) const {
+double ChebyshevBasisElement::DoEvaluate(double variable_val,
+                                         int degree) const {
   return EvaluateChebyshevPolynomial(variable_val, degree);
 }
 
@@ -39,15 +42,15 @@ int power_of_2(int degree) {
 }
 }  // namespace
 
-std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
-                                           const ChebyshevBasis& b) {
-  // If variable x shows up in both ChebyshevBasis a and b, we know that
+std::map<ChebyshevBasisElement, double> operator*(
+    const ChebyshevBasisElement& a, const ChebyshevBasisElement& b) {
+  // If variable x shows up in both ChebyshevBasisElement a and b, we know that
   // Tₘ(x) * Tₙ(x) = 0.5 (Tₘ₊ₙ(x) + Tₘ₋ₙ(x)), namely we will expand the product
   // to the sum of two new Chebyshev polynomials. Hence the number of terms in
   // the product of a * b is 2 to the power of # common variables showing up in
   // both a and b.
 
-  // Number of variables that show up in both ChebyshevBasis a and b.
+  // Number of variables that show up in both ChebyshevBasisElement a and b.
   // I first count the nummber of common variables, so as to do memory
   // allocation for the product result.
   int num_common_variables = 0;
@@ -72,7 +75,7 @@ std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
       it_b++;
     }
   }
-  // The number of ChebyshevBasis in the product result is
+  // The number of ChebyshevBasisElement in the product result is
   // 2^num_common_variables.
   std::vector<std::map<Variable, int>> chebyshev_basis_all(
       power_of_2(num_common_variables));
@@ -140,9 +143,9 @@ std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
     AppendVariableAndDegree(it_b->first, it_b->second, &chebyshev_basis_all);
   }
   const double coeff = 1.0 / power_of_2(num_common_variables);
-  std::map<ChebyshevBasis, double> result;
+  std::map<ChebyshevBasisElement, double> result;
   for (const auto& var_to_degree_map : chebyshev_basis_all) {
-    result.emplace(ChebyshevBasis(var_to_degree_map), coeff);
+    result.emplace(ChebyshevBasisElement(var_to_degree_map), coeff);
   }
   return result;
 }

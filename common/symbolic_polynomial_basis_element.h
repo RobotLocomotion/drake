@@ -14,17 +14,19 @@ namespace drake {
 namespace symbolic {
 /**
  * Each polynomial p(x) can be written as a linear combination of its basis
- * p(x) = ∑ᵢ cᵢ * ϕᵢ(x), where ϕᵢ(x) is the i'th basis, cᵢ is the coefficient
- * of that basis. The most commonly used basis is monomials. For example
- * in polynomial p(x) = 2x₀²x₁ + 3x₀x₁ + 2, x₀²x₁, x₀x₁ and 1 are all its basis.
- * Likewise, a polynomial can be written using other basis, such as Chebyshev
- * polynomials, Legendre polynomials, etc. For a polynomial written with
- * Chebyshev polynomial basis p(x) = 2T₂(x₀)T₁(x₁) + 3T₁(x₁) + 2T₂(x₀),
- * T₂(x₀)T₁(x₁),T₁(x₁), and T₂(x₀) are all its basis. This PolynomialBasis class
- * represents a basis ϕᵢ(x). We can think of a polynomial basis as a mapping
- * from the variable to its degree. So for monomial basis x₀²x₁, it can be
- * thought of as a mapping {x₀ -> 2, x₁ -> 1}. For a Chebyshev basis
- * T₂(x₀)T₁(x₁), it can be thought of as a mapping {x₀ -> 2, x₁ -> 1}.
+ * elements p(x) = ∑ᵢ cᵢ * ϕᵢ(x), where ϕᵢ(x) is the i'th element in the basis,
+ * cᵢ is the coefficient of that element. The most commonly used basis is
+ * monomials. For example in polynomial p(x) = 2x₀²x₁ + 3x₀x₁ + 2, x₀²x₁, x₀x₁
+ * and 1 are all elements of monomial basis. Likewise, a polynomial can be
+ * written using other basis, such as Chebyshev polynomials, Legendre
+ * polynomials, etc. For a polynomial written with Chebyshev polynomial basis
+ * p(x) = 2T₂(x₀)T₁(x₁) + 3T₁(x₁) + 2T₂(x₀), T₂(x₀)T₁(x₁),T₁(x₁), and T₂(x₀) are
+ * all elements of Chebyshev basis. This PolynomialBasisElement class represents
+ * an element ϕᵢ(x) in the basis. We can think of an element of polynomial basis
+ * as a mapping from the variable to its degree. So for monomial basis element
+ * x₀²x₁, it can be thought of as a mapping {x₀ -> 2, x₁ -> 1}. For a Chebyshev
+ * basis element T₂(x₀)T₁(x₁), it can be thought of as a mapping {x₀ -> 2, x₁ ->
+ * 1}.
  *
  * Each of the derived class, `Derived`, should implement the following
  * functions
@@ -34,9 +36,9 @@ namespace symbolic {
  * const;
  * - bool Derived::operator<(const Derived& other) const;
  */
-class PolynomialBasis {
+class PolynomialBasisElement {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolynomialBasis)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolynomialBasisElement)
 
   /**
    * Constructs a polynomial basis given the variable and the degree of that
@@ -44,9 +46,10 @@ class PolynomialBasis {
    * @throw std::logic_error if any of the degree is negative.
    * @note we will ignore the variable with degree 0.
    */
-  explicit PolynomialBasis(const std::map<Variable, int>& var_to_degree_map);
+  explicit PolynomialBasisElement(
+      const std::map<Variable, int>& var_to_degree_map);
 
-  virtual ~PolynomialBasis() = default;
+  virtual ~PolynomialBasisElement() = default;
 
   const std::map<Variable, int>& var_to_degree_map() const {
     return var_to_degree_map_;
@@ -65,20 +68,20 @@ class PolynomialBasis {
    */
   double Evaluate(const Environment& env) const;
 
-  bool operator==(const PolynomialBasis& other) const;
+  bool operator==(const PolynomialBasisElement& other) const;
 
-  bool operator!=(const PolynomialBasis& other) const;
+  bool operator!=(const PolynomialBasisElement& other) const;
 
  protected:
   /**
-   * Compares two PolynomialBasis using lexicographical order. This function
-   * is meant to be called by the derived class, to compare two polynomial basis
-   * of the same derived class.
+   * Compares two PolynomialBasisElement using lexicographical order. This
+   * function is meant to be called by the derived class, to compare two
+   * polynomial basis of the same derived class.
    */
-  bool lexicographical_compare(const PolynomialBasis& other) const;
+  bool lexicographical_compare(const PolynomialBasisElement& other) const;
 
  protected:
-  virtual bool EqualTo(const PolynomialBasis& other) const;
+  virtual bool EqualTo(const PolynomialBasisElement& other) const;
 
  private:
   // This function evaluates the polynomial basis for a univariate polynomial at

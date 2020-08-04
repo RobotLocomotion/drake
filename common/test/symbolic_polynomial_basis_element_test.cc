@@ -8,12 +8,12 @@ namespace drake {
 namespace symbolic {
 
 // Create a concrete derived polynomial basis class.
-class DerivedBasisA : public PolynomialBasis {
+class DerivedBasisA : public PolynomialBasisElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DerivedBasisA);
 
   explicit DerivedBasisA(const std::map<Variable, int>& var_to_degree_map)
-      : PolynomialBasis(var_to_degree_map) {}
+      : PolynomialBasisElement(var_to_degree_map) {}
 
   bool operator<(const DerivedBasisA& other) const {
     return this->lexicographical_compare(other);
@@ -25,12 +25,12 @@ class DerivedBasisA : public PolynomialBasis {
   }
 };
 
-class DerivedBasisB : public PolynomialBasis {
+class DerivedBasisB : public PolynomialBasisElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DerivedBasisB);
 
   explicit DerivedBasisB(const std::map<Variable, int>& var_to_degree_map)
-      : PolynomialBasis(var_to_degree_map) {}
+      : PolynomialBasisElement(var_to_degree_map) {}
 
   bool operator<(const DerivedBasisB& other) const {
     return this->lexicographical_compare(other);
@@ -42,13 +42,13 @@ class DerivedBasisB : public PolynomialBasis {
   }
 };
 
-class SymbolicPolynomialBasisTest : public ::testing::Test {
+class SymbolicPolynomialBasisElementTest : public ::testing::Test {
  protected:
   const Variable x_{"x"};
   const Variable y_{"y"};
 };
 
-TEST_F(SymbolicPolynomialBasisTest, Constructor) {
+TEST_F(SymbolicPolynomialBasisElementTest, Constructor) {
   const DerivedBasisA p1({{x_, 1}, {y_, 2}});
   EXPECT_EQ(p1.total_degree(), 3);
   EXPECT_EQ(p1.var_to_degree_map().size(), 2);
@@ -72,7 +72,7 @@ TEST_F(SymbolicPolynomialBasisTest, Constructor) {
                               "The degree for x is negative.");
 }
 
-TEST_F(SymbolicPolynomialBasisTest, GetVariables) {
+TEST_F(SymbolicPolynomialBasisElementTest, GetVariables) {
   const symbolic::DerivedBasisA p1({{x_, 1}, {y_, 2}});
   EXPECT_EQ(p1.GetVariables(), Variables({x_, y_}));
 
@@ -86,7 +86,7 @@ TEST_F(SymbolicPolynomialBasisTest, GetVariables) {
   EXPECT_EQ(p4.GetVariables(), Variables({}));
 }
 
-TEST_F(SymbolicPolynomialBasisTest, OperatorEqualNotEqual) {
+TEST_F(SymbolicPolynomialBasisElementTest, OperatorEqualNotEqual) {
   const DerivedBasisA p1({{x_, 1}, {y_, 2}});
   const DerivedBasisA p2({{x_, 1}, {y_, 2}});
   const DerivedBasisA p3({{x_, 0}, {y_, 2}});
@@ -105,7 +105,7 @@ TEST_F(SymbolicPolynomialBasisTest, OperatorEqualNotEqual) {
   EXPECT_NE(p5, p6);
 }
 
-TEST_F(SymbolicPolynomialBasisTest, Evaluate) {
+TEST_F(SymbolicPolynomialBasisElementTest, Evaluate) {
   Environment env1;
   env1.insert(x_, 2);
   env1.insert(y_, 3);
@@ -125,7 +125,7 @@ TEST_F(SymbolicPolynomialBasisTest, Evaluate) {
                               ".* x is not in env");
 }
 
-TEST_F(SymbolicPolynomialBasisTest, LessThan) {
+TEST_F(SymbolicPolynomialBasisElementTest, LessThan) {
   const DerivedBasisA p1({{x_, 1}, {y_, 2}});
   const DerivedBasisA p2({{y_, 3}});
   const DerivedBasisA p3({{x_, 2}});

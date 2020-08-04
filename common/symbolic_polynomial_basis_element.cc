@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace symbolic {
-PolynomialBasis::PolynomialBasis(
+PolynomialBasisElement::PolynomialBasisElement(
     const std::map<Variable, int>& var_to_degree_map) {
   total_degree_ = std::accumulate(
       var_to_degree_map.begin(), var_to_degree_map.end(), 0,
@@ -30,7 +30,7 @@ PolynomialBasis::PolynomialBasis(
   }
 }
 
-Variables PolynomialBasis::GetVariables() const {
+Variables PolynomialBasisElement::GetVariables() const {
   Variables vars{};
   for (const auto& p : var_to_degree_map_) {
     vars += p.first;
@@ -38,7 +38,7 @@ Variables PolynomialBasis::GetVariables() const {
   return vars;
 }
 
-double PolynomialBasis::Evaluate(const Environment& env) const {
+double PolynomialBasisElement::Evaluate(const Environment& env) const {
   return accumulate(
       var_to_degree_map().begin(), var_to_degree_map().end(), 1.0,
       [this, &env](const double v, const std::pair<const Variable, int>& p) {
@@ -53,11 +53,13 @@ double PolynomialBasis::Evaluate(const Environment& env) const {
       });
 }
 
-bool PolynomialBasis::operator==(const PolynomialBasis& other) const {
+bool PolynomialBasisElement::operator==(
+    const PolynomialBasisElement& other) const {
   return typeid(*this) == typeid(other) && EqualTo(other);
 }
 
-bool PolynomialBasis::EqualTo(const PolynomialBasis& other) const {
+bool PolynomialBasisElement::EqualTo(
+    const PolynomialBasisElement& other) const {
   if (var_to_degree_map_.size() != other.var_to_degree_map_.size()) {
     return false;
   }
@@ -75,12 +77,13 @@ bool PolynomialBasis::EqualTo(const PolynomialBasis& other) const {
   return true;
 }
 
-bool PolynomialBasis::operator!=(const PolynomialBasis& other) const {
+bool PolynomialBasisElement::operator!=(
+    const PolynomialBasisElement& other) const {
   return !(*this == other);
 }
 
-bool PolynomialBasis::lexicographical_compare(
-    const PolynomialBasis& other) const {
+bool PolynomialBasisElement::lexicographical_compare(
+    const PolynomialBasisElement& other) const {
   DRAKE_ASSERT(typeid(*this) == typeid(other));
   return std::lexicographical_compare(
       var_to_degree_map_.begin(), var_to_degree_map_.end(),
