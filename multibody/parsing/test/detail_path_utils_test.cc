@@ -7,6 +7,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/unused.h"
 
 using std::string;
 
@@ -138,6 +139,24 @@ GTEST_TEST(ResolveUriTest, TestRelativePath) {
 
   string path = ResolveUri(relative_path, package_map, root_dir);
   EXPECT_NE(path, "");
+}
+
+// Verifies that ResolveUri() does not resolve relative paths when root_dir is
+// unset.
+GTEST_TEST(ResolveUriTest, TestNoRoot) {
+  // This is a relative path that _does_ exist, so could be accidentally found
+  // by ResolveUri if it had a bug treating an empty root_dir to indicate cwd
+  // or similar.  (We confirm that the path is valid by finding it as a
+  // resource, but ignoring the returned absolute path).
+  const string rel_path =
+      "multibody/parsing/test/"
+          "package_map_test_packages/package_map_test_package_a/"
+          "sdf/test_model.sdf";
+  unused(FindResourceOrThrow("drake/" + rel_path));
+  const PackageMap package_map;
+  const std::string root_dir;
+  string path = ResolveUri(rel_path, package_map, root_dir);
+  EXPECT_EQ(path, "");
 }
 
 // Verifies that ResolveUri() resolves to the proper file using the scheme

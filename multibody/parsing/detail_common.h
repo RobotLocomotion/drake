@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -10,6 +11,16 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// Helper struct that provides for either a file name xor file contents to be
+// passed between our various parsing functions.  Exactly one of the pointers
+// must be set to non-nullptr.
+struct DataSource {
+  const std::string* file_name{};
+  const std::string* file_contents{};
+
+  void DemandExactlyOne() const;
+};
 
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:

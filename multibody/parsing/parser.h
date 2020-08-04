@@ -64,6 +64,22 @@ class Parser final {
       const std::string& file_name,
       const std::string& model_name = {});
 
+  /// Parses the SDF or URDF XML data passed given in @p file_contents and adds
+  /// one model to @p plant.  It is an error to call this using an SDF with
+  /// more than one `<model>` element.
+  ///
+  /// @param file_contents The XML data to be parsed.
+  /// @param file_type The data format; must be either "sdf" or "urdf".
+  /// @param model_name The name given to the newly created instance of this
+  ///   model.  If empty, the "name" attribute from the `<model>` or `<robot>`
+  ///   tag will be used.
+  /// @returns The instance index for the newly added model.
+  /// @throws std::exception in case of errors.
+  ModelInstanceIndex AddModelFromString(
+      const std::string& file_contents,
+      const std::string& file_type,
+      const std::string& model_name = {});
+
  private:
   PackageMap package_map_;
   MultibodyPlant<double>* const plant_;

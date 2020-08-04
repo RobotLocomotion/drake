@@ -1,8 +1,14 @@
 #include "drake/multibody/parsing/detail_common.h"
 
+#include "drake/common/drake_assert.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
+
+void DataSource::DemandExactlyOne() const {
+  DRAKE_DEMAND((file_name != nullptr) ^ (file_contents != nullptr));
+}
 
 geometry::ProximityProperties ParseProximityProperties(
     const std::function<std::optional<double>(const char*)>& read_double,

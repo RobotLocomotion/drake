@@ -19,12 +19,13 @@ std::string GetFullPath(const std::string& file_name);
 
 /// Resolves the full path of a URI. If @p uri starts with "package:" or
 /// "model:", the ROS packages specified in @p package_map are searched.
-/// Otherwise, @p uri is appended to the end of @p root_dir (if it's not already
-/// an absolute path) and checked for existence. If the file does not exist or
-/// is not found, a warning is printed to `std::cerr` and an empty string is
-/// returned. The returned path will be lexically normalized. In other words, a
-/// path like `/some//path/to/ignored/../file.txt` (with duplicate slashes,
-/// directory changes, etc.) would be boiled down to `/some/path/to/file.txt`.
+/// Otherwise, iff a root_dir was provided then @p uri is appended to the end
+/// of @p root_dir (if it's not already an absolute path) and checked for
+/// existence.  If the file does not exist or is not found, a warning is
+/// printed to `std::cerr` and an empty string is returned. The returned path
+/// will be lexically normalized. In other words, a path like
+/// `/some//path/to/ignored/../file.txt` (with duplicate slashes, directory
+/// changes, etc.) would be boiled down to `/some/path/to/file.txt`.
 ///
 /// @param[in] uri The name of the resource to find.
 ///
@@ -33,7 +34,8 @@ std::string GetFullPath(const std::string& file_name);
 /// starts with "package:"or "model:".
 ///
 /// @param[in] root_dir The root directory to look in. This is only used when
-/// @p filename does not start with "package:".
+/// @p filename does not start with "package:".  Can be empty when only URIs
+/// (not relative paths) should be allowed for @p uri.
 ///
 /// @return The file's full path, lexically normalized, or an empty string if
 /// the file is not found or does not exist.

@@ -30,6 +30,20 @@ using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
 
+// TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including this
+// helper function as well as all it's call sites below.  We should refactor
+// the plant, scene_graph, etc. into a test fixture for brevity.
+ModelInstanceIndex AddModelFromUrdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelFromUrdf(
+      { .file_name = &file_name },
+      model_name, package_map, plant, scene_graph);
+}
+
 // Verifies that the URDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
