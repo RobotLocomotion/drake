@@ -118,7 +118,7 @@ class ChebyshevPolynomial {
 std::ostream& operator<<(std::ostream& out, const ChebyshevPolynomial& p);
 
 /**
- * Evaluate a Chebyshev polynomial at a given value.
+ * Evaluates a Chebyshev polynomial at a given value.
  * @param variable_val The value of the variable.
  * @param degree The degree of the Chebyshev polynomial.
  */

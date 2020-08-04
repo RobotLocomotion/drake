@@ -1,6 +1,10 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
 
-#include <queue>
+#include <algorithm>
+#include <numeric>
+#include <stdexcept>
+#include <typeinfo>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -50,8 +54,25 @@ double PolynomialBasis::Evaluate(const Environment& env) const {
 }
 
 bool PolynomialBasis::operator==(const PolynomialBasis& other) const {
-  return typeid(*this) == typeid(other) &&
-         this->var_to_degree_map() == other.var_to_degree_map();
+  return typeid(*this) == typeid(other) && EqualTo(other);
+}
+
+bool PolynomialBasis::EqualTo(const PolynomialBasis& other) const {
+  if (var_to_degree_map_.size() != other.var_to_degree_map_.size()) {
+    return false;
+  }
+  for (auto it1 = var_to_degree_map_.begin(),
+            it2 = other.var_to_degree_map_.begin();
+       it1 != var_to_degree_map_.end(); ++it1, ++it2) {
+    const Variable& var1{it1->first};
+    const Variable& var2{it2->first};
+    const int degree1{it1->second};
+    const int degree2{it2->second};
+    if (!var1.equal_to(var2) || degree1 != degree2) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool PolynomialBasis::operator!=(const PolynomialBasis& other) const {

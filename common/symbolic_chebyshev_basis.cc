@@ -1,4 +1,6 @@
 // NOLINTNEXTLINE(build/include): Its header file is included in symbolic.h.
+#include <cmath>
+#include <vector>
 
 #include "drake/common/symbolic.h"
 
@@ -6,8 +8,6 @@ namespace drake {
 namespace symbolic {
 ChebyshevBasis::ChebyshevBasis(const std::map<Variable, int>& var_to_degree_map)
     : PolynomialBasis(var_to_degree_map) {}
-
-ChebyshevBasis::~ChebyshevBasis() {}
 
 bool ChebyshevBasis::operator<(const ChebyshevBasis& other) const {
   return this->lexicographical_compare(other);
@@ -27,6 +27,16 @@ void AppendVariableAndDegree(
     cheby_basis.emplace(var, degree);
   }
 }
+
+int power_of_2(int degree) {
+  if (degree < 0) {
+    throw std::invalid_argument("power of 2 underflow");
+  }
+  if (degree > static_cast<int>((sizeof(int) * CHAR_BIT - 2))) {
+    throw std::invalid_argument("power of 2 overflow");
+  }
+  return 1 << degree;
+}
 }  // namespace
 
 std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
@@ -41,24 +51,39 @@ std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
   // I first count the nummber of common variables, so as to do memory
   // allocation for the product result.
   int num_common_variables = 0;
-  for (const auto& pair_A : a.var_to_degree_map()) {
-    if (b.var_to_degree_map().count(pair_A.first) > 0) {
-      // b also contains this variable in pair_A.
+  auto it_a = a.var_to_degree_map().begin();
+  auto it_b = b.var_to_degree_map().begin();
+  // Since the keys in var_to_degree_map are sorted, we can loop through
+  // a.var_to_degree_map and b.var_to_degree_map jointly to find the common
+  // variables.
+  while (it_a != a.var_to_degree_map().end() &&
+         it_b != b.var_to_degree_map().end()) {
+    const Variable& var_a = it_a->first;
+    const Variable& var_b = it_b->first;
+    if (var_a.less(var_b)) {
+      // var_a is less than var_b, and hence var_a less than all variables in b
+      // after var_b. We can increment it_a.
+      it_a++;
+    } else if (var_b.less(var_a)) {
+      it_b++;
+    } else {
       num_common_variables++;
+      it_a++;
+      it_b++;
     }
   }
   // The number of ChebyshevBasis in the product result is
   // 2^num_common_variables.
   std::vector<std::map<Variable, int>> chebyshev_basis_all(
-      std::pow(2, num_common_variables));
+      power_of_2(num_common_variables));
   // I will go through the (variable, degree) pair of both a and b. If the
   // variable shows up in only a or b, then each term in the product a * b
   // contains that variable and its degree. If a has term Tₘ(x) and b has term
   // Tₙ(x), where x is the common variable, then half of the basis in a * b
   // contains term Tₘ₊ₙ(x), and the other half contains Tₘ₋ₙ(x).
-  auto it_a = a.var_to_degree_map().begin();
-  auto it_b = b.var_to_degree_map().begin();
   int common_variables_count = 0;
+  it_a = a.var_to_degree_map().begin();
+  it_b = b.var_to_degree_map().begin();
 
   // Note that var_to_degree_map() has its keys sorted in an increasing order.
   while (it_a != a.var_to_degree_map().end() &&
@@ -88,9 +113,9 @@ std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
       // interval [j * 2n + n, (j+1) * 2n).
       const int degree_sum = degree_a + degree_b;
       const int degree_diff = std::abs(degree_a - degree_b);
-      const int n = std::pow(2, common_variables_count);
+      const int n = power_of_2(common_variables_count);
       for (int j = 0;
-           j < std::pow(2, num_common_variables - common_variables_count - 1);
+           j < power_of_2(num_common_variables - common_variables_count - 1);
            ++j) {
         for (int i = j * 2 * n; i < j * 2 * n + n; ++i) {
           chebyshev_basis_all[i].emplace(var_a, degree_sum);
@@ -114,7 +139,7 @@ std::map<ChebyshevBasis, double> operator*(const ChebyshevBasis& a,
   for (; it_b != b.var_to_degree_map().end(); ++it_b) {
     AppendVariableAndDegree(it_b->first, it_b->second, &chebyshev_basis_all);
   }
-  const double coeff = 1.0 / std::pow(2, num_common_variables);
+  const double coeff = 1.0 / power_of_2(num_common_variables);
   std::map<ChebyshevBasis, double> result;
   for (const auto& var_to_degree_map : chebyshev_basis_all) {
     result.emplace(ChebyshevBasis(var_to_degree_map), coeff);

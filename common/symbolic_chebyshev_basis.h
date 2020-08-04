@@ -7,8 +7,6 @@
 
 #include <map>
 
-#include <Eigen/Core>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
@@ -26,10 +24,10 @@ class ChebyshevBasis : public PolynomialBasis {
 
   explicit ChebyshevBasis(const std::map<Variable, int>& var_to_degree_map);
 
-  ~ChebyshevBasis();
+  ~ChebyshevBasis() = default;
 
   /**
-   * Compare two ChebyshevBasis in lexicographic order.
+   * Compares two ChebyshevBasis in lexicographic order.
    */
   bool operator<(const ChebyshevBasis& other) const;
 
@@ -38,9 +36,9 @@ class ChebyshevBasis : public PolynomialBasis {
 };
 
 /**
- * Return the product of two Chebyshev basis.
+ * Returns the product of two Chebyshev basis.
  * Since Tₘ(x) * Tₙ(x) = 0.5 (Tₘ₊ₙ(x) + Tₘ₋ₙ(x)) if m >= n, the product of
- * Chebyshev basis is the weighted sum of several Chebyshev basises. For example
+ * Chebyshev basis is the weighted sum of several Chebyshev bases. For example
  * T₁(x)T₂(y) * T₃(x)T₁(y) = 0.25*(T₄(x)T₃(y) + T₂(x)T₃(y) + T₄(x)T₁(y) +
  * T₂(x)T₁(y))
  * @return the result of the product, from each ChebyshevBasis to its
