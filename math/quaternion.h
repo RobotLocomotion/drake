@@ -17,6 +17,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/rotation_matrix.h"
@@ -125,6 +126,7 @@ typename Derived1::Scalar quatDiffAxisInvar(
  * doi: 10.1109/ROBOT.2004.1308895
  */
 template <typename Derived1, typename Derived2, typename Scalar>
+DRAKE_DEPRECATED("2020-12-01", "Use Eigen::Quaternion<T>::slerp() instead")
 Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
                       const Eigen::MatrixBase<Derived2>& q2,
                       const Scalar& interpolation_parameter) {
