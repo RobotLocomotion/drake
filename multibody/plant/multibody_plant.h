@@ -2169,8 +2169,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The spatial acceleration of body B in the world frame W, expressed in W.
   /// @throws std::exception if Finalize() was not called on `this` model or if
   /// `body_B` does not belong to this model.
-  /// @note This method calls MultibodyPlant::EvalForwardDynamics() which can
-  /// be computational intensive.
+  /// @note When cached values are out of sync with the state stored in context,
+  /// this method performs an expensive forward dynamics computation, whereas
+  /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalBodySpatialAccelerationInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const;
