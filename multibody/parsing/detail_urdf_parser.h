@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -18,8 +19,8 @@ namespace internal {
 /// specification.  The exception contains a message with a list of errors
 /// encountered while parsing the file.
 ///
-/// @param file_name
-///   The name of the URDF file to be parsed.
+/// @param data_source
+///   The URDF data to be parsed.
 /// @param model_name
 ///   The name given to the newly created instance of this model.  If
 ///   empty, the "name" attribute from the model tag will be used.
@@ -30,8 +31,8 @@ namespace internal {
 ///   A pointer to a mutable SceneGraph object used for geometry registration
 ///   (either to model visual or contact geometry).  May be nullptr.
 /// @returns The model instance index for the newly added model.
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromUrdf(
+    const DataSource& data_source,
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
