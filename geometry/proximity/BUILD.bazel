@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":mesh_to_vtk",
+        ":obb",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":plane",
@@ -369,6 +370,21 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "obb",
+    srcs = ["obb.cc"],
+    hdrs = ["obb.h"],
+    deps = [
+        ":posed_half_space",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common",
+        "//geometry:shape_specification",
+        "//geometry:utilities",
+        "//math:geometric_transform",
     ],
 )
 
@@ -706,6 +722,20 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//geometry:shape_specification",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "obb_test",
+    deps = [
+        ":make_box_mesh",
+        ":make_ellipsoid_mesh",
+        ":make_sphere_mesh",
+        ":obb",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:shape_specification",
     ],
 )
 
