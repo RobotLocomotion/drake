@@ -86,12 +86,13 @@ TEST_F(SymbolicPolynomialBasisTest, GetVariables) {
   EXPECT_EQ(p4.GetVariables(), Variables({}));
 }
 
-TEST_F(SymbolicPolynomialBasisTest, operator_equal_not_equal) {
+TEST_F(SymbolicPolynomialBasisTest, OperatorEqualNotEqual) {
   const DerivedBasisA p1({{x_, 1}, {y_, 2}});
   const DerivedBasisA p2({{x_, 1}, {y_, 2}});
   const DerivedBasisA p3({{x_, 0}, {y_, 2}});
   const DerivedBasisA p4({{y_, 2}});
   const DerivedBasisB p5({{y_, 2}});
+  const DerivedBasisB p6({{x_, 2}});
 
   EXPECT_EQ(p1, p2);
   // x⁰y² == y²
@@ -100,6 +101,8 @@ TEST_F(SymbolicPolynomialBasisTest, operator_equal_not_equal) {
   EXPECT_NE(p1, p3);
   // The derived basis types are different.
   EXPECT_NE(p4, p5);
+  // The variable is different.
+  EXPECT_NE(p5, p6);
 }
 
 TEST_F(SymbolicPolynomialBasisTest, Evaluate) {
@@ -122,7 +125,7 @@ TEST_F(SymbolicPolynomialBasisTest, Evaluate) {
                               ".* x is not in env");
 }
 
-TEST_F(SymbolicPolynomialBasisTest, less_than) {
+TEST_F(SymbolicPolynomialBasisTest, LessThan) {
   const DerivedBasisA p1({{x_, 1}, {y_, 2}});
   const DerivedBasisA p2({{y_, 3}});
   const DerivedBasisA p3({{x_, 2}});
