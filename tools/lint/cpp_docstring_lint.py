@@ -413,8 +413,8 @@ def reformat_docstring(docstring, *, public):
             return [f"{indent}{new_start_single} {first_line}"]
         new_lines = maybe_wrap(f"{new_start} {first_line}", " */")
     else:
-        new_lines = [f"{indent}{new_start}"]
-        for line in text_lines[:-1]:
+        new_lines = [f"{indent}{new_start} {text_lines[0]}"]
+        for line in text_lines[1:-1]:
             new_line = f"{indent}{spacing}{line}".rstrip()
             new_lines.append(new_line)
         last_line = text_lines[-1]
