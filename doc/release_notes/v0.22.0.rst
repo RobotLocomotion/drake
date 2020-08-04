@@ -103,5 +103,51 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
-  Current oldest_commit X (inclusive).
-  Current newest_commit X (inclusive).
+  Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
+  Current newest_commit 9d785bacce72f9a9c120dc3b8dc8db73ff957ef3 (inclusive).
+
+* .bazelignore,doc: Ignore debian directory during bazel build and doxygen doc generation (`#13766`_)
+* CPPLINT.cfg: cpplint: Disable whitespace/todo (`#13763`_)  # In preparation for enabling C-style comment linting, we disable the whitespace rules for TODOs.  They go beyond what GSG demands, and it is unclear how to apply them to C-style comments.
+* attic,common,examples,geometry,math,multibody,solvers,systems: Fix line length and whitespace nits throughout (`#13762`_)  # Remove commented-out attic code that defeats the new cpplint. These problems were highlighted by forthcoming changes to cpplint.
+* attic,doc,examples,manipulation,multibody,systems,tools: Mow over all XML files with xmllint (`#13768`_)
+* bindings: Provide a spdlog sink that connects to Python's `logging` module (`#13568`_)  # sdplog output will appear in the Jupyter window instead of in the terminal. Add tests for python logging redirection Resolves #13215
+* bindings: Remove spdlog warning (`#13781`_)  # Change the order of include statements to avoid the SPDLOG_ACTIVE_LEVEL redefined warning. Resolves #13771
+* bindings: pydrake: Improve unit test error message (`#13761`_)  # When a warning does occur, its str does not explain it; instead, we should print the message to improve debugging.
+* common,setup,solvers,systems,tools: Remove deprecated code (2020-08) (`#13785`_)
+* common,tools: workspace: Upgrade fmt to latest release 7.0.2 (`#13788`_)
+* common: add symbolic ChebyshevPolynomial (`#13751`_)  # This only implements a univariate Chebyshev polynomial. We will implement the ChebyshevBasis class later, which handles multi-variate Chebyshev basis in the form of T0(x)*T1(y)*T3(z) etc.
+* common: yaml: Add EraseMatchingMaps to YamlWriteArchive (`#13699`_)  # This allows for emitting a minimal yaml representation when loaded with retain_map_defaults set on the eventual reader.  This is the minimal API to accomplish that; I intend to provide better usability shims for this in a future commit.
+* doc,setup: setup: Update recommended Bazel version to 3.4 (`#13743`_)
+* doc,tools: doc: Update code style guide for Python 3 and docstrings (`#12236`_)  # workspace: Bump styleguide fork to latest
+* doc: doc: Add release notes v0.21.0 (`#13724`_)
+* examples,manipulation,multibody,systems: Simplify SDFormat //pose elements (`#13774`_)  # - Remove `//pose/@frame` when empty - Collapse identity transforms (all zeros) - Remove purely identity transforms ("<pose/>") Script used: https://git.io/JJ2OQ
+* examples,manipulation,multibody,systems: models: Have all models use SDFormat 1.7 (`#13758`_)  # * models: Delete unused / untested older versions * models: Remove //version from model.config files Let the models describe themselves * four_bar: Rewind to 1.6 due to usage of //use_parent_model_frame * models: Up-convert all concrete SDFormat files to use 1.7 Procedure, using this WIP setup / script: https://github.com/RobotLocomotion/drake/tree/9465206dfdaeaa54006f9fe5a9da18c261741d37/tmp 1. Run `./tmp/convert.py` 2. Using `git gui`, pick selected +- lines/hunks in the editor * Generally, any changes regarding `//use_parent_model_frame` * Some minor changes collapsing empty tags (e.g. `//link`) 3. Do minor line reordering * models: Update all xacro / rsdf files to 1.7 by hand This should mirror the upgrades in the generated files * Update Python, C++, and world files to SDFormat 1.7 (by hand)
+* examples,manipulation: Replace tabs with spaces in xml files (`#13772`_)  # Command: ``` find . \ -name '*.config' \ -o -name '*.rsdf' \ -o -name '*.sdf' \ -o -name '*.urdf' \ -o -name '*.xacro' \ -o -name '*.xml' \ -o -name '*.world' \ | xargs grep -rnI -P '\t' -l \ | xargs sed -e 's#\t#  #g' -e 's# *$##g' -i ```
+* examples,tools: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
+* geometry,systems: Add NOLINT markers to overly-wide non-markdown tables (`#13805`_)
+* geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
+* math: math: Declare explicit class instantiations for SO(3) and SE(3) (`#13798`_)
+* multibody: Fix format in TAMSIs exception message (`#13802`_)
+* multibody: Implement PlanarMobilizer (`#13711`_)
+* multibody: Introduce discrete contact pairs for agnostic treatment of discrete contact models (`#13734`_)  # * Introduce discrete pairs in MBP so that TAMSI is agnostic to how pairs are collected. To be noted in the next release: In addition, this PR fixes and old TODO in the Jacobian computation and therefore contact results are expected to change so slightly (in the right direction). Not a breaking change, but probably users should be notified in the next release.
+* multibody: Make set_default_positions an NVI (`#13757`_)
+* multibody: benchmarks: Remove rogue tab from acrobot.sdf (`#13768`_)
+* solvers: Add examples on sum-of-squares (`#13719`_)  # Test sum-of-squares programming with CSDP, Mosek and SCS.
+* solvers: Add two more examples on SOS optimization (`#13746`_)
+* solvers: CSDP on mac should have a different numerical tolerance (`#13759`_)  # One possible explanation is that they use different BLAS.
+* solvers: Fix a bug when customizing the quadratic cost (`#13752`_)
+* solvers: MPResult::GetSolution also works for a polynomial (`#13748`_)
+* solvers: Relax the tolerance on the Motzkin example for mosek test (`#13765`_)
+* third_party,tools: Move `mkdoc.py` from `third_party` (`#13769`_)  # Relocate `mkdoc.py` to the same directory as `mkdoc_comment.py`. Remove the LICENSE file and (now empty) `third_party/com_github_pybind_pybind11` directory. Add copyright information to the two files that are derived from original `mkdoc.py` in pybind11. Resolves #13726
+* tools: Add support in one tutorial for Google Colab (`#13697`_)  # * Add setup script to provision colab notebooks Towards #13683
+* tools: Bump meshcat_python SHA to get generalized "start server" methods (`#13806`_)
+* tools: Reformat text in mkdoc comment text (`#13740`_)  # Follow-up to #13651
+* tools: Rename libspdlog.so to libdrake_spdlog.so (`#13698`_)
+* tools: sdformat: Add simple interface to `ign sdf` tool (`#13767`_)
+* tools: setup_drake_colab avoids reinstall if version info is unchanged (`#13795`_)
+* tools: workspace: Update pybind11 fork with cherry-pick from upstream (`#13801`_)  # Add test checking for missing LeafSystem.__init__
+* tools: workspace: Upgrade buildifier to latest release 3.4.0 (`#13791`_)
+* tools: workspace: Upgrade fcl to latest commit (`#13787`_)
+* tools: workspace: Upgrade models to latest commit (`#13786`_)
+* tools: workspace: Upgrade ros_xacro to latest release 1.13.6 (`#13790`_)
+* tools: workspace: Upgrade scs to latest release 2.1.2 (`#13789`_)
