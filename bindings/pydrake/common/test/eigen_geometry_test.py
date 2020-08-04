@@ -119,6 +119,9 @@ class TestEigenGeometry(unittest.TestCase):
         numpy_compare.assert_float_equal(
                 q_AB_conj.wxyz(), [0.5, -0.5, -0.5, -0.5])
 
+        numpy_compare.assert_float_equal(
+            q_I.slerp(t=0, other=q_I).wxyz(), [1., 0, 0, 0])
+
         # Test `type_caster`s.
         if T == float:
             value = test_util.create_quaternion()
