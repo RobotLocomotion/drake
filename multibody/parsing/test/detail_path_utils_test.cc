@@ -140,6 +140,19 @@ GTEST_TEST(ResolveUriTest, TestRelativePath) {
   EXPECT_NE(path, "");
 }
 
+// Verifies that ResolveUri() does not resolve relative paths when root_dir is
+// unset.
+GTEST_TEST(ResolveUriTest, TestNoRoot) {
+  const string rel_path =
+      "multibody/parsing/test/"
+          "package_map_test_packages/package_map_test_package_a/"
+          "sdf/test_model.sdf";
+  const PackageMap package_map;
+  const std::string root_dir;
+  string path = ResolveUri(rel_path, package_map, root_dir);
+  EXPECT_EQ(path, "");
+}
+
 // Verifies that ResolveUri() resolves to the proper file using the scheme
 // 'model://'
 GTEST_TEST(ResolveUriTest, TestModel) {

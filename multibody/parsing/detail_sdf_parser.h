@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -25,8 +26,8 @@ namespace internal {
 /// @throws std::exception if plant is nullptr or if MultibodyPlant::Finalize()
 /// was already called on `plant`.
 ///
-/// @param file_name
-///   The name of the SDF file to be parsed.
+/// @param data_source
+///   The SDF data to be parsed.
 /// @param model_name
 ///   The name given to the newly created instance of this model.  If
 ///   empty, the "name" attribute from the model tag will be used.
@@ -39,8 +40,8 @@ namespace internal {
 ///   A pointer to a mutable SceneGraph object used for geometry registration
 ///   (either to model visual or contact geometry).  May be nullptr.
 /// @returns The model instance index for the newly added model.
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromSdf(
+    const DataSource& data_source,
     const std::string& model_name,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
@@ -58,8 +59,8 @@ ModelInstanceIndex AddModelFromSdfFile(
 /// @throws std::exception if plant is nullptr or if MultibodyPlant::Finalize()
 /// was already called on `plant`.
 ///
-/// @param file_name
-///   The name of the SDF file to be parsed.
+/// @param data_source
+///   The SDF data to be parsed.
 /// @param plant
 ///   A pointer to a mutable MultibodyPlant object to which the model will be
 ///   added.
@@ -69,11 +70,12 @@ ModelInstanceIndex AddModelFromSdfFile(
 ///   A pointer to a mutable SceneGraph object used for geometry registration
 ///   (either to model visual or contact geometry).  May be nullptr.
 /// @returns The set of model instance indices for the newly added models.
-std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-    const std::string& file_name,
+std::vector<ModelInstanceIndex> AddModelsFromSdf(
+    const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

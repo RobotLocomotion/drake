@@ -1,7 +1,11 @@
 #include "drake/multibody/parsing/parser.h"
 
+#include <fstream>
+#include <sstream>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
@@ -10,6 +14,14 @@
 namespace drake {
 namespace multibody {
 namespace {
+
+std::string ReadEntireFile(const std::string& file_name) {
+  std::ifstream input(file_name);
+  DRAKE_DEMAND(input.good());
+  std::stringstream result;
+  result << input.rdbuf();
+  return result.str();
+}
 
 GTEST_TEST(FileParserTest, BasicTest) {
   const std::string sdf_name = FindResourceOrThrow(
@@ -41,6 +53,31 @@ GTEST_TEST(FileParserTest, BasicTest) {
     Parser dut(&plant);
     dut.AddModelFromFile(sdf_name, "foo");
     dut.AddModelFromFile(urdf_name, "bar");
+  }
+}
+
+GTEST_TEST(FileParserTest, BasicStringTest) {
+  const std::string sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string urdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.urdf");
+
+  // Load an SDF via string.
+  {
+    const std::string sdf_contents = ReadEntireFile(sdf_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
+  }
+
+  // Load an URDF via string.
+  {
+    const std::string urdf_contents = ReadEntireFile(urdf_name);
+    MultibodyPlant<double> plant(0.0);
+    Parser dut(&plant);
+    const ModelInstanceIndex id = dut.AddModelFromString(urdf_contents, "urdf");
+    EXPECT_EQ(plant.GetModelInstanceName(id), "acrobot");
   }
 }
 
@@ -106,6 +143,27 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
       Parser(&plant).AddModelFromFile("acrobot.URDF"),
       std::exception,
       ".*does not exist.*");
+}
+
+GTEST_TEST(FileParserTest, BadStringTest) {
+  // Malformed SDF string is an error.
+  MultibodyPlant<double> plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelFromString("bad", "sdf"),
+      std::exception,
+      ".*\n.*Unable to SDF string.*");
+
+  // Malformed URDF string is an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelFromString("bad", "urdf"),
+      std::exception,
+      "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+
+  // Unknown extension is an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant).AddModelFromString("<bad/>", "weird-ext"),
+      std::exception,
+      ".*file type '\\.weird-ext' is not supported .*");
 }
 
 // If a Drake URDF or SDF file uses package URIs, this confirms that the attempt
