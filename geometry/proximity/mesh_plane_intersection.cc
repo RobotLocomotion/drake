@@ -196,9 +196,8 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S,
-    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR) {
+    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
+    const GeometryId id_R, const math::RigidTransform<T>& X_WR) {
   std::vector<VolumeElementIndex> tet_indices;
   tet_indices.reserve(field_S.mesh().num_elements());
   auto callback = [&tet_indices](VolumeElementIndex tet_index) {
@@ -246,7 +245,7 @@ template std::unique_ptr<ContactSurface<double>> ComputeContactSurface(
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S,
+    const Bvh<VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<double>& X_WS, const GeometryId id_R,
     const math::RigidTransform<double>& X_WR);
 
@@ -256,9 +255,8 @@ template <>
 std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId, const VolumeMeshFieldLinear<double, double>&,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const math::RigidTransform<AutoDiffXd>&) {
+    const Bvh<VolumeMesh<double>>&, const math::RigidTransform<AutoDiffXd>&,
+    const GeometryId, const math::RigidTransform<AutoDiffXd>&) {
   throw std::logic_error(
       "AutoDiff-valued ContactSurface calculations are not currently "
       "supported");

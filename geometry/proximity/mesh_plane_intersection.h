@@ -6,7 +6,7 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"
@@ -145,10 +145,8 @@ template <typename T>
 std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
-    const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S,
-    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR);
-
+    const Bvh<VolumeMesh<double>>& bvh_S, const math::RigidTransform<T>& X_WS,
+    const GeometryId id_R, const math::RigidTransform<T>& X_WR);
 
 }  // namespace internal
 }  // namespace geometry
