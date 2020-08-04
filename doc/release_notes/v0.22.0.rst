@@ -11,6 +11,7 @@ Breaking changes since v0.21.0
 ------------------------------
 
 * TBD Make set_default_positions an NVI (`#13757`_)
+* TBD This maybe removed some files (`#13758`_)
 
 Changes since v0.21.0:
 ----------------------
@@ -62,6 +63,7 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Reformat all XML files with xmllint (`#13768`_)
+* Upgrade all models to use SDFormat 1.7 syntax (`#13772`_, `#13774`_, `#13758`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -124,9 +126,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 * common: add symbolic ChebyshevPolynomial (`#13751`_)  # This only implements a univariate Chebyshev polynomial. We will implement the ChebyshevBasis class later, which handles multi-variate Chebyshev basis in the form of T0(x)*T1(y)*T3(z) etc.
 * common: yaml: Add EraseMatchingMaps to YamlWriteArchive (`#13699`_)  # This allows for emitting a minimal yaml representation when loaded with retain_map_defaults set on the eventual reader.  This is the minimal API to accomplish that; I intend to provide better usability shims for this in a future commit.
-* examples,manipulation,multibody,systems: Simplify SDFormat //pose elements (`#13774`_)  # - Remove `//pose/@frame` when empty - Collapse identity transforms (all zeros) - Remove purely identity transforms ("<pose/>") Script used: https://git.io/JJ2OQ
-* examples,manipulation,multibody,systems: models: Have all models use SDFormat 1.7 (`#13758`_)  # * models: Delete unused / untested older versions * models: Remove //version from model.config files Let the models describe themselves * four_bar: Rewind to 1.6 due to usage of //use_parent_model_frame * models: Up-convert all concrete SDFormat files to use 1.7 Procedure, using this WIP setup / script: https://github.com/RobotLocomotion/drake/tree/9465206dfdaeaa54006f9fe5a9da18c261741d37/tmp 1. Run `./tmp/convert.py` 2. Using `git gui`, pick selected +- lines/hunks in the editor * Generally, any changes regarding `//use_parent_model_frame` * Some minor changes collapsing empty tags (e.g. `//link`) 3. Do minor line reordering * models: Update all xacro / rsdf files to 1.7 by hand This should mirror the upgrades in the generated files * Update Python, C++, and world files to SDFormat 1.7 (by hand)
-* examples,manipulation: Replace tabs with spaces in xml files (`#13772`_)  # Command: ``` find . \ -name '*.config' \ -o -name '*.rsdf' \ -o -name '*.sdf' \ -o -name '*.urdf' \ -o -name '*.xacro' \ -o -name '*.xml' \ -o -name '*.world' \ | xargs grep -rnI -P '\t' -l \ | xargs sed -e 's#\t#  #g' -e 's# *$##g' -i ```
 * examples: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
 * geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
 * math: math: Declare explicit class instantiations for SO(3) and SE(3) (`#13798`_)
