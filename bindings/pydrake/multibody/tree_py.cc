@@ -22,6 +22,7 @@
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree.h"  // `JacobianWrtVariable`
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -305,6 +306,44 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_angular_velocity", &Class::set_angular_velocity,
             py::arg("context"), py::arg("w_FM"),
             cls_doc.set_angular_velocity.doc);
+  }
+
+  // PlanarJoint
+  {
+    using Class = PlanarJoint<T>;
+    constexpr auto& cls_doc = doc.PlanarJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "PlanarJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                 Vector3<double>>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"),
+            py::arg("damping") = Vector3<double>::Zero(), cls_doc.ctor.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("get_translation", &Class::get_translation, py::arg("context"),
+            cls_doc.get_translation.doc)
+        .def("set_translation", &Class::set_translation, py::arg("context"),
+            py::arg("p_FoMo_F"), cls_doc.set_translation.doc)
+        .def("get_rotation", &Class::get_rotation, py::arg("context"),
+            cls_doc.get_rotation.doc)
+        .def("set_rotation", &Class::set_rotation, py::arg("context"),
+            py::arg("theta"), cls_doc.set_rotation.doc)
+        .def("set_pose", &Class::set_pose, py::arg("context"),
+            py::arg("p_FoMo_F"), py::arg("theta"), cls_doc.set_pose.doc)
+        .def("get_translational_velocity", &Class::get_translational_velocity,
+            py::arg("context"), cls_doc.get_translational_velocity.doc)
+        .def("set_translational_velocity", &Class::set_translational_velocity,
+            py::arg("context"), py::arg("v_FoMo_F"),
+            cls_doc.set_translational_velocity.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+            py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+            py::arg("context"), py::arg("theta_dot"),
+            cls_doc.set_angular_velocity.doc)
+        .def("set_random_pose_distribution",
+            &Class::set_random_pose_distribution, py::arg("p_FoMo_F"),
+            py::arg("theta"), cls_doc.set_random_pose_distribution.doc);
   }
 
   // PrismaticJoint
