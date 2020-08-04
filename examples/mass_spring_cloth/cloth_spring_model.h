@@ -102,10 +102,6 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
 
   T h() const { return h_; }
 
-  Eigen::ComputationInfo linear_solver_info() const {
-    return linear_solver_info_;
-  }
-
   /** For discrete mode only: set the max number of iterations for the Conjugate
     Gradient solve for the implicit damping force. */
   void SetLinearSolveMaxIterations(int max_iterations) {
@@ -283,8 +279,6 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   mutable Eigen::ConjugateGradient<Eigen::SparseMatrix<double>,
                                    Eigen::Lower | Eigen::Upper>
       cg_;
-  /* Solver info for the Conjugate Gradient solver. */
-  mutable Eigen::ComputationInfo linear_solver_info_;
 };
 }  // namespace mass_spring_cloth
 }  // namespace examples

@@ -44,7 +44,6 @@ int DoMain() {
   auto context = diagram->CreateDefaultContext();
   auto simulator =
       systems::MakeSimulatorFromGflags(*diagram, std::move(context));
-  simulator->Initialize();
   simulator->AdvanceTo(FLAGS_simulation_time);
   return 0;
 }
