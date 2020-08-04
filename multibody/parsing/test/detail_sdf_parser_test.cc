@@ -45,6 +45,29 @@ using systems::Context;
 
 const double kEps = std::numeric_limits<double>::epsilon();
 
+// TODO(jwnimmer-tri) This unit test has a lot of copy-pasta, including these
+// helper functions as well as all their call sites below.  We should refactor
+// the plant, scene_graph, etc. into a test fixture for brevity.
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    const std::string& model_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelFromSdf(
+      { .file_name = &file_name },
+      model_name, package_map, plant, scene_graph);
+}
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    const PackageMap& package_map,
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
+  return AddModelsFromSdf(
+      { .file_name = &file_name },
+      package_map, plant, scene_graph);
+}
+
 // Verifies that the SDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
