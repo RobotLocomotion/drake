@@ -1210,7 +1210,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
   const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
   const VolumeMeshFieldLinear<double, double> field_F{
       "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
-  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_F(mesh_F);
+  const Bvh<VolumeMesh<double>> bvh_F(mesh_F);
 
   // We'll pose the plane in the soft mesh's frame S and then transform the
   // whole system.
@@ -1298,7 +1298,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, AutoDiffThrows) {
   const VolumeMesh<double> mesh_F = TrivialVolumeMesh(RigidTransformd{});
   const VolumeMeshFieldLinear<double, double> field_F{
       "pressure", vector<double>{0.25, 0.5, 0.75, 1, -1}, &mesh_F};
-  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_F(mesh_F);
+  const Bvh<VolumeMesh<double>> bvh_F(mesh_F);
 
   const RigidTransform<AutoDiffXd> X_WS;
   const RigidTransform<AutoDiffXd> X_WR;
