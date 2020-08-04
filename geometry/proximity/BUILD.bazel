@@ -14,7 +14,7 @@ drake_cc_package_library(
     name = "proximity",
     visibility = ["//visibility:public"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":collision_filter_legacy",
         ":collisions_exist_callback",
         ":contact_surface_utility",
@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":mesh_intersection",
         ":mesh_plane_intersection",
         ":mesh_to_vtk",
+        ":obb",
         ":obj_to_surface_mesh",
         ":penetration_as_point_pair_callback",
         ":plane",
@@ -51,10 +52,11 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "bounding_volume_hierarchy",
-    srcs = ["bounding_volume_hierarchy.cc"],
-    hdrs = ["bounding_volume_hierarchy.h"],
+    name = "bvh",
+    srcs = ["bvh.cc"],
+    hdrs = ["bvh.h"],
     deps = [
+        ":obb",
         ":posed_half_space",
         ":surface_mesh",
         ":volume_mesh",
@@ -175,7 +177,7 @@ drake_cc_library(
     srcs = ["hydroelastic_internal.cc"],
     hdrs = ["hydroelastic_internal.h"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":make_box_field",
         ":make_box_mesh",
         ":make_cylinder_field",
@@ -317,7 +319,7 @@ drake_cc_library(
         "mesh_half_space_intersection.h",
     ],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":contact_surface_utility",
         ":posed_half_space",
         ":surface_mesh",
@@ -333,7 +335,7 @@ drake_cc_library(
     srcs = ["mesh_intersection.cc"],
     hdrs = ["mesh_intersection.h"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":contact_surface_utility",
         ":mesh_field",
         ":posed_half_space",
@@ -350,7 +352,7 @@ drake_cc_library(
     srcs = ["mesh_plane_intersection.cc"],
     hdrs = ["mesh_plane_intersection.h"],
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":contact_surface_utility",
         ":mesh_field",
         ":plane",
@@ -369,6 +371,21 @@ drake_cc_library(
         ":surface_mesh",
         ":volume_mesh",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "obb",
+    srcs = ["obb.cc"],
+    hdrs = ["obb.h"],
+    deps = [
+        ":posed_half_space",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common",
+        "//geometry:shape_specification",
+        "//geometry:utilities",
+        "//math:geometric_transform",
     ],
 )
 
@@ -481,9 +498,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "bounding_volume_hierarchy_test",
+    name = "bvh_test",
     deps = [
-        ":bounding_volume_hierarchy",
+        ":bvh",
         ":make_ellipsoid_mesh",
         ":make_sphere_mesh",
         ":surface_mesh",
@@ -706,6 +723,20 @@ drake_cc_googletest(
         "//common:temp_directory",
         "//geometry:shape_specification",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "obb_test",
+    deps = [
+        ":make_box_mesh",
+        ":make_ellipsoid_mesh",
+        ":make_sphere_mesh",
+        ":obb",
+        ":surface_mesh",
+        ":volume_mesh",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:shape_specification",
     ],
 )
 
