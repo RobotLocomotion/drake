@@ -79,7 +79,8 @@ Build system and dependencies
 * Upgrade buildifier to latest release 3.4.0 (`#13791`_)
 * Upgrade fcl to latest commit (`#13787`_)
 * Upgrade fmt to latest release 7.0.2 (`#13788`_)
-* Upgrade meshcat_python to latest commit (`#13806`_)
+* Upgrade meshcat to latest commit (`#13755`_)
+* Upgrade meshcat_python to latest commit (`#13755`_, `#13806`_)
 * Upgrade models to latest commit (`#13786`_)
 * Upgrade pybind11 fork to latest commit (`#13801`_)
 * Upgrade ros_xacro to latest release 1.13.6 (`#13790`_)
@@ -121,7 +122,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples,manipulation,multibody,systems: Simplify SDFormat //pose elements (`#13774`_)  # - Remove `//pose/@frame` when empty - Collapse identity transforms (all zeros) - Remove purely identity transforms ("<pose/>") Script used: https://git.io/JJ2OQ
 * examples,manipulation,multibody,systems: models: Have all models use SDFormat 1.7 (`#13758`_)  # * models: Delete unused / untested older versions * models: Remove //version from model.config files Let the models describe themselves * four_bar: Rewind to 1.6 due to usage of //use_parent_model_frame * models: Up-convert all concrete SDFormat files to use 1.7 Procedure, using this WIP setup / script: https://github.com/RobotLocomotion/drake/tree/9465206dfdaeaa54006f9fe5a9da18c261741d37/tmp 1. Run `./tmp/convert.py` 2. Using `git gui`, pick selected +- lines/hunks in the editor * Generally, any changes regarding `//use_parent_model_frame` * Some minor changes collapsing empty tags (e.g. `//link`) 3. Do minor line reordering * models: Update all xacro / rsdf files to 1.7 by hand This should mirror the upgrades in the generated files * Update Python, C++, and world files to SDFormat 1.7 (by hand)
 * examples,manipulation: Replace tabs with spaces in xml files (`#13772`_)  # Command: ``` find . \ -name '*.config' \ -o -name '*.rsdf' \ -o -name '*.sdf' \ -o -name '*.urdf' \ -o -name '*.xacro' \ -o -name '*.xml' \ -o -name '*.world' \ | xargs grep -rnI -P '\t' -l \ | xargs sed -e 's#\t#  #g' -e 's# *$##g' -i ```
-* examples,tools: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
+* examples: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
 * geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
 * math: math: Declare explicit class instantiations for SO(3) and SE(3) (`#13798`_)
 * multibody: Fix format in TAMSIs exception message (`#13802`_)
