@@ -41,14 +41,15 @@ py::return_value_policy return_value_policy_for_scalar_type() {
 }
 
 namespace internal {
-// For generic types, only permit conversion to the type itself.
-// `AutoDiffXd` and `Expression` cannot `static_cast<>` to each other, and
-// cannot `static_cast<>` to `double`.
+/*
+For generic types, only permit conversion to the type itself.
+`AutoDiffXd` and `Expression` cannot `static_cast<>` to each other, and
+cannot `static_cast<>` to `double`. */
 template <typename T>
 struct CastUPack {
   using Pack = type_pack<T>;
 };
-// For `double`, permit conversion to any common type.
+/* For `double`, permit conversion to any common type. */
 template <>
 struct CastUPack<double> {
   using Pack = CommonScalarPack;

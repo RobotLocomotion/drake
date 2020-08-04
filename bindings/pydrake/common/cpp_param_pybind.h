@@ -63,10 +63,12 @@ class Object {
   }
 
  private:
-  // Increments reference count. See `py::handle::inc_ref()` for more details.
+  /* Increments reference count. See `py::handle::inc_ref()` for more details.
+   */
   void inc_ref();
 
-  // Decrements reference count. See `py::handle::dec_ref()` for more details.
+  /* Decrements reference count. See `py::handle::dec_ref()` for more details.
+   */
   void dec_ref();
 
   ::PyObject* ptr_{};
@@ -74,7 +76,7 @@ class Object {
 
 namespace internal {
 
-// Wrapper for Object.
+/* Wrapper for Object. */
 struct wrapper_pydrake_object {
   using Type = Object;
   static constexpr auto original_name = py::detail::_("pydrake::Object");
@@ -89,15 +91,16 @@ struct wrapper_pydrake_object {
   }
 };
 
-// Gets singleton for type aliases from `cpp_param`.
+/* Gets singleton for type aliases from `cpp_param`. */
 py::object GetParamAliases();
 
-// Gets Python type object given `std::type_info`.
-// @throws std::runtime_error if type is neither aliased nor registered in
-// `pybind11`.
+/*
+Gets Python type object given `std::type_info`.
+@throws std::runtime_error if type is neither aliased nor registered in
+`pybind11`. */
 py::object GetPyParamScalarImpl(const std::type_info& tinfo);
 
-// Gets Python type for a C++ type (base case).
+/* Gets Python type for a C++ type (base case). */
 template <typename T>
 inline py::object GetPyParamScalarImpl(type_pack<T> = {}) {
   static_assert(!py::detail::is_pyobject<T>::value,
@@ -106,15 +109,16 @@ inline py::object GetPyParamScalarImpl(type_pack<T> = {}) {
   return GetPyParamScalarImpl(typeid(T));
 }
 
-// Gets Python literal for a C++ literal (specialization).
+/* Gets Python literal for a C++ literal (specialization). */
 template <typename T, T Value>
 inline py::object GetPyParamScalarImpl(
     type_pack<std::integral_constant<T, Value>> = {}) {
   return py::cast(Value);
 }
 
-// Gets Python type for a C++ vector that is not registered using
-// PYBIND11_MAKE_OPAQUE.
+/*
+Gets Python type for a C++ vector that is not registered using
+PYBIND11_MAKE_OPAQUE. */
 template <typename T>
 inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
   // Get inner type for validation.

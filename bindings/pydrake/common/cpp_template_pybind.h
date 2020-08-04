@@ -16,10 +16,11 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-// C++ interface for `pydrake.common.cpp_template.get_or_init`.
-// Please see that function for common parameters.
-// @param template_cls_name Name of the template class in `cpp_template`,
-// resolves to class to be passed as `template_cls`.
+/*
+C++ interface for `pydrake.common.cpp_template.get_or_init`.
+Please see that function for common parameters.
+@param template_cls_name Name of the template class in `cpp_template`,
+resolves to class to be passed as `template_cls`. */
 inline py::object GetOrInitTemplate(  // BR
     py::handle scope, const std::string& name,
     const std::string& template_cls_name,  // BR
@@ -30,13 +31,13 @@ inline py::object GetOrInitTemplate(  // BR
       scope, name, m.attr(template_cls_name.c_str()), *args, **kwargs);
 }
 
-// Adds instantiation to a Python template.
+/* Adds instantiation to a Python template. */
 inline void AddInstantiation(
     py::handle py_template, py::handle obj, py::tuple param) {
   py_template.attr("add_instantiation")(param, obj);
 }
 
-// Gets name for a given instantiation.
+/* Gets name for a given instantiation. */
 inline std::string GetInstantiationName(
     py::handle py_template, py::tuple param) {
   return py::cast<std::string>(py_template.attr("_instantiation_name")(param));

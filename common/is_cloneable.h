@@ -9,13 +9,14 @@ namespace drake {
 
 namespace is_cloneable_internal {
 
-// Default case; assumes that a class is *not* cloneable.
+/* Default case; assumes that a class is *not* cloneable. */
 template <typename T, class>
 struct is_cloneable_helper : std::false_type {};
 
-// Special sauce for SFINAE. Only compiles if it can finds the method
-// `unique_ptr<T> T::Clone() const`. If this exists, the is_cloneable implicitly
-// prefers this overload over the default overload.
+/*
+Special sauce for SFINAE. Only compiles if it can finds the method
+`unique_ptr<T> T::Clone() const`. If this exists, the is_cloneable implicitly
+prefers this overload over the default overload. */
 template <typename T>
 struct is_cloneable_helper<
     T,

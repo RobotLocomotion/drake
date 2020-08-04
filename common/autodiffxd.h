@@ -24,28 +24,29 @@
 namespace Eigen {
 
 #if !defined(DRAKE_DOXYGEN_CXX)
-// Explicit template specializations of Eigen::AutoDiffScalar for VectorXd.
-//
-// AutoDiffScalar tries to call internal::make_coherent to promote empty
-// derivatives. However, it fails to do the promotion when an operand is an
-// expression tree (i.e. CwiseBinaryOp). Our solution is to provide special
-// overloading for VectorXd and change the return types of its operators. With
-// this change, the operators evaluate terms immediately and return an
-// AutoDiffScalar<VectorXd> instead of expression trees (such as CwiseBinaryOp).
-// Eigen's implementation of internal::make_coherent makes use of const_cast in
-// order to promote zero sized derivatives. This however interferes badly with
-// our caching system and produces unexpected behaviors. See #10971 for details.
-// Therefore our implementation stops using internal::make_coherent and treats
-// scalars with zero sized derivatives as constants, as it should.
-//
-// We also provide overloading of math functions for AutoDiffScalar<VectorXd>
-// which return AutoDiffScalar<VectorXd> instead of an expression tree.
-//
-// See https://github.com/RobotLocomotion/drake/issues/6944 for more
-// information. See also drake/common/autodiff_overloads.h.
-//
-// TODO(soonho-tri): Next time when we upgrade Eigen, please check if we still
-// need these specializations.
+/*
+Explicit template specializations of Eigen::AutoDiffScalar for VectorXd.
+
+AutoDiffScalar tries to call internal::make_coherent to promote empty
+derivatives. However, it fails to do the promotion when an operand is an
+expression tree (i.e. CwiseBinaryOp). Our solution is to provide special
+overloading for VectorXd and change the return types of its operators. With
+this change, the operators evaluate terms immediately and return an
+AutoDiffScalar<VectorXd> instead of expression trees (such as CwiseBinaryOp).
+Eigen's implementation of internal::make_coherent makes use of const_cast in
+order to promote zero sized derivatives. This however interferes badly with
+our caching system and produces unexpected behaviors. See #10971 for details.
+Therefore our implementation stops using internal::make_coherent and treats
+scalars with zero sized derivatives as constants, as it should.
+
+We also provide overloading of math functions for AutoDiffScalar<VectorXd>
+which return AutoDiffScalar<VectorXd> instead of an expression tree.
+
+See https://github.com/RobotLocomotion/drake/issues/6944 for more
+information. See also drake/common/autodiff_overloads.h.
+
+TODO(soonho-tri): Next time when we upgrade Eigen, please check if we still
+need these specializations. */
 template <>
 class AutoDiffScalar<VectorXd>
     : public internal::auto_diff_special_op<VectorXd, false> {
@@ -393,9 +394,10 @@ DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY(
 
 #undef DRAKE_EIGEN_AUTODIFFXD_DECLARE_GLOBAL_UNARY
 
-// We have this specialization here because the Eigen-3.3.3's atan2
-// implementation for AutoDiffScalar does not make a return with properly sized
-// derivatives.
+/*
+We have this specialization here because the Eigen-3.3.3's atan2
+implementation for AutoDiffScalar does not make a return with properly sized
+derivatives. */
 inline const AutoDiffScalar<VectorXd> atan2(const AutoDiffScalar<VectorXd>& a,
                                             const AutoDiffScalar<VectorXd>& b) {
   const bool has_a_der = a.derivatives().size() > 0;
@@ -418,16 +420,17 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
                             a.derivatives() * (b * pow(a.value(), b - 1)));
 }
 
-// We have these implementations here because Eigen's implementations do not
-// have consistent behavior when a == b. We enforce the following rules for that
-// case:
-// 1) If both a and b are ADS with non-empty derivatives, return a.
-// 2) If both a and b are doubles, return a.
-// 3) If one of a, b is a double, and the other is an ADS, return the ADS.
-// 4) Treat ADS with empty derivatives as though they were doubles.
-// Points (1) and (4) are handled here. Points (2) and (3) are already handled
-// by Eigen's overloads.
-// See https://gitlab.com/libeigen/eigen/-/issues/1870.
+/*
+We have these implementations here because Eigen's implementations do not
+have consistent behavior when a == b. We enforce the following rules for that
+case:
+1) If both a and b are ADS with non-empty derivatives, return a.
+2) If both a and b are doubles, return a.
+3) If one of a, b is a double, and the other is an ADS, return the ADS.
+4) Treat ADS with empty derivatives as though they were doubles.
+Points (1) and (4) are handled here. Points (2) and (3) are already handled
+by Eigen's overloads.
+See https://gitlab.com/libeigen/eigen/-/issues/1870. */
 inline const AutoDiffScalar<VectorXd> min(const AutoDiffScalar<VectorXd>& a,
                                           const AutoDiffScalar<VectorXd>& b) {
   // If both a and b have derivatives, then their derivative sizes must match.

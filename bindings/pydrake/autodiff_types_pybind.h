@@ -35,13 +35,14 @@ namespace internal {
 // TODO(eric.cousineau): Deprecate these methods once we support proper NumPy
 // UFuncs.
 
-// Adds math function overloads for AutoDiffXd (ADL free functions from
-// `autodiff.h`) for both NumPy methods and `pydrake.math`.
-// @param obj
-//   If this is py::class_, this is intended to register class methods on
-//   `AutoDiffXd` to overload NumPy's math methods.
-//   If this is py::module, this is intended to register the overloads in
-//   `pydrake.math`.
+/*
+Adds math function overloads for AutoDiffXd (ADL free functions from
+`autodiff.h`) for both NumPy methods and `pydrake.math`.
+@param obj
+If this is py::class_, this is intended to register class methods on
+`AutoDiffXd` to overload NumPy's math methods.
+If this is py::module, this is intended to register the overloads in
+`pydrake.math`. */
 template <typename PyObject>
 void BindAutoDiffMathOverloads(PyObject* obj) {
   // TODO(m-chaturvedi) Add Pybind11 documentation.

@@ -20,10 +20,11 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
-// Wrapper for Eigen::Translation<>, to be used as first parameter to
-// `type_caster_wrapped`.
-// Since there are not many special operations for a translation vector, we
-// shall return it as a nominal vector.
+/*
+Wrapper for Eigen::Translation<>, to be used as first parameter to
+`type_caster_wrapped`.
+Since there are not many special operations for a translation vector, we
+shall return it as a nominal vector. */
 template <typename T, int Dim>
 struct wrapper_eigen_translation {
   using Type = Eigen::Translation<T, Dim>;

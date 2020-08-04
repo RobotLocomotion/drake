@@ -17,7 +17,7 @@ struct type_pack;
 
 namespace internal {
 
-// Provides type at given index.
+/* Provides type at given index. */
 template <size_t N, size_t K, typename T, typename... Ts>
 struct type_at_impl {
   using type = typename type_at_impl<N, K + 1, Ts...>::type;

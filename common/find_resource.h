@@ -57,18 +57,19 @@ class FindResourceResult {
   FindResourceResult() = default;
   void CheckInvariants();
 
-  // The path as requested by the user.
+  /* The path as requested by the user. */
   std::string resource_path_;
 
-  // The absolute path where resource_path was found, if success.
+  /* The absolute path where resource_path was found, if success. */
   std::optional<std::string> absolute_path_;
 
-  // An error message, permitted to be present only when base_path is empty.
-  //
-  // All three of resource_path, base_path, and error_message can be empty
-  // (e.g., a default-constructed and/or moved-from object), which represents
-  // resource-not-found along with an unspecified non-empty default error
-  // message from get_error_message().
+  /*
+  An error message, permitted to be present only when base_path is empty.
+
+  All three of resource_path, base_path, and error_message can be empty
+  (e.g., a default-constructed and/or moved-from object), which represents
+  resource-not-found along with an unspecified non-empty default error
+  message from get_error_message(). */
   std::optional<std::string> error_message_;
 };
 

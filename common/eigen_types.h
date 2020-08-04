@@ -211,15 +211,12 @@ struct MultiplyEigenSizes {
 };
 
 /*
- * Determines if a type is derived from EigenBase<> (e.g. ArrayBase<>,
- * MatrixBase<>).
- */
+Determines if a type is derived from EigenBase<> (e.g. ArrayBase<>,
+MatrixBase<>). */
 template <typename Derived>
 struct is_eigen_type : std::is_base_of<Eigen::EigenBase<Derived>, Derived> {};
 
-/*
- * Determines if an EigenBase<> has a specific scalar type.
- */
+/* Determines if an EigenBase<> has a specific scalar type. */
 template <typename Derived, typename Scalar>
 struct is_eigen_scalar_same
     : std::integral_constant<
@@ -227,18 +224,16 @@ struct is_eigen_scalar_same
                     std::is_same<typename Derived::Scalar, Scalar>::value> {};
 
 /*
- * Determines if an EigenBase<> type is a compile-time (column) vector.
- * This will not check for run-time size.
- */
+Determines if an EigenBase<> type is a compile-time (column) vector.
+This will not check for run-time size. */
 template <typename Derived>
 struct is_eigen_vector
     : std::integral_constant<bool, is_eigen_type<Derived>::value &&
                                        Derived::ColsAtCompileTime == 1> {};
 
 /*
- * Determines if an EigenBase<> type is a compile-time (column) vector of a
- * scalar type. This will not check for run-time size.
- */
+Determines if an EigenBase<> type is a compile-time (column) vector of a
+scalar type. This will not check for run-time size. */
 template <typename Derived, typename Scalar>
 struct is_eigen_vector_of
     : std::integral_constant<
@@ -249,12 +244,11 @@ struct is_eigen_vector_of
 // this logic will qualify it as a vector. Address the downstream logic if this
 // becomes an issue.
 /*
- * Determines if a EigenBase<> type is a compile-time non-column-vector matrix
- * of a scalar type. This will not check for run-time size.
- * @note For an EigenBase<> of the correct Scalar type, this logic is
- * exclusive to is_eigen_vector_of<> such that distinct specializations are not
- * ambiguous.
- */
+Determines if a EigenBase<> type is a compile-time non-column-vector matrix
+of a scalar type. This will not check for run-time size.
+@note For an EigenBase<> of the correct Scalar type, this logic is
+exclusive to is_eigen_vector_of<> such that distinct specializations are not
+ambiguous. */
 template <typename Derived, typename Scalar>
 struct is_eigen_nonvector_of
     : std::integral_constant<
@@ -354,8 +348,9 @@ class EigenPtr {
   }
 
   EigenPtr& operator=(const EigenPtr& other) {
-    // We must explicitly override this version of operator=.
-    // The template below will not take precedence over this one.
+    /*
+    We must explicitly override this version of operator=.
+    The template below will not take precedence over this one. */
     return assign(other);
   }
 
@@ -378,10 +373,11 @@ class EigenPtr {
   bool operator!=(std::nullptr_t) const { return is_valid(); }
 
  private:
-  // Simple reassignable container without requirement of heap allocation.
-  // This is used because `drake::optional<>` does not work with `Eigen::Ref<>`
-  // because `Ref` deletes the necessary `operator=` overload for
-  // `std::is_copy_assignable`.
+  /*
+  Simple reassignable container without requirement of heap allocation.
+  This is used because `drake::optional<>` does not work with `Eigen::Ref<>`
+  because `Ref` deletes the necessary `operator=` overload for
+  `std::is_copy_assignable`. */
   class ReassignableRef {
    public:
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ReassignableRef)
@@ -390,7 +386,7 @@ class EigenPtr {
       reset();
     }
 
-    // Reset value to null.
+    /* Reset value to null. */
     void reset() {
       if (has_value_) {
         raw_value().~RefType();
@@ -398,7 +394,7 @@ class EigenPtr {
       }
     }
 
-    // Set value.
+    /* Set value. */
     template <typename PlainObjectTypeIn>
     void set_value(PlainObjectTypeIn* value_in) {
       if (has_value_) {
@@ -408,17 +404,17 @@ class EigenPtr {
       has_value_ = true;
     }
 
-    // Access to value.
+    /* Access to value. */
     RefType& value() {
       DRAKE_ASSERT(has_value());
       return raw_value();
     }
 
-    // Indicates if it has a value.
+    /* Indicates if it has a value. */
     bool has_value() const { return has_value_; }
 
    private:
-    // Unsafe access to value.
+    /* Unsafe access to value. */
     RefType& raw_value() { return reinterpret_cast<RefType&>(storage_); }
 
     bool has_value_{};
@@ -426,12 +422,14 @@ class EigenPtr {
         storage_;
   };
 
-  // Use mutable, reassignable ref to permit pointer-like semantics (with
-  // ownership) on the stack.
+  /*
+  Use mutable, reassignable ref to permit pointer-like semantics (with
+  ownership) on the stack. */
   mutable ReassignableRef m_;
 
-  // Consolidate assignment here, so that both the copy constructor and the
-  // construction from another type may be used.
+  /*
+  Consolidate assignment here, so that both the copy constructor and the
+  construction from another type may be used. */
   template <typename PlainObjectTypeIn>
   EigenPtr& assign(const EigenPtr<PlainObjectTypeIn>& other) {
     if (other) {
@@ -442,7 +440,7 @@ class EigenPtr {
     return *this;
   }
 
-  // Consolidate getting a reference here.
+  /* Consolidate getting a reference here. */
   RefType& get_reference() const {
     if (!m_.has_value())
       throw std::runtime_error("EigenPtr: nullptr dereference");

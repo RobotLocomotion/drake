@@ -8,7 +8,7 @@
 namespace pybind11 {
 namespace detail {
 
-// Casts `SortedPair<T>` as `Tuple[T]` comprised of `(first, second)`.
+/* Casts `SortedPair<T>` as `Tuple[T]` comprised of `(first, second)`. */
 template <typename T>
 struct type_caster<drake::SortedPair<T>> {
   using Type = drake::SortedPair<T>;

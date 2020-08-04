@@ -54,9 +54,10 @@ inline py::object py_keep_alive(py::object nurse, py::object patient) {
   return nurse;
 }
 
-// Implementation for `overload_cast_explicit`. We must use this structure so
-// that we can constrain what is inferred. Otherwise, the ambiguity confuses
-// the compiler.
+/*
+Implementation for `overload_cast_explicit`. We must use this structure so
+that we can constrain what is inferred. Otherwise, the ambiguity confuses
+the compiler. */
 template <typename Return, typename... Args>
 struct overload_cast_impl {
   auto operator()(Return (*func)(Args...)) const { return func; }
