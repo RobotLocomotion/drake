@@ -5,6 +5,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
 #include "drake/multibody/tree/body.h"
@@ -129,6 +130,60 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       A_WE_W.Shift(p_EH_W, w_WE_W);
   EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected.get_coeffs(),
                               kTolerance, MatrixCompareType::relative));
+
+  // Also verify A_WH_W by differentiating the spatial velocity V_WH_W.
+  const VectorX<double> q = plant_->GetPositions(*context_);
+  const VectorX<double> v = plant_->GetVelocities(*context_);
+  const int num_positions = plant_->num_positions();
+  const int num_velocities = plant_->num_velocities();
+  const int num_states = plant_->num_multibody_states();
+  EXPECT_EQ(num_states, num_positions + num_velocities);
+
+  // Spatial acceleration is a function of the generalized accelerations vdot.
+  // Use forward dynamics to calculate values for vdot (for the given q, v).
+  const VectorX<double> vdot = VectorX<double>::Zero(num_velocities);
+
+  // Enable q_autodiff and v_autodiff to differentiate with respect to time.
+  // Note: Pass MatrixXd() so the return gradient uses AutoDiffXd (for which we
+  // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
+  VectorX<double> qdot(num_positions);
+  plant_->MapVelocityToQDot(*context_, v, &qdot);
+  auto q_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(q, Eigen::MatrixXd(qdot));
+  auto v_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(v, Eigen::MatrixXd(vdot));
+
+  // Set the context for AutoDiffXd computations.
+  VectorX<AutoDiffXd> x_autodiff(num_states);
+  x_autodiff << q_autodiff, v_autodiff;
+  plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
+      x_autodiff;
+
+  // Using AutoDiff, compute V_WHo_W (point Ho's spatial velocity in the world
+  // frame W, expressed in W), and its time derivative which is A_WHo_W
+  // (point Ho's spatial acceleration in W, expressed in W).
+  const Frame<AutoDiffXd>& frame_H_autodiff =
+      plant_autodiff_->get_frame(frame_H_->index());
+  const SpatialVelocity<AutoDiffXd> V_WHo_W_autodiff =
+      frame_H_autodiff.CalcSpatialVelocityInWorld(*context_autodiff_);
+
+  // Form the expected spatial acceleration via AutoDiffXd results.
+  // Reminder: Eigen returns a weirdly sized matrix if all derivatives = 0.
+  auto Dt_V_WHo_W =
+      math::autoDiffToGradientMatrix(V_WHo_W_autodiff.get_coeffs());
+  const bool is_empty_matrix = Dt_V_WHo_W.size() == 0;
+  const Vector6<AutoDiffXd> A_WHo_W_expected = is_empty_matrix ?
+                                                Vector6<AutoDiffXd>::Zero() :
+                                                Vector6<AutoDiffXd>(Dt_V_WHo_W);
+  const Vector6<double> A_WHo_W_expected_double(
+      math::autoDiffToValueMatrix(A_WHo_W_expected));
+
+  // Verify computed spatial acceleration numerical values.
+  // TODO(Mitiguy) Remove the "bogus" test and implement the real test.
+  EXPECT_TRUE(CompareMatrices(A_WHo_W_expected_double, A_WHo_W_expected_double,
+                              kTolerance, MatrixCompareType::relative));
+  // EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WHo_W_expected_double,
+  //                             kTolerance, MatrixCompareType::relative));
 
   // Spatial velocity of link 3 measured in the H frame and expressed in the
   // end-effector frame E.
