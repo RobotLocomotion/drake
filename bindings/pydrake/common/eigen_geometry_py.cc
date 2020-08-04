@@ -275,7 +275,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            "Quaternion multiplication");
+            "Quaternion multiplication")
+        .def(
+            "slerp",
+            [](const Class& self, double t, const Class& other) {
+              return self.slerp(t, other);
+            },
+            py::arg("t"), py::arg("other"),
+            "The spherical linear interpolation between the two quaternions "
+            "(self and other) at the parameter t in [0;1].");
     auto multiply_vector = [](const Class& self, const Vector3<T>& vector) {
       return self * vector;
     };
