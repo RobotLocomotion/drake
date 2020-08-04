@@ -35,19 +35,20 @@ output_ports:
 - value
 @endsystem
 
-@tparam_default_scalar
-*/
+@tparam_default_scalar */
 template <typename T>
 class PortSwitch final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PortSwitch)
 
-  /** Constructs a vector-valued %PortSwitch. All input ports declared via
+  /**
+  Constructs a vector-valued %PortSwitch. All input ports declared via
   DeclareInputPort() will be vector-valued ports of size `vector_size`,
   which must be greater than zero. */
   explicit PortSwitch(int vector_size);
 
-  /** Constructs a %PortSwitch using the type of `model_value` as the model for
+  /**
+  Constructs a %PortSwitch using the type of `model_value` as the model for
   the output port.  All input ports declared via DeclareInputPort() will be
   abstract-valued ports using the same `model_value`. */
   template <typename OutputType>
@@ -55,11 +56,12 @@ class PortSwitch final : public LeafSystem<T> {
       : PortSwitch(-1, AbstractValue::Make<OutputType>(model_value), nullptr,
                    nullptr) {}
 
-  /** Constructs a %PortSwitch using the type of `dummy_value` as the model for
+  /**
+  Constructs a %PortSwitch using the type of `dummy_value` as the model for
   the output port.  This version provides support for input/output values
   that are templated on scalar type; the scalar type on the port is kept
   consistent with the scalar type of the System (even through scalar
-  conversion). The type of `dummy_value` must be default constructible.  */
+  conversion). The type of `dummy_value` must be default constructible. */
   template <template <typename> class OutputType>
   explicit PortSwitch(const OutputType<T>& dummy_value)
       : PortSwitch(
@@ -70,7 +72,8 @@ class PortSwitch final : public LeafSystem<T> {
     unused(dummy_value);
   }
 
-  /** Scalar-type converting copy constructor. See @ref
+  /**
+  Scalar-type converting copy constructor. See @ref
   system_scalar_conversion. */
   template <typename U>
   explicit PortSwitch(const PortSwitch<U>& other);
@@ -83,7 +86,8 @@ class PortSwitch final : public LeafSystem<T> {
     return System<T>::get_output_port(0);
   }
 
-  /** Declares a new input port to the switch with port name `name`.  The
+  /**
+  Declares a new input port to the switch with port name `name`.  The
   type of this port is already defined by the type of the output port. This
   must be called before any Context is allocated. */
   const InputPort<T>& DeclareInputPort(std::string name);

@@ -9,62 +9,63 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-/// This class implements a controller for a Schunk WSG gripper in position
-/// control mode.  It assumes that the gripper is modeled in the plant as two
-/// independent prismatic joints for the fingers.
-///
-/// Note: This is intended as a simpler single-system implementation that can
-/// replace the SchunkWsgController when using position control mode.  We
-/// anticipate a single-system SchunkWsgForceController implementation to
-/// (soon) replace the other mode, and then will deprecate SchunkWsgController.
-///
-/// Call the positions of the prismatic joints q₀ and q₁.  q₀ = q₁ = 0 is
-/// the configuration where the fingers are touching in the center.  When the
-/// gripper is open, q₀ < 0 and q₁ > 0.
-///
-/// The physical gripper mechanically imposes that -q₀ = q₁, and implements a
-/// controller to track -q₀ = q₁ = q_d/2 (q_d is the desired position, which
-/// is the signed distance between the two fingers).  We model that here with
-/// two PD controllers -- one that implements the physical constraint
-/// (keeping the fingers centered):
-///   f₀+f₁ = -kp_constraint*(q₀+q₁) - kd_constraint*(v₀+v₁),
-/// and another to implement the controller (opening/closing the fingers):
-///   -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)),
-/// where sat() saturates the command to be in the range [-force_limit,
-/// force_limit].  The expectation is that
-///   kp_constraint ≫ kp_command.
-///
-/// @system
-/// name: SchunkWSGPdController
-/// input_ports:
-/// - desired_state
-/// - force_limit
-/// - state
-/// output_ports:
-/// - generalized_force
-/// - grip_force
-/// @endsystem
-///
-/// The desired_state is a BasicVector<double> of size 2 (position and
-/// velocity of the distance between the fingers).  The force_limit is a
-/// scalar (BasicVector<double> of size 1).  The state is a
-/// BasicVector<double> of size 4 (positions and velocities of the two
-/// fingers).  The output generalized_force is a BasicVector<double> of size
-/// 2 (generalized force inputs to the two fingers).  The output grip_force is
-/// a scalar surrogate for the force measurement from the driver,
-/// f = abs(f₀-f₁) which, like the gripper itself, only reports a positive
-/// force.
-///
+/**
+This class implements a controller for a Schunk WSG gripper in position
+control mode.  It assumes that the gripper is modeled in the plant as two
+independent prismatic joints for the fingers.
+
+Note: This is intended as a simpler single-system implementation that can
+replace the SchunkWsgController when using position control mode.  We
+anticipate a single-system SchunkWsgForceController implementation to
+(soon) replace the other mode, and then will deprecate SchunkWsgController.
+
+Call the positions of the prismatic joints q₀ and q₁.  q₀ = q₁ = 0 is
+the configuration where the fingers are touching in the center.  When the
+gripper is open, q₀ < 0 and q₁ > 0.
+
+The physical gripper mechanically imposes that -q₀ = q₁, and implements a
+controller to track -q₀ = q₁ = q_d/2 (q_d is the desired position, which
+is the signed distance between the two fingers).  We model that here with
+two PD controllers -- one that implements the physical constraint
+(keeping the fingers centered):
+  f₀+f₁ = -kp_constraint*(q₀+q₁) - kd_constraint*(v₀+v₁),
+and another to implement the controller (opening/closing the fingers):
+  -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)),
+where sat() saturates the command to be in the range [-force_limit,
+force_limit].  The expectation is that
+  kp_constraint ≫ kp_command.
+
+@system
+name: SchunkWSGPdController
+input_ports:
+- desired_state
+- force_limit
+- state
+output_ports:
+- generalized_force
+- grip_force
+@endsystem
+
+The desired_state is a BasicVector<double> of size 2 (position and
+velocity of the distance between the fingers).  The force_limit is a
+scalar (BasicVector<double> of size 1).  The state is a
+BasicVector<double> of size 4 (positions and velocities of the two
+fingers).  The output generalized_force is a BasicVector<double> of size
+2 (generalized force inputs to the two fingers).  The output grip_force is
+a scalar surrogate for the force measurement from the driver,
+f = abs(f₀-f₁) which, like the gripper itself, only reports a positive
+force. */
 class SchunkWsgPdController : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPdController)
 
-  /// Initialize the controller.  The gain parameters are set based
-  /// limited tuning in simulation with a kuka picking up small objects.
   // Note: These default parameter values came from the previous version of
   // the controller, except that kp_command is decreased by 10x.  Setting
   // kd_constraint = 50.0 resulted in some numerical instability in existing
   // kuka tests.  They could be tuned in better with more simulation effort.
+  /**
+  Initialize the controller.  The gain parameters are set based
+  limited tuning in simulation with a kuka picking up small objects. */
   SchunkWsgPdController(double kp_command = 200.0, double kd_command = 5.0,
                         double kp_constraint = 2000.0,
                         double kd_constraint = 5.0);
@@ -112,31 +113,33 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   systems::OutputPortIndex grip_force_output_port_{};
 };
 
-/// This class implements a controller for a Schunk WSG gripper in position
-/// control mode adding a discrete-derivative to estimate the desired
-/// velocity from the desired position commands.  It is a thin wrapper
-/// around SchunkWsgPdController.
-///
-/// @system
-/// name: SchunkWSGPositionController
-/// input_ports:
-/// - desired_position
-/// - force_limit
-/// - state
-/// output_ports:
-/// - generalized_force
-/// - grip_force
-/// @endsystem
-///
-/// @see SchunkWsgPdController
+/**
+This class implements a controller for a Schunk WSG gripper in position
+control mode adding a discrete-derivative to estimate the desired
+velocity from the desired position commands.  It is a thin wrapper
+around SchunkWsgPdController.
+
+@system
+name: SchunkWSGPositionController
+input_ports:
+- desired_position
+- force_limit
+- state
+output_ports:
+- generalized_force
+- grip_force
+@endsystem
+
+@see SchunkWsgPdController */
 class SchunkWsgPositionController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionController)
 
-  /// Initialize the controller.  The default @p time_step is set to match
-  /// the update rate of the wsg firmware.  The gain parameters are set based
-  /// limited tuning in simulation with a kuka picking up small objects.
-  /// @see SchunkWsgPdController::SchunkWsgPdController()
+  /**
+  Initialize the controller.  The default @p time_step is set to match
+  the update rate of the wsg firmware.  The gain parameters are set based
+  limited tuning in simulation with a kuka picking up small objects.
+  @see SchunkWsgPdController::SchunkWsgPdController() */
   SchunkWsgPositionController(double time_step = 0.05,
                               double kp_command = 200.0,
                               double kd_command = 5.0,

@@ -9,9 +9,7 @@
 namespace drake {
 namespace lcm {
 
-/**
- Encodes an LCM message to a series of bytes.
- */
+/** Encodes an LCM message to a series of bytes. */
 template <typename Message>
 std::vector<uint8_t> EncodeLcmMessage(const Message& message) {
   const int num_bytes = message.getEncodedSize();
@@ -23,9 +21,8 @@ std::vector<uint8_t> EncodeLcmMessage(const Message& message) {
 }
 
 /**
- Decodes an LCM message from a series of bytes.
- @throws std::runtime_error if decoding fails.
- */
+Decodes an LCM message from a series of bytes.
+@throws std::runtime_error if decoding fails. */
 template <typename Message>
 Message DecodeLcmMessage(const std::vector<uint8_t>& bytes) {
   Message message{};
@@ -38,9 +35,7 @@ Message DecodeLcmMessage(const std::vector<uint8_t>& bytes) {
   return message;
 }
 
-/**
- Compares two LCM messages of the same type to see if they are equal.
- */
+/** Compares two LCM messages of the same type to see if they are equal. */
 template <typename Message>
 bool AreLcmMessagesEqual(const Message& a, const Message& b) {
   return EncodeLcmMessage(a) == EncodeLcmMessage(b);

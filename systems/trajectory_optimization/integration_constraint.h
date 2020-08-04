@@ -6,20 +6,17 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 /**
- * Implements the midpoint integration
- *
- *     (ẋₗ + ẋᵣ)/2  * dt = xᵣ - xₗ
- * where the bounded variables are (xᵣ, xₗ, ẋᵣ, ẋₗ, dt)
- */
+Implements the midpoint integration
+
+    (ẋₗ + ẋᵣ)/2  * dt = xᵣ - xₗ
+where the bounded variables are (xᵣ, xₗ, ẋᵣ, ẋₗ, dt) */
 class MidPointIntegrationConstraint : public solvers::Constraint {
  public:
   explicit MidPointIntegrationConstraint(int dim);
 
   ~MidPointIntegrationConstraint() override {}
 
-  /**
-   * Compose x for the Eval input from individual variables.
-   */
+  /** Compose x for the Eval input from individual variables. */
   template <typename T>
   void ComposeX(const Eigen::Ref<const VectorX<T>>& x_r,
                 const Eigen::Ref<const VectorX<T>>& x_l,

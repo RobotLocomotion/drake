@@ -16,7 +16,8 @@ namespace examples {
 namespace rod2d {
 
 // TODO(edrumwri): Track energy and add a test to check it.
-/** Dynamical system representation of a rod contacting a half-space in
+/**
+Dynamical system representation of a rod contacting a half-space in
 two dimensions.
 
 <h3>Notation</h3>
@@ -146,39 +147,42 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
                    Impact". SIAM Rev., 42(1), 3-39, 2000.
 
-@tparam_double_only
-*/
+@tparam_double_only */
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:
   ~Rod2D() override {}
 
-  /// System model and approach for simulating the system.
+  /** System model and approach for simulating the system. */
   enum class SystemType {
-    /// For modeling the system using rigid contact, Coulomb friction, and
-    /// hybrid mode variables and simulating the system through piecewise
-    /// solutions of differential algebraic equations.
+    /**
+    For modeling the system using rigid contact, Coulomb friction, and
+    hybrid mode variables and simulating the system through piecewise
+    solutions of differential algebraic equations. */
     kPiecewiseDAE,
 
-    /// For modeling the system using either rigid or compliant contact,
-    /// Coulomb friction, and a first-order time discretization (which can
-    /// be applied to simulating the system without an integrator).
+    /**
+    For modeling the system using either rigid or compliant contact,
+    Coulomb friction, and a first-order time discretization (which can
+    be applied to simulating the system without an integrator). */
     kDiscretized,
 
-    /// For modeling the system using compliant contact, Coulomb friction,
-    /// and ordinary differential equations and simulating the system
-    /// through standard algorithms for solving initial value problems.
+    /**
+    For modeling the system using compliant contact, Coulomb friction,
+    and ordinary differential equations and simulating the system
+    through standard algorithms for solving initial value problems. */
     kContinuous
   };
 
-  /// Constructor for the 2D rod system using the piecewise DAE (differential
-  /// algebraic equation) based approach, the discretization approach, or the
-  /// continuous ordinary differential equation based approach.
-  /// @param dt The integration step size. This step size cannot be reset
-  ///           after construction.
-  /// @throws std::logic_error if @p dt is not positive and system_type is
-  ///         kDiscretized or @p dt is not zero and system_type is
-  ///         kPiecewiseDAE or kContinuous.
+  /**
+  Constructor for the 2D rod system using the piecewise DAE (differential
+  algebraic equation) based approach, the discretization approach, or the
+  continuous ordinary differential equation based approach.
+  @param dt The integration step size. This step size cannot be reset
+            after construction.
+  @throws std::logic_error if @p dt is not positive and system_type is
+          kDiscretized or @p dt is not zero and system_type is
+          kPiecewiseDAE or kContinuous. */
   explicit Rod2D(SystemType system_type, double dt);
 
   static const Rod2dStateVector<T>& get_state(
@@ -203,8 +207,8 @@ class Rod2D : public systems::LeafSystem<T> {
         context->get_mutable_continuous_state_vector());
   }
 
-  /// Transforms dissipation (α) to damping, given a characteristic
   // deformation.
+  /** Transforms dissipation (α) to damping, given a characteristic */
   double TransformDissipationToDampingAboutDeformation(
       double characteristic_deformation) const {
     // Equation (16) from [Hunt 1975], yields b = 3/2 * α * k * x. We can
@@ -217,8 +221,9 @@ class Rod2D : public systems::LeafSystem<T> {
         half_length_;
   }
 
-  /// Transforms damping (b) to dissipation (α) , given a characteristic
-  /// deformation.
+  /**
+  Transforms damping (b) to dissipation (α) , given a characteristic
+  deformation. */
   double TransformDampingToDissipationAboutDeformation(
       double characteristic_deformation, double b) const {
     // See documentation for TransformDissipationToDampingAboutDeformation()
@@ -227,92 +232,99 @@ class Rod2D : public systems::LeafSystem<T> {
         half_length_);
   }
 
-  /// Gets the constraint force mixing parameter (CFM, used for discretized
-  /// systems only), which should lie in the interval [0, infinity].
+  /**
+  Gets the constraint force mixing parameter (CFM, used for discretized
+  systems only), which should lie in the interval [0, infinity]. */
   double get_cfm() const {
     return 1.0 /
         (stiffness_ * dt_ + TransformDissipationToDampingAboutDeformation(
         kCharacteristicDeformation));
   }
 
-  /// Gets the error reduction parameter (ERP, used for discretized
-  /// systems only), which should lie in the interval [0, 1].
+  /**
+  Gets the error reduction parameter (ERP, used for discretized
+  systems only), which should lie in the interval [0, 1]. */
   double get_erp() const {
     return dt_ * stiffness_ / (stiffness_ * dt_ +
         TransformDissipationToDampingAboutDeformation(
         kCharacteristicDeformation));
   }
 
-  /// Gets the generalized position of the rod, given a Context. The first two
-  /// components represent the location of the rod's center-of-mass, expressed
-  /// in the global frame. The third component represents the orientation of
-  /// the rod, measured counter-clockwise with respect to the x-axis.
+  /**
+  Gets the generalized position of the rod, given a Context. The first two
+  components represent the location of the rod's center-of-mass, expressed
+  in the global frame. The third component represents the orientation of
+  the rod, measured counter-clockwise with respect to the x-axis. */
   Vector3<T> GetRodConfig(const systems::Context<T>& context) const {
     return context.get_state().
         get_continuous_state().get_generalized_position().CopyToVector();
   }
 
-  /// Gets the generalized velocity of the rod, given a Context. The first
-  /// two components represent the translational velocities of the
-  /// center-of-mass. The third component represents the angular velocity of
-  /// the rod.
+  /**
+  Gets the generalized velocity of the rod, given a Context. The first
+  two components represent the translational velocities of the
+  center-of-mass. The third component represents the angular velocity of
+  the rod. */
   Vector3<T> GetRodVelocity(const systems::Context<T>& context) const {
     return context.get_state().
         get_continuous_state().get_generalized_velocity().CopyToVector();
   }
 
-  /// Gets the acceleration (with respect to the positive y-axis) due to
-  /// gravity (i.e., this number should generally be negative).
+  /**
+  Gets the acceleration (with respect to the positive y-axis) due to
+  gravity (i.e., this number should generally be negative). */
   double get_gravitational_acceleration() const { return g_; }
 
-  /// Sets the acceleration (with respect to the positive y-axis) due to
-  /// gravity (i.e., this number should generally be negative).
+  /**
+  Sets the acceleration (with respect to the positive y-axis) due to
+  gravity (i.e., this number should generally be negative). */
   void set_gravitational_acceleration(double g) { g_ = g; }
 
-  /// Gets the coefficient of dynamic (sliding) Coulomb friction.
+  /** Gets the coefficient of dynamic (sliding) Coulomb friction. */
   double get_mu_coulomb() const { return mu_; }
 
-  /// Sets the coefficient of dynamic (sliding) Coulomb friction.
+  /** Sets the coefficient of dynamic (sliding) Coulomb friction. */
   void set_mu_coulomb(double mu) { mu_ = mu; }
 
-  /// Gets the mass of the rod.
+  /** Gets the mass of the rod. */
   double get_rod_mass() const { return mass_; }
 
-  /// Sets the mass of the rod.
+  /** Sets the mass of the rod. */
   void set_rod_mass(double mass) { mass_ = mass; }
 
-  /// Gets the half-length h of the rod.
+  /** Gets the half-length h of the rod. */
   double get_rod_half_length() const { return half_length_; }
 
-  /// Sets the half-length h of the rod.
+  /** Sets the half-length h of the rod. */
   void set_rod_half_length(double half_length) { half_length_ = half_length; }
 
-  /// Gets the rod moment of inertia.
+  /** Gets the rod moment of inertia. */
   double get_rod_moment_of_inertia() const { return J_; }
 
-  /// Sets the rod moment of inertia.
+  /** Sets the rod moment of inertia. */
   void set_rod_moment_of_inertia(double J) { J_ = J; }
 
-  /// Get compliant contact normal stiffness in N/m.
+  /** Get compliant contact normal stiffness in N/m. */
   double get_stiffness() const { return stiffness_; }
 
-  /// Set compliant contact normal stiffness in N/m (>= 0).
+  /** Set compliant contact normal stiffness in N/m (>= 0). */
   void set_stiffness(double stiffness) {
     DRAKE_DEMAND(stiffness >= 0);
     stiffness_ = stiffness;
   }
 
-  /// Get compliant contact normal dissipation in 1/velocity (s/m).
+  /** Get compliant contact normal dissipation in 1/velocity (s/m). */
   double get_dissipation() const { return dissipation_; }
 
-  /// Set compliant contact normal dissipation in 1/velocity (s/m, >= 0).
+  /** Set compliant contact normal dissipation in 1/velocity (s/m, >= 0). */
   void set_dissipation(double dissipation) {
     DRAKE_DEMAND(dissipation >= 0);
     dissipation_ = dissipation;
   }
 
-  /// Sets stiffness and dissipation for the rod from cfm and erp values (used
-  /// for discretized system implementations).
+  /**
+  Sets stiffness and dissipation for the rod from cfm and erp values (used
+  for discretized system implementations). */
   void SetStiffnessAndDissipation(double cfm, double erp) {
     // These values were determined by solving the equations:
     // cfm = 1 / (dt * stiffness + damping)
@@ -326,156 +338,170 @@ class Rod2D : public systems::LeafSystem<T> {
         kCharacteristicDeformation, b));
   }
 
-  /// Get compliant contact static friction (stiction) coefficient `μ_s`.
+  /** Get compliant contact static friction (stiction) coefficient `μ_s`. */
   double get_mu_static() const { return mu_s_; }
 
-  /// Set contact stiction coefficient (>= mu_coulomb). This has no
-  /// effect if the rod model is discretized.
+  /**
+  Set contact stiction coefficient (>= mu_coulomb). This has no
+  effect if the rod model is discretized. */
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
     mu_s_ = mu_static;
   }
 
-  /// Get the stiction speed tolerance (m/s).
+  /** Get the stiction speed tolerance (m/s). */
   double get_stiction_speed_tolerance() const {return v_stick_tol_;}
 
-  /// Set the stiction speed tolerance (m/s). This is the maximum slip
-  /// speed that we are willing to consider as sticking. For a given normal
-  /// force N this is the speed at which the friction force will be largest,
-  /// at `μ_s*N` where `μ_s` is the static coefficient of friction. This has no
-  /// effect if the rod model is not compliant.
+  /**
+  Set the stiction speed tolerance (m/s). This is the maximum slip
+  speed that we are willing to consider as sticking. For a given normal
+  force N this is the speed at which the friction force will be largest,
+  at `μ_s*N` where `μ_s` is the static coefficient of friction. This has no
+  effect if the rod model is not compliant. */
   void set_stiction_speed_tolerance(double v_stick_tol) {
     DRAKE_DEMAND(v_stick_tol > 0);
     v_stick_tol_ = v_stick_tol;
   }
 
-  /// Gets the rotation matrix that transforms velocities from a sliding
-  /// contact frame to the global frame.
-  /// @param xaxis_velocity The velocity of the rod at the point of contact,
-  ///        projected along the +x-axis.
-  /// @returns a 2x2 orthogonal matrix with first column set to the contact
-  ///          normal, which is +y ([0 1]) and second column set to the
-  ///          direction of sliding motion, ±x (±[1 0]). Both directions are
-  ///          expressed in the global frame.
-  /// @note Aborts if @p xaxis_velocity is zero.
+  /**
+  Gets the rotation matrix that transforms velocities from a sliding
+  contact frame to the global frame.
+  @param xaxis_velocity The velocity of the rod at the point of contact,
+         projected along the +x-axis.
+  @returns a 2x2 orthogonal matrix with first column set to the contact
+           normal, which is +y ([0 1]) and second column set to the
+           direction of sliding motion, ±x (±[1 0]). Both directions are
+           expressed in the global frame.
+  @note Aborts if @p xaxis_velocity is zero. */
   Matrix2<T> GetSlidingContactFrameToWorldTransform(
       const T& xaxis_velocity) const;
 
-  /// Gets the rotation matrix that transforms velocities from a non-sliding
-  /// contact frame to the global frame. Note: all such non-sliding frames are
-  /// identical for this example.
-  /// @returns a 2x2 orthogonal matrix with first column set to the contact
-  ///          normal, which is +y ([0 1]) and second column set to the
-  ///          contact tangent +x ([1 0]). Both directions are expressed in
-  ///          the global frame.
+  /**
+  Gets the rotation matrix that transforms velocities from a non-sliding
+  contact frame to the global frame. Note: all such non-sliding frames are
+  identical for this example.
+  @returns a 2x2 orthogonal matrix with first column set to the contact
+           normal, which is +y ([0 1]) and second column set to the
+           contact tangent +x ([1 0]). Both directions are expressed in
+           the global frame. */
   Matrix2<T> GetNonSlidingContactFrameToWorldTransform() const;
 
-  /// Checks whether the system is in an impacting state, meaning that the
-  /// relative velocity along the contact normal between the rod and the
-  /// halfspace is such that the rod will begin interpenetrating the halfspace
-  /// at any time Δt in the future (i.e., Δt > 0). If the context does not
-  /// correspond to a configuration where the rod and halfspace are contacting,
-  /// this method returns `false`.
+  /**
+  Checks whether the system is in an impacting state, meaning that the
+  relative velocity along the contact normal between the rod and the
+  halfspace is such that the rod will begin interpenetrating the halfspace
+  at any time Δt in the future (i.e., Δt > 0). If the context does not
+  correspond to a configuration where the rod and halfspace are contacting,
+  this method returns `false`. */
   bool IsImpacting(const systems::Context<T>& context) const;
 
-  /// Gets the integration step size for the discretized system.
-  /// @returns 0 if this is a DAE-based system.
+  /**
+  Gets the integration step size for the discretized system.
+  @returns 0 if this is a DAE-based system. */
   double get_integration_step_size() const { return dt_; }
 
-  /// Gets the model and simulation type for this system.
+  /** Gets the model and simulation type for this system. */
   SystemType get_system_type() const { return system_type_; }
 
-  /// Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
-  /// translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
-  /// and torque t_R=τ is the moment due to the contact forces actually being
-  /// applied elsewhere. The returned spatial force may be the resultant of
-  /// multiple active contact points. Only valid for simulation type
-  /// kContinuous.
+  /**
+  Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
+  translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
+  and torque t_R=τ is the moment due to the contact forces actually being
+  applied elsewhere. The returned spatial force may be the resultant of
+  multiple active contact points. Only valid for simulation type
+  kContinuous. */
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
 
-  /// Gets the number of witness functions for the system active in the system
-  /// for a given state (using @p context).
+  /**
+  Gets the number of witness functions for the system active in the system
+  for a given state (using @p context). */
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 
-  /// Returns the 3D pose of this rod.
+  /** Returns the 3D pose of this rod. */
   const systems::OutputPort<T>& pose_output() const {
     return *pose_output_port_;
   }
 
-  /// Utility method for determining the World frame location of one of three
-  /// points on the rod whose origin is Ro. Let r be the half-length of the rod.
-  /// Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
-  /// @param x The horizontal location of the rod center of mass (expressed in
-  ///        the world frame).
-  /// @param y The vertical location of the rod center of mass (expressed in
-  ///        the world frame).
-  /// @param k The rod endpoint (k=+1 indicates the rod "right" endpoint,
-  ///          k=-1 indicates the rod "left" endpoint, and k=0 indicates the
-  ///          rod origin; each of these are described in the primary class
-  ///          documentation.
-  /// @param ctheta cos(theta), where θ is the orientation of the rod (as
-  ///        described in the primary class documentation).
-  /// @param stheta sin(theta), where θ is the orientation of the rod (as
-  ///        described in the class documentation).
-  /// @param half_rod_len Half the length of the rod.
-  /// @returns p_WP, the designated point on the rod, expressed in the world
-  ///          frame.
+  /**
+  Utility method for determining the World frame location of one of three
+  points on the rod whose origin is Ro. Let r be the half-length of the rod.
+  Define point P = Ro+k*r where k = { -1, 0, 1 }. This returns p_WP.
+  @param x The horizontal location of the rod center of mass (expressed in
+         the world frame).
+  @param y The vertical location of the rod center of mass (expressed in
+         the world frame).
+  @param k The rod endpoint (k=+1 indicates the rod "right" endpoint,
+           k=-1 indicates the rod "left" endpoint, and k=0 indicates the
+           rod origin; each of these are described in the primary class
+           documentation.
+  @param ctheta cos(theta), where θ is the orientation of the rod (as
+         described in the primary class documentation).
+  @param stheta sin(theta), where θ is the orientation of the rod (as
+         described in the class documentation).
+  @param half_rod_len Half the length of the rod.
+  @returns p_WP, the designated point on the rod, expressed in the world
+           frame. */
   static Vector2<T> CalcRodEndpoint(const T& x, const T& y, int k,
                                     const T& ctheta, const T& stheta,
                                     double half_rod_len);
 
-  /// Given a location p_WC of a point C in the World frame, define the point Rc
-  /// on the rod that is coincident with C, and report Rc's World frame velocity
-  /// v_WRc. We're given p_WRo=(x,y) and V_WRo = (v_WRo,w_WR) =
-  /// (xdot,ydot,thetadot).
-  /// @param p_WRo The center-of-mass of the rod, expressed in the world frame.
-  /// @param v_WRo The translational velocity of the rod, expressed in the
-  ///              world frame.
-  /// @param w_WR The angular velocity of the rod.
-  /// @param p_WC The location of a point on the rod.
-  /// @returns The translational velocity of p_WC, expressed in the world frame.
+  /**
+  Given a location p_WC of a point C in the World frame, define the point Rc
+  on the rod that is coincident with C, and report Rc's World frame velocity
+  v_WRc. We're given p_WRo=(x,y) and V_WRo = (v_WRo,w_WR) =
+  (xdot,ydot,thetadot).
+  @param p_WRo The center-of-mass of the rod, expressed in the world frame.
+  @param v_WRo The translational velocity of the rod, expressed in the
+               world frame.
+  @param w_WR The angular velocity of the rod.
+  @param p_WC The location of a point on the rod.
+  @returns The translational velocity of p_WC, expressed in the world frame. */
   static Vector2<T> CalcCoincidentRodPointVelocity(
       const Vector2<T>& p_WRo, const Vector2<T>& v_WRo,
       const T& w_WR,  // aka thetadot
       const Vector2<T>& p_WC);
 
-  /// Gets the point(s) of contact for the 2D rod.
-  /// @p context The context storing the current configuration and velocity of
-  ///            the rod.
-  /// @p points Contains the contact points (those rod endpoints touching or
-  ///           lying within the ground halfspace) on return. This function
-  ///           aborts if @p points is null or @p points is non-empty.
+  /**
+  Gets the point(s) of contact for the 2D rod.
+  @p context The context storing the current configuration and velocity of
+             the rod.
+  @p points Contains the contact points (those rod endpoints touching or
+            lying within the ground halfspace) on return. This function
+            aborts if @p points is null or @p points is non-empty. */
   void GetContactPoints(const systems::Context<T>& context,
                         std::vector<Vector2<T>>* points) const;
 
-  /// Gets the tangent velocities for all contact points.
-  /// @p context The context storing the current configuration and velocity of
-  ///            the rod.
-  /// @p points The set of context points.
-  /// @p vels Contains the velocities (measured along the x-axis) on return.
-  ///         This function aborts if @p vels is null. @p vels will be resized
-  ///         appropriately (to the same number of elements as @p points) on
-  ///         return.
+  /**
+  Gets the tangent velocities for all contact points.
+  @p context The context storing the current configuration and velocity of
+             the rod.
+  @p points The set of context points.
+  @p vels Contains the velocities (measured along the x-axis) on return.
+          This function aborts if @p vels is null. @p vels will be resized
+          appropriately (to the same number of elements as @p points) on
+          return. */
   void GetContactPointsTangentVelocities(
       const systems::Context<T>& context,
       const std::vector<Vector2<T>>& points, std::vector<T>* vels) const;
 
-  /// Initializes the contact data for the rod, given a set of contact points.
-  /// Aborts if data is null or if `points.size() != tangent_vels.size()`.
-  /// @param points a vector of contact points, expressed in the world frame.
-  /// @param tangent_vels a vector of tangent velocities at the contact points,
-  ///        measured along the positive x-axis.
-  /// @param[out] data the rigid contact problem data.
+  /**
+  Initializes the contact data for the rod, given a set of contact points.
+  Aborts if data is null or if `points.size() != tangent_vels.size()`.
+  @param points a vector of contact points, expressed in the world frame.
+  @param tangent_vels a vector of tangent velocities at the contact points,
+         measured along the positive x-axis.
+  @param[out] data the rigid contact problem data. */
   void CalcConstraintProblemData(const systems::Context<T>& context,
                                    const std::vector<Vector2<T>>& points,
                                    const std::vector<T>& tangent_vels,
     multibody::constraint::ConstraintAccelProblemData<T>* data) const;
 
-  /// Initializes the impacting contact data for the rod, given a set of contact
-  /// points. Aborts if data is null.
-  /// @param points a vector of contact points, expressed in the world frame.
-  /// @param[out] data the rigid impact problem data.
+  /**
+  Initializes the impacting contact data for the rod, given a set of contact
+  points. Aborts if data is null.
+  @param points a vector of contact points, expressed in the world frame.
+  @param[out] data the rigid impact problem data. */
   void CalcImpactProblemData(
       const systems::Context<T>& context,
       const std::vector<Vector2<T>>& points,

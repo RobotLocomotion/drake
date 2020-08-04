@@ -22,8 +22,9 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringMassDamperSystem);
 
-  /// Constructs an unforced spring-mass-damper system.
-  /// Subclasses must use the protected constructor, not this one.
+  /**
+  Constructs an unforced spring-mass-damper system.
+  Subclasses must use the protected constructor, not this one. */
   SpringMassDamperSystem(double spring_constant_N_per_m,
                          double damping_constant_Ns_per_m,
                          double mass_kg)
@@ -31,7 +32,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
             SystemTypeTag<SpringMassDamperSystem>{},
             spring_constant_N_per_m, damping_constant_Ns_per_m, mass_kg) {}
 
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit SpringMassDamperSystem(const SpringMassDamperSystem<U>& other)
       : SpringMassDamperSystem(
@@ -39,22 +40,23 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
             other.get_damping_constant(),
             other.get_mass()) {}
 
-  /// Returns the damping constant that was provided at construction in Ns/m
+  /** Returns the damping constant that was provided at construction in Ns/m */
   double get_damping_constant() const { return damping_constant_Ns_per_m_; }
 
-  /// Returns the closed-form position and velocity solution for the unforced
-  /// spring-mass-damper from the given initial conditions *for the case that
-  /// the spring-mass-damper is not underdamped*. In other words, this function
-  /// requires that `c² - 4⋅m⋅k ≥ 0`, where c is the damping coefficient,
-  /// m is the mass, and k is the spring coefficient. Put yet another way,
-  /// the damping ratio must be greater than one (i.e., ξ = c/2sqrt(km)) > 1).
-  /// @param x0 the position of the spring at time t = 0.
-  /// @param v0 the velocity of the spring at time t = 0.
-  /// @param tf the time at which to return the position and velocity.
-  /// @param[out] xf the position of the spring at time tf, on return.
-  /// @param[out] vf the velocity of the spring at time tf, on return.
-  /// @throws std::logic_error if xf or vf is nullptr or the system is
-  ///         damped, yet underdamped.
+  /**
+  Returns the closed-form position and velocity solution for the unforced
+  spring-mass-damper from the given initial conditions *for the case that
+  the spring-mass-damper is not underdamped*. In other words, this function
+  requires that `c² - 4⋅m⋅k ≥ 0`, where c is the damping coefficient,
+  m is the mass, and k is the spring coefficient. Put yet another way,
+  the damping ratio must be greater than one (i.e., ξ = c/2sqrt(km)) > 1).
+  @param x0 the position of the spring at time t = 0.
+  @param v0 the velocity of the spring at time t = 0.
+  @param tf the time at which to return the position and velocity.
+  @param[out] xf the position of the spring at time tf, on return.
+  @param[out] vf the velocity of the spring at time tf, on return.
+  @throws std::logic_error if xf or vf is nullptr or the system is
+          damped, yet underdamped. */
   void GetClosedFormSolution(const T& x0, const T& v0, const T& tf,
                              T* xf, T* vf) const {
     using std::exp;
@@ -103,7 +105,7 @@ class SpringMassDamperSystem : public SpringMassSystem<T> {
   }
 
  protected:
-  /// Constructor that specifies @ref system_scalar_conversion support.
+  /** Constructor that specifies @ref system_scalar_conversion support. */
   SpringMassDamperSystem(SystemScalarConverter converter,
                          double spring_constant_N_per_m,
                          double damping_constant_Ns_per_m,

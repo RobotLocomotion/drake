@@ -7,30 +7,32 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This struct stores the results from a computation performed with
-/// TamsiSolver. See the TamsiSolver class's documentation
-/// for further details.
-/// We denote `nv` the size of the vector of generalized velocities and `nc` the
-/// number of contact points.
+/**
+This struct stores the results from a computation performed with
+TamsiSolver. See the TamsiSolver class's documentation
+for further details.
+We denote `nv` the size of the vector of generalized velocities and `nc` the
+number of contact points. */
 template <class T>
 struct TamsiSolverResults {
-  /// Vector of generalized velocities at the next time step.
+  /** Vector of generalized velocities at the next time step. */
   VectorX<T> v_next;
 
-  /// Vector storing the normal force (positive) at each contact point, of size
-  /// `nc`.
+  /**
+  Vector storing the normal force (positive) at each contact point, of size
+  `nc`. */
   VectorX<T> fn;
 
-  /// Vector of tangential velocities in the contact frame, of size `2⋅nc`.
+  /** Vector of tangential velocities in the contact frame, of size `2⋅nc`. */
   VectorX<T> ft;
 
-  /// Vector of normal separation speeds, of size `nc`.
+  /** Vector of normal separation speeds, of size `nc`. */
   VectorX<T> vn;
 
-  /// Vector of tangential relative velocities, of size `2⋅nc`.
+  /** Vector of tangential relative velocities, of size `2⋅nc`. */
   VectorX<T> vt;
 
-  /// Vector of generalized forces due to contact, of size `nv`.
+  /** Vector of generalized forces due to contact, of size `nv`. */
   VectorX<T> tau_contact;
 };
 

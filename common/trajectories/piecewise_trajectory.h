@@ -13,15 +13,16 @@
 namespace drake {
 namespace trajectories {
 
-/// Abstract class that implements the basic logic of maintaining consequent
-/// segments of time (delimited by `breaks`) to implement a trajectory that
-/// is represented by simpler logic in each segment or "piece".
-///
-/// @tparam_default_scalars
+/**
+Abstract class that implements the basic logic of maintaining consequent
+segments of time (delimited by `breaks`) to implement a trajectory that
+is represented by simpler logic in each segment or "piece".
+
+@tparam_default_scalars */
 template <typename T>
 class PiecewiseTrajectory : public Trajectory<T> {
  public:
-  /// Minimum delta quantity used for comparing time.
+  /** Minimum delta quantity used for comparing time. */
   static constexpr double kEpsilonTime = std::numeric_limits<double>::epsilon();
 
   ~PiecewiseTrajectory() override = default;
@@ -38,9 +39,7 @@ class PiecewiseTrajectory : public Trajectory<T> {
 
   T end_time() const override;
 
-  /**
-   * Returns true iff `t >= getStartTime() && t <= getEndTime()`.
-   */
+  /** Returns true iff `t >= getStartTime() && t <= getEndTime()`. */
   boolean<T> is_time_in_range(const T& t) const;
 
   int get_segment_index(const T& t) const;
@@ -58,7 +57,7 @@ class PiecewiseTrajectory : public Trajectory<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseTrajectory)
   PiecewiseTrajectory() = default;
 
-  /// @p breaks increments must be greater or equal to kEpsilonTime.
+  /** @p breaks increments must be greater or equal to kEpsilonTime. */
   explicit PiecewiseTrajectory(const std::vector<T>& breaks);
 
   bool SegmentTimesEqual(const PiecewiseTrajectory& b,

@@ -14,33 +14,35 @@
 namespace drake {
 namespace systems {
 
-/// %DiagramContinuousState is a ContinuousState consisting of Supervectors
-/// xc, q, v, z over the corresponding entries in a set of referenced
-/// ContinuousState objects, which may or may not be owned by this
-/// %DiagramContinuousState. This is done recursively since any of the
-/// referenced ContinuousState objects could themselves be
-/// %DiagramContinuousState objects. The actual numerical data is always
-/// contained in the leaf ContinuousState objects at the bottom of the tree.
-///
-/// This object is used both for a Diagram's actual continuous state variables
-/// xc (with partitions q, v, z) and for the time derivatives xdot (qdot, vdot,
-/// zdot). Cloning a %DiagramContinuousState results in an object with identical
-/// structure, but which owns the referenced ContinuousState objects, regardless
-/// of whether the original had ownership.
-///
-/// @tparam_default_scalar
+/**
+%DiagramContinuousState is a ContinuousState consisting of Supervectors
+xc, q, v, z over the corresponding entries in a set of referenced
+ContinuousState objects, which may or may not be owned by this
+%DiagramContinuousState. This is done recursively since any of the
+referenced ContinuousState objects could themselves be
+%DiagramContinuousState objects. The actual numerical data is always
+contained in the leaf ContinuousState objects at the bottom of the tree.
+
+This object is used both for a Diagram's actual continuous state variables
+xc (with partitions q, v, z) and for the time derivatives xdot (qdot, vdot,
+zdot). Cloning a %DiagramContinuousState results in an object with identical
+structure, but which owns the referenced ContinuousState objects, regardless
+of whether the original had ownership.
+
+@tparam_default_scalar */
 template <typename T>
 class DiagramContinuousState final: public ContinuousState<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState)
 
-  /// Constructs a ContinuousState that is composed of other ContinuousStates,
-  /// which are not owned by this object and must outlive it.
-  ///
-  /// The DiagramContinuousState vector xc = [q v z] will have the same
-  /// ordering as the `substates` parameter, which should be the order of
-  /// the Diagram itself. That is, the substates should be indexed by
-  /// SubsystemIndex in the same order as the subsystems are. */
+  /**
+  Constructs a ContinuousState that is composed of other ContinuousStates,
+  which are not owned by this object and must outlive it.
+
+  The DiagramContinuousState vector xc = [q v z] will have the same
+  ordering as the `substates` parameter, which should be the order of
+  the Diagram itself. That is, the substates should be indexed by
+  SubsystemIndex in the same order as the subsystems are. +/ */
   explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
       : ContinuousState<T>(
             Span(substates, x_selector), Span(substates, q_selector),
@@ -49,8 +51,9 @@ class DiagramContinuousState final: public ContinuousState<T> {
     DRAKE_ASSERT(internal::IsNonNull(substates_));
   }
 
-  /// Constructs a ContinuousState that is composed (recursively) of other
-  /// ContinuousState objects, ownership of which is transferred here.
+  /**
+  Constructs a ContinuousState that is composed (recursively) of other
+  ContinuousState objects, ownership of which is transferred here. */
   explicit DiagramContinuousState(
       std::vector<std::unique_ptr<ContinuousState<T>>> substates)
       : DiagramContinuousState<T>(internal::Unpack(substates)) {
@@ -60,10 +63,11 @@ class DiagramContinuousState final: public ContinuousState<T> {
 
   ~DiagramContinuousState() override {}
 
-  /// Creates a deep copy of this %DiagramContinuousState, with the same
-  /// substructure but with new, owned data. Intentionally shadows the
-  /// ContinuousState::Clone() method but with a more-specific return type so
-  /// you don't have to downcast.
+  /**
+  Creates a deep copy of this %DiagramContinuousState, with the same
+  substructure but with new, owned data. Intentionally shadows the
+  ContinuousState::Clone() method but with a more-specific return type so
+  you don't have to downcast. */
   std::unique_ptr<DiagramContinuousState> Clone() const {
     // We are sure of the type here because DoClone() is final.  However,
     // we'll still use the `..._or_throw` spelling as a sanity check.
@@ -73,16 +77,18 @@ class DiagramContinuousState final: public ContinuousState<T> {
 
   int num_substates() const { return static_cast<int>(substates_.size()); }
 
-  /// Returns the continuous state at the given `index`. Aborts if `index` is
-  /// out-of-bounds.
+  /**
+  Returns the continuous state at the given `index`. Aborts if `index` is
+  out-of-bounds. */
   const ContinuousState<T>& get_substate(int index) const {
     DRAKE_DEMAND(0 <= index && index < num_substates());
     DRAKE_DEMAND(substates_[index] != nullptr);
     return *substates_[index];
   }
 
-  /// Returns the continuous state at the given `index`. Aborts if `index` is
-  /// out-of-bounds.
+  /**
+  Returns the continuous state at the given `index`. Aborts if `index` is
+  out-of-bounds. */
   ContinuousState<T>& get_mutable_substate(int index) {
     return const_cast<ContinuousState<T>&>(get_substate(index));
   }

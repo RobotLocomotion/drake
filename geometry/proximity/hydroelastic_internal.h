@@ -124,7 +124,7 @@ class SoftGeometry {
 
    This can be accomplished by querying `is_half_space()`. Attempting to access
    data members of the *wrong* type will throw an exception.  */
-  //@{
+  /** @{ */
 
   bool is_half_space() const {
     return std::holds_alternative<SoftHalfSpace>(geometry_);
@@ -170,7 +170,7 @@ class SoftGeometry {
     return std::get<SoftHalfSpace>(geometry_).pressure_scale;
   }
 
-  //@}
+  /** @} */
 
  private:
   std::variant<SoftHalfSpace, SoftMesh> geometry_;
@@ -364,7 +364,7 @@ class Geometries final : public ShapeReifier {
 
  For every shape that *is* supported, an overload of this method on that shape
  type is declared below.  */
-//@{
+/** @{ */
 
 /* Generic interface for handling unsupported rigid Shapes. Unsupported
  geometries will return a std::nullopt.  */
@@ -449,7 +449,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 
-//@}
+/** @} */
 
 }  // namespace hydroelastic
 }  // namespace internal

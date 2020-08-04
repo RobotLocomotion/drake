@@ -5,11 +5,12 @@
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-/// Defines Drake's canonical implementation of the UniformRandomBitGenerator
-/// C++ concept (as well as a few conventional extras beyond the concept, e.g.,
-/// seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and
-/// Nishimura, 1998.  For more information, see
-/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine
+/**
+Defines Drake's canonical implementation of the UniformRandomBitGenerator
+C++ concept (as well as a few conventional extras beyond the concept, e.g.,
+seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and
+Nishimura, 1998.  For more information, see
+https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine */
 class RandomGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomGenerator)
@@ -29,15 +30,17 @@ class RandomGenerator {
   std::mt19937 generator_{};
 };
 
-/// Drake supports explicit reasoning about a few carefully chosen random
-/// distributions.
+/**
+Drake supports explicit reasoning about a few carefully chosen random
+distributions. */
 enum class RandomDistribution {
   kUniform = 0,   ///< Vector elements are independent and uniformly distributed
-                  ///  ∈ [0.0, 1.0).
+                  /** ∈ [0.0, 1.0). */
   kGaussian = 1,  ///< Vector elements are independent and drawn from a
-                  ///  mean-zero, unit-variance normal (Gaussian) distribution.
+                  /** mean-zero, unit-variance normal (Gaussian) distribution.
+                   */
   kExponential = 2,  ///< Vector elements are independent and drawn from an
-                     ///  exponential distribution with λ=1.0.
+                     /** exponential distribution with λ=1.0. */
 };
 
 }  // namespace drake

@@ -31,7 +31,8 @@ class System;
 
 // TODO(sherm1) Implement caching for output ports and update the above
 // documentation to explain in more detail.
-/** An %OutputPort belongs to a System and represents the properties of one of
+/**
+An %OutputPort belongs to a System and represents the properties of one of
 that System's output ports. %OutputPort objects are assigned OutputPortIndex
 values in the order they are declared; these are unique within a single System.
 
@@ -60,8 +61,7 @@ to be determined at runtime.
 - Calc() unconditionally computes the port's value.
 - Eval() updates a cached value if necessary.
 
-@tparam_default_scalar
-*/
+@tparam_default_scalar */
 template <typename T>
 class OutputPort : public OutputPortBase {
  public:
@@ -69,7 +69,8 @@ class OutputPort : public OutputPortBase {
 
   ~OutputPort() override = default;
 
-  /** Returns a reference to the up-to-date value of this output port contained
+  /**
+  Returns a reference to the up-to-date value of this output port contained
   in the given Context. This is the preferred way to obtain an output port's
   value since it will not be recalculated once up to date.
 
@@ -92,8 +93,7 @@ class OutputPort : public OutputPortBase {
   @throw std::exception if the port is not connected.
 
   @pre The output port is vector-valued (when no ValueType is provided).
-  @pre The output port is of type ValueType (when ValueType is provided).
-  */
+  @pre The output port is of type ValueType (when ValueType is provided). */
 #ifdef DRAKE_DOXYGEN_CXX
   template <typename ValueType = Eigen::VectorBlock<const VectorX<T>>>
   const ValueType& Eval(const Context<T>& context) const;
@@ -127,7 +127,8 @@ class OutputPort : public OutputPortBase {
   }
 #endif  // DRAKE_DOXYGEN_CXX
 
-  /** Allocates a concrete object suitable for holding the value to be exposed
+  /**
+  Allocates a concrete object suitable for holding the value to be exposed
   by this output port, and returns that as an AbstractValue. The returned object
   will never be null. If Drake assertions are enabled (typically only in Debug
   builds), validates for a vector-valued port that the returned AbstractValue
@@ -146,7 +147,8 @@ class OutputPort : public OutputPortBase {
     return value;
   }
 
-  /** Unconditionally computes the value of this output port with respect to the
+  /**
+  Unconditionally computes the value of this output port with respect to the
   given context, into an already-allocated AbstractValue object whose concrete
   type must be exactly the same as the type returned by this port's allocator.
   If Drake assertions are enabled (typically only in Debug builds), validates
@@ -160,7 +162,8 @@ class OutputPort : public OutputPortBase {
     DoCalc(context, value);
   }
 
-  /** Returns a reference to the System that owns this output port. Note that
+  /**
+  Returns a reference to the System that owns this output port. Note that
   for a diagram output port this will be the diagram, not the leaf system whose
   output port was forwarded. */
   const System<T>& get_system() const {
@@ -177,14 +180,15 @@ class OutputPort : public OutputPortBase {
   using PortBase::ticket;
 
  protected:
-  /** Provides derived classes the ability to set the base class members at
+  // The system and system_interface are provided separately since we don't have
+  // access to System's declaration here so can't cast but the caller can.
+  /**
+  Provides derived classes the ability to set the base class members at
   construction. See OutputPortBase::OutputPortBase() for the meaning of these
   parameters.
   @pre The `name` must not be empty.
   @pre The `system` parameter must be the same object as the `system_interface`
   parameter. */
-  // The system and system_interface are provided separately since we don't have
-  // access to System's declaration here so can't cast but the caller can.
   OutputPort(const System<T>* system,
              internal::SystemMessageInterface* system_interface,
              std::string name, OutputPortIndex index, DependencyTicket ticket,
@@ -197,13 +201,15 @@ class OutputPort : public OutputPortBase {
     DRAKE_DEMAND(static_cast<const void*>(system) == system_interface);
   }
 
-  /** A concrete %OutputPort must provide a way to allocate a suitable object
+  /**
+  A concrete %OutputPort must provide a way to allocate a suitable object
   for holding the runtime value of this output port. The particulars may depend
   on values and types of objects in the given Context.
   @returns A unique_ptr to the new value-holding object as an AbstractValue. */
   virtual std::unique_ptr<AbstractValue> DoAllocate() const = 0;
 
-  /** A concrete %OutputPort must implement this method to calculate the value
+  /**
+  A concrete %OutputPort must implement this method to calculate the value
   this output port should have, given the supplied Context. The value may be
   determined by computation or by copying from a source value in the Context.
   @param context A Context that has already been validated as compatible with
@@ -214,7 +220,8 @@ class OutputPort : public OutputPortBase {
   virtual void DoCalc(const Context<T>& context,
                       AbstractValue* value) const = 0;
 
-  /** A concrete %OutputPort must provide access to the current value of this
+  /**
+  A concrete %OutputPort must provide access to the current value of this
   output port stored within the given Context. If the value is already up to
   date with respect to its prerequisites in `context`, no computation should be
   performed. Otherwise, the implementation should arrange for the value to be

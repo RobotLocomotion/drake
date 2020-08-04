@@ -61,7 +61,8 @@ class SystemImpl {
 };
 #endif  // DRAKE_DOXYGEN_CXX
 
-/** Base class for all System functionality that is dependent on the templatized
+/**
+Base class for all System functionality that is dependent on the templatized
 scalar type T for input, state, parameters, and outputs.
 
 @tparam_default_scalar */
@@ -73,49 +74,56 @@ class System : public SystemBase {
 
   ~System() override;
 
-  /// Implements a visitor pattern.  @see SystemVisitor<T>.
+  /** Implements a visitor pattern.  @see SystemVisitor<T>. */
   virtual void Accept(SystemVisitor<T>* v) const;
 
   //----------------------------------------------------------------------------
-  /** @name           Resource allocation and initialization
+  /**
+  @name           Resource allocation and initialization
   These methods are used to allocate and initialize Context resources. */
-  //@{
+  /** @{ */
 
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
   /** Returns a Context<T> suitable for use with this System<T>. */
   std::unique_ptr<Context<T>> AllocateContext() const;
 
-  /** Allocates a CompositeEventCollection for this system. The allocated
+  /**
+  Allocates a CompositeEventCollection for this system. The allocated
   instance is used for populating collections of triggered events; for
   example, Simulator passes this object to System::CalcNextUpdateTime() to
   allow the system to identify and handle upcoming events. */
   virtual std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const = 0;
 
-  /** Given an input port, allocates the vector storage.  The @p input_port
+  /**
+  Given an input port, allocates the vector storage.  The @p input_port
   must match a port declared via DeclareInputPort. */
   std::unique_ptr<BasicVector<T>> AllocateInputVector(
       const InputPort<T>& input_port) const;
 
-  /** Given an input port, allocates the abstract storage.  The @p input_port
+  /**
+  Given an input port, allocates the abstract storage.  The @p input_port
   must match a port declared via DeclareInputPort. */
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
       const InputPort<T>& input_port) const;
 
-  /** Returns a container that can hold the values of all of this System's
+  /**
+  Returns a container that can hold the values of all of this System's
   output ports. It is sized with the number of output ports and uses each
   output port's allocation method to provide an object of the right type
   for that port. */
   std::unique_ptr<SystemOutput<T>> AllocateOutput() const;
 
-  /** Returns a ContinuousState of the same size as the continuous_state
+  /**
+  Returns a ContinuousState of the same size as the continuous_state
   allocated in CreateDefaultContext. The simulator will provide this state
   as the output argument to EvalTimeDerivatives. */
   virtual std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const
       = 0;
 
-  /** Returns an Eigen VectorX suitable for use as the output argument to
+  /**
+  Returns an Eigen VectorX suitable for use as the output argument to
   the CalcImplicitTimeDerivativesResidual() method. The returned VectorX
   will have size implicit_time_derivatives_residual_size() with the
   elements uninitialized. This is just a convenience method -- you are free
@@ -124,31 +132,37 @@ class System : public SystemBase {
     return VectorX<T>(implicit_time_derivatives_residual_size());
   }
 
-  /** Returns a DiscreteValues of the same dimensions as the discrete_state
+  /**
+  Returns a DiscreteValues of the same dimensions as the discrete_state
   allocated in CreateDefaultContext. The simulator will provide this state
   as the output argument to Update. */
   virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const
       = 0;
 
-  /** This convenience method allocates a context using AllocateContext() and
+  /**
+  This convenience method allocates a context using AllocateContext() and
   sets its default values using SetDefaultContext(). */
   std::unique_ptr<Context<T>> CreateDefaultContext() const;
 
-  /** Assigns default values to all elements of the state. Overrides must not
+  /**
+  Assigns default values to all elements of the state. Overrides must not
   change the number of state variables. */
   virtual void SetDefaultState(const Context<T>& context,
                                State<T>* state) const = 0;
 
-  /** Assigns default values to all parameters. Overrides must not
+  /**
+  Assigns default values to all parameters. Overrides must not
   change the number of parameters. */
   virtual void SetDefaultParameters(const Context<T>& context,
                                     Parameters<T>* parameters) const = 0;
 
-  /** Sets Context fields to their default values.  User code should not
+  /**
+  Sets Context fields to their default values.  User code should not
   override. */
   void SetDefaultContext(Context<T>* context) const;
 
-  /** Assigns random values to all elements of the state.
+  /**
+  Assigns random values to all elements of the state.
   This default implementation calls SetDefaultState; override this method to
   provide random initial conditions using the stdc++ random library, e.g.:
   @code
@@ -162,7 +176,8 @@ class System : public SystemBase {
   virtual void SetRandomState(const Context<T>& context, State<T>* state,
                               RandomGenerator* generator) const;
 
-  /** Assigns random values to all parameters.
+  /**
+  Assigns random values to all parameters.
   This default implementation calls SetDefaultParameters; override this
   method to provide random parameters using the stdc++ random library, e.g.:
   @code
@@ -177,41 +192,48 @@ class System : public SystemBase {
                                    Parameters<T>* parameters,
                                    RandomGenerator* generator) const;
 
-  /** Sets Context fields to random values.  User code should not
+  /**
+  Sets Context fields to random values.  User code should not
   override. */
   void SetRandomContext(Context<T>* context, RandomGenerator* generator) const;
 
-  /** For each input port, allocates a fixed input of the concrete type
+  /**
+  For each input port, allocates a fixed input of the concrete type
   that this System requires, and binds it to the port, disconnecting any
   prior input. Does not assign any values to the fixed inputs. */
   void AllocateFixedInputs(Context<T>* context) const;
 
-  /** Returns `true` if any of the inputs to the system might be directly
+  /**
+  Returns `true` if any of the inputs to the system might be directly
   fed through to any of its outputs and `false` otherwise. */
   bool HasAnyDirectFeedthrough() const;
 
-  /** Returns true if there might be direct-feedthrough from any input port to
+  /**
+  Returns true if there might be direct-feedthrough from any input port to
   the given @p output_port, and false otherwise. */
   bool HasDirectFeedthrough(int output_port) const;
 
-  /** Returns true if there might be direct-feedthrough from the given
+  /**
+  Returns true if there might be direct-feedthrough from the given
   @p input_port to the given @p output_port, and false otherwise. */
   bool HasDirectFeedthrough(int input_port, int output_port) const;
 
   using SystemBase::GetDirectFeedthroughs;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                        Publishing
+  /**
+  @name                        Publishing
   Publishing is the primary mechanism for a %System to communicate with
   the world outside the %System abstraction during a simulation. Publishing
   occurs at user-specified times or events and can generate side-effect
   results such as terminal output, visualization, logging, plotting, and
   network messages. Other than computational cost, publishing has no effect
   on the progress of a simulation. */
-  //@{
+  /** @{ */
 
-  /** This method is the public entry point for dispatching all publish event
+  /**
+  This method is the public entry point for dispatching all publish event
   handlers. It checks the validity of @p context, and directly calls
   DispatchPublishHandler. @p events is a homogeneous collection of publish
   events.
@@ -225,16 +247,18 @@ class System : public SystemBase {
   void Publish(const Context<T>& context,
                const EventCollection<PublishEvent<T>>& events) const;
 
-  /** Forces a publish on the system, given a @p context. The publish event will
+  /**
+  Forces a publish on the system, given a @p context. The publish event will
   have a trigger type of kForced, with no additional data, attribute or
   custom callback. The Simulator can be configured to call this in
   Simulator::Initialize() and at the start of each continuous integration
   step. See the Simulator API for more details. */
   void Publish(const Context<T>& context) const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                     Cached evaluations
+  /**
+  @name                     Cached evaluations
   Given the values in a Context, a Drake %System must be able to provide
   the results of particular computations needed for analysis and simulation
   of the %System. These results are maintained in a mutable cache within
@@ -253,9 +277,10 @@ class System : public SystemBase {
   not be checked in Release builds for performance reasons. If we do check
   and a precondition is violated, an std::logic_error will be thrown with
   a helpful message. */
-  //@{
+  /** @{ */
 
-  /** Returns a reference to the cached value of the continuous state variable
+  /**
+  Returns a reference to the cached value of the continuous state variable
   time derivatives, evaluating first if necessary using CalcTimeDerivatives().
 
   This method returns the time derivatives ẋ꜀ of the continuous state
@@ -277,13 +302,15 @@ class System : public SystemBase {
     return entry.Eval<ContinuousState<T>>(context);
   }
 
-  /** (Advanced) Returns the CacheEntry used to cache time derivatives for
+  /**
+  (Advanced) Returns the CacheEntry used to cache time derivatives for
   EvalTimeDerivatives(). */
   const CacheEntry& get_time_derivatives_cache_entry() const {
     return this->get_cache_entry(time_derivatives_cache_index_);
   }
 
-  /** Returns a reference to the cached value of the potential energy (PE),
+  /**
+  Returns a reference to the cached value of the potential energy (PE),
   evaluating first if necessary using CalcPotentialEnergy().
 
   By definition here, potential energy depends only on "configuration"
@@ -303,7 +330,8 @@ class System : public SystemBase {
   @see CalcPotentialEnergy() */
   const T& EvalPotentialEnergy(const Context<T>& context) const;
 
-  /** Returns a reference to the cached value of the kinetic energy (KE),
+  /**
+  Returns a reference to the cached value of the kinetic energy (KE),
   evaluating first if necessary using CalcKineticEnergy().
 
   By definition here, kinetic energy depends only on "configuration" and
@@ -322,7 +350,8 @@ class System : public SystemBase {
   @see CalcKineticEnergy() */
   const T& EvalKineticEnergy(const Context<T>& context) const;
 
-  /** Returns a reference to the cached value of the conservative power (Pc),
+  /**
+  Returns a reference to the cached value of the conservative power (Pc),
   evaluating first if necessary using CalcConservativePower().
 
   The returned Pc represents the rate at which mechanical energy is being
@@ -349,7 +378,8 @@ class System : public SystemBase {
        EvalPotentialEnergy(), EvalKineticEnergy() */
   const T& EvalConservativePower(const Context<T>& context) const;
 
-  /** Returns a reference to the cached value of the non-conservative power
+  /**
+  Returns a reference to the cached value of the non-conservative power
   (Pnc), evaluating first if necessary using CalcNonConservativePower().
 
   The returned Pnc represents the rate at which work W is done on the system
@@ -372,7 +402,8 @@ class System : public SystemBase {
   const T& EvalNonConservativePower(const Context<T>& context) const;
 
   // TODO(jwnimmer-tri) Deprecate me.
-  /** Returns the value of the vector-valued input port with the given
+  /**
+  Returns the value of the vector-valued input port with the given
   `port_index` as a BasicVector or a specific subclass `Vec` derived from
   BasicVector. Causes the value to become up to date first if necessary. See
   EvalAbstractInput() for more information.
@@ -417,7 +448,8 @@ class System : public SystemBase {
   }
 
   // TODO(jwnimmer-tri) Deprecate me.
-  /** Returns the value of the vector-valued input port with the given
+  /**
+  Returns the value of the vector-valued input port with the given
   `port_index` as an %Eigen vector. Causes the value to become up to date
   first if necessary. See EvalAbstractInput() for more information.
 
@@ -428,13 +460,14 @@ class System : public SystemBase {
   @see EvalVectorInput() */
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
   /** @name               Constraint-related functions */
-  //@{
+  /** @{ */
 
-  /** Adds an "external" constraint to this System.
+  /**
+  Adds an "external" constraint to this System.
 
   This method is intended for use by applications that are examining this
   System to add additional constraints based on their particular situation
@@ -448,10 +481,11 @@ class System : public SystemBase {
   conversion. */
   SystemConstraintIndex AddExternalConstraint(
       ExternalSystemConstraint constraint);
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                        Calculations
+  /**
+  @name                        Calculations
   A Drake %System defines a set of common computations that are understood
   by the framework. Most of these are embodied in a `Calc` method that
   unconditionally performs the calculation into an output argument of the
@@ -463,9 +497,10 @@ class System : public SystemBase {
 
   This group also includes additional %System-specific operations that
   depend on both Context and additional input arguments. */
-  //@{
+  /** @{ */
 
-  /** Calculates the time derivatives ẋ꜀ of the continuous state x꜀ into
+  /**
+  Calculates the time derivatives ẋ꜀ of the continuous state x꜀ into
   a given output argument. Prefer EvalTimeDerivatives() instead to avoid
   unnecessary recomputation.
 
@@ -484,11 +519,12 @@ class System : public SystemBase {
 
   @see EvalTimeDerivatives() for more information.
   @see CalcImplicitTimeDerivativesResidual() for the implicit form of these
-       equations.*/
+       equations. */
   void CalcTimeDerivatives(const Context<T>& context,
                            ContinuousState<T>* derivatives) const;
 
-  /** Evaluates the implicit form of the %System equations and returns the
+  /**
+  Evaluates the implicit form of the %System equations and returns the
   residual.
 
   The explicit and implicit forms of the %System equations are
@@ -547,7 +583,8 @@ class System : public SystemBase {
       const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
       EigenPtr<VectorX<T>> residual) const;
 
-  /** This method is the public entry point for dispatching all discrete
+  /**
+  This method is the public entry point for dispatching all discrete
   variable update event handlers. Using all the discrete update handlers in
   @p events, the method calculates the update `xd(n+1)` to discrete
   variables `xd(n)` in @p context and outputs the results to @p
@@ -558,7 +595,8 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const;
 
-  /** Given the @p discrete_state results of a previous call to
+  /**
+  Given the @p discrete_state results of a previous call to
   CalcDiscreteVariableUpdates() that dispatched the given collection of
   events, modifies the @p context to reflect the updated @p discrete_state.
   @param[in] events
@@ -579,14 +617,16 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const;
 
-  /** This method forces a discrete update on the system given a @p context,
+  /**
+  This method forces a discrete update on the system given a @p context,
   and the updated discrete state is stored in @p discrete_state. The
   discrete update event will have a trigger type of kForced, with no
   attribute or custom callback. */
   void CalcDiscreteVariableUpdates(const Context<T>& context,
                                    DiscreteValues<T>* discrete_state) const;
 
-  /** This method is the public entry point for dispatching all unrestricted
+  /**
+  This method is the public entry point for dispatching all unrestricted
   update event handlers. Using all the unrestricted update handers in
   @p events, it updates *any* state variables in the @p context, and
   outputs the results to @p state. It does not allow the dimensionality
@@ -600,7 +640,8 @@ class System : public SystemBase {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const;
 
-  /** Given the @p state results of a previous call to CalcUnrestrictedUpdate()
+  /**
+  Given the @p state results of a previous call to CalcUnrestrictedUpdate()
   that dispatched the given collection of events, modifies the @p context to
   reflect the updated @p state.
   @param[in] events
@@ -620,7 +661,8 @@ class System : public SystemBase {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const;
 
-  /** This method forces an unrestricted update on the system given a
+  /**
+  This method forces an unrestricted update on the system given a
   @p context, and the updated state is stored in @p state. The
   unrestricted update event will have a trigger type of kForced, with no
   additional data, attribute or custom callback.
@@ -631,7 +673,8 @@ class System : public SystemBase {
   void CalcUnrestrictedUpdate(const Context<T>& context,
                               State<T>* state) const;
 
-  /** This method is called by a Simulator during its calculation of the size of
+  /**
+  This method is called by a Simulator during its calculation of the size of
   the next continuous step to attempt. The System returns the next time at
   which some discrete action must be taken, and records what those actions
   ought to be in @p events. Upon reaching that time, the simulator will
@@ -644,7 +687,8 @@ class System : public SystemBase {
   T CalcNextUpdateTime(const Context<T>& context,
                        CompositeEventCollection<T>* events) const;
 
-  /** This method is called by Simulator::Initialize() to gather all update
+  /**
+  This method is called by Simulator::Initialize() to gather all update
   and publish events that are to be handled in AdvanceTo() at the point
   before Simulator integrates continuous state. It is assumed that these
   events remain constant throughout the simulation. The "step" here refers
@@ -659,7 +703,8 @@ class System : public SystemBase {
   void GetPerStepEvents(const Context<T>& context,
                         CompositeEventCollection<T>* events) const;
 
-  /** This method is called by Simulator::Initialize() to gather all
+  /**
+  This method is called by Simulator::Initialize() to gather all
   update and publish events that need to be handled at initialization
   before the simulator starts integration.
 
@@ -667,7 +712,8 @@ class System : public SystemBase {
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const;
 
-  /** Gets whether there exists a unique periodic attribute that triggers
+  /**
+  Gets whether there exists a unique periodic attribute that triggers
   one or more discrete update events (and, if so, returns that unique
   periodic attribute). Thus, this method can be used (1) as a test to
   determine whether a system's dynamics are at least partially governed by
@@ -678,7 +724,8 @@ class System : public SystemBase {
   std::optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const;
 
-  /** Returns true iff the state dynamics of this system are governed
+  /**
+  Returns true iff the state dynamics of this system are governed
   exclusively by a difference equation on a single discrete state group
   and with a unique periodic update (having zero offset).  E.g., it is
   amenable to analysis of the form:
@@ -695,13 +742,15 @@ class System : public SystemBase {
   system), then `time_period` does not receive a value. */
   bool IsDifferenceEquationSystem(double* time_period = nullptr) const;
 
-  /** Gets all periodic triggered events for a system. Each periodic attribute
+  /**
+  Gets all periodic triggered events for a system. Each periodic attribute
   (offset and period, in seconds) is mapped to one or more update events
   that are to be triggered at the proper times. */
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
     PeriodicEventDataComparator> GetPeriodicEvents() const;
 
-  /** Utility method that computes for _every_ output port i the value y(i) that
+  /**
+  Utility method that computes for _every_ output port i the value y(i) that
   should result from the current contents of the given Context. Note that
   individual output port values can be calculated using
   `get_output_port(i).Calc()`; this method invokes that for each output port
@@ -711,35 +760,40 @@ class System : public SystemBase {
   of entries of the right types. */
   void CalcOutput(const Context<T>& context, SystemOutput<T>* outputs) const;
 
-  /** Calculates and returns the potential energy represented by the current
+  /**
+  Calculates and returns the potential energy represented by the current
   configuration provided in `context`. Prefer EvalPotentialEnergy() to
   avoid unnecessary recalculation.
 
   @see EvalPotentialEnergy() for more information. */
   T CalcPotentialEnergy(const Context<T>& context) const;
 
-  /** Calculates and returns the kinetic energy represented by the current
+  /**
+  Calculates and returns the kinetic energy represented by the current
   configuration and velocity provided in `context`. Prefer
   EvalKineticEnergy() to avoid unnecessary recalculation.
 
   @see EvalKineticEnergy() for more information. */
   T CalcKineticEnergy(const Context<T>& context) const;
 
-  /** Calculates and returns the conservative power represented by the current
+  /**
+  Calculates and returns the conservative power represented by the current
   contents of the given `context`. Prefer EvalConservativePower() to avoid
   unnecessary recalculation.
 
   @see EvalConservativePower() for more information. */
   T CalcConservativePower(const Context<T>& context) const;
 
-  /** Calculates and returns the non-conservative power represented by the
+  /**
+  Calculates and returns the non-conservative power represented by the
   current contents of the given `context`. Prefer EvalNonConservativePower()
   to avoid unnecessary recalculation.
 
   @see EvalNonConservativePower() for more information. */
   T CalcNonConservativePower(const Context<T>& context) const;
 
-  /** Transforms a given generalized velocity `v` to the time derivative `qdot`
+  /**
+  Transforms a given generalized velocity `v` to the time derivative `qdot`
   of the generalized configuration `q` taken from the supplied Context.
   `v` and `qdot` are related linearly by `qdot = N(q) * v`, where `N` is a
   block diagonal matrix. For example, in a multibody system there will be
@@ -755,7 +809,8 @@ class System : public SystemBase {
                          const VectorBase<T>& generalized_velocity,
                          VectorBase<T>* qdot) const;
 
-  /** Transforms the given generalized velocity to the time derivative of
+  /**
+  Transforms the given generalized velocity to the time derivative of
   generalized configuration. See the other signature of MapVelocityToQDot()
   for more information. */
   void MapVelocityToQDot(
@@ -763,7 +818,8 @@ class System : public SystemBase {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const;
 
-  /** Transforms the time derivative `qdot` of the generalized configuration `q`
+  /**
+  Transforms the time derivative `qdot` of the generalized configuration `q`
   to generalized velocities `v`. `v` and `qdot` are related linearly by
   `qdot = N(q) * v`, where `N` is a block diagonal matrix. For example, in a
   multibody system there will be one block of `N` per tree joint. Although
@@ -783,17 +839,19 @@ class System : public SystemBase {
   void MapQDotToVelocity(const Context<T>& context, const VectorBase<T>& qdot,
                          VectorBase<T>* generalized_velocity) const;
 
-  /** Transforms the given time derivative `qdot` of generalized configuration
+  /**
+  Transforms the given time derivative `qdot` of generalized configuration
   `q` to generalized velocity `v`. This signature takes `qdot` as an %Eigen
   VectorX object for faster speed. See the other signature of
   MapQDotToVelocity() for additional information. */
   void MapQDotToVelocity(const Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          VectorBase<T>* generalized_velocity) const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                    Subcontext access
+  /**
+  @name                    Subcontext access
   Methods in this section locate the Context belonging to a particular
   subsystem, from within the Context for a containing System (typically a
   Diagram). There are two common circumstances where this is needed:
@@ -811,23 +869,26 @@ class System : public SystemBase {
 
   The second case is particularly useful in monitor functions for the
   Drake Simulator. */
-  //@{
+  /** @{ */
 
-  /** Returns a const reference to the subcontext that corresponds to the
+  /**
+  Returns a const reference to the subcontext that corresponds to the
   contained %System `subsystem`.
   @throws std::logic_error if `subsystem` not contained in `this` %System.
   @pre The given `context` is valid for use with `this` %System. */
   const Context<T>& GetSubsystemContext(const System<T>& subsystem,
                                         const Context<T>& context) const;
 
-  /** Returns a mutable reference to the subcontext that corresponds to the
+  /**
+  Returns a mutable reference to the subcontext that corresponds to the
   contained %System `subsystem`.
   @throws std::logic_error if `subsystem` not contained in `this` %System.
   @pre The given `context` is valid for use with `this` %System. */
   Context<T>& GetMutableSubsystemContext(const System<T>& subsystem,
                                          Context<T>* context) const;
 
-  /** Returns the const Context for `this` subsystem, given a root context. If
+  /**
+  Returns the const Context for `this` subsystem, given a root context. If
   `this` %System is already the top level (root) %System, just returns
   `root_context`. (A root Context is one that does not have a parent
   Context.)
@@ -836,11 +897,12 @@ class System : public SystemBase {
   @see GetSubsystemContext() */
   const Context<T>& GetMyContextFromRoot(const Context<T>& root_context) const;
 
-  /** Returns the mutable subsystem context for `this` system, given a root
+  /**
+  Returns the mutable subsystem context for `this` system, given a root
   context.
   @see GetMyContextFromRoot() */
   Context<T>& GetMyMutableContextFromRoot(Context<T>* root_context) const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
   /** @cond */
@@ -909,9 +971,10 @@ class System : public SystemBase {
 
   //----------------------------------------------------------------------------
   /** @name                      Utility methods */
-  //@{
+  /** @{ */
 
-  /** Returns a name for this %System based on a stringification of its type
+  /**
+  Returns a name for this %System based on a stringification of its type
   name and memory address.  This is intended for use in diagnostic output
   and should not be used for behavioral logic, because the stringification
   of the type name may produce differing results across platforms and
@@ -929,14 +992,16 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
-  /** Returns the typed input port specified by the InputPortSelection or by
+  /**
+  Returns the typed input port specified by the InputPortSelection or by
   the InputPortIndex.  Returns nullptr if no port is selected.  This is
   provided as a convenience method since many algorithms provide the same
   common default or optional port semantics. */
   const InputPort<T>* get_input_port_selection(
       std::variant<InputPortSelection, InputPortIndex> port_index) const;
 
-  /** Returns the typed input port with the unique name @p port_name.
+  /**
+  Returns the typed input port with the unique name @p port_name.
   The current implementation performs a linear search over strings; prefer
   get_input_port() when performance is a concern.
   @throws std::logic_error if port_name is not found. */
@@ -949,14 +1014,16 @@ class System : public SystemBase {
         this->GetOutputPortBaseOrThrow(__func__, port_index));
   }
 
-  /** Returns the typed output port specified by the OutputPortSelection or by
+  /**
+  Returns the typed output port specified by the OutputPortSelection or by
   the OutputPortIndex.  Returns nullptr if no port is selected. This is
   provided as a convenience method since many algorithms provide the same
   common default or optional port semantics. */
   const OutputPort<T>* get_output_port_selection(
       std::variant<OutputPortSelection, OutputPortIndex> port_index) const;
 
-  /** Returns the typed output port with the unique name @p port_name.
+  /**
+  Returns the typed output port with the unique name @p port_name.
   The current implementation performs a linear search over strings; prefer
   get_output_port() when performance is a concern.
   @throws std::logic_error if port_name is not found. */
@@ -965,44 +1032,49 @@ class System : public SystemBase {
   /** Returns the number of constraints specified for the system. */
   int num_constraints() const;
 
-  /** Returns the constraint at index @p constraint_index.
+  /**
+  Returns the constraint at index @p constraint_index.
   @throws std::out_of_range for an invalid constraint_index. */
   const SystemConstraint<T>& get_constraint(
       SystemConstraintIndex constraint_index) const;
 
-  /** Returns true if @p context satisfies all of the registered
+  /**
+  Returns true if @p context satisfies all of the registered
   SystemConstraints with tolerance @p tol.  @see
   SystemConstraint::CheckSatisfied. */
   boolean<T> CheckSystemConstraintsSatisfied(
       const Context<T>& context, double tol) const;
 
-  /** Checks that @p output is consistent with the number and size of output
+  /**
+  Checks that @p output is consistent with the number and size of output
   ports declared by the system.
   @throws std::exception unless `output` is non-null and valid for this
   system. */
   void CheckValidOutput(const SystemOutput<T>* output) const;
 
-  /** Returns a copy of the continuous state vector x꜀ into an Eigen
+  /**
+  Returns a copy of the continuous state vector x꜀ into an Eigen
   vector. */
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
   /** @name                      Graphviz methods */
-  //@{
+  /** @{ */
 
-  /** Returns a Graphviz string describing this System.  To render the string,
+  /**
+  Returns a Graphviz string describing this System.  To render the string,
   use the Graphviz tool, ``dot``. http://www.graphviz.org/
 
   @param max_depth Sets a limit to the depth of nested diagrams to
   visualize.  Set to zero to render a diagram as a single system block.
 
-  @see GenerateHtml
-  */
+  @see GenerateHtml */
   std::string GetGraphvizString(
       int max_depth = std::numeric_limits<int>::max()) const;
 
-  /** Appends a Graphviz fragment to the @p dot stream.  The fragment must be
+  /**
+  Appends a Graphviz fragment to the @p dot stream.  The fragment must be
   valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
   nothing by default.
 
@@ -1011,25 +1083,29 @@ class System : public SystemBase {
   virtual void GetGraphvizFragment(int max_depth,
                                    std::stringstream* dot) const;
 
-  /** Appends a fragment to the @p dot stream identifying the graphviz node
+  /**
+  Appends a fragment to the @p dot stream identifying the graphviz node
   representing @p port. Does nothing by default. */
   virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
                                          int max_depth,
                                          std::stringstream* dot) const;
 
-  /** Appends a fragment to the @p dot stream identifying the graphviz node
+  /**
+  Appends a fragment to the @p dot stream identifying the graphviz node
   representing @p port. Does nothing by default. */
   virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                           int max_depth,
                                           std::stringstream* dot) const;
 
-  /** Returns an opaque integer that uniquely identifies this system in the
+  /**
+  Returns an opaque integer that uniquely identifies this system in the
   Graphviz output. */
   int64_t GetGraphvizId() const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                Automatic differentiation
+  /**
+  @name                Automatic differentiation
   From a %System templatized by `double`, you can obtain an identical system
   templatized by an automatic differentiation scalar providing
   machine-precision computation of partial derivatives of any numerical
@@ -1040,7 +1116,8 @@ class System : public SystemBase {
   // both static and non-static member functions.
   //@{
 
-  /** Creates a deep copy of this System, transmogrified to use the autodiff
+  /**
+  Creates a deep copy of this System, transmogrified to use the autodiff
   scalar type, with a dynamic-sized vector of partial derivatives.  The
   result is never nullptr.
   @throws std::exception if this System does not support autodiff
@@ -1049,7 +1126,8 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXd() const;
 
-  /** Creates a deep copy of `from`, transmogrified to use the autodiff scalar
+  /**
+  Creates a deep copy of `from`, transmogrified to use the autodiff scalar
   type, with a dynamic-sized vector of partial derivatives.  The result is
   never nullptr.
   @throws std::exception if `from` does not support autodiff
@@ -1078,14 +1156,16 @@ class System : public SystemBase {
     return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
   }
 
-  /** Creates a deep copy of this system exactly like ToAutoDiffXd(), but
+  /**
+  Creates a deep copy of this system exactly like ToAutoDiffXd(), but
   returns nullptr if this System does not support autodiff, instead of
   throwing an exception. */
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                          Symbolics
+  /**
+  @name                          Symbolics
   From a %System templatized by `double`, you can obtain an identical system
   templatized by a symbolic expression scalar. */
 
@@ -1093,7 +1173,8 @@ class System : public SystemBase {
   // both static and non-static member functions.
   //@{
 
-  /** Creates a deep copy of this System, transmogrified to use the symbolic
+  /**
+  Creates a deep copy of this System, transmogrified to use the symbolic
   scalar type. The result is never nullptr.
   @throws std::exception if this System does not support symbolic
 
@@ -1101,7 +1182,8 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   std::unique_ptr<System<symbolic::Expression>> ToSymbolic() const;
 
-  /** Creates a deep copy of `from`, transmogrified to use the symbolic scalar
+  /**
+  Creates a deep copy of `from`, transmogrified to use the symbolic scalar
   type. The result is never nullptr.
   @throws std::exception if this System does not support symbolic
 
@@ -1129,17 +1211,19 @@ class System : public SystemBase {
     return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
   }
 
-  /** Creates a deep copy of this system exactly like ToSymbolic(), but returns
+  /**
+  Creates a deep copy of this system exactly like ToSymbolic(), but returns
   nullptr if this System does not support symbolic, instead of throwing an
   exception. */
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
   /** @name                Scalar type conversion utilities */
-  //@{
+  /** @{ */
 
-  /** Fixes all of the input ports in @p target_context to their current values
+  /**
+  Fixes all of the input ports in @p target_context to their current values
   in @p other_context, as evaluated by @p other_system.
   @throws std::exception unless `other_context` and `target_context` both
   have the same shape as this System, and the `other_system`. Ignores
@@ -1148,13 +1232,15 @@ class System : public SystemBase {
                          const Context<double>& other_context,
                          Context<T>* target_context) const;
 
-  /** (Advanced) Returns the SystemScalarConverter for this object.  This is an
+  /**
+  (Advanced) Returns the SystemScalarConverter for this object.  This is an
   expert-level API intended for framework authors.  Most users should
   prefer the convenience helpers such as System::ToAutoDiffXd. */
   const SystemScalarConverter& get_system_scalar_converter() const;
-  //@}
+  /** @} */
 
-  /** Gets the witness functions active for the given state.
+  /**
+  Gets the witness functions active for the given state.
   DoGetWitnessFunctions() does the actual work. The vector of active witness
   functions are expected to change only upon an unrestricted update.
   @param context a valid context for the System (aborts if not true).
@@ -1168,7 +1254,8 @@ class System : public SystemBase {
   T CalcWitnessValue(const Context<T>& context,
                      const WitnessFunction<T>& witness_func) const;
 
-  /** Add `event` to `events` due to a witness function triggering. `events`
+  /**
+  Add `event` to `events` due to a witness function triggering. `events`
   should be allocated with this system's AllocateCompositeEventCollection.
   Neither `event` nor `events` can be nullptr. Additionally, `event` must
   contain event data (event->get_event_data() must not be nullptr) and
@@ -1215,13 +1302,15 @@ class System : public SystemBase {
   // Don't promote output_port_ticket() since it is for internal use only.
 
  protected:
-  /** Derived classes will implement this method to evaluate a witness function
+  /**
+  Derived classes will implement this method to evaluate a witness function
   at the given context. */
   virtual T DoCalcWitnessValue(
       const Context<T>& context,
       const WitnessFunction<T>& witness_func) const = 0;
 
-  /** Derived classes can override this method to provide witness functions
+  /**
+  Derived classes can override this method to provide witness functions
   active for the given state. The default implementation does nothing. On
   entry to this function, the context will have already been validated and
   the vector of witness functions will have been validated to be both empty
@@ -1230,7 +1319,8 @@ class System : public SystemBase {
       std::vector<const WitnessFunction<T>*>*) const;
 
   //----------------------------------------------------------------------------
-  /** @name                 Event handler dispatch mechanism
+  /**
+  @name                 Event handler dispatch mechanism
   For a LeafSystem (or user implemented equivalent classes), these functions
   need to call the appropriate LeafSystem::DoX event handler. E.g.
   LeafSystem::DispatchPublishHandler() calls LeafSystem::DoPublish(). User
@@ -1261,15 +1351,17 @@ class System : public SystemBase {
   derived implementations can assume that @p context is valid. See, e.g.,
   LeafSystem::DispatchPublishHandler() and Diagram::DispatchPublishHandler()
   for more details. */
-  //@{
+  /** @{ */
 
-  /** This function dispatches all publish events to the appropriate
+  /**
+  This function dispatches all publish events to the appropriate
   handlers. */
   virtual void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const = 0;
 
-  /** This function dispatches all discrete update events to the appropriate
+  /**
+  This function dispatches all discrete update events to the appropriate
   handlers. @p discrete_state cannot be null. */
   virtual void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
@@ -1280,7 +1372,8 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const = 0;
 
-  /** This function dispatches all unrestricted update events to the appropriate
+  /**
+  This function dispatches all unrestricted update events to the appropriate
   handlers. @p state cannot be null. */
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
@@ -1290,15 +1383,17 @@ class System : public SystemBase {
   virtual void DoApplyUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const = 0;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
-  /** @name                    System construction
+  /**
+  @name                    System construction
   Authors of derived %Systems can use these methods in the constructor
   for those %Systems. */
-  //@{
+  /** @{ */
 
-  /** Constructs an empty %System base class object and allocates base class
+  /**
+  Constructs an empty %System base class object and allocates base class
   resources, possibly supporting scalar-type conversion support (AutoDiff,
   etc.) using @p converter.
 
@@ -1306,7 +1401,8 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   explicit System(SystemScalarConverter converter);
 
-  /** Adds a port with the specified @p type and @p size to the input topology.
+  /**
+  Adds a port with the specified @p type and @p size to the input topology.
 
   Input port names must be unique for this system (passing in a duplicate
   @p name will throw std::logic_error). If @p name is given as
@@ -1325,31 +1421,35 @@ class System : public SystemBase {
       std::variant<std::string, UseDefaultName> name, PortDataType type,
       int size, std::optional<RandomDistribution> random_type = std::nullopt);
 
-  //@}
+  /** @} */
 
   // =========================================================================
-  /** @name             To-be-deprecated declarations
+  /**
+  @name             To-be-deprecated declarations
   Methods in this section leave out the port name parameter and are the same
   as invoking the corresponding method with `kUseDefaultName` as the name.
   We intend to make specifying the name required and will deprecate these
   soon. Don't use them. */
-  //@{
+  /** @{ */
 
-  /** See the nearly identical signature with an additional (first) argument
+  /**
+  See the nearly identical signature with an additional (first) argument
   specifying the port name.  This version will be deprecated as discussed
   in #9447. */
   InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
       std::optional<RandomDistribution> random_type = std::nullopt);
-  //@}
+  /** @} */
 
-  /** Adds an already-created constraint to the list of constraints for this
+  /**
+  Adds an already-created constraint to the list of constraints for this
   System.  Ownership of the SystemConstraint is transferred to this system. */
   SystemConstraintIndex AddConstraint(
       std::unique_ptr<SystemConstraint<T>> constraint);
 
   //----------------------------------------------------------------------------
-  /** @name               Virtual methods for calculations
+  /**
+  @name               Virtual methods for calculations
   These virtuals allow concrete systems to implement the calculations
   defined by the `Calc` methods in the public interface. Most have default
   implementations that are usable for simple systems, but you are likely
@@ -1362,9 +1462,10 @@ class System : public SystemBase {
   your implementation. Users cannot invoke these directly since they are
   protected. You should place your overrides in the protected or private
   sections of your concrete class. */
-  //@{
+  /** @{ */
 
-  /** Override this if you have any continuous state variables x꜀ in your
+  /**
+  Override this if you have any continuous state variables x꜀ in your
   concrete %System to calculate their time derivatives. The `derivatives`
   vector will correspond elementwise with the state vector
   `Context.state.continuous_state.get_state()`. Thus, if the state in the
@@ -1383,7 +1484,8 @@ class System : public SystemBase {
   virtual void DoCalcTimeDerivatives(const Context<T>& context,
                                      ContinuousState<T>* derivatives) const;
 
-  /** Override this if you have an efficient way to evaluate the implicit
+  /**
+  Override this if you have an efficient way to evaluate the implicit
   time derivatives residual for this System. Otherwise the default
   implementation is
   `residual = proposed_derivatives − EvalTimeDerivatives(context)`. Note that
@@ -1400,7 +1502,8 @@ class System : public SystemBase {
       const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
       EigenPtr<VectorX<T>> residual) const;
 
-  /** Computes the next time at which this System must perform a discrete
+  /**
+  Computes the next time at which this System must perform a discrete
   action.
 
   Override this method if your System has any discrete actions which must
@@ -1416,7 +1519,8 @@ class System : public SystemBase {
                                     CompositeEventCollection<T>* events,
                                     T* time) const;
 
-  /** Implement this method to return all periodic triggered events.
+  /**
+  Implement this method to return all periodic triggered events.
   @see GetPeriodicEvents() for a detailed description of the returned
        variable.
   @note The default implementation returns an empty map. */
@@ -1424,7 +1528,8 @@ class System : public SystemBase {
       std::vector<const Event<T>*>, PeriodicEventDataComparator>
     DoGetPeriodicEvents() const = 0;
 
-  /** Implement this method to return any events to be handled before the
+  /**
+  Implement this method to return any events to be handled before the
   simulator integrates the system's continuous state at each time step.
   @p events is cleared in the public non-virtual GetPerStepEvents()
   before that method calls this function. You may assume that @p context
@@ -1437,7 +1542,8 @@ class System : public SystemBase {
       const Context<T>& context,
       CompositeEventCollection<T>* events) const;
 
-  /** Implement this method to return any events to be handled at the
+  /**
+  Implement this method to return any events to be handled at the
   simulator's initialization step. @p events is cleared in the public
   non-virtual GetInitializationEvents(). You may assume that @p context has
   already been validated and that @p events is not null. @p events can be
@@ -1449,7 +1555,8 @@ class System : public SystemBase {
       const Context<T>& context,
       CompositeEventCollection<T>* events) const;
 
-  /** Override this method for physical systems to calculate the potential
+  /**
+  Override this method for physical systems to calculate the potential
   energy PE currently stored in the configuration provided in the given
   Context. The default implementation returns 0 which is correct for
   non-physical systems. You may assume that `context` has already
@@ -1460,7 +1567,8 @@ class System : public SystemBase {
   time, velocities, or any input port values. */
   virtual T DoCalcPotentialEnergy(const Context<T>& context) const;
 
-  /** Override this method for physical systems to calculate the kinetic
+  /**
+  Override this method for physical systems to calculate the kinetic
   energy KE currently present in the motion provided in the given
   Context. The default implementation returns 0 which is correct for
   non-physical systems. You may assume that `context` has already
@@ -1471,7 +1579,8 @@ class System : public SystemBase {
   time or any input port values. */
   virtual T DoCalcKineticEnergy(const Context<T>& context) const;
 
-  /** Override this method to return the rate Pc at which mechanical energy is
+  /**
+  Override this method to return the rate Pc at which mechanical energy is
   being converted _from_ potential energy _to_ kinetic energy by this system
   in the given Context. By default, returns zero. Physical systems should
   override. You may assume that `context` has already been validated before
@@ -1483,7 +1592,8 @@ class System : public SystemBase {
   explicitly on time or any input port values. */
   virtual T DoCalcConservativePower(const Context<T>& context) const;
 
-  /** Override this method to return the rate Pnc at which work W is done on the
+  /**
+  Override this method to return the rate Pnc at which work W is done on the
   system by non-conservative forces. By default, returns zero. Physical
   systems should override. You may assume that `context` has already been
   validated before it is passed to you here.
@@ -1495,7 +1605,8 @@ class System : public SystemBase {
   time and input ports. */
   virtual T DoCalcNonConservativePower(const Context<T>& context) const;
 
-  /** Provides the substantive implementation of MapQDotToVelocity().
+  /**
+  Provides the substantive implementation of MapQDotToVelocity().
 
   The default implementation uses the identity mapping, and correctly does
   nothing if the %System does not have second-order state variables. It
@@ -1517,7 +1628,8 @@ class System : public SystemBase {
                                    const Eigen::Ref<const VectorX<T>>& qdot,
                                    VectorBase<T>* generalized_velocity) const;
 
-  /** Provides the substantive implementation of MapVelocityToQDot().
+  /**
+  Provides the substantive implementation of MapVelocityToQDot().
 
   The default implementation uses the identity mapping, and correctly does
   nothing if the %System does not have second-order state variables. It
@@ -1539,19 +1651,20 @@ class System : public SystemBase {
       const Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       VectorBase<T>* qdot) const;
-  //@}
+  /** @} */
 
   //----------------------------------------------------------------------------
   /** @name                 Utility methods (protected) */
-  //@{
+  /** @{ */
 
-  /** Returns a mutable Eigen expression for a vector valued output port with
+  /**
+  Returns a mutable Eigen expression for a vector valued output port with
   index @p port_index in this system. All input ports that directly depend
   on this output port will be notified that upstream data has changed, and
   may invalidate cache entries as a result. */
   Eigen::VectorBlock<VectorX<T>> GetMutableOutputVector(SystemOutput<T>* output,
                                                         int port_index) const;
-  //@}
+  /** @} */
 
   bool forced_publish_events_exist() const {
     return forced_publish_events_ != nullptr;
@@ -1615,7 +1728,8 @@ class System : public SystemBase {
     forced_unrestricted_update_events_ = std::move(forced);
   }
 
-  /** Checks whether the given object was created for this system.
+  /**
+  Checks whether the given object was created for this system.
   @note This method is sufficiently fast for performance sensitive code. */
   template <template <typename> class Clazz>
   void ValidateChildOfContext(const Clazz<T>* object) const {

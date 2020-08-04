@@ -8,7 +8,8 @@
 // TODO(sherm1) Add unit tests for these macros. See issue #8403.
 
 #ifdef DRAKE_DOXYGEN_CXX
-/** Unit test helper macro for "expecting" an exception to be thrown but also
+/**
+Unit test helper macro for "expecting" an exception to be thrown but also
 testing the error message against a provided regular expression. This is
 like GTest's `EXPECT_THROW` but is fussier about the particular error message.
 Usage example: @code
@@ -32,21 +33,24 @@ mechanism for testing _exclusive_ throwing behavior (i.e., only throws in
 Debug).
 @see DRAKE_ASSERT_THROWS_MESSAGE
 @see DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED, DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED
-*/
+ */
 #define DRAKE_EXPECT_THROWS_MESSAGE(expression, exception, regexp)
 
-/** Fatal error version of `DRAKE_EXPECT_THROWS_MESSAGE`.
+/**
+Fatal error version of `DRAKE_EXPECT_THROWS_MESSAGE`.
 @see DRAKE_EXPECT_THROWS_MESSAGE */
 #define DRAKE_ASSERT_THROWS_MESSAGE(expression, exception, regexp)
 
-/** Same as `DRAKE_EXPECT_THROWS_MESSAGE` in Debug builds, but doesn't _require_
+/**
+Same as `DRAKE_EXPECT_THROWS_MESSAGE` in Debug builds, but doesn't _require_
 a throw in Release builds. However, if the Release build does throw it must
 throw the right message. More precisely, the thrown message is required
 whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do be default.
 @see DRAKE_EXPECT_THROWS_MESSAGE */
 #define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp)
 
-/** Same as `DRAKE_ASSERT_THROWS_MESSAGE` in Debug builds, but doesn't require
+/**
+Same as `DRAKE_ASSERT_THROWS_MESSAGE` in Debug builds, but doesn't require
 a throw in Release builds. However, if the Release build does throw it must
 throw the right message. More precisely, the thrown message is required
 whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do by default.

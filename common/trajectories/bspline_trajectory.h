@@ -11,7 +11,8 @@
 
 namespace drake {
 namespace trajectories {
-/** Represents a B-spline curve using a given `basis` with ordered
+/**
+Represents a B-spline curve using a given `basis` with ordered
 `control_points` such that each control point is a matrix in ℝʳᵒʷˢ ˣ ᶜᵒˡˢ.
 @see math::BsplineBasis */
 template <typename T>
@@ -19,14 +20,16 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineTrajectory);
 
-  /** Constructs a B-spline trajectory with the given `basis` and
+  /**
+  Constructs a B-spline trajectory with the given `basis` and
   `control_points`.
   @pre control_points.size() == basis.num_basis_functions() */
   BsplineTrajectory(math::BsplineBasis<T> basis,
                     std::vector<MatrixX<T>> control_points);
 
 #ifdef DRAKE_DOXYGEN_CXX
-  /** Constructs a T-valued B-spline trajectory from a double-valued `basis` and
+  /**
+  Constructs a T-valued B-spline trajectory from a double-valued `basis` and
   T-valued `control_points`.
   @pre control_points.size() == basis.num_basis_functions() */
   BsplineTrajectory(math::BsplineBasis<double> basis,
@@ -44,7 +47,8 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   // Required methods for trajectories::Trajectory interface.
   std::unique_ptr<trajectories::Trajectory<T>> Clone() const override;
 
-  /** Evaluates the BsplineTrajectory at the given time t.
+  /**
+  Evaluates the BsplineTrajectory at the given time t.
   @param t The time at which to evaluate the %BsplineTrajectory.
   @return The matrix of evaluated values.
   @pre If T == symbolic::Expression, `t.is_constant()` must be true.
@@ -80,7 +84,8 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   /** Returns the basis of this curve. */
   const math::BsplineBasis<T>& basis() const { return basis_; }
 
-  /** Adds new knots at the specified `additional_knots` without changing the
+  /**
+  Adds new knots at the specified `additional_knots` without changing the
   behavior of the trajectory. The basis and control points of the trajectory are
   adjusted such that it produces the same value for any valid time before and
   after this method is called. The resulting trajectory is guaranteed to have
@@ -89,20 +94,23 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   @pre start_time() <= t <= end_time() for all t in `additional_knots` */
   void InsertKnots(const std::vector<T>& additional_knots);
 
-  /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
+  /**
+  Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `select(point)` on each `point`
-  in `this->control_points()`.*/
+  in `this->control_points()`. */
   BsplineTrajectory<T> CopyWithSelector(
       const std::function<MatrixX<T>(const MatrixX<T>&)>& select) const;
 
-  /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
+  /**
+  Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling
   `point.block(start_row, start_col, block_rows, block_cols)` on each `point`
-  in `this->control_points()`.*/
+  in `this->control_points()`. */
   BsplineTrajectory<T> CopyBlock(int start_row, int start_col,
                                        int block_rows, int block_cols) const;
 
-  /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
+  /**
+  Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `point.head(n)` on each `point`
   in `this->control_points()`.
   @pre this->cols() == 1

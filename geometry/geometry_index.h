@@ -6,8 +6,9 @@ namespace drake {
 namespace geometry {
 
 // TODO(SeanCurtis-TRI): Remove FrameIndex.
-/** Index into the ordered vector of all registered frames -- by convention,
- the world frame's index is always zero.  */
+/**
+Index into the ordered vector of all registered frames -- by convention,
+the world frame's index is always zero. */
 using FrameIndex = TypeSafeIndex<class GeometryTag>;
 
 }  // namespace geometry

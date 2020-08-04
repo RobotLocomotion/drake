@@ -22,12 +22,11 @@ namespace internal {
 // are allocated (or if it doesn't matter if they are).
 
 /**
- * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
- * LinearEqualityConstraint, or ExpressionConstraint, depending on the
- * arguments.  Constraints of the form x == 1 (which could be created as a
- * BoundingBoxConstraint or LinearEqualityConstraint) will be
- * constructed as a LinearEqualityConstraint.
- */
+The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
+LinearEqualityConstraint, or ExpressionConstraint, depending on the
+arguments.  Constraints of the form x == 1 (which could be created as a
+BoundingBoxConstraint or LinearEqualityConstraint) will be
+constructed as a LinearEqualityConstraint. */
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -43,14 +42,13 @@ inline Binding<Constraint> ParseConstraint(
 }
 
 /**
- * Parses the constraint lb <= e <= ub to linear constraint types, including
- * BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
- * e is not a linear expression, then return a null pointer.
- * If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
- * then we return a BoundingBoxConstraint pointer. For example, the constraint
- * 1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
- * 0.5. Hence we will return the BoundingBoxConstraint in this case.
- */
+Parses the constraint lb <= e <= ub to linear constraint types, including
+BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
+e is not a linear expression, then return a null pointer.
+If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
+then we return a BoundingBoxConstraint pointer. For example, the constraint
+1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
+0.5. Hence we will return the BoundingBoxConstraint in this case. */
 std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
     const symbolic::Expression& e, double lb, double ub);
 
@@ -221,9 +219,8 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
 }
 
 /**
- * Assists MathematicalProgram::AddConstraint(...) to create a quadratic
- * constraint binding.
- */
+Assists MathematicalProgram::AddConstraint(...) to create a quadratic
+constraint binding. */
 Binding<QuadraticConstraint> ParseQuadraticConstraint(
     const symbolic::Expression& e, double lower_bound, double upper_bound);
 

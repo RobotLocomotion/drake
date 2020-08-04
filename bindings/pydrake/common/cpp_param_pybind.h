@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file
-/// Provides a mechanism to map C++ types to canonical Python types.
+/**
+@file
+Provides a mechanism to map C++ types to canonical Python types. */
 
 #include <string>
 #include <typeinfo>
@@ -17,46 +18,48 @@
 namespace drake {
 namespace pydrake {
 
-/// Provides a publicly visible, but minimal, re-implementation of `py::object`
-/// so that a public type can be used with `drake::Value<T>`, while still
-/// maintaining the revelant semantics with its generic implementation (#13207).
-/// This should *only* be used in place of `py::object` for public APIs that
-/// rely on RTTI (e.g. `typeid`).
-/// See implementation of `class object` in pybind11/include/pybind11/pytypes.h.
+/**
+Provides a publicly visible, but minimal, re-implementation of `py::object`
+so that a public type can be used with `drake::Value<T>`, while still
+maintaining the revelant semantics with its generic implementation (#13207).
+This should *only* be used in place of `py::object` for public APIs that
+rely on RTTI (e.g. `typeid`).
+See implementation of `class object` in pybind11/include/pybind11/pytypes.h. */
 class Object {
  public:
   Object() {}
 
-  /// Decrements reference count (if pointing to a real object).
+  /** Decrements reference count (if pointing to a real object). */
   ~Object();
 
-  /// Constructs from raw pointer, incrementing the reference count.
-  /// @note This does not implement any of the `py::reinterpret_borrow<>`
-  /// semantics.
+  /**
+  Constructs from raw pointer, incrementing the reference count.
+  @note This does not implement any of the `py::reinterpret_borrow<>`
+  semantics. */
   explicit Object(::PyObject* ptr);
 
-  /// Constructs from another Object, incrementing the reference count.
+  /** Constructs from another Object, incrementing the reference count. */
   explicit Object(const Object& other);
 
-  /// Steals object (and reference count) from another Object.
+  /** Steals object (and reference count) from another Object. */
   Object(Object&& other);
 
-  /// Copies object reference and increments reference count.
+  /** Copies object reference and increments reference count. */
   Object& operator=(const Object& other);
 
-  /// Steals object (and reference count) from another Object.
+  /** Steals object (and reference count) from another Object. */
   Object& operator=(Object&& other);
 
-  /// Accesses raw PyObject pointer (no reference counting).
+  /** Accesses raw PyObject pointer (no reference counting). */
   ::PyObject* ptr() const { return ptr_; }
 
-  /// Converts to a pybind11 Python type, using py::reinterpret_borrow.
+  /** Converts to a pybind11 Python type, using py::reinterpret_borrow. */
   template <typename T>
   T to_pyobject() const {
     return py::reinterpret_borrow<T>(ptr());
   }
 
-  /// Converts from a pybind11 Python type, using py::reinterpret_borrow.
+  /** Converts from a pybind11 Python type, using py::reinterpret_borrow. */
   template <typename T>
   static Object from_pyobject(const T& h) {
     return Object(h.ptr());
@@ -128,16 +131,17 @@ inline py::object GetPyParamScalarImpl(type_pack<std::vector<T>> = {}) {
 
 }  // namespace internal
 
-/// Gets the canonical Python parameters for each C++ type.
-/// @returns Python tuple of canonical parameters.
-/// @throws std::runtime_error on the first type it encounters that is neither
-/// aliased nor registered in `pybind11`.
-/// @tparam Ts The types to get C++ types for.
-/// @pre Ts must be public symbols.
-/// @pre Ts cannot be a `py::` symbol (e.g. `py::object`). On Mac, this may
-/// cause failure depending on import order (e.g. trying to use
-/// `Value<py::object>` between different modules). See #8704 and #13207 for
-/// more details.
+/**
+Gets the canonical Python parameters for each C++ type.
+@returns Python tuple of canonical parameters.
+@throws std::runtime_error on the first type it encounters that is neither
+aliased nor registered in `pybind11`.
+@tparam Ts The types to get C++ types for.
+@pre Ts must be public symbols.
+@pre Ts cannot be a `py::` symbol (e.g. `py::object`). On Mac, this may
+cause failure depending on import order (e.g. trying to use
+`Value<py::object>` between different modules). See #8704 and #13207 for
+more details. */
 template <typename... Ts>
 inline py::tuple GetPyParam(type_pack<Ts...> = {}) {
   return py::make_tuple(internal::GetPyParamScalarImpl(type_pack<Ts>{})...);

@@ -2,62 +2,67 @@
 
 #include <type_traits>
 
-/// @file
-/// Provides Drake's assertion implementation.  This is intended to be used
-/// both within Drake and by other software.  Drake's asserts can be armed
-/// and disarmed independently from the system-wide asserts.
+/**
+@file
+Provides Drake's assertion implementation.  This is intended to be used
+both within Drake and by other software.  Drake's asserts can be armed
+and disarmed independently from the system-wide asserts. */
 
 #ifdef DRAKE_DOXYGEN_CXX
-/// @p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
-/// from the C++ system header @p <cassert>.  Unless Drake's assertions are
-/// disarmed by the pre-processor definitions listed below, @p DRAKE_ASSERT
-/// will evaluate @p condition and iff the value is false will trigger an
-/// assertion failure with a message showing at least the condition text,
-/// function name, file, and line.
-///
-/// By default, assertion failures will :abort() the program.  However, when
-/// using the pydrake python bindings, assertion failures will instead throw a
-/// C++ exception that causes a python SystemExit exception.
-///
-/// Assertions are enabled or disabled using the following pre-processor macros:
-///
-/// - If @p DRAKE_ENABLE_ASSERTS is defined, then @p DRAKE_ASSERT is armed.
-/// - If @p DRAKE_DISABLE_ASSERTS is defined, then @p DRAKE_ASSERT is disarmed.
-/// - If both macros are defined, then it is a compile-time error.
-/// - If neither are defined, then NDEBUG governs assertions as usual.
-///
-/// This header will define exactly one of either @p DRAKE_ASSERT_IS_ARMED or
-/// @p DRAKE_ASSERT_IS_DISARMED to indicate whether @p DRAKE_ASSERT is armed.
-///
-/// This header will define both `constexpr bool drake::kDrakeAssertIsArmed`
-/// and `constexpr bool drake::kDrakeAssertIsDisarmed` globals.
-///
-/// One difference versus the standard @p assert(condition) is that the
-/// @p condition within @p DRAKE_ASSERT is always syntax-checked, even if
-/// Drake's assertions are disarmed.
-///
-/// Treat @p DRAKE_ASSERT like a statement -- it must always be used
-/// in block scope, and must always be followed by a semicolon.
+/**
+@p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
+from the C++ system header @p <cassert>.  Unless Drake's assertions are
+disarmed by the pre-processor definitions listed below, @p DRAKE_ASSERT
+will evaluate @p condition and iff the value is false will trigger an
+assertion failure with a message showing at least the condition text,
+function name, file, and line.
+
+By default, assertion failures will :abort() the program.  However, when
+using the pydrake python bindings, assertion failures will instead throw a
+C++ exception that causes a python SystemExit exception.
+
+Assertions are enabled or disabled using the following pre-processor macros:
+
+- If @p DRAKE_ENABLE_ASSERTS is defined, then @p DRAKE_ASSERT is armed.
+- If @p DRAKE_DISABLE_ASSERTS is defined, then @p DRAKE_ASSERT is disarmed.
+- If both macros are defined, then it is a compile-time error.
+- If neither are defined, then NDEBUG governs assertions as usual.
+
+This header will define exactly one of either @p DRAKE_ASSERT_IS_ARMED or
+@p DRAKE_ASSERT_IS_DISARMED to indicate whether @p DRAKE_ASSERT is armed.
+
+This header will define both `constexpr bool drake::kDrakeAssertIsArmed`
+and `constexpr bool drake::kDrakeAssertIsDisarmed` globals.
+
+One difference versus the standard @p assert(condition) is that the
+@p condition within @p DRAKE_ASSERT is always syntax-checked, even if
+Drake's assertions are disarmed.
+
+Treat @p DRAKE_ASSERT like a statement -- it must always be used
+in block scope, and must always be followed by a semicolon. */
 #define DRAKE_ASSERT(condition)
-/// Like @p DRAKE_ASSERT, except that the expression must be void-valued; this
-/// allows for guarding expensive assertion-checking subroutines using the same
-/// macros as stand-alone assertions.
+/**
+Like @p DRAKE_ASSERT, except that the expression must be void-valued; this
+allows for guarding expensive assertion-checking subroutines using the same
+macros as stand-alone assertions. */
 #define DRAKE_ASSERT_VOID(expression)
-/// Evaluates @p condition and iff the value is false will trigger an assertion
-/// failure with a message showing at least the condition text, function name,
-/// file, and line.
+/**
+Evaluates @p condition and iff the value is false will trigger an assertion
+failure with a message showing at least the condition text, function name,
+file, and line. */
 #define DRAKE_DEMAND(condition)
-/// Silences a "no return value" compiler warning by calling a function that
-/// always raises an exception or aborts (i.e., a function marked noreturn).
-/// Only use this macro at a point where (1) a point in the code is truly
-/// unreachable, (2) the fact that it's unreachable is knowable from only
-/// reading the function itself (and not, e.g., some larger design invariant),
-/// and (3) there is a compiler warning if this macro were removed.  The most
-/// common valid use is with a switch-case-return block where all cases are
-/// accounted for but the enclosing function is supposed to return a value.  Do
-/// *not* use this macro as a "logic error" assertion; it should *only* be used
-/// to silence false positive warnings.  When in doubt, throw an exception
-/// manually instead of using this macro.
+/**
+Silences a "no return value" compiler warning by calling a function that
+always raises an exception or aborts (i.e., a function marked noreturn).
+Only use this macro at a point where (1) a point in the code is truly
+unreachable, (2) the fact that it's unreachable is knowable from only
+reading the function itself (and not, e.g., some larger design invariant),
+and (3) there is a compiler warning if this macro were removed.  The most
+common valid use is with a switch-case-return block where all cases are
+accounted for but the enclosing function is supposed to return a value.  Do
+*not* use this macro as a "logic error" assertion; it should *only* be used
+to silence false positive warnings.  When in doubt, throw an exception
+manually instead of using this macro. */
 #define DRAKE_UNREACHABLE()
 #else  //  DRAKE_DOXYGEN_CXX
 

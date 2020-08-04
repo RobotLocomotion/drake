@@ -13,24 +13,26 @@
 namespace drake {
 namespace systems {
 
-/// A ScalarDenseOutput class implementation that wraps a
-/// DenseOutput class instance and behaves as a view to one of
-/// its elements.
-///
-/// @tparam_default_scalar
+/**
+A ScalarDenseOutput class implementation that wraps a
+DenseOutput class instance and behaves as a view to one of
+its elements.
+
+@tparam_default_scalar */
 template <typename T>
 class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarViewDenseOutput)
 
-  /// Constructs a view of another DenseOutput instance.
-  /// @param base_output Base dense output to operate with.
-  /// @param n The nth scalar element (0-indexed) of the output value
-  ///          to view.
-  /// @throws std::runtime_error if @p base_output is nullptr.
-  /// @throws std::runtime_error if given @p n does not refer to a valid
-  ///                            base output dimension
-  ///                            i.e. @p n ∉ [0, `base_output`->size()).
+  /**
+  Constructs a view of another DenseOutput instance.
+  @param base_output Base dense output to operate with.
+  @param n The nth scalar element (0-indexed) of the output value
+           to view.
+  @throws std::runtime_error if @p base_output is nullptr.
+  @throws std::runtime_error if given @p n does not refer to a valid
+                             base output dimension
+                             i.e. @p n ∉ [0, `base_output`->size()). */
   explicit ScalarViewDenseOutput(
       std::unique_ptr<DenseOutput<T>> base_output, int n)
       : base_output_(std::move(base_output)), n_(n) {
@@ -44,8 +46,9 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
     }
   }
 
-  /// Returns the base dense output upon which the
-  /// view operates.
+  /**
+  Returns the base dense output upon which the
+  view operates. */
   const DenseOutput<T>* get_base_output() const {
     return base_output_.get();
   }

@@ -9,37 +9,35 @@
 namespace drake {
 namespace multibody {
 /**
- * Constrain that the distance between a point P1 on frame B1 and another point
- * P2 on frame B2 is within a range [distance_lower, distance_upper].
- */
+Constrain that the distance between a point P1 on frame B1 and another point
+P2 on frame B2 is within a range [distance_lower, distance_upper]. */
 class PointToPointDistanceConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointToPointDistanceConstraint)
 
   /**
-   * Constrain that the distance between a point P1 attached to frame B1 and
-   * another point P2 attached to frame B2 is within the range [distance_lower,
-   * distance_upper].
-   * Mathematically, we impose the constraint
-   * distance_lower² <= distance(P1, P2)² <= distance_upper².
-   * We impose the constraint on the distance square instead of distance
-   * directly, because the gradient of distance is not well defined at
-   * distance=0, the the gradient of the distance square is well defined
-   * everywhere.
-   * @param plant The MultibodyPlant on which the constraint is imposed. `plant`
-   * should be alive during the lifetime of this constraint.
-   * @param frame1 The frame in which P1 is attached to.
-   * @param p_B1P1 The position of P1 measured and expressed in B1.
-   * @param frame2 The frame in which P2 is attached to.
-   * @param p_B2P2 The position of P2 measured and expressed in B2.
-   * @param distance_lower The lower bound on the distance, must be
-   * non-negative.
-   * @param distance_upper The upper bound on the distance, must be
-   * non-negative.
-   * @param plant_context The Context that has been allocated for this
-   *   `plant`. We will update the context when evaluating the constraint.
-   *   `plant_context` should be alive during the lifetime of this constraint.
-   */
+  Constrain that the distance between a point P1 attached to frame B1 and
+  another point P2 attached to frame B2 is within the range [distance_lower,
+  distance_upper].
+  Mathematically, we impose the constraint
+  distance_lower² <= distance(P1, P2)² <= distance_upper².
+  We impose the constraint on the distance square instead of distance
+  directly, because the gradient of distance is not well defined at
+  distance=0, the the gradient of the distance square is well defined
+  everywhere.
+  @param plant The MultibodyPlant on which the constraint is imposed. `plant`
+  should be alive during the lifetime of this constraint.
+  @param frame1 The frame in which P1 is attached to.
+  @param p_B1P1 The position of P1 measured and expressed in B1.
+  @param frame2 The frame in which P2 is attached to.
+  @param p_B2P2 The position of P2 measured and expressed in B2.
+  @param distance_lower The lower bound on the distance, must be
+  non-negative.
+  @param distance_upper The upper bound on the distance, must be
+  non-negative.
+  @param plant_context The Context that has been allocated for this
+    `plant`. We will update the context when evaluating the constraint.
+    `plant_context` should be alive during the lifetime of this constraint. */
   PointToPointDistanceConstraint(
       const MultibodyPlant<double>* plant, const Frame<double>& frame1,
       const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,
@@ -48,12 +46,11 @@ class PointToPointDistanceConstraint : public solvers::Constraint {
       double distance_upper, systems::Context<double>* plant_context);
 
   /**
-   * Overloaded constructor. Same as the constructor with the double version
-   * (using MultibodyPlant<double> and Context<double>), except the gradient of
-   * the constraint is computed from autodiff.
-   * @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-   * Documentation string is manually recreated in Python.}
-   */
+  Overloaded constructor. Same as the constructor with the double version
+  (using MultibodyPlant<double> and Context<double>), except the gradient of
+  the constraint is computed from autodiff.
+  @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
+  Documentation string is manually recreated in Python.} */
   PointToPointDistanceConstraint(
       const MultibodyPlant<AutoDiffXd>* plant, const Frame<AutoDiffXd>& frame1,
       const Eigen::Ref<const Eigen::Vector3d>& p_B1P1,

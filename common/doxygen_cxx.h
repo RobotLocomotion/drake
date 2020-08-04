@@ -1,2 +1,3 @@
-/// @defgroup cxx C++ support features
-/// @ingroup technical_notes
+/**
+@defgroup cxx C++ support features
+@ingroup technical_notes */

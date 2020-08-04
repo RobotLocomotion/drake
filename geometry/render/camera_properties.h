@@ -14,15 +14,16 @@ namespace render {
 // class outside of `drake::systems`, and possibly rename this class, in order
 // to decouple generic pinhole parameters from Drake-specific render engine
 // information.
-/** The intrinsic properties for a render camera. The render system
- uses a reduced set of intrinsic parameters by making some simplifying
- assumptions:
+/**
+The intrinsic properties for a render camera. The render system
+uses a reduced set of intrinsic parameters by making some simplifying
+assumptions:
 
- - Zero skew coefficient between the x- and y-axes.
- - The camera's principal point lies in the center of the image.
+- Zero skew coefficient between the x- and y-axes.
+- The camera's principal point lies in the center of the image.
 
- The focal length is inferred by the sensor format (width and height) and the
- field of view along the y-axis. */
+The focal length is inferred by the sensor format (width and height) and the
+field of view along the y-axis. */
 struct CameraProperties {
   CameraProperties(int width_in, int height_in, double fov_y_in,
                    std::string renderer_name_in)
@@ -37,10 +38,11 @@ struct CameraProperties {
   std::string renderer_name;  ///< The name of the renderer to use.
 };
 
-/** The intrinsic properties for a render _depth_ camera. Consists of all of the
- intrinsic properties of the render camera but extended with additional
- depth-specific parameters.
- @see CameraProperties */
+/**
+The intrinsic properties for a render _depth_ camera. Consists of all of the
+intrinsic properties of the render camera but extended with additional
+depth-specific parameters.
+@see CameraProperties */
 struct DepthCameraProperties : public CameraProperties {
   DepthCameraProperties(int width_in, int height_in, double fov_y_in,
                         std::string renderer_name_in, double z_near_in,
@@ -51,9 +53,9 @@ struct DepthCameraProperties : public CameraProperties {
         z_far(z_far_in) {}
 
   double z_near{};  ///< The minimum reportable depth value. All surfaces closer
-                    ///< than this distance, saturate to this value.
+                    /** < than this distance, saturate to this value. */
   double z_far{};   ///< The maximum reportable depth value. All surfaces
-                    ///< farther than this distance, saturate to this value.
+                    /** < farther than this distance, saturate to this value. */
 };
 
 // TODO(SeanCurtis-TRI): Add properties for structured-light depth sensor which

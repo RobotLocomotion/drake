@@ -10,52 +10,58 @@
 namespace drake {
 namespace systems {
 
-/// A source block with a constant output port at all times. The value of the
-/// output port is a parameter of the system (see Parameters).
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+A source block with a constant output port at all times. The value of the
+output port is a parameter of the system (see Parameters).
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class ConstantVectorSource final : public SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantVectorSource)
 
-  /// Constructs a system with a vector output that is constant and equals the
-  /// supplied @p source_value at all times.
-  /// @param source_value the constant value of the output so that
-  /// `y = source_value` at all times.
+  /**
+  Constructs a system with a vector output that is constant and equals the
+  supplied @p source_value at all times.
+  @param source_value the constant value of the output so that
+  `y = source_value` at all times. */
   explicit ConstantVectorSource(
       const Eigen::Ref<const VectorX<T>>& source_value);
 
-  /// Constructs a system with a scalar-valued output of type T that is constant
-  /// and equals the supplied @p source_value at all times.
-  /// @param source_value the constant value of the output so that
-  /// `y = source_value` at all times.
-  ///
-  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  /**
+  Constructs a system with a scalar-valued output of type T that is constant
+  and equals the supplied @p source_value at all times.
+  @param source_value the constant value of the output so that
+  `y = source_value` at all times.
+
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   explicit ConstantVectorSource(const T& source_value);
 
-  /// Constructs a system with a vector output that is constant, has the type of
-  /// the @p source_value, and equals the @p source_value at all times.
-  ///
-  /// @note Objects created using this constructor overload do not support
-  /// system scalar conversion.  See @ref system_scalar_conversion.
-  ///
-  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  /**
+  Constructs a system with a vector output that is constant, has the type of
+  the @p source_value, and equals the @p source_value at all times.
+
+  @note Objects created using this constructor overload do not support
+  system scalar conversion.  See @ref system_scalar_conversion.
+
+  @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   explicit ConstantVectorSource(const BasicVector<T>& source_value);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit ConstantVectorSource(const ConstantVectorSource<U>& other);
 
   ~ConstantVectorSource() final;
 
-  /// Return a read-only reference to the source value of this block in the
-  /// given @p context.
+  /**
+  Return a read-only reference to the source value of this block in the
+  given @p context. */
   const BasicVector<T>& get_source_value(const Context<T>& context) const;
 
-  /// Return a mutable reference to the source value of this block in the given
-  /// @p context.
+  /**
+  Return a mutable reference to the source value of this block in the given
+  @p context. */
   BasicVector<T>& get_mutable_source_value(Context<T>* context);
 
  private:

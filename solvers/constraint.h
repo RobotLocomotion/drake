@@ -31,29 +31,27 @@ namespace solvers {
 // acceleration constraints in the rigid body dynamics are constraints
 // on vdot and f, but are "parameterized" by q and v.
 /**
- * A constraint is a function + lower and upper bounds.
- *
- * Solver interfaces must acknowledge that these constraints are mutable.
- * Parameters can change after the constraint is constructed and before the
- * call to Solve().
- *
- * It should support evaluating the constraint, and adding it to an optimization
- * problem.
- */
+A constraint is a function + lower and upper bounds.
+
+Solver interfaces must acknowledge that these constraints are mutable.
+Parameters can change after the constraint is constructed and before the
+call to Solve().
+
+It should support evaluating the constraint, and adding it to an optimization
+problem. */
 class Constraint : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Constraint)
 
   /**
-   * Constructs a constraint which has `num_constraints` rows, with an input
-   * `num_vars` x 1 vector.
-   * @param num_constraints. The number of rows in the constraint output.
-   * @param num_vars. The number of rows in the input.
-   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
-   * @param lb Lower bound, which must be a `num_constraints` x 1 vector.
-   * @param ub Upper bound, which must be a `num_constraints` x 1 vector.
-   * @see Eval(...)
-   */
+  Constructs a constraint which has `num_constraints` rows, with an input
+  `num_vars` x 1 vector.
+  @param num_constraints. The number of rows in the constraint output.
+  @param num_vars. The number of rows in the input.
+  If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
+  @param lb Lower bound, which must be a `num_constraints` x 1 vector.
+  @param ub Upper bound, which must be a `num_constraints` x 1 vector.
+  @see Eval(...) */
   template <typename DerivedLB, typename DerivedUB>
   Constraint(int num_constraints, int num_vars,
              const Eigen::MatrixBase<DerivedLB>& lb,
@@ -66,13 +64,12 @@ class Constraint : public EvaluatorBase {
   }
 
   /**
-   * Constructs a constraint which has `num_constraints` rows, with an input
-   * `num_vars` x 1 vector, with no bounds.
-   * @param num_constraints. The number of rows in the constraint output.
-   * @param num_vars. The number of rows in the input.
-   * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
-   * @see Eval(...)
-   */
+  Constructs a constraint which has `num_constraints` rows, with an input
+  `num_vars` x 1 vector, with no bounds.
+  @param num_constraints. The number of rows in the constraint output.
+  @param num_vars. The number of rows in the input.
+  If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
+  @see Eval(...) */
   Constraint(int num_constraints, int num_vars)
       : Constraint(
             num_constraints, num_vars,
@@ -82,10 +79,9 @@ class Constraint : public EvaluatorBase {
                 num_constraints, std::numeric_limits<double>::infinity())) {}
 
   /**
-   * Return whether this constraint is satisfied by the given value, `x`.
-   * @param x A `num_vars` x 1 vector.
-   * @param tol A tolerance for bound checking.
-   */
+  Return whether this constraint is satisfied by the given value, `x`.
+  @param x A `num_vars` x 1 vector.
+  @param tol A tolerance for bound checking. */
   bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                       double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
@@ -112,10 +108,10 @@ class Constraint : public EvaluatorBase {
 
 
  protected:
-  /** Updates the lower bound.
-   * @note if the users want to expose this method in a sub-class, do
-   * using Constraint::UpdateLowerBound, as in LinearConstraint.
-   */
+  /**
+  Updates the lower bound.
+  @note if the users want to expose this method in a sub-class, do
+  using Constraint::UpdateLowerBound, as in LinearConstraint. */
   void UpdateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& new_lb) {
     if (new_lb.rows() != num_constraints()) {
       throw std::logic_error("Lower bound has invalid dimension.");
@@ -123,10 +119,10 @@ class Constraint : public EvaluatorBase {
     lower_bound_ = new_lb;
   }
 
-  /** Updates the upper bound.
-   * @note if the users want to expose this method in a sub-class, do
-   * using Constraint::UpdateUpperBound, as in LinearConstraint.
-   */
+  /**
+  Updates the upper bound.
+  @note if the users want to expose this method in a sub-class, do
+  using Constraint::UpdateUpperBound, as in LinearConstraint. */
   void UpdateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
     if (new_ub.rows() != num_constraints()) {
       throw std::logic_error("Upper bound has invalid dimension.");
@@ -135,12 +131,11 @@ class Constraint : public EvaluatorBase {
   }
 
   /**
-   * Set the upper and lower bounds of the constraint.
-   * @param lower_bound. A `num_constraints` x 1 vector.
-   * @param upper_bound. A `num_constraints` x 1 vector.
-   * @note If the users want to expose this method in a sub-class, do
-   * using Constraint::set_bounds, as in LinearConstraint.
-   */
+  Set the upper and lower bounds of the constraint.
+  @param lower_bound. A `num_constraints` x 1 vector.
+  @param upper_bound. A `num_constraints` x 1 vector.
+  @note If the users want to expose this method in a sub-class, do
+  using Constraint::set_bounds, as in LinearConstraint. */
   void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
                   const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
     UpdateLowerBound(lower_bound);
@@ -176,13 +171,12 @@ class Constraint : public EvaluatorBase {
 };
 
 /**
- * lb ≤ .5 xᵀQx + bᵀx ≤ ub
- * Without loss of generality, the class stores a symmetric matrix Q.
- * For a non-symmetric matrix Q₀, we can define Q = (Q₀ + Q₀ᵀ) / 2, since
- * xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
- * transpose of a scalar is the scalar itself. Hence we can always convert
- * a non-symmetric matrix Q₀ to a symmetric matrix Q.
- */
+lb ≤ .5 xᵀQx + bᵀx ≤ ub
+Without loss of generality, the class stores a symmetric matrix Q.
+For a non-symmetric matrix Q₀, we can define Q = (Q₀ + Q₀ᵀ) / 2, since
+xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
+transpose of a scalar is the scalar itself. Hence we can always convert
+a non-symmetric matrix Q₀ to a symmetric matrix Q. */
 class QuadraticConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticConstraint)
@@ -190,14 +184,13 @@ class QuadraticConstraint : public Constraint {
   static const int kNumConstraints = 1;
 
   /**
-   * Construct a quadratic constraint.
-   * @tparam DerivedQ The type for Q.
-   * @tparam Derivedb The type for b.
-   * @param Q0 The square matrix. Notice that Q₀ does not have to be symmetric.
-   * @param b The linear coefficient.
-   * @param lb The lower bound.
-   * @param ub The upper bound.
-   */
+  Construct a quadratic constraint.
+  @tparam DerivedQ The type for Q.
+  @tparam Derivedb The type for b.
+  @param Q0 The square matrix. Notice that Q₀ does not have to be symmetric.
+  @param b The linear coefficient.
+  @param lb The lower bound.
+  @param ub The upper bound. */
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q0,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
@@ -212,18 +205,16 @@ class QuadraticConstraint : public Constraint {
 
   ~QuadraticConstraint() override {}
 
-  /** The symmetric matrix Q, being the Hessian of this constraint.
-   */
+  /** The symmetric matrix Q, being the Hessian of this constraint. */
   virtual const Eigen::MatrixXd& Q() const { return Q_; }
 
   virtual const Eigen::VectorXd& b() const { return b_; }
 
   /**
-   * Updates the quadratic and linear term of the constraint. The new
-   * matrices need to have the same dimension as before.
-   * @param new_Q new quadratic term
-   * @param new_b new linear term
-   */
+  Updates the quadratic and linear term of the constraint. The new
+  matrices need to have the same dimension as before.
+  @param new_Q new quadratic term
+  @param new_b new linear term */
   template <typename DerivedQ, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
                           const Eigen::MatrixBase<DerivedB>& new_b) {
@@ -262,41 +253,39 @@ class QuadraticConstraint : public Constraint {
 };
 
 /**
- Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
- A vector z ∈ ℝ ⁿ lies within Lorentz cone if
- @f[
- z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
- @f]
- <!-->
- z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²)
- <-->
- where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
- Ideally this constraint should be handled by a second-order cone solver.
- In case the user wants to enforce this constraint through general nonlinear
- optimization, we provide three different formulations on the Lorentz cone
- constraint
- 1. g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
-    This formulation is not differentiable at z₁=...=zₙ₋₁=0
- 2. g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
-    but the gradient of g(z) is approximated as
-    ∂g(z)/∂z = [1, -z₁/sqrt(z₁² + ... zₙ₋₁² + ε), ...,
- -zₙ₋₁/sqrt(z₁²+...+zₙ₋₁²+ε)] where ε is a small positive number.
- 3. z₀²-(z₁²+...+zₙ₋₁²) ≥ 0
-    z₀ ≥ 0
-    This constraint is differentiable everywhere, but z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 is
- non-convex. The default is to use the first formulation. For more information
- and visualization, please refer to
- https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
- */
+Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
+A vector z ∈ ℝ ⁿ lies within Lorentz cone if
+@f[
+z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
+@f]
+<!-->
+z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²)
+<-->
+where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
+Ideally this constraint should be handled by a second-order cone solver.
+In case the user wants to enforce this constraint through general nonlinear
+optimization, we provide three different formulations on the Lorentz cone
+constraint
+1. g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
+   This formulation is not differentiable at z₁=...=zₙ₋₁=0
+2. g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
+   but the gradient of g(z) is approximated as
+   ∂g(z)/∂z = [1, -z₁/sqrt(z₁² + ... zₙ₋₁² + ε), ...,
+-zₙ₋₁/sqrt(z₁²+...+zₙ₋₁²+ε)] where ε is a small positive number.
+3. z₀²-(z₁²+...+zₙ₋₁²) ≥ 0
+   z₀ ≥ 0
+   This constraint is differentiable everywhere, but z₀²-(z₁²+...+zₙ₋₁²) ≥ 0 is
+non-convex. The default is to use the first formulation. For more information
+and visualization, please refer to
+https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html */
 class LorentzConeConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LorentzConeConstraint)
 
   /**
-   * We provide three possible Eval functions to represent the Lorentz cone
-   * constraint z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²). For more explanation on the three
-   * formulations, refer to LorentzConeConstraint documentation.
-   */
+  We provide three possible Eval functions to represent the Lorentz cone
+  constraint z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²). For more explanation on the three
+  formulations, refer to LorentzConeConstraint documentation. */
   enum class EvalType {
     kConvex,  ///< The constraint is g(z) = z₀ - sqrt(z₁² + ... + zₙ₋₁²) ≥ 0
     kConvexSmooth,  ///< Same as kConvex1, but with approximated gradient.
@@ -341,23 +330,22 @@ class LorentzConeConstraint : public Constraint {
 };
 
 /**
- * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated
- * Lorentz cone.
- * A vector z ∈ ℝ ⁿ lies within rotated Lorentz cone, if
- * @f[
- * z_0 \ge 0\\
- * z_1 \ge 0\\
- * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
- * @f]
- * where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
- * <!-->
- * z₀ ≥ 0
- * z₁ ≥ 0
- * z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁²
- * <-->
- * For more information and visualization, please refer to
- * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
- */
+Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated
+Lorentz cone.
+A vector z ∈ ℝ ⁿ lies within rotated Lorentz cone, if
+@f[
+z_0 \ge 0\\
+z_1 \ge 0\\
+z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
+@f]
+where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
+<!-->
+z₀ ≥ 0
+z₁ ≥ 0
+z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁²
+<-->
+For more information and visualization, please refer to
+https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html */
 class RotatedLorentzConeConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotatedLorentzConeConstraint)
@@ -407,22 +395,20 @@ class RotatedLorentzConeConstraint : public Constraint {
 };
 
 /**
- * A constraint that may be specified using another (potentially nonlinear)
- * evaluator.
- * @tparam EvaluatorType The nested evaluator.
- */
+A constraint that may be specified using another (potentially nonlinear)
+evaluator.
+@tparam EvaluatorType The nested evaluator. */
 template <typename EvaluatorType = EvaluatorBase>
 class EvaluatorConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluatorConstraint)
 
   /**
-   * Constructs an evaluator constraint, given the EvaluatorType instance
-   * (which will specify the number of constraints and variables), and will
-   * forward the remaining arguments to the Constraint constructor.
-   * @param evaluator EvaluatorType instance.
-   * @param args Arguments to be forwarded to the constraint constructor.
-   */
+  Constructs an evaluator constraint, given the EvaluatorType instance
+  (which will specify the number of constraints and variables), and will
+  forward the remaining arguments to the Constraint constructor.
+  @param evaluator EvaluatorType instance.
+  @param args Arguments to be forwarded to the constraint constructor. */
   template <typename... Args>
   EvaluatorConstraint(const std::shared_ptr<EvaluatorType>& evaluator,
                       Args&&... args)
@@ -456,27 +442,25 @@ class EvaluatorConstraint : public Constraint {
 };
 
 /**
- * A constraint on the values of multivariate polynomials.
- *
- *  lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
- *  polynomial in x, y...
- *
- * The Polynomial class uses a different variable naming scheme; thus the
- * caller must provide a list of Polynomial::VarType variables that correspond
- * to the members of the MathematicalProgram::Binding (the individual scalar
- * elements of the given VariableList).
- */
+A constraint on the values of multivariate polynomials.
+
+ lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
+ polynomial in x, y...
+
+The Polynomial class uses a different variable naming scheme; thus the
+caller must provide a list of Polynomial::VarType variables that correspond
+to the members of the MathematicalProgram::Binding (the individual scalar
+elements of the given VariableList). */
 class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialConstraint)
 
   /**
-   * Constructs a polynomial constraint
-   * @param polynomials Polynomial vector, a `num_constraints` x 1 vector.
-   * @param poly_vars Polynomial variables, a `num_vars` x 1 vector.
-   * @param lb Lower bounds, a `num_constraints` x 1 vector.
-   * @param ub Upper bounds, a `num_constraints` x 1 vector.
-   */
+  Constructs a polynomial constraint
+  @param polynomials Polynomial vector, a `num_constraints` x 1 vector.
+  @param poly_vars Polynomial variables, a `num_vars` x 1 vector.
+  @param lb Lower bounds, a `num_constraints` x 1 vector.
+  @param ub Upper bounds, a `num_constraints` x 1 vector. */
   PolynomialConstraint(const VectorXPoly& polynomials,
                        const std::vector<Polynomiald::VarType>& poly_vars,
                        const Eigen::VectorXd& lb, const Eigen::VectorXd& ub)
@@ -497,9 +481,7 @@ class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
 // IntegerConstraint, ...
 
-/**
- * Implements a constraint of the form @f$ lb <= Ax <= ub @f$
- */
+/** Implements a constraint of the form @f$ lb <= Ax <= ub @f$ */
 class LinearConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearConstraint)
@@ -525,15 +507,14 @@ class LinearConstraint : public Constraint {
   }
 
   /**
-   * Updates the linear term, upper and lower bounds in the linear constraint.
-   * The updated constraint is:
-   * new_lb <= new_A * x <= new_ub
-   * Note that the size of constraints (number of rows) can change, but the
-   * number of variables (number of cols) cannot.
-   * @param new_A new linear term
-   * @param new_lb new lower bound
-   * @param new_up new upper bound
-   */
+  Updates the linear term, upper and lower bounds in the linear constraint.
+  The updated constraint is:
+  new_lb <= new_A * x <= new_ub
+  Note that the size of constraints (number of rows) can change, but the
+  number of variables (number of cols) cannot.
+  @param new_A new linear term
+  @param new_lb new lower bound
+  @param new_up new upper bound */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
                           const Eigen::MatrixBase<DerivedL>& new_lb,
@@ -577,9 +558,7 @@ class LinearConstraint : public Constraint {
                      VectorX<ScalarY>* y) const;
 };
 
-/**
- * Implements a constraint of the form @f$ Ax = b @f$
- */
+/** Implements a constraint of the form @f$ Ax = b @f$ */
 class LinearEqualityConstraint : public LinearConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearEqualityConstraint)
@@ -610,9 +589,8 @@ class LinearEqualityConstraint : public LinearConstraint {
 
  private:
   /**
-   * The user should not call this function. Call UpdateCoefficients(Aeq, beq)
-   * instead.
-   */
+  The user should not call this function. Call UpdateCoefficients(Aeq, beq)
+  instead. */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>&,
                           const Eigen::MatrixBase<DerivedL>&,
@@ -627,14 +605,13 @@ class LinearEqualityConstraint : public LinearConstraint {
 };
 
 /**
- * Implements a constraint of the form @f$ lb <= x <= ub @f$
- *
- * Note: the base Constraint class (as implemented at the moment) could
- * play this role.  But this class enforces that it is ONLY a bounding
- * box constraint, and not something more general.  Some solvers use
- * this information to handle bounding box constraints differently than
- * general constraints, so use of this form is encouraged.
- */
+Implements a constraint of the form @f$ lb <= x <= ub @f$
+
+Note: the base Constraint class (as implemented at the moment) could
+play this role.  But this class enforces that it is ONLY a bounding
+box constraint, and not something more general.  Some solvers use
+this information to handle bounding box constraints differently than
+general constraints, so use of this form is encouraged. */
 class BoundingBoxConstraint : public LinearConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BoundingBoxConstraint)
@@ -666,17 +643,16 @@ class BoundingBoxConstraint : public LinearConstraint {
 };
 
 /**
- * Implements a constraint of the form:
- *
- * <pre>
- *   Mx + q >= 0
- *   x >= 0
- *   x'(Mx + q) == 0
- * </pre>
- *
- * An implied slack variable complements any 0 component of x.  To get
- * the slack values at a given solution x, use Eval(x).
- */
+Implements a constraint of the form:
+
+<pre>
+  Mx + q >= 0
+  x >= 0
+  x'(Mx + q) == 0
+</pre>
+
+An implied slack variable complements any 0 component of x.  To get
+the slack values at a given solution x, use Eval(x). */
 class LinearComplementarityConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearComplementarityConstraint)
@@ -723,67 +699,66 @@ class LinearComplementarityConstraint : public Constraint {
 };
 
 /**
- * Implements a positive semidefinite constraint on a symmetric matrix S
- * @f[\text{
- *     S is p.s.d
- * }@f]
- * namely, all eigen values of S are non-negative.
- */
+Implements a positive semidefinite constraint on a symmetric matrix S
+@f[\text{
+    S is p.s.d
+}@f]
+namely, all eigen values of S are non-negative. */
 class PositiveSemidefiniteConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PositiveSemidefiniteConstraint)
 
   /**
-   * Impose the constraint that a symmetric matrix with size @p rows x @p rows
-   * is positive semidefinite.
-   * @see MathematicalProgram::AddPositiveSemidefiniteConstraint() for how
-   * to use this constraint on some decision variables. We currently use this
-   * constraint as a place holder in MathematicalProgram, to indicate the
-   * positive semidefiniteness of some decision variables.
-   * @param rows The number of rows (and columns) of the symmetric matrix.
-   *
-   * Example:
-   * @code{.cc}
-   * // Create a MathematicalProgram object.
-   * auto prog = MathematicalProgram();
-   *
-   * // Add a 2 x 2 symmetric matrix S to optimization program as new decision
-   * // variables.
-   * auto S = prog.NewSymmetricContinuousVariables<2>("S");
-   *
-   * // Impose a positive semidefinite constraint on S.
-   * std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
-   *     prog.AddPositiveSemidefiniteConstraint(S);
-   *
-   * /////////////////////////////////////////////////////////////
-   * // Add more constraints to make the program more interesting,
-   * // but this is not needed.
-   *
-   * // Add the constraint that S(1, 0) = 1.
-   * prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
-   *
-   * // Minimize S(0, 0) + S(1, 1).
-   * prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
-   *
-   * /////////////////////////////////////////////////////////////
-   *
-   * // Now solve the program.
-   * auto result = Solve(prog);
-   *
-   * // Retrieve the solution of matrix S.
-   * auto S_value = GetSolution(S, result);
-   *
-   * // Compute the eigen values of the solution, to see if they are
-   * // all non-negative.
-   * Eigen::Vector4d S_stacked;
-   * S_stacked << S_value.col(0), S_value.col(1);
-   *
-   * Eigen::VectorXd S_eigen_values;
-   * psd_constraint->Eval(S_stacked, S_eigen_values);
-   *
-   * std::cout<<"S solution is: " << S << std::endl;
-   * std::cout<<"The eigen value of S is " << S_eigen_values << std::endl;
-   * @endcode
+  Impose the constraint that a symmetric matrix with size @p rows x @p rows
+  is positive semidefinite.
+  @see MathematicalProgram::AddPositiveSemidefiniteConstraint() for how
+  to use this constraint on some decision variables. We currently use this
+  constraint as a place holder in MathematicalProgram, to indicate the
+  positive semidefiniteness of some decision variables.
+  @param rows The number of rows (and columns) of the symmetric matrix.
+
+  Example:
+  @code{.cc}
+  // Create a MathematicalProgram object.
+  auto prog = MathematicalProgram();
+
+  // Add a 2 x 2 symmetric matrix S to optimization program as new decision
+  // variables.
+  auto S = prog.NewSymmetricContinuousVariables<2>("S");
+
+  // Impose a positive semidefinite constraint on S.
+  std::shared_ptr<PositiveSemidefiniteConstraint> psd_constraint =
+      prog.AddPositiveSemidefiniteConstraint(S);
+
+  /////////////////////////////////////////////////////////////
+  // Add more constraints to make the program more interesting,
+  // but this is not needed.
+
+  // Add the constraint that S(1, 0) = 1.
+  prog.AddBoundingBoxConstraint(1, 1, S(1, 0));
+
+  // Minimize S(0, 0) + S(1, 1).
+  prog.AddLinearCost(Eigen::RowVector2d(1, 1), {S.diagonal()});
+
+  /////////////////////////////////////////////////////////////
+
+  // Now solve the program.
+  auto result = Solve(prog);
+
+  // Retrieve the solution of matrix S.
+  auto S_value = GetSolution(S, result);
+
+  // Compute the eigen values of the solution, to see if they are
+  // all non-negative.
+  Eigen::Vector4d S_stacked;
+  S_stacked << S_value.col(0), S_value.col(1);
+
+  Eigen::VectorXd S_eigen_values;
+  psd_constraint->Eval(S_stacked, S_eigen_values);
+
+  std::cout<<"S solution is: " << S << std::endl;
+  std::cout<<"The eigen value of S is " << S_eigen_values << std::endl;
+  @endcode
    */
   explicit PositiveSemidefiniteConstraint(int rows)
       : Constraint(rows, rows * rows, Eigen::VectorXd::Zero(rows),
@@ -797,25 +772,22 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
  protected:
   /**
-   * Evaluate the eigen values of the symmetric matrix.
-   * @param x The stacked columns of the symmetric matrix.
-   */
+  Evaluate the eigen values of the symmetric matrix.
+  @param x The stacked columns of the symmetric matrix. */
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
   /**
-   * @param x The stacked columns of the symmetric matrix. This function is not
-   * supported yet, since Eigen's eigen value solver does not accept
-   * AutoDiffScalar.
-   */
+  @param x The stacked columns of the symmetric matrix. This function is not
+  supported yet, since Eigen's eigen value solver does not accept
+  AutoDiffScalar. */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;
 
   /**
-   * @param x The stacked columns of the symmetric matrix. This function is not
-   * supported, since Eigen's eigen value solver does not accept
-   * symbolic::Expression.
-   */
+  @param x The stacked columns of the symmetric matrix. This function is not
+  supported, since Eigen's eigen value solver does not accept
+  symbolic::Expression. */
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
@@ -825,25 +797,23 @@ class PositiveSemidefiniteConstraint : public Constraint {
 };
 
 /**
- * Impose the matrix inequality constraint on variable x
- * <!-->
- * F₀ + x₁ * F₁ + ... xₙ * Fₙ is p.s.d
- * <-->
- * @f[
- * F_0 + x_1  F_1 + ... + x_n  F_n \text{ is p.s.d}
- * @f]
- * where p.s.d stands for positive semidefinite.
- * @f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size.
- */
+Impose the matrix inequality constraint on variable x
+<!-->
+F₀ + x₁ * F₁ + ... xₙ * Fₙ is p.s.d
+<-->
+@f[
+F_0 + x_1  F_1 + ... + x_n  F_n \text{ is p.s.d}
+@f]
+where p.s.d stands for positive semidefinite.
+@f$ F_0, F_1, ..., F_n @f$ are all given symmetric matrices of the same size. */
 class LinearMatrixInequalityConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixInequalityConstraint)
 
   /**
-   * @param F Each symmetric matrix F[i] should be of the same size.
-   * @param symmetry_tolerance  The precision to determine if the input matrices
-   * Fi are all symmetric. @see math::IsSymmetric().
-   */
+  @param F Each symmetric matrix F[i] should be of the same size.
+  @param symmetry_tolerance  The precision to determine if the input matrices
+  Fi are all symmetric. @see math::IsSymmetric(). */
   LinearMatrixInequalityConstraint(
       const std::vector<Eigen::Ref<const Eigen::MatrixXd>>& F,
       double symmetry_tolerance = 1E-10);
@@ -853,28 +823,25 @@ class LinearMatrixInequalityConstraint : public Constraint {
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }
 
-  /// Gets the number of rows in the matrix inequality constraint. Namely
-  /// Fi are all matrix_rows() x matrix_rows() matrices.
+  /**
+  Gets the number of rows in the matrix inequality constraint. Namely
+  Fi are all matrix_rows() x matrix_rows() matrices. */
   int matrix_rows() const { return matrix_rows_; }
 
  protected:
-  /**
-   * Evaluate the eigen values of the linear matrix.
-   */
+  /** Evaluate the eigen values of the linear matrix. */
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
   /**
-   * This function is not supported, since Eigen's eigen value solver does not
-   * accept AutoDiffScalar type.
-   */
+  This function is not supported, since Eigen's eigen value solver does not
+  accept AutoDiffScalar type. */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;
 
   /**
-   * This function is not supported, since Eigen's eigen value solver does not
-   * accept symbolic::Expression type.
-   */
+  This function is not supported, since Eigen's eigen value solver does not
+  accept symbolic::Expression type. */
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
@@ -884,12 +851,11 @@ class LinearMatrixInequalityConstraint : public Constraint {
 };
 
 /**
- * Impose a generic (potentially nonlinear) constraint represented as a
- * vector of symbolic Expression.  Expression::Evaluate is called on every
- * constraint evaluation.
- *
- * Uses symbolic::Jacobian to provide the gradients to the AutoDiff method.
- */
+Impose a generic (potentially nonlinear) constraint represented as a
+vector of symbolic Expression.  Expression::Evaluate is called on every
+constraint evaluation.
+
+Uses symbolic::Jacobian to provide the gradients to the AutoDiff method. */
 class ExpressionConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionConstraint)
@@ -899,11 +865,10 @@ class ExpressionConstraint : public Constraint {
                        const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /**
-   * @return the list of the variables involved in the vector of expressions,
-   * in the order that they are expected to be received during DoEval.
-   * Any Binding that connects this constraint to decision variables should
-   * pass this list of variables to the Binding.
-   */
+  @return the list of the variables involved in the vector of expressions,
+  in the order that they are expected to be received during DoEval.
+  Any Binding that connects this constraint to decision variables should
+  pass this list of variables to the Binding. */
   const VectorXDecisionVariable& vars() const { return vars_; }
 
   /** @return the symbolic expressions. */
@@ -934,33 +899,31 @@ class ExpressionConstraint : public Constraint {
 };
 
 /**
- * An exponential cone constraint is a special type of convex cone constraint.
- * We constrain A * x + b to be in the exponential cone, where A has 3 rows, and
- * b is in ℝ³, x is the decision variable.
- * A vector z in ℝ³ is in the exponential cone, if
- * {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ > 0}.
- * Equivalently, this constraint can be refomulated with logarithm function
- * {z₀, z₁, z₂ | z₂ ≤ z₁ * log(z₀ / z₁), z₀ > 0, z₁ > 0}
- *
- * The Eval function implemented in this class is
- * z₀ - z₁ * exp(z₂ / z₁) >= 0,
- * z₁ > 0
- * where z = A * x + b.
- * It is not recommended to solve an exponential cone constraint through
- * generic nonlinear optimization. It is possible that the nonlinear solver
- * can accidentally set z₁ = 0, where the constraint is not well defined.
- * Instead, the user should consider to solve the program through conic solvers
- * that can exploit exponential cone, such as Mosek and SCS.
- */
+An exponential cone constraint is a special type of convex cone constraint.
+We constrain A * x + b to be in the exponential cone, where A has 3 rows, and
+b is in ℝ³, x is the decision variable.
+A vector z in ℝ³ is in the exponential cone, if
+{z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ > 0}.
+Equivalently, this constraint can be refomulated with logarithm function
+{z₀, z₁, z₂ | z₂ ≤ z₁ * log(z₀ / z₁), z₀ > 0, z₁ > 0}
+
+The Eval function implemented in this class is
+z₀ - z₁ * exp(z₂ / z₁) >= 0,
+z₁ > 0
+where z = A * x + b.
+It is not recommended to solve an exponential cone constraint through
+generic nonlinear optimization. It is possible that the nonlinear solver
+can accidentally set z₁ = 0, where the constraint is not well defined.
+Instead, the user should consider to solve the program through conic solvers
+that can exploit exponential cone, such as Mosek and SCS. */
 class ExponentialConeConstraint : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExponentialConeConstraint)
 
   /**
-   * Constructor for exponential cone.
-   * Constrains A * x + b to be in the exponential cone.
-   * @pre A has 3 rows.
-   */
+  Constructor for exponential cone.
+  Constrains A * x + b to be in the exponential cone.
+  @pre A has 3 rows. */
   ExponentialConeConstraint(
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
       const Eigen::Ref<const Eigen::Vector3d>& b);

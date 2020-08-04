@@ -42,15 +42,16 @@ class MultibodyPlantTester {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
 
-/// Utility struct to assist with returning joint torques/forces.
-/// --------|----------------------------------------------------------
-/// F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
-/// F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
-/// F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
-/// F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
-/// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
-/// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
-/// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
+/**
+Utility struct to assist with returning joint torques/forces.
+--------|----------------------------------------------------------
+F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
+F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
+F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
+F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
+F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
+F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
+F_Go_W  | Spatial force on Go from F, expressed in frame W (world). */
 template <typename T>
 struct KukaRobotJointReactionForces {
   SpatialForce<T> F_Ao_W;
@@ -62,25 +63,27 @@ struct KukaRobotJointReactionForces {
   SpatialForce<T> F_Go_W;
 };
 
-/// This class is a MultibodyTree model for a 7-DOF Kuka iiwa robot arm.
-/// It is used to compare Drake results for the robot end-effector (rigid linkG)
-/// relative to world (Newtonian frame linkN) versus MotionGenesis solution.
-/// This class takes input values for each of the 7 joint angles (q) as well as
-/// their 1st and 2nd time derivatives (q̇, q̈) and calculates the end-effector
-/// rotation matrix (relative to world), position (from world origin) angular
-/// velocity, velocity, angular acceleration, and acceleration.
-/// Geometrical and connectivity data is in file kuka_iiwa_robot.urdf.
+/**
+This class is a MultibodyTree model for a 7-DOF Kuka iiwa robot arm.
+It is used to compare Drake results for the robot end-effector (rigid linkG)
+relative to world (Newtonian frame linkN) versus MotionGenesis solution.
+This class takes input values for each of the 7 joint angles (q) as well as
+their 1st and 2nd time derivatives (q̇, q̈) and calculates the end-effector
+rotation matrix (relative to world), position (from world origin) angular
+velocity, velocity, angular acceleration, and acceleration.
+Geometrical and connectivity data is in file kuka_iiwa_robot.urdf. */
 template <typename T>
 class DrakeKukaIIwaRobot {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeKukaIIwaRobot)
 
-  /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
-  /// The robot is constructed with 7 revolute joints.
-  /// @param[in] gravity Earth's gravitational acceleration in m/s².  The world
-  /// z-unit vector is vertically upward.  If a gravity value of 9.8 is passed
-  /// to this constructor, it means the gravity vector is directed opposite the
-  /// world upward z-unit vector (which is correct -- gravity is downward).
+  /**
+  Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
+  The robot is constructed with 7 revolute joints.
+  @param[in] gravity Earth's gravitational acceleration in m/s².  The world
+  z-unit vector is vertically upward.  If a gravity value of 9.8 is passed
+  to this constructor, it means the gravity vector is directed opposite the
+  world upward z-unit vector (which is correct -- gravity is downward). */
   explicit DrakeKukaIIwaRobot(double gravity) {
     plant_ =
         MultibodyPlantTester::CreateMultibodyPlantFromTree(
@@ -119,22 +122,24 @@ class DrakeKukaIIwaRobot {
     context_ = plant_->CreateDefaultContext();
   }
 
-  /// This method gets the number of rigid bodies in this robot.
-  /// @returns the number of rigid bodies in this robot.
+  /**
+  This method gets the number of rigid bodies in this robot.
+  @returns the number of rigid bodies in this robot. */
   int get_number_of_rigid_bodies() const  { return tree().num_bodies(); }
 
-  /// This method calculates kinematic properties of the end-effector (herein
-  /// denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
-  /// Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
-  /// with Nz vertically upward and right-handed orthogonal unit vectors
-  /// Gx, Gy, Gz are fixed in G.  The origin of frame N (Earth) is denoted No.
-  /// The origin Go of end-effector G is located at G's inboard revolute joint.
-  ///
-  /// @param[in] q robot's joint angles (generalized coordinates).
-  /// @param[in] qDt 1st-time-derivative of q.
-  /// @param[in] qDDt 2nd-time-derivative of q.
-  ///
-  /// @returns G's kinematics in N, expressed in N.
+  /**
+  This method calculates kinematic properties of the end-effector (herein
+  denoted as rigid body G) of a 7-DOF KUKA LBR iiwa robot (14 kg payload).
+  Right-handed orthogonal unit vectors Nx, Ny, Nz are fixed in N (Earth)
+  with Nz vertically upward and right-handed orthogonal unit vectors
+  Gx, Gy, Gz are fixed in G.  The origin of frame N (Earth) is denoted No.
+  The origin Go of end-effector G is located at G's inboard revolute joint.
+
+  @param[in] q robot's joint angles (generalized coordinates).
+  @param[in] qDt 1st-time-derivative of q.
+  @param[in] qDDt 2nd-time-derivative of q.
+
+  @returns G's kinematics in N, expressed in N. */
   test_utilities::SpatialKinematicsPVA<T>
   CalcEndEffectorKinematics(const Eigen::Ref<const VectorX<T>>& q,
                             const Eigen::Ref<const VectorX<T>>& qDt,
@@ -167,22 +172,23 @@ class DrakeKukaIIwaRobot {
     return test_utilities::SpatialKinematicsPVA<T>(X_NG, V_NG_N, A_NG_N);
   }
 
-  /// This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
-  /// robot, from known joint angles and their 1st and 2nd time-derivatives.
-  ///
-  /// @param[in] q robot's joint angles (generalized coordinates).
-  /// @param[in] qDt 1st-time-derivative of q.
-  /// @param[in] qDDt 2nd-time-derivative of q.
-  ///
-  /// @returns a structure holding the quantities defined below.
-  /// --------|----------------------------------------------------------
-  /// F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
-  /// F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
-  /// F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
-  /// F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
-  /// F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
-  /// F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
-  /// F_Go_W  | Spatial force on Go from F, expressed in frame W (world).
+  /**
+  This method calculates joint reaction torques/forces for a 7-DOF KUKA iiwa
+  robot, from known joint angles and their 1st and 2nd time-derivatives.
+
+  @param[in] q robot's joint angles (generalized coordinates).
+  @param[in] qDt 1st-time-derivative of q.
+  @param[in] qDDt 2nd-time-derivative of q.
+
+  @returns a structure holding the quantities defined below.
+  --------|----------------------------------------------------------
+  F_Ao_W  | Spatial force on Ao from W, expressed in frame W (world).
+  F_Bo_W  | Spatial force on Bo from A, expressed in frame W (world).
+  F_Co_W  | Spatial force on Co from B, expressed in frame W (world).
+  F_Do_W  | Spatial force on Do from C, expressed in frame W (world).
+  F_Eo_W  | Spatial force on Eo from D, expressed in frame W (world).
+  F_Fo_W  | Spatial force on Fo from E, expressed in frame W (world).
+  F_Go_W  | Spatial force on Go from F, expressed in frame W (world). */
   KukaRobotJointReactionForces<T> CalcJointReactionForces(
       const Eigen::Ref<const VectorX<T>>& q,
       const Eigen::Ref<const VectorX<T>>& qDt,

@@ -9,43 +9,45 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-/// A model of a simple pendulum
-/// @f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = \tau @f]
-///
-/// @system
-/// name: PendulumPlant
-/// input_ports:
-/// - tau
-/// output_ports:
-/// - state
-/// @endsystem
-///
-/// @tparam_default_scalar
+/**
+A model of a simple pendulum
+@f[ ml^2 \ddot\theta + b\dot\theta + mgl\sin\theta = \tau @f]
+
+@system
+name: PendulumPlant
+input_ports:
+- tau
+output_ports:
+- state
+@endsystem
+
+@tparam_default_scalar */
 template <typename T>
 class PendulumPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
 
-  /// Constructs a default plant.
+  /** Constructs a default plant. */
   PendulumPlant();
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit PendulumPlant(const PendulumPlant<U>&);
 
   ~PendulumPlant() final;
 
-  /// Returns the input port to the externally applied force.
+  /** Returns the input port to the externally applied force. */
   const systems::InputPort<T>& get_input_port() const;
 
-  /// Returns the port to output state.
+  /** Returns the port to output state. */
   const systems::OutputPort<T>& get_state_output_port() const;
 
-  /// Calculates the kinetic + potential energy.
+  /** Calculates the kinetic + potential energy. */
   T CalcTotalEnergy(const systems::Context<T>& context) const;
 
-  /// Evaluates the input port and returns the scalar value
-  /// of the commanded torque.
+  /**
+  Evaluates the input port and returns the scalar value
+  of the commanded torque. */
   T get_tau(const systems::Context<T>& context) const {
     return this->get_input_port().Eval(context)(0);
   }

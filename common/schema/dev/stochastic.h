@@ -32,8 +32,9 @@ namespace schema {
 // the most acute place where this information is missing. This class really
 // needs a more doxygen-oriented explanation that includes examples.
 
-/// Base class for a single distribution, to be used with YAML archives.
-/// (See struct DistributionVector for vector-valued distributions.)
+/**
+Base class for a single distribution, to be used with YAML archives.
+(See struct DistributionVector for vector-valued distributions.) */
 struct Distribution {
   virtual ~Distribution();
 
@@ -46,7 +47,7 @@ struct Distribution {
   Distribution();
 };
 
-/// A single deterministic `value`.
+/** A single deterministic `value`. */
 struct Deterministic final : public Distribution {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Deterministic)
 
@@ -67,7 +68,7 @@ struct Deterministic final : public Distribution {
   double value{};
 };
 
-/// A gaussian distribution with `mean` and `std`.
+/** A gaussian distribution with `mean` and `std`. */
 struct Gaussian final : public Distribution {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Gaussian)
 
@@ -89,7 +90,7 @@ struct Gaussian final : public Distribution {
   double std{};
 };
 
-/// A uniform distribution with `min` inclusive and `max` exclusive.
+/** A uniform distribution with `min` inclusive and `max` exclusive. */
 struct Uniform final : public Distribution {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform)
 
@@ -111,7 +112,7 @@ struct Uniform final : public Distribution {
   double max{};
 };
 
-/// Chooses from among discrete `values` with equal probability.
+/** Chooses from among discrete `values` with equal probability. */
 struct UniformDiscrete final : public Distribution {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformDiscrete)
 
@@ -131,49 +132,54 @@ struct UniformDiscrete final : public Distribution {
   std::vector<double> values;
 };
 
-/// Variant over all kinds of distributions.
+/** Variant over all kinds of distributions. */
 using DistributionVariant = std::variant<
     double, Deterministic, Gaussian, Uniform, UniformDiscrete>;
 
-/// Copies the given variant into a Distribution base class.
+/** Copies the given variant into a Distribution base class. */
 std::unique_ptr<Distribution> ToDistribution(
     const DistributionVariant& var);
 
-/// Like Distribution::Sample, but on a DistributionVariant instead.
+/** Like Distribution::Sample, but on a DistributionVariant instead. */
 double Sample(const DistributionVariant& var,
               drake::RandomGenerator* generator);
 
-/// Like Distribution::Mean, but on a DistributionVariant instead.
+/** Like Distribution::Mean, but on a DistributionVariant instead. */
 double Mean(const DistributionVariant& var);
 
-/// Like Distribution::ToSymbolic, but on a DistributionVariant instead.
+/** Like Distribution::ToSymbolic, but on a DistributionVariant instead. */
 drake::symbolic::Expression ToSymbolic(const DistributionVariant& var);
 
-/// Like Distribution::Sample, but elementwise over a collection of
-/// possibly-heterogenous DistributionVariant instead.
+/**
+Like Distribution::Sample, but elementwise over a collection of
+possibly-heterogenous DistributionVariant instead. */
 Eigen::VectorXd Sample(const std::vector<DistributionVariant>& vec,
                        drake::RandomGenerator* generator);
 
-/// Like Distribution::Mean, but elementwise over a collection of
-/// possibly-heterogenous DistributionVariant instead.
+/**
+Like Distribution::Mean, but elementwise over a collection of
+possibly-heterogenous DistributionVariant instead. */
 Eigen::VectorXd Mean(const std::vector<DistributionVariant>& vec);
 
-/// Like Distribution::ToSymbolic, but elementwise over a collection of
-/// possibly-heterogenous DistributionVariant instead.
+/**
+Like Distribution::ToSymbolic, but elementwise over a collection of
+possibly-heterogenous DistributionVariant instead. */
 drake::VectorX<drake::symbolic::Expression> ToSymbolic(
     const std::vector<DistributionVariant>& vec);
 
-/// Returns true iff `var` is set to a deterministic value.
+/** Returns true iff `var` is set to a deterministic value. */
 bool IsDeterministic(const DistributionVariant& var);
 
-/// If `var` is deterministic, retrieves its value.
-/// @throws exception if `var` is not deterministic.
+/**
+If `var` is deterministic, retrieves its value.
+@throws exception if `var` is not deterministic. */
 double GetDeterministicValue(const DistributionVariant& var);
 
 // ---------------------------------------------------------------------------
 
-/// Base class for a vector of distributions, to be used with YAML archives.
-/// (See struct Distribution for single distributions.)
+/**
+Base class for a vector of distributions, to be used with YAML archives.
+(See struct Distribution for single distributions.) */
 struct DistributionVector {
   virtual ~DistributionVector();
 
@@ -186,8 +192,9 @@ struct DistributionVector {
   DistributionVector();
 };
 
-/// A single deterministic vector `value`.
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+A single deterministic vector `value`.
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 struct DeterministicVector final : public DistributionVector {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeterministicVector)
@@ -208,8 +215,9 @@ struct DeterministicVector final : public DistributionVector {
   drake::Vector<double, Size> value;
 };
 
-/// A gaussian distribution with vector `mean` and vector or scalar `std`.
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+A gaussian distribution with vector `mean` and vector or scalar `std`.
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 struct GaussianVector final : public DistributionVector {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GaussianVector)
@@ -233,9 +241,10 @@ struct GaussianVector final : public DistributionVector {
   drake::VectorX<double> std;
 };
 
-/// A uniform distribution with vector `min` inclusive and vector `max`
-/// exclusive.
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+A uniform distribution with vector `min` inclusive and vector `max`
+exclusive.
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 struct UniformVector final : public DistributionVector {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformVector)
@@ -268,12 +277,13 @@ struct InvalidVariantSelection {
 };
 }  // namespace internal
 
-/// Variant over all kinds of vector distributions.
-///
-/// If the Size parameter allows for 1-element vectors (i.e, is either 1 or
-/// Eigen::Dynamic), then this variant also offers the single distributions.
-///
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+Variant over all kinds of vector distributions.
+
+If the Size parameter allows for 1-element vectors (i.e, is either 1 or
+Eigen::Dynamic), then this variant also offers the single distributions.
+
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 using DistributionVectorVariant = std::variant<
   drake::Vector<double, Size>,
@@ -290,23 +300,26 @@ using DistributionVectorVariant = std::variant<
     Uniform,
     internal::InvalidVariantSelection>>;
 
-/// DistributionVectorVariant that permits any vector size dynamically.
+/** DistributionVectorVariant that permits any vector size dynamically. */
 using DistributionVectorVariantX = DistributionVectorVariant<Eigen::Dynamic>;
 
-/// Copies the given variant into a DistributionVector base class.
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+Copies the given variant into a DistributionVector base class.
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 std::unique_ptr<DistributionVector> ToDistributionVector(
     const DistributionVectorVariant<Size>& vec);
 
-/// Returns true iff this is set to a deterministic value.
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+Returns true iff this is set to a deterministic value.
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 bool IsDeterministic(const DistributionVectorVariant<Size>& vec);
 
-/// If `vec` is deterministic, retrieves its value.
-/// @throws exception if `vec` is not deterministic.
-/// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
+/**
+If `vec` is deterministic, retrieves its value.
+@throws exception if `vec` is not deterministic.
+@tparam Size rows at compile time (max 6) or else Eigen::Dynamic. */
 template <int Size>
 Eigen::VectorXd GetDeterministicValue(
     const DistributionVectorVariant<Size>& vec);

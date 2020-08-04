@@ -24,50 +24,60 @@ namespace systems {
 // This is presented as an ID to end users but is implemented internally as
 // a typed integer index for fast access into the std::vector of dependency
 // trackers. That's why it is named differently than the other "indexes".
-/** Identifies a particular source value or computation for purposes of
+/**
+Identifies a particular source value or computation for purposes of
 declaring and managing dependencies. Unique only within a given subsystem
 and its corresponding subcontext. */
 using DependencyTicket = TypeSafeIndex<class DependencyTag>;
 
-/** Serves as a unique identifier for a particular CacheEntry in a System and
+/**
+Serves as a unique identifier for a particular CacheEntry in a System and
 the corresponding CacheEntryValue in that System's Context. This is an index
 providing extremely fast constant-time access to both. */
 using CacheIndex = TypeSafeIndex<class CacheTag>;
 
-/** Serves as a local index for a child subsystem within a parent
+/**
+Serves as a local index for a child subsystem within a parent
 Diagram, or a child subcontext within a parent DiagramContext. A subsystem and
 its matching subcontext have the same %SubsystemIndex. Unique only
 within a given subsystem or subcontext. */
 using SubsystemIndex = TypeSafeIndex<class SubsystemIndexTag>;
 
-/** Serves as the local index for the input ports of a given System. The
+/**
+Serves as the local index for the input ports of a given System. The
 indexes used by a subsystem and its corresponding subcontext are the same. */
 using InputPortIndex = TypeSafeIndex<class InputPortTag>;
 
-/** Serves as the local index for the output ports of a given System. The
+/**
+Serves as the local index for the output ports of a given System. The
 indexes used by a subsystem and its corresponding subcontext are the same. */
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
-/** Serves as the local index for discrete state groups within a given System
+/**
+Serves as the local index for discrete state groups within a given System
 and its corresponding Context. */
 using DiscreteStateIndex = TypeSafeIndex<class DiscreteStateTag>;
 
-/** Serves as the local index for abstract state variables within a given System
+/**
+Serves as the local index for abstract state variables within a given System
 and its corresponding Context. */
 using AbstractStateIndex = TypeSafeIndex<class AbstractStateTag>;
 
-/** Serves as the local index for numeric parameter groups within a given System
+/**
+Serves as the local index for numeric parameter groups within a given System
 and its corresponding Context. */
 using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 
-/** Serves as the local index for abstract parameters within a given System
+/**
+Serves as the local index for abstract parameters within a given System
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
 
 /** Serves as the local index for constraints declared on a given System. */
 using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 
-/** All system ports are either vectors of Eigen scalars, or black-box
+/**
+All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
 typedef enum {
   kVectorValued = 0,
@@ -75,16 +85,19 @@ typedef enum {
 } PortDataType;
 
 // TODO(sherm1) Implement this.
-/** Port type indicating a vector value whose size is not prespecified but
+/**
+Port type indicating a vector value whose size is not prespecified but
 rather depends on what it is connected to (not yet implemented). */
 constexpr int kAutoSize = -1;
 
-/** (Advanced.)  Tag type that indicates a system or port should use a default
+/**
+(Advanced.)  Tag type that indicates a system or port should use a default
 name, instead of a user-provided name.  Most users will use the kUseDefaultName
 constant, without ever having to mention this type. */
 struct UseDefaultName final {};
 
-/** Name to use when you want a default one generated. You should normally
+/**
+Name to use when you want a default one generated. You should normally
 give meaningful names to all Drake System entities you create rather than
 using this. */
 constexpr UseDefaultName kUseDefaultName = {};
@@ -96,11 +109,13 @@ inline bool operator==(
   return std::holds_alternative<UseDefaultName>(value);
 }
 
-/** Intended for use in e.g. variant<InputPortSelection, InputPortIndex> for
+/**
+Intended for use in e.g. variant<InputPortSelection, InputPortIndex> for
 algorithms that support optional and/or default port indices. */
 enum class InputPortSelection { kNoInput = -1, kUseFirstInputIfItExists = -2 };
 
-/** Intended for use in e.g. variant<OutputPortSelection, OutputPortIndex> for
+/**
+Intended for use in e.g. variant<OutputPortSelection, OutputPortIndex> for
 algorithms that support optional and/or default port indices. */
 enum class OutputPortSelection { kNoOutput = -1, kUseFirstOutputIfItExists =
     -2 };

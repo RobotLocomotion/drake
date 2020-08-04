@@ -99,7 +99,7 @@ struct CallbackData {
                               assigned (as documented in
                               QueryObject::ComputeSignedDistanceToPoint().
  @param is_grad_w_unique[out] True if the value in `grad_W` is unique.  */
-//@{
+/** @{ */
 
 /* Computes distance from point to sphere with the understanding that all
  quantities are measured and expressed in the sphere's frame, S. Otherwise, the
@@ -261,7 +261,7 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
 
 // TODO(DamrongGuoy): Add overloads for all supported geometries.
 
-//@}
+/** @} */
 
 /* A functor to compute signed distance between a point and a geometry. By
  design, one instance should be created for each unique pairing of query point Q
@@ -596,7 +596,7 @@ class DistanceToPoint {
  specialization is provided which whitelists the supported shape types.
 
  @tparam T      The computational scalar type.  */
-//@{
+/** @{ */
 
 template <typename T>
 struct ScalarSupport {
@@ -636,7 +636,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   }
 };
 
-//@}
+/** @} */
 
 /* The callback function for computing the signed distance between a point and
  a supported shape. Intended to be invoked as a result of broadphase culling

@@ -8,30 +8,32 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
-/// Expresses a PendulumPlants's geometry to a SceneGraph.
-///
-/// @system
-/// name: PendulumGeometry
-/// input_ports:
-/// - state
-/// output_ports:
-/// - geometry_pose
-/// @endsystem
-///
-/// This class has no public constructor; instead use the AddToBuilder() static
-/// method to create and add it to a DiagramBuilder directly.
+/**
+Expresses a PendulumPlants's geometry to a SceneGraph.
+
+@system
+name: PendulumGeometry
+input_ports:
+- state
+output_ports:
+- geometry_pose
+@endsystem
+
+This class has no public constructor; instead use the AddToBuilder() static
+method to create and add it to a DiagramBuilder directly. */
 class PendulumGeometry final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumGeometry);
   ~PendulumGeometry() final;
 
-  /// Creates, adds, and connects a PendulumGeometry system into the given
-  /// `builder`.  Both the `pendulum_state.get_system()` and `scene_graph`
-  /// systems must have been added to the given `builder` already.
-  ///
-  /// The `scene_graph` pointer is not retained by the %PendulumGeometry system.
-  /// The return value pointer is an alias of the new %PendulumGeometry system
-  /// that is owned by the `builder`.
+  /**
+  Creates, adds, and connects a PendulumGeometry system into the given
+  `builder`.  Both the `pendulum_state.get_system()` and `scene_graph`
+  systems must have been added to the given `builder` already.
+
+  The `scene_graph` pointer is not retained by the %PendulumGeometry system.
+  The return value pointer is an alias of the new %PendulumGeometry system
+  that is owned by the `builder`. */
   static const PendulumGeometry* AddToBuilder(
       systems::DiagramBuilder<double>* builder,
       const systems::OutputPort<double>& pendulum_state_port,

@@ -8,35 +8,37 @@
 namespace drake {
 namespace systems {
 
-/// An adder for arbitrarily many inputs of equal size.
-///
-/// @system
-/// name: Adder
-/// input_ports:
-/// - input(0)
-/// - ...
-/// - input(N-1)
-/// output_ports:
-/// - sum
-/// @endsystem
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+An adder for arbitrarily many inputs of equal size.
+
+@system
+name: Adder
+input_ports:
+- input(0)
+- ...
+- input(N-1)
+output_ports:
+- sum
+@endsystem
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class Adder final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Adder)
 
-  /// Construct an %Adder System.
-  /// @param num_inputs is the number of input ports to be added.
-  /// @param size number of elements in each input and output signal.
+  /**
+  Construct an %Adder System.
+  @param num_inputs is the number of input ports to be added.
+  @param size number of elements in each input and output signal. */
   Adder(int num_inputs, int size);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit Adder(const Adder<U>&);
 
-  /// Returns the output port on which the sum is presented.
+  /** Returns the output port on which the sum is presented. */
   const OutputPort<T>& get_output_port() const {
     return LeafSystem<T>::get_output_port(0);
   }

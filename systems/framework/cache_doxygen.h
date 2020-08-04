@@ -1,5 +1,6 @@
-/** @file
- Doxygen-only documentation for @ref cache_design_notes.  */
+/**
+@file
+Doxygen-only documentation for @ref cache_design_notes. */
 
 #pragma once
 
@@ -7,7 +8,8 @@
 namespace drake {
 namespace systems {
 
-/** @defgroup cache_design_notes System Cache Design and Implementation Notes
+/**
+@defgroup cache_design_notes System Cache Design and Implementation Notes
     @ingroup technical_notes
 
 <!-- Fluff needed to keep Doxygen from misformatting due to quotes and
@@ -663,8 +665,7 @@ dependency list for the Calculator(). Currently they are just defaulting to
 "depends on everything".
 
 See Drake issue [#9205](https://github.com/RobotLocomotion/drake/issues/9205)
-on GitHub for a checklist of caching loose ends.
-*/
+on GitHub for a checklist of caching loose ends. */
 
 }  // namespace systems
 }  // namespace drake

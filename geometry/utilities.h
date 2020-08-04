@@ -63,7 +63,7 @@ class MapKeyRange {
  manner to allow SceneGraph to mindlessly convert Quantity<T> to
  Quantity<double> efficiently. There is *particular* emphasis on making the
  Quantity<double> -> Quantity<double> as cheap as possible.  */
-//@{
+/** @{ */
 
 inline const Vector3<double>& convert_to_double(const Vector3<double>& vec) {
   return vec;
@@ -99,7 +99,7 @@ math::RigidTransformd convert_to_double(
   return math::RigidTransformd(math::RotationMatrixd(R_converted), p_converted);
 }
 
-//@}
+/** @} */
 
 }  // namespace internal
 }  // namespace geometry

@@ -5,7 +5,7 @@
 namespace drake {
 namespace test {
 
-/// Obtains a matrix of random unvariate Polynomials of the specified size.
+/** Obtains a matrix of random unvariate Polynomials of the specified size. */
 template <typename T = double>
 static Eigen::Matrix<Polynomial<T>, Eigen::Dynamic, Eigen::Dynamic>
 RandomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial,

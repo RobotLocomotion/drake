@@ -12,43 +12,48 @@
 
 namespace drake {
 
-/// For more high-level information, see the @ref python_bindings
-/// "Python Bindings" technical notes.
-///
-/// Drake developers should prefer any aliases defined here over their full
-/// spellings in `pybind11`.
-///
-/// `namespace py` is a shorthand alias to `pybind11` for consistency. (This
-/// symbol cannot be exposed directly in Doxygen.)
-///
-/// @note Downstream users should avoid `using namespace drake::pydrake`, as
-/// this may create ambiguous aliases (especially for GCC). Instead, consider
-/// using your own alias directly to the `pybind11` namespace.
+/**
+For more high-level information, see the @ref python_bindings
+"Python Bindings" technical notes.
+
+Drake developers should prefer any aliases defined here over their full
+spellings in `pybind11`.
+
+`namespace py` is a shorthand alias to `pybind11` for consistency. (This
+symbol cannot be exposed directly in Doxygen.)
+
+@note Downstream users should avoid `using namespace drake::pydrake`, as
+this may create ambiguous aliases (especially for GCC). Instead, consider
+using your own alias directly to the `pybind11` namespace. */
 namespace pydrake {
 
 // Note: Doxygen apparently doesn't process comments for namespace aliases. If
 // you put Doxygen comments here they will apply instead to py_rvp.
 namespace py = pybind11;
 
-/// Shortened alias for py::return_value_policy. For more information, see
-/// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
+/**
+Shortened alias for py::return_value_policy. For more information, see
+the @ref PydrakeReturnValuePolicy "Return Value Policy" section. */
 using py_rvp = py::return_value_policy;
 
-/// Used when returning `T& or `const T&`, as pybind's default behavior is to
-/// copy lvalue references.
+/**
+Used when returning `T& or `const T&`, as pybind's default behavior is to
+copy lvalue references. */
 DRAKE_DEPRECATED("2020-11-01", "Please use py_rvp::reference instead")
 const auto py_reference = py::return_value_policy::reference;
 
-/// Used when returning references to objects that are internally owned by
-/// `self`. Implies both `py_rvp::reference` and `py::keep_alive<0, 1>`, which
-/// implies "Keep alive, reference: `return` keeps` self` alive".
+/**
+Used when returning references to objects that are internally owned by
+`self`. Implies both `py_rvp::reference` and `py::keep_alive<0, 1>`, which
+implies "Keep alive, reference: `return` keeps` self` alive". */
 DRAKE_DEPRECATED("2020-11-01", "Please use py_rvp::reference_internal instead")
 const auto py_reference_internal = py::return_value_policy::reference_internal;
 
-/// Use this when you must do manual casting - e.g. lists or tuples of nurses,
-/// where the container may get discarded but the items kept. Prefer this over
-/// `py::cast(obj, reference_internal, parent)` (pending full resolution of
-/// #11046).
+/**
+Use this when you must do manual casting - e.g. lists or tuples of nurses,
+where the container may get discarded but the items kept. Prefer this over
+`py::cast(obj, reference_internal, parent)` (pending full resolution of
+#11046). */
 inline py::object py_keep_alive(py::object nurse, py::object patient) {
   py::detail::keep_alive_impl(nurse, patient);
   return nurse;
@@ -72,15 +77,17 @@ struct overload_cast_impl {
   }
 };
 
-/// Provides option to provide explicit signature when
-/// `py::overload_cast<Args...>` fails to infer the Return argument.
+/**
+Provides option to provide explicit signature when
+`py::overload_cast<Args...>` fails to infer the Return argument. */
 template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
-/// Binds Pythonic `__copy__` and `__deepcopy__` using class's copy
-/// constructor.
-/// @note Do not use this if the class's copy constructor does not imply a deep
-/// copy.
+/**
+Binds Pythonic `__copy__` and `__deepcopy__` using class's copy
+constructor.
+@note Do not use this if the class's copy constructor does not imply a deep
+copy. */
 template <typename PyClass>
 void DefCopyAndDeepCopy(PyClass* ppy_class) {
   using Class = typename PyClass::type;
@@ -90,9 +97,10 @@ void DefCopyAndDeepCopy(PyClass* ppy_class) {
           [](const Class* self, py::dict /* memo */) { return Class{*self}; });
 }
 
-/// Binds Pythonic `__copy__` and `__deepcopy__` for a class, as well as
-/// `Clone` method, using class's `Clone` method rather than the copy
-/// constructor.
+/**
+Binds Pythonic `__copy__` and `__deepcopy__` for a class, as well as
+`Clone` method, using class's `Clone` method rather than the copy
+constructor. */
 template <typename PyClass>
 void DefClone(PyClass* ppy_class) {
   using Class = typename PyClass::type;
@@ -104,18 +112,19 @@ void DefClone(PyClass* ppy_class) {
           [](const Class* self, py::dict /* memo */) { return self->Clone(); });
 }
 
-/// Returns a constructor for creating an instance of Class and initializing
-/// parameters (bound using `def_readwrite`).
-/// This provides an alternative to manually enumerating each
-/// parameter as an argument using `py::init<...>` and `py::arg(...)`, and is
-/// useful when the C++ class only has a default constructor. Example:
-/// @code
-/// using Class = ExampleClass;
-/// py::class_<Class>(m, "ExampleClass")  // BR
-///     .def(ParamInit<Class>());
-/// @endcode
-///
-/// @tparam Class The C++ class. Must have a default constructor.
+/**
+Returns a constructor for creating an instance of Class and initializing
+parameters (bound using `def_readwrite`).
+This provides an alternative to manually enumerating each
+parameter as an argument using `py::init<...>` and `py::arg(...)`, and is
+useful when the C++ class only has a default constructor. Example:
+@code
+using Class = ExampleClass;
+py::class_<Class>(m, "ExampleClass")  // BR
+    .def(ParamInit<Class>());
+@endcode
+
+@tparam Class The C++ class. Must have a default constructor. */
 template <typename Class>
 auto ParamInit() {
   return py::init([](py::kwargs kwargs) {
@@ -131,9 +140,10 @@ auto ParamInit() {
   });
 }
 
-/// Executes Python code to introduce additional symbols for a given module.
-/// For a module with local name `{name}`, the code executed will be
-/// `_{name}_extra.py`. See #9599 for relevant background.
+/**
+Executes Python code to introduce additional symbols for a given module.
+For a module with local name `{name}`, the code executed will be
+`_{name}_extra.py`. See #9599 for relevant background. */
 inline void ExecuteExtraPythonCode(py::module m) {
   py::module::import("pydrake").attr("_execute_extra_python_code")(m);
 }

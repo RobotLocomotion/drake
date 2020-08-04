@@ -15,7 +15,7 @@ enum SolutionResult {
       -5,                ///< The primal is either infeasible or unbounded.
   kIterationLimit = -6,  ///< Reaches the iteration limits.
   kDualInfeasible = -7,  ///< Dual problem is infeasible. In this case we cannot
-                         /// infer the status of the primal problem.
+                         /** infer the status of the primal problem. */
 };
 
 std::string to_string(SolutionResult solution_result);

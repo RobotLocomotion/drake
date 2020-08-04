@@ -21,22 +21,20 @@ using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
 /**
- * This class implements unit tests for the following classes:
- * MpcData
- * MpcVariable
- * MPCResidual
- * MPCFeasibiity
- * RiccatiLinearSolver
- */
+This class implements unit tests for the following classes:
+MpcData
+MpcVariable
+MPCResidual
+MPCFeasibiity
+RiccatiLinearSolver */
 class MpcComponentUnitTests {
  public:
   /**
-   * Sets up the optimal control problem
-   * that will be used to test the component objects.
-   *
-   * The mathematical format can be found in
-   * https://arxiv.org/pdf/1901.04046.pdf Eq. (29) or in mpc_data.h.
-   */
+  Sets up the optimal control problem
+  that will be used to test the component objects.
+
+  The mathematical format can be found in
+  https://arxiv.org/pdf/1901.04046.pdf Eq. (29) or in mpc_data.h. */
   MpcComponentUnitTests() {
     int N = 2;  // Use a horizon length of 2 throughout.
 
@@ -95,9 +93,7 @@ class MpcComponentUnitTests {
     x0_ = x0;
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void GEMVH() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nz = data.nz_;
@@ -119,9 +115,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void GEMVA() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nv = data.nv_;
@@ -143,9 +137,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void GEMVG() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nl = data.nl_;
@@ -167,9 +159,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void GEMVGT() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nl = data.nl_;
@@ -191,9 +181,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void GEMVAT() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nv = data.nv_;
@@ -215,9 +203,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void AXPYF() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nz = data.nz_;
@@ -234,9 +220,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void AXPYH() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nl = data.nl_;
@@ -253,9 +237,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void AXPYB() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
     const int nv = data.nv_;
@@ -273,9 +255,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void Variable() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
 
@@ -312,9 +292,7 @@ class MpcComponentUnitTests {
     }
   }
 
-  /**
-   * Tests against hand calculations.
-   */
+  /** Tests against hand calculations. */
   void InnerResidual() {
     MpcData data(&Q_, &R_, &S_, &q_, &r_, &A_, &B_, &c_, &E_, &L_, &d_, &x0_);
 

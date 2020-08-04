@@ -232,55 +232,56 @@ int IntersectTetWithLevelSet(
 //  edge -- if the level set function itself is not linear, it will have a
 //  different zero point along the edge.
 
-/// Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
-/// method computes a triangulation of the zero level set of `φ(V)` in the
-/// volume defined by `mesh_M`.
-///
-/// This method produces a surface mesh that samples a scalar field defined on a
-/// volume mesh. The geometry of the surface mesh is implicitly defined by a
-/// function. The surface is the zero level set of the function within the
-/// domain of the volume mesh. The vertices of the surface lie on the zero level
-/// set and the normals at the vertices are the gradient of the level set at the
-/// vertex positions. Finally, each surface mesh vertex is associated with the
-/// value of the volume mesh field `e_m_volume` evaluated at the vertex
-/// position.
-///
-/// The resolution of the zero level set triangulation depends on the
-/// resolution of the initial volume mesh. That is, if we denote with h the
-/// typical length scale of a tetrahedral element, then the surface
-/// triangulation will also have triangular elements of size in the order of
-/// h. Thus, features in the level set function with a length scale smaller
-/// than h will not be properly captured by the triangulation.
-///
-/// @param mesh_M
-///   Defines the volume M within which the zero level of `φ(V)` is found.
-/// @param[in] phi_N
-///   The representation of the function `φ(V)` expressed in the frame N. That
-///   is, it can be evaluated for a point V when measured and expressed in that
-///   same frame N. In code, φ(V) ≡ phi_N(p_NV).
-/// @param[in] X_NM
-///   The pose of M in N.
-/// @param[in] e_m_volume
-///   A discrete, linear representation of a scalar field, defined by the value
-///   of the field at the mesh vertices.
-/// @param[out] e_m_surface
-///   The scalar field e_m_volume sampled on the vertices of the zero-level set
-///   contact surface. Because `e_m_volume` is itself a discrete, linear
-///   representation of a continuous scalar field, the values on the contact
-///   surface will be an linear interpolation of those values.
-///   Any existing values in `e_m_surface` at input are cleared.
-///
-/// @note This implementation uses the marching tetrahedra algorithm as
-/// described in Bloomenthal, J., 1994. An Implicit Surface Polygonizer.
-/// Graphics Gems IV, pp. 324-349.
-///
-/// @returns A triangulation of the zero level set of `φ(V)` in the volume
-/// defined by `mesh_M`.  The triangulation is measured and expressed in frame
-/// N. The right handed normal of each triangle points towards the negative side
-/// of the level set function `φ(V)` (the normals point out of the soft volume
-/// mesh and into the rigid object represented by the level set field.
-///
-/// @note  The geometry::SurfaceMesh may have duplicate vertices.
+/**
+Given a level set function `φ(V)` and a volume defined by `mesh_M`, this
+method computes a triangulation of the zero level set of `φ(V)` in the
+volume defined by `mesh_M`.
+
+This method produces a surface mesh that samples a scalar field defined on a
+volume mesh. The geometry of the surface mesh is implicitly defined by a
+function. The surface is the zero level set of the function within the
+domain of the volume mesh. The vertices of the surface lie on the zero level
+set and the normals at the vertices are the gradient of the level set at the
+vertex positions. Finally, each surface mesh vertex is associated with the
+value of the volume mesh field `e_m_volume` evaluated at the vertex
+position.
+
+The resolution of the zero level set triangulation depends on the
+resolution of the initial volume mesh. That is, if we denote with h the
+typical length scale of a tetrahedral element, then the surface
+triangulation will also have triangular elements of size in the order of
+h. Thus, features in the level set function with a length scale smaller
+than h will not be properly captured by the triangulation.
+
+@param mesh_M
+  Defines the volume M within which the zero level of `φ(V)` is found.
+@param[in] phi_N
+  The representation of the function `φ(V)` expressed in the frame N. That
+  is, it can be evaluated for a point V when measured and expressed in that
+  same frame N. In code, φ(V) ≡ phi_N(p_NV).
+@param[in] X_NM
+  The pose of M in N.
+@param[in] e_m_volume
+  A discrete, linear representation of a scalar field, defined by the value
+  of the field at the mesh vertices.
+@param[out] e_m_surface
+  The scalar field e_m_volume sampled on the vertices of the zero-level set
+  contact surface. Because `e_m_volume` is itself a discrete, linear
+  representation of a continuous scalar field, the values on the contact
+  surface will be an linear interpolation of those values.
+  Any existing values in `e_m_surface` at input are cleared.
+
+@note This implementation uses the marching tetrahedra algorithm as
+described in Bloomenthal, J., 1994. An Implicit Surface Polygonizer.
+Graphics Gems IV, pp. 324-349.
+
+@returns A triangulation of the zero level set of `φ(V)` in the volume
+defined by `mesh_M`.  The triangulation is measured and expressed in frame
+N. The right handed normal of each triangle points towards the negative side
+of the level set function `φ(V)` (the normals point out of the soft volume
+mesh and into the rigid object represented by the level set field.
+
+@note  The geometry::SurfaceMesh may have duplicate vertices. */
 template <typename T>
 std::unique_ptr<geometry::SurfaceMesh<T>> CalcZeroLevelSetInMeshDomain(
     const geometry::VolumeMesh<T>& mesh_M, const LevelSetField<T>& phi_N,

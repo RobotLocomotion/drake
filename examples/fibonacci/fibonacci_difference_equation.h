@@ -10,7 +10,8 @@ namespace drake {
 namespace examples {
 namespace fibonacci {
 
-/** A pure discrete system that generates the Fibonacci sequence F_n using
+/**
+A pure discrete system that generates the Fibonacci sequence F_n using
 a difference equation.
 
 @system
@@ -56,9 +57,7 @@ publishing at `t = n*h` produces the expected result
    F_n  0  1  1  2  3  5  8 13 21 ...
 ```
 
-See run_fibonacci.cc for the code required to output the above sequence.
-
-*/
+See run_fibonacci.cc for the code required to output the above sequence. */
 class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FibonacciDifferenceEquation)
@@ -77,7 +76,7 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
                             &FibonacciDifferenceEquation::Output);
   }
 
-  /// Update period (in seconds) for the system.
+  /** Update period (in seconds) for the system. */
   static constexpr double kPeriod = 0.25;  // Arbitrary, e.g. 0.1234 works too!
 
  private:

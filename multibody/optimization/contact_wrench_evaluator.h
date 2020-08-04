@@ -21,17 +21,14 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchEvaluator)
 
   /**
-   * @anchor ComposeVariableValues
-   * @name compose variable values.
-   * Composes the value of the variable `x` in Eval(x, &y) function, based on
-   * the context and value of lambda, x = [q, λ].
-   * @pre q has size plant.num_positions() x 1
-   * @pre lambda has size num_lambda_ x 1.
-   */
-  //@{
-  /**
-   * Overloads @ref ComposeVariableValues
-   */
+  @anchor ComposeVariableValues
+  @name compose variable values.
+  Composes the value of the variable `x` in Eval(x, &y) function, based on
+  the context and value of lambda, x = [q, λ].
+  @pre q has size plant.num_positions() x 1
+  @pre lambda has size num_lambda_ x 1. */
+  /** @{ */
+  /** Overloads @ref ComposeVariableValues */
   template <typename T, typename Derived>
   typename std::enable_if<std::is_same<T, typename Derived::Scalar>::value,
                           VectorX<T>>::type
@@ -46,9 +43,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   }
 
   /**
-   * Overloads @ref ComposeVariableValues with q, λ as the input instead of
-   * context, λ.
-   */
+  Overloads @ref ComposeVariableValues with q, λ as the input instead of
+  context, λ. */
   template <typename DerivedQ, typename DerivedLambda>
   typename std::enable_if<std::is_same<typename DerivedQ::Scalar,
                                        typename DerivedLambda::Scalar>::value,
@@ -65,16 +61,12 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     x.tail(num_lambda_) = lambda_value;
     return x;
   }
-  //@}
+  /** @} */
 
-  /**
-   * Returns the size of lambda.
-   */
+  /** Returns the size of lambda. */
   int num_lambda() const { return num_lambda_; }
 
-  /**
-   * Returns the pair of geometry IDs.
-   */
+  /** Returns the pair of geometry IDs. */
   const SortedPair<geometry::GeometryId>& geometry_id_pair() const {
     return geometry_id_pair_;
   }
@@ -89,16 +81,15 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 
  protected:
   /**
-   * Each derived class should call this constructor.
-   * @param plant The MultibodyPlant on which the contact wrench is computed.
-   * The lifetime of plant should outlive this object.
-   * @param context The context of @p plant. The lifetime of context should
-   * outlive this object.
-   * @param num_lambda The size of lambda.
-   * @param geometry_id_pair The pair of geometries for which the contact wrench
-   * is computed. Notice that the order of the geometries in the pair should
-   * match with that in SceneGraphInspector::GetCollisionCandidates().
-   */
+  Each derived class should call this constructor.
+  @param plant The MultibodyPlant on which the contact wrench is computed.
+  The lifetime of plant should outlive this object.
+  @param context The context of @p plant. The lifetime of context should
+  outlive this object.
+  @param num_lambda The size of lambda.
+  @param geometry_id_pair The pair of geometries for which the contact wrench
+  is computed. Notice that the order of the geometries in the pair should
+  match with that in SceneGraphInspector::GetCollisionCandidates(). */
   ContactWrenchEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context, int num_lambda,
@@ -115,17 +106,14 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     DRAKE_DEMAND(num_lambda >= 0);
   }
 
-  /**
-   * Extract the generalized configuration q from x (x is used in Eval(x, &y)).
+  /** Extract the generalized configuration q from x (x is used in Eval(x, &y)).
    */
   template <typename Derived>
   Eigen::VectorBlock<const Derived> q(const Derived& x) const {
     return x.head(plant_->num_positions());
   }
 
-  /**
-   * Extract lambda from x (x is used in Eval(x, &y)).
-   */
+  /** Extract lambda from x (x is used in Eval(x, &y)). */
   template <typename Derived>
   Eigen::VectorBlock<const Derived> lambda(const Derived& x) const {
     return x.tail(num_lambda_);
@@ -141,25 +129,23 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 };
 
 /**
- * The contact wrench is τ_AB_W = 0, f_AB_W = λ
- * Namely we assume that λ is the contact force from A to B, applied directly
- * at B's witness point.
- */
+The contact wrench is τ_AB_W = 0, f_AB_W = λ
+Namely we assume that λ is the contact force from A to B, applied directly
+at B's witness point. */
 class ContactWrenchFromForceInWorldFrameEvaluator final
     : public ContactWrenchEvaluator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchFromForceInWorldFrameEvaluator)
 
   /**
-   * @param plant The MultibodyPlant on which the contact wrench is computed.
-   * The lifetime of @p plant should outlive this object.
-   * @param context The context of the MultibodyPlant.
-   * The lifetime of @p context should outlive this object.
-   * @param geometry_id_pair The pair of geometries for which the contact wrench
-   * is computed. Notice that the order of the geometries in the pair should
-   * match with that in SceneGraphInspector::GetCollisionCandidates().
-   * @param description The description of this evaluator. Default to none.
-   */
+  @param plant The MultibodyPlant on which the contact wrench is computed.
+  The lifetime of @p plant should outlive this object.
+  @param context The context of the MultibodyPlant.
+  The lifetime of @p context should outlive this object.
+  @param geometry_id_pair The pair of geometries for which the contact wrench
+  is computed. Notice that the order of the geometries in the pair should
+  match with that in SceneGraphInspector::GetCollisionCandidates().
+  @param description The description of this evaluator. Default to none. */
   ContactWrenchFromForceInWorldFrameEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
@@ -185,12 +171,11 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
 
 namespace internal {
 /**
- * This struct records the contact wrench evaluator, together with the indices
- * of lambda used in this evaluator, among all lambda.
- *
- * The user is not supposed to use this struct directly. It is used internally
- * by the constraint's MakeBinding() method.
- */
+This struct records the contact wrench evaluator, together with the indices
+of lambda used in this evaluator, among all lambda.
+
+The user is not supposed to use this struct directly. It is used internally
+by the constraint's MakeBinding() method. */
 struct GeometryPairContactWrenchEvaluatorBinding {
   GeometryPairContactWrenchEvaluatorBinding(
       std::vector<int> lambda_indices_in_all_lambda_in,

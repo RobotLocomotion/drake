@@ -201,32 +201,33 @@ struct wrap_function_impl {
 
 }  // namespace internal
 
-/// Wraps the types used in a function signature to produce a new function with
-/// wrapped arguments and return value (if non-void). The wrapping is based on
-/// `wrap_arg_policy`.
-/// Any types that are of the form `std::function<F>` will be recursively
-/// wrapped, such that callbacks will be of a wrapped form (arguments and
-/// return types wrapped). The original form of the callbacks will still be
-/// called in the wrapped callback.
-/// @tparam wrap_arg_policy
-///   User-supplied argument wrapper, that must supply the static functions
-///   `wrap(Arg arg) -> Wrapped` and `unwrap(Wrapped wrapped) -> Arg`.
-///   `Arg arg` is the original argument, and `Wrapped wrapped` is the wrapped
-///   / transformed argument type.
-///   N.B. This template template parameter uses a parameter pack to allow
-///   for SFINAE. If passing a `using` template alias, ensure that the alias
-///   template template parameter uses a parameter pack of the *exact* same
-///   form.
-/// @tparam use_functions
-///   If true (default), will recursively wrap callbacks. If your policy
-///   provides handling for functions, then you should set this to false.
-/// @param func
-///   Functor to be wrapped. Returns a function with wrapped arguments and
-///   return type. If functor is a method pointer, it will return a function of
-///   the form `Return ([const] Class* self, ...)`.
-/// @return Wrapped function lambda.
-///   N.B. Construct a `std::function<>` from this if you encounter inference
-///   issues downstream of this method.
+/**
+Wraps the types used in a function signature to produce a new function with
+wrapped arguments and return value (if non-void). The wrapping is based on
+`wrap_arg_policy`.
+Any types that are of the form `std::function<F>` will be recursively
+wrapped, such that callbacks will be of a wrapped form (arguments and
+return types wrapped). The original form of the callbacks will still be
+called in the wrapped callback.
+@tparam wrap_arg_policy
+  User-supplied argument wrapper, that must supply the static functions
+  `wrap(Arg arg) -> Wrapped` and `unwrap(Wrapped wrapped) -> Arg`.
+  `Arg arg` is the original argument, and `Wrapped wrapped` is the wrapped
+  / transformed argument type.
+  N.B. This template template parameter uses a parameter pack to allow
+  for SFINAE. If passing a `using` template alias, ensure that the alias
+  template template parameter uses a parameter pack of the *exact* same
+  form.
+@tparam use_functions
+  If true (default), will recursively wrap callbacks. If your policy
+  provides handling for functions, then you should set this to false.
+@param func
+  Functor to be wrapped. Returns a function with wrapped arguments and
+  return type. If functor is a method pointer, it will return a function of
+  the form `Return ([const] Class* self, ...)`.
+@return Wrapped function lambda.
+  N.B. Construct a `std::function<>` from this if you encounter inference
+  issues downstream of this method. */
 template <template <typename...> class wrap_arg_policy,
     bool use_functions = true, typename Func = void>
 auto WrapFunction(Func&& func) {
@@ -236,9 +237,10 @@ auto WrapFunction(Func&& func) {
       internal::infer_function_info(std::forward<Func>(func)));
 }
 
-/// Default case for argument wrapping, with pure pass-through. Consider
-/// inheriting from this for base cases.
-/// N.B. `Wrapped` is not necessary, but is used for demonstration purposes.
+/**
+Default case for argument wrapping, with pure pass-through. Consider
+inheriting from this for base cases.
+N.B. `Wrapped` is not necessary, but is used for demonstration purposes. */
 template <typename T>
 struct wrap_arg_default {
   using Wrapped = T;
@@ -250,7 +252,7 @@ struct wrap_arg_default {
   // with primitive types, such as `int`.
 };
 
-/// Policy for explicitly wrapping functions for a given policy.
+/** Policy for explicitly wrapping functions for a given policy. */
 template <template <typename...> class wrap_arg_policy, typename Signature>
 using wrap_arg_function = typename internal::wrap_function_impl<
     wrap_arg_policy>::template wrap_arg<std::function<Signature>>;

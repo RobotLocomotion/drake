@@ -7,9 +7,8 @@
 namespace drake {
 namespace math {
 /**
- * GrayCodesMatrix::type returns an Eigen matrix of integers. The size of this
- * matrix is determined by the number of digits in the Gray code.
- */
+GrayCodesMatrix::type returns an Eigen matrix of integers. The size of this
+matrix is determined by the number of digits in the Gray code. */
 template<int NumDigits>
 struct GrayCodesMatrix {
   static_assert(NumDigits >= 0 && NumDigits <= 30, "NumDigits out of range.");
@@ -24,12 +23,11 @@ struct GrayCodesMatrix<Eigen::Dynamic> {
 };
 
 /**
- * Returns a matrix whose i'th row is the Gray code for integer i.
- * @tparam NumDigits The number of digits in the Gray code.
- * @param num_digits The number of digits in the Gray code.
- * @return M. M is a matrix of size 2ᵏ x k, where `k` is `num_digits`.
- * M.row(i) is the Gray code for integer i.
- */
+Returns a matrix whose i'th row is the Gray code for integer i.
+@tparam NumDigits The number of digits in the Gray code.
+@param num_digits The number of digits in the Gray code.
+@return M. M is a matrix of size 2ᵏ x k, where `k` is `num_digits`.
+M.row(i) is the Gray code for integer i. */
 template<int NumDigits = Eigen::Dynamic>
 typename GrayCodesMatrix<NumDigits>::type
 CalculateReflectedGrayCodes(int num_digits = NumDigits) {
@@ -48,14 +46,13 @@ CalculateReflectedGrayCodes(int num_digits = NumDigits) {
 }
 
 /**
- * Converts the Gray code to an integer. For example
- * (0, 0) -> 0
- * (0, 1) -> 1
- * (1, 1) -> 2
- * (1, 0) -> 3
- * @param gray_code The N-digit Gray code, where N is gray_code.rows()
- * @return The integer represented by the Gray code `gray_code`.
- */
+Converts the Gray code to an integer. For example
+(0, 0) -> 0
+(0, 1) -> 1
+(1, 1) -> 2
+(1, 0) -> 3
+@param gray_code The N-digit Gray code, where N is gray_code.rows()
+@return The integer represented by the Gray code `gray_code`. */
 int GrayCodeToInteger(const Eigen::Ref<const Eigen::VectorXi>& gray_code);
 }  // namespace math
 }  // namespace drake

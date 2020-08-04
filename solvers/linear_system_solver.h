@@ -16,13 +16,14 @@ class LinearSystemSolver final : public SolverBase {
   LinearSystemSolver();
   ~LinearSystemSolver() final;
 
-  /// @name Static versions of the instance methods with similar names.
-  //@{
+  /**
+  @name Static versions of the instance methods with similar names.
+  @{ */
   static SolverId id();
   static bool is_available();
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
-  //@}
+  /** @} */
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;

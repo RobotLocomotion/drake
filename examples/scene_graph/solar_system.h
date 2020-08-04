@@ -16,7 +16,8 @@ namespace solar_system {
 
 // TODO(SeanCurtis-TRI): When textures are available, modify this so that planet
 // rotations become apparent as well (and not just revolutions).
-/** A model of an orrery -- a simple mechanical model of the solar system.
+/**
+A model of an orrery -- a simple mechanical model of the solar system.
 
  The orrery contains one sun and multiple orbiting bodies: two planets (Earth
  and Mars) each with one moon and multiple satellites for Earth. The idea is
@@ -88,8 +89,7 @@ X_OₑOₗ→├───┘       │  S  │         X_OₘOₚ → ├──�
  The frame of orbit's origin lies at the circle's center and it's z-axis is
  perpendicular to the plane of the circle.
 
- @tparam_double_only
-*/
+ @tparam_double_only */
 template <typename T>
 class SolarSystem : public systems::LeafSystem<T> {
  public:

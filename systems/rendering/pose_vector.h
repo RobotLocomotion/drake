@@ -10,43 +10,45 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/// A 7-vector representing the transform of frame A in the world frame, X_WA,
-/// in the form `{p_WA, R_WA}`, where `p` is represented as an x-y-z
-/// translation, and `R` is represented as a quaternion. The exact order of
-/// elements is `{x, y, z, qw, qx, qy, qz}`.
-///
-/// @tparam_default_scalar
+/**
+A 7-vector representing the transform of frame A in the world frame, X_WA,
+in the form `{p_WA, R_WA}`, where `p` is represented as an x-y-z
+translation, and `R` is represented as a quaternion. The exact order of
+elements is `{x, y, z, qw, qx, qy, qz}`.
+
+@tparam_default_scalar */
 template <typename T>
 class PoseVector : public BasicVector<T> {
  public:
-  /// Default constructor.
+  /** Default constructor. */
   PoseVector();
   ~PoseVector() override;
 
-  /// Fully-parameterized constructor.
-  /// @param rotation the orientation R_WA of frame A in the world frame W.
-  /// @param translation the position vector p_WA giving A's origin measured
-  /// from W's origin, expressed in W.
+  /**
+  Fully-parameterized constructor.
+  @param rotation the orientation R_WA of frame A in the world frame W.
+  @param translation the position vector p_WA giving A's origin measured
+  from W's origin, expressed in W. */
   PoseVector(const Eigen::Quaternion<T>& rotation,
              const Eigen::Translation<T, 3>& translation);
 
-  /// Returns the transform X_WA.
+  /** Returns the transform X_WA. */
   DRAKE_DEPRECATED("2020-09-01", "Please use get_transform()")
   Isometry3<T> get_isometry() const;
 
-  /// Returns the transform X_WA.
+  /** Returns the transform X_WA. */
   math::RigidTransform<T> get_transform() const;
-  /// Assigns the transform X_WA.
+  /** Assigns the transform X_WA. */
   void set_transform(const math::RigidTransform<T>& transform);
 
-  /// Returns the translation p_WA.
+  /** Returns the translation p_WA. */
   Eigen::Translation<T, 3> get_translation() const;
-  /// Assigns the translation p_WA.
+  /** Assigns the translation p_WA. */
   void set_translation(const Eigen::Translation<T, 3>& q);
 
-  /// Returns the rotation R_WA.
+  /** Returns the rotation R_WA. */
   Eigen::Quaternion<T> get_rotation() const;
-  /// Assigns the rotation R_WA.
+  /** Assigns the rotation R_WA. */
   void set_rotation(const Eigen::Quaternion<T>& q);
 
   static constexpr int kSize = 7;

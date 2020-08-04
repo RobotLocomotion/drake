@@ -12,19 +12,20 @@ namespace drake {
 namespace examples {
 namespace quadrotor {
 
-/// The Quadrotor - an underactuated aerial vehicle. This version of the
-/// Quadrotor is implemented to match the dynamics of the plant specified in
-/// the `quadrotor.urdf` model file.
-///
-/// @system
-/// name: QuadrotorPlant
-/// input_ports:
-/// - propellor_force
-/// output_ports:
-/// - state
-/// @endsystem
-///
-/// @tparam_nonsymbolic_scalar
+/**
+The Quadrotor - an underactuated aerial vehicle. This version of the
+Quadrotor is implemented to match the dynamics of the plant specified in
+the `quadrotor.urdf` model file.
+
+@system
+name: QuadrotorPlant
+input_ports:
+- propellor_force
+output_ports:
+- state
+@endsystem
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class QuadrotorPlant final : public systems::LeafSystem<T> {
  public:
@@ -32,7 +33,7 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   QuadrotorPlant(double m_arg, double L_arg, const Eigen::Matrix3d& I_arg,
                  double kF_arg, double kM_arg);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit QuadrotorPlant(const QuadrotorPlant<U>&);
 
@@ -61,9 +62,10 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
   const Eigen::Matrix3d I_;  // Moment of Inertia about the Center of Mass
 };
 
-/// Generates an LQR controller to move to @p nominal_position. Internally
-/// computes the nominal input corresponding to a hover at position @p x0.
-/// @see systems::LinearQuadraticRegulator.
+/**
+Generates an LQR controller to move to @p nominal_position. Internally
+computes the nominal input corresponding to a hover at position @p x0.
+@see systems::LinearQuadraticRegulator. */
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
     const QuadrotorPlant<double>* quadrotor_plant,
     Eigen::Vector3d nominal_position);

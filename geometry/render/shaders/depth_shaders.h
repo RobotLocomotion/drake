@@ -8,8 +8,9 @@ namespace shaders {
 // NOTE: For the VTK infrastructure, the shader should always start with the
 // line:
 //   //VTK::System::Dec
-/** A vertex shader program for rendering depth images, which computes vertices
- and normals for the fragment shader program coming after. */
+/**
+A vertex shader program for rendering depth images, which computes vertices
+and normals for the fragment shader program coming after. */
 constexpr char kDepthVS[] = R"""(
     //VTK::System::Dec
     attribute vec4 vertexMC;
@@ -32,17 +33,18 @@ constexpr char kDepthVS[] = R"""(
 // lines:
 //   //VTK::System::Dec
 //   //VTK::Output::Dec
-/** A fragment shader program for rendering depth images, which computes depth
- values for each pixel in depth images, converts them to be in range [0, 1]
- and packs those values to three color channels. In other words, we encode
- a depth image into a color image and output the color image. For the detail
- of packing algorithm, please refer to:
- https://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
- Note that we are only using three channels instead of four channels to
- express a float value. This differs from the example code in the link above.
- The reason is that we need to set one to alpha channel so that the rendered
- "image" will be opaque. Otherwise, we will have different colors from what
- we output here, thus expect, in the end.  */
+/**
+A fragment shader program for rendering depth images, which computes depth
+values for each pixel in depth images, converts them to be in range [0, 1]
+and packs those values to three color channels. In other words, we encode
+a depth image into a color image and output the color image. For the detail
+of packing algorithm, please refer to:
+https://aras-p.info/blog/2009/07/30/encoding-floats-to-rgba-the-final/
+Note that we are only using three channels instead of four channels to
+express a float value. This differs from the example code in the link above.
+The reason is that we need to set one to alpha channel so that the rendered
+"image" will be opaque. Otherwise, we will have different colors from what
+we output here, thus expect, in the end. */
 constexpr char kDepthFS[] = R"""(
     //VTK::System::Dec
     //VTK::Output::Dec

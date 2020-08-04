@@ -1,8 +1,9 @@
 #pragma once
 
-/// @file
-/// Provides the Python bindings for the core system classes of the systems
-/// framework.
+/**
+@file
+Provides the Python bindings for the core system classes of the systems
+framework. */
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 

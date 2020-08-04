@@ -14,48 +14,50 @@ namespace multibody {
 namespace benchmarks {
 namespace acrobot {
 
-/// This class is used to store the numerical parameters defining the model of
-/// an acrobot with the method MakeAcrobotPlant().
-/// Refer to this the documentation of this class's constructor for further
-/// details on the parameters stored by this class and their default values.
-///
-/// @note The default constructor initializes the parameters in accordance to
-/// the `acrobot.sdf` file in this same directory. Therefore this file and
-/// `acrobot.sdf` MUST be kept in sync.
+/**
+This class is used to store the numerical parameters defining the model of
+an acrobot with the method MakeAcrobotPlant().
+Refer to this the documentation of this class's constructor for further
+details on the parameters stored by this class and their default values.
+
+@note The default constructor initializes the parameters in accordance to
+the `acrobot.sdf` file in this same directory. Therefore this file and
+`acrobot.sdf` MUST be kept in sync. */
 class AcrobotParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
 
-  /// Constructor used to initialize the physical parameters for an acrobot
-  /// model. The parameters are defaulted to values in Spong's paper
-  /// [Spong 1994].
-  ///
-  /// @param m1
-  ///   Mass of link 1 (kg).
-  /// @param m2
-  ///   Mass of link 2 (kg).
-  /// @param l1
-  ///   Length of link 1 (m).
-  /// @param l2
-  ///   Length of link 2 (m).
-  /// @param lc1
-  ///   Vertical distance from shoulder joint to center of mass of link 1 (m).
-  /// @param lc2
-  ///   Vertical distance from elbow joint to center of mass of link 2 (m).
-  /// @param Ic1
-  ///   Inertia of link 1 about the center of mass of link 1 (kg⋅m²).
-  /// @param Ic2
-  ///   Inertia of link 2 about the center of mass of link 2 (kg*m^2).
-  /// @param b1
-  ///   Damping coefficient of the shoulder joint (N⋅m⋅s).
-  /// @param b2
-  ///   Damping coefficient of the elbow joint (N⋅m⋅s).
-  /// @param g
-  ///   Gravitational constant (m/s²).
-  ///
-  ///  - [Spong 1994] Spong, M.W., 1994. Swing up control of the acrobot.
-  ///    In Robotics and Automation, 1994. Proceedings., 1994 IEEE International
-  ///    Conference on (pp. 2356-2361). IEEE.
+  /**
+  Constructor used to initialize the physical parameters for an acrobot
+  model. The parameters are defaulted to values in Spong's paper
+  [Spong 1994].
+
+  @param m1
+    Mass of link 1 (kg).
+  @param m2
+    Mass of link 2 (kg).
+  @param l1
+    Length of link 1 (m).
+  @param l2
+    Length of link 2 (m).
+  @param lc1
+    Vertical distance from shoulder joint to center of mass of link 1 (m).
+  @param lc2
+    Vertical distance from elbow joint to center of mass of link 2 (m).
+  @param Ic1
+    Inertia of link 1 about the center of mass of link 1 (kg⋅m²).
+  @param Ic2
+    Inertia of link 2 about the center of mass of link 2 (kg*m^2).
+  @param b1
+    Damping coefficient of the shoulder joint (N⋅m⋅s).
+  @param b2
+    Damping coefficient of the elbow joint (N⋅m⋅s).
+  @param g
+    Gravitational constant (m/s²).
+
+   - [Spong 1994] Spong, M.W., 1994. Swing up control of the acrobot.
+     In Robotics and Automation, 1994. Proceedings., 1994 IEEE International
+     Conference on (pp. 2356-2361). IEEE. */
   AcrobotParameters(
       double m1 = 1.0,
       double m2 = 1.0,
@@ -132,22 +134,23 @@ class AcrobotParameters {
   std::string actuator_name_{"ElbowActuator"};
 };
 
-/// This method makes a MultibodyPlant model of the Acrobot - a canonical
-/// underactuated system as described in <a
-/// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
-/// of Underactuated Robotics</a>.
-///
-/// @param[in] default_parameters
-///   Default parameters of the model set at construction. These parameters
-///   include masses, link lengths, rotational inertias, etc. Refer to the
-///   documentation of AcrobotParameters for further details.
-/// @param[in] finalize
-///   If `true`, MultibodyPlant::Finalize() gets called on the new plant.
-/// @param scene_graph
-///   If a SceneGraph is provided with this argument, this factory method
-///   will register the new multibody plant to be a source for that geometry
-///   system and it will also register geometry for visualization.
-///   If this argument is omitted, no geometry will be registered.
+/**
+This method makes a MultibodyPlant model of the Acrobot - a canonical
+underactuated system as described in <a
+href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
+of Underactuated Robotics</a>.
+
+@param[in] default_parameters
+  Default parameters of the model set at construction. These parameters
+  include masses, link lengths, rotational inertias, etc. Refer to the
+  documentation of AcrobotParameters for further details.
+@param[in] finalize
+  If `true`, MultibodyPlant::Finalize() gets called on the new plant.
+@param scene_graph
+  If a SceneGraph is provided with this argument, this factory method
+  will register the new multibody plant to be a source for that geometry
+  system and it will also register geometry for visualization.
+  If this argument is omitted, no geometry will be registered. */
 std::unique_ptr<MultibodyPlant<double>>
 MakeAcrobotPlant(const AcrobotParameters& default_parameters, bool finalize,
                  geometry::SceneGraph<double>* scene_graph = nullptr);

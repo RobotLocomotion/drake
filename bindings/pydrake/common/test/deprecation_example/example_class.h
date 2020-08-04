@@ -5,10 +5,10 @@
 namespace drake {
 namespace example_class {
 
-/// Example class.
+/** Example class. */
 class ExampleCppClass {
  public:
-  /// Good constructor.
+  /** Good constructor. */
   ExampleCppClass() {}
 
   // N.B. This spacer is to ensure that the class's documentation does not pick
@@ -23,10 +23,10 @@ class ExampleCppClass {
   DRAKE_DEPRECATED("2038-01-19", "Do not use DeprecatedMethod().")
   void DeprecatedMethod() {}
 
-  /// Good property.
+  /** Good property. */
   int prop{};
 
-  /// Good overload.
+  /** Good overload. */
   void overload() {}
 
   DRAKE_DEPRECATED("2038-01-19", "Do not use overload(int).")

@@ -52,101 +52,109 @@ struct CompareMonomial {
 };
 }  // namespace internal
 
-/// Represents symbolic polynomials. A symbolic polynomial keeps a mapping from
-/// a monomial of indeterminates to its coefficient in a symbolic expression.
-///
-/// A polynomial `p` has to satisfy an invariant such that
-/// `p.decision_variables() ∩ p.indeterminates() = ∅`. We have CheckInvariant()
-/// method to check the invariant.
-///
-/// Note that arithmetic operations (+,-,*) between a Polynomial and a Variable
-/// are not provided. The problem is that Variable class has no intrinsic
-/// information if a variable is a decision variable or an indeterminate while
-/// we need this information to perform arithmetic operations over Polynomials.
+/**
+Represents symbolic polynomials. A symbolic polynomial keeps a mapping from
+a monomial of indeterminates to its coefficient in a symbolic expression.
+
+A polynomial `p` has to satisfy an invariant such that
+`p.decision_variables() ∩ p.indeterminates() = ∅`. We have CheckInvariant()
+method to check the invariant.
+
+Note that arithmetic operations (+,-,*) between a Polynomial and a Variable
+are not provided. The problem is that Variable class has no intrinsic
+information if a variable is a decision variable or an indeterminate while
+we need this information to perform arithmetic operations over Polynomials. */
 class Polynomial {
  public:
   using MapType = std::map<Monomial, Expression, internal::CompareMonomial>;
 
-  /// Constructs a zero polynomial.
+  /** Constructs a zero polynomial. */
   Polynomial() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polynomial)
 
-  /** Constructs a default value.  This overload is used by Eigen when
-   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
-   */
+  /**
+  Constructs a default value.  This overload is used by Eigen when
+  EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled. */
   explicit Polynomial(std::nullptr_t) : Polynomial() {}
 
-  /// Constructs a polynomial from a map, Monomial → Expression.
+  /** Constructs a polynomial from a map, Monomial → Expression. */
   explicit Polynomial(MapType init);
 
-  /// Constructs a polynomial from a monomial @p m. Note that all variables
-  /// in `m` are considered as indeterminates.
+  /**
+  Constructs a polynomial from a monomial @p m. Note that all variables
+  in `m` are considered as indeterminates. */
   //
   // Note that this implicit conversion is desirable to have a dot product of
   // two Eigen::Vector<Monomial>s return a Polynomial.
   // NOLINTNEXTLINE(runtime/explicit)
   Polynomial(const Monomial& m);
 
-  /// Constructs a polynomial from an expression @p e. Note that all variables
-  /// in `e` are considered as indeterminates.
-  ///
-  /// @throws std::runtime_error if @p e is not a polynomial.
+  /**
+  Constructs a polynomial from an expression @p e. Note that all variables
+  in `e` are considered as indeterminates.
+
+  @throws std::runtime_error if @p e is not a polynomial. */
   explicit Polynomial(const Expression& e);
 
-  /// Constructs a polynomial from an expression @p e by decomposing it with
-  /// respect to @p indeterminates.
-  ///
-  /// @note It collects the intersection of the variables appeared in `e` and
-  /// the provided @p indeterminates.
-  ///
-  /// @throws std::runtime_error if @p e is not a polynomial in @p
-  /// indeterminates.
+  /**
+  Constructs a polynomial from an expression @p e by decomposing it with
+  respect to @p indeterminates.
+
+  @note It collects the intersection of the variables appeared in `e` and
+  the provided @p indeterminates.
+
+  @throws std::runtime_error if @p e is not a polynomial in @p
+  indeterminates. */
   Polynomial(const Expression& e, Variables indeterminates);
 
-  /// Returns the indeterminates of this polynomial.
+  /** Returns the indeterminates of this polynomial. */
   const Variables& indeterminates() const;
 
-  /// Returns the decision variables of this polynomial.
+  /** Returns the decision variables of this polynomial. */
   const Variables& decision_variables() const;
 
-  /// Sets the indeterminates to `new_indeterminates`.
-  ///
-  /// Changing the indeterminates would change `monomial_to_coefficient_map()`,
-  /// and also potentially the degree of the polynomial. Here is an example.
-  ///
-  /// @code
-  /// // p is a quadratic polynomial with x being the indeterminates.
-  /// symbolic::Polynomial p(a * x * x + b * x + c, {x});
-  /// // p.monomial_to_coefficient_map() contains {1: c, x: b, x*x:a}.
-  /// std::cout << p.TotalDegree(); // prints 2.
-  /// // Now set (a, b, c) to the indeterminates. p becomes a linear
-  /// // polynomial of a, b, c.
-  /// p.SetIndeterminates({a, b, c});
-  /// // p.monomial_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
-  /// std::cout << p.TotalDegree(); // prints 1.
-  /// @endcode
+  /**
+  Sets the indeterminates to `new_indeterminates`.
+
+  Changing the indeterminates would change `monomial_to_coefficient_map()`,
+  and also potentially the degree of the polynomial. Here is an example.
+
+  @code
+  // p is a quadratic polynomial with x being the indeterminates.
+  symbolic::Polynomial p(a * x * x + b * x + c, {x});
+  // p.monomial_to_coefficient_map() contains {1: c, x: b, x*x:a}.
+  std::cout << p.TotalDegree(); // prints 2.
+  // Now set (a, b, c) to the indeterminates. p becomes a linear
+  // polynomial of a, b, c.
+  p.SetIndeterminates({a, b, c});
+  // p.monomial_to_coefficient_map() now is {a: x * x, b: x, c: 1}.
+  std::cout << p.TotalDegree(); // prints 1.
+  @endcode
+   */
   void SetIndeterminates(const Variables& new_indeterminates);
 
-  /// Returns the highest degree of this polynomial in a variable @p v.
+  /** Returns the highest degree of this polynomial in a variable @p v. */
   int Degree(const Variable& v) const;
 
-  /// Returns the total degree of this polynomial.
+  /** Returns the total degree of this polynomial. */
   int TotalDegree() const;
 
-  /// Returns the mapping from a Monomial to its corresponding coefficient of
-  /// this polynomial.
+  /**
+  Returns the mapping from a Monomial to its corresponding coefficient of
+  this polynomial. */
   const MapType& monomial_to_coefficient_map() const;
 
-  /// Returns an equivalent symbolic expression of this polynomial.
+  /** Returns an equivalent symbolic expression of this polynomial. */
   Expression ToExpression() const;
 
-  /** Differentiates this polynomial with respect to the variable @p x. Note
-   * that a variable @p x can be either a decision variable or an indeterminate.
-   */
+  /**
+  Differentiates this polynomial with respect to the variable @p x. Note
+  that a variable @p x can be either a decision variable or an indeterminate. */
   Polynomial Differentiate(const Variable& x) const;
 
-  /// Computes the Jacobian matrix J of the polynomial with respect to
-  /// @p vars. J(0,i) contains ∂f/∂vars(i).
+  /**
+  Computes the Jacobian matrix J of the polynomial with respect to
+  @p vars. J(0,i) contains ∂f/∂vars(i). */
   template <typename Derived>
   Eigen::Matrix<Polynomial, 1, Derived::RowsAtCompileTime> Jacobian(
       const Eigen::MatrixBase<Derived>& vars) const {
@@ -162,34 +170,38 @@ class Polynomial {
     return J;
   }
 
-  /// Evaluates this polynomial under a given environment @p env.
-  ///
-  /// @throws std::out_of_range if there is a variable in this polynomial whose
-  /// assignment is not provided by @p env.
+  /**
+  Evaluates this polynomial under a given environment @p env.
+
+  @throws std::out_of_range if there is a variable in this polynomial whose
+  assignment is not provided by @p env. */
   double Evaluate(const Environment& env) const;
 
-  /// Partially evaluates this polynomial using an environment @p env.
-  ///
-  /// @throws std::runtime_error if NaN is detected during evaluation.
+  /**
+  Partially evaluates this polynomial using an environment @p env.
+
+  @throws std::runtime_error if NaN is detected during evaluation. */
   Polynomial EvaluatePartial(const Environment& env) const;
 
-  /// Partially evaluates this polynomial by substituting @p var with @p c.
-  ///
-  /// @throws std::runtime_error if NaN is detected at any point during
-  /// evaluation.
+  /**
+  Partially evaluates this polynomial by substituting @p var with @p c.
+
+  @throws std::runtime_error if NaN is detected at any point during
+  evaluation. */
   Polynomial EvaluatePartial(const Variable& var, double c) const;
 
-  /// Adds @p coeff * @p m to this polynomial.
+  /** Adds @p coeff * @p m to this polynomial. */
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
-  /// Removes the terms whose absolute value of the coefficients are smaller
-  /// than or equal to @p coefficient_tol
-  /// For example, if the polynomial is 2x² + 3xy + 10⁻⁴x - 10⁻⁵,
-  /// then after calling RemoveTermsWithSmallCoefficients(1e-3), the returned
-  /// polynomial becomes 2x² + 3xy.
-  /// @param coefficient_tol A positive scalar.
-  /// @retval polynomial_cleaned A polynomial whose terms with small
-  /// coefficients are removed.
+  /**
+  Removes the terms whose absolute value of the coefficients are smaller
+  than or equal to @p coefficient_tol
+  For example, if the polynomial is 2x² + 3xy + 10⁻⁴x - 10⁻⁵,
+  then after calling RemoveTermsWithSmallCoefficients(1e-3), the returned
+  polynomial becomes 2x² + 3xy.
+  @param coefficient_tol A positive scalar.
+  @retval polynomial_cleaned A polynomial whose terms with small
+  coefficients are removed. */
   Polynomial RemoveTermsWithSmallCoefficients(double coefficient_tol) const;
 
   Polynomial& operator+=(const Polynomial& p);
@@ -207,27 +219,31 @@ class Polynomial {
   Polynomial& operator*=(double c);
   Polynomial& operator*=(const Variable& v);
 
-  /// Returns true if this polynomial and @p p are structurally equal.
+  /** Returns true if this polynomial and @p p are structurally equal. */
   bool EqualTo(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p p are equal, after expanding the
-  /// coefficients.
+  /**
+  Returns true if this polynomial and @p p are equal, after expanding the
+  coefficients. */
   bool EqualToAfterExpansion(const Polynomial& p) const;
 
-  /// Returns true if this polynomial and @p are almost equal (the difference
-  /// in the corresponding coefficients are all less than @p tol), after
-  /// expanding the coefficients.
+  /**
+  Returns true if this polynomial and @p are almost equal (the difference
+  in the corresponding coefficients are all less than @p tol), after
+  expanding the coefficients. */
   bool CoefficientsAlmostEqual(const Polynomial& p, double tol) const;
 
-  /// Returns a symbolic formula representing the condition where this
-  /// polynomial and @p p are the same.
+  /**
+  Returns a symbolic formula representing the condition where this
+  polynomial and @p p are the same. */
   Formula operator==(const Polynomial& p) const;
 
-  /// Returns a symbolic formula representing the condition where this
-  /// polynomial and @p p are not the same.
+  /**
+  Returns a symbolic formula representing the condition where this
+  polynomial and @p p are not the same. */
   Formula operator!=(const Polynomial& p) const;
 
-  /// Implements the @ref hash_append concept.
+  /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher,
                           const Polynomial& item) noexcept {
@@ -249,7 +265,7 @@ class Polynomial {
   Variables decision_variables_;
 };
 
-/// Unary minus operation for polynomial.
+/** Unary minus operation for polynomial. */
 Polynomial operator-(const Polynomial& p);
 
 Polynomial operator+(Polynomial p1, const Polynomial& p2);
@@ -286,28 +302,29 @@ Polynomial operator*(double c, const Monomial& m);
 Polynomial operator*(Polynomial p, const Variable& v);
 Polynomial operator*(const Variable& v, Polynomial p);
 
-/// Returns `p / v`.
+/** Returns `p / v`. */
 Polynomial operator/(Polynomial p, double v);
 
-/// Returns polynomial @p rasied to @p n.
+/** Returns polynomial @p rasied to @p n. */
 Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
 
-/// Provides the following seven operations:
-///
-/// - Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
-/// - Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
-/// - Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
-/// - Matrix<Monomial> * Matrix<Monomial> => Matrix<Polynomial>
-/// - Matrix<Monomial> * Matrix<double> => Matrix<Polynomial>
-/// - Matrix<double> * Matrix<Polynomial> => Matrix<Polynomial>
-/// - Matrix<double> * Matrix<Monomial> => Matrix<Polynomial>
-///
-/// @note that these operator overloadings are necessary even after providing
-/// Eigen::ScalarBinaryOpTraits. See
-/// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
-/// for more information.
+/**
+Provides the following seven operations:
+
+- Matrix<Polynomial> * Matrix<Monomial> => Matrix<Polynomial>
+- Matrix<Polynomial> * Matrix<double> => Matrix<Polynomial>
+- Matrix<Monomial> * Matrix<Polynomial> => Matrix<Polynomial>
+- Matrix<Monomial> * Matrix<Monomial> => Matrix<Polynomial>
+- Matrix<Monomial> * Matrix<double> => Matrix<Polynomial>
+- Matrix<double> * Matrix<Polynomial> => Matrix<Polynomial>
+- Matrix<double> * Matrix<Monomial> => Matrix<Polynomial>
+
+@note that these operator overloadings are necessary even after providing
+Eigen::ScalarBinaryOpTraits. See
+https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
+for more information. */
 #if defined(DRAKE_DOXYGEN_CXX)
 template <typename MatrixL, typename MatrixR>
 Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
@@ -454,11 +471,12 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 
 namespace drake {
 namespace symbolic {
-/// Evaluates a matrix `m` of symbolic polynomials using `env`.
-///
-/// @returns a matrix of double whose size is the size of @p m.
-/// @throws std::runtime_error if NaN is detected during evaluation.
-/// @pydrake_mkdoc_identifier{polynomial}
+/**
+Evaluates a matrix `m` of symbolic polynomials using `env`.
+
+@returns a matrix of double whose size is the size of @p m.
+@throws std::runtime_error if NaN is detected during evaluation.
+@pydrake_mkdoc_identifier{polynomial} */
 template <typename Derived>
 std::enable_if_t<
     std::is_same<typename Derived::Scalar, Polynomial>::value,
@@ -469,11 +487,12 @@ Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
   return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
 }
 
-/// Computes the Jacobian matrix J of the vector function @p f with respect to
-/// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
-///
-/// @pre {@p vars is non-empty}.
-/// @pydrake_mkdoc_identifier{polynomial}
+/**
+Computes the Jacobian matrix J of the vector function @p f with respect to
+@p vars. J(i,j) contains ∂f(i)/∂vars(j).
+
+@pre {@p vars is non-empty}.
+@pydrake_mkdoc_identifier{polynomial} */
 MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
 

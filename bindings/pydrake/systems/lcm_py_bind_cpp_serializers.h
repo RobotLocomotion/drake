@@ -10,8 +10,7 @@ types.
 
 For more usages in Python, see the following in `_lcm_extra.py`:
 - _make_lcm_subscriber / LcmSubscriberSystem.Make
-- _make_lcm_publisher / LcmPublisherSystem.Make
-*/
+- _make_lcm_publisher / LcmPublisherSystem.Make */
 
 namespace drake {
 namespace pydrake {

@@ -22,27 +22,29 @@ class KukaIiwaModelBuilder {
   template <typename U>
   using MultibodyTree = multibody::internal::MultibodyTree<U>;
 
-  /// Instantiate a builder to make a MultibodyTree model of the KUKA iiwa arm
-  /// as specified in this class' documentation.
-  /// The world z-unit vector is vertically upward.
-  /// @param[in] finalize_model
-  ///   If `true`, the model is finalized with MultibodyTree::Finalize().
-  ///   A non-finalized model can be requested if adding more multibody elements
-  ///   is desired.
-  /// @param[in] gravity
-  ///   The model's acceleration of gravity. `gravity > 0` means the gravity
-  ///   field is directed opposite the world upward z-unit vector (i.e.
-  ///   downwards).
+  /**
+  Instantiate a builder to make a MultibodyTree model of the KUKA iiwa arm
+  as specified in this class' documentation.
+  The world z-unit vector is vertically upward.
+  @param[in] finalize_model
+    If `true`, the model is finalized with MultibodyTree::Finalize().
+    A non-finalized model can be requested if adding more multibody elements
+    is desired.
+  @param[in] gravity
+    The model's acceleration of gravity. `gravity > 0` means the gravity
+    field is directed opposite the world upward z-unit vector (i.e.
+    downwards). */
   KukaIiwaModelBuilder(bool finalize_model, double gravity) :
       gravity_(gravity),
       finalize_model_(finalize_model) {}
 
-  /// Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
-  /// The robot is constructed with 7 revolute joints.
-  /// The world z-unit vector is vertically upward. The acceleration of gravity
-  /// is of 9.81 m/s² directed opposite the world upward z-unit vector.
   // TODO(amcastro-tri): consider adding an input for the pose of the base in
   // the world.
+  /**
+  Construct a 7-DOF Kuka iiwa robot arm (from file kuka_iiwa_robot.urdf).
+  The robot is constructed with 7 revolute joints.
+  The world z-unit vector is vertically upward. The acceleration of gravity
+  is of 9.81 m/s² directed opposite the world upward z-unit vector. */
   std::unique_ptr<MultibodyTree<T>> Build() const;
 
  private:
@@ -140,21 +142,22 @@ class KukaIiwaModelBuilder {
 
 }  // namespace internal
 
-/// This method makes a MultibodyTree model for a Kuka Iiwa arm as specified
-/// in the file kuka_iiwa_robot.urdf contained in this same directory.
-/// Links can be accessed by their name "iiwa_link_1" (base) through
-/// "iiwa_link_7" (end effector). The "world" body can be accessed with
-/// MultibodyTree::world_body().
-/// Joints can be accessed by their name "iiwa_joint_1" (from the base) through
-/// "iiwa_joint_7" (to the end effector).
-/// The new MultibodyTree model is finalized by MultibodyTree::Finalize() and
-/// therefore no more modeling elements can be added.
-/// @param[in] finalize_model
-///   If `true`, the model is finalized with MultibodyTree::Finalize().
-///   A non-finalized model can be requested if adding more multibody elements
-///   is desired.
-/// @param[in] gravity
-///   The value of the acceleration of gravity, in m/s².
+/**
+This method makes a MultibodyTree model for a Kuka Iiwa arm as specified
+in the file kuka_iiwa_robot.urdf contained in this same directory.
+Links can be accessed by their name "iiwa_link_1" (base) through
+"iiwa_link_7" (end effector). The "world" body can be accessed with
+MultibodyTree::world_body().
+Joints can be accessed by their name "iiwa_joint_1" (from the base) through
+"iiwa_joint_7" (to the end effector).
+The new MultibodyTree model is finalized by MultibodyTree::Finalize() and
+therefore no more modeling elements can be added.
+@param[in] finalize_model
+  If `true`, the model is finalized with MultibodyTree::Finalize().
+  A non-finalized model can be requested if adding more multibody elements
+  is desired.
+@param[in] gravity
+  The value of the acceleration of gravity, in m/s². */
 template <typename T>
 std::unique_ptr<multibody::internal::MultibodyTree<T>> MakeKukaIiwaModel(
     bool finalize_model = true, double gravity = 9.81) {

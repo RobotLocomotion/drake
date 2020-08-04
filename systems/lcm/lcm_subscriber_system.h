@@ -19,40 +19,38 @@ namespace systems {
 namespace lcm {
 
 /**
- * Receives LCM messages from a given channel and outputs them to a
- * System<double>'s port. This class stores the most recently processed LCM
- * message in the State. When a LCM message arrives asynchronously, an update
- * event is scheduled to process the message and store it in the State at the
- * earliest possible simulation time. The output is always consistent with the
- * State.
- *
- * To process a LCM message, CalcNextUpdateTime() needs to be called first to
- * check for new messages and schedule a callback event if a new LCM message
- * has arrived. The message is then processed and stored in the Context by
- * CalcUnrestrictedUpdate(). When this system is evaluated by the Simulator,
- * all these operations are taken care of by the Simulator. On the other hand,
- * the user needs to manually replicate this process without the Simulator.
- *
- * If LCM service in use is a drake::lcm::DrakeLcmLog (not live operation),
- * then see drake::systems::lcm::LcmLogPlaybackSystem for a helper to advance
- * the log cursor in concert with the simulation.
- *
- * @ingroup message_passing
- */
+Receives LCM messages from a given channel and outputs them to a
+System<double>'s port. This class stores the most recently processed LCM
+message in the State. When a LCM message arrives asynchronously, an update
+event is scheduled to process the message and store it in the State at the
+earliest possible simulation time. The output is always consistent with the
+State.
+
+To process a LCM message, CalcNextUpdateTime() needs to be called first to
+check for new messages and schedule a callback event if a new LCM message
+has arrived. The message is then processed and stored in the Context by
+CalcUnrestrictedUpdate(). When this system is evaluated by the Simulator,
+all these operations are taken care of by the Simulator. On the other hand,
+the user needs to manually replicate this process without the Simulator.
+
+If LCM service in use is a drake::lcm::DrakeLcmLog (not live operation),
+then see drake::systems::lcm::LcmLogPlaybackSystem for a helper to advance
+the log cursor in concert with the simulation.
+
+@ingroup message_passing */
 class LcmSubscriberSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
   /**
-   * Factory method that returns a subscriber System that provides
-   * Value<LcmMessage> message objects on its sole abstract-valued output port.
-   *
-   * @tparam LcmMessage message type to deserialize, e.g., lcmt_drake_signal.
-   *
-   * @param[in] channel The LCM channel on which to subscribe.
-   *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
-   */
+  Factory method that returns a subscriber System that provides
+  Value<LcmMessage> message objects on its sole abstract-valued output port.
+
+  @tparam LcmMessage message type to deserialize, e.g., lcmt_drake_signal.
+
+  @param[in] channel The LCM channel on which to subscribe.
+
+  @param lcm A non-null pointer to the LCM subsystem to subscribe on. */
   template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> Make(
       const std::string& channel, drake::lcm::DrakeLcmInterface* lcm) {
@@ -61,29 +59,28 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   }
 
   /**
-   * Constructor that returns a subscriber System that provides message objects
-   * on its sole abstract-valued output port.  The type of the message object is
-   * determined by the @p serializer.
-   *
-   * @param[in] channel The LCM channel on which to subscribe.
-   *
-   * @param[in] serializer The serializer that converts between byte vectors
-   * and LCM message objects.
-   *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
-   */
+  Constructor that returns a subscriber System that provides message objects
+  on its sole abstract-valued output port.  The type of the message object is
+  determined by the @p serializer.
+
+  @param[in] channel The LCM channel on which to subscribe.
+
+  @param[in] serializer The serializer that converts between byte vectors
+  and LCM message objects.
+
+  @param lcm A non-null pointer to the LCM subsystem to subscribe on. */
   LcmSubscriberSystem(const std::string& channel,
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmSubscriberSystem() override;
 
-  /// Returns the default name for a system that subscribes to @p channel.
+  /** Returns the default name for a system that subscribes to @p channel. */
   static std::string make_name(const std::string& channel);
 
   const std::string& get_channel_name() const;
 
-  /// Returns the sole output port.
+  /** Returns the sole output port. */
   const OutputPort<double>& get_output_port() const {
     DRAKE_THROW_UNLESS(this->num_output_ports() == 1);
     return LeafSystem<double>::get_output_port(0);
@@ -96,32 +93,28 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   void get_input_port(int) = delete;
 
   /**
-   * Blocks the caller until its internal message count exceeds
-   * `old_message_count` with an optional timeout.
-   * @param old_message_count Internal message counter.
-   *
-   * @param message If non-null, will return the received message.
-   *
-   * @param timeout The duration (in seconds) to wait before returning; a
-   * non-positive duration will not time out.
-   *
-   * @return Returns the new count of received messages. If a timeout occurred,
-   * this will be less than or equal to old_message_count.
-   *
-   * @pre If `message` is specified, this system must be abstract-valued.
-   */
+  Blocks the caller until its internal message count exceeds
+  `old_message_count` with an optional timeout.
+  @param old_message_count Internal message counter.
+
+  @param message If non-null, will return the received message.
+
+  @param timeout The duration (in seconds) to wait before returning; a
+  non-positive duration will not time out.
+
+  @return Returns the new count of received messages. If a timeout occurred,
+  this will be less than or equal to old_message_count.
+
+  @pre If `message` is specified, this system must be abstract-valued. */
   int WaitForMessage(int old_message_count, AbstractValue* message = nullptr,
                      double timeout = -1.) const;
 
   /**
-   * Returns the internal message counter. Meant to be used with
-   * `WaitForMessage`.
-   */
+  Returns the internal message counter. Meant to be used with
+  `WaitForMessage`. */
   int GetInternalMessageCount() const;
 
-  /**
-   * Returns the message counter stored in @p context.
-   */
+  /** Returns the message counter stored in @p context. */
   int GetMessageCount(const Context<double>& context) const;
 
  private:

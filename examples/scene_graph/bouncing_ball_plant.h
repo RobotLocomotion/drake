@@ -15,26 +15,26 @@ namespace examples {
 namespace scene_graph {
 namespace bouncing_ball {
 
-/** A model of a bouncing ball with Hunt-Crossley compliant contact model.
- The model supports 1D motion in a 3D world.
+/**
+A model of a bouncing ball with Hunt-Crossley compliant contact model.
+The model supports 1D motion in a 3D world.
 
- @tparam_double_only
-*/
+@tparam_double_only */
 template <typename T>
 class BouncingBallPlant : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBallPlant)
 
-  /** Constructor
-   @param source_id             The source id for this plant to interact with
-                                GeoemtrySystem.
-   @param scene_graph           Pointer to the geometry system instance on which
-                                this plant's geometry will be registered. It
-                                must be the same system the source id was
-                                extracted from.
-   @param p_WB                  The 2D, projected position vector of the ball
-                                onto the ground plane relative to the world.
-   */
+  /**
+  Constructor
+  @param source_id             The source id for this plant to interact with
+                               GeoemtrySystem.
+  @param scene_graph           Pointer to the geometry system instance on which
+                               this plant's geometry will be registered. It
+                               must be the same system the source id was
+                               extracted from.
+  @param p_WB                  The 2D, projected position vector of the ball
+                               onto the ground plane relative to the world. */
   BouncingBallPlant(geometry::SourceId source_id,
                     geometry::SceneGraph<T>* scene_graph,
                     const Vector2<double>& p_WB);

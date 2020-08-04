@@ -12,8 +12,9 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
-/// This enum specifies the type of interpolator to use in constructing
-/// the piece-wise polynomial.
+/**
+This enum specifies the type of interpolator to use in constructing
+the piece-wise polynomial. */
 enum class InterpolatorType {
   ZeroOrderHold,
   FirstOrderHold,
@@ -21,26 +22,27 @@ enum class InterpolatorType {
   Cubic
 };
 
-/// This class implements a source of joint positions for a robot.
-/// It has one input port for robot_plan_t messages containing a
-/// plan to follow.
-///
-/// The system has two output ports, one with the current desired
-/// state (q,v) of the robot and another for the accelerations.
-///
-/// @system
-/// name: RobotPlanInterpolator
-/// input_ports:
-/// - plan
-/// output_ports:
-/// - state
-/// - acceleration
-/// @endsystem
-///
-/// If a plan is received with no knot points, the system will create
-/// a plan which commands the robot to hold at the measured position.
-///
-/// @ingroup manipulation_systems
+/**
+This class implements a source of joint positions for a robot.
+It has one input port for robot_plan_t messages containing a
+plan to follow.
+
+The system has two output ports, one with the current desired
+state (q,v) of the robot and another for the accelerations.
+
+@system
+name: RobotPlanInterpolator
+input_ports:
+- plan
+output_ports:
+- state
+- acceleration
+@endsystem
+
+If a plan is received with no knot points, the system will create
+a plan which commands the robot to hold at the measured position.
+
+@ingroup manipulation_systems */
 class RobotPlanInterpolator : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotPlanInterpolator)
@@ -50,7 +52,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
                         double update_interval = kDefaultPlanUpdateInterval);
   ~RobotPlanInterpolator() override;
 
-  /// N.B. This input port is useless and may be left disconnected.
+  /** N.B. This input port is useless and may be left disconnected. */
   const systems::InputPort<double>& get_plan_input_port() const {
     return this->get_input_port(plan_input_port_);
   }
@@ -66,10 +68,9 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   }
 
   /**
-   * Makes a plan to hold at the measured joint configuration @p q0 starting at
-   * @p plan_start_time. This function needs to be explicitly called before any
-   * simulation. Otherwise this aborts in CalcOutput().
-   */
+  Makes a plan to hold at the measured joint configuration @p q0 starting at
+  @p plan_start_time. This function needs to be explicitly called before any
+  simulation. Otherwise this aborts in CalcOutput(). */
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;
 

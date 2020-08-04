@@ -11,20 +11,22 @@
 namespace drake {
 namespace systems {
 
-/// A continuous- or discrete-time Affine Time-Varying system with system
-/// matrices described by trajectories.
-///
-/// @tparam_nonsymbolic_scalar
-/// @ingroup primitive_systems
+/**
+A continuous- or discrete-time Affine Time-Varying system with system
+matrices described by trajectories.
+
+@tparam_nonsymbolic_scalar
+@ingroup primitive_systems */
 template <typename T>
 class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryAffineSystem)
 
-  /// Constructs a TrajectoryAffineSystem from trajectories of matrices.
-  ///
-  /// @param time_period Defines the period of the discrete time system; use
-  ///  time_period=0.0 to denote a continuous time system.  @default 0.0
+  /**
+  Constructs a TrajectoryAffineSystem from trajectories of matrices.
+
+  @param time_period Defines the period of the discrete time system; use
+   time_period=0.0 to denote a continuous time system.  @default 0.0 */
   TrajectoryAffineSystem(const trajectories::Trajectory<double>& A,
                          const trajectories::Trajectory<double>& B,
                          const trajectories::Trajectory<double>& f0,
@@ -33,13 +35,14 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
                          const trajectories::Trajectory<double>& y0,
                          double time_period = 0.);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit TrajectoryAffineSystem(const TrajectoryAffineSystem<U>& other);
 
-  /// @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
-  /// methods.
-  /// @{
+  /**
+  @name Implementations of TimeVaryingAffineSystem<T>'s pure virtual
+  methods.
+  @{ */
   MatrixX<T> A(const T& t) const final {
     return A_->value(ExtractDoubleOrThrow(t));
   }
@@ -58,7 +61,7 @@ class TrajectoryAffineSystem final : public TimeVaryingAffineSystem<T> {
   VectorX<T> y0(const T& t) const final {
     return y0_->value(ExtractDoubleOrThrow(t));
   }
-  /// @}
+  /** @} */
 
  private:
   // Allow different specializations to access each other's private data.

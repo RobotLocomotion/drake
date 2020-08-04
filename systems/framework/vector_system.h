@@ -20,14 +20,15 @@
 namespace drake {
 namespace systems {
 
-/// A base class that specializes LeafSystem for use with only zero or one
-/// vector input ports, and only zero or one vector output ports.
-///
-/// By default, this base class does not declare any state; subclasses may
-/// optionally declare continuous or discrete state, but not both; subclasses
-/// may not declare abstract state.
-///
-/// @tparam_default_scalar
+/**
+A base class that specializes LeafSystem for use with only zero or one
+vector input ports, and only zero or one vector output ports.
+
+By default, this base class does not declare any state; subclasses may
+optionally declare continuous or discrete state, but not both; subclasses
+may not declare abstract state.
+
+@tparam_default_scalar */
 template <typename T>
 class VectorSystem : public LeafSystem<T> {
  public:
@@ -35,7 +36,7 @@ class VectorSystem : public LeafSystem<T> {
 
   ~VectorSystem() override = default;
 
-  /// Returns the sole input port.
+  /** Returns the sole input port. */
   const InputPort<T>& get_input_port() const {
     DRAKE_DEMAND(this->num_input_ports() == 1);
     return LeafSystem<T>::get_input_port(0);
@@ -44,7 +45,7 @@ class VectorSystem : public LeafSystem<T> {
   // Don't use the indexed get_input_port when calling this system directly.
   void get_input_port(int) = delete;
 
-  /// Returns the sole output port.
+  /** Returns the sole output port. */
   const OutputPort<T>& get_output_port() const {
     DRAKE_DEMAND(this->num_output_ports() == 1);
     return LeafSystem<T>::get_output_port(0);
@@ -54,42 +55,44 @@ class VectorSystem : public LeafSystem<T> {
   void get_output_port(int) = delete;
 
  protected:
-  /// Creates a system with one input port and one output port of the given
-  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
-  /// case no input (or output) port is created.
-  ///
-  /// The `direct_feedthrough` specifies whether the input port direct feeds
-  /// through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
-  /// When not provided, assumes true (the output is direct feedthrough).
-  /// When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
-  ///
-  /// Does *not* declare scalar-type conversion support (AutoDiff, etc.).  To
-  /// enable AutoDiff support, use the SystemScalarConverter-based constructor.
-  /// (For that, see @ref system_scalar_conversion at the example titled
-  /// "Example using drake::systems::VectorSystem as the base class".)
+  /**
+  Creates a system with one input port and one output port of the given
+  sizes, when the sizes are non-zero.  Either size can be zero, in which
+  case no input (or output) port is created.
+
+  The `direct_feedthrough` specifies whether the input port direct feeds
+  through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
+  When not provided, assumes true (the output is direct feedthrough).
+  When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
+
+  Does *not* declare scalar-type conversion support (AutoDiff, etc.).  To
+  enable AutoDiff support, use the SystemScalarConverter-based constructor.
+  (For that, see @ref system_scalar_conversion at the example titled
+  "Example using drake::systems::VectorSystem as the base class".) */
   VectorSystem(int input_size, int output_size,
                std::optional<bool> direct_feedthrough = std::nullopt)
       : VectorSystem(SystemScalarConverter{}, input_size, output_size,
                      direct_feedthrough) {}
 
-  /// Creates a system with one input port and one output port of the given
-  /// sizes, when the sizes are non-zero.  Either size can be zero, in which
-  /// case no input (or output) port is created.  This constructor allows
-  /// subclasses to declare scalar-type conversion support (AutoDiff, etc.).
-  ///
-  /// The `direct_feedthrough` specifies whether the input port direct feeds
-  /// through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
-  /// When not provided, infers feedthrough from the symbolic form if
-  /// available, or else assumes true (the output is direct feedthrough).
-  /// When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
-  ///
-  /// The scalar-type conversion support will use @p converter.
-  /// To enable scalar-type conversion support, pass a `SystemTypeTag<S>{}`
-  /// where `S` must be the exact class of `this` being constructed.
-  ///
-  /// See @ref system_scalar_conversion for detailed background and examples
-  /// related to scalar-type conversion support, especially the example titled
-  /// "Example using drake::systems::VectorSystem as the base class".
+  /**
+  Creates a system with one input port and one output port of the given
+  sizes, when the sizes are non-zero.  Either size can be zero, in which
+  case no input (or output) port is created.  This constructor allows
+  subclasses to declare scalar-type conversion support (AutoDiff, etc.).
+
+  The `direct_feedthrough` specifies whether the input port direct feeds
+  through to the output port.  (See SystemBase::GetDirectFeedthroughs().)
+  When not provided, infers feedthrough from the symbolic form if
+  available, or else assumes true (the output is direct feedthrough).
+  When false, the DoCalcVectorOutput `input` will be empty (zero-sized).
+
+  The scalar-type conversion support will use @p converter.
+  To enable scalar-type conversion support, pass a `SystemTypeTag<S>{}`
+  where `S` must be the exact class of `this` being constructed.
+
+  See @ref system_scalar_conversion for detailed background and examples
+  related to scalar-type conversion support, especially the example titled
+  "Example using drake::systems::VectorSystem as the base class". */
   VectorSystem(SystemScalarConverter converter, int input_size, int output_size,
                std::optional<bool> direct_feedthrough = std::nullopt)
       : LeafSystem<T>(std::move(converter)) {
@@ -118,9 +121,10 @@ class VectorSystem : public LeafSystem<T> {
     }
   }
 
-  /// Causes the vector-valued input port to become up-to-date, and returns
-  /// the port's value as an %Eigen vector.  If the system has zero inputs,
-  /// then returns an empty vector.
+  /**
+  Causes the vector-valued input port to become up-to-date, and returns
+  the port's value as an %Eigen vector.  If the system has zero inputs,
+  then returns an empty vector. */
   Eigen::VectorBlock<const VectorX<T>> EvalVectorInput(
       const Context<T>& context) const {
     // Obtain the block form of u (or the empty vector).
@@ -131,8 +135,9 @@ class VectorSystem : public LeafSystem<T> {
     return empty_vector.access().segment(0, 0);
   }
 
-  /// Returns a reference to an %Eigen vector version of the state from within
-  /// the %Context.
+  /**
+  Returns a reference to an %Eigen vector version of the state from within
+  the %Context. */
   Eigen::VectorBlock<const VectorX<T>> GetVectorState(
       const Context<T>& context) const {
     // Obtain the block form of xc or xd.
@@ -149,8 +154,9 @@ class VectorSystem : public LeafSystem<T> {
     return state_vector->get_value();
   }
 
-  /// Converts the parameters to Eigen::VectorBlock form, then delegates to
-  /// DoCalcVectorTimeDerivatives().
+  /**
+  Converts the parameters to Eigen::VectorBlock form, then delegates to
+  DoCalcVectorTimeDerivatives(). */
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final {
     // Short-circuit when there's no work to do.
@@ -177,8 +183,9 @@ class VectorSystem : public LeafSystem<T> {
                                 &derivatives_block);
   }
 
-  /// Converts the parameters to Eigen::VectorBlock form, then delegates to
-  /// DoCalcVectorDiscreteVariableUpdates().
+  /**
+  Converts the parameters to Eigen::VectorBlock form, then delegates to
+  DoCalcVectorDiscreteVariableUpdates(). */
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
@@ -209,8 +216,9 @@ class VectorSystem : public LeafSystem<T> {
                                         &discrete_update_block);
   }
 
-  /// Converts the parameters to Eigen::VectorBlock form, then delegates to
-  /// DoCalcVectorOutput().
+  /**
+  Converts the parameters to Eigen::VectorBlock form, then delegates to
+  DoCalcVectorOutput(). */
   void CalcVectorOutput(const Context<T>& context,
                         BasicVector<T>* output) const {
     // Should only get here if we've declared an output.
@@ -273,21 +281,22 @@ class VectorSystem : public LeafSystem<T> {
     DoCalcVectorOutput(context, input_block, state_block, &output_block);
   }
 
-  /// Provides a convenience method for %VectorSystem subclasses.  This
-  /// method performs the same logical operation as System::DoCalcOutput but
-  /// provides VectorBlocks to represent the input, state, and output.
-  /// Subclasses with outputs should override this method, and not the base
-  /// class method (which is `final`).
-  ///
-  /// The @p state will be either empty, the continuous state, or the discrete
-  /// state, depending on which (or none) was declared at context-creation
-  /// time.
-  ///
-  /// The @p input will be empty (zero-sized) when this System is declared to
-  /// be non-direct-feedthrough.
-  ///
-  /// By default, this function does nothing if the @p output is empty,
-  /// and throws an exception otherwise.
+  /**
+  Provides a convenience method for %VectorSystem subclasses.  This
+  method performs the same logical operation as System::DoCalcOutput but
+  provides VectorBlocks to represent the input, state, and output.
+  Subclasses with outputs should override this method, and not the base
+  class method (which is `final`).
+
+  The @p state will be either empty, the continuous state, or the discrete
+  state, depending on which (or none) was declared at context-creation
+  time.
+
+  The @p input will be empty (zero-sized) when this System is declared to
+  be non-direct-feedthrough.
+
+  By default, this function does nothing if the @p output is empty,
+  and throws an exception otherwise. */
   virtual void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
@@ -297,16 +306,17 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(output->size() == 0);
   }
 
-  /// Provides a convenience method for %VectorSystem subclasses.  This
-  /// method performs the same logical operation as
-  /// System::DoCalcTimeDerivatives but provides VectorBlocks to represent the
-  /// input, continuous state, and derivatives.  Subclasses should override
-  /// this method, and not the base class method (which is `final`).
-  /// The @p state will be either empty or the continuous state, depending on
-  /// whether continuous state was declared at context-creation time.
-  ///
-  /// By default, this function does nothing if the @p derivatives are empty,
-  /// and throws an exception otherwise.
+  /**
+  Provides a convenience method for %VectorSystem subclasses.  This
+  method performs the same logical operation as
+  System::DoCalcTimeDerivatives but provides VectorBlocks to represent the
+  input, continuous state, and derivatives.  Subclasses should override
+  this method, and not the base class method (which is `final`).
+  The @p state will be either empty or the continuous state, depending on
+  whether continuous state was declared at context-creation time.
+
+  By default, this function does nothing if the @p derivatives are empty,
+  and throws an exception otherwise. */
   virtual void DoCalcVectorTimeDerivatives(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
@@ -316,18 +326,19 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(derivatives->size() == 0);
   }
 
-  /// Provides a convenience method for %VectorSystem subclasses.  This
-  /// method performs the same logical operation as
-  /// System::DoCalcDiscreteVariableUpdates but provides VectorBlocks to
-  /// represent the input, discrete state, and discrete updates.  Subclasses
-  /// should override this method, and not the base class method (which is
-  /// `final`).
-  ///
-  /// The @p state will be either empty or the discrete state, depending on
-  /// whether discrete state was declared at context-creation time.
-  ///
-  /// By default, this function does nothing if the @p next_state is
-  /// empty, and throws an exception otherwise.
+  /**
+  Provides a convenience method for %VectorSystem subclasses.  This
+  method performs the same logical operation as
+  System::DoCalcDiscreteVariableUpdates but provides VectorBlocks to
+  represent the input, discrete state, and discrete updates.  Subclasses
+  should override this method, and not the base class method (which is
+  `final`).
+
+  The @p state will be either empty or the discrete state, depending on
+  whether discrete state was declared at context-creation time.
+
+  By default, this function does nothing if the @p next_state is
+  empty, and throws an exception otherwise. */
   virtual void DoCalcVectorDiscreteVariableUpdates(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,

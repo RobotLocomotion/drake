@@ -12,12 +12,13 @@ namespace kuka_iiwa_arm {
 using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
 
-/// Used to set the feedback gains for the simulated position controlled KUKA.
+/** Used to set the feedback gains for the simulated position controlled KUKA.
+ */
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
 
-/// Used to set the feedback gains for the simulated torque controlled KUKA.
+/** Used to set the feedback gains for the simulated torque controlled KUKA. */
 void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
                                   Eigen::VectorXd* damping_ratio);
 

@@ -10,10 +10,9 @@
 namespace drake {
 namespace geometry {
 /**
- * Same as SignedDistanceToPoint, except this class also contains the gradient
- * w.r.t p_GQ_G (the position of the query point Q measured and expressed in
- * object G's frame).
- */
+Same as SignedDistanceToPoint, except this class also contains the gradient
+w.r.t p_GQ_G (the position of the query point Q measured and expressed in
+object G's frame). */
 struct SignedDistanceToPointWithGradient {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistanceToPointWithGradient)
 
@@ -33,32 +32,26 @@ struct SignedDistanceToPointWithGradient {
         dgrad_W_dp_GQ(std::move(dgrad_W_dp_GQ_in)),
         is_grad_W_well_defined{is_grad_W_well_defined_in} {}
 
-  /**
-   * Same as SignedDistanceToPoint::id_G.
-   */
+  /** Same as SignedDistanceToPoint::id_G. */
   GeometryId id_G;
   /**
-   * Same as SignedDistanceToPoint::p_GN. The position of the nearest point N
-   * on G's surface to the query point Q, expressed in G's frame.
-   */
+  Same as SignedDistanceToPoint::p_GN. The position of the nearest point N
+  on G's surface to the query point Q, expressed in G's frame. */
   Eigen::Vector3d p_GN;
   /**
-   * The gradient of p_GN w.r.t p_GQ (the position of query point Q measured and
-   * expressed in object G's frame).
-   */
+  The gradient of p_GN w.r.t p_GQ (the position of query point Q measured and
+  expressed in object G's frame). */
   Eigen::Matrix3d dp_GN_dp_GQ;
   /**
-   * Same as SignedDistanceToPoint::distance.The signed distance from the query
-   * point Q to the nearest point N on the surface of geometry G.
-   */
+  Same as SignedDistanceToPoint::distance.The signed distance from the query
+  point Q to the nearest point N on the surface of geometry G. */
   double distance{};
   /** The gradient of the distance w.r.t p_GQ. */
   Eigen::RowVector3d ddistance_dp_GQ;
   /**
-   * Same as SignedDistanceToPoint::grad_W. The unit length gradient vector of
-   * the distance function with respect to the query point Q, expressed in world
-   * frame W.
-   */
+  Same as SignedDistanceToPoint::grad_W. The unit length gradient vector of
+  the distance function with respect to the query point Q, expressed in world
+  frame W. */
   Eigen::Vector3d grad_W;
   /** The derivative of grad_W w.r.t p_GQ. */
   Eigen::Matrix3d dgrad_W_dp_GQ;

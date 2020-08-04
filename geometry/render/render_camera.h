@@ -11,15 +11,17 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** Defines the near and far clipping planes for frustum-based (e.g. OpenGL)
- RenderEngine cameras.  */
+/**
+Defines the near and far clipping planes for frustum-based (e.g. OpenGL)
+RenderEngine cameras. */
 class ClippingRange {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ClippingRange);
 
-  /** Constructs the %ClippingRange.
-   @throws std::runtime_error if either value isn't positive, or if
-                              `near >= far`.  */
+  /**
+  Constructs the %ClippingRange.
+  @throws std::runtime_error if either value isn't positive, or if
+                             `near >= far`. */
   ClippingRange(double near, double far);
 
   double near() const { return near_; }
@@ -30,21 +32,23 @@ class ClippingRange {
   double far_{};
 };
 
-/** Collection of core parameters for modeling a pinhole-model camera in a
- RenderEngine. These parameters are applicable to both depth and color/label
- renderings. Parameters specific to those output image types can be found
- below.
+/**
+Collection of core parameters for modeling a pinhole-model camera in a
+RenderEngine. These parameters are applicable to both depth and color/label
+renderings. Parameters specific to those output image types can be found
+below.
 
- While these parameters are generally applicable to all RenderEngine
- implementations, this is not guaranteed to be true. For example, the clipping
- range property only applies to frustum-based RenderEngine implementations.
- I.e., it wouldn't apply to a ray-tracing based implementation.  */
+While these parameters are generally applicable to all RenderEngine
+implementations, this is not guaranteed to be true. For example, the clipping
+range property only applies to frustum-based RenderEngine implementations.
+I.e., it wouldn't apply to a ray-tracing based implementation. */
 class RenderCameraCore {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderCameraCore);
 
-  /** Fully-specified constructor. See the documentation on the member getter
-   methods for documentation of parameters.  */
+  /**
+  Fully-specified constructor. See the documentation on the member getter
+  methods for documentation of parameters. */
   RenderCameraCore(std::string renderer_name,
                    systems::sensors::CameraInfo intrinsics,
                    ClippingRange clipping, math::RigidTransformd X_BS)
@@ -53,19 +57,22 @@ class RenderCameraCore {
         clipping_(std::move(clipping)),
         X_BS_(std::move(X_BS)) {}
 
-  /** The name of the render engine this camera should be used with.  */
+  /** The name of the render engine this camera should be used with. */
   const std::string& renderer_name() const { return renderer_name_; }
 
-  /** The camera's intrinsic properties (e.g., focal length, sensor size, etc.)
-   See systems::sensors::CameraInfo for details.  */
+  /**
+  The camera's intrinsic properties (e.g., focal length, sensor size, etc.)
+  See systems::sensors::CameraInfo for details. */
   const systems::sensors::CameraInfo& intrinsics() const { return intrinsics_; }
 
-  /** The near and far clipping planes for this camera. This property is ignored
-   by RenderEngine implementations that don't use a clipping frustum.  */
+  /**
+  The near and far clipping planes for this camera. This property is ignored
+  by RenderEngine implementations that don't use a clipping frustum. */
   const ClippingRange& clipping() const { return clipping_; }
 
-  /** The pose of the sensor frame (S) in the camera's body frame (B). This is
-   the "imager" referred to in systems::sensors::CameraInfo's documentation.  */
+  /**
+  The pose of the sensor frame (S) in the camera's body frame (B). This is
+  the "imager" referred to in systems::sensors::CameraInfo's documentation. */
   const math::RigidTransformd& sensor_pose_in_camera_body() const {
     return X_BS_;
   }
@@ -82,21 +89,23 @@ class RenderCameraCore {
   //  RenderEngine implementations.
 };
 
-/** Collection of camera properties for cameras to be used with color/label
- images.  */
+/**
+Collection of camera properties for cameras to be used with color/label
+images. */
 class ColorRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ColorRenderCamera);
 
-  /** Fully-specified constructor. See the documentation on the member getter
-   methods for documentation of parameters.  */
+  /**
+  Fully-specified constructor. See the documentation on the member getter
+  methods for documentation of parameters. */
   explicit ColorRenderCamera(RenderCameraCore core, bool show_window = false)
       : core_(std::move(core)), show_window_(show_window) {}
 
-  /** This camera's core render properties.  */
+  /** This camera's core render properties. */
   const RenderCameraCore& core() const { return core_; }
 
-  /** If true, requests that the RenderEngine display the rendered image.  */
+  /** If true, requests that the RenderEngine display the rendered image. */
   bool show_window() const { return show_window_; }
 
  private:
@@ -105,28 +114,30 @@ class ColorRenderCamera {
   bool show_window_{false};
 };
 
-/** Defines a depth sensor's functional range. Only points that lie within the
- range `[min_depth, max_depth]` will register meaningful values.
+/**
+Defines a depth sensor's functional range. Only points that lie within the
+range `[min_depth, max_depth]` will register meaningful values.
 
- @note It's important to carefully coordinate depth range and clipping planes.
- It might seem reasonable to use the depth range as clipping planes, but that
- would be a mistake. Objects closer than the depth range's minimum value have
- an occluding effect in reality. If the near clipping plane is set to the
- minimum depth range value, those objects will be clipped away and won't
- occlude as they should. In essence, the camera will see through them and return
- incorrect values from beyond the missing geometry. The near clipping plane
- should _always_ be closer than the minimum depth range. How much closer depends
- on the scenario. Given the scenario, evaluate the closest possible distance
- to the camera that geometry in the scene could possibly achieve; the clipping
- plane should be slightly closer than that. When in doubt, some very small
- value (e.g., 1 mm) is typically safe.  */
+@note It's important to carefully coordinate depth range and clipping planes.
+It might seem reasonable to use the depth range as clipping planes, but that
+would be a mistake. Objects closer than the depth range's minimum value have
+an occluding effect in reality. If the near clipping plane is set to the
+minimum depth range value, those objects will be clipped away and won't
+occlude as they should. In essence, the camera will see through them and return
+incorrect values from beyond the missing geometry. The near clipping plane
+should _always_ be closer than the minimum depth range. How much closer depends
+on the scenario. Given the scenario, evaluate the closest possible distance
+to the camera that geometry in the scene could possibly achieve; the clipping
+plane should be slightly closer than that. When in doubt, some very small
+value (e.g., 1 mm) is typically safe. */
 class DepthRange {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRange);
 
-  /** Constructs the %DepthRange.
-   @throws std::runtime_error if either value isn't positive, or if
-                              `min_in >= max_in`.  */
+  /**
+  Constructs the %DepthRange.
+  @throws std::runtime_error if either value isn't positive, or if
+                             `min_in >= max_in`. */
   DepthRange(double min_in, double max_in);
 
   double min_depth() const { return min_depth_; }
@@ -137,23 +148,23 @@ class DepthRange {
   double max_depth_{};
 };
 
-/** Collection of camera properties for cameras to be used with depth images.
- */
+/** Collection of camera properties for cameras to be used with depth images. */
 class DepthRenderCamera {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DepthRenderCamera);
 
-  /** Fully-specified constructor. See the documentation on the member getter
-   methods for documentation of parameters.
+  /**
+  Fully-specified constructor. See the documentation on the member getter
+  methods for documentation of parameters.
 
-   @throws std::runtime_error if the depth_range is not fully contained within
-                              the clipping range.  */
+  @throws std::runtime_error if the depth_range is not fully contained within
+                             the clipping range. */
   DepthRenderCamera(RenderCameraCore core, DepthRange depth_range);
 
-  /** This camera's core render properties.  */
+  /** This camera's core render properties. */
   const RenderCameraCore& core() const { return core_; }
 
-  /** The range of valid values for the depth camera.  */
+  /** The range of valid values for the depth camera. */
   const DepthRange& depth_range() const { return depth_range_; }
 
  private:

@@ -15,10 +15,9 @@
 namespace drake {
 namespace solvers {
 /**
- * A binding on constraint type C is a mapping of the decision
- * variables onto the inputs of C.  This allows the constraint to operate
- * on a vector made up of different elements of the decision variables.
- */
+A binding on constraint type C is a mapping of the decision
+variables onto the inputs of C.  This allows the constraint to operate
+on a vector made up of different elements of the decision variables. */
 template <typename C>
 class Binding {
  public:
@@ -31,10 +30,9 @@ class Binding {
   }
 
   /**
-   * Concatenates each VectorDecisionVariable object in @p v into a single
-   * column vector, binds this column vector of decision variables with
-   * the constraint @p c.
-   */
+  Concatenates each VectorDecisionVariable object in @p v into a single
+  column vector, binds this column vector of decision variables with
+  the constraint @p c. */
   Binding(const std::shared_ptr<C>& c, const VariableRefList& v)
       : evaluator_(c) {
     vars_ = ConcatenateVariableRefList(v);
@@ -52,8 +50,7 @@ class Binding {
 
   const VectorXDecisionVariable& variables() const { return vars_; }
 
-  /**
-   * Returns true iff the given @p var is included in this Binding. */
+  /** Returns true iff the given @p var is included in this Binding. */
   bool ContainsVariable(const symbolic::Variable& var) const {
     for (int i = 0; i < vars_.rows(); ++i) {
       if (vars_(i).equal_to(var)) {
@@ -69,9 +66,7 @@ class Binding {
     return vars_.size();
   }
 
-  /**
-   * Returns string representation of Binding.
-   */
+  /** Returns string representation of Binding. */
   std::string to_string() const {
     std::ostringstream os;
     os << *this;
@@ -79,9 +74,8 @@ class Binding {
   }
 
   /**
-   * Compare two bindings based on their evaluator pointers and the bound
-   * variables.
-   */
+  Compare two bindings based on their evaluator pointers and the bound
+  variables. */
   bool operator==(const Binding<C>& other) const {
     if (this->evaluator().get() != other.evaluator().get()) {
       return false;
@@ -121,9 +115,7 @@ class Binding {
   VectorXDecisionVariable vars_;
 };
 
-/**
- * Print out the Binding.
- */
+/** Print out the Binding. */
 template <typename C>
 std::ostream& operator<<(std::ostream& os, const Binding<C>& binding) {
   return binding.evaluator()->Display(os, binding.variables());

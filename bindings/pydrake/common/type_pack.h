@@ -1,8 +1,9 @@
 #pragma once
 
-/// @file
-/// Basic meta-programming utilities for types, focused on template parameter
-/// packs.
+/**
+@file
+Basic meta-programming utilities for types, focused on template parameter
+packs. */
 
 #include <cstddef>
 #include <type_traits>
@@ -69,60 +70,64 @@ struct assert_default_constructible {
 
 }  // namespace internal
 
-/// Extracts the Ith type from a sequence of types.
+/** Extracts the Ith type from a sequence of types. */
 template <size_t I, typename... Ts>
 struct type_at {
   static_assert(I >= 0 && I < sizeof...(Ts), "Invalid type index");
   using type = typename internal::type_at_impl<I, 0, Ts...>::type;
 };
 
-/// Provides a tag to pass a type for ease of inference.
+/** Provides a tag to pass a type for ease of inference. */
 template <typename T>
 struct type_tag {
   using type = T;
 };
 
-/// Provides a tag for single-parameter templates.
-/// @note Single-parameter is specialized because `using` aliases are picky
-/// about how template parameters are passed.
-/// @see https://stackoverflow.com/a/33131008/7829525
-/// @note The above issues can be worked around if either (a) inheritance
-/// rather than aliasing is used, or (b) the alias uses the *exact* matching
-/// form of expansion.
+/**
+Provides a tag for single-parameter templates.
+@note Single-parameter is specialized because `using` aliases are picky
+about how template parameters are passed.
+@see https://stackoverflow.com/a/33131008/7829525
+@note The above issues can be worked around if either (a) inheritance
+rather than aliasing is used, or (b) the alias uses the *exact* matching
+form of expansion. */
 template <template <typename> class Tpl>
 struct template_single_tag {
   template <typename T>
   using type = Tpl<T>;
 };
 
-/// Provides a tag to pass a parameter packs for ease of inference.
+/** Provides a tag to pass a parameter packs for ease of inference. */
 template <typename... Ts>
 struct type_pack {
-  /// Number of template parameters.
+  /** Number of template parameters. */
   static constexpr int size = sizeof...(Ts);
 
-  /// Rebinds parameter pack to a given template.
+  /** Rebinds parameter pack to a given template. */
   template <template <typename...> class Tpl>
   using bind = Tpl<Ts...>;
 
-  /// Extracts the Ith type from this sequence.
+  /** Extracts the Ith type from this sequence. */
   template <size_t I>
   using type_at = typename drake::type_at<I, Ts...>::type;
 };
 
-/// Returns an expression (only to be used in `decltype`) for inferring
-/// and binding a parameter pack to a template.
+/**
+Returns an expression (only to be used in `decltype`) for inferring
+and binding a parameter pack to a template. */
 template <template <typename...> class Tpl, typename... Ts>
 Tpl<Ts...> type_bind(type_pack<Ts...>);
 
-/// Extracts the inner template arguments (typename only) for a typename which
-/// is a template instantiation.
+/**
+Extracts the inner template arguments (typename only) for a typename which
+is a template instantiation. */
 template <typename T>
 using type_pack_extract = typename internal::type_pack_extract_impl<T>::type;
 
-/// Visit a type by constructing its default value.
-/// Useful for iterating over `type_tag`, `type_pack`, `std::integral_constant`,
-/// etc.
+/**
+Visit a type by constructing its default value.
+Useful for iterating over `type_tag`, `type_pack`, `std::integral_constant`,
+etc. */
 struct type_visit_with_default {
   template <typename T, typename Visitor>
   inline static void run(Visitor&& visitor) {
@@ -133,7 +138,7 @@ struct type_visit_with_default {
   }
 };
 
-/// Visits a type by construct a template tag's default value.
+/** Visits a type by construct a template tag's default value. */
 template <template <typename> class Tag = type_tag>
 struct type_visit_with_tag {
   template <typename T, typename Visitor>
@@ -142,28 +147,29 @@ struct type_visit_with_tag {
   }
 };
 
-/// Provides a check which will return true for any type.
+/** Provides a check which will return true for any type. */
 template <typename T>
 using type_check_always_true = std::true_type;
 
 // TODO(eric.cousineau): Remove this once C++17 is used.
-/// Provides backport of C++17 `std::negation`.
+/** Provides backport of C++17 `std::negation`. */
 template <typename T>
 using negation = std::integral_constant<bool, !T::value>;
 
-/// Provides a check which returns whether `T` is different than `U`.
+/** Provides a check which returns whether `T` is different than `U`. */
 template <typename T>
 struct type_check_different_from {
   template <typename U>
   using type = negation<std::is_same<T, U>>;
 };
 
-/// Visits each type in a type pack. This effectively implements a
+/** Visits each type in a type pack. This effectively implements a */
 // `constexpr for` loops. See `type_pack_test.cc` for usages.
-/// @tparam VisitWith
-///   Visit helper. @see `type_visit_with_default`, `type_visit_with_tag`.
-/// @tparam Predicate Predicate operating on the type dictated by `VisitWith`.
-/// @param visitor Lambda or functor for visiting a type.
+/**
+@tparam VisitWith
+  Visit helper. @see `type_visit_with_default`, `type_visit_with_tag`.
+@tparam Predicate Predicate operating on the type dictated by `VisitWith`.
+@param visitor Lambda or functor for visiting a type. */
 template <class VisitWith = type_visit_with_default,
     template <typename> class Predicate = type_check_always_true,
     typename Visitor = void, typename... Ts>
@@ -178,7 +184,7 @@ void type_visit(Visitor&& visitor, type_pack<Ts...> = {},
   // clang-format on
 }
 
-/// Provides short-hand for hashing a type.
+/** Provides short-hand for hashing a type. */
 template <typename T>
 constexpr size_t type_hash() {
   return std::type_index(typeid(T)).hash_code();

@@ -26,7 +26,8 @@ class ContextBaseFixedInputAttorney;
 }  // namespace internal
 #endif
 
-/** A %FixedInputPortValue encapsulates a vector or abstract value for
+/**
+A %FixedInputPortValue encapsulates a vector or abstract value for
 use as an internal value source for one of a System's input ports. The semantics
 are identical to a Parameter. We assign a DependencyTracker to this object
 and subscribe the InputPort to it when that port is fixed. Any modification to
@@ -52,14 +53,17 @@ class FixedInputPortValue {
     return *value_;
   }
 
-  /** Returns a reference to the contained `BasicVector<T>` or throws an
+  /**
+  Returns a reference to the contained `BasicVector<T>` or throws an
   exception if this doesn't contain an object of that type. */
   template <typename T>
   const BasicVector<T>& get_vector_value() const {
     return get_value().get_value<BasicVector<T>>();
   }
 
-  /** Returns a pointer to the data inside this %FixedInputPortValue, and
+  // TODO(sherm1) Replace these with safer Set() methods.
+  /**
+  Returns a pointer to the data inside this %FixedInputPortValue, and
   notifies the dependent input port that the value has changed.
 
   To ensure invalidation notifications are delivered, callers should call this
@@ -67,10 +71,10 @@ class FixedInputPortValue {
   MUST NOT write through the returned pointer if there is any possibility this
   %FixedInputPortValue has been accessed since the last time this method
   was called. */
-  // TODO(sherm1) Replace these with safer Set() methods.
   AbstractValue* GetMutableData();
 
-  /** Returns a pointer to the data inside this %FixedInputPortValue, and
+  /**
+  Returns a pointer to the data inside this %FixedInputPortValue, and
   notifies the dependent input port that the value has changed, invalidating
   downstream computations.
   @throws std::bad_cast if the data is not vector data.
@@ -88,7 +92,8 @@ class FixedInputPortValue {
     return &GetMutableData()->get_mutable_value<BasicVector<T>>();
   }
 
-  /** Returns the serial number of the contained value. This counts up every
+  /**
+  Returns the serial number of the contained value. This counts up every
   time the contained value changes, or when mutable access is granted. */
   int64_t serial_number() const { return serial_number_; }
 

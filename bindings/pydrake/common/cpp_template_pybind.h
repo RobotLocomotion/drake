@@ -44,21 +44,23 @@ inline std::string GetInstantiationName(
 
 }  // namespace internal
 
-/// Provides a temporary, unique name for a class instantiation that
-/// will be passed to `AddTemplateClass`.
+/**
+Provides a temporary, unique name for a class instantiation that
+will be passed to `AddTemplateClass`. */
 template <typename T>
 std::string TemporaryClassName(const std::string& name = "TemporaryName") {
   return "_" + name + "_" + typeid(T).name();
 }
 
-/// Adds a template class instantiation.
-/// @param scope Parent scope of the template.
-/// @param name Name of the template.
-/// @param py_class Class instantiation to be added.
-/// @note The class name should be *unique*. If you would like automatic unique
-/// names, consider constructing the class binding as
-/// `py::class_<Class, ...>(m, TemporaryClassName<Class>().c_str())`.
-/// @param param Parameters for the instantiation.
+/**
+Adds a template class instantiation.
+@param scope Parent scope of the template.
+@param name Name of the template.
+@param py_class Class instantiation to be added.
+@note The class name should be *unique*. If you would like automatic unique
+names, consider constructing the class binding as
+`py::class_<Class, ...>(m, TemporaryClassName<Class>().c_str())`.
+@param param Parameters for the instantiation. */
 inline py::object AddTemplateClass(  // BR
     py::handle scope, const std::string& name, py::handle py_class,
     py::tuple param) {
@@ -68,11 +70,12 @@ inline py::object AddTemplateClass(  // BR
   return py_template;
 }
 
-/// Provides a convenience wrapper for defining a template class instantiation
-/// and a default instantiation (if not already defined).
-/// The default instantiation is named `default_name`, while the template is
-/// named `default_name + template_suffix`.
-/// @return pybind11 class
+/**
+Provides a convenience wrapper for defining a template class instantiation
+and a default instantiation (if not already defined).
+The default instantiation is named `default_name`, while the template is
+named `default_name + template_suffix`.
+@return pybind11 class */
 template <typename Class, typename... Options>
 py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
     py::handle scope, const std::string& default_name, py::tuple param,
@@ -90,12 +93,13 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
   return py_class;
 }
 
-/// Declares a template function.
-/// @param scope Parent scope of the template.
-/// @param name Name of the template.
-/// @param func Function to be added.
-/// @param param Parameters for the instantiation.
-/// @param extra... Additional arguments to pass to `py::cpp_function`.
+/**
+Declares a template function.
+@param scope Parent scope of the template.
+@param name Name of the template.
+@param func Function to be added.
+@param param Parameters for the instantiation.
+@param extra... Additional arguments to pass to `py::cpp_function`. */
 template <typename Func, typename... Extra>
 py::object AddTemplateFunction(py::handle scope, const std::string& name,
     Func&& func, py::tuple param, Extra&&... extra) {
@@ -110,12 +114,13 @@ py::object AddTemplateFunction(py::handle scope, const std::string& name,
   return py_template;
 }
 
-/// Declares a template method.
-/// @param scope Parent scope of the template. This should be a class.
-/// @param name Name of the template.
-/// @param method Method to be added.
-/// @param param Parameters for the instantiation.
-/// @param extra... Additional arguments to pass to `py::cpp_function`.
+/**
+Declares a template method.
+@param scope Parent scope of the template. This should be a class.
+@param name Name of the template.
+@param method Method to be added.
+@param param Parameters for the instantiation.
+@param extra... Additional arguments to pass to `py::cpp_function`. */
 template <typename Method, typename... Extra>
 py::object AddTemplateMethod(  // BR
     py::handle scope, const std::string& name, Method&& method, py::tuple param,

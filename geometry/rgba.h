@@ -9,32 +9,34 @@
 namespace drake {
 namespace geometry {
 
-/** Defines RGBA (red, green, blue, alpha) values on the range [0, 1].  */
+/** Defines RGBA (red, green, blue, alpha) values on the range [0, 1]. */
 class Rgba {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rgba);
 
-  /** Constructs with given (r, g, b, a) values.
-   @pre All values are within the range of [0, 1].  */
+  /**
+  Constructs with given (r, g, b, a) values.
+  @pre All values are within the range of [0, 1]. */
   Rgba(double r, double g, double b, double a = 1.) {
     set(r, g, b, a);
   }
 
-  /** Red.  */
+  /** Red. */
   double r() const { return r_; }
 
-  /** Green.  */
+  /** Green. */
   double g() const { return g_; }
 
-  /** Blue.  */
+  /** Blue. */
   double b() const { return b_; }
 
-  /** Alpha.  */
+  /** Alpha. */
   double a() const { return a_; }
 
-  /** Sets (r, g, b, a) values.
-   @pre All values are within the range of [0, 1]. The values are not updated
-   if this precondition is not met.  */
+  /**
+  Sets (r, g, b, a) values.
+  @pre All values are within the range of [0, 1]. The values are not updated
+  if this precondition is not met. */
   void set(double r, double g, double b, double a = 1.) {
     if ((r < 0 || r > 1) ||
         (g < 0 || g > 1) ||

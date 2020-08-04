@@ -9,46 +9,49 @@
 namespace drake {
 namespace systems {
 
-/// This system splits a vector valued signal on its input into multiple
-/// outputs.
-///
-/// The input to this system directly feeds through to its output.
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+This system splits a vector valued signal on its input into multiple
+outputs.
+
+The input to this system directly feeds through to its output.
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class Demultiplexer final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Demultiplexer)
 
-  /// Constructs %Demultiplexer with one vector valued output ports with sizes
-  /// specified as the vector @p output_ports_sizes. The number of output ports
-  /// is the length of this vector. The size of each output port is the value of
-  /// the corresponding element of the vector @p output_ports_sizes.
-  ///
-  /// @throws std::logic_error if @p output_ports_sizes is a zero length vector.
-  /// @throws std::logic_error if any element of the @p output_ports_sizes is
-  /// zero. Therefore, the Demultiplexer does not allow zero size output ports.
-  ///
-  /// @param output_ports_sizes Contains the sizes of each output port. The
-  /// number of output ports is determined by the length of @p
-  /// output_ports_sizes. The accumulative value of the all the values in @p
-  /// output_ports_sizes will be the size of the input port.
+  /**
+  Constructs %Demultiplexer with one vector valued output ports with sizes
+  specified as the vector @p output_ports_sizes. The number of output ports
+  is the length of this vector. The size of each output port is the value of
+  the corresponding element of the vector @p output_ports_sizes.
+
+  @throws std::logic_error if @p output_ports_sizes is a zero length vector.
+  @throws std::logic_error if any element of the @p output_ports_sizes is
+  zero. Therefore, the Demultiplexer does not allow zero size output ports.
+
+  @param output_ports_sizes Contains the sizes of each output port. The
+  number of output ports is determined by the length of @p
+  output_ports_sizes. The accumulative value of the all the values in @p
+  output_ports_sizes will be the size of the input port. */
   explicit Demultiplexer(const std::vector<int>& output_ports_sizes);
 
-  /// Constructs %Demultiplexer with one vector valued input port of size
-  /// @p size and vector valued output ports of size @p output_ports_size.
-  ///
-  /// @throws std::logic_error if output_ports_sizes can not exactly divide @p
-  /// size. The number of output ports is therefore `size / output_ports_size`.
-  ///
-  /// @param size is the size of the input signal to be demultiplexed into its
-  /// individual components.
-  /// @param output_ports_size The size of the output ports. @p size must be
-  /// a multiple of @p output_ports_size.
+  /**
+  Constructs %Demultiplexer with one vector valued input port of size
+  @p size and vector valued output ports of size @p output_ports_size.
+
+  @throws std::logic_error if output_ports_sizes can not exactly divide @p
+  size. The number of output ports is therefore `size / output_ports_size`.
+
+  @param size is the size of the input signal to be demultiplexed into its
+  individual components.
+  @param output_ports_size The size of the output ports. @p size must be
+  a multiple of @p output_ports_size. */
   explicit Demultiplexer(int size, int output_ports_size = 1);
 
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit Demultiplexer(const Demultiplexer<U>&);
 

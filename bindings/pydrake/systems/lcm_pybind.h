@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file
-/// Helpers for defining C++ LCM type serializers.
+/**
+@file
+Helpers for defining C++ LCM type serializers. */
 
 #include <string>
 #include <utility>
@@ -15,14 +16,15 @@ namespace pydrake {
 namespace pysystems {
 namespace pylcm {
 
-/// Provides a Python binding of C++ LCM type serializers. This registers the
-/// binding using the Python LCM type in `pydrake.systems.lcm.CppSerializer`,
-/// so that the type is easily indexed.
-/// @tparam CppType C++ message type.
-/// @param lcm_package The package that the LCM type belongs to. The C++
-///   message type name is used to retrieve the relevant Python LCM type.
-/// @see The `use_cpp_serializer` parameter in the factory methods in
-/// `_lcm_extra.py`.
+/**
+Provides a Python binding of C++ LCM type serializers. This registers the
+binding using the Python LCM type in `pydrake.systems.lcm.CppSerializer`,
+so that the type is easily indexed.
+@tparam CppType C++ message type.
+@param lcm_package The package that the LCM type belongs to. The C++
+  message type name is used to retrieve the relevant Python LCM type.
+@see The `use_cpp_serializer` parameter in the factory methods in
+`_lcm_extra.py`. */
 template <typename CppType>
 py::object BindCppSerializer(const std::string& lcm_package) {
   using systems::lcm::Serializer;

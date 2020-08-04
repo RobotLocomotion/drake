@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file This file contains classes dealing with sending/receiving
-/// LCM messages related to the allegro hand.
+/**
+@file This file contains classes dealing with sending/receiving
+LCM messages related to the allegro hand. */
 
 #include <memory>
 #include <utility>
@@ -23,22 +24,24 @@ namespace allegro_hand {
 // rate.
 const double kLcmStatusPeriod = 0.003;
 
-/// Handles lcmt_allegro_command messages from a LcmSubscriberSystem.
-/// Has two output ports: one for the commanded position for each joint along
-/// with a zero velocity for each joint, and another for commanded additional
-/// feedforward joint torque. The joint torque command is currently not used.
+/**
+Handles lcmt_allegro_command messages from a LcmSubscriberSystem.
+Has two output ports: one for the commanded position for each joint along
+with a zero velocity for each joint, and another for commanded additional
+feedforward joint torque. The joint torque command is currently not used. */
 class AllegroCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroCommandReceiver)
 
   explicit AllegroCommandReceiver(int num_joints = kAllegroNumJoints);
 
-  /// Sets the initial position of the controlled hand prior to any
-  /// commands being received.  @param x contains the starting position.
-  /// This position will be the commanded position (with zero
-  /// velocity) until a position message is received.  If this
-  /// function is not called, the open hand pose will be the zero
-  /// configuration.
+  /**
+  Sets the initial position of the controlled hand prior to any
+  commands being received.  @param x contains the starting position.
+  This position will be the commanded position (with zero
+  velocity) until a position message is received.  If this
+  function is not called, the open hand pose will be the zero
+  configuration. */
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const VectorX<double>>& x) const;
 
@@ -66,22 +69,23 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
   const int num_joints_ = 16;
 };
 
-/// Creates and outputs lcmt_allegro_status messages.
-///
-/// This system has three vector-valued input ports, one for the plant's
-/// current state, one for the most recently received position command, and one
-/// for the most recently received joint torque command.
-/// The state and command ports contain a position and velocity for each joint,
-/// which is supposed to be in the order of thumb(4)-index(4)-middle(4)-ring(4).
-///
-/// This system has one abstract valued output port that contains a
-/// Value object templated on type `lcmt_allegro_status`. Note that
-/// this system does not actually send this message on an LCM channel. To send
-/// the message, the output of this system should be connected to an input port
-/// of a systems::lcm::LcmPublisherSystem that accepts a Value object
-/// templated on type `lcmt_allegro_status`.
-///
-/// This system is presently only used in simulation.
+/**
+Creates and outputs lcmt_allegro_status messages.
+
+This system has three vector-valued input ports, one for the plant's
+current state, one for the most recently received position command, and one
+for the most recently received joint torque command.
+The state and command ports contain a position and velocity for each joint,
+which is supposed to be in the order of thumb(4)-index(4)-middle(4)-ring(4).
+
+This system has one abstract valued output port that contains a
+Value object templated on type `lcmt_allegro_status`. Note that
+this system does not actually send this message on an LCM channel. To send
+the message, the output of this system should be connected to an input port
+of a systems::lcm::LcmPublisherSystem that accepts a Value object
+templated on type `lcmt_allegro_status`.
+
+This system is presently only used in simulation. */
 class AllegroStatusSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AllegroStatusSender)

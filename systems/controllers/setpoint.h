@@ -12,23 +12,22 @@ namespace systems {
 namespace controllers {
 
 /**
- * This is used to compute target spatial acceleration, which is the input
- * to the inverse dynamics controller.
- * The target acceleration is computed by:
- * acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
- * where x is pose, xd is velocity, and xdd is acceleration.
- * Variables with superscript * are the set points, and Kp and Kd are the
- * position and velocity gains.
- *
- * Pose "difference" is computed as:
- * H^w_d = E * H^w_m, E = H^w_d * H^w_m.inverse(), where
- * H^w_d = desired orientation in the world frame,
- * H^w_m = measured orientation in the world frame,
- * E = a small rotation in the world frame from measured to desired.
- *
- * The first terms 3 are angular accelerations, and the last 3 are linear
- * accelerations.
- */
+This is used to compute target spatial acceleration, which is the input
+to the inverse dynamics controller.
+The target acceleration is computed by:
+acceleration_d = Kp*(x* - x) + Kd*(xd* - xd) + xdd*,
+where x is pose, xd is velocity, and xdd is acceleration.
+Variables with superscript * are the set points, and Kp and Kd are the
+position and velocity gains.
+
+Pose "difference" is computed as:
+H^w_d = E * H^w_m, E = H^w_d * H^w_m.inverse(), where
+H^w_d = desired orientation in the world frame,
+H^w_m = measured orientation in the world frame,
+E = a small rotation in the world frame from measured to desired.
+
+The first terms 3 are angular accelerations, and the last 3 are linear
+accelerations. */
 template <typename Scalar>
 class CartesianSetpoint {
  public:
@@ -43,12 +42,11 @@ class CartesianSetpoint {
   }
 
   /**
-   * @param pose_d Desired pose
-   * @param vel_d Desired velocity
-   * @param acc_d Desired feedforward acceleration
-   * @param Kp Position gain
-   * @param Kd Velocity gain
-   */
+  @param pose_d Desired pose
+  @param vel_d Desired velocity
+  @param acc_d Desired feedforward acceleration
+  @param Kp Position gain
+  @param Kd Velocity gain */
   CartesianSetpoint(const Isometry3<Scalar>& pose_d,
                     const Vector6<Scalar>& vel_d, const Vector6<Scalar>& acc_d,
                     const Vector6<Scalar>& Kp, const Vector6<Scalar>& Kd) {
@@ -60,11 +58,10 @@ class CartesianSetpoint {
   }
 
   /**
-   * Computes target acceleration using PD feedback + feedfoward acceleration.
-   * @param pose Measured pose
-   * @param vel Measured velocity
-   * @return Computed spatial acceleration.
-   */
+  Computes target acceleration using PD feedback + feedfoward acceleration.
+  @param pose Measured pose
+  @param vel Measured velocity
+  @return Computed spatial acceleration. */
   Vector6<Scalar> ComputeTargetAcceleration(const Isometry3<Scalar>& pose,
                                             const Vector6<Scalar>& vel) const {
     // feedforward acc + velocity feedback
@@ -180,12 +177,11 @@ class VectorSetpoint {
   }
 
   /**
-   * @param pos_d Desired position
-   * @param vel_d Desired velocity
-   * @param acc_d Desired feedforward acceleration
-   * @param Kp Position gain
-   * @param Kd Velocity gain
-   */
+  @param pos_d Desired position
+  @param vel_d Desired velocity
+  @param acc_d Desired feedforward acceleration
+  @param Kp Position gain
+  @param Kd Velocity gain */
   VectorSetpoint(const VectorX<Scalar>& pos_d, const VectorX<Scalar>& vel_d,
                  const VectorX<Scalar>& acc_d, const VectorX<Scalar>& Kp,
                  const VectorX<Scalar>& Kd) {
@@ -202,12 +198,11 @@ class VectorSetpoint {
   }
 
   /**
-   * Computes target acceleration using PD feedback + feedforward acceleration
-   * @param idx Index
-   * @param pos Measured position
-   * @param vel Measured velocity
-   * @return Computed acceleration
-   */
+  Computes target acceleration using PD feedback + feedforward acceleration
+  @param idx Index
+  @param pos Measured position
+  @param vel Measured velocity
+  @return Computed acceleration */
   Scalar ComputeTargetAcceleration(int idx, Scalar pos, Scalar vel) const {
     if (idx < 0 || idx >= pos_d_.size())
       throw std::runtime_error("Index out of bound.");
@@ -218,12 +213,11 @@ class VectorSetpoint {
   }
 
   /**
-   * Computes target acceleration using PD feedback + feedforward acceleration
-   * @param idx Index
-   * @param pos Measured position
-   * @param vel Measured velocity
-   * @return Computed acceleration
-   */
+  Computes target acceleration using PD feedback + feedforward acceleration
+  @param idx Index
+  @param pos Measured position
+  @param vel Measured velocity
+  @return Computed acceleration */
   VectorX<Scalar> ComputeTargetAcceleration(const VectorX<Scalar>& pos,
                                             const VectorX<Scalar>& vel) const {
     if (pos.size() != vel.size() || pos.size() != pos_d_.size()) {

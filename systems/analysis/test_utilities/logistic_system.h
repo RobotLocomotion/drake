@@ -12,10 +12,11 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/// System with state evolution yielding a logistic function, for purposes of
-/// witness function testing using the differential equation
-/// dx/dt = α⋅(1 - (x/k)^ν)⋅t, where ν > 0 (affects the shape of the curve),
-/// α > 0 (growth rate), and k is the upper asymptote.
+/**
+System with state evolution yielding a logistic function, for purposes of
+witness function testing using the differential equation
+dx/dt = α⋅(1 - (x/k)^ν)⋅t, where ν > 0 (affects the shape of the curve),
+α > 0 (growth rate), and k is the upper asymptote. */
 template <class T>
 class LogisticSystem : public LeafSystem<T> {
  public:

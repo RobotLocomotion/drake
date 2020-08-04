@@ -49,7 +49,7 @@ class DummyRenderEngine : public render::RenderEngine {
         label_props_{-1, -1, -1.0, ""} {}
 
   /* @group No-op implementation of RenderEngine interface.  */
-  //@{
+  /** @{ */
   void UpdateViewpoint(const math::RigidTransformd& X_WC) override {
     X_WC_ = X_WC;
   }
@@ -82,10 +82,10 @@ class DummyRenderEngine : public render::RenderEngine {
   void ImplementGeometry(const Capsule& capsule, void* user_data) override {}
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {}
   void ImplementGeometry(const Convex& convex, void* user_data) override {}
-  //@}
+  /** @} */
 
   /* @name  Functions for supporting tests.  */
-  //@{
+  /** @{ */
 
   /* Creates a set of perception properties that will cause this render engine
    to _accept_ geometry during registration.  */

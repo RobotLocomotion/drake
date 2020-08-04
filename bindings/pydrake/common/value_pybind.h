@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file
-/// Helpers for defining instantiations of drake::Value<>.
+/**
+@file
+Helpers for defining instantiations of drake::Value<>. */
 
 #include <string>
 
@@ -17,13 +18,14 @@
 namespace drake {
 namespace pydrake {
 
-/// Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
-/// meant to bind `Value<T>` (or specializations thereof).
-/// @prereq `T` must have already been exposed to `pybind11`.
-/// @param scope Parent scope.
-/// @tparam T Inner parameter of `Value<T>`.
-/// @tparam Class Class to be bound. By default, `Value<T>` is used.
-/// @returns Reference to the registered Python type.
+/**
+Defines an instantiation of `pydrake.common.value.Value[...]`. This is only
+meant to bind `Value<T>` (or specializations thereof).
+@prereq `T` must have already been exposed to `pybind11`.
+@param scope Parent scope.
+@tparam T Inner parameter of `Value<T>`.
+@tparam Class Class to be bound. By default, `Value<T>` is used.
+@returns Reference to the registered Python type. */
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
     py::module scope) {

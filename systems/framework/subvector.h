@@ -13,20 +13,22 @@
 namespace drake {
 namespace systems {
 
-/// Subvector is a concrete class template that implements
-/// VectorBase by providing a sliced view of a VectorBase.
-///
-/// @tparam_default_scalar
+/**
+Subvector is a concrete class template that implements
+VectorBase by providing a sliced view of a VectorBase.
+
+@tparam_default_scalar */
 template <typename T>
 class Subvector : public VectorBase<T> {
  public:
   // Subvector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
 
-  /// Constructs a subvector of vector that consists of num_elements starting
-  /// at first_element.
-  /// @param vector The vector to slice.  Must not be nullptr. Must remain
-  ///               valid for the lifetime of this object.
+  /**
+  Constructs a subvector of vector that consists of num_elements starting
+  at first_element.
+  @param vector The vector to slice.  Must not be nullptr. Must remain
+                valid for the lifetime of this object. */
   Subvector(VectorBase<T>* vector, int first_element, int num_elements)
       : vector_(vector),
         first_element_(first_element),
@@ -39,9 +41,10 @@ class Subvector : public VectorBase<T> {
     }
   }
 
-  /// Constructs an empty subvector.
-  /// @param vector The vector to slice.  Must not be nullptr. Must remain
-  ///               valid for the lifetime of this object.
+  /**
+  Constructs an empty subvector.
+  @param vector The vector to slice.  Must not be nullptr. Must remain
+                valid for the lifetime of this object. */
   explicit Subvector(VectorBase<T>* vector) : Subvector(vector, 0, 0) {}
 
   int size() const override { return num_elements_; }

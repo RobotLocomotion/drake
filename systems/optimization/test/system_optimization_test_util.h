@@ -21,9 +21,7 @@ void DummySystemConstraintCalc(const Context<T>& context, VectorX<T>* y) {
   (*y)(1) = x(2) - x(1) * x(1) - p * x(0) * x(0);
 }
 
-/**
- * A dummy continuous system with parameter(s).
- */
+/** A dummy continuous system with parameter(s). */
 template <typename T>
 class DummySystem : public LeafSystem<T> {
  public:

@@ -9,50 +9,53 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/// Expresses an AcrobotPlant's geometry to a SceneGraph.
-///
-/// @system
-/// name: AcrobotGeometry
-/// input_ports:
-/// - state
-/// output_ports:
-/// - geometry_pose
-/// @endsystem
-///
-/// This class has no public constructor; instead use the AddToBuilder() static
-/// method to create and add it to a DiagramBuilder directly.
-///
-/// @ingroup acrobot_systems
+/**
+Expresses an AcrobotPlant's geometry to a SceneGraph.
+
+@system
+name: AcrobotGeometry
+input_ports:
+- state
+output_ports:
+- geometry_pose
+@endsystem
+
+This class has no public constructor; instead use the AddToBuilder() static
+method to create and add it to a DiagramBuilder directly.
+
+@ingroup acrobot_systems */
 class AcrobotGeometry final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AcrobotGeometry);
   ~AcrobotGeometry() final;
 
-  /// Creates, adds, and connects an AcrobotGeometry system into the given
-  /// `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
-  /// systems must have been added to the given `builder` already.
-  ///
-  /// @param acrobot_params sets the parameters of the geometry registered
-  /// with `scene_graph`.
-  ///
-  /// The `scene_graph` pointer is not retained by the %AcrobotGeometry
-  /// system.  The return value pointer is an alias of the new
-  /// %AcrobotGeometry system that is owned by the `builder`.
+  /**
+  Creates, adds, and connects an AcrobotGeometry system into the given
+  `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
+  systems must have been added to the given `builder` already.
+
+  @param acrobot_params sets the parameters of the geometry registered
+  with `scene_graph`.
+
+  The `scene_graph` pointer is not retained by the %AcrobotGeometry
+  system.  The return value pointer is an alias of the new
+  %AcrobotGeometry system that is owned by the `builder`. */
   static const AcrobotGeometry* AddToBuilder(
       systems::DiagramBuilder<double>* builder,
       const systems::OutputPort<double>& acrobot_state_port,
       const AcrobotParams<double>& acrobot_params,
       geometry::SceneGraph<double>* scene_graph);
 
-  /// Creates, adds, and connects an AcrobotGeometry system into the given
-  /// `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
-  /// systems must have been added to the given `builder` already.
-  ///
-  /// Acrobot parameters are set to their default values.
-  ///
-  /// The `scene_graph` pointer is not retained by the %AcrobotGeometry
-  /// system.  The return value pointer is an alias of the new
-  /// %AcrobotGeometry system that is owned by the `builder`.
+  /**
+  Creates, adds, and connects an AcrobotGeometry system into the given
+  `builder`.  Both the `acrobot_state.get_system()` and `scene_graph`
+  systems must have been added to the given `builder` already.
+
+  Acrobot parameters are set to their default values.
+
+  The `scene_graph` pointer is not retained by the %AcrobotGeometry
+  system.  The return value pointer is an alias of the new
+  %AcrobotGeometry system that is owned by the `builder`. */
   static const AcrobotGeometry* AddToBuilder(
       systems::DiagramBuilder<double>* builder,
       const systems::OutputPort<double>& acrobot_state_port,

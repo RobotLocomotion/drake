@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file
-/// Helper methods for binding solvers.
+/**
+@file
+Helper methods for binding solvers. */
 
 #include <memory>
 #include <string>

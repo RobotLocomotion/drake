@@ -6,36 +6,40 @@
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_call_python.hpp"
 
-/// @file
-/// Utilities for calling Python from C++ over an RPC.
-///
-/// For command-line examples, see the documentation in `call_python_client.py`.
-/// For C++ examples, see `call_python_test.cc`.
+/**
+@file
+Utilities for calling Python from C++ over an RPC.
+
+For command-line examples, see the documentation in `call_python_client.py`.
+For C++ examples, see `call_python_test.cc`. */
 
 namespace drake {
 namespace common {
 
-/// Initializes `CallPython` for a given file.  If this function is not called,
-/// then the filename defaults to `/tmp/python_rpc`.
-/// @throws std::runtime_error If either this function or `CallPython` have
-/// already been called.
+/**
+Initializes `CallPython` for a given file.  If this function is not called,
+then the filename defaults to `/tmp/python_rpc`.
+@throws std::runtime_error If either this function or `CallPython` have
+already been called. */
 void CallPythonInit(const std::string& filename);
 
-/// A proxy to a variable stored in Python side.
+/** A proxy to a variable stored in Python side. */
 class PythonRemoteVariable;
 
-/// Calls a Python client with a given function and arguments, returning
-/// a handle to the result.  For example uses, see `call_python_test.cc`.
+/**
+Calls a Python client with a given function and arguments, returning
+a handle to the result.  For example uses, see `call_python_test.cc`. */
 template <typename... Types>
 PythonRemoteVariable CallPython(const std::string& function_name,
                                 Types... args);
 
-/// Creates a tuple in Python.
+/** Creates a tuple in Python. */
 template <typename... Types>
 PythonRemoteVariable ToPythonTuple(Types... args);
 
-/// Creates a keyword-argument list to be unpacked.
-/// @param args Argument list in the form of (key1, value1, key2, value2, ...).
+/**
+Creates a keyword-argument list to be unpacked.
+@param args Argument list in the form of (key1, value1, key2, value2, ...). */
 template <typename... Types>
 PythonRemoteVariable ToPythonKwargs(Types... args);
 
@@ -59,18 +63,18 @@ using PythonAttrAccessor = PythonAccessor<PythonAttrPolicy>;
 template <typename Derived>
 class PythonApi {
  public:
-  /// Calls object with given arguments, returning the remote result.
+  /** Calls object with given arguments, returning the remote result. */
   template <typename... Types>
   PythonRemoteVariable operator()(Types... args) const;
 
-  /// Accesses an attribute.
+  /** Accesses an attribute. */
   PythonAttrAccessor attr(const std::string& name) const;
 
-  /// Accesses an item.
+  /** Accesses an item. */
   template <typename Type>
   PythonItemAccessor operator[](Type key) const;
 
-  /// Accesses a NumPy-friendly slice.
+  /** Accesses a NumPy-friendly slice. */
   template <typename... Types>
   PythonItemAccessor slice(Types... args) const;
 
@@ -96,7 +100,7 @@ class PythonRemoteVariable : public internal::PythonApi<PythonRemoteVariable> {
 
 namespace internal {
 
-/// Creates a new remote variable with the corresponding value set.
+/** Creates a new remote variable with the corresponding value set. */
 template <typename T>
 PythonRemoteVariable NewPythonVariable(T value) {
   return CallPython("pass_through", value);

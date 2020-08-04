@@ -57,7 +57,7 @@ class InternalFrame {
   bool operator!=(const InternalFrame &other) const;
 
   /* @name      Frame properties    */
-  //@{
+  /** @{ */
 
   /* Returns the source id that registered the frame.  */
   SourceId source_id() const { return source_id_; }
@@ -79,10 +79,10 @@ class InternalFrame {
   /* Returns the clique associated with this frame.  */
   int clique() const { return clique_; }
 
-  //@}
+  /** @} */
 
   /* @name     Scene Graph topology    */
-  //@{
+  /** @{ */
 
   /* Returns true if this frame has the given id as its parent.  */
   bool has_parent(FrameId parent) const { return parent_id_ == parent; }

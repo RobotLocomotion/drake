@@ -12,88 +12,89 @@
 namespace drake {
 namespace solvers {
 /**
- * The Mosek solver details after calling Solve() function. The user can call
- * MathematicalProgramResult::get_solver_details<MosekSolver>() to obtain the
- * details.
- */
+The Mosek solver details after calling Solve() function. The user can call
+MathematicalProgramResult::get_solver_details<MosekSolver>() to obtain the
+details. */
 struct MosekSolverDetails {
-  /// The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
-  /// https://docs.mosek.com/9.0/capi/constants.html?highlight=msk_dinf_optimizer_time
+  /**
+  The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
+  https://docs.mosek.com/9.0/capi/constants.html?highlight=msk_dinf_optimizer_time
+   */
   double optimizer_time{};
-  /// The response code returned from mosek solver. Check
-  /// https://docs.mosek.com/9.0/capi/response-codes.html for the meaning on the
-  /// response code.
+  /**
+  The response code returned from mosek solver. Check
+  https://docs.mosek.com/9.0/capi/response-codes.html for the meaning on the
+  response code. */
   int rescode{};
-  /// The solution status after solving the problem. Check
-  /// https://docs.mosek.com/9.0/capi/accessing-solution.html and
-  /// https://docs.mosek.com/9.0/capi/constants.html#mosek.solsta for the
-  /// meaning on the solution status.
+  /**
+  The solution status after solving the problem. Check
+  https://docs.mosek.com/9.0/capi/accessing-solution.html and
+  https://docs.mosek.com/9.0/capi/constants.html#mosek.solsta for the
+  meaning on the solution status. */
   int solution_status{};
 };
 
 /**
- * @note Mosek only cares about the initial guess of integer variables. The
- * initial guess of continuous variables are not passed to MOSEK. If all the
- * integer variables are set to some integer values, then MOSEK will be forced
- * to compute the remaining continuous variable values as the initial guess.
- * (Mosek might change the values of the integer/binary variables in the
- * subsequent iterations.) If the specified integer solution is infeasible or
- * incomplete, MOSEK will simply ignore it. For more details, check
- * https://docs.mosek.com/9.0/capi/tutorial-mio-shared.html?highlight=initial
- */
+@note Mosek only cares about the initial guess of integer variables. The
+initial guess of continuous variables are not passed to MOSEK. If all the
+integer variables are set to some integer values, then MOSEK will be forced
+to compute the remaining continuous variable values as the initial guess.
+(Mosek might change the values of the integer/binary variables in the
+subsequent iterations.) If the specified integer solution is infeasible or
+incomplete, MOSEK will simply ignore it. For more details, check
+https://docs.mosek.com/9.0/capi/tutorial-mio-shared.html?highlight=initial */
 class MosekSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
 
-  /// Type of details stored in MathematicalProgramResult.
+  /** Type of details stored in MathematicalProgramResult. */
   using Details = MosekSolverDetails;
 
   MosekSolver();
   ~MosekSolver() final;
 
   /**
-   * Control stream logging. Refer to
-   * https://docs.mosek.com/9.0/capi/solver-io.html for more details.
-   * @param flag Set to true if the user want to turn on stream logging.
-   * @param log_file If the user wants to output the logging to a file, then
-   * set @p log_file to the name of that file. If the user wants to output the
-   * logging to the console, then set log_file to empty string.
-   */
+  Control stream logging. Refer to
+  https://docs.mosek.com/9.0/capi/solver-io.html for more details.
+  @param flag Set to true if the user want to turn on stream logging.
+  @param log_file If the user wants to output the logging to a file, then
+  set @p log_file to the name of that file. If the user wants to output the
+  logging to the console, then set log_file to empty string. */
   void set_stream_logging(bool flag, const std::string& log_file) {
     stream_logging_ = flag;
     log_file_ = log_file;
   }
 
   /**
-   * This type contains a valid MOSEK license environment, and is only to be
-   * used from AcquireLicense().
-   */
+  This type contains a valid MOSEK license environment, and is only to be
+  used from AcquireLicense(). */
   class License;
 
   /**
-   * This acquires a MOSEK license environment shared among all MosekSolver
-   * instances; the environment will stay valid as long as at least one
-   * shared_ptr returned by this function is alive.
-   * Call this ONLY if you must use different MathematicalProgram
-   * instances at different instances in time, and repeatedly acquiring the
-   * license is costly (e.g., requires contacting a license server).
-   * @return A shared pointer to a license environment that will stay valid
-   * as long as any shared_ptr returned by this function is alive. If MOSEK is
-   * not available in your build, this will return a null (empty) shared_ptr.
-   * @throws std::runtime_error if MOSEK is available but a license cannot be
-   * obtained.
-   */
+  This acquires a MOSEK license environment shared among all MosekSolver
+  instances; the environment will stay valid as long as at least one
+  shared_ptr returned by this function is alive.
+  Call this ONLY if you must use different MathematicalProgram
+  instances at different instances in time, and repeatedly acquiring the
+  license is costly (e.g., requires contacting a license server).
+  @return A shared pointer to a license environment that will stay valid
+  as long as any shared_ptr returned by this function is alive. If MOSEK is
+  not available in your build, this will return a null (empty) shared_ptr.
+  @throws std::runtime_error if MOSEK is available but a license cannot be
+  obtained. */
   static std::shared_ptr<License> AcquireLicense();
 
-  /// @name Static versions of the instance methods with similar names.
-  //@{
+  /**
+  @name Static versions of the instance methods with similar names.
+  @{ */
   static SolverId id();
   static bool is_available();
-  /// Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
-  /// set to a non-empty value.
+  /**
+  Returns true iff the environment variable MOSEKLM_LICENSE_FILE has been
+  set to a non-empty value. */
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
-  //@}
+  /** @} */
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;

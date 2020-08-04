@@ -38,7 +38,7 @@ class DiscontinuousSpringMassDamperSystem final
     DRAKE_ASSERT(constant_force >= 0.0);
   }
 
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit DiscontinuousSpringMassDamperSystem(
       const DiscontinuousSpringMassDamperSystem<U>& other)
@@ -48,7 +48,7 @@ class DiscontinuousSpringMassDamperSystem final
             other.get_mass(),
             other.get_constant_force()) {}
 
-  /// Gets the magnitude of the constant force acting on the system.
+  /** Gets the magnitude of the constant force acting on the system. */
   double get_constant_force() const { return constant_force_; }
 
  protected:

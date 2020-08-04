@@ -6,12 +6,13 @@
 
 #include <Eigen/Core>
 
-/// @file
-/// Eigen::LDLT is specialized for drake::symbolic::Expression, for certain
-/// matrix sizes.  If the expression matrix is all constants, it returns the
-/// robust decomposition (as per Eigen's algorithm).  If there are unbound
-/// variables, currently throws an exception (but may support this in the
-/// future).
+/**
+@file
+Eigen::LDLT is specialized for drake::symbolic::Expression, for certain
+matrix sizes.  If the expression matrix is all constants, it returns the
+robust decomposition (as per Eigen's algorithm).  If there are unbound
+variables, currently throws an exception (but may support this in the
+future). */
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {

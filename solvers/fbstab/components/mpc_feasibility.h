@@ -11,50 +11,45 @@ namespace solvers {
 namespace fbstab {
 
 /**
- * This class detects infeasibility in quadratic programs, see
- * mpc_data.h for a description of the QPs.
- * It contains methods for determining if a primal-dual variable
- * is a certificate of either unboundedness (dual infeasibility)
- * or primal infeasibility. It implements
- * Algorithm 3 of https://arxiv.org/pdf/1901.04046.pdf.
- */
+This class detects infeasibility in quadratic programs, see
+mpc_data.h for a description of the QPs.
+It contains methods for determining if a primal-dual variable
+is a certificate of either unboundedness (dual infeasibility)
+or primal infeasibility. It implements
+Algorithm 3 of https://arxiv.org/pdf/1901.04046.pdf. */
 class MpcFeasibility {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcFeasibility)
   /**
-   * Allocates workspace memory.
-   *
-   * @param[in] N  horizon length
-   * @param[in] nx number of states
-   * @param[in] nu number of control input
-   * @param[in] nc number of constraints per stage
-   *
-   * Throws a runtime_error if any inputs are non-positive.
-   */
+  Allocates workspace memory.
+
+  @param[in] N  horizon length
+  @param[in] nx number of states
+  @param[in] nu number of control input
+  @param[in] nc number of constraints per stage
+
+  Throws a runtime_error if any inputs are non-positive. */
   MpcFeasibility(int N, int nx, int nu, int nc);
 
   /**
-   * Checks to see if x is an infeasibility certificate for the QP and stores
-   * the result internally.
-   * @param[in] x   infeasibility certificate candidate
-   * @param[in] tol numerical tolerance
-   *
-   * Throws a runtime_error if x and *this aren't the same size
-   * or if the problem data hasn't been linked.
-   */
+  Checks to see if x is an infeasibility certificate for the QP and stores
+  the result internally.
+  @param[in] x   infeasibility certificate candidate
+  @param[in] tol numerical tolerance
+
+  Throws a runtime_error if x and *this aren't the same size
+  or if the problem data hasn't been linked. */
   void ComputeFeasibility(const MpcVariable& x, double tol);
 
   /**
-   * Retrieves the result of the last infeasibility check.
-   * @return false if a dual infeasibility certificate was found, true otherwise
-   */
+  Retrieves the result of the last infeasibility check.
+  @return false if a dual infeasibility certificate was found, true otherwise */
   bool IsDualFeasible() const { return dual_feasible_; }
 
   /**
-   * Retrieves the result of the last infeasibility check.
-   * @return false if a primal infeasibility certificate was found, true
-   * otherwise
-   */
+  Retrieves the result of the last infeasibility check.
+  @return false if a primal infeasibility certificate was found, true
+  otherwise */
   bool IsPrimalFeasible() const { return primal_feasible_; }
 
  private:

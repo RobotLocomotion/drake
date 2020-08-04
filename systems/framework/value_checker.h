@@ -13,16 +13,17 @@ namespace drake {
 namespace systems {
 namespace internal {
 
-/// Checks some BasicVector invariants on @p basic_vector.
-///
-/// Because this function uses shady implementation tricks, it should ONLY be
-/// called from within DRAKE_ASSERT_VOID or unit test code.
-///
-/// This function is likely to be expensive (on the order of a full copy), so
-/// should be used sparingly.  In particular, only a few select locations
-/// within the Systems Framework itself should likely call this function.
-///
-/// @throws std::exception if invariants are violated or basic_vector is nullptr
+/**
+Checks some BasicVector invariants on @p basic_vector.
+
+Because this function uses shady implementation tricks, it should ONLY be
+called from within DRAKE_ASSERT_VOID or unit test code.
+
+This function is likely to be expensive (on the order of a full copy), so
+should be used sparingly.  In particular, only a few select locations
+within the Systems Framework itself should likely call this function.
+
+@throws std::exception if invariants are violated or basic_vector is nullptr */
 template <typename T>
 void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
   DRAKE_THROW_UNLESS(basic_vector != nullptr);
@@ -40,21 +41,22 @@ void CheckBasicVectorInvariants(const BasicVector<T>* basic_vector) {
   }
 }
 
-/// If @p abstract_value is a Value<BasicVector<T>>, then checks some
-/// BasicVector invariants.  Otherwise, does nothing.
-///
-/// Because this function uses shady implementation tricks, it should ONLY be
-/// called from within DRAKE_ASSERT_VOID or unit test code.
-///
-/// This function is likely to be expensive (on the order of a full copy), so
-/// should be used sparingly.  In particular, only a few select locations
-/// within the Systems Framework itself should likely call this function.
-///
-/// @tparam T the supposed element type of the Value<BasicVector<T>> that has
-/// been erased into an AbstractValue
-///
-/// @throws std::exception if invariants are violated or abstract_value is
-/// nullptr
+/**
+If @p abstract_value is a Value<BasicVector<T>>, then checks some
+BasicVector invariants.  Otherwise, does nothing.
+
+Because this function uses shady implementation tricks, it should ONLY be
+called from within DRAKE_ASSERT_VOID or unit test code.
+
+This function is likely to be expensive (on the order of a full copy), so
+should be used sparingly.  In particular, only a few select locations
+within the Systems Framework itself should likely call this function.
+
+@tparam T the supposed element type of the Value<BasicVector<T>> that has
+been erased into an AbstractValue
+
+@throws std::exception if invariants are violated or abstract_value is
+nullptr */
 template <typename T>
 void CheckVectorValueInvariants(const AbstractValue* abstract_value) {
   DRAKE_THROW_UNLESS(abstract_value != nullptr);

@@ -1,6 +1,7 @@
-/** @file
- Doxygen-only documentation for @ref multibody_notation, 
- @ref multibody_spatial_inertia.  */
+/**
+@file
+Doxygen-only documentation for @ref multibody_notation,
+@ref multibody_spatial_inertia. */
 
 // Developers: the subsections here can be linkably referenced from your Doxygen
 // comments using
@@ -11,7 +12,8 @@
 
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody_notation
+/**
+@addtogroup multibody_notation
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -81,8 +83,7 @@ default font that is much easier to write and to read in the source.
 from your Doxygen comments; instructions are at the top of the source file used
 to generate them.</em>
 
-Next topic: @ref multibody_notation_basics
-*/
+Next topic: @ref multibody_notation_basics */
 
 // Developers: this document is somewhat of an exception to the motherhood-
 // and-apple-pie goals above. We're going to show how our code-friendly
@@ -90,7 +91,8 @@ Next topic: @ref multibody_notation_basics
 // formatting here. But that doesn't mean you should write this way in your
 // code comments if you can express the same thing in a more readable way!
 
-/** @defgroup multibody_notation_basics Notation Basics
+/**
+@defgroup multibody_notation_basics Notation Basics
 @ingroup multibody_notation
 
 We are interested in representing physical quantities like position,
@@ -173,10 +175,10 @@ documentation.
 Next we discuss the kinds of quantities we need to account for and present their
 typeset and code representations.
 
-Next topic: @ref multibody_frames_and_bodies
-*/
+Next topic: @ref multibody_frames_and_bodies */
 
-/** @defgroup multibody_frames_and_bodies Frames and Bodies
+/**
+@defgroup multibody_frames_and_bodies Frames and Bodies
 @ingroup multibody_notation
 
 The most fundamental object in multibody mechanics is the _coordinate frame_, or
@@ -260,10 +262,10 @@ comments to clarify your precise meaning. That's a good idea even if the
 notation fits since some readers of your code may not be facile with this
 notation.
 
-Next topic: @ref multibody_quantities
-*/
+Next topic: @ref multibody_quantities */
 
-/** @defgroup multibody_quantities Multibody Quantities
+/**
+@defgroup multibody_quantities Multibody Quantities
 @ingroup multibody_notation
 
 Quantities of interest in multibody dynamics have distinct types. For example,
@@ -375,11 +377,11 @@ vset_E     | vlist_E      |  Set of generic vectors v = {v₀,  v₁,  v₂} exp
 mesh_B                    || A mesh whose underlying vertices' positions are from Bo (frame B's origin), expressed in frame B
 point_cloud_B             || A point cloud whose underlying points' positions are from Bo (frame B's origin), expressed in frame B
 
- Next topic: @ref Dt_multibody_quantities
-*/
+ Next topic: @ref Dt_multibody_quantities */
 
 //------------------------------------------------------------------------------
-/** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
+/**
+@defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
 @ingroup multibody_notation
 
 <b>Scalar quantities</b>: The ordinary first time-derivative of the scalar x is
@@ -426,11 +428,11 @@ Instead, use `DtG(v)_F`.
 uppercase letters are available as superscripts in unicode.  Consider choosing
 frame names to accommodate this strange quirk in unicode.
 
-Next topic: @ref multibody_spatial_algebra
-*/
+Next topic: @ref multibody_spatial_algebra */
 
 //------------------------------------------------------------------------------
-/** @defgroup multibody_spatial_algebra Spatial Algebra
+/**
+@defgroup multibody_spatial_algebra Spatial Algebra
 @ingroup multibody_notation
 
 Multibody dynamics involves both rotational and translational quantities, for
@@ -442,10 +444,10 @@ Here we describe the important spatial quantities used in Drake's multibody
 mechanics implementation, the terminology and notation we use to document them,
 and their physical representations in code, typically as %Eigen objects.
 
-Next topic: @ref multibody_spatial_pose
-*/
+Next topic: @ref multibody_spatial_pose */
 
-/** @defgroup multibody_spatial_pose Spatial Pose and Transform
+/**
+@defgroup multibody_spatial_pose Spatial Pose and Transform
 @ingroup multibody_spatial_algebra
 
 A _spatial pose_, more commonly just _pose_, provides the location and
@@ -568,10 +570,10 @@ frame symbols: <pre>
     X_WC = X_WA * X_AB * X_BC.
 </pre>
 
-Next topic: @ref multibody_spatial_vectors
-*/
+Next topic: @ref multibody_spatial_vectors */
 
-/** @defgroup multibody_spatial_vectors Spatial Vectors
+/**
+@defgroup multibody_spatial_vectors Spatial Vectors
 @ingroup multibody_spatial_algebra
 
 Spatial vectors are 6-element quantities that are pairs of ordinary 3-vectors.
@@ -644,10 +646,10 @@ read as "the point of body A coincident in space with point Q", where point Q
 might be identified with a different body. You should use fully-expanded
 symbols, and helpful comments, if there is any chance of confusion.
 
-Next topic: @ref multibody_spatial_inertia
-*/
+Next topic: @ref multibody_spatial_inertia */
 
-/** @defgroup multibody_spatial_inertia Spatial Mass Matrix (Spatial Inertia)
+/**
+@defgroup multibody_spatial_inertia Spatial Mass Matrix (Spatial Inertia)
 @ingroup multibody_spatial_algebra
 
 A _Spatial Mass Matrix_ (also called _Spatial Inertia_) M represents the mass,
@@ -702,5 +704,4 @@ the World frame origin, and expressed in World.
 Given `M_BP_F` (@f$[M^{B/P}]_F@f$), its top left submatrix is `I_BP_F`
 (@f$[I^{B/P}]_F@f$) and position vector c = `p_PBcm_F` (@f$[^Pp^{B_{cm}}]_F@f$),
 that is, the position vector of the center of mass measured from point P and
-expressed in F. Note that if the "taken about" point is `Bcm`, then c=0.
-*/
+expressed in F. Note that if the "taken about" point is `Bcm`, then c=0. */

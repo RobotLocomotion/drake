@@ -16,95 +16,82 @@ class MpcComponentUnitTests;
 }  // namespace test
 
 /**
- * This class computes and stores residuals for MPC QPs. See mpc_data.h
- * for the mathematical description.
- *
- * Residuals have 3 components:
- * - z: Stationarity residual
- * - l: Equality residual
- * - v: Inequality/complimentarity residual
- */
+This class computes and stores residuals for MPC QPs. See mpc_data.h
+for the mathematical description.
+
+Residuals have 3 components:
+- z: Stationarity residual
+- l: Equality residual
+- v: Inequality/complimentarity residual */
 class MpcResidual {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpcResidual)
   /**
-   * Allocates memory for the residual.
-   *
-   * @param[in] N  horizon length
-   * @param[in] nx number of states
-   * @param[in] nu number of control input
-   * @param[in] nc number of constraints per stage
-   *
-   * Throws a runtime_error if any of the inputs
-   * are non-positive.
-   */
+  Allocates memory for the residual.
+
+  @param[in] N  horizon length
+  @param[in] nx number of states
+  @param[in] nu number of control input
+  @param[in] nc number of constraints per stage
+
+  Throws a runtime_error if any of the inputs
+  are non-positive. */
   MpcResidual(int N, int nx, int nu, int nc);
 
   /**
-   * Sets the value of alpha used in residual computations,
-   * see (19) in https://arxiv.org/pdf/1901.04046.pdf.
-   * @param[in] alpha
-   */
+  Sets the value of alpha used in residual computations,
+  see (19) in https://arxiv.org/pdf/1901.04046.pdf.
+  @param[in] alpha */
   void SetAlpha(double alpha) { alpha_ = alpha; }
 
   /**
-   * Fills the storage with all a.
-   * @param[in] a
-   */
+  Fills the storage with all a.
+  @param[in] a */
   void Fill(double a);
 
-  /**
-   * Sets *this <- -1* *this.
-   */
+  /** Sets *this <- -1* *this. */
   void Negate();
 
-  /**
-   * @return Euclidean norm of the residual.
-   */
+  /** @return Euclidean norm of the residual. */
   double Norm() const;
 
-  /**
-   * @return 0.5*Norm()^2
-   */
+  /** @return 0.5*Norm()^2 */
   double Merit() const;
 
   /**
-   * Computes R(x,xbar,sigma), the residual of a proximal subproblem
-   * and stores the result internally.
-   * R(x,xbar,sigma) = 0 if and only if x = P(xbar,sigma)
-   * where P is the proximal operator.
-   *
-   * See (11) and (20) in https://arxiv.org/pdf/1901.04046.pdf
-   * for a mathematical description.
-   *
-   * @param[in] x      Inner loop variable
-   * @param[in] xbar   Outer loop variable
-   * @param[in] sigma  Regularization strength > 0
-   *
-   * Throws a runtime_error if sigma isn't positive,
-   * or if x and xbar aren't the same size.
-   */
+  Computes R(x,xbar,sigma), the residual of a proximal subproblem
+  and stores the result internally.
+  R(x,xbar,sigma) = 0 if and only if x = P(xbar,sigma)
+  where P is the proximal operator.
+
+  See (11) and (20) in https://arxiv.org/pdf/1901.04046.pdf
+  for a mathematical description.
+
+  @param[in] x      Inner loop variable
+  @param[in] xbar   Outer loop variable
+  @param[in] sigma  Regularization strength > 0
+
+  Throws a runtime_error if sigma isn't positive,
+  or if x and xbar aren't the same size. */
   void InnerResidual(const MpcVariable& x, const MpcVariable& xbar,
                      double sigma);
 
   /**
-   * Computes π(x): the natural residual of the QP
-   * at the primal-dual point x and stores the result internally.
-   * See (17) in https://arxiv.org/pdf/1901.04046.pdf
-   * for a mathematical definition.
-   *
-   * @param[in] x Evaluation point.
-   */
+  Computes π(x): the natural residual of the QP
+  at the primal-dual point x and stores the result internally.
+  See (17) in https://arxiv.org/pdf/1901.04046.pdf
+  for a mathematical definition.
+
+  @param[in] x Evaluation point. */
   void NaturalResidual(const MpcVariable& x);
 
   /**
-   * Computes the natural residual function augmented with
-   * penalty terms, it is analogous to (18) in
-   * https://arxiv.org/pdf/1901.04046.pdf,
-   * and stores the result internally.
-   *
-   * @param[in] x Evaluation point.
-   */
+  Computes the natural residual function augmented with
+  penalty terms, it is analogous to (18) in
+  https://arxiv.org/pdf/1901.04046.pdf,
+  and stores the result internally.
+
+  @param[in] x Evaluation point. */
   void PenalizedNaturalResidual(const MpcVariable& x);
 
   /** Accessor for stationarity residual. */

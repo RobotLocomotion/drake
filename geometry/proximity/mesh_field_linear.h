@@ -19,77 +19,76 @@ namespace drake {
 namespace geometry {
 
 /**
- %MeshFieldLinear represents a continuous piecewise-linear scalar field f
- defined on a (triangular or tetrahedral) mesh; the field value changes
- linearly within each element E (triangle or tetrahedron), and the gradient
- ∇f is constant within each element. The field is continuous across adjacent
- elements, but its gradient is discontinuous from one element to the other.
+%MeshFieldLinear represents a continuous piecewise-linear scalar field f
+defined on a (triangular or tetrahedral) mesh; the field value changes
+linearly within each element E (triangle or tetrahedron), and the gradient
+∇f is constant within each element. The field is continuous across adjacent
+elements, but its gradient is discontinuous from one element to the other.
 
- To represent a piecewise linear field f, we store one field value per vertex
- of the mesh. Each element E (triangle or tetrahedron) has (d+1) vertices,
- where d is the dimension of the element. For triangle, d = 2, and for
- tetrahedron, d = 3.
+To represent a piecewise linear field f, we store one field value per vertex
+of the mesh. Each element E (triangle or tetrahedron) has (d+1) vertices,
+where d is the dimension of the element. For triangle, d = 2, and for
+tetrahedron, d = 3.
 
- On each element E, we define a linear function fᵉ:ℝ³→ℝ using the field values
- at vertices of E. The gradient ∇fᵉ:ℝ³→ℝ³ is a constant map, so we write ∇fᵉ
- for the constant gradient vector on E as well. For a point Q in element E, we
- have:
+On each element E, we define a linear function fᵉ:ℝ³→ℝ using the field values
+at vertices of E. The gradient ∇fᵉ:ℝ³→ℝ³ is a constant map, so we write ∇fᵉ
+for the constant gradient vector on E as well. For a point Q in element E, we
+have:
 
-        f(Q) = fᵉ(Q) for Q ∈ E,
-       ∇f(Q) = ∇fᵉ for Q ∈ E.
+       f(Q) = fᵉ(Q) for Q ∈ E,
+      ∇f(Q) = ∇fᵉ for Q ∈ E.
 
- Notice that the domain of fᵉ is the entire space of ℝ³, while the domain of f
- is the underlying space of the mesh.
+Notice that the domain of fᵉ is the entire space of ℝ³, while the domain of f
+is the underlying space of the mesh.
 
- The following sections are details for interested readers.
+The following sections are details for interested readers.
 
- <h3> Barycentric coordinate </h3>
+<h3> Barycentric coordinate </h3>
 
- For a linear triangle or tetrahedron element E in 3-D, we use barycentric
- coordinate:
+For a linear triangle or tetrahedron element E in 3-D, we use barycentric
+coordinate:
 
-       (b₀, b₁, b₂)     for triangle,
-       (b₀, b₁, b₂, b₃) for tetrahedron,
-       ∑bᵢ = 1, bᵢ ≥ 0,
+      (b₀, b₁, b₂)     for triangle,
+      (b₀, b₁, b₂, b₃) for tetrahedron,
+      ∑bᵢ = 1, bᵢ ≥ 0,
 
- to identify a point Q that lies in the simplicial element E. The coefficient
- bᵢ is the weight of vertex Vᵉᵢ of the element E, where the index i is a local
- index within the element E, not the global index of the entire mesh. In other
- words, vertex Vᵉᵢ is the iᵗʰ vertex of E, not the iᵗʰ vertex among all vertices
- in the mesh. The point Q in E can be expressed as:
+to identify a point Q that lies in the simplicial element E. The coefficient
+bᵢ is the weight of vertex Vᵉᵢ of the element E, where the index i is a local
+index within the element E, not the global index of the entire mesh. In other
+words, vertex Vᵉᵢ is the iᵗʰ vertex of E, not the iᵗʰ vertex among all vertices
+in the mesh. The point Q in E can be expressed as:
 
-       Q = ∑bᵉᵢ(Q)Vᵉᵢ,
+      Q = ∑bᵉᵢ(Q)Vᵉᵢ,
 
- where we indicate the barycentric coordinate of a point Q on an element E as
- bᵉᵢ(Q).
+where we indicate the barycentric coordinate of a point Q on an element E as
+bᵉᵢ(Q).
 
- <h3> Field value from barycentric coordinates </h3>
+<h3> Field value from barycentric coordinates </h3>
 
- At a point Q in element E, the piecewise linear field f has value:
+At a point Q in element E, the piecewise linear field f has value:
 
-       f(Q) = fᵉ(Q) = ∑bᵉᵢ(Q)Fᵉᵢ
+      f(Q) = fᵉ(Q) = ∑bᵉᵢ(Q)Fᵉᵢ
 
- where Fᵉᵢ is the field value at the iᵗʰ vertex of element E.
+where Fᵉᵢ is the field value at the iᵗʰ vertex of element E.
 
- <h3> Gradient </h3>
+<h3> Gradient </h3>
 
- Consider each bᵉᵢ:ℝ³→ℝ as a linear function, its gradient ∇bᵉᵢ:ℝ³→ℝ³ is a
- constant map, and we write ∇bᵉᵢ for the constant gradient vector. The
- gradient of the piecewise linear field f at a point Q in an element E is:
+Consider each bᵉᵢ:ℝ³→ℝ as a linear function, its gradient ∇bᵉᵢ:ℝ³→ℝ³ is a
+constant map, and we write ∇bᵉᵢ for the constant gradient vector. The
+gradient of the piecewise linear field f at a point Q in an element E is:
 
-       ∇f(Q) = ∇fᵉ = ∑Fᵉᵢ∇bᵉᵢ.
+      ∇f(Q) = ∇fᵉ = ∑Fᵉᵢ∇bᵉᵢ.
 
- <h3> Field value from Cartesian coordinates </h3>
+<h3> Field value from Cartesian coordinates </h3>
 
- At a point Q in element E, the piecewise linear field f has value:
+At a point Q in element E, the piecewise linear field f has value:
 
-       f(Q) = ∇fᵉ⋅Q + fᵉ(0,0,0).
+      f(Q) = ∇fᵉ⋅Q + fᵉ(0,0,0).
 
- Notice that (0,0,0) may or may not lie in element E.
+Notice that (0,0,0) may or may not lie in element E.
 
- @tparam T  a valid Eigen scalar for field values.
- @tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh.
- */
+@tparam T  a valid Eigen scalar for field values.
+@tparam MeshType    the type of the meshes: SurfaceMesh or VolumeMesh. */
 template <class T, class MeshType>
 class MeshFieldLinear final : public MeshField<T, MeshType> {
  public:
@@ -99,21 +98,21 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   //  documentation of MeshFieldLinear about the choice of calculating
   //  gradient."
 
-  /** Constructs a MeshFieldLinear.
-   @param name    The name of the field variable.
-   @param values  The field value at each vertex of the mesh.
-   @param mesh    The mesh M to which this MeshField refers.
-   @param calculate_gradient Calculate gradient field when true, default is
-                  true. Calculating gradient allows EvaluateCartesian() to
-                  evaluate the field directly instead of converting
-                  Cartesian coordinates to barycentric coordinates first.
-                  If calculate_gradient is false, EvaluateCartesian() will be
-                  slower. On the other hand, calculating gradient requires
-                  certain quality from mesh elements. If the mesh quality is
-                  very poor, calculating gradient may throw.
-   @pre   The `mesh` is non-null, and the number of entries in `values` is the
-          same as the number of vertices of the mesh.
-   */
+  /**
+  Constructs a MeshFieldLinear.
+  @param name    The name of the field variable.
+  @param values  The field value at each vertex of the mesh.
+  @param mesh    The mesh M to which this MeshField refers.
+  @param calculate_gradient Calculate gradient field when true, default is
+                 true. Calculating gradient allows EvaluateCartesian() to
+                 evaluate the field directly instead of converting
+                 Cartesian coordinates to barycentric coordinates first.
+                 If calculate_gradient is false, EvaluateCartesian() will be
+                 slower. On the other hand, calculating gradient requires
+                 certain quality from mesh elements. If the mesh quality is
+                 very poor, calculating gradient may throw.
+  @pre   The `mesh` is non-null, and the number of entries in `values` is the
+         same as the number of vertices of the mesh. */
   MeshFieldLinear(std::string name, std::vector<T>&& values,
                   const MeshType* mesh, bool calculate_gradient = true)
       : MeshField<T, MeshType>(mesh),
@@ -143,17 +142,17 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return value;
   }
 
-  /** Evaluates the field at a point Qp on an element. If the element is a
-   tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
-   projection of Q on the triangle's plane.
+  /**
+  Evaluates the field at a point Qp on an element. If the element is a
+  tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
+  projection of Q on the triangle's plane.
 
-   If gradients have been calculated, it evaluates the field value directly.
-   Otherwise, it converts Cartesian coordinates to barycentric coordinates
-   for barycentric interpolation.
-   @param e The index of the element.
-   @param p_MQ The position of point Q expressed in frame M, in Cartesian
-               coordinates. M is the frame of the mesh.
-   */
+  If gradients have been calculated, it evaluates the field value directly.
+  Otherwise, it converts Cartesian coordinates to barycentric coordinates
+  for barycentric interpolation.
+  @param e The index of the element.
+  @param p_MQ The position of point Q expressed in frame M, in Cartesian
+              coordinates. M is the frame of the mesh. */
   T EvaluateCartesian(typename MeshType::ElementIndex e,
                       const typename MeshType::Cartesian& p_MQ) const final {
     if (gradients_.size() == 0) {
@@ -165,11 +164,11 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     }
   }
 
-  /** Evaluates the gradient in the domain of the element indicated by `e`.
+  /**
+  Evaluates the gradient in the domain of the element indicated by `e`.
   The gradient is a vector in R³ expressed in frame M. For surface meshes, it
   will particularly lie parallel to the plane of the corresponding triangle.
-  @throw std::runtime_error if the gradient vector was not calculated.
-  */
+  @throw std::runtime_error if the gradient vector was not calculated. */
   Vector3<T> EvaluateGradient(typename MeshType::ElementIndex e) const {
     if (gradients_.size() == 0) {
       throw std::runtime_error("Gradient vector was not calculated.");
@@ -177,11 +176,11 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
     return gradients_[e];
   }
 
-  /** Transforms the gradient vectors of this field from its initial frame M
-   to the new frame N.
-   @warning Use this function when the reference mesh of this field changes
-   its frame in the same way.
-   */
+  /**
+  Transforms the gradient vectors of this field from its initial frame M
+  to the new frame N.
+  @warning Use this function when the reference mesh of this field changes
+  its frame in the same way. */
   void TransformGradients(
       const math::RigidTransform<typename MeshType::ScalarType>& X_NM) {
     for (auto& grad : gradients_) {
@@ -196,13 +195,13 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
   // TODO(DamrongGuoy): Change the type of parameter `field` from MeshField
   //  to MeshFieldLinear. We will need to change the callers of this function
   //  too.
-  /** Checks to see whether the given MeshFieldLinear object is equal via deep
-   exact comparison. The name of the objects are exempt from this comparison.
-   NaNs are treated as not equal as per the IEEE standard.
-   @param field The field for comparison.
-   @returns `true` if the given field is equal.
-   @note Requires `MeshField field` to be MeshFieldLinear.
-   */
+  /**
+  Checks to see whether the given MeshFieldLinear object is equal via deep
+  exact comparison. The name of the objects are exempt from this comparison.
+  NaNs are treated as not equal as per the IEEE standard.
+  @param field The field for comparison.
+  @returns `true` if the given field is equal.
+  @note Requires `MeshField field` to be MeshFieldLinear. */
   bool Equal(const MeshField<T, MeshType>& field) const {
     if (!this->mesh().Equal(field.mesh())) return false;
 
@@ -252,9 +251,8 @@ class MeshFieldLinear final : public MeshField<T, MeshType> {
 };
 
 /**
- @tparam FieldValue  a valid Eigen scalar for field values.
- @tparam T  a valid Eigen scalar for coordinates.
- */
+@tparam FieldValue  a valid Eigen scalar for field values.
+@tparam T  a valid Eigen scalar for coordinates. */
 template <typename FieldValue, typename T>
 using SurfaceMeshFieldLinear = MeshFieldLinear<FieldValue, SurfaceMesh<T>>;
 

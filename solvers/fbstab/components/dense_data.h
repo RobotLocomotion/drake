@@ -9,28 +9,26 @@ namespace solvers {
 namespace fbstab {
 
 /**
- * Represents data for quadratic programming problems of the following type (1):
- *
- * min.    1/2  z'Hz + f'z
- * s.t.         Az <= b
- *
- * where H is symmetric and positive semidefinite.
- */
+Represents data for quadratic programming problems of the following type (1):
+
+min.    1/2  z'Hz + f'z
+s.t.         Az <= b
+
+where H is symmetric and positive semidefinite. */
 class DenseData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseData)
   /**
-   * Stores the problem data and performs input validation.
-   * This class assumes that the pointers to the data remain valid.
-   *
-   * @param[in] H Hessian matrix
-   * @param[in] f Linear term
-   * @param[in] A Constraint matrix
-   * @param[in] b Constraint vector
-   *
-   * Throws a runtime exception if any of the inputs are null or if
-   * the sizes of the inputs are inconsistent.
-   */
+  Stores the problem data and performs input validation.
+  This class assumes that the pointers to the data remain valid.
+
+  @param[in] H Hessian matrix
+  @param[in] f Linear term
+  @param[in] A Constraint matrix
+  @param[in] b Constraint vector
+
+  Throws a runtime exception if any of the inputs are null or if
+  the sizes of the inputs are inconsistent. */
   DenseData(const Eigen::MatrixXd* H, const Eigen::VectorXd* f,
             const Eigen::MatrixXd* A, const Eigen::VectorXd* b);
 
@@ -46,13 +44,9 @@ class DenseData {
   /** Read only accessor for the b vector. */
   const Eigen::VectorXd& b() const { return *b_; }
 
-  /**
-   * @return number of decision variables (i.e., dimension of z)
-   */
+  /** @return number of decision variables (i.e., dimension of z) */
   int num_variables() const { return nz_; }
-  /**
-   * @return number of inequality constraints
-   */
+  /** @return number of inequality constraints */
   int num_constraints() const { return nv_; }
 
  private:

@@ -14,37 +14,37 @@
 
 namespace drake {
 
-/** A scalar multi-variate polynomial containing sines and cosines.
- *
- * TrigPoly represents a Polynomial some of whose variables actually represent
- * the sines or cosines of other variables.  Sines and cosines of first-order
- * polynomials (affine combinations of variables) are decomposed into
- * polynomials of the sines and cosines of individual variables via the
- * Prosthaphaeresis formulae.
- *
- * Any variables which will appear in the arguments to trigonometric functions
- * must be declared in the "SinCosMap" (created automatically by most TrigPoly
- * constructors); attempting to, e.g., use sin(x) without first creating a
- * SinCosMap mapping for 'x' will result in an exception.
- *
- * The same variable may not appear more than once in the sin_cos_map,
- * regardless of position.
- *
- * For example:
- * \code
- * Polynomial base_x("x"), s("s"), c("c");
- * TrigPoly x(base_x, s, c)  // This "x" knows that s = sin(x)
- *                           // and that c = cos(x)
- * cout << sin(x)                     // emits "s1"
- * cout << sin(x) * x                 // emits "x1*s1"
- * cout << sin(x + x) * x             // emits "x1*s1*c1 + x1*c1*s1"
- * \endcode
- *
- * NOTE:  Certain analyses may not succeed when individual Monomials contain
- * both x and sin(x) or cos(x) terms.  This restriction is not currently
- * enforced programmatically.
- * <!-- TODO(ggould-tri): Fix this in the future. -->
- */
+/**
+A scalar multi-variate polynomial containing sines and cosines.
+
+TrigPoly represents a Polynomial some of whose variables actually represent
+the sines or cosines of other variables.  Sines and cosines of first-order
+polynomials (affine combinations of variables) are decomposed into
+polynomials of the sines and cosines of individual variables via the
+Prosthaphaeresis formulae.
+
+Any variables which will appear in the arguments to trigonometric functions
+must be declared in the "SinCosMap" (created automatically by most TrigPoly
+constructors); attempting to, e.g., use sin(x) without first creating a
+SinCosMap mapping for 'x' will result in an exception.
+
+The same variable may not appear more than once in the sin_cos_map,
+regardless of position.
+
+For example:
+\code
+Polynomial base_x("x"), s("s"), c("c");
+TrigPoly x(base_x, s, c)  // This "x" knows that s = sin(x)
+                          // and that c = cos(x)
+cout << sin(x)                     // emits "s1"
+cout << sin(x) * x                 // emits "x1*s1"
+cout << sin(x + x) * x             // emits "x1*s1*c1 + x1*c1*s1"
+\endcode
+
+NOTE:  Certain analyses may not succeed when individual Monomials contain
+both x and sin(x) or cos(x) terms.  This restriction is not currently
+enforced programmatically.
+<!-- TODO(ggould-tri): Fix this in the future. --> */
 template <typename T = double>
 class TrigPoly final {
  public:
@@ -67,23 +67,21 @@ class TrigPoly final {
     typedef decltype(static_cast<Rhs>(0) * static_cast<Lhs>(0)) type;
   };
 
-  /// Constructs a vacuous TrigPoly.
+  /** Constructs a vacuous TrigPoly. */
   TrigPoly() {}
 
-  /// Constructs a constant TrigPoly.
+  /** Constructs a constant TrigPoly. */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   TrigPoly(const T& scalar) : poly_(scalar) {}
 
   /**
-   * Constructs a TrigPoly on the associated Polynomial p with no associated
-   * trigonometric correspondences.
-   */
+  Constructs a TrigPoly on the associated Polynomial p with no associated
+  trigonometric correspondences. */
   explicit TrigPoly(const PolyType& p) : poly_(p) {}
 
   /**
-   * Constructs a TrigPoly on the associated Polynomial p, but with the
-   * additional information about sin and cos relations in _sin_cos_map.
-   */
+  Constructs a TrigPoly on the associated Polynomial p, but with the
+  additional information about sin and cos relations in _sin_cos_map. */
   TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map)
       : poly_(p), sin_cos_map_(_sin_cos_map) {
     // The provided _sin_cos_map might have extraneous entries; clip them.
@@ -105,9 +103,8 @@ class TrigPoly final {
   }
 
   /**
-   * Constructs a TrigPoly version of q, but with the additional information
-   * that the variables s and c represent the sine and cosine of q.
-   */
+  Constructs a TrigPoly version of q, but with the additional information
+  that the variables s and c represent the sine and cosine of q. */
   TrigPoly(const PolyType& q, const PolyType& s, const PolyType& c) {
     if ((q.GetDegree() != 1) || (s.GetDegree() != 1) || (c.GetDegree() != 1))
       throw std::runtime_error(
@@ -122,19 +119,19 @@ class TrigPoly final {
 
   ~TrigPoly() = default;
 
-  /// Returns the underlying Polynomial for this TrigPoly.
+  /** Returns the underlying Polynomial for this TrigPoly. */
   const PolyType& poly(void) const { return poly_; }
 
-  /// Returns the SinCosMap for this TrigPoly.
+  /** Returns the SinCosMap for this TrigPoly. */
   const SinCosMap& sin_cos_map(void) const { return sin_cos_map_; }
 
-  /** A version of sin that handles TrigPoly arguments through ADL.
-   *
-   * Implements sin(x) for a TrigPoly x.
-   *
-   * x must be of degree 0 or 1, and must contain only variables that have
-   * entries in its SinCosMap.
-   */
+  /**
+  A version of sin that handles TrigPoly arguments through ADL.
+
+  Implements sin(x) for a TrigPoly x.
+
+  x must be of degree 0 or 1, and must contain only variables that have
+  entries in its SinCosMap. */
   friend TrigPoly sin(const TrigPoly& p) {
     using std::abs;
     using std::copysign;
@@ -187,13 +184,12 @@ class TrigPoly final {
     return sin(a) * cos(b) + cos(a) * sin(b);
   }
 
-  /// A version of cos that handles TrigPoly arguments through ADL.
+  /** A version of cos that handles TrigPoly arguments through ADL. */
   /**
-   * Implements cos(x) for a TrigPoly x.
-   *
-   * x must be of degree 0 or 1, and must contain only variables that have
-   * entries in its SinCosMap.
-   */
+  Implements cos(x) for a TrigPoly x.
+
+  x must be of degree 0 or 1, and must contain only variables that have
+  entries in its SinCosMap. */
   friend TrigPoly cos(const TrigPoly& p) {
     using std::abs;
     using std::copysign;
@@ -249,7 +245,7 @@ class TrigPoly final {
     return cos(a) * cos(b) - sin(a) * sin(b);
   }
 
-  /// Returns all of the base (non-sin/cos) variables in this TrigPoly.
+  /** Returns all of the base (non-sin/cos) variables in this TrigPoly. */
   std::set<VarType> GetVariables() const {
     std::set<VarType> vars = poly_.GetVariables();
     for (const auto& sin_cos_item : sin_cos_map_) {
@@ -260,12 +256,12 @@ class TrigPoly final {
     return vars;
   }
 
-  /** Given a value for every variable in this expression, evaluates it.
-   *
-   * By analogy with Polynomial::EvaluateMultivariate().  Values must be
-   * supplied for all base variables; supplying values for sin/cos variables
-   * is an error.
-   */
+  /**
+  Given a value for every variable in this expression, evaluates it.
+
+  By analogy with Polynomial::EvaluateMultivariate().  Values must be
+  supplied for all base variables; supplying values for sin/cos variables
+  is an error. */
   template <typename U>
   typename Product<T, U>::type EvaluateMultivariate(
       const std::map<VarType, U>& var_values) const {
@@ -281,12 +277,12 @@ class TrigPoly final {
     return poly_.EvaluateMultivariate(all_var_values);
   }
 
-  /** Partially evaluates this expression, returning the resulting expression.
-   *
-   * By analogy with Polynomial::evaluatePartial.  Values must be supplied for
-   * all base variables only; supplying values for sin/cos variables is an
-   * error.
-   */
+  /**
+  Partially evaluates this expression, returning the resulting expression.
+
+  By analogy with Polynomial::evaluatePartial.  Values must be supplied for
+  all base variables only; supplying values for sin/cos variables is an
+  error. */
   virtual TrigPoly<T> EvaluatePartial(
       const std::map<VarType, T>& var_values) const {
     std::map<VarType, T> var_values_with_sincos = var_values;
@@ -305,17 +301,16 @@ class TrigPoly final {
                     sin_cos_map_);
   }
 
-  /// Compares two TrigPolys for equality.
+  /** Compares two TrigPolys for equality. */
   /**
-   * Note that the question of equality of TrigPolys is a bit subtle.  It is
-   * not immediately clear if two TrigPolys whose poly and sin_cos_map members
-   * differ equivalently (eg, a + b (b = cos(a)) and a + c (c = cos(a))) should
-   * be considered equal.
-   *
-   * For simplicity we only consider exactly equality rather than semantic
-   * equivalence.  However that decision could reasonably revisited in the
-   * future.
-   */
+  Note that the question of equality of TrigPolys is a bit subtle.  It is
+  not immediately clear if two TrigPolys whose poly and sin_cos_map members
+  differ equivalently (eg, a + b (b = cos(a)) and a + c (c = cos(a))) should
+  be considered equal.
+
+  For simplicity we only consider exactly equality rather than semantic
+  equivalence.  However that decision could reasonably revisited in the
+  future. */
   bool operator==(const TrigPoly& other) const {
     return (poly_ == other.poly_) && (sin_cos_map_ == other.sin_cos_map_);
   }
@@ -464,7 +459,7 @@ std::ostream& operator<<(
 
 typedef TrigPoly<double> TrigPolyd;
 
-/// A column vector of TrigPoly; used in several optimization classes.
+/** A column vector of TrigPoly; used in several optimization classes. */
 typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;
 
 }  // namespace drake

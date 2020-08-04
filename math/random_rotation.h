@@ -13,13 +13,14 @@
 namespace drake {
 namespace math {
 
-/// Generates a rotation (in the quaternion representation) that rotates a
-/// point on the unit sphere to another point on the unit sphere with a uniform
-/// distribution over the sphere.
-/// This method is briefly explained in
-/// http://planning.cs.uiuc.edu/node198.html, a full explanation can be found in
-/// K. Shoemake. Uniform Random Rotations in D. Kirk, editor, Graphics Gems III,
-/// pages 124-132. Academic, New York, 1992.
+/**
+Generates a rotation (in the quaternion representation) that rotates a
+point on the unit sphere to another point on the unit sphere with a uniform
+distribution over the sphere.
+This method is briefly explained in
+http://planning.cs.uiuc.edu/node198.html, a full explanation can be found in
+K. Shoemake. Uniform Random Rotations in D. Kirk, editor, Graphics Gems III,
+pages 124-132. Academic, New York, 1992. */
 template <typename T = double, class Generator = RandomGenerator>
 Eigen::Quaternion<T> UniformlyRandomQuaternion(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
@@ -38,9 +39,10 @@ Eigen::Quaternion<T> UniformlyRandomQuaternion(Generator* generator) {
                               sqrt_u1 * cos(2 * M_PI * u3));
 }
 
-/// Generates a rotation (in the axis-angle representation) that rotates a
-/// point on the unit sphere to another point on the unit sphere with a uniform
-/// distribution over the sphere.
+/**
+Generates a rotation (in the axis-angle representation) that rotates a
+point on the unit sphere to another point on the unit sphere with a uniform
+distribution over the sphere. */
 template <typename T = double, class Generator = RandomGenerator>
 Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
@@ -49,9 +51,10 @@ Eigen::AngleAxis<T> UniformlyRandomAngleAxis(Generator* generator) {
   return internal::QuaternionToAngleAxisLikeEigen(quaternion);
 }
 
-/// Generates a rotation (in the rotation matrix representation) that rotates a
-/// point on the unit sphere to another point on the unit sphere with a uniform
-/// distribution over the sphere.
+/**
+Generates a rotation (in the rotation matrix representation) that rotates a
+point on the unit sphere to another point on the unit sphere with a uniform
+distribution over the sphere. */
 template <typename T = double, class Generator = RandomGenerator>
 RotationMatrix<T> UniformlyRandomRotationMatrix(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);
@@ -60,9 +63,10 @@ RotationMatrix<T> UniformlyRandomRotationMatrix(Generator* generator) {
   return RotationMatrix<T>(quaternion);
 }
 
-/// Generates a rotation (in the roll-pitch-yaw representation) that rotates a
-/// point on the unit sphere to another point on the unit sphere with a uniform
-/// distribution over the sphere.
+/**
+Generates a rotation (in the roll-pitch-yaw representation) that rotates a
+point on the unit sphere to another point on the unit sphere with a uniform
+distribution over the sphere. */
 template <typename T = double, class Generator = RandomGenerator>
 Vector3<T> UniformlyRandomRPY(Generator* generator) {
   DRAKE_DEMAND(generator != nullptr);

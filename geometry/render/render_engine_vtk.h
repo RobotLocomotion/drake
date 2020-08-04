@@ -80,12 +80,12 @@ class ShaderCallback : public vtkCommand {
 
 #endif  // !DRAKE_DOXYGEN_CXX
 
-/** See documentation of MakeRenderEngineVtk().  */
+/** See documentation of MakeRenderEngineVtk(). */
 class RenderEngineVtk : public RenderEngine,
                         private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
-  /** \name Does not allow copy, move, or assignment  */
-  //@{
+  /** \name Does not allow copy, move, or assignment */
+  /** @{ */
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
   // basis for implementing the DoClone() method.
@@ -96,38 +96,38 @@ class RenderEngineVtk : public RenderEngine,
   RenderEngineVtk& operator=(RenderEngineVtk&&) = delete;
   //@}}
 
-  /** Constructs the render engine from the given `parameters`.
+  /**
+  Constructs the render engine from the given `parameters`.
 
-   When one of the optional parameters is omitted, the constructed value will be
-   as documented elsewhere in @ref render_engine_vtk_properties "this class".
-  */
+  When one of the optional parameters is omitted, the constructed value will be
+  as documented elsewhere in @ref render_engine_vtk_properties "this class". */
   RenderEngineVtk(
       const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
 
-  /** @see RenderEngine::UpdateViewpoint().  */
+  /** @see RenderEngine::UpdateViewpoint(). */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
   using RenderEngine::RenderColorImage;
   using RenderEngine::RenderDepthImage;
   using RenderEngine::RenderLabelImage;
 
-  /** @see RenderEngine::RenderColorImage().  */
+  /** @see RenderEngine::RenderColorImage(). */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const override;
 
-  /** @see RenderEngine::RenderDepthImage().  */
+  /** @see RenderEngine::RenderDepthImage(). */
   void RenderDepthImage(
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const override;
 
-  /** @see RenderEngine::RenderLabelImage().  */
+  /** @see RenderEngine::RenderLabelImage(). */
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  /** @name    Shape reification  */
-  //@{
+  /** @name    Shape reification */
+  /** @{ */
   using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) override;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) override;
@@ -137,23 +137,25 @@ class RenderEngineVtk : public RenderEngine,
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) override;
   void ImplementGeometry(const Mesh& mesh, void* user_data) override;
   void ImplementGeometry(const Convex& convex, void* user_data) override;
-  //@}
+  /** @} */
 
-  /** @name    Access the default properties
+  /**
+  @name    Access the default properties
 
-   Provides access to the default values this instance of the render engine is
-   using. These values must be set at construction.  */
-  //@{
+  Provides access to the default values this instance of the render engine is
+  using. These values must be set at construction. */
+  /** @{ */
 
   const Eigen::Vector4d& default_diffuse() const { return default_diffuse_; }
 
   using RenderEngine::default_render_label;
-  //@}
+  /** @} */
 
  protected:
-  /** Returns all actors registered with the engine, keyed by the SceneGraph
-   GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
-   label. */
+  /**
+  Returns all actors registered with the engine, keyed by the SceneGraph
+  GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
+  label. */
   const std::unordered_map<GeometryId,
                            std::array<vtkSmartPointer<vtkActor>, 3>>&
   actors() const {

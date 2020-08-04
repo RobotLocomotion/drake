@@ -11,37 +11,36 @@ namespace drake {
 namespace systems {
 
 /**
- A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
- with a fourth order error estimate.
+A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
+with a fourth order error estimate.
 
- For a discussion of this Runge-Kutta method, see [Hairer, 1993]. The
- embedded error estimate was derived using the method mentioned in
- [Hairer, 1993].
-  The Butcher tableau for this integrator follows:
- <pre>
-    0 |
-  1/5 |        1/5
- 3/10 |       3/40         9/40
-  4/5 |      44/45       -56/15         32/9
-  8/9 | 19372/6561   −25360/2187   64448/6561   −212/729
-    1 |  9017/3168      −355/33   46732/5247     49/176     −5103/18656
-    1 |     35/384            0     500/1113    125/192      −2187/6784      11/84         <!-- NOLINT(*) -->
- ---------------------------------------------------------------------------------         <!-- NOLINT(*) -->
-            35/384            0     500/1113    125/192      −2187/6784      11/84      0  <!-- NOLINT(*) -->
-        5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40  <!-- NOLINT(*) -->
- </pre>
- where the second to last row is the 5th-order (propagated) solution and
- the last row gives a 2nd-order accurate solution used for error control.
+For a discussion of this Runge-Kutta method, see [Hairer, 1993]. The
+embedded error estimate was derived using the method mentioned in
+[Hairer, 1993].
+ The Butcher tableau for this integrator follows:
+<pre>
+   0 |
+ 1/5 |        1/5
+3/10 |       3/40         9/40
+ 4/5 |      44/45       -56/15         32/9
+ 8/9 | 19372/6561   −25360/2187   64448/6561   −212/729
+   1 |  9017/3168      −355/33   46732/5247     49/176     −5103/18656
+   1 |     35/384            0     500/1113    125/192      −2187/6784      11/84         <!-- NOLINT(*) -->
+---------------------------------------------------------------------------------         <!-- NOLINT(*) -->
+           35/384            0     500/1113    125/192      −2187/6784      11/84      0  <!-- NOLINT(*) -->
+       5179/57600            0   7571/16695    393/640   −92097/339200   187/2100   1/40  <!-- NOLINT(*) -->
+</pre>
+where the second to last row is the 5th-order (propagated) solution and
+the last row gives a 2nd-order accurate solution used for error control.
 
- - [Dormand, 1980] J. Dormand and P. Prince. "A family of embedded
-   Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
-   1980, 6(1): 19–26.
- - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
-   rev. ed. Springer, 1993. p. 166.
+- [Dormand, 1980] J. Dormand and P. Prince. "A family of embedded
+  Runge-Kutta formulae", Journal of Computational and Applied Mathematics,
+  1980, 6(1): 19–26.
+- [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
+  rev. ed. Springer, 1993. p. 166.
 
- @tparam_nonsymbolic_scalar
- @ingroup integrators
- */
+@tparam_nonsymbolic_scalar
+@ingroup integrators */
 template <typename T>
 class RungeKutta5Integrator final : public IntegratorBase<T> {
  public:
@@ -62,12 +61,10 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
     save_xc0_.resize(derivs1_->size());
   }
 
-  /**
-   * The integrator supports error estimation.
-   */
+  /** The integrator supports error estimation. */
   bool supports_error_estimation() const override { return true; }
 
-  /// The order of the asymptotic term in the error estimate.
+  /** The order of the asymptotic term in the error estimate. */
   int get_error_estimate_order() const override { return 4; }
 
  private:

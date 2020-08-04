@@ -16,13 +16,12 @@ namespace drake {
 namespace multibody {
 
 /**
- A container class storing the contact results information for each contact
- pair for a given state of the simulation. Note that copying this data structure
- is expensive when `num_hydroelastic_contacts() > 0` because a deep copy is
- performed.
+A container class storing the contact results information for each contact
+pair for a given state of the simulation. Note that copying this data structure
+is expensive when `num_hydroelastic_contacts() > 0` because a deep copy is
+performed.
 
- @tparam_default_scalar
- */
+@tparam_default_scalar */
 template <typename T>
 class ContactResults {
  public:
@@ -40,14 +39,16 @@ class ContactResults {
   /** Returns the number of hydroelastic contacts. */
   int num_hydroelastic_contacts() const;
 
-  /** Retrieves the ith PointPairContactInfo instance. The input index i
-   must be in the range [0, `num_point_pair_contacts()` - 1] or this method
-   aborts. */
+  /**
+  Retrieves the ith PointPairContactInfo instance. The input index i
+  must be in the range [0, `num_point_pair_contacts()` - 1] or this method
+  aborts. */
   const PointPairContactInfo<T>& point_pair_contact_info(int i) const;
 
-  /** Retrieves the ith HydroelasticContactInfo instance. The input index i
-   must be in the range [0, `num_hydroelastic_contacts()` - 1] or this
-   method aborts. */
+  /**
+  Retrieves the ith HydroelasticContactInfo instance. The input index i
+  must be in the range [0, `num_hydroelastic_contacts()` - 1] or this
+  method aborts. */
   const HydroelasticContactInfo<T>& hydroelastic_contact_info(int i) const;
 
   // The following methods should only be called by MultibodyPlant and testing

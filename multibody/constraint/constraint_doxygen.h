@@ -1,7 +1,9 @@
-/** @file
- Doxygen-only documentation for @ref constraint_overview */
+/**
+@file
+Doxygen-only documentation for @ref constraint_overview */
 
-/** @addtogroup constraint_overview
+/**
+@addtogroup constraint_overview
 
 This documentation describes the types of multibody constraints supported in
 Drake, including specialized constraint types- namely point-based contact
@@ -45,9 +47,10 @@ and will delve into the constraint solver functionality in:
  velocity-level constraints will be covered in @ref constraint_variable_defs.
 
  References for this discussion will be provided in @ref constraint_references.
-*/
+ */
 
-/** @defgroup constraint_variable_defs Variable definitions
+/**
+@defgroup constraint_variable_defs Variable definitions
 @ingroup constraint_overview
 - nb      The number of bilateral constraint equations (nb ≥ 0)
 - nk      The number of edges in a polygonal approximation to a friction
@@ -78,10 +81,10 @@ and will delve into the constraint solver functionality in:
 - β       A non-negative, real valued scalar used to correct position constraint
           errors via the same error feedback process (Baumgarte
           Stabilization) that uses α.
-- γ       Non-negative, real valued scalar used to regularize constraints.
-*/
+- γ       Non-negative, real valued scalar used to regularize constraints. */
 
-/** @defgroup constraint_types Constraint types
+/**
+@defgroup constraint_types Constraint types
 @ingroup constraint_overview
 
 Constraints can be categorized as either bilateral ("two-sided" constraints,
@@ -168,10 +171,10 @@ which we will typically write in the common shorthand notation:<pre>
 Interpreting this triplet of constraint equations, two conditions become
 apparent: (1) when the constraint is inactive (gₐ > 0), the constraint force
 must be zero (λ = 0) and (2) the constraint force can only act in one
-direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
-*/
+direction (λ ≥ 0). This triplet is known as a *complementarity constraint*. */
 
-/** @defgroup constraint_stabilization Constraint stabilization
+/**
+@defgroup constraint_stabilization Constraint stabilization
 @ingroup constraint_overview
 
 Both truncation and rounding errors can prevent constraints from being
@@ -212,10 +215,10 @@ commercial software uses ζ=1, implying *critical damping*, and undamped angular
 frequency ω₀ that is high enough to correct errors rapidly but low enough to
 avoid computational stiffness. Picking that parameter is considered to be more
 art than science (see @ref Ascher1995 "[Ascher 1995]"). Given desired ω₀ and ζ,
-α and β are set using the equations above.
-*/
+α and β are set using the equations above. */
 
-/** @defgroup constraint_Jacobians Constraint Jacobian matrices
+/**
+@defgroup constraint_Jacobians Constraint Jacobian matrices
 @ingroup constraint_overview
 
 Much of the problem data necessary to account for constraints in dynamical
@@ -242,10 +245,10 @@ require considering this distinction using the operator paradigm (see, e.g.,
 "ConstraintVelProblemData"). Since the Jacobians are described
 completely by the equation `ġₚ = ∂gₚ/∂q⋅N(q)⋅v + ∂c/∂t`, one can simply
 evaluate `ġₚ - ∂g/∂t` for a given `v`; no Jacobian matrix need be formed
-explicitly.
-*/
+explicitly. */
 
-/** @defgroup contact_surface_constraints Contact surface constraints
+/**
+@defgroup contact_surface_constraints Contact surface constraints
 @ingroup constraint_overview
 
 Consider two points pᵢ and pⱼ on rigid bodies i and j, respectively, and
@@ -315,39 +318,38 @@ constraint problem data</h4>
     @ref drake::multibody::constraint::ConstraintAccelProblemData
     "ConstraintAccelProblemData") or `N_transpose_mult` (for
     @ref drake::multibody::constraint::ConstraintVelProblemData
-    "ConstraintVelProblemData")
-*/
+    "ConstraintVelProblemData") */
 
-/** @defgroup constraint_references References
- @ingroup constraint_overview
+/**
+@defgroup constraint_references References
+@ingroup constraint_overview
 
- Sources referenced within the multibody constraint documentation.
+Sources referenced within the multibody constraint documentation.
 
- - @anchor Anitescu1997 [Anitescu 1997]  M. Anitescu and F. Potra. Formulating
-   Dynamic Multi-Rigid-Body Contact Problems with Friction as Solvable Linear
-   Complementarity Problems. Nonlinear Dynamics, 14, pp. 231-247. 1997.
- - @anchor Ascher1995 [Ascher 1995]  U. Ascher, H. Chin, L. Petzold, and
-   S. Reich. Stabilization of constrained mechanical systems with DAEs and
-   invariant manifolds. J. Mech. Struct. Machines, 23, pp. 135-158. 1995.
- - @anchor Ascher1998 [Ascher 1998]  U. Ascher and L. Petzold. Computer Methods
-   for Ordinary Differential Equations and Differential Algebraic Equations.
-   SIAM, Philadelphia. 1998.
- - @anchor Baumgarte1972 [Baumgarte 1972]  J. Baumgarte. Stabilization of
-   constraints and integrals of motion in dynamical systems. Comp. Math. Appl.
-   Mech. Engr., 1, pp. 1-16. 1972.
- - @anchor Catto2011 [Catto 2011]  E. Catto. Soft Constraints: Reinventing the
-   Spring. Game Developers Conference presentation, 2011.
- - @anchor Cottle1992 [Cottle 1992]  R. Cottle, J-S. Pang, and R. Stone. The
-   Linear Complementarity Problem. Academic Press, Boston. 1992.
- - @anchor Hairer1996 [Hairer 1996]  E. Hairer and G. Wanner. Solving ordinary
-   differential equations II: stiff and differential algebraic problems, 2nd ed.
-   Springer-Verlag, Berlin. 1996.
- - @anchor Lacoursiere2007 [Lacoursiere 2007]  C. Lacoursière. Ghosts and
-   Machines: Regularized Variational Methods for Interactive Simulations of
-   Multibodies with Dry Frictional Contacts. Umeå University. 2007.
- - @anchor Pfeiffer1996 [Pfeiffer 1996]  F. Pfeiffer and C. Glocker. Multibody
-   Dynamics with Unilateral Contacts, John Wiley & Sons, New York. 1996.
- - @anchor Sciavicco2000 [Sciavicco 2000]  L. Sciavicco and B. Siciliano.
-   Modeling and Control of Robot Manipulators, 2nd ed. Springer-Verlag, London.
-   2000.
- */
+- @anchor Anitescu1997 [Anitescu 1997]  M. Anitescu and F. Potra. Formulating
+  Dynamic Multi-Rigid-Body Contact Problems with Friction as Solvable Linear
+  Complementarity Problems. Nonlinear Dynamics, 14, pp. 231-247. 1997.
+- @anchor Ascher1995 [Ascher 1995]  U. Ascher, H. Chin, L. Petzold, and
+  S. Reich. Stabilization of constrained mechanical systems with DAEs and
+  invariant manifolds. J. Mech. Struct. Machines, 23, pp. 135-158. 1995.
+- @anchor Ascher1998 [Ascher 1998]  U. Ascher and L. Petzold. Computer Methods
+  for Ordinary Differential Equations and Differential Algebraic Equations.
+  SIAM, Philadelphia. 1998.
+- @anchor Baumgarte1972 [Baumgarte 1972]  J. Baumgarte. Stabilization of
+  constraints and integrals of motion in dynamical systems. Comp. Math. Appl.
+  Mech. Engr., 1, pp. 1-16. 1972.
+- @anchor Catto2011 [Catto 2011]  E. Catto. Soft Constraints: Reinventing the
+  Spring. Game Developers Conference presentation, 2011.
+- @anchor Cottle1992 [Cottle 1992]  R. Cottle, J-S. Pang, and R. Stone. The
+  Linear Complementarity Problem. Academic Press, Boston. 1992.
+- @anchor Hairer1996 [Hairer 1996]  E. Hairer and G. Wanner. Solving ordinary
+  differential equations II: stiff and differential algebraic problems, 2nd ed.
+  Springer-Verlag, Berlin. 1996.
+- @anchor Lacoursiere2007 [Lacoursiere 2007]  C. Lacoursière. Ghosts and
+  Machines: Regularized Variational Methods for Interactive Simulations of
+  Multibodies with Dry Frictional Contacts. Umeå University. 2007.
+- @anchor Pfeiffer1996 [Pfeiffer 1996]  F. Pfeiffer and C. Glocker. Multibody
+  Dynamics with Unilateral Contacts, John Wiley & Sons, New York. 1996.
+- @anchor Sciavicco2000 [Sciavicco 2000]  L. Sciavicco and B. Siciliano.
+  Modeling and Control of Robot Manipulators, 2nd ed. Springer-Verlag, London.
+  2000. */

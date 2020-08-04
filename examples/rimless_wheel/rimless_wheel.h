@@ -14,80 +14,83 @@ namespace drake {
 namespace examples {
 namespace rimless_wheel {
 
-/// Dynamical representation of the idealized hybrid dynamics of a "rimless
-/// wheel", as described in
-///   http://underactuated.mit.edu/underactuated.html?chapter=simple_legs
-/// In addition, this model has two additional (discrete) state variables that
-/// are not required in the mathematical model:
-///
-/// - the position of the stance toe along the ramp (helpful for outputting
-///   a floating-base model coordinate, e.g. for visualization),
-/// - a boolean indicator for "double support" (to avoid the numerical
-///   challenges of simulation around the Zeno phenomenon at the standing
-///   fixed point).
-///
-/// @system
-/// name: RimlessWheel
-/// output_ports:
-/// - minimal_state (theta and thetadot only)
-/// - floating_base_state
-/// @endsystem
-///
-/// Continuous States: theta, thetadot.
-/// Discrete States: stance toe position, double support indicator.
-/// Parameters: mass, length, number of spokes, etc, are all set as Context
-///   parameters using RimlessWheelParams.
-///
-/// @tparam_nonsymbolic_scalar
+/**
+Dynamical representation of the idealized hybrid dynamics of a "rimless
+wheel", as described in
+  http://underactuated.mit.edu/underactuated.html?chapter=simple_legs
+In addition, this model has two additional (discrete) state variables that
+are not required in the mathematical model:
+
+- the position of the stance toe along the ramp (helpful for outputting
+  a floating-base model coordinate, e.g. for visualization),
+- a boolean indicator for "double support" (to avoid the numerical
+  challenges of simulation around the Zeno phenomenon at the standing
+  fixed point).
+
+@system
+name: RimlessWheel
+output_ports:
+- minimal_state (theta and thetadot only)
+- floating_base_state
+@endsystem
+
+Continuous States: theta, thetadot.
+Discrete States: stance toe position, double support indicator.
+Parameters: mass, length, number of spokes, etc, are all set as Context
+  parameters using RimlessWheelParams.
+
+@tparam_nonsymbolic_scalar */
 template <typename T>
 class RimlessWheel final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RimlessWheel);
 
-  /// Constructs the plant.
+  /** Constructs the plant. */
   RimlessWheel();
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit RimlessWheel(const RimlessWheel<U>&) : RimlessWheel<T>() {}
 
-  /// Return reference to the output port that publishes only [theta,
-  /// thetatdot].
+  /**
+  Return reference to the output port that publishes only [theta,
+  thetatdot]. */
   const systems::OutputPort<T>& get_minimal_state_output_port() {
     return this->get_output_port(0);
   }
 
-  /// Returns reference to the output port that provides a 12 dimensional state
-  /// (FloatingBaseType::kRollPitchYaw positions then velocities).  This is
-  /// useful, e.g., for visualization.  θ of the rimless wheel is the pitch
-  /// of the floating base (rotation around global y), and downhill moves toward
-  /// positive x.  As always, we use vehicle coordinates (x-y on the ground, z
-  /// is up).
+  /**
+  Returns reference to the output port that provides a 12 dimensional state
+  (FloatingBaseType::kRollPitchYaw positions then velocities).  This is
+  useful, e.g., for visualization.  θ of the rimless wheel is the pitch
+  of the floating base (rotation around global y), and downhill moves toward
+  positive x.  As always, we use vehicle coordinates (x-y on the ground, z
+  is up). */
   const systems::OutputPort<T>& get_floating_base_state_output_port() {
     return this->get_output_port(1);
   }
 
-  /// Access the RimlessWheelContinuousState.
+  /** Access the RimlessWheelContinuousState. */
   static const RimlessWheelContinuousState<T>& get_continuous_state(
       const systems::ContinuousState<T>& cstate) {
     return dynamic_cast<const RimlessWheelContinuousState<T>&>(
         cstate.get_vector());
   }
 
-  /// Access the RimlessWheelContinuousState.
+  /** Access the RimlessWheelContinuousState. */
   static const RimlessWheelContinuousState<T>& get_continuous_state(
       const systems::Context<T>& context) {
     return get_continuous_state(context.get_continuous_state());
   }
 
-  /// Access the mutable RimlessWheelContinuousState.
+  /** Access the mutable RimlessWheelContinuousState. */
   static RimlessWheelContinuousState<T>& get_mutable_continuous_state(
       systems::ContinuousState<T>* cstate) {
     return dynamic_cast<RimlessWheelContinuousState<T>&>(
         cstate->get_mutable_vector());
   }
 
-  /// Access the mutable RimlessWheelContinuousState.
+  /** Access the mutable RimlessWheelContinuousState. */
   static RimlessWheelContinuousState<T>& get_mutable_continuous_state(
       systems::Context<T>* context) {
     return get_mutable_continuous_state(
@@ -111,18 +114,18 @@ class RimlessWheel final : public systems::LeafSystem<T> {
     return state->template get_mutable_abstract_state<bool>(0);
   }
 
-  /// Access the RimlessWheelParams.
+  /** Access the RimlessWheelParams. */
   const RimlessWheelParams<T>& get_parameters(
       const systems::Context<T>& context) const {
     return this->template GetNumericParameter<RimlessWheelParams>(context, 0);
   }
 
-  /// Alpha is half the interleg angle, and is used frequently.
+  /** Alpha is half the interleg angle, and is used frequently. */
   static T calc_alpha(const RimlessWheelParams<T>& params) {
     return M_PI / params.number_of_spokes();
   }
 
-  /// Calculates the kinetic + potential energy.
+  /** Calculates the kinetic + potential energy. */
   T CalcTotalEnergy(const systems::Context<T>& context) const;
 
  private:

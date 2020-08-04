@@ -15,7 +15,8 @@
 namespace drake {
 namespace trajectories {
 
-/** A DiscreteTimeTrajectory is a Trajectory whose value is only defined at
+/**
+A DiscreteTimeTrajectory is a Trajectory whose value is only defined at
 discrete time points.  Calling `value()` at a time that is not equal to one of
 those times (up to a tolerance) will throw.  This trajectory does *not* have
 well-defined time-derivatives.
@@ -52,8 +53,7 @@ discrete sample time, then this means u(t) = -K(t_s)*x(t_s) instead of u(t) =
 -K(t_s)*x(t).  Using x(t_s) and having a true zero-order hold on u(t) is the
 correct model for the discrete-time LQR result.
 
-@tparam_default_scalars
-*/
+@tparam_default_scalars */
 template <typename T>
 class DiscreteTimeTrajectory final : public Trajectory<T> {
  public:
@@ -63,7 +63,8 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   /** Default constructor creates the empty trajectory. */
   DiscreteTimeTrajectory() = default;
 
-  /** Constructs a trajectory of vector @p values at the specified @p times.
+  /**
+  Constructs a trajectory of vector @p values at the specified @p times.
   @pre @p times must differ by more than @p time_comparison_tolerance and be
   monotonically increasing.
   @pre @p values must have times.size() columns.
@@ -74,7 +75,8 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
                          double time_comparison_tolerance =
                              std::numeric_limits<double>::epsilon());
 
-  /** Constructs a trajectory of matrix @p values at the specified @p times.
+  /**
+  Constructs a trajectory of matrix @p values at the specified @p times.
   @pre @p times should differ by more than @p time_comparison_tolerance and be
   monotonically increasing.
   @pre @p values must have times.size() elements, each with the same number of
@@ -86,16 +88,19 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
                          double time_comparison_tolerance =
                              std::numeric_limits<double>::epsilon());
 
-  /** Converts the discrete-time trajectory using
+  /**
+  Converts the discrete-time trajectory using
   PiecewisePolynomial<T>::ZeroOrderHold(). */
   PiecewisePolynomial<T> ToZeroOrderHold() const;
 
-  /** The trajectory is only defined at finite sample times.  This method
+  /**
+  The trajectory is only defined at finite sample times.  This method
   returns the tolerance used determine which time sample (if any) matches a
   query time on calls to value(t). */
   double time_comparison_tolerance() const;
 
-  /** Returns the number of discrete times where the trajectory value is
+  /**
+  Returns the number of discrete times where the trajectory value is
   defined. */
   int num_times() const;
 
@@ -105,24 +110,29 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   /** Returns a deep copy of the trajectory. */
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
-  /** Returns the value of the trajectory at @p t.
+  /**
+  Returns the value of the trajectory at @p t.
   @throws runtime_error if t is not within tolerance of one of the sample times.
-  */
+   */
   MatrixX<T> value(const T& t) const override;
 
-  /** Returns the number of rows in the MatrixX<T> returned by value().
+  /**
+  Returns the number of rows in the MatrixX<T> returned by value().
   @pre num_times() > 0. */
   Eigen::Index rows() const override;
 
-  /** Returns the number of cols in the MatrixX<T> returned by value().
+  /**
+  Returns the number of cols in the MatrixX<T> returned by value().
   @pre num_times() > 0. */
   Eigen::Index cols() const override;
 
-  /** Returns the minimum value of get_times().
+  /**
+  Returns the minimum value of get_times().
   @pre num_times() > 0. */
   T start_time() const override;
 
-  /** Returns the maximum value of get_times().
+  /**
+  Returns the maximum value of get_times().
   @pre num_times() > 0. */
   T end_time() const override;
 

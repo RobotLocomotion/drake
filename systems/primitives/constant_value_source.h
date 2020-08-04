@@ -9,19 +9,20 @@
 namespace drake {
 namespace systems {
 
-/// A source block that always outputs a constant value.
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+A source block that always outputs a constant value.
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class ConstantValueSource final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantValueSource)
 
-  /// @param value The constant value to emit which is copied by this system.
+  /** @param value The constant value to emit which is copied by this system. */
   explicit ConstantValueSource(const AbstractValue& value);
 
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit ConstantValueSource(const ConstantValueSource<U>&);
 

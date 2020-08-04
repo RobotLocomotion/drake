@@ -12,81 +12,86 @@
 namespace drake {
 namespace systems {
 
-/// A discrete time delay block with input u, which is vector-valued (discrete
-/// or continuous) or abstract, and output delayed_u which is previously
-/// received input, delayed by the given amount.  The initial output will be a
-/// vector of zeros for vector-valued or a given value for abstract-valued
-/// until the delay time has passed.
-///
-/// @system
-/// name: DiscreteTimeDelay
-/// input_ports:
-/// - u
-/// output_ports:
-/// - delayed_u
-/// @endsystem
-///
-/// Let t,z ∈ ℕ be the number of delay time steps and the input vector size.
-/// For abstract-valued %DiscreteTimeDelay, z is 1.
-/// The state x ∈ ℝ⁽ᵗ⁺¹⁾ᶻ is partitioned into t+1 blocks x[0] x[1] ... x[t],
-/// each of size z. The input and output are u,y ∈ ℝᶻ.
-/// The discrete state space dynamics of %DiscreteTimeDelay is:
-/// ```
-///   xₙ₊₁ = xₙ[1] xₙ[2] ... xₙ[t] uₙ  // update
-///   yₙ = xₙ[0]                       // output
-///   x₀ = xᵢₙᵢₜ                       // initialize
-/// ```
-/// where xᵢₙᵢₜ = 0 for vector-valued %DiscreteTimeDelay and xᵢₙᵢₜ is a
-/// given value for abstract-valued %DiscreteTimeDelay.
-///
-/// See @ref discrete_systems "Discrete Systems" for general information about
-/// discrete systems in Drake, including how they interact with continuous
-/// systems.
-///
-/// @note While the output port can be sampled at any continuous time, this
-///       system does not interpolate.
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+A discrete time delay block with input u, which is vector-valued (discrete
+or continuous) or abstract, and output delayed_u which is previously
+received input, delayed by the given amount.  The initial output will be a
+vector of zeros for vector-valued or a given value for abstract-valued
+until the delay time has passed.
+
+@system
+name: DiscreteTimeDelay
+input_ports:
+- u
+output_ports:
+- delayed_u
+@endsystem
+
+Let t,z ∈ ℕ be the number of delay time steps and the input vector size.
+For abstract-valued %DiscreteTimeDelay, z is 1.
+The state x ∈ ℝ⁽ᵗ⁺¹⁾ᶻ is partitioned into t+1 blocks x[0] x[1] ... x[t],
+each of size z. The input and output are u,y ∈ ℝᶻ.
+The discrete state space dynamics of %DiscreteTimeDelay is:
+```
+  xₙ₊₁ = xₙ[1] xₙ[2] ... xₙ[t] uₙ  // update
+  yₙ = xₙ[0]                       // output
+  x₀ = xᵢₙᵢₜ                       // initialize
+```
+where xᵢₙᵢₜ = 0 for vector-valued %DiscreteTimeDelay and xᵢₙᵢₜ is a
+given value for abstract-valued %DiscreteTimeDelay.
+
+See @ref discrete_systems "Discrete Systems" for general information about
+discrete systems in Drake, including how they interact with continuous
+systems.
+
+@note While the output port can be sampled at any continuous time, this
+      system does not interpolate.
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class DiscreteTimeDelay final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeDelay)
 
-  /// Constructs a DiscreteTimeDelay system updating every `update_sec` and
-  /// delaying a vector-valued input of size `vector_size` for
-  /// `delay_timesteps` number of updates.
+  /**
+  Constructs a DiscreteTimeDelay system updating every `update_sec` and
+  delaying a vector-valued input of size `vector_size` for
+  `delay_timesteps` number of updates. */
   DiscreteTimeDelay(double update_sec, int delay_timesteps, int vector_size)
       : DiscreteTimeDelay(update_sec, delay_timesteps, vector_size, nullptr) {}
 
-  /// Constructs a DiscreteTimeDelay system updating every `update_sec` and
-  /// delaying an abstract-valued input of type `abstract_model_value` for
-  /// `delay_timesteps` number of updates.
+  /**
+  Constructs a DiscreteTimeDelay system updating every `update_sec` and
+  delaying an abstract-valued input of type `abstract_model_value` for
+  `delay_timesteps` number of updates. */
   DiscreteTimeDelay(double update_sec, int delay_timesteps,
                     const AbstractValue& abstract_model_value)
       : DiscreteTimeDelay(update_sec, delay_timesteps, -1,
                           abstract_model_value.Clone()) {}
 
-  /// Scalar-type converting copy constructor.
-  /// See @ref system_scalar_conversion.
+  /**
+  Scalar-type converting copy constructor.
+  See @ref system_scalar_conversion. */
   template <typename U>
   explicit DiscreteTimeDelay(const DiscreteTimeDelay<U>& other);
 
   ~DiscreteTimeDelay() final = default;
 
-  /// Returns the sole input port.
+  /** Returns the sole input port. */
   const InputPort<T>& get_input_port() const {
     return LeafSystem<T>::get_input_port(0);
   }
 
-  /// Returns the sole output port.
+  /** Returns the sole output port. */
   const OutputPort<T>& get_output_port() const {
     return LeafSystem<T>::get_output_port(0);
   }
 
-  /// (Advanced) Manually samples the input port and updates the state of the
-  /// block, sliding the delay buffer forward and placing the sampled input at
-  /// the end. This emulates an update event and is mostly useful for testing.
+  /**
+  (Advanced) Manually samples the input port and updates the state of the
+  block, sliding the delay buffer forward and placing the sampled input at
+  the end. This emulates an update event and is mostly useful for testing. */
   void SaveInputToBuffer(Context<T>* context) const {
     if (is_abstract()) {
       SaveInputAbstractValueToBuffer(*context, &context->get_mutable_state());

@@ -25,8 +25,7 @@ not be compiled if debugging is turned off (-DNDEBUG is set):
 
 The format string syntax is fmtlib; see https://fmt.dev/7.0.2/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
-printed without any special handling.
-*/
+printed without any special handling. */
 
 #include <string>
 
@@ -94,15 +93,17 @@ namespace drake {
 namespace logging {
 
 // If we have spdlog, just alias logger into our namespace.
-/// The drake::logging::logger class provides text logging methods.
-/// See the text_logging.h documentation for a short tutorial.
+/**
+The drake::logging::logger class provides text logging methods.
+See the text_logging.h documentation for a short tutorial. */
 using logger = spdlog::logger;
 
-/// When spdlog is enabled in this build, drake::logging::sink is an alias for
-/// spdlog::sinks::sink.  When spdlog is disabled, it is an empty class.
+/**
+When spdlog is enabled in this build, drake::logging::sink is an alias for
+spdlog::sinks::sink.  When spdlog is disabled, it is an empty class. */
 using spdlog::sinks::sink;
 
-/// True only if spdlog is enabled in this build.
+/** True only if spdlog is enabled in this build. */
 constexpr bool kHaveSpdlog = true;
 
 }  // namespace logging
@@ -157,39 +158,43 @@ class sink {
 
 #endif  // HAVE_SPDLOG
 
-/// Retrieve an instance of a logger to use for logging; for example:
-/// <pre>
-///   drake::log()->info("potato!")
-/// </pre>
-///
-/// See the text_logging.h documentation for a short tutorial.
+/**
+Retrieve an instance of a logger to use for logging; for example:
+<pre>
+  drake::log()->info("potato!")
+</pre>
+
+See the text_logging.h documentation for a short tutorial. */
 logging::logger* log();
 
 namespace logging {
 
-/// (Advanced) Retrieves the default sink for all Drake logs.  When spdlog is
-/// enabled, the return value can be cast to spdlog::sinks::dist_sink_mt and
-/// thus allows consumers of Drake to redirect Drake's text logs to locations
-/// other than the default of stderr.  When spdlog is disabled, the return
-/// value is an empty class.
+/**
+(Advanced) Retrieves the default sink for all Drake logs.  When spdlog is
+enabled, the return value can be cast to spdlog::sinks::dist_sink_mt and
+thus allows consumers of Drake to redirect Drake's text logs to locations
+other than the default of stderr.  When spdlog is disabled, the return
+value is an empty class. */
 sink* get_dist_sink();
 
-/// When constructed, logs a message (at "warn" severity); the destructor is
-/// guaranteed to be trivial.  This is useful for declaring an instance of this
-/// class as a function-static global, so that a warning is logged the first
-/// time the program encounters some code, but does not repeat the warning on
-/// subsequent encounters within the same process.
-///
-/// For example:
-/// <pre>
-/// double* SanityCheck(double* data) {
-///   if (!data) {
-///     static const logging::Warn log_once("Bad data!");
-///     return alternative_data();
-///   }
-///   return data;
-/// }
-/// </pre>
+/**
+When constructed, logs a message (at "warn" severity); the destructor is
+guaranteed to be trivial.  This is useful for declaring an instance of this
+class as a function-static global, so that a warning is logged the first
+time the program encounters some code, but does not repeat the warning on
+subsequent encounters within the same process.
+
+For example:
+<pre>
+double* SanityCheck(double* data) {
+  if (!data) {
+    static const logging::Warn log_once("Bad data!");
+    return alternative_data();
+  }
+  return data;
+}
+</pre>
+ */
 struct Warn {
   template <typename... Args>
   Warn(const char* a, const Args&... b) {
@@ -197,18 +202,21 @@ struct Warn {
   }
 };
 
-/// Invokes `drake::log()->set_level(level)`.
-/// @param level Must be a string from spdlog enumerations: `trace`, `debug`,
-/// `info`, `warn`, `err`, `critical`, `off`, or `unchanged` (not an enum, but
-/// useful for command-line).
-/// @return The string value of the previous log level. If SPDLOG is disabled,
-/// then this returns an empty string.
+/**
+Invokes `drake::log()->set_level(level)`.
+@param level Must be a string from spdlog enumerations: `trace`, `debug`,
+`info`, `warn`, `err`, `critical`, `off`, or `unchanged` (not an enum, but
+useful for command-line).
+@return The string value of the previous log level. If SPDLOG is disabled,
+then this returns an empty string. */
 std::string set_log_level(const std::string& level);
 
-/// The "unchanged" string to pass to set_log_level() so as to achieve a no-op.
+/** The "unchanged" string to pass to set_log_level() so as to achieve a no-op.
+ */
 extern const char* const kSetLogLevelUnchanged;
 
-/// An end-user help string suitable to describe the effects of set_log_level().
+/** An end-user help string suitable to describe the effects of set_log_level().
+ */
 extern const char* const kSetLogLevelHelpMessage;
 
 }  // namespace logging

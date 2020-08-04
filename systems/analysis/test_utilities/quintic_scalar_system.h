@@ -8,13 +8,14 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/// System where the state at (scalar) time t corresponds to the quintic
-/// equation t⁵ + 2t⁴ + 3t³ + 4t² + 5t + 6.
+/**
+System where the state at (scalar) time t corresponds to the quintic
+equation t⁵ + 2t⁴ + 3t³ + 4t² + 5t + 6. */
 class QuinticScalarSystem : public LeafSystem<double> {
  public:
   QuinticScalarSystem() { this->DeclareContinuousState(1); }
 
-  /// Evaluates the system at time t.
+  /** Evaluates the system at time t. */
   double Evaluate(double t) const {
     return t * (t * (t * (t * (t + 2) + 3) + 4) + 5) + 6;
   }

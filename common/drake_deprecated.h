@@ -1,11 +1,13 @@
 #pragma once
 
-/** @file
+/**
+@file
 Provides a portable macro for use in generating compile-time warnings for
 use of code that is permitted but discouraged. */
 
 #ifdef DRAKE_DOXYGEN_CXX
-/** Use `DRAKE_DEPRECATED("removal_date", "message")` to discourage use of
+/**
+Use `DRAKE_DEPRECATED("removal_date", "message")` to discourage use of
 certain APIs.  It can be used on classes, typedefs, variables, non-static data
 members, functions, arguments, enumerations, and template specializations. When
 code refers to the deprecated item, a compile time warning will be issued
@@ -51,7 +53,7 @@ Sample uses: @code
       DRAKE_DEPRECATED("2038-01-19", "Use NewType instead.")
       = OldType;
 @endcode
-*/
+ */
 #define DRAKE_DEPRECATED(removal_date, message)
 
 #else  // DRAKE_DOXYGEN_CXX

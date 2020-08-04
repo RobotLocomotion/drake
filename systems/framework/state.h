@@ -14,18 +14,19 @@
 namespace drake {
 namespace systems {
 
-/// %State is a container for all the data comprising the
-/// complete state of a particular System at a particular moment. Any field in
-/// %State may be empty if it is not applicable to the System in question.
-/// A System may not maintain state in any place other than a %State object.
-///
-/// A %State `x` contains three types of state variables:
-///
-/// - ContinuousState `xc`
-/// - DiscreteState   `xd`
-/// - AbstractState   `xa`
-///
-/// @tparam_default_scalar
+/**
+%State is a container for all the data comprising the
+complete state of a particular System at a particular moment. Any field in
+%State may be empty if it is not applicable to the System in question.
+A System may not maintain state in any place other than a %State object.
+
+A %State `x` contains three types of state variables:
+
+- ContinuousState `xc`
+- DiscreteState   `xd`
+- AbstractState   `xa`
+
+@tparam_default_scalar */
 template <typename T>
 class State {
  public:
@@ -93,23 +94,25 @@ class State {
     return *abstract_state_.get();
   }
 
-  /// Returns a const pointer to the abstract component of the
-  /// state at @p index.  Asserts if @p index doesn't exist.
+  /**
+  Returns a const pointer to the abstract component of the
+  state at @p index.  Asserts if @p index doesn't exist. */
   template <typename U>
   const U& get_abstract_state(int index) const {
     const AbstractValues& xa = get_abstract_state();
     return xa.get_value(index).get_value<U>();
   }
 
-  /// Returns a mutable pointer to element @p index of the abstract state.
-  /// Asserts if @p index doesn't exist.
+  /**
+  Returns a mutable pointer to element @p index of the abstract state.
+  Asserts if @p index doesn't exist. */
   template <typename U>
   U& get_mutable_abstract_state(int index) {
     AbstractValues& xa = get_mutable_abstract_state();
     return xa.get_mutable_value(index).get_mutable_value<U>();
   }
 
-  /// Initializes this state from a State<U>.
+  /** Initializes this state from a State<U>. */
   template <typename U>
   void SetFrom(const State<U>& other) {
     continuous_state_->SetFrom(other.get_continuous_state());

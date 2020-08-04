@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file
-/// A benchmarking helper.
+/**
+@file
+A benchmarking helper. */
 
 #include <chrono>
 #include <utility>
@@ -10,7 +11,7 @@ namespace drake {
 namespace common {
 namespace test {
 
-/// Returns the elapsed time of `func(args)`, in seconds.
+/** Returns the elapsed time of `func(args)`, in seconds. */
 template <typename F, typename... Args>
 [[nodiscard]] static double MeasureExecutionTime(F func, Args&&... args) {
   using clock = std::chrono::steady_clock;

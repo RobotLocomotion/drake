@@ -9,23 +9,25 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/// A 6-vector representing the derivatives of the position transform of frame A
-/// in the world frame, Xdot_WA, in the form `{R_WA, p_WA}`, where `p` is
-/// the derivatives of x-y-z translation, and `R` is the derivatives of x-y-z
-/// rotation.
-///
-/// The exact order of elements is `{ωx, ωy, ωz, vx, vy, vz}`.
-///
-/// @tparam_default_scalar
+/**
+A 6-vector representing the derivatives of the position transform of frame A
+in the world frame, Xdot_WA, in the form `{R_WA, p_WA}`, where `p` is
+the derivatives of x-y-z translation, and `R` is the derivatives of x-y-z
+rotation.
+
+The exact order of elements is `{ωx, ωy, ωz, vx, vy, vz}`.
+
+@tparam_default_scalar */
 template <typename T>
 class FrameVelocity final : public BasicVector<T> {
  public:
-  /// Default constructor.
+  /** Default constructor. */
   FrameVelocity();
   ~FrameVelocity() override;
 
-  /// Fully-parameterized constructor.
-  /// @param velocity the entire spatial velocity V_WA.
+  /**
+  Fully-parameterized constructor.
+  @param velocity the entire spatial velocity V_WA. */
   explicit FrameVelocity(const multibody::SpatialVelocity<T>& velocity);
 
   // FrameVelocity is final, so we can implement copy and assignment without
@@ -34,9 +36,9 @@ class FrameVelocity final : public BasicVector<T> {
   FrameVelocity(const FrameVelocity<T>& other);
   FrameVelocity<T>& operator=(const FrameVelocity<T>& other);
 
-  /// Returns the entire spatial velocity V_WA.
+  /** Returns the entire spatial velocity V_WA. */
   multibody::SpatialVelocity<T> get_velocity() const;
-  /// Assigns the entire spatial velocity V_WA.
+  /** Assigns the entire spatial velocity V_WA. */
   void set_velocity(const multibody::SpatialVelocity<T>& velocity);
 
   static constexpr int kSize = 6;

@@ -9,84 +9,89 @@
 namespace drake {
 namespace systems {
 
-/// A zero order hold block with input u, which may be vector-valued (discrete
-/// or continuous) or abstract, and discrete output y, where the y is sampled
-/// from u with a fixed period.
-///
-/// @system
-/// name: ZeroOrderHold
-/// input_ports:
-/// - u
-/// output_ports:
-/// - y
-/// @endsystem
-///
-/// The discrete state space dynamics of %ZeroOrderHold is:
-/// ```
-///   xₙ₊₁ = uₙ     // update
-///   yₙ   = xₙ     // output
-///   x₀   = xᵢₙᵢₜ  // initialize
-/// ```
-/// where xᵢₙᵢₜ = 0 for vector-valued %ZeroOrderHold, and xᵢₙᵢₜ is a given
-/// value for abstract-valued %ZeroOrderHold.
-///
-/// See @ref discrete_systems "Discrete Systems" for general information about
-/// discrete systems in Drake, including how they interact with continuous
-/// systems.
-///
-/// @note This system uses a periodic update with zero offset, so the first
-///       update occurs at t=0. When used with a Simulator, the output port
-///       is equal to xᵢₙᵢₜ after simulator.Initialize(), but is immediately
-///       updated to u₀ at the start of the first step. If you want to force
-///       that initial update, use simulator.AdvanceTo(0.).
-///
-/// @note For an abstract-valued ZeroOrderHold, scalar-type conversion is not
-///       supported since AbstractValue does not support it.
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+A zero order hold block with input u, which may be vector-valued (discrete
+or continuous) or abstract, and discrete output y, where the y is sampled
+from u with a fixed period.
+
+@system
+name: ZeroOrderHold
+input_ports:
+- u
+output_ports:
+- y
+@endsystem
+
+The discrete state space dynamics of %ZeroOrderHold is:
+```
+  xₙ₊₁ = uₙ     // update
+  yₙ   = xₙ     // output
+  x₀   = xᵢₙᵢₜ  // initialize
+```
+where xᵢₙᵢₜ = 0 for vector-valued %ZeroOrderHold, and xᵢₙᵢₜ is a given
+value for abstract-valued %ZeroOrderHold.
+
+See @ref discrete_systems "Discrete Systems" for general information about
+discrete systems in Drake, including how they interact with continuous
+systems.
+
+@note This system uses a periodic update with zero offset, so the first
+      update occurs at t=0. When used with a Simulator, the output port
+      is equal to xᵢₙᵢₜ after simulator.Initialize(), but is immediately
+      updated to u₀ at the start of the first step. If you want to force
+      that initial update, use simulator.AdvanceTo(0.).
+
+@note For an abstract-valued ZeroOrderHold, scalar-type conversion is not
+      supported since AbstractValue does not support it.
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class ZeroOrderHold final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
-  /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
-  /// vector-valued input of size `vector_size`. The default initial
-  /// value for this system will be zero. The offset is always zero, meaning
-  /// that the first update occurs at t=0.
+  /**
+  Constructs a ZeroOrderHold system with the given `period_sec`, over a
+  vector-valued input of size `vector_size`. The default initial
+  value for this system will be zero. The offset is always zero, meaning
+  that the first update occurs at t=0. */
   ZeroOrderHold(double period_sec, int vector_size)
       : ZeroOrderHold(period_sec, vector_size, nullptr) {}
 
-  /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
-  /// abstract-valued input `abstract_model_value`. The default initial value
-  /// for this system will be `abstract_model_value`. The offset is always
-  /// zero, meaning that the first update occurs at t=0.
+  /**
+  Constructs a ZeroOrderHold system with the given `period_sec`, over a
+  abstract-valued input `abstract_model_value`. The default initial value
+  for this system will be `abstract_model_value`. The offset is always
+  zero, meaning that the first update occurs at t=0. */
   ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value)
       : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone()) {}
 
-  /// Scalar-type converting copy constructor.
-  /// See @ref system_scalar_conversion.
+  /**
+  Scalar-type converting copy constructor.
+  See @ref system_scalar_conversion. */
   template <typename U>
   explicit ZeroOrderHold(const ZeroOrderHold<U>& other);
 
   ~ZeroOrderHold() final = default;
 
-  /// Returns the sole input port.
+  /** Returns the sole input port. */
   const InputPort<T>& get_input_port() const {
     return LeafSystem<T>::get_input_port(0);
   }
 
-  /// Returns the sole output port.
+  /** Returns the sole output port. */
   const OutputPort<T>& get_output_port() const {
     return LeafSystem<T>::get_output_port(0);
   }
 
-  /// Reports the period of this hold (in seconds).
+  /** Reports the period of this hold (in seconds). */
   double period() const { return period_sec_; }
 
-  /// (Advanced) Manually sample the input port and copy ("latch") the value
-  /// into the state. This emulates an update event and is mostly useful for
-  /// testing.
+  /**
+  (Advanced) Manually sample the input port and copy ("latch") the value
+  into the state. This emulates an update event and is mostly useful for
+  testing. */
   void LatchInputPortToState(Context<T>* context) const {
     if (is_abstract()) {
       LatchInputAbstractValueToState(*context, &context->get_mutable_state());

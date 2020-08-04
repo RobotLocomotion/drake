@@ -10,7 +10,8 @@
 
 namespace drake {
 namespace math {
-/** Given a set of non-descending breakpoints t₀ ≤ t₁ ≤ ⋅⋅⋅ ≤ tₘ, a B-spline
+/**
+Given a set of non-descending breakpoints t₀ ≤ t₁ ≤ ⋅⋅⋅ ≤ tₘ, a B-spline
 basis of order k is a set of n + 1 (where n = m - k) piecewise polynomials of
 degree k - 1 defined over those breakpoints. The elements of this set are
 called "B-splines". The vector (t₀, t₁, ..., tₘ)' is referred to as
@@ -33,12 +34,14 @@ class BsplineBasis final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BsplineBasis);
 
-  /** Constructs a B-spline basis with the specified `order` and `knots`.
+  /**
+  Constructs a B-spline basis with the specified `order` and `knots`.
   @pre `knots` is sorted in non-descending order.
   @throws std::invalid_argument if knots.size() < 2 * order. */
   BsplineBasis(int order, std::vector<T> knots);
 
-  /** Constructs a B-spline basis with the specified `order`,
+  /**
+  Constructs a B-spline basis with the specified `order`,
   `num_basis_functions`, `initial_parameter_value`, `final_parameter_value`,
   and an auto-generated knot vector of the specified `type`.
   @throws std::invalid_argument if num_basis_functions < order
@@ -49,7 +52,8 @@ class BsplineBasis final {
                const T& final_parameter_value = 1);
 
 #ifdef DRAKE_DOXYGEN_CXX
-  /** Conversion constructor. Constructs an instance of BsplineBasis<T> from a
+  /**
+  Conversion constructor. Constructs an instance of BsplineBasis<T> from a
   double-valued basis. */
   explicit BsplineBasis(const BsplineBasis<double>& other);
 #else
@@ -73,36 +77,43 @@ class BsplineBasis final {
   /** The order of this B-spline basis (k in the class description). */
   int order() const { return order_; }
 
-  /** The degree of the piecewise polynomials comprising this B-spline basis
+  /**
+  The degree of the piecewise polynomials comprising this B-spline basis
   (k - 1 in the class description). */
   int degree() const { return order() - 1; }
 
-  /** The number of basis functions in this B-spline basis (n + 1 in the class
+  /**
+  The number of basis functions in this B-spline basis (n + 1 in the class
   description). */
   int num_basis_functions() const { return num_basis_functions_; }
 
-  /** The knot vector of this B-spline basis (the vector (t₀, t₁, ..., tₘ)' in
+  /**
+  The knot vector of this B-spline basis (the vector (t₀, t₁, ..., tₘ)' in
   the class description). */
   const std::vector<T>& knots() const { return knots_; }
 
-  /** The minimum allowable parameter value for B-spline curves using this
+  /**
+  The minimum allowable parameter value for B-spline curves using this
   basis (tₖ₋₁ in the class description). */
   const T& initial_parameter_value() const { return knots()[order() - 1]; }
 
-  /** The maximum allowable parameter value for B-spline curves using this
+  /**
+  The maximum allowable parameter value for B-spline curves using this
   basis (tₙ₊₁ in the class description). */
   const T& final_parameter_value() const {
     return knots()[num_basis_functions()];
   }
 
-  /** For a `parameter_value` = t, the interval that contains it is the pair of
+  /**
+  For a `parameter_value` = t, the interval that contains it is the pair of
   knot values [tᵢ, tᵢ₊₁] for the greatest i such that tᵢ ≤ t and
   tᵢ < final_parameter_value(). This function returns that value of i.
   @pre parameter_value ≥ initial_parameter_value()
   @pre parameter_value ≤ final_parameter_value() */
   int FindContainingInterval(const T& parameter_value) const;
 
-  /** Returns the indices of the basis functions which may evaluate to non-zero
+  /**
+  Returns the indices of the basis functions which may evaluate to non-zero
   values for some parameter value in `parameter_interval`; all other basis
   functions are strictly zero over `parameter_interval`.
   @pre parameter_interval[0] ≤ parameter_interval[1]
@@ -111,7 +122,8 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const std::array<T, 2>& parameter_interval) const;
 
-  /** Returns the indices of the basis functions which may evaluate to non-zero
+  /**
+  Returns the indices of the basis functions which may evaluate to non-zero
   values for `parameter_value`; all other basis functions are strictly zero at
   this point.
   @pre parameter_value ≥ initial_parameter_value()
@@ -119,7 +131,8 @@ class BsplineBasis final {
   std::vector<int> ComputeActiveBasisFunctionIndices(
       const T& parameter_value) const;
 
-  /** Evaluates the B-spline curve defined by `this` and `control_points` at the
+  /**
+  Evaluates the B-spline curve defined by `this` and `control_points` at the
   given `parameter_value`.
   @param control_points Control points of the B-spline curve.
   @param parameter_value Parameter value at which to evaluate the B-spline
@@ -176,7 +189,8 @@ class BsplineBasis final {
     return p.front();
   }
 
-  /** Returns the value of the `i`-th basis function evaluated at
+  /**
+  Returns the value of the `i`-th basis function evaluated at
   `parameter_value`. */
   T EvaluateBasisFunctionI(int i, const T& parameter_value) const;
 

@@ -17,8 +17,9 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 
-/** @file Provides the structures and logic to support signed distance queries
- between shapes.  */
+/**
+@file Provides the structures and logic to support signed distance queries
+between shapes. */
 
 namespace drake {
 namespace geometry {
@@ -123,7 +124,7 @@ class DistancePairGeometry {
    1. φ_A,B = φ_B(Ao) - r
    2. Nb = η_B(Ao)
    3. Na = Ao - r * ∇φ_B(Ao)  */
-  //@{
+  /** @{ */
 
   void operator()(const fcl::Sphered& sphere_A, const fcl::Sphered& sphere_B) {
     SphereShapeDistance(sphere_A, sphere_B);
@@ -148,7 +149,7 @@ class DistancePairGeometry {
     SphereShapeDistance(sphere_A, capsule_B);
   }
 
-  //@}
+  /** @} */
 
  private:
   // Distance computation between a sphere A and a generic shape B. We use
@@ -196,7 +197,7 @@ class DistancePairGeometry {
  of functions defines the fallback logic for the various scalar types. It
  applies a _whitelist_-based approach in that we assume there is no fallback
  for a scalar type unless one is explicitly provided.  */
-//@{
+/** @{ */
 
 /* For all non-whitelisted scalar types T, throws an exception declaring the
  unsupported combination of geometry types and scalar type.  */
@@ -254,7 +255,7 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   }
 }
 
-//@}
+/** @} */
 
 /* Dispatches the narrowphase shape-shape query for the object pair (`a`, `b`)
  to the appropriate primitive-primitive function (optionally defaulting to the
@@ -353,7 +354,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
  specialization is provided which whitelists the supported shape types.
 
  @tparam T      The computational scalar type.  */
-//@{
+/** @{ */
 
 template <typename T>
 struct ScalarSupport {
@@ -400,7 +401,7 @@ struct ScalarSupport<Eigen::AutoDiffScalar<DerType>> {
   }
 };
 
-//@}
+/** @} */
 
 /* The callback function for computing signed distance between two arbitrary
  shapes.

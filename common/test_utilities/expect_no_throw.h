@@ -28,14 +28,12 @@
 /**
 Unittest helper to explicitly indicate that a statement should not throw an
 exception. This should be used in place of EXPECT_NO_THROW because it will have
-useful information when a failure indeed happens.
-*/
+useful information when a failure indeed happens. */
 #define DRAKE_EXPECT_NO_THROW(statement) \
   _DRAKE_TEST_NO_THROW(statement, ADD_FAILURE)
 
 /**
 Same as DRAKE_EXPECT_NO_THROW, but halts the execution of the given test case
-on failure.
-*/
+on failure. */
 #define DRAKE_ASSERT_NO_THROW(statement) \
   _DRAKE_TEST_NO_THROW(statement, GTEST_FAIL)

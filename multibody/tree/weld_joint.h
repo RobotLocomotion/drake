@@ -14,10 +14,11 @@
 namespace drake {
 namespace multibody {
 
-/// This Joint fixes the relative pose between two frames as if "welding" them
-/// together.
-///
-/// @tparam_default_scalar
+/**
+This Joint fixes the relative pose between two frames as if "welding" them
+together.
+
+@tparam_default_scalar */
 template <typename T>
 class WeldJoint final : public Joint<T> {
  public:
@@ -28,9 +29,10 @@ class WeldJoint final : public Joint<T> {
 
   static const char kTypeName[];
 
-  /// Constructor for a %WeldJoint between a `parent_frame_P` and a
-  /// `child_frame_C` so that their relative pose `X_PC` is fixed as if they
-  /// were "welded" together.
+  /**
+  Constructor for a %WeldJoint between a `parent_frame_P` and a
+  `child_frame_C` so that their relative pose `X_PC` is fixed as if they
+  were "welded" together. */
   WeldJoint(const std::string& name, const Frame<T>& parent_frame_P,
             const Frame<T>& child_frame_C,
             const math::RigidTransform<double>& X_PC)
@@ -48,16 +50,17 @@ class WeldJoint final : public Joint<T> {
     return name.access();
   }
 
-  /// Returns the pose X_PC of frame C in P.
+  /** Returns the pose X_PC of frame C in P. */
   const math::RigidTransform<double>& X_PC() const {
     return X_PC_;
   }
 
  protected:
-  /// Joint<T> override called through public NVI, Joint::AddInForce().
-  /// Since frame P and C are welded together, it is physically not possible to
-  /// apply forces between them. Therefore this method throws an exception if
-  /// invoked.
+  /**
+  Joint<T> override called through public NVI, Joint::AddInForce().
+  Since frame P and C are welded together, it is physically not possible to
+  apply forces between them. Therefore this method throws an exception if
+  invoked. */
   void DoAddInOneForce(
       const systems::Context<T>&, int, const T&,
       MultibodyForces<T>*) const override {

@@ -11,7 +11,8 @@
 namespace drake {
 namespace systems {
 
-/** Holds the status return value from a call to Simulator::AdvanceTo() and
+/**
+Holds the status return value from a call to Simulator::AdvanceTo() and
 related methods. The argument t to AdvanceTo(t) is called the boundary time,
 and represents the maximum time to which the simulation trajectory will be
 advanced by a call to AdvanceTo(). (For methods that don't advance time, the
@@ -27,21 +28,25 @@ class SimulatorStatus {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SimulatorStatus)
 
   enum ReturnReason {
-    /** This is the normal return: no termination or error condition was
+    /**
+    This is the normal return: no termination or error condition was
     encountered before reaching the boundary time. There is no message and no
     saved System. */
     kReachedBoundaryTime,
-    /** An event handler or monitor function returned with a "reached
+    /**
+    An event handler or monitor function returned with a "reached
     termination condition" EventStatus (has message with details). For
     AdvanceTo() the return time may be earlier than the boundary time. */
     kReachedTerminationCondition,
-    /** An event handler or monitor function returned with a "failed"
+    /**
+    An event handler or monitor function returned with a "failed"
     EventStatus (has message with details). For AdvanceTo() the return time may
     be earlier than the boundary time. */
     kEventHandlerFailed
   };
 
-  /** Sets this status to "reached boundary time" with no message and with
+  /**
+  Sets this status to "reached boundary time" with no message and with
   the final time set to the boundary time (this is the same as the
   post-construction default). */
   void SetReachedBoundaryTime() {
@@ -51,7 +56,8 @@ class SimulatorStatus {
     message_.clear();
   }
 
-  /** Sets this status to "reached termination" with the early-termination
+  /**
+  Sets this status to "reached termination" with the early-termination
   time and a message explaining why. */
   void SetReachedTermination(double termination_time, const SystemBase* system,
                              std::string message) {
@@ -59,7 +65,8 @@ class SimulatorStatus {
               std::move(message));
   }
 
-  /** Sets this status to "event handler failed" with the early-termination
+  /**
+  Sets this status to "event handler failed" with the early-termination
   time and a message explaining why. */
   void SetEventHandlerFailed(double failure_time, const SystemBase* system,
                              std::string message) {
@@ -72,13 +79,15 @@ class SimulatorStatus {
   /** Returns true if we reached the boundary time with no surprises. */
   bool succeeded() const { return reason() == kReachedBoundaryTime; }
 
-  /** Returns the maximum time we could have reached with this call; whether
+  /**
+  Returns the maximum time we could have reached with this call; whether
   we actually got there depends on the status. This is the time supplied in
   an AdvanceTo() call or the current time for methods that don't advance
   time, that is, Initialize() and AdvancePendingEvents(). */
   double boundary_time() const { return boundary_time_; }
 
-  /** Returns the time that was actually reached. This will be boundary_time()
+  /**
+  Returns the time that was actually reached. This will be boundary_time()
   if succeeded() returns true. Otherwise it is the time at which a termination
   or error condition was detected and may be earlier than boundary_time(). */
   double return_time() const { return return_time_; }
@@ -86,18 +95,21 @@ class SimulatorStatus {
   /** Returns the reason that a %Simulator call returned. */
   ReturnReason reason() const { return reason_; }
 
-  /** Optionally, returns the subsystem to which the status and contained
+  /**
+  Optionally, returns the subsystem to which the status and contained
   message should be attributed. May be nullptr in which case the status
   should be attributed to the System as a whole. */
   const SystemBase* system() const { return system_; }
 
-  /** For termination or error conditions, returns a human-readable message
+  /**
+  For termination or error conditions, returns a human-readable message
   explaining what happened. This is the message from the subsystem that
   detected the condition. FormatMessage() returns additional information and
   also includes this message. */
   const std::string& message() const { return message_; }
 
-  /** Returns true if the `other` status contains exactly the same information
+  /**
+  Returns true if the `other` status contains exactly the same information
   as `this` status. This is likely only useful for unit testing of
   %SimulatorStatus. */
   bool IsIdenticalStatus(const SimulatorStatus& other) {

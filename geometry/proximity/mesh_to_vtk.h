@@ -17,7 +17,7 @@ namespace internal {
  visualization in ParaView. The file format is described in:
  https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
  */
-//@{
+/** @{ */
 
 /*
  Writes VolumeMesh to VTK file.
@@ -73,7 +73,7 @@ void WriteSurfaceMeshFieldLinearToVtk(
     const SurfaceMeshFieldLinear<double, double>& field,
     const std::string& title);
 
-//@}
+/** @} */
 
 }  // namespace internal
 }  // namespace geometry

@@ -1,6 +1,7 @@
-/// @file
-/// Utilities that relate simultaneously to both autodiff matrices and
-/// gradient matrices.
+/**
+@file
+Utilities that relate simultaneously to both autodiff matrices and
+gradient matrices. */
 
 #pragma once
 
@@ -62,14 +63,14 @@ typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
   return gradient;
 }
 
-/** \brief Initializes an autodiff matrix given a matrix of values and gradient
- * matrix
- * \param[in] val value matrix
- * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
- * row j of the gradient matrix.
- * \param[out] autodiff_matrix matrix of AutoDiffScalars with the same size as
- * \p val
- */
+/**
+\brief Initializes an autodiff matrix given a matrix of values and gradient
+matrix
+\param[in] val value matrix
+\param[in] gradient gradient matrix; the derivatives of val(j) are stored in
+row j of the gradient matrix.
+\param[out] autodiff_matrix matrix of AutoDiffScalars with the same size as
+\p val */
 template <typename Derived, typename DerivedGradient, typename DerivedAutoDiff>
 void initializeAutoDiffGivenGradientMatrix(
     const Eigen::MatrixBase<Derived>& val,
@@ -103,14 +104,14 @@ void initializeAutoDiffGivenGradientMatrix(
   }
 }
 
-/** \brief Creates and initializes an autodiff matrix given a matrix of values
- * and gradient matrix
- * \param[in] val value matrix
- * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in
- * row j of the gradient matrix.
- * \return autodiff_matrix matrix of AutoDiffScalars with the same size as \p
- * val
- */
+/**
+\brief Creates and initializes an autodiff matrix given a matrix of values
+and gradient matrix
+\param[in] val value matrix
+\param[in] gradient gradient matrix; the derivatives of val(j) are stored in
+row j of the gradient matrix.
+\return autodiff_matrix matrix of AutoDiffScalars with the same size as \p
+val */
 template <typename Derived, typename DerivedGradient>
 AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime>
 initializeAutoDiffGivenGradientMatrix(
@@ -138,24 +139,24 @@ void gradientMatrixToAutoDiff(
   }
 }
 
-/** `B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
- * AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
- * the gradient matrix is empty or zero.  For a matrix of type, e.g.
- * `MatrixX<AutoDiffXd> A`, the comparable operation
- *   `B = A.cast<double>()`
- * should (and does) fail to compile.  Use `DiscardZeroGradient(A)` if you want
- * to force the cast (and the check).
- *
- * This method is overloaded to permit the user to call it for double types and
- * AutoDiffScalar types (to avoid the calling function having to handle the
- * two cases differently).
- *
- * @param precision is passed to Eigen's isZero(precision) to evaluate whether
- * the gradients are zero.
- * @throws std::runtime_error if the gradients were not empty nor zero.
- *
- * @see DiscardGradient
- */
+/**
+`B = DiscardZeroGradient(A, precision)` enables casting from a matrix of
+AutoDiffScalars to AutoDiffScalar::Scalar type, but first checking that
+the gradient matrix is empty or zero.  For a matrix of type, e.g.
+`MatrixX<AutoDiffXd> A`, the comparable operation
+  `B = A.cast<double>()`
+should (and does) fail to compile.  Use `DiscardZeroGradient(A)` if you want
+to force the cast (and the check).
+
+This method is overloaded to permit the user to call it for double types and
+AutoDiffScalar types (to avoid the calling function having to handle the
+two cases differently).
+
+@param precision is passed to Eigen's isZero(precision) to evaluate whether
+the gradients are zero.
+@throws std::runtime_error if the gradients were not empty nor zero.
+
+@see DiscardGradient */
 template <typename Derived>
 typename std::enable_if<
     !std::is_same<typename Derived::Scalar, double>::value,
@@ -175,7 +176,7 @@ DiscardZeroGradient(
       "Casting AutoDiff to value but gradients are not zero.");
 }
 
-/// @see DiscardZeroGradient().
+/** @see DiscardZeroGradient(). */
 template <typename Derived>
 typename std::enable_if<std::is_same<typename Derived::Scalar, double>::value,
                         const Eigen::MatrixBase<Derived>&>::type
@@ -185,7 +186,7 @@ DiscardZeroGradient(const Eigen::MatrixBase<Derived>& matrix,
   return matrix;
 }
 
-/// @see DiscardZeroGradient().
+/** @see DiscardZeroGradient(). */
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 typename std::enable_if<
     !std::is_same<_Scalar, double>::value,
@@ -198,7 +199,7 @@ DiscardZeroGradient(
       DiscardZeroGradient(auto_diff_transform.matrix(), precision));
 }
 
-/// @see DiscardZeroGradient().
+/** @see DiscardZeroGradient(). */
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 typename std::enable_if<
     std::is_same<_Scalar, double>::value,

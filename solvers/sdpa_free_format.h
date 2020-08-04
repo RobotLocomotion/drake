@@ -16,9 +16,8 @@ namespace drake {
 namespace solvers {
 namespace internal {
 /**
- * X is a block diagonal matrix in SDPA format. EntryInX stores the information
- * of one entry in this block-diagonal matrix X.
- */
+X is a block diagonal matrix in SDPA format. EntryInX stores the information
+of one entry in this block-diagonal matrix X. */
 struct EntryInX {
   EntryInX(int block_index_in, int row_index_in_block_in,
            int column_index_in_block_in, int X_start_row_in)
@@ -50,39 +49,37 @@ struct BlockInX {
 };
 
 /**
- * Refer to @ref map_decision_variable_to_sdpa
- * When the decision variable either (or both) finite lower or upper bound (with
- * the two bounds not equal), we need to record the sign of the coefficient
- * before y.
- */
+Refer to @ref map_decision_variable_to_sdpa
+When the decision variable either (or both) finite lower or upper bound (with
+the two bounds not equal), we need to record the sign of the coefficient
+before y. */
 enum class Sign {
   kPositive,
   kNegative,
 };
 
 /**
- * @anchor map_decision_variable_to_sdpa Map decision variable to SDPA
- * When MathematicalProgram formulates a semidefinite program (SDP), we can
- * convert MathematicalProgram to a standard format for SDP, namely the SDPA
- * format. Each of the variable x in MathematicalProgram might be mapped to a
- * variable in the SDPA free format, depending on the following conditions.
- * 1. If the variable x has no lower nor upper bound, it is mapped to a free
- *    variable in SDPA free format.
- * 2. If the variable x only has a finite lower bound, and an infinite upper
- *    bound, then we will replace x by lower + y, where y is a diagonal entry
- *    in X in SDPA free format.
- * 3. If the variable x only has a finite upper bound, and an infinite lower
- *    bound, then we will replace x by upper - y, where y is a diagonal entry
- *    in X in SDPA free format.
- * 4. If the variable x has both finite upper and lower bounds, and these bounds
- *    are not equal, then we replace x by lower + y1, and introduce another
- *    constraint y1 + y2 = upper - lower, where both y1 and y2 are diagonal
- *    entries in X in SDPA free format.
- * 5. If the variable x has equal lower and upper bound, then we replace x with
- *    the double value of lower bound.
- * A MathematicalProgram decision variable can be replaced by coeff_sign * y +
- * offset, where y is a diagonal entry in SDPA X matrix.
- */
+@anchor map_decision_variable_to_sdpa Map decision variable to SDPA
+When MathematicalProgram formulates a semidefinite program (SDP), we can
+convert MathematicalProgram to a standard format for SDP, namely the SDPA
+format. Each of the variable x in MathematicalProgram might be mapped to a
+variable in the SDPA free format, depending on the following conditions.
+1. If the variable x has no lower nor upper bound, it is mapped to a free
+   variable in SDPA free format.
+2. If the variable x only has a finite lower bound, and an infinite upper
+   bound, then we will replace x by lower + y, where y is a diagonal entry
+   in X in SDPA free format.
+3. If the variable x only has a finite upper bound, and an infinite lower
+   bound, then we will replace x by upper - y, where y is a diagonal entry
+   in X in SDPA free format.
+4. If the variable x has both finite upper and lower bounds, and these bounds
+   are not equal, then we replace x by lower + y1, and introduce another
+   constraint y1 + y2 = upper - lower, where both y1 and y2 are diagonal
+   entries in X in SDPA free format.
+5. If the variable x has equal lower and upper bound, then we replace x with
+   the double value of lower bound.
+A MathematicalProgram decision variable can be replaced by coeff_sign * y +
+offset, where y is a diagonal entry in SDPA X matrix. */
 struct DecisionVariableInSdpaX {
   DecisionVariableInSdpaX(Sign coeff_sign_m, double offset_m,
                           EntryInX entry_in_X_m)
@@ -101,13 +98,12 @@ struct DecisionVariableInSdpaX {
 };
 
 /**
- * SDPA format with free variables.
- *
- *     max tr(C * X) + dᵀs
- *     s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
- *         X ≽ 0
- *         s is free.
- */
+SDPA format with free variables.
+
+    max tr(C * X) + dᵀs
+    s.t tr(Aᵢ*X) + bᵢᵀs = gᵢ
+        X ≽ 0
+        s is free. */
 class SdpaFreeFormat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdpaFreeFormat)
@@ -157,35 +153,34 @@ class SdpaFreeFormat {
 
   const Eigen::SparseMatrix<double>& d() const { return d_; }
 
-  /** The SDPA format doesn't include the constant term in the cost, but
-   * MathematicalProgram does. We store the constant cost term here.
-   */
+  /**
+  The SDPA format doesn't include the constant term in the cost, but
+  MathematicalProgram does. We store the constant cost term here. */
   double constant_min_cost_term() const { return constant_min_cost_term_; }
 
   /**
-   * For the following problem
-   *
-   *     max tr(C * X) + dᵀs
-   *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
-   *         X ≽ 0
-   *         s is free,
-   *
-   * remove the free variable s by considering the nullspace of Bᵀ, where bᵢᵀ
-   * is the i'th row of B.
-   *
-   *     max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
-   *     s.t tr(FᵢX̂) = (Nᵀa)(i)
-   *         X̂ ≽ 0,
-   *
-   * where Fᵢ  = ∑ⱼ NⱼᵢAⱼ, N is the null space of Bᵀ. Bᵀ * ŷ = d.
-   * For more information, refer to RemoveFreeVariableMethod for the
-   * derivation.
-   * @param C_hat[out] C_hat is (C-∑ᵢ ŷᵢAᵢ) in the documentation.
-   * @param A_hat[out] A_hat[i] is Fᵢ in the documentation.
-   * @param rhs_hat[out] rhs_hat is (Nᵀa)
-   * @param y_hat[out] ŷ in the documentation.
-   * @param QR_B[out] The QR decomposition of B.
-   */
+  For the following problem
+
+      max tr(C * X) + dᵀs
+      s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+          X ≽ 0
+          s is free,
+
+  remove the free variable s by considering the nullspace of Bᵀ, where bᵢᵀ
+  is the i'th row of B.
+
+      max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
+      s.t tr(FᵢX̂) = (Nᵀa)(i)
+          X̂ ≽ 0,
+
+  where Fᵢ  = ∑ⱼ NⱼᵢAⱼ, N is the null space of Bᵀ. Bᵀ * ŷ = d.
+  For more information, refer to RemoveFreeVariableMethod for the
+  derivation.
+  @param C_hat[out] C_hat is (C-∑ᵢ ŷᵢAᵢ) in the documentation.
+  @param A_hat[out] A_hat[i] is Fᵢ in the documentation.
+  @param rhs_hat[out] rhs_hat is (Nᵀa)
+  @param y_hat[out] ŷ in the documentation.
+  @param QR_B[out] The QR decomposition of B. */
   void RemoveFreeVariableByNullspaceApproach(
       Eigen::SparseMatrix<double>* C_hat,
       std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
@@ -194,83 +189,81 @@ class SdpaFreeFormat {
           QR_B) const;
 
   /**
-   * For the problem
-   *
-   *     max tr(C * X) + dᵀs
-   *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
-   *         X ≽ 0
-   *         s is free.
-   *
-   * Remove the free variable s by introducing two slack variables y⁺ ≥ 0 and y⁻
-   * ≥ 0, and the constraint y⁺ - y⁻ = s. We get a new program without free
-   * variables.
-   *
-   *     max tr(Ĉ * X̂)
-   *     s.t tr(Âᵢ*X̂) = aᵢ
-   *         X̂ ≽ 0
-   *     where Ĉ = diag(C, diag(d), -diag(d))
-   *           X̂ = diag(X, diag(y⁺), diag(y⁻))
-   *           Âᵢ = diag(Aᵢ, diag(bᵢ), -diag(bᵢ))
-   *
-   * @param[out] X_hat_blocks The block matrix recording X̂.
-   * @param[out] A_hat A_hat[i] is Âᵢ in the documentation.
-   * @param[out] C_hat Ĉ in the documentation.
-   */
+  For the problem
+
+      max tr(C * X) + dᵀs
+      s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+          X ≽ 0
+          s is free.
+
+  Remove the free variable s by introducing two slack variables y⁺ ≥ 0 and y⁻
+  ≥ 0, and the constraint y⁺ - y⁻ = s. We get a new program without free
+  variables.
+
+      max tr(Ĉ * X̂)
+      s.t tr(Âᵢ*X̂) = aᵢ
+          X̂ ≽ 0
+      where Ĉ = diag(C, diag(d), -diag(d))
+            X̂ = diag(X, diag(y⁺), diag(y⁻))
+            Âᵢ = diag(Aᵢ, diag(bᵢ), -diag(bᵢ))
+
+  @param[out] X_hat_blocks The block matrix recording X̂.
+  @param[out] A_hat A_hat[i] is Âᵢ in the documentation.
+  @param[out] C_hat Ĉ in the documentation. */
   void RemoveFreeVariableByTwoSlackVariablesApproach(
       std::vector<internal::BlockInX>* X_hat_blocks,
       std::vector<Eigen::SparseMatrix<double>>* A_hat,
       Eigen::SparseMatrix<double>* C_hat) const;
 
   /**
-   * For the problem
-   *
-   *     max tr(C * X) + dᵀs
-   *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
-   *         X ≽ 0
-   *         s is free.
-   *
-   * Remove the free variable s by introducing a slack variable t with the
-   * Lorentz cone constraint t ≥ sqrt(sᵀs). We get a new program without free
-   * variables.
-   * The Lorentz cone constraint t ≥ sqrt(sᵀs) is equivalent to the following
-   * matrix being positive semidefinite (LMI constraint on t and s).
-   *
-   *     ⎡   t  s(1) s(2) ... s(n)⎤
-   *     ⎢s(1)    t     0 ...    0⎥
-   *     ⎢         ...            ⎥
-   *     ⎣s(n)    0     0        t⎦
-   *
-   * To write this LMI in SDPA format, we can introduce a new matrix variable Y
-   * with the constraint Y ≽ 0
-   * Y(1, 1) is set to t, Y(1, i+1) is set to s(i)
-   * We also introduce the linear equality constraints
-   * Y(i, i) = Y(1, 1) if i >= 1
-   * Y(i, j) = 0 if i > j >=1
-   *
-   * After removing the free variables with Y, the SDP problem can be formulated
-   * as below:
-   *
-   *     max tr(Ĉ * X̂)
-   *     s.t tr(Âᵢ*X̂) = âᵢ
-   *         X̂ ≽ 0
-   *     where Ĉ = diag(C, D)
-   *           X̂ = diag(X, Y)
-   *           Âᵢ = diag(Aᵢ, B̂ᵢ)
-   *           and the extra linear equality constraint
-   *           Y(i, i) = Y(1, 1) if i >= 1
-   *           Y(i, j) = 0 if i > j >= 1
-   *     where D = ⎡0  dᵀ/2⎤
-   *               ⎣d/2   0⎦
-   *     B̂ᵢ = ⎡0  bᵢᵀ/2⎤
-   *          ⎣bᵢ/2   0⎦
-   * in both D and B̂ᵢ, the top left 0 is a scalar, while the bottom right 0 is
-   * a matrix of size s.rows() x s.rows()
-   *
-   * @param[out] X_hat_blocks The block matrix recording X̂.
-   * @param[out] A_hat A_hat[i] is Âᵢ in the documentation.
-   * @param[out] rhs_hat rhs_hat[i] is âᵢ in the documentation.
-   * @param[out] C_hat Ĉ in the documentation.
-   */
+  For the problem
+
+      max tr(C * X) + dᵀs
+      s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+          X ≽ 0
+          s is free.
+
+  Remove the free variable s by introducing a slack variable t with the
+  Lorentz cone constraint t ≥ sqrt(sᵀs). We get a new program without free
+  variables.
+  The Lorentz cone constraint t ≥ sqrt(sᵀs) is equivalent to the following
+  matrix being positive semidefinite (LMI constraint on t and s).
+
+      ⎡   t  s(1) s(2) ... s(n)⎤
+      ⎢s(1)    t     0 ...    0⎥
+      ⎢         ...            ⎥
+      ⎣s(n)    0     0        t⎦
+
+  To write this LMI in SDPA format, we can introduce a new matrix variable Y
+  with the constraint Y ≽ 0
+  Y(1, 1) is set to t, Y(1, i+1) is set to s(i)
+  We also introduce the linear equality constraints
+  Y(i, i) = Y(1, 1) if i >= 1
+  Y(i, j) = 0 if i > j >=1
+
+  After removing the free variables with Y, the SDP problem can be formulated
+  as below:
+
+      max tr(Ĉ * X̂)
+      s.t tr(Âᵢ*X̂) = âᵢ
+          X̂ ≽ 0
+      where Ĉ = diag(C, D)
+            X̂ = diag(X, Y)
+            Âᵢ = diag(Aᵢ, B̂ᵢ)
+            and the extra linear equality constraint
+            Y(i, i) = Y(1, 1) if i >= 1
+            Y(i, j) = 0 if i > j >= 1
+      where D = ⎡0  dᵀ/2⎤
+                ⎣d/2   0⎦
+      B̂ᵢ = ⎡0  bᵢᵀ/2⎤
+           ⎣bᵢ/2   0⎦
+  in both D and B̂ᵢ, the top left 0 is a scalar, while the bottom right 0 is
+  a matrix of size s.rows() x s.rows()
+
+  @param[out] X_hat_blocks The block matrix recording X̂.
+  @param[out] A_hat A_hat[i] is Âᵢ in the documentation.
+  @param[out] rhs_hat rhs_hat[i] is âᵢ in the documentation.
+  @param[out] C_hat Ĉ in the documentation. */
   void RemoveFreeVariableByLorentzConeSlackApproach(
       std::vector<internal::BlockInX>* X_hat_blocks,
       std::vector<Eigen::SparseMatrix<double>>* A_hat, Eigen::VectorXd* rhs_hat,
@@ -389,12 +382,11 @@ class SdpaFreeFormat {
   std::vector<Eigen::Triplet<double>> B_triplets_;
 
   /**
-   * Depending on the bounds and whether the variable appears in a PSD cone, a
-   * MathematicalProgram decision variable can be either an entry in X, a free
-   * variable, or a double constant in SDPA free format.
-   * We use std::nullptr_t to indicate that this variable hasn't been registered
-   * into SDPA free format yet.
-   */
+  Depending on the bounds and whether the variable appears in a PSD cone, a
+  MathematicalProgram decision variable can be either an entry in X, a free
+  variable, or a double constant in SDPA free format.
+  We use std::nullptr_t to indicate that this variable hasn't been registered
+  into SDPA free format yet. */
   std::vector<std::variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
                       std::nullptr_t>>
       prog_var_in_sdpa_;
@@ -411,93 +403,90 @@ class SdpaFreeFormat {
 }  // namespace internal
 
 /**
- * SDPA format doesn't accept free variables, namely the problem it solves is
- * in this form P1
- *
- *     max tr(C * X)
- *     s.t tr(Aᵢ*X) = aᵢ
- *         X ≽ 0.
- *
- * Notice that the decision variable X has to be in the proper cone X ≽ 0, and
- * it doesn't accept free variable (without the conic constraint). On the
- * other hand, most real-world applications require free variables, namely
- * problems in this form P2
- *
- *     max tr(C * X) + dᵀs
- *     s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
- *         X ≽ 0
- *         s is free.
- *
- * In order to remove the free variables, we consider three approaches.
- * 1. Replace a free variable s with two variables s = p - q, p ≥ 0, q ≥ 0.
- * 2. First write the dual of the problem P2 as D2
- *
- *        min aᵀy
- *        s.t ∑ᵢ yᵢAᵢ - C = Z
- *            Z ≽ 0
- *            Bᵀ * y = d,
- *
- *    where bᵢᵀ is the i'th row of B.
- *    The last constraint Bᵀ * y = d means y = ŷ + Nt, where Bᵀ * ŷ = d, and N
- *    is the null space of Bᵀ. Hence, D2 is equivalent to the following
- *    problem, D3
- *
- *        min aᵀNt + aᵀŷ
- *        s.t ∑ᵢ tᵢFᵢ - (C -∑ᵢ ŷᵢAᵢ) = Z
- *            Z ≽ 0,
- *
- *    where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D3 is the dual of the following primal problem P3
- *    without free variables
- *
- *        max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
- *        s.t tr(FᵢX̂) = (Nᵀa)(i)
- *            X̂ ≽ 0.
- *
- *    Then (X, s) = (X̂, B⁻¹(a - tr(Aᵢ X̂))) is the solution to the original
- *    problem P2.
- * 3. Add a slack variable t, with the Lorentz cone constraint t ≥ sqrt(sᵀs).
- *
- */
+SDPA format doesn't accept free variables, namely the problem it solves is
+in this form P1
+
+    max tr(C * X)
+    s.t tr(Aᵢ*X) = aᵢ
+        X ≽ 0.
+
+Notice that the decision variable X has to be in the proper cone X ≽ 0, and
+it doesn't accept free variable (without the conic constraint). On the
+other hand, most real-world applications require free variables, namely
+problems in this form P2
+
+    max tr(C * X) + dᵀs
+    s.t tr(Aᵢ*X) + bᵢᵀs = aᵢ
+        X ≽ 0
+        s is free.
+
+In order to remove the free variables, we consider three approaches.
+1. Replace a free variable s with two variables s = p - q, p ≥ 0, q ≥ 0.
+2. First write the dual of the problem P2 as D2
+
+       min aᵀy
+       s.t ∑ᵢ yᵢAᵢ - C = Z
+           Z ≽ 0
+           Bᵀ * y = d,
+
+   where bᵢᵀ is the i'th row of B.
+   The last constraint Bᵀ * y = d means y = ŷ + Nt, where Bᵀ * ŷ = d, and N
+   is the null space of Bᵀ. Hence, D2 is equivalent to the following
+   problem, D3
+
+       min aᵀNt + aᵀŷ
+       s.t ∑ᵢ tᵢFᵢ - (C -∑ᵢ ŷᵢAᵢ) = Z
+           Z ≽ 0,
+
+   where Fᵢ  = ∑ⱼ NⱼᵢAⱼ. D3 is the dual of the following primal problem P3
+   without free variables
+
+       max tr((C-∑ᵢ ŷᵢAᵢ)*X̂) + aᵀŷ
+       s.t tr(FᵢX̂) = (Nᵀa)(i)
+           X̂ ≽ 0.
+
+   Then (X, s) = (X̂, B⁻¹(a - tr(Aᵢ X̂))) is the solution to the original
+   problem P2.
+3. Add a slack variable t, with the Lorentz cone constraint t ≥ sqrt(sᵀs). */
 enum class RemoveFreeVariableMethod {
   kTwoSlackVariables,  ///< Approach 1, replace a free variable s as
-                       ///< s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0.
+                       /** < s = y⁺ - y⁻, y⁺ ≥ 0, y⁻ ≥ 0. */
   kNullspace,  ///< Approach 2, reformulate the dual problem by considering
-               ///< the nullspace of the linear constraint in the dual.
+               /** < the nullspace of the linear constraint in the dual. */
   kLorentzConeSlack,  ///< Approach 3, add a slack variable t with the lorentz
-                      ///< cone constraint t ≥ sqrt(sᵀs).
+                      /** < cone constraint t ≥ sqrt(sᵀs). */
 };
 
 /**
- * SDPA is a format to record an SDP problem
- *
- *     max tr(C*X)
- *     s.t tr(Aᵢ*X) = gᵢ
- *         X ≽ 0
- *
- * or the dual of the problem
- *
- *     min gᵀy
- *     s.t ∑ᵢ yᵢAᵢ - C ≽ 0
- *
- * where X is a symmetric block diagonal matrix.
- * The format is described in http://plato.asu.edu/ftp/sdpa_format.txt. Many
- * solvers, such as CSDP, DSDP, SDPA, sedumi and SDPT3, accept an SDPA format
- * file as the input.
- * This function reads a MathematicalProgram that can be formulated as above,
- * and write an SDPA file.
- * @param prog a program that contains an optimization program.
- * @param file_name The name of the file, note that the extension will be added
- * automatically.
- * @param method If @p prog contains free variables (i.e., variables without
- * bounds), then we need to remove these free variables to write the program
- * in the SDPA format. Please refer to RemoveFreeVariableMethod for details
- * on how to remove the free variables. @default is
- * RemoveFreeVariableMethod::kNullspace.
- * @retval is_success. Returns true if we can generate the SDPA file. The
- * failure could be
- * 1. @p prog cannot be captured by the formulation above.
- * 2. @p prog cannot create a file with the given name, etc.
- */
+SDPA is a format to record an SDP problem
+
+    max tr(C*X)
+    s.t tr(Aᵢ*X) = gᵢ
+        X ≽ 0
+
+or the dual of the problem
+
+    min gᵀy
+    s.t ∑ᵢ yᵢAᵢ - C ≽ 0
+
+where X is a symmetric block diagonal matrix.
+The format is described in http://plato.asu.edu/ftp/sdpa_format.txt. Many
+solvers, such as CSDP, DSDP, SDPA, sedumi and SDPT3, accept an SDPA format
+file as the input.
+This function reads a MathematicalProgram that can be formulated as above,
+and write an SDPA file.
+@param prog a program that contains an optimization program.
+@param file_name The name of the file, note that the extension will be added
+automatically.
+@param method If @p prog contains free variables (i.e., variables without
+bounds), then we need to remove these free variables to write the program
+in the SDPA format. Please refer to RemoveFreeVariableMethod for details
+on how to remove the free variables. @default is
+RemoveFreeVariableMethod::kNullspace.
+@retval is_success. Returns true if we can generate the SDPA file. The
+failure could be
+1. @p prog cannot be captured by the formulation above.
+2. @p prog cannot create a file with the given name, etc. */
 bool GenerateSDPA(
     const MathematicalProgram& prog, const std::string& file_name,
     RemoveFreeVariableMethod method = RemoveFreeVariableMethod::kNullspace);

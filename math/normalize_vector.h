@@ -7,7 +7,8 @@
 
 namespace drake {
 namespace math {
-/** Computes the normalized vector, optionally with its gradient and second
+/**
+Computes the normalized vector, optionally with its gradient and second
 derivative.
 @param[in]  x        An N x 1 vector to be normalized. Must not be zero.
 @param[out] x_norm   The normalized vector (N x 1).

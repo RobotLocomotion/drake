@@ -1,26 +1,28 @@
 #pragma once
-/// @file
-/// This file provides a set of predicates which can be used with GTEST's
-/// ASSERT/EXPECT_PRED{n} macros. The motivation is to provide better diagnostic
-/// information when the assertions fail. Please consider a scenario where a
-/// user wants to assert that two symbolic expressions, `e1` and `e2`, are
-/// structurally identical.
-///
-/// @code
-/// // The following does not work because `operator==(const Expression& e1,
-/// // const Expression& e2)` does not return a Boolean value. We need to use
-/// // Expression::EqualTo() method instead.
-/// ASSERT_EQ(e1, e2);
-///
-/// // The following compiles, but it does not provide enough information when
-/// // the assertion fails. It merely reports that `e1.EqualTo(e2)` is evaluated
-/// // to `false`, not to `true`.
-/// ASSERT_TRUE(e1.EqualTo(e2));
-///
-/// // When the following assertion fails, it reports the value of `e1` and `e2`
-/// // which should help debugging.
-/// ASSERT_PRED2(ExprEqual, e1, e2);
-/// @endcode
+/**
+@file
+This file provides a set of predicates which can be used with GTEST's
+ASSERT/EXPECT_PRED{n} macros. The motivation is to provide better diagnostic
+information when the assertions fail. Please consider a scenario where a
+user wants to assert that two symbolic expressions, `e1` and `e2`, are
+structurally identical.
+
+@code
+// The following does not work because `operator==(const Expression& e1,
+// const Expression& e2)` does not return a Boolean value. We need to use
+// Expression::EqualTo() method instead.
+ASSERT_EQ(e1, e2);
+
+// The following compiles, but it does not provide enough information when
+// the assertion fails. It merely reports that `e1.EqualTo(e2)` is evaluated
+// to `false`, not to `true`.
+ASSERT_TRUE(e1.EqualTo(e2));
+
+// When the following assertion fails, it reports the value of `e1` and `e2`
+// which should help debugging.
+ASSERT_PRED2(ExprEqual, e1, e2);
+@endcode
+ */
 #include <algorithm>
 #include <vector>
 
@@ -128,12 +130,11 @@ template <typename F>
 }
 
 /**
- * Compare if two polynomials p1 and p2 are the same, by checking if all the
- * coefficients in their difference p1 - p2 is no larger than tol.
- * @param p1 A polynomial.
- * @param p2 A polynomial.
- * @param tol The tolerance on the coefficients of p1 - p2.
- */
+Compare if two polynomials p1 and p2 are the same, by checking if all the
+coefficients in their difference p1 - p2 is no larger than tol.
+@param p1 A polynomial.
+@param p2 A polynomial.
+@param tol The tolerance on the coefficients of p1 - p2. */
 [[nodiscard]] inline ::testing::AssertionResult PolynomialEqual(
     const symbolic::Polynomial& p1, const symbolic::Polynomial& p2,
     double tol) {

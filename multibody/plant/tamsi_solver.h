@@ -13,222 +13,234 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This struct implements the Transition-Aware Line Search (TALS) algorithm as
-/// described in @ref castro_etal_2019 "[Castro et al., 2019]".
-/// TamsiSolver performs a Newton-Raphson iteration, and at each kth iteration,
-/// it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
-/// to compute the tangential velocity at the next iteration (k+1) as vₜᵏ⁺¹ =
-/// vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line search to
-/// improve convergence.
-/// Line search works very well for smooth problems. However, even though TAMSI
-/// is solving the root of a continuous function, this function has very steep
-/// gradients only within the very small regions close to where the tangential
-/// velocities are zero. These regions are circles in ℝ² of radius equal to the
-/// stiction tolerance of the solver vₛ. We refer to these circular regions as
-/// the "stiction regions" and to their boundaries as the "stiction circles". We
-/// refer to the region of ℝ² outside the stiction region around the origin as
-/// the "sliding region".
-/// TamsiSolver uses the following regularized friction function
-/// μₛ with slip speed: <pre>
-///     μₛ(x) = ⌈ μ x (2 - x),  x  < 1
-///             ⌊ μ          ,  x >= 1
-/// </pre>
-/// where x corresponds to the dimensionless slip speed x = ‖vₜ‖ / vₛ and
-/// μ is the Coulomb's law coefficient of friction. The TAMSI solver makes no
-/// distinction between static and dynamic coefficients of friction and
-/// therefore a single coefficient μ needs to be specified.
-/// Regularized friction is highly nonlinear and difficult to solve with a
-/// conventional Newton-Raphson method. However, it can be partitioned into
-/// regions based on how well the local gradients can be used to find a
-/// solution. We'll describe the algorithm below in terms of "strong" gradients
-/// (∂μ/∂v >> 0) and "weak" gradients (∂μ/∂v ≈ 0). Roughly, the gradients are
-/// strong during stiction and weak during sliding.
-/// These regions are so small compared to the velocity scales dealt with by the
-/// TAMSI solver, that effectively, the Newton-Raphson iterate would only "see"
-/// a fixed dynamic coefficient of friction and it would never be able to
-/// predict stiction. That is, if search direction Δvₜᵏ computed by the
-/// Newton-Raphson algorithm is not limited in some way, the iteration would
-/// never fall within the stiction regions where gradients are "strong" to guide
-/// the convergence of the solution, to either stiction or sliding.
-///
-/// The remedy to this situation is to limit changes in the tangential
-/// velocities at each iteration. The situation described above, in which an
-/// update  Δvₜᵏ "misses" the stiction circle can be described in purely
-/// geometric terms. We exploit this fact to devise a strategy that is
-/// appropriate for this particular problem. We use the methodology outlined in
-/// @ref uchida_etal_2015 "[Uchida et al., 2015]" and describe particulars to
-/// our implementation below.
-///
-/// %TalsLimiter implements a specific strategy with knowledge of the TAMSI
-/// solver iteration procedure. It is important to note that %TalsLimiter uses
-/// "soft norms" to avoid divisions by zero. That is, friction forces are
-/// computed according to: <pre>
-///   fₜ(vₜ) = -μ(‖vₜ‖ₛ) vₜ/‖vₜ‖ₛ
-/// </pre>
-/// where, to avoid the singularity at zero velocity, we use a "soft norm"
-/// ‖vₜ‖ₛ = sqrt(vₜᵀvₜ + εᵥ²), with εᵥ a small fraction of vₛ. Due to the
-/// use of soft norms, the gradient of fₜ with vₜ is now well defined,
-/// but it goes to zero as vₜ approaches the origin. Therefore, gradients
-/// are also "weak" in the neighborhood of ‖vₜ‖ₛ ≲ εᵥ.
-/// Due to this, external forcing (either from applied forces or from coupling
-/// with other friction forces) has the potential to, mistakenly, force a
-/// transition from stiction to sliding. The solver will most likely recover
-/// from this, but this will result in a larger number of iterations.
-/// %TalsLimiter considers any tangential velocity vₜ (or change Δvₜ)
-/// to be approximately zero if x = ‖vₜ‖/vₛ is smaller than `tolerance`
-/// (see docs below, this is a dimensionless number << 1). We define
-/// `εᵥ = tolerance⋅vₛ` (with units of m/s).
-///
-/// In what follows we list a number of special scenarios dealt with by
-/// %TalsLimiter. We use the observations made above.
-///
-/// - %TalsLimiter first deals with the case ‖vₜ‖ < εᵥ to avoid
-///   divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
-///   to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
-///   Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
-///   See implementation notes for CalcAlpha() for further details.
-/// - Transition from ‖vₜ‖ < εᵥ (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since
-///   we are in a region of "weak" gradients (due to "norm softening",
-///   see discussion above), we limit the update to vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2.
-///   In other words, if the speed would grow too fast, we cap it at vₛ/2
-///   so that at least two Newton iterations are required to go from near-0
-///   sticking to sliding.
-/// - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
-///   ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
-///   iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
-///   velocity "in the same direction where it came from", within the stiction
-///   region, but where gradients are strong.
-/// - Velocity change Δvₜᵏ intersects the stiction circle. To be more precise,
-///   the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
-///   This situation implies that most likely a stiction transition could
-///   happen but the pure Newton-Raphson would miss it. This situation is
-///   outlined in @ref uchida_etal_2015 "[Uchida et al., 2015]". In this case
-///   %TalsLimiter computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest
-///   vector to the origin. This corresponds to the geometric condition
-///   dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
-/// - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
-///   changes happen in a region away from stiction (within the sliding
-///   region). However, large angular changes (measured by the angle
-///   θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
-///   might indicate a solution that is attempting to reach a stiction region.
-///   In order to aid convergence, we limit the angle change to θₘₐₓ, and
-///   therefore (see @ref uchida_etal_2015 "[Uchida et al., 2015]") we compute α
-///   so that θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
-///
-/// %TalsLimiter implements the algorithm described above. We place it
-/// inside a struct so that we can use Eigen::Ref arguments allowing different
-/// scalar types T.
+/**
+This struct implements the Transition-Aware Line Search (TALS) algorithm as
+described in @ref castro_etal_2019 "[Castro et al., 2019]".
+TamsiSolver performs a Newton-Raphson iteration, and at each kth iteration,
+it computes a tangential velocity update Δvₜᵏ. One Newton strategy would be
+to compute the tangential velocity at the next iteration (k+1) as vₜᵏ⁺¹ =
+vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line search to
+improve convergence.
+Line search works very well for smooth problems. However, even though TAMSI
+is solving the root of a continuous function, this function has very steep
+gradients only within the very small regions close to where the tangential
+velocities are zero. These regions are circles in ℝ² of radius equal to the
+stiction tolerance of the solver vₛ. We refer to these circular regions as
+the "stiction regions" and to their boundaries as the "stiction circles". We
+refer to the region of ℝ² outside the stiction region around the origin as
+the "sliding region".
+TamsiSolver uses the following regularized friction function
+μₛ with slip speed: <pre>
+    μₛ(x) = ⌈ μ x (2 - x),  x  < 1
+            ⌊ μ          ,  x >= 1
+</pre>
+where x corresponds to the dimensionless slip speed x = ‖vₜ‖ / vₛ and
+μ is the Coulomb's law coefficient of friction. The TAMSI solver makes no
+distinction between static and dynamic coefficients of friction and
+therefore a single coefficient μ needs to be specified.
+Regularized friction is highly nonlinear and difficult to solve with a
+conventional Newton-Raphson method. However, it can be partitioned into
+regions based on how well the local gradients can be used to find a
+solution. We'll describe the algorithm below in terms of "strong" gradients
+(∂μ/∂v >> 0) and "weak" gradients (∂μ/∂v ≈ 0). Roughly, the gradients are
+strong during stiction and weak during sliding.
+These regions are so small compared to the velocity scales dealt with by the
+TAMSI solver, that effectively, the Newton-Raphson iterate would only "see"
+a fixed dynamic coefficient of friction and it would never be able to
+predict stiction. That is, if search direction Δvₜᵏ computed by the
+Newton-Raphson algorithm is not limited in some way, the iteration would
+never fall within the stiction regions where gradients are "strong" to guide
+the convergence of the solution, to either stiction or sliding.
+
+The remedy to this situation is to limit changes in the tangential
+velocities at each iteration. The situation described above, in which an
+update  Δvₜᵏ "misses" the stiction circle can be described in purely
+geometric terms. We exploit this fact to devise a strategy that is
+appropriate for this particular problem. We use the methodology outlined in
+@ref uchida_etal_2015 "[Uchida et al., 2015]" and describe particulars to
+our implementation below.
+
+%TalsLimiter implements a specific strategy with knowledge of the TAMSI
+solver iteration procedure. It is important to note that %TalsLimiter uses
+"soft norms" to avoid divisions by zero. That is, friction forces are
+computed according to: <pre>
+  fₜ(vₜ) = -μ(‖vₜ‖ₛ) vₜ/‖vₜ‖ₛ
+</pre>
+where, to avoid the singularity at zero velocity, we use a "soft norm"
+‖vₜ‖ₛ = sqrt(vₜᵀvₜ + εᵥ²), with εᵥ a small fraction of vₛ. Due to the
+use of soft norms, the gradient of fₜ with vₜ is now well defined,
+but it goes to zero as vₜ approaches the origin. Therefore, gradients
+are also "weak" in the neighborhood of ‖vₜ‖ₛ ≲ εᵥ.
+Due to this, external forcing (either from applied forces or from coupling
+with other friction forces) has the potential to, mistakenly, force a
+transition from stiction to sliding. The solver will most likely recover
+from this, but this will result in a larger number of iterations.
+%TalsLimiter considers any tangential velocity vₜ (or change Δvₜ)
+to be approximately zero if x = ‖vₜ‖/vₛ is smaller than `tolerance`
+(see docs below, this is a dimensionless number << 1). We define
+`εᵥ = tolerance⋅vₛ` (with units of m/s).
+
+In what follows we list a number of special scenarios dealt with by
+%TalsLimiter. We use the observations made above.
+
+- %TalsLimiter first deals with the case ‖vₜ‖ < εᵥ to avoid
+  divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
+  to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
+  Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
+  See implementation notes for CalcAlpha() for further details.
+- Transition from ‖vₜ‖ < εᵥ (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since
+  we are in a region of "weak" gradients (due to "norm softening",
+  see discussion above), we limit the update to vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2.
+  In other words, if the speed would grow too fast, we cap it at vₛ/2
+  so that at least two Newton iterations are required to go from near-0
+  sticking to sliding.
+- Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
+  ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
+  iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
+  velocity "in the same direction where it came from", within the stiction
+  region, but where gradients are strong.
+- Velocity change Δvₜᵏ intersects the stiction circle. To be more precise,
+  the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
+  This situation implies that most likely a stiction transition could
+  happen but the pure Newton-Raphson would miss it. This situation is
+  outlined in @ref uchida_etal_2015 "[Uchida et al., 2015]". In this case
+  %TalsLimiter computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest
+  vector to the origin. This corresponds to the geometric condition
+  dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
+- Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
+  changes happen in a region away from stiction (within the sliding
+  region). However, large angular changes (measured by the angle
+  θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
+  might indicate a solution that is attempting to reach a stiction region.
+  In order to aid convergence, we limit the angle change to θₘₐₓ, and
+  therefore (see @ref uchida_etal_2015 "[Uchida et al., 2015]") we compute α
+  so that θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+
+%TalsLimiter implements the algorithm described above. We place it
+inside a struct so that we can use Eigen::Ref arguments allowing different
+scalar types T. */
 template <typename T>
 struct TalsLimiter {
-  /// Implements the limiting algorithm described in the documentation above.
-  /// @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
-  /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
-  /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
-  /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
-  /// @param[in] relative_tolerance a value << 1 used to determine when
-  /// ‖vₜ‖ ≈ 0. Typical values lie within the 10⁻³ - 10⁻² range. This allows
-  /// us to compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small
-  /// tangential velocity scale". This value is used to compute "soft norms"
-  /// (see class's documentation) and to detect values close to
-  /// zero, ‖vₜ‖ < εᵥ. A value close to one could cause the solver to miss
-  /// transitions from/to stiction.
-  /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
+  /**
+  Implements the limiting algorithm described in the documentation above.
+  @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
+  @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
+  @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
+  @param[in] v_stiction the stiction tolerance vₛ, in m/s.
+  @param[in] relative_tolerance a value << 1 used to determine when
+  ‖vₜ‖ ≈ 0. Typical values lie within the 10⁻³ - 10⁻² range. This allows
+  us to compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small
+  tangential velocity scale". This value is used to compute "soft norms"
+  (see class's documentation) and to detect values close to
+  zero, ‖vₜ‖ < εᵥ. A value close to one could cause the solver to miss
+  transitions from/to stiction.
+  @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ. */
   static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
                      const Eigen::Ref<const Vector2<T>>& dv,
                      double cos_theta_max, double v_stiction,
                      double relative_tolerance);
 
-  /// Helper method for detecting when the line connecting v with v1 = v + dv
-  /// crosses the stiction region, a circle of radius `v_stiction`.
-  /// All other input arguments are quantities already precomputed by
-  /// CalcAlpha() and thus we reuse them.
-  /// @param alpha when this method returns `true` (zero crossing), a
-  /// coefficient in `(0, 1]` so that `v_alpha = v + alpha * dv` is the closest
-  /// vector to the origin. It is not set when the method returns `false`.
-  /// @returns `true` if the line connecting v with v1 = v + dv crosses the
-  /// stiction region.
+  /**
+  Helper method for detecting when the line connecting v with v1 = v + dv
+  crosses the stiction region, a circle of radius `v_stiction`.
+  All other input arguments are quantities already precomputed by
+  CalcAlpha() and thus we reuse them.
+  @param alpha when this method returns `true` (zero crossing), a
+  coefficient in `(0, 1]` so that `v_alpha = v + alpha * dv` is the closest
+  vector to the origin. It is not set when the method returns `false`.
+  @returns `true` if the line connecting v with v1 = v + dv crosses the
+  stiction region. */
   static bool CrossesTheStictionRegion(
       const Eigen::Ref<const Vector2<T>>& v,
       const Eigen::Ref<const Vector2<T>>& dv,
       const T& v_dot_dv, const T& dv_norm, const T& dv_norm2,
       double epsilon_v, double v_stiction, T* alpha);
 
-  /// Helper method to solve the quadratic equation aα² + bα + c = 0 for the
-  /// very particular case we know we have real roots (Δ = b² - 4ac > 0) and we
-  /// are interested in the smallest positive root.
+  /**
+  Helper method to solve the quadratic equation aα² + bα + c = 0 for the
+  very particular case we know we have real roots (Δ = b² - 4ac > 0) and we
+  are interested in the smallest positive root. */
   static T SolveQuadraticForTheSmallestPositiveRoot(
       const T& a, const T& b, const T& c);
 };
 }  // namespace internal
 
-/// The result from TamsiSolver::SolveWithGuess() used to report the
-/// success or failure of the solver.
+/**
+The result from TamsiSolver::SolveWithGuess() used to report the
+success or failure of the solver. */
 enum class TamsiSolverResult {
-  /// Successful computation.
+  /** Successful computation. */
   kSuccess = 0,
 
-  /// The maximum number of iterations was reached.
+  /** The maximum number of iterations was reached. */
   kMaxIterationsReached = 1,
 
-  /// The linear solver used within the Newton-Raphson loop failed.
-  /// This might be caused by a divergent iteration that led to an invalid
-  /// Jacobian matrix.
+  /**
+  The linear solver used within the Newton-Raphson loop failed.
+  This might be caused by a divergent iteration that led to an invalid
+  Jacobian matrix. */
   kLinearSolverFailed = 2
 };
 
-/// These are the parameters controlling the iteration process of the
-/// TamsiSolver solver.
+/**
+These are the parameters controlling the iteration process of the
+TamsiSolver solver. */
 struct TamsiSolverParameters {
-  /// The stiction tolerance vₛ for the slip velocity in the regularized
-  /// friction function, in m/s. Roughly, for an externally applied tangential
-  /// forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
-  /// be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
-  /// error of the regularized friction approximation occurs at the edge of the
-  /// friction cone when fₜ = μfₙ and vₜ = vₛ. The default of 0.1 mm/s is
-  /// a very tight value that for most problems of interest in robotics will
-  /// result in simulation results with negligible slip velocities introduced by
-  /// regularizing friction when in stiction.
+  /**
+  The stiction tolerance vₛ for the slip velocity in the regularized
+  friction function, in m/s. Roughly, for an externally applied tangential
+  forcing fₜ and normal force fₙ, under "stiction", the slip velocity will
+  be approximately vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
+  error of the regularized friction approximation occurs at the edge of the
+  friction cone when fₜ = μfₙ and vₜ = vₛ. The default of 0.1 mm/s is
+  a very tight value that for most problems of interest in robotics will
+  result in simulation results with negligible slip velocities introduced by
+  regularizing friction when in stiction. */
   double stiction_tolerance{1.0e-4};  // 0.1 mm/s
 
-  /// The maximum number of iterations allowed for the Newton-Raphson
-  /// iterative solver.
+  /**
+  The maximum number of iterations allowed for the Newton-Raphson
+  iterative solver. */
   int max_iterations{100};
 
-  /// The tolerance to monitor the convergence of the tangential velocities.
-  /// This number specifies a tolerance relative to the value of the
-  /// stiction_tolerance and thus it is dimensionless. Using a tolerance
-  /// relative to the value of the stiction_tolerance is necessary in order
-  /// to capture transitions to stiction that would require an accuracy in the
-  /// value of the tangential velocities smaller than that of the
-  /// "stiction region" (the circle around the origin with radius
-  /// stiction_tolerance).
-  /// A value close to one could cause the solver to miss transitions from/to
-  /// stiction. Small values approaching zero will result in a higher number of
-  /// iterations needed to attain the desired level of convergence.
-  /// Typical values lie within the 10⁻³ - 10⁻² range.
+  /**
+  The tolerance to monitor the convergence of the tangential velocities.
+  This number specifies a tolerance relative to the value of the
+  stiction_tolerance and thus it is dimensionless. Using a tolerance
+  relative to the value of the stiction_tolerance is necessary in order
+  to capture transitions to stiction that would require an accuracy in the
+  value of the tangential velocities smaller than that of the
+  "stiction region" (the circle around the origin with radius
+  stiction_tolerance).
+  A value close to one could cause the solver to miss transitions from/to
+  stiction. Small values approaching zero will result in a higher number of
+  iterations needed to attain the desired level of convergence.
+  Typical values lie within the 10⁻³ - 10⁻² range. */
   double relative_tolerance{1.0e-2};
 
-  /// (Advanced) TamsiSolver limits large angular changes between
-  /// tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
-  /// change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
-  /// To aid convergence, TamsiSolver, limits this angular change to
-  /// `theta_max`. Please refer to the documentation for TamsiSolver
-  /// for further details.
-  ///
-  /// Small values of `theta_max` will result in a larger number of iterations
-  /// of the solver for situations in which large angular changes occur (sudden
-  /// transients or impacts). Values of `theta_max` close to π/2 allow for a
-  /// faster convergence for problems with sudden transitions to/from stiction.
-  /// Large values of `theta_max` however might lead to non-convergence of the
-  /// solver. We choose a conservative number by default that we found to work
-  /// well in most practical problems of interest.
+  /**
+  (Advanced) TamsiSolver limits large angular changes between
+  tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
+  change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+  To aid convergence, TamsiSolver, limits this angular change to
+  `theta_max`. Please refer to the documentation for TamsiSolver
+  for further details.
+
+  Small values of `theta_max` will result in a larger number of iterations
+  of the solver for situations in which large angular changes occur (sudden
+  transients or impacts). Values of `theta_max` close to π/2 allow for a
+  faster convergence for problems with sudden transitions to/from stiction.
+  Large values of `theta_max` however might lead to non-convergence of the
+  solver. We choose a conservative number by default that we found to work
+  well in most practical problems of interest. */
   double theta_max{M_PI / 3.0};
 };
 
-/// Struct used to store information about the iteration process performed by
-/// TamsiSolver.
+/**
+Struct used to store information about the iteration process performed by
+TamsiSolver. */
 struct TamsiSolverIterationStats {
-  /// (Internal) Used by TamsiSolver to reset statistics.
+  /** (Internal) Used by TamsiSolver to reset statistics. */
   void Reset() {
     num_iterations = 0;
     // Clear does not change a std::vector "capacity", and therefore there's
@@ -236,32 +248,36 @@ struct TamsiSolverIterationStats {
     residuals.clear();
   }
 
-  /// (Internal) Used by TamsiSolver to update statistics.
+  /** (Internal) Used by TamsiSolver to update statistics. */
   void Update(double iteration_residual) {
     ++num_iterations;
     residuals.push_back(iteration_residual);
   }
 
-  /// The number of iterations performed by the last TamsiSolver
-  /// solve.
+  /**
+  The number of iterations performed by the last TamsiSolver
+  solve. */
   int num_iterations{0};
 
-  /// Returns the residual in the tangential velocities, in m/s. Upon
-  /// convergence of the solver this value should be smaller than
-  /// Parameters::tolerance times Parameters::stiction_tolerance.
+  /**
+  Returns the residual in the tangential velocities, in m/s. Upon
+  convergence of the solver this value should be smaller than
+  Parameters::tolerance times Parameters::stiction_tolerance. */
   double vt_residual() const { return residuals.back();}
 
-  /// (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
-  /// in this vector corresponds to the residual for the k-th Newton-Raphson
-  /// iteration performed by the solver.
-  /// After TamsiSolver solved a problem, this vector will have size
-  /// num_iterations.
-  /// The last entry in this vector, `residuals[num_iterations-1]`, corresponds
-  /// to the residual upon completion of the solver, i.e. vt_residual.
+  /**
+  (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
+  in this vector corresponds to the residual for the k-th Newton-Raphson
+  iteration performed by the solver.
+  After TamsiSolver solved a problem, this vector will have size
+  num_iterations.
+  The last entry in this vector, `residuals[num_iterations-1]`, corresponds
+  to the residual upon completion of the solver, i.e. vt_residual. */
   std::vector<double> residuals;
 };
 
-/** @anchor tamsi_class_intro
+/**
+@anchor tamsi_class_intro
 %TamsiSolver uses the Transition-Aware Modified Semi-Implicit (TAMSI) method,
 @ref castro_etal_2019 "[Castro et al., 2019]", to solve the equations below for
 mechanical systems in contact with regularized friction:
@@ -500,205 +516,219 @@ term exactly as needed in Eq. (16).
 
 @authors Alejandro Castro (2018) Original author.
 @authors Michael Sherman, Evan Drumwright (2018) Original PR #8925 reviewers.
-@authors Drake team (see https://drake.mit.edu/credits).
-*/
+@authors Drake team (see https://drake.mit.edu/credits). */
 template <typename T>
 class TamsiSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TamsiSolver)
 
-  /// Instantiates a solver for a problem with `nv` generalized velocities.
-  /// @throws std::exception if nv is non-positive.
+  /**
+  Instantiates a solver for a problem with `nv` generalized velocities.
+  @throws std::exception if nv is non-positive. */
   explicit TamsiSolver(int nv);
 
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
-  /// Sets data for the problem to be solved as outlined by Eq. (3) in this
-  /// class's documentation: <pre>
-  ///   (3)  M v = p* + δt Jₙᵀ fₙ +  δt Jₜᵀ fₜ(v)
-  /// </pre>
-  /// Refer to this class's documentation for further details on the structure
-  /// of the problem and the solution strategy.
-  /// In the documented parameters below, `nv` is the number of generalized
-  /// velocities and `nc` is the number of contact points.
-  ///
-  /// @param[in] M
-  ///   The mass matrix of the system, of size `nv x nv`.
-  /// @param[in] Jn
-  ///   The normal separation velocities Jacobian, of size `nc x nv`.
-  /// @param[in] Jt
-  ///   The tangential velocities Jacobian, of size `2nc x nv`.
-  /// @param[in] p_star
-  ///   The generalized momentum the system would have at `s + 1` if contact
-  ///   forces were zero.
-  /// @param[in] fn
-  ///   A vector of size `nc` containing the normal force at each contact point.
-  /// @param[in] mu
-  ///   A vector of size `nc` containing the friction coefficient at each
-  ///   contact point. The solver makes no distinction between static and
-  ///   dynamic coefficients of friction or, similarly, the solver assumes the
-  ///   static and dynamic coefficients of friction are the same.
-  ///
-  /// @warning This method stores constant references to the matrices and
-  /// vectors passed as arguments. Therefore
-  ///   1. they must outlive this class and,
-  ///   2. changes to the problem data invalidate any solution performed by this
-  ///      solver. In such a case, SetOneWayCoupledProblemData() and
-  ///      SolveWithGuess() must be invoked again.
-  ///
-  /// @throws std::exception if any of the data pointers are nullptr.
-  /// @throws std::exception if the problem data sizes are not consistent as
-  /// described above.
-  /// @throws std::exception if SetTwoWayCoupledProblemData() was ever called on
-  /// `this` solver.
+  /**
+  Sets data for the problem to be solved as outlined by Eq. (3) in this
+  class's documentation: <pre>
+    (3)  M v = p* + δt Jₙᵀ fₙ +  δt Jₜᵀ fₜ(v)
+  </pre>
+  Refer to this class's documentation for further details on the structure
+  of the problem and the solution strategy.
+  In the documented parameters below, `nv` is the number of generalized
+  velocities and `nc` is the number of contact points.
+
+  @param[in] M
+    The mass matrix of the system, of size `nv x nv`.
+  @param[in] Jn
+    The normal separation velocities Jacobian, of size `nc x nv`.
+  @param[in] Jt
+    The tangential velocities Jacobian, of size `2nc x nv`.
+  @param[in] p_star
+    The generalized momentum the system would have at `s + 1` if contact
+    forces were zero.
+  @param[in] fn
+    A vector of size `nc` containing the normal force at each contact point.
+  @param[in] mu
+    A vector of size `nc` containing the friction coefficient at each
+    contact point. The solver makes no distinction between static and
+    dynamic coefficients of friction or, similarly, the solver assumes the
+    static and dynamic coefficients of friction are the same.
+
+  @warning This method stores constant references to the matrices and
+  vectors passed as arguments. Therefore
+    1. they must outlive this class and,
+    2. changes to the problem data invalidate any solution performed by this
+       solver. In such a case, SetOneWayCoupledProblemData() and
+       SolveWithGuess() must be invoked again.
+
+  @throws std::exception if any of the data pointers are nullptr.
+  @throws std::exception if the problem data sizes are not consistent as
+  described above.
+  @throws std::exception if SetTwoWayCoupledProblemData() was ever called on
+  `this` solver. */
   void SetOneWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M,
       EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
       EigenPtr<const VectorX<T>> p_star,
       EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu);
 
-  /// Sets the problem data to solve the problem outlined in Eq. (10) in this
-  /// class's documentation using a two-way coupled approach: <pre>
-  ///   (10)  M(qˢ) vˢ⁺¹ = p* + δt [Jₙᵀ(qˢ) fₙ(vˢ⁺¹) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
-  /// </pre>
-  /// Refer to this class's documentation for further details on the structure
-  /// of the problem and the solution strategy.
-  /// In the documented parameters below, `nv` is the number of generalized
-  /// velocities and `nc` is the number of contact points.
-  ///
-  /// @param[in] M
-  ///   The mass matrix of the system, of size `nv x nv`.
-  /// @param[in] Jn
-  ///   The normal separation velocities Jacobian, of size `nc x nv`.
-  /// @param[in] Jt
-  ///   The tangential velocities Jacobian, of size `2nc x nv`.
-  /// @param[in] p_star
-  ///   The generalized momentum the system would have at `n + 1` if contact
-  ///   forces were zero.
-  /// @param[in] fn0
-  ///   Normal force at the previous time step. Always positive since bodies
-  ///   cannot attract each other.
-  /// @param[in] stiffness
-  ///   A vector of size `nc` storing at each ith entry the stiffness
-  ///   coefficient for the ith contact pair.
-  /// @param[in] dissipation
-  ///   A vector of size `nc` storing at each ith entry the dissipation
-  ///   coefficient for the ith contact pair.
-  /// @param[in] mu
-  ///   A vector of size `nc` containing the friction coefficient at each
-  ///   contact point. The solver makes no distinction between static and
-  ///   dynamic coefficients of friction or, similarly, the solver assumes the
-  ///   static and dynamic coefficients of friction are the same.
-  ///
-  /// @warning This method stores constant references to the matrices and
-  /// vectors passed as arguments. Therefore
-  ///   1. they must outlive this class and,
-  ///   2. changes to the problem data invalidate any solution performed by this
-  ///      solver. In such a case, SetOneWayCoupledProblemData() and
-  ///      SolveWithGuess() must be invoked again.
-  ///
-  /// @throws std::exception if any of the data pointers are nullptr.
-  /// @throws std::exception if the problem data sizes are not consistent as
-  /// described above.
-  /// @throws std::exception if SetOneWayCoupledProblemData() was ever called on
-  /// `this` solver.
   // TODO(amcastro-tri): rework the entire math again to make phi to actually be
   // the signed distance function (instead of the signed penetration distance).
+  /**
+  Sets the problem data to solve the problem outlined in Eq. (10) in this
+  class's documentation using a two-way coupled approach: <pre>
+    (10)  M(qˢ) vˢ⁺¹ = p* + δt [Jₙᵀ(qˢ) fₙ(vˢ⁺¹) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
+  </pre>
+  Refer to this class's documentation for further details on the structure
+  of the problem and the solution strategy.
+  In the documented parameters below, `nv` is the number of generalized
+  velocities and `nc` is the number of contact points.
+
+  @param[in] M
+    The mass matrix of the system, of size `nv x nv`.
+  @param[in] Jn
+    The normal separation velocities Jacobian, of size `nc x nv`.
+  @param[in] Jt
+    The tangential velocities Jacobian, of size `2nc x nv`.
+  @param[in] p_star
+    The generalized momentum the system would have at `n + 1` if contact
+    forces were zero.
+  @param[in] fn0
+    Normal force at the previous time step. Always positive since bodies
+    cannot attract each other.
+  @param[in] stiffness
+    A vector of size `nc` storing at each ith entry the stiffness
+    coefficient for the ith contact pair.
+  @param[in] dissipation
+    A vector of size `nc` storing at each ith entry the dissipation
+    coefficient for the ith contact pair.
+  @param[in] mu
+    A vector of size `nc` containing the friction coefficient at each
+    contact point. The solver makes no distinction between static and
+    dynamic coefficients of friction or, similarly, the solver assumes the
+    static and dynamic coefficients of friction are the same.
+
+  @warning This method stores constant references to the matrices and
+  vectors passed as arguments. Therefore
+    1. they must outlive this class and,
+    2. changes to the problem data invalidate any solution performed by this
+       solver. In such a case, SetOneWayCoupledProblemData() and
+       SolveWithGuess() must be invoked again.
+
+  @throws std::exception if any of the data pointers are nullptr.
+  @throws std::exception if the problem data sizes are not consistent as
+  described above.
+  @throws std::exception if SetOneWayCoupledProblemData() was ever called on
+  `this` solver. */
   void SetTwoWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
       EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
       EigenPtr<const VectorX<T>> fn0, EigenPtr<const VectorX<T>> stiffness,
       EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu);
 
-  /// Given an initial guess `v_guess`, this method uses a Newton-Raphson
-  /// iteration to find a solution for the generalized velocities satisfying
-  /// either Eq. (3) when one-way coupling is used or Eq. (10) when two-way
-  /// coupling is used. See this class's documentation for further details.
-  /// To retrieve the solution, please refer to @ref retrieving_the_solution.
-  /// @returns kSuccess if the iteration converges. All other values of
-  /// TamsiSolverResult report different failure modes.
-  /// Uses `this` solver accessors to retrieve the last computed solution.
-  /// @warning Always verify that the return value indicates success before
-  /// retrieving the computed solution.
-  ///
-  /// @param[in] dt The time step used advance the solution in time.
-  /// @param[in] v_guess The initial guess used in by the Newton-Raphson
-  /// iteration. Typically, the previous time step velocities.
-  ///
-  /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
-  /// generalized velocities specified at construction.
+  /**
+  Given an initial guess `v_guess`, this method uses a Newton-Raphson
+  iteration to find a solution for the generalized velocities satisfying
+  either Eq. (3) when one-way coupling is used or Eq. (10) when two-way
+  coupling is used. See this class's documentation for further details.
+  To retrieve the solution, please refer to @ref retrieving_the_solution.
+  @returns kSuccess if the iteration converges. All other values of
+  TamsiSolverResult report different failure modes.
+  Uses `this` solver accessors to retrieve the last computed solution.
+  @warning Always verify that the return value indicates success before
+  retrieving the computed solution.
+
+  @param[in] dt The time step used advance the solution in time.
+  @param[in] v_guess The initial guess used in by the Newton-Raphson
+  iteration. Typically, the previous time step velocities.
+
+  @throws std::logic_error if `v_guess` is not of size `nv`, the number of
+  generalized velocities specified at construction. */
   TamsiSolverResult SolveWithGuess(
       double dt, const VectorX<T>& v_guess) const;
 
-  /// @anchor retrieving_the_solution
-  /// @name Retrieving the solution
-  /// This methods allow to retrieve the solution stored in the solver after
-  /// the last call to SolveWithGuess().
-  /// @{
+  /**
+  @anchor retrieving_the_solution
+  @name Retrieving the solution
+  This methods allow to retrieve the solution stored in the solver after
+  the last call to SolveWithGuess().
+  @{ */
 
-  /// Returns a constant reference to the most recent  vector of generalized
-  /// friction forces.
+  /**
+  Returns a constant reference to the most recent  vector of generalized
+  friction forces. */
   const VectorX<T>& get_generalized_friction_forces() const {
     return fixed_size_workspace_.mutable_tau_f();
   }
 
-  /// Returns a constant reference to the most recent solution vector for normal
-  /// separation velocities. This method returns an `Eigen::VectorBlock`
-  /// referencing a vector of size `nc`.
+  /**
+  Returns a constant reference to the most recent solution vector for normal
+  separation velocities. This method returns an `Eigen::VectorBlock`
+  referencing a vector of size `nc`. */
   Eigen::VectorBlock<const VectorX<T>> get_normal_velocities() const {
     return variable_size_workspace_.vn();
   }
 
-  /// Returns a constant reference to the most recent vector of generalized
-  /// contact forces, including both friction and normal forces.
+  /**
+  Returns a constant reference to the most recent vector of generalized
+  contact forces, including both friction and normal forces. */
   const VectorX<T>& get_generalized_contact_forces() const {
     return fixed_size_workspace_.mutable_tau();
   }
 
-  /// Returns a constant reference to the most recent vector of tangential
-  /// forces. This method returns an `Eigen::VectorBlock` referencing a vector
-  /// of size `nc`.
+  /**
+  Returns a constant reference to the most recent vector of tangential
+  forces. This method returns an `Eigen::VectorBlock` referencing a vector
+  of size `nc`. */
   Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
     return variable_size_workspace_.vt();
   }
 
-  /// Returns a constant reference to the most recent vector of generalized
-  /// velocities.
+  /**
+  Returns a constant reference to the most recent vector of generalized
+  velocities. */
   const VectorX<T>& get_generalized_velocities() const {
     return fixed_size_workspace_.mutable_v();
   }
 
-  /// Returns a constant reference to the most recent vector of (repulsive)
-  /// forces in the normal direction. That is, the normal force is positive when
-  /// the bodies push each other apart. Otherwise the normal force is zero,
-  /// since contact forces can only be repulsive.
+  /**
+  Returns a constant reference to the most recent vector of (repulsive)
+  forces in the normal direction. That is, the normal force is positive when
+  the bodies push each other apart. Otherwise the normal force is zero,
+  since contact forces can only be repulsive. */
   Eigen::VectorBlock<const VectorX<T>> get_normal_forces() const {
     return variable_size_workspace_.fn();
   }
 
-  /// Returns a constant reference to the most recent vector of friction forces.
-  /// These friction forces are defined in accordance to the tangential
-  /// velocities Jacobian Jₜ as documented in
-  /// @ref tamsi_class_intro "this class's documentation".
+  /**
+  Returns a constant reference to the most recent vector of friction forces.
+  These friction forces are defined in accordance to the tangential
+  velocities Jacobian Jₜ as documented in
+  @ref tamsi_class_intro "this class's documentation". */
   Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
     return variable_size_workspace_.ft();
   }
 
-  /// @}
+  /** @} */
 
-  /// Returns statistics recorded during the last call to SolveWithGuess().
-  /// See IterationStats for details.
+  /**
+  Returns statistics recorded during the last call to SolveWithGuess().
+  See IterationStats for details. */
   const TamsiSolverIterationStats& get_iteration_statistics() const {
     return statistics_;
   }
 
-  /// Returns the current set of parameters controlling the iteration process.
-  /// See Parameters for details.
+  /**
+  Returns the current set of parameters controlling the iteration process.
+  See Parameters for details. */
   const TamsiSolverParameters& get_solver_parameters() const {
     return parameters_;
   }
 
-  /// Sets the parameters to be used by the solver.
-  /// See Parameters for details.
+  /**
+  Sets the parameters to be used by the solver.
+  See Parameters for details. */
   void set_solver_parameters(
       const TamsiSolverParameters& parameters) {
     // cos_theta_max must be updated consistently with the new value of

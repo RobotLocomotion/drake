@@ -12,7 +12,7 @@
 namespace drake {
 namespace pydrake {
 
-/// Binds a TypeSafeIndex instantiation.
+/** Binds a TypeSafeIndex instantiation. */
 template <typename Class>
 auto BindTypeSafeIndex(
     py::module m, const std::string& name, const std::string& class_doc = "") {

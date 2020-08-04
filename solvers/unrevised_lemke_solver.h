@@ -17,22 +17,23 @@
 namespace drake {
 namespace solvers {
 
-/// Non-template class for UnrevisedLemkeSolver<T> constants.
+/** Non-template class for UnrevisedLemkeSolver<T> constants. */
 class UnrevisedLemkeSolverId {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolverId);
   UnrevisedLemkeSolverId() = delete;
 
-  /// @return same as SolverInterface::solver_id()
+  /** @return same as SolverInterface::solver_id() */
   static SolverId id();
 };
 
-/// A class for the Unrevised Implementation of Lemke Algorithm's for solving
-/// Linear Complementarity Problems (LCPs). See MobyLcpSolver for a description
-/// of LCPs. This code makes extensive use of the following document:
-/// [Dai 2018]  Dai, H. and Drumwright, E. Computing the Principal Pivoting
-///     Transform for Solving Linear Complementarity Problems with Lemke's
-///     Algorithm. (2018, located in doc/pivot_column.pdf).
+/**
+A class for the Unrevised Implementation of Lemke Algorithm's for solving
+Linear Complementarity Problems (LCPs). See MobyLcpSolver for a description
+of LCPs. This code makes extensive use of the following document:
+[Dai 2018]  Dai, H. and Drumwright, E. Computing the Principal Pivoting
+    Transform for Solving Linear Complementarity Problems with Lemke's
+    Algorithm. (2018, located in doc/pivot_column.pdf). */
 template <class T>
 class UnrevisedLemkeSolver final : public SolverBase {
  public:
@@ -41,61 +42,65 @@ class UnrevisedLemkeSolver final : public SolverBase {
   UnrevisedLemkeSolver();
   ~UnrevisedLemkeSolver() final;
 
-  /// Calculates the zero tolerance that the solver would compute if the user
-  /// does not specify a tolerance.
+  /**
+  Calculates the zero tolerance that the solver would compute if the user
+  does not specify a tolerance. */
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
         (2 * std::numeric_limits<double>::epsilon());
   }
 
-  /// Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
-  /// w ≥ 0, zᵀw = 0 is satisfied to a given tolerance. If the tolerance is
-  /// non-positive, this method computes a reasonable tolerance using M.
+  /**
+  Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
+  w ≥ 0, zᵀw = 0 is satisfied to a given tolerance. If the tolerance is
+  non-positive, this method computes a reasonable tolerance using M. */
   static bool IsSolution(
       const MatrixX<T>& M, const VectorX<T>& q, const VectorX<T>& z,
       T zero_tol = -1);
 
-  /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
-  /// all strictly semimonotone matrices, all P-matrices, and all strictly
-  /// copositive matrices. The solver can be applied with occasional success to
-  /// problems outside of its guaranteed matrix classes. Lemke's Algorithm is
-  /// described in [Cottle 1992], Section 4.4.
-  ///
-  /// The solver will denote failure on return if it exceeds a problem-size
-  /// dependent number of iterations.
-  /// @param[in] M the LCP matrix.
-  /// @param[in] q the LCP vector.
-  /// @param[in,out] z the solution to the LCP on return (if the solver
-  ///                succeeds). If the length of z is equal to the length of q,
-  ///                the solver will attempt to use the basis from the last
-  ///                solution. This strategy can prove exceptionally
-  ///                fast if solutions differ little between successive calls.
-  ///                If the solver fails (returns `false`),
-  ///                `z` will be set to the zero vector on return.
-  /// @param[out] num_pivots the number of pivots used, on return.
-  /// @param[in] zero_tol The tolerance for testing against zero. If the
-  ///            tolerance is negative (default) the solver will determine a
-  ///            generally reasonable tolerance.
-  /// @returns `true` if the solver computes a solution to floating point
-  ///           tolerances (i.e., if IsSolution() returns `true` on the problem)
-  ///           and `false` otherwise.
-  /// @throws std::logic_error if M is not square or the dimensions of M do not
-  ///         match the length of q.
-  ///
-  /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
-  ///                      Complementarity Problem. Academic Press, 1992.
+  /**
+  Lemke's Algorithm for solving LCPs in the matrix class E, which contains
+  all strictly semimonotone matrices, all P-matrices, and all strictly
+  copositive matrices. The solver can be applied with occasional success to
+  problems outside of its guaranteed matrix classes. Lemke's Algorithm is
+  described in [Cottle 1992], Section 4.4.
+
+  The solver will denote failure on return if it exceeds a problem-size
+  dependent number of iterations.
+  @param[in] M the LCP matrix.
+  @param[in] q the LCP vector.
+  @param[in,out] z the solution to the LCP on return (if the solver
+                 succeeds). If the length of z is equal to the length of q,
+                 the solver will attempt to use the basis from the last
+                 solution. This strategy can prove exceptionally
+                 fast if solutions differ little between successive calls.
+                 If the solver fails (returns `false`),
+                 `z` will be set to the zero vector on return.
+  @param[out] num_pivots the number of pivots used, on return.
+  @param[in] zero_tol The tolerance for testing against zero. If the
+             tolerance is negative (default) the solver will determine a
+             generally reasonable tolerance.
+  @returns `true` if the solver computes a solution to floating point
+            tolerances (i.e., if IsSolution() returns `true` on the problem)
+            and `false` otherwise.
+  @throws std::logic_error if M is not square or the dimensions of M do not
+          match the length of q.
+
+  * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
+                       Complementarity Problem. Academic Press, 1992. */
   bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q,
                      VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
-  /// @name Static versions of the instance methods with similar names.
-  //@{
+  /**
+  @name Static versions of the instance methods with similar names.
+  @{ */
   static SolverId id();
   static bool is_available();
   static bool is_enabled();
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
-  //@}
+  /** @} */
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;

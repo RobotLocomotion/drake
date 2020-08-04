@@ -11,34 +11,37 @@
 namespace drake {
 namespace systems {
 
-/// A continuous- or discrete-time Linear Time-Varying system with system
-/// matrices described by trajectories.
-///
-/// @tparam_nonsymbolic_scalar
-/// @ingroup primitive_systems
+/**
+A continuous- or discrete-time Linear Time-Varying system with system
+matrices described by trajectories.
+
+@tparam_nonsymbolic_scalar
+@ingroup primitive_systems */
 template <typename T>
 class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryLinearSystem)
 
-  /// Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
-  /// structure.
-  ///
-  /// @param time_period Defines the period of the discrete time system; use
-  ///  time_period=0.0 to denote a continuous time system.  @default 0.0
+  /**
+  Constructs a PiecewisePolynomialLinearSystem from a LinearTimeVaryingData
+  structure.
+
+  @param time_period Defines the period of the discrete time system; use
+   time_period=0.0 to denote a continuous time system.  @default 0.0 */
   TrajectoryLinearSystem(const trajectories::Trajectory<double>& A,
                          const trajectories::Trajectory<double>& B,
                          const trajectories::Trajectory<double>& C,
                          const trajectories::Trajectory<double>& D,
                          double time_period = 0.);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit TrajectoryLinearSystem(const TrajectoryLinearSystem<U>& other);
 
-  /// @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
-  /// methods.
-  /// @{
+  /**
+  @name Implementations of PiecewisePolynomialLinearSystem<T>'s pure virtual
+  methods.
+  @{ */
   MatrixX<T> A(const T& t) const final {
     return A_->value(ExtractDoubleOrThrow(t));
   }
@@ -51,7 +54,7 @@ class TrajectoryLinearSystem final : public TimeVaryingLinearSystem<T> {
   MatrixX<T> D(const T& t) const final {
     return D_->value(ExtractDoubleOrThrow(t));
   }
-  /// @}
+  /** @} */
 
  private:
   // Allow different specializations to access each other's private data.

@@ -11,16 +11,17 @@ namespace drake {
 namespace examples {
 namespace bouncing_ball {
 
-/// Dynamical representation of the idealized hybrid dynamics
-/// of a ball dropping from a height and bouncing on a surface.
-///
-/// Inputs: no inputs.
-/// States: vertical position (state index 0) and velocity (state index 1) in
-/// units of m and m/s, respectively.
-/// Outputs: vertical position (state index 0) and velocity (state index 1) in
-/// units of m and m/s, respectively.
-///
-/// @tparam_default_scalar
+/**
+Dynamical representation of the idealized hybrid dynamics
+of a ball dropping from a height and bouncing on a surface.
+
+Inputs: no inputs.
+States: vertical position (state index 0) and velocity (state index 1) in
+units of m and m/s, respectively.
+Outputs: vertical position (state index 0) and velocity (state index 1) in
+units of m and m/s, respectively.
+
+@tparam_default_scalar */
 template <typename T>
 class BouncingBall final : public systems::LeafSystem<T> {
  public:
@@ -43,15 +44,16 @@ class BouncingBall final : public systems::LeafSystem<T> {
         systems::UnrestrictedUpdateEvent<T>());
   }
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit BouncingBall(const BouncingBall<U>&) : BouncingBall<T>() {}
 
-  /// Gets the signed acceleration due to gravity. Since initial positions
-  /// correspond to heights, acceleration should be negative.
+  /**
+  Gets the signed acceleration due to gravity. Since initial positions
+  correspond to heights, acceleration should be negative. */
   double get_gravitational_acceleration() const { return -9.81; }
 
-  /// Getter for the coefficient of restitution for this model.
+  /** Getter for the coefficient of restitution for this model. */
   double get_restitution_coef() const { return restitution_coef_; }
 
  private:

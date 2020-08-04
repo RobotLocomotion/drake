@@ -9,50 +9,50 @@
 namespace drake {
 namespace geometry {
 
-/** %MeshField is an abstract class that represents a field variable defined
-  on a mesh M. It can evaluate the field value at any location on any element
-  of the mesh.
+/**
+%MeshField is an abstract class that represents a field variable defined
+on a mesh M. It can evaluate the field value at any location on any element
+of the mesh.
 
-  @tparam FieldValue  a valid Eigen scalar or Vector of Eigen scalar for
-                     the field value.
-  @tparam MeshType   the type of the mesh: SurfaceMesh or VolumeMesh.
-*/
+@tparam FieldValue  a valid Eigen scalar or Vector of Eigen scalar for
+                   the field value.
+@tparam MeshType   the type of the mesh: SurfaceMesh or VolumeMesh. */
 template <class FieldValue, class MeshType>
 // TODO(DamrongGuoy): Consider making the fact that MeshType is templated on
 //  a scalar type explicit here for some additional error checking.
 class MeshField {
  public:
   virtual ~MeshField() = default;
-  /** Evaluates the field value at a vertex.
-   @param v The index of the vertex.
-   */
+  /**
+  Evaluates the field value at a vertex.
+  @param v The index of the vertex. */
   virtual FieldValue EvaluateAtVertex(
       typename MeshType::VertexIndex e) const = 0;
 
-  /** Evaluates the field value at a location on an element.
-   @param e The index of the element.
-   @param b The barycentric coordinates.
-   */
+  /**
+  Evaluates the field value at a location on an element.
+  @param e The index of the element.
+  @param b The barycentric coordinates. */
   virtual FieldValue Evaluate(
       typename MeshType::ElementIndex e,
       const typename MeshType::Barycentric& b) const = 0;
 
-  /** Evaluates the field at a point Qp on an element. If the element is a
-   tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
-   projection of Q on the triangle's plane.
-   @param e The index of the element.
-   @param p_MQ The position of point Q expressed in frame M, in Cartesian
-               coordinates. M is the frame of the mesh.
-   */
+  /**
+  Evaluates the field at a point Qp on an element. If the element is a
+  tetrahedron, Qp is the input point Q. If the element is a triangle, Qp is the
+  projection of Q on the triangle's plane.
+  @param e The index of the element.
+  @param p_MQ The position of point Q expressed in frame M, in Cartesian
+              coordinates. M is the frame of the mesh. */
   virtual FieldValue EvaluateCartesian(
       typename MeshType::ElementIndex e,
       const typename MeshType::Cartesian& p_MQ) const = 0;
 
-  /** Copy to a new %MeshField and set the new %MeshField to use a new
-   compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
-   does not own the mesh. In fact, several %MeshField objects can use the same
-   mesh.
-   */
+  /**
+  Copy to a new %MeshField and set the new %MeshField to use a new
+  compatible mesh. %MeshField needs a mesh to operate; however, %MeshField
+  does not own the mesh. In fact, several %MeshField objects can use the same
+  mesh. */
   [[nodiscard]] std::unique_ptr<MeshField> CloneAndSetMesh(
       const MeshType* new_mesh) const {
     DRAKE_DEMAND(new_mesh != nullptr);
@@ -76,9 +76,9 @@ class MeshField {
   [[nodiscard]] std::unique_ptr<MeshField> CloneWithNullMesh() const {
     return DoCloneWithNullMesh();
   }
-  /** Derived classes must implement this method to clone themselves given
-   that the pointer to the mesh is null.
-   */
+  /**
+  Derived classes must implement this method to clone themselves given
+  that the pointer to the mesh is null. */
   [[nodiscard]] virtual std::unique_ptr<MeshField> DoCloneWithNullMesh()
       const = 0;
 
@@ -89,10 +89,9 @@ class MeshField {
 };
 
 /**
- @tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
-                     the field value.
- @tparam T  a valid Eigen scalar for coordinates.
- */
+@tparam FieldValue  a valid Eigen scalar or vector of valid Eigen scalars for
+                    the field value.
+@tparam T  a valid Eigen scalar for coordinates. */
 template <typename FieldValue, typename T>
 using SurfaceMeshField = MeshField<FieldValue, SurfaceMesh<T>>;
 

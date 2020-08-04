@@ -20,32 +20,33 @@
 namespace drake {
 namespace symbolic {
 
-/** Implements Graded reverse lexicographic order.
- *
- * @tparam VariableOrder VariableOrder{}(v1, v2) is true if v1 < v2.
- *
- * We first compare the total degree of the monomial; if there is a tie, then we
- * use the lexicographical order as the tie breaker, but a monomial with higher
- * order in lexicographical order is considered lower order in graded reverse
- * lexicographical order.
- *
- * Take MonomialBasis({x, y, z}, 2) as an example, with the order x > y > z. To
- * get the graded reverse lexicographical order, we take the following steps:
- *
- * First find all the monomials using the total degree. The monomials with
- * degree 2 are {x^2, y^2, z^2, xy, xz, yz}. The monomials with degree 1 are {x,
- * y, z}, and the monomials with degree 0 is {1}. To break the tie between
- * monomials with the same total degree, first sort them in the reverse
- * lexicographical order, namely x < y < z in the reverse lexicographical
- * order. The lexicographical order compares two monomial by first comparing the
- * exponent of the largest variable, if there is a tie then go forth to the
- * second largest variable. Thus z^2 > zy >zx > y^2 > yx > x^2. Finally reverse
- * the order as x^2 > xy > y^2 > xz > yz > z^2.
- *
- * There is an introduction to monomial order in
- * https://en.wikipedia.org/wiki/Monomial_order, and an introduction to graded
- * reverse lexicographical order in
- * https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order
+/**
+Implements Graded reverse lexicographic order.
+
+@tparam VariableOrder VariableOrder{}(v1, v2) is true if v1 < v2.
+
+We first compare the total degree of the monomial; if there is a tie, then we
+use the lexicographical order as the tie breaker, but a monomial with higher
+order in lexicographical order is considered lower order in graded reverse
+lexicographical order.
+
+Take MonomialBasis({x, y, z}, 2) as an example, with the order x > y > z. To
+get the graded reverse lexicographical order, we take the following steps:
+
+First find all the monomials using the total degree. The monomials with
+degree 2 are {x^2, y^2, z^2, xy, xz, yz}. The monomials with degree 1 are {x,
+y, z}, and the monomials with degree 0 is {1}. To break the tie between
+monomials with the same total degree, first sort them in the reverse
+lexicographical order, namely x < y < z in the reverse lexicographical
+order. The lexicographical order compares two monomial by first comparing the
+exponent of the largest variable, if there is a tie then go forth to the
+second largest variable. Thus z^2 > zy >zx > y^2 > yx > x^2. Finally reverse
+the order as x^2 > xy > y^2 > xz > yz > z^2.
+
+There is an introduction to monomial order in
+https://en.wikipedia.org/wiki/Monomial_order, and an introduction to graded
+reverse lexicographical order in
+https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order
  */
 template <typename VariableOrder>
 struct GradedReverseLexOrder {
@@ -96,11 +97,11 @@ struct GradedReverseLexOrder {
 };
 
 namespace internal {
-/** Generates [b * m for m in MonomialBasis(vars, degree)] and push them to
- * bin. Used as a helper function to implement MonomialBasis.
- *
- * @tparam MonomialOrder provides a monomial ordering.
- */
+/**
+Generates [b * m for m in MonomialBasis(vars, degree)] and push them to
+bin. Used as a helper function to implement MonomialBasis.
+
+@tparam MonomialOrder provides a monomial ordering. */
 template <typename MonomialOrder>
 void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
                            std::set<Monomial, MonomialOrder>* const bin) {
@@ -126,15 +127,15 @@ enum class DegreeType {
   kAny,   ///< Any degree
 };
 
-/** Returns all monomials up to a given degree under the graded reverse
- * lexicographic order. This is called by MonomialBasis functions defined below.
- *
- * @tparam rows Number of rows or Dynamic
- * @param degree_type If degree_type is kAny, then the monomials' degrees are no
- * larger than @p degree. If degree_type is kEven, then the monomial's degrees
- * are even numbers no larger than @p degree. If degree_type is kOdd, then the
- * monomial degrees are odd numbers no larger than @p degree.
- */
+/**
+Returns all monomials up to a given degree under the graded reverse
+lexicographic order. This is called by MonomialBasis functions defined below.
+
+@tparam rows Number of rows or Dynamic
+@param degree_type If degree_type is kAny, then the monomials' degrees are no
+larger than @p degree. If degree_type is kEven, then the monomial's degrees
+are even numbers no larger than @p degree. If degree_type is kOdd, then the
+monomial degrees are odd numbers no larger than @p degree. */
 template <int rows>
 Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(
     const Variables& vars, int degree,
@@ -177,15 +178,15 @@ Eigen::Matrix<Monomial, rows, 1> ComputeMonomialBasis(
 }
 }  // namespace internal
 
-/** Returns all monomials up to a given degree under the graded reverse
- * lexicographic order. Note that graded reverse lexicographic order uses the
- * total order among Variable which is based on a variable's unique ID. For
- * example, for a given variable ordering x > y > z, `MonomialBasis({x, y, z},
- * 2)` returns a column vector `[x^2, xy, y^2, xz, yz, z^2, x, y, z, 1]`.
- *
- * @pre @p vars is a non-empty set.
- * @pre @p degree is a non-negative integer.
- */
+/**
+Returns all monomials up to a given degree under the graded reverse
+lexicographic order. Note that graded reverse lexicographic order uses the
+total order among Variable which is based on a variable's unique ID. For
+example, for a given variable ordering x > y > z, `MonomialBasis({x, y, z},
+2)` returns a column vector `[x^2, xy, y^2, xz, yz, z^2, x, y, z, 1]`.
+
+@pre @p vars is a non-empty set.
+@pre @p degree is a non-negative integer. */
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> MonomialBasis(const Variables& vars,
                                                          int degree);
 
@@ -196,15 +197,15 @@ constexpr int NChooseK(int n, int k) {
   return (k == 0) ? 1 : (n * NChooseK(n - 1, k - 1)) / k;
 }
 
-/** Returns all monomials up to a given degree under the graded reverse
- * lexicographic order.
- *
- * @tparam n      number of variables.
- * @tparam degree maximum total degree of monomials to compute.
- *
- * @pre @p vars is a non-empty set.
- * @pre vars.size() == @p n.
- */
+/**
+Returns all monomials up to a given degree under the graded reverse
+lexicographic order.
+
+@tparam n      number of variables.
+@tparam degree maximum total degree of monomials to compute.
+
+@pre @p vars is a non-empty set.
+@pre vars.size() == @p n. */
 template <int n, int degree>
 Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
     const Variables& vars) {
@@ -215,32 +216,32 @@ Eigen::Matrix<Monomial, NChooseK(n + degree, degree), 1> MonomialBasis(
                                                                       degree);
 }
 
-/** Returns all even degree monomials up to a given degree under the graded
- * reverse lexicographic order. A monomial has an even degree if its total
- * degree is even. So xy is an even degree monomial (degree 2) while x²y is not
- * (degree 3). Note that graded reverse lexicographic order uses the total order
- * among Variable which is based on a variable's unique ID. For example, for a
- * given variable ordering x > y > z, `EvenDegreeMonomialBasis({x, y, z}, 2)`
- * returns a column vector `[x², xy, y², xz, yz, z², 1]`.
- *
- * @pre @p vars is a non-empty set.
- * @pre @p degree is a non-negative integer.
- */
+/**
+Returns all even degree monomials up to a given degree under the graded
+reverse lexicographic order. A monomial has an even degree if its total
+degree is even. So xy is an even degree monomial (degree 2) while x²y is not
+(degree 3). Note that graded reverse lexicographic order uses the total order
+among Variable which is based on a variable's unique ID. For example, for a
+given variable ordering x > y > z, `EvenDegreeMonomialBasis({x, y, z}, 2)`
+returns a column vector `[x², xy, y², xz, yz, z², 1]`.
+
+@pre @p vars is a non-empty set.
+@pre @p degree is a non-negative integer. */
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> EvenDegreeMonomialBasis(
     const Variables& vars, int degree);
 
-/** Returns all odd degree monomials up to a given degree under the graded
- * reverse lexicographic order. A monomial has an odd degree if its total
- * degree is odd. So x²y is an odd degree monomial (degree 3) while xy is not
- * (degree 2). Note that graded reverse lexicographic order uses the total order
- * among Variable which is based on a variable's unique ID. For example, for a
- * given variable ordering x > y > z, `OddDegreeMonomialBasis({x, y, z}, 3)`
- * returns a column vector `[x³, x²y, xy², y³, x²z, xyz, y²z, xz², yz², z³, x,
- * y, z]`
- *
- * @pre @p vars is a non-empty set.
- * @pre @p degree is a non-negative integer.
- */
+/**
+Returns all odd degree monomials up to a given degree under the graded
+reverse lexicographic order. A monomial has an odd degree if its total
+degree is odd. So x²y is an odd degree monomial (degree 3) while xy is not
+(degree 2). Note that graded reverse lexicographic order uses the total order
+among Variable which is based on a variable's unique ID. For example, for a
+given variable ordering x > y > z, `OddDegreeMonomialBasis({x, y, z}, 3)`
+returns a column vector `[x³, x²y, xy², y³, x²z, xyz, y²z, xz², yz², z³, x,
+y, z]`
+
+@pre @p vars is a non-empty set.
+@pre @p degree is a non-negative integer. */
 Eigen::Matrix<Monomial, Eigen::Dynamic, 1> OddDegreeMonomialBasis(
     const Variables& vars, int degree);
 

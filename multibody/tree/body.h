@@ -18,50 +18,51 @@
 namespace drake {
 namespace multibody {
 
-/// @cond
+/** @cond */
 // Helper macro to throw an exception within methods that should not be called
 // pre-finalize.
 #define DRAKE_BODY_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
-/// @endcond
+/** @endcond */
 
 // Forward declaration for BodyFrame<T>.
 template<typename T> class Body;
 
-/// A %BodyFrame is a material Frame that serves as the unique reference frame
-/// for a Body.
-///
-/// Each Body B, regardless of whether it represents a rigid body or a
-/// flexible body, has a unique body frame for which we use the same symbol B
-/// (with meaning clear from context). The body frame is also referred to as
-/// a _reference frame_ in the literature for flexible body mechanics modeling
-/// using the Finite Element Method. All properties of a body are defined with
-/// respect to its body frame, including its mass properties and attachment
-/// locations for joints, constraints, actuators, geometry and so on. Run time
-/// motion of the body is defined with respect to the motion of its body frame.
-/// We represent a body frame by a %BodyFrame object that is created whenever a
-/// Body is constructed and is owned by the Body.
-///
-/// Note that the %BodyFrame associated with
-/// a body does not necessarily need to be located at its center of mass nor
-/// does it need to be aligned with the body's principal axes, although, in
-/// practice, it frequently is.
-/// For flexible bodies, %BodyFrame provides a representation for the body's
-/// reference frame. The flexible degrees of freedom associated with a flexible
-/// body describe the body's deformation in this frame. Therefore, the motion of
-/// a flexible body is defined by the motion of its %BodyFrame, or reference
-/// frame, plus the motion of the material points on the body with respect to
-/// its %BodyFrame.
-///
-/// A %BodyFrame and Body are tightly coupled concepts; neither makes sense
-/// without the other. Therefore, a %BodyFrame instance is constructed in
-/// conjunction with its Body and cannot be
-/// constructed anywhere else. However, you can still access the frame
-/// associated with a body, see Body::body_frame().
-/// This access is more than a convenience; you can use the %BodyFrame to
-/// define other frames on the body and to attach other multibody elements
-/// to it.
-///
-/// @tparam_default_scalar
+/**
+A %BodyFrame is a material Frame that serves as the unique reference frame
+for a Body.
+
+Each Body B, regardless of whether it represents a rigid body or a
+flexible body, has a unique body frame for which we use the same symbol B
+(with meaning clear from context). The body frame is also referred to as
+a _reference frame_ in the literature for flexible body mechanics modeling
+using the Finite Element Method. All properties of a body are defined with
+respect to its body frame, including its mass properties and attachment
+locations for joints, constraints, actuators, geometry and so on. Run time
+motion of the body is defined with respect to the motion of its body frame.
+We represent a body frame by a %BodyFrame object that is created whenever a
+Body is constructed and is owned by the Body.
+
+Note that the %BodyFrame associated with
+a body does not necessarily need to be located at its center of mass nor
+does it need to be aligned with the body's principal axes, although, in
+practice, it frequently is.
+For flexible bodies, %BodyFrame provides a representation for the body's
+reference frame. The flexible degrees of freedom associated with a flexible
+body describe the body's deformation in this frame. Therefore, the motion of
+a flexible body is defined by the motion of its %BodyFrame, or reference
+frame, plus the motion of the material points on the body with respect to
+its %BodyFrame.
+
+A %BodyFrame and Body are tightly coupled concepts; neither makes sense
+without the other. Therefore, a %BodyFrame instance is constructed in
+conjunction with its Body and cannot be
+constructed anywhere else. However, you can still access the frame
+associated with a body, see Body::body_frame().
+This access is more than a convenience; you can use the %BodyFrame to
+define other frames on the body and to attach other multibody elements
+to it.
+
+@tparam_default_scalar */
 template <typename T>
 class BodyFrame final : public Frame<T> {
  public:
@@ -141,7 +142,7 @@ class BodyFrame final : public Frame<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
-/// @cond
+/** @cond */
 // Internal implementation details. Users should not access implementations
 // in this namespace.
 namespace internal {
@@ -165,148 +166,163 @@ class BodyAttorney {
   friend class internal::MultibodyTree<T>;
 };
 }  // namespace internal
-/// @endcond
+/** @endcond */
 
-/// %Body provides the general abstraction of a body with an API that
-/// makes no assumption about whether a body is rigid or deformable and neither
-/// does it make any assumptions about the underlying physical model or
-/// approximation.
-/// As an element or component of a MultibodyTree, a body is a
-/// MultibodyElement, and therefore it has a unique index of type BodyIndex
-/// within the multibody tree it belongs to.
-///
-/// A %Body contains a unique BodyFrame; see BodyFrame class documentation for
-/// more information.
-///
-/// @tparam_default_scalar
+/**
+%Body provides the general abstraction of a body with an API that
+makes no assumption about whether a body is rigid or deformable and neither
+does it make any assumptions about the underlying physical model or
+approximation.
+As an element or component of a MultibodyTree, a body is a
+MultibodyElement, and therefore it has a unique index of type BodyIndex
+within the multibody tree it belongs to.
+
+A %Body contains a unique BodyFrame; see BodyFrame class documentation for
+more information.
+
+@tparam_default_scalar */
 template <typename T>
 class Body : public MultibodyElement<Body, T, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /// Creates a %Body named `name` in model instance `model_instance`
-  /// with a given `default_mass` and a BodyFrame associated with it.
+  /**
+  Creates a %Body named `name` in model instance `model_instance`
+  with a given `default_mass` and a BodyFrame associated with it. */
   Body(const std::string& name, ModelInstanceIndex model_instance,
        double default_mass)
       : MultibodyElement<Body, T, BodyIndex>(model_instance),
         name_(name),
         body_frame_(*this), default_mass_(default_mass) {}
 
-  /// Gets the `name` associated with `this` body.
+  /** Gets the `name` associated with `this` body. */
   const std::string& name() const { return name_; }
 
-  /// Returns the number of generalized positions q describing flexible
-  /// deformations for this body. A rigid body will therefore return zero.
+  /**
+  Returns the number of generalized positions q describing flexible
+  deformations for this body. A rigid body will therefore return zero. */
   virtual int get_num_flexible_positions() const = 0;
 
-  /// Returns the number of generalized velocities v describing flexible
-  /// deformations for this body. A rigid body will therefore return zero.
+  /**
+  Returns the number of generalized velocities v describing flexible
+  deformations for this body. A rigid body will therefore return zero. */
   virtual int get_num_flexible_velocities() const = 0;
 
-  /// Returns a const reference to the associated BodyFrame.
+  /** Returns a const reference to the associated BodyFrame. */
   const BodyFrame<T>& body_frame() const {
     return body_frame_;
   }
 
-  /// (Advanced) Returns the index of the node in the underlying tree structure
-  /// of the parent MultibodyTree to which this body belongs.
+  /**
+  (Advanced) Returns the index of the node in the underlying tree structure
+  of the parent MultibodyTree to which this body belongs. */
   internal::BodyNodeIndex node_index() const {
     return topology_.body_node;
   }
 
-  /// (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
-  /// @note A floating body is not necessarily modeled with a quaternion
-  /// mobilizer, see has_quaternion_dofs(). Alternative options include a space
-  /// XYZ parametrization of rotations, see SpaceXYZMobilizer.
-  /// @throws std::exception if called pre-finalize, see
-  /// MultibodyPlant::Finalize().
+  /**
+  (Advanced) Returns `true` if `this` body is granted 6-dofs by a Mobilizer.
+  @note A floating body is not necessarily modeled with a quaternion
+  mobilizer, see has_quaternion_dofs(). Alternative options include a space
+  XYZ parametrization of rotations, see SpaceXYZMobilizer.
+  @throws std::exception if called pre-finalize, see
+  MultibodyPlant::Finalize(). */
   bool is_floating() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     return topology_.is_floating;
   }
 
-  /// (Advanced) If `true`, this body is a floating body modeled with a
-  /// quaternion floating mobilizer. By implication, is_floating() is also
-  /// `true`.
-  /// @see floating_positions_start(), floating_velocities_start().
-  /// @throws std::exception if called pre-finalize, see
-  /// MultibodyPlant::Finalize().
+  /**
+  (Advanced) If `true`, this body is a floating body modeled with a
+  quaternion floating mobilizer. By implication, is_floating() is also
+  `true`.
+  @see floating_positions_start(), floating_velocities_start().
+  @throws std::exception if called pre-finalize, see
+  MultibodyPlant::Finalize(). */
   bool has_quaternion_dofs() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     return topology_.has_quaternion_dofs;
   }
 
-  /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of the first generalized position in the state vector for a
-  /// MultibodyPlant model.
-  /// Positions for this body are then contiguous starting at this index.
-  /// When a floating body is modeled with a quaternion mobilizer (see
-  /// has_quaternion_dofs()), the four consecutive entries in the state starting
-  /// at this index correspond to the quaternion that parametrizes this body's
-  /// orientation.
-  /// @throws std::exception if called pre-finalize, see
-  /// MultibodyPlant::Finalize().
+  /**
+  (Advanced) For floating bodies (see is_floating()) this method returns the
+  index of the first generalized position in the state vector for a
+  MultibodyPlant model.
+  Positions for this body are then contiguous starting at this index.
+  When a floating body is modeled with a quaternion mobilizer (see
+  has_quaternion_dofs()), the four consecutive entries in the state starting
+  at this index correspond to the quaternion that parametrizes this body's
+  orientation.
+  @throws std::exception if called pre-finalize, see
+  MultibodyPlant::Finalize(). */
   int floating_positions_start() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     return topology_.floating_positions_start;
   }
 
-  /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of the first generalized velocity in the state vector for a
-  /// MultibodyPlant model.
-  /// Velocities for this body are then contiguous starting at this index.
-  /// @throws std::exception if called pre-finalize, see
-  /// MultibodyPlant::Finalize().
+  /**
+  (Advanced) For floating bodies (see is_floating()) this method returns the
+  index of the first generalized velocity in the state vector for a
+  MultibodyPlant model.
+  Velocities for this body are then contiguous starting at this index.
+  @throws std::exception if called pre-finalize, see
+  MultibodyPlant::Finalize(). */
   int floating_velocities_start() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     return topology_.floating_velocities_start;
   }
 
-  /// Returns the default mass (not Context dependent) for `this` body.
-  /// In general, the mass for a body can be a parameter of the model that can
-  /// be retrieved with the method get_mass(). When the mass of a body is a
-  /// parameter, the value returned by get_default_mass() is used to initialize
-  /// the mass parameter in the context.
+  /**
+  Returns the default mass (not Context dependent) for `this` body.
+  In general, the mass for a body can be a parameter of the model that can
+  be retrieved with the method get_mass(). When the mass of a body is a
+  parameter, the value returned by get_default_mass() is used to initialize
+  the mass parameter in the context. */
   double get_default_mass() const { return default_mass_; }
 
-  /// (Advanced) Returns the mass of this body stored in `context`.
+  /** (Advanced) Returns the mass of this body stored in `context`. */
   virtual T get_mass(
       const systems::Context<T> &context)const = 0;
 
-  /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
-  /// of this body measured from this body's frame origin `Bo` and expressed in
-  /// the body frame B.
+  /**
+  (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
+  of this body measured from this body's frame origin `Bo` and expressed in
+  the body frame B. */
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
-  /// frame origin `Bo` (not necessarily its center of mass) and expressed in
-  /// its body frame `B`.
-  /// In general, the spatial inertia of a body is a function of state.
-  /// Consider for instance the case of a flexible body for which its spatial
-  /// inertia in the body frame depends on the generalized coordinates
-  /// describing its state of deformation. As a particular case, the spatial
-  /// inertia of a RigidBody in its body frame is constant.
+  /**
+  (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
+  frame origin `Bo` (not necessarily its center of mass) and expressed in
+  its body frame `B`.
+  In general, the spatial inertia of a body is a function of state.
+  Consider for instance the case of a flexible body for which its spatial
+  inertia in the body frame depends on the generalized coordinates
+  describing its state of deformation. As a particular case, the spatial
+  inertia of a RigidBody in its body frame is constant. */
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
-  /// Returns the pose `X_WB` of this body B in the world frame W as a function
-  /// of the state of the model stored in `context`.
+  /**
+  Returns the pose `X_WB` of this body B in the world frame W as a function
+  of the state of the model stored in `context`. */
   const math::RigidTransform<T>& EvalPoseInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
   }
 
-  /// Returns the spatial velocity `V_WB` of this body B in the world frame W
-  /// as a function of the state of the model stored in `context`.
+  /**
+  Returns the spatial velocity `V_WB` of this body B in the world frame W
+  as a function of the state of the model stored in `context`. */
   const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
         context, *this);
   }
 
-  /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
-  /// applied at body B's origin Bo and expressed in world world frame W.
+  /**
+  Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
+  applied at body B's origin Bo and expressed in world world frame W. */
   const SpatialForce<T>& GetForceInWorld(
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {
     DRAKE_THROW_UNLESS(
@@ -314,8 +330,9 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     return forces.body_forces()[node_index()];
   }
 
-  /// Adds the spatial force on `this` body B, applied at body B's origin Bo and
-  /// expressed in the world frame W into `forces`.
+  /**
+  Adds the spatial force on `this` body B, applied at body B's origin Bo and
+  expressed in the world frame W into `forces`. */
   void AddInForceInWorld(const systems::Context<T>&,
                          const SpatialForce<T>& F_Bo_W,
                          MultibodyForces<T>* forces) const {
@@ -325,21 +342,22 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     forces->mutable_body_forces()[node_index()] += F_Bo_W;
   }
 
-  /// Adds the spatial force on `this` body B, applied at point P and
-  /// expressed in a frame E into `forces`.
-  /// @param[in] context
-  ///   The context containing the current state of the model.
-  /// @param[in] p_BP_E
-  ///   The position of point P in B, expressed in a frame E.
-  /// @param[in] F_Bp_E
-  ///   The spatial force to be applied on body B at point P, expressed in
-  ///   frame E.
-  /// @param[in] frame_E
-  ///   The expressed-in frame E.
-  /// @param[out] forces
-  ///   A multibody forces objects that on output will have `F_Bp_E` added.
-  /// @throws std::exception if `forces` is nullptr or if it is not consistent
-  /// with the model to which `this` body belongs.
+  /**
+  Adds the spatial force on `this` body B, applied at point P and
+  expressed in a frame E into `forces`.
+  @param[in] context
+    The context containing the current state of the model.
+  @param[in] p_BP_E
+    The position of point P in B, expressed in a frame E.
+  @param[in] F_Bp_E
+    The spatial force to be applied on body B at point P, expressed in
+    frame E.
+  @param[in] frame_E
+    The expressed-in frame E.
+  @param[out] forces
+    A multibody forces objects that on output will have `F_Bp_E` added.
+  @throws std::exception if `forces` is nullptr or if it is not consistent
+  with the model to which `this` body belongs. */
   void AddInForce(
       const systems::Context<T>& context,
       const Vector3<T>& p_BP_E, const SpatialForce<T>& F_Bp_E,
@@ -354,12 +372,13 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
     AddInForceInWorld(context, F_Bo_W, forces);
   }
 
-  /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
-  /// type of the new clone to be created. This method is mostly intended to be
-  /// called by MultibodyTree::CloneToScalar(). Most users should not call this
-  /// clone method directly but rather clone the entire parent MultibodyTree if
-  /// needed.
-  /// @sa MultibodyTree::CloneToScalar()
+  /**
+  NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
+  type of the new clone to be created. This method is mostly intended to be
+  called by MultibodyTree::CloneToScalar(). Most users should not call this
+  clone method directly but rather clone the entire parent MultibodyTree if
+  needed.
+  @sa MultibodyTree::CloneToScalar() */
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> CloneToScalar(
   const internal::MultibodyTree<ToScalar>& tree_clone) const {
@@ -367,34 +386,35 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   }
 
  protected:
-  /// @name Methods to make a clone templated on different scalar types.
-  ///
-  /// These methods are meant to be called by MultibodyTree::CloneToScalar()
-  /// when making a clone of the entire tree or a new instance templated on a
-  /// different scalar type. The only const argument to these methods is the
-  /// new MultibodyTree clone under construction. Specific %Body subclasses
-  /// might specify a number of prerequisites on the cloned tree and therefore
-  /// require it to be at a given state of cloning (for instance requiring that
-  /// the cloned tree already contains all the frames in the world as in the
-  /// original tree.) See MultibodyTree::CloneToScalar() for a list of
-  /// prerequisites that are guaranteed to be satisfied during the cloning
-  /// process.
-  ///
-  /// @{
+  /**
+  @name Methods to make a clone templated on different scalar types.
 
-  /// Clones this %Body (templated on T) to a body templated on `double`.
+  These methods are meant to be called by MultibodyTree::CloneToScalar()
+  when making a clone of the entire tree or a new instance templated on a
+  different scalar type. The only const argument to these methods is the
+  new MultibodyTree clone under construction. Specific %Body subclasses
+  might specify a number of prerequisites on the cloned tree and therefore
+  require it to be at a given state of cloning (for instance requiring that
+  the cloned tree already contains all the frames in the world as in the
+  original tree.) See MultibodyTree::CloneToScalar() for a list of
+  prerequisites that are guaranteed to be satisfied during the cloning
+  process.
+
+  @{ */
+
+  /** Clones this %Body (templated on T) to a body templated on `double`. */
   virtual std::unique_ptr<Body<double>> DoCloneToScalar(
       const internal::MultibodyTree<double>& tree_clone) const = 0;
 
-  /// Clones this %Body (templated on T) to a body templated on AutoDiffXd.
+  /** Clones this %Body (templated on T) to a body templated on AutoDiffXd. */
   virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
-  /// Clones this %Body (templated on T) to a body templated on Expression.
+  /** Clones this %Body (templated on T) to a body templated on Expression. */
   virtual std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
 
-  /// @}
+  /** @} */
 
  private:
   // Only friends of BodyAttorney (i.e. MultibodyTree) have access to a selected
@@ -445,13 +465,13 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   internal::BodyTopology topology_;
 };
 
-/// @cond
+/** @cond */
 // Undef macros defined at the top of the file. From the GSG:
 // "Exporting macros from headers (i.e. defining them in a header without
 // #undefing them before the end of the header) is extremely strongly
 // discouraged."
 #undef DRAKE_BODY_THROW_IF_NOT_FINALIZED
-/// @endcond
+/** @endcond */
 
 }  // namespace multibody
 }  // namespace drake

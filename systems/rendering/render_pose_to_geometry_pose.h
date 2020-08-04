@@ -8,9 +8,10 @@ namespace drake {
 namespace systems {
 namespace rendering {
 
-/// A direct-feedthrough system that converts the C++ type of poses from
-/// rendering::PoseVector<T> on the input to geometry::FramePoseVector<T>
-/// on the output.
+/**
+A direct-feedthrough system that converts the C++ type of poses from
+rendering::PoseVector<T> on the input to geometry::FramePoseVector<T>
+on the output. */
 template <typename T>
 class RenderPoseToGeometryPose final : public LeafSystem<T> {
  public:
@@ -18,18 +19,18 @@ class RenderPoseToGeometryPose final : public LeafSystem<T> {
 
   RenderPoseToGeometryPose(geometry::SourceId, geometry::FrameId);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit RenderPoseToGeometryPose(const RenderPoseToGeometryPose<U>&);
 
   ~RenderPoseToGeometryPose() override;
 
-  /// Returns the rendering::PoseVector input port.
+  /** Returns the rendering::PoseVector input port. */
   const InputPort<T>& get_input_port() const {
     return LeafSystem<T>::get_input_port(0);
   }
 
-  /// Returns the geometry::FramePoseVector output port.
+  /** Returns the geometry::FramePoseVector output port. */
   const OutputPort<T>& get_output_port() const {
     return LeafSystem<T>::get_output_port(0);
   }

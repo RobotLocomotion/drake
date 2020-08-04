@@ -8,7 +8,8 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/** Compare the result between Eval<double>() and Eval<AutoDiffXd>(). Also
+/**
+Compare the result between Eval<double>() and Eval<AutoDiffXd>(). Also
 compare the gradient in Eval<AutoDiffXd>() with a finite difference
 approximation.
 @param constraint The constraint object to test.
@@ -16,8 +17,7 @@ approximation.
 @param tol Tolerance on the comparison of the results from Eval<double>() and
 Eval<AutoDiffXd>(). The tolerance on the comparison between the autodiff
 gradient and the finite difference approximation is sqrt(tolerance) to account
-for approximation error.
-*/
+for approximation error. */
 void CheckConstraintEvalNonsymbolic(
     const Constraint& constraint,
     const Eigen::Ref<const AutoDiffVecXd>& x_autodiff, double tol);

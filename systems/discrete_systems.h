@@ -7,7 +7,8 @@ namespace systems {
 // TODO(sherm1) When PR #10132 lands, beautify this example and use SignalLogger
 // for output rather than std::cout.
 
-/** @addtogroup discrete_systems
+/**
+@addtogroup discrete_systems
 @brief This page describes discrete systems modeled by difference equations
 (contrast to continuous systems modeled by ordinary differential equations)
 as well as considerations for implementing these systems in Drake.
@@ -219,8 +220,7 @@ followed by continuous time and state advancement.
 
 @see drake::systems::Simulator for more details.
 
-@ingroup systems
-*/
+@ingroup systems */
 
 }  // namespace systems
 }  // namespace drake

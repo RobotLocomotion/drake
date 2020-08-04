@@ -11,17 +11,16 @@
 namespace drake {
 
 /**
- * Provides thread-safe, global-safe access to a shared resource. When
- * all references are gone, the resource will be freed due to using a weak_ptr.
- * @tparam T Class of the resource. Must be default-constructible.
- * @tparam Unique Optional class, meant to make a unique specialization, such
- * that you can have multiple singletons of T if necessary.
- *
- * @note An example application is obtaining license for multiple disjoint
- * solver objects, where acquiring a license requires network communication,
- * and the solver is under an interface where you cannot explicitly pass the
- * license resource to the solver without violating encapsulation.
- */
+Provides thread-safe, global-safe access to a shared resource. When
+all references are gone, the resource will be freed due to using a weak_ptr.
+@tparam T Class of the resource. Must be default-constructible.
+@tparam Unique Optional class, meant to make a unique specialization, such
+that you can have multiple singletons of T if necessary.
+
+@note An example application is obtaining license for multiple disjoint
+solver objects, where acquiring a license requires network communication,
+and the solver is under an interface where you cannot explicitly pass the
+license resource to the solver without violating encapsulation. */
 template <typename T, typename Unique = void>
 std::shared_ptr<T> GetScopedSingleton() {
   // Confine implementation to a class.

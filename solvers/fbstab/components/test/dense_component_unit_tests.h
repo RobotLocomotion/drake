@@ -21,13 +21,12 @@ using MatrixXd = Eigen::MatrixXd;
 using VectorXd = Eigen::VectorXd;
 
 /**
- * This class implements unit tests for the following classes
- * DenseData
- * DenseVariable
- * DenseResidual
- * DenseFeasibiity
- * DenseLinearSolver
- */
+This class implements unit tests for the following classes
+DenseData
+DenseVariable
+DenseResidual
+DenseFeasibiity
+DenseLinearSolver */
 class DenseComponentUnitTests {
  public:
   DenseComponentUnitTests() {
@@ -45,11 +44,10 @@ class DenseComponentUnitTests {
   }
 
   /**
-   * This methods implements a unit test for the variable object.
-   * It checks the computation of the constraint margin y = b - A*z against
-   * Eigen and operations of the form y <- a*x + y
-   * where x and y are DenseVariables.
-   */
+  This methods implements a unit test for the variable object.
+  It checks the computation of the constraint margin y = b - A*z against
+  Eigen and operations of the form y <- a*x + y
+  where x and y are DenseVariables. */
   void DenseVariableTests() {
     DenseData data(&H_, &f_, &A_, &b_);
 
@@ -215,13 +213,12 @@ class DenseComponentUnitTests {
   }
 
   /**
-   * This test checks that the infeasibility checker class correctly
-   * identifies certificates of primal infeasibility.
-   * The QP used in this example has no solution
-   * and the vector [1 0 0 1 1] is a certificate of
-   * infeasibility, i.e., it separates Range(A) and b.
-   * The example is from https://arxiv.org/pdf/1901.04046.pdf
-   */
+  This test checks that the infeasibility checker class correctly
+  identifies certificates of primal infeasibility.
+  The QP used in this example has no solution
+  and the vector [1 0 0 1 1] is a certificate of
+  infeasibility, i.e., it separates Range(A) and b.
+  The example is from https://arxiv.org/pdf/1901.04046.pdf */
   void PrimalInfeasibilityDetection() {
     MatrixXd H(2, 2);
     MatrixXd A(5, 2);
@@ -256,12 +253,11 @@ class DenseComponentUnitTests {
   }
 
   /**
-   * This test checks that the infeasibility checker class correctly
-   * identifies certificates of dual infeasibility.
-   * The QP used in this example has a direction of infinite descent
-   * given by [0 1].
-   * The example is taken from https://arxiv.org/pdf/1901.04046.pdf
-   */
+  This test checks that the infeasibility checker class correctly
+  identifies certificates of dual infeasibility.
+  The QP used in this example has a direction of infinite descent
+  given by [0 1].
+  The example is taken from https://arxiv.org/pdf/1901.04046.pdf */
   void DualInfeasibilityDetection() {
     MatrixXd H(2, 2);
     MatrixXd A(4, 2);

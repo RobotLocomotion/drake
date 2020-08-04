@@ -1,8 +1,9 @@
 #pragma once
 
-/// @file
-/// This is an internal (not installed) header. Do not use this outside of
-/// `find_resource.cc`.
+/**
+@file
+This is an internal (not installed) header. Do not use this outside of
+`find_resource.cc`. */
 
 namespace drake {
 namespace internal {

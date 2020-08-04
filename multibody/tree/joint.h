@@ -18,98 +18,100 @@
 namespace drake {
 namespace multibody {
 
-/// A %Joint models the kinematical relationship which characterizes the
-/// possible relative motion between two bodies.
-/// The two bodies connected by a %Joint object are referred to as the
-/// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
-/// sometimes used synonymously to describe the relationship between inboard and
-/// outboard bodies in multibody _trees_, the parent/child relationship is
-/// more general and remains meaningful for multibody systems with loops, such
-/// as a four-bar linkage. However, whenever possible the parent body will be
-/// made to be inboard and the child outboard in the tree.
-/// A %Joint is a model of a physical kinematic constraint between two bodies,
-/// a constraint that in the real physical system does not specify a tree
-/// ordering.
-///
-/// In Drake we define a frame F rigidly attached to the parent body P with pose
-/// `X_PF` and a frame M rigidly attached to the child body B with pose `X_BM`.
-/// A %Joint object specifies a kinematic relation between frames F and M,
-/// which in turn imposes a kinematic relation between bodies P and B.
-///
-/// Typical joints include the ball joint, to allow unrestricted rotations about
-/// a given point, the revolute joint, that constraints two bodies to rotate
-/// about a given common axis, etc.
-///
-/// Consider the following example to build a simple pendulum system:
-///
-/// @code
-/// MultibodyPlant<double> plant(0.0);
-/// // ... Code here to setup quantities below as mass, com, etc. ...
-/// const Body<double>& pendulum =
-///   plant.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
-/// // We will connect the pendulum body to the world using a RevoluteJoint.
-/// // In this simple case the parent body P is the model's world body and frame
-/// // F IS the world frame.
-/// // Additionally, we need to specify the pose of frame M on the pendulum's
-/// // body frame B.
-/// // Say we declared and initialized X_BM...
-/// const RevoluteJoint<double>& elbow =
-///   plant.AddJoint<RevoluteJoint>(
-///     "Elbow",                /* joint name */
-///     plant.world_body(),     /* parent body */
-///     {},                     /* frame F IS the world frame W */
-///     pendulum,               /* child body, the pendulum */
-///     X_BM,                   /* pose of frame M in the body frame B */
-///     Vector3d::UnitZ());     /* revolute axis in this case */
-/// @endcode
-///
-/// @warning Do not ever attempt to instantiate and manipulate %Joint objects
-/// on the stack; it will fail. Add joints to your plant using the provided API
-/// MultibodyPlant::AddJoint() as in the example above.
-///
-/// @tparam_default_scalar
+/**
+A %Joint models the kinematical relationship which characterizes the
+possible relative motion between two bodies.
+The two bodies connected by a %Joint object are referred to as the
+_parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
+sometimes used synonymously to describe the relationship between inboard and
+outboard bodies in multibody _trees_, the parent/child relationship is
+more general and remains meaningful for multibody systems with loops, such
+as a four-bar linkage. However, whenever possible the parent body will be
+made to be inboard and the child outboard in the tree.
+A %Joint is a model of a physical kinematic constraint between two bodies,
+a constraint that in the real physical system does not specify a tree
+ordering.
+
+In Drake we define a frame F rigidly attached to the parent body P with pose
+`X_PF` and a frame M rigidly attached to the child body B with pose `X_BM`.
+A %Joint object specifies a kinematic relation between frames F and M,
+which in turn imposes a kinematic relation between bodies P and B.
+
+Typical joints include the ball joint, to allow unrestricted rotations about
+a given point, the revolute joint, that constraints two bodies to rotate
+about a given common axis, etc.
+
+Consider the following example to build a simple pendulum system:
+
+@code
+MultibodyPlant<double> plant(0.0);
+// ... Code here to setup quantities below as mass, com, etc. ...
+const Body<double>& pendulum =
+  plant.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
+// We will connect the pendulum body to the world using a RevoluteJoint.
+// In this simple case the parent body P is the model's world body and frame
+// F IS the world frame.
+// Additionally, we need to specify the pose of frame M on the pendulum's
+// body frame B.
+// Say we declared and initialized X_BM...
+const RevoluteJoint<double>& elbow =
+  plant.AddJoint<RevoluteJoint>(
+    "Elbow",                /+ joint name +/
+    plant.world_body(),     /+ parent body +/
+    {},                     /+ frame F IS the world frame W +/
+    pendulum,               /+ child body, the pendulum +/
+    X_BM,                   /+ pose of frame M in the body frame B +/
+    Vector3d::UnitZ());     /+ revolute axis in this case +/
+@endcode
+
+@warning Do not ever attempt to instantiate and manipulate %Joint objects
+on the stack; it will fail. Add joints to your plant using the provided API
+MultibodyPlant::AddJoint() as in the example above.
+
+@tparam_default_scalar */
 template <typename T>
 class Joint : public MultibodyElement<Joint, T, JointIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
-  /// Creates a joint between two Frame objects which imposes a given kinematic
-  /// relation between frame F attached on the parent body P and frame M
-  /// attached on the child body B. The joint will be initialized to the model
-  /// instance from @p frame_on_child (this is the typical convention for joints
-  /// between the world and a model, or between two models (e.g. an arm to a
-  /// gripper)).  See this class's documentation for further details.
-  ///
-  /// @param[in] name
-  ///   A string with a name identifying `this` joint.
-  /// @param[in] frame_on_parent
-  ///   The frame F attached on the parent body connected by this joint.
-  /// @param[in] frame_on_child
-  ///   The frame M attached on the child body connected by this joint.
-  /// @param[in] pos_lower_limits
-  ///   A vector storing the lower limit for each generalized position.
-  ///   It must have the same size as `pos_upper_limit`.
-  ///   A value equal to -∞ implies no lower limit.
-  /// @param[in] pos_upper_limits
-  ///   A vector storing the upper limit for each generalized position.
-  ///   It must have the same size as `pos_lower_limit`.
-  ///   A value equal to +∞ implies no upper limit.
-  /// @param[in] vel_lower_limits
-  ///   A vector storing the lower limit for each generalized velocity.
-  ///   It must have the same size as `vel_upper_limit`.
-  ///   A value equal to -∞ implies no lower limit.
-  /// @param[in] vel_upper_limits
-  ///   A vector storing the upper limit for each generalized velocity.
-  ///   It must have the same size as `vel_lower_limit`.
-  ///   A value equal to +∞ implies no upper limit.
-  /// @param[in] acc_lower_limits
-  ///   A vector storing the lower limit for each generalized acceleration.
-  ///   It must have the same size as `acc_upper_limit`.
-  ///   A value equal to -∞ implies no lower limit.
-  /// @param[in] acc_upper_limits
-  ///   A vector storing the upper limit for each generalized acceleration.
-  ///   It must have the same size as `acc_lower_limit`.
-  ///   A value equal to +∞ implies no upper limit.
+  /**
+  Creates a joint between two Frame objects which imposes a given kinematic
+  relation between frame F attached on the parent body P and frame M
+  attached on the child body B. The joint will be initialized to the model
+  instance from @p frame_on_child (this is the typical convention for joints
+  between the world and a model, or between two models (e.g. an arm to a
+  gripper)).  See this class's documentation for further details.
+
+  @param[in] name
+    A string with a name identifying `this` joint.
+  @param[in] frame_on_parent
+    The frame F attached on the parent body connected by this joint.
+  @param[in] frame_on_child
+    The frame M attached on the child body connected by this joint.
+  @param[in] pos_lower_limits
+    A vector storing the lower limit for each generalized position.
+    It must have the same size as `pos_upper_limit`.
+    A value equal to -∞ implies no lower limit.
+  @param[in] pos_upper_limits
+    A vector storing the upper limit for each generalized position.
+    It must have the same size as `pos_lower_limit`.
+    A value equal to +∞ implies no upper limit.
+  @param[in] vel_lower_limits
+    A vector storing the lower limit for each generalized velocity.
+    It must have the same size as `vel_upper_limit`.
+    A value equal to -∞ implies no lower limit.
+  @param[in] vel_upper_limits
+    A vector storing the upper limit for each generalized velocity.
+    It must have the same size as `vel_lower_limit`.
+    A value equal to +∞ implies no upper limit.
+  @param[in] acc_lower_limits
+    A vector storing the lower limit for each generalized acceleration.
+    It must have the same size as `acc_upper_limit`.
+    A value equal to -∞ implies no lower limit.
+  @param[in] acc_upper_limits
+    A vector storing the upper limit for each generalized acceleration.
+    It must have the same size as `acc_lower_limit`.
+    A value equal to +∞ implies no upper limit. */
   Joint(const std::string& name, const Frame<T>& frame_on_parent,
         const Frame<T>& frame_on_child, const VectorX<double>& pos_lower_limits,
         const VectorX<double>& pos_upper_limits,
@@ -149,103 +151,109 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 
   virtual ~Joint() {}
 
-  /// Returns the name of this joint.
+  /** Returns the name of this joint. */
   const std::string& name() const { return name_; }
 
-  /// Returns a const reference to the parent body P.
+  /** Returns a const reference to the parent body P. */
   const Body<T>& parent_body() const {
     return frame_on_parent_.body();
   }
 
-  /// Returns a const reference to the child body B.
+  /** Returns a const reference to the child body B. */
   const Body<T>& child_body() const {
     return frame_on_child_.body();
   }
 
-  /// Returns a const reference to the frame F attached on the parent body P.
+  /** Returns a const reference to the frame F attached on the parent body P. */
   const Frame<T>& frame_on_parent() const {
     return frame_on_parent_;
   }
 
-  /// Returns a const reference to the frame M attached on the child body B.
+  /** Returns a const reference to the frame M attached on the child body B. */
   const Frame<T>& frame_on_child() const {
     return frame_on_child_;
   }
 
-  /// Returns a string identifying the type of `this` joint, such as "revolute"
-  /// or "prismatic".
+  /**
+  Returns a string identifying the type of `this` joint, such as "revolute"
+  or "prismatic". */
   virtual const std::string& type_name() const = 0;
 
-  /// Returns the index to the first generalized velocity for this joint
-  /// within the vector v of generalized velocities for the full multibody
-  /// system.
+  /**
+  Returns the index to the first generalized velocity for this joint
+  within the vector v of generalized velocities for the full multibody
+  system. */
   int velocity_start() const {
     return do_get_velocity_start();
   }
 
-  /// Returns the number of generalized velocities describing this joint.
+  /** Returns the number of generalized velocities describing this joint. */
   int num_velocities() const {
     DRAKE_ASSERT(0 <= do_get_num_velocities() && do_get_num_velocities() <= 6);
     return do_get_num_velocities();
   }
 
-  /// Returns the index to the first generalized position for this joint
-  /// within the vector q of generalized positions for the full multibody
-  /// system.
+  /**
+  Returns the index to the first generalized position for this joint
+  within the vector q of generalized positions for the full multibody
+  system. */
   int position_start() const {
     return do_get_position_start();
   }
 
-  /// Returns the number of generalized positions describing this joint.
+  /** Returns the number of generalized positions describing this joint. */
   int num_positions() const {
     DRAKE_ASSERT(0 <= do_get_num_positions() && do_get_num_positions() <= 7);
     return do_get_num_positions();
   }
 
-  /// Returns the position coordinate for joints with a single degree of
-  /// freedom.
-  /// @throws std::exception if the joint does not have a single degree of
-  /// freedom.
+  /**
+  Returns the position coordinate for joints with a single degree of
+  freedom.
+  @throws std::exception if the joint does not have a single degree of
+  freedom. */
   const T& GetOnePosition(const systems::Context<T>& context) const {
     DRAKE_THROW_UNLESS(num_positions() == 1);
     return DoGetOnePosition(context);
   }
 
-  /// Returns the velocity coordinate for joints with a single degree of
-  /// freedom.
-  /// @throws std::exception if the joint does not have a single degree of
-  /// freedom.
+  /**
+  Returns the velocity coordinate for joints with a single degree of
+  freedom.
+  @throws std::exception if the joint does not have a single degree of
+  freedom. */
   const T& GetOneVelocity(const systems::Context<T>& context) const {
     DRAKE_THROW_UNLESS(num_velocities() == 1);
     return DoGetOneVelocity(context);
   }
 
-  /// Adds into `forces` a force along the one of the joint's degrees of
-  /// freedom indicated by index `joint_dof`.
-  /// The meaning for this degree of freedom and even its dimensional units
-  /// depend on the specific joint sub-class. For a RevoluteJoint for instance,
-  /// `joint_dof` can only be 0 since revolute joints's motion subspace only has
-  /// one degree of freedom, while the units of `joint_tau` are those of torque
-  /// (N⋅m in the MKS system of units). For multi-dof joints please refer to
-  /// the documentation provided by specific joint sub-classes regarding the
-  /// meaning of `joint_dof`.
-  ///
-  /// @param[in] context
-  ///   The context storing the state and parameters for the model to which
-  ///   `this` joint belongs.
-  /// @param[in] joint_dof
-  ///   Index specifying one of the degrees of freedom for this joint. The index
-  ///   must be in the range `0 <= joint_dof < num_velocities()` or otherwise
-  ///   this method will abort.
-  /// @param[in] joint_tau
-  ///   Generalized force corresponding to the degree of freedom indicated by
-  ///   `joint_dof` to be added into `forces`.
-  /// @param[out] forces
-  ///   On return, this method will add force `joint_tau` for the degree of
-  ///   freedom `joint_dof` into the output `forces`. This method aborts if
-  ///   `forces` is `nullptr` or if `forces` doest not have the right sizes to
-  ///   accommodate a set of forces for the model to which this joint belongs.
   // NVI to DoAddInOneForce().
+  /**
+  Adds into `forces` a force along the one of the joint's degrees of
+  freedom indicated by index `joint_dof`.
+  The meaning for this degree of freedom and even its dimensional units
+  depend on the specific joint sub-class. For a RevoluteJoint for instance,
+  `joint_dof` can only be 0 since revolute joints's motion subspace only has
+  one degree of freedom, while the units of `joint_tau` are those of torque
+  (N⋅m in the MKS system of units). For multi-dof joints please refer to
+  the documentation provided by specific joint sub-classes regarding the
+  meaning of `joint_dof`.
+
+  @param[in] context
+    The context storing the state and parameters for the model to which
+    `this` joint belongs.
+  @param[in] joint_dof
+    Index specifying one of the degrees of freedom for this joint. The index
+    must be in the range `0 <= joint_dof < num_velocities()` or otherwise
+    this method will abort.
+  @param[in] joint_tau
+    Generalized force corresponding to the degree of freedom indicated by
+    `joint_dof` to be added into `forces`.
+  @param[out] forces
+    On return, this method will add force `joint_tau` for the degree of
+    freedom `joint_dof` into the output `forces`. This method aborts if
+    `forces` is `nullptr` or if `forces` doest not have the right sizes to
+    accommodate a set of forces for the model to which this joint belongs. */
   void AddInOneForce(
       const systems::Context<T>& context,
       int joint_dof,
@@ -257,17 +265,18 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     DoAddInOneForce(context, joint_dof, joint_tau, forces);
   }
 
-  /// Adds into `forces` the force due to damping within `this` joint.
-  ///
-  /// @param[in] context
-  ///   The context storing the state and parameters for the model to which
-  ///   `this` joint belongs.
-  /// @param[out] forces
-  ///   On return, this method will add the force due to damping within `this`
-  ///   joint. This method aborts if `forces` is `nullptr` or if `forces` does
-  ///   not have the right sizes to accommodate a set of forces for the model
-  ///   to which this joint belongs.
   // NVI to DoAddInOneForce().
+  /**
+  Adds into `forces` the force due to damping within `this` joint.
+
+  @param[in] context
+    The context storing the state and parameters for the model to which
+    `this` joint belongs.
+  @param[out] forces
+    On return, this method will add the force due to damping within `this`
+    joint. This method aborts if `forces` is `nullptr` or if `forces` does
+    not have the right sizes to accommodate a set of forces for the model
+    to which this joint belongs. */
   void AddInDamping(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
@@ -275,55 +284,57 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     DoAddInDamping(context, forces);
   }
 
-  /// @name Methods to get and set the limits of `this` joint. For position
-  /// limits, the layout is the same as the generalized position's. For
-  /// velocity and acceleration limits, the layout is the same as the
-  /// generalized velocity's. A limit with value +/- ∞ implies no upper or
-  /// lower limit.
-  /// @{
-  /// Returns the position lower limits.
+  /**
+  @name Methods to get and set the limits of `this` joint. For position
+  limits, the layout is the same as the generalized position's. For
+  velocity and acceleration limits, the layout is the same as the
+  generalized velocity's. A limit with value +/- ∞ implies no upper or
+  lower limit.
+  @{
+  Returns the position lower limits. */
   const VectorX<double>& position_lower_limits() const {
     return pos_lower_limits_;
   }
 
-  /// Returns the position upper limits.
+  /** Returns the position upper limits. */
   const VectorX<double>& position_upper_limits() const {
     return pos_upper_limits_;
   }
 
-  /// Returns the velocity lower limits.
+  /** Returns the velocity lower limits. */
   const VectorX<double>& velocity_lower_limits() const {
     return vel_lower_limits_;
   }
 
-  /// Returns the velocity upper limits.
+  /** Returns the velocity upper limits. */
   const VectorX<double>& velocity_upper_limits() const {
     return vel_upper_limits_;
   }
 
-  /// Returns the acceleration lower limits.
+  /** Returns the acceleration lower limits. */
   const VectorX<double>& acceleration_lower_limits() const {
     return acc_lower_limits_;
   }
 
-  /// Returns the acceleration upper limits.
+  /** Returns the acceleration upper limits. */
   const VectorX<double>& acceleration_upper_limits() const {
     return acc_upper_limits_;
   }
 
-  /// Returns the default positions.
+  /** Returns the default positions. */
   const VectorX<double>& default_positions() const {
     return default_positions_;
   }
 
-  /// Sets the position limits to @p lower_limits and @p upper_limits.
-  /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_positions().
-  /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
-  /// @note Setting the position limits does not affect the
-  /// `default_positions()`, regardless of whether the current
-  /// `default_positions()` satisfy the new position limits.
+  /**
+  Sets the position limits to @p lower_limits and @p upper_limits.
+  @throws std::exception if the dimension of @p lower_limits or
+  @p upper_limits does not match num_positions().
+  @throws std::exception if any of @p lower_limits is larger than the
+  corresponding term in @p upper_limits.
+  @note Setting the position limits does not affect the
+  `default_positions()`, regardless of whether the current
+  `default_positions()` satisfy the new position limits. */
   void set_position_limits(const VectorX<double>& lower_limits,
                            const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -333,11 +344,12 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     pos_upper_limits_ = upper_limits;
   }
 
-  /// Sets the velocity limits to @p lower_limits and @p upper_limits.
-  /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_velocities().
-  /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
+  /**
+  Sets the velocity limits to @p lower_limits and @p upper_limits.
+  @throws std::exception if the dimension of @p lower_limits or
+  @p upper_limits does not match num_velocities().
+  @throws std::exception if any of @p lower_limits is larger than the
+  corresponding term in @p upper_limits. */
   void set_velocity_limits(const VectorX<double>& lower_limits,
                            const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -347,11 +359,12 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     vel_upper_limits_ = upper_limits;
   }
 
-  /// Sets the acceleration limits to @p lower_limits and @p upper_limits.
-  /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_velocities().
-  /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
+  /**
+  Sets the acceleration limits to @p lower_limits and @p upper_limits.
+  @throws std::exception if the dimension of @p lower_limits or
+  @p upper_limits does not match num_velocities().
+  @throws std::exception if any of @p lower_limits is larger than the
+  corresponding term in @p upper_limits. */
   void set_acceleration_limits(const VectorX<double>& lower_limits,
                                const VectorX<double>& upper_limits) {
     DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
@@ -361,18 +374,19 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     acc_upper_limits_ = upper_limits;
   }
 
-  /// Sets the default positions to @p default_positions. Joint subclasses are
-  /// expected to implement the do_set_default_positions().
-  /// @throws std::exception if the dimension of @p default_positions does not
-  /// match num_positions().
-  /// @note The values in @p default_positions are NOT constrained to be within
-  /// `position_lower_limits()` and `position_upper_limits()`.
+  /**
+  Sets the default positions to @p default_positions. Joint subclasses are
+  expected to implement the do_set_default_positions().
+  @throws std::exception if the dimension of @p default_positions does not
+  match num_positions().
+  @note The values in @p default_positions are NOT constrained to be within
+  `position_lower_limits()` and `position_upper_limits()`. */
   void set_default_positions(const VectorX<double>& default_positions) {
     DRAKE_THROW_UNLESS(default_positions.size() == num_positions());
     default_positions_ = default_positions;
     do_set_default_positions(default_positions);
   }
-  /// @}
+  /** @} */
 
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
@@ -395,29 +409,33 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   // End of hidden Doxygen section.
 
  protected:
-  /// (Advanced) Structure containing all the information needed to build the
-  /// MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
-  /// %Joint creates a BluePrint of its implementation with MakeModelBlueprint()
-  /// so that MultibodyTree can build an implementation for it.
+  /**
+  (Advanced) Structure containing all the information needed to build the
+  MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
+  %Joint creates a BluePrint of its implementation with MakeModelBlueprint()
+  so that MultibodyTree can build an implementation for it. */
   struct BluePrint {
     std::vector<std::unique_ptr<internal::Mobilizer<T>>> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies.
   };
 
-  /// (Advanced) A Joint is implemented in terms of MultibodyTree elements such
-  /// as bodies, mobilizers, force elements and constraints. This object
-  /// contains the internal details of the MultibodyTree implementation for a
-  /// joint. The implementation does not own the MBT elements, it just keeps
-  /// references to them.
-  /// This is intentionally made a protected member so that derived classes have
-  /// access to its definition.
+  /**
+  (Advanced) A Joint is implemented in terms of MultibodyTree elements such
+  as bodies, mobilizers, force elements and constraints. This object
+  contains the internal details of the MultibodyTree implementation for a
+  joint. The implementation does not own the MBT elements, it just keeps
+  references to them.
+  This is intentionally made a protected member so that derived classes have
+  access to its definition. */
   struct JointImplementation {
-    /// Default constructor to create an empty implementation. Used by
-    /// Joint::CloneToScalar().
+    /**
+    Default constructor to create an empty implementation. Used by
+    Joint::CloneToScalar(). */
     JointImplementation() {}
 
-    /// This constructor creates an implementation for `this` joint from the
-    /// blueprint provided.
+    /**
+    This constructor creates an implementation for `this` joint from the
+    blueprint provided. */
     explicit JointImplementation(const BluePrint& blue_print) {
       DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) != 0);
       for (const auto& mobilizer : blue_print.mobilizers_) {
@@ -425,7 +443,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
       }
     }
 
-    /// Returns the number of mobilizers in this implementation.
+    /** Returns the number of mobilizers in this implementation. */
     int num_mobilizers() const {
       return static_cast<int>(mobilizers_.size());
     }
@@ -449,91 +467,101 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
 #endif
     // End of hidden Doxygen section.
 
-    /// References (raw pointers) to the mobilizers that make part of this
-    /// implementation.
+    /**
+    References (raw pointers) to the mobilizers that make part of this
+    implementation. */
     std::vector<internal::Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 
-  /// Implementation to the NVI velocity_start(), see velocity_start() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
+  /**
+  Implementation to the NVI velocity_start(), see velocity_start() for
+  details.
+  @note Implementations must meet the styleguide requirements for snake_case
+  accessor methods. */
   virtual int do_get_velocity_start() const = 0;
 
-  /// Implementation to the NVI num_velocities(), see num_velocities() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
+  /**
+  Implementation to the NVI num_velocities(), see num_velocities() for
+  details.
+  @note Implementations must meet the styleguide requirements for snake_case
+  accessor methods. */
   virtual int do_get_num_velocities() const = 0;
 
-  /// Implementation to the NVI position_start(), see position_start() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
+  /**
+  Implementation to the NVI position_start(), see position_start() for
+  details.
+  @note Implementations must meet the styleguide requirements for snake_case
+  accessor methods. */
   virtual int do_get_position_start() const = 0;
 
-  /// Implementation to the NVI num_positions(), see num_positions() for
-  /// details.
-  /// @note Implementations must meet the styleguide requirements for
-  /// snake_case accessor methods.
+  /**
+  Implementation to the NVI num_positions(), see num_positions() for
+  details.
+  @note Implementations must meet the styleguide requirements for
+  snake_case accessor methods. */
   virtual int do_get_num_positions() const = 0;
 
-  /// Implementation to the NVI set_default_positions(), see
-  /// set_default_positions() for details. It is the responsibility of the
-  /// subclass to ensure that their joint implementation, should they have one,
-  /// is updated with @p default_positions.
-  /// @note Implementations must meet the styleguide requirements for snake_case
-  /// accessor methods.
+  /**
+  Implementation to the NVI set_default_positions(), see
+  set_default_positions() for details. It is the responsibility of the
+  subclass to ensure that their joint implementation, should they have one,
+  is updated with @p default_positions.
+  @note Implementations must meet the styleguide requirements for snake_case
+  accessor methods. */
   virtual void do_set_default_positions(
       const VectorX<double>& default_positions) = 0;
 
-  /// Implementation to the NVI GetOnePosition() that must only be implemented
-  /// by those joint subclasses that have a single degree of freedom.
-  /// The default implementation for all other joints is to abort with an
-  /// appropriate message.
-  /// Revolute and prismatic are examples of joints that will want to implement
-  /// this method.
+  /**
+  Implementation to the NVI GetOnePosition() that must only be implemented
+  by those joint subclasses that have a single degree of freedom.
+  The default implementation for all other joints is to abort with an
+  appropriate message.
+  Revolute and prismatic are examples of joints that will want to implement
+  this method. */
   virtual const T& DoGetOnePosition(const systems::Context<T>&) const {
     throw std::domain_error(
         "GetOnePosition can only be called on single-dof joints.");
   }
 
-  /// Implementation to the NVI GetOneVelocity() that must only be implemented
-  /// by those joint subclasses that have a single degree of freedom.
-  /// The default implementation for all other joints is to abort with an
-  /// appropriate message.
-  /// Revolute and prismatic are examples of joints that will want to implement
-  /// this method.
+  /**
+  Implementation to the NVI GetOneVelocity() that must only be implemented
+  by those joint subclasses that have a single degree of freedom.
+  The default implementation for all other joints is to abort with an
+  appropriate message.
+  Revolute and prismatic are examples of joints that will want to implement
+  this method. */
   virtual const T& DoGetOneVelocity(const systems::Context<T>&) const {
     throw std::domain_error(
         "GetOneVelocity can only be called on single-dof joints.");
   }
 
-  /// Adds into `forces` a force along the one of the joint's degrees of
-  /// freedom given by `joint_dof`.
-  /// How forces are added to a MultibodyTree model depends on the underlying
-  /// implementation of a particular joint and therefore specific %Joint
-  /// subclasses must provide a definition for this method. For instance, a
-  /// revolute joint could be modeled with a single generalized coordinate for
-  /// the angular rotation (implemented through a RevoluteMobilizer) or it could
-  /// be modeled using a constraint that only allows rotation about the joint's
-  /// axis but that constrains the motion in the other five degrees of freedom.
-  /// This method is only called by the public NVI AddInOneForce() and therefore
-  /// input arguments were checked to be valid.
-  /// @see The public NVI AddInOneForce() for details.
+  /**
+  Adds into `forces` a force along the one of the joint's degrees of
+  freedom given by `joint_dof`.
+  How forces are added to a MultibodyTree model depends on the underlying
+  implementation of a particular joint and therefore specific %Joint
+  subclasses must provide a definition for this method. For instance, a
+  revolute joint could be modeled with a single generalized coordinate for
+  the angular rotation (implemented through a RevoluteMobilizer) or it could
+  be modeled using a constraint that only allows rotation about the joint's
+  axis but that constrains the motion in the other five degrees of freedom.
+  This method is only called by the public NVI AddInOneForce() and therefore
+  input arguments were checked to be valid.
+  @see The public NVI AddInOneForce() for details. */
   virtual void DoAddInOneForce(
       const systems::Context<T>& context,
       int joint_dof,
       const T& joint_tau,
       MultibodyForces<T>* forces) const = 0;
 
-  /// Adds into MultibodyForces the forces due to damping within `this` joint.
-  /// How forces are added to a MultibodyTree model depends on the underlying
-  /// implementation of a particular joint (for instance, mobilizer vs.
-  /// constraint) and therefore specific %Joint subclasses must provide a
-  /// definition for this method.
-  /// The default implementation is a no-op for joints with no damping.
+  /**
+  Adds into MultibodyForces the forces due to damping within `this` joint.
+  How forces are added to a MultibodyTree model depends on the underlying
+  implementation of a particular joint (for instance, mobilizer vs.
+  constraint) and therefore specific %Joint subclasses must provide a
+  definition for this method.
+  The default implementation is a no-op for joints with no damping. */
   virtual void DoAddInDamping(
       const systems::Context<T>&, MultibodyForces<T>*) const {}
 
@@ -541,28 +569,31 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
   // though we could require them to have one in the future.
   void DoSetTopology(const internal::MultibodyTreeTopology&) {}
 
-  /// @name Methods to make a clone templated on different scalar types.
-  /// @{
-  /// Clones this %Joint (templated on T) to a joint templated on `double`.
+  /**
+  @name Methods to make a clone templated on different scalar types.
+  @{
+  Clones this %Joint (templated on T) to a joint templated on `double`. */
   virtual std::unique_ptr<Joint<double>> DoCloneToScalar(
       const internal::MultibodyTree<double>& tree_clone) const = 0;
 
-  /// Clones this %Joint (templated on T) to a joint templated on AutoDiffXd.
+  /** Clones this %Joint (templated on T) to a joint templated on AutoDiffXd. */
   virtual std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
   virtual std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
-  /// @}
+  /** @} */
 
-  /// This method must be implemented by derived classes in order to provide
-  /// JointImplementationBuilder a BluePrint of their internal implementation
-  /// JointImplementation.
+  /**
+  This method must be implemented by derived classes in order to provide
+  JointImplementationBuilder a BluePrint of their internal implementation
+  JointImplementation. */
   virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint() const = 0;
 
-  /// Returns a const reference to the internal implementation of `this` joint.
-  /// @warning The MultibodyTree model must have already been finalized, or
-  /// this method will abort.
+  /**
+  Returns a const reference to the internal implementation of `this` joint.
+  @warning The MultibodyTree model must have already been finalized, or
+  this method will abort. */
   const JointImplementation& get_implementation() const {
     // The MultibodyTree must have been finalized for the implementation to be
     // valid.
@@ -570,8 +601,9 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
     return *implementation_;
   }
 
-  /// Returns whether `this` joint owns a particular implementation.
-  /// If the MultibodyTree has been finalized, this will return true.
+  /**
+  Returns whether `this` joint owns a particular implementation.
+  If the MultibodyTree has been finalized, this will return true. */
   bool has_implementation() const { return implementation_ != nullptr; }
 
  private:

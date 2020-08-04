@@ -8,7 +8,8 @@
 
 namespace drake {
 
-/** Checks for the existence of a non-empty intersection between two sorted
+/**
+Checks for the existence of a non-empty intersection between two sorted
 `std::vector`'s.
 
 @param[in]  a  First vector.

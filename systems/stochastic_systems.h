@@ -2,12 +2,13 @@
 namespace drake {
 namespace systems {
 
-/** @addtogroup stochastic_systems
+/**
+@addtogroup stochastic_systems
 @brief This page describes the implementation details of modeling a
 stochastic system in Drake and writing algorithms that explicitly
 leverage the stochastic modeling framework.
 
-A discrete-time system in Drake can be viewed as having the state-space 
+A discrete-time system in Drake can be viewed as having the state-space
 dynamics
 
   x_{n+1} = f(p; n, x_n, u_n, w_n),
@@ -78,8 +79,7 @@ System and its simulation parameters as a deterministic function
 of the drake::RandomGenerator.
 
 @see systems::analysis::MonteCarloSimulation
-@ingroup systems
-*/
+@ingroup systems */
 
 }  // namespace systems
 }  // namespace drake

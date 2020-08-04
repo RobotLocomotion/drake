@@ -6,13 +6,14 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/// Test a trivial semidefinite problem.
-/// min S(0, 0) + S(1, 1)
-/// s.t S(1, 0) = 1
-///     S is p.s.d
-/// The analytical solution is
-/// S = [1 1]
-///     [1 1]
+/**
+Test a trivial semidefinite problem.
+min S(0, 0) + S(1, 1)
+s.t S(1, 0) = 1
+    S is p.s.d
+The analytical solution is
+S = [1 1]
+    [1 1] */
 void TestTrivialSDP(const SolverInterface& solver,
                     double tol);
 
@@ -64,34 +65,35 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 void SolveEigenvalueProblem(const SolverInterface& solver,
                             double tol);
 
-/// Solve an SDP with a second order cone constraint. This example is taken from
-/// https://docs.mosek.com/9.0/capi/tutorial-sdo-shared.html
+/**
+Solve an SDP with a second order cone constraint. This example is taken from
+https://docs.mosek.com/9.0/capi/tutorial-sdo-shared.html */
 void SolveSDPwithSecondOrderConeExample1(const SolverInterface& solver,
                                          double tol);
 
-/** Solve an SDP with second order cone constraints. Notice that the variables
- * appear in the second order cone constraints appear also in the positive
- * semidefinite constraint.
- * min X(0, 0) + X(1, 1) + x(0)
- * s.t X(0, 0) + 2 * X(1, 1) + X(2, 2) + 3 * x(0) = 3
- *     X(0, 0) >= sqrt((X(1, 1) + x(0))² + (X(1, 1) + X(2, 2))²)
- *     X(1, 0) + X(2, 1) = 1
- *     X is psd, x(0) >= 0
- */
+/**
+Solve an SDP with second order cone constraints. Notice that the variables
+appear in the second order cone constraints appear also in the positive
+semidefinite constraint.
+min X(0, 0) + X(1, 1) + x(0)
+s.t X(0, 0) + 2 * X(1, 1) + X(2, 2) + 3 * x(0) = 3
+    X(0, 0) >= sqrt((X(1, 1) + x(0))² + (X(1, 1) + X(2, 2))²)
+    X(1, 0) + X(2, 1) = 1
+    X is psd, x(0) >= 0 */
 void SolveSDPwithSecondOrderConeExample2(const SolverInterface& solver,
                                          double tol);
 
-/** Solve an SDP with two PSD constraint, where each PSD constraint has
- * duplicate entries and the two PSD matrix share a common variables.
- * min 2 * x0 + x2
- * s.t [x0 x1] is psd
- *     [x1 x0]
- *
- *     [x0 x2] is psd
- *     [x2 x0]
- *     x1 == 1
- * The optimal solution will be x = (1, 1, -1).
- */
+/**
+Solve an SDP with two PSD constraint, where each PSD constraint has
+duplicate entries and the two PSD matrix share a common variables.
+min 2 * x0 + x2
+s.t [x0 x1] is psd
+    [x1 x0]
+
+    [x0 x2] is psd
+    [x2 x0]
+    x1 == 1
+The optimal solution will be x = (1, 1, -1). */
 void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
                                       double tol);
 }  // namespace test

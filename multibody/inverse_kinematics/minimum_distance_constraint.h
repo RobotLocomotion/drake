@@ -11,7 +11,8 @@
 namespace drake {
 namespace multibody {
 
-/** Computes the penalty function φ(x) and its derivatives dφ(x)/dx. Valid
+/**
+Computes the penalty function φ(x) and its derivatives dφ(x)/dx. Valid
 penalty functions must meet the following criteria:
 
 1.     φ(x) ≥ 0 ∀ x ∈ ℝ.
@@ -20,7 +21,8 @@ penalty functions must meet the following criteria:
 4. dφ(x)/dx < 0 ∀ x < 0. */
 using MinimumDistancePenaltyFunction = solvers::MinimumValuePenaltyFunction;
 
-/** A hinge loss function smoothed by exponential function. This loss
+/**
+A hinge loss function smoothed by exponential function. This loss
 function is differentiable everywhere. The fomulation is described in
 section II.C of [2].
 The penalty is
@@ -34,7 +36,8 @@ Kinematics" by Hongkai Dai, Andres Valenzuela and Russ Tedrake, IEEE-RAS
 International Conference on Humanoid Robots, 2014. */
 using solvers::ExponentiallySmoothedHingeLoss;
 
-/** A linear hinge loss, smoothed with a quadratic loss near the origin. The
+/**
+A linear hinge loss, smoothed with a quadratic loss near the origin. The
 formulation is in equation (6) of [1].
 The penalty is
 <pre>
@@ -47,7 +50,8 @@ Labels." by Jason Rennie and Nathan Srebro, Proceedings of IJCAI
 multidisciplinary workshop on Advances in preference handling. */
 using solvers::QuadraticallySmoothedHingeLoss;
 
-/** Constrain the signed distance between all candidate pairs of geometries
+/**
+Constrain the signed distance between all candidate pairs of geometries
 (according to the logic of SceneGraphInspector::GetCollisionCandidates()) to be
 no smaller than a specified minimum distance.
 
@@ -62,13 +66,13 @@ multibody::MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth
 approximation of max(d). We require that dₘᵢₙ < d_influence. The input scaling
 (dᵢ - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
 feasible set (when dᵢ == dₘᵢₙ), we evaluate the penalty function at -1, where it
-is required to have a non-zero gradient.
-*/
+is required to have a non-zero gradient. */
 class MinimumDistanceConstraint final : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceConstraint)
 
-  /** Constructs a MinimumDistanceConstraint.
+  /**
+  Constructs a MinimumDistanceConstraint.
   @param plant The multibody system on which the constraint will be evaluated.
   @param minimum_distance The minimum allowed value, dₘᵢₙ, of the signed
   distance between any candidate pair of geometries.
@@ -83,8 +87,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   @throws std::invalid_argument if `plant` has not registered its geometry with
   a SceneGraph object.
   @throws std::invalid_argument if influence_distance_offset = ∞.
-  @throws std::invalid_argument if influence_distance_offset ≤ 0.
-  */
+  @throws std::invalid_argument if influence_distance_offset ≤ 0. */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance, systems::Context<double>* plant_context,
@@ -95,8 +98,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
   @exclude_from_pydrake_mkdoc{Suppressed due to ambiguity in mkdoc.
-  Documentation string is manually recreated in Python.}
-  */
+  Documentation string is manually recreated in Python.} */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
       double minimum_distance, systems::Context<AutoDiffXd>* plant_context,

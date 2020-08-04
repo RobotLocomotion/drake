@@ -7,8 +7,9 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/// System where the state at (scalar) time t corresponds to the linear equation
-/// St + 3, where S is 4 by default.
+/**
+System where the state at (scalar) time t corresponds to the linear equation
+St + 3, where S is 4 by default. */
 class LinearScalarSystem : public LeafSystem<double> {
  public:
   explicit LinearScalarSystem(double S = 4.0) : S_(S) {

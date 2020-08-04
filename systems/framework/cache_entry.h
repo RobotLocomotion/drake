@@ -14,7 +14,8 @@
 namespace drake {
 namespace systems {
 
-/** A %CacheEntry belongs to a System and represents the properties of one of
+/**
+A %CacheEntry belongs to a System and represents the properties of one of
 that System's cached computations. %CacheEntry objects are assigned CacheIndex
 values in the order they are declared; these are unique within a single System
 and can be used for quick access to both the %CacheEntry and the corresponding
@@ -46,19 +47,22 @@ class CacheEntry {
   // TODO(sherm1) These callbacks should not be specific to this class. Move
   // elsewhere, e.g. framework_common.h so they can be shared with output port.
 
-  /** Signature of a function suitable for allocating an object that can hold
+  /**
+  Signature of a function suitable for allocating an object that can hold
   a value of a particular cache entry. The result is always returned as an
   AbstractValue but must contain the correct concrete type. */
   using AllocCallback =
       std::function<std::unique_ptr<AbstractValue>()>;
 
-  /** Signature of a function suitable for calculating a value of a particular
+  /**
+  Signature of a function suitable for calculating a value of a particular
   cache entry, given a place to put the value. */
   using CalcCallback = std::function<void(const ContextBase&, AbstractValue*)>;
 
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.
-  /** (Advanced) Constructs a cache entry within a System and specifies the
+  /**
+  (Advanced) Constructs a cache entry within a System and specifies the
   resources it needs.
 
   This method is intended only for use by the framework which provides much
@@ -90,14 +94,16 @@ class CacheEntry {
              AllocCallback alloc_function, CalcCallback calc_function,
              std::set<DependencyTicket> prerequisites_of_calc);
 
-  /** Returns a reference to the set of prerequisites needed by this cache
+  /**
+  Returns a reference to the set of prerequisites needed by this cache
   entry's Calc() function. These are all within the same subsystem that
   owns this %CacheEntry. */
   const std::set<DependencyTicket>& prerequisites() const {
     return prerequisites_of_calc_;
   }
 
-  /** (Advanced) Returns a mutable reference to the set of prerequisites needed
+  /**
+  (Advanced) Returns a mutable reference to the set of prerequisites needed
   by this entry's Calc() function. Any tickets in this set are interpreted as
   referring to prerequisites within the same subsystem that owns this
   %CacheEntry. Modifications take effect the next time the containing System is
@@ -117,13 +123,15 @@ class CacheEntry {
     return prerequisites_of_calc_;
   }
 
-  /** Invokes this cache entry's allocator function to allocate a concrete
+  /**
+  Invokes this cache entry's allocator function to allocate a concrete
   object suitable for holding the value to be held in this cache entry, and
   returns that as an AbstractValue. The returned object will never be null.
   @throws std::logic_error if the allocator function returned null. */
   std::unique_ptr<AbstractValue> Allocate() const;
 
-  /** Unconditionally computes the value this cache entry should have given a
+  /**
+  Unconditionally computes the value this cache entry should have given a
   particular context, into an already-allocated object.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry.
@@ -131,7 +139,8 @@ class CacheEntry {
        the object returned by this entry's Allocate() method. */
   void Calc(const ContextBase& context, AbstractValue* value) const;
 
-  /** Returns a reference to the up-to-date value of this cache entry contained
+  /**
+  Returns a reference to the up-to-date value of this cache entry contained
   in the given Context. This is the preferred way to obtain a cached value. If
   the value is not already up to date with respect to its prerequisites, or if
   caching is disabled for this entry, then this entry's Calc() method is used
@@ -148,7 +157,10 @@ class CacheEntry {
     return ExtractValueOrThrow<ValueType>(abstract_value, __func__);
   }
 
-  /** Returns a reference to the up-to-date abstract value of this cache entry
+  // Keep this method as small as possible to encourage inlining; it gets
+  // called *a lot*.
+  /**
+  Returns a reference to the up-to-date abstract value of this cache entry
   contained in the given Context. If the value is not already up to date with
   respect to its prerequisites, or if caching is disabled for this entry, the
   Calc() method above is used first to update the value before the reference is
@@ -156,15 +168,16 @@ class CacheEntry {
   need to be recomputed.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry. */
-  // Keep this method as small as possible to encourage inlining; it gets
-  // called *a lot*.
   const AbstractValue& EvalAbstract(const ContextBase& context) const {
     const CacheEntryValue& cache_value = get_cache_entry_value(context);
     if (cache_value.needs_recomputation()) UpdateValue(context);
     return cache_value.get_abstract_value();
   }
 
-  /** Returns a reference to the _known up-to-date_ value of this cache entry
+  // Keep this method as small as possible to encourage inlining; it gets
+  // called *a lot*.
+  /**
+  Returns a reference to the _known up-to-date_ value of this cache entry
   contained in the given Context. The purpose of this method is to avoid
   unexpected recomputations in circumstances where you believe the value must
   already be up to date. Unlike Eval(), this method will throw an exception
@@ -176,8 +189,6 @@ class CacheEntry {
        this cache entry.
   @throws std::logic_error if the value is out of date or if it does not
                            actually have type `ValueType`. */
-  // Keep this method as small as possible to encourage inlining; it gets
-  // called *a lot*.
   template <typename ValueType>
   const ValueType& GetKnownUpToDate(const ContextBase& context) const {
     const CacheEntryValue& cache_value = get_cache_entry_value(context);
@@ -186,14 +197,15 @@ class CacheEntry {
                                           __func__);
   }
 
-  /** Returns a reference to the _known up-to-date_ abstract value of this cache
+  // Keep this method as small as possible to encourage inlining; it gets
+  // called *a lot*.
+  /**
+  Returns a reference to the _known up-to-date_ abstract value of this cache
   entry contained in the given Context. See GetKnownUpToDate() for more
   information.
   @pre `context` is a subcontext that is compatible with the subsystem that owns
        this cache entry.
   @throws std::logic_error if the value is not up to date. */
-  // Keep this method as small as possible to encourage inlining; it gets
-  // called *a lot*.
   const AbstractValue& GetKnownUpToDateAbstract(
       const ContextBase& context) const {
     const CacheEntryValue& cache_value = get_cache_entry_value(context);
@@ -201,7 +213,8 @@ class CacheEntry {
     return cache_value.get_abstract_value();
   }
 
-  /** Returns `true` if the current value of this cache entry is out of
+  /**
+  Returns `true` if the current value of this cache entry is out of
   date with respect to its prerequisites. If this returns `false` then the
   Eval() method will not perform any computation when invoked, unless caching
   has been disabled for this entry. If this returns `true` the
@@ -210,14 +223,16 @@ class CacheEntry {
     return get_cache_entry_value(context).is_out_of_date();
   }
 
-  /** (Debugging) Returns `true` if caching has been disabled for this cache
+  /**
+  (Debugging) Returns `true` if caching has been disabled for this cache
   entry in the given `context`. That means Eval() will recalculate even if the
   entry is marked up to date. */
   bool is_cache_entry_disabled(const ContextBase& context) const {
     return get_cache_entry_value(context).is_cache_entry_disabled();
   }
 
-  /** (Debugging) Disables caching for this cache entry in the given `context`.
+  /**
+  (Debugging) Disables caching for this cache entry in the given `context`.
   Eval() will recompute the cached value every time it is invoked, regardless
   of the state of the out_of_date flag. That should have no effect on any
   computed results, other than speed. See class documentation for ideas as to
@@ -228,14 +243,16 @@ class CacheEntry {
     value.disable_caching();
   }
 
-  /** (Debugging) Enables caching for this cache entry in the given `context`
+  /**
+  (Debugging) Enables caching for this cache entry in the given `context`
   if it was previously disabled. */
   void enable_caching(const ContextBase& context) const {
     CacheEntryValue& value = get_mutable_cache_entry_value(context);
     value.enable_caching();
   }
 
-  /** (Debugging) Marks this cache entry so that the corresponding
+  /**
+  (Debugging) Marks this cache entry so that the corresponding
   CacheEntryValue object in any allocated Context is created with its
   `disabled` flag initially set. This can be useful for debugging when you have
   observed a difference between cached and non-cached behavior that can't be
@@ -245,14 +262,16 @@ class CacheEntry {
     is_disabled_by_default_ = true;
   }
 
-  /** (Debugging) Returns the current value of this flag. It is `false` unless
+  /**
+  (Debugging) Returns the current value of this flag. It is `false` unless
   a call to `disable_caching_by_default()` has previously been made. */
   bool is_disabled_by_default() const { return is_disabled_by_default_; }
 
   /** Return the human-readable description for this %CacheEntry. */
   const std::string& description() const { return description_; }
 
-  /** (Advanced) Returns a const reference to the CacheEntryValue object that
+  /**
+  (Advanced) Returns a const reference to the CacheEntryValue object that
   corresponds to this %CacheEntry, from the supplied Context. The returned
   object contains the current value and tracks whether it is up to date with
   respect to its prerequisites. If you just need the value, use the Eval()
@@ -263,7 +282,8 @@ class CacheEntry {
     return context.get_cache().get_cache_entry_value(cache_index_);
   }
 
-  /** (Advanced) Returns a mutable reference to the CacheEntryValue object that
+  /**
+  (Advanced) Returns a mutable reference to the CacheEntryValue object that
   corresponds to this %CacheEntry, from the supplied Context. Note that
   `context` is const; cache values are mutable. Don't call this method unless
   you know what you're doing. This method is constant time and _very_ fast in
@@ -274,17 +294,20 @@ class CacheEntry {
         cache_index_);
   }
 
-  /** Returns the CacheIndex used to locate this %CacheEntry within the
+  /**
+  Returns the CacheIndex used to locate this %CacheEntry within the
   containing System. */
   CacheIndex cache_index() const { return cache_index_; }
 
-  /** Returns the DependencyTicket used to register dependencies on the value
+  /**
+  Returns the DependencyTicket used to register dependencies on the value
   of this %CacheEntry. This can also be used to locate the DependencyTracker
   that manages dependencies at runtime for the associated CacheEntryValue in
   a Context. */
   DependencyTicket ticket() const { return ticket_; }
 
-  /** (Advanced) Returns `true` if this cache entry was created without
+  /**
+  (Advanced) Returns `true` if this cache entry was created without
   specifying any prerequisites. This can be useful in determining whether
   the apparent dependencies should be believed, or whether they may just be
   due to some user's ignorance.

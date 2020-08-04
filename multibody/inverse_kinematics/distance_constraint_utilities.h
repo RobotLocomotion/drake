@@ -7,21 +7,20 @@ namespace drake {
 namespace multibody {
 namespace internal {
 /**
- * @param plant The plant for which the distance is computed.
- * @param context The context containing the generalized position for computing
- * the distance.
- * @param frameA The frame to which geometry A is attached.
- * @param frameB The frame to which geometry B is attached.
- * @param p_ACa The position of the witness point Ca measured and expressed in
- * frame A.
- * @param distance The signed distance between geometry A and B.
- * @param nhat_BA_W The unit length vector representing the gradient of the
- * signed distance field to geometry B, expressed in the world frame.
- * @param q The generalized position of the plant, it also stores the gradient
- * dq / dz, where z is some other variables.
- * @param[out] distance_autodiff Containing the gradient of @p distance w.r.t
- * z (the same variable as shown up in the gradient of q).
- */
+@param plant The plant for which the distance is computed.
+@param context The context containing the generalized position for computing
+the distance.
+@param frameA The frame to which geometry A is attached.
+@param frameB The frame to which geometry B is attached.
+@param p_ACa The position of the witness point Ca measured and expressed in
+frame A.
+@param distance The signed distance between geometry A and B.
+@param nhat_BA_W The unit length vector representing the gradient of the
+signed distance field to geometry B, expressed in the world frame.
+@param q The generalized position of the plant, it also stores the gradient
+dq / dz, where z is some other variables.
+@param[out] distance_autodiff Containing the gradient of @p distance w.r.t
+z (the same variable as shown up in the gradient of q). */
 void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
                              const systems::Context<double>& context,
                              const Frame<double>& frameA,
@@ -32,9 +31,8 @@ void CalcDistanceDerivatives(const MultibodyPlant<double>& plant,
                              AutoDiffXd* distance_autodiff);
 
 /**
- * This is the overloaded version of CalcDistanceDerivatives for plant being
- * MultibodyPlant<AutoDiffXd> instead of MultibodyPlant<double>.
- */
+This is the overloaded version of CalcDistanceDerivatives for plant being
+MultibodyPlant<AutoDiffXd> instead of MultibodyPlant<double>. */
 void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>& plant,
                              const systems::Context<AutoDiffXd>& context,
                              const Frame<AutoDiffXd>& frameA,
@@ -46,9 +44,8 @@ void CalcDistanceDerivatives(const MultibodyPlant<AutoDiffXd>& plant,
                              double* distance);
 
 /**
- * This is the overloaded version of CalcDistanceDerivatives for the input q of
- * double scalar type, it just copies @p distance_in to @p distance_out.
- */
+This is the overloaded version of CalcDistanceDerivatives for the input q of
+double scalar type, it just copies @p distance_in to @p distance_out. */
 template <typename T>
 void CalcDistanceDerivatives(const MultibodyPlant<T>&,
                              const systems::Context<T>&, const Frame<T>&,
@@ -59,9 +56,7 @@ void CalcDistanceDerivatives(const MultibodyPlant<T>&,
   *distance_out = distance_in;
 }
 
-/**
- * Check if the plant has registered its geometry with the SceneGraph.
- */
+/** Check if the plant has registered its geometry with the SceneGraph. */
 template <typename T>
 void CheckPlantIsConnectedToSceneGraph(
     const MultibodyPlant<T>& plant, const systems::Context<T>& plant_context) {

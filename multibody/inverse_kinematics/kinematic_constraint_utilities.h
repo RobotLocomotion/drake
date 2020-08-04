@@ -10,21 +10,19 @@ namespace drake {
 namespace multibody {
 namespace internal {
 /**
- * Determines if a and b are equal. a equals to b if they have the same value
- * and gradients.
- * TODO(hongkai.dai) implement and use std::equal_to<> for comparing Eigen
- * vector of AutoDiffXd.
- */
+Determines if a and b are equal. a equals to b if they have the same value
+and gradients.
+TODO(hongkai.dai) implement and use std::equal_to<> for comparing Eigen
+vector of AutoDiffXd. */
 bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
                            const Eigen::Ref<const AutoDiffVecXd>& b);
 
 /**
- * Check if the generalized positions in @p context are the same as @p q.
- * If they are not the same, then reset @p context's generalized positions
- * to @p q. Otherwise, leave @p context unchanged.
- * The intention is to avoid dirtying the computation cache, given it is
- * ticket-based rather than hash-based.
- */
+Check if the generalized positions in @p context are the same as @p q.
+If they are not the same, then reset @p context's generalized positions
+to @p q. Otherwise, leave @p context unchanged.
+The intention is to avoid dirtying the computation cache, given it is
+ticket-based rather than hash-based. */
 void UpdateContextConfiguration(drake::systems::Context<double>* context,
                                 const MultibodyPlant<double>& plant,
                                 const Eigen::Ref<const VectorX<double>>& q);
@@ -38,10 +36,9 @@ void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
                                 const Eigen::Ref<const AutoDiffVecXd>& q);
 
 /**
- * Normalize an Eigen vector of doubles. This function is used in the
- * constructor of some kinematic constraints.
- * @throws std::invalid_argument if the vector is close to zero.
- */
+Normalize an Eigen vector of doubles. This function is used in the
+constructor of some kinematic constraints.
+@throws std::invalid_argument if the vector is close to zero. */
 template <typename DerivedA>
 typename std::enable_if<
     is_eigen_vector_of<DerivedA, double>::value,
@@ -55,10 +52,9 @@ NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
 }
 
 /**
- * If `plant` is not nullptr, return a reference to the MultibodyPlant to which
- * it points.
- * @throws std::invalid_argument if `plant` is nullptr.
- */
+If `plant` is not nullptr, return a reference to the MultibodyPlant to which
+it points.
+@throws std::invalid_argument if `plant` is nullptr. */
 template <typename T>
 const MultibodyPlant<T>& RefFromPtrOrThrow(
     const MultibodyPlant<T>* const plant) {

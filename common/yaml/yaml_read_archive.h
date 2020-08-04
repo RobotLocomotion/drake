@@ -24,82 +24,88 @@
 namespace drake {
 namespace yaml {
 
-/// Loads data from a YAML file into a C++ structure, using the Serialize /
-/// Archive pattern.
-///
-/// Sample data:
-/// @code{yaml}
-/// doc:
-///   foo: 1.0
-///   bar: [2.0, 3.0]
-/// @endcode
-///
-/// Sample code:
-/// @code{cpp}
-/// struct MyData {
-///   double foo{NAN};
-///   std::vector<double> bar;
-///
-///   template <typename Archive>
-///   void Serialize(Archive* a) {
-///     a->Visit(DRAKE_NVP(foo));
-///     a->Visit(DRAKE_NVP(bar));
-///   }
-/// };
-///
-/// MyData LoadData(const std::string& filename) {
-///   MyData result;
-///   const YAML::Node& root = YAML::LoadFile(filename);
-///   common::YamlReadArchive(root).Accept(&result);
-///   return result;
-/// }
-/// @endcode
-///
-/// Structures can be arbitrarily nested, as long as each `struct` has a
-/// `Serialize` method.  Many common built-in types (int, double, std::string,
-/// std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
-/// also be used.
-///
-/// YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
-///
-/// For inspiration and background, see:
-/// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
+/**
+Loads data from a YAML file into a C++ structure, using the Serialize /
+Archive pattern.
+
+Sample data:
+@code{yaml}
+doc:
+  foo: 1.0
+  bar: [2.0, 3.0]
+@endcode
+
+Sample code:
+@code{cpp}
+struct MyData {
+  double foo{NAN};
+  std::vector<double> bar;
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(foo));
+    a->Visit(DRAKE_NVP(bar));
+  }
+};
+
+MyData LoadData(const std::string& filename) {
+  MyData result;
+  const YAML::Node& root = YAML::LoadFile(filename);
+  common::YamlReadArchive(root).Accept(&result);
+  return result;
+}
+@endcode
+
+Structures can be arbitrarily nested, as long as each `struct` has a
+`Serialize` method.  Many common built-in types (int, double, std::string,
+std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
+also be used.
+
+YAML's "merge keys" (https://yaml.org/type/merge.html) are supported.
+
+For inspiration and background, see:
+https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html */
 class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
-  /// Configuration for YamlReadArchive to govern when certain conditions are
-  /// errors or not.  Refer to the member fields for details.
+  /**
+  Configuration for YamlReadArchive to govern when certain conditions are
+  errors or not.  Refer to the member fields for details. */
   struct Options {
     friend std::ostream& operator<<(std::ostream& os, const Options& x);
 
-    /// Allows yaml Maps to have extra key-value pairs that are not Visited by
-    /// the Serializable being parsed into.  In other words, the Serializable
-    /// types provide an incomplete schema for the YAML data.  This allows for
-    /// parsing only a subset of the YAML data.
+    /**
+    Allows yaml Maps to have extra key-value pairs that are not Visited by
+    the Serializable being parsed into.  In other words, the Serializable
+    types provide an incomplete schema for the YAML data.  This allows for
+    parsing only a subset of the YAML data. */
     bool allow_yaml_with_no_cpp{false};
 
-    /// Allows Serializables to provide more key-value pairs than are present
-    /// in the YAML data.  In other words, the structs have default values that
-    /// are left intact unless the YAML data provides a value.
+    /**
+    Allows Serializables to provide more key-value pairs than are present
+    in the YAML data.  In other words, the structs have default values that
+    are left intact unless the YAML data provides a value. */
     bool allow_cpp_with_no_yaml{false};
 
-    /// If set to true, when parsing a std::map the Archive will merge the YAML
-    /// data into the destination, instead of replacing the std::map contents
-    /// entirely.  In other words, a visited std::map can have default values
-    /// that are left intact unless the YAML data provides a value *for that
-    /// specific key*.
+    /**
+    If set to true, when parsing a std::map the Archive will merge the YAML
+    data into the destination, instead of replacing the std::map contents
+    entirely.  In other words, a visited std::map can have default values
+    that are left intact unless the YAML data provides a value *for that
+    specific key*. */
     bool retain_map_defaults{false};
   };
 
-  /// Creates an archive that reads from @p root.  See the %YamlReadArchive
-  /// class overview for details.
-  ///
-  /// When the `options` are not provided by the caller, this currently sets
-  /// `allow_yaml_with_no_cpp = true` for backwards compatibility reasons.
-  /// This default will change in a future Drake release to be `false`,
-  /// instead.  Callers that wish to avoid disruption should set the options
-  /// explicitly.
+  /**
+  Creates an archive that reads from @p root.  See the %YamlReadArchive
+  class overview for details.
+
+  When the `options` are not provided by the caller, this currently sets
+  `allow_yaml_with_no_cpp = true` for backwards compatibility reasons.
+  This default will change in a future Drake release to be `false`,
+  instead.  Callers that wish to avoid disruption should set the options
+  explicitly. */
   explicit YamlReadArchive(const YAML::Node& root, const Options& options = {
                              .allow_yaml_with_no_cpp = true,
                              .allow_cpp_with_no_yaml = false,
@@ -115,8 +121,9 @@ class YamlReadArchive final {
     RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
   }
 
-  /// Sets the contents `serializable` based on the YAML file associated with
-  /// this archive.  See the %YamlReadArchive class overview for details.
+  /**
+  Sets the contents `serializable` based on the YAML file associated with
+  this archive.  See the %YamlReadArchive class overview for details. */
   template <typename Serializable>
   void Accept(Serializable* serializable) {
     if (!has_root()) {
@@ -127,9 +134,10 @@ class YamlReadArchive final {
     CheckAllAccepted();
   }
 
-  /// (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
-  /// file associated with this archive.  Most users should should call Accept,
-  /// not Visit.
+  /**
+  (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
+  file associated with this archive.  Most users should should call Accept,
+  not Visit. */
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     this->Visit(nvp, VisitShouldMemorizeType::kYes);

@@ -13,7 +13,7 @@ class EncodedData;
 /** Type used to identify geometry sources in SceneGraph. */
 using SourceId = drake::Identifier<class SourceTag>;
 
-/** Type used to identify geometry frames in SceneGraph.*/
+/** Type used to identify geometry frames in SceneGraph. */
 using FrameId = drake::Identifier<class FrameTag>;
 
 /** Type used to identify geometry instances in SceneGraph. */
@@ -42,9 +42,9 @@ class GeometryId : public drake::Identifier<class GeometryTag> {
 
 namespace std {
 
-/** Enables use of the identifier to serve as a key in STL containers.
- @relates GeometryId
- */
+/**
+Enables use of the identifier to serve as a key in STL containers.
+@relates GeometryId */
 template <>
 struct hash<drake::geometry::GeometryId> {
   size_t operator()(const drake::geometry::GeometryId& id) const {

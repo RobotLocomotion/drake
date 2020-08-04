@@ -16,24 +16,25 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
-/// The Spong acrobot swing-up controller as described in:
-///   Spong, Mark W. "Swing up control of the acrobot." Robotics and Automation,
-///   1994. Proceedings., 1994 IEEE International Conference on. IEEE, 1994.
-///
-/// Note that the Spong controller works well on the default set of parameters,
-/// which Spong used in his paper. In contrast, it is difficult to find a
-/// functional set of gains to stabilize the robot about its upright fixed
-/// point using the parameters of the physical robot we have in lab.
-///
-/// @system
-/// name: AcrobotSpongController
-/// input_ports:
-/// - acrobot_state
-/// output_ports:
-/// - elbow_torque
-/// @endsystem
-///
-/// @ingroup acrobot_systems
+/**
+The Spong acrobot swing-up controller as described in:
+  Spong, Mark W. "Swing up control of the acrobot." Robotics and Automation,
+  1994. Proceedings., 1994 IEEE International Conference on. IEEE, 1994.
+
+Note that the Spong controller works well on the default set of parameters,
+which Spong used in his paper. In contrast, it is difficult to find a
+functional set of gains to stabilize the robot about its upright fixed
+point using the parameters of the physical robot we have in lab.
+
+@system
+name: AcrobotSpongController
+input_ports:
+- acrobot_state
+output_ports:
+- elbow_torque
+@endsystem
+
+@ingroup acrobot_systems */
 template <typename T>
 class AcrobotSpongController : public systems::LeafSystem<T> {
  public:

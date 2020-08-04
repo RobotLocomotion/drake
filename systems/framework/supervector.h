@@ -15,19 +15,21 @@
 namespace drake {
 namespace systems {
 
-/// Supervector is a concrete class template that implements
-/// VectorBase by concatenating multiple VectorBases, which it
-/// does not own.
-///
-/// @tparam_default_scalar
+/**
+Supervector is a concrete class template that implements
+VectorBase by concatenating multiple VectorBases, which it
+does not own.
+
+@tparam_default_scalar */
 template <typename T>
 class Supervector : public VectorBase<T> {
  public:
   // Supervector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector)
 
-  /// Constructs a supervector consisting of all the vectors in
-  /// subvectors, which must live at least as long as this supervector.
+  /**
+  Constructs a supervector consisting of all the vectors in
+  subvectors, which must live at least as long as this supervector. */
   explicit Supervector(const std::vector<VectorBase<T>*>& subvectors)
       : vectors_(subvectors) {
     int sum = 0;

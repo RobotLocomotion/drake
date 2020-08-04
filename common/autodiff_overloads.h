@@ -1,21 +1,22 @@
-/// @file
-/// Overloads for STL mathematical operations on AutoDiffScalar.
-///
-/// Used via argument-dependent lookup (ADL). These functions appear
-/// in the Eigen namespace so that ADL can automatically choose between
-/// the STL version and the overloaded version to match the type of the
-/// arguments. The proper use would be e.g.
-///
-/// \code{.cc}
-///    void mymethod() {
-///       using std::isinf;
-///       isinf(myval);
-///    }
-/// \endcode{}
-///
-/// @note The if_then_else and cond functions for AutoDiffScalar are in
-/// namespace drake because cond is defined in namespace drake in
-/// "drake/common/cond.h" file.
+/**
+@file
+Overloads for STL mathematical operations on AutoDiffScalar.
+
+Used via argument-dependent lookup (ADL). These functions appear
+in the Eigen namespace so that ADL can automatically choose between
+the STL version and the overloaded version to match the type of the
+arguments. The proper use would be e.g.
+
+\code{.cc}
+   void mymethod() {
+      using std::isinf;
+      isinf(myval);
+   }
+\endcode{}
+
+@note The if_then_else and cond functions for AutoDiffScalar are in
+namespace drake because cond is defined in namespace drake in
+"drake/common/cond.h" file. */
 
 #pragma once
 
@@ -33,56 +34,56 @@
 
 namespace Eigen {
 
-/// Overloads nexttoward to mimic std::nexttoward from <cmath>.
+/** Overloads nexttoward to mimic std::nexttoward from <cmath>. */
 template <typename DerType>
 double nexttoward(const Eigen::AutoDiffScalar<DerType>& from, long double to) {
   using std::nexttoward;
   return nexttoward(from.value(), to);
 }
 
-/// Overloads round to mimic std::round from <cmath>.
+/** Overloads round to mimic std::round from <cmath>. */
 template <typename DerType>
 double round(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::round;
   return round(x.value());
 }
 
-/// Overloads isinf to mimic std::isinf from <cmath>.
+/** Overloads isinf to mimic std::isinf from <cmath>. */
 template <typename DerType>
 bool isinf(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::isinf;
   return isinf(x.value());
 }
 
-/// Overloads isfinite to mimic std::isfinite from <cmath>.
+/** Overloads isfinite to mimic std::isfinite from <cmath>. */
 template <typename DerType>
 bool isfinite(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::isfinite;
   return isfinite(x.value());
 }
 
-/// Overloads isnan to mimic std::isnan from <cmath>.
+/** Overloads isnan to mimic std::isnan from <cmath>. */
 template <typename DerType>
 bool isnan(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::isnan;
   return isnan(x.value());
 }
 
-/// Overloads floor to mimic std::floor from <cmath>.
+/** Overloads floor to mimic std::floor from <cmath>. */
 template <typename DerType>
 double floor(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::floor;
   return floor(x.value());
 }
 
-/// Overloads ceil to mimic std::ceil from <cmath>.
+/** Overloads ceil to mimic std::ceil from <cmath>. */
 template <typename DerType>
 double ceil(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::ceil;
   return ceil(x.value());
 }
 
-/// Overloads copysign from <cmath>.
+/** Overloads copysign from <cmath>. */
 template <typename DerType, typename T>
 Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
                                         const T& y) {
@@ -94,7 +95,7 @@ Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
     return x;
 }
 
-/// Overloads copysign from <cmath>.
+/** Overloads copysign from <cmath>. */
 template <typename DerType>
 double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
   using std::isnan;
@@ -105,8 +106,9 @@ double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
     return x;
 }
 
-/// Overloads pow for an AutoDiffScalar base and exponent, implementing the
-/// chain rule.
+/**
+Overloads pow for an AutoDiffScalar base and exponent, implementing the
+chain rule. */
 template <typename DerTypeA, typename DerTypeB>
 Eigen::AutoDiffScalar<
     typename internal::remove_all<DerTypeA>::type::PlainObject>
@@ -153,14 +155,15 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
 
 namespace drake {
 
-/// Returns the autodiff scalar's value() as a double.  Never throws.
-/// Overloads ExtractDoubleOrThrow from common/extract_double.h.
+/**
+Returns the autodiff scalar's value() as a double.  Never throws.
+Overloads ExtractDoubleOrThrow from common/extract_double.h. */
 template <typename DerType>
 double ExtractDoubleOrThrow(const Eigen::AutoDiffScalar<DerType>& scalar) {
   return static_cast<double>(scalar.value());
 }
 
-/// Specializes common/dummy_value.h.
+/** Specializes common/dummy_value.h. */
 template <typename DerType>
 struct dummy_value<Eigen::AutoDiffScalar<DerType>> {
   static constexpr Eigen::AutoDiffScalar<DerType> get() {
@@ -171,11 +174,13 @@ struct dummy_value<Eigen::AutoDiffScalar<DerType>> {
   }
 };
 
-/// Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
-/// Eigen's generic expressions, we use casting to the plain object after
-/// applying Eigen::internal::remove_all. It is based on the Eigen's
-/// implementation of min/max function for AutoDiffScalar type
-/// (https://bitbucket.org/eigen/eigen/src/10a1de58614569c9250df88bdfc6402024687bc6/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h?at=default&fileviewer=file-view-default#AutoDiffScalar.h-546).
+/**
+Provides if-then-else expression for Eigen::AutoDiffScalar type. To support
+Eigen's generic expressions, we use casting to the plain object after
+applying Eigen::internal::remove_all. It is based on the Eigen's
+implementation of min/max function for AutoDiffScalar type
+(https://bitbucket.org/eigen/eigen/src/10a1de58614569c9250df88bdfc6402024687bc6/unsupported/Eigen/src/AutoDiff/AutoDiffScalar.h?at=default&fileviewer=file-view-default#AutoDiffScalar.h-546).
+ */
 template <typename DerType1, typename DerType2>
 inline Eigen::AutoDiffScalar<
     typename Eigen::internal::remove_all<DerType1>::type::PlainObject>
@@ -192,7 +197,7 @@ if_then_else(bool f_cond, const Eigen::AutoDiffScalar<DerType1>& x,
   return f_cond ? ADS1(x) : ADS2(y);
 }
 
-/// Provides special case of cond expression for Eigen::AutoDiffScalar type.
+/** Provides special case of cond expression for Eigen::AutoDiffScalar type. */
 template <typename DerType, typename... Rest>
 Eigen::AutoDiffScalar<
     typename Eigen::internal::remove_all<DerType>::type::PlainObject>

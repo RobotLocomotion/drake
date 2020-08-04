@@ -16,41 +16,37 @@
 namespace drake {
 namespace geometry {
 
-/**
- Index used to identify a vertex in a volume mesh.
- */
+/** Index used to identify a vertex in a volume mesh. */
 using VolumeVertexIndex = TypeSafeIndex<class VolumeVertexTag>;
 
-/**
- Index for identifying a tetrahedral element in a volume mesh.
- */
+/** Index for identifying a tetrahedral element in a volume mesh. */
 using VolumeElementIndex = TypeSafeIndex<class VolumeElementTag>;
 
-/** %VolumeVertex represents a vertex in VolumeMesh.
- @tparam T The underlying scalar type for coordinates, e.g., double or
-           AutoDiffXd. Must be a valid Eigen scalar.
- */
+/**
+%VolumeVertex represents a vertex in VolumeMesh.
+@tparam T The underlying scalar type for coordinates, e.g., double or
+          AutoDiffXd. Must be a valid Eigen scalar. */
 template <class T>
 class VolumeVertex {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeVertex)
 
-  /** Constructs VolumeVertex.
-   @param r_MV displacement vector from the origin of M's frame to this
-               vertex, expressed in M's frame.
-   */
+  /**
+  Constructs VolumeVertex.
+  @param r_MV displacement vector from the origin of M's frame to this
+              vertex, expressed in M's frame. */
   explicit VolumeVertex(const Vector3<T>& r_MV)
       : r_MV_(r_MV) {}
 
-  /** Constructs VolumeVertex from the xyz components of a point V in a frame
-   M.
-   */
+  /**
+  Constructs VolumeVertex from the xyz components of a point V in a frame
+  M. */
   VolumeVertex(const T& Vx_M, const T& Vy_M, const T& Vz_M)
       : r_MV_(Vx_M, Vy_M, Vz_M) {}
 
-  /** Returns the displacement vector from the origin of M's frame to this
-    vertex, expressed in M's frame.
-   */
+  /**
+  Returns the displacement vector from the origin of M's frame to this
+  vertex, expressed in M's frame. */
   const Vector3<T>& r_MV() const { return r_MV_; }
 
  private:
@@ -59,42 +55,42 @@ class VolumeVertex {
   Vector3<T> r_MV_;
 };
 
-/** %VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
- topological entity in the sense that it only knows the indices of its vertices
- but not their coordinates.
- */
+/**
+%VolumeElement represents a tetrahedral element in a VolumeMesh. It is a
+topological entity in the sense that it only knows the indices of its vertices
+but not their coordinates. */
 class VolumeElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeElement)
 
-  /** Constructs VolumeElement.
-   We follow the convention that the first three vertices define a triangle with
-   its right-handed normal pointing inwards. The fourth vertex is then on the
-   positive side of this first triangle.
-   @warning This class does not enforce our convention for the ordering of the
-   vertices.
-   @param v0 Index of the first vertex in VolumeMesh.
-   @param v1 Index of the second vertex in VolumeMesh.
-   @param v2 Index of the third vertex in VolumeMesh.
-   @param v3 Index of the last vertex in VolumeMesh.
-   */
+  /**
+  Constructs VolumeElement.
+  We follow the convention that the first three vertices define a triangle with
+  its right-handed normal pointing inwards. The fourth vertex is then on the
+  positive side of this first triangle.
+  @warning This class does not enforce our convention for the ordering of the
+  vertices.
+  @param v0 Index of the first vertex in VolumeMesh.
+  @param v1 Index of the second vertex in VolumeMesh.
+  @param v2 Index of the third vertex in VolumeMesh.
+  @param v3 Index of the last vertex in VolumeMesh. */
   VolumeElement(VolumeVertexIndex v0, VolumeVertexIndex v1,
                 VolumeVertexIndex v2, VolumeVertexIndex v3)
       : vertex_({v0, v1, v2, v3}) {}
 
-  /** Constructs VolumeElement.
-   @param v  Array of four integer indices of the vertices of the element in
-             VolumeMesh.
-   */
+  /**
+  Constructs VolumeElement.
+  @param v  Array of four integer indices of the vertices of the element in
+            VolumeMesh. */
   explicit VolumeElement(const int v[4])
       : vertex_({VolumeVertexIndex(v[0]), VolumeVertexIndex(v[1]),
                  VolumeVertexIndex(v[2]), VolumeVertexIndex(v[3])}) {}
 
-  /** Returns the vertex index in VolumeMesh of the i-th vertex of this
-   element.
-   @param i  The local index of the vertex in this element.
-   @pre 0 <= i < 4
-   */
+  /**
+  Returns the vertex index in VolumeMesh of the i-th vertex of this
+  element.
+  @param i  The local index of the vertex in this element.
+  @pre 0 <= i < 4 */
   VolumeVertexIndex vertex(int i) const {
     return vertex_.at(i);
   }
@@ -108,24 +104,23 @@ class VolumeElement {
 // friend access to VolumeMeshTester<T>.
 template <typename T> class VolumeMeshTester;
 
-/** %VolumeMesh represents a tetrahedral volume mesh.
- @tparam T  The underlying scalar type for coordinates, e.g., double or
-            AutoDiffXd. Must be a valid Eigen scalar.
- */
+/**
+%VolumeMesh represents a tetrahedral volume mesh.
+@tparam T  The underlying scalar type for coordinates, e.g., double or
+           AutoDiffXd. Must be a valid Eigen scalar. */
 template <class T>
 class VolumeMesh {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VolumeMesh)
 
   /**
-   @name Mesh type traits
+  @name Mesh type traits
 
-   A collection of type traits to enable mesh consumers to be templated on
-   mesh type. Each mesh type provides specific definitions of _vertex_,
-   _element_, and _barycentric coordinates_. For %VolumeMesh, an element is a
-   tetrahedron.
-   */
-  //@{
+  A collection of type traits to enable mesh consumers to be templated on
+  mesh type. Each mesh type provides specific definitions of _vertex_,
+  _element_, and _barycentric coordinates_. For %VolumeMesh, an element is a
+  tetrahedron. */
+  /** @{ */
 
   using ScalarType = T;
 
@@ -135,40 +130,37 @@ class VolumeMesh {
 
   static constexpr int kDim = 3;
 
-  /**
-   Number of vertices per element. A tetrahedron has 4 vertices.
-   */
+  /** Number of vertices per element. A tetrahedron has 4 vertices. */
   static constexpr int kVertexPerElement = 4;
 
-  /** Index for identifying a vertex.
-   */
+  /** Index for identifying a vertex. */
   using VertexIndex = VolumeVertexIndex;
 
-  /** Index for identifying a tetrahedral element.
-   */
+  /** Index for identifying a tetrahedral element. */
   using ElementIndex = VolumeElementIndex;
 
-  /** Type of barycentric coordinates on a tetrahedral element. Barycentric
-   coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds
-   to a position in the space. If all bᵢ >= 0, it corresponds to a position
-   inside the tetrahedron or on the faces of the tetrahedron. If some bᵢ < 0,
-   it corresponds to a position outside the tetrahedron. Technically we
-   could calculate one of the bᵢ from the others; however, there is no
-   standard way to omit one of the coordinates.
-  */
+  /**
+  Type of barycentric coordinates on a tetrahedral element. Barycentric
+  coordinates (b₀, b₁, b₂, b₃) satisfy b₀ + b₁ + b₂ + b₃ = 1. It corresponds
+  to a position in the space. If all bᵢ >= 0, it corresponds to a position
+  inside the tetrahedron or on the faces of the tetrahedron. If some bᵢ < 0,
+  it corresponds to a position outside the tetrahedron. Technically we
+  could calculate one of the bᵢ from the others; however, there is no
+  standard way to omit one of the coordinates. */
   using Barycentric = Vector<T, kDim + 1>;
 
-  /** Type of Cartesian coordinates. Mesh consumers can use it in conversion
-   from Cartesian coordinates to barycentric coordinates.
-   */
+  /**
+  Type of Cartesian coordinates. Mesh consumers can use it in conversion
+  from Cartesian coordinates to barycentric coordinates. */
   using Cartesian = Vector<T, 3>;
 
-  //@}
+  /** @} */
 
-  /** Constructor from a vector of vertices and from a vector of elements.
-   Each element must be a valid VolumeElement following the vertex ordering
-   convention documented in the VolumeElement class. This class however does not
-   enforce this convention and it is thus the responsibility of the user.  */
+  /**
+  Constructor from a vector of vertices and from a vector of elements.
+  Each element must be a valid VolumeElement following the vertex ordering
+  convention documented in the VolumeElement class. This class however does not
+  enforce this convention and it is thus the responsibility of the user. */
   VolumeMesh(std::vector<VolumeElement>&& elements,
              std::vector<VolumeVertex<T>>&& vertices)
       : elements_(std::move(elements)), vertices_(std::move(vertices)) {
@@ -182,10 +174,10 @@ class VolumeMesh {
     return elements_[e];
   }
 
-  /** Returns the vertex identified by a given index.
-   @param v  The index of the vertex.
-   @pre v ∈ {0, 1, 2,...,num_vertices()-1}.
-   */
+  /**
+  Returns the vertex identified by a given index.
+  @param v  The index of the vertex.
+  @pre v ∈ {0, 1, 2,...,num_vertices()-1}. */
   const VolumeVertex<T>& vertex(VertexIndex v) const {
     DRAKE_DEMAND(0 <= v && v < num_vertices());
     return vertices_[v];
@@ -195,16 +187,13 @@ class VolumeMesh {
 
   const std::vector<VolumeElement>& tetrahedra() const { return elements_; }
 
-  /** Returns the number of tetrahedral elements in the mesh.
-   */
+  /** Returns the number of tetrahedral elements in the mesh. */
   int num_elements() const { return elements_.size(); }
 
-  /** Returns the number of vertices in the mesh.
-   */
+  /** Returns the number of vertices in the mesh. */
   int num_vertices() const { return vertices_.size(); }
 
-  /** Calculates volume of a tetrahedral element.
-   */
+  /** Calculates volume of a tetrahedral element. */
   T CalcTetrahedronVolume(VolumeElementIndex e) const {
     // TODO(DamrongGuoy): Refactor this function out of VolumeMesh when we need
     //  it. CalcTetrahedronVolume(VolumeElementIndex) will call
@@ -223,15 +212,15 @@ class VolumeMesh {
     return volume;
   }
 
-  /** Calculate barycentric coordinates with respect to the tetrahedron `e`
-   of the point Q'. This operation is expensive compared with going from
-   barycentric to Cartesian.
-   @param p_MQ  A position expressed in the frame M of the mesh.
-   @param e     The index of a tetrahedral element.
-   @note  If p_MQ is outside the tetrahedral element, the barycentric
-          coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
-          however, some bᵢ will be negative.
-   */
+  /**
+  Calculate barycentric coordinates with respect to the tetrahedron `e`
+  of the point Q'. This operation is expensive compared with going from
+  barycentric to Cartesian.
+  @param p_MQ  A position expressed in the frame M of the mesh.
+  @param e     The index of a tetrahedral element.
+  @note  If p_MQ is outside the tetrahedral element, the barycentric
+         coordinates (b₀, b₁, b₂, b₃) still satisfy b₀ + b₁ + b₂ + b₃ = 1;
+         however, some bᵢ will be negative. */
   Barycentric CalcBarycentric(const Cartesian& p_MQ, ElementIndex e) const {
     // We have two conditions to satisfy.
     // 1. b₀ + b₁ + b₂ + b₃ = 1
@@ -259,11 +248,11 @@ class VolumeMesh {
     return b_Q;
   }
 
-  /** Checks to see whether the given VolumeMesh object is equal via deep
-   exact comparison. NaNs are treated as not equal as per the IEEE standard.
-   @param mesh The mesh for comparison.
-   @returns `true` if the given mesh is equal.
-   */
+  /**
+  Checks to see whether the given VolumeMesh object is equal via deep
+  exact comparison. NaNs are treated as not equal as per the IEEE standard.
+  @param mesh The mesh for comparison.
+  @returns `true` if the given mesh is equal. */
   bool Equal(const VolumeMesh<T>& mesh) const {
     if (this == &mesh) return true;
 
@@ -286,11 +275,11 @@ class VolumeMesh {
     return true;
   }
 
-  /** Calculates the gradient ∇u of a linear field u on the tetrahedron `e`.
-   Field u is defined by the four field values `field_value[i]` at the i-th
-   vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
-   frame of this mesh M.
-   */
+  /**
+  Calculates the gradient ∇u of a linear field u on the tetrahedron `e`.
+  Field u is defined by the four field values `field_value[i]` at the i-th
+  vertex of the tetrahedron. The gradient ∇u is expressed in the coordinates
+  frame of this mesh M. */
   template <typename FieldValue>
   Vector3<FieldValue> CalcGradientVectorOfLinearField(
       const std::array<FieldValue, 4>& field_value,

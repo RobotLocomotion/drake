@@ -9,14 +9,15 @@ namespace systems {
 namespace analysis {
 namespace test {
 
-/// Robertson's stiff chemical reaction problem. This example is taken from
-/// [Hairer, 1996] and is described in more detail in:
-/// http://www.radford.edu/~thompson/vodef90web/problems/demosnodislin/Single/DemoRobertson/demorobertson.pdf
-/// The original system is described in:
-///
-/// - [Robertson, 1966]  H. H. Robertson. "The solution of a system of reaction
-///                      rate equations" in Numerical Analysis, An Introduction.
-///                      Pages 178-182. Academic Press, 1966.
+/**
+Robertson's stiff chemical reaction problem. This example is taken from
+[Hairer, 1996] and is described in more detail in:
+http://www.radford.edu/~thompson/vodef90web/problems/demosnodislin/Single/DemoRobertson/demorobertson.pdf
+The original system is described in:
+
+- [Robertson, 1966]  H. H. Robertson. "The solution of a system of reaction
+                     rate equations" in Numerical Analysis, An Introduction.
+                     Pages 178-182. Academic Press, 1966. */
 template <class T>
 class RobertsonSystem : public LeafSystem<T> {
  public:
@@ -43,7 +44,7 @@ class RobertsonSystem : public LeafSystem<T> {
     deriv->get_mutable_vector().SetAtIndex(2, y3_prime);
   }
 
-  /// Sets the initial conditions for the Robertson system.
+  /** Sets the initial conditions for the Robertson system. */
   void SetDefaultState(
       const Context<T>& context, State<T>* state) const override {
     auto& xc = state->get_mutable_continuous_state().get_mutable_vector();
@@ -52,10 +53,10 @@ class RobertsonSystem : public LeafSystem<T> {
     xc.SetAtIndex(2, 0);
   }
 
-  /// Gets the end time for integration.
+  /** Gets the end time for integration. */
   T get_end_time() const { return 1e11; }
 
-  /// Gets the system solution. Only works for time 10^11.
+  /** Gets the system solution. Only works for time 10^11. */
   static Vector3<T> GetSolution(const T& t) {
     DRAKE_DEMAND(t == 1e11);
     Vector3<T> sol;

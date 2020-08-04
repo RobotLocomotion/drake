@@ -7,66 +7,71 @@
 namespace drake {
 namespace systems {
 
-/// An element-wise first order low pass filter system that filters the i-th
-/// input uᵢ into the i-th output zᵢ. This system has one continuous state per
-/// filtered input signal. Therefore, the i-th state of the system zᵢ evolves
-/// according to: <pre>
-///   żᵢ = -1/τᵢ (zᵢ - uᵢ)
-/// </pre>
-/// where τᵢ is the time constant of the i-th filter.
-/// The i-th output of the system is given by: <pre>
-///   yᵢ = zᵢ
-/// </pre>
-///
-/// The transfer function for the i-th filter corresponds to: <pre>
-///   H(s) = 1 / (1 + τᵢ s)
-/// </pre>
-///
-/// The Bode plot for the i-th filter exhibits a cutoff frequency (angular
-/// frequency) at 1/τᵢ and a gain of one. For frequencies higher than the cutoff
-/// frequency, the Bode plot approaches a 20 dB per decade negative slope.
-/// The Bode plot in phase exhibits a -90 degrees shift (lag) for frequencies
-/// much larger than the cutoff frequency and a zero shift for low frequencies.
-///
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
+/**
+An element-wise first order low pass filter system that filters the i-th
+input uᵢ into the i-th output zᵢ. This system has one continuous state per
+filtered input signal. Therefore, the i-th state of the system zᵢ evolves
+according to: <pre>
+  żᵢ = -1/τᵢ (zᵢ - uᵢ)
+</pre>
+where τᵢ is the time constant of the i-th filter.
+The i-th output of the system is given by: <pre>
+  yᵢ = zᵢ
+</pre>
+
+The transfer function for the i-th filter corresponds to: <pre>
+  H(s) = 1 / (1 + τᵢ s)
+</pre>
+
+The Bode plot for the i-th filter exhibits a cutoff frequency (angular
+frequency) at 1/τᵢ and a gain of one. For frequencies higher than the cutoff
+frequency, the Bode plot approaches a 20 dB per decade negative slope.
+The Bode plot in phase exhibits a -90 degrees shift (lag) for frequencies
+much larger than the cutoff frequency and a zero shift for low frequencies.
+
+@tparam_default_scalar
+@ingroup primitive_systems */
 template <typename T>
 class FirstOrderLowPassFilter final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FirstOrderLowPassFilter)
 
-  /// Constructs a %FirstOrderLowPassFilter system that filters all input
-  /// signals with the same time constant, i.e. τᵢ = τ, ∀ i.
-  ///
-  /// @param[in] time_constant the time constant τ of the filter.
-  ///                          It must be a positive number.
-  /// @param[in] size number of elements in the signal to be processed.
+  /**
+  Constructs a %FirstOrderLowPassFilter system that filters all input
+  signals with the same time constant, i.e. τᵢ = τ, ∀ i.
+
+  @param[in] time_constant the time constant τ of the filter.
+                           It must be a positive number.
+  @param[in] size number of elements in the signal to be processed. */
   explicit FirstOrderLowPassFilter(double time_constant, int size = 1);
 
-  /// Constructs a %FirstOrderLowPassFilter so that the i-th component of the
-  /// input signal vector is low pass filtered with a time constant given in the
-  /// i-th component τᵢ of the input `time_constants` vector.
-  ///
-  /// @param[in] time_constants Vector of time constants. Each entry in this
-  ///                           vector must be positive.
+  /**
+  Constructs a %FirstOrderLowPassFilter so that the i-th component of the
+  input signal vector is low pass filtered with a time constant given in the
+  i-th component τᵢ of the input `time_constants` vector.
+
+  @param[in] time_constants Vector of time constants. Each entry in this
+                            vector must be positive. */
   explicit FirstOrderLowPassFilter(const VectorX<double>& time_constants);
 
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit FirstOrderLowPassFilter(const FirstOrderLowPassFilter<U>&);
 
-  /// Returns the time constant of the filter for filters that have the same
-  /// time constant τ for all signals.
-  /// This method aborts if called on filters if with different time constants
-  /// per input signal. @see get_time_constants_vector().
+  /**
+  Returns the time constant of the filter for filters that have the same
+  time constant τ for all signals.
+  This method aborts if called on filters if with different time constants
+  per input signal. @see get_time_constants_vector(). */
   double get_time_constant() const;
 
-  /// Returns the vector of time constants for `this` filter.
+  /** Returns the vector of time constants for `this` filter. */
   const VectorX<double>& get_time_constants_vector() const;
 
-  /// Sets the initial conditions on the output value of the filtered signal.
-  /// @param[in] context The current system context.
-  /// @param[in] z0 The vector on initial conditions on the output value.
+  /**
+  Sets the initial conditions on the output value of the filtered signal.
+  @param[in] context The current system context.
+  @param[in] z0 The vector on initial conditions on the output value. */
   void set_initial_output_value(Context<T>* context,
                                 const Eigen::Ref<const VectorX<T>>& z0) const;
 

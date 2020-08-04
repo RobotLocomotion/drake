@@ -1009,7 +1009,7 @@ TYPED_TEST_P(ImplicitIntegratorTest, ContextAccess) {
                std::logic_error);
 }
 
-/// Verifies error estimation is supported.
+/** Verifies error estimation is supported. */
 TYPED_TEST_P(ImplicitIntegratorTest, AccuracyEstAndErrorControl) {
   // Spring-mass system is necessary only to setup the problem.
   using Integrator = TypeParam;

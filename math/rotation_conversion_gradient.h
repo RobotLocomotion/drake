@@ -10,11 +10,10 @@
 namespace drake {
 namespace math {
 /**
- * Computes the gradient of the function that converts a unit length quaternion
- * to a rotation matrix.
- * @param quaternion A unit length quaternion [w;x;y;z]
- * @return The gradient
- */
+Computes the gradient of the function that converts a unit length quaternion
+to a rotation matrix.
+@param quaternion A unit length quaternion [w;x;y;z]
+@return The gradient */
 template <typename Derived>
 typename drake::math::Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>,
                                drake::kQuaternionSize>::type
@@ -42,15 +41,14 @@ dquat2rotmat(const Eigen::MatrixBase<Derived>& quaternion) {
 }
 
 /**
- * Computes the gradient of the function that converts a rotation matrix to
- * body-fixed z-y'-x'' Euler angles.
- * @param R A 3 x 3 rotation matrix
- * @param dR A 9 x N matrix, dR(i,j) is the gradient of R(i) w.r.t x(j)
- * @return The gradient G. G is a 3 x N matrix.
- *   G(0,j) is the gradient of roll w.r.t x(j)
- *   G(1,j) is the gradient of pitch w.r.t x(j)
- *   G(2,j) is the gradient of yaw w.r.t x(j)
- */
+Computes the gradient of the function that converts a rotation matrix to
+body-fixed z-y'-x'' Euler angles.
+@param R A 3 x 3 rotation matrix
+@param dR A 9 x N matrix, dR(i,j) is the gradient of R(i) w.r.t x(j)
+@return The gradient G. G is a 3 x N matrix.
+  G(0,j) is the gradient of roll w.r.t x(j)
+  G(1,j) is the gradient of pitch w.r.t x(j)
+  G(2,j) is the gradient of yaw w.r.t x(j) */
 template <typename DerivedR, typename DerivedDR>
 typename drake::math::Gradient<
     Eigen::Matrix<typename DerivedR::Scalar, drake::kRpySize, 1>,
@@ -103,16 +101,15 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
 }
 
 /**
- * Computes the gradient of the function that converts rotation matrix to
- * quaternion.
- * @param R A 3 x 3 rotation matrix
- * @param dR A 9 x N matrix, dR(i,j) is the gradient of R(i) w.r.t x_var(j)
- * @return The gradient G. G is a 4 x N matrix
- *   G(0,j) is the gradient of w w.r.t x_var(j)
- *   G(1,j) is the gradient of x w.r.t x_var(j)
- *   G(2,j) is the gradient of y w.r.t x_var(j)
- *   G(3,j) is the gradient of z w.r.t x_var(j)
- */
+Computes the gradient of the function that converts rotation matrix to
+quaternion.
+@param R A 3 x 3 rotation matrix
+@param dR A 9 x N matrix, dR(i,j) is the gradient of R(i) w.r.t x_var(j)
+@return The gradient G. G is a 4 x N matrix
+  G(0,j) is the gradient of w w.r.t x_var(j)
+  G(1,j) is the gradient of x w.r.t x_var(j)
+  G(2,j) is the gradient of y w.r.t x_var(j)
+  G(3,j) is the gradient of z w.r.t x_var(j) */
 template <typename DerivedR, typename DerivedDR>
 typename drake::math::Gradient<
     Eigen::Matrix<typename DerivedR::Scalar, drake::kQuaternionSize, 1>,

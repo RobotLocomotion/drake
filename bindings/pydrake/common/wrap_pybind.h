@@ -1,5 +1,6 @@
-/// @file
-/// Defines convenience utilities to wrap pybind11 methods and classes.
+/**
+@file
+Defines convenience utilities to wrap pybind11 methods and classes. */
 
 #pragma once
 
@@ -116,27 +117,29 @@ struct type_caster_wrapped {
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
 
-/// Ensures that any `std::function<>` arguments are wrapped such that any `T&`
-/// (which can infer for `T = const U`) is wrapped as `U*` (and conversely
-/// unwrapped when returned).
-/// Use this when you have a callback in C++ that has a lvalue reference (const
-/// or mutable) to a C++ argument or return value.
-/// Otherwise, `pybind11` may try and copy the object, will be bad if either
-/// the type is a non-copyable or if you are trying to mutate the object; in
-/// this case, the copy is mutated, but not the original you care about.
-/// For more information, see: https://github.com/pybind/pybind11/issues/1241
+/**
+Ensures that any `std::function<>` arguments are wrapped such that any `T&`
+(which can infer for `T = const U`) is wrapped as `U*` (and conversely
+unwrapped when returned).
+Use this when you have a callback in C++ that has a lvalue reference (const
+or mutable) to a C++ argument or return value.
+Otherwise, `pybind11` may try and copy the object, will be bad if either
+the type is a non-copyable or if you are trying to mutate the object; in
+this case, the copy is mutated, but not the original you care about.
+For more information, see: https://github.com/pybind/pybind11/issues/1241 */
 template <typename Func>
 auto WrapCallbacks(Func&& func) {
   return WrapFunction<internal::wrap_callback, false>(std::forward<Func>(func));
 }
 
-/// Idempotent to pybind11's `def_readwrite()`, with the exception that the
-/// setter is protected with keep_alive on a `member` variable that is a bare
-/// pointer.  Should not be used for unique_ptr members.
-///
-/// @tparam PyClass the python class.
-/// @tparam Class the C++ class.
-/// @tparam T type for the member we wish to apply keep alive semantics.
+/**
+Idempotent to pybind11's `def_readwrite()`, with the exception that the
+setter is protected with keep_alive on a `member` variable that is a bare
+pointer.  Should not be used for unique_ptr members.
+
+@tparam PyClass the python class.
+@tparam Class the C++ class.
+@tparam T type for the member we wish to apply keep alive semantics. */
 template <typename PyClass, typename Class, typename T>
 void DefReadWriteKeepAlive(
     PyClass* cls, const char* name, T Class::*member, const char* doc = "") {
@@ -150,13 +153,14 @@ void DefReadWriteKeepAlive(
       doc);
 }
 
-/// Idempotent to pybind11's `def_readonly()`, which works for unique_ptr
-/// elements; the getter is protected with keep_alive on a `member` variable
-/// that is a unique_ptr.
-///
-/// @tparam PyClass the python class.
-/// @tparam Class the C++ class.
-/// @tparam T type for the member we wish to apply keep alive semantics.
+/**
+Idempotent to pybind11's `def_readonly()`, which works for unique_ptr
+elements; the getter is protected with keep_alive on a `member` variable
+that is a unique_ptr.
+
+@tparam PyClass the python class.
+@tparam Class the C++ class.
+@tparam T type for the member we wish to apply keep alive semantics. */
 template <typename PyClass, typename Class, typename T>
 void DefReadUniquePtr(PyClass* cls, const char* name,
     const std::unique_ptr<T> Class::*member, const char* doc = "") {

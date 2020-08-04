@@ -28,9 +28,8 @@ enum class BrickFace {
 };
 
 /**
- * The helper class that contains the diagram of the planar gripper (3 planar
- * fingers) with a brick.
- */
+The helper class that contains the diagram of the planar gripper (3 planar
+fingers) with a brick. */
 template <typename T>
 class GripperBrickHelper {
  public:
@@ -75,10 +74,9 @@ class GripperBrickHelper {
   Eigen::Vector3d brick_size() const { return brick_size_; }
 
   /**
-   * Return the orientation of link 2. Notice that since the finger only moves
-   * in the planar surface, the orientation can be represented by the rotation
-   * angle around the world x axis.
-   */
+  Return the orientation of link 2. Notice that since the finger only moves
+  in the planar surface, the orientation can be represented by the rotation
+  angle around the world x axis. */
   template <typename U>
   U CalcFingerLink2Orientation(Finger finger, const U& base_joint_angle,
                                const U& middle_joint_angle) const {

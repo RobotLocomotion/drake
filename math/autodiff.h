@@ -1,5 +1,6 @@
-/// @file
-/// Utilities for arithmetic on AutoDiffScalar.
+/**
+@file
+Utilities for arithmetic on AutoDiffScalar. */
 
 // TODO(russt): rename methods to be GSG compliant.
 
@@ -36,20 +37,20 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
   return ret;
 }
 
-/** `B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
- * to AutoDiffScalar::Scalar type, explicitly throwing away any gradient
- * information. For a matrix of type, e.g. `MatrixX<AutoDiffXd> A`, the
- * comparable operation
- *   `B = A.cast<double>()`
- * should (and does) fail to compile.  Use `DiscardGradient(A)` if you want to
- * force the cast (and explicitly declare that information is lost).
- *
- * This method is overloaded to permit the user to call it for double types and
- * AutoDiffScalar types (to avoid the calling function having to handle the
- * two cases differently).
- *
- * @see DiscardZeroGradient
- */
+/**
+`B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
+to AutoDiffScalar::Scalar type, explicitly throwing away any gradient
+information. For a matrix of type, e.g. `MatrixX<AutoDiffXd> A`, the
+comparable operation
+  `B = A.cast<double>()`
+should (and does) fail to compile.  Use `DiscardGradient(A)` if you want to
+force the cast (and explicitly declare that information is lost).
+
+This method is overloaded to permit the user to call it for double types and
+AutoDiffScalar types (to avoid the calling function having to handle the
+two cases differently).
+
+@see DiscardZeroGradient */
 template <typename Derived>
 typename std::enable_if<
     !std::is_same<typename Derived::Scalar, double>::value,
@@ -60,7 +61,7 @@ DiscardGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
   return autoDiffToValueMatrix(auto_diff_matrix);
 }
 
-/// @see DiscardGradient().
+/** @see DiscardGradient(). */
 template <typename Derived>
 typename std::enable_if<
     std::is_same<typename Derived::Scalar, double>::value,
@@ -69,7 +70,7 @@ DiscardGradient(const Eigen::MatrixBase<Derived>& matrix) {
   return matrix;
 }
 
-/// @see DiscardGradient().
+/** @see DiscardGradient(). */
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 typename std::enable_if<
     !std::is_same<_Scalar, double>::value,
@@ -80,7 +81,7 @@ DiscardGradient(const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&
       autoDiffToValueMatrix(auto_diff_transform.matrix()));
 }
 
-/// @see DiscardGradient().
+/** @see DiscardGradient(). */
 template <typename _Scalar, int _Dim, int _Mode, int _Options>
 typename std::enable_if<std::is_same<_Scalar, double>::value,
                         const Eigen::Transform<_Scalar, _Dim, _Mode,
@@ -91,23 +92,23 @@ DiscardGradient(
 }
 
 
-/** \brief Initialize a single autodiff matrix given the corresponding value
- *matrix.
- *
- * Set the values of \p auto_diff_matrix to be equal to \p val, and for each
- *element i of \p auto_diff_matrix,
- * resize the derivatives vector to \p num_derivatives, and set derivative
- *number \p deriv_num_start + i to one (all other elements of the derivative
- *vector set to zero).
- *
- * \param[in] mat 'regular' matrix of values
- * \param[out] ret AutoDiff matrix
- * \param[in] num_derivatives the size of the derivatives vector @default the
- *size of mat
- * \param[in] deriv_num_start starting index into derivative vector (i.e.
- *element deriv_num_start in derivative vector corresponds to mat(0, 0)).
- *@default 0
- */
+/**
+\brief Initialize a single autodiff matrix given the corresponding value
+*matrix.
+*
+* Set the values of \p auto_diff_matrix to be equal to \p val, and for each
+*element i of \p auto_diff_matrix,
+* resize the derivatives vector to \p num_derivatives, and set derivative
+*number \p deriv_num_start + i to one (all other elements of the derivative
+*vector set to zero).
+*
+* \param[in] mat 'regular' matrix of values
+* \param[out] ret AutoDiff matrix
+* \param[in] num_derivatives the size of the derivatives vector @default the
+*size of mat
+* \param[in] deriv_num_start starting index into derivative vector (i.e.
+*element deriv_num_start in derivative vector corresponds to mat(0, 0)).
+*@default 0 */
 template <typename Derived, typename DerivedAutoDiff>
 void initializeAutoDiff(const Eigen::MatrixBase<Derived>& val,
                         // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -131,32 +132,32 @@ void initializeAutoDiff(const Eigen::MatrixBase<Derived>& val,
   }
 }
 
-/** \brief The appropriate AutoDiffScalar gradient type given the value type and
- * the number of derivatives at compile time
- */
+/**
+\brief The appropriate AutoDiffScalar gradient type given the value type and
+the number of derivatives at compile time */
 template <typename Derived, int Nq>
 using AutoDiffMatrixType = Eigen::Matrix<
     Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1>>,
     Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
     Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
-/** \brief Initialize a single autodiff matrix given the corresponding value
- *matrix.
- *
- * Create autodiff matrix that matches \p mat in size with derivatives of
- *compile time size \p Nq and runtime size \p num_derivatives.
- * Set its values to be equal to \p val, and for each element i of \p
- *auto_diff_matrix, set derivative number \p deriv_num_start + i to one (all
- *other derivatives set to zero).
- *
- * \param[in] mat 'regular' matrix of values
- * \param[in] num_derivatives the size of the derivatives vector @default the
- *size of mat
- * \param[in] deriv_num_start starting index into derivative vector (i.e.
- *element deriv_num_start in derivative vector corresponds to mat(0, 0)).
- *@default 0
- * \return AutoDiff matrix
- */
+/**
+\brief Initialize a single autodiff matrix given the corresponding value
+*matrix.
+*
+* Create autodiff matrix that matches \p mat in size with derivatives of
+*compile time size \p Nq and runtime size \p num_derivatives.
+* Set its values to be equal to \p val, and for each element i of \p
+*auto_diff_matrix, set derivative number \p deriv_num_start + i to one (all
+*other derivatives set to zero).
+*
+* \param[in] mat 'regular' matrix of values
+* \param[in] num_derivatives the size of the derivatives vector @default the
+*size of mat
+* \param[in] deriv_num_start starting index into derivative vector (i.e.
+*element deriv_num_start in derivative vector corresponds to mat(0, 0)).
+*@default 0
+* \return AutoDiff matrix */
 template <int Nq = Eigen::Dynamic, typename Derived>
 AutoDiffMatrixType<Derived, Nq> initializeAutoDiff(
     const Eigen::MatrixBase<Derived>& mat,
@@ -193,18 +194,18 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
 };
 }  // namespace internal
 
-/** Resize derivatives vector of each element of a matrix to to match the size
- * of the derivatives vector of a given scalar.
- * \brief If the mat and scalar inputs are AutoDiffScalars, resize the
- * derivatives vector of each element of the matrix mat to match
- * the number of derivatives of the scalar. This is useful in functions that
- * return matrices that do not depend on an AutoDiffScalar
- * argument (e.g. a function with a constant output), while it is desired that
- * information about the number of derivatives is preserved.
- * \param mat matrix, for which the derivative vectors of the elements will be
- * resized
- * \param scalar scalar to match the derivative size vector against.
- */
+/**
+Resize derivatives vector of each element of a matrix to to match the size
+of the derivatives vector of a given scalar.
+\brief If the mat and scalar inputs are AutoDiffScalars, resize the
+derivatives vector of each element of the matrix mat to match
+the number of derivatives of the scalar. This is useful in functions that
+return matrices that do not depend on an AutoDiffScalar
+argument (e.g. a function with a constant output), while it is desired that
+information about the number of derivatives is preserved.
+\param mat matrix, for which the derivative vectors of the elements will be
+resized
+\param scalar scalar to match the derivative size vector against. */
 template <typename Derived>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
@@ -214,8 +215,7 @@ void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
 }
 
 namespace internal {
-/** \brief Helper for totalSizeAtCompileTime function (recursive)
- */
+/** \brief Helper for totalSizeAtCompileTime function (recursive) */
 template <typename Head, typename... Tail>
 struct TotalSizeAtCompileTime {
   static constexpr int eval() {
@@ -227,37 +227,35 @@ struct TotalSizeAtCompileTime {
   }
 };
 
-/** \brief Helper for totalSizeAtCompileTime function (base case)
- */
+/** \brief Helper for totalSizeAtCompileTime function (base case) */
 template <typename Head>
 struct TotalSizeAtCompileTime<Head> {
   static constexpr int eval() { return Head::SizeAtCompileTime; }
 };
 
-/** \brief Determine the total size at compile time of a number of arguments
- * based on their SizeAtCompileTime static members
- */
+/**
+\brief Determine the total size at compile time of a number of arguments
+based on their SizeAtCompileTime static members */
 template <typename... Args>
 constexpr int totalSizeAtCompileTime() {
   return TotalSizeAtCompileTime<Args...>::eval();
 }
 
-/** \brief Determine the total size at runtime of a number of arguments using
- * their size() methods (base case).
- */
+/**
+\brief Determine the total size at runtime of a number of arguments using
+their size() methods (base case). */
 constexpr Eigen::DenseIndex totalSizeAtRunTime() { return 0; }
 
-/** \brief Determine the total size at runtime of a number of arguments using
- * their size() methods (recursive)
- */
+/**
+\brief Determine the total size at runtime of a number of arguments using
+their size() methods (recursive) */
 template <typename Head, typename... Tail>
 Eigen::DenseIndex totalSizeAtRunTime(const Eigen::MatrixBase<Head>& head,
                                      const Tail&... tail) {
   return head.size() + totalSizeAtRunTime(tail...);
 }
 
-/** \brief Helper for initializeAutoDiffTuple function (recursive)
- */
+/** \brief Helper for initializeAutoDiffTuple function (recursive) */
 template <size_t Index>
 struct InitializeAutoDiffTupleHelper {
   template <typename... ValueTypes, typename... AutoDiffTypes>
@@ -276,8 +274,7 @@ struct InitializeAutoDiffTupleHelper {
   }
 };
 
-/** \brief Helper for initializeAutoDiffTuple function (base case)
- */
+/** \brief Helper for initializeAutoDiffTuple function (base case) */
 template <>
 struct InitializeAutoDiffTupleHelper<0> {
   template <typename... ValueTypes, typename... AutoDiffTypes>
@@ -290,28 +287,28 @@ struct InitializeAutoDiffTupleHelper<0> {
 };
 }  // namespace internal
 
-/** \brief Given a series of Eigen matrices, create a tuple of corresponding
- *AutoDiff matrices with values equal to the input matrices and properly
- *initialized derivative vectors.
- *
- * The size of the derivative vector of each element of the matrices in the
- *output tuple will be the same, and will equal the sum of the number of
- *elements of the matrices in \p args.
- * If all of the matrices in \p args have fixed size, then the derivative
- *vectors will also have fixed size (being the sum of the sizes at compile time
- *of all of the input arguments),
- * otherwise the derivative vectors will have dynamic size.
- * The 0th element of the derivative vectors will correspond to the derivative
- *with respect to the 0th element of the first argument.
- * Subsequent derivative vector elements correspond first to subsequent elements
- *of the first input argument (traversed first by row, then by column), and so
- *on for subsequent arguments.
- *
- * \param args a series of Eigen matrices
- * \return a tuple of properly initialized AutoDiff matrices corresponding to \p
- *args
- *
- */
+/**
+\brief Given a series of Eigen matrices, create a tuple of corresponding
+*AutoDiff matrices with values equal to the input matrices and properly
+*initialized derivative vectors.
+*
+* The size of the derivative vector of each element of the matrices in the
+*output tuple will be the same, and will equal the sum of the number of
+*elements of the matrices in \p args.
+* If all of the matrices in \p args have fixed size, then the derivative
+*vectors will also have fixed size (being the sum of the sizes at compile time
+*of all of the input arguments),
+* otherwise the derivative vectors will have dynamic size.
+* The 0th element of the derivative vectors will correspond to the derivative
+*with respect to the 0th element of the first argument.
+* Subsequent derivative vector elements correspond first to subsequent elements
+*of the first input argument (traversed first by row, then by column), and so
+*on for subsequent arguments.
+*
+* \param args a series of Eigen matrices
+* \return a tuple of properly initialized AutoDiff matrices corresponding to \p
+*args
+* */
 template <typename... Deriveds>
 std::tuple<AutoDiffMatrixType<
     Deriveds, internal::totalSizeAtCompileTime<Deriveds...>()>...>

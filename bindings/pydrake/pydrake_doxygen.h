@@ -1,7 +1,9 @@
-/** @file
- Doxygen-only documentation for @ref python_bindings.  */
+/**
+@file
+Doxygen-only documentation for @ref python_bindings. */
 
-/** @defgroup python_bindings Python Bindings
+/**
+@defgroup python_bindings Python Bindings
 @ingroup technical_notes
 @brief Details on implementing python bindings for the C++ code.
 
@@ -74,7 +76,7 @@ Some (but not all) exceptions to the above rules:
 - `drake/solvers/mathematical_program.h` symbols live in
 `pydrake.solvers.mathematicalprogram` (notice the Python name has no
 underscore).
-- `drake/systems/framework/*.h` symbols live in `pydrake.systems.framework`
+- `drake/systems/framework/+.h` symbols live in `pydrake.systems.framework`
 (per the rule) and the bindings are ultimately linked via
 `pydrake/systems/framework_py.cc`, but for compilation speed the binding
 definitions themselves are split into
@@ -508,9 +510,7 @@ for ease of use.
 If using CLion, you can still connect to the `gdbserver` instance.
 
 There are analogs for `lldb` / `lldbserver` but for brevity, only GDB is
-covered.
-
-*/
+covered. */
 
 // TODO(eric.cousineau): If it ever stops redirecting stdin, use
 // `bazel run --run_under='gdb --args python' --script_path=...`.

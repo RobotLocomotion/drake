@@ -8,18 +8,19 @@
 
 namespace drake {
 namespace test {
-/// Checks if @p value of @p T type is movable via memcpy. That is, it tests
-/// memcpy on @p value keeps a given invariant between @p value and a copy of
-/// it. It uses a binary function object @p invariant_pred to check for
-/// invariance.
-///
-/// @note Eigen's reallocation mechanisms have an issue. It is moving bytes
-/// using `memcpy` without calling a move constructor. As a result, if a
-/// `Scalar` type of Eigen matrix/array is not IsMemcpyMovable, we have
-/// undefined behavior when `conservativeResize` method is called. This should
-/// *always* be used to test a `Scalar` used within an `Eigen::EigenBase<...>`
-/// object. Please see https://github.com/RobotLocomotion/drake/issues/5974 for
-/// more information.
+/**
+Checks if @p value of @p T type is movable via memcpy. That is, it tests
+memcpy on @p value keeps a given invariant between @p value and a copy of
+it. It uses a binary function object @p invariant_pred to check for
+invariance.
+
+@note Eigen's reallocation mechanisms have an issue. It is moving bytes
+using `memcpy` without calling a move constructor. As a result, if a
+`Scalar` type of Eigen matrix/array is not IsMemcpyMovable, we have
+undefined behavior when `conservativeResize` method is called. This should
+*always* be used to test a `Scalar` used within an `Eigen::EigenBase<...>`
+object. Please see https://github.com/RobotLocomotion/drake/issues/5974 for
+more information. */
 template <typename T, typename InvariantPred = std::equal_to<T>>
 [[nodiscard]] bool IsMemcpyMovable(
     const T& value, const InvariantPred& invariant_pred = InvariantPred()) {

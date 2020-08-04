@@ -10,58 +10,55 @@ namespace systems {
 namespace rendering {
 
 /**
- * A direct-feedthrough system that converts a vector of joint positions
- * directly to a geometry::FramePoseVector<T> to behave like a
- * MultibodyPlant::get_geometry_pose_output_port().
- *
- * @system
- * name: MultibodyPositionToGeometryPose
- * input_ports:
- * - position
- * output_ports:
- * - geometry_pose
- * @endsystem
- *
- * The position input must be a vector whose length matches either the
- * number of positions in the MultibodyPlant or the number of states (based
- * on the optional argument in the constructor).  This option to pass the full
- * state vector is provided only for convenience -- only the position values
- * will affect the outputs.
- *
- * @tparam_double_only
- * @ingroup visualization
- */
+A direct-feedthrough system that converts a vector of joint positions
+directly to a geometry::FramePoseVector<T> to behave like a
+MultibodyPlant::get_geometry_pose_output_port().
+
+@system
+name: MultibodyPositionToGeometryPose
+input_ports:
+- position
+output_ports:
+- geometry_pose
+@endsystem
+
+The position input must be a vector whose length matches either the
+number of positions in the MultibodyPlant or the number of states (based
+on the optional argument in the constructor).  This option to pass the full
+state vector is provided only for convenience -- only the position values
+will affect the outputs.
+
+@tparam_double_only
+@ingroup visualization */
 template <typename T>
 class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPositionToGeometryPose)
 
   /**
-   * The %MultibodyPositionToGeometryPose holds an internal, non-owned
-   * reference to the MultibodyPlant object so you must ensure that @p plant
-   * has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
-   *
-   * @param input_multibody_state If true, the vector input port will be the
-   * size of the `plant` *state* vector.  If false, it will be the size
-   * of the `plant` *position* vector.  In both cases, only the
-   * positions will affect the output.  @default false.
-   *
-   * @throws if `plant` is not finalized and registered with a SceneGraph.
-   */
+  The %MultibodyPositionToGeometryPose holds an internal, non-owned
+  reference to the MultibodyPlant object so you must ensure that @p plant
+  has a longer lifetime than `this` %MultibodyPositionToGeometryPose system.
+
+  @param input_multibody_state If true, the vector input port will be the
+  size of the `plant` *state* vector.  If false, it will be the size
+  of the `plant` *position* vector.  In both cases, only the
+  positions will affect the output.  @default false.
+
+  @throws if `plant` is not finalized and registered with a SceneGraph. */
   explicit MultibodyPositionToGeometryPose(
       const multibody::MultibodyPlant<T>& plant,
       bool input_multibody_state = false);
 
   /**
-   * The %MultibodyPositionToGeometryPose owns its internal plant.
-   *
-   * @param input_multibody_state If true, the vector input port will be the
-   * size of the `plant` *state* vector.  If false, it will be the size
-   * of the `plant` *position* vector.  In both cases, only the
-   * positions will affect the output.  @default: false.
-   *
-   * @throws if `owned_plant` is not finalized and registered with a SceneGraph.
-   */
+  The %MultibodyPositionToGeometryPose owns its internal plant.
+
+  @param input_multibody_state If true, the vector input port will be the
+  size of the `plant` *state* vector.  If false, it will be the size
+  of the `plant` *position* vector.  In both cases, only the
+  positions will affect the output.  @default: false.
+
+  @throws if `owned_plant` is not finalized and registered with a SceneGraph. */
   explicit MultibodyPositionToGeometryPose(
       std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
       bool input_multibody_state = false);

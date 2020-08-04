@@ -14,27 +14,29 @@ namespace multibody {
 template <typename T>
 class Body;
 
-/// This %ForceElement models a torsional spring attached to a RevoluteJoint
-/// and applies a torque to that joint
-/// <pre>
-///   τ = -k⋅(θ - θ₀)
-/// </pre>
-/// where θ₀ is the nominal joint position. Note that joint damping exists
-/// within the RevoluteJoint itself, and so is not included here.
-///
-/// @tparam_default_scalar
+/**
+This %ForceElement models a torsional spring attached to a RevoluteJoint
+and applies a torque to that joint
+<pre>
+  τ = -k⋅(θ - θ₀)
+</pre>
+where θ₀ is the nominal joint position. Note that joint damping exists
+within the RevoluteJoint itself, and so is not included here.
+
+@tparam_default_scalar */
 template <typename T>
 class RevoluteSpring final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteSpring)
 
-  /// Constructor for a spring attached to the given joint
-  /// @param[in] nominal_angle
-  ///   The nominal angle of the spring  θ₀, in radians, at which the spring
-  ///   applies no moment.
-  /// @param[in] stiffness
-  ///   The stiffness k of the spring in N⋅m/rad.
-  /// @throws std::exception if `stiffness` is negative.
+  /**
+  Constructor for a spring attached to the given joint
+  @param[in] nominal_angle
+    The nominal angle of the spring  θ₀, in radians, at which the spring
+    applies no moment.
+  @param[in] stiffness
+    The stiffness k of the spring in N⋅m/rad.
+  @throws std::exception if `stiffness` is negative. */
   RevoluteSpring(const RevoluteJoint<T>& joint, double nominal_angle,
                  double stiffness);
 

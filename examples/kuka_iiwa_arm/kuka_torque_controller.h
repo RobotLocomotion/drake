@@ -11,18 +11,17 @@ namespace kuka_iiwa_arm {
 
 // N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
- * Controller that take emulates the kuka_iiwa_arm when operated in torque
- * control mode. The controller specifies a stiffness and damping ratio at each
- * of the joints. Because the critical damping constant is a function of the
- * configuration the damping is non-linear. See
- * https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java
- *
- * for details on the low-level controller. Note that the
- * input_port_desired_state() method takes a full state for convenient wiring
- * with other Systems, but ignores the velocity component.
- *
- * @tparam_double_only
- */
+Controller that take emulates the kuka_iiwa_arm when operated in torque
+control mode. The controller specifies a stiffness and damping ratio at each
+of the joints. Because the critical damping constant is a function of the
+configuration the damping is non-linear. See
+https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java
+
+for details on the low-level controller. Note that the
+input_port_desired_state() method takes a full state for convenient wiring
+with other Systems, but ignores the velocity component.
+
+@tparam_double_only */
 template <typename T>
 class KukaTorqueController
     : public systems::Diagram<T>,
@@ -30,8 +29,9 @@ class KukaTorqueController
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KukaTorqueController)
 
-  /// @p plant is aliased and must remain valid for the lifetime of the
-  /// controller.
+  /**
+  @p plant is aliased and must remain valid for the lifetime of the
+  controller. */
   KukaTorqueController(
       const multibody::MultibodyPlant<T>& plant,
       const VectorX<double>& stiffness,

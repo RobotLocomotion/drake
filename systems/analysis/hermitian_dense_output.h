@@ -19,10 +19,11 @@ namespace systems {
 
 namespace internal {
 
-/// Returns @p input_matrix as an Eigen::Matrix<double, ...> with the same size
-/// allocation as @p input_matrix.  Calls ExtractDoubleOrThrow on each element
-/// of the matrix, and therefore throws if any one of the extractions fail.
-/// @see ExtractDoubleOrThrow(const T&)
+/**
+Returns @p input_matrix as an Eigen::Matrix<double, ...> with the same size
+allocation as @p input_matrix.  Calls ExtractDoubleOrThrow on each element
+of the matrix, and therefore throws if any one of the extractions fail.
+@see ExtractDoubleOrThrow(const T&) */
 template <typename Derived>
 MatrixX<double> ExtractDoublesOrThrow(
     const Eigen::MatrixBase<Derived>& input_matrix) {
@@ -31,11 +32,12 @@ MatrixX<double> ExtractDoublesOrThrow(
   });
 }
 
-/// Converts an STL vector of scalar type `S` elements to an STL vector
-/// of double type elements, failing at runtime if the type cannot be
-/// converted.
-/// @see ExtractDoubleOrThrow(const T&)
-/// @tparam S A valid Eigen scalar type.
+/**
+Converts an STL vector of scalar type `S` elements to an STL vector
+of double type elements, failing at runtime if the type cannot be
+converted.
+@see ExtractDoubleOrThrow(const T&)
+@tparam S A valid Eigen scalar type. */
 template <typename S>
 std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
   std::vector<double> output_vector{};
@@ -48,11 +50,12 @@ std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
   return output_vector;
 }
 
-/// Converts an STL vector of matrices with scalar type `S` elements to an STL
-/// vector of matrices with double type elements, failing at runtime if the type
-/// cannot be converted.
-/// @see ExtractDoublesOrThrow(const MatrixX<T>&)
-/// @tparam S A valid Eigen scalar type.
+/**
+Converts an STL vector of matrices with scalar type `S` elements to an STL
+vector of matrices with double type elements, failing at runtime if the type
+cannot be converted.
+@see ExtractDoublesOrThrow(const MatrixX<T>&)
+@tparam S A valid Eigen scalar type. */
 template <typename S>
 std::vector<MatrixX<double>>
 ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
@@ -68,69 +71,72 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 
 }  // namespace internal
 
-/// A StepwiseDenseOutput class implementation using Hermitian interpolators,
-/// and therefore a _continuous extension_ of the solution 𝐱(t) (see
-/// [Engquist, 2105]). This concept can be recast as a type of dense output that
-/// is continuous.
-///
-/// Updates take the form of integration steps, for which state 𝐱 and state time
-/// derivative d𝐱/dt are known at least at both ends of the step. Hermite cubic
-/// polynomials are then constructed upon @ref StepwiseDenseOutput::Consolidate
-/// "consolidation", yielding a C1 extension of the solution 𝐱(t).
-///
-/// Hermitian continuous extensions exhibit the same truncation error as that
-/// of the integration scheme being used for up to 3rd order schemes (see
-/// [Hairer, 1993]).
-///
-/// From a performance standpoint, memory footprint and evaluation overhead
-/// (i.e. the computational cost of an evaluation) increase linearly and
-/// logarithmically with the amount of steps taken, respectively.
-///
-/// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
-///                    Mathematics, p. 339, Springer, 2015.
-/// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
-///                  Differential Equations I (Nonstiff Problems), p.190,
-///                  Springer, 1993.
-/// @tparam_default_scalar
+/**
+A StepwiseDenseOutput class implementation using Hermitian interpolators,
+and therefore a _continuous extension_ of the solution 𝐱(t) (see
+[Engquist, 2105]). This concept can be recast as a type of dense output that
+is continuous.
+
+Updates take the form of integration steps, for which state 𝐱 and state time
+derivative d𝐱/dt are known at least at both ends of the step. Hermite cubic
+polynomials are then constructed upon @ref StepwiseDenseOutput::Consolidate
+"consolidation", yielding a C1 extension of the solution 𝐱(t).
+
+Hermitian continuous extensions exhibit the same truncation error as that
+of the integration scheme being used for up to 3rd order schemes (see
+[Hairer, 1993]).
+
+From a performance standpoint, memory footprint and evaluation overhead
+(i.e. the computational cost of an evaluation) increase linearly and
+logarithmically with the amount of steps taken, respectively.
+
+- [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
+                   Mathematics, p. 339, Springer, 2015.
+- [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
+                 Differential Equations I (Nonstiff Problems), p.190,
+                 Springer, 1993.
+@tparam_default_scalar */
 template <typename T>
 class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(HermitianDenseOutput)
 
-  /// An integration step representation class, holding just enough
-  /// for Hermitian interpolation: three (3) related sets containing
-  /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
-  /// {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ ∈ ℝⁿ, and state derivatives
-  /// {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ} where d𝐱/dtᵢ ∈ ℝⁿ.
-  ///
-  /// This step definition allows for intermediate time, state and state
-  /// derivative triplets (e.g. the integrator internal stages) to improve
-  /// interpolation.
-  ///
-  /// @note The use of column matrices instead of plain vectors helps reduce
-  ///       HermitianDenseOutput construction overhead, as this type of dense
-  ///       output leverages a PiecewisePolynomial instance that takes matrices.
+  /**
+  An integration step representation class, holding just enough
+  for Hermitian interpolation: three (3) related sets containing
+  step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
+  {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ ∈ ℝⁿ, and state derivatives
+  {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ} where d𝐱/dtᵢ ∈ ℝⁿ.
+
+  This step definition allows for intermediate time, state and state
+  derivative triplets (e.g. the integrator internal stages) to improve
+  interpolation.
+
+  @note The use of column matrices instead of plain vectors helps reduce
+        HermitianDenseOutput construction overhead, as this type of dense
+        output leverages a PiecewisePolynomial instance that takes matrices. */
   class IntegrationStep {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IntegrationStep)
-    /// Constructs an empty step.
+    /** Constructs an empty step. */
     IntegrationStep() = default;
 
-    /// Constructs a zero length step (i.e. a step containing a single time,
-    /// state and state derivative triplet) from column matrices.
-    ///
-    /// @param initial_time Initial time t₀ where the step starts.
-    /// @param initial_state Initial state vector 𝐱₀ at @p initial_time
-    ///                      as a column matrix.
-    /// @param initial_state_derivative Initial state derivative vector
-    ///                                 d𝐱/dt₀ at @p initial_time as a
-    ///                                 column matrix.
-    /// @throws std::runtime_error
-    ///   if given @p initial_state 𝐱₀ is not a column matrix.<br>
-    ///   if given @p initial_state_derivative d𝐱/t₀ is not a column
-    ///   matrix.<br>
-    ///   if given @p initial_state 𝐱₀ and @p initial_state_derivative
-    ///   d𝐱/dt₀ do not match each other's dimension.
+    /**
+    Constructs a zero length step (i.e. a step containing a single time,
+    state and state derivative triplet) from column matrices.
+
+    @param initial_time Initial time t₀ where the step starts.
+    @param initial_state Initial state vector 𝐱₀ at @p initial_time
+                         as a column matrix.
+    @param initial_state_derivative Initial state derivative vector
+                                    d𝐱/dt₀ at @p initial_time as a
+                                    column matrix.
+    @throws std::runtime_error
+      if given @p initial_state 𝐱₀ is not a column matrix.<br>
+      if given @p initial_state_derivative d𝐱/t₀ is not a column
+      matrix.<br>
+      if given @p initial_state 𝐱₀ and @p initial_state_derivative
+      d𝐱/dt₀ do not match each other's dimension. */
     IntegrationStep(const T& initial_time, MatrixX<T> initial_state,
                     MatrixX<T> initial_state_derivative) {
       ValidateStepExtendTripletOrThrow(initial_time, initial_state,
@@ -140,24 +146,25 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       state_derivatives_.push_back(std::move(initial_state_derivative));
     }
 
-    /// Extends the step forward in time from column matrices.
-    ///
-    /// Provided @p time, @p state and @p state_derivative are appended
-    /// to the current step, effectively increasing its time length.
-    ///
-    /// @param time Time tᵢ to extend the step to.
-    /// @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
-    /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
-    ///                         as a column matrix.
-    /// @throws std::runtime_error
-    ///   if given @p state 𝐱ᵢ is not a column matrix.<br>
-    ///   if given @p state_derivative d𝐱/dtᵢ is not a column matrix.<br>
-    ///   if given @p time tᵢ is not greater than the previous time
-    ///   tᵢ₋₁ in the step.<br>
-    ///   if given @p state 𝐱ᵢ dimension does not match the dimension of
-    ///   the previous state 𝐱ᵢ₋₁.<br>
-    ///   if given @p state 𝐱ᵢ and @p state_derivative d𝐱/dtᵢ do not
-    ///   match each other's dimension.
+    /**
+    Extends the step forward in time from column matrices.
+
+    Provided @p time, @p state and @p state_derivative are appended
+    to the current step, effectively increasing its time length.
+
+    @param time Time tᵢ to extend the step to.
+    @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
+    @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
+                            as a column matrix.
+    @throws std::runtime_error
+      if given @p state 𝐱ᵢ is not a column matrix.<br>
+      if given @p state_derivative d𝐱/dtᵢ is not a column matrix.<br>
+      if given @p time tᵢ is not greater than the previous time
+      tᵢ₋₁ in the step.<br>
+      if given @p state 𝐱ᵢ dimension does not match the dimension of
+      the previous state 𝐱ᵢ₋₁.<br>
+      if given @p state 𝐱ᵢ and @p state_derivative d𝐱/dtᵢ do not
+      match each other's dimension. */
     void Extend(const T& time, MatrixX<T> state, MatrixX<T> state_derivative) {
       ValidateStepExtendTripletOrThrow(time, state, state_derivative);
       times_.push_back(time);
@@ -165,31 +172,34 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       state_derivatives_.push_back(std::move(state_derivative));
     }
 
-    /// Returns step start time t₀ (that of the first time, state and state
-    /// derivative triplet), which may coincide with its end time tᵢ (that of
-    /// the last time, state and state derivative triplet) if the step has zero
-    /// length (that is, it contains a single triplet).
+    /**
+    Returns step start time t₀ (that of the first time, state and state
+    derivative triplet), which may coincide with its end time tᵢ (that of
+    the last time, state and state derivative triplet) if the step has zero
+    length (that is, it contains a single triplet). */
     const T& start_time() const { return times_.front(); }
 
-    /// Returns step end time tᵢ (that of the first time, state and state
-    /// derivative triplet), which may coincide with its start time t₀ (that of
-    /// the last time, state and state derivative triplet) if the step has zero
-    /// length (that is, it contains a single triplet).
+    /**
+    Returns step end time tᵢ (that of the first time, state and state
+    derivative triplet), which may coincide with its start time t₀ (that of
+    the last time, state and state derivative triplet) if the step has zero
+    length (that is, it contains a single triplet). */
     const T& end_time() const { return times_.back(); }
 
-    /// Returns the step state 𝐱 size (i.e. dimension).
+    /** Returns the step state 𝐱 size (i.e. dimension). */
     int size() const {
       return states_.back().rows();
     }
 
-    /// Returns step times {t₀, ..., tᵢ₋₁, tᵢ}.
+    /** Returns step times {t₀, ..., tᵢ₋₁, tᵢ}. */
     const std::vector<T>& get_times() const { return times_; }
 
-    /// Returns step states {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} as column matrices.
+    /** Returns step states {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} as column matrices. */
     const std::vector<MatrixX<T>>& get_states() const { return states_; }
 
-    /// Gets step state derivatives {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}
-    /// as column matrices.
+    /**
+    Gets step state derivatives {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}
+    as column matrices. */
     const std::vector<MatrixX<T>>& get_state_derivatives() const {
       return state_derivatives_;
     }
@@ -240,7 +250,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   HermitianDenseOutput() = default;
 
-  /// Initialize the DenseOutput with an existing trajectory.
+  /** Initialize the DenseOutput with an existing trajectory. */
   explicit HermitianDenseOutput(
       const trajectories::PiecewisePolynomial<T>& trajectory)
       : start_time_(trajectory.start_time()),
@@ -267,19 +277,20 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     }
   }
 
-  /// Update output with the given @p step.
-  ///
-  /// Provided @p step is queued for later consolidation. Note that
-  /// the time the @p step extends cannot be readily evaluated (see
-  /// StepwiseDenseOutput class documentation).
-  ///
-  /// @param step Integration step to update this output with.
-  /// @throws std::runtime_error
-  ///   if given @p step has zero length.<br>
-  ///   if given @p step does not ensure C1 continuity at the end of
-  ///   this dense output.<br>
-  ///   if given @p step dimensions does not match this dense output
-  ///   dimensions.
+  /**
+  Update output with the given @p step.
+
+  Provided @p step is queued for later consolidation. Note that
+  the time the @p step extends cannot be readily evaluated (see
+  StepwiseDenseOutput class documentation).
+
+  @param step Integration step to update this output with.
+  @throws std::runtime_error
+    if given @p step has zero length.<br>
+    if given @p step does not ensure C1 continuity at the end of
+    this dense output.<br>
+    if given @p step dimensions does not match this dense output
+    dimensions. */
   void Update(IntegrationStep step) {
     ValidateStepCanBeConsolidatedOrThrow(step);
     raw_steps_.push_back(std::move(step));

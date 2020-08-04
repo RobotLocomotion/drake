@@ -14,35 +14,29 @@
 namespace drake {
 namespace solvers {
 
-/**
- * Provides an abstract base for all costs.
- */
+/** Provides an abstract base for all costs. */
 class Cost : public EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Cost)
 
  protected:
   /**
-   * Constructs a cost evaluator.
-   * @param num_vars Number of input variables.
-   * @param description Human-friendly description.
-   */
+  Constructs a cost evaluator.
+  @param num_vars Number of input variables.
+  @param description Human-friendly description. */
   explicit Cost(int num_vars, const std::string& description = "")
       : EvaluatorBase(1, num_vars, description) {}
 };
 
-/**
- * Implements a cost of the form @f[ a'x + b @f].
- */
+/** Implements a cost of the form @f[ a'x + b @f]. */
 class LinearCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearCost)
 
   /**
-   * Construct a linear cost of the form @f[ a'x + b @f].
-   * @param a Linear term.
-   * @param b (optional) Constant term.
-   */
+  Construct a linear cost of the form @f[ a'x + b @f].
+  @param a Linear term.
+  @param b (optional) Constant term. */
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   LinearCost(const Eigen::Ref<const Eigen::VectorXd>& a, double b = 0.)
       : Cost(a.rows()), a_(a), b_(b) {}
@@ -60,12 +54,11 @@ class LinearCost : public Cost {
   double b() const { return b_; }
 
   /**
-   * Updates the linear term, upper and lower bounds in the linear constraint.
-   * The updated constraint is @f[ a_new' x + b_new @f].
-   * Note that the number of variables (number of cols) cannot change.
-   * @param new_a New linear term.
-   * @param new_b (optional) New constant term.
-   */
+  Updates the linear term, upper and lower bounds in the linear constraint.
+  The updated constraint is @f[ a_new' x + b_new @f].
+  Note that the number of variables (number of cols) cannot change.
+  @param new_a New linear term.
+  @param new_b (optional) New constant term. */
   void UpdateCoefficients(const Eigen::Ref<const Eigen::VectorXd>& new_a,
                           double new_b = 0.) {
     if (new_a.rows() != a_.rows()) {
@@ -97,19 +90,16 @@ class LinearCost : public Cost {
   double b_{};
 };
 
-/**
- * Implements a cost of the form @f[ .5 x'Qx + b'x + c @f].
- */
+/** Implements a cost of the form @f[ .5 x'Qx + b'x + c @f]. */
 class QuadraticCost : public Cost {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuadraticCost)
 
   /**
-   * Constructs a cost of the form @f[ .5 x'Qx + b'x + c @f].
-   * @param Q Quadratic term.
-   * @param b Linear term.
-   * @param c (optional) Constant term.
-   */
+  Constructs a cost of the form @f[ .5 x'Qx + b'x + c @f].
+  @param Q Quadratic term.
+  @param b Linear term.
+  @param c (optional) Constant term. */
   template <typename DerivedQ, typename Derivedb>
   QuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q,
                 const Eigen::MatrixBase<Derivedb>& b, double c = 0.)
@@ -120,7 +110,7 @@ class QuadraticCost : public Cost {
 
   ~QuadraticCost() override {}
 
-  /// Returns the symmetric matrix Q, as the Hessian of the cost.
+  /** Returns the symmetric matrix Q, as the Hessian of the cost. */
   const Eigen::MatrixXd& Q() const { return Q_; }
 
   const Eigen::VectorXd& b() const { return b_; }
@@ -128,12 +118,11 @@ class QuadraticCost : public Cost {
   double c() const { return c_; }
 
   /**
-   * Updates the quadratic and linear term of the constraint. The new
-   * matrices need to have the same dimension as before.
-   * @param new_Q New quadratic term.
-   * @param new_b New linear term.
-   * @param new_c (optional) New constant term.
-   */
+  Updates the quadratic and linear term of the constraint. The new
+  matrices need to have the same dimension as before.
+  @param new_Q New quadratic term.
+  @param new_b New linear term.
+  @param new_c (optional) New constant term. */
   template <typename DerivedQ, typename DerivedB>
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
                           const Eigen::MatrixBase<DerivedB>& new_b,
@@ -173,25 +162,20 @@ class QuadraticCost : public Cost {
   double c_{};
 };
 
-/**
- * Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired).
- */
+/** Creates a cost term of the form (x-x_desired)'*Q*(x-x_desired). */
 std::shared_ptr<QuadraticCost> MakeQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& x_desired);
 
-/**
- * Creates a cost term of the form | Ax - b |^2.
- */
+/** Creates a cost term of the form | Ax - b |^2. */
 std::shared_ptr<QuadraticCost> MakeL2NormCost(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b);
 
 /**
- * A cost that may be specified using another (potentially nonlinear)
- * evaluator.
- * @tparam EvaluatorType The nested evaluator.
- */
+A cost that may be specified using another (potentially nonlinear)
+evaluator.
+@tparam EvaluatorType The nested evaluator. */
 template <typename EvaluatorType = EvaluatorBase>
 class EvaluatorCost : public Cost {
  public:
@@ -223,23 +207,21 @@ class EvaluatorCost : public Cost {
 };
 
 /**
- * Implements a cost of the form P(x, y...) where P is a multivariate
- * polynomial in x, y, ...
- *
- * The Polynomial class uses a different variable naming scheme; thus the
- * caller must provide a list of Polynomial::VarType variables that correspond
- * to the members of the Binding<> (the individual scalar elements of the
- * given VariableList).
- */
+Implements a cost of the form P(x, y...) where P is a multivariate
+polynomial in x, y, ...
+
+The Polynomial class uses a different variable naming scheme; thus the
+caller must provide a list of Polynomial::VarType variables that correspond
+to the members of the Binding<> (the individual scalar elements of the
+given VariableList). */
 class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PolynomialCost)
 
   /**
-   * Constructs a polynomial cost
-   * @param polynomials Polynomial vector, a 1 x 1 vector.
-   * @param poly_vars Polynomial variables, a `num_vars` x 1 vector.
-   */
+  Constructs a polynomial cost
+  @param polynomials Polynomial vector, a 1 x 1 vector.
+  @param poly_vars Polynomial variables, a `num_vars` x 1 vector. */
   PolynomialCost(const VectorXPoly& polynomials,
                  const std::vector<Polynomiald::VarType>& poly_vars)
       : EvaluatorCost(
@@ -253,11 +235,10 @@ class PolynomialCost : public EvaluatorCost<PolynomialEvaluator> {
 };
 
 /**
- * Converts an input of type @p F to a nonlinear cost.
- * @tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
- * The class `F` should have functions numInputs(), numOutputs(), and
- * eval(x, y).
- */
+Converts an input of type @p F to a nonlinear cost.
+@tparam FF The forwarded function type (e.g., `const F&, `F&&`, ...).
+The class `F` should have functions numInputs(), numOutputs(), and
+eval(x, y). */
 template <typename FF>
 std::shared_ptr<Cost> MakeFunctionCost(FF&& f) {
   return std::make_shared<EvaluatorCost<>>(

@@ -12,19 +12,21 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/// Run solver.Solve() on the given @p prog.  If the solver is absent or does
-/// not find a solution, stop immediately via an exception.  (Were we to
-/// continue, testing statements that examine the results would be likely to
-/// fail with confusing messages, so best to avoid them entirely.)
+/**
+Run solver.Solve() on the given @p prog.  If the solver is absent or does
+not find a solution, stop immediately via an exception.  (Were we to
+continue, testing statements that examine the results would be likely to
+fail with confusing messages, so best to avoid them entirely.) */
 MathematicalProgramResult RunSolver(
     const MathematicalProgram& prog,
     const SolverInterface& solver,
     const std::optional<Eigen::VectorXd>& initial_guess = {});
 
-/// Determine if two bindings are the same. Two bindings are the same if
-///
-/// 1. They contain the same constraint pointer.
-/// 2. Their bound variables are the same.
+/**
+Determine if two bindings are the same. Two bindings are the same if
+
+1. They contain the same constraint pointer.
+2. Their bound variables are the same. */
 template <typename Constraint>
 ::testing::AssertionResult IsBindingEqual(const Binding<Constraint>& binding1,
                                           const Binding<Constraint>& binding2) {
@@ -46,7 +48,7 @@ template <typename Constraint>
   return ::testing::AssertionSuccess() << "Same binding.";
 }
 
-/// Determines if two vectors of bindings are the same.
+/** Determines if two vectors of bindings are the same. */
 template <typename Constraint>
 ::testing::AssertionResult IsVectorOfBindingEqual(
     const std::vector<Binding<Constraint>>& bindings1,

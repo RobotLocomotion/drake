@@ -12,19 +12,20 @@ namespace test {
 
 using Vector2d = Vector2<double>;
 
-/// A system of ODEs that can be used to test performance of the initial value
-/// problem (IVP) solvers. This problem corresponds to the "n-body-problem"
-/// (where n = 7); in short, given initial positions and velocities of seven
-/// particles that move according to Newtonian Mechanics (F=ma) and subject to
-/// inverse-square gravitational forces, compute their positions and velocities
-/// at a given time in the future. One potentially useful aspect of this problem
-/// is that it is energy conserving. The problem setup and data are taken from:
-/// https://archimede.dm.uniba.it/~testset/report/plei.pdf, which is part of the
-/// IVP benchmark suite described in:
-///
-/// F.Mazzia and C.Magherini. Test Set for Initial Value Problem Solvers,
-/// release 2.4. Department of Mathematics, University of Bari and INdAM,
-/// Research Unit of Bari, February 2008. http://www.dm.uniba.it/~testset.
+/**
+A system of ODEs that can be used to test performance of the initial value
+problem (IVP) solvers. This problem corresponds to the "n-body-problem"
+(where n = 7); in short, given initial positions and velocities of seven
+particles that move according to Newtonian Mechanics (F=ma) and subject to
+inverse-square gravitational forces, compute their positions and velocities
+at a given time in the future. One potentially useful aspect of this problem
+is that it is energy conserving. The problem setup and data are taken from:
+https://archimede.dm.uniba.it/~testset/report/plei.pdf, which is part of the
+IVP benchmark suite described in:
+
+F.Mazzia and C.Magherini. Test Set for Initial Value Problem Solvers,
+release 2.4. Department of Mathematics, University of Bari and INdAM,
+Research Unit of Bari, February 2008. http://www.dm.uniba.it/~testset. */
 class PleidesSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PleidesSystem)

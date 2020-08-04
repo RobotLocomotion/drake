@@ -10,10 +10,9 @@ namespace drake {
 namespace systems {
 
 /**
- * A second-order, explicit Runge Kutta integrator.
- * @tparam_default_scalar
- * @ingroup integrators
- */
+A second-order, explicit Runge Kutta integrator.
+@tparam_default_scalar
+@ingroup integrators */
 template <class T>
 class RungeKutta2Integrator final : public IntegratorBase<T> {
  public:
@@ -22,16 +21,15 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
   ~RungeKutta2Integrator() override = default;
 
   /**
-   * Constructs fixed-step integrator for a given system using the given
-   * context for initial conditions.
-   * @param system A reference to the system to be simulated
-   * @param max_step_size The maximum (fixed) step size; the integrator will
-   *                      not take larger step sizes than this.
-   * @param context pointer to the context (nullptr is ok, but the caller
-   *                must set a non-null context before Initialize()-ing the
-   *                integrator).
-   * @sa Initialize()
-   */
+  Constructs fixed-step integrator for a given system using the given
+  context for initial conditions.
+  @param system A reference to the system to be simulated
+  @param max_step_size The maximum (fixed) step size; the integrator will
+                       not take larger step sizes than this.
+  @param context pointer to the context (nullptr is ok, but the caller
+                 must set a non-null context before Initialize()-ing the
+                 integrator).
+  @sa Initialize() */
   RungeKutta2Integrator(const System<T>& system, const T& max_step_size,
                         Context<T>* context = nullptr) :
       IntegratorBase<T>(system, context) {
@@ -39,12 +37,10 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
     derivs0_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
   }
 
-  /**
-   * The RK2 integrator does not support error estimation.
-   */
+  /** The RK2 integrator does not support error estimation. */
   bool supports_error_estimation() const override { return false; }
 
-  /// Integrator does not provide an error estimate.
+  /** Integrator does not provide an error estimate. */
   int get_error_estimate_order() const override { return 0; }
 
  private:
@@ -55,16 +51,16 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
 };
 
 /**
- * Integrates the system forward in time from the current time t₀ to
- * t₁ = t₀ + h. The value of h is determined by IntegratorBase::Step().
- *
- * The Butcher tableau for this integrator follows: <pre>
- *
- *     0  |
- *     1  | 1
- *     -----------------
- *          1/2     1/2
- * </pre>
+Integrates the system forward in time from the current time t₀ to
+t₁ = t₀ + h. The value of h is determined by IntegratorBase::Step().
+
+The Butcher tableau for this integrator follows: <pre>
+
+    0  |
+    1  | 1
+    -----------------
+         1/2     1/2
+</pre>
  */
 template <class T>
 bool RungeKutta2Integrator<T>::DoStep(const T& h) {

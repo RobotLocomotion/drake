@@ -26,11 +26,10 @@ enum class ExitFlag {
 };
 
 /**
- * Packages the exit flag, overall residual, solve time,
- * and iteration counts.
- *
- * A negative valuve for solve_time indicates that no timing data is available.
- */
+Packages the exit flag, overall residual, solve time,
+and iteration counts.
+
+A negative valuve for solve_time indicates that no timing data is available. */
 struct SolverOut {
   ExitFlag eflag = ExitFlag::MAXITERATIONS;
   double residual = 0.0;
@@ -41,33 +40,32 @@ struct SolverOut {
 
 using clock = std::chrono::high_resolution_clock;
 /**
- * This class implements the FBstab solver for
- * convex quadratic programs, see
- * https://arxiv.org/pdf/1901.04046.pdf for more details.
- *
- * FBstab tries to solve instances of the following convex QP:
- *
- *     min.  1/2 z'*H*z + f'*z
- *
- *     s.t.  Gz =  h
- *           Az <= b
- *
- * The algorithm is implemented using to abstract objects
- * representing variables, residuals etc.
- * These are template parameters for the class and
- * should be written so as to be efficient for specific classes
- * of QPs, e.g., model predictive control QPs or sparse QPs.
- *
- * The algorithm exits when: ||π(x)|| <= abs_tol + ||π(x0)|| rel_tol
- * where π is the natural residual function,
- * (17) in https://arxiv.org/pdf/1901.04046.pdf.
- *
- * @tparam Variable:      storage and methods for primal-dual variables
- * @tparam Residual:      storage and methods for QP residuals
- * @tparam Data:          QP specific data storage and operations
- * @tparam LinearSolver:  solves Newton step systems
- * @tparam Feasibility:   checks for primal-dual infeasibility
- */
+This class implements the FBstab solver for
+convex quadratic programs, see
+https://arxiv.org/pdf/1901.04046.pdf for more details.
+
+FBstab tries to solve instances of the following convex QP:
+
+    min.  1/2 z'*H*z + f'*z
+
+    s.t.  Gz =  h
+          Az <= b
+
+The algorithm is implemented using to abstract objects
+representing variables, residuals etc.
+These are template parameters for the class and
+should be written so as to be efficient for specific classes
+of QPs, e.g., model predictive control QPs or sparse QPs.
+
+The algorithm exits when: ||π(x)|| <= abs_tol + ||π(x0)|| rel_tol
+where π is the natural residual function,
+(17) in https://arxiv.org/pdf/1901.04046.pdf.
+
+@tparam Variable:      storage and methods for primal-dual variables
+@tparam Residual:      storage and methods for QP residuals
+@tparam Data:          QP specific data storage and operations
+@tparam LinearSolver:  solves Newton step systems
+@tparam Feasibility:   checks for primal-dual infeasibility */
 template <class Variable, class Residual, class Data, class LinearSolver,
           class Feasibility>
 class FBstabAlgorithm {
@@ -81,13 +79,12 @@ class FBstabAlgorithm {
   };
 
   /**
-   * Saves the components objects needed by the solver.
-   *
-   * @param[in] x1,x2,x3,x4 Variable objects used by the solver
-   * @param[in] r1,r2 Residual objects used by the solver
-   * @param[in] lin_sol Linear solver used by the solver
-   * @param[in] fcheck Feasibility checker used by the solver
-   */
+  Saves the components objects needed by the solver.
+
+  @param[in] x1,x2,x3,x4 Variable objects used by the solver
+  @param[in] r1,r2 Residual objects used by the solver
+  @param[in] lin_sol Linear solver used by the solver
+  @param[in] fcheck Feasibility checker used by the solver */
   FBstabAlgorithm(Variable* x1, Variable* x2, Variable* x3, Variable* x4,
                   Residual* r1, Residual* r2, LinearSolver* lin_sol,
                   Feasibility* fcheck) {
@@ -121,46 +118,44 @@ class FBstabAlgorithm {
   }
 
   /**
-   * Attempts to solve the QP for the given
-   * data starting from the supplied initial guess.
-   *
-   * @param[in] qp_data problem data
-   * @param[in,out] x0    initial primal-dual guess, overwritten with the
-   * solution
-   *
-   * @return Details on the solver output
-   */
+  Attempts to solve the QP for the given
+  data starting from the supplied initial guess.
+
+  @param[in] qp_data problem data
+  @param[in,out] x0    initial primal-dual guess, overwritten with the
+  solution
+
+  @return Details on the solver output */
   SolverOut Solve(const Data* qp_data, Variable* x0);
 
   /**
-   * Allows setting of algorithm options.
-   * @param[in] option option name
-   * @param[in] value  new value
-   *
-   * Possible options and default parameters are:
-   * - sigma0{1e-8}: Initial stabilization parameter
-   * - alpha{0.95}:  Penalized FB function parameter
-   * - beta{0.7}:    Backtracking linesearch parameter
-   * - eta{1e-8}:    Sufficient decrease parameter
-   * - inner_tol_multiplier{0.2}: Reduction factor for subproblem tolerance
-   *
-   * - abs_tol{1e-6}: Absolute tolerance
-   * - rel_tol{1e-12}: Relative tolerance
-   * - stall_tol{1e-10}: Tolerance on ||dx||
-   * - infeas_tol{1e-8}: Relative tolerance used in feasibility checking
-   *
-   * - inner_tol_max{1.0}: Maximum value for the subproblem tolerance
-   * - inner_tol_min{1e-12}: Minimum value for the subproblem tolerance
-   *
-   * - max_newton_iters{200}: Maximum number of Newton iterations before timeout
-   * - max_prox_iters{30}: Maximum number of proximal iterations before timeout
-   * - max_inner_iters{50}: Maximum number of iterations that can be applied
-   * to a single subproblem
-   * - max_linesearch_iters{20}: Maximum number of backtracking linesearch steps
-   *
-   * - check_feasibility{true}: Enables or disables the feasibility checker,
-   * if the problem is known to be feasible then it can be disabled for speed.
-   */
+  Allows setting of algorithm options.
+  @param[in] option option name
+  @param[in] value  new value
+
+  Possible options and default parameters are:
+  - sigma0{1e-8}: Initial stabilization parameter
+  - alpha{0.95}:  Penalized FB function parameter
+  - beta{0.7}:    Backtracking linesearch parameter
+  - eta{1e-8}:    Sufficient decrease parameter
+  - inner_tol_multiplier{0.2}: Reduction factor for subproblem tolerance
+
+  - abs_tol{1e-6}: Absolute tolerance
+  - rel_tol{1e-12}: Relative tolerance
+  - stall_tol{1e-10}: Tolerance on ||dx||
+  - infeas_tol{1e-8}: Relative tolerance used in feasibility checking
+
+  - inner_tol_max{1.0}: Maximum value for the subproblem tolerance
+  - inner_tol_min{1e-12}: Minimum value for the subproblem tolerance
+
+  - max_newton_iters{200}: Maximum number of Newton iterations before timeout
+  - max_prox_iters{30}: Maximum number of proximal iterations before timeout
+  - max_inner_iters{50}: Maximum number of iterations that can be applied
+  to a single subproblem
+  - max_linesearch_iters{20}: Maximum number of backtracking linesearch steps
+
+  - check_feasibility{true}: Enables or disables the feasibility checker,
+  if the problem is known to be feasible then it can be disabled for speed. */
   void UpdateOption(const char* option, double value) {
     if (std::strcmp(option, "abs_tol") == 0) {
       abs_tol_ = std::max(value, 1e-14);
@@ -338,10 +333,9 @@ class FBstabAlgorithm {
   }
 
   /**
-   * Checks if x certifies primal or dual infeasibility.
-   * @param[in]  x
-   * @return feasibility status
-   */
+  Checks if x certifies primal or dual infeasibility.
+  @param[in]  x
+  @return feasibility status */
   InfeasibilityStatus CheckInfeasibility(const Variable& x) {
     feasibility_->ComputeFeasibility(x, infeasibility_tol_);
 
@@ -359,9 +353,8 @@ class FBstabAlgorithm {
   }
 
   /**
-   * Shifts all elements in merit_buffer_ up one spot then inserts at [0].
-   * @param[in] x value to be inserted at merit_buffer_[0]
-   */
+  Shifts all elements in merit_buffer_ up one spot then inserts at [0].
+  @param[in] x value to be inserted at merit_buffer_[0] */
   void InsertMerit(double x) {
     for (int i = static_cast<int>(merit_buffer_.size()) - 1; i > 0; i--) {
       merit_buffer_.at(i) = merit_buffer_.at(i - 1);

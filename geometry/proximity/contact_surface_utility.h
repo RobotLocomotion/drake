@@ -1,11 +1,11 @@
 #pragma once
 
-/** @file
- There are multiple ways to compute a contact surface depending on the geometry
- representations and compliance types involved. However, they should all produce
- ContactSurface instances that satisfy some basic invariants. These functions
- assist in maintaining those invariants.
- */
+/**
+@file
+There are multiple ways to compute a contact surface depending on the geometry
+representations and compliance types involved. However, they should all produce
+ContactSurface instances that satisfy some basic invariants. These functions
+assist in maintaining those invariants. */
 
 #include <vector>
 

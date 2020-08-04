@@ -14,10 +14,9 @@ namespace drake {
 namespace trajectories {
 
 /**
- * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
- *
- * @tparam_double_only
- */
+y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
+
+@tparam_double_only */
 template <typename T>
 class ExponentialPlusPiecewisePolynomial final
     : public PiecewiseTrajectory<T> {

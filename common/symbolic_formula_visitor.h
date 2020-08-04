@@ -13,16 +13,17 @@
 namespace drake {
 namespace symbolic {
 
-/// Calls visitor object @p v with a symbolic formula @p f, and arguments @p
-/// args. Visitor object is expected to implement the following methods which
-/// take @p f and @p args: `VisitFalse`, `VisitTrue`, `VisitVariable`,
-/// `VisitEqualTo`, VisitNotEqualTo, VisitGreaterThan,
-/// `VisitGreaterThanOrEqualTo`, `VisitLessThan`, `VisitLessThanOrEqualTo`,
-/// `VisitConjunction`, `VisitDisjunction`, `VisitNegation`, `VisitForall`,
-/// `VisitIsnan`, `VisitPositiveSemidefinite`.
-///
-/// Check the implementation of @c NegationNormalFormConverter class in
-/// drake/common/test/symbolic_formula_visitor_test.cc file to find an example.
+/**
+Calls visitor object @p v with a symbolic formula @p f, and arguments @p
+args. Visitor object is expected to implement the following methods which
+take @p f and @p args: `VisitFalse`, `VisitTrue`, `VisitVariable`,
+`VisitEqualTo`, VisitNotEqualTo, VisitGreaterThan,
+`VisitGreaterThanOrEqualTo`, `VisitLessThan`, `VisitLessThanOrEqualTo`,
+`VisitConjunction`, `VisitDisjunction`, `VisitNegation`, `VisitForall`,
+`VisitIsnan`, `VisitPositiveSemidefinite`.
+
+Check the implementation of @c NegationNormalFormConverter class in
+drake/common/test/symbolic_formula_visitor_test.cc file to find an example. */
 template <typename Result, typename Visitor, typename... Args>
 Result VisitFormula(Visitor* v, const Formula& f, Args&&... args) {
   switch (f.get_kind()) {

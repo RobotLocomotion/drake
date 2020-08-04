@@ -12,7 +12,7 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/// System with no state for testing a simplistic witness function.
+/** System with no state for testing a simplistic witness function. */
 template <class T>
 class StatelessSystem final : public LeafSystem<T> {
  public:
@@ -26,10 +26,11 @@ class StatelessSystem final : public LeafSystem<T> {
         &StatelessSystem::InvokePublishCallback);
   }
 
-  /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
-  /// @note This function does not preserve the publish callback because
-  ///       this is test code for which it is expected that no one will care
-  ///       whether the publish callback survives transmogrification.
+  /**
+  Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  @note This function does not preserve the publish callback because
+        this is test code for which it is expected that no one will care
+        whether the publish callback survives transmogrification. */
   template <typename U>
   explicit StatelessSystem(const StatelessSystem<U>& other)
       : StatelessSystem<T>(other.get_trigger_time(),
@@ -40,7 +41,7 @@ class StatelessSystem final : public LeafSystem<T> {
     publish_callback_ = callback;
   }
 
-  /// Gets the time that the witness function triggered.
+  /** Gets the time that the witness function triggered. */
   double get_trigger_time() const { return offset_; }
 
  protected:

@@ -65,9 +65,7 @@ class OptimizationProgram {
   std::optional<Eigen::VectorXd> initial_guess_;
 };
 
-/**
- * Simple example x = b
- */
+/** Simple example x = b */
 class LinearSystemExample1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample1)
@@ -99,11 +97,10 @@ class LinearSystemExample1 {
 };
 
 /**
- * Simple linear system
- *     x    = b
- * 2 * y(0) = b(0)
- * 2 * y(1) = b(1)
- */
+Simple linear system
+    x    = b
+2 * y(0) = b(0)
+2 * y(1) = b(1) */
 class LinearSystemExample2 : public LinearSystemExample1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample2)
@@ -122,11 +119,10 @@ class LinearSystemExample2 : public LinearSystemExample1 {
 };
 
 /**
- * Simple linear system
- * 3 * x    = b
- * 2 * y(0) = b(0)
- * 2 * y(1) = b(1)
- */
+Simple linear system
+3 * x    = b
+2 * y(0) = b(0)
+2 * y(1) = b(1) */
 class LinearSystemExample3 : public LinearSystemExample2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemExample3)
@@ -139,10 +135,9 @@ class LinearSystemExample3 : public LinearSystemExample2 {
 
 
 /**
- * For a stable linear system ẋ = A x, find its Lyapunov function by solving
- * the Lyapunov equality on the symmetric matrix X
- * Aᵀ * X + X * A = -E
- */
+For a stable linear system ẋ = A x, find its Lyapunov function by solving
+the Lyapunov equality on the symmetric matrix X
+Aᵀ * X + X * A = -E */
 class LinearMatrixEqualityExample {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearMatrixEqualityExample)
@@ -159,15 +154,17 @@ class LinearMatrixEqualityExample {
   Eigen::Matrix3d A_;
 };
 
-/// This test comes from Section 2.2 of
-/// Handbook of Test Problems in Local and Global Optimization.
-/// © 1999
-/// ISBN 978-1-4757-3040-1
+/**
+This test comes from Section 2.2 of
+Handbook of Test Problems in Local and Global Optimization.
+© 1999
+ISBN 978-1-4757-3040-1 */
 class NonConvexQPproblem1 {
-  /// This is a non-convex quadratic program with inequality constraints.
-  /// We choose to add the cost and constraints through different forms,
-  /// to test different solvers, and whether MathematicalProgram can parse
-  /// constraints in different forms.
+  /**
+  This is a non-convex quadratic program with inequality constraints.
+  We choose to add the cost and constraints through different forms,
+  to test different solvers, and whether MathematicalProgram can parse
+  constraints in different forms. */
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem1)
 
@@ -223,10 +220,11 @@ class NonConvexQPproblem1 {
   Eigen::Matrix<double, 5, 1> x_expected_;
 };
 
-/// This test comes from Section 2.3 of
-/// Handbook of Test Problems in Local and Global Optimization.
-/// © 1999
-/// ISBN 978-1-4757-3040-1
+/**
+This test comes from Section 2.3 of
+Handbook of Test Problems in Local and Global Optimization.
+© 1999
+ISBN 978-1-4757-3040-1 */
 class NonConvexQPproblem2 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonConvexQPproblem2)
@@ -283,10 +281,11 @@ class NonConvexQPproblem2 {
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
-/// This test comes from Section 3.4 of
-/// Handbook of Test Problems in Local and Global Optimization.
-/// © 1999
-/// ISBN 978-1-4757-3040-1
+/**
+This test comes from Section 3.4 of
+Handbook of Test Problems in Local and Global Optimization.
+© 1999
+ISBN 978-1-4757-3040-1 */
 class LowerBoundedProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LowerBoundedProblem)
@@ -380,16 +379,17 @@ class LowerBoundedProblem {
   Eigen::Matrix<double, 6, 1> x_expected_;
 };
 
-/// gloptiPolyConstrainedMinimization
-/// @brief From section 5.8.2 of the gloptipoly3 documentation.
-///
-/// Which is from section 3.5 in
-///   Handbook of Test Problems in Local and Global Optimization
-///   © 1999
-///   ISBN 978-1-4757-3040-1
-/// We deliberately duplicate the problem, with the same constraints and
-/// costs on decision variables x and y, so as to test out program works
-/// correctly with multiple decision variables.
+/**
+gloptiPolyConstrainedMinimization
+@brief From section 5.8.2 of the gloptipoly3 documentation.
+
+Which is from section 3.5 in
+  Handbook of Test Problems in Local and Global Optimization
+  © 1999
+  ISBN 978-1-4757-3040-1
+We deliberately duplicate the problem, with the same constraints and
+costs on decision variables x and y, so as to test out program works
+correctly with multiple decision variables. */
 class GloptiPolyConstrainedMinimizationProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GloptiPolyConstrainedMinimizationProblem)
@@ -491,24 +491,25 @@ class GloptiPolyConstrainedMinimizationProblem {
   Eigen::Vector3d expected_;
 };
 
-/// An SOCP with Lorentz cone and rotated Lorentz cone constraints.
-/// The objective is to find the smallest distance from a hyperplane
-/// A * x = b to the origin.
-/// We can solve the following SOCP with Lorentz cone constraint
-/// min  t
-///  s.t t >= sqrt(xᵀ*x)
-///      A * x = b.
-/// Alternatively, we can solve the following SOCP with rotated Lorentz cone
-/// constraint
-/// min t
-/// s.t t >= xᵀ*x
-///     A * x = b.
-///
-/// The optimal solution of this equality constrained QP can be found using
-/// Lagrangian method. The optimal solution x* and Lagrangian multiplier z*
-/// satisfy
-/// A_hat * [x*; z*] = [b; 0]
-/// where A_hat = [A 0; 2*I Aᵀ].
+/**
+An SOCP with Lorentz cone and rotated Lorentz cone constraints.
+The objective is to find the smallest distance from a hyperplane
+A * x = b to the origin.
+We can solve the following SOCP with Lorentz cone constraint
+min  t
+ s.t t >= sqrt(xᵀ*x)
+     A * x = b.
+Alternatively, we can solve the following SOCP with rotated Lorentz cone
+constraint
+min t
+s.t t >= xᵀ*x
+    A * x = b.
+
+The optimal solution of this equality constrained QP can be found using
+Lagrangian method. The optimal solution x* and Lagrangian multiplier z*
+satisfy
+A_hat * [x*; z*] = [b; 0]
+where A_hat = [A 0; 2*I Aᵀ]. */
 class MinDistanceFromPlaneToOrigin {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinDistanceFromPlaneToOrigin)
@@ -557,12 +558,11 @@ class MinDistanceFromPlaneToOrigin {
 };
 
 /**
- * A simple convex optimization program
- * min -12 * x + x³
- * s.t  x >= 0
- * Notice the objective function is convex in the feasible region x >= 0
- * The optimal solution is x = 2.
- */
+A simple convex optimization program
+min -12 * x + x³
+s.t  x >= 0
+Notice the objective function is convex in the feasible region x >= 0
+The optimal solution is x = 2. */
 class ConvexCubicProgramExample : public MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexCubicProgramExample)
@@ -578,12 +578,11 @@ class ConvexCubicProgramExample : public MathematicalProgram {
 };
 
 /**
- * A simple non-convex problem with a quadratic equality constraint
- * min 0
- * s.t xᵀx = 1
- * This test is meant to verify that we can add a quadratic constraint to a
- * program, and solve it through nonlinear optimization.
- */
+A simple non-convex problem with a quadratic equality constraint
+min 0
+s.t xᵀx = 1
+This test is meant to verify that we can add a quadratic constraint to a
+program, and solve it through nonlinear optimization. */
 class UnitLengthProgramExample : public MathematicalProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnitLengthProgramExample)
@@ -715,16 +714,15 @@ class DistanceToTetrahedronExample : public MathematicalProgram {
 };
 
 /**
- * This problem is taken from Pseudo-complementary algorithms for mathematical
- * programming by U. Eckhardt in Numerical Methods for Nonlinear Optimization,
- * 1972. This problem has a sparse gradient.
- * max x0
- * s.t x1 - exp(x0) >= 0
- *     x2 - exp(x1) >= 0
- *     0 <= x0 <= 100
- *     0 <= x1 <= 100
- *     0 <= x2 <= 10
- */
+This problem is taken from Pseudo-complementary algorithms for mathematical
+programming by U. Eckhardt in Numerical Methods for Nonlinear Optimization,
+1972. This problem has a sparse gradient.
+max x0
+s.t x1 - exp(x0) >= 0
+    x2 - exp(x1) >= 0
+    0 <= x0 <= 100
+    0 <= x1 <= 100
+    0 <= x2 <= 10 */
 class EckhardtProblem {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EckhardtProblem)
@@ -770,18 +768,15 @@ class EckhardtProblem {
   Vector3<symbolic::Variable> x_;
 };
 
-/**
- * Test dual solution for Eckhardt problem.
- */
+/** Test dual solution for Eckhardt problem. */
 void TestEckhardtDualSolution(const SolverInterface& solver,
                               const Eigen::Ref<const Eigen::VectorXd>& x_init,
                               double tol = 1e-6);
 
 /**
- * This is problem 106 from  Test examples for Nonlinear Programming
- * Codes by Will Hock and Klaus Schittkowski, Springer. The constraint of this
- * problem has sparse gradient.
- */
+This is problem 106 from  Test examples for Nonlinear Programming
+Codes by Will Hock and Klaus Schittkowski, Springer. The constraint of this
+problem has sparse gradient. */
 class HeatExchangerDesignProblem {
  public:
   HeatExchangerDesignProblem();
@@ -855,24 +850,25 @@ class HeatExchangerDesignProblem {
   Eigen::Matrix<symbolic::Variable, 8, 1> x_;
 };
 
-/// In Eigen's autodiff, when the derivatives() vector has empty size, it is
-/// interpreted as 0 gradient (i.e., the gradient has value 0, with the size of
-/// the gradient matrix being arbitrary). On the other hand, many solvers
-/// interpret empty size gradient in a different way, that the variable to be
-/// taken derivative with has 0 size. This test guarantees that when Eigen
-/// autodiff returns an empty size gradient, we can manually set the gradient
-/// size to be the right size. This class represents the following trivial
-/// problem
-/// <pre>
-/// min f(x)
-/// s.t g(x) <= 0
-/// </pre>
-/// where f(x) = 1 and g(x) = 0. x.rows() == 2.
-/// When evaluating f(x) and g(x), autodiff returns an empty gradient. But the
-/// solvers expect to see gradient ∂f/∂x = [0 0] and ∂g/∂x = [0 0], namely
-/// matrices of size 1 x 2, not empty size matrix. This test shows that we can
-/// automatically set the gradient to the right size, although Eigen's autodiff
-/// returns an empty size gradient.
+/**
+In Eigen's autodiff, when the derivatives() vector has empty size, it is
+interpreted as 0 gradient (i.e., the gradient has value 0, with the size of
+the gradient matrix being arbitrary). On the other hand, many solvers
+interpret empty size gradient in a different way, that the variable to be
+taken derivative with has 0 size. This test guarantees that when Eigen
+autodiff returns an empty size gradient, we can manually set the gradient
+size to be the right size. This class represents the following trivial
+problem
+<pre>
+min f(x)
+s.t g(x) <= 0
+</pre>
+where f(x) = 1 and g(x) = 0. x.rows() == 2.
+When evaluating f(x) and g(x), autodiff returns an empty gradient. But the
+solvers expect to see gradient ∂f/∂x = [0 0] and ∂g/∂x = [0 0], namely
+matrices of size 1 x 2, not empty size matrix. This test shows that we can
+automatically set the gradient to the right size, although Eigen's autodiff
+returns an empty size gradient. */
 class EmptyGradientProblem {
  public:
   EmptyGradientProblem();

@@ -11,46 +11,49 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-/// Simple model to capture the quantization and calibration offset effects
-/// of a rotary encoder.  Consider combining this with a ZeroOrderHold system
-/// to capture the sampled-data effects.
-///
-/// The inputs to this system are assumed to be in radians, and the outputs of
-/// the system are also in radians.
-///
-/// @ingroup sensor_systems
+/**
+Simple model to capture the quantization and calibration offset effects
+of a rotary encoder.  Consider combining this with a ZeroOrderHold system
+to capture the sampled-data effects.
+
+The inputs to this system are assumed to be in radians, and the outputs of
+the system are also in radians.
+
+@ingroup sensor_systems */
 template <typename T>
 class RotaryEncoders final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RotaryEncoders)
 
-  /// Quantization-only constructor.  Specifies one ticks_per_revolution count
-  /// for every element of the input port.
+  /**
+  Quantization-only constructor.  Specifies one ticks_per_revolution count
+  for every element of the input port. */
   explicit RotaryEncoders(const std::vector<int>& ticks_per_revolution);
 
-  /// Selector-only constructor.  Provides arguments to select particular
-  /// indices from the input signal to use in the output.  Since
-  /// ticks_per_revolution is not being set, the outputs will NOT be quantized.
-  /// @param input_port_size Dimension of the expected input signal
-  /// @param input_vector_indices List of indices
+  /**
+  Selector-only constructor.  Provides arguments to select particular
+  indices from the input signal to use in the output.  Since
+  ticks_per_revolution is not being set, the outputs will NOT be quantized.
+  @param input_port_size Dimension of the expected input signal
+  @param input_vector_indices List of indices */
   RotaryEncoders(int input_port_size,
                  const std::vector<int>& input_vector_indices);
 
-  /// Quantization and Selector constructor.
+  /** Quantization and Selector constructor. */
   RotaryEncoders(int input_port_size,
                  const std::vector<int>& input_vector_indices,
                  const std::vector<int>& ticks_per_revolution);
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit RotaryEncoders(const RotaryEncoders<U>&);
 
-  /// Set the calibration offset parameters.
+  /** Set the calibration offset parameters. */
   void set_calibration_offsets(
       Context<T>* context,
       const Eigen::Ref<VectorX<T>>& calibration_offsets) const;
 
-  /// Retrieve the calibration offset parameters.
+  /** Retrieve the calibration offset parameters. */
   Eigen::VectorBlock<const VectorX<T>> get_calibration_offsets(
       const Context<T>& context) const;
 

@@ -1,5 +1,6 @@
-/// @file
-/// Utilities for arithmetic on gradients.
+/**
+@file
+Utilities for arithmetic on gradients. */
 
 #pragma once
 

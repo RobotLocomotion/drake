@@ -1,5 +1,6 @@
-/// @file
-/// Utilities for arithmetic on exponential maps.
+/**
+@file
+Utilities for arithmetic on exponential maps. */
 
 #pragma once
 

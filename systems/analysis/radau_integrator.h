@@ -13,53 +13,52 @@ namespace drake {
 namespace systems {
 
 /**
- * A selectable order (third- or first-order), fully implicit integrator with
- * error estimation.
- *
- * @tparam_nonsymbolic_scalar
- * @tparam num_stages The number of stages used in this integrator, which must
- *         be either 1 or 2. Set this to 1 for the integrator to be implicit
- *         Euler and 2 for it to Radau3 (default).
- *
- * A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
- * propagating the state forward, by default. The state can also be propagated
- * using a single-stage method, in which case it is equivalent to an implicit
- * Euler method, by setting num_stages=1. Regardless of the order of propagating
- * state, the local (truncation) error is estimated through the implicit
- * trapezoid rule.
- *
- * Radau IIa methods are known to be L-Stable, meaning both that
- * applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
- * yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
- * A-Stability, in turn, means that the method can integrate the linear constant
- * coefficient system `dx/dt = Ax` at any step size without the solution
- * becoming unstable (growing without bound). The practical effect of
- * L-Stability is that the integrator tends to be stable for any given step size
- * on an arbitrary system of ordinary differential equations. Note that the
- * implicit trapezoid rule used for error estimation is "only" A-Stable; whether
- * this lesser stability has some practical effect on the efficiency of this
- * integrator is currently unknown. See [Lambert, 1991], Ch. 6 for an
- * approachable discussion on stiff differential equations and L- and
- * A-Stability.
- *
- * This implementation uses Newton-Raphson (NR). General implementation
- * details were taken from [Hairer, 1996] Ch. 8.
- *
- * - [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
- *                    Equations II (Stiff and Differential-Algebraic Problems).
- *                    Springer, 1996.
- * - [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
- *                    Equations. John Wiley & Sons, 1991.
- *
- * @see ImplicitIntegrator class documentation for information about implicit
- *      integration methods in general.
- * @see Radau3Integrator and Radau1Integrator alises for third- and first-order
- *      templates with num_stages already specified.
- * @note This integrator uses the integrator accuracy setting, even when run
- *       in fixed-step mode, to limit the error in the underlying Newton-Raphson
- *       process. See IntegratorBase::set_target_accuracy() for more info.
- * @ingroup integrators
- */
+A selectable order (third- or first-order), fully implicit integrator with
+error estimation.
+
+@tparam_nonsymbolic_scalar
+@tparam num_stages The number of stages used in this integrator, which must
+        be either 1 or 2. Set this to 1 for the integrator to be implicit
+        Euler and 2 for it to Radau3 (default).
+
+A two-stage Radau IIa (see [Hairer, 1996], Ch. 5) method is used for
+propagating the state forward, by default. The state can also be propagated
+using a single-stage method, in which case it is equivalent to an implicit
+Euler method, by setting num_stages=1. Regardless of the order of propagating
+state, the local (truncation) error is estimated through the implicit
+trapezoid rule.
+
+Radau IIa methods are known to be L-Stable, meaning both that
+applying it at a fixed integration step to the  "test" equation `y(t) = eᵏᵗ`
+yields zero (for `k < 0` and `t → ∞`) *and* that it is also A-Stable.
+A-Stability, in turn, means that the method can integrate the linear constant
+coefficient system `dx/dt = Ax` at any step size without the solution
+becoming unstable (growing without bound). The practical effect of
+L-Stability is that the integrator tends to be stable for any given step size
+on an arbitrary system of ordinary differential equations. Note that the
+implicit trapezoid rule used for error estimation is "only" A-Stable; whether
+this lesser stability has some practical effect on the efficiency of this
+integrator is currently unknown. See [Lambert, 1991], Ch. 6 for an
+approachable discussion on stiff differential equations and L- and
+A-Stability.
+
+This implementation uses Newton-Raphson (NR). General implementation
+details were taken from [Hairer, 1996] Ch. 8.
+
+- [Hairer, 1996]   E. Hairer and G. Wanner. Solving Ordinary Differential
+                   Equations II (Stiff and Differential-Algebraic Problems).
+                   Springer, 1996.
+- [Lambert, 1991]  J. D. Lambert. Numerical Methods for Ordinary Differential
+                   Equations. John Wiley & Sons, 1991.
+
+@see ImplicitIntegrator class documentation for information about implicit
+     integration methods in general.
+@see Radau3Integrator and Radau1Integrator alises for third- and first-order
+     templates with num_stages already specified.
+@note This integrator uses the integrator accuracy setting, even when run
+      in fixed-step mode, to limit the error in the underlying Newton-Raphson
+      process. See IntegratorBase::set_target_accuracy() for more info.
+@ingroup integrators */
 template <typename T, int num_stages = 2>
 class RadauIntegrator final : public ImplicitIntegrator<T> {
   static_assert(num_stages == 1 || num_stages == 2,
@@ -74,11 +73,12 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   bool supports_error_estimation() const final { return true; }
 
-  /// This integrator uses embedded second order methods to compute estimates of
-  /// the local truncation error. The order of the asymptotic difference between
-  /// the third-order Radau method and an embedded second order method is O(h³).
-  /// The order of the asymptotic difference between the first-order Radau
-  /// method and an embedded second order method is O(h²).
+  /**
+  This integrator uses embedded second order methods to compute estimates of
+  the local truncation error. The order of the asymptotic difference between
+  the third-order Radau method and an embedded second order method is O(h³).
+  The order of the asymptotic difference between the first-order Radau
+  method and an embedded second order method is O(h²). */
   int get_error_estimate_order() const final {
     if (num_stages == 2) {
       return 3;
@@ -299,13 +299,15 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   int64_t num_err_est_nr_iterations_{0};
 };
 
-/** A third-order fully implicit integrator with error estimation.
+/**
+A third-order fully implicit integrator with error estimation.
 See RadauIntegrator with `num_stages == 2` for details.
 @tparam_nonsymbolic_scalar */
 template <typename T>
 using Radau3Integrator = RadauIntegrator<T, 2>;
 
-/** A first-order fully implicit integrator with error estimation.
+/**
+A first-order fully implicit integrator with error estimation.
 See RadauIntegrator with `num_stages == 1` for details.
 @tparam_nonsymbolic_scalar */
 template <typename T>

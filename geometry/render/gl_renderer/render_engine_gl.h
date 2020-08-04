@@ -22,11 +22,11 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-/** See documentation of MakeRenderEngineGl().  */
+/** See documentation of MakeRenderEngineGl(). */
 class RenderEngineGl final : public RenderEngine {
  public:
-  /** @name Does not allow public copy, move, or assignment  */
-  //@{
+  /** @name Does not allow public copy, move, or assignment */
+  /** @{ */
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor is actually protected to serve as the basis for
   // implementing the DoClone() method.
@@ -41,36 +41,38 @@ class RenderEngineGl final : public RenderEngine {
 
   ~RenderEngineGl() final;
 
-  /** @see RenderEngine::UpdateViewpoint().  */
+  /** @see RenderEngine::UpdateViewpoint(). */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
-  /** @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
-   this will throw an exception.
+  /**
+  @see RenderEngine::RenderColorImage(). Currently unimplemented. Calling
+  this will throw an exception.
 
-   Note that the display window triggered by `show_window` is shared with
-   RenderLabelImage(), and only the last color or label image rendered will be
-   visible in the window (once these methods are implemented).  */
+  Note that the display window triggered by `show_window` is shared with
+  RenderLabelImage(), and only the last color or label image rendered will be
+  visible in the window (once these methods are implemented). */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const final;
 
-  /** @see RenderEngine::RenderDepthImage().  */
+  /** @see RenderEngine::RenderDepthImage(). */
   void RenderDepthImage(
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const final;
 
-  /** @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
-   this will throw an exception.
+  /**
+  @see RenderEngine::RenderLabelImage(). Currently unimplemented. Calling
+  this will throw an exception.
 
-   Note that the display window triggered by `show_window` is shared with
-   RenderColorImage(), and only the last color or label image rendered will be
-   visible in the window (once these methods are implemented).  */
+  Note that the display window triggered by `show_window` is shared with
+  RenderColorImage(), and only the last color or label image rendered will be
+  visible in the window (once these methods are implemented). */
   void RenderLabelImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
-  /** @name    Shape reification  */
-  //@{
+  /** @name    Shape reification */
+  /** @{ */
   using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) final;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final;
@@ -78,7 +80,7 @@ class RenderEngineGl final : public RenderEngine {
   void ImplementGeometry(const Box& box, void* user_data) final;
   void ImplementGeometry(const Mesh& mesh, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;
-  //@}
+  /** @} */
 
  private:
   friend class RenderEngineGlTester;

@@ -3,8 +3,7 @@
 /**
 @file
 (Advanced) Provides the ability to override NiceTypeName::Get(T*) so that
-Python objects can have human-readable names.
-*/
+Python objects can have human-readable names. */
 
 #include <functional>
 #include <string>

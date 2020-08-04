@@ -4,15 +4,16 @@
 
 namespace drake {
 
-/// Provides a "dummy" value for a ScalarType -- a value that is unlikely to be
-/// mistaken for a purposefully-computed value, useful for initializing a value
-/// before the true result is available.
-///
-/// Defaults to using std::numeric_limits::quiet_NaN when available; it is a
-/// compile-time error to call the unspecialized dummy_value::get() when
-/// quiet_NaN is unavailable.
-///
-/// See autodiff_overloads.h to use this with Eigen's AutoDiffScalar.
+/**
+Provides a "dummy" value for a ScalarType -- a value that is unlikely to be
+mistaken for a purposefully-computed value, useful for initializing a value
+before the true result is available.
+
+Defaults to using std::numeric_limits::quiet_NaN when available; it is a
+compile-time error to call the unspecialized dummy_value::get() when
+quiet_NaN is unavailable.
+
+See autodiff_overloads.h to use this with Eigen's AutoDiffScalar. */
 template <typename T>
 struct dummy_value {
   static constexpr T get() {

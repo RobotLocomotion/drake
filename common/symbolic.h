@@ -1,17 +1,18 @@
 #pragma once
-/// @file
-/// Provides public header files of Drake's symbolic library.
-/// A user of the symbolic library should only include this header file.
-/// Including other individual headers such as symbolic_expression.h will
-/// generate a compile-time error.
-///
-/// Many symbolic types are not closed under the defined operations. For
-/// example, relational operations (i.e. <) over symbolic::Expression produce
-/// symbolic::Formula. Another example is addition (+) over Monomial which gives
-/// Polynomial. If a user does not include the necessary set of header files,
-/// he/she will get either 1) incomprehensible c++ errors or 2) undefined
-/// runtime behaviors. The problem is trickier if we use symbolic objects via
-/// Eigen.
+/**
+@file
+Provides public header files of Drake's symbolic library.
+A user of the symbolic library should only include this header file.
+Including other individual headers such as symbolic_expression.h will
+generate a compile-time error.
+
+Many symbolic types are not closed under the defined operations. For
+example, relational operations (i.e. <) over symbolic::Expression produce
+symbolic::Formula. Another example is addition (+) over Monomial which gives
+Polynomial. If a user does not include the necessary set of header files,
+he/she will get either 1) incomprehensible c++ errors or 2) undefined
+runtime behaviors. The problem is trickier if we use symbolic objects via
+Eigen. */
 
 // In each header included below, it asserts that this macro
 // `DRAKE_COMMON_SYMBOLIC_HEADER` is defined. If the macro is not defined, it

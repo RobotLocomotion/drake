@@ -12,28 +12,30 @@
 namespace drake {
 namespace systems {
 
-/// A simple subclass of BasicVector<T> for testing, particularly for cases
-/// where BasicVector subtyping must be preserved through the framework.
+/**
+A simple subclass of BasicVector<T> for testing, particularly for cases
+where BasicVector subtyping must be preserved through the framework. */
 template <typename T, int N>
 class MyVector : public BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector)
 
-  /// Constructs an uninitialized N-vector.
+  /** Constructs an uninitialized N-vector. */
   MyVector() : BasicVector<T>(N) {}
 
-  /// Constructs from a variable-length vector whose length must be N.
+  /** Constructs from a variable-length vector whose length must be N. */
   explicit MyVector(const VectorX<T>& data) : BasicVector<T>(data) {
     DRAKE_THROW_UNLESS(data.size() == N);
   }
 
-  /// Constructs from a fixed-size Eigen VectorN.
+  /** Constructs from a fixed-size Eigen VectorN. */
   explicit MyVector(const Eigen::Matrix<T, N, 1>& data)
       : BasicVector<T>(data) {}
 
-  /// Constructs a MyVector where each element is constructed using the
-  /// placewise-corresponding member of @p args as the sole constructor
-  /// argument.  For instance: `MyVector<2, double>::Make(1.1, 2.2)`.
+  /**
+  Constructs a MyVector where each element is constructed using the
+  placewise-corresponding member of @p args as the sole constructor
+  argument.  For instance: `MyVector<2, double>::Make(1.1, 2.2)`. */
   template<typename... Fargs>
   static std::unique_ptr<MyVector> Make(Fargs&&... args) {
     static_assert(sizeof...(args) == N,
@@ -48,8 +50,9 @@ class MyVector : public BasicVector<T> {
   // AbstractValue; we should not pun away from BasicVector, since many methods
   // in the leaf system and context code assumes that BasicVector is what gets
   // type-erased!
-  /// Shadows the base class Clone() method to change the return type, so that
-  /// this can be used in `copyable_unique_ptr<MyVector>` and `Value<MyVector>`.
+  /**
+  Shadows the base class Clone() method to change the return type, so that
+  this can be used in `copyable_unique_ptr<MyVector>` and `Value<MyVector>`. */
   std::unique_ptr<MyVector<T, N>> Clone() const {
     return dynamic_pointer_cast_or_throw<MyVector<T, N>>(
         BasicVector<T>::Clone());

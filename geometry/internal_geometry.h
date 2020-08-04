@@ -62,7 +62,7 @@ class InternalGeometry {
   }
 
   /*  @name     Geometry properties  */
-  //@{
+  /** @{ */
 
   /* Returns the shape specification for this geometry.  */
   const Shape& shape() const { return *shape_spec_; }
@@ -79,10 +79,10 @@ class InternalGeometry {
   /* Returns true if this geometry belongs to the source with the given id.  */
   bool belongs_to_source(SourceId id) const { return source_id_ == id; }
 
-  //@}
+  /** @} */
 
   /* @name     Scene Graph topology    */
-  //@{
+  /** @{ */
 
   /* Reports the frame this internal geometry is rigidly attached to.  */
   FrameId frame_id() const { return frame_id_; }
@@ -160,7 +160,7 @@ class InternalGeometry {
     return frame_id_ != InternalFrame::world_frame_id();
   }
 
-  //@}
+  /** @} */
 
   /* @name   Role management
 
@@ -169,7 +169,7 @@ class InternalGeometry {
    role. It is the job of GeometryState to make sure that an individual
    geometry's understanding of its role is kept in sync with the corresponding
    engine's understanding as well.  */
-  //@{
+  /** @{ */
 
   /* Assigns a proximity role to this geometry, replacing any proximity
    properties that were previously assigned.  */
@@ -245,7 +245,7 @@ class InternalGeometry {
     perception_props_ = std::nullopt;
   }
 
-  //@}
+  /** @} */
 
  private:
   // The specification for this instance's shape.

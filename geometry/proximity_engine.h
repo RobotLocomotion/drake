@@ -86,7 +86,7 @@ class ProximityEngine {
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ToAutoDiffXd() const;
 
   /* @name Topology management */
-  //@{
+  /** @{ */
 
   /* Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
@@ -152,7 +152,7 @@ class ProximityEngine {
 
   double distance_tolerance() const;
 
-  //@}
+  /** @} */
 
   /* Updates the poses for all of the _dynamic_ geometries in the engine.
    @param X_WGs     The poses of each geometry `G` measured and expressed in the
@@ -171,7 +171,7 @@ class ProximityEngine {
   /* @name              Signed Distance Queries
   See @ref signed_distance_query "Signed Distance Query" for more details.  */
 
-  //@{
+  /** @{ */
   // NOTE: This maps to Model::ClosestPointsAllToAll().
   /* Implementation of
    GeometryState::ComputeSignedDistancePairwiseClosestPoints().
@@ -199,14 +199,14 @@ class ProximityEngine {
       const Vector3<T>& p_WQ,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       const double threshold = std::numeric_limits<double>::infinity()) const;
-  //@}
+  /** @} */
 
 
   //----------------------------------------------------------------------------
   /* @name                Collision Queries
   See @ref collision_queries "Collision Queries" for more details.  */
 
-  //@{
+  /** @{ */
 
   // NOTE: This maps to Model::ComputeMaximumDepthCollisionPoints().
   // The definition that touching is not penetrating is due to an FCL issue
@@ -239,7 +239,7 @@ class ProximityEngine {
   /* Implementation of GeometryState::HasCollisions().  */
   bool HasCollisions() const;
 
-  //@}
+  /** @} */
 
   /* @name               Collision filters
 
@@ -249,7 +249,7 @@ class ProximityEngine {
    See @ref scene_graph_collision_filtering "Scene Graph Collision Filtering"
    for more details.
    */
-  //@{
+  /** @{ */
 
   /* Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
@@ -278,7 +278,7 @@ class ProximityEngine {
    collision.  */
   bool CollisionFiltered(GeometryId id1, bool is_dynamic_1,
                          GeometryId id2, bool is_dynamic_2) const;
-  //@}
+  /** @} */
 
  private:
   // Class to give GeometryState access to clique management.

@@ -9,9 +9,10 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-/// System with no state evolution for testing numerical differencing in
-/// integrators that use it.
-/// @tparam_default_scalar
+/**
+System with no state evolution for testing numerical differencing in
+integrators that use it.
+@tparam_default_scalar */
 template <typename T>
 class StationarySystem final : public LeafSystem<T> {
  public:
@@ -19,7 +20,7 @@ class StationarySystem final : public LeafSystem<T> {
 
   StationarySystem();
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  /** Scalar-converting copy constructor.  See @ref system_scalar_conversion. */
   template <typename U>
   explicit StationarySystem(const StationarySystem<U>&) : StationarySystem() {}
 

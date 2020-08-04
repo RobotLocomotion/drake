@@ -21,62 +21,65 @@
 namespace drake {
 namespace yaml {
 
-/// Saves data from a C++ structure into a YAML file, using the Serialize /
-/// Archive pattern.
-///
-/// Sample code:
-/// @code{cpp}
-/// struct MyData {
-///   double foo{NAN};
-///   std::vector<double> bar;
-///
-///   template <typename Archive>
-///   void Serialize(Archive* a) {
-///     a->Visit(DRAKE_NVP(foo));
-///     a->Visit(DRAKE_NVP(bar));
-///   }
-/// };
-///
-/// std::string SaveData(const MyData& data) {
-///   common::YamlWriteArchive archive;
-///   archive.Accept(data);
-///   return archive.EmitString();
-/// }
-///
-/// int main() {
-///   MyData data{1.0, {2.0, 3.0}};
-///   std::cout << SaveData(data);
-///   return 0;
-/// }
-/// @endcode
-///
-/// Output:
-/// @code{yaml}
-/// root:
-///   foo: 1.0
-///   bar: [2.0, 3.0]
-/// @endcode
-///
-/// Structures can be arbitrarily nested, as long as each `struct` has a
-/// `Serialize` method.  Many common built-in types (int, double, std::string,
-/// std::vector, std::array, std::map, std::unordered_map, std::optional,
-/// std::variant, Eigen::Matrix) may also be used.
-///
-/// The EmitString output is always deterministic, even for unordered datatypes
-/// like std::unordered_map.
-///
-/// For inspiration and background, see:
-/// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
+/**
+Saves data from a C++ structure into a YAML file, using the Serialize /
+Archive pattern.
+
+Sample code:
+@code{cpp}
+struct MyData {
+  double foo{NAN};
+  std::vector<double> bar;
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(foo));
+    a->Visit(DRAKE_NVP(bar));
+  }
+};
+
+std::string SaveData(const MyData& data) {
+  common::YamlWriteArchive archive;
+  archive.Accept(data);
+  return archive.EmitString();
+}
+
+int main() {
+  MyData data{1.0, {2.0, 3.0}};
+  std::cout << SaveData(data);
+  return 0;
+}
+@endcode
+
+Output:
+@code{yaml}
+root:
+  foo: 1.0
+  bar: [2.0, 3.0]
+@endcode
+
+Structures can be arbitrarily nested, as long as each `struct` has a
+`Serialize` method.  Many common built-in types (int, double, std::string,
+std::vector, std::array, std::map, std::unordered_map, std::optional,
+std::variant, Eigen::Matrix) may also be used.
+
+The EmitString output is always deterministic, even for unordered datatypes
+like std::unordered_map.
+
+For inspiration and background, see:
+https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html */
 class YamlWriteArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlWriteArchive)
 
-  /// Creates an archive.  See the %YamlWriteArchive class overview for
-  /// details.
+  /**
+  Creates an archive.  See the %YamlWriteArchive class overview for
+  details. */
   YamlWriteArchive() {}
 
-  /// Copies the contents of `serializable` into the YAML object associated
-  /// with this archive.  See the %YamlWriteArchive class overview for details.
+  /**
+  Copies the contents of `serializable` into the YAML object associated
+  with this archive.  See the %YamlWriteArchive class overview for details. */
   template <typename Serializable>
   void Accept(const Serializable& serializable) {
     auto* serializable_mutable = const_cast<Serializable*>(&serializable);
@@ -92,23 +95,26 @@ class YamlWriteArchive final {
     }
   }
 
-  /// Returns the YAML string for whatever Serializable was most recently
-  /// passed into Accept.  The returned document will be a single Map node
-  /// named using `root_name` with the Serializable's visited fields as
-  /// key-value entries within it.
+  /**
+  Returns the YAML string for whatever Serializable was most recently
+  passed into Accept.  The returned document will be a single Map node
+  named using `root_name` with the Serializable's visited fields as
+  key-value entries within it. */
   std::string EmitString(const std::string& root_name = "root") const;
 
-  /// (Advanced.)  Remove from this archive any map entries that are identical
-  /// to an entry in `other`, iff they reside at the same location within the
-  /// node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
-  /// all the way up to the root) are also all maps.  This enables emitting a
-  /// minimal YAML representation when the output will be later loaded using
-  /// YamlReadArchive's option to retain_map_defaults; the "all parents are
-  /// maps" condition is the complement to what retain_map_defaults admits.
+  /**
+  (Advanced.)  Remove from this archive any map entries that are identical
+  to an entry in `other`, iff they reside at the same location within the
+  node tree hierarchy, and iff their parent nodes (and grandparent, etc.,
+  all the way up to the root) are also all maps.  This enables emitting a
+  minimal YAML representation when the output will be later loaded using
+  YamlReadArchive's option to retain_map_defaults; the "all parents are
+  maps" condition is the complement to what retain_map_defaults admits. */
   void EraseMatchingMaps(const YamlWriteArchive& other);
 
-  /// (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
-  /// object.  Most users should should call Accept, not Visit.
+  /**
+  (Advanced.)  Copies the value pointed to by `nvp.value()` into the YAML
+  object.  Most users should should call Accept, not Visit. */
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     // Use int32_t for the final argument to prefer the specialized overload.

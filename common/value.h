@@ -50,81 +50,90 @@ using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 }  // namespace internal
 #endif
 
-/// A fully type-erased container class.  An AbstractValue stores an object of
-/// some type T (where T is declared during at construction time) that at
-/// runtime can be passed between functions without mentioning T.  Only when
-/// the stored T must be accessed does the user need to mention T again.
-///
-/// (Advanced.) Note that AbstractValue's getters and setters method declare
-/// that "If T does not match, a std::logic_error will be thrown with a helpful
-/// error message".  The code that implements this check uses hashing, so in
-/// the extraordinarily unlikely case of a 64-bit hash collision, the error may
-/// go undetected in Release builds. (Debug builds have extra checks that will
-/// trigger.)
-///
-/// (Advanced.) Only Value should inherit directly from AbstractValue.
-/// User-defined classes with additional features may inherit from Value.
+/**
+A fully type-erased container class.  An AbstractValue stores an object of
+some type T (where T is declared during at construction time) that at
+runtime can be passed between functions without mentioning T.  Only when
+the stored T must be accessed does the user need to mention T again.
+
+(Advanced.) Note that AbstractValue's getters and setters method declare
+that "If T does not match, a std::logic_error will be thrown with a helpful
+error message".  The code that implements this check uses hashing, so in
+the extraordinarily unlikely case of a 64-bit hash collision, the error may
+go undetected in Release builds. (Debug builds have extra checks that will
+trigger.)
+
+(Advanced.) Only Value should inherit directly from AbstractValue.
+User-defined classes with additional features may inherit from Value. */
 class AbstractValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValue)
 
   virtual ~AbstractValue();
 
-  /// Returns an AbstractValue containing the given @p value.
+  /** Returns an AbstractValue containing the given @p value. */
   template <typename T>
   static std::unique_ptr<AbstractValue> Make(const T& value);
 
-  /// Returns the value wrapped in this AbstractValue as a const reference.
-  /// The reference remains valid only until this object is set or destroyed.
-  /// @tparam T The originally declared type of this AbstractValue, e.g., from
-  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
-  /// std::logic_error will be thrown with a helpful error message.
+  /**
+  Returns the value wrapped in this AbstractValue as a const reference.
+  The reference remains valid only until this object is set or destroyed.
+  @tparam T The originally declared type of this AbstractValue, e.g., from
+  AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
+  std::logic_error will be thrown with a helpful error message. */
   template <typename T>
   const T& get_value() const { return cast<T>().get_value(); }
 
-  /// Returns the value wrapped in this AbstractValue as mutable reference.
-  /// The reference remains valid only until this object is set or destroyed.
-  /// @tparam T The originally declared type of this AbstractValue, e.g., from
-  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
-  /// std::logic_error will be thrown with a helpful error message.
+  /**
+  Returns the value wrapped in this AbstractValue as mutable reference.
+  The reference remains valid only until this object is set or destroyed.
+  @tparam T The originally declared type of this AbstractValue, e.g., from
+  AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
+  std::logic_error will be thrown with a helpful error message. */
   template <typename T>
   T& get_mutable_value() { return cast<T>().get_mutable_value(); }
 
-  /// Sets the value wrapped in this AbstractValue.
-  /// @tparam T The originally declared type of this AbstractValue, e.g., from
-  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
-  /// std::logic_error will be thrown with a helpful error message.
+  /**
+  Sets the value wrapped in this AbstractValue.
+  @tparam T The originally declared type of this AbstractValue, e.g., from
+  AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
+  std::logic_error will be thrown with a helpful error message. */
   template <typename T>
   void set_value(const T& v) { cast<T>().set_value(v); }
 
-  /// Returns the value wrapped in this AbstractValue, if T matches the
-  /// originally declared type of this AbstractValue.
-  /// @tparam T The originally declared type of this AbstractValue, e.g., from
-  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match,
-  /// returns nullptr.
+  /**
+  Returns the value wrapped in this AbstractValue, if T matches the
+  originally declared type of this AbstractValue.
+  @tparam T The originally declared type of this AbstractValue, e.g., from
+  AbstractValue::Make<T>() or Value<T>::Value().  If T does not match,
+  returns nullptr. */
   template <typename T>
   const T* maybe_get_value() const;
 
-  /// Returns a copy of this AbstractValue.
+  /** Returns a copy of this AbstractValue. */
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
 
-  /// Copies the value in @p other to this value.  If other is not compatible
-  /// with this object, a std::logic_error will be thrown with a helpful error
-  /// message.
+  /**
+  Copies the value in @p other to this value.  If other is not compatible
+  with this object, a std::logic_error will be thrown with a helpful error
+  message. */
   virtual void SetFrom(const AbstractValue& other) = 0;
 
-  /// Returns typeid of the contained object of type T. If T is polymorphic,
-  /// this returns the typeid of the most-derived type of the contained object.
+  /**
+  Returns typeid of the contained object of type T. If T is polymorphic,
+  this returns the typeid of the most-derived type of the contained object. */
   virtual const std::type_info& type_info() const = 0;
 
-  /// Returns typeid(T) for this Value<T> object. If T is polymorphic, this
-  /// does NOT reflect the typeid of the most-derived type of the contained
-  /// object; the result is always the base type T.
+  /**
+  Returns typeid(T) for this Value<T> object. If T is polymorphic, this
+  does NOT reflect the typeid of the most-derived type of the contained
+  object; the result is always the base type T. */
   virtual const std::type_info& static_type_info() const = 0;
 
-  /// Returns a human-readable name for the underlying type T. This may be
-  /// slow but is useful for error messages. If T is polymorphic, this returns
-  /// the typeid of the most-derived type of the contained object.
+  /**
+  Returns a human-readable name for the underlying type T. This may be
+  slow but is useful for error messages. If T is polymorphic, this returns
+  the typeid of the most-derived type of the contained object. */
   std::string GetNiceTypeName() const;
 
  protected:
@@ -148,27 +157,28 @@ class AbstractValue {
   const size_t type_hash_;
 };
 
-/// A container class for an arbitrary type T (with some restrictions).  This
-/// class inherits from AbstractValue and therefore at runtime can be passed
-/// between functions without mentioning T.
-///
-/// Example:
-/// @code
-/// void print_string(const AbstractValue& arg) {
-///   const std::string& message = arg.get_value<std::string>();
-///   std::cerr << message;
-/// }
-/// void meow() {
-///   const Value<std::string> value("meow");
-///   print_string(value);
-/// }
-/// @endcode
-///
-/// (Advanced.) User-defined classes with additional features may subclass
-/// Value, but should take care to override Clone().
-///
-/// @tparam T Must be copy-constructible or cloneable. Must not be a pointer,
-/// array, nor have const, volatile, or reference qualifiers.
+/**
+A container class for an arbitrary type T (with some restrictions).  This
+class inherits from AbstractValue and therefore at runtime can be passed
+between functions without mentioning T.
+
+Example:
+@code
+void print_string(const AbstractValue& arg) {
+  const std::string& message = arg.get_value<std::string>();
+  std::cerr << message;
+}
+void meow() {
+  const Value<std::string> value("meow");
+  print_string(value);
+}
+@endcode
+
+(Advanced.) User-defined classes with additional features may subclass
+Value, but should take care to override Clone().
+
+@tparam T Must be copy-constructible or cloneable. Must not be a pointer,
+array, nor have const, volatile, or reference qualifiers. */
 template <typename T>
 class Value : public AbstractValue {
  public:
@@ -182,8 +192,9 @@ class Value : public AbstractValue {
       !std::is_pointer_v<T> && !std::is_array_v<T>,
       "T cannot be a pointer or array.");
 
-  /// Constructs a Value<T> using T's default constructor, if available.
-  /// This is only available for T's that support default construction.
+  /**
+  Constructs a Value<T> using T's default constructor, if available.
+  This is only available for T's that support default construction. */
 #if !defined(DRAKE_DOXYGEN_CXX)
   // T1 is template boilerplate; do not specify it at call sites.
   template <typename T1 = T,
@@ -192,12 +203,13 @@ class Value : public AbstractValue {
 #endif
   Value();
 
-  /// Constructs a Value<T> by copying or cloning the given value @p v.
+  /** Constructs a Value<T> by copying or cloning the given value @p v. */
   explicit Value(const T& v);
 
-  /// Constructs a Value<T> by forwarding the given @p args to T's constructor,
-  /// if available.  This is only available for non-primitive T's that are
-  /// constructible from @p args.
+  /**
+  Constructs a Value<T> by forwarding the given @p args to T's constructor,
+  if available.  This is only available for non-primitive T's that are
+  constructible from @p args. */
 #if defined(DRAKE_DOXYGEN_CXX)
   template <typename... Args>
   explicit Value(Args&&... args);
@@ -212,21 +224,24 @@ class Value : public AbstractValue {
   explicit Value(Arg1&& arg1, Args&&... args);
 #endif
 
-  /// Constructs a Value<T> by copying or moving the given value @p v.
-  /// @pre v is non-null.
+  /**
+  Constructs a Value<T> by copying or moving the given value @p v.
+  @pre v is non-null. */
   explicit Value(std::unique_ptr<T> v);
 
   ~Value() override {}
 
-  /// Returns a const reference to the stored value.
-  /// The reference remains valid only until this object is set or destroyed.
+  /**
+  Returns a const reference to the stored value.
+  The reference remains valid only until this object is set or destroyed. */
   const T& get_value() const;
 
-  /// Returns a mutable reference to the stored value.
-  /// The reference remains valid only until this object is set or destroyed.
+  /**
+  Returns a mutable reference to the stored value.
+  The reference remains valid only until this object is set or destroyed. */
   T& get_mutable_value();
 
-  /// Replaces the stored value with a new one.
+  /** Replaces the stored value with a new one. */
   void set_value(const T& v);
 
   // AbstractValue overrides.

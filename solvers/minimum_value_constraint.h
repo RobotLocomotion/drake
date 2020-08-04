@@ -6,7 +6,8 @@
 
 namespace drake {
 namespace solvers {
-/** Computes the penalty function φ(x) and its derivatives dφ(x)/dx. Valid
+/**
+Computes the penalty function φ(x) and its derivatives dφ(x)/dx. Valid
 penalty functions must meet the following criteria:
 
 1.     φ(x) ≥ 0 ∀ x ∈ ℝ.
@@ -18,7 +19,8 @@ If `dpenalty_dx` is nullptr, the function should only compute φ(x). */
 using MinimumValuePenaltyFunction =
     std::function<void(double x, double* penalty, double* dpenalty_dx)>;
 
-/** A hinge loss function smoothed by exponential function. This loss
+/**
+A hinge loss function smoothed by exponential function. This loss
 function is differentiable everywhere. The fomulation is described in
 section II.C of [2].
 The penalty is
@@ -33,7 +35,8 @@ International Conference on Humanoid Robots, 2014. */
 void ExponentiallySmoothedHingeLoss(double x, double* penalty,
                                     double* dpenalty_dx);
 
-/** A linear hinge loss, smoothed with a quadratic loss near the origin. The
+/**
+A linear hinge loss, smoothed with a quadratic loss near the origin. The
 formulation is in equation (6) of [1].
 The penalty is
 <pre class="unicode-art">
@@ -47,7 +50,8 @@ multidisciplinary workshop on Advances in preference handling. */
 void QuadraticallySmoothedHingeLoss(double x, double* penalty,
                                     double* dpenalty_dx);
 
-/** Constrain all elements of the vector returned by the user-provided function
+/**
+Constrain all elements of the vector returned by the user-provided function
 to be no smaller than a specified minimum value.
 
 The formulation of the constraint is
@@ -68,7 +72,8 @@ a vector with fewer than `max_num_values` elements, the remaining elements are
 assumed to be greater than the "influence value". */
 class MinimumValueConstraint final : public solvers::Constraint {
  public:
-  /** Constructs a MinimumValueConstraint.
+  /**
+  Constructs a MinimumValueConstraint.
   @param num_vars The number of inputs to `value_function`
   @param minimum_value The minimum allowed value, vₘᵢₙ, for all elements of the
   vector returned by `value_function`.
@@ -94,8 +99,7 @@ class MinimumValueConstraint final : public solvers::Constraint {
   math::autoDiffToValueMatrix(value_function(x, v_influence))` for all x.
   @pre `value_function(x).size() <= max_num_values` for all x.
   @throws std::invalid_argument if influence_value_offset = ∞.
-  @throws std::invalid_argument if influence_value_offset ≤ 0.
-  */
+  @throws std::invalid_argument if influence_value_offset ≤ 0. */
   MinimumValueConstraint(
       int num_vars, double minimum_value, double influence_value_offset,
       int max_num_values,
@@ -146,7 +150,8 @@ class MinimumValueConstraint final : public solvers::Constraint {
       value_function_double_;
   const double minimum_value_;
   const double influence_value_;
-  /** Stores the value of
+  /**
+  Stores the value of
   1 / φ((vₘᵢₙ - v_influence)/(v_influence - vₘᵢₙ)) = 1 / φ(-1). This is
   used to scale the output of the penalty function to be 1 when v == vₘᵢₙ. */
   double penalty_output_scaling_;

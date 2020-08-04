@@ -39,7 +39,7 @@ struct ModuleInitVtkRenderingOpenGL2 {
 
 }  // namespace internal
 
-/** See documentation for MakeRenderEngineOspray() for details.  */
+/** See documentation for MakeRenderEngineOspray() for details. */
 class RenderEngineOspray final
     : public RenderEngine,
       private internal::ModuleInitVtkRenderingOpenGL2 {
@@ -49,8 +49,8 @@ class RenderEngineOspray final
   //  should simply go into the DoClone() method. The appropriate time to do
   //  this is with the VTK refactoring (resolving it here and for
   //  RenderEngineVtk). See issue #11964.
-  /** @name Does not allow copy, move, or assignment  */
-  //@{
+  /** @name Does not allow copy, move, or assignment */
+  /** @{ */
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor is actually private to serve as the basis for
   // implementing the DoClone() method.
@@ -59,16 +59,16 @@ class RenderEngineOspray final
   RenderEngineOspray& operator=(const RenderEngineOspray&) = delete;
   RenderEngineOspray(RenderEngineOspray&&) = delete;
   RenderEngineOspray& operator=(RenderEngineOspray&&) = delete;
-  //@}
+  /** @} */
 
-  /** Constructs the render engine with the given `parameters`  */
+  /** Constructs the render engine with the given `parameters` */
   RenderEngineOspray(
       const RenderEngineOsprayParams& parameters = RenderEngineOsprayParams());
 
-  /** @see RenderEngine::UpdateViewpoint().  */
+  /** @see RenderEngine::UpdateViewpoint(). */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
-  /** @see RenderEngine::RenderColorImage().  */
+  /** @see RenderEngine::RenderColorImage(). */
   void RenderColorImage(
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageRgba8U* color_image_out) const final;
@@ -85,8 +85,8 @@ class RenderEngineOspray final
       const CameraProperties& camera, bool show_window,
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
-  /** @name    Shape reification  */
-  //@{
+  /** @name    Shape reification */
+  /** @{ */
   using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* user_data) final;
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final;
@@ -96,13 +96,14 @@ class RenderEngineOspray final
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* user_data) final;
   void ImplementGeometry(const Mesh& mesh, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;
-  //@}
+  /** @} */
 
-  /** @name    Access the default properties
+  /**
+  @name    Access the default properties
 
-   Provides access to the default values this instance of the render engine is
-   using. These values must be set at construction.  */
-  //@{
+  Provides access to the default values this instance of the render engine is
+  using. These values must be set at construction. */
+  /** @{ */
 
   // TODO(SeanCurtis-TRI): Figure out a "default" material - material properties
   //  and its representation (this will evolve when I support full OSPRay
@@ -115,7 +116,7 @@ class RenderEngineOspray final
   }
 
   using RenderEngine::default_render_label;
-  //@}
+  /** @} */
 
  private:
   // @see RenderEngine::DoRegisterVisual().

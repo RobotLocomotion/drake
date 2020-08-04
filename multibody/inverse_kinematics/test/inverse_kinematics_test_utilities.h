@@ -18,28 +18,21 @@
 namespace drake {
 namespace multibody {
 
-/**
- * Adds two free bodies to a MultibodyPlant.
- */
+/** Adds two free bodies to a MultibodyPlant. */
 template <typename T>
 void AddTwoFreeBodiesToPlant(MultibodyPlant<T>* model);
 
-/**
- * Constructs a MultibodyPlant consisting of two free bodies.
- */
+/** Constructs a MultibodyPlant consisting of two free bodies. */
 template <typename T>
 std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant();
 
-/**
- * Constructs a MultibodyPlant consisting of an Iiwa robot.
- */
+/** Constructs a MultibodyPlant consisting of an Iiwa robot. */
 std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& file_path, double time_step);
 
 /**
- * Compares if two eigen matrices of AutoDiff have the same values and
- * gradients.
- */
+Compares if two eigen matrices of AutoDiff have the same values and
+gradients. */
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename DerivedA::Scalar, typename DerivedB::Scalar>::value &&
@@ -52,9 +45,7 @@ CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
                               math::autoDiffToGradientMatrix(b), tol));
 }
 
-/**
- * Convert an Eigen::Quaternion to a vector 4d in the order (w, x, y, z).
- */
+/** Convert an Eigen::Quaternion to a vector 4d in the order (w, x, y, z). */
 Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q);
 
 // We test kinematic constraints on two robots: an IIWA robot and two free
@@ -136,12 +127,11 @@ class TwoFreeSpheresTest : public ::testing::Test {
 };
 
 /**
- * Compute the signed distance between a box and a sphere.
- * @param box_size The size of the box.
- * @param radius The radius of the sphere.
- * @param X_WB the pose of the box (B) in the world frame (W).
- * @param X_WS the pose of the sphere (S) in the world frame (W).
- */
+Compute the signed distance between a box and a sphere.
+@param box_size The size of the box.
+@param radius The radius of the sphere.
+@param X_WB the pose of the box (B) in the world frame (W).
+@param X_WS the pose of the sphere (S) in the world frame (W). */
 template <typename T>
 T BoxSphereSignedDistance(const Eigen::Ref<const Eigen::Vector3d>& box_size,
                           double radius, const math::RigidTransform<T>& X_WB,
@@ -174,29 +164,28 @@ class BoxSphereTest : public ::testing::Test {
 };
 
 /**
- * Since we can construct the kinematic constraint using both
- * MultibodyPlant<double> (as @p constraint_from_double) and
- * MultibodyPlant<AutoDiffXd> (as @p constraint_from_autodiff), and evaluate the
- * constraint with both VectorX<double> and VectorX<AutoDiffXd>, we check if the
- * following evaluation results match:
- * 1. constraint_from_double.Eval(x_double) =
- *    constraint_from_autodiff.Eval(x_double).
- * 2. constraint_from_double.Eval(x_autodiff) =
- *    constraint_from_autodiff.Eval(x_autodiff).
- * 3. constraint_from_double.Eval(x_double) =
- *    constraint_from_double.Eval(x_autodiff).value()
- * 4. numerical_gradient(constraint_from_double.Eval(x_double)) ≈
- *    constraint_from_double.Eval(x_autodiff).
- * @param constraint_from_double A kinematic constraint constructed from
- * MultibodyPlant<double>
- * @param constraint_from_autodiff The same kinematic constraint, but
- * constructed from MultibodyPlant<AutoDiffXd>.
- * @param x_double The value of x passed to the constraint Eval function.
- * @param dx The gradient of x_double. dx must have the same number of rows as
- * x_double.
- * @param gradient_tol The tolerance for checking the 4th condition above, that
- * the numerical gradient should be close to the analytical gradient.
- */
+Since we can construct the kinematic constraint using both
+MultibodyPlant<double> (as @p constraint_from_double) and
+MultibodyPlant<AutoDiffXd> (as @p constraint_from_autodiff), and evaluate the
+constraint with both VectorX<double> and VectorX<AutoDiffXd>, we check if the
+following evaluation results match:
+1. constraint_from_double.Eval(x_double) =
+   constraint_from_autodiff.Eval(x_double).
+2. constraint_from_double.Eval(x_autodiff) =
+   constraint_from_autodiff.Eval(x_autodiff).
+3. constraint_from_double.Eval(x_double) =
+   constraint_from_double.Eval(x_autodiff).value()
+4. numerical_gradient(constraint_from_double.Eval(x_double)) ≈
+   constraint_from_double.Eval(x_autodiff).
+@param constraint_from_double A kinematic constraint constructed from
+MultibodyPlant<double>
+@param constraint_from_autodiff The same kinematic constraint, but
+constructed from MultibodyPlant<AutoDiffXd>.
+@param x_double The value of x passed to the constraint Eval function.
+@param dx The gradient of x_double. dx must have the same number of rows as
+x_double.
+@param gradient_tol The tolerance for checking the 4th condition above, that
+the numerical gradient should be close to the analytical gradient. */
 template <typename ConstraintType>
 void TestKinematicConstraintEval(
     const ConstraintType& constraint_from_double,

@@ -7,18 +7,19 @@ namespace drake {
 namespace examples {
 namespace particles {
 
-/// A linear 1DOF particle system.
-///
-/// With very simple dynamics @f$ \ddot x = a @f$, this system can be
-/// described in terms of its:
-///
-/// - Inputs:
-///   - linear acceleration (input index 0), in @f$ m/s^2 @f$ units.
-/// - States/Outputs:
-///   - linear position (state/output index 0), in @f$ m @f$ units.
-///   - linear velocity (state/output index 1), in @f$ m/s @f$ units.
-///
-/// @tparam_double_only
+/**
+A linear 1DOF particle system.
+
+With very simple dynamics @f$ \ddot x = a @f$, this system can be
+described in terms of its:
+
+- Inputs:
+  - linear acceleration (input index 0), in @f$ m/s^2 @f$ units.
+- States/Outputs:
+  - linear position (state/output index 0), in @f$ m @f$ units.
+  - linear velocity (state/output index 1), in @f$ m/s @f$ units.
+
+@tparam_double_only */
 template <typename T>
 class Particle final : public systems::LeafSystem<T> {
  public:

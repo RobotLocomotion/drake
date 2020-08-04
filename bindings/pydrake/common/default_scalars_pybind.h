@@ -1,7 +1,8 @@
 #pragma once
 
-/// @file
-/// Helpers for defining scalars and values.
+/**
+@file
+Helpers for defining scalars and values. */
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -15,7 +16,7 @@ namespace pydrake {
 
 // N.B. This should be kept in sync with the `*_DEFAULT_SCALARS` macro in
 // `default_scalars.h`.
-/// Type pack defining common scalar types.
+/** Type pack defining common scalar types. */
 using CommonScalarPack = type_pack<  // BR
     double,                          //
     AutoDiffXd,                      //
@@ -23,14 +24,15 @@ using CommonScalarPack = type_pack<  // BR
 
 // N.B. This should be kept in sync with the `*_DEFAULT_NONSYMBOLIC_SCALARS`
 // macro in `default_scalars.h`.
-/// Type pack for non-symbolic common scalar types.
+/** Type pack for non-symbolic common scalar types. */
 using NonSymbolicScalarPack = type_pack<  // BR
     double,                               //
     AutoDiffXd>;
 
 // TODO(eric.cousineau): Simplify this (#8116).
-/// Permits referencing for builtin dtypes (e.g. T = double), but then switches
-/// to copying for custom dtypes (T = {AutoDiffXd, Expression}).
+/**
+Permits referencing for builtin dtypes (e.g. T = double), but then switches
+to copying for custom dtypes (T = {AutoDiffXd, Expression}). */
 template <typename T>
 py::return_value_policy return_value_policy_for_scalar_type() {
   if (std::is_same<T, double>::value) {
@@ -55,7 +57,7 @@ struct CastUPack<double> {
 };
 }  // namespace internal
 
-/// Binds `cast<T>()` explicitly.
+/** Binds `cast<T>()` explicitly. */
 template <typename T, typename PyClass,
     typename UPack = typename internal::CastUPack<T>::Pack>
 void DefCast(PyClass* cls, const char* doc, UPack U_pack = {}) {

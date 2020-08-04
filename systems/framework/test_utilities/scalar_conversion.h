@@ -22,12 +22,13 @@ static T copysign_int_to_non_symbolic_scalar(int magic, const T& value) {
 }
 }  // namespace test
 
-/// Tests whether the given device under test of type S<double> can be
-/// converted to use AutoDiffXd as its scalar type.  If the test passes,
-/// additional checks on the converted object of type `const S<AutoDiffXd>&`
-/// can be passed via a lambda into @p callback.  The Callback must take an
-/// `const S<AutoDiffXd>&` and return void; a typical value would be a lambda
-/// such as `[](const auto& converted) { EXPECT_TRUE(converted.thing()); }`.
+/**
+Tests whether the given device under test of type S<double> can be
+converted to use AutoDiffXd as its scalar type.  If the test passes,
+additional checks on the converted object of type `const S<AutoDiffXd>&`
+can be passed via a lambda into @p callback.  The Callback must take an
+`const S<AutoDiffXd>&` and return void; a typical value would be a lambda
+such as `[](const auto& converted) { EXPECT_TRUE(converted.thing()); }`. */
 template <template <typename> class S, typename Callback>
 ::testing::AssertionResult is_autodiffxd_convertible(
      const S<double>& dut, Callback callback) {
@@ -50,19 +51,21 @@ template <template <typename> class S, typename Callback>
   return ::testing::AssertionSuccess();
 }
 
-/// Tests whether the given device under test of type S<double> can be
-/// converted to use AutoDiffXd as its scalar type.
+/**
+Tests whether the given device under test of type S<double> can be
+converted to use AutoDiffXd as its scalar type. */
 template <template <typename> class S>
 ::testing::AssertionResult is_autodiffxd_convertible(const S<double>& dut) {
   return is_autodiffxd_convertible(dut, [](const auto&){});
 }
 
-/// Tests whether the given device under test of type S<double> can be
-/// converted to use Expression as its scalar type.  If the test passes,
-/// additional checks on the converted object of type `const S<Expression>&`
-/// can be passed via a lambda into @p callback.  The Callback must take an
-/// `const S<Expression>&` and return void; a typical value would be a lambda
-/// such as `[](const auto& converted) { EXPECT_TRUE(converted.thing()); }`.
+/**
+Tests whether the given device under test of type S<double> can be
+converted to use Expression as its scalar type.  If the test passes,
+additional checks on the converted object of type `const S<Expression>&`
+can be passed via a lambda into @p callback.  The Callback must take an
+`const S<Expression>&` and return void; a typical value would be a lambda
+such as `[](const auto& converted) { EXPECT_TRUE(converted.thing()); }`. */
 template <template <typename> class S, typename Callback>
 ::testing::AssertionResult is_symbolic_convertible(
      const S<double>& dut, Callback callback) {
@@ -85,8 +88,9 @@ template <template <typename> class S, typename Callback>
   return ::testing::AssertionSuccess();
 }
 
-/// Tests whether the given device under test of type S<double> can be
-/// converted to use Expression as its scalar type.
+/**
+Tests whether the given device under test of type S<double> can be
+converted to use Expression as its scalar type. */
 template <template <typename> class S>
 ::testing::AssertionResult is_symbolic_convertible(const S<double>& dut) {
   return is_symbolic_convertible(dut, [](const auto&){});

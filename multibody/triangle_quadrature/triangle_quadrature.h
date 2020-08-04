@@ -9,40 +9,43 @@
 namespace drake {
 namespace multibody {
 
-/// A class for integrating a function using numerical quadrature over
-/// triangular domains.
-///
-/// @tparam NumericReturnType the output type of the function being integrated.
-///         Commonly will be a IEEE floating point scalar (e.g., `double`), but
-///         could be an Eigen::VectorXd, a multibody::SpatialForce, or any
-///         other numeric type that supports both scalar multiplication
-///         (i.e., operator*(const NumericReturnType&, double) and addition with
-///         another of the same type (i.e.,
-///         operator+(const NumericReturnType&, const NumericReturnType&)).
-/// @tparam T the scalar type of the function being integrated over. Supported
-///         types are currently only IEEE floating point scalars.
+/**
+A class for integrating a function using numerical quadrature over
+triangular domains.
+
+@tparam NumericReturnType the output type of the function being integrated.
+        Commonly will be a IEEE floating point scalar (e.g., `double`), but
+        could be an Eigen::VectorXd, a multibody::SpatialForce, or any
+        other numeric type that supports both scalar multiplication
+        (i.e., operator*(const NumericReturnType&, double) and addition with
+        another of the same type (i.e.,
+        operator+(const NumericReturnType&, const NumericReturnType&)).
+@tparam T the scalar type of the function being integrated over. Supported
+        types are currently only IEEE floating point scalars. */
 template <typename NumericReturnType, typename T>
 class TriangleQuadrature {
  public:
-  /// Numerically integrates the function f over a triangle using the given
-  /// quadrature rule and the initial value.
-  /// @param f(p) a function that returns a numerical value for point p in the
-  ///        domain of the triangle, specified in barycentric coordinates.
-  ///        The barycentric coordinates are given by
-  ///        (p[0], p[1], 1 - p[0] - p[1]).
-  /// @param area the area of the triangle.
+  /**
+  Numerically integrates the function f over a triangle using the given
+  quadrature rule and the initial value.
+  @param f(p) a function that returns a numerical value for point p in the
+         domain of the triangle, specified in barycentric coordinates.
+         The barycentric coordinates are given by
+         (p[0], p[1], 1 - p[0] - p[1]).
+  @param area the area of the triangle. */
   static NumericReturnType Integrate(
       const std::function<NumericReturnType(const Vector2<T>&)>& f,
       const TriangleQuadratureRule& rule,
       const T& area);
 
-  /// Alternative signature for Integrate() that uses three-dimensional
-  /// barycentric coordinates.
-  /// @param f(p) a function that returns a numerical value for point p in the
-  ///        domain of the triangle, specified in barycentric coordinates.
-  ///        The barycentric coordinates are given by
-  ///        (p[0], p[1], p[2]).
-  /// @param area the area of the triangle.
+  /**
+  Alternative signature for Integrate() that uses three-dimensional
+  barycentric coordinates.
+  @param f(p) a function that returns a numerical value for point p in the
+         domain of the triangle, specified in barycentric coordinates.
+         The barycentric coordinates are given by
+         (p[0], p[1], p[2]).
+  @param area the area of the triangle. */
   static NumericReturnType Integrate(
       const std::function<NumericReturnType(const Vector3<T>&)>& f,
       const TriangleQuadratureRule& rule,

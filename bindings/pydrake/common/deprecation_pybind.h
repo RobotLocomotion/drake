@@ -1,8 +1,9 @@
 #pragma once
 
-/// @file
-/// Provides access to Python deprecation utilities from C++.
-/// For example usages, please see `deprecation_example/cc_module_py.cc`.
+/**
+@file
+Provides access to Python deprecation utilities from C++.
+For example usages, please see `deprecation_example/cc_module_py.cc`. */
 
 #include <memory>
 #include <optional>
@@ -22,9 +23,10 @@ namespace pydrake {
 // API converts `None` to a string.
 // See: https://github.com/pybind/pybind11/issues/2361
 
-/// Deprecates an attribute `name` of a class `cls`.
-/// This *only* works with class attributes (unbound members or methods) as it
-/// is implemented with a Python property descriptor.
+/**
+Deprecates an attribute `name` of a class `cls`.
+This *only* works with class attributes (unbound members or methods) as it
+is implemented with a Python property descriptor. */
 inline void DeprecateAttribute(py::object cls, py::str name, py::str message,
     std::optional<std::string> date = {}) {
   py::object deprecated =
@@ -33,11 +35,12 @@ inline void DeprecateAttribute(py::object cls, py::str name, py::str message,
   cls.attr(name) = deprecated(message, py::arg("date") = date)(original);
 }
 
-/// Raises a deprecation warning.
-///
-/// @note If you are deprecating a class's member or method, please use
-/// `DeprecateAttribute` so that the warning is issued immediately when
-/// accessed, not only when it is called.
+/**
+Raises a deprecation warning.
+
+@note If you are deprecating a class's member or method, please use
+`DeprecateAttribute` so that the warning is issued immediately when
+accessed, not only when it is called. */
 inline void WarnDeprecated(
     py::str message, std::optional<std::string> date = {}) {
   py::object warn_deprecated =
@@ -71,16 +74,18 @@ decltype(auto) WrapDeprecatedImpl(py::str message,
 
 }  // namespace internal
 
-/// Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
-/// a deprecation message.
+/**
+Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
+a deprecation message. */
 template <typename Func>
 auto WrapDeprecated(py::str message, Func&& func) {
   return internal::WrapDeprecatedImpl(
       message, internal::infer_function_info(std::forward<Func>(func)));
 }
 
-/// Deprecated wrapping of `py::init<>`.
-/// @note Only for `unique_ptr` holders. If using `shared_ptr`, talk to Eric.
+/**
+Deprecated wrapping of `py::init<>`.
+@note Only for `unique_ptr` holders. If using `shared_ptr`, talk to Eric. */
 template <typename Class, typename... Args>
 auto py_init_deprecated(py::str message) {
   // N.B. For simplicity, require that Class be passed up front, rather than
@@ -92,7 +97,7 @@ auto py_init_deprecated(py::str message) {
   });
 }
 
-/// Deprecated wrapping of `py::init(factory)`.
+/** Deprecated wrapping of `py::init(factory)`. */
 template <typename Func>
 auto py_init_deprecated(py::str message, Func&& func) {
   return py::init(WrapDeprecated(message, std::forward<Func>(func)));

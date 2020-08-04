@@ -5,11 +5,12 @@
 
 namespace drake {
 
-/// Makes the derviatives of the recipient coherent with respect to those of the
-/// donor variable (see drake/common/autodiffxd.h).  If the recipient's
-/// derivatives are already populated with a vector of the same size as that of
-/// the donor, variables pass through unchanged.  An exception is thrown when
-/// there are nonempty vectors of different sizes.
+/**
+Makes the derviatives of the recipient coherent with respect to those of the
+donor variable (see drake/common/autodiffxd.h).  If the recipient's
+derivatives are already populated with a vector of the same size as that of
+the donor, variables pass through unchanged.  An exception is thrown when
+there are nonempty vectors of different sizes. */
 inline void autodiffxd_make_coherent(const AutoDiffXd& donor,
                                      AutoDiffXd* recipient) {
   DRAKE_ASSERT(recipient != nullptr);

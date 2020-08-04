@@ -28,10 +28,9 @@ class LcmPlanInterpolator : public systems::Diagram<double> {
   }
 
   /**
-   * Makes a plan to hold at the measured joint configuration @p q0 starting at
-   * @p plan_start_time. This function needs to be explicitly called before any
-   * simulation. Otherwise this aborts in CalcOutput().
-   */
+  Makes a plan to hold at the measured joint configuration @p q0 starting at
+  @p plan_start_time. This function needs to be explicitly called before any
+  simulation. Otherwise this aborts in CalcOutput(). */
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::Context<double>* context) const;
 

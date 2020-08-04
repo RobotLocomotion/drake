@@ -7,13 +7,14 @@
 namespace drake {
 namespace systems {
 
-/// A DenseOutput class interface extension to deal with scalar ODE
-/// solutions. A ScalarDenseOutput instance is also a DenseOutput
-/// instance with single element vector values (i.e. size() == 1).
-/// As such, its value can evaluated in both scalar and vectorial
-/// form (via EvaluateScalar() and Evaluate(), respectively).
-///
-/// @tparam_default_scalar
+/**
+A DenseOutput class interface extension to deal with scalar ODE
+solutions. A ScalarDenseOutput instance is also a DenseOutput
+instance with single element vector values (i.e. size() == 1).
+As such, its value can evaluated in both scalar and vectorial
+form (via EvaluateScalar() and Evaluate(), respectively).
+
+@tparam_default_scalar */
 template <typename T>
 class ScalarDenseOutput : public DenseOutput<T> {
  public:
@@ -21,13 +22,14 @@ class ScalarDenseOutput : public DenseOutput<T> {
 
   virtual ~ScalarDenseOutput() = default;
 
-  /// Evaluates output at the given time @p t.
-  /// @param t Time at which to evaluate output.
-  /// @returns Output scalar value.
-  /// @pre Output is not empty i.e. is_empty() is false.
-  /// @throws std::logic_error if any of the preconditions is not met.
-  /// @throws std::runtime_error if given @p t is not within output's domain
-  ///                            i.e. @p t ∉ [start_time(), end_time()].
+  /**
+  Evaluates output at the given time @p t.
+  @param t Time at which to evaluate output.
+  @returns Output scalar value.
+  @pre Output is not empty i.e. is_empty() is false.
+  @throws std::logic_error if any of the preconditions is not met.
+  @throws std::runtime_error if given @p t is not within output's domain
+                             i.e. @p t ∉ [start_time(), end_time()]. */
   T EvaluateScalar(const T& t) const {
     this->ThrowIfOutputIsEmpty(__func__);
     this->ThrowIfTimeIsInvalid(__func__, t);

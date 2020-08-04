@@ -7,23 +7,22 @@ namespace drake {
 namespace systems {
 
 /**
- This utility class serves as an in-memory cache of time-dependent vector
- values. Note that this is a standalone class, not a Drake System. It is
- primarily intended to support the Drake System primitive SignalLogger, but can
- be used independently.
+This utility class serves as an in-memory cache of time-dependent vector
+values. Note that this is a standalone class, not a Drake System. It is
+primarily intended to support the Drake System primitive SignalLogger, but can
+be used independently.
 
- @tparam_default_scalar
- */
+@tparam_default_scalar */
 template <typename T>
 class SignalLog {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLog)
 
-  /** Constructs the signal log.
-   @param input_size                Dimension of the per-time step data set.
-   @param batch_allocation_size     Storage is (re)allocated in blocks of size
-                                    (input_size X batch_allocation_size).
-  */
+  /**
+  Constructs the signal log.
+  @param input_size                Dimension of the per-time step data set.
+  @param batch_allocation_size     Storage is (re)allocated in blocks of size
+                                   (input_size X batch_allocation_size). */
   explicit SignalLog(int input_size, int batch_allocation_size = 1000);
 
   /** Returns the number of samples taken since construction or last reset(). */
@@ -47,11 +46,11 @@ class SignalLog {
     num_samples_ = 0;
   }
 
-  /** Adds a `sample` to the data set with the associated `time` value.
+  /**
+  Adds a `sample` to the data set with the associated `time` value.
 
-   @param time      The time value for this sample.
-   @param sample    A vector of data of the declared size for this log.
-   */
+  @param time      The time value for this sample.
+  @param sample    A vector of data of the declared size for this log. */
   void AddData(T time, VectorX<T> sample);
 
   /** Reports the size of the log's input vector. */

@@ -14,59 +14,62 @@ namespace drake {
 namespace examples {
 namespace manipulation_station {
 
-/// A System that connects via message-passing to the hardware manipulation
-/// station.
-///
-/// Note: Users must call Connect() after initialization.
-///
-/// @{
-///
-/// @system
-/// name: ManipulationStationHardwareInterface
-/// input_ports:
-/// - iiwa_position
-/// - iiwa_feedforward_torque
-/// - wsg_position
-/// - wsg_force_limit
-/// output_ports:
-/// - iiwa_position_commanded
-/// - iiwa_position_measured
-/// - iiwa_velocity_estimated
-/// - iiwa_torque_commanded
-/// - iiwa_torque_measured
-/// - iiwa_torque_external
-/// - wsg_state_measured
-/// - wsg_force_measured
-/// - camera_[NAME]_rgb_image
-/// - camera_[NAME]_depth_image
-/// - ...
-/// - camera_[NAME]_rgb_image
-/// - camera_[NAME]_depth_image
-/// @endsystem
-///
-/// @ingroup manipulation_station_systems
-/// @}
-///
+/**
+A System that connects via message-passing to the hardware manipulation
+station.
+
+Note: Users must call Connect() after initialization.
+
+@{
+
+@system
+name: ManipulationStationHardwareInterface
+input_ports:
+- iiwa_position
+- iiwa_feedforward_torque
+- wsg_position
+- wsg_force_limit
+output_ports:
+- iiwa_position_commanded
+- iiwa_position_measured
+- iiwa_velocity_estimated
+- iiwa_torque_commanded
+- iiwa_torque_measured
+- iiwa_torque_external
+- wsg_state_measured
+- wsg_force_measured
+- camera_[NAME]_rgb_image
+- camera_[NAME]_depth_image
+- ...
+- camera_[NAME]_rgb_image
+- camera_[NAME]_depth_image
+@endsystem
+
+@ingroup manipulation_station_systems
+@} */
 class ManipulationStationHardwareInterface : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ManipulationStationHardwareInterface)
 
-  /// Subscribes to an incoming camera message on the channel
-  ///   DRAKE_RGBD_CAMERA_IMAGES_<camera_id>
-  /// where @p camera_name contains the names/unique ids, typically serial
-  /// numbers, and declares the output ports camera_%s_rgb_image and
-  /// camera_%s_depth_image, where %s is the camera name.
+  /**
+  Subscribes to an incoming camera message on the channel
+    DRAKE_RGBD_CAMERA_IMAGES_<camera_id>
+  where @p camera_name contains the names/unique ids, typically serial
+  numbers, and declares the output ports camera_%s_rgb_image and
+  camera_%s_depth_image, where %s is the camera name. */
   ManipulationStationHardwareInterface(
       std::vector<std::string> camera_names = {});
 
-  /// Starts a thread to receive network messages, and blocks execution until
-  /// the first messages have been received.
+  /**
+  Starts a thread to receive network messages, and blocks execution until
+  the first messages have been received. */
   void Connect(bool wait_for_cameras = true);
 
-  /// For parity with ManipulationStation, we maintain a MultibodyPlant of
-  /// the IIWA arm, with the lumped-mass equivalent spatial inertia of the
-  /// Schunk WSG gripper.
   // TODO(russt): Actually add the equivalent mass of the WSG.
+  /**
+  For parity with ManipulationStation, we maintain a MultibodyPlant of
+  the IIWA arm, with the lumped-mass equivalent spatial inertia of the
+  Schunk WSG gripper. */
   const multibody::MultibodyPlant<double>& get_controller_plant() const {
     return *owned_controller_plant_;
   }
@@ -75,8 +78,9 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
     return camera_names_;
   }
 
-  /// Gets the number of joints in the IIWA (only -- does not include the
-  /// gripper).
+  /**
+  Gets the number of joints in the IIWA (only -- does not include the
+  gripper). */
   int num_iiwa_joints() const;
 
  private:

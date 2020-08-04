@@ -14,17 +14,18 @@
 namespace drake {
 namespace symbolic {
 
-/// Calls visitor object @p v with a polynomial symbolic-expression @p e, and
-/// arguments @p args. Visitor object is expected to implement the following
-/// methods which take @p f and @p args: `VisitConstant`, `VisitVariable`,
-/// `VisitAddition`, `VisitMultiplication`, `VisitDivision`, `VisitPow`.
-///
-/// @throws std::runtime_error if NaN is detected during a visit.
-///
-/// See the implementation of @c DegreeVisitor class and @c Degree function in
-/// drake/common/symbolic_monomial.cc as an example usage.
-///
-/// @pre e.is_polynomial() is true.
+/**
+Calls visitor object @p v with a polynomial symbolic-expression @p e, and
+arguments @p args. Visitor object is expected to implement the following
+methods which take @p f and @p args: `VisitConstant`, `VisitVariable`,
+`VisitAddition`, `VisitMultiplication`, `VisitDivision`, `VisitPow`.
+
+@throws std::runtime_error if NaN is detected during a visit.
+
+See the implementation of @c DegreeVisitor class and @c Degree function in
+drake/common/symbolic_monomial.cc as an example usage.
+
+@pre e.is_polynomial() is true. */
 template <typename Result, typename Visitor, typename... Args>
 Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
   DRAKE_DEMAND(e.is_polynomial());
@@ -78,16 +79,17 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
   DRAKE_UNREACHABLE();
 }
 
-/// Calls visitor object @p v with a symbolic-expression @p e, and arguments @p
-/// args. Visitor object is expected to implement the following methods which
-/// take @p f and @p args: `VisitConstant`, `VisitVariable`, `VisitAddition`,
-/// `VisitMultiplication`, `VisitDivision`, `VisitLog`, `VisitAbs`, `VisitExp`,
-/// `VisitSqrt`, `VisitPow`, `VisitSin`, `VisitCos`, `VisitTan`, `VisitAsin`,
-/// `VisitAtan`, `VisitAtan2`, `VisitSinh`, `VisitCosh`, `VisitTanh`,
-/// `VisitMin`, `VisitMax`, `VisitCeil`, `VisitFloor`, `VisitIfThenElse`,
-/// `VisitUninterpretedFunction.
-///
-/// @throws std::runtime_error if NaN is detected during a visit.
+/**
+Calls visitor object @p v with a symbolic-expression @p e, and arguments @p
+args. Visitor object is expected to implement the following methods which
+take @p f and @p args: `VisitConstant`, `VisitVariable`, `VisitAddition`,
+`VisitMultiplication`, `VisitDivision`, `VisitLog`, `VisitAbs`, `VisitExp`,
+`VisitSqrt`, `VisitPow`, `VisitSin`, `VisitCos`, `VisitTan`, `VisitAsin`,
+`VisitAtan`, `VisitAtan2`, `VisitSinh`, `VisitCosh`, `VisitTanh`,
+`VisitMin`, `VisitMax`, `VisitCeil`, `VisitFloor`, `VisitIfThenElse`,
+`VisitUninterpretedFunction.
+
+@throws std::runtime_error if NaN is detected during a visit. */
 template <typename Result, typename Visitor, typename... Args>
 Result VisitExpression(Visitor* v, const Expression& e, Args&&... args) {
   switch (e.get_kind()) {

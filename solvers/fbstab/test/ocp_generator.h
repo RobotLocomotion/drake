@@ -13,23 +13,21 @@ namespace fbstab {
 namespace test {
 
 /**
- * This class is used to create optimal control problems (OCPs) in a format
- * FBstab accepts. It stores the problem data internally and only passes
- * pointers to FBstab. Make sure these pointers are valid for the length of the
- * solve.
- */
+This class is used to create optimal control problems (OCPs) in a format
+FBstab accepts. It stores the problem data internally and only passes
+pointers to FBstab. Make sure these pointers are valid for the length of the
+solve. */
 class OcpGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(OcpGenerator)
 
   /**
-   * Represents data needed to simulate the system
-   *
-   *     x(i+1) = Ax(i) + Bu(i)
-   *     y(i) = Cx(i) + Du(i)
-   *
-   * for T steps starting from x(0) = x0.
-   */
+  Represents data needed to simulate the system
+
+      x(i+1) = Ax(i) + Bu(i)
+      y(i) = Cx(i) + Du(i)
+
+  for T steps starting from x(0) = x0. */
   struct SimulationInputs {
     Eigen::VectorXd x0;
     Eigen::MatrixXd A;
@@ -42,98 +40,91 @@ class OcpGenerator {
   OcpGenerator() = default;
 
   /**
-   * Returns problem data in the form accepted by FBstab.
-   * @return problem data
-   *
-   * Throws a runtime_error if one of the problem creator methods hasn't been
-   * called first.
-   */
+  Returns problem data in the form accepted by FBstab.
+  @return problem data
+
+  Throws a runtime_error if one of the problem creator methods hasn't been
+  called first. */
   FBstabMpc::QPData GetFBstabInput() const;
 
   /**
-   * Returns the data needed to simulate the linear time invariant systems
-   * used in the examples.
-   *
-   * @return simulation inputs
-   *
-   * Throws a runtime_error if one of the problem creator methods hasn't been
-   * called first.
-   */
+  Returns the data needed to simulate the linear time invariant systems
+  used in the examples.
+
+  @return simulation inputs
+
+  Throws a runtime_error if one of the problem creator methods hasn't been
+  called first. */
   SimulationInputs GetSimulationInputs() const;
 
   /**
-   * Fills internal storage with data
-   * for a copolymerization reactor control problem.
-   *
-   * The example is from:
-   *
-   * Congalidis, John P., John R. Richards, and W. Harmon Ray.
-   * "Modeling and control of a copolymerization reactor."
-   * 1986 American Control Conference. IEEE, 1986.
-   *
-   * See https://arxiv.org/pdf/1901.04046.pdf for more details.
-   *
-   * @param N prediction horizon length
-   */
+  Fills internal storage with data
+  for a copolymerization reactor control problem.
+
+  The example is from:
+
+  Congalidis, John P., John R. Richards, and W. Harmon Ray.
+  "Modeling and control of a copolymerization reactor."
+  1986 American Control Conference. IEEE, 1986.
+
+  See https://arxiv.org/pdf/1901.04046.pdf for more details.
+
+  @param N prediction horizon length */
   void CopolymerizationReactor(int N = 70);
 
   /**
-   * Fills internal storage with data
-   * for a servo motor control problem.
-   *
-   * The example is from:
-   * Bemporad, Alberto, and Edoardo Mosca. "Fulfilling hard constraints in
-   * uncertain linear systems by reference managing." Automatica 34.4 (1998):
-   * 451-461.
-   *
-   * See https://arxiv.org/pdf/1901.04046.pdf for more details.
-   *
-   * @parm[in] N prediction horizon length
-   *
-   * Throws a runtime_error if N <= 0.
-   */
+  Fills internal storage with data
+  for a servo motor control problem.
+
+  The example is from:
+  Bemporad, Alberto, and Edoardo Mosca. "Fulfilling hard constraints in
+  uncertain linear systems by reference managing." Automatica 34.4 (1998):
+  451-461.
+
+  See https://arxiv.org/pdf/1901.04046.pdf for more details.
+
+  @parm[in] N prediction horizon length
+
+  Throws a runtime_error if N <= 0. */
   void ServoMotor(int N = 20);
 
   /**
-   * Fills internal storage with data
-   * for a spacecraft relative motion control problem with horizon N.
-   * The example is from:
-   *
-   * Weiss, Avishai, et al.
-   * "Model predictive control of three dimensional spacecraft relative motion."
-   * 2012 American Control Conference (ACC). IEEE, 2012.
-   *
-   * See https://arxiv.org/pdf/1901.04046.pdf for more details.
-   *
-   * @param[in] N prediction horizon length
-   *
-   * Throws a runtime_error if N <= 0.
-   */
+  Fills internal storage with data
+  for a spacecraft relative motion control problem with horizon N.
+  The example is from:
+
+  Weiss, Avishai, et al.
+  "Model predictive control of three dimensional spacecraft relative motion."
+  2012 American Control Conference (ACC). IEEE, 2012.
+
+  See https://arxiv.org/pdf/1901.04046.pdf for more details.
+
+  @param[in] N prediction horizon length
+
+  Throws a runtime_error if N <= 0. */
   void SpacecraftRelativeMotion(int N = 40);
 
   /**
-   * Fills internal storage with data
-   * for a constrained double integrator problem.
-   *
-   * @param[in] N prediction horizon length
-   *
-   * Throws a runtime_error if N <= 0.
-   */
+  Fills internal storage with data
+  for a constrained double integrator problem.
+
+  @param[in] N prediction horizon length
+
+  Throws a runtime_error if N <= 0. */
   void DoubleIntegrator(int N = 10);
 
   // TODO(dliaomcp@umich.edu) Add a random system generator.
   // i.e., void RandomSystem(int N = 10);
 
   /**
-   * Get a summary of the problem size,
-   * in the following order:
-   * - N:  horizon length
-   * - nx: number of states
-   * - nu: number of control inputs
-   * - nc: number of constraint per stage
-   *
-   * @return vector of problem sizes
-   */
+  Get a summary of the problem size,
+  in the following order:
+  - N:  horizon length
+  - nx: number of states
+  - nu: number of control inputs
+  - nc: number of constraint per stage
+
+  @return vector of problem sizes */
   Eigen::Vector4d ProblemSize();
 
   /** Number of decision variables. */

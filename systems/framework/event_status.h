@@ -11,7 +11,8 @@ namespace systems {
 
 class SystemBase;
 
-/** Holds the return status from execution of an event handler function, or the
+/**
+Holds the return status from execution of an event handler function, or the
 effective status after a series of handler executions due to dispatching of
 simultaneous events. Drake API users will typically use only the four factory
 methods below to return status, and optionally a human-readable message, from
@@ -31,7 +32,8 @@ class EventStatus {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventStatus)
 
-  /** The numerical values are ordered, with
+  /**
+  The numerical values are ordered, with
   did_nothing < success < terminate < fatal. */
   enum Severity {
     /** Successful, but nothing happened; no state update needed. */
@@ -64,17 +66,20 @@ class EventStatus {
   /** Returns the severity of the current status. */
   Severity severity() const { return severity_; }
 
-  /** Returns the optionally-provided subsystem that generated a status
+  /**
+  Returns the optionally-provided subsystem that generated a status
   return that can include a message (reached termination or failed). Returns
   nullptr if no subsystem was provided. */
   const SystemBase* system() const { return system_; }
 
-  /** Returns the optionally-provided human-readable message supplied by the
+  /**
+  Returns the optionally-provided human-readable message supplied by the
   event handler that produced the current status. Returns an empty string if
   no message was provided. */
   const std::string& message() const { return message_; }
 
-  /** (Advanced) Replaces the contents of `this` with the more-severe status
+  /**
+  (Advanced) Replaces the contents of `this` with the more-severe status
   if `candidate` is a more severe status than `this` one. Does nothing if
   `candidate` severity is less than or equal to `this` severity. This method is
   for use in event dispatchers for accumulating status returns from a series of

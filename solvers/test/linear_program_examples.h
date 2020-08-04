@@ -9,12 +9,13 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/// Test a simple linear programming problem with zero cost, i.e. a feasibility
-/// problem
-///    0 <= x0 + 2x1 + 3x2 <= 10
-/// -inf <=       x1 - 2x2 <= 3
-///   -1 <= 0x0+ 0x1 + 0x2 <= 0
-///           x1 >= 1
+/**
+Test a simple linear programming problem with zero cost, i.e. a feasibility
+problem
+   0 <= x0 + 2x1 + 3x2 <= 10
+-inf <=       x1 - 2x2 <= 3
+  -1 <= 0x0+ 0x1 + 0x2 <= 0
+          x1 >= 1 */
 class LinearFeasibilityProgram : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearFeasibilityProgram)
@@ -29,16 +30,17 @@ class LinearFeasibilityProgram : public OptimizationProgram {
   VectorDecisionVariable<3> x_;
 };
 
-/// Adapt from the linear programming example
-/// http://cvxopt.org/examples/tutorial/lp.html
-/// Solve the following linear program
-/// min     2x0 + x1
-/// s.t  -inf <= -x0 + x1 <= 1
-///         2 <= x0 + x1  <=inf
-///      -inf <= x0 - 2x1 <= 4
-///      x1 >= 2
-///      x0 >= 0
-/// The optimal solution is x0 = 1, x1 = 2
+/**
+Adapt from the linear programming example
+http://cvxopt.org/examples/tutorial/lp.html
+Solve the following linear program
+min     2x0 + x1
+s.t  -inf <= -x0 + x1 <= 1
+        2 <= x0 + x1  <=inf
+     -inf <= x0 - 2x1 <= 4
+     x1 >= 2
+     x0 >= 0
+The optimal solution is x0 = 1, x1 = 2 */
 class LinearProgram0 : public OptimizationProgram {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearProgram0)
@@ -151,12 +153,11 @@ class LinearProgramTest
 std::vector<LinearProblems> linear_problems();
 
 /**
- * An infeasible linear program.
- * max x0 + x1
- * s.t x0 + 2 * x1 <= 3;
- *     2 * x0 + x1 == 4
- *     x0 >= 0, x1 >= 2
- */
+An infeasible linear program.
+max x0 + x1
+s.t x0 + 2 * x1 <= 3;
+    2 * x0 + x1 == 4
+    x0 >= 0, x1 >= 2 */
 class InfeasibleLinearProgramTest0 : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InfeasibleLinearProgramTest0)
@@ -170,11 +171,10 @@ class InfeasibleLinearProgramTest0 : public ::testing::Test {
 };
 
 /**
- * An unbounded linear program.
- * max x0 + x1
- * s.t 2 * x0 + x1 >= 4
- *     x0 >= 0, x1 >= 2
- */
+An unbounded linear program.
+max x0 + x1
+s.t 2 * x0 + x1 >= 4
+    x0 >= 0, x1 >= 2 */
 class UnboundedLinearProgramTest0 : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest0)
@@ -188,12 +188,11 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
 };
 
 /**
- * An unbounded linear program.
- * min x0 + 2*x1 + 3*x2 + 2.5*x3 + 2
- * s.t x0 + x1 - x2 + x3 <= 3
- *     1 <= x0 + 2 * x1 - 2 * x2 + 4 * x3 <= 3
- *     0 <= x0, x2 <= 1
- */
+An unbounded linear program.
+min x0 + 2*x1 + 3*x2 + 2.5*x3 + 2
+s.t x0 + x1 - x2 + x3 <= 3
+    1 <= x0 + 2 * x1 - 2 * x2 + 4 * x3 <= 3
+    0 <= x0, x2 <= 1 */
 class UnboundedLinearProgramTest1 : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest1)
@@ -207,16 +206,16 @@ class UnboundedLinearProgramTest1 : public ::testing::Test {
 };
 
 /**
- * Test getting dual solution for LP.
- * This LP has inequality constraints.
- */
+Test getting dual solution for LP.
+This LP has inequality constraints. */
 void TestLPDualSolution1(const SolverInterface& solver, double tol = 1e-6);
 
 /** This LP has only bounding box constraints. */
 void TestLPDualSolution2(const SolverInterface& solver, double tol = 1e-6);
 
-/** This LP has only bounding box constraints. The decision variable is
- * scaled.*/
+/**
+This LP has only bounding box constraints. The decision variable is
+scaled. */
 void TestLPDualSolution2Scaled(const SolverInterface& solver,
                                double tol = 1e-6);
 }  // namespace test
