@@ -87,6 +87,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
   state.set_thetadot(state.thetadot() + 0.2);
   double initial_energy = rw.CalcTotalEnergy(context);
+  simulator.Initialize();
   simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.0);
@@ -103,6 +104,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
   state.set_thetadot(state.thetadot() - 0.2);
   initial_energy = rw.CalcTotalEnergy(context);
+  simulator.Initialize();
   simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.);
@@ -118,6 +120,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   state.set_thetadot(-4.);
   toe = 0.0;
   double_support = false;
+  simulator.Initialize();
   initial_energy = rw.CalcTotalEnergy(context);
   simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
@@ -167,6 +170,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   state.set_thetadot(0.0);
   toe = 0.0;
   double_support = false;
+  simulator.Initialize();
   simulator.AdvanceTo(0.2);
   EXPECT_TRUE(double_support);
   EXPECT_NEAR(std::abs(state.theta() - params.slope()), alpha, 1e-8);
