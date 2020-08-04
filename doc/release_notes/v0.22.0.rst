@@ -1,0 +1,107 @@
+*************
+Drake v0.22.0
+*************
+
+Announcements
+-------------
+
+TBD
+
+Breaking changes since v0.21.0
+------------------------------
+
+TBD
+
+Changes since v0.21.0:
+----------------------
+
+Dynamical Systems
+~~~~~~~~~~~~~~~~~
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Mathematical Program
+~~~~~~~~~~~~~~~~~~~~
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Multibody Dynamics
+~~~~~~~~~~~~~~~~~~
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Tutorials and examples
+~~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+Miscellaneous features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+pydrake bindings
+~~~~~~~~~~~~~~~~
+
+New features
+
+* TBD
+
+Fixes
+
+* TBD
+
+Newly bound
+
+* TBD
+
+Build system and dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+Newly-deprecated APIs
+~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+Removal of deprecated items
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* TBD
+
+Notes
+-----
+
+This release provides `pre-compiled binaries
+<https://github.com/RobotLocomotion/drake/releases/tag/v0.22.0>`__ named
+``drake-YYYYMMDD-{bionic|focal|mac}.tar.gz``. See :ref:`Nightly Releases
+<nightly-releases>` for instructions on how to use them.
+
+Drake binary releases incorporate a pre-compiled version of `SNOPT
+<https://ccom.ucsd.edu/~optimizers/solvers/snopt/>`__ as part of the
+`Mathematical Program toolbox
+<https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
+Philip E. Gill and Elizabeth Wong for their kind support.
+
+..
+  Current oldest_commit X (inclusive).
+  Current newest_commit X (inclusive).
