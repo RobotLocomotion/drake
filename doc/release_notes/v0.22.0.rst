@@ -36,6 +36,7 @@ New features
 * TBD Add two more examples on SOS optimization (`#13746`_, `#13759`_, `#13765`_)
 * TBD Fix a bug when customizing the quadratic cost (`#13752`_)
 * TBD MPResult::GetSolution also works for a polynomial (`#13748`_)
+* TBD Add symbolic ChebyshevPolynomial (`#13751`_)
 
 Fixes
 
@@ -53,11 +54,13 @@ New features
 Fixes
 
 * TBD Fix format in TAMSIs exception message (`#13802`_)
+* TBD Make contact results deterministic (`#13737`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* Add support for "planar visualization" in meshcat (`#13755`_)
+* Use planar visualization in the ManipulationStation demos (`#13755`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +127,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
   Current newest_commit 9d785bacce72f9a9c120dc3b8dc8db73ff957ef3 (inclusive).
-
-* common: add symbolic ChebyshevPolynomial (`#13751`_)  # This only implements a univariate Chebyshev polynomial. We will implement the ChebyshevBasis class later, which handles multi-variate Chebyshev basis in the form of T0(x)*T1(y)*T3(z) etc.
-* examples: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
-* geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
