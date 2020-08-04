@@ -26,6 +26,7 @@ from pydrake.multibody.tree import (
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
+    PlanarJoint_,
     PrismaticJoint_,
     RevoluteJoint_,
     RevoluteSpring_,
@@ -1230,6 +1231,14 @@ class TestPlant(unittest.TestCase):
                 damping=damping,
             )
 
+        def make_planar_joint(plant, P, C):
+            return PlanarJoint_[T](
+                name="planar",
+                frame_on_parent=P,
+                frame_on_child=C,
+                damping=[1., 2., 3.],
+            )
+
         def make_prismatic_joint(plant, P, C):
             return PrismaticJoint_[T](
                 name="prismatic",
@@ -1268,6 +1277,7 @@ class TestPlant(unittest.TestCase):
 
         make_joint_list = [
             make_ball_rpy_joint,
+            make_planar_joint,
             make_prismatic_joint,
             make_revolute_joint,
             make_universal_joint,
@@ -1311,6 +1321,31 @@ class TestPlant(unittest.TestCase):
                     set_point)
                 joint.set_random_angles_distribution(
                     uniform_random * np.array([1., 1., 1.]))
+            elif joint.name() == "planar":
+                self.assertEqual(len(joint.damping()), 3)
+                set_translation = array_T([1., 2.])
+                set_angle = T(3.)
+                joint.set_translation(context=context,
+                                      p_FoMo_F=set_translation)
+                numpy_compare.assert_equal(
+                    joint.get_translation(context=context), set_translation)
+                joint.set_rotation(context=context, theta=set_angle)
+                numpy_compare.assert_equal(joint.get_rotation(context=context),
+                                           set_angle)
+                joint.set_pose(context=context, p_FoMo_F=set_translation,
+                               theta=set_angle)
+                joint.set_translational_velocity(context=context,
+                                                 v_FoMo_F=set_translation)
+                numpy_compare.assert_equal(
+                    joint.get_translational_velocity(context=context),
+                    set_translation)
+                joint.set_angular_velocity(context=context,
+                                           theta_dot=set_angle)
+                numpy_compare.assert_equal(
+                    joint.get_angular_velocity(context=context), set_angle)
+                joint.set_random_pose_distribution(
+                    p_FoMo_F=uniform_random * np.array([1., 1.]),
+                    theta=uniform_random)
             elif joint.name() == "prismatic":
                 self.assertEqual(joint.damping(), damping)
                 numpy_compare.assert_equal(joint.translation_axis(), x_axis)
