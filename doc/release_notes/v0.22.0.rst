@@ -10,7 +10,7 @@ TBD
 Breaking changes since v0.21.0
 ------------------------------
 
-TBD
+* TBD Make set_default_positions an NVI (`#13757`_)
 
 Changes since v0.21.0:
 ----------------------
@@ -42,11 +42,13 @@ Multibody Dynamics
 
 New features
 
-* TBD
+* TBD Implement PlanarMobilizer (`#13711`_)
+* TBD Introduce discrete contact pairs for agnostic treatment of discrete contact models (`#13734`_)  # * Introduce discrete pairs in MBP so that TAMSI is agnostic to how pairs are collected. To be noted in the next release: In addition, this PR fixes and old TODO in the Jacobian computation and therefore contact results are expected to change so slightly (in the right direction). Not a breaking change, but probably users should be notified in the next release.
+* TBD Make set_default_positions an NVI (`#13757`_)
 
 Fixes
 
-* TBD
+* TBD Fix format in TAMSIs exception message (`#13802`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -124,11 +126,6 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 * examples: Adds support for "planar visualization" in meshcat (`#13755`_)  # And uses it in the ManipulationStation planar demos Also sets a different background color for meshcat (now that I finally can!) to match drake-visualizer.
 * geometry: [geometry] Making contact results deterministic (`#13737`_)  # * Making contact results deterministic This encompasses two things: 1. Guarantees that if objects A and B make contact, that the result is identical regardless of which is "first" or "second". 2. For multiple contacts, the results will be ordered in a reliable ordering (for a fixed set of poses). This impacts the following queries documented in QueryObject: - ComputePointPairPenetration() - ComputeContactSurfaces() - ComputeContactSurfacesWithFallback() - FindCollisionCandidates()
 * math: math: Declare explicit class instantiations for SO(3) and SE(3) (`#13798`_)
-* multibody: Fix format in TAMSIs exception message (`#13802`_)
-* multibody: Implement PlanarMobilizer (`#13711`_)
-* multibody: Introduce discrete contact pairs for agnostic treatment of discrete contact models (`#13734`_)  # * Introduce discrete pairs in MBP so that TAMSI is agnostic to how pairs are collected. To be noted in the next release: In addition, this PR fixes and old TODO in the Jacobian computation and therefore contact results are expected to change so slightly (in the right direction). Not a breaking change, but probably users should be notified in the next release.
-* multibody: Make set_default_positions an NVI (`#13757`_)
-* multibody: benchmarks: Remove rogue tab from acrobot.sdf (`#13768`_)
 * solvers: Add examples on sum-of-squares (`#13719`_)  # Test sum-of-squares programming with CSDP, Mosek and SCS.
 * solvers: Add two more examples on SOS optimization (`#13746`_)
 * solvers: CSDP on mac should have a different numerical tolerance (`#13759`_)  # One possible explanation is that they use different BLAS.
