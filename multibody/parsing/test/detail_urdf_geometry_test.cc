@@ -206,13 +206,13 @@ GTEST_TEST(DetailUrdfGeometryTest, AddMaterialToMaterialMap) {
 // <collision> tag.
 unique_ptr<XMLDocument> MakeCollisionDocFromString(
     const std::string& collision_spec) {
-  const std::string urdf_harness = R"_(
+  const std::string urdf_harness = R"""(
 <?xml version="1.0"?>
   <collision>
     <geometry>
       <box size=".1 .2 .3"/>
     </geometry>{}
-  </collision>)_";
+  </collision>)""";
   const std::string urdf = fmt::format(urdf_harness, collision_spec);
   auto doc = make_unique<XMLDocument>();
   doc->Parse(urdf.c_str());
@@ -555,14 +555,14 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   // confirm that all of the basic tags get parsed and focus on the logic that
   // is unique to `ParseCollision()`.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:mesh_resolution_hint value="2.5"/>
     <drake:elastic_modulus value="3.5" />
     <drake:hunt_crossley_dissipation value="3.5" />
     <drake:mu_dynamic value="3.25" />
     <drake:mu_static value="3.5" />
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -580,10 +580,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: specifies rigid hydroelastic.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -599,10 +599,10 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: specifies soft hydroelastic.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -618,11 +618,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: specifies both -- should be an error.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
     <drake:rigid_hydroelastic/>
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -637,11 +637,11 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
   // Case: has no drake:proximity_properties coefficients, only drake_compliance
   // coeffs.
   {
-    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+    unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake_compliance>
     <static_friction>3.5</static_friction>
     <dynamic_friction>2.5</dynamic_friction>
-  </drake_compliance>)_");
+  </drake_compliance>)""");
     const XMLElement* collision_node = doc->FirstChildElement("collision");
     ASSERT_NE(collision_node, nullptr);
     GeometryInstance instance =
@@ -653,14 +653,14 @@ TEST_F(UrdfGeometryTests, CollisionProperties) {
 
   // Case: has both drake_compliance and drake:proximity_properties;
   // drake:proximity_properties wins.
-  unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"_(
+  unique_ptr<XMLDocument> doc = MakeCollisionDocFromString(R"""(
   <drake_compliance>
     <static_friction>3.5</static_friction>
     <dynamic_friction>2.5</dynamic_friction>
   </drake_compliance>
   <drake:proximity_properties>
     <drake:mu_dynamic value="4.5" />
-  </drake:proximity_properties>)_");
+  </drake:proximity_properties>)""");
   const XMLElement* collision_node = doc->FirstChildElement("collision");
   ASSERT_NE(collision_node, nullptr);
   GeometryInstance instance =

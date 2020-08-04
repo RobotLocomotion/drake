@@ -48,7 +48,7 @@ RenderEngineGl::RenderEngineGl()
   // The vertex shader computes two pieces of information per vertex: its
   // transformed position and its depth. Both get linearly interpolated across
   // the rasterized triangle's fragments.
-  const string kDepthVertexShader = R"__(
+  const string kDepthVertexShader = R"""(
 #version 330
 
 layout(location = 0) in vec3 p_Model;
@@ -60,13 +60,13 @@ void main() {
   vec4 p_Camera = model_view_matrix * vec4(p_Model, 1);
   depth = -p_Camera.z;
   gl_Position = projection_matrix * p_Camera;
-})__";
+})""";
 
   // The fragment shader "clamps" the depth of the fragment to the specified
   // sensor range. Values closer than depth_z_near are set to zero, values
   // farther than depth_z_far are pushed to infinity. This "clamped" depth value
   // gets written to the frame buffer.
-  const string kDepthFragmentShader = R"__(
+  const string kDepthFragmentShader = R"""(
 #version 330
 
 in float depth;
@@ -93,13 +93,13 @@ void main() {
     encoded_depth = pos_infinity;
   else
     encoded_depth = depth;
-})__";
+})""";
 
   // The vertex shader simply transforms the vertices. Strictly speaking, we
   // could combine modelview and projection matrices into a single transform,
   // but there's no real value in doing so. Leaving it as is maintains
   // compatibility with the depth shader.
-  const std::string kLabelVertexShader = R"__(
+  const std::string kLabelVertexShader = R"""(
 #version 330
 layout(location = 0) in vec3 p_Model;
 uniform mat4 model_view_matrix;
@@ -107,17 +107,17 @@ uniform mat4 projection_matrix;
 void main() {
   vec4 p_Camera = model_view_matrix * vec4(p_Model, 1);
   gl_Position = projection_matrix * p_Camera;
-})__";
+})""";
 
   // For each fragment from a geometry, it simply colors the fragment with the
   // provided label encoded as an RGBA color.
-  const std::string kLabelFragmentShader = R"__(
+  const std::string kLabelFragmentShader = R"""(
 #version 330
 out vec4 color;
 uniform vec4 encoded_label;
 void main() {
   color = encoded_label;
-})__";
+})""";
 
   shader_programs_[kLabel].LoadFromSources(kLabelVertexShader,
                                            kLabelFragmentShader);
