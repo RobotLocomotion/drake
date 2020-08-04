@@ -200,7 +200,7 @@ class LinkWriter : public SystemVisitor<double> {
 
 std::string GenerateHtml(const System<double>& system, int initial_depth) {
   std::stringstream html;
-  html << R"!(
+  html << R"""(
 <div style='height:400px;' id='myDiagramDiv'>
 The implementation of GenerateHtml has been temporarily removed from Drake due
 to licensing restrictions.
@@ -346,24 +346,24 @@ to licensing restrictions.
     linkFromPortIdProperty: "fromPort", // required information:
     linkToPortIdProperty: "toPort", // identifies data property names
     nodeDataArray: [
-)!";
+)""";
 
   NodeWriter node_writer("", &html, initial_depth);
   system.Accept(&node_writer);
 
-  html << R"!(
+  html << R"""(
     ],
     linkDataArray: [
-)!";
+)""";
 
   LinkWriter link_writer(&html);
   system.Accept(&link_writer);
 
-  html << R"!(
+  html << R"""(
     ]
   });
 </script>
-)!";
+)""";
   return html.str();
 }
 

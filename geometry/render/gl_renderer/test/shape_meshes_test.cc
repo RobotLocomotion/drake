@@ -67,7 +67,7 @@ GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
           o──────o
           6      7
   */
-  std::stringstream in_stream(R"_(
+  std::stringstream in_stream(R"""(
   v -1 -1 0
   v 1 -1 0
   v 2 1 0
@@ -77,7 +77,7 @@ GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
   v 1 -2 0
   f 1 2 3 4 5
   f 6 7 2 1
-  )_");
+  )""");
   auto [vertices, indices] = LoadMeshFromObj(&in_stream);
   EXPECT_EQ(vertices.rows(), 7);
   EXPECT_EQ(indices.rows(), 5);
@@ -100,7 +100,7 @@ GTEST_TEST(LoadMeshFromObjTest, PreserveTriangulation) {
           o──────o
           6      7
   */
-  std::stringstream in_stream(R"_(
+  std::stringstream in_stream(R"""(
   v -1 -1 0
   v 1 -1 0
   v 2 1 0
@@ -113,7 +113,7 @@ GTEST_TEST(LoadMeshFromObjTest, PreserveTriangulation) {
   f 3 4 5
   f 1 6 7
   f 1 7 2
-  )_");
+  )""");
   auto [vertices, indices] = LoadMeshFromObj(&in_stream);
   EXPECT_EQ(vertices.rows(), 7);
   EXPECT_EQ(indices.rows(), 5);
@@ -131,7 +131,7 @@ GTEST_TEST(LoadMeshFromObjTest, NoMeshOptimization) {
     1, 6  o───────o 2
 
   */
-  std::stringstream in_stream(R"_(
+  std::stringstream in_stream(R"""(
   v -1 -1 0  # First four corners form a box around the origin.
   v 1 -1 0
   v 1 1 0
@@ -140,7 +140,7 @@ GTEST_TEST(LoadMeshFromObjTest, NoMeshOptimization) {
   v -1 -1 0  # Duplpicate of vertex 1
   f 1 2 3
   f 6 3 4
-  )_");
+  )""");
   auto [vertices, indices] = LoadMeshFromObj(&in_stream);
   EXPECT_EQ(vertices.rows(), 6);
   EXPECT_EQ(indices.rows(), 2);
