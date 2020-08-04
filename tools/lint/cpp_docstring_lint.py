@@ -714,7 +714,7 @@ def is_ignored_file(relpath):
 
 
 def check_or_apply_lint_on_tokens(
-        tokens, lint_errors, verbose=False, maybe_private=False):
+        tokens, lint_errors, verbose=False, maybe_private=True):
     tokens = reorder_multiline_tokens(tokens, lint_errors)
     # Replace docstrings with "re-rendered" version.
     new_lines = []
