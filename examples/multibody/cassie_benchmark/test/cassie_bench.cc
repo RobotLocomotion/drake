@@ -70,7 +70,6 @@ BENCHMARK_F(DoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
   for (auto _ : state) {
     LimitMalloc guard(LimitReleaseOnly(175));
     context_->NoteContinuousStateChange();
-    plant_->SetPositionsAndVelocities(context_.get(), x_);
     plant_->CalcMassMatrix(*context_, &M);
   }
 }
@@ -82,7 +81,6 @@ BENCHMARK_F(DoubleFixture, DoubleInverseDynamics)(benchmark::State& state) {
   for (auto _ : state) {
     LimitMalloc guard(LimitReleaseOnly(3));
     context_->NoteContinuousStateChange();
-    plant_->SetPositionsAndVelocities(context_.get(), x_);
     plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
   }
 }
@@ -95,8 +93,7 @@ BENCHMARK_F(DoubleFixture, DoubleForwardDynamics)(benchmark::State& state) {
   for (auto _ : state) {
     LimitMalloc guard(LimitReleaseOnly(22));
     context_->NoteContinuousStateChange();
-    port_value.GetMutableData();
-    plant_->SetPositionsAndVelocities(context_.get(), x_);
+    port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_->CalcTimeDerivatives(*context_, derivatives.get());
   }
 }
@@ -118,11 +115,11 @@ class AutodiffFixture : public DoubleFixture {
 BENCHMARK_F(AutodiffFixture, AutodiffMassMatrix)(benchmark::State& state) {
   MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
   auto x_autodiff = math::initializeAutoDiff(x_);
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+      x_autodiff);
   for (auto _ : state) {
     LimitMalloc guard(LimitReleaseOnly(62476));
     context_autodiff_->NoteContinuousStateChange();
-    plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-                                               x_autodiff);
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
   }
 }
@@ -135,11 +132,11 @@ BENCHMARK_F(AutodiffFixture, AutodiffInverseDynamics)(benchmark::State& state) {
   auto x_autodiff = math::initializeAutoDiff(x_, nq_ + 2 * nv_);
   auto vdot_autodiff =
       math::initializeAutoDiff(desired_vdot, nq_ + 2 * nv_, nq_ + nv_);
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+      x_autodiff);
   for (auto _ : state) {
     LimitMalloc guard(LimitReleaseOnly(70301));
     context_autodiff_->NoteContinuousStateChange();
-    plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-                                               x_autodiff);
     plant_autodiff_->CalcInverseDynamics(*context_autodiff_,
                                          vdot_autodiff,
                                          external_forces_autodiff);
@@ -153,12 +150,12 @@ BENCHMARK_F(AutodiffFixture, AutodiffForwardDynamics)(benchmark::State& state) {
   auto& port_value = plant_autodiff_->get_actuation_input_port().FixValue(
       context_autodiff_.get(), u_autodiff);
   auto x_autodiff = math::initializeAutoDiff(x_, nq_ + nv_ + nu_);
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+      x_autodiff);
   for (auto _ : state) {
     LimitMalloc guard(LimitReleaseOnly(105675));
     context_autodiff_->NoteContinuousStateChange();
-    port_value.GetMutableData();
-    plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
-                                               x_autodiff);
+    port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
                                          derivatives_autodiff.get());
   }
