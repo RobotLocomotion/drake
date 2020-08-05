@@ -1,6 +1,6 @@
-///
-/// @brief  A discrete mass-spring system example.
-///
+/*
+ @brief  A discrete mass-spring system example.
+*/
 
 #include <cstdlib>
 #include <limits>
