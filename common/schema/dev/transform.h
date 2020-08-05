@@ -4,12 +4,11 @@
 #include <string>
 
 #include "drake/common/name_value.h"
+#include "drake/common/schema/dev/rotation.h"
+#include "drake/common/schema/dev/stochastic.h"
 #include "drake/math/rigid_transform.h"
-#include "common/schema/rotation.h"
-#include "common/schema/stochastic.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 
 /// A specification for a 3d rotation and translation, optionally with respect
@@ -21,7 +20,7 @@ struct Transform {
   Transform() = default;
 
   /// Constructs the given transform.
-  explicit Transform(const drake::math::RigidTransformd&);
+  explicit Transform(const math::RigidTransformd&);
 
   /// Sets the rotation field to the given deterministic RPY, in degrees.
   void set_rotation_rpy_deg(const Eigen::Vector3d& rpy_deg) {
@@ -33,12 +32,12 @@ struct Transform {
 
   /// If this is deterministic, retrieves its value.
   /// @throws exception if this is not fully deterministic.
-  drake::math::RigidTransformd GetDeterministicValue() const;
+  math::RigidTransformd GetDeterministicValue() const;
 
   /// Returns the symbolic form of this rotation.  If this is deterministic,
   /// the result will contain no variables.  If this is random, the result will
   /// contain one or more random variables, based on the distributions in use.
-  drake::math::RigidTransform<drake::symbolic::Expression> ToSymbolic() const;
+  math::RigidTransform<symbolic::Expression> ToSymbolic() const;
 
   /// Returns the mean of this rotation.  If this is deterministic, the result
   /// is the same as GetDeterministicValue.  If this is random, note that the
@@ -46,11 +45,11 @@ struct Transform {
   /// individually to their mean.  Various other measures of the resulting
   /// RigidTransform (e.g., the distribution of one of the Euler angles) may
   /// not necessarily match that measure on the returned value.
-  drake::math::RigidTransformd Mean() const;
+  math::RigidTransformd Mean() const;
 
   /// Samples this Transform.  If this is deterministic, the result is the same
   /// as GetDeterministicValue.
-  drake::math::RigidTransformd Sample(drake::RandomGenerator* random) const;
+  math::RigidTransformd Sample(RandomGenerator* random) const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -62,7 +61,7 @@ struct Transform {
     // TODO(anzu#4772) Once rotation_rpy_deg is gone, this should be
     // `Visit(MakeNameValue("rotation", &rotation.value))` instead.
     std::optional<Rotation::Variant> maybe_rotation = rotation.value;
-    a->Visit(drake::MakeNameValue("rotation", &maybe_rotation));
+    a->Visit(MakeNameValue("rotation", &maybe_rotation));
     if (maybe_rotation) {
       rotation.value = *maybe_rotation;
     }
@@ -71,7 +70,7 @@ struct Transform {
     // it to be read and obeyed (but not written) during a transition window.
     // TODO(anzu#4772) Remove this compatibility shim once nothing is using it.
     std::optional<Eigen::Vector3d> maybe_rpy;
-    a->Visit(drake::MakeNameValue("rotation_rpy_deg", &maybe_rpy));
+    a->Visit(MakeNameValue("rotation_rpy_deg", &maybe_rpy));
     if (maybe_rpy) {
       this->set_rotation_rpy_deg(*maybe_rpy);
     }
@@ -89,5 +88,4 @@ struct Transform {
 };
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake

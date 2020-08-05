@@ -1,14 +1,13 @@
-#include "common/schema/rotation.h"
+#include "drake/common/schema/dev/rotation.h"
 
 #include "drake/common/drake_throw.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 
-using drake::symbolic::Expression;
+using symbolic::Expression;
 
 namespace {
 // Boilerplate for std::visit.
@@ -16,10 +15,10 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }  // namespace
 
-Rotation::Rotation(const drake::math::RotationMatrix<double>& arg)
-    : Rotation(drake::math::RollPitchYaw<double>(arg)) {}
+Rotation::Rotation(const math::RotationMatrix<double>& arg)
+    : Rotation(math::RollPitchYaw<double>(arg)) {}
 
-Rotation::Rotation(const drake::math::RollPitchYaw<double>& arg) {
+Rotation::Rotation(const math::RollPitchYaw<double>& arg) {
   const Eigen::Vector3d rpy_rad = arg.vector();
   set_rpy_deg(rpy_rad * 180 / M_PI);
 }
@@ -43,13 +42,13 @@ bool Rotation::IsDeterministic() const {
   }, value);
 }
 
-drake::math::RotationMatrixd Rotation::GetDeterministicValue() const {
+math::RotationMatrixd Rotation::GetDeterministicValue() const {
   DRAKE_THROW_UNLESS(this->IsDeterministic());
-  const drake::Matrix3<Expression> symbolic = this->ToSymbolic().matrix();
+  const Matrix3<Expression> symbolic = this->ToSymbolic().matrix();
   const Eigen::Matrix3d result = symbolic.unaryExpr([](const auto& e) {
-    return drake::ExtractDoubleOrThrow(e);
+    return ExtractDoubleOrThrow(e);
   });
-  return drake::math::RotationMatrixd(result);
+  return math::RotationMatrixd(result);
 }
 
 namespace {
@@ -61,39 +60,38 @@ Expression deg2rad(const DistributionVariant& deg_var) {
   return deg_sym * (M_PI / 180.0);
 }
 template <int Size>
-drake::Vector<Expression, Size> deg2rad(
+Vector<Expression, Size> deg2rad(
     const DistributionVectorVariant<Size>& deg_var) {
   DRAKE_THROW_UNLESS(!std::holds_alternative<GaussianVector<Size>>(deg_var));
-  const drake::Vector<Expression, Size> deg_sym =
+  const Vector<Expression, Size> deg_sym =
       schema::ToDistributionVector(deg_var)->ToSymbolic();
   return deg_sym * (M_PI / 180.0);
 }
 }  // namespace
 
-drake::math::RotationMatrix<Expression> Rotation::ToSymbolic() const {
-  using Result = drake::math::RotationMatrix<Expression>;
+math::RotationMatrix<Expression> Rotation::ToSymbolic() const {
+  using Result = math::RotationMatrix<Expression>;
   return std::visit(overloaded {
     [](const Identity&) -> Result {
       return Result{};
     },
     [](const Rpy& rpy) -> Result {
-      const drake::Vector3<Expression> rpy_rad = deg2rad(rpy.deg);
-      return Result{drake::math::RollPitchYaw<Expression>(rpy_rad)};
+      const Vector3<Expression> rpy_rad = deg2rad(rpy.deg);
+      return Result{math::RollPitchYaw<Expression>(rpy_rad)};
     },
     [](const AngleAxis& aa) -> Result {
       const Expression angle_rad = deg2rad(aa.angle_deg);
-      const drake::Vector3<Expression> axis =
+      const Vector3<Expression> axis =
           schema::ToDistributionVector(aa.axis)->ToSymbolic().normalized();
       const Eigen::AngleAxis<Expression> theta_lambda(angle_rad, axis);
       return Result{theta_lambda};
     },
     [](const Uniform&) -> Result {
-      drake::RandomGenerator generator;
-      return drake::math::UniformlyRandomRotationMatrix<Expression>(&generator);
+      RandomGenerator generator;
+      return math::UniformlyRandomRotationMatrix<Expression>(&generator);
     },
   }, value);
 }
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake
