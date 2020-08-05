@@ -18,6 +18,10 @@ namespace drake {
 namespace schema {
 namespace {
 
+// TODO(jeremy.nimmer) We can remove this argument from the call sites below
+// once Drake's YamlReadArchive constructor default changes to be strict.
+constexpr YamlReadArchive::Options kStrict;
+
 struct DistributionStruct {
   std::vector<DistributionVariant> vec;
 
@@ -65,7 +69,7 @@ void CheckUniformDiscreteSymbolic(
 
 GTEST_TEST(StochasticTest, ScalarTest) {
   DistributionStruct variants;
-  YamlReadArchive(YAML::Load(all_variants)).Accept(&variants);
+  YamlReadArchive(YAML::Load(all_variants), kStrict).Accept(&variants);
 
   RandomGenerator generator;
 
@@ -142,7 +146,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   EXPECT_PRED2(ExprEqual, symbolic_vec(4), 3.2);
 
   // Try loading a value which looks like an ordinary vector.
-  YamlReadArchive(YAML::Load(floats)).Accept(&variants);
+  YamlReadArchive(YAML::Load(floats), kStrict).Accept(&variants);
   vec = Sample(variants.vec, &generator);
   ASSERT_EQ(vec.size(), 3);
   EXPECT_TRUE(CompareMatrices(vec, Eigen::Vector3d(5.0, 6.1, 7.2)));
@@ -184,7 +188,7 @@ uniform_scalar: !Uniform { min: 1, max: 2 }
 
 GTEST_TEST(StochasticTest, VectorTest) {
   DistributionVectorStruct variants;
-  YamlReadArchive(YAML::Load(vector_variants)).Accept(&variants);
+  YamlReadArchive(YAML::Load(vector_variants), kStrict).Accept(&variants);
 
   RandomGenerator generator;
 
