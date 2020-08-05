@@ -1,10 +1,3 @@
-/*
-Adapted for Drake from a Cassie benchmark by Michael Posa:
-Copyright (c) 2020, Dynamic Autonomy and Intelligent Robotics Lab
-BSD 3-clause license: https://github.com/DAIRLab/dairlib/blob/master/LICENSE
-See https://github.com/DAIRLab/dairlib/issues/181 for the original benchmark.
-*/
-
 #include <benchmark/benchmark.h>
 
 #include "drake/common/find_resource.h"
@@ -17,6 +10,7 @@ See https://github.com/DAIRLab/dairlib/issues/181 for the original benchmark.
 
 using drake::multibody::MultibodyPlant;
 using drake::systems::Context;
+using drake::test::LimitMalloc;
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -28,12 +22,10 @@ namespace {
 // According to research from @sherm1, the caching system has some
 // debug-only asserts that allocate memory. Hence there are two different
 // ceilings for allocations until that is addressed.
-#ifdef NDEBUG
-#define RELEASE_LIMIT_MALLOC(x) \
-  drake::test::LimitMalloc guard({.max_num_allocations = (x)});
-#else
-#define RELEASE_LIMIT_MALLOC(x) /* empty */
-#endif
+drake::test::LimitMallocParams LimitReleaseOnly(int max_num_allocations) {
+  if (kDrakeAssertIsArmed) { return {}; }
+  return { .max_num_allocations = max_num_allocations };
+}
 
 class DoubleFixture : public benchmark::Fixture {
  public:
@@ -76,7 +68,7 @@ class DoubleFixture : public benchmark::Fixture {
 BENCHMARK_F(DoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
-    RELEASE_LIMIT_MALLOC(175);
+    LimitMalloc guard(LimitReleaseOnly(175));
     context_->NoteContinuousStateChange();
     plant_->SetPositionsAndVelocities(context_.get(), x_);
     plant_->CalcMassMatrix(*context_, &M);
@@ -88,7 +80,7 @@ BENCHMARK_F(DoubleFixture, DoubleInverseDynamics)(benchmark::State& state) {
   VectorXd desired_vdot = VectorXd::Zero(nv_);
   multibody::MultibodyForces<double> external_forces(*plant_);
   for (auto _ : state) {
-    RELEASE_LIMIT_MALLOC(3);
+    LimitMalloc guard(LimitReleaseOnly(3));
     context_->NoteContinuousStateChange();
     plant_->SetPositionsAndVelocities(context_.get(), x_);
     plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
@@ -101,7 +93,7 @@ BENCHMARK_F(DoubleFixture, DoubleForwardDynamics)(benchmark::State& state) {
   auto& port_value =
       plant_->get_actuation_input_port().FixValue(context_.get(), u_);
   for (auto _ : state) {
-    RELEASE_LIMIT_MALLOC(22);
+    LimitMalloc guard(LimitReleaseOnly(22));
     context_->NoteContinuousStateChange();
     port_value.GetMutableData();
     plant_->SetPositionsAndVelocities(context_.get(), x_);
@@ -127,7 +119,7 @@ BENCHMARK_F(AutodiffFixture, AutodiffMassMatrix)(benchmark::State& state) {
   MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
   auto x_autodiff = math::initializeAutoDiff(x_);
   for (auto _ : state) {
-    RELEASE_LIMIT_MALLOC(62476);
+    LimitMalloc guard(LimitReleaseOnly(62476));
     context_autodiff_->NoteContinuousStateChange();
     plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
                                                x_autodiff);
@@ -144,7 +136,7 @@ BENCHMARK_F(AutodiffFixture, AutodiffInverseDynamics)(benchmark::State& state) {
   auto vdot_autodiff =
       math::initializeAutoDiff(desired_vdot, nq_ + 2 * nv_, nq_ + nv_);
   for (auto _ : state) {
-    RELEASE_LIMIT_MALLOC(70301);
+    LimitMalloc guard(LimitReleaseOnly(70301));
     context_autodiff_->NoteContinuousStateChange();
     plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
                                                x_autodiff);
@@ -162,7 +154,7 @@ BENCHMARK_F(AutodiffFixture, AutodiffForwardDynamics)(benchmark::State& state) {
       context_autodiff_.get(), u_autodiff);
   auto x_autodiff = math::initializeAutoDiff(x_, nq_ + nv_ + nu_);
   for (auto _ : state) {
-    RELEASE_LIMIT_MALLOC(105675);
+    LimitMalloc guard(LimitReleaseOnly(105675));
     context_autodiff_->NoteContinuousStateChange();
     port_value.GetMutableData();
     plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
@@ -171,8 +163,6 @@ BENCHMARK_F(AutodiffFixture, AutodiffForwardDynamics)(benchmark::State& state) {
                                          derivatives_autodiff.get());
   }
 }
-
-#undef RELEASE_LIMIT_MALLOC
 
 }  // namespace
 }  // namespace examples
