@@ -52,11 +52,6 @@ namespace mass_spring_cloth {
  discrete system because it is conditionally stable, and large time steps can
  lead to an unstable numerical solution.
 
- The discrete mode involves solving a
- linear system. One can set the amount of allowed relative error on the velocity
- (unit-less) in that linear solve by calling `set_linear_solve_accuracy()`. The
- default accuracy for the linear solve is 1e-4.
-
  Note that the spring energy is finite and thus the particles can overlap in
  certain scenarios. For both the discrete and the continuous system, when two
  particles overlap, the state is invalid and the system will throw a
@@ -108,14 +103,19 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   T h() const { return h_; }
 
   /** For discrete mode only: set the max number of iterations for the Conjugate
-    Gradient solve for the implicit damping force. */
+    Gradient solve for the implicit damping force. It has no effect on
+    continuous mode. */
   void set_linear_solve_max_iterations(int max_iterations) {
     cg_.setMaxIterations(max_iterations);
   }
 
-  /** For discrete mode only: set the tolerance for the Conjugate Gradient solve
-    for the implicit damping force. */
-  void set_linear_solve_accuracy(T accuracy) { cg_.setTolerance(accuracy); }
+  /** For discrete mode only: set the accuracy for the Conjugate Gradient solve
+    for the implicit damping force. The It has not effect on continuous mode.
+    @param[in] accuracy  The unit-less permissible relative error on velocity
+    update. */
+  void set_linear_solve_accuracy(T accuracy = 0.0001) {
+    cg_.setTolerance(accuracy);
+  }
 
  private:
   struct Spring {

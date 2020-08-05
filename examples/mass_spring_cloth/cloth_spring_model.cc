@@ -58,9 +58,9 @@ ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
     H_.setZero();
     // CG is guaranteed to converge when iteration reaches the number of DOFs.
     // It usually takes far fewer iterations to converge.
-    cg_.setMaxIterations(num_particles_ * 3);
-    // Set a tight tolerance for convergence.
-    cg_.setTolerance(0.0001);
+    set_linear_solve_max_iterations(num_particles_ * 3);
+    // Set the default accuracy for the linear solve.
+    set_linear_solve_accuracy();
   }
 }
 
