@@ -37,6 +37,7 @@ New features
 * TBD Fix a bug when customizing the quadratic cost (`#13752`_)
 * TBD MPResult::GetSolution also works for a polynomial (`#13748`_)
 * TBD Add symbolic ChebyshevPolynomial (`#13751`_)
+* TBD Add GetKnownSolvers (`#13821`_)
 
 Fixes
 
@@ -50,6 +51,8 @@ New features
 * TBD Implement PlanarMobilizer (`#13711`_)
 * TBD Introduce discrete contact pairs for agnostic treatment of discrete contact models (`#13734`_)  # * Introduce discrete pairs in MBP so that TAMSI is agnostic to how pairs are collected. To be noted in the next release: In addition, this PR fixes and old TODO in the Jacobian computation and therefore contact results are expected to change so slightly (in the right direction). Not a breaking change, but probably users should be notified in the next release.
 * TBD Make set_default_positions an NVI (`#13757`_)
+* TBD Implement PlanarJoint (`#13747`_, `#13813`_)
+* TBD Add support for parsing SDF and URDF from strings (`#13814`_)
 
 Fixes
 
@@ -79,10 +82,11 @@ New features
 Fixes
 
 * TBD
+* TBD Require YYYY-MM-DD to be present in message (`#13730`_) (breaking?)
 
 Newly bound
 
-* TBD
+* TBD eigen_geometry: Bind Quaternion.slerp (`#13810`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,11 +103,13 @@ Build system and dependencies
 * Upgrade pybind11 fork to latest commit (`#13801`_)
 * Upgrade ros_xacro to latest release 1.13.6 (`#13790`_)
 * Upgrade scs to latest release 2.1.2 (`#13789`_)
+* Upgrade styleguide latest commit (`#13804`_)
+* Do not install gl_renderer's private headers (`#13807`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* TBD Deprecate drake::math::Slerp in lieu of Eigen's (`#13810`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,12 +133,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
   Current newest_commit 4f3cbe445f449d1e40fdbc3b402dc1589573e830 (inclusive).
-
-* multibody: Implement PlanarJoint (`#13747`_)
-* bindings: py deprecation: Require YYYY-MM-DD to be present in message (`#13730`_)  # Facilitate this with minimal API overhaul
-* geometry: gl_renderer: Do not install private headers (`#13807`_)  # Split the renderer out from the factory, for clarity.
-* tools: workspace: Upgrade styleguide latest commit (`#13804`_)  # This incorporates cpplint.py changes to enable checking c-style comments.
-* math: py eigen_geometry: Bind Quaternion.slerp (`#13810`_)  # * quaternion: Deprecate drake::math::Slerp in lieu of Eigen's
-* bindings: Add bindings for PlanarJoint (`#13813`_)
-* multibody: parsing: Add support for parsing SDF and URDF from strings (`#13814`_)
-* solvers: solvers: Add GetKnownSolvers (`#13821`_)
