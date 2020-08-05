@@ -52,7 +52,10 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
             py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc)
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
-            py::arg("model_name") = "", cls_doc.AddModelFromFile.doc);
+            py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
+        .def("AddModelFromString", &Class::AddModelFromString,
+            py::arg("file_contents"), py::arg("file_type"),
+            py::arg("model_name") = "", cls_doc.AddModelFromString.doc);
   }
 }
 
