@@ -122,7 +122,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       A_WB_all[end_effector_link_->index()];
   EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_from_port.get_coeffs());
 
-  // Verify frame_H's spatial acceleration in world W, expressed in W.
+  // Verify A_WH_W, frame_H's spatial acceleration in world W, expressed in W.
   const SpatialAcceleration<double> A_WH_W =
     frame_H_->CalcSpatialAccelerationInWorld(*context_);
   const Vector3<double> w_WE_W = V_WH.rotational();
@@ -131,22 +131,20 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected.get_coeffs(),
                               kTolerance, MatrixCompareType::relative));
 
-  // Also verify A_WH_W by differentiating the spatial velocity V_WH_W.
-  const VectorX<double> q = plant_->GetPositions(*context_);
-  const VectorX<double> v = plant_->GetVelocities(*context_);
-  const int num_positions = plant_->num_positions();
-  const int num_velocities = plant_->num_velocities();
-  const int num_states = plant_->num_multibody_states();
-  EXPECT_EQ(num_states, num_positions + num_velocities);
-
+  // Reverify A_WH_W by differentiating the spatial velocity V_WH_W.
   // Spatial acceleration is a function of the generalized accelerations vdot.
   // Use forward dynamics to calculate values for vdot (for the given q, v).
-  const VectorX<double> vdot = VectorX<double>::Zero(num_velocities);
+  const auto& derivs = plant_->EvalTimeDerivatives(*context_);
+  const auto& vdot_auto = derivs.get_generalized_velocity();
+  EXPECT_EQ(vdot_auto.size(), plant_->num_velocities());
+  const VectorX<double> vdot(vdot_auto.CopyToVector());
 
   // Enable q_autodiff and v_autodiff to differentiate with respect to time.
   // Note: Pass MatrixXd() so the return gradient uses AutoDiffXd (for which we
   // do have explicit instantiations) instead of AutoDiffScalar<Matrix1d>.
-  VectorX<double> qdot(num_positions);
+  const VectorX<double> q = plant_->GetPositions(*context_);
+  const VectorX<double> v = plant_->GetVelocities(*context_);
+  VectorX<double> qdot(plant_->num_positions());
   plant_->MapVelocityToQDot(*context_, v, &qdot);
   auto q_autodiff =
       math::initializeAutoDiffGivenGradientMatrix(q, Eigen::MatrixXd(qdot));
@@ -154,7 +152,7 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       math::initializeAutoDiffGivenGradientMatrix(v, Eigen::MatrixXd(vdot));
 
   // Set the context for AutoDiffXd computations.
-  VectorX<AutoDiffXd> x_autodiff(num_states);
+  VectorX<AutoDiffXd> x_autodiff(plant_->num_multibody_states());
   x_autodiff << q_autodiff, v_autodiff;
   plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
       x_autodiff;
@@ -179,11 +177,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       math::autoDiffToValueMatrix(A_WHo_W_expected));
 
   // Verify computed spatial acceleration numerical values.
-  // TODO(Mitiguy) Remove the "bogus" test and implement the real test.
-  EXPECT_TRUE(CompareMatrices(A_WHo_W_expected_double, A_WHo_W_expected_double,
-                              kTolerance, MatrixCompareType::relative));
-  // EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WHo_W_expected_double,
-  //                             kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WHo_W_expected_double,
+                               kTolerance, MatrixCompareType::relative));
 
   // Spatial velocity of link 3 measured in the H frame and expressed in the
   // end-effector frame E.
