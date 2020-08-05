@@ -126,4 +126,15 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
-  Current newest_commit 9d785bacce72f9a9c120dc3b8dc8db73ff957ef3 (inclusive).
+  Current newest_commit 4f3cbe445f449d1e40fdbc3b402dc1589573e830 (inclusive).
+
+* common,geometry,multibody,systems,tools: Prefer triple-quote for C++ multi-line string literals (`#13811`_)  # To help naive readers better understand this unusual construction, we'll use a marker similar to Python's multi-line literal and apply the style uniformly across the codebase.
+* multibody: Implement PlanarJoint (`#13747`_)
+* bindings: py deprecation: Require YYYY-MM-DD to be present in message (`#13730`_)  # Facilitate this with minimal API overhaul
+* geometry: gl_renderer: Do not install private headers (`#13807`_)  # Split the renderer out from the factory, for clarity.
+* tools: workspace: Upgrade styleguide latest commit (`#13804`_)  # This incorporates cpplint.py changes to enable checking c-style comments.
+* math: py eigen_geometry: Bind Quaternion.slerp (`#13810`_)  # * quaternion: Deprecate drake::math::Slerp in lieu of Eigen's
+* bindings: py tree: Improve testing for random distributions and accessors (`#13817`_)
+* bindings: Add bindings for PlanarJoint (`#13813`_)
+* multibody: parsing: Add support for parsing SDF and URDF from strings (`#13814`_)
+* solvers: solvers: Add GetKnownSolvers (`#13821`_)
