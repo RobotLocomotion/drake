@@ -8,15 +8,44 @@
 
 set -euo pipefail
 
+with_kcov=0
+with_maintainer_only=0
+with_test_only=1
+
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    # Install the kcov code coverage analysis tool from the
+    # drake-apt.csail.mit.edu apt repository on Ubuntu 18.04 (Bionic). Ignored
+    # on Ubuntu 20.04 (Focal) where kcov is always installed from the Ubuntu
+    # "universe" apt repository.
+    --with-kcov)
+      with_kcov=1
+      ;;
+    # Install prerequisites that are only needed to run select maintainer
+    # scripts. Most developers will not need to install these dependencies.
+    --with-maintainer-only)
+      with_maintainer_only=1
+      ;;
+    # Do NOT install prerequisites that are only needed to build and/or run
+    # unit tests, i.e., those prerequisites that are not dependencies of
+    # bazel build //:install and/or bazel run //:install.
+    --without-test-only)
+      with_test_only=0
+      ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 3
+  esac
+  shift
+done
+
 if [[ "${EUID}" -ne 0 ]]; then
   echo 'ERROR: This script must be run as root' >&2
   exit 1
 fi
 
-apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
-apt-transport-https
+apt-get install --no-install-recommends $(cat <<EOF
 ca-certificates
-gnupg
 wget
 EOF
 )
@@ -25,17 +54,18 @@ codename=$(lsb_release -sc)
 
 # On Bionic, developers must opt-in to kcov support; it comes in with the
 # non-standard package name kcov-35 via a Drake-specific PPA.
-if [[ "${codename}" == 'bionic' ]] &&
-    [[ "$#" -eq 1 ]] &&
-    [[ "$1" == "--with-kcov" ]]; then
-  wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" > /etc/apt/sources.list.d/drake.list
+if [[ "${codename}" == 'bionic' ]] && [[ "${with_kcov}" -eq 1 ]]; then
+  apt-get install --no-install-recommends gnupg
+  apt-key adv --fetch-keys https://drake-apt.csail.mit.edu/drake.pub.gpg
+  echo "deb [arch=amd64] https://drake-apt.csail.mit.edu/${codename} ${codename} main" \
+    > /etc/apt/sources.list.d/drake.list
   apt-get update
   apt-get install --no-install-recommends kcov-35
 fi
 
 apt-get update
-apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt" | tr '\n' ' ')
+apt-get install --no-install-recommends \
+  $(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 
 locale-gen en_US.UTF-8
 
@@ -47,6 +77,18 @@ if [[ "${codename}" == 'focal' ]]; then
   else
     echo "/usr/bin/python is already installed"
   fi
+fi
+
+if [[ "${with_test_only}" -eq 1 ]]; then
+  # Suppress Python 3.8 warnings when installing python3-pandas on Focal.
+  PYTHONWARNINGS=ignore::SyntaxWarning \
+    apt-get install --no-install-recommends \
+      $(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
+fi
+
+if [[ "${with_maintainer_only}" -eq 1 ]]; then
+  apt-get install --no-install-recommends \
+    $(cat "${BASH_SOURCE%/*}/packages-${codename}-maintainer.txt")
 fi
 
 dpkg_install_from_wget() {
@@ -88,6 +130,7 @@ dpkg_install_from_wget() {
   rm "${tmpdeb}"
 }
 
+# Depends: g++, unzip, zlib1g-dev
 dpkg_install_from_wget \
   bazel 3.4.1 \
   https://releases.bazel.build/3.4.1/release/bazel_3.4.1-linux-x86_64.deb \

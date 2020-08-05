@@ -269,8 +269,10 @@ debuggging symbols, and produce nicely formatted browse-able coverage reports.
 Drake's ``kcov`` build system integration is only supported on Ubuntu, not
 macOS.
 
-To use kcov, you must first run Drake's ``install_prereqs`` setup script using
-the ``--with-kcov`` option.
+To use kcov on Ubuntu 18.04 (Bionic), you must first run Drake's
+``install_prereqs`` setup script using the ``--with-kcov`` option. On Ubuntu
+20.04 (Focal), the option is ignored. The macOS ``install_prereqs`` setup
+script does not install kcov, and passing a ``--with-kcov`` option is an error.
 
 To analyze test coverage, run one (or more) tests under ``kcov``::
 
