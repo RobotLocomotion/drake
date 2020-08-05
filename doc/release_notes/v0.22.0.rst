@@ -49,16 +49,15 @@ Multibody Dynamics
 
 New features
 
-* TBD Implement PlanarMobilizer (`#13711`_)
-* TBD Introduce discrete contact pairs for agnostic treatment of discrete contact models (`#13734`_)  # * Introduce discrete pairs in MBP so that TAMSI is agnostic to how pairs are collected. To be noted in the next release: In addition, this PR fixes and old TODO in the Jacobian computation and therefore contact results are expected to change so slightly (in the right direction). Not a breaking change, but probably users should be notified in the next release.
-* TBD Make set_default_positions an NVI (`#13757`_)
-* TBD Implement PlanarJoint (`#13747`_, `#13813`_)
-* TBD Add support for parsing SDF and URDF from strings (`#13814`_)
+* Add PlanarMobilizer and PlanarJoint (`#13711`_, `#13747`_, `#13813`_)
+* Add support for parsing SDF and URDF from strings (`#13814`_)
 
 Fixes
 
-* TBD Fix format in TAMSIs exception message (`#13802`_)
-* TBD Make contact results deterministic (`#13737`_)
+* Make contact results deterministic (`#13737`_)
+* Contact results will differ slightly from prior releases (`#13734`_)
+* Joint::set_default_positions updates the underlying mobilizer (`#13757`_)
+* Fix formatting in TAMSI error message (`#13802`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
