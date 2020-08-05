@@ -110,7 +110,7 @@ class ClothSpringModel final : public systems::LeafSystem<T> {
   }
 
   /** For discrete mode only: set the accuracy for the Conjugate Gradient solve
-    for the implicit damping force. The It has not effect on continuous mode.
+    for the implicit damping force. It has not effect on continuous mode.
     @param[in] accuracy  The unit-less permissible relative error on velocity
     update. */
   void set_linear_solve_accuracy(T accuracy = 0.0001) {
