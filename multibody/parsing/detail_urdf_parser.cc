@@ -14,7 +14,6 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
@@ -727,31 +726,48 @@ ModelInstanceIndex ParseUrdf(
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromUrdf(
+    const DataSource& data_source,
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+  data_source.DemandExactlyOne();
 
-  const std::string full_path = GetFullPath(file_name);
+  // When the data_source is a filename, we'll use its parent directory to be
+  // the root directory to search for files referenced within the URDF file.
+  // If data_source is a string, this will remain unset and relative-path
+  // resources that would otherwise require a root directory will not be found.
+  std::string root_dir;
 
   // Opens the URDF file and feeds it into the XML parser.
   XMLDocument xml_doc;
-  xml_doc.LoadFile(full_path.c_str());
-  if (xml_doc.ErrorID()) {
-    throw std::runtime_error("Failed to parse XML in file " + full_path +
-                             "\n" + xml_doc.ErrorName());
-  }
-
-  // Uses the directory holding the URDF to be the root directory
-  // in which to search for files referenced within the URDF file.
-  std::string root_dir = ".";
-  size_t found = full_path.find_last_of("/\\");
-  if (found != std::string::npos) {
-    root_dir = full_path.substr(0, found);
+  if (data_source.file_name) {
+    const std::string full_path = GetFullPath(*data_source.file_name);
+    size_t found = full_path.find_last_of("/\\");
+    if (found != std::string::npos) {
+      root_dir = full_path.substr(0, found);
+    } else {
+      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
+      // using drake::filesystem for path manipulation, not string searching.
+      root_dir = ".";
+    }
+    xml_doc.LoadFile(full_path.c_str());
+    if (xml_doc.ErrorID()) {
+      throw std::runtime_error(fmt::format(
+          "Failed to parse XML file {}:\n{}",
+          full_path, xml_doc.ErrorName()));
+    }
+  } else {
+    DRAKE_DEMAND(data_source.file_contents);
+    xml_doc.Parse(data_source.file_contents->c_str());
+    if (xml_doc.ErrorID()) {
+      throw std::runtime_error(fmt::format(
+          "Failed to parse XML string: {}",
+          xml_doc.ErrorName()));
+    }
   }
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {

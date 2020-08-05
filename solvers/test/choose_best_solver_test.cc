@@ -17,6 +17,7 @@
 
 namespace drake {
 namespace solvers {
+
 class ChooseBestSolverTest : public ::testing::Test {
  public:
   ChooseBestSolverTest()
@@ -40,11 +41,17 @@ class ChooseBestSolverTest : public ::testing::Test {
   void CheckBestSolver(const SolverId& expected_solver_id) const {
     const SolverId solver_id = ChooseBestSolver(prog_);
     EXPECT_EQ(solver_id, expected_solver_id);
+
+    // Ensure GetKnownSolvers is comprehensive.
+    EXPECT_EQ(GetKnownSolvers().count(solver_id), 1);
   }
 
   void CheckMakeSolver(const SolverInterface& solver) const {
     auto new_solver = MakeSolver(solver.solver_id());
     EXPECT_EQ(new_solver->solver_id(), solver.solver_id());
+
+    // Ensure GetKnownSolvers is comprehensive.
+    EXPECT_EQ(GetKnownSolvers().count(solver.solver_id()), 1);
   }
 
   void CheckBestSolver(const std::vector<SolverInterface*>& solvers) {
@@ -175,5 +182,15 @@ TEST_F(ChooseBestSolverTest, MakeSolver) {
                               std::invalid_argument,
                               "MakeSolver: no matching solver foo");
 }
+
+// Checks that all of the known solvers can be instantiated.
+TEST_F(ChooseBestSolverTest, KnownSolvers) {
+  const std::set<SolverId>& ids = GetKnownSolvers();
+  EXPECT_GT(ids.size(), 5);
+  for (const auto& id : ids) {
+    EXPECT_EQ(MakeSolver(id)->solver_id(), id);
+  }
+}
+
 }  // namespace solvers
 }  // namespace drake

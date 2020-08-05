@@ -67,9 +67,9 @@ TEST_F(YamlWriteArchiveTest, StdArray) {
     EXPECT_EQ(Save(x), expected);
   };
 
-  test({1.0, 2.0, 3.0}, R"R(doc:
+  test({1.0, 2.0, 3.0}, R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, StdVector) {
@@ -81,13 +81,13 @@ TEST_F(YamlWriteArchiveTest, StdVector) {
 
   // When the vector items are simple YAML scalars, we should use
   // "flow" style, where they all appear on a single line.
-  test({}, R"R(doc:
+  test({}, R"""(doc:
   value: []
-)R");
+)""");
 
-  test({1.0, 2.0, 3.0}, R"R(doc:
+  test({1.0, 2.0, 3.0}, R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 
   // When the vector items are not simple scalars, we should use
   // "block" style, where each gets its own line(s).
@@ -96,11 +96,11 @@ TEST_F(YamlWriteArchiveTest, StdVector) {
     {.value = "foo"},
     {.value = "bar"},
   };
-  EXPECT_EQ(Save(x), R"R(doc:
+  EXPECT_EQ(Save(x), R"""(doc:
   value:
     - value: foo
     - value: bar
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, StdMap) {
@@ -110,20 +110,20 @@ TEST_F(YamlWriteArchiveTest, StdMap) {
     EXPECT_EQ(Save(x), expected);
   };
 
-  test({}, R"R(doc:
+  test({}, R"""(doc:
   value: {}
-)R");
+)""");
 
-  test({{"foo", 0.0}}, R"R(doc:
+  test({{"foo", 0.0}}, R"""(doc:
   value:
     foo: 0.0
-)R");
+)""");
 
-  test({{"foo", 0.0}, {"bar", 1.0}}, R"R(doc:
+  test({{"foo", 0.0}, {"bar", 1.0}}, R"""(doc:
   value:
     bar: 1.0
     foo: 0.0
-)R");
+)""");
 }
 
 
@@ -147,7 +147,7 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
     {"charlie", 2.0},
     {"bravo", 1.0},
     {"alpha", 0.0},
-  }, R"R(doc:
+  }, R"""(doc:
   value:
     alpha: 0.0
     bravo: 1.0
@@ -156,7 +156,7 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
     echo: 4.0
     fox: 5.0
     gulf: 6.0
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, Optional) {
@@ -196,9 +196,9 @@ TEST_F(YamlWriteArchiveTest, EigenVector) {
     EXPECT_EQ(Save(x3), expected);
   };
 
-  test(Eigen::Vector3d(1.0, 2.0, 3.0), R"R(doc:
+  test(Eigen::Vector3d(1.0, 2.0, 3.0), R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVectorX) {
@@ -208,12 +208,12 @@ TEST_F(YamlWriteArchiveTest, EigenVectorX) {
     EXPECT_EQ(Save(x), expected);
   };
 
-  test(Eigen::VectorXd(), R"R(doc:
+  test(Eigen::VectorXd(), R"""(doc:
   value: []
-)R");
-  test(Eigen::Matrix<double, 1, 1>(1.0), R"R(doc:
+)""");
+  test(Eigen::Matrix<double, 1, 1>(1.0), R"""(doc:
   value: [1.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenMatrix) {
@@ -226,12 +226,12 @@ TEST_F(YamlWriteArchiveTest, EigenMatrix) {
   };
 
   test((Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished(),
-       R"R(doc:
+       R"""(doc:
   value:
     - [0.0, 1.0, 2.0, 3.0]
     - [4.0, 5.0, 6.0, 7.0]
     - [8.0, 9.0, 10.0, 11.0]
-)R");
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, Nested) {
@@ -240,11 +240,11 @@ TEST_F(YamlWriteArchiveTest, Nested) {
   x.outer_value = 1.0;
 
   const std::string saved = Save(x);
-  const std::string expected = R"R(doc:
+  const std::string expected = R"""(doc:
   outer_value: 1.0
   inner_struct:
     inner_value: 2.0
-)R";
+)""";
   EXPECT_EQ(saved, expected);
 }
 
@@ -253,10 +253,10 @@ TEST_F(YamlWriteArchiveTest, BlankInner) {
   x.outer_value = 1.0;
 
   const std::string saved = Save(x);
-  const std::string expected = R"R(doc:
+  const std::string expected = R"""(doc:
   outer_value: 1.0
   inner_struct: {}
-)R";
+)""";
   EXPECT_EQ(saved, expected);
 }
 

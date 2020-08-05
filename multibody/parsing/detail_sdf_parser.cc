@@ -13,7 +13,6 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
@@ -420,19 +419,26 @@ void AddJointFromSpecification(
 // object.
 std::string LoadSdf(
     sdf::Root* root,
-    const std::string& file_name) {
+    const DataSource& data_source) {
+  data_source.DemandExactlyOne();
 
-  const std::string full_path = GetFullPath(file_name);
-
-  // Load the SDF file.
-  ThrowAnyErrors(root->Load(full_path));
-
-  // Uses the directory holding the SDF to be the root directory
-  // in which to search for files referenced within the SDF file.
-  std::string root_dir = ".";
-  size_t found = full_path.find_last_of("/\\");
-  if (found != std::string::npos) {
-    root_dir = full_path.substr(0, found);
+  std::string root_dir;
+  if (data_source.file_name) {
+    const std::string full_path = GetFullPath(*data_source.file_name);
+    ThrowAnyErrors(root->Load(full_path));
+    // Uses the directory holding the SDF to be the root directory
+    // in which to search for files referenced within the SDF file.
+    size_t found = full_path.find_last_of("/\\");
+    if (found != std::string::npos) {
+      root_dir = full_path.substr(0, found);
+    } else {
+      // TODO(jwnimmer-tri) This is not unit tested.  In any case, we should be
+      // using drake::filesystem for path manipulation, not string searching.
+      root_dir = ".";
+    }
+  } else {
+    DRAKE_DEMAND(data_source.file_contents);
+    ThrowAnyErrors(root->LoadSdfString(*data_source.file_contents));
   }
 
   return root_dir;
@@ -731,8 +737,8 @@ ModelInstanceIndex AddModelFromSpecification(
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
+ModelInstanceIndex AddModelFromSdf(
+    const DataSource& data_source,
     const std::string& model_name_in,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
@@ -742,7 +748,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, file_name);
+  std::string root_dir = LoadSdf(&root, data_source);
 
   if (root.ModelCount() != 1) {
     throw std::runtime_error("File must have a single <model> element.");
@@ -762,8 +768,8 @@ ModelInstanceIndex AddModelFromSdfFile(
       model, model_name, plant, package_map, root_dir);
 }
 
-std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-    const std::string& file_name,
+std::vector<ModelInstanceIndex> AddModelsFromSdf(
+    const DataSource& data_source,
     const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
@@ -772,7 +778,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
 
   sdf::Root root;
 
-  std::string root_dir = LoadSdf(&root, file_name);
+  std::string root_dir = LoadSdf(&root, data_source);
 
   // Throw an error if there are no models or worlds.
   if (root.ModelCount() == 0 && root.WorldCount() == 0) {

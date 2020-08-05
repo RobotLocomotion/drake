@@ -192,14 +192,14 @@ TEST_P(YamlReadArchiveTest, BigStdMapAppend) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     bar:
       outer_value: 3.0
       inner_struct:
         inner_value: 4.0
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   if (GetParam().retain_map_defaults) {
     EXPECT_EQ(x.value.size(), 2);
@@ -217,12 +217,12 @@ TEST_P(YamlReadArchiveTest, BigStdMapMergeNewOuterValue) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     foo:
       outer_value: 3.0
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   EXPECT_EQ(x.value.size(), 1);
   EXPECT_EQ(x.value.at("foo").outer_value, 3.0);
@@ -238,13 +238,13 @@ TEST_P(YamlReadArchiveTest, BigStdMapMergeNewInnerValue) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     foo:
       inner_struct:
         inner_value: 4.0
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   EXPECT_EQ(x.value.size(), 1);
   if (GetParam().retain_map_defaults) {
@@ -260,11 +260,11 @@ TEST_P(YamlReadArchiveTest, BigStdMapMergeEmpty) {
     // The parser would raise an uninteresting exception in this case.
     return;
   }
-  std::string doc = R"R(
+  std::string doc = R"""(
 doc:
   value:
     foo: {}
-)R";
+)""";
   const auto& x = AcceptNoThrow<BigMapStruct>(Load(doc));
   EXPECT_EQ(x.value.size(), 1);
   if (GetParam().retain_map_defaults) {
@@ -294,7 +294,7 @@ TEST_P(YamlReadArchiveTest, StdMapWithMergeKeys) {
   };
 
   // Use merge keys to populate some keys.
-  test(R"R(
+  test(R"""(
 _template: &template
   foo: 1.0
 
@@ -302,10 +302,10 @@ doc:
   value:
     << : *template
     bar: 2.0
-)R", {{"foo", 1.0}, {"bar", 2.0}});
+)""", {{"foo", 1.0}, {"bar", 2.0}});
 
   // A pre-existing value should win, though.
-  test(R"R(
+  test(R"""(
 _template: &template
   foo: 3.0
 
@@ -314,10 +314,10 @@ doc:
     << : *template
     foo: 1.0
     bar: 2.0
-)R", {{"foo", 1.0}, {"bar", 2.0}});
+)""", {{"foo", 1.0}, {"bar", 2.0}});
 
   // A list of merges should also work.
-  test(R"R(
+  test(R"""(
 _template: &template
   - foo: 1.0
   - baz: 3.0
@@ -326,33 +326,33 @@ doc:
   value:
     << : *template
     bar: 2.0
-)R", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
+)""", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
 }
 
 TEST_P(YamlReadArchiveTest, StdMapWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<MapStruct>(Load(R"R(
+      AcceptIntoDummy<MapStruct>(Load(R"""(
 _template: &template 99.0
 
 doc:
   value:
     << : *template
     bar: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has invalid merge key type \\(Scalar\\) within entry"
       " for std::map<[^ ]*> value\\.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<MapStruct>(Load(R"R(
+      AcceptIntoDummy<MapStruct>(Load(R"""(
 _template: &template
 
 doc:
   value:
     << : *template
     bar: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has invalid merge key type \\(Null\\) within entry"
@@ -429,13 +429,13 @@ TEST_P(YamlReadArchiveTest, EigenMatrix) {
     EXPECT_TRUE(drake::CompareMatrices(mat34.value, expected));
   };
 
-  test(R"R(
+  test(R"""(
 doc:
   value:
   - [0.0, 1.0, 2.0, 3.0]
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 10.0, 11.0]
-)R", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+)""", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
 TEST_P(YamlReadArchiveTest, EigenMissing) {
@@ -452,12 +452,12 @@ TEST_P(YamlReadArchiveTest, EigenMissing) {
 }
 
 TEST_P(YamlReadArchiveTest, Nested) {
-  const auto& x = AcceptNoThrow<OuterStruct>(Load(R"R(
+  const auto& x = AcceptNoThrow<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value: 2.0
-)R"));
+)"""));
   EXPECT_EQ(x.outer_value, 1.0);
   EXPECT_EQ(x.inner_struct.inner_value, 2.0);
 }
@@ -476,7 +476,7 @@ TEST_P(YamlReadArchiveTest, NestedWithMergeKeys) {
   };
 
   // Use merge keys to populate InnerStruct.
-  test(R"R(
+  test(R"""(
 _template: &template
   inner_value: 2.0
   ignored_key: ignored_value
@@ -485,11 +485,11 @@ doc:
   inner_struct:
     << : *template
   outer_value: 1.0
-)R");
+)""");
 
   // Use merge keys to populate InnerStruct, though to no effect because the
   // existing value wins.
-  test(R"R(
+  test(R"""(
 _template: &template
   inner_value: 3.0
   ignored_key: ignored_value
@@ -499,10 +499,10 @@ doc:
     << : *template
     inner_value: 2.0
   outer_value: 1.0
-)R");
+)""");
 
   // Use merge keys to populate OuterStruct.
-  test(R"R(
+  test(R"""(
 _template: &template
   inner_struct:
     inner_value: 2.0
@@ -511,11 +511,11 @@ _template: &template
 doc:
   << : *template
   outer_value: 1.0
-)R");
+)""");
 
   // Use array of merge keys to populate OuterStruct.
   // First array with a value wins.
-  test(R"R(
+  test(R"""(
 _template: &template
   - inner_struct:
       inner_value: 2.0
@@ -526,19 +526,19 @@ _template: &template
 doc:
   << : *template
   outer_value: 1.0
-)R");
+)""");
 }
 
 TEST_P(YamlReadArchiveTest, NestedWithBadMergeKey) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 _template: &template 99.0
 
 doc:
   inner_struct:
     << : *template
   outer_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -546,14 +546,14 @@ doc:
       " for .*::OuterStruct::InnerStruct inner_struct\\.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 _template: &template
 
 doc:
   inner_struct:
     << : *template
   outer_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -561,7 +561,7 @@ doc:
       " for .*::OuterStruct::InnerStruct inner_struct\\.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 _template: &template
   - inner_value
   - 2.0
@@ -569,7 +569,7 @@ _template: &template
 doc:
   << : *template
   outer_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{outer_value\\}\\)"
       " has invalid merge key type \\(Sequence-of-non-Map\\) within entry"
@@ -579,12 +579,12 @@ doc:
 // This finds nothing when a scalar was wanted, because the name had a typo.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundNothing) {
   // This has a "_TYPO" in a field name.
-  const YAML::Node node = Load(R"R(
+  const YAML::Node node = Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value_TYPO: 2.0
-)R");
+)""");
   if (GetParam().allow_cpp_with_no_yaml &&
       GetParam().allow_yaml_with_no_cpp) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
@@ -616,12 +616,12 @@ doc:
 // This finds an array when a scalar was wanted.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundArray) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value: [2.0, 3.0]
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{inner_value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for double inner_value"
@@ -633,13 +633,13 @@ doc:
 // This finds a struct when a scalar was wanted.
 TEST_P(YamlReadArchiveTest, VisitScalarFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct:
     inner_value:
        key: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{inner_value\\}\\)"
       " has non-Scalar \\(Map\\) entry for double inner_value"
@@ -669,11 +669,11 @@ TEST_P(YamlReadArchiveTest, VisitArrayFoundScalar) {
 // This finds a sub-structure when a std::array was wanted.
 TEST_P(YamlReadArchiveTest, VisitArrayFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<ArrayStruct>(Load(R"R(
+      AcceptIntoDummy<ArrayStruct>(Load(R"""(
 doc:
   value:
     inner_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Map\\) entry for std::array<.*> value\\.");
@@ -700,11 +700,11 @@ TEST_P(YamlReadArchiveTest, VisitVectorFoundScalar) {
 // This finds a sub-structure when a std::vector was wanted.
 TEST_P(YamlReadArchiveTest, VisitVectorFoundStruct) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<VectorStruct>(Load(R"R(
+      AcceptIntoDummy<VectorStruct>(Load(R"""(
 doc:
   value:
     inner_value: 1.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Map\\) entry for std::vector<.*> value\\.");
@@ -836,13 +836,13 @@ TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundOneDimensional) {
 
 // This finds a non-square (4+4+3) matrix, when an Eigen::Matrix was wanted.
 TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundNonSquare) {
-  const std::string doc(R"R(
+  const std::string doc(R"""(
 doc:
   value:
   - [0.0, 1.0, 2.0, 3.0]
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 0.0]
-)R");
+)""");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(Load(doc)),
       std::runtime_error,
@@ -857,10 +857,10 @@ doc:
 
 // This finds nothing when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
-  const YAML::Node node = Load(R"R(
+  const YAML::Node node = Load(R"""(
   doc:
     outer_value: 1.0
-  )R");
+  )""");
   if (GetParam().allow_cpp_with_no_yaml) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
     EXPECT_EQ(x.outer_value, 1.0);
@@ -877,11 +877,11 @@ TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
 // This finds a scalar when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct: 2.0
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -891,11 +891,11 @@ doc:
 // This finds an array when a sub-structure was wanted.
 TEST_P(YamlReadArchiveTest, VisitStructFoundArray) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<OuterStruct>(Load(R"R(
+      AcceptIntoDummy<OuterStruct>(Load(R"""(
 doc:
   outer_value: 1.0
   inner_struct: [2.0, 3.0]
-)R")),
+)""")),
       std::runtime_error,
       "YAML node of type Map"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"

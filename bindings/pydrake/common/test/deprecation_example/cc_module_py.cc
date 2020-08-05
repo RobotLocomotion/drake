@@ -17,7 +17,7 @@ PYBIND11_MODULE(cc_module, m) {
 
   m.def("emit_deprecation", []() {
     // N.B. This is only for coverage. You generally do not need this.
-    WarnDeprecated("Example emitting of deprecation");
+    WarnDeprecated("Example emitting of deprecation", "2038-01-19");
   });
 
   {

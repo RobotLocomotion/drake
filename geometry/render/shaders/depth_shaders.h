@@ -10,7 +10,7 @@ namespace shaders {
 //   //VTK::System::Dec
 /** A vertex shader program for rendering depth images, which computes vertices
  and normals for the fragment shader program coming after. */
-constexpr char kDepthVS[] = R"__(
+constexpr char kDepthVS[] = R"""(
     //VTK::System::Dec
     attribute vec4 vertexMC;
     uniform mat4 MCDCMatrix;
@@ -20,7 +20,7 @@ constexpr char kDepthVS[] = R"__(
       vertexVCVSOutput = MCVCMatrix * vertexMC;
       gl_Position = MCDCMatrix * vertexMC;
     }
-)__";
+)""";
 
 // TODO(SeanCurtis-TRI): Investigate rendering directly to a one-channel,
 //  32-bit float image so that the encoding isn't necessary.
@@ -43,7 +43,7 @@ constexpr char kDepthVS[] = R"__(
  The reason is that we need to set one to alpha channel so that the rendered
  "image" will be opaque. Otherwise, we will have different colors from what
  we output here, thus expect, in the end.  */
-constexpr char kDepthFS[] = R"__(
+constexpr char kDepthFS[] = R"""(
     //VTK::System::Dec
     //VTK::Output::Dec
     varying vec4 vertexVCVSOutput;
@@ -109,7 +109,7 @@ constexpr char kDepthFS[] = R"__(
       }
       color_out = vec4(res, 1.);
     }
-)__";
+)""";
 
 }  // namespace shaders
 }  // namespace render

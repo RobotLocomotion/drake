@@ -16,21 +16,21 @@ namespace render {
 namespace internal {
 namespace {
 
-constexpr char kVertexSource[] = R"_(
+constexpr char kVertexSource[] = R"""(
   #version 330
   void main() {
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
   }
-)_";
+)""";
 
-constexpr char kFragmentSource[] = R"_(
+constexpr char kFragmentSource[] = R"""(
   #version 330
   uniform float test_uniform;
   uniform vec4 test_uniform4;
   void main() {
     gl_FragColor = vec4(0.18, 0.54, 0.34, test_uniform) + test_uniform4;
   }
-)_";
+)""";
 
 }  // namespace
 
@@ -123,11 +123,11 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     // function from the fragment shader as documented here:
     // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glLinkProgram.xhtml
     DRAKE_EXPECT_THROWS_MESSAGE(
-        program.LoadFromSources(kVertexSource, R"_(
+        program.LoadFromSources(kVertexSource, R"""(
             #version 100
             void foo() {
               gl_FragColor = vec4(0.1, 0.2, 0.3, 1.0);
-            })_"),
+            })"""),
         std::runtime_error, "Error linking shaders[^]+");
   }
 

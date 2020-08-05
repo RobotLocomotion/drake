@@ -41,9 +41,9 @@ TEST_F(YamlWriteArchiveDefaultsTest, BasicExample1) {
   OuterStruct data = defaults;
   data.outer_value = 3.0;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   outer_value: 3.0
-)R");
+)""");
 }
 
 // Shows the typical use -- that only the novel data is output.
@@ -56,10 +56,10 @@ TEST_F(YamlWriteArchiveDefaultsTest, BasicExample2) {
   OuterStruct data = defaults;
   data.inner_struct.inner_value = 3.0;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   inner_struct:
     inner_value: 3.0
-)R");
+)""");
 }
 
 // Same as the BasicExample1 from above, except that the map order of the
@@ -73,9 +73,9 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentMapOrder1) {
   data.outer_value = 3.0;
   data.inner_struct.inner_value = defaults.inner_struct.inner_value;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   outer_value: 3.0
-)R");
+)""");
 }
 
 // Same as the BasicExample2 from above, except that the map order of the
@@ -89,10 +89,10 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentMapOrder2) {
   data.outer_value = defaults.outer_value;
   data.inner_struct.inner_value = 3.0;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   inner_struct:
     inner_value: 3.0
-)R");
+)""");
 }
 
 // YAML nulls are handled reasonably, without throwing.
@@ -102,8 +102,8 @@ TEST_F(YamlWriteArchiveDefaultsTest, Nulls) {
 
   OptionalStruct defaults = data;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
-)R");
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
+)""");
 }
 
 // Arrays differing in their values are not erased.
@@ -114,9 +114,9 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentArrays) {
   ArrayStruct defaults;
   defaults.value = { 0.0, 0.0, 0.0 };
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 }
 
 // Vectors differing in size (but sharing a prefix) are not erased.
@@ -127,9 +127,9 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentSizeVectors) {
   VectorStruct defaults;
   defaults.value = { 1.0, 2.0 };
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value: [1.0, 2.0, 3.0]
-)R");
+)""");
 }
 
 // Variants differing by tag are not erased.
@@ -140,10 +140,10 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentVariantTag) {
   VariantStruct defaults;
   defaults.value = StringStruct{"1.0"};
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value: !DoubleStruct
     value: 1.0
-)R");
+)""");
 }
 
 // Maps differing in key only (same value) are not erased.
@@ -154,10 +154,10 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentMapKeys) {
   MapStruct defaults;
   defaults.value["b"] = 1.0;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value:
     a: 1.0
-)R");
+)""");
 }
 
 // Maps differing in value only (same key) are not erased.
@@ -168,10 +168,10 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentMapValues) {
   MapStruct defaults;
   defaults.value["a"] = 2.0;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value:
     a: 1.0
-)R");
+)""");
 }
 
 // In the ununsual case that the user provided two different schemas to
@@ -185,9 +185,9 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentSchemas) {
 
   ArrayStruct defaults;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   value: 1.0
-)R");
+)""");
 }
 
 // In the ununsual case that the user provided two different (but similar)
@@ -202,11 +202,11 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentInnerSchemas) {
 
   OuterWithBlankInner defaults;
 
-  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"R(doc:
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   outer_value: 1.0
   inner_struct:
     inner_value: 2.0
-)R");
+)""");
 }
 
 }  // namespace
