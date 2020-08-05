@@ -3,12 +3,11 @@
 #include <variant>
 
 #include "drake/common/name_value.h"
+#include "drake/common/schema/dev/stochastic.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "common/schema/stochastic.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 
 /// A specification for an SO(3) rotation, to be used for serialization
@@ -24,10 +23,10 @@ struct Rotation {
   Rotation() = default;
 
   /// Constructs an Rpy rotation with the given value.
-  explicit Rotation(const drake::math::RotationMatrix<double>&);
+  explicit Rotation(const math::RotationMatrix<double>&);
 
   /// Constructs an Rpy rotation with the given value.
-  explicit Rotation(const drake::math::RollPitchYaw<double>&);
+  explicit Rotation(const math::RollPitchYaw<double>&);
 
   /// No-op rotation.
   struct Identity {
@@ -81,16 +80,16 @@ struct Rotation {
 
   /// If this is deterministic, retrieves its value.
   /// @throws exception if this is not fully deterministic.
-  drake::math::RotationMatrixd GetDeterministicValue() const;
+  math::RotationMatrixd GetDeterministicValue() const;
 
   /// Returns the symbolic form of this rotation.  If this is deterministic,
   /// the result will contain no variables.  If this is random, the result will
   /// contain one or more random variables, based on the distributions in use.
-  drake::math::RotationMatrix<drake::symbolic::Expression> ToSymbolic() const;
+  math::RotationMatrix<symbolic::Expression> ToSymbolic() const;
 
   /// Sets this value to the given deterministic RPY, in degrees.
   void set_rpy_deg(const Eigen::Vector3d& rpy_deg) {
-    value.emplace<common::schema::Rotation::Rpy>().deg = rpy_deg;
+    value.emplace<Rotation::Rpy>().deg = rpy_deg;
   }
 
   template <typename Archive>
@@ -103,5 +102,4 @@ struct Rotation {
 };
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake

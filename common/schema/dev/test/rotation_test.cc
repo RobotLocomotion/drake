@@ -1,4 +1,4 @@
-#include "common/schema/rotation.h"
+#include "drake/common/schema/dev/rotation.h"
 
 #include <gtest/gtest.h>
 
@@ -6,8 +6,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/common/yaml/yaml_write_archive.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 namespace {
 
@@ -113,5 +112,4 @@ GTEST_TEST(RotationTest, RpyToYaml) {
 
 }  // namespace
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake

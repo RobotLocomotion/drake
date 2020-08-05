@@ -1,4 +1,4 @@
-#include "common/schema/transform.h"
+#include "drake/common/schema/dev/transform.h"
 
 #include <gtest/gtest.h>
 
@@ -9,8 +9,7 @@
 
 using drake::yaml::YamlReadArchive;
 
-namespace anzu {
-namespace common {
+namespace drake {
 namespace schema {
 namespace {
 
@@ -99,14 +98,14 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
 
   // The sampled transforms must lie within the randomization domain.
   const auto& translation_domain =
-      std::get<common::schema::UniformVector<3>>(transform.translation);
+      std::get<schema::UniformVector<3>>(transform.translation);
   for (int i = 0; i < 3; i++) {
     EXPECT_GT(sampled_transform.translation()[i], translation_domain.min[i]);
     EXPECT_LT(sampled_transform.translation()[i], translation_domain.max[i]);
   }
   const auto& rotation_domain =
-      std::get<common::schema::UniformVector<3>>(
-          std::get<common::schema::Rotation::Rpy>(
+      std::get<schema::UniformVector<3>>(
+          std::get<schema::Rotation::Rpy>(
               transform.rotation.value).deg);
   const Eigen::Vector3d rpy =
       drake::math::RollPitchYawd(sampled_transform.rotation())
@@ -133,5 +132,4 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
 
 }  // namespace
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace drake
