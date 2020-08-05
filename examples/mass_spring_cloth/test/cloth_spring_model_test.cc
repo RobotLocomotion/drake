@@ -53,11 +53,11 @@ TEST_F(DiscreteClothSpringModelTest, Simulate) {
   // that the solver is converging. Advance to a few time steps away from
   // initial condition for a more non-trivial setup.
   const double t_final = 0.1;
-  dut_->SetLinearSolveTolerance(std::numeric_limits<double>::epsilon());
+  dut_->set_linear_solve_accuracy(std::numeric_limits<double>::epsilon());
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.Initialize();
   simulator.AdvanceTo(t_final);
-  // The linear solver should converge even at the tight tolerance we set
+  // The linear solver should converge even at the tight accuracy we set
   // because the default max number of iterations is equal to the size of the
   // linear system. Therefore the sim should not crash.
   EXPECT_EQ(simulator.get_context().get_time(), t_final);

@@ -60,7 +60,7 @@ ClothSpringModel<T>::ClothSpringModel(int nx, int ny, T h, double dt)
     // It usually takes far fewer iterations to converge.
     cg_.setMaxIterations(num_particles_ * 3);
     // Set a tight tolerance for convergence.
-    cg_.setTolerance(std::numeric_limits<T>::epsilon());
+    cg_.setTolerance(0.0001);
   }
 }
 
