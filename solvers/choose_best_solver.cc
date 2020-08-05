@@ -1,5 +1,6 @@
 #include "drake/solvers/choose_best_solver.h"
 
+#include "drake/common/never_destroyed.h"
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -14,12 +15,15 @@
 
 namespace drake {
 namespace solvers {
+namespace {
 
 template <typename SomeSolver>
 bool IsMatch(const MathematicalProgram& prog) {
   return SomeSolver::is_available() && SomeSolver::is_enabled() &&
       SomeSolver::ProgramAttributesSatisfied(prog);
 }
+
+}  // namespace
 
 SolverId ChooseBestSolver(const MathematicalProgram& prog) {
   if (IsMatch<LinearSystemSolver>(prog)) {
@@ -53,6 +57,23 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
   }
   throw std::invalid_argument(
       "There is no available solver for the optimization program");
+}
+
+const std::set<SolverId>& GetKnownSolvers() {
+  static const never_destroyed<std::set<SolverId>> result{std::set<SolverId>{
+    LinearSystemSolver::id(),
+    EqualityConstrainedQPSolver::id(),
+    MosekSolver::id(),
+    GurobiSolver::id(),
+    OsqpSolver::id(),
+    MobyLcpSolverId::id(),
+    SnoptSolver::id(),
+    IpoptSolver::id(),
+    NloptSolver::id(),
+    CsdpSolver::id(),
+    ScsSolver::id(),
+  }};
+  return result.access();
 }
 
 std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id) {
