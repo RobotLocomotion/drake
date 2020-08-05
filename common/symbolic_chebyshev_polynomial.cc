@@ -100,10 +100,10 @@ void EvalImpl(double x_val, double* poly_curr_val, double* poly_prev_val) {
 }
 }  // namespace
 
-double ChebyshevPolynomial::Evaluate(double var_val) const {
-  if (degree_ == 0) {
+double EvaluateChebyshevPolynomial(double var_val, int degree) {
+  if (degree == 0) {
     return 1;
-  } else if (degree_ == 1) {
+  } else if (degree == 1) {
     return var_val;
   } else {
     // Instead of using the equation
@@ -115,11 +115,15 @@ double ChebyshevPolynomial::Evaluate(double var_val) const {
     // arccosh function.
     double poly_prev_val = 1;
     double poly_curr_val = var_val;
-    for (int i = 0; i <= degree_ - 2; ++i) {
+    for (int i = 0; i <= degree - 2; ++i) {
       EvalImpl(var_val, &poly_curr_val, &poly_prev_val);
     }
     return poly_curr_val;
   }
+}
+
+double ChebyshevPolynomial::Evaluate(double var_val) const {
+  return EvaluateChebyshevPolynomial(var_val, degree_);
 }
 
 bool ChebyshevPolynomial::operator==(const ChebyshevPolynomial& other) const {
