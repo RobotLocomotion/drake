@@ -109,12 +109,20 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD Deprecate drake::math::Slerp in lieu of Eigen's (`#13810`_)
+* drake::math::Slerp (`#13810`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD Remove deprecated code (2020-08) (`#13785`_)
+* drake::Polynomial::IsApprox (`#13785`_)
+* drake::systems::Simulator::reset_integrator (`#13785`_)
+* drake::trajectories::PiecewisePolynomial<T>::PolynomialType (`#13785`_)
+* pydrake.polynomial.Polynomial.IsApprox (`#13785`_)
+* pydrake.systems.analysis.Simulator.reset_integrator (`#13785`_)
+* pydrake.systems.framework.AbstractValue (`#13785`_)
+* pydrake.systems.framework.Value (`#13785`_)
+* The bitbucket.bzl macros (`#13785`_)
+* The tinydir external (`#13785`_)
 
 Notes
 -----
