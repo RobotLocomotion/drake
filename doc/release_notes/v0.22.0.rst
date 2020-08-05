@@ -10,8 +10,9 @@ TBD
 Breaking changes since v0.21.0
 ------------------------------
 
-* TBD Make set_default_positions an NVI (`#13757`_)
-* TBD This maybe removed some files (`#13758`_)
+* drake::multibody::Joint gained a new pure virtual method do_set_default_positions (`#13757`_)
+* pydrake's deprecation infrastructure now must always be given a removal date, either as embedded in the message or via the new date= kwarg (`#13730`_)
+* Several stale forks of SDFormat models were removed from the Atlas example (`#13758`_)
 
 Changes since v0.21.0:
 ----------------------
@@ -78,15 +79,15 @@ pydrake bindings
 New features
 
 * Redirect drake's logs to the Python ``logging`` module instead of stderr (`#13568`_, `#13781`_)
+* Deprecation annotations may pass a date=YYYY-MM-DD kwarg (`#13730`_)
 
 Fixes
 
 * TBD
-* TBD Require YYYY-MM-DD to be present in message (`#13730`_) (breaking?)
 
 Newly bound
 
-* TBD eigen_geometry: Bind Quaternion.slerp (`#13810`_)
+* pydrake.common.eigen_geometry.Quaternion.slerp (`#13810`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
