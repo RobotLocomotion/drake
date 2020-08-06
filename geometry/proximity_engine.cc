@@ -815,10 +815,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   vector<ContactSurface<T>> ComputeContactSurfaces(
+      bool include_pressure_gradients,
       const unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
     vector<ContactSurface<T>> surfaces;
     // All these quantities are aliased in the callback data.
-    hydroelastic::CallbackData<T> data{&collision_filter_, &X_WGs,
+    hydroelastic::CallbackData<T> data{include_pressure_gradients,
+                                       &collision_filter_, &X_WGs,
                                        &hydroelastic_geometries_, &surfaces};
 
     // Perform a query of the dynamic objects against themselves.
@@ -844,6 +846,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ComputeContactSurfacesWithFallback(
+      bool include_pressure_gradients,
       const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
@@ -851,7 +854,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(point_pairs);
     // All these quantities are aliased in the callback data.
     hydroelastic::CallbackWithFallbackData<T> data{
-        hydroelastic::CallbackData<T>{&collision_filter_, &X_WGs,
+        hydroelastic::CallbackData<T>{include_pressure_gradients,
+                                      &collision_filter_, &X_WGs,
                                       &hydroelastic_geometries_, surfaces},
         point_pairs};
 
@@ -1310,17 +1314,19 @@ ProximityEngine<T>::ComputePointPairPenetration() const {
 
 template <typename T>
 std::vector<ContactSurface<T>> ProximityEngine<T>::ComputeContactSurfaces(
+    bool include_pressure_gradients,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
-  return impl_->ComputeContactSurfaces(X_WGs);
+  return impl_->ComputeContactSurfaces(include_pressure_gradients, X_WGs);
 }
 
 template <typename T>
 void ProximityEngine<T>::ComputeContactSurfacesWithFallback(
+    bool include_pressure_gradients,
     const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
-  return impl_->ComputeContactSurfacesWithFallback(X_WGs, surfaces,
-                                                   point_pairs);
+  return impl_->ComputeContactSurfacesWithFallback(
+      include_pressure_gradients, X_WGs, surfaces, point_pairs);
 }
 
 template <typename T>

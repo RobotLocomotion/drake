@@ -284,7 +284,11 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const SurfaceMesh<T>& surface_N,
     const math::RigidTransform<T>& X_MN,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN) {
+    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+    std::vector<Vector3<T>>* grad_eM_Ms) {
+  // In order to get the gradient, we need the concrete linear field underneath.
+  const VolumeMeshFieldLinear<T, T>& volume_linear_field_M =
+      dynamic_cast<const VolumeMeshFieldLinear<T, T>&>(volume_field_M);
   std::vector<SurfaceFace> surface_faces;
   std::vector<SurfaceVertex<T>> surface_vertices_M;
   std::vector<T> surface_e;
@@ -294,6 +298,35 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   // triangular faces of a tetrahedron.
   std::vector<SurfaceVertexIndex> contact_polygon;
   contact_polygon.reserve(7);
+
+  // The work of adding faces depends on whether we are also sampling the
+  // gradient of the soft mesh's pressure field. We'll make that decision here,
+  // once and then mindlessly call the function in the nested for loop.
+  std::function<void(const std::vector<SurfaceVertexIndex>&, const Vector3<T>&,
+                     std::vector<SurfaceFace>*, std::vector<SurfaceVertex<T>>*,
+                     const Vector3<T>&)>
+      add_polygon_data;
+  if (grad_eM_Ms) {
+    add_polygon_data = [grad_eM_Ms](
+                           const std::vector<SurfaceVertexIndex>& polygon,
+                           const Vector3<T>& n_M,
+                           std::vector<SurfaceFace>* faces,
+                           std::vector<SurfaceVertex<T>>* vertices_M,
+                           const Vector3<T>& grad_eMi_M) {
+      size_t old_count = faces->size();
+      AddPolygonToMeshData(polygon, n_M, faces, vertices_M);
+      for (size_t i = old_count; i < faces->size(); ++i) {
+        grad_eM_Ms->push_back(grad_eMi_M);
+      }
+    };
+  } else {
+    add_polygon_data =
+        [](const std::vector<SurfaceVertexIndex>& polygon,
+           const Vector3<T>& n_M, std::vector<SurfaceFace>* faces,
+           std::vector<SurfaceVertex<T>>* vertices_M, const Vector3<T>&) {
+          AddPolygonToMeshData(polygon, n_M, faces, vertices_M);
+        };
+  }
 
   for (VolumeElementIndex tet_index(0); tet_index < mesh_M.num_elements();
        ++tet_index) {
@@ -332,8 +365,9 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
       }
       const Vector3<T>& nhat_M =
           X_MN.rotation() * surface_N.face_normal(tri_index);
-      AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
-                           &surface_vertices_M);
+      add_polygon_data(contact_polygon, nhat_M, &surface_faces,
+                       &surface_vertices_M,
+                       volume_linear_field_M.EvaluateGradient(tet_index));
 
       const int num_current_vertices = surface_vertices_M.size();
       // Calculate values of the pressure field and the normal field at the
@@ -366,7 +400,11 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_N,
     const math::RigidTransform<T>& X_MN,
     std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN) {
+    std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+    std::vector<Vector3<T>>* grad_eM_Ms) {
+  // In order to get the gradient, we need the concrete linear field underneath.
+  const VolumeMeshFieldLinear<T, T>& volume_linear_field_M =
+      dynamic_cast<const VolumeMeshFieldLinear<T, T>&>(volume_field_M);
   std::vector<SurfaceFace> surface_faces;
   std::vector<SurfaceVertex<T>> surface_vertices_M;
   std::vector<T> surface_e;
@@ -377,13 +415,42 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
   std::vector<SurfaceVertexIndex> contact_polygon;
   contact_polygon.reserve(7);
 
-  auto callback = [&volume_field_M, &surface_N, &surface_faces,
+  // The work of adding faces depends on whether we are also sampling the
+  // gradient of the soft mesh's pressure field. We'll make that decision here,
+  // once and then mindlessly call the function in the nested for loop.
+  std::function<void(const std::vector<SurfaceVertexIndex>&, const Vector3<T>&,
+                     std::vector<SurfaceFace>*, std::vector<SurfaceVertex<T>>*,
+                     const Vector3<T>&)>
+      add_polygon_data;
+  if (grad_eM_Ms) {
+    add_polygon_data = [grad_eM_Ms](
+                           const std::vector<SurfaceVertexIndex>& polygon,
+                           const Vector3<T>& n_M,
+                           std::vector<SurfaceFace>* faces,
+                           std::vector<SurfaceVertex<T>>* vertices_M,
+                           const Vector3<T>& grad_eMi_M) {
+      size_t old_count = faces->size();
+      AddPolygonToMeshData(polygon, n_M, faces, vertices_M);
+      for (size_t i = old_count; i < faces->size(); ++i) {
+        grad_eM_Ms->push_back(grad_eMi_M);
+      }
+    };
+  } else {
+    add_polygon_data =
+        [](const std::vector<SurfaceVertexIndex>& polygon,
+           const Vector3<T>& n_M, std::vector<SurfaceFace>* faces,
+           std::vector<SurfaceVertex<T>>* vertices_M, const Vector3<T>&) {
+          AddPolygonToMeshData(polygon, n_M, faces, vertices_M);
+        };
+  }
+
+  auto callback = [&volume_linear_field_M, &surface_N, &surface_faces,
                    &surface_vertices_M, &surface_e, &mesh_M, &X_MN,
-                   &contact_polygon,
+                   &contact_polygon, &add_polygon_data,
                    this](VolumeElementIndex tet_index,
                          SurfaceFaceIndex tri_index) -> BvttCallbackResult {
-    if (!this->IsFaceNormalAlongPressureGradient(volume_field_M, surface_N,
-                                                 X_MN, tet_index, tri_index)) {
+    if (!this->IsFaceNormalAlongPressureGradient(
+            volume_linear_field_M, surface_N, X_MN, tet_index, tri_index)) {
       return BvttCallbackResult::Continue;
     }
 
@@ -414,15 +481,17 @@ void SurfaceVolumeIntersector<T>::SampleVolumeFieldOnSurface(
     }
     const Vector3<T>& nhat_M =
         X_MN.rotation() * surface_N.face_normal(tri_index);
-    AddPolygonToMeshData(contact_polygon, nhat_M, &surface_faces,
-                         &surface_vertices_M);
+    add_polygon_data(contact_polygon, nhat_M, &surface_faces,
+                       &surface_vertices_M,
+                       volume_linear_field_M.EvaluateGradient(tet_index));
 
     const int num_current_vertices = surface_vertices_M.size();
     // Calculate values of the pressure field and the normal field at the
     // new vertices.
     for (int v = num_previous_vertices; v < num_current_vertices; ++v) {
       const Vector3<T>& r_MV = surface_vertices_M[v].r_MV();
-      const T pressure = volume_field_M.EvaluateCartesian(tet_index, r_MV);
+      const T pressure =
+          volume_linear_field_M.EvaluateCartesian(tet_index, r_MV);
       surface_e.push_back(pressure);
     }
     return BvttCallbackResult::Continue;
@@ -444,7 +513,8 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const SurfaceMesh<T>& mesh_R, const math::RigidTransform<T>& X_WR) {
+    const SurfaceMesh<T>& mesh_R, const math::RigidTransform<T>& X_WR,
+    bool include_pressure_gradients) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated.
   // Generally,
   //  there are three types of scalars: the pose scalar, the mesh field
@@ -466,8 +536,14 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
+  std::vector<Vector3<T>> grad_eS_S{0};
+  std::vector<Vector3<T>>* grad_eS_S_ptr{};
+  if (include_pressure_gradients) {
+    grad_eS_S_ptr = &grad_eS_S;
+  }
+
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(
-      field_S, mesh_R, X_SR, &surface_SR, &e_SR);
+      field_S, mesh_R, X_SR, &surface_SR, &e_SR, grad_eS_S_ptr);
 
   if (surface_SR == nullptr) return nullptr;
 
@@ -478,9 +554,18 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
   e_SR->TransformGradients(X_WS);
+  std::unique_ptr<std::vector<Vector3<T>>> grad_eS_W;
+  if (include_pressure_gradients) {
+    grad_eS_W = std::make_unique<std::vector<Vector3<T>>>();
+    grad_eS_W->reserve(grad_eS_S.size());
+    for (const auto& grad_eSi_S : grad_eS_S) {
+      grad_eS_W->emplace_back(X_WS.rotation() * grad_eSi_S);
+    }
+  }
 
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
-                                             std::move(e_SR));
+                                             std::move(e_SR),
+                                             std::move(grad_eS_W), nullptr);
 }
 
 /* A variant of ComputeContactSurfaceFromSoftVolumeRigidSurface but with
@@ -493,7 +578,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
     const SurfaceMesh<T>& mesh_R,
     const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_R,
-    const math::RigidTransform<T>& X_WR) {
+    const math::RigidTransform<T>& X_WR,
+    bool include_pressure_gradients) {
   // TODO(SeanCurtis-TRI): This function is insufficiently templated. Generally,
   //  there are three types of scalars: the pose scalar, the mesh field *value*
   //  scalar, and the mesh vertex-position scalar. However, short term, it is
@@ -513,8 +599,14 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   std::unique_ptr<SurfaceMesh<T>> surface_SR;
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_SR;
 
+  std::vector<Vector3<T>> grad_eS_S{0};
+  std::vector<Vector3<T>>* grad_eS_S_ptr{};
+  if (include_pressure_gradients) {
+    grad_eS_S_ptr = &grad_eS_S;
+  }
+
   SurfaceVolumeIntersector<T>().SampleVolumeFieldOnSurface(
-      field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR, &e_SR);
+      field_S, bvh_S, mesh_R, bvh_R, X_SR, &surface_SR, &e_SR, grad_eS_S_ptr);
 
   if (surface_SR == nullptr) return nullptr;
 
@@ -525,13 +617,22 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
   // Transform the mesh from the S frame to the world frame.
   surface_SR->TransformVertices(X_WS);
   e_SR->TransformGradients(X_WS);
+  std::unique_ptr<std::vector<Vector3<T>>> grad_eS_W;
+  if (include_pressure_gradients) {
+    grad_eS_W = std::make_unique<std::vector<Vector3<T>>>();
+    grad_eS_W->reserve(grad_eS_S.size());
+    for (const auto& grad_eSi_S : grad_eS_S) {
+      grad_eS_W->emplace_back(X_WS.rotation() * grad_eSi_S);
+    }
+  }
 
   // The contact surface is documented as having the normals pointing *out* of
   // the second surface and into the first. This mesh intersection creates a
   // surface mesh with normals pointing out of the rigid surface, so we make
   // sure the ids are ordered so that the rigid is the second id.
   return std::make_unique<ContactSurface<T>>(id_S, id_R, std::move(surface_SR),
-                                             std::move(e_SR));
+                                             std::move(e_SR),
+                                             std::move(grad_eS_W), nullptr);
 }
 
 template class SurfaceVolumeIntersector<double>;
@@ -546,7 +647,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<double, double>& field_S,
     const math::RigidTransform<double>& X_WS, const GeometryId id_R,
     const SurfaceMesh<double>& mesh_R,
-    const math::RigidTransform<double>& X_WR);
+    const math::RigidTransform<double>& X_WR, bool);
 
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
@@ -555,7 +656,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<double>& X_WS, const GeometryId id_R,
     const SurfaceMesh<double>& mesh_R,
     const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<double>& X_WR);
+    const math::RigidTransform<double>& X_WR, bool);
 
 template std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
@@ -563,7 +664,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const VolumeMeshField<AutoDiffXd, AutoDiffXd>& field_S,
     const math::RigidTransform<AutoDiffXd>& X_WS, const GeometryId id_R,
     const SurfaceMesh<AutoDiffXd>& mesh_R,
-    const math::RigidTransform<AutoDiffXd>& X_WR);
+    const math::RigidTransform<AutoDiffXd>& X_WR, bool);
 
 // NOTE: This is a short-term hack to allow ProximityEngine to compile when
 // invoking this method. There are currently a host of issues preventing us from
@@ -574,7 +675,7 @@ std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshField<double, double>&,
     const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&) {
+    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&, bool) {
   throw std::logic_error(
       "AutoDiff-valued ContactSurface calculation between meshes is not"
       "currently supported");
@@ -587,7 +688,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<AutoDiffXd>&, const GeometryId,
     const SurfaceMesh<double>&,
     const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&) {
+    const math::RigidTransform<AutoDiffXd>&, bool) {
   throw std::logic_error(
       "AutoDiff-valued ContactSurface calculation between meshes is not"
       "currently supported");

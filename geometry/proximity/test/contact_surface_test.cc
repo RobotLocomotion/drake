@@ -41,8 +41,11 @@ class ContactSurfaceTester {
 
 namespace {
 
+using Eigen::Vector3d;
 using std::make_unique;
 using std::move;
+using std::unique_ptr;
+using std::vector;
 
 // TODO(DamrongGuoy): Consider splitting the test into several smaller tests
 //  including a separated mesh test.
@@ -65,7 +68,7 @@ GTEST_TEST(ContactSurfaceTest, TestContactSurfaceAutoDiffXd) {
 }
 
 template <typename T>
-std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
+unique_ptr<SurfaceMesh<T>> GenerateMesh() {
 // A simple mesh for a contact surface. It consists of two right
 // triangles that make a square.
 //
@@ -84,11 +87,11 @@ std::unique_ptr<SurfaceMesh<T>> GenerateMesh() {
 //   v0(0,0,0)  v1(1,0,0)
 //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
-  std::vector<SurfaceFace> faces;
+  vector<SurfaceFace> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
   const Vector3<T> vertex_data[4] = {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
-  std::vector<SurfaceVertex<T>> vertices;
+  vector<SurfaceVertex<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh =
       make_unique<SurfaceMesh<T>>(move(faces), move(vertices));
@@ -110,7 +113,7 @@ ContactSurface<T> TestContactSurface() {
   const T e1{1.};
   const T e2{2.};
   const T e3{3.};
-  std::vector<T> e_values = {e0, e1, e2, e3};
+  vector<T> e_values = {e0, e1, e2, e3};
   auto e_field = make_unique<SurfaceMeshFieldLinear<T, T>>(
       "e", move(e_values), surface_mesh.get());
 
@@ -139,6 +142,116 @@ ContactSurface<T> TestContactSurface() {
   }
 
   return contact_surface;
+}
+
+// Tests the ContactSurface with constituent gradients: construction, successful
+//  reversal, access, etc.
+GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
+  using Index = SurfaceMesh<double>::ElementIndex;
+
+  const auto id_M = GeometryId::get_new_id();
+  const auto id_N = GeometryId::get_new_id();
+  ASSERT_LT(id_M, id_N);
+
+  unique_ptr<SurfaceMesh<double>> surface_mesh = GenerateMesh<double>();
+  auto make_e_field = [](SurfaceMesh<double>* mesh) {
+    vector<double> e_values{0, 1, 2, 3};
+    return make_unique<SurfaceMeshFieldLinear<double, double>>(
+        "e", move(e_values), mesh, false /* calc_gradient */);
+  };
+  vector<Vector3d> grad_e;
+  for (int i = 0; i < surface_mesh->num_elements(); ++i) {
+    grad_e.push_back(Vector3d(i, i, i));
+  }
+
+  {
+    // Case: Neither constituent gradient field is defined.
+    const ContactSurface<double> surface(
+        id_M, id_N, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), nullptr, nullptr);
+    EXPECT_FALSE(surface.HasGradE_M());
+    EXPECT_THROW(surface.EvaluateGradE_M_W(Index(1)), std::runtime_error);
+    EXPECT_FALSE(surface.HasGradE_N());
+    EXPECT_THROW(surface.EvaluateGradE_N_W(Index(1)), std::runtime_error);
+  }
+
+  {
+    // Case: Only the first id (M) has gradient.
+    const ContactSurface<double> surface(
+        id_M, id_N, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
+        nullptr);
+    EXPECT_TRUE(surface.HasGradE_M());
+    EXPECT_EQ(surface.EvaluateGradE_M_W(Index(1)), grad_e[1]);
+    EXPECT_FALSE(surface.HasGradE_N());
+    EXPECT_THROW(surface.EvaluateGradE_N_W(Index(1)), std::runtime_error);
+  }
+
+  {
+    // Case: Only the first id (N) has gradient; but because N > M, things get
+    // swapped.
+    const ContactSurface<double> surface(
+        id_N, id_M, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
+        nullptr);
+    EXPECT_FALSE(surface.HasGradE_M());
+    EXPECT_THROW(surface.EvaluateGradE_M_W(Index(1)), std::runtime_error);
+    EXPECT_TRUE(surface.HasGradE_N());
+    EXPECT_EQ(surface.EvaluateGradE_N_W(Index(1)), grad_e[1]);
+  }
+
+  {
+    // Case: Only the second id (N) has gradient.
+    const ContactSurface<double> surface(
+        id_M, id_N, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), nullptr,
+        make_unique<vector<Vector3d>>(grad_e));
+    EXPECT_FALSE(surface.HasGradE_M());
+    EXPECT_THROW(surface.EvaluateGradE_M_W(Index(1)), std::runtime_error);
+    EXPECT_TRUE(surface.HasGradE_N());
+    EXPECT_EQ(surface.EvaluateGradE_N_W(Index(1)), grad_e[1]);
+  }
+
+  {
+    // Case: Only the second id (M) has gradient; but because N > M, things get
+    // swapped.
+    const ContactSurface<double> surface(
+        id_N, id_M, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), nullptr,
+        make_unique<vector<Vector3d>>(grad_e));
+    EXPECT_TRUE(surface.HasGradE_M());
+    EXPECT_EQ(surface.EvaluateGradE_M_W(Index(1)), grad_e[1]);
+    EXPECT_FALSE(surface.HasGradE_N());
+    EXPECT_THROW(surface.EvaluateGradE_N_W(Index(1)), std::runtime_error);
+  }
+
+  vector<Vector3d> grad_e2;
+  for (int i = 0; i < surface_mesh->num_elements(); ++i) {
+    grad_e2.push_back(Vector3d(i + 1, i + 1, i + 1));
+  }
+  {
+    // Case: Both have gradients.
+    const ContactSurface<double> surface(
+        id_M, id_N, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
+        make_unique<vector<Vector3d>>(grad_e2));
+    EXPECT_TRUE(surface.HasGradE_M());
+    EXPECT_EQ(surface.EvaluateGradE_M_W(Index(1)), grad_e[1]);
+    EXPECT_TRUE(surface.HasGradE_N());
+    EXPECT_EQ(surface.EvaluateGradE_N_W(Index(1)), grad_e2[1]);
+  }
+
+  {
+    // Case: Both have gradients, but N > M causes a swap.
+    const ContactSurface<double> surface(
+        id_N, id_M, make_unique<SurfaceMesh<double>>(*surface_mesh),
+        make_e_field(surface_mesh.get()), make_unique<vector<Vector3d>>(grad_e),
+        make_unique<vector<Vector3d>>(grad_e2));
+    EXPECT_TRUE(surface.HasGradE_M());
+    EXPECT_EQ(surface.EvaluateGradE_M_W(Index(1)), grad_e2[1]);
+    EXPECT_TRUE(surface.HasGradE_N());
+    EXPECT_EQ(surface.EvaluateGradE_N_W(Index(1)), grad_e[1]);
+  }
 }
 
 // Tests copy constructor of ContactSurface. We use `double` as a
@@ -187,7 +300,7 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
                    &surface.e_MN());
   DRAKE_DEMAND(field);
   // Then, copy the field values and change it.
-  std::vector<double> field2_values(field->values());
+  vector<double> field2_values(field->values());
   field2_values.at(0) += 2.0;
   auto field2 = make_unique<SurfaceMeshFieldLinear<double, double>>(
                     field->name(), move(field2_values), mesh2.get());
@@ -206,7 +319,7 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   // TODO(DamrongGuoy): Remove `original_tester` when ContactSurface allows
   //  direct access to e_MN.
   const ContactSurfaceTester<double> original_tester(original);
-  std::vector<double> e_MN_values = original_tester.e_MN().values();
+  vector<double> e_MN_values = original_tester.e_MN().values();
 
   // Create id_M after id_N, so id_M > id_N. This condition will trigger
   // SwapMAndN in the constructor of ContactSurface.

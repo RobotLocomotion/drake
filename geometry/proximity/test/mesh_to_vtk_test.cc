@@ -76,7 +76,7 @@ unique_ptr<ContactSurface<double>> BoxContactSurface() {
 
   return ComputeContactSurfaceFromSoftVolumeRigidSurface(
       GeometryId::get_new_id(), soft_pressure, X_WS,
-      GeometryId::get_new_id(), rigid_mesh, X_WR);
+      GeometryId::get_new_id(), rigid_mesh, X_WR, false);
 }
 
 GTEST_TEST(MeshToVtkTest, BoxContactSurfacePressure) {

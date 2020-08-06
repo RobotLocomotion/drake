@@ -280,7 +280,7 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, WithoutBVH)
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
   for (auto _ : state) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, mesh_R_, X_SR_, &surface_SR, &e_SR);
+        field_S_, mesh_R_, X_SR_, &surface_SR, &e_SR, nullptr);
   }
   RecordContactSurfaceResult(surface_SR.get(), "WithoutBVH", state);
 }
@@ -314,7 +314,7 @@ BENCHMARK_DEFINE_F(MeshIntersectionBenchmark, ___WithBVH)
   std::unique_ptr<SurfaceMeshFieldLinear<double, double>> e_SR;
   for (auto _ : state) {
     SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR);
+        field_S_, bvh_S, mesh_R_, bvh_R, X_SR_, &surface_SR, &e_SR, nullptr);
   }
   RecordContactSurfaceResult(surface_SR.get(), "___WithBVH", state);
 }

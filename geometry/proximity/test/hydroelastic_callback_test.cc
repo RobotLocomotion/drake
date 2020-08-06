@@ -91,7 +91,7 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
                                            id_B, rigid_properties());
 
   vector<ContactSurface<AutoDiffXd>> surfaces;
-  CallbackData<AutoDiffXd> data(&collision_filter, &X_WGs,
+  CallbackData<AutoDiffXd> data(false, &collision_filter, &X_WGs,
                                 &hydroelastic_geometries, &surfaces);
   DRAKE_EXPECT_THROWS_MESSAGE(
       Callback<AutoDiffXd>(&object_A, &object_B, &data), std::logic_error,
@@ -100,7 +100,7 @@ GTEST_TEST(HydroelasticCallbackAutodiff, AutoDiffBlanketFailure) {
 
   vector<PenetrationAsPointPair<double>> point_pairs;
   CallbackWithFallbackData<AutoDiffXd> fallback_data{
-      {&collision_filter, &X_WGs, &hydroelastic_geometries, &surfaces},
+      {false, &collision_filter, &X_WGs, &hydroelastic_geometries, &surfaces},
       &point_pairs};
   DRAKE_EXPECT_THROWS_MESSAGE(
       CallbackWithFallback<AutoDiffXd>(&object_A, &object_B, &fallback_data),
@@ -121,13 +121,14 @@ enum class ShapeType {
 template <typename T>
 class TestScene {
  public:
-  explicit TestScene(ShapeType A_shape_type, ShapeType B_shape_type)
+  explicit TestScene(ShapeType A_shape_type, ShapeType B_shape_type,
+                     bool request_gradients = false)
       : id_A_{GeometryId::get_new_id()},
         id_B_{GeometryId::get_new_id()},
         shape_A_type_(A_shape_type),
         shape_B_type_(B_shape_type),
-        data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
-              &surfaces_} {
+        data_{request_gradients, &collision_filter_, &X_WGs_,
+              &hydroelastic_geometries_, &surfaces_} {
     X_WGs_[id_A_] = RigidTransform<T>();
     X_WGs_[id_B_] = RigidTransform<T>();
   }
@@ -301,7 +302,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B, false);
     EXPECT_NE(surface, nullptr);
   }
 
@@ -312,7 +313,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidMesh) {
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B, false);
     EXPECT_EQ(surface, nullptr);
   }
 }
@@ -337,7 +338,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B, false);
     EXPECT_NE(surface, nullptr);
   }
 
@@ -348,7 +349,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftMeshRigidHalfSpace) {
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_A), X_WA, id_A,
-        geometries.rigid_geometry(id_B), X_WB, id_B);
+        geometries.rigid_geometry(id_B), X_WB, id_B, false);
     EXPECT_EQ(surface, nullptr);
   }
 }
@@ -372,7 +373,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_B), X_WB, id_A,
-        geometries.rigid_geometry(id_A), X_WA, id_B);
+        geometries.rigid_geometry(id_A), X_WA, id_B, false);
     EXPECT_NE(surface, nullptr);
   }
 
@@ -383,7 +384,7 @@ TYPED_TEST(DispatchRigidSoftCalculationTests, SoftHalfSpaceRigidMesh) {
 
     unique_ptr<ContactSurface<T>> surface = DispatchRigidSoftCalculation(
         geometries.soft_geometry(id_B), X_WB, id_A,
-        geometries.rigid_geometry(id_A), X_WA, id_B);
+        geometries.rigid_geometry(id_A), X_WA, id_B, false);
     EXPECT_EQ(surface, nullptr);
   }
 }
@@ -510,6 +511,27 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, HandleSoftMeshRigidHalfspace) {
   EXPECT_EQ(scene.surfaces().size(), 1u);
 }
 
+// Confirms that if the data contains a request for constituent pressure
+// gradients the results include it.
+TYPED_TEST(MaybeCalcContactSurfaceTests, RespectPressureGradientRequest) {
+  using T = TypeParam;
+
+  for (const bool request_gradients : {true, false}) {
+    TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere,
+                       request_gradients};
+    scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
+
+    CalcContactSurfaceResult result = MaybeCalcContactSurface<T>(
+        &scene.shape_A(), &scene.shape_B(), &scene.data());
+    EXPECT_EQ(result, CalcContactSurfaceResult::kCalculated);
+    ASSERT_EQ(scene.surfaces().size(), 1u);
+    EXPECT_FALSE(scene.surfaces()[0].HasGradE_M());
+    // We've configured the second geometry to be soft, and by construction
+    // the second geometry will be geometry N.
+    EXPECT_EQ(scene.surfaces()[0].HasGradE_N(), request_gradients);
+  }
+}
+
 TYPED_TEST_SUITE(StrictHydroelasticCallbackTyped, ScalarTypes);
 
 // Test infrastructure for the strict hydroelastic callback for arbitrary
@@ -615,6 +637,26 @@ TYPED_TEST(StrictHydroelasticCallbackTyped, ValidPairProducesResult) {
   DRAKE_EXPECT_NO_THROW(
       Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()));
   EXPECT_EQ(scene.surfaces().size(), 1u);
+}
+
+// Confirms that if the data contains a request for constituent pressure
+// gradients the results include it.
+TYPED_TEST(StrictHydroelasticCallbackTyped, RespectPressureGradientRequest) {
+  using T = TypeParam;
+
+  for (const bool request_gradients : {true, false}) {
+    TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere,
+                       request_gradients};
+    scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
+
+    DRAKE_EXPECT_NO_THROW(
+        Callback<T>(&scene.shape_A(), &scene.shape_B(), &scene.data()));
+    ASSERT_EQ(scene.surfaces().size(), 1u);
+    EXPECT_FALSE(scene.surfaces()[0].HasGradE_M());
+    // We've configured the second geometry to be soft, and by construction
+    // the second geometry will be geometry N.
+    EXPECT_EQ(scene.surfaces()[0].HasGradE_N(), request_gradients);
+  }
 }
 
 TYPED_TEST_SUITE(HydroelasticCallbackFallbackTyped, ScalarTypes);
@@ -723,6 +765,30 @@ TYPED_TEST(HydroelasticCallbackFallbackTyped, ValidPairProducesResult) {
       CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
   EXPECT_EQ(scene.surfaces().size(), 1u);
   EXPECT_EQ(point_pairs.size(), 0u);
+}
+
+// Confirms that if the data contains a request for constituent pressure
+// gradients the results include it.
+TYPED_TEST(HydroelasticCallbackFallbackTyped, RespectPressureGradientRequest) {
+  using T = TypeParam;
+
+  for (const bool request_gradients : {true, false}) {
+    TestScene<T> scene{ShapeType::kSphere, ShapeType::kSphere,
+                       request_gradients};
+    scene.ConfigureScene(HydroelasticType::kRigid, HydroelasticType::kSoft);
+
+    vector<PenetrationAsPointPair<T>> point_pairs;
+    CallbackWithFallbackData<T> data{scene.data(), &point_pairs};
+
+    DRAKE_EXPECT_NO_THROW(
+        CallbackWithFallback<T>(&scene.shape_A(), &scene.shape_B(), &data));
+    EXPECT_EQ(point_pairs.size(), 0u);
+    ASSERT_EQ(scene.surfaces().size(), 1u);
+    EXPECT_FALSE(scene.surfaces()[0].HasGradE_M());
+    // We've configured the second geometry to be soft, and by construction
+    // the second geometry will be geometry N.
+    EXPECT_EQ(scene.surfaces()[0].HasGradE_N(), request_gradients);
+  }
 }
 
 }  // namespace

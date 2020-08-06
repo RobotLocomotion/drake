@@ -222,6 +222,7 @@ class ProximityEngine {
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      bool include_pressure_gradients,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
       const;
 
@@ -229,6 +230,7 @@ class ProximityEngine {
    This includes `X_WGs`, the current poses of all geometries in World in the
    current scalar type, keyed on each geometry's GeometryId.  */
   void ComputeContactSurfacesWithFallback(
+      bool include_pressure_gradients,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<double>>* point_pairs) const;

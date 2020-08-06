@@ -885,6 +885,7 @@ TEST_F(SliceTetWithPlaneTest, NoDoubleCounting) {
   4. Confirm that the surface mesh field references the surface mesh in the
      resultant ContactSurface.
   5. Mesh normals point out of plane and into soft mesh.
+  6. Report the pressure gradient of the soft mesh on the contact surface.
  These tests are done in a single, non-trivial frame F. The robustness of the
  numerics is covered in the SliceTetWithPlaneTest and this just needs to
  account for data tracking. */
@@ -943,7 +944,7 @@ TEST_F(ComputeContactSurfaceTest, NoIntersectionReturnsNullPtr) {
     const Vector3d p_FB = X_FM_.translation() + 1.5 * Mz_F;
     const Plane<double> plane_F{Mz_F, p_FB};
     EXPECT_EQ(ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_,
-                                            plane_F, both_tets_, X_WF_),
+                                            plane_F, both_tets_, X_WF_, false),
               nullptr);
   }
 
@@ -953,7 +954,7 @@ TEST_F(ComputeContactSurfaceTest, NoIntersectionReturnsNullPtr) {
     const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
     const Plane<double> plane_F{Mz_F, p_FB};
     EXPECT_EQ(ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_,
-                                            plane_F, only_tet_1_, X_WF_),
+                                            plane_F, only_tet_1_, X_WF_, false),
               nullptr);
   }
 }
@@ -970,7 +971,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   // Passing in all tet indices produces the full intersection: 6 triangles.
   unique_ptr<ContactSurface<double>> contact_surface =
       ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                    both_tets_, X_WF_);
+                                    both_tets_, X_WF_, false);
   ASSERT_NE(contact_surface, nullptr);
   EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
   EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
@@ -978,7 +979,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
   // Passing just one or the other produces only one tet's worth of triangles.
   auto contact_surface_0 =
       ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                    only_tet_0_, X_WF_);
+                                    only_tet_0_, X_WF_, false);
   ASSERT_NE(contact_surface_0, nullptr);
   EXPECT_EQ(contact_surface_0->mesh_W().num_elements(), 3);
   EXPECT_EQ(contact_surface_0->mesh_W().num_vertices(), 4);
@@ -994,7 +995,7 @@ TEST_F(ComputeContactSurfaceTest, AllTetsAreConsidered) {
 
   auto contact_surface_1 =
       ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                    only_tet_1_, X_WF_);
+                                    only_tet_1_, X_WF_, false);
   ASSERT_NE(contact_surface_1, nullptr);
   EXPECT_EQ(contact_surface_1->mesh_W().num_elements(), 3);
   EXPECT_EQ(contact_surface_1->mesh_W().num_vertices(), 4);
@@ -1040,7 +1041,7 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // Passing in all tet indices produces the full intersection: 6 triangles.
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
-                                      both_tets_, X_WF_);
+                                      both_tets_, X_WF_, false);
     ASSERT_NE(contact_surface, nullptr);
     const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
     EXPECT_EQ(contact_mesh_W.num_elements(), 6);
@@ -1071,7 +1072,7 @@ TEST_F(ComputeContactSurfaceTest, DuplicatesHandledProperly) {
     // Passing in all tet indices produces the full intersection: 6 triangles.
     unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurface<double>(mesh_id_, dupe_field_F, plane_id_,
-                                      plane_F, both_tets_, X_WF_);
+                                      plane_F, both_tets_, X_WF_, false);
     ASSERT_NE(contact_surface, nullptr);
     const SurfaceMesh<double>& contact_mesh_W = contact_surface->mesh_W();
     EXPECT_EQ(contact_mesh_W.num_elements(), 6);
@@ -1101,7 +1102,7 @@ TEST_F(ComputeContactSurfaceTest, ContactSurfaceFieldReferencesMesh) {
   const Vector3d p_FB = X_FM_.translation() + 0.5 * Mz_F;
   const Plane<double> plane_F{Mz_F, p_FB};
   unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
-      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_);
+      mesh_id_, *field_F_, plane_id_, plane_F, both_tets_, X_WF_, false);
   const auto& mesh_W = contact->mesh_W();
   const auto& field_W = contact->e_MN();
   EXPECT_EQ(&mesh_W, &field_W.mesh());
@@ -1122,7 +1123,7 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
                                            {plane_id_, mesh_id_}};
   for (const auto& [id_A, id_B] : ids) {
     unique_ptr<ContactSurface<double>> contact = ComputeContactSurface<double>(
-        id_A, *field_F_, id_B, plane_F, both_tets_, X_WF_);
+        id_A, *field_F_, id_B, plane_F, both_tets_, X_WF_, false);
 
     const double normal_sign = contact->id_N() == id_B ? 1.0 : -1.0;
     const Vector3d nhat_W = X_WF_.rotation() * (normal_sign * Mz_F);
@@ -1132,6 +1133,68 @@ TEST_F(ComputeContactSurfaceTest, NormalsInPlaneDirection) {
     const SurfaceMesh<double>& mesh_W = contact->mesh_W();
     for (SurfaceFaceIndex f{0}; f < mesh_W.num_faces(); ++f) {
       EXPECT_TRUE(CompareMatrices(mesh_W.face_normal(f), nhat_W, kEps));
+    }
+  }
+}
+
+/* Tests responsibility 6: when requested, the gradient of the mesh's pressure
+ field is supplied in the resulting contact surface. We make sure there's
+ contact across multiple tetrahedra so that we can confirm that unique gradients
+ are reported.  */
+TEST_F(ComputeContactSurfaceTest, GradientConstituentPressure) {
+  ASSERT_LT(mesh_id_, plane_id_);
+
+  const Vector3d& Mx_F = X_FM_.rotation().col(0);
+  // The plane's normal aligns with Mx; slices through both tets.
+  const Vector3d p_FB = X_FM_.translation() + 0.5 * Mx_F;
+  const Plane<double> plane_F{Mx_F, p_FB};
+
+  const Vector3d& grad_eMesh_W_expected0 =
+      X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(0));
+  const Vector3d& grad_eMesh_W_expected1 =
+      X_WF_.rotation() * field_F_->EvaluateGradient(VolumeElementIndex(1));
+
+  {
+    // Case: plane slices through both tets. The resulting surface should have
+    // six triangles. The gradient for pressure field on M should be defined, N
+    // is not. The gradient reported on the first three triangles is that of tet
+    // 0, and for the last three should be tet 1.
+    unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(mesh_id_, *field_F_, plane_id_, plane_F,
+                                      both_tets_, X_WF_, true);
+    ASSERT_NE(contact_surface, nullptr);
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+    EXPECT_TRUE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
+    for (SurfaceFaceIndex f(0); f < 3; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                  grad_eMesh_W_expected0));
+    }
+    for (SurfaceFaceIndex f(3); f < 6; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                  grad_eMesh_W_expected1));
+    }
+  }
+
+  {
+    // Case: Reversing the ids will swap M and N. Otherwise all results should
+    // be the same.
+     unique_ptr<ContactSurface<double>> contact_surface =
+        ComputeContactSurface<double>(plane_id_, *field_F_, mesh_id_, plane_F,
+                                      both_tets_, X_WF_, true);
+    ASSERT_NE(contact_surface, nullptr);
+    EXPECT_EQ(contact_surface->mesh_W().num_elements(), 6);
+    EXPECT_EQ(contact_surface->mesh_W().num_vertices(), 6);
+    EXPECT_FALSE(contact_surface->HasGradE_M());
+    EXPECT_TRUE(contact_surface->HasGradE_N());
+    for (SurfaceFaceIndex f(0); f < 3; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                  grad_eMesh_W_expected0));
+    }
+    for (SurfaceFaceIndex f(3); f < 6; ++f) {
+      EXPECT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                  grad_eMesh_W_expected1));
     }
   }
 }
@@ -1173,7 +1236,9 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     // on previous tests to prove correctness. We're just looking for positive
     // indicators.
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WR);
+        id_A, field_F, bvh_F, X_WS, id_B, X_WR, false);
+    EXPECT_FALSE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
     ASSERT_NE(contact_surface, nullptr);
     // We exploit the knowledge that id_M < id_N and id_A < id_B.
     ASSERT_LT(id_A, id_B);
@@ -1192,6 +1257,18 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     EXPECT_NEAR(p_SV(0), 0.5, kEps);
   }
 
+  {
+    // Case 1a: request gradients of constituent pressure fields and confirm
+    // that one is reported. For this test, it is sufficient to test for
+    // existence; the details have been tested elsewhere.
+    auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+        id_A, field_F, bvh_F, X_WS, id_B, X_WR, true);
+    // We expect the gradients for geometry M because the id_A < id_B.
+    ASSERT_LT(id_A, id_B);
+    EXPECT_TRUE(contact_surface->HasGradE_M());
+    EXPECT_FALSE(contact_surface->HasGradE_N());
+  }
+
   // Subsequent tests will not test all the properties of the resulting contact
   // surface. We assume that the initial test indicates the values come through.
 
@@ -1199,7 +1276,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     // Case 2: Move the mesh out of intersection.
     const RigidTransformd X_SM{Vector3d{-0.51, 0, 0}};
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR);
+        id_A, field_F, bvh_F, X_WS * X_SM, id_B, X_WR, false);
     ASSERT_EQ(contact_surface, nullptr);
   }
 
@@ -1207,14 +1284,14 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     // Case 3: Move the plane out of intersection.
     const RigidTransformd X_SR2{X_SR.rotation(), Vector3d{1.01, 0, 0}};
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2);
+        id_A, field_F, bvh_F, X_WS, id_B, X_WS * X_SR2, false);
     ASSERT_EQ(contact_surface, nullptr);
   }
 
   {
     // Case 4: Reverse GeometryIds.
     auto contact_surface = ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
-        id_B, field_F, bvh_F, X_WS, id_A, X_WR);
+        id_B, field_F, bvh_F, X_WS, id_A, X_WR, false);
     ASSERT_NE(contact_surface, nullptr);
     EXPECT_EQ(contact_surface->id_M(), id_A);
     EXPECT_EQ(contact_surface->id_N(), id_B);
@@ -1240,8 +1317,8 @@ GTEST_TEST(MeshPlaneIntersectionTest, AutoDiffThrows) {
   const RigidTransform<AutoDiffXd> X_WR;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(id_A, field_F, bvh_F,
-                                                        X_WS, id_B, X_WR),
+      ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
+          id_A, field_F, bvh_F, X_WS, id_B, X_WR, false),
       std::logic_error,
       "AutoDiff-valued ContactSurface calculations are not currently "
       "supported");
