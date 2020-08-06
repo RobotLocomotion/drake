@@ -2782,7 +2782,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return Abias_WFp.get_coeffs();
   }
 
-  /// For one point Bp affixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
+  /// For one point Bp fixed/welded to a frame B, calculates J𝑠_V_ABp, Bp's
   /// spatial velocity Jacobian in frame A with respect to "speeds" 𝑠.
   /// <pre>
   ///      J𝑠_V_ABp ≜ [ ∂(V_ABp)/∂𝑠₁,  ...  ∂(V_ABp)/∂𝑠ₙ ]    (n is j or k)
@@ -2797,14 +2797,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// JacobianWrtVariable::kV, indicating whether the Jacobian `J𝑠_V_ABp` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
-  /// @param[in] frame_B The frame on which point Bp is affixed/welded.
+  /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B A position vector from Bo (frame_B's origin) to point
-  /// Bp (regarded as affixed/welded to B), expressed in frame_B.
+  /// Bp (regarded as fixed/welded to B), expressed in frame_B.
   /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
   /// Note: It is natural to wonder why there is no parameter p_AoAp_A (similar
   /// to the parameter p_BoBp_B for frame_B).  There is no need for p_AoAp_A
   /// because Bp's velocity in A is defined as the derivative in frame A of
-  /// Bp's position vector from _any_ point affixed to A.
+  /// Bp's position vector from _any_ point fixed to A.
   /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
   /// the frame in which the Jacobian `J𝑠_V_ABp` is expressed on output.
   /// @param[out] J𝑠_V_ABp_E Point Bp's spatial velocity Jacobian in frame A
@@ -2819,9 +2819,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///     J𝑠_v_ABp_E = J𝑠_V_ABp_E.bottomRows<3>();
   /// </pre>
   /// Note: Consider CalcJacobianTranslationalVelocity() for multiple points
-  /// affixed to frame B and consider CalcJacobianAngularVelocity() to calculate
+  /// fixed to frame B and consider CalcJacobianAngularVelocity() to calculate
   /// frame B's angular velocity Jacobian.
-  /// @throws std::exception if `J𝑠_V_ABi_E` is nullptr or not sized `3*p x n`.
+  /// @throws std::exception if `J𝑠_V_ABp_E` is nullptr or not sized `6 x n`.
   void CalcJacobianSpatialVelocity(const systems::Context<T>& context,
                                    JacobianWrtVariable with_respect_to,
                                    const Frame<T>& frame_B,
