@@ -11,7 +11,7 @@ Breaking changes since v0.21.0
 ------------------------------
 
 * drake::multibody::Joint gained a new pure virtual method do_set_default_positions (`#13757`_)
-* pydrake's deprecation infrastructure now must always be given a removal date, either as embedded in the message or via the new date= kwarg (`#13730`_)
+* pydrake's deprecation infrastructure now must always be given a removal date, either embedded in the message or via the new date= kwarg (`#13730`_)
 * Several stale forks of SDFormat models were removed from the Atlas example (`#13758`_)
 
 Changes since v0.21.0:
@@ -33,17 +33,16 @@ Mathematical Program
 
 New features
 
-* TBD Add examples on sum-of-squares (`#13719`_)
-* TBD Add two more examples on SOS optimization (`#13746`_, `#13759`_, `#13765`_)
-* TBD Fix a bug when customizing the quadratic cost (`#13752`_)
-* TBD MPResult::GetSolution also works for a polynomial (`#13748`_)
-* TBD Add symbolic ChebyshevPolynomial (`#13751`_)
-* TBD Add PolynomialBasisElement class, and an implementation of ChebyshevBasisElement (`#13796`_)
-* TBD Add GetKnownSolvers (`#13821`_)
+* Add GetKnownSolvers (`#13821`_)
+* Add three examples on sum-of-squares optimization (`#13719`_, `#13746`_, `#13759`_, `#13765`_)
+* Improve polynomial-related support:
+
+  * MathematicalProgramResult::GetSolution also works for a polynomial (`#13748`_)
+  * Add symbolic ChebyshevPolynomial, ChebyshevBasisElement, PolynomialBasisElement (`#13751`_, `#13796`_)
 
 Fixes
 
-* TBD
+* Fix a bug in the Autodiff QuadraticCost (`#13752`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -82,10 +81,6 @@ New features
 * Redirect drake's logs to the Python ``logging`` module instead of stderr (`#13568`_, `#13781`_)
 * Deprecation annotations may pass a date=YYYY-MM-DD kwarg (`#13730`_)
 
-Fixes
-
-* TBD
-
 Newly bound
 
 * pydrake.common.eigen_geometry.Quaternion.slerp (`#13810`_)
@@ -107,7 +102,9 @@ Build system and dependencies
 * Upgrade scs to latest release 2.1.2 (`#13789`_)
 * Upgrade styleguide latest commit (`#13804`_)
 * Do not install gl_renderer's private headers (`#13807`_)
-* TBD Prune unwanted dependencies and reorganize (`#13753`_, `#13827`_, `#13830`_)
+* Prune unwanted dependencies (`#13753`_, `#13827`_, `#13830`_)
+
+  * The install_prereqs script for source builds now offers a --without-test-only option to install only the dependencies needed to compile and install Drake, omitting dependencies only required for testing.
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
