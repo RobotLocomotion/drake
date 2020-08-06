@@ -67,15 +67,18 @@ class SurfaceVolumeIntersector {
        The sampled field values on the intersecting surface (samples to support
        a linear mesh field -- i.e., one per vertex). If no intersection exists,
        this will not change.
+   @param[out] grad_eM_Ms
+       The sampled gradient of the soft mesh pressure field (one sample per
+       triangle in `surface_MN_M`).
    @note
        The output surface mesh may have duplicate vertices.
    */
   void SampleVolumeFieldOnSurface(
       const VolumeMeshField<T, T>& volume_field_M,
-      const SurfaceMesh<T>& surface_N,
-      const math::RigidTransform<T>& X_MN,
+      const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+      std::vector<Vector3<T>>* grad_eM_Ms);
 
   /* A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
    reduce the number of element-pairs evaluated.  */
@@ -86,7 +89,8 @@ class SurfaceVolumeIntersector {
       const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+      std::vector<Vector3<T>>* grad_eM_Ms);
 
  private:
   /* Calculates the intersection point between an infinite straight line

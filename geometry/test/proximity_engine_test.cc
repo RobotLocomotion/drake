@@ -208,8 +208,8 @@ class ProximityEngineMeshes : public ::testing::Test {
   // configuration and compliant type.
   std::pair<GeometryId, RigidTransformd> AddShape(
       ProximityEngine<double>* engine, const Shape& shape, bool is_anchored,
-      bool is_soft) {
-    RigidTransformd X_WS = RigidTransformd::Identity();
+      bool is_soft, const Vector3d& p_S1S2_W) {
+    RigidTransformd X_WS = RigidTransformd(p_S1S2_W);
     const GeometryId id_S = GeometryId::get_new_id();
     // We'll mindlessly provide edge_length; even if the shape doesn't require
     // it.
@@ -230,17 +230,20 @@ class ProximityEngineMeshes : public ::testing::Test {
     return std::make_pair(id_S, X_WS);
   }
 
-  // Populates the world with two shapes with identity pose (assuming that that
-  // is a colliding configuration). Each shape can be anchored or dynamic and
-  // rigid or soft. Stores the geometry ids of the first and second shapes.
+  // Populates the world with two shapes. The second shape is translated such
+  // the amount p_S1S2_W and the returned transforms reflect that relationship.
+  // Each shape can be anchored or dynamic and rigid or soft. Stores the
+  // geometry ids of the first and second shapes.
   unordered_map<GeometryId, RigidTransformd> PopulateEngine(
       ProximityEngine<double>* engine, const Shape& shape1, bool anchored1,
-      bool soft1, const Shape& shape2, bool anchored2, bool soft2) {
+      bool soft1, const Shape& shape2, bool anchored2, bool soft2,
+      const Vector3d& p_S1S2_W = Vector3d(0, 0, 0)) {
     unordered_map<GeometryId, RigidTransformd> X_WGs;
     RigidTransformd X_WG;
-    std::tie(id1_, X_WG) = AddShape(engine, shape1, anchored1, soft1);
+    std::tie(id1_, X_WG) =
+        AddShape(engine, shape1, anchored1, soft1, Vector3d::Zero());
     X_WGs.insert({id1_, X_WG});
-    std::tie(id2_, X_WG) = AddShape(engine, shape2, anchored2, soft2);
+    std::tie(id2_, X_WG) = AddShape(engine, shape2, anchored2, soft2, p_S1S2_W);
     X_WGs.insert({id2_, X_WG});
     engine->UpdateWorldPoses(X_WGs);
     return X_WGs;
@@ -290,6 +293,141 @@ TEST_F(ProximityEngineMeshes, MeshComputeContactSurfacesOnly) {
   EXPECT_FALSE(engine.HasCollisions());
 }
 
+// There are two axes of geometry classification that control the result of
+// ComputeContactSurfaces: anchored/dynamic and mesh/primitive. For a geometry
+// pair, these classifications can combine in different ways. Each combination
+// depends on a *different* code path. Each code path must be tested:
+//
+//   1. dynamic primitive vs anchored primitive
+//   2. dynamic primitive vs dynamic primitive
+//   3. dynamic primitive vs anchored mesh
+//   4. dynamic primitive vs dynamic mesh
+//   5. dynamic mesh vs anchored primitive
+//   6. dynamic mesh vs anchored mesh (must throw)
+//   7. dynamic mesh vs dynamic mesh (must throw)
+//
+// 1. anchored * vs anchored * is never possible.
+// 2. * mesh vs * mesh (lines 6 & 7) must throw because we require contact
+//    between different compliance types, but we only support rigid meshes. This
+//    will change when we support soft compliance for arbitrary meshes.
+//
+// In principle, there is a *third* axis: compliance. However, only one value
+// along that axis *can* produce a ContactSurface: the two geometries must have
+// different compliance. We include that third axis in this struct so we can
+// also confirm the non-producing behaviors of having matching compliance.
+// This struct defines a geometry pair for testing encapsulating all *three*
+// dimensions: compliance (soft/rigid), anchored/dynamic, and mesh/primitive.
+struct ContactSurfacePair {
+  bool is_soft1{};
+  bool is_anchored1{};
+  const Shape* shape1{};
+  bool is_soft2{};
+  bool is_anchored2{};
+  const Shape* shape2{};
+  Vector3d p_S1S2_W;
+};
+
+std::ostream& operator<<(std::ostream& out, const ContactSurfacePair& pair) {
+  out << (pair.is_soft1 ? "soft" : "rigid") << ", "
+      << (pair.is_anchored1 ? "anchored" : "dynamic") << " "
+      << ShapeName(*pair.shape1).name() << " vs "
+      << (pair.is_soft2 ? "soft" : "rigid") << ", "
+      << (pair.is_anchored2 ? "anchored" : "dynamic") << " "
+      << ShapeName(*pair.shape2).name();
+  return out;
+}
+
+// Tests the ComputeContactSurfaces. The ProximityEngine largely relies on
+// hydroelastic::Callback functionality to do its work and that is tested
+// elsewhere. ProximityEngine::ComputeContactSurfaces has several unique
+// responsibilities:
+//   - Confirm that collision results are returned at all (implicitly tested
+//     for the "valid pairs").
+//   - Confirm that meshes can participate. Specifically:
+//     - rigid mesh-soft anything in contact produces a result. This includes
+//       any combination of anchored/dynamic except for (anchored, anchored).
+//     - soft *mesh*-anything throws (soft meshes are not supported at all).
+//   - Enforce that the results are well-ordered. This aspect is confirmed in
+//     the ComputeContactSurfacesResultOrdering test below.
+TEST_F(ProximityEngineMeshes, ComputeContactSurfaces) {
+  const bool anchored{true};
+  const bool soft{true};
+  const double radius = 0.2;
+  const Sphere sphere{radius};
+  const Mesh mesh{
+      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
+      1.0 /* scale */};
+
+  // The set of geometry pairs that should produce a single contact. For
+  // sphere-sphere contact, we want to make sure they aren't exactly on top of
+  // each other.
+  const Vector3d p_S0S1(1.5 * radius, 0, 0);
+  const Vector3d zero(0, 0, 0);
+
+  const std::vector<ContactSurfacePair> valid_pairs{
+      {// Dynamic primitive vs dynamic primitive.
+       {soft, !anchored, &sphere, !soft, !anchored, &sphere, p_S0S1},
+       // Dynamic primitive vs anchored primitive.
+       {soft, !anchored, &sphere, !soft, anchored, &sphere, p_S0S1},
+       // Dynamic primitive vs anchored mesh.
+       {soft, !anchored, &sphere, !soft, anchored, &mesh, zero},
+       // Dynamic primitive vs dynamic mesh.
+       {soft, !anchored, &sphere, !soft, !anchored, &mesh, zero},
+       // Anchored primitive vs dynamic mesh.
+       {soft, anchored, &sphere, !soft, !anchored, &mesh, zero}}};
+
+  for (const auto& contact_pair : valid_pairs) {
+    ProximityEngine<double> engine;
+    const auto X_WGs =
+        PopulateEngine(&engine, *contact_pair.shape1, contact_pair.is_anchored1,
+                       contact_pair.is_soft1, *contact_pair.shape2,
+                       contact_pair.is_anchored2, contact_pair.is_soft2,
+                       contact_pair.p_S1S2_W);
+
+    const auto surfaces = engine.ComputeContactSurfaces(X_WGs);
+    EXPECT_EQ(surfaces.size(), 1) << contact_pair;
+  }
+
+  // Note: it is not an error to declare a soft mesh; it will simply be ignored.
+  // However, when evaluating contact with that mesh, it will be classified as
+  // undefined and that will cause an exception to be thrown.
+  const std::vector<ContactSurfacePair> bad_pairs{
+      {// Dynamic primitive vs dynamic primitive - same compliance.
+       {soft, !anchored, &sphere, soft, !anchored, &sphere, p_S0S1},
+       {!soft, !anchored, &sphere, !soft, !anchored, &sphere, p_S0S1},
+       // Dynamic primitive vs anchored primitive - same compliance.
+       {soft, !anchored, &sphere, soft, anchored, &sphere, p_S0S1},
+       {!soft, !anchored, &sphere, !soft, anchored, &sphere, p_S0S1},
+       // Dynamic primitive vs anchored mesh - same compliance.
+       {!soft, !anchored, &sphere, !soft, anchored, &mesh, zero},
+       {soft, !anchored, &sphere, soft, anchored, &mesh, zero},
+       // Dynamic primitive vs dynamic mesh - same compliance.
+       {!soft, !anchored, &sphere, !soft, !anchored, &mesh, zero},
+       {soft, !anchored, &sphere, soft, !anchored, &mesh, zero},
+       // Dynamic mesh vs dynamic mesh - same and different compliance.
+       {soft, !anchored, &mesh, !soft, !anchored, &mesh, zero},
+       {soft, !anchored, &mesh, soft, !anchored, &mesh, zero},
+       {!soft, !anchored, &mesh, !soft, !anchored, &mesh, zero},
+       // Anchored primitive vs dynamic mesh - same compliance.
+       {!soft, anchored, &sphere, !soft, !anchored, &mesh, zero},
+       {soft, anchored, &sphere, soft, !anchored, &mesh, zero},
+       // Anchored mesh vs dynamic mesh - same and different compliance.
+       {soft, !anchored, &mesh, !soft, anchored, &mesh, zero},
+       {soft, !anchored, &mesh, soft, anchored, &mesh, zero},
+       {!soft, !anchored, &mesh, !soft, anchored, &mesh, zero}}};
+
+  for (const auto& contact_pair : bad_pairs) {
+    ProximityEngine<double> engine;
+    const auto X_WGs =
+        PopulateEngine(&engine, *contact_pair.shape1, contact_pair.is_anchored1,
+                       contact_pair.is_soft1, *contact_pair.shape2,
+                       contact_pair.is_anchored2, contact_pair.is_soft2,
+                       contact_pair.p_S1S2_W);
+    EXPECT_THROW(engine.ComputeContactSurfaces(X_WGs), std::logic_error)
+        << contact_pair;
+  }
+}
+
 // Tests the ComputeContactSurfacesWithFallback. The ProximityEngine largely
 // relies on the hydroelastic::Callback* functionality to do its work and those
 // are tested elsewhere. This function has several unique responsibilities:
@@ -305,7 +443,9 @@ TEST_F(ProximityEngineMeshes, MeshComputeContactSurfacesOnly) {
 //       - If it satisfies the strict hydroelastic functions's conditions
 //         (e.g., rigid-soft), it produces a single contact surface.
 //       - If it _doesn't_ satisfy the strict hydroelastic functions'
-//         conditions (e.g., same compliance types), it throw.
+//         conditions (e.g., same compliance types), it throws.
+//   - Enforce that the results are well-ordered. This aspect is confirmed in
+//     the ComputeContactSurfacesWithFallbackResultOrdering test below.
 // TODO(SeanCurtis-TRI): Update this test when soft meshes are supported.
 TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   const bool anchored{true};
@@ -314,8 +454,10 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
   const Mesh mesh{
       drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
       1.0 /* scale */};
-  // All anchored-dynamic configurations with at least one dynamic geometry.
-  // (Anchored-anchored is tested below.)
+
+  // For a (mesh, shape) pair, this enumerates all anchor/dynamic configurations
+  // with at least one dynamic mesh (false = anchored, true = dynamic).
+  // The anchored-anchored test is covered below.
   const std::vector<std::pair<bool, bool>> anchor_configurations{
       {false, false}, {false, true}, {true, false}};
 
@@ -336,18 +478,26 @@ TEST_F(ProximityEngineMeshes, ComputeContactSurfaceWithFallback) {
     }
   }
 
+  // TODO(SeanCurtis-TRI) The reasoning here is flawed. I could comment out
+  //  various lines in ProximityEngine::ComputeContactSurfacesWithFallback() and
+  //  this test will pass. There are various calls to collide() and FclCollide()
+  //  in that function. This test should have one variant for each of those
+  //  calls to guarantee that each one contributes contact. Reformulate this
+  //  test to match how ComputeContactSurface is tested.
+
   // Case: all dynamic-anchored permutations which don't satisfy hydroelastic
   // conditions should throw: this includes (rigid, rigid), (soft, soft),
   // (rigid, undefined), (soft, undefined) with at least one geometry in each
-  // pair a mesh). It should terminate on the strict hydroelastic criteria and
+  // pair a mesh. It should terminate on the strict hydroelastic criteria and
   // report that function's exception. We test only (rigid, rigid) for
   // (shape, mesh) and (mesh, mesh) geometries as a representative of those
   // other failure conditions with the following justifications:
   //    1. ProximityEngine (PE) doesn't generate those errors. Those errors
-  //       arise because PE explicitly calls strict hydroelastics on meshes. So,
-  //       if one of those conditions fails, all must fail. Thus, this one
-  //       case is evidence that the right function is being invoked and not
-  //       a test of what that function _does_.
+  //       arise because PE explicitly calls the hydroelastics callback on
+  //       meshes. We make sure that an exception is thrown for *one* of those
+  //       cases and rely on tests on the callback to handle all cases
+  //       correctly. This tests merely provides evidence that the right
+  //       callback is invoked.
   //    2. It is impossible to create a soft mesh, so that's a theoretical
   //       combination that isn't possible in practice. We could only get a
   //       rigid mesh and an undefined mesh.
