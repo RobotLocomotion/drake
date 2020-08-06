@@ -1835,8 +1835,8 @@ void MultibodyPlant<double>::CalcHydroelasticWithFallback(
     data->contact_surfaces.clear();
     data->point_pairs.clear();
 
-    query_object.ComputeContactSurfacesWithFallback(&data->contact_surfaces,
-                                                    &data->point_pairs);
+    query_object.ComputeContactSurfacesWithFallback(
+        false, &data->contact_surfaces, &data->point_pairs);
   }
 }
 

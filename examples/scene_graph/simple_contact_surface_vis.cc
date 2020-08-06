@@ -194,7 +194,8 @@ class ContactResultMaker final : public LeafSystem<double> {
     if (use_strict_hydro_) {
       surfaces = query_object.ComputeContactSurfaces();
     } else {
-      query_object.ComputeContactSurfacesWithFallback(&surfaces, &points);
+      query_object.ComputeContactSurfacesWithFallback(false, &surfaces,
+                                                      &points);
     }
     const int num_surfaces = static_cast<int>(surfaces.size());
     const int num_pairs = static_cast<int>(points.size());

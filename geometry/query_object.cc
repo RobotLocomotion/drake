@@ -104,16 +104,17 @@ bool QueryObject<T>::HasCollisions() const {
 
 template <typename T>
 std::vector<ContactSurface<T>>
-QueryObject<T>::ComputeContactSurfaces() const {
+QueryObject<T>::ComputeContactSurfaces(bool include_pressure_gradients) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeContactSurfaces();
+  return state.ComputeContactSurfaces(include_pressure_gradients);
 }
 
 template <typename T>
 void QueryObject<T>::ComputeContactSurfacesWithFallback(
+    bool include_pressure_gradients,
     std::vector<ContactSurface<T>>* surfaces,
     std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
   DRAKE_DEMAND(surfaces);
@@ -123,7 +124,8 @@ void QueryObject<T>::ComputeContactSurfacesWithFallback(
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  state.ComputeContactSurfacesWithFallback(surfaces, point_pairs);
+  state.ComputeContactSurfacesWithFallback(include_pressure_gradients, surfaces,
+                                           point_pairs);
 }
 
 template <typename T>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -146,6 +147,9 @@ class ContactSurface {
     e_MN_.reset(static_cast<SurfaceMeshFieldLinear<T, T>*>(
         surface.e_MN_->CloneAndSetMesh(mesh_W_.get()).release()));
 
+    grad_eM_W_ = surface.grad_eM_W_;
+    grad_eN_W_ = surface.grad_eN_W_;
+
     return *this;
   }
 
@@ -171,6 +175,42 @@ class ContactSurface {
         id_N_(id_N),
         mesh_W_(std::move(mesh_W)),
         e_MN_(std::move(e_MN)) {
+    if (id_N_ < id_M_) SwapMAndN();
+  }
+
+  /** Constructs a ContactSurface with the optional gradients of the constituent
+   scalar fields.
+   @param id_M         The id of the first geometry M.
+   @param id_N         The id of the second geometry N.
+   @param mesh_W       The surface mesh of the contact surface 𝕊ₘₙ between M
+                       and N. The mesh vertices are defined in the world frame.
+   @param e_MN         Represents the scalar field eₘₙ on the surface mesh.
+   @param grad_eM_W    ∇eₘ sampled once per face, expressed in the world frame.
+   @param grad_eN_W    ∇eₙ sampled once per face, expressed in the world frame.
+   @pre The face normals in `mesh_W` point *out of* geometry N and *into* M.
+   @pre If given, `grad_eM_W` and `grad_eN_W` must have as many entries as
+        `mesh_W` has faces.
+   @note If `id_M > id_N`, the labels will be swapped and the normals of the
+         mesh reversed (to maintain the documented invariants). Comparing the
+         input parameters with the members of the resulting %ContactSurface will
+         reveal if such a swap has occurred.
+   */
+  ContactSurface(GeometryId id_M, GeometryId id_N,
+                 std::unique_ptr<SurfaceMesh<T>> mesh_W,
+                 std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN,
+                 std::optional<std::vector<Vector3<T>>> grad_eM_W,
+                 std::optional<std::vector<Vector3<T>>> grad_eN_W)
+      : id_M_(id_M),
+        id_N_(id_N),
+        mesh_W_(std::move(mesh_W)),
+        e_MN_(std::move(e_MN)),
+        grad_eM_W_(std::move(grad_eM_W)),
+        grad_eN_W_(std::move(grad_eN_W)) {
+    // If defined the gradient values must map 1-to-1 onto elements.
+    DRAKE_THROW_UNLESS(!grad_eM_W_ || static_cast<int>(grad_eM_W_->size()) ==
+                                          mesh_W_->num_elements());
+    DRAKE_THROW_UNLESS(!grad_eN_W_ || static_cast<int>(grad_eN_W_->size()) ==
+                                          mesh_W_->num_elements());
     if (id_N_ < id_M_) SwapMAndN();
   }
 
@@ -201,6 +241,59 @@ class ContactSurface {
   T EvaluateE_MN(SurfaceVertexIndex vertex) const {
     return e_MN_->EvaluateAtVertex(vertex);
   }
+
+  /** @name  Evaluation of constituent pressure fields
+
+   The quantities that can be evaluated in the domain of the contact surface
+   depend on the application. The %ContactSurface *optionally* includes
+   the gradients of the constituent pressure fields (∇eₘ and ∇eₙ) sampled on the
+   contact surface. In order for these values to be included in an instance:
+
+     - the gradients must be requested (see QueryObject::ComputeContactSurfaces
+       and QueryObject::ComputeContactSurfacesWithFallback) and
+     - the gradient must be well defined (i.e., the corresponding geometry
+       cannot be rigid; the gradient of the pressure field would be some
+       variant of <∞, ∞, ∞>).
+
+   Accessing the gradient values must be pre-conditioned on a test that the
+   particular instance of %ContactSurface actually contains the gradient data.
+   The presence of gradient data for each geometry must be confirmed separately.
+
+   The values ∇eₘ and ∇eₘ are piecewise constant over the %ContactSurface and
+   can only be evaluate on a per-triangle basis.  */
+  //@{
+
+  /** @return `true` if `this` contains values for ∇eₘ.  */
+  bool HasGradE_M() const { return grad_eM_W_.has_value(); }
+
+  /** @return `true` if `this` contains values for ∇eₙ.  */
+  bool HasGradE_N() const { return grad_eN_W_.has_value(); }
+
+  /** Returns the value of ∇eₘ for the triangle with index `index`.
+   @throws std::exception if HasGradE_M() returns false.  */
+  const Vector3<T>& EvaluateGradE_M_W(SurfaceFaceIndex index) const {
+    if (!grad_eM_W_) {
+      throw std::runtime_error(
+          "ContactSurface::EvaluateGradE_M_W() invalid; no gradient values "
+          "stored. Mesh M may be rigid, or the constituent gradients weren't "
+          "requested.");
+    }
+    return (*grad_eM_W_)[index];
+  }
+
+  /** Returns the value of ∇eₘ for the triangle with index `index`.
+   @throws std::exception if HasGradE_M() returns false.  */
+  const Vector3<T>& EvaluateGradE_N_W(SurfaceFaceIndex index) const {
+    if (!grad_eN_W_) {
+      throw std::runtime_error(
+          "ContactSurface::EvaluateGradE_N_W() invalid; no gradient values "
+          "stored. Mesh N may be rigid, or the constituent gradients weren't "
+          "requested.");
+    }
+    return (*grad_eN_W_)[index];
+  }
+
+  //@}
 
   /** Returns a reference to the surface mesh whose vertex
    positions are measured and expressed in the world frame.
@@ -249,6 +342,7 @@ class ContactSurface {
     mesh_W_->ReverseFaceWinding();
 
     // Note: the scalar field does not depend on the order of M and N.
+    std::swap(grad_eM_W_, grad_eN_W_);
   }
 
   // The id of the first geometry M.
@@ -262,6 +356,16 @@ class ContactSurface {
   //  uses a different derivation.
   // Represents the scalar field eₘₙ on the surface mesh.
   std::unique_ptr<SurfaceMeshFieldLinear<T, T>> e_MN_;
+
+  // The gradients of the pressure fields eₘ and eₙ sampled on the contact
+  // surface. There is one gradient value *per contact surface triangle*.
+  // These quantities may not be defined if:
+  //   - the gradients haven't been requested, or
+  //   - the gradient is not well-defined (e.g., if the corresponding mesh is
+  //     rigid).
+  std::optional<std::vector<Vector3<T>>> grad_eM_W_;
+  std::optional<std::vector<Vector3<T>>> grad_eN_W_;
+
   // TODO(DamrongGuoy): Remove this when we allow direct access to e_MN.
   template <typename U> friend class ContactSurfaceTester;
 };

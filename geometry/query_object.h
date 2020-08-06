@@ -224,11 +224,17 @@ class QueryObject {
    method with T = AutoDiffXd will throw an exception if there are *any*
    geometry pairs that couldn't be culled.
 
+   @param include_pressure_gradients If `true`, the resulting contact surfaces
+                                     will includes the gradients of the
+                                     constituent pressure fields where possible.
+                                     For details, see the documentation for
+                                     ContactSurface.
    @returns A vector populated with all detected intersections characterized as
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
-  std::vector<ContactSurface<T>> ComputeContactSurfaces() const;
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      bool include_pressure_gradients = false) const;
 
   /** Reports pair-wise intersections and characterizes each non-empty
    intersection as a ContactSurface _where possible_ and as a
@@ -251,14 +257,30 @@ class QueryObject {
    The ordering of the _added_ results is guaranteed to be consistent -- for
    fixed geometry poses, the results will remain the same.
 
+   @param include_pressure_gradients
+                            If `true`, the resulting contact surfaces will
+                            includes the gradients of the constituent pressure
+                            fields where possible. For details, see the
+                            documentation for ContactSurface.
    @param[out] surfaces     The vector that contact surfaces will be added to.
                             The vector will _not_ be cleared.
    @param[out] point_pairs  The vector that fall back point pair data will be
                             added to. The vector will _not_ be cleared.
    @pre Neither `surfaces` nor `point_pairs` is nullptr.  */
   void ComputeContactSurfacesWithFallback(
+      bool include_pressure_gradients,
       std::vector<ContactSurface<T>>* surfaces,
       std::vector<PenetrationAsPointPair<double>>* point_pairs) const;
+
+  /** Variant that never includes constituent pressure gradients.  */
+  DRAKE_DEPRECATED(
+      "2020-11-01",
+      "Use the variant that explicitly indicates pressure gradients")
+  void ComputeContactSurfacesWithFallback(
+      std::vector<ContactSurface<T>>* surfaces,
+      std::vector<PenetrationAsPointPair<double>>* point_pairs) const {
+    ComputeContactSurfacesWithFallback(false, surfaces, point_pairs);
+  }
 
   /** Applies a conservative culling mechanism to create a subset of all
    possible geometry pairs based on non-zero intersections. A geometry pair

@@ -100,6 +100,9 @@ void SliceTetWithPlane(VolumeElementIndex tet_index,
                             world frame W. Used to guarantee that the contact
                             surface is measured and expressed in the world
                             frame.
+ @param[in] include_pressure_gradients
+                            If `true` the ContactSurface will contain the
+                            gradient of the soft half space's pressure field.
  @returns `nullptr` if there is no intersection, otherwise the appropriate
            ContactSurface. The normals of the contact surface mesh will all
            be parallel with the plane normal.
@@ -112,7 +115,8 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
     const VolumeMeshFieldLinear<double, double>& mesh_field_M,
     GeometryId plane_id, const Plane<T>& plane_M,
     const std::vector<VolumeElementIndex> tet_indices,
-    const math::RigidTransform<T>& X_WM);
+    const math::RigidTransform<T>& X_WM,
+    bool include_pressure_gradients);
 
 // TODO(SeanCurtis-TRI): This is, in some sense, the "public" api. It refers to
 //  half spaces. Does it belong in this file? Does it belong elsewhere? At the
@@ -136,6 +140,9 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurface(
  @param[in] id_R        The id of the rigid half space.
  @param[in] X_WR        The relative pose between Frame R -- the frame the half
                         space is defined in -- and the world frame W.
+ @param[in] include_pressure_gradients
+                            If `true` the ContactSurface will contain the
+                            gradient of the soft half space's pressure field.
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. The normals of the contact surface mesh
           will all be parallel with the plane normal.
@@ -147,7 +154,8 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const BoundingVolumeHierarchy<VolumeMesh<double>>& bvh_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const math::RigidTransform<T>& X_WR);
+    const math::RigidTransform<T>& X_WR,
+    bool include_pressure_gradients);
 
 
 }  // namespace internal

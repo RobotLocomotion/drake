@@ -67,15 +67,19 @@ class SurfaceVolumeIntersector {
        The sampled field values on the intersecting surface (samples to support
        a linear mesh field -- i.e., one per vertex). If no intersection exists,
        this will not change.
+   @param[in,out] grad_eM_Ms
+       If not `nullptr`, the gradient of the soft mesh pressure field sampled
+       per triangle in `surface_MN_M` will be added. It is assumed that it
+       starts empty.
    @note
        The output surface mesh may have duplicate vertices.
    */
   void SampleVolumeFieldOnSurface(
       const VolumeMeshField<T, T>& volume_field_M,
-      const SurfaceMesh<T>& surface_N,
-      const math::RigidTransform<T>& X_MN,
+      const SurfaceMesh<T>& surface_N, const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+      std::vector<Vector3<T>>* grad_eM_Ms);
 
   /* A variant of SampleVolumeFieldOnSurface but with broad-phase culling to
    reduce the number of element-pairs evaluated.  */
@@ -86,7 +90,8 @@ class SurfaceVolumeIntersector {
       const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
       std::unique_ptr<SurfaceMesh<T>>* surface_MN_M,
-      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN);
+      std::unique_ptr<SurfaceMeshFieldLinear<T, T>>* e_MN,
+      std::vector<Vector3<T>>* grad_eM_Ms);
 
  private:
   /* Calculates the intersection point between an infinite straight line
@@ -327,6 +332,9 @@ class SurfaceVolumeIntersector {
      outward.
  @param[in] X_WR
      The pose of the rigid frame R in the world frame W.
+ @param[in] include_pressure_gradients
+     If `true` the ContactSurface will contain the gradient of the soft half
+     space's pressure field.
  @return
      The contact surface between M and N. Geometries S and R map to M and N
  with a consistent mapping (as documented in ContactSurface) but without any
@@ -354,7 +362,8 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshField<T, T>& field_S,
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
-    const SurfaceMesh<T>& mesh_R, const math::RigidTransform<T>& X_WR);
+    const SurfaceMesh<T>& mesh_R, const math::RigidTransform<T>& X_WR,
+    bool include_pressure_gradients);
 
 /* A variant of ComputeContactSurfaceFromSoftVolumeRigidSurface but with
  broad-phase culling to reduce the number of element-pairs evaluated.  */
@@ -366,7 +375,8 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<T>& X_WS, const GeometryId id_R,
     const SurfaceMesh<T>& mesh_R,
     const BoundingVolumeHierarchy<SurfaceMesh<T>>& bvh_R,
-    const math::RigidTransform<T>& X_WR);
+    const math::RigidTransform<T>& X_WR,
+    bool include_pressure_gradients);
 
 // NOTE: This is a short-term hack to allow ProximityEngine to compile when
 // invoking this method. There are currently a host of issues preventing us from
@@ -377,7 +387,7 @@ std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId, const VolumeMeshField<double, double>&,
     const math::RigidTransform<AutoDiffXd>&, const GeometryId,
-    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&);
+    const SurfaceMesh<double>&, const math::RigidTransform<AutoDiffXd>&, bool);
 
 std::unique_ptr<ContactSurface<AutoDiffXd>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
@@ -386,7 +396,7 @@ ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const math::RigidTransform<AutoDiffXd>&, const GeometryId,
     const SurfaceMesh<double>&,
     const BoundingVolumeHierarchy<SurfaceMesh<double>>&,
-    const math::RigidTransform<AutoDiffXd>&);
+    const math::RigidTransform<AutoDiffXd>&, bool);
 
 }  // namespace internal
 }  // namespace geometry

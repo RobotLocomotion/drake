@@ -131,6 +131,9 @@ ConstructSurfaceMeshFromMeshHalfspaceIntersection(
                             mesh measured and expressed in Frame R.
  @param[in] X_WR            The relative pose between Frame R -- the frame the
                             mesh is defined in -- and the world frame W.
+ @param[in] include_pressure_gradients
+                            If `true` the ContactSurface will contain the
+                            gradient of the soft half space's pressure field.
  @returns `nullptr` if there is no collision, otherwise the ContactSurface
           between geometries S and R. Each triangle in the contact surface is a
           piece of a triangle in the input `mesh_R`; the normals of the former
@@ -144,7 +147,8 @@ ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
     GeometryId id_S, const math::RigidTransform<T>& X_WS, double pressure_scale,
     GeometryId id_R, const SurfaceMesh<double>& mesh_R,
     const BoundingVolumeHierarchy<SurfaceMesh<double>>& bvh_R,
-    const math::RigidTransform<T>& X_WR);
+    const math::RigidTransform<T>& X_WR,
+    bool include_pressure_gradients);
 
 }  // namespace internal
 }  // namespace geometry
