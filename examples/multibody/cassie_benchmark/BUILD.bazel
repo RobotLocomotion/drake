@@ -33,11 +33,17 @@ drake_cc_test(
     ],
 )
 
+COMMAND = """
+DEVELOPER_DIR=$$(xcode-select --print-path) \
+ SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) \
+ $(CC) --version > $@
+"""
+
 genrule(
     name = "record_compiler_version",
     srcs = [],
     outs = ["compiler.txt"],
-    cmd = "$(CC) --version > $@",
+    cmd = COMMAND,
     toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
 )
 
