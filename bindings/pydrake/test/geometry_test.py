@@ -15,21 +15,24 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import AbstractValue, Value
 from pydrake.lcm import DrakeLcm, Subscriber
-from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
+from pydrake.math import RigidTransform, RigidTransform_
 from pydrake.systems.analysis import (
     Simulator_,
 )
 from pydrake.systems.framework import (
+    DiagramBuilder,
     DiagramBuilder_,
     InputPort_,
     OutputPort_,
 )
 from pydrake.systems.sensors import (
     ImageRgba8U,
+    ImageDepth16U,
     ImageDepth32F,
-    ImageLabel16I
-    )
+    ImageLabel16I,
+    RgbdSensor,
+)
 
 
 class TestGeometry(unittest.TestCase):
@@ -629,3 +632,133 @@ class TestGeometry(unittest.TestCase):
         Value[mut.QueryObject_[T]]
         Value[mut.Rgba]
         Value[mut.render.RenderLabel]
+
+    def test_render_engine_api(self):
+        class DummyRenderEngine(mut.render.RenderEngine):
+            """Mirror of C++ DummyRenderEngine."""
+
+            # See comment below about `rgbd_sensor_test.cc`.
+            latest_instance = None
+
+            def __init__(self, render_label=None):
+                mut.render.RenderEngine.__init__(self)
+                # N.B. We do not hide these because this is a test class.
+                # Normally, you would want to hide this.
+                self.force_accept = False
+                self.registered_geometries = set()
+                self.updated_ids = {}
+                self.include_group_name = "in_test"
+                self.X_WC = RigidTransform_[float]()
+                self.simple_color_count = 0
+                self.simple_depth_count = 0
+                self.simple_label_count = 0
+                self.color_props = None
+                self.depth_props = None
+                self.label_props = None
+
+            def UpdateViewpoint(self, X_WC):
+                DummyRenderEngine.latest_instance = self
+                self.X_WC = X_WC
+
+            def DoRenderColorImage(self, camera, color_image_out):
+                DummyRenderEngine.latest_instance = self
+                self.simple_color_count += 1
+                self.color_props = camera
+
+            def DoRenderDepthImage(self, camera, depth_image_out):
+                DummyRenderEngine.latest_instance = self
+                self.simple_depth_count += 1
+                self.depth_props = camera
+
+            def DoRenderLabelImage(self, camera, label_image_out):
+                DummyRenderEngine.latest_instance = self
+                self.simple_label_count += 1
+                self.label_props = camera
+
+            def ImplementGeometry(self, shape, user_data):
+                DummyRenderEngine.latest_instance = self
+
+            def DoRegisterVisual(self, id, shape, properties, X_WG):
+                DummyRenderEngine.latest_instance = self
+                mut.GetRenderLabelOrThrow(properties)
+                if self.force_accept or properties.HasGroup(
+                    self.include_group_name
+                ):
+                    self.registered_geometries.add(id)
+                    return True
+                return False
+
+            def DoUpdateVisualPose(self, id, X_WG):
+                DummyRenderEngine.latest_instance = self
+                self.updated_ids[id] = X_WG
+
+            def DoRemoveGeometry(self, id):
+                DummyRenderEngine.latest_instance = self
+                self.registered_geometries.remove(id)
+
+            def DoClone(self):
+                DummyRenderEngine.latest_instance = self
+                new = DummyRenderEngine()
+                new.force_accept = copy.copy(self.force_accept)
+                new.registered_geometries = copy.copy(
+                    self.registered_geometries)
+                new.updated_ids = copy.copy(self.updated_ids)
+                new.include_group_name = copy.copy(self.include_group_name)
+                new.X_WC = copy.copy(self.X_WC)
+                new.simple_color_count = copy.copy(self.simple_color_count)
+                new.simple_depth_count = copy.copy(self.simple_depth_count)
+                new.simple_label_count = copy.copy(self.simple_label_count)
+                new.color_props = copy.copy(self.color_props)
+                new.depth_props = copy.copy(self.depth_props)
+                new.label_props = copy.copy(self.label_props)
+                return new
+
+        engine = DummyRenderEngine()
+        self.assertIsInstance(engine, mut.render.RenderEngine)
+        self.assertIsInstance(engine.Clone(), DummyRenderEngine)
+
+        # Test implementation of C++ interface by using RgbdSensor.
+        renderer_name = "renderer"
+        builder = DiagramBuilder()
+        scene_graph = builder.AddSystem(mut.SceneGraph())
+        # N.B. This passes ownership.
+        scene_graph.AddRenderer(renderer_name, engine)
+        sensor = builder.AddSystem(RgbdSensor(
+            parent_id=scene_graph.world_frame_id(),
+            X_PB=RigidTransform(),
+            properties=mut.render.DepthCameraProperties(
+                width=640, height=480, fov_y=np.pi/4,
+                renderer_name="renderer", z_near=0.1, z_far=5.0,
+            ),
+            camera_poses=RgbdSensor.CameraPoses(),
+            show_window=False,
+        ))
+        builder.Connect(
+            scene_graph.get_query_output_port(),
+            sensor.query_object_input_port(),
+        )
+        diagram = builder.Build()
+        diagram_context = diagram.CreateDefaultContext()
+        sensor_context = sensor.GetMyContextFromRoot(diagram_context)
+        image = sensor.color_image_output_port().Eval(sensor_context)
+        # N.B. Because there's context cloning going on under the hood, we
+        # won't be interacting with our originally registered instance.
+        # See `rgbd_sensor_test.cc` as well.
+        current_engine = DummyRenderEngine.latest_instance
+        self.assertIsNot(current_engine, engine)
+        self.assertIsInstance(image, ImageRgba8U)
+        self.assertEqual(current_engine.simple_color_count, 1)
+
+        image = sensor.depth_image_32F_output_port().Eval(sensor_context)
+        self.assertIsInstance(image, ImageDepth32F)
+        self.assertEqual(current_engine.simple_depth_count, 1)
+
+        image = sensor.depth_image_16U_output_port().Eval(sensor_context)
+        self.assertIsInstance(image, ImageDepth16U)
+        self.assertEqual(current_engine.simple_depth_count, 2)
+
+        image = sensor.label_image_output_port().Eval(sensor_context)
+        self.assertIsInstance(image, ImageLabel16I)
+        self.assertEqual(current_engine.simple_label_count, 1)
+
+        # TODO(eric, duy): Test more properties.
