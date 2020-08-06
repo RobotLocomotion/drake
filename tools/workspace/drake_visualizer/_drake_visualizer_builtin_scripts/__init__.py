@@ -15,13 +15,15 @@ import sys
 from warnings import warn
 import weakref
 
-# N.B. Keep this in sync with `use_builtin_scripts.py`.
+# N.B. Keep this in sync (with the same ordering) as the keys defined in
+# `available` in `use_builtin_scripts.py`.
 AVAILABLE_SCRIPTS = [
     "frame",
     "hydroelastic_contact",
     "image",
     "point_pair_contact",
     "time",
+    "grid_wireframe",
     "limit_clipping_range",
 ]
 

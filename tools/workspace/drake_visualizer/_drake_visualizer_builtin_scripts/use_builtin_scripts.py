@@ -7,13 +7,14 @@ import sys
 
 from _drake_visualizer_builtin_scripts import (
     AVAILABLE_SCRIPTS,
+    grid_wireframe,
     limit_clipping_range,
+    scoped_singleton_func,
     show_frame,
     show_hydroelastic_contact,
     show_image,
     show_point_pair_contact,
     show_time,
-    scoped_singleton_func,
 )
 
 
@@ -25,6 +26,7 @@ def init_visualizer():
         ("image", show_image.init_visualizer),
         ("point_pair_contact", show_point_pair_contact.init_visualizer),
         ("time", show_time.init_visualizer),
+        ("grid_wireframe", grid_wireframe.activate),
         # N.B. `view` is defined globally for scripts executed directly by
         # `director`.
         (
@@ -37,7 +39,7 @@ def init_visualizer():
     assert available_scripts == AVAILABLE_SCRIPTS, (
         f"Discrepancy between __init__.py` (AVAILABLE_SCRIPTS) (used for "
         f"--help) and those defined in this file (available_scripts):\n"
-        f"  AVAILABE_SCRIPTS: {AVAILABE_SCRIPTS}\n"
+        f"  AVAILABE_SCRIPTS: {AVAILABLE_SCRIPTS}\n"
         f"  available_scripts: {available_scripts}\n")
     print("")
     print("Drake Scripts:")
