@@ -29,6 +29,15 @@ drake::test::LimitMallocParams LimitReleaseOnly(int max_num_allocations) {
 
 class DoubleFixture : public benchmark::Fixture {
  public:
+  DoubleFixture() {
+    ComputeStatistics("min", [](const std::vector<double>& v) -> double {
+        return *(std::min_element(std::begin(v), std::end(v)));
+      });
+    ComputeStatistics("max", [](const std::vector<double>& v) -> double {
+        return *(std::max_element(std::begin(v), std::end(v)));
+      });
+  }
+
   // This apparently futile using statement works around "overloaded virtual"
   // errors in g++. All of this is a consequence of the weird deprecation of
   // const-ref State versions of SetUp() and TearDown() in benchmark.h.
