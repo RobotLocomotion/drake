@@ -1,3 +1,5 @@
+**WARNING** All of the files (*.urdf models and *.obj meshes) in this package
+are deprecated and will be removed on 2020-11-01.
 
 This directory contains model files for the IRB140.
 
