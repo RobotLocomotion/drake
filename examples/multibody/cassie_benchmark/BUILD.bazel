@@ -33,9 +33,12 @@ drake_cc_test(
     ],
 )
 
+# It should be simple to get compiler name and version string, but alas,
+# xcode/bazel integration involves a wrapper that has to be primed with a mess
+# of environment variables.
 COMMAND = """
-DEVELOPER_DIR=$$(xcode-select --print-path) \
- SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) \
+DEVELOPER_DIR=$$(type -p xcode-select >/dev/null && xcode-select --print-path) \
+ SDKROOT=$$(type -p xcrun >/dev/null && xcrun --sdk macosx --show-sdk-path) \
  $(CC) --version > $@
 """
 
