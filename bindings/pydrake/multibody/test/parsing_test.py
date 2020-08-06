@@ -39,9 +39,10 @@ class TestParsing(unittest.TestCase):
         dut.PopulateFromEnvironment('TEST_TMPDIR')
         dut.PopulateFromFolder(tmpdir)
 
-    def test_parser(self):
-        # Calls every combination of arguments for the Parser methods and
-        # inspects their return type.
+    def test_parser_file(self):
+        """Calls every combination of arguments for the Parser methods which
+        use a file_name (not contents) and inspects their return type.
+        """
         sdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         urdf_file = FindResourceOrThrow(
@@ -69,3 +70,15 @@ class TestParsing(unittest.TestCase):
                 assert result_dim is list
                 self.assertIsInstance(result, list)
                 self.assertIsInstance(result[0], ModelInstanceIndex)
+
+    def test_parser_string(self):
+        """Checks parsing from a string (not file_name)."""
+        sdf_file = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        with open(sdf_file, "r") as f:
+            sdf_contents = f.read()
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        result = parser.AddModelFromString(
+            file_contents=sdf_contents, file_type="sdf")
+        self.assertIsInstance(result, ModelInstanceIndex)

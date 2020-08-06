@@ -8,7 +8,11 @@ package(default_visibility = ["//visibility:public"])
 # Make our package requirements (but not manual scripts) available to
 # downstream projects.
 exports_files([
+    "ubuntu/source_distribution/packages-bionic-maintainer-only.txt",
+    "ubuntu/source_distribution/packages-bionic-test-only.txt",
     "ubuntu/source_distribution/packages-bionic.txt",
+    "ubuntu/source_distribution/packages-focal-maintainer-only.txt",
+    "ubuntu/source_distribution/packages-focal-test-only.txt",
     "ubuntu/source_distribution/packages-focal.txt",
     "ubuntu/binary_distribution/packages-bionic.txt",
     "ubuntu/binary_distribution/packages-focal.txt",

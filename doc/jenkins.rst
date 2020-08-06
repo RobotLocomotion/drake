@@ -103,6 +103,14 @@ are necessary for :ref:`binary installation <binary-installation>`) and
 ``binary_distribution``, you do not need to duplicate binary prerequisites in
 ``source_distribution``.
 
+Prerequisites of the ``source_distribution`` are further split into three
+parts: those that are needed for building and running the ``//:install`` target
+using ``bazel`` (``bazel run //:install``), those additional dependencies for
+building and running tests (``bazel test ...``), and those additional
+dependencies for running select maintainer scripts (e.g., ``mirror_to_s3.py``
+and ``new_release.py``). Again, it is expected that a given prerequisite will
+only appear in one of these lists.
+
 When updating prerequisites with these scripts, the normal experimental CI will
 most likely fail. To test new prerequisites, you should first request
 unprovisioned experimental builds, e.g.:
