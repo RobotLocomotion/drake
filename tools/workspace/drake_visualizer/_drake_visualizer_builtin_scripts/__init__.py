@@ -23,6 +23,7 @@ AVAILABLE_SCRIPTS = [
     "point_pair_contact",
     "time",
     "limit_clipping_range",
+    "grid_wireframe",
 ]
 
 
