@@ -8,6 +8,15 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+const SpatialAcceleration<T>& Body<T>::EvalSpatialAccelerationInWorld(
+    const systems::Context<T>& context) const {
+  const MultibodyPlant<T>& parent_plant = this->GetParentPlant();
+  const SpatialAcceleration<T>& A_WB_W =
+      parent_plant.EvalBodySpatialAccelerationInWorld(context, *this);
+  return A_WB_W;
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Frame<ToScalar>> BodyFrame<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {

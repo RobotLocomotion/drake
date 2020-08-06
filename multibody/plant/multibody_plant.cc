@@ -2921,7 +2921,8 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
     const Body<T>& body_B) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   const AccelerationKinematicsCache<T>& ac = EvalForwardDynamics(context);
-  return ac.get_A_WB(body_B.node_index());
+  const SpatialAcceleration<T>& A_WB_W = ac.get_A_WB(body_B.node_index());
+  return A_WB_W;
 }
 
 template <typename T>

@@ -1349,10 +1349,31 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   const SpatialAcceleration<T> AsBias_WBodyA_W = frame_A.is_world_frame() ?
       SpatialAcceleration<T>::Zero() : AsBias_WB_all[body_A.node_index()];
 
-  return CalcSpatialAccelerationHelper(context, frame_B, p_BoBp_B,
-      frame_A, frame_E, AsBias_WBodyB_W, AsBias_WBodyA_W);
+  return CalcSpatialAccelerationHelper(context, frame_B, p_BoBp_B, frame_A,
+      frame_E, AsBias_WBodyB_W, AsBias_WBodyA_W);
 }
 
+template <typename T>
+SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAcceleration(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B,
+    const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+    const Frame<T>& frame_A,
+    const Frame<T>& frame_E) const {
+  // Frame_B is regarded as fixed/welded to a body, herein named body_B.
+  const Body<T>& body_B = frame_B.body();
+  const SpatialAcceleration<T> A_WBodyB_W =
+      body_B.EvalSpatialAccelerationInWorld(context);
+
+  // Frame_A is regarded as fixed/welded to a body herein named body_A.
+  const Body<T>& body_A = frame_A.body();
+  const SpatialAcceleration<T> A_WBodyA_W =
+      frame_A.is_world_frame() ? SpatialAcceleration<T>::Zero()
+                               : body_A.EvalSpatialAccelerationInWorld(context);
+
+  return CalcSpatialAccelerationHelper(context, frame_B, p_BoBp_B, frame_A,
+                                       frame_E, A_WBodyB_W, A_WBodyA_W);
+}
 
 template <typename T>
 SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
