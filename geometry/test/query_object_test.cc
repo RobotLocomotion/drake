@@ -142,7 +142,10 @@ TEST_F(QueryObjectTest, CopySemantics) {
 // the class (SceneGraph) that actually *performs* those queries. The
 // correctness of those queries is handled in geometry_state_test.cc. The
 // wrapper merely confirms that the state is correct and that wrapper
-// functionality is tested in DefaultQueryThrows.
+// functionality is tested in DefaultQueryThrows. Arguably, the question of
+// "do the parameters and return values" get mapped correctly could be under
+// test. But, for now, we assume the parameters and return values are propagated
+// correctly.
 TEST_F(QueryObjectTest, DefaultQueryThrows) {
   QueryObject<double> default_object;
   EXPECT_TRUE(is_default(default_object));
@@ -160,10 +163,13 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(default_object.X_PF(FrameId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object.X_WG(GeometryId::get_new_id()));
 
-
   // Penetration queries.
   EXPECT_DEFAULT_ERROR(default_object.ComputePointPairPenetration());
   EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfaces());
+  std::vector<ContactSurface<double>> surfaces;
+  std::vector<PenetrationAsPointPair<double>> point_pairs;
+  EXPECT_DEFAULT_ERROR(default_object.ComputeContactSurfacesWithFallback(
+      &surfaces, &point_pairs));
 
   // Signed distance queries.
   EXPECT_DEFAULT_ERROR(
