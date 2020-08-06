@@ -21,6 +21,10 @@ esac
 
 cp ${TEST_SRCDIR}/drake/examples/multibody/cassie_benchmark/compiler.txt \
    ${TEST_UNDECLARED_OUTPUTS_DIR}/compiler.txt
+# Don't preserve irritating read-only permissions from the upstream file.
+chmod --reference ${TEST_UNDECLARED_OUTPUTS_DIR}/kernel.txt \
+       ${TEST_UNDECLARED_OUTPUTS_DIR}/compiler.txt
+
 
 ${TEST_SRCDIR}/drake/examples/multibody/cassie_benchmark/cassie_bench \
     --benchmark_report_aggregates_only=true \
