@@ -140,4 +140,14 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
-  Current newest_commit 4f3cbe445f449d1e40fdbc3b402dc1589573e830 (inclusive).
+  Current newest_commit 1d12e67d9abe785a0d16891ba196deff0b9629aa (inclusive).
+
+* common: schema: Incorporate some Anzu nit fixes (`#13822`_)
+* common: Add PolynomialBasisElement class, and an implementation of ChebyshevBasisElement (`#13796`_)
+* doc,setup: Prune unwanted dependencies and reorganize (`#13753`_)
+* examples: Example of a cloth system modeled as a collection of springs (`#13714`_)  # * Add a mass-spring cloth example. The example models a rectangular piece of cloth with particles connected by springs and dampers. The example supports both continuous and discrete mode.
+* common: schema: Copy rotation,transform from Anzu (`#13823`_)  # Co-authored-by: Grant Gould <ggould@tri.global> Co-authored-by: Sam Creasey <sam.creasey@tri.global> Co-authored-by: Siyuan Feng <siyuan.feng@tri.global>
+* common: schema: Adapt rotation,transform to Drake and add to BUILD (`#13823`_)
+* setup: setup: Export all of the package list text files (`#13827`_)  # We missed this in 06604c29e3c9c276646b0a5a7fbfd651d8e7049b.
+* bindings: bindings: Bind pydrake.multibody.Parser.AddModelFromString (`#13826`_)
+* setup: setup: Really export the package list text files (`#13830`_)  # * setup: really export the package list text files I typo'd this in 04e15ce3a4607917b2cc05592eb0c00116b91fe3.
