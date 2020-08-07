@@ -43,7 +43,6 @@ genrule(
         "@bazel_tools//tools/cpp:cc_flags",
         "@bazel_tools//tools/cpp:current_cc_toolchain",
     ],
-    visibility = ["//common:__pkg__"],
 )
 
 # Utility script to indicate which compiler is being used.
