@@ -57,6 +57,19 @@ sh_binary(
     ],
 )
 
+# Utility rule to save the compiler settings to a file.
+genrule(
+    name = "host_settings",
+    srcs = [],
+    outs = ["host_settings.txt"],
+    cmd = "$(location :print_host_settings) $(location :capture_cc.env) >$@",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+    tools = [
+        ":capture_cc.env",
+        ":print_host_settings",
+    ],
+)
+
 # Test the above script; if CROSSTOOL is removed or changed, $(CC) may be an
 # invalid binary (related to #7763), and CI should catch this.
 # N.B. We have to use a proxy script since `print_host_settings` has `data`.
