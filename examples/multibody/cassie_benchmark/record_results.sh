@@ -19,7 +19,7 @@ case $(uname) in
 esac
 ) > ${TEST_UNDECLARED_OUTPUTS_DIR}/os.txt
 
-cp ${TEST_SRCDIR}/drake/examples/multibody/cassie_benchmark/compiler.txt \
+cp ${TEST_SRCDIR}/drake/tools/cc_toolchain/host_settings.txt \
    ${TEST_UNDECLARED_OUTPUTS_DIR}/compiler.txt
 # Don't preserve irritating read-only permissions from the upstream file.
 chmod --reference ${TEST_UNDECLARED_OUTPUTS_DIR}/kernel.txt \

@@ -43,6 +43,7 @@ genrule(
         "@bazel_tools//tools/cpp:cc_flags",
         "@bazel_tools//tools/cpp:current_cc_toolchain",
     ],
+    visibility = ["//common:__pkg__"],
 )
 
 # Utility script to indicate which compiler is being used.
@@ -53,6 +54,18 @@ sh_binary(
     data = [
         ":capture_cc.env",
         ":toolchain_deps",
+    ],
+)
+
+# Utility rule to save the compiler settings to a file.
+genrule(
+    name = "host_settings",
+    srcs = [],
+    outs = ["host_settings.txt"],
+    cmd = "$(location :print_host_settings) $(location :capture_cc.env) >$@",
+    tools = [
+        ":capture_cc.env",
+        ":print_host_settings",
     ],
 )
 

@@ -33,29 +33,13 @@ drake_cc_test(
     ],
 )
 
-genrule(
-    name = "record_compiler_version",
-    srcs = [],
-    tools = [
-        "//tools/cc_toolchain:capture_cc.env",
-        "//tools/cc_toolchain:print_host_settings",
-    ],
-    outs = ["compiler.txt"],
-    cmd = ("$(location //tools/cc_toolchain:print_host_settings)" +
-           " $(location //tools/cc_toolchain:capture_cc.env) >$@"),
-    toolchains = [
-        "@bazel_tools//tools/cpp:cc_flags",
-        "@bazel_tools//tools/cpp:current_cc_toolchain"
-    ],
-)
-
 sh_test(
     name = "record_results",
     size = "small",
     srcs = ["record_results.sh"],
     data = [
         ":cassie_bench",
-        ":record_compiler_version",
+        "//tools/cc_toolchain:host_settings",
     ],
 )
 
