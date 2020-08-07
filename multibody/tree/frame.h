@@ -50,6 +50,11 @@ class Frame : public FrameBase<T> {
     return body_;
   }
 
+  /// Returns true if `this` is the world frame.
+  bool is_world_frame() const {
+    return this->index() == FrameIndex(0);
+  }
+
   /// Returns the name of this frame. It may be empty if unnamed.
   const std::string& name() const {
     return name_;
