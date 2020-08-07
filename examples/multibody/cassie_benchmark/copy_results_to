@@ -1,0 +1,21 @@
+#!/bin/bash
+# Copy benchmark results to a user-chosen directory.
+
+set -e -u -o pipefail
+
+die () {
+    echo $"$@"
+    exit 1
+}
+
+
+[[ "$#" -ge 1 ]] || die "missing argument: destination directory"
+
+DST="$1"
+
+TESTLOGS=$(bazel info bazel-testlogs)
+TARGET="examples/multibody/cassie_benchmark/record_results"
+SRC="${TESTLOGS}/${TARGET}/test.outputs"
+
+mkdir -p "$DST"
+cp -av "$SRC"/* "$DST"
