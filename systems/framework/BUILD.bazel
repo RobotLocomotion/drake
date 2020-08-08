@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":diagram_continuous_state",
         ":diagram_discrete_values",
         ":diagram_output_port",
+        ":diagram_state",
         ":discrete_values",
         ":event_collection",
         ":framework_common",
@@ -552,13 +553,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "diagram_state",
+    srcs = ["diagram_state.cc"],
+    hdrs = ["diagram_state.h"],
+    deps = [
+        ":diagram_continuous_state",
+        ":diagram_discrete_values",
+        ":state",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "diagram_context",
     srcs = ["diagram_context.cc"],
     hdrs = ["diagram_context.h"],
     deps = [
         ":context",
-        ":diagram_continuous_state",
-        ":diagram_discrete_values",
+        ":diagram_state",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
