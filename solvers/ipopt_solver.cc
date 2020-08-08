@@ -231,6 +231,31 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   return grad_idx;
 }
 
+/// Evaluate a constraint, storing the result of the evaluation into
+/// @p result. Uses the double verison of the constraint,
+/// constraint.Eval(VectorXd, VectorXd*), and does not compute the gradient.
+/// @see EvaluateConstraint() for the "with gradient" verison.
+void EvaluateConstraintNoGrad(const MathematicalProgram& prog,
+                                const Eigen::VectorXd& xvec,
+                                const Constraint& c,
+                                const VectorXDecisionVariable& variables,
+                                Number* result) {
+  // Extract the appropriate subset of decision variables into this_x
+  int num_v_variables = variables.rows();
+  Eigen::VectorXd this_x(num_v_variables);
+  for (int i = 0; i < num_v_variables; ++i) {
+    this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
+  }
+  Eigen::VectorXd ty(c.num_constraints());
+
+  c.Eval(this_x, &ty);
+
+  // Store the results.
+  for (int i = 0; i < c.num_constraints(); i++) {
+    result[i] = ty(i);
+  }
+}
+
 // IPOPT uses separate callbacks to get the result and the gradients.
 // Since Drake's eval() functions emit both of these at once, cache
 // the result for IPOPT.
@@ -325,6 +350,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
 
     constraint_cache_.reset(new ResultCache(n, m, nnz_jac_g));
+    constraint_nograd_.resize(m, std::numeric_limits<double>::infinity());
+
 
     nnz_h_lag = 0;
     index_style = C_STYLE;
@@ -455,10 +482,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   virtual bool eval_g(Index n, const Number* x, bool new_x, Index m,
                       Number* g) {
     if (new_x || !constraint_cache_->is_x_equal(n, x)) {
-      EvaluateConstraints(n, x);
+      EvaluateConstraintsNoGrad(n, x);
+      ResultCache::Extract(constraint_nograd_, m, g);
+    } else {
+      ResultCache::Extract(constraint_cache_->result, m, g);
     }
-
-    ResultCache::Extract(constraint_cache_->result, m, g);
     return true;
   }
 
@@ -660,9 +688,45 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
   }
 
+  /// Evalaute all constraints as a function of decision variables
+  /// @param xvec
+  /// @return the constraint evaluations by pointer into result. Assumes that
+  /// memory has already been allocated
+  void EvaluateConstraintsNoGrad(Index n, const Number* x) {
+    const Eigen::VectorXd xvec = MakeEigenVector(n, x);
+    Number* result = constraint_nograd_.data();
+
+    for (const auto& c : problem_->generic_constraints()) {
+      EvaluateConstraintNoGrad(*problem_, xvec, (*c.evaluator()),
+                                  c.variables(), result);
+      result += c.evaluator()->num_constraints();
+    }
+    for (const auto& c : problem_->lorentz_cone_constraints()) {
+      EvaluateConstraintNoGrad(*problem_, xvec, (*c.evaluator()),
+                                  c.variables(), result);
+      result += c.evaluator()->num_constraints();
+    }
+    for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
+      EvaluateConstraintNoGrad(*problem_, xvec, (*c.evaluator()),
+                                  c.variables(), result);
+      result += c.evaluator()->num_constraints();
+    }
+    for (const auto& c : problem_->linear_constraints()) {
+      EvaluateConstraintNoGrad(*problem_, xvec, (*c.evaluator()),
+                                  c.variables(), result);
+      result += c.evaluator()->num_constraints();
+    }
+    for (const auto& c : problem_->linear_equality_constraints()) {
+      EvaluateConstraintNoGrad(*problem_, xvec, (*c.evaluator()),
+                                  c.variables(), result);
+      result += c.evaluator()->num_constraints();
+    }
+  }
+
   const MathematicalProgram* const problem_;
   std::unique_ptr<ResultCache> cost_cache_;
   std::unique_ptr<ResultCache> constraint_cache_;
+  std::vector<Number> constraint_nograd_;
   Eigen::VectorXd x_init_;
   MathematicalProgramResult* const result_;
   // bb_con_dual_variable_indices_[constraint] maps the bounding box constraint
