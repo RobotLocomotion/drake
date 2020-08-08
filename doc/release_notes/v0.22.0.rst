@@ -34,7 +34,7 @@ Mathematical Program
 New features
 
 * Add GetKnownSolvers (`#13821`_)
-* Add three examples on sum-of-squares optimization (`#13719`_, `#13746`_, `#13759`_, `#13765`_)
+* Add three examples of sum-of-squares optimization (`#13719`_, `#13746`_, `#13759`_, `#13765`_)
 * Improve polynomial-related support:
 
   * MathematicalProgramResult::GetSolution also works for a polynomial (`#13748`_)
@@ -42,7 +42,7 @@ New features
 
 Fixes
 
-* Fix a bug in the Autodiff QuadraticCost (`#13752`_)
+* Fix out-of-bounds matrix access in Autodiff QuadraticCost (`#13752`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
@@ -111,7 +111,7 @@ Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
 * drake::math::Slerp (`#13810`_)
-* examples/irb140/urdf (`#13831`_)
+* examples/irb140/urdf/** (`#13831`_)
 * examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf (`#13831`_)
 
 Removal of deprecated items
