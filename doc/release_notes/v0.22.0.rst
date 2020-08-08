@@ -140,4 +140,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
-  Current newest_commit 1d12e67d9abe785a0d16891ba196deff0b9629aa (inclusive).
+  Current newest_commit 4839af9b0ec9de50a9fda92a20931a778c037304 (inclusive).
+
+* drake_visualizer: Add grid_wireframe for --use_builtin_scripts (`#13829`_)  # Mitigates effect of z-fighting between the display grid and user geometry representing a ground plane by making sure the grid displays only as lines.
+* examples: Deprecate IRB140 and big_robot_toy models (`#13831`_)  # These are unused, untested, and have large meshes that do not follow the RobotLocomotion/models policy.
+* framework: Move files to preserve history (`#13839`_)  # These files are not yet part of the BUILD.bazel, so this commit won't compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
+* framework: Restore files to unmodified status (`#13839`_)
+* framework: Extract DiagramState into its own file (`#13839`_)  # Prior commits already copied diagram_context.h into diagram_state.h. This commit removes the extra class from each file, and updates the include statements and build rules to match.
+* Fix documentation for CalcJacobianSpatialVelocity() and also kill PR# 12804 (`#13837`_)  # * Fix documentation for CalcJacobianSpatialVelocity() to also kill PR# 12804.
