@@ -361,8 +361,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "context",
-    srcs = ["context.cc"],
+    srcs = ["context.old.cc"],
     hdrs = ["context.h"],
+    tags = ["nolint"],
     deps = [
         ":context_base",
         ":parameters",
@@ -375,8 +376,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "leaf_context",
-    srcs = ["leaf_context.cc"],
+    srcs = ["leaf_context.old.cc"],
     hdrs = ["leaf_context.h"],
+    tags = ["nolint"],
     deps = [
         ":cache_and_dependency_tracker",
         ":context",
@@ -567,8 +569,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "diagram_context",
-    srcs = ["diagram_context.cc"],
+    srcs = ["diagram_context.old.cc"],
     hdrs = ["diagram_context.h"],
+    tags = ["nolint"],
     deps = [
         ":context",
         ":diagram_state",
