@@ -13,7 +13,8 @@ void Context<T>::SetTime(const T& time_sec) {
 }
 
 template <typename T>
-FixedInputPortValue& Context<T>::FixInputPort(int index, const BasicVector<T>& vec) {
+FixedInputPortValue& Context<T>::FixInputPort(
+    int index, const BasicVector<T>& vec) {
   return ContextBase::FixInputPort(
       index, std::make_unique<Value<BasicVector<T>>>(vec.Clone()));
 }
@@ -144,9 +145,9 @@ template <typename T>
 Context<T>::Context(const Context<T>&) = default;
 
 template <typename T>
-void Context<T>::PropagateTimeChange(Context<T>* context, const T& time,
-                                const std::optional<T>& true_time,
-                                int64_t change_event) {
+void Context<T>::PropagateTimeChange(
+    Context<T>* context, const T& time, const std::optional<T>& true_time,
+    int64_t change_event) {
   DRAKE_ASSERT(context != nullptr);
   context->NoteTimeChanged(change_event);
   context->time_ = time;
@@ -155,9 +156,9 @@ void Context<T>::PropagateTimeChange(Context<T>* context, const T& time,
 }
 
 template <typename T>
-void Context<T>::PropagateAccuracyChange(Context<T>* context,
-                                    const std::optional<double>& accuracy,
-                                    int64_t change_event) {
+void Context<T>::PropagateAccuracyChange(
+    Context<T>* context, const std::optional<double>& accuracy,
+    int64_t change_event) {
   DRAKE_ASSERT(context != nullptr);
   context->NoteAccuracyChanged(change_event);
   context->accuracy_ = accuracy;
@@ -193,8 +194,8 @@ void Context<T>::init_parameters(std::unique_ptr<Parameters<T>> params) {
 }
 
 template <typename T>
-void Context<T>::ThrowIfNotRootContext(const char* func_name,
-                           const char* quantity) const {
+void Context<T>::ThrowIfNotRootContext(
+    const char* func_name, const char* quantity) const {
   if (!is_root_context()) {
     throw std::logic_error(
         fmt::format("{}(): {} change allowed only in the root Context.",
@@ -203,8 +204,8 @@ void Context<T>::ThrowIfNotRootContext(const char* func_name,
 }
 
 template <typename T>
-void Context<T>::SetTimeAndNoteContinuousStateChangeHelper(const char* func_name,
-    const T& time_sec) {
+void Context<T>::SetTimeAndNoteContinuousStateChangeHelper(
+    const char* func_name, const T& time_sec) {
   ThrowIfNotRootContext(func_name, "Time");
   const int64_t change_event = this->start_new_change_event();
   PropagateTimeChange(this, time_sec, {}, change_event);

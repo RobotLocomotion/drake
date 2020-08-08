@@ -12,7 +12,8 @@ DiagramContext<T>::DiagramContext(int num_subcontexts)
       state_(std::make_unique<DiagramState<T>>(num_subcontexts)) {}
 
 template <typename T>
-void DiagramContext<T>::AddSystem(SubsystemIndex index, std::unique_ptr<Context<T>> context) {
+void DiagramContext<T>::AddSystem(
+    SubsystemIndex index, std::unique_ptr<Context<T>> context) {
   DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
   DRAKE_DEMAND(contexts_[index] == nullptr);
   ContextBase::set_parent(context.get(), this);
@@ -67,8 +68,9 @@ void DiagramContext<T>::SubscribeDiagramPortToExportedOutputPort(
 }
 
 template <typename T>
-void DiagramContext<T>::SubscribeInputPortToOutputPort(const OutputPortIdentifier& output_port,
-                                    const InputPortIdentifier& input_port) {
+void DiagramContext<T>::SubscribeInputPortToOutputPort(
+    const OutputPortIdentifier& output_port,
+    const InputPortIdentifier& input_port) {
   // Identify and validate the source output port.
   const SubsystemIndex oport_system_index = output_port.first;
   const OutputPortIndex oport_index = output_port.second;
@@ -259,9 +261,10 @@ std::string DiagramContext<T>::do_to_string() const {
 }
 
 template <typename T>
-void DiagramContext<T>::DoPropagateTimeChange(const T& time_sec,
-                           const std::optional<T>& true_time,
-                           int64_t change_event) {
+void DiagramContext<T>::DoPropagateTimeChange(
+    const T& time_sec,
+    const std::optional<T>& true_time,
+    int64_t change_event) {
   for (auto& subcontext : contexts_) {
     DRAKE_ASSERT(subcontext != nullptr);
     Context<T>::PropagateTimeChange(&*subcontext, time_sec, true_time,
@@ -270,8 +273,9 @@ void DiagramContext<T>::DoPropagateTimeChange(const T& time_sec,
 }
 
 template <typename T>
-void DiagramContext<T>::DoPropagateAccuracyChange(const std::optional<double>& accuracy,
-                               int64_t change_event) {
+void DiagramContext<T>::DoPropagateAccuracyChange(
+    const std::optional<double>& accuracy,
+    int64_t change_event) {
   for (auto& subcontext : contexts_) {
     DRAKE_ASSERT(subcontext != nullptr);
     Context<T>::PropagateAccuracyChange(&*subcontext, accuracy, change_event);
