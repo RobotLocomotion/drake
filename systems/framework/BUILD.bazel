@@ -361,7 +361,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "context",
-    srcs = ["context.old.cc"],
+    srcs = ["context.cc"],
     hdrs = ["context.h"],
     tags = ["nolint"],
     deps = [
@@ -376,7 +376,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "leaf_context",
-    srcs = ["leaf_context.old.cc"],
+    srcs = ["leaf_context.cc"],
     hdrs = ["leaf_context.h"],
     tags = ["nolint"],
     deps = [
@@ -569,7 +569,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "diagram_context",
-    srcs = ["diagram_context.old.cc"],
+    srcs = ["diagram_context.cc"],
     hdrs = ["diagram_context.h"],
     tags = ["nolint"],
     deps = [

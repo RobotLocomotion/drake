@@ -1,75 +1,35 @@
-#pragma once
+#include "drake/systems/framework/leaf_context.h"
 
-#include <memory>
-#include <set>
-#include <string>
 #include <utility>
-#include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/cache.h"
-#include "drake/systems/framework/context.h"
-#include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
-#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
-/** %LeafContext contains all prerequisite data necessary to uniquely determine
-the results of computations performed by the associated LeafSystem.
-@see Context for more information.
-
-@tparam_default_scalar
-*/
-template <typename T>
-class LeafContext : public Context<T> {
- public:
-  /// @name  Does not allow copy, move, or assignment.
-  //@{
-  // Copy constructor is protected for use in implementing Clone().
-  LeafContext(LeafContext&&) = delete;
-  LeafContext& operator=(const LeafContext&) = delete;
-  LeafContext& operator=(LeafContext&&) = delete;
-  //@}
-
-  LeafContext()
+  template <typename T>
+  LeafContext<T>::LeafContext()
       : state_(std::make_unique<State<T>>()) {}
-  ~LeafContext() override {}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // Temporarily promoting these to public so that LeafSystem and testing code
-  // can construct a LeafContext with state & parameters. Users should never
-  // call these because state & parameters should not be resized once allocated
-  // (or at least should be done under Framework control so that dependency
-  // tracking can be correctly revised).
-  // TODO(sherm1) Make these inaccessible to users. See discussion in PR #9029.
-  using Context<T>::init_continuous_state;
-  using Context<T>::init_discrete_state;
-  using Context<T>::init_abstract_state;
-  using Context<T>::init_parameters;
-#endif
+  template <typename T>
+  LeafContext<T>::~LeafContext() {}
 
- protected:
-  /// Protected copy constructor takes care of the local data members and
-  /// all base class members, but doesn't update base class pointers so is
-  /// not a complete copy.
-  LeafContext(const LeafContext& source) : Context<T>(source) {
+  template <typename T>
+  LeafContext<T>::LeafContext(const LeafContext& source) : Context<T>(source) {
     // Make a deep copy of the state.
     state_ = source.CloneState();
 
     // Everything else was handled by the Context<T> copy constructor.
   }
 
-  /// Derived classes should reimplement and replace this; don't recursively
-  /// invoke it.
-  std::unique_ptr<ContextBase> DoCloneWithoutPointers() const override {
+  template <typename T>
+  std::unique_ptr<ContextBase> LeafContext<T>::DoCloneWithoutPointers() const {
     return std::unique_ptr<ContextBase>(new LeafContext<T>(*this));
   }
 
-  std::unique_ptr<State<T>> DoCloneState() const override {
+  template <typename T>
+  std::unique_ptr<State<T>> LeafContext<T>::DoCloneState() const {
     auto clone = std::make_unique<State<T>>();
 
     // Make a deep copy of the continuous state using BasicVector::Clone().
@@ -89,28 +49,8 @@ class LeafContext : public Context<T> {
     return clone;
   }
 
- private:
-  friend class LeafContextTest;
-  using ContextBase::AddInputPort;    // For LeafContextTest.
-  using ContextBase::AddOutputPort;
-  using ContextBase::AddDiscreteStateTicket;
-  using ContextBase::AddAbstractStateTicket;
-  using ContextBase::AddNumericParameterTicket;
-  using ContextBase::AddAbstractParameterTicket;
-
-  const State<T>& do_access_state() const final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  State<T>& do_access_mutable_state() final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  /// Returns a partial textual description of the Context, intended to be
-  /// human-readable.  It is not guaranteed to be unambiguous nor complete.
-  std::string do_to_string() const final {
+  template <typename T>
+  std::string LeafContext<T>::do_to_string() const {
     std::ostringstream os;
 
     os << this->GetSystemPathname() << " Context\n";
@@ -161,13 +101,8 @@ class LeafContext : public Context<T> {
     return os.str();
   }
 
-
-  // The state values (x) for this LeafContext; this is never null.
-  std::unique_ptr<State<T>> state_;
-};
-
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::LeafContext)
