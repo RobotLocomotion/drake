@@ -98,6 +98,78 @@ TEST_F(SymbolicChebyshevBasisElementTest, multiply) {
             0.125);
 }
 
+TEST_F(SymbolicChebyshevBasisElementTest, Differentiate) {
+  // d1/dx = 0
+  const auto result1 = ChebyshevBasisElement().Differentiate(x_);
+  EXPECT_TRUE(result1.empty());
+
+  // dT2(x) / dy = 0
+  const auto result2 = ChebyshevBasisElement({{x_, 2}}).Differentiate(y_);
+  EXPECT_TRUE(result2.empty());
+
+  // dT2(x) / dx = 4 * T1(x)
+  const auto result3 = ChebyshevBasisElement({{x_, 2}}).Differentiate(x_);
+  EXPECT_EQ(result3.size(), 1);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 1}})), 4);
+
+  // d(T2(x) * T3(y)) / dx = 4 * T1(x)*T3(y)
+  const auto result4 =
+      ChebyshevBasisElement({{x_, 2}, {y_, 3}}).Differentiate(x_);
+  EXPECT_EQ(result4.size(), 1);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 1}, {y_, 3}})), 4);
+
+  // dT3(x) / dx = 6*T2(x) + 3
+  const auto result5 = ChebyshevBasisElement({{x_, 3}}).Differentiate(x_);
+  EXPECT_EQ(result5.size(), 2);
+  EXPECT_EQ(result5.at(ChebyshevBasisElement({{x_, 2}})), 6);
+  EXPECT_EQ(result5.at(ChebyshevBasisElement()), 3);
+
+  // d(T3(x) * T4(y)) / dx = 6*T2(x)*T4(y) + 3*T4(y)
+  const auto result6 =
+      ChebyshevBasisElement({{x_, 3}, {y_, 4}}).Differentiate(x_);
+  EXPECT_EQ(result6.size(), 2);
+  EXPECT_EQ(result6.at(ChebyshevBasisElement({{x_, 2}, {y_, 4}})), 6);
+  EXPECT_EQ(result6.at(ChebyshevBasisElement({{y_, 4}})), 3);
+
+  // dT4(x) / dx = 8*T3(x) + 8*T1(x)
+  const auto result7 = ChebyshevBasisElement({{x_, 4}}).Differentiate(x_);
+  EXPECT_EQ(result7.size(), 2);
+  EXPECT_EQ(result7.at(ChebyshevBasisElement({{x_, 3}})), 8);
+  EXPECT_EQ(result7.at(ChebyshevBasisElement({{x_, 1}})), 8);
+
+  // d(T4(x)*T3(y)) / dx = 8*T3(x)T3(y) + 8*T1(x)T3(y)
+  const auto result8 =
+      ChebyshevBasisElement({{x_, 4}, {y_, 3}}).Differentiate(x_);
+  EXPECT_EQ(result8.size(), 2);
+  EXPECT_EQ(result8.at(ChebyshevBasisElement({{x_, 3}, {y_, 3}})), 8);
+  EXPECT_EQ(result8.at(ChebyshevBasisElement({{x_, 1}, {y_, 3}})), 8);
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, Integration) {
+  // ∫1dx = T1(x)
+  const auto result1 = ChebyshevBasisElement().Integration(x_);
+  EXPECT_EQ(result1.size(), 1);
+  EXPECT_EQ(result1.at(ChebyshevBasisElement({{x_, 1}})), 1);
+
+  // ∫T2(x)dy = T2(x)T1(y)
+  const auto result2 = ChebyshevBasisElement({{x_, 2}}).Integration(y_);
+  EXPECT_EQ(result2.size(), 1);
+  EXPECT_EQ(result2.at(ChebyshevBasisElement({{x_, 2}, {y_, 1}})), 1);
+
+  // ∫T2(x)dx = 1/6*T3(x) - 1/2*T1(x)
+  const auto result3 = ChebyshevBasisElement({{x_, 2}}).Integration(x_);
+  EXPECT_EQ(result3.size(), 2);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 3}})), 1. / 6);
+  EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 1}})), -1. / 2);
+
+  // ∫T3(x)T2(y)dx = 1/8*T4(x)T2(y) - 1/4*T2(x)T2(y)
+  const auto result4 =
+      ChebyshevBasisElement({{x_, 3}, {y_, 2}}).Integration(x_);
+  EXPECT_EQ(result4.size(), 2);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 4}, {y_, 2}})), 1. / 8);
+  EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 2}, {y_, 2}})), -1. / 4);
+}
+
 TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {
   std::ostringstream os1;
   os1 << ChebyshevBasisElement();
@@ -144,6 +216,25 @@ TEST_F(SymbolicChebyshevBasisElementTest, EigenMatrix) {
   // `Eigen::NumTraits<drake::symbolic::DerivedA>`
   std::ostringstream oss;
   oss << M;
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, Hash) {
+  // Check that ChebyshevBasisElement can be used as a key in
+  // std::unordered_map.
+  std::unordered_map<ChebyshevBasisElement, int> map;
+  map.emplace(ChebyshevBasisElement({{x_, 1}}), 1);
+  EXPECT_EQ(map.size(), 1);
+  EXPECT_EQ(map.at(ChebyshevBasisElement({{x_, 1}})), 1);
+
+  map.emplace(ChebyshevBasisElement({{x_, 1}, {y_, 2}}), 2);
+  EXPECT_EQ(map.size(), 2);
+  EXPECT_EQ(map.at(ChebyshevBasisElement({{x_, 1}, {y_, 2}})), 2);
+
+  // Test the special case to map T0() to 3.
+  map.emplace(ChebyshevBasisElement({{x_, 0}}), 3);
+  EXPECT_EQ(map.size(), 3);
+  // T0(y) = T0(x) = 1.
+  EXPECT_EQ(map.at(ChebyshevBasisElement({{y_, 0}})), 3);
 }
 }  // namespace symbolic
 }  // namespace drake
