@@ -63,9 +63,12 @@ class TestMeshcat(unittest.TestCase):
         cart_pole.Finalize()
         assert cart_pole.geometry_source_is_registered()
 
+        # Note: pass window=None argument to confirm kwargs are passed
+        # through to meshcat.Visualizer.
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
                                                          zmq_url=ZMQ_URL,
-                                                         open_browser=False))
+                                                         open_browser=False,
+                                                         window=None))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
 
