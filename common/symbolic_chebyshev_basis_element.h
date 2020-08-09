@@ -36,6 +36,49 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    */
   bool operator<(const ChebyshevBasisElement& other) const;
 
+  /**
+   * Differentiates the ChebyshevBasisElement with respect to a variable.
+   * We use the fact that
+   * - If n is even dTₙ(x)/dx = 2n ∑ⱼ Tⱼ(x), j is odd  and j <= n-1
+   * - If n is odd dTₙ(x)/dx = 2n ∑ⱼ Tⱼ(x) - n, j is even and j <= n-1
+   * We return `result`, a map from ChebyshevBasisElement to double, such that
+   * sum(result.key() * result[key]) is the differentiation of `this` w.r.t the
+   * variable.
+   * For example if n is even, dTₙ(x)Tₘ(y)/dx = 2n∑ⱼ Tⱼ(x)Tₘ(y), j is odd and j
+   * <= 1, then the returned result is {T₁(x)Tₘ(y), 2n}, {T₃(x)Tₘ(y), 2n}, ...,
+   * {T₂ₙ₋₁(x)Tₘ(y), 2n}.
+   * A special case is that @p var is not a variable in `this`, then we return
+   * an empty map.
+   * @param var A variable to differentiate with.
+   */
+  std::map<ChebyshevBasisElement, double> Differentiate(
+      const Variable& var) const;
+
+  /**
+   * Integrates a ChebyshevBasisElement for a variable.
+   * We use the fact that
+   * ∫ Tₙ(x)dx = 1/(2n+1)Tₙ₊₁(x) − 1/(2n−1)Tₙ₋₁(x)
+   * A special case is ∫ T₀(x)dx = T₁(x)
+   * @param var The variable to integrate. If @param var is not a variable in
+   * this ChebyshevBasisElement, then the integration result is *this * T₁(var).
+   * @retval result sum(key * result[key]) is the integration result. For
+   * example, ∫ T₂(x)T₃(y)dx = 1/5*T₃(x)T₃(y) − 1/3 * T₁(x)T₃(y), then the
+   * result is the map containing {T₃(x)T₃(y), 1/5} and {T₁(x)T₃(y), -1/3}.
+   */
+  std::map<ChebyshevBasisElement, double> Integration(
+      const Variable& var) const;
+
+  /** Implements the @ref hash_append concept. */
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const ChebyshevBasisElement& item) noexcept {
+    using drake::hash_append;
+    // We do not send total_degree_ to the hasher, because it is already fully
+    // represented by var_to_degree_map_ -- it is just a cached tally of the
+    // exponents.
+    hash_append(hasher, item.var_to_degree_map());
+  }
+
  private:
   double DoEvaluate(double variable_val, int degree) const override;
   Expression DoToExpression() const override;
@@ -57,6 +100,13 @@ std::map<ChebyshevBasisElement, double> operator*(
 std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m);
 }  // namespace symbolic
 }  // namespace drake
+
+namespace std {
+/* Provides std::hash<drake::symbolic::ChebyshevBasisElement>. */
+template <>
+struct hash<drake::symbolic::ChebyshevBasisElement>
+    : public drake::DefaultHash {};
+}  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 namespace Eigen {
