@@ -2,12 +2,11 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/abstract_values.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
 
@@ -32,11 +31,8 @@ class State {
   // State is not copyable or moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(State)
 
-  State()
-      : abstract_state_(std::make_unique<AbstractValues>()),
-        continuous_state_(std::make_unique<ContinuousState<T>>()),
-        discrete_state_(std::make_unique<DiscreteValues<T>>()) {}
-  virtual ~State() {}
+  State();
+  virtual ~State();
 
   void set_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
     DRAKE_DEMAND(xc != nullptr);

@@ -1,15 +1,13 @@
 #pragma once
 
+#include <functional>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/continuous_state.h"
-#include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/supervector.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
@@ -41,35 +39,20 @@ class DiagramContinuousState final: public ContinuousState<T> {
   /// ordering as the `substates` parameter, which should be the order of
   /// the Diagram itself. That is, the substates should be indexed by
   /// SubsystemIndex in the same order as the subsystems are. */
-  explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
-      : ContinuousState<T>(
-            Span(substates, x_selector), Span(substates, q_selector),
-            Span(substates, v_selector), Span(substates, z_selector)),
-        substates_(std::move(substates)) {
-    DRAKE_ASSERT(internal::IsNonNull(substates_));
-  }
+  explicit DiagramContinuousState(std::vector<ContinuousState<T>*> substates);
 
   /// Constructs a ContinuousState that is composed (recursively) of other
   /// ContinuousState objects, ownership of which is transferred here.
   explicit DiagramContinuousState(
-      std::vector<std::unique_ptr<ContinuousState<T>>> substates)
-      : DiagramContinuousState<T>(internal::Unpack(substates)) {
-      owned_substates_ = std::move(substates);
-    DRAKE_ASSERT(internal::IsNonNull(owned_substates_));
-  }
+      std::vector<std::unique_ptr<ContinuousState<T>>> substates);
 
-  ~DiagramContinuousState() override {}
+  ~DiagramContinuousState() override;
 
   /// Creates a deep copy of this %DiagramContinuousState, with the same
   /// substructure but with new, owned data. Intentionally shadows the
   /// ContinuousState::Clone() method but with a more-specific return type so
   /// you don't have to downcast.
-  std::unique_ptr<DiagramContinuousState> Clone() const {
-    // We are sure of the type here because DoClone() is final.  However,
-    // we'll still use the `..._or_throw` spelling as a sanity check.
-    return dynamic_pointer_cast_or_throw<DiagramContinuousState>(
-        ContinuousState<T>::Clone());
-  }
+  std::unique_ptr<DiagramContinuousState> Clone() const;
 
   int num_substates() const { return static_cast<int>(substates_.size()); }
 
@@ -91,25 +74,13 @@ class DiagramContinuousState final: public ContinuousState<T> {
   // This completely replaces the base class default DoClone() so must
   // take care of the base class members as well as the local ones.
   // The returned concrete object is a DiagramContinuousState<T>.
-  std::unique_ptr<ContinuousState<T>> DoClone() const final {
-    std::vector<std::unique_ptr<ContinuousState<T>>> owned_states;
-    // Make deep copies regardless of whether they were owned.
-    for (auto state : substates_) owned_states.push_back(state->Clone());
-    return std::make_unique<DiagramContinuousState>(std::move(owned_states));
-  }
+  std::unique_ptr<ContinuousState<T>> DoClone() const final;
 
   // Returns a Supervector over the x, q, v, or z components of each
   // substate in `substates`, as indicated by `selector`.
   static std::unique_ptr<VectorBase<T>> Span(
       const std::vector<ContinuousState<T>*>& substates,
-      std::function<VectorBase<T>&(ContinuousState<T>*)> selector) {
-    std::vector<VectorBase<T>*> sub_xs;
-    for (const auto& substate : substates) {
-      DRAKE_DEMAND(substate != nullptr);
-      sub_xs.push_back(&selector(substate));
-    }
-    return std::make_unique<Supervector<T>>(sub_xs);
-  }
+      std::function<VectorBase<T>&(ContinuousState<T>*)> selector);
 
   // Returns the entire state vector in `xc`.
   static VectorBase<T>& x_selector(ContinuousState<T>* xc) {

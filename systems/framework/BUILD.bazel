@@ -125,14 +125,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "continuous_state",
-    srcs = ["continuous_state.old.cc"],
+    srcs = ["continuous_state.cc"],
     hdrs = ["continuous_state.h"],
     tags = ["nolint"],
     deps = [
         ":framework_common",
         ":system_scalar_converter",
         ":vector",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -155,7 +154,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "state",
-    srcs = ["state.old.cc"],
+    srcs = ["state.cc"],
     hdrs = ["state.h"],
     tags = ["nolint"],
     deps = [
@@ -163,10 +162,8 @@ drake_cc_library(
         ":continuous_state",
         ":discrete_values",
         ":vector",
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
-        "//common:value",
     ],
 )
 
@@ -532,11 +529,12 @@ drake_cc_library(
 
 drake_cc_library(
     name = "diagram_continuous_state",
-    srcs = ["diagram_continuous_state.old.cc"],
+    srcs = ["diagram_continuous_state.cc"],
     hdrs = ["diagram_continuous_state.h"],
     tags = ["nolint"],
     deps = [
         ":continuous_state",
+        ":vector",
         "//common:default_scalars",
         "//common:essential",
         "//common:pointer_cast",
@@ -557,7 +555,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "diagram_state",
-    srcs = ["diagram_state.old.cc"],
+    srcs = ["diagram_state.cc"],
     hdrs = ["diagram_state.h"],
     tags = ["nolint"],
     deps = [
