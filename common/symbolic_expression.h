@@ -170,6 +170,26 @@ symbolic::Formula instead of bool. Those operations are declared in
 symbolic_formula.h file. To check structural equality between two expressions a
 separate function, Expression::EqualTo, is provided.
 
+Regarding NaN, we have the following rules:
+ 1. NaN values are extremely rare during typical computations. Because they are
+    difficult to handle symbolically, we will round that up to "must never
+    occur". We allow the user to form ExpressionNaN cells in a symbolic
+    tree. For example, the user can initialize an Expression to NaN and then
+    overwrite it later. However, evaluating a tree that has NaN in its evaluated
+    sub-trees is an error (see rule (3) below).
+ 2. It's still valid for code to check `isnan` in order to fail-fast. So we
+    provide isnan(const Expression&) for the common case of non-NaN value
+    returning False. This way, code can fail-fast with double yet still compile
+    with Expression.
+ 3. If there are expressions that embed separate cases (`if_then_else`), some of
+    the sub-expressions may be not used in evaluation when they are in the
+    not-taken case (for NaN reasons or any other reason). Bad values within
+    those not-taken branches does not cause exceptions.
+ 4. The isnan check is different than if_then_else. In the latter, the
+    ExpressionNaN is within a dead sub-expression branch. In the former, it
+    appears in an evaluated trunk. That goes against rule (1) where a NaN
+    anywhere in a computation (other than dead code) is an error.
+
 symbolic::Expression can be used as a scalar type of Eigen types.
 */
 class Expression {

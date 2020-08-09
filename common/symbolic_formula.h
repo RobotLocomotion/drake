@@ -313,9 +313,12 @@ Formula operator>(const Expression& e1, const Expression& e2);
 Formula operator>=(const Expression& e1, const Expression& e2);
 
 /** Returns a Formula for the predicate isnan(e) to the given expression. This
- * serves as the argument-dependent lookup related to std::isnan(double). When
- * evaluated, this Formula will return false when the e.Evaluate() is not NaN.
- * @throws std::runtime_error if NaN is detected during evaluation.
+ * serves as the argument-dependent lookup related to std::isnan(double).
+ *
+ * When this formula is evaluated, there are two possible outcomes:
+ * - Returns false if the e.Evaluate() is not NaN.
+ * - Throws std::runtime_error if NaN is detected during evaluation.
+ * Note that the evaluation of `isnan(e)` never returns true.
  */
 Formula isnan(const Expression& e);
 
