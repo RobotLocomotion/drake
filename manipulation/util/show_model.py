@@ -30,7 +30,7 @@ remove the need for `--find_resource`:
 
     ./bazel-bin/manipulation/util/show_model \
         --meshcat default \
-        ${PWD}/manipulation/models/iiwa_description/sdf/iiwa7_no_collision.sdf
+        ${PWD}/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
 Note:
     If `--meshcat` is not specified, no meshcat visualization will take
