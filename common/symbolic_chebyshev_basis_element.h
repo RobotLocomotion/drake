@@ -23,6 +23,9 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ChebyshevBasisElement)
 
+  /** Constructs a ChebyshevBasisElement equals to 1. */
+  ChebyshevBasisElement();
+
   explicit ChebyshevBasisElement(
       const std::map<Variable, int>& var_to_degree_map);
 
@@ -35,6 +38,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
 
  private:
   double DoEvaluate(double variable_val, int degree) const override;
+  Expression DoToExpression() const override;
 };
 
 /**
@@ -49,5 +53,18 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
  */
 std::map<ChebyshevBasisElement, double> operator*(
     const ChebyshevBasisElement& a, const ChebyshevBasisElement& b);
+
+std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m);
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+// Eigen scalar type traits for Matrix<drake::symbolic::ChebyshevBasisElement>.
+template <>
+struct NumTraits<drake::symbolic::ChebyshevBasisElement>
+    : GenericNumTraits<drake::symbolic::ChebyshevBasisElement> {
+  static inline int digits10() { return 0; }
+};
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)

@@ -7,6 +7,8 @@
 
 #include <map>
 
+#include <Eigen/Core>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
 
@@ -41,6 +43,12 @@ class PolynomialBasisElement {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PolynomialBasisElement)
 
   /**
+   * Constructs a polynomial basis with empty var_to_degree map. This element
+   * should be interpreted as 1.
+   */
+  PolynomialBasisElement();
+
+  /**
    * Constructs a polynomial basis given the variable and the degree of that
    * variable.
    * @throw std::logic_error if any of the degree is negative.
@@ -72,6 +80,8 @@ class PolynomialBasisElement {
 
   bool operator!=(const PolynomialBasisElement& other) const;
 
+  symbolic::Expression ToExpression() const;
+
  protected:
   /**
    * Compares two PolynomialBasisElement using lexicographical order. This
@@ -90,6 +100,8 @@ class PolynomialBasisElement {
   // evaluats the Chebyshev polynomial Tₙ(x).
   virtual double DoEvaluate(double variable_val, int degree) const = 0;
 
+  virtual Expression DoToExpression() const = 0;
+
   // Internally, the polynomial basis is represented as a mapping from a
   // variable to its degree.
   std::map<Variable, int> var_to_degree_map_;
@@ -98,3 +110,17 @@ class PolynomialBasisElement {
 
 }  // namespace symbolic
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+namespace Eigen {
+namespace internal {
+// Informs Eigen how to cast drake::symbolic::PolynomialBasisElement to
+// drake::symbolic::Expression.
+template <>
+EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
+    const drake::symbolic::PolynomialBasisElement& m) {
+  return m.ToExpression();
+}
+}  // namespace internal
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)

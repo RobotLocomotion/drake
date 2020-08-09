@@ -12,6 +12,9 @@
 
 namespace drake {
 namespace symbolic {
+PolynomialBasisElement::PolynomialBasisElement()
+    : var_to_degree_map_{}, total_degree_{0} {}
+
 PolynomialBasisElement::PolynomialBasisElement(
     const std::map<Variable, int>& var_to_degree_map) {
   total_degree_ = std::accumulate(
@@ -108,6 +111,10 @@ bool PolynomialBasisElement::lexicographical_compare(
         }
         return i1 < i2;
       });
+}
+
+symbolic::Expression PolynomialBasisElement::ToExpression() const {
+  return DoToExpression();
 }
 }  // namespace symbolic
 }  // namespace drake

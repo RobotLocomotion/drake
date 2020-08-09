@@ -1,6 +1,8 @@
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
 namespace symbolic {
@@ -94,6 +96,54 @@ TEST_F(SymbolicChebyshevBasisElementTest, multiply) {
             0.125);
   EXPECT_EQ(result7.at(ChebyshevBasisElement({{x_, 1}, {y_, 1}, {z_, 2}})),
             0.125);
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, StringOutput) {
+  std::ostringstream os1;
+  os1 << ChebyshevBasisElement();
+  EXPECT_EQ(fmt::format("{}", os1.str()), "T0()");
+
+  std::ostringstream os2;
+  os2 << ChebyshevBasisElement({{x_, 1}});
+  EXPECT_EQ(fmt::format("{}", os2.str()), "T1(x)");
+
+  std::ostringstream os3;
+  os3 << ChebyshevBasisElement({{x_, 0}});
+  EXPECT_EQ(fmt::format("{}", os3.str()), "T0()");
+
+  std::ostringstream os4;
+  os4 << ChebyshevBasisElement({{x_, 1}, {y_, 2}});
+  EXPECT_EQ(fmt::format("{}", os4.str()), "T1(x)T2(y)");
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, ToExpression) {
+  EXPECT_PRED2(test::ExprEqual, ChebyshevBasisElement().ToExpression(),
+               Expression(1.));
+
+  EXPECT_PRED2(test::ExprEqual, ChebyshevBasisElement({{x_, 0}}).ToExpression(),
+               Expression(1.));
+
+  EXPECT_PRED2(test::ExprEqual, ChebyshevBasisElement({{x_, 2}}).ToExpression(),
+               ChebyshevPolynomial(x_, 2).ToPolynomial().ToExpression());
+
+  EXPECT_PRED2(test::ExprEqual,
+               ChebyshevBasisElement({{x_, 2}, {y_, 3}}).ToExpression(),
+               ChebyshevPolynomial(x_, 2).ToPolynomial().ToExpression() *
+                   ChebyshevPolynomial(y_, 3).ToPolynomial().ToExpression());
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, EigenMatrix) {
+  // Checks we can have an Eigen matrix of ChebyshevBasisElements without
+  // compilation errors. No assertions in the test.
+  Eigen::Matrix<ChebyshevBasisElement, 2, 2> M;
+  M << ChebyshevBasisElement(), ChebyshevBasisElement({{x_, 1}}),
+      ChebyshevBasisElement({{x_, 1}, {y_, 2}}),
+      ChebyshevBasisElement({{y_, 2}});
+
+  // The following fails if we do not provide
+  // `Eigen::NumTraits<drake::symbolic::DerivedA>`
+  std::ostringstream oss;
+  oss << M;
 }
 }  // namespace symbolic
 }  // namespace drake
