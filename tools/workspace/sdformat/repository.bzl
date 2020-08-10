@@ -16,6 +16,10 @@ def sdformat_repository(
             # should remove it once we reach a new enough version, probably for
             # sdformat10 or so.
             "@drake//tools/workspace/sdformat:3bbd303.patch",
+            # Disable logging to $HOME/.sdformat/sdformat.log
+            # Once https://github.com/osrf/sdformat/issues/334 is resolved, we
+            # can probably remove this patch from Drake.
+            "@drake//tools/workspace/sdformat:no-console-file.patch",
         ],
         patch_args = ["-p1"],
         mirrors = mirrors,
