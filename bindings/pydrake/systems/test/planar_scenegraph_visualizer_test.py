@@ -139,12 +139,12 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         This test ensures we can load obj files or provide a reasonable error
         message.
         """
-        def scene_graph_with_mesh(filename):
+        def scene_graph_with_mesh(filename, scale=1.0):
             builder = DiagramBuilder()
             mbp, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
             world_body = mbp.world_body()
 
-            mesh_shape = Mesh(filename)
+            mesh_shape = Mesh(filename, scale=scale)
             mesh_body = mbp.AddRigidBody("mesh", SpatialInertia(
                 mass=1.0, p_PScm_E=np.array([0., 0., 0.]),
                 G_SP_E=UnitInertia(1.0, 1.0, 1.0)))
@@ -184,6 +184,13 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         scene_graph = scene_graph_with_mesh("garbage.STL")
         with self.assertRaises(RuntimeError):
             PlanarSceneGraphVisualizer(scene_graph)
+
+        # This should load correctly and yield a very large patch.
+        scene_graph = scene_graph_with_mesh(mesh_name, 1e3)
+        visualizer = PlanarSceneGraphVisualizer(scene_graph)
+        _, _, width, height = visualizer.ax.dataLim.bounds
+        self.assertTrue(width > 10.0)
+        self.assertTrue(height > 10.0)
 
     def testConnectPlanarSceneGraphVisualizer(self):
         """Cart-Pole with simple geometry."""

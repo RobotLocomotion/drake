@@ -267,7 +267,9 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    mesh = ReadObjToSurfaceMesh(filename)
+                    # Get mesh scaling.
+                    scale = geom.float_data[0]
+                    mesh = ReadObjToSurfaceMesh(filename, scale)
                     patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
 
                 else:
