@@ -1,15 +1,21 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <errno.h>
+#include <stdlib.h>
+
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include <sdf/sdf.hh>
 
+#include "drake/common/unused.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -735,6 +741,25 @@ ModelInstanceIndex AddModelFromSpecification(
   return model_instance;
 }
 
+void InitializeSdformatLogging() {
+  // Latch-initialize the sdf::Console singleton by side-effect with $HOME
+  // unset, so that it never prints to $HOME/.sdformat/sdformat.log.  See
+  // https://github.com/RobotLocomotion/drake/issues/9087.
+  const char* const home = std::getenv("HOME");
+  if (home != nullptr) {
+    unused(::unsetenv("HOME"));
+  }
+  unused(sdf::Console::Instance());
+  if (home != nullptr) {
+    const int err = ::setenv("HOME", home, 1);
+    if (err != 0) {
+      const int errno_copy = errno;
+      throw std::runtime_error(fmt::format(
+          "Could not reset $HOME: errno {}", errno_copy));
+    }
+  }
+}
+
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdf(
@@ -745,6 +770,8 @@ ModelInstanceIndex AddModelFromSdf(
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  InitializeSdformatLogging();
 
   sdf::Root root;
 
@@ -775,6 +802,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  InitializeSdformatLogging();
 
   sdf::Root root;
 
