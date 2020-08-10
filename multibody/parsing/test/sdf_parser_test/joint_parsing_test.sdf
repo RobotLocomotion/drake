@@ -149,5 +149,25 @@ Defines an SDF model with various types of joints used for testing the parser.
         <xyz expressed_in="__model__">0 0 1</xyz>
       </axis>
     </joint>
+    <link name="link7">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.1</iyy>
+          <iyz>0</iyz>
+          <izz>0.1</izz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name='frame6' attached_to='link6'/>
+    <frame name='frame7' attached_to='link7'/>
+    <drake:joint name="planar_joint" type="planar">
+      <drake:child>frame7</drake:child>
+      <drake:parent>frame6</drake:parent>
+      <drake:damping>0.1 0.1 0.1</drake:damping>
+    </drake:joint>
   </model>
 </sdf>
