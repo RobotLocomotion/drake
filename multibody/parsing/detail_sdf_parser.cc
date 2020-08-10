@@ -1,15 +1,21 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
+#include <errno.h>
+#include <stdlib.h>
+
+#include <cstdlib>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 #include <sdf/sdf.hh>
 
+#include "drake/common/unused.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -735,6 +741,39 @@ ModelInstanceIndex AddModelFromSpecification(
   return model_instance;
 }
 
+// Iff error == 0, do nothing.  Otherwise, raise an exception for errno.
+void IfErrorThrowErrno(int error, const char* const description) {
+  if (error == 0) {
+    return;
+  }
+  const int errno_copy = errno;
+  throw std::runtime_error(fmt::format(
+      "Errno {} while calling {}", errno_copy, description));
+}
+
+// Latch-initialize the sdf::Console singleton with $HOME unset, so that it
+// never creates $HOME/.sdformat/sdformat.log.
+// See https://github.com/RobotLocomotion/drake/issues/9087.
+void InitializeSdformatLogging() {
+  // Read the prior $HOME and then unset it.
+  const char* const home = std::getenv("HOME");
+  if (home != nullptr) {
+    const int error = ::unsetenv("HOME");
+    IfErrorThrowErrno(error, "unsetenv(\"HOME\")");
+  }
+
+  // Initialize sdf::Console.
+  unused(sdf::Console::Instance());
+
+  // Reset $HOME to its prior value.
+  if (home != nullptr) {
+    // Using `overwrite = 0` is probably the same, but why risk it?
+    const int overwrite = 1;
+    const int error = ::setenv("HOME", home, overwrite);
+    IfErrorThrowErrno(error, "setenv(\"HOME\", ...)");
+  }
+}
+
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdf(
@@ -745,6 +784,8 @@ ModelInstanceIndex AddModelFromSdf(
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  InitializeSdformatLogging();
 
   sdf::Root root;
 
@@ -775,6 +816,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  InitializeSdformatLogging();
 
   sdf::Root root;
 
