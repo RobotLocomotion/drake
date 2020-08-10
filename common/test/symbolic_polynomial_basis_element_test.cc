@@ -3,6 +3,9 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
+#include "drake/common/symbolic_expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {
@@ -11,6 +14,8 @@ namespace symbolic {
 class DerivedBasisA : public PolynomialBasisElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DerivedBasisA);
+
+  DerivedBasisA() : PolynomialBasisElement() {}
 
   explicit DerivedBasisA(const std::map<Variable, int>& var_to_degree_map)
       : PolynomialBasisElement(var_to_degree_map) {}
@@ -23,11 +28,21 @@ class DerivedBasisA : public PolynomialBasisElement {
   double DoEvaluate(double variable_val, int degree) const override {
     return std::pow(variable_val, degree);
   }
+
+  Expression DoToExpression() const override {
+    std::map<Expression, Expression> base_to_exponent_map;
+    for (const auto& [var, degree] : var_to_degree_map()) {
+      base_to_exponent_map.emplace(Expression{var}, degree);
+    }
+    return ExpressionMulFactory{1.0, base_to_exponent_map}.GetExpression();
+  }
 };
 
 class DerivedBasisB : public PolynomialBasisElement {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DerivedBasisB);
+
+  DerivedBasisB() : PolynomialBasisElement() {}
 
   explicit DerivedBasisB(const std::map<Variable, int>& var_to_degree_map)
       : PolynomialBasisElement(var_to_degree_map) {}
@@ -40,6 +55,8 @@ class DerivedBasisB : public PolynomialBasisElement {
   double DoEvaluate(double variable_val, int degree) const override {
     return 1.;
   }
+
+  Expression DoToExpression() const override { return Expression(1.); }
 };
 
 class SymbolicPolynomialBasisElementTest : public ::testing::Test {
@@ -64,7 +81,7 @@ TEST_F(SymbolicPolynomialBasisElementTest, Constructor) {
   EXPECT_EQ(p3.total_degree(), 0);
   EXPECT_EQ(p3.var_to_degree_map().size(), 0);
 
-  const DerivedBasisA p4({});
+  const DerivedBasisA p4(std::map<Variable, int>({}));
   EXPECT_EQ(p4.total_degree(), 0);
   EXPECT_EQ(p4.var_to_degree_map().size(), 0);
 
@@ -82,7 +99,7 @@ TEST_F(SymbolicPolynomialBasisElementTest, GetVariables) {
   const symbolic::DerivedBasisA p3({{x_, 0}, {y_, 0}});
   EXPECT_EQ(p3.GetVariables(), Variables({}));
 
-  const symbolic::DerivedBasisA p4({});
+  const symbolic::DerivedBasisA p4(std::map<Variable, int>({}));
   EXPECT_EQ(p4.GetVariables(), Variables({}));
 }
 
@@ -133,6 +150,14 @@ TEST_F(SymbolicPolynomialBasisElementTest, LessThan) {
   EXPECT_LT(p2, p1);
   EXPECT_LT(p1, p3);
   EXPECT_LT(p2, p3);
+}
+
+TEST_F(SymbolicPolynomialBasisElementTest, EigenMatrix) {
+  // Checks we can have an Eigen matrix of PolynomialBasisElements without
+  // compilation errors. No assertions in the test.
+  Eigen::Matrix<DerivedBasisA, 2, 2> M;
+  M << DerivedBasisA(std::map<Variable, int>({})), DerivedBasisA({{x_, 1}}),
+      DerivedBasisA({{x_, 1}, {y_, 2}}), DerivedBasisA({{y_, 2}});
 }
 }  // namespace symbolic
 }  // namespace drake

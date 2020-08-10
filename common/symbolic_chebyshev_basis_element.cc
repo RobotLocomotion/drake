@@ -3,9 +3,14 @@
 #include <vector>
 
 #include "drake/common/symbolic.h"
+#define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
+#include "drake/common/symbolic_expression_cell.h"
+#undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
 namespace drake {
 namespace symbolic {
+ChebyshevBasisElement::ChebyshevBasisElement() : PolynomialBasisElement() {}
+
 ChebyshevBasisElement::ChebyshevBasisElement(
     const std::map<Variable, int>& var_to_degree_map)
     : PolynomialBasisElement(var_to_degree_map) {}
@@ -15,9 +20,64 @@ bool ChebyshevBasisElement::operator<(
   return this->lexicographical_compare(other);
 }
 
+std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Differentiate(
+    const Variable& var) const {
+  if (var_to_degree_map().count(var) == 0) {
+    // Return an empty map (the differentiation result is 0) when @p var is not
+    // a variable in @p this.
+    return {};
+  }
+  std::map<ChebyshevBasisElement, double> result;
+  std::map<Variable, int> var_to_degree_map = this->var_to_degree_map();
+  auto it = var_to_degree_map.find(var);
+  const int degree = it->second;
+  const int start_degree = degree % 2 == 0 ? 1 : 2;
+  for (int i = start_degree; i < degree; i += 2) {
+    it->second = i;
+    result.emplace(ChebyshevBasisElement(var_to_degree_map), 2 * degree);
+  }
+  // Lastly, add the term for T0(x) if the degree is odd. The coefficient for
+  // T0(x) is degree instead of 2 * degree.
+  if (degree % 2 == 1) {
+    it->second = 0;
+    result.emplace(ChebyshevBasisElement(var_to_degree_map), degree);
+  }
+  return result;
+}
+
+std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Integration(
+    const Variable& var) const {
+  auto var_to_degree_map = this->var_to_degree_map();
+  auto it = var_to_degree_map.find(var);
+  if (it == var_to_degree_map.end()) {
+    // var is not a variable in this Chebyshev basis element.
+    // Append T1(var) to the var_to_degree_map.
+    var_to_degree_map.emplace_hint(it, var, 1);
+    return {{ChebyshevBasisElement(var_to_degree_map), 1}};
+  }
+  const int degree = it->second;
+  std::map<ChebyshevBasisElement, double> result;
+  it->second = degree + 1;
+  result.emplace(ChebyshevBasisElement(var_to_degree_map),
+                 1.0 / (2 * degree + 2));
+  it->second = degree - 1;
+  result.emplace(ChebyshevBasisElement(var_to_degree_map),
+                 -1.0 / (2 * degree - 2));
+  return result;
+}
+
 double ChebyshevBasisElement::DoEvaluate(double variable_val,
                                          int degree) const {
   return EvaluateChebyshevPolynomial(variable_val, degree);
+}
+
+Expression ChebyshevBasisElement::DoToExpression() const {
+  std::map<Expression, Expression> base_to_exponent_map;
+  for (const auto& [var, degree] : var_to_degree_map()) {
+    base_to_exponent_map.emplace(
+        ChebyshevPolynomial(var, degree).ToPolynomial().ToExpression(), 1);
+  }
+  return ExpressionMulFactory{1.0, base_to_exponent_map}.GetExpression();
 }
 
 namespace {
@@ -148,6 +208,17 @@ std::map<ChebyshevBasisElement, double> operator*(
     result.emplace(ChebyshevBasisElement(var_to_degree_map), coeff);
   }
   return result;
+}
+
+std::ostream& operator<<(std::ostream& out, const ChebyshevBasisElement& m) {
+  if (m.var_to_degree_map().empty()) {
+    out << "T0()";
+  } else {
+    for (const auto& [var, degree] : m.var_to_degree_map()) {
+      out << ChebyshevPolynomial(var, degree);
+    }
+  }
+  return out;
 }
 }  // namespace symbolic
 }  // namespace drake
