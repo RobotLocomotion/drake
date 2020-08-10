@@ -335,3 +335,48 @@ Change the following fields in the instructions given above:
 Building the drake addenda lint tool:
 
 ``bazel build //tools/lint:drakelint``
+
+Debugging an arbitrary program in Drake with CLion
+==================================================
+
+Apparently CLion (or perhaps the Bazel plugin) has a certain amount of
+auto-configuration of run/debug targets. It appears to hinge on the presence of
+the gtest.h header in source files. This is convenient, but only further
+mystifies the process of debugging a non-gtest program. This section explains
+how to configure debugging support for arbitrary programs in a Drake/CLion
+project.
+
+This section assumes all of the Drake-recommended installation and
+configuration is done.
+
+Get the bazel target string
+---------------------------
+
+Find the source file of the program in the file tree view. Right-click on the
+file, and select "Copy BUILD Target String". This will put the Bazel target
+name into the clipboard.
+
+Start a run configuration
+-------------------------
+
+From the top menu, select "Run/Edit Configurations...". Select the "+" at the
+upper left of the dialog to add a new configuration. From the list, select
+"Bazel Command".
+
+Fill in the configuration
+-------------------------
+
+Now it's time to fill in the new blank configuration. Give it a name, then
+select the "+" at the right side to add the target expression. Once the edit
+box appears, paste the contents of the clipboard there. Hit "Enter" or "Tab" to
+confirm the setting; a port number value should appear in the "Port number"
+field below. In "Bazel command", select either "run" (for an arbitrary
+program), or "test" (for a Bazel test target). Everything else can be left at
+default values. Click OK to finish.
+
+Launch the debugger
+-------------------
+
+At this point, the top menu "Run" should have entries to run or debug the new
+configuration. Select the debug entry there, or use the controls at the upper
+right to launch the debugger.
