@@ -213,7 +213,8 @@ class MeshcatVisualizer(LeafSystem):
                  frames_to_draw={},
                  frames_opacity=1.,
                  axis_length=0.15,
-                 axis_radius=0.006):
+                 axis_radius=0.006,
+                 **kwargs):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -241,6 +242,8 @@ class MeshcatVisualizer(LeafSystem):
                     {"1": {"A", "B"}}.
             frames_opacity, axis_length and axis_radius are the opacity, length
                 and radius of the coordinate axes to be drawn.
+
+        Additional kwargs will be passed to the MeshcatVisualizer constructor.
         Note:
             This call will not return until it connects to the
             ``meshcat-server``.
@@ -273,7 +276,7 @@ class MeshcatVisualizer(LeafSystem):
         self.prefix = prefix
         if zmq_url is not None:
             print("Connecting to meshcat-server at zmq_url=" + zmq_url + "...")
-        self.vis = meshcat.Visualizer(zmq_url=zmq_url)
+        self.vis = meshcat.Visualizer(zmq_url=zmq_url, **kwargs)
         print("Connected to meshcat-server.")
         self._scene_graph = scene_graph
 
