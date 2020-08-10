@@ -244,6 +244,8 @@ class Context : public ContextBase {
   /// have changed. These methods _do not_ initiate such recomputation
   /// themselves.
   ///
+  /// @sa @ref cache_design_notes
+  ///
   /// <h3>Invalidation and "out of date" notification</h3>
   /// Each method in this group provides the ability to change a particular
   /// subset of the available quantities listed above. This triggers "out of
