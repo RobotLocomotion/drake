@@ -83,20 +83,8 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
 
   // Form spatial acceleration via AutoDiffXd results.
   // Reminder: Eigen returns an empty matrix if all derivatives = 0.
-  // TODO(Mitiguy) Talk to Alejandro about why the 1st works, the 2nd does not.
-#if 1
-  auto Dt_V_ABo_A_weird =
-      math::autoDiffToGradientMatrix(V_ABo_A_autodiff.get_coeffs());
-  const bool is_empty_matrix = Dt_V_ABo_A_weird.size() == 0;
-  const Vector6<AutoDiffXd> Dt_V_ABo_A = is_empty_matrix ?
-                                         Vector6<AutoDiffXd>::Zero() :
-                                         Vector6<AutoDiffXd>(Dt_V_ABo_A_weird);
-
-  const Vector6<double> A_ABo_A_double(math::autoDiffToValueMatrix(Dt_V_ABo_A));
-#else
   const Vector6<double> A_ABo_A_double(
-      math::autoDiffToValueMatrix(V_ABo_A_autodiff.get_coeffs()));
-#endif
+      math::autoDiffToGradientMatrix(V_ABo_A_autodiff.get_coeffs()));
   const SpatialAcceleration<double> A_ABo_A(A_ABo_A_double);
 
   // Shortcut return if frame_A == frame_E.
