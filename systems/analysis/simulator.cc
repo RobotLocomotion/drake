@@ -102,14 +102,14 @@ SimulatorStatus Simulator<T>::Initialize() {
   context_->PerturbTime(slightly_before_current_time, current_time);
 
   // Get the next timed event.
-  next_timed_event_time_ =
+  const T next_timed_event_time =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
   // Reset the context time.
   context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
-  if (next_timed_event_time_ == current_time) {
+  if (next_timed_event_time == current_time) {
     time_or_witness_triggered_ = kTimeTriggered;
   } else {
     time_or_witness_triggered_ = kNothingTriggered;
@@ -139,6 +139,7 @@ SimulatorStatus Simulator<T>::Initialize() {
 
   // Initialize runtime variables.
   initialization_done_ = true;
+  last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
   return status;
 }
@@ -194,6 +195,14 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
       return initialize_status;
   }
 
+  DRAKE_DEMAND(!std::isnan(last_known_simtime_));
+  if (last_known_simtime_ != context_->get_time()) {
+    static const logging::Warn log_once(
+        "Simulation time has changed since last Initialize() or AdvanceTo()."
+        " Resetting simulation time requires a call to Initialize()."
+        " This warning will become a hard error on or after 2020-12-01.");
+  }
+
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
   // Assume success.
@@ -233,9 +242,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 
     // How far can we go before we have to handle timed events?
-    next_timed_event_time_ =
+    const T next_timed_event_time =
         system_.CalcNextUpdateTime(*context_, timed_events_.get());
-    DRAKE_DEMAND(next_timed_event_time_ >= step_start_time);
+    DRAKE_DEMAND(next_timed_event_time >= step_start_time);
 
     // Determine whether the set of events requested by the System at
     // next_timed_event_time includes an Update action, a Publish action, or
@@ -244,17 +253,17 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     T next_publish_time = std::numeric_limits<double>::infinity();
     if (timed_events_->HasDiscreteUpdateEvents() ||
         timed_events_->HasUnrestrictedUpdateEvents()) {
-      next_update_time = next_timed_event_time_;
+      next_update_time = next_timed_event_time;
     }
     if (timed_events_->HasPublishEvents()) {
-      next_publish_time = next_timed_event_time_;
+      next_publish_time = next_timed_event_time;
     }
 
     // Integrate the continuous state forward in time.
     time_or_witness_triggered_ = IntegrateContinuousState(
         next_publish_time,
         next_update_time,
-        next_timed_event_time_,
+        next_timed_event_time,
         boundary_time,
         witnessed_events_.get());
 
@@ -297,6 +306,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
+
+  // Record the time to detect unexpected jumps.
+  last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
   return status;
 }
