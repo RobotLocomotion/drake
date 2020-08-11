@@ -236,15 +236,13 @@ void MultibodyTreeSystem<T>::Finalize() {
         auto& Ab_WB_cache =
             cache_value
                 ->get_mutable_value<std::vector<SpatialAcceleration<T>>>();
-        tree->CalcSpatialAccelerationBiasCache(
-            context, &Ab_WB_cache);
+        tree->CalcSpatialAccelerationBiasCache(context, &Ab_WB_cache);
       },
       {this->kinematics_ticket()});
-  cache_indexes_.spatial_acceleration_bias =
-      Ab_WB_cache_entry.cache_index();
+  cache_indexes_.spatial_acceleration_bias = Ab_WB_cache_entry.cache_index();
 
   auto& Zb_Bo_W_cache_entry = this->DeclareCacheEntry(
-      std::string("ABI velocity bias cache (Zb_Bo_W)"),
+      std::string("ABI force bias cache (Zb_Bo_W)"),
       [tree = tree_.get()]() {
         return AbstractValue::Make(
             std::vector<SpatialForce<T>>(tree->num_bodies()));
@@ -253,16 +251,138 @@ void MultibodyTreeSystem<T>::Finalize() {
                            AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& Zb_Bo_W_cache =
-            cache_value
-                ->get_mutable_value<std::vector<SpatialForce<T>>>();
-        tree->CalcArticulatedBodyForceBiasCache(
-            context, &Zb_Bo_W_cache);
+            cache_value->get_mutable_value<std::vector<SpatialForce<T>>>();
+        tree->CalcArticulatedBodyForceBiasCache(context, &Zb_Bo_W_cache);
       },
       {this->kinematics_ticket()});
-  cache_indexes_.articulated_body_velocity_bias =
+  cache_indexes_.articulated_body_force_bias =
       Zb_Bo_W_cache_entry.cache_index();
 
+  // Articulated Body Algorithm (ABA) force cache.
+  auto& aba_force_cache_entry = this->DeclareCacheEntry(
+      std::string("ABA force cache"),
+      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
+      &MultibodyTreeSystem<T>::CalcArticulatedBodyForceCache,
+      {this->all_sources_ticket()});
+  cache_indexes_.articulated_body_forces =
+      aba_force_cache_entry.cache_index();
+
+  // Acceleration kinematics must be calculated for forward dynamics,
+  // regardless of whether that is done in continuous mode (as the last pass
+  // of ABA) or in discrete mode (explicitly by MultibodyPlant).
+  auto& acceleration_kinematics_cache_entry = this->DeclareCacheEntry(
+      std::string("Accelerations"),
+      AccelerationKinematicsCache<T>(internal_tree().get_topology()),
+      &MultibodyTreeSystem<T>::CalcForwardDynamics,
+      {this->all_sources_ticket()});
+  cache_indexes_.acceleration_kinematics =
+      acceleration_kinematics_cache_entry.cache_index();
+
   already_finalized_ = true;
+}
+
+template<typename T>
+void MultibodyTreeSystem<T>::DoCalcTimeDerivatives(
+    const systems::Context<T>& context,
+    systems::ContinuousState<T>* derivatives) const {
+  // No derivatives to compute if state is discrete.
+  if (is_discrete()) return;
+  // No derivatives to compute if state is empty. (Will segfault otherwise.)
+  // TODO(amcastro-tri): When nv = 0 we should not declare state or cache
+  // entries at all and the system framework will never call this.
+  if (internal_tree().num_states() == 0) return;
+
+  // N.B. get_value() here is inexplicably returning a VectorBlock
+  // rather than a reference to the stored VectorX.
+  const auto x =
+      dynamic_cast<const systems::BasicVector<T>&>(
+          context.get_continuous_state_vector()).get_value();
+  const auto v = x.bottomRows(internal_tree().num_velocities());
+
+  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
+
+  // TODO(sherm1) Heap allocation here. Get rid of it.
+  VectorX<T> xdot(internal_tree().num_states());
+  VectorX<T> qdot(internal_tree().num_positions());
+  internal_tree().MapVelocityToQDot(context, v, &qdot);
+  xdot << qdot, vdot;
+  derivatives->SetFromVector(xdot);
+}
+
+template<typename T>
+void MultibodyTreeSystem<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
+
+  DRAKE_ASSERT(qdot.size() == nq);
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+
+  // TODO(sherm1) Heap allocation. Make this go away.
+  VectorX<T> v(nv);
+  internal_tree().MapQDotToVelocity(context, qdot, &v);
+  generalized_velocity->SetFromVector(v);
+}
+
+template<typename T>
+void MultibodyTreeSystem<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
+
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+
+  // TODO(sherm1) Heap allocation. Make this go away.
+  VectorX<T> qdot(nq);
+  internal_tree().MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::CalcArticulatedBodyForceCache(
+    const systems::Context<T>& context,
+    ArticulatedBodyForceCache<T>* aba_force_cache) const {
+  DRAKE_DEMAND(aba_force_cache != nullptr);
+
+  // TODO(sherm1) Heap allocation here. Get rid of it.
+  MultibodyForces<T> forces(*this);
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // Compute forces applied by force elements. Note that this resets forces
+  // to empty so must come first.
+  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
+
+  // Compute forces applied by the derived class (likely MultibodyPlant).
+  AddInForcesContinuous(context, &forces);
+
+  // Perform the tip-to-base pass to compute the force bias terms needed by ABA.
+  internal_tree().CalcArticulatedBodyForceCache(context, forces,
+                                                aba_force_cache);
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::CalcForwardDynamicsContinuous(
+    const systems::Context<T>& context,
+    AccelerationKinematicsCache<T>* ac) const {
+  DRAKE_DEMAND(ac != nullptr);
+
+  // Collect forces from all sources and propagate tip-to-base.
+  const ArticulatedBodyForceCache<T>& aba_force_cache =
+      EvalArticulatedBodyForceCache(context);
+
+  // Perform the last base-to-tip pass to compute accelerations using the O(n)
+  // ABA.
+  internal_tree().CalcArticulatedBodyAccelerations(context,
+                                                   aba_force_cache, ac);
 }
 
 }  // namespace internal

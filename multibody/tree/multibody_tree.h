@@ -2637,10 +2637,10 @@ class MultibodyTree {
   }
 
   // See CalcArticulatedBodyForceBiasCache() for details.
-  const std::vector<SpatialForce<T>>& EvalArticulatedBodyVelocityBiasCache(
+  const std::vector<SpatialForce<T>>& EvalArticulatedBodyForceBiasCache(
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
-    return tree_system_->EvalArticulatedBodyVelocityBiasCache(context);
+    return tree_system_->EvalArticulatedBodyForceBiasCache(context);
   }
 
   // Given the state of this model in `context` and a known vector
