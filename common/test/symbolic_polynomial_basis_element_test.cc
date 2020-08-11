@@ -24,6 +24,14 @@ class DerivedBasisA : public PolynomialBasisElement {
     return this->lexicographical_compare(other);
   }
 
+  std::pair<double, DerivedBasisA> EvaluatePartial(
+      const Environment& env) const {
+    double coeff;
+    std::map<Variable, int> new_var_to_degree_map;
+    this->DoEvaluatePartial(env, &coeff, &new_var_to_degree_map);
+    return std::make_pair(coeff, DerivedBasisA(new_var_to_degree_map));
+  }
+
  private:
   double DoEvaluate(double variable_val, int degree) const override {
     return std::pow(variable_val, degree);
@@ -63,6 +71,7 @@ class SymbolicPolynomialBasisElementTest : public ::testing::Test {
  protected:
   const Variable x_{"x"};
   const Variable y_{"y"};
+  const Variable z_{"z"};
 };
 
 TEST_F(SymbolicPolynomialBasisElementTest, Constructor) {
@@ -87,6 +96,13 @@ TEST_F(SymbolicPolynomialBasisElementTest, Constructor) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(DerivedBasisA({{x_, -1}}), std::logic_error,
                               "The degree for x is negative.");
+}
+
+TEST_F(SymbolicPolynomialBasisElementTest, degree) {
+  EXPECT_EQ(DerivedBasisA({{x_, 1}, {y_, 2}}).degree(x_), 1);
+  EXPECT_EQ(DerivedBasisA({{x_, 1}, {y_, 2}}).degree(y_), 2);
+  EXPECT_EQ(DerivedBasisA({{x_, 1}, {y_, 2}}).degree(z_), 0);
+  EXPECT_EQ(DerivedBasisA(std::map<Variable, int>()).degree(x_), 0);
 }
 
 TEST_F(SymbolicPolynomialBasisElementTest, GetVariables) {
@@ -158,6 +174,22 @@ TEST_F(SymbolicPolynomialBasisElementTest, EigenMatrix) {
   Eigen::Matrix<DerivedBasisA, 2, 2> M;
   M << DerivedBasisA(std::map<Variable, int>({})), DerivedBasisA({{x_, 1}}),
       DerivedBasisA({{x_, 1}, {y_, 2}}), DerivedBasisA({{y_, 2}});
+}
+
+TEST_F(SymbolicPolynomialBasisElementTest, EvaluatePartial) {
+  Environment env;
+  env.insert(x_, 2);
+  const DerivedBasisA m1{{{x_, 3}, {y_, 4}}};
+  double coeff;
+  DerivedBasisA new_basis;
+  std::tie(coeff, new_basis) = m1.EvaluatePartial(env);
+  EXPECT_EQ(coeff, 8);
+  EXPECT_EQ(new_basis, DerivedBasisA({{y_, 4}}));
+
+  const DerivedBasisA m2{{{y_, 3}, {z_, 2}}};
+  std::tie(coeff, new_basis) = m2.EvaluatePartial(env);
+  EXPECT_EQ(coeff, 1);
+  EXPECT_EQ(new_basis, m2);
 }
 }  // namespace symbolic
 }  // namespace drake

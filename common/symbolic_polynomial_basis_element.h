@@ -37,6 +37,10 @@ namespace symbolic {
  * - std::map<Derived, double> Derived::Differentiate(const Variable& var)
  * const;
  * - bool Derived::operator<(const Derived& other) const;
+ * - std::pair<double, Derived> EvaluatePartial(const Environment& e) const;
+ *
+ * The function lexicographical_compare can be used when implementing operator<.
+ * The function DoEvaluatePartial can be used when implementing EvaluatePartial
  */
 class PolynomialBasisElement {
  public:
@@ -57,15 +61,32 @@ class PolynomialBasisElement {
   explicit PolynomialBasisElement(
       const std::map<Variable, int>& var_to_degree_map);
 
+  PolynomialBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
+                         const Eigen::Ref<const Eigen::VectorXi>& degrees);
+
   virtual ~PolynomialBasisElement() = default;
 
   const std::map<Variable, int>& var_to_degree_map() const {
     return var_to_degree_map_;
   }
 
+  /**
+   * Returns variable to degree map.
+   * TODO(hongkai.dai): this function is added because Monomial class has
+   * get_powers() function. We will remove this get_powers() function when
+   * Monomial class is deprecated.
+   */
+  const std::map<Variable, int>& get_powers() const {
+    return var_to_degree_map_;
+  }
+
   /** Returns the total degree of a polynomial basis. This is the summation of
    * the degree for each variable. */
   int total_degree() const { return total_degree_; }
+
+  /** Returns the degree of this PolynomialBasisElement in a variable @p v. If
+   * @p v is not a variable in this PolynomialBasisElement, then returns 0.*/
+  int degree(const Variable& v) const;
 
   Variables GetVariables() const;
 
@@ -90,8 +111,19 @@ class PolynomialBasisElement {
    */
   bool lexicographical_compare(const PolynomialBasisElement& other) const;
 
- protected:
   virtual bool EqualTo(const PolynomialBasisElement& other) const;
+
+  // Partially evaluate a polynomial basis element, where @p e doesn't contain
+  // all the variables in this basis element. The evaluation result is coeff *
+  // new_basis_element
+  void DoEvaluatePartial(const Environment& e, double* coeff,
+                         std::map<Variable, int>* new_basis_element) const;
+
+  int* get_mutable_total_degree() { return &total_degree_; }
+
+  std::map<Variable, int>* get_mutable_var_to_degree_map() {
+    return &var_to_degree_map_;
+  }
 
  private:
   // This function evaluates the polynomial basis for a univariate polynomial at

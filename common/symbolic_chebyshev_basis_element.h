@@ -6,6 +6,7 @@
 #endif
 
 #include <map>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
@@ -28,6 +29,18 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
 
   explicit ChebyshevBasisElement(
       const std::map<Variable, int>& var_to_degree_map);
+
+  explicit ChebyshevBasisElement(const Variable& var);
+
+  ChebyshevBasisElement(const Variable& var, int degree);
+
+  /** Constructs a default value.  This overload is used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit ChebyshevBasisElement(std::nullptr_t);
+
+  ChebyshevBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
+                        const Eigen::Ref<const Eigen::VectorXi>& degrees);
 
   ~ChebyshevBasisElement() = default;
 
@@ -66,6 +79,15 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    */
   std::map<ChebyshevBasisElement, double> Integration(
       const Variable& var) const;
+
+  /** Partially evaluates using a given environment @p env. The evaluation
+   * result is of type pair<double, ChebyshevBasisElement>. The first component
+   * (: double) represents the coefficient part while the second component
+   * represents the remaining parts of the ChebyshevBasisElement which was not
+   * evaluated.
+   */
+  std::pair<double, ChebyshevBasisElement> EvaluatePartial(
+      const Environment& env) const;
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
