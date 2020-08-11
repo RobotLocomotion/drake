@@ -6,9 +6,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/diagram_continuous_state.h"
-#include "drake/systems/framework/diagram_discrete_values.h"
-#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/state.h"
 
 namespace drake {
@@ -22,10 +19,7 @@ class DiagramState : public State<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramState)
 
   /// Constructs a DiagramState consisting of @p size substates.
-  explicit DiagramState<T>(int size) :
-      State<T>(),
-      substates_(size),
-      owned_substates_(size) {}
+  explicit DiagramState<T>(int size);
 
   /// Sets the substate at @p index to @p substate, or aborts if @p index is
   /// out of bounds. Does not take ownership of @p substate, which must live
@@ -55,36 +49,7 @@ class DiagramState : public State<T> {
   }
 
   /// Finalizes this state as a span of all the constituent substates.
-  void Finalize() {
-    DRAKE_DEMAND(!finalized_);
-    finalized_ = true;
-    std::vector<ContinuousState<T>*> sub_xcs;
-    sub_xcs.reserve(num_substates());
-    std::vector<DiscreteValues<T>*> sub_xds;
-    std::vector<AbstractValue*> sub_xas;
-    for (State<T>* substate : substates_) {
-      // Continuous
-      sub_xcs.push_back(&substate->get_mutable_continuous_state());
-      // Discrete
-      sub_xds.push_back(&substate->get_mutable_discrete_state());
-      // Abstract (no substructure)
-      AbstractValues& xa = substate->get_mutable_abstract_state();
-      for (int i_xa = 0; i_xa < xa.size(); ++i_xa) {
-        sub_xas.push_back(&xa.get_mutable_value(i_xa));
-      }
-    }
-
-    // This State consists of a continuous, discrete, and abstract state, each
-    // of which is a spanning vector over the continuous, discrete, and abstract
-    // parts of the constituent states.  The spanning vectors do not own any
-    // of the actual memory that contains state variables. They just hold
-    // pointers to that memory.
-    this->set_continuous_state(
-        std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-    this->set_discrete_state(
-        std::make_unique<DiagramDiscreteValues<T>>(sub_xds));
-    this->set_abstract_state(std::make_unique<AbstractValues>(sub_xas));
-  }
+  void Finalize();
 
  private:
   int num_substates() const {
