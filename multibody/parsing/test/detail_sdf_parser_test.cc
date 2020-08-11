@@ -985,6 +985,46 @@ GTEST_TEST(SdfParser, BushingParsing) {
                               "<drake:bushing_torque_damping> child tag.");
 }
 
+// This test verifies that we can specify the "world" frame for a custom drake
+// joint.
+GTEST_TEST(SdfParser, PlanarJointWithWorldAsParent) {
+  // Specifying the world frame with the "world" string.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='two_dimensional_mass'>
+      <link name='a_link'/>
+      <drake:joint name='a_planar' type='planar'>
+        <drake:parent>world</drake:parent>
+        <drake:child>a_link</drake:child>
+        <drake:damping>0.0 0.0 0.0</drake:damping>
+      </drake:joint>
+    </model>)");
+    ASSERT_EQ(plant->num_joints(), 1);
+    ASSERT_EQ(plant->num_bodies(), 2);  // "a_link" and "world".
+    plant->Finalize();
+    EXPECT_EQ(plant->num_positions(), 3);
+    EXPECT_EQ(plant->num_velocities(), 3);
+  }
+
+  // Specifying the world frame with an empty string.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"(
+    <model name='two_dimensional_mass'>
+      <link name='a_link'/>
+      <drake:joint name='a_planar' type='planar'>
+        <drake:parent></drake:parent>
+        <drake:child>a_link</drake:child>
+        <drake:damping>0.0 0.0 0.0</drake:damping>
+      </drake:joint>
+    </model>)");
+    ASSERT_EQ(plant->num_joints(), 1);
+    ASSERT_EQ(plant->num_bodies(), 2);  // "a_link" and "world".
+    plant->Finalize();
+    EXPECT_EQ(plant->num_positions(), 3);
+    EXPECT_EQ(plant->num_velocities(), 3);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

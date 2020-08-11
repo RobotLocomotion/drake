@@ -597,6 +597,13 @@ const Frame<double>& ParseFrame(const sdf::ElementPtr node,
 
   const std::string frame_name = node->Get<std::string>(element_name);
 
+  // SDF's convention to indicate a joint is connected to the world is to either
+  // name the corresponding link "world" or just leave it unnamed.
+  // Thus this the "if" statement in the following line.
+  if (frame_name.empty() || frame_name == "world") {
+    return plant->world_frame();
+  }
+
   if (!plant->HasFrameNamed(frame_name)) {
     throw std::runtime_error(fmt::format(
         "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
