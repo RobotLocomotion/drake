@@ -189,26 +189,25 @@ TEST_F(SymbolicChebyshevBasisElementTest, Differentiate) {
   EXPECT_EQ(result8.at(ChebyshevBasisElement({{x_, 1}, {y_, 3}})), 8);
 }
 
-TEST_F(SymbolicChebyshevBasisElementTest, Integration) {
+TEST_F(SymbolicChebyshevBasisElementTest, Integrate) {
   // ∫1dx = T1(x)
-  const auto result1 = ChebyshevBasisElement().Integration(x_);
+  const auto result1 = ChebyshevBasisElement().Integrate(x_);
   EXPECT_EQ(result1.size(), 1);
   EXPECT_EQ(result1.at(ChebyshevBasisElement({{x_, 1}})), 1);
 
   // ∫T2(x)dy = T2(x)T1(y)
-  const auto result2 = ChebyshevBasisElement({{x_, 2}}).Integration(y_);
+  const auto result2 = ChebyshevBasisElement({{x_, 2}}).Integrate(y_);
   EXPECT_EQ(result2.size(), 1);
   EXPECT_EQ(result2.at(ChebyshevBasisElement({{x_, 2}, {y_, 1}})), 1);
 
   // ∫T2(x)dx = 1/6*T3(x) - 1/2*T1(x)
-  const auto result3 = ChebyshevBasisElement({{x_, 2}}).Integration(x_);
+  const auto result3 = ChebyshevBasisElement({{x_, 2}}).Integrate(x_);
   EXPECT_EQ(result3.size(), 2);
   EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 3}})), 1. / 6);
   EXPECT_EQ(result3.at(ChebyshevBasisElement({{x_, 1}})), -1. / 2);
 
   // ∫T3(x)T2(y)dx = 1/8*T4(x)T2(y) - 1/4*T2(x)T2(y)
-  const auto result4 =
-      ChebyshevBasisElement({{x_, 3}, {y_, 2}}).Integration(x_);
+  const auto result4 = ChebyshevBasisElement({{x_, 3}, {y_, 2}}).Integrate(x_);
   EXPECT_EQ(result4.size(), 2);
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 4}, {y_, 2}})), 1. / 8);
   EXPECT_EQ(result4.at(ChebyshevBasisElement({{x_, 2}, {y_, 2}})), -1. / 4);
