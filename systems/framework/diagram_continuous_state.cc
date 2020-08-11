@@ -9,7 +9,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-DiagramContinuousState<T>::DiagramContinuousState(std::vector<ContinuousState<T>*> substates)
+DiagramContinuousState<T>::DiagramContinuousState(
+    std::vector<ContinuousState<T>*> substates)
     : ContinuousState<T>(
           Span(substates, x_selector), Span(substates, q_selector),
           Span(substates, v_selector), Span(substates, z_selector)),
@@ -21,7 +22,7 @@ template <typename T>
 DiagramContinuousState<T>::DiagramContinuousState(
     std::vector<std::unique_ptr<ContinuousState<T>>> substates)
     : DiagramContinuousState<T>(internal::Unpack(substates)) {
-    owned_substates_ = std::move(substates);
+  owned_substates_ = std::move(substates);
   DRAKE_ASSERT(internal::IsNonNull(owned_substates_));
 }
 
@@ -29,7 +30,8 @@ template <typename T>
 DiagramContinuousState<T>::~DiagramContinuousState() {}
 
 template <typename T>
-std::unique_ptr<DiagramContinuousState<T>> DiagramContinuousState<T>::Clone() const {
+std::unique_ptr<DiagramContinuousState<T>>
+DiagramContinuousState<T>::Clone() const {
   // We are sure of the type here because DoClone() is final.  However,
   // we'll still use the `..._or_throw` spelling as a sanity check.
   return dynamic_pointer_cast_or_throw<DiagramContinuousState>(

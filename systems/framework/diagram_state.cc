@@ -7,10 +7,10 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-DiagramState<T>::DiagramState(int size) :
-    State<T>(),
-    substates_(size),
-    owned_substates_(size) {}
+DiagramState<T>::DiagramState(int size)
+    : State<T>(),
+      substates_(size),
+      owned_substates_(size) {}
 
 template <typename T>
 void DiagramState<T>::Finalize() {
