@@ -15,6 +15,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// TODO(sherm1) Should cache qdot here.
+
 /// This class is one of the cache entries in the Context. It holds the
 /// kinematics results of computations that depend not only on the generalized
 /// positions of the system, but also on its generalized velocities.
