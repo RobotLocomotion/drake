@@ -135,9 +135,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   // Spatial acceleration is a function of the generalized accelerations vdot.
   // Use forward dynamics to calculate values for vdot (for the given q, v).
   const auto& derivs = plant_->EvalTimeDerivatives(*context_);
-  const auto& vdot_auto = derivs.get_generalized_velocity();
-  EXPECT_EQ(vdot_auto.size(), plant_->num_velocities());
-  const VectorX<double> vdot(vdot_auto.CopyToVector());
+  const VectorX<double> vdot(derivs.get_generalized_velocity().CopyToVector());
+  EXPECT_EQ(vdot.size(), plant_->num_velocities());
 
   // Enable q_autodiff and v_autodiff to differentiate with respect to time.
   // Note: Pass MatrixXd() so the return gradient uses AutoDiffXd (for which we
@@ -157,27 +156,22 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
       x_autodiff;
 
-  // Using AutoDiff, compute V_WHo_W (point Ho's spatial velocity in the world
-  // frame W, expressed in W), and its time derivative which is A_WHo_W
-  // (point Ho's spatial acceleration in W, expressed in W).
+  // Using AutoDiff, compute V_WH_W (frame H's spatial velocity in the world
+  // frame W, expressed in W), and its time derivative which is A_WH_W
+  // (frame H's spatial acceleration in W, expressed in W).
   const Frame<AutoDiffXd>& frame_H_autodiff =
       plant_autodiff_->get_frame(frame_H_->index());
-  const SpatialVelocity<AutoDiffXd> V_WHo_W_autodiff =
+  const SpatialVelocity<AutoDiffXd> V_WH_W_autodiff =
       frame_H_autodiff.CalcSpatialVelocityInWorld(*context_autodiff_);
 
   // Form the expected spatial acceleration via AutoDiffXd results.
-  // Reminder: Eigen returns a weirdly sized matrix if all derivatives = 0.
-  auto Dt_V_WHo_W =
-      math::autoDiffToGradientMatrix(V_WHo_W_autodiff.get_coeffs());
-  const bool is_empty_matrix = Dt_V_WHo_W.size() == 0;
-  const Vector6<AutoDiffXd> A_WHo_W_expected = is_empty_matrix ?
-                                                Vector6<AutoDiffXd>::Zero() :
-                                                Vector6<AutoDiffXd>(Dt_V_WHo_W);
-  const Vector6<double> A_WHo_W_expected_double(
-      math::autoDiffToValueMatrix(A_WHo_W_expected));
+  const Vector6<AutoDiffXd> A_WH_W_alternate =
+      math::autoDiffToGradientMatrix(V_WH_W_autodiff.get_coeffs());
+  const Vector6<double> A_WH_W_expected_double(
+      math::autoDiffToValueMatrix(A_WH_W_alternate));
 
   // Verify computed spatial acceleration numerical values.
-  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WHo_W_expected_double,
+  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected_double,
                                kTolerance, MatrixCompareType::relative));
 
   // Spatial velocity of link 3 measured in the H frame and expressed in the
