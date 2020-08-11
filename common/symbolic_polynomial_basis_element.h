@@ -140,6 +140,82 @@ class PolynomialBasisElement {
   int total_degree_{};
 };
 
+/** Implements Graded reverse lexicographic order.
+ *
+ * @tparam VariableOrder VariableOrder{}(v1, v2) is true if v1 < v2.
+ * @tparam BasisElement A derived class of PolynomialBasisElement.
+ *
+ * We first compare the total degree of the PolynomialBasisElement; if there is
+ * a tie, then we use the graded reverse lexicographical order as the tie
+ * breaker.
+ *
+ * Take monomials with variables {x, y, z} and total degree<=2 as an
+ * example, with the order x > y > z. To get the graded reverse lexicographical
+ * order, we take the following steps:
+ *
+ * First find all the monomials using the total degree. The monomials with
+ * degree 2 are {x², y², z², xy, xz, yz}. The monomials with degree 1 are {x,
+ * y, z}, and the monomials with degree 0 is {1}. To break the tie between
+ * monomials with the same total degree, first sort them in the reverse
+ * lexicographical order, namely x < y < z. The lexicographical order compares
+ * two monomials by first comparing the exponent of the largest variable, if
+ * there is a tie then go forth to the second largest variable. Thus z² > zy >zx
+ * > y² > yx > x². Finally reverse the order as x² > xy > y² > xz > yz > z² > x
+ * > y > z.
+ *
+ * There is an introduction to monomial order in
+ * https://en.wikipedia.org/wiki/Monomial_order, and an introduction to graded
+ * reverse lexicographical order in
+ * https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order
+ */
+template <typename VariableOrder, typename BasisElement>
+struct BasisElementGradedReverseLexOrder {
+  /** Returns true if m1 < m2 under the Graded reverse lexicographic order. */
+  bool operator()(const BasisElement& m1, const BasisElement& m2) const {
+    const int d1{m1.total_degree()};
+    const int d2{m2.total_degree()};
+    if (d1 > d2) {
+      return false;
+    }
+    if (d2 > d1) {
+      return true;
+    }
+    // d1 == d2
+    if (d1 == 0) {
+      // Because both of them are 1.
+      return false;
+    }
+    const std::map<Variable, int>& powers1{m1.get_powers()};
+    const std::map<Variable, int>& powers2{m2.get_powers()};
+    std::map<Variable, int>::const_iterator it1{powers1.cbegin()};
+    std::map<Variable, int>::const_iterator it2{powers2.cbegin()};
+    while (it1 != powers1.cend() && it2 != powers2.cend()) {
+      const Variable& var1{it1->first};
+      const Variable& var2{it2->first};
+      const int degree1{it1->second};
+      const int degree2{it2->second};
+      if (variable_order_(var2, var1)) {
+        return false;
+      } else if (variable_order_(var1, var2)) {
+        return true;
+      } else {
+        // var1 == var2
+        if (degree1 == degree2) {
+          ++it1;
+          ++it2;
+        } else {
+          return degree1 > degree2;
+        }
+      }
+    }
+    // When m1 and m2 are identical.
+    return false;
+  }
+
+ private:
+  VariableOrder variable_order_;
+};
+
 }  // namespace symbolic
 }  // namespace drake
 

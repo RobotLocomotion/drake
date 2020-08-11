@@ -3,6 +3,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #define DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 #include "drake/common/symbolic_expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
@@ -190,6 +191,42 @@ TEST_F(SymbolicPolynomialBasisElementTest, EvaluatePartial) {
   std::tie(coeff, new_basis) = m2.EvaluatePartial(env);
   EXPECT_EQ(coeff, 1);
   EXPECT_EQ(new_basis, m2);
+}
+
+TEST_F(SymbolicPolynomialBasisElementTest, BasisElementGradedReverseLexOrder) {
+  EXPECT_PRED2(test::VarLess, x_, y_);
+  EXPECT_PRED2(test::VarLess, y_, z_);
+  BasisElementGradedReverseLexOrder<std::less<Variable>, DerivedBasisA> compare;
+  // y^0 = x^0 = 1.
+  EXPECT_FALSE(compare(DerivedBasisA({{y_, 0}}), DerivedBasisA({{x_, 0}})));
+  EXPECT_FALSE(compare(DerivedBasisA({{x_, 0}}), DerivedBasisA({{y_, 0}})));
+
+  // x < y < z
+  EXPECT_TRUE(compare(DerivedBasisA({{x_, 1}}), DerivedBasisA({{y_, 1}})));
+  EXPECT_TRUE(compare(DerivedBasisA({{x_, 1}}), DerivedBasisA({{z_, 1}})));
+  EXPECT_TRUE(compare(DerivedBasisA({{y_, 1}}), DerivedBasisA({{z_, 1}})));
+
+  // x < y < z < x² < xy < xz < y² < yz < z²
+  std::vector<DerivedBasisA> derived_basis_all;
+  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 0}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 1}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{y_, 1}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{z_, 1}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 2}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 1}, {y_, 1}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{x_, 1}, {z_, 1}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{y_, 2}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{y_, 1}, {z_, 1}});
+  derived_basis_all.emplace_back(std::map<Variable, int>{{z_, 2}});
+  for (int i = 0; i < static_cast<int>(derived_basis_all.size()); ++i) {
+    for (int j = 0; j < static_cast<int>(derived_basis_all.size()); ++j) {
+      if (i < j) {
+        EXPECT_TRUE(compare(derived_basis_all[i], derived_basis_all[j]));
+      } else {
+        EXPECT_FALSE(compare(derived_basis_all[i], derived_basis_all[j]));
+      }
+    }
+  }
 }
 }  // namespace symbolic
 }  // namespace drake
