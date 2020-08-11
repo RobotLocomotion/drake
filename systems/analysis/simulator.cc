@@ -58,7 +58,7 @@ Simulator<T>::Simulator(const System<T>* system,
 }
 
 template <typename T>
-SimulatorStatus Simulator<T>::Initialize() {
+SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
   if (!context_)
@@ -79,7 +79,9 @@ SimulatorStatus Simulator<T>::Initialize() {
 
   // Process all the initialization events.
   auto init_events = system_.AllocateCompositeEventCollection();
-  system_.GetInitializationEvents(*context_, init_events.get());
+  if (!params.suppress_initialization_events) {
+    system_.GetInitializationEvents(*context_, init_events.get());
+  }
 
   // Do unrestricted updates first.
   HandleUnrestrictedUpdate(init_events->get_unrestricted_update_events());

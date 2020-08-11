@@ -34,6 +34,16 @@ const char* const kDefaultIntegratorName = "runge_kutta3";
 const bool kDefaultPublishEveryTimeStep = false;
 }  // namespace internal
 
+// TODO(rpoyner-tri) consider folding publish-at-initialization flag here.
+/// @ingroup simulation
+/// Parameters for fine control of simulator initialization.
+/// @see Simulator<T>::Initialize().
+struct InitializeParams {
+  /// Whether to trigger initialization events. Events are triggered by
+  /// default; it may be useful to suppress them when reusing a simulator.
+  bool suppress_initialization_events{false};
+};
+
 /** @ingroup simulation
 A class for advancing the state of hybrid dynamic systems, represented by
 `System<T>` objects, forward in time. Starting with an initial Context for a
@@ -237,8 +247,6 @@ class Simulator {
             std::unique_ptr<Context<T>> context = nullptr);
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
-  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
-  //              automatically by AdvanceTo() if the Context has changed.
   /// Prepares the %Simulator for a simulation. In order, the sequence of
   /// actions taken here are:
   /// - The active integrator's Initialize() method is invoked.
@@ -277,11 +285,13 @@ class Simulator {
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
   ///
+  /// @param params (optional) a parameter structure (@see InitializeParams).
+  ///
   /// @retval status A SimulatorStatus object indicating success, termination,
   ///                or an error condition as reported by event handlers or
   ///                the monitor function.
   /// @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus
-  SimulatorStatus Initialize();
+  SimulatorStatus Initialize(const InitializeParams& params = {});
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
