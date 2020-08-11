@@ -134,7 +134,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   // Reverify A_WH_W by differentiating the spatial velocity V_WH_W.
   // Spatial acceleration is a function of the generalized accelerations vdot.
   // Use forward dynamics to calculate values for vdot (for the given q, v).
-  const auto& derivs = plant_->EvalTimeDerivatives(*context_);
+  const systems::ContinuousState<double>& derivs =
+      plant_->EvalTimeDerivatives(*context_);
   const VectorX<double> vdot(derivs.get_generalized_velocity().CopyToVector());
   EXPECT_EQ(vdot.size(), plant_->num_velocities());
 
@@ -165,10 +166,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       frame_H_autodiff.CalcSpatialVelocityInWorld(*context_autodiff_);
 
   // Form the expected spatial acceleration via AutoDiffXd results.
-  const Vector6<AutoDiffXd> A_WH_W_alternate =
+  const Vector6<double> A_WH_W_expected_double =
       math::autoDiffToGradientMatrix(V_WH_W_autodiff.get_coeffs());
-  const Vector6<double> A_WH_W_expected_double(
-      math::autoDiffToValueMatrix(A_WH_W_alternate));
 
   // Verify computed spatial acceleration numerical values.
   EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected_double,
