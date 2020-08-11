@@ -3,14 +3,14 @@
 namespace drake {
 namespace systems {
 
-  template <typename T>
-  State<T>::State()
-      : abstract_state_(std::make_unique<AbstractValues>()),
-        continuous_state_(std::make_unique<ContinuousState<T>>()),
-        discrete_state_(std::make_unique<DiscreteValues<T>>()) {}
+template <typename T>
+State<T>::State()
+    : abstract_state_(std::make_unique<AbstractValues>()),
+      continuous_state_(std::make_unique<ContinuousState<T>>()),
+      discrete_state_(std::make_unique<DiscreteValues<T>>()) {}
 
-  template <typename T>
-  State<T>::~State() {}
+template <typename T>
+State<T>::~State() {}
 
 }  // namespace systems
 }  // namespace drake
