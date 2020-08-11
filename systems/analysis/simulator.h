@@ -34,6 +34,15 @@ const char* const kDefaultIntegratorName = "runge_kutta3";
 const bool kDefaultPublishEveryTimeStep = false;
 }  // namespace internal
 
+/// @ingroup simulation
+/// Parameters for fine control of simulator initialization.
+/// @see Simulator<T>::Initialize().
+struct InitializeParams {
+  /// Whether to trigger initialization events. Events are triggered by
+  /// default; it may be useful to suppress them when reusing a simulator.
+  bool suppress_initialization_events{false};
+};
+
 /** @ingroup simulation
 A class for advancing the state of hybrid dynamic systems, represented by
 `System<T>` objects, forward in time. Starting with an initial Context for a
@@ -185,6 +194,7 @@ procedure AdvancePendingEvents() → status
 // trajectory, and thus the value the Context should contain at the start of the
 // first simulation step.
 procedure Initialize(t₀, x₀) → status
+  // Initialization events can be optionally suppressed.
   x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
   x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
@@ -195,16 +205,20 @@ procedure Initialize(t₀, x₀) → status
   DoAnyPublishes(t₀, x⁻(t₀))
   CallMonitor(t₀, x⁻(t₀))
 ```
-Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
-Step() call as described above. Like Step(), Initialize() first
-performs pending updates (in this case only initialization events can be
-"pending"). Time doesn't advance so there is no continuous update phase and
-witnesses cannot trigger. Finally, again like Step(), the initial trajectory
-point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
-events. That includes initialization publish events, per-step publish events,
-and periodic or timed publish events that trigger at t₀, followed by a call
-to the monitor() function if one has been defined (a monitor is semantically
-identical to a per-step publish).
+
+Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first Step()
+call as described above. Like Step(), Initialize() first performs pending
+updates (in this case only initialization events can be "pending", and even
+those may be optionally suppressed). Time doesn't advance so there is no
+continuous update phase and witnesses cannot trigger. Finally, again like
+Step(), the initial trajectory point `{t₀, x⁻(t₀)}` is provided to the handlers
+for any triggered publish events. That includes initialization publish events
+(if not suppressed), per-step publish events, and periodic or timed publish
+events that trigger at t₀, followed by a call to the monitor() function if one
+has been defined (a monitor is semantically identical to a per-step publish).
+
+Optionally, initialization events can be suppressed. This can be useful when
+reusing the simulator over the same system and time span.
 
 @tparam_nonsymbolic_scalar
 */
@@ -237,19 +251,21 @@ class Simulator {
             std::unique_ptr<Context<T>> context = nullptr);
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
-  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
-  //              automatically by AdvanceTo() if the Context has changed.
   /// Prepares the %Simulator for a simulation. In order, the sequence of
   /// actions taken here are:
   /// - The active integrator's Initialize() method is invoked.
   /// - Statistics are reset.
-  /// - Initialization update events are triggered and handled to produce the
-  ///   initial trajectory value `{t₀, x(t₀)}`.
+  /// - By default, initialization update events are triggered and handled to
+  ///   produce the initial trajectory value `{t₀, x(t₀)}`. If initialization
+  ///   events are suppressed, it is the caller's responsibility to ensure the
+  ///   desired initial state.
+
   /// - Then that initial value is provided to the handlers for any publish
-  ///   events that have triggered, including initialization and per-step
-  ///   publish events, periodic or other time-triggered publish events
-  ///   that are scheduled for the initial time t₀, and finally a call to the
-  ///   monitor() function if one has been defined.
+  ///   events that have triggered, including initialization events if any, and
+  ///   per-step publish events, periodic or other time-triggered publish
+  ///   events that are scheduled for the initial time t₀, and finally a call
+  ///   to the monitor() function if one has been defined.
+
   ///
   /// See the class documentation for more information. We recommend calling
   /// Initialize() explicitly prior to beginning a simulation so that error
@@ -269,6 +285,11 @@ class Simulator {
   /// for the first violation; after 2020-12-01 the warning will become a hard
   /// error.
   ///
+  /// @note The only way to suppress initialization events is by calling
+  /// Initialize() explicitly. The most common scenario for this is when
+  /// reusing a Simulator object. In this case, the caller is responsible for
+  /// ensuring the correctness of the initial state.
+  ///
   /// @warning Initialize() does not automatically attempt to satisfy System
   /// constraints -- it is up to you to make sure that constraints are
   /// satisfied by the initial conditions.
@@ -277,11 +298,13 @@ class Simulator {
   /// doesn't make sense. Other failures are possible from the System and
   /// integrator in use.
   ///
+  /// @param params (optional) a parameter structure (@see InitializeParams).
+  ///
   /// @retval status A SimulatorStatus object indicating success, termination,
   ///                or an error condition as reported by event handlers or
   ///                the monitor function.
   /// @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus
-  SimulatorStatus Initialize();
+  SimulatorStatus Initialize(const InitializeParams& params = {});
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
