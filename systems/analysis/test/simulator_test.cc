@@ -2124,6 +2124,11 @@ GTEST_TEST(SimulatorTest, Initialization) {
     bool get_pub_init() const { return pub_init_; }
     bool get_dis_update_init() const { return dis_update_init_; }
     bool get_unres_update_init() const { return unres_update_init_; }
+    void reset() const {
+      pub_init_ = false;
+      dis_update_init_ = false;
+      unres_update_init_ = false;
+    }
 
    private:
     void InitPublish(const Context<double>& context,
@@ -2143,8 +2148,6 @@ GTEST_TEST(SimulatorTest, Initialization) {
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         dis_update_init_ = true;
-      } else {
-        EXPECT_TRUE(dis_update_init_);
       }
     }
 
@@ -2157,8 +2160,6 @@ GTEST_TEST(SimulatorTest, Initialization) {
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         unres_update_init_ = true;
-      } else {
-        EXPECT_TRUE(unres_update_init_);
       }
     }
 
@@ -2174,6 +2175,15 @@ GTEST_TEST(SimulatorTest, Initialization) {
   EXPECT_TRUE(sys.get_pub_init());
   EXPECT_TRUE(sys.get_dis_update_init());
   EXPECT_TRUE(sys.get_unres_update_init());
+
+  sys.reset();
+  simulator.get_mutable_context().SetTime(0);
+  simulator.Initialize({.suppress_initialization_events = true});
+  simulator.AdvanceTo(1);
+
+  EXPECT_FALSE(sys.get_pub_init());
+  EXPECT_FALSE(sys.get_dis_update_init());
+  EXPECT_FALSE(sys.get_unres_update_init());
 }
 
 GTEST_TEST(SimulatorTest, OwnedSystemTest) {
