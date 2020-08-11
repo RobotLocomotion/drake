@@ -697,16 +697,16 @@ GTEST_TEST(MultibodyPlantSdfParserTest, RevoluteSpringParsingTest) {
 
 GTEST_TEST(SdfParser, TestSupportedFrames) {
   // Test `//link/pose[@relative_to]`.
-  ParseTestString(R"(
+  ParseTestString(R"""(
 <model name='good'>
   <frame name='my_frame'/>
   <link name='my_link'>
     <pose relative_to='my_frame'/>
   </link>
 </model>
-)");
+)""");
   // Test `//link/visual/pose[@relative_to]`.
-  ParseTestString(R"(
+  ParseTestString(R"""(
 <model name='good'>
   <frame name='my_frame'/>
   <link name='my_link'>
@@ -715,9 +715,9 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
     </visual>
   </link>
 </model>
-)");
+)""");
   // Test `//link/collision/pose[@relative_to]`.
-  ParseTestString(R"(
+  ParseTestString(R"""(
 <model name='good'>
   <frame name='my_frame'/>
   <link name='my_link'>
@@ -726,9 +726,9 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
     </collision>
   </link>
 </model>
-)");
+)""");
   // Test `//joint/pose[@relative_to]`.
-  ParseTestString(R"(
+  ParseTestString(R"""(
 <model name='good'>
   <link name='a'/>
   <frame name='my_frame'/>
@@ -737,7 +737,7 @@ GTEST_TEST(SdfParser, TestSupportedFrames) {
     <parent>world</parent>
     <child>a</child>"
   </joint>
-</model>)");
+</model>)""");
 }
 
 void FailWithUnsupportedRelativeTo(const std::string& inner) {
@@ -766,43 +766,43 @@ void FailWithReservedName(const std::string& inner) {
 
 GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   // Model frames cannot attach to / nor be relative to the world frame.
-  FailWithInvalidWorld(R"(
+  FailWithInvalidWorld(R"""(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='model_scope_world_frame' attached_to='world'>
     <pose>0 0 0 0 0 0</pose>
   </frame>
 </model>
-)");
-  FailWithInvalidWorld(R"(
+)""");
+  FailWithInvalidWorld(R"""(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='model_scope_world_relative_frame'>
     <pose relative_to='world'>0 0 0 0 0 0</pose>
   </frame>
 </model>
-)");
+)""");
   for (std::string bad_name : {"world", "__model__", "__anything__"}) {
-    FailWithReservedName(fmt::format(R"(
+    FailWithReservedName(fmt::format(R"""(
 <model name='bad'>
   <link name='dont_crash_plz'/>  <!-- Need at least one link -->
   <frame name='{}'/>  <!-- Invalid name -->
 </model>
-)", bad_name));
+)""", bad_name));
   }
 
-  FailWithUnsupportedRelativeTo(R"(
+  FailWithUnsupportedRelativeTo(R"""(
 <model name='bad'>
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
-</model>)");
-  FailWithUnsupportedRelativeTo(R"(
+</model>)""");
+  FailWithUnsupportedRelativeTo(R"""(
 <model name='bad'>
   <frame name='my_frame'/>
   <link name='a'>
     <inertial><pose relative_to='my_frame'/></inertial>
   </link>
-</model>)");
+</model>)""");
 }
 
 // Reports if the frame with the given id has a geometry with the given role
@@ -891,7 +891,7 @@ GTEST_TEST(SdfParser, VisualGeometryParsing) {
 
 GTEST_TEST(SdfParser, BushingParsing) {
   // Test successful parsing
-  auto [plant, scene_graph] = ParseTestString(R"(
+  auto [plant, scene_graph] = ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -905,7 +905,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)");
+    </model>)""");
 
   // MBP will always create a UniformGravityField, so the only other
   // ForceElement should be the LinearBushingRollPitchYaw element parsed.
@@ -922,7 +922,7 @@ GTEST_TEST(SdfParser, BushingParsing) {
   EXPECT_EQ(bushing.force_damping_constants(), Eigen::Vector3d(10, 11, 12));
 
   // Test missing frame tag
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -936,14 +936,14 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)"),
+    </model>)"""),
                               std::runtime_error,
                               "<drake:linear_bushing_rpy>: Unable to find the "
                               "<drake:bushing_frameC> child tag.");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+      ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -958,14 +958,14 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)"),
+    </model>)"""),
       std::runtime_error,
       "<drake:linear_bushing_rpy>: Frame 'frameZ' specified for "
       "<drake:bushing_frameC> does not exist in "
       "the model.");
 
   // Test missing constants tag
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"(
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -979,10 +979,62 @@ GTEST_TEST(SdfParser, BushingParsing) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)"),
+    </model>)"""),
                               std::runtime_error,
                               "<drake:linear_bushing_rpy>: Unable to find the "
                               "<drake:bushing_torque_damping> child tag.");
+}
+
+// This test verifies that we can specify the "world" frame for a custom drake
+// joint.
+GTEST_TEST(SdfParser, PlanarJointWithWorldAsParent) {
+  // Specifying the world frame with the "world" string.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"""(
+    <model name='two_dimensional_mass'>
+      <link name='a_link'/>
+      <drake:joint name='a_planar' type='planar'>
+        <drake:parent>world</drake:parent>
+        <drake:child>a_link</drake:child>
+        <drake:damping>0.0 0.0 0.0</drake:damping>
+      </drake:joint>
+    </model>)""");
+    ASSERT_EQ(plant->num_joints(), 1);
+    ASSERT_EQ(plant->num_bodies(), 2);  // "a_link" and "world".
+    // Verify that the "parent" frame for this joint is the world frame as
+    // requested.
+    EXPECT_EQ(plant->GetJointByName<PlanarJoint>("a_planar")
+                  .frame_on_parent()
+                  .index(),
+              plant->world_frame().index());
+    plant->Finalize();
+    EXPECT_EQ(plant->num_positions(), 3);
+    EXPECT_EQ(plant->num_velocities(), 3);
+  }
+
+  // Specifying the world frame with an empty string.
+  {
+    auto [plant, scene_graph] = ParseTestString(R"""(
+    <model name='two_dimensional_mass'>
+      <link name='a_link'/>
+      <drake:joint name='a_planar' type='planar'>
+        <drake:parent></drake:parent>
+        <drake:child>a_link</drake:child>
+        <drake:damping>0.0 0.0 0.0</drake:damping>
+      </drake:joint>
+    </model>)""");
+    ASSERT_EQ(plant->num_joints(), 1);
+    ASSERT_EQ(plant->num_bodies(), 2);  // "a_link" and "world".
+    // Verify that the "parent" frame for this joint is the world frame as
+    // requested.
+    EXPECT_EQ(plant->GetJointByName<PlanarJoint>("a_planar")
+                  .frame_on_parent()
+                  .index(),
+              plant->world_frame().index());
+    plant->Finalize();
+    EXPECT_EQ(plant->num_positions(), 3);
+    EXPECT_EQ(plant->num_velocities(), 3);
+  }
 }
 
 }  // namespace

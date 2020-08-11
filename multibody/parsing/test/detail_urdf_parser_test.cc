@@ -496,7 +496,7 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
   // Test successful parsing
-  auto [plant, scene_graph] = ParseTestString(R"(
+  auto [plant, scene_graph] = ParseTestString(R"""(
     <robot name="bushing_test">
         <link name='A'/>
         <link name='C'/>
@@ -510,7 +510,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
-    </robot>)");
+    </robot>)""");
 
   // MBP will always create a UniformGravityField, so the only other
   // ForceElement should be the LinearBushingRollPitchYaw element parsed.
@@ -528,7 +528,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
 
   // Test missing frame tag
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+      ParseTestString(R"""(
     <robot name="bushing_test">
         <link name='A'/>
         <link name='C'/>
@@ -542,13 +542,13 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
-    </robot>)"),
+    </robot>)"""),
       std::runtime_error,
       "Unable to find the <drake:bushing_frameC> tag on line [0-9]+");
 
   // Test non-existent frame
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+      ParseTestString(R"""(
     <robot name="bushing_test">
         <link name='A'/>
         <link name='C'/>
@@ -563,14 +563,14 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
-    </robot>)"),
+    </robot>)"""),
       std::runtime_error,
       "Frame: frameZ specified for <drake:bushing_frameC> does not exist in "
       "the model.");
 
   // Test missing constants tag
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+      ParseTestString(R"""(
     <robot name="bushing_test">
         <link name='A'/>
         <link name='C'/>
@@ -584,13 +584,13 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
-    </robot>)"),
+    </robot>)"""),
       std::runtime_error,
       "Unable to find the <drake:bushing_torque_damping> tag on line [0-9]+");
 
   // Test missing `value` attribute
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"(
+      ParseTestString(R"""(
     <robot name="bushing_test">
         <link name='A'/>
         <link name='C'/>
@@ -605,10 +605,35 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
             <drake:bushing_force_stiffness  value="7 8 9"/>
             <drake:bushing_force_damping    value="10 11 12"/>
         </drake:linear_bushing_rpy>
-    </robot>)"),
+    </robot>)"""),
       std::runtime_error,
       "Unable to read the 'value' attribute for the"
       " <drake:bushing_torque_stiffness> tag on line [0-9]+");
+}
+
+// This test verifies that we can specify the "world" frame for a custom drake
+// joint.
+GTEST_TEST(MultibodyPlantUrdfParserTest, PlanarJointWithWorldAsParent) {
+  // Specifying the world frame with the "world" string.
+  auto [plant, scene_graph] = ParseTestString(R"""(
+   <robot name="bushing_test">
+     <link name='a_link'/>
+       <drake:joint name="a_planar" type="planar">
+         <parent link="world"/>
+         <child link="a_link"/>
+         <origin rpy="0 0 0" xyz="0 0 0"/>
+         <dynamics damping="0.1 0.1 0.1"/>
+       </drake:joint>
+   </robot>)""");
+  ASSERT_EQ(plant->num_joints(), 1);
+  ASSERT_EQ(plant->num_bodies(), 2);  // "a_link" and "world".
+  // TODO(amcastro-tri): Verify that the "parent" frame for this joint is the
+  // world frame as requested.
+  // Right now it is not due to #13863, and the parser creates an extra frame
+  // coincident in this case with the world frame.
+  plant->Finalize();
+  EXPECT_EQ(plant->num_positions(), 3);
+  EXPECT_EQ(plant->num_velocities(), 3);
 }
 
 }  // namespace
