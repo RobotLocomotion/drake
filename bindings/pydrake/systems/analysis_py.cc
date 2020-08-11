@@ -57,6 +57,16 @@ PYBIND11_MODULE(analysis, m) {
             cls_doc.IsIdenticalStatus.doc);
   }
 
+  {
+    constexpr auto& cls_doc = pydrake_doc.drake.systems.InitializeParams;
+    using Class = InitializeParams;
+    py::class_<Class>(m, "InitializeParams", cls_doc.doc)
+        .def(ParamInit<Class>())
+        .def_readwrite("suppress_initialization_events",
+            &Class::suppress_initialization_events,
+            cls_doc.suppress_initialization_events.doc);
+  }
+
   auto bind_scalar_types = [m](auto dummy) {
     constexpr auto& doc = pydrake_doc.drake.systems;
     using T = decltype(dummy);
@@ -130,7 +140,8 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, ownership: `context` keeps `self` alive.
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
-            doc.Simulator.Initialize.doc)
+            doc.Simulator.Initialize.doc,
+            py::arg("params") = InitializeParams{})
         .def("AdvanceTo", &Simulator<T>::AdvanceTo, py::arg("boundary_time"),
             doc.Simulator.AdvanceTo.doc)
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
