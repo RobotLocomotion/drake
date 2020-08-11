@@ -166,11 +166,11 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       frame_H_autodiff.CalcSpatialVelocityInWorld(*context_autodiff_);
 
   // Form the expected spatial acceleration via AutoDiffXd results.
-  const Vector6<double> A_WH_W_expected_double =
+  const Vector6<double> A_WH_W_expected_alternate =
       math::autoDiffToGradientMatrix(V_WH_W_autodiff.get_coeffs());
 
   // Verify computed spatial acceleration numerical values.
-  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected_double,
+  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected_alternate,
                                kTolerance, MatrixCompareType::relative));
 
   // Spatial velocity of link 3 measured in the H frame and expressed in the
