@@ -29,10 +29,13 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
+
 // Returns A_AB_E, frame B's spatial acceleration in a frame_A, expressed in
-// a frame E, evaluated at values found in the context.
+// a frame E, evaluated at values of q, v, v̇ which are passed to this method
+// in the arguments `context` and `vdot` (generalized accelerations).
 // @param[in] plant The plant associated with the system and context.
 // @param[in] context The state of the multibody system.
+// @param[in] vdot Generalized acceleration values used for this calculation.
 // @param[in] frame_B The frame for which spatial acceleration is calculated.
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
@@ -56,8 +59,8 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
   auto v_autodiff =
       math::initializeAutoDiffGivenGradientMatrix(v, Eigen::MatrixXd(vdot));
 
-  // Convert the double model to an AutoDiffXd model.
-  // Then, create a default context for the AutoDiffXd model.
+  // Convert the double plant to an AutoDiffXd plant.
+  // Then, create a default context for the AutoDiffXd plant.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
       systems::System<double>::ToAutoDiffXd(plant);
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
@@ -82,7 +85,6 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
                                            frame_A_autodiff);
 
   // Form spatial acceleration via AutoDiffXd results.
-  // Reminder: Eigen returns an empty matrix if all derivatives = 0.
   const Vector6<double> A_ABo_A_double(
       math::autoDiffToGradientMatrix(V_ABo_A_autodiff.get_coeffs()));
   const SpatialAcceleration<double> A_ABo_A(A_ABo_A_double);
