@@ -169,8 +169,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<Vector6<T>>>(context);
   }
 
-  // TODO(sherm1) Add ArticulatedBodyInertiaCache.
-
  protected:
   /** @name        Alternate API for derived classes
   Derived classes may use these methods to create a MultibodyTreeSystem

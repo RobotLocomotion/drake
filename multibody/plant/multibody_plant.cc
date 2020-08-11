@@ -1741,7 +1741,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
           context.get_continuous_state_vector()).get_value();
   const auto v = x.bottomRows(this->num_velocities());
 
-  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context);
+  const VectorX<T>& vdot = EvalForwardDynamics(context).get_vdot();
 
   VectorX<T> xdot(this->num_multibody_states());
   VectorX<T> qdot(this->num_positions());
@@ -1989,9 +1989,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   internal_tree().CalcInverseDynamics(
-      context0, vdot,
-      F_BBo_W_array, minus_tau,
-      &A_WB_array,
+      context0, vdot, F_BBo_W_array, minus_tau, &A_WB_array,
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
@@ -2027,11 +2025,9 @@ void MultibodyPlant<T>::CalcTamsiResults(
   }
 
   // Solve for v and the contact forces.
-  TamsiSolverResult info{
-      TamsiSolverResult::kMaxIterationsReached};
+  TamsiSolverResult info{TamsiSolverResult::kMaxIterationsReached};
 
-  TamsiSolverParameters params =
-      tamsi_solver_->get_solver_parameters();
+  TamsiSolverParameters params = tamsi_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
   params.max_iterations = 20;
@@ -2082,9 +2078,8 @@ void MultibodyPlant<T>::CalcTamsiResults(
   results->ft = tamsi_solver_->get_friction_forces();
   results->vn = tamsi_solver_->get_normal_velocities();
   results->vt = tamsi_solver_->get_tangential_velocities();
-  results->tau_contact =
-      tamsi_solver_->get_generalized_contact_forces();
-      }
+  results->tau_contact = tamsi_solver_->get_generalized_contact_forces();
+}
 
 template <typename T>
 void MultibodyPlant<T>::CalcArticulatedBodyForceCache(
@@ -2123,14 +2118,6 @@ void MultibodyPlant<T>::CalcForwardDynamics(
   // ABA.
   internal_tree().CalcArticulatedBodyAccelerations(context,
                                                    aba_force_cache, ac);
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcGeneralizedAccelerations(
-    const drake::systems::Context<T>& context, VectorX<T>* vdot) const {
-  DRAKE_DEMAND(vdot != nullptr);
-  DRAKE_DEMAND(vdot->size() == num_velocities());
-  *vdot = EvalForwardDynamics(context).get_vdot();
 }
 
 template <typename T>
@@ -2259,7 +2246,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // For a discrete model this evaluates vdot = (v_next - v0)/time_step() and
   // includes contact forces.
-  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context0);
+  const VectorX<T>& vdot = EvalForwardDynamics(context0).get_vdot();
 
   // TODO(amcastro-tri): Consider replacing this by:
   //   const VectorX<T>& v_next = solver_results.v_next;
@@ -2391,8 +2378,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               {this->all_sources_ticket()})
           .get_index();
 
-  const auto& generalized_accelerations_cache_entry =
-      this->get_cache_entry(cache_indexes_.generalized_accelerations);
+  const auto& aba_accelerations_cache_entry =
+      this->get_cache_entry(cache_indexes_.aba_accelerations);
 
   // Declare one output port for the entire generalized acceleration vector
   // vdot (length is nv).
@@ -2402,9 +2389,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               [this](const systems::Context<T>& context,
                      systems::BasicVector<T>* result) {
                 result->SetFromVector(
-                    this->EvalGeneralizedAccelerations(context));
+                    this->EvalForwardDynamics(context).get_vdot());
               },
-              {generalized_accelerations_cache_entry.ticket()})
+              {aba_accelerations_cache_entry.ticket()})
           .get_index();
 
   // Declare per model instance state and acceleration output ports.
@@ -2441,11 +2428,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 [this, model_instance_index](const systems::Context<T>& context,
                                              systems::BasicVector<T>* result) {
                   const auto& vdot =
-                      this->EvalGeneralizedAccelerations(context);
+                      this->EvalForwardDynamics(context).get_vdot();
                   result->SetFromVector(
                       this->GetVelocitiesFromArray(model_instance_index, vdot));
                 },
-                {generalized_accelerations_cache_entry.ticket()})
+                {aba_accelerations_cache_entry.ticket()})
             .get_index();
   }
 
@@ -2501,8 +2488,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       this->DeclareAbstractOutputPort(
               "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
               &MultibodyPlant<T>::CalcReactionForces,
-              {this->cache_entry_ticket(
-                  cache_indexes_.generalized_accelerations)})
+              {this->cache_entry_ticket(cache_indexes_.aba_accelerations)})
           .get_index();
 
   // Contact results output port.
@@ -2732,22 +2718,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->all_sources_ticket()});
   cache_indexes_.aba_accelerations =
       aba_accelerations_cache_entry.cache_index();
-
-  // Cache generalized accelerations.
-  auto& vdot_cache_entry = this->DeclareCacheEntry(
-      std::string("Generalized Accelerations (vdot)."),
-      [this]() { return AbstractValue::Make(VectorX<T>(num_velocities())); },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& vdot_in_cache = cache_value->get_mutable_value<VectorX<T>>();
-        this->CalcGeneralizedAccelerations(context, &vdot_in_cache);
-      },
-      // Generalized accelerations depend on both state and inputs.
-      // All sources include: time, accuracy, state, input ports, and
-      // parameters.
-      {this->all_sources_ticket()});
-  cache_indexes_.generalized_accelerations = vdot_cache_entry.cache_index();
 
   // Cache spatial continuous contact forces.
   auto& spatial_contact_forces_continuous_cache_entry = this->DeclareCacheEntry(
@@ -2986,7 +2956,7 @@ void MultibodyPlant<T>::CalcReactionForces(
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
 
-  const VectorX<T>& vdot = EvalGeneralizedAccelerations(context);
+  const VectorX<T>& vdot = EvalForwardDynamics(context).get_vdot();
 
   MultibodyForces<T> applied_forces(*this);
   CalcAppliedForces(context, &applied_forces);
