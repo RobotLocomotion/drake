@@ -2479,6 +2479,13 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       std::vector<Vector6<T>>* H_PB_W_cache) const;
 
+  /// (Internal) Method that throws std::logic_error if the multibody tree is
+  /// not finalized or `body_B` does not belong to `this` multibody tree.
+  void IsFinalizedAndHasThisParentTreeOrThrow(const Body<T>& body_B) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    body_B.HasThisParentTreeOrThrow(this);
+  }
+
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access

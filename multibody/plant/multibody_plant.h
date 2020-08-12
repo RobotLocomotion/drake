@@ -2136,8 +2136,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The body B for which the pose is requested.
   /// @retval X_WB
   ///   The pose of body frame B in the world frame W.
-  /// @throws std::exception if Finalize() was not called on `this` model or if
-  /// `body_B` does not belong to this model.
+  /// @throws std::logic_error if Finalize() was not called on `this` model or
+  ///   if `body_B` does not belong to this model.
   const math::RigidTransform<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const {
@@ -2151,8 +2151,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The body B for which the spatial velocity is requested.
   /// @returns V_WB
   ///   The spatial velocity of body frame B in the world frame W.
-  /// @throws std::exception if Finalize() was not called on `this` model or if
-  /// `body_B` does not belong to this model.
+  /// @throws std::logic_error if Finalize() was not called on `this` model or
+  ///   if `body_B` does not belong to this model.
   const SpatialVelocity<T>& EvalBodySpatialVelocityInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const {
@@ -2167,8 +2167,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The body B for which the spatial acceleration is requested.
   /// @returns A_WB_W
   ///   The spatial acceleration of body B in the world frame W, expressed in W.
-  /// @throws std::exception if Finalize() was not called on `this` model or if
-  /// `body_B` does not belong to this model.
+  /// @throws std::logic_error if Finalize() was not called on `this` model or
+  ///   if `body_B` does not belong to this model.
   /// @note When cached values are out of sync with the state stored in context,
   /// this method performs an expensive forward dynamics computation, whereas
   /// once evaluated, successive calls to this method are inexpensive.
