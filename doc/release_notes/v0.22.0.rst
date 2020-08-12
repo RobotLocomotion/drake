@@ -26,6 +26,7 @@ New features
 
 Fixes
 
+* Simulator warns about calls AdvanceTo after externally modifying the Context's time without an intervening Initialize; this will be promoted to an exception in a future release (`#13851`_)
 * Extract DiagramState into its own file (`#13839`_)
 
 Mathematical Program
@@ -38,7 +39,9 @@ New features
 * Improve polynomial-related support:
 
   * MathematicalProgramResult::GetSolution also works for a polynomial (`#13748`_)
-  * Add symbolic ChebyshevPolynomial, ChebyshevBasisElement, PolynomialBasisElement (`#13751`_, `#13796`_)
+  * Add symbolic ChebyshevPolynomial, ChebyshevBasisElement, PolynomialBasisElement (`#13751`_, `#13796`_, `#13845`_)
+  * Add Differentiation and Integration to ChebyshevBasisElement (`#13845`_)
+  * Allow using ChebyshevBasisElement as scalar type in Eigen matrix (`#13845`_)
 
 Fixes
 
@@ -49,7 +52,7 @@ Multibody Dynamics
 
 New features
 
-* Add PlanarMobilizer and PlanarJoint (`#13711`_, `#13747`_, `#13813`_)
+* Add PlanarMobilizer and PlanarJoint (`#13711`_, `#13747`_, `#13813`_, `#13824`_)
 * Add support for parsing SDF and URDF from strings (`#13814`_, `#13826`_)
 
 Fixes
@@ -58,11 +61,11 @@ Fixes
 * Contact results will differ slightly from prior releases (`#13734`_)
 * Joint::set_default_positions updates the underlying mobilizer (`#13757`_)
 * Fix formatting in TAMSI error message (`#13802`_)
+* Never write to $HOME/.sdformat/sdformat.log (`#13850`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
-* Add support for "planar visualization" in meshcat (`#13755`_)
 * Use planar visualization in the ManipulationStation demos (`#13755`_)
 * Add example of a cloth system modeled as a collection of springs (`#13714`_)
 
@@ -72,6 +75,8 @@ Miscellaneous features and fixes
 * Reformat all XML files with xmllint (`#13768`_)
 * Upgrade all models to use SDFormat 1.7 syntax (`#13772`_, `#13774`_, `#13758`_)
 * drake-visualizer: Mitigate z-fighting between display grid and ground plane (`#13829`_)
+* meshcat: Add support for "planar visualization" (`#13755`_, `#13836`_, `#13857`_)
+* meshcat: Pass kwargs through MeshcatVisualizer (`#13848`_)
 * yaml: Add YamlWriteArchive::EraseMatchingMaps (`#13699`_)
 
 pydrake bindings
@@ -103,6 +108,7 @@ Build system and dependencies
 * Upgrade scs to latest release 2.1.2 (`#13789`_)
 * Upgrade styleguide latest commit (`#13804`_)
 * Do not install gl_renderer's private headers (`#13807`_)
+* In Docker images, drake-visualizer is not supported (`#13764`_)
 * Prune unwanted dependencies (`#13753`_, `#13827`_, `#13830`_)
 
   * The install_prereqs script for source builds now offers a --without-test-only option to install only the dependencies needed to compile and install Drake, omitting dependencies only required for testing.
@@ -113,6 +119,7 @@ Newly-deprecated APIs
 * drake::math::Slerp (`#13810`_)
 * examples/irb140/urdf/** (`#13831`_)
 * examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf (`#13831`_)
+* drake::systems::Simulator::AdvanceTo will throw exception in a future release if the Context's time is externally changed without an intervening Initialize (`#13851`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,13 +202,3 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
   Current newest_commit a696dcdff0c821af819a5bb6015269de226a7c3f (inclusive).
-
-* Pass kwargs through MeshcatVisualizer to meshcat.Visualizer (`#13848`_)
-* pydrake: Respect mesh scaling in PlanarSceneGraphVisualizer (`#13836`_)
-* Replace drake-visualizer with warning script on prebuilt Docker images (`#13764`_)  # On prebuilt Docker images, rename `drake-visualizer` to `drake-visualizer.image`. Create a `drake-visualizer` script that prints a warning message with a pointer to the renamed file. Resolves #12483 and #13639
-* parsing: Disable $HOME/.sdformat/sdformat.log (`#13850`_)  # Log messages still appear on std::cerr, just not in a file anymore. Libraries should not unconditionally open non-standard files nor create non-standard directories. This removes the "No HOME defined in the environment. Will not log." message when running tests in bazel's hermetic sandbox.
-* multibody: Add parsing for PlanarJoint (`#13824`_)
-* Remove cpplint_wrapper and associated test (`#13853`_)  # Resolves #13585
-* Add ToExpression to ChebyshevBasisElement (`#13845`_)  # 1. Add ToExpression to ChebyshevBasisElement. 2. Allow using ChebyshevBasisElement as scalar type in Eigen matrix. 3. Add Differentiation and Integration to ChebyshevBasisElement.
-* simulator: Warn about time jumps (`#13851`_)  # Related to #13741. * remove a false member * add time jump check as one-time warning * adjust tests that use time jumps * adjust doc
-* PlanarSceneGraphVisualizer: Store convex hulls of meshes (`#13857`_)  # Prior to this commit, we stored all of the vertices of each mesh and then took their convex hull after projecting them to the visualization plane every dt. Now we only store the vertices of the 3D convex hull of each mesh. The 2D convex hull must still be computed at each dt, but, for meshes with lots of interior vertices, it will now be over a much smaller set of points.
