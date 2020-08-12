@@ -100,6 +100,9 @@ namespace internal {
  * bin. Used as a helper function to implement MonomialBasis.
  *
  * @tparam MonomialOrder provides a monomial ordering.
+ * TODO(hongkai.dai): Remove this method and use
+ * AddPolynomialBasisElementsOfDegreeN in symbolic_polynomial_basis.h instead
+ * when we deprecate Monomial class.
  */
 template <typename MonomialOrder>
 void AddMonomialsOfDegreeN(const Variables& vars, int degree, const Monomial& b,
