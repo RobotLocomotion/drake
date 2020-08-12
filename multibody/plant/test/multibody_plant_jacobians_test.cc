@@ -29,14 +29,16 @@ namespace {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
-
-// Returns A_AB_E, frame B's spatial acceleration in a frame_A, expressed in
-// a frame E, evaluated at values of q, v, v̇ which are passed to this method
+// For a frame Bq that has a fixed offset from a frame_B, returns A_ABq_E,
+// frame Bq's spatial acceleration in a frame_A, expressed in a frame E,
+// evaluated at values of q, v, v̇ which are passed to this method
 // in the arguments `context` and `vdot` (generalized accelerations).
 // @param[in] plant The plant associated with the system and context.
 // @param[in] context The state of the multibody system.
 // @param[in] vdot Generalized acceleration values used for this calculation.
-// @param[in] frame_B The frame for which spatial acceleration is calculated.
+// @param[in] frame_B The frame to which frame Bq is fixed/welded.
+// @param[in] p_BoBq_B Position vector from Bo (frame_B's origin) to the origin
+//            of frame Bq, expressed in frame_B.
 // @param[in] frame_A The measured-in frame for spatial acceleration.
 // @param[in] frame_E The expressed-in frame for spatial acceleration.
 SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
@@ -44,6 +46,7 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
     const systems::Context<double>& context,
     const VectorX<double>& vdot,
     const Frame<double>& frame_B,
+    const Vector3<double>& p_BoBq_B,
     const Frame<double>& frame_A,
     const Frame<double>& frame_E) {
 
@@ -89,14 +92,43 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
       math::autoDiffToGradientMatrix(V_ABo_A_autodiff.get_coeffs()));
   const SpatialAcceleration<double> A_ABo_A(A_ABo_A_double);
 
+  // Shift translational acceleration to point Q.
+  const RotationMatrix<double> R_AB =
+      frame_B.CalcRotationMatrix(context, frame_A);
+  const Vector3<double> p_BoBq_A = R_AB * p_BoBq_B;
+  const Vector3<double> w_AB_A =
+      frame_B.CalcSpatialVelocity(context, frame_A, frame_A).rotational();
+  const SpatialAcceleration<double> A_ABp_A = A_ABo_A.Shift(p_BoBq_A,  w_AB_A);
+
   // Shortcut return if frame_A == frame_E.
-  if (frame_E.index() == frame_A.index()) return A_ABo_A;
+  if (frame_E.index() == frame_A.index()) return A_ABp_A;
 
   // Otherwise, express the result in frame_E.
   const RotationMatrix<double> R_EA =
       frame_A.CalcRotationMatrix(context, frame_E);
-  const SpatialAcceleration<double> A_ABo_E = R_EA * A_ABo_A;
-  return A_ABo_E;
+  const SpatialAcceleration<double> A_ABp_E = R_EA * A_ABp_A;
+  return A_ABp_E;
+}
+
+// Returns A_AB_E, frame B's spatial acceleration in a frame_A, expressed in
+// a frame E, evaluated at values of q, v, v̇ which are passed to this method
+// in the arguments `context` and `vdot` (generalized accelerations).
+// @param[in] plant The plant associated with the system and context.
+// @param[in] context The state of the multibody system.
+// @param[in] vdot Generalized acceleration values used for this calculation.
+// @param[in] frame_B The frame for which spatial acceleration is calculated.B.
+// @param[in] frame_A The measured-in frame for spatial acceleration.
+// @param[in] frame_E The expressed-in frame for spatial acceleration.
+SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
+    const MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const VectorX<double>& vdot,
+    const Frame<double>& frame_B,
+    const Frame<double>& frame_A,
+    const Frame<double>& frame_E) {
+  const Vector3<double>& p_BoQ_B = Vector3<double>::Zero();
+  return CalcSpatialAccelerationViaSpatialVelocityDerivative(plant, context,
+      vdot, frame_B, p_BoQ_B, frame_A, frame_E);
 }
 
 // For one or more points Ei fixed on a body B, this method computes Jq_v_WEi_W,
@@ -397,12 +429,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
         *bodyA_, math::RigidTransformd(p_AoFo_A),
         *bodyB_, math::RigidTransformd(p_BoMo_B), Vector3d::UnitZ());
 
-    // Add a frame_Bp the the distal end of bodyB_ (for testing only).
-    const Vector3<double> p_BoBp_B(0.5 * link_length_, 0, 0);
-    const math::RigidTransform<double> X_BBp(p_BoBp_B);
-    frame_Bp_ = &plant_->AddFrame(
-        std::make_unique<FixedOffsetFrame<double>>(*bodyB_, X_BBp));
-
     // Finalize the plant and create a context to store this plant's state.
     plant_->Finalize();
     context_ = plant_->CreateDefaultContext();
@@ -428,9 +454,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RigidBody<double>* bodyB_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
-
-  // Frame at the distal end of bodyB_ (for testing only).
-  const FixedOffsetFrame<double>* frame_Bp_{nullptr};
 
   // AutoDiffXd this system to automate derivative calculations.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
@@ -667,11 +690,12 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAccelerationViaVectorDerivative) {
   EXPECT_TRUE(
       CompareMatrices(A_WAp_A.translational(), a_WAp_A_expected, kTolerance));
 
-  // frame_Bp_ is the frame fixed to B's distal end.
   // Calculate frame_Bp's spatial acceleration in frame W, expressed in A.
+  // Note: frame_Bp is the frame fixed to bodyB_'s distal end.
+  const Vector3<double> p_BoBp_B(0.5 * link_length_, 0, 0);
   const SpatialAcceleration<double> A_WBp_A =
       CalcSpatialAccelerationViaSpatialVelocityDerivative(
-          *plant_, *context_, vDt, *frame_Bp_, frame_W, frame_A);
+          *plant_, *context_, vDt, frame_B, p_BoBp_B, frame_W, frame_A);
 
   // Compare results with the following by-hand analytical results.
   // A_WBp_W = L alphaA Ay - L wAz² Ax + L alphaAB By - L (wAz + wBz)² Bx
@@ -683,11 +707,10 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialAccelerationViaVectorDerivative) {
   EXPECT_TRUE(
       CompareMatrices(A_WBp_A.translational(), a_WBp_A_expected, kTolerance));
 
-  // frame_Bp_ is the frame fixed to B's distal end.
   // Calculate frame_Bp's spatial acceleration in frame A, expressed in A.
   const SpatialAcceleration<double> A_ABp_A =
       CalcSpatialAccelerationViaSpatialVelocityDerivative(
-          *plant_, *context_, vDt, *frame_Bp_, frame_A, frame_A);
+          *plant_, *context_, vDt, frame_B, p_BoBp_B, frame_A, frame_A);
 
   // Compare results with the following by-hand analytical results.
   // DtA(w_AB_A)  = Dt(wBz) Az
