@@ -69,29 +69,29 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaSpatialVelocityDerivative(
   plant_autodiff->GetMutablePositionsAndVelocities(context_autodiff.get()) =
       x_autodiff;
 
-  // Using AutoDiff, compute V_ABp_A (point Bp's spatial velocity in frame_A,
-  // expressed in frame_A), and its time derivative which is A_ABp_A
-  // (point Bp's spatial acceleration in frame_A, expressed in frame_A).
+  // Using AutoDiff, compute V_AB_A (frame B's spatial velocity in frame_A,
+  // expressed in frame_A), and its time derivative which is A_AB_A
+  // (frame B's spatial acceleration in frame_A, expressed in frame_A).
   const Frame<AutoDiffXd>& frame_A_autodiff =
       plant_autodiff->get_frame(frame_A.index());
   const Frame<AutoDiffXd>& frame_B_autodiff =
       plant_autodiff->get_frame(frame_B.index());
-  const SpatialVelocity<AutoDiffXd> V_ABo_A_autodiff =
+  const SpatialVelocity<AutoDiffXd> V_AB_A_autodiff =
       frame_B_autodiff.CalcSpatialVelocity(*context_autodiff, frame_A_autodiff,
                                            frame_A_autodiff);
 
   // Form spatial acceleration via AutoDiffXd results.
-  const Vector6<double> A_ABo_A_double(
-      math::autoDiffToGradientMatrix(V_ABo_A_autodiff.get_coeffs()));
-  const SpatialAcceleration<double> A_ABo_A(A_ABo_A_double);
+  const SpatialAcceleration<double> A_AB_A(
+      math::autoDiffToGradientMatrix(V_AB_A_autodiff.get_coeffs()));
 
   // Shortcut return if frame_A == frame_E.
-  if (frame_E.index() == frame_A.index()) return A_ABo_A;
+  if (frame_E.index() == frame_A.index()) return A_AB_A;
+
   // Otherwise, express the result in frame_E.
   const RotationMatrix<double> R_EA =
       frame_A.CalcRotationMatrix(context, frame_E);
-  const SpatialAcceleration<double> A_ABo_E = R_EA * A_ABo_A;
-  return A_ABo_E;
+  const SpatialAcceleration<double> A_AB_E = R_EA * A_AB_A;
+  return A_AB_E;
 }
 
 TEST_F(KukaIiwaModelTests, FramesKinematics) {
