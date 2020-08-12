@@ -3671,7 +3671,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex contact_surfaces;
-    systems::CacheIndex generalized_accelerations;
     systems::CacheIndex generalized_contact_forces_continuous;
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
@@ -3997,18 +3996,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_results)
         .template Eval<ContactResults<T>>(context);
-  }
-
-  // Given the state x and input u in `context`, this method computes the
-  // generalized acceleration into vdot.
-  void CalcGeneralizedAccelerations(const drake::systems::Context<T>& context,
-                                    VectorX<T>* vdot) const;
-
-  // Eval() version of the method CalcGeneralizedAccelerations().
-  const VectorX<T>& EvalGeneralizedAccelerations(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.generalized_accelerations)
-        .template Eval<VectorX<T>>(context);
   }
 
   // Calc method for the reaction forces output port.

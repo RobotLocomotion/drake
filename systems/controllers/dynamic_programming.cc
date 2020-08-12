@@ -94,6 +94,7 @@ FittedValueIteration(
     for (int state = 0; state < num_states; state++) {
       context.SetTime(0.0);
       sim_state.SetFromVector(state_mesh.get_mesh_point(state));
+      simulator->Initialize();
 
       cost[input](state) = timestep * cost_function(context);
 
@@ -224,6 +225,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
       context.SetTime(0.0);
       state_vec = state_samples.col(state);
       sim_state.SetFromVector(state_vec);
+      simulator->Initialize();
 
       const double cost = timestep * cost_function(context);
 

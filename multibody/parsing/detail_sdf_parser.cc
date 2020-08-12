@@ -18,6 +18,7 @@
 #include "drake/multibody/parsing/detail_scene_graph.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -572,55 +573,91 @@ const Frame<double>& AddFrameFromSpecification(
   return frame;
 }
 
+Eigen::Vector3d ParseVector3(const sdf::ElementPtr node,
+                             const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    throw std::runtime_error(
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name));
+  }
+
+  auto value = node->Get<ignition::math::Vector3d>(element_name);
+
+  return ToVector3(value);
+}
+
+const Frame<double>& ParseFrame(const sdf::ElementPtr node,
+                                MultibodyPlant<double>* plant,
+                                const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    throw std::runtime_error(
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name));
+  }
+
+  const std::string frame_name = node->Get<std::string>(element_name);
+
+  if (!plant->HasFrameNamed(frame_name)) {
+    throw std::runtime_error(fmt::format(
+        "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
+        node->GetName(), frame_name, element_name));
+  }
+
+  return plant->GetFrameByName(frame_name);
+}
+
+// TODO(eric.cousineau): Update parsing pending resolution of
+// https://github.com/osrf/sdformat/issues/288
+void AddDrakeJointFromSpecification(const sdf::ElementPtr node,
+                                    MultibodyPlant<double>* plant) {
+  if (!node->HasAttribute("type")) {
+    throw std::runtime_error(
+        "<drake:joint>: Unable to find the 'type' attribute.");
+  }
+  const std::string joint_type = node->Get<std::string>("type");
+  if (!node->HasAttribute("name")) {
+    throw std::runtime_error(
+        "<drake:joint>: Unable to find the 'name' attribute.");
+  }
+  const std::string joint_name = node->Get<std::string>("name");
+
+  // TODO(eric.cousineau): Add support for parsing joint pose.
+  if (node->HasElement("pose")) {
+    throw std::runtime_error(
+        "<drake:joint> does not yet support the <pose> child tag.");
+  }
+
+  const Frame<double>& parent_frame = ParseFrame(node, plant, "drake:parent");
+  const Frame<double>& child_frame = ParseFrame(node, plant, "drake:child");
+
+  if (joint_type == "planar") {
+    // TODO(eric.cousineau): Error out when there are unused tags.
+    Vector3d damping = ParseVector3(node, "drake:damping");
+    plant->AddJoint(std::make_unique<PlanarJoint<double>>(
+        joint_name, parent_frame, child_frame, damping));
+  } else {
+    throw std::runtime_error(
+        "ERROR: <drake:joint> '" + joint_name +
+        "' has unrecognized value for 'type' attribute: " + joint_type);
+  }
+}
+
 const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
     const sdf::ElementPtr node, MultibodyPlant<double>* plant) {
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
-  // Throws an error if the tag does not exist or if the value is not properly
-  // formatted.
+  // Throws an error if the tag does not exist.
   auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
-    if (!node->HasElement(element_name)) {
-      throw std::runtime_error(
-          fmt::format("Unable to find the <{}> tag.", element_name));
-    }
-
-    auto [value, successful] = node->Get<ignition::math::Vector3d>(
-        element_name, ignition::math::Vector3d() /* default value. not used */);
-
-    if (!successful) {
-      throw std::runtime_error(fmt::format(
-          "Unable to read the value of the <{}> tag.", element_name));
-    }
-
-    return ToVector3(value);
+    return ParseVector3(node, element_name);
   };
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // frame name, e.g. <element_name>frame_name</element_name>
-  // Throws an error if the tag does not exist or if the value
-  // is not properly formatted.
+  // Throws an error if the tag does not exist or if the frame does not exist in
+  // the plant.
   auto read_frame = [node,
                      plant](const char* element_name) -> const Frame<double>& {
-    if (!node->HasElement(element_name)) {
-      throw std::runtime_error(
-          fmt::format("Unable to find the <{}> tag.", element_name));
-    }
-
-    auto [frame_name, successful] = node->Get<std::string>(
-        element_name, std::string() /* default value. not used */);
-
-    if (!successful) {
-      throw std::runtime_error(fmt::format(
-          "Unable to read the value of the <{}> tag.", element_name));
-    }
-
-    if (!plant->HasFrameNamed(frame_name)) {
-      throw std::runtime_error(fmt::format(
-          "Frame: {} specified for <{}> does not exist in the model.",
-          frame_name, element_name));
-    }
-
-    return plant->GetFrameByName(frame_name);
+    return ParseFrame(node, plant, element_name);
   };
 
   return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
@@ -698,6 +735,15 @@ ModelInstanceIndex AddModelFromSpecification(
        ++frame_index) {
     const sdf::Frame& frame = *model.FrameByIndex(frame_index);
     AddFrameFromSpecification(frame, model_instance, model_frame, plant);
+  }
+
+  drake::log()->trace("sdf_parser: Add drake custom joints");
+  if (model.Element()->HasElement("drake:joint")) {
+    for (sdf::ElementPtr joint_node =
+             model.Element()->GetElement("drake:joint");
+         joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
+      AddDrakeJointFromSpecification(joint_node, plant);
+    }
   }
 
   drake::log()->trace("sdf_parser: Add linear_bushing_rpy");

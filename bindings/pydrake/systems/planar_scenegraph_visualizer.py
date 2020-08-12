@@ -267,8 +267,17 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                     if not os.path.exists(filename):
                         raise FileNotFoundError(errno.ENOENT, os.strerror(
                             errno.ENOENT), filename)
-                    mesh = ReadObjToSurfaceMesh(filename)
-                    patch_G = np.vstack([v.r_MV() for v in mesh.vertices()]).T
+                    # Get mesh scaling.
+                    scale = geom.float_data[0]
+                    mesh = ReadObjToSurfaceMesh(filename, scale)
+                    patch_G = np.vstack([v.r_MV() for v in mesh.vertices()])
+                    # Only store the vertices of the (3D) convex hull of the
+                    # mesh, as any interior vertices will still be interior
+                    # vertices after projection, and will therefore be removed
+                    # in _update_body_fill_verts().
+                    hull = spatial.ConvexHull(patch_G)
+                    patch_G = np.vstack(
+                        [patch_G[v, :] for v in hull.vertices]).T
 
                 else:
                     print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(

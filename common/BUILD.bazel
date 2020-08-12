@@ -562,19 +562,6 @@ drake_cc_binary(
     ],
 )
 
-# This should probably move to the test_utilities package, but developers
-# expect to find it here, so we'll leave it alone for now.
-drake_py_binary(
-    name = "cpplint_wrapper",
-    testonly = 1,
-    srcs = ["test/cpplint_wrapper.py"],
-    data = [
-        "//:CPPLINT.cfg",
-        "@styleguide//:cpplint",
-    ],
-    main = "test/cpplint_wrapper.py",
-)
-
 install(
     name = "install_drake_marker",
     targets = [":libdrake_marker.so"],
@@ -1353,20 +1340,6 @@ drake_py_unittest(
     name = "drake_cc_googletest_main_test",
     args = ["$(location :drake_cc_googletest_main_test_device)"],
     data = [":drake_cc_googletest_main_test_device"],
-)
-
-drake_py_unittest(
-    name = "cpplint_wrapper_test",
-    args = [
-        "$(location :cpplint_wrapper)",
-        "$(location :eigen_types.h)",
-    ],
-    data = [
-        ":cpplint_wrapper",
-        ":eigen_types.h",
-    ],
-    # Exceeds timeout when run under Valgrind tools.
-    tags = ["no_valgrind_tools"],
 )
 
 drake_py_unittest(
