@@ -194,4 +194,32 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
-  Current newest_commit 4839af9b0ec9de50a9fda92a20931a778c037304 (inclusive).
+  Current newest_commit a696dcdff0c821af819a5bb6015269de226a7c3f (inclusive).
+
+* framework: Rename old cc files out of the way (`#13842`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
+* framework: Move h files to cc files to preserve history (`#13842`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
+* framework: Restore h files to unmodified status (`#13842`_)
+* framework: Split context code between h and cc (`#13842`_)  # This passes all tests, but does not pass lint (still disabled).
+* framework: De-indent context method definitions two spaces (`#13842`_)
+* systems: Fix context whitespace and re-enable linter (`#13842`_)
+* Clarify documentation of symbolic::isnan (`#12938`_)
+* Fix doc string in show_model.py (`#13847`_)  # It was referring to a urdf file that does not exist
+* Pass kwargs through MeshcatVisualizer to meshcat.Visualizer (`#13848`_)
+* pydrake: Respect mesh scaling in PlanarSceneGraphVisualizer (`#13836`_)
+* Replace drake-visualizer with warning script on prebuilt Docker images (`#13764`_)  # On prebuilt Docker images, rename `drake-visualizer` to `drake-visualizer.image`. Create a `drake-visualizer` script that prints a warning message with a pointer to the renamed file. Resolves #12483 and #13639
+* CLion doc: Add section on debugging arbitrary programs (`#13840`_)  # Resolves #13815.
+* parsing: Disable $HOME/.sdformat/sdformat.log (`#13850`_)  # Log messages still appear on std::cerr, just not in a file anymore. Libraries should not unconditionally open non-standard files nor create non-standard directories. This removes the "No HOME defined in the environment. Will not log." message when running tests in bazel's hermetic sandbox.
+* multibody: Add parsing for PlanarJoint (`#13824`_)  # * Add parsing for PlanarJoint both SDF and URDF
+* context: Add cross-reference to cache design docs (`#13852`_)
+* Remove cpplint_wrapper and associated test (`#13853`_)  # Resolves #13585
+* Add ToExpression to ChebyshevBasisElement (`#13845`_)  # 1. Add ToExpression to ChebyshevBasisElement. 2. Allow using ChebyshevBasisElement as scalar type in Eigen matrix. 3. Add Differentiation and Integration to ChebyshevBasisElement.
+* simulator: Warn about time jumps (`#13851`_)  # Related to #13741. * remove a false member * add time jump check as one-time warning * adjust tests that use time jumps * adjust doc
+* Remove redundant generalized_acceleration cache from MultibodyPlant (`#13855`_)  # * Remove redundant generalized_acceleration cache.
+* PlanarSceneGraphVisualizer: Store convex hulls of meshes (`#13857`_)  # Prior to this commit, we stored all of the vertices of each mesh and then took their convex hull after projecting them to the visualization plane every dt. Now we only store the vertices of the 3D convex hull of each mesh. The 2D convex hull must still be computed at each dt, but, for meshes with lots of interior vertices, it will now be over a much smaller set of points.
+* Cassie bench gbench (`#13782`_)  # * Cassie benchmark for mass matrix, inverse & forward dynamics & autodiff. Resolves #10322. h/t Michael Posa and Michael Sherman for earlier draft benchmarks.
+* framework: Rename old cc files out of the way (`#13844`_)  # This clears the way for the header's history to replace the cc file's history in a future commit.
+* framework: Move h files to cc files to preserve history (`#13844`_)  # These files are not yet part of the build, but due to the missing header files this commit will not compile.  This commit strictly speaking is a move, but once combined with a future merge commit will behave more like a copy instead.
+* framework: Restore h files to unmodified status (`#13844`_)
+* framework: Split state code between h and cc (`#13844`_)  # This passes all tests, but does not pass lint (still disabled).
+* framework: De-indent state method definitions two spaces (`#13844`_)
+* framework: Fix state whitespace and re-enable linter (`#13844`_)
