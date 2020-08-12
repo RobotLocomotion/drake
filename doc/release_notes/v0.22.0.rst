@@ -169,6 +169,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13757: https://github.com/RobotLocomotion/drake/pull/13757
 .. _#13758: https://github.com/RobotLocomotion/drake/pull/13758
 .. _#13759: https://github.com/RobotLocomotion/drake/pull/13759
+.. _#13764: https://github.com/RobotLocomotion/drake/pull/13764
 .. _#13765: https://github.com/RobotLocomotion/drake/pull/13765
 .. _#13768: https://github.com/RobotLocomotion/drake/pull/13768
 .. _#13772: https://github.com/RobotLocomotion/drake/pull/13772
@@ -192,12 +193,19 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13813: https://github.com/RobotLocomotion/drake/pull/13813
 .. _#13814: https://github.com/RobotLocomotion/drake/pull/13814
 .. _#13821: https://github.com/RobotLocomotion/drake/pull/13821
+.. _#13824: https://github.com/RobotLocomotion/drake/pull/13824
 .. _#13826: https://github.com/RobotLocomotion/drake/pull/13826
 .. _#13827: https://github.com/RobotLocomotion/drake/pull/13827
 .. _#13829: https://github.com/RobotLocomotion/drake/pull/13829
 .. _#13830: https://github.com/RobotLocomotion/drake/pull/13830
 .. _#13831: https://github.com/RobotLocomotion/drake/pull/13831
+.. _#13836: https://github.com/RobotLocomotion/drake/pull/13836
 .. _#13839: https://github.com/RobotLocomotion/drake/pull/13839
+.. _#13845: https://github.com/RobotLocomotion/drake/pull/13845
+.. _#13848: https://github.com/RobotLocomotion/drake/pull/13848
+.. _#13850: https://github.com/RobotLocomotion/drake/pull/13850
+.. _#13851: https://github.com/RobotLocomotion/drake/pull/13851
+.. _#13857: https://github.com/RobotLocomotion/drake/pull/13857
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
