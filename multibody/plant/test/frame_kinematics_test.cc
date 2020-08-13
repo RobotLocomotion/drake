@@ -206,7 +206,6 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-
 TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
