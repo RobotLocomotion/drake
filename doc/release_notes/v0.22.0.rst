@@ -5,7 +5,8 @@ Drake v0.22.0
 Announcements
 -------------
 
-TBD
+* This is the final release to support RigidBodyPlant and the drake "attic".
+  That code is scheduled for removal on 2020-09-01 (`#12158`_).
 
 Breaking changes since v0.21.0
 ------------------------------
@@ -22,7 +23,7 @@ Dynamical Systems
 
 New features
 
-* TBD
+* None
 
 Fixes
 
@@ -36,12 +37,8 @@ New features
 
 * Add GetKnownSolvers (`#13821`_)
 * Add three examples of sum-of-squares optimization (`#13719`_, `#13746`_, `#13759`_, `#13765`_)
-* Improve polynomial-related support:
-
-  * MathematicalProgramResult::GetSolution also works for a polynomial (`#13748`_)
-  * Add symbolic ChebyshevPolynomial, ChebyshevBasisElement, PolynomialBasisElement (`#13751`_, `#13796`_, `#13845`_)
-  * Add Differentiation and Integration to ChebyshevBasisElement (`#13845`_)
-  * Allow using ChebyshevBasisElement as scalar type in Eigen matrix (`#13845`_)
+* MathematicalProgramResult::GetSolution also works for a polynomial (`#13748`_)
+* Many improvements to ChebyshevPolynomial, ChebyshevBasisElement, and PolynomialBasisElement (`#13751`_, `#13796`_, `#13845`_, `#13856`_)
 
 Fixes
 
@@ -148,6 +145,7 @@ Drake binary releases incorporate a pre-compiled version of `SNOPT
 <https://drake.mit.edu/doxygen_cxx/group__solvers.html>`__. Thanks to
 Philip E. Gill and Elizabeth Wong for their kind support.
 
+.. _#12158: https://github.com/RobotLocomotion/drake/pull/12158
 .. _#13568: https://github.com/RobotLocomotion/drake/pull/13568
 .. _#13697: https://github.com/RobotLocomotion/drake/pull/13697
 .. _#13698: https://github.com/RobotLocomotion/drake/pull/13698
@@ -205,8 +203,9 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13848: https://github.com/RobotLocomotion/drake/pull/13848
 .. _#13850: https://github.com/RobotLocomotion/drake/pull/13850
 .. _#13851: https://github.com/RobotLocomotion/drake/pull/13851
+.. _#13856: https://github.com/RobotLocomotion/drake/pull/13856
 .. _#13857: https://github.com/RobotLocomotion/drake/pull/13857
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
-  Current newest_commit a696dcdff0c821af819a5bb6015269de226a7c3f (inclusive).
+  Current newest_commit e5900251255f2be0d12dbdf1ed90aaae3290f377 (inclusive).
