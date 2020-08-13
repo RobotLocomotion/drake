@@ -15,6 +15,20 @@ ChebyshevBasisElement::ChebyshevBasisElement(
     const std::map<Variable, int>& var_to_degree_map)
     : PolynomialBasisElement(var_to_degree_map) {}
 
+ChebyshevBasisElement::ChebyshevBasisElement(const Variable& var)
+    : ChebyshevBasisElement({{var, 1}}) {}
+
+ChebyshevBasisElement::ChebyshevBasisElement(const Variable& var, int degree)
+    : ChebyshevBasisElement({{var, degree}}) {}
+
+ChebyshevBasisElement::ChebyshevBasisElement(std::nullptr_t)
+    : ChebyshevBasisElement() {}
+
+ChebyshevBasisElement::ChebyshevBasisElement(
+    const Eigen::Ref<const VectorX<Variable>>& vars,
+    const Eigen::Ref<const Eigen::VectorXi>& degrees)
+    : PolynomialBasisElement(vars, degrees) {}
+
 bool ChebyshevBasisElement::operator<(
     const ChebyshevBasisElement& other) const {
   return this->lexicographical_compare(other);
@@ -64,6 +78,14 @@ std::map<ChebyshevBasisElement, double> ChebyshevBasisElement::Integration(
   result.emplace(ChebyshevBasisElement(var_to_degree_map),
                  -1.0 / (2 * degree - 2));
   return result;
+}
+
+std::pair<double, ChebyshevBasisElement> ChebyshevBasisElement::EvaluatePartial(
+    const Environment& env) const {
+  double coeff;
+  std::map<Variable, int> new_basis_element;
+  DoEvaluatePartial(env, &coeff, &new_basis_element);
+  return std::make_pair(coeff, ChebyshevBasisElement(new_basis_element));
 }
 
 double ChebyshevBasisElement::DoEvaluate(double variable_val,

@@ -37,6 +37,10 @@ namespace symbolic {
  * - std::map<Derived, double> Derived::Differentiate(const Variable& var)
  * const;
  * - bool Derived::operator<(const Derived& other) const;
+ * - std::pair<double, Derived> EvaluatePartial(const Environment& e) const;
+ *
+ * The function lexicographical_compare can be used when implementing operator<.
+ * The function DoEvaluatePartial can be used when implementing EvaluatePartial
  */
 class PolynomialBasisElement {
  public:
@@ -57,15 +61,38 @@ class PolynomialBasisElement {
   explicit PolynomialBasisElement(
       const std::map<Variable, int>& var_to_degree_map);
 
+  /**
+   * Constructs a polynomial basis, such that it contains the variable-to-degree
+   * map vars(i)→degrees(i).
+   * @throws invalid_argument if @p vars contains repeated variables.
+   * @throws logic_error if any degree is negative.
+   */
+  PolynomialBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
+                         const Eigen::Ref<const Eigen::VectorXi>& degrees);
+
   virtual ~PolynomialBasisElement() = default;
 
   const std::map<Variable, int>& var_to_degree_map() const {
     return var_to_degree_map_;
   }
 
+  /**
+   * Returns variable to degree map.
+   * TODO(hongkai.dai): this function is added because Monomial class has
+   * get_powers() function. We will remove this get_powers() function when
+   * Monomial class is deprecated.
+   */
+  const std::map<Variable, int>& get_powers() const {
+    return var_to_degree_map_;
+  }
+
   /** Returns the total degree of a polynomial basis. This is the summation of
    * the degree for each variable. */
   int total_degree() const { return total_degree_; }
+
+  /** Returns the degree of this PolynomialBasisElement in a variable @p v. If
+   * @p v is not a variable in this PolynomialBasisElement, then returns 0.*/
+  int degree(const Variable& v) const;
 
   Variables GetVariables() const;
 
@@ -90,8 +117,19 @@ class PolynomialBasisElement {
    */
   bool lexicographical_compare(const PolynomialBasisElement& other) const;
 
- protected:
   virtual bool EqualTo(const PolynomialBasisElement& other) const;
+
+  // Partially evaluate a polynomial basis element, where @p e does not
+  // necessarily contain all the variables in this basis element. The
+  // evaluation result is coeff * new_basis_element.
+  void DoEvaluatePartial(const Environment& e, double* coeff,
+                         std::map<Variable, int>* new_basis_element) const;
+
+  int* get_mutable_total_degree() { return &total_degree_; }
+
+  std::map<Variable, int>* get_mutable_var_to_degree_map() {
+    return &var_to_degree_map_;
+  }
 
  private:
   // This function evaluates the polynomial basis for a univariate polynomial at
@@ -106,6 +144,82 @@ class PolynomialBasisElement {
   // variable to its degree.
   std::map<Variable, int> var_to_degree_map_;
   int total_degree_{};
+};
+
+/** Implements Graded reverse lexicographic order.
+ *
+ * @tparam VariableOrder VariableOrder{}(v1, v2) is true if v1 < v2.
+ * @tparam BasisElement A derived class of PolynomialBasisElement.
+ *
+ * We first compare the total degree of the PolynomialBasisElement; if there is
+ * a tie, then we use the graded reverse lexicographical order as the tie
+ * breaker.
+ *
+ * Take monomials with variables {x, y, z} and total degree<=2 as an
+ * example, with the order x > y > z. To get the graded reverse lexicographical
+ * order, we take the following steps:
+ *
+ * First find all the monomials using the total degree. The monomials with
+ * degree 2 are {x², y², z², xy, xz, yz}. The monomials with degree 1 are {x,
+ * y, z}, and the monomials with degree 0 is {1}. To break the tie between
+ * monomials with the same total degree, first sort them in the reverse
+ * lexicographical order, namely x < y < z. The lexicographical order compares
+ * two monomials by first comparing the exponent of the largest variable, if
+ * there is a tie then go forth to the second largest variable. Thus z² > zy >zx
+ * > y² > yx > x². Finally reverse the order as x² > xy > y² > xz > yz > z² > x
+ * > y > z.
+ *
+ * There is an introduction to monomial order in
+ * https://en.wikipedia.org/wiki/Monomial_order, and an introduction to graded
+ * reverse lexicographical order in
+ * https://en.wikipedia.org/wiki/Monomial_order#Graded_reverse_lexicographic_order
+ */
+template <typename VariableOrder, typename BasisElement>
+struct BasisElementGradedReverseLexOrder {
+  /** Returns true if m1 < m2 under the Graded reverse lexicographic order. */
+  bool operator()(const BasisElement& m1, const BasisElement& m2) const {
+    const int d1{m1.total_degree()};
+    const int d2{m2.total_degree()};
+    if (d1 > d2) {
+      return false;
+    }
+    if (d2 > d1) {
+      return true;
+    }
+    // d1 == d2
+    if (d1 == 0) {
+      // Because both of them are 1.
+      return false;
+    }
+    const std::map<Variable, int>& powers1{m1.get_powers()};
+    const std::map<Variable, int>& powers2{m2.get_powers()};
+    std::map<Variable, int>::const_iterator it1{powers1.cbegin()};
+    std::map<Variable, int>::const_iterator it2{powers2.cbegin()};
+    while (it1 != powers1.cend() && it2 != powers2.cend()) {
+      const Variable& var1{it1->first};
+      const Variable& var2{it2->first};
+      const int degree1{it1->second};
+      const int degree2{it2->second};
+      if (variable_order_(var2, var1)) {
+        return false;
+      } else if (variable_order_(var1, var2)) {
+        return true;
+      } else {
+        // var1 == var2
+        if (degree1 == degree2) {
+          ++it1;
+          ++it2;
+        } else {
+          return degree1 > degree2;
+        }
+      }
+    }
+    // When m1 and m2 are identical.
+    return false;
+  }
+
+ private:
+  VariableOrder variable_order_;
 };
 
 }  // namespace symbolic

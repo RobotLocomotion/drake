@@ -29,6 +29,7 @@ sh_test(
     size = "small",
     srcs = ["record_results.sh"],
     data = [":cassie_bench"],
+    tags = ["no_valgrind_tools"],
 )
 
 add_lint_tests()
