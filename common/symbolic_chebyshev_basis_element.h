@@ -30,11 +30,13 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
   explicit ChebyshevBasisElement(
       const std::map<Variable, int>& var_to_degree_map);
 
+  /** Constructs a Chebyshev polynomial T₁(var). */
   explicit ChebyshevBasisElement(const Variable& var);
 
+  /** Constructs a Chebyshev polynomial Tₙ(var) where n = degree. */
   ChebyshevBasisElement(const Variable& var, int degree);
 
-  /** Constructs a default value.  This overload is used by Eigen when
+  /** Constructs a default value 1.  This overload is used by Eigen when
    * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
    */
   explicit ChebyshevBasisElement(std::nullptr_t);
@@ -84,7 +86,11 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    * result is of type pair<double, ChebyshevBasisElement>. The first component
    * (: double) represents the coefficient part while the second component
    * represents the remaining parts of the ChebyshevBasisElement which was not
-   * evaluated.
+   * evaluated, the product of the first and the second component is the result
+   * of the partial evaluation. For example, if this ChebyshevBasisElement is
+   * T₂(x)T₃(y)T₁(z), and @p env stores x→ 3, y→ 2, then the partial evaluation
+   * is T₂(3)*T₃(2)*T₁(z) = 17 * 26 * T₁(z) = 442*T₁(z), then we return the pair
+   * (442, T₁(z)).
    */
   std::pair<double, ChebyshevBasisElement> EvaluatePartial(
       const Environment& env) const;

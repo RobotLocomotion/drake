@@ -61,6 +61,12 @@ class PolynomialBasisElement {
   explicit PolynomialBasisElement(
       const std::map<Variable, int>& var_to_degree_map);
 
+  /**
+   * Constructs a polynomial basis, such that it contains the variable-to-degree
+   * map vars(i)→degrees(i).
+   * @throws invalid_argument if @p vars contains repeated variables.
+   * @throws logic_error if any degree is negative.
+   */
   PolynomialBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
                          const Eigen::Ref<const Eigen::VectorXi>& degrees);
 
@@ -113,9 +119,9 @@ class PolynomialBasisElement {
 
   virtual bool EqualTo(const PolynomialBasisElement& other) const;
 
-  // Partially evaluate a polynomial basis element, where @p e doesn't contain
-  // all the variables in this basis element. The evaluation result is coeff *
-  // new_basis_element
+  // Partially evaluate a polynomial basis element, where @p e does not
+  // necessarily contain all the variables in this basis element. The
+  // evaluation result is coeff * new_basis_element.
   void DoEvaluatePartial(const Environment& e, double* coeff,
                          std::map<Variable, int>* new_basis_element) const;
 
