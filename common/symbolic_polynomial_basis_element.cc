@@ -12,6 +12,27 @@
 
 namespace drake {
 namespace symbolic {
+namespace {
+std::map<Variable, int> ToVarToDegreeMap(
+    const Eigen::Ref<const VectorX<Variable>>& vars,
+    const Eigen::Ref<const Eigen::VectorXi>& exponents) {
+  DRAKE_DEMAND(vars.size() == exponents.size());
+  std::map<Variable, int> powers;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (powers.count(vars[i]) > 0) {
+      throw std::invalid_argument(fmt::format(
+          "PolynomialBasisElement: {} is repeated", vars[i].get_name()));
+    }
+    if (exponents[i] > 0) {
+      powers.emplace(vars[i], exponents[i]);
+    } else if (exponents[i] < 0) {
+      throw std::logic_error("The exponent is negative.");
+    }
+  }
+  return powers;
+}
+}  // namespace
+
 PolynomialBasisElement::PolynomialBasisElement()
     : var_to_degree_map_{}, total_degree_{0} {}
 
@@ -30,6 +51,20 @@ PolynomialBasisElement::PolynomialBasisElement(
           fmt::format("The degree for {} is negative.", p.first.get_name()));
     }
     // Ignore the entry if the degree == 0.
+  }
+}
+
+PolynomialBasisElement::PolynomialBasisElement(
+    const Eigen::Ref<const VectorX<Variable>>& vars,
+    const Eigen::Ref<const Eigen::VectorXi>& degrees)
+    : PolynomialBasisElement(ToVarToDegreeMap(vars, degrees)) {}
+
+int PolynomialBasisElement::degree(const Variable& v) const {
+  auto it = var_to_degree_map_.find(v);
+  if (it == var_to_degree_map_.end()) {
+    return 0;
+  } else {
+    return it->second;
   }
 }
 
@@ -115,6 +150,23 @@ bool PolynomialBasisElement::lexicographical_compare(
 
 symbolic::Expression PolynomialBasisElement::ToExpression() const {
   return DoToExpression();
+}
+
+void PolynomialBasisElement::DoEvaluatePartial(
+    const Environment& env, double* coeff,
+    std::map<Variable, int>* new_basis_element) const {
+  DRAKE_ASSERT(coeff);
+  DRAKE_ASSERT(new_basis_element);
+  DRAKE_ASSERT(new_basis_element->empty());
+  *coeff = 1;
+  for (const auto& [var, degree] : var_to_degree_map_) {
+    auto it = env.find(var);
+    if (it != env.end()) {
+      *coeff *= DoEvaluate(it->second, degree);
+    } else {
+      new_basis_element->emplace(var, degree);
+    }
+  }
 }
 }  // namespace symbolic
 }  // namespace drake

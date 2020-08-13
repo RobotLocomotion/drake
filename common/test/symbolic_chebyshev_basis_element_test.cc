@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
@@ -24,6 +25,49 @@ TEST_F(SymbolicChebyshevBasisElementTest, less_than) {
   EXPECT_LT(p4, p1);
   EXPECT_LT(p2, p3);
   EXPECT_LT(p4, p3);
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, Constructor) {
+  const ChebyshevBasisElement b1{};
+  EXPECT_TRUE(b1.var_to_degree_map().empty());
+  EXPECT_EQ(b1.total_degree(), 0);
+
+  const ChebyshevBasisElement b2{x_};
+  EXPECT_EQ(b2.var_to_degree_map().size(), 1);
+  EXPECT_EQ(b2.var_to_degree_map().at(x_), 1);
+  EXPECT_EQ(b2.total_degree(), 1);
+
+  const ChebyshevBasisElement b3{x_, 2};
+  EXPECT_EQ(b3.var_to_degree_map().size(), 1);
+  EXPECT_EQ(b3.var_to_degree_map().at(x_), 2);
+  EXPECT_EQ(b3.total_degree(), 2);
+
+  const ChebyshevBasisElement b4{{{x_, 2}, {y_, 1}}};
+  EXPECT_EQ(b4.var_to_degree_map().size(), 2);
+  EXPECT_EQ(b4.var_to_degree_map().at(x_), 2);
+  EXPECT_EQ(b4.var_to_degree_map().at(y_), 1);
+  EXPECT_EQ(b4.total_degree(), 3);
+
+  const ChebyshevBasisElement b5{Vector2<Variable>(x_, y_),
+                                 Eigen::Vector2i(2, 1)};
+  EXPECT_EQ(b5.var_to_degree_map().size(), 2);
+  EXPECT_EQ(b5.var_to_degree_map().at(x_), 2);
+  EXPECT_EQ(b5.var_to_degree_map().at(y_), 1);
+  EXPECT_EQ(b5.total_degree(), 3);
+
+  const ChebyshevBasisElement b6{Vector2<Variable>(x_, y_),
+                                 Eigen::Vector2i(2, 0)};
+  EXPECT_EQ(b6.var_to_degree_map().size(), 1);
+  EXPECT_EQ(b6.var_to_degree_map().at(x_), 2);
+  EXPECT_EQ(b6.total_degree(), 2);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ChebyshevBasisElement(Vector2<Variable>(x_, x_), Eigen::Vector2i(2, 1)),
+      std::invalid_argument, ".*x is repeated");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ChebyshevBasisElement(Vector2<Variable>(x_, y_), Eigen::Vector2i(2, -1)),
+      std::logic_error, "The exponent is negative.");
 }
 
 TEST_F(SymbolicChebyshevBasisElementTest, Evaluate) {
@@ -235,6 +279,23 @@ TEST_F(SymbolicChebyshevBasisElementTest, Hash) {
   EXPECT_EQ(map.size(), 3);
   // T0(y) = T0(x) = 1.
   EXPECT_EQ(map.at(ChebyshevBasisElement({{y_, 0}})), 3);
+}
+
+TEST_F(SymbolicChebyshevBasisElementTest, EvaluatePartial) {
+  Environment env;
+  env.insert(x_, 3);
+
+  const ChebyshevBasisElement m1{{{x_, 2}, {y_, 4}, {z_, 3}}};
+  double coeff;
+  ChebyshevBasisElement new_basis_element;
+  std::tie(coeff, new_basis_element) = m1.EvaluatePartial(env);
+  EXPECT_EQ(coeff, 17);
+  EXPECT_EQ(new_basis_element, ChebyshevBasisElement({{y_, 4}, {z_, 3}}));
+
+  env.insert(z_, 2);
+  std::tie(coeff, new_basis_element) = m1.EvaluatePartial(env);
+  EXPECT_EQ(coeff, 17 * 26);
+  EXPECT_EQ(new_basis_element, ChebyshevBasisElement(y_, 4));
 }
 }  // namespace symbolic
 }  // namespace drake
