@@ -18,6 +18,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
@@ -258,6 +259,18 @@ drake_py_library(
 )
 
 drake_py_library(
+    name = "jupyter_widgets_py",
+    srcs = ["jupyter_widgets.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/common:jupyter_py",
+    ],
+)
+
+drake_py_library(
     name = "perception_py",
     srcs = ["perception.py"],
     imports = PACKAGE_INFO.py_imports,
@@ -314,6 +327,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":drawing_py",
+    ":jupyter_widgets_py",
     ":meshcat_visualizer_py",
     ":scalar_conversion_py",
     ":module_py",
@@ -368,6 +382,22 @@ drake_py_binary(
         ":primitives_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "jupyter_widgets_examples",
+    add_test_rule = 1,
+    data = [
+        "//manipulation/models/ycb:models",
+    ],
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":jupyter_widgets_py",
+        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
