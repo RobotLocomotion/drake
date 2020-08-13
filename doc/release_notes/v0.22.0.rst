@@ -14,6 +14,7 @@ Breaking changes since v0.21.0
 * drake::multibody::Joint gained a new pure virtual method do_set_default_positions (`#13757`_)
 * pydrake's deprecation infrastructure now must always be given a removal date, either embedded in the message or via the new date= kwarg (`#13730`_)
 * Several stale forks of SDFormat models were removed from the Atlas example (`#13758`_)
+* Rename libspdlog.so to libdrake_spdlog.so (`#13698`_)
 
 Changes since v0.21.0:
 ----------------------
@@ -42,7 +43,7 @@ New features
 
 Fixes
 
-* Fix out-of-bounds matrix access in Autodiff QuadraticCost (`#13752`_)
+* Fix out-of-bounds matrix access in AutoDiff QuadraticCost (`#13752`_)
 
 Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
