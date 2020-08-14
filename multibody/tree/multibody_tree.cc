@@ -1348,89 +1348,95 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   const Body<T>& body_A = frame_A.body();
   const SpatialAcceleration<T> AsBias_WBodyA_W = frame_A.is_world_frame() ?
       SpatialAcceleration<T>::Zero() : AsBias_WB_all[body_A.node_index()];
-  return CalcSpatialAccelerationHelper(context, frame_B, p_BoBp_B, frame_A,
+
+  // Calculate Bp's spatial acceleration bias in body_A, expressed in frame_E.
+  return CalcSpatialAccelerationHelper(context, frame_B, p_BoBp_B, body_A,
       frame_E, AsBias_WBodyB_W, AsBias_WBodyA_W);
 }
 
 template <typename T>
 SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     const systems::Context<T>& context,
-    const Frame<T>& frame_B,
-    const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-    const Frame<T>& frame_A,
+    const Frame<T>& frame_F,
+    const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
+    const Body<T>& body_A,
     const Frame<T>& frame_E,
-    const SpatialAcceleration<T>& A_WbodyB_W,
-    const SpatialAcceleration<T>& A_WbodyA_W) const {
-  // For a point Bp that is fixed/welded to a frame B, one way to calculate
-  // A_ABp (point Bp's spatial acceleration in a frame A) is by rearranging
-  // formulas for the angular acceleration and translational acceleration parts
-  // of Bp's spatial acceleration in the world frame W.
+    const SpatialAcceleration<T>& A_WB_W,
+    const SpatialAcceleration<T>& A_WA_W) const {
+  // For a frame Fp that is fixed/welded to a frame_F, one way to calculate
+  // A_AFp (Fp's spatial acceleration in body_A) is by rearranging formulas
+  // for the angular acceleration and translational acceleration parts of
+  // Fp's spatial acceleration in the world frame W.
   //
-  // The angular acceleration part of A_ABp is denoted α_AB and can be
+  // Since frame Fp is regarded as fixed/welded to both frame_F and a body_B,
+  // Fp's angular acceleration in body_A is equal to body_B's angular
+  // acceleration in body_A, and hence can be denoted α_AB and can be
   // calculated by rearranging the "angular acceleration addition theorem"
   // (from eqn (12) in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
   // or Chap 8, Angular velocity/acceleration [Mitiguy 2019], reference below).
   //   (1)  α_WB = α_WA + α_AB + w_WA x w_AB   is rearranged to
   //   (2)  α_AB = α_WB - α_WA - w_WA x w_AB,  where
-  // α_AB is frame B's angular acceleration in frame A,
-  // α_WB is frame B's angular acceleration in frame W,
-  // α_WA is frame A's angular acceleration in frame W,
-  // w_WA is frame A's angular velocity in frame W, and
-  // w_AB is frame B's angular velocity in frame A.
+  // α_AB is body B's angular acceleration in body A,
+  // α_WB is body B's angular acceleration in frame W (world),
+  // α_WA is body A's angular acceleration in frame W (world),
+  // w_WA is body A's angular velocity in frame W, and
+  // w_AB is body B's angular velocity in body A.
   //
-  // The translational acceleration part of A_ABp is denoted a_ABp and can be
+  // The translational acceleration part of A_AFp is denoted a_AFp and can be
   // calculated by rearranging the "one point moving on a rigid frame formula"
   // (from eqn (13) in SpatialAcceleration::ComposeWithMovingFrameAcceleration()
   // or from Chapter 10, Points: Velocity and acceleration [Mitiguy 2019]
   // or from section 2.8, page 39 [Kane & Levinson 1985], references below)
-  //   (3)  a_WBp = a_WAp + a_ABp + 2 w_WA x v_ABp    is rearranged to
-  //   (4)  a_ABp = a_WBp - a_WAp - 2 w_WA x v_ABp,  where
-  // point Ap is the point fixed to A that is coincident with Bp,
-  // a_ABp is point Bp's acceleration in frame A,
-  // a_WBp is point Bp's acceleration in frame W,
+  //   (3)  a_WFp = a_WAp + a_AFp + 2 w_WA x v_AFp    is rearranged to
+  //   (4)  a_AFp = a_WFp - a_WAp - 2 w_WA x v_AFp,  where
+  // point Ap is the point fixed to body_A that is coincident with Fp,
+  // a_AFp is Fp's translational acceleration in body_A,
+  // a_WFp is Fp's translational acceleration in frame W (world),
   // a_WAp is point Ap's acceleration in frame W (calculated as shown below),
-  // w_WA is frame A's angular velocity in frame W,
-  // v_ABp is point Bp's velocity in frame A.
+  // w_WA is body A's angular velocity in frame W,
+  // v_AFp is Fp's translational velocity in body_A.
   //
   // The previous equations also apply to bias acceleration, so eqns (2) and (4)
   // apply to bias angular acceleration and bias translational acceleration as
   //   (5)  αBias_AB = αBias_WB - αBias_WA - w_WA x w_AB
-  //   (6)  aBias_ABp = aBias_WBp - aBias_WAp - 2 w_WA x v_ABp
+  //   (6)  aBias_AFp = aBias_WFp - aBias_WAp - 2 w_WA x v_AFp
   //
   // - [Mitiguy, 2019]: "Advanced Dynamics and Motion Simulation,
   //   For professional engineers and scientists," Prodigy Press, Sunnyvale CA,
   //   Available at www.MotionGenesis.com
   // - [Kane & Levinson 1985] "Dynamics, Theory and Applications," McGraw-Hill.
   //    Available for free .pdf download: https://hdl.handle.net/1813/638
-  // Shift spatial acceleration from body_B's origin to point Bp of frame_B.
-  const SpatialAcceleration<T> A_WBp_W = ShiftSpatialAccelerationInWorld(
-      context, frame_B, p_BoBp_B, A_WbodyB_W);
+  // Shift spatial acceleration from body_B's origin to point Fp of frame_F.
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  const SpatialAcceleration<T> A_WFp_W = ShiftSpatialAccelerationInWorld(
+      frame_F, p_FoFp_F, A_WB_W, pc, vc);
 
-  // Calculations are simpler if frame_A (the "measured-in" frame) is the world
+  // Calculations are simpler if body_A (the "measured-in" frame) is the world
   // frame W.  Otherwise, extra calculations are needed.
-  SpatialAcceleration<T> A_ABp_W;
+  SpatialAcceleration<T> A_AFp_W;
   const Frame<T>& frame_W = world_frame();
+  const Frame<T>& frame_A = body_A.body_frame();
   if (frame_A.is_world_frame()) {
-    A_ABp_W = A_WBp_W;
+    A_AFp_W = A_WFp_W;
   } else  {
-    // Point Ap is the point of (fixed to) frame_A that is coincident with
-    // point Bp. Calculate the position vector from Ao (frame_A's origin) to Ap.
-    const RigidTransform<T> X_AB = frame_B.CalcPose(context, frame_A);
-    const Vector3<T> p_AoAp_A = X_AB * p_BoBp_B;  // Note: p_AoAp = p_AoBp
+    // Point Ap is the point of (fixed to) body_A that is coincident with
+    // point Fp. Calculate the position vector from Ao (body_A's origin) to Ap.
+    const RigidTransform<T> X_AF = frame_F.CalcPose(context, frame_A);
+    const Vector3<T> p_AoAp_A = X_AF * p_FoFp_F;  // Note: p_AoAp = p_AoFp
 
-    // Frame_A is regarded as fixed/welded to a body herein named body_A.
-    // Shift spatial acceleration from body_A's origin to point Ap of frame_A.
-    // Note: Since Ap is regarded as fixed to frame A, Ap's translational
+    // Shift spatial acceleration from body_A's origin to point Ap of body_A.
+    // Note: Since Ap is regarded as fixed to body_A, Ap's translational
     // acceleration in the world frame W is calculated as
     //   a_WAp = a_WAo + α_WA x p_AoAp + w_WA x (w_WA x p_AoAp)
     // Reminder: p_AoAp is an "instantaneous" position vector, so differentation
     // of p_AoAp or a_WAp may produce a result different than you might expect.
     const SpatialAcceleration<T> A_WAp_W = ShiftSpatialAccelerationInWorld(
-        context, frame_A, p_AoAp_A, A_WbodyA_W);
+        frame_A, p_AoAp_A, A_WA_W, pc, vc);
 
     // Implement part of the formula from equations (5) and (6) above.
     // TODO(Mitiguy) Investigate whether it is more accurate and/or efficient
-    //  to calculate (A_WBp_W - A_WAp_W) via a least common ancestor.
+    //  to calculate (A_WFp_W - A_WAp_W) via a least common ancestor.
     // Discussion with reviewers (Sherm and Alejandro) included the following
     // thoughts about using a least common ancestor.
     // * There may be simulations in which using a least common ancestor is
@@ -1446,64 +1452,61 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
     //   unclear whether typical non-World frame relative accelerations would
     //   involve near-ancestors rather than far-ancestors. If the latter,
     //   then the extra iterations from World wouldn't matter much.
-    A_ABp_W = A_WBp_W - A_WAp_W;  // Calculation of A_ABp_W is partially done.
+    A_AFp_W = A_WFp_W - A_WAp_W;  // Calculation of A_AFp_W is unfinished here.
 
     // Equation (5) is  α_AB = α_WB - α_WA - w_WA x w_AB,
     // hence calculate A's angular velocity in W and B's angular velocity in A.
     const Vector3<T> w_WA_W =
-        frame_A.CalcSpatialVelocityInWorld(context).rotational();
-    SpatialVelocity<T> V_AB_W =
-        frame_B.CalcSpatialVelocity(context, frame_A, frame_W);
-    const Vector3<T> w_AB_W = V_AB_W.rotational();
-    A_ABp_W.rotational() -= w_WA_W.cross(w_AB_W);
+        body_A.EvalSpatialVelocityInWorld(context).rotational();
+    SpatialVelocity<T> V_AF_W =
+        frame_F.CalcSpatialVelocity(context, frame_A, frame_W);
+    const Vector3<T> w_AF_W = V_AF_W.rotational();  // Frame F is welded to B.
+    A_AFp_W.rotational() -= w_WA_W.cross(w_AF_W);
 
-    // Equation (6) is  a_ABp = a_WBp - a_WAp - 2 w_WA x v_ABp,  hence calculate
-    // Bp's velocity in A for the "Coriolis acceleration" 2 w_WA x v_ABp.
-    const RotationMatrix<T> R_WB = frame_B.CalcRotationMatrixInWorld(context);
-    const Vector3<T> p_BoBp_W = R_WB * p_BoBp_B;
-    const Vector3<T> v_ABp_W = V_AB_W.Shift(p_BoBp_W).translational();
-    const Vector3<T> coriolis_acceleration = 2 * w_WA_W.cross(v_ABp_W);
-    A_ABp_W.translational() -= coriolis_acceleration;
+    // Equation (6) is  a_AFp = a_WFp - a_WAp - 2 w_WA x v_AFp,  hence calculate
+    // Fp's velocity in A to form the "Coriolis acceleration" 2 w_WA x v_AFp.
+    const RotationMatrix<T> R_WF = frame_F.CalcRotationMatrixInWorld(context);
+    const Vector3<T> p_FoFp_W = R_WF * p_FoFp_F;
+    const Vector3<T> v_AFp_W = V_AF_W.Shift(p_FoFp_W).translational();
+    const Vector3<T> coriolis_acceleration = 2 * w_WA_W.cross(v_AFp_W);
+    A_AFp_W.translational() -= coriolis_acceleration;
   }
 
   // If necessary, re-express the results in frame_E.
-  if (frame_E.is_world_frame()) return A_ABp_W;
+  if (frame_E.is_world_frame()) return A_AFp_W;
   const RotationMatrix<T> R_EW =
-      CalcRelativeRotationMatrix(context, frame_E, frame_W);
-  const SpatialAcceleration<T> A_ABp_E = R_EW * A_ABp_W;
-  return A_ABp_E;
+      frame_E.CalcRotationMatrixInWorld(context).inverse();
+  const SpatialAcceleration<T> A_AFp_E = R_EW * A_AFp_W;
+  return A_AFp_E;
 }
 
 template <typename T>
 SpatialAcceleration<T> MultibodyTree<T>::ShiftSpatialAccelerationInWorld(
-    const systems::Context<T>& context,
     const Frame<T>& frame_B,
     const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-    const SpatialAcceleration<T>& A_WA_W) const {
-  // Optimize for the common case that frame_B is body_A.body_frame().
+    const SpatialAcceleration<T>& A_WA_W,
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  // frame_B is fixed/welded to body_A.
   const Body<T>& body_A = frame_B.body();
+
+  // Optimize for the common case that frame_B is a body frame.
   Vector3<T> p_AoBp_A;
-  if (body_A.body_frame().index() == frame_B.index()) {
+  if (frame_B.is_body_frame()) {
     p_AoBp_A = p_BoBp_B;
   } else {
-    // Get transform from body_A to frame_B (frame_B is fixed/welded to body_A).
+    // Form the position from Ao (body_A's origin) to Bp, expressed in body_A.
     const RigidTransform<T> X_AB = frame_B.GetFixedPoseInBodyFrame();
-    // Calculate p_AoBp_A (position from Ao to Bp expressed in body frame A).
     p_AoBp_A = X_AB * p_BoBp_B;
   }
-  // Reminder: frame_B is assumed to be fixed/welded to body_A.
-  // Get body_B's rotation matrix and angular velocity in world frame W.
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  const RotationMatrix<T>& R_WA = pc.get_R_WB(body_A.node_index());
-  const Vector3<T>& w_WA_W = vc.get_V_WB(body_A.node_index()).rotational();
 
-  // Form the position vector from Ao to Bp expressed in the world frame W.
+  // Form the position vector from Ao to Bp, expressed in the world frame W.
+  const RotationMatrix<T>& R_WA = pc.get_R_WB(body_A.node_index());
   const Vector3<T> p_AoBp_W = R_WA * p_AoBp_A;
 
-  // Shift spatial acceleration from point Ao to point Bp.
-  // Note: Since frame_B is assumed to be fixed/welded to body_A,
-  // frame_B's angular acceleration = body_A's angular acceleration.
+  // Shift spatial acceleration from body_A to frame_Bp.
+  // Note: Since frame_B is assumed to be fixed to body_A, w_WB = w_WA.
+  const Vector3<T>& w_WA_W = vc.get_V_WB(body_A.node_index()).rotational();
   SpatialAcceleration<T> A_WBp_W = A_WA_W.Shift(p_AoBp_W, w_WA_W);
   return A_WBp_W;
 }
