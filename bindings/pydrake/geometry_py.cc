@@ -627,6 +627,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
+      // Keep alive, ownership: `builder` keeps `lcm` alive.
+      py::keep_alive<1, 3>(),
       // See #11531 for why `py_rvp::reference` is needed.
       py_rvp::reference, doc.ConnectDrakeVisualizer.doc_4args);
   m.def("ConnectDrakeVisualizer",
@@ -638,6 +640,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("role") = geometry::Role::kIllustration,
       // Keep alive, ownership: `return` keeps `builder` alive.
       py::keep_alive<0, 1>(),
+      // Keep alive, ownership: `builder` keeps `lcm` alive.
+      py::keep_alive<1, 3>(),
       // See #11531 for why `py_rvp::reference` is needed.
       py_rvp::reference, doc.ConnectDrakeVisualizer.doc_5args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
