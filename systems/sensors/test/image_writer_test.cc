@@ -134,6 +134,30 @@ Image<PixelType::kLabel16I> test_image() {
   return label_image;
 }
 
+template <>
+Image<PixelType::kDepth16U> test_image() {
+  // Creates a simple 4x1 image consisting of: 0, 100, 200, 300.
+  Image<PixelType::kDepth16U> depth_image(4, 1);
+  *depth_image.at(0, 0) = 0;
+  *depth_image.at(1, 0) = 100;
+  *depth_image.at(2, 0) = 200;
+  // Note: value > 255 to make sure that values aren't being truncated/wrapped
+  // to 8-bit values.
+  *depth_image.at(3, 0) = 300;
+  return depth_image;
+}
+
+template <>
+Image<PixelType::kGrey8U> test_image() {
+  // Creates a simple 4x1 image consisting of: 1, 2, 3, 4.
+  Image<PixelType::kGrey8U> grey_imageimage(4, 1);
+  *grey_imageimage.at(0, 0) = 1;
+  *grey_imageimage.at(1, 0) = 2;
+  *grey_imageimage.at(2, 0) = 3;
+  *grey_imageimage.at(3, 0) = 4;
+  return grey_imageimage;
+}
+
 // Class for testing actual I/O work. This helps manage generated files by
 // facilitating temporary file names and registering additional names so that
 // they can be cleaned up at the conclusion of the tests.
@@ -188,6 +212,8 @@ class ImageWriterTest : public ::testing::Test {
       vtkSmartPointer<vtkImageReader2> reader;
       switch (kPixelType) {
         case PixelType::kRgba8U:
+        case PixelType::kGrey8U:
+        case PixelType::kDepth16U:
         case PixelType::kLabel16I:
           reader = vtkSmartPointer<vtkPNGReader>::New();
           break;
@@ -307,10 +333,14 @@ TEST_F(ImageWriterTest, ImageToStringMaps) {
   EXPECT_EQ("color", tester.label(PixelType::kRgba8U));
   EXPECT_EQ("label", tester.label(PixelType::kLabel16I));
   EXPECT_EQ("depth", tester.label(PixelType::kDepth32F));
+  EXPECT_EQ("depth", tester.label(PixelType::kDepth16U));
+  EXPECT_EQ("grey_scale", tester.label(PixelType::kGrey8U));
 
   EXPECT_EQ(".png", tester.extension(PixelType::kRgba8U));
   EXPECT_EQ(".png", tester.extension(PixelType::kLabel16I));
   EXPECT_EQ(".tiff", tester.extension(PixelType::kDepth32F));
+  EXPECT_EQ(".png", tester.extension(PixelType::kDepth16U));
+  EXPECT_EQ(".png", tester.extension(PixelType::kGrey8U));
 }
 
 // Tests the processing of file format for extracting the directory.
@@ -538,6 +568,8 @@ TEST_F(ImageWriterTest, FileExtension) {
   TestPixelExtension<PixelType::kRgba8U>(temp_dir(), &writer, &count);
   TestPixelExtension<PixelType::kLabel16I>(temp_dir(), &writer, &count);
   TestPixelExtension<PixelType::kDepth32F>(temp_dir(), &writer, &count);
+  TestPixelExtension<PixelType::kDepth16U>(temp_dir(), &writer, &count);
+  TestPixelExtension<PixelType::kGrey8U>(temp_dir(), &writer, &count);
 
   ImageWriterTester tester(writer);
   // Case: Format string with correct extension remains unchanged.
@@ -657,6 +689,16 @@ TEST_F(ImageWriterTest, WritesDepthImage) {
   TestWritingImageOnPort<PixelType::kDepth32F>();
 }
 
+// This simply confirms that the depth image gets written to the right format.
+TEST_F(ImageWriterTest, WritesDepthImage16U) {
+  TestWritingImageOnPort<PixelType::kDepth16U>();
+}
+
+// This simply confirms that the color image gets written to the right format.
+TEST_F(ImageWriterTest, WritesGreyImage) {
+  TestWritingImageOnPort<PixelType::kGrey8U>();
+}
+
 // Evaluate the stand-alone test for color images.
 TEST_F(ImageWriterTest, SaveToPng_Color) {
   ImageRgba8U color_image = test_image<PixelType::kRgba8U>();
@@ -685,6 +727,26 @@ TEST_F(ImageWriterTest, SaveToPng_Label) {
   SaveToPng(label_image, label_image_name);
 
   EXPECT_TRUE(MatchesFileOnDisk(label_image_name, label_image));
+}
+
+// Evaluate the stand-alone test for depth16 images.
+TEST_F(ImageWriterTest, SaveToPng_Depth16) {
+  ImageDepth16U image = test_image<PixelType::kDepth16U>();
+
+  const std::string image_name = temp_name();
+  SaveToPng(image, image_name);
+
+  EXPECT_TRUE(MatchesFileOnDisk(image_name, image));
+}
+
+// Evaluate the stand-alone test for grey images.
+TEST_F(ImageWriterTest, SaveToPng_Grey) {
+  ImageGrey8U image = test_image<PixelType::kGrey8U>();
+
+  const std::string image_name = temp_name();
+  SaveToPng(image, image_name);
+
+  EXPECT_TRUE(MatchesFileOnDisk(image_name, image));
 }
 
 }  // namespace
