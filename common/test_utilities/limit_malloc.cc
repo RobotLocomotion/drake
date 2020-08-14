@@ -44,6 +44,8 @@ class Monitor {
     }
   }
 
+  int num_allocations() const { return observed_num_allocations_.load(); }
+
  private:
   void ObserveAllocation();
 
@@ -172,6 +174,10 @@ LimitMalloc::LimitMalloc(LimitMallocParams args) {
   if (prior) {
     throw std::logic_error("Cannot nest LimitMalloc guards");
   }
+}
+
+int LimitMalloc::num_allocations() const {
+  return ActiveMonitor::load()->num_allocations();
 }
 
 LimitMalloc::~LimitMalloc() {
