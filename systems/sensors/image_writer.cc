@@ -34,7 +34,12 @@ void SaveToFileHelper(const Image<kPixelType>& image,
   // NOTE: This excludes *many* of the defined `PixelType` values.
   switch (kPixelType) {
     case PixelType::kRgba8U:
+    case PixelType::kGrey8U:
       vtk_image->AllocateScalars(VTK_UNSIGNED_CHAR, num_channels);
+      writer = vtkSmartPointer<vtkPNGWriter>::New();
+      break;
+    case PixelType::kDepth16U:
+      vtk_image->AllocateScalars(VTK_UNSIGNED_SHORT, num_channels);
       writer = vtkSmartPointer<vtkPNGWriter>::New();
       break;
     case PixelType::kDepth32F:
@@ -78,7 +83,15 @@ void SaveToTiff(const ImageDepth32F& image, const std::string& file_path) {
   SaveToFileHelper(image, file_path);
 }
 
+void SaveToPng(const ImageDepth16U& image, const std::string& file_path) {
+  SaveToFileHelper(image, file_path);
+}
+
 void SaveToPng(const ImageLabel16I& image, const std::string& file_path) {
+  SaveToFileHelper(image, file_path);
+}
+
+void SaveToPng(const ImageGrey8U& image, const std::string& file_path) {
   SaveToFileHelper(image, file_path);
 }
 
@@ -90,6 +103,10 @@ ImageWriter::ImageWriter() {
   extensions_[PixelType::kLabel16I] = ".png";
   labels_[PixelType::kLabel16I] = "label";
   extensions_[PixelType::kDepth32F] = ".tiff";
+  labels_[PixelType::kDepth16U] = "depth";
+  extensions_[PixelType::kDepth16U] = ".png";
+  labels_[PixelType::kGrey8U] = "grey_scale";
+  extensions_[PixelType::kGrey8U] = ".png";
 }
 
 template <PixelType kPixelType>
@@ -99,9 +116,11 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
   // Test to confirm valid pixel type.
   static_assert(kPixelType == PixelType::kRgba8U ||
                     kPixelType == PixelType::kDepth32F ||
-                    kPixelType == PixelType::kLabel16I,
+                    kPixelType == PixelType::kDepth16U ||
+                    kPixelType == PixelType::kLabel16I ||
+                    kPixelType == PixelType::kGrey8U,
                 "ImageWriter: the only supported pixel types are: kRgba8U, "
-                "kDepth32F, and kLabel16I");
+                "kDepth32F, kDepth16U, kGrey8U, and kLabel16I");
 
   if (publish_period <= 0) {
     throw std::logic_error("ImageWriter: publish period must be positive");
@@ -239,12 +258,22 @@ template const InputPort<double>& ImageWriter::DeclareImageInputPort<
 template const InputPort<double>& ImageWriter::DeclareImageInputPort<
     PixelType::kLabel16I>(std::string port_name, std::string file_name_format,
                           double publish_period, double start_time);
+template const InputPort<double>& ImageWriter::DeclareImageInputPort<
+    PixelType::kDepth16U>(std::string port_name, std::string file_name_format,
+                          double publish_period, double start_time);
+template const InputPort<double>& ImageWriter::DeclareImageInputPort<
+    PixelType::kGrey8U>(std::string port_name, std::string file_name_format,
+                        double publish_period, double start_time);
 
 template void ImageWriter::WriteImage<PixelType::kRgba8U>(
     const Context<double>& context, int index) const;
 template void ImageWriter::WriteImage<PixelType::kDepth32F>(
     const Context<double>& context, int index) const;
 template void ImageWriter::WriteImage<PixelType::kLabel16I>(
+    const Context<double>& context, int index) const;
+template void ImageWriter::WriteImage<PixelType::kDepth16U>(
+    const Context<double>& context, int index) const;
+template void ImageWriter::WriteImage<PixelType::kGrey8U>(
     const Context<double>& context, int index) const;
 
 }  // namespace sensors
