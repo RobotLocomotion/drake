@@ -61,6 +61,8 @@ TEST_P(LimitMallocTest, UnlimitedTest) {
   Allocate();  // Malloc is OK.
   Allocate();  // Malloc is OK.
   Allocate();  // Malloc is OK.
+  // Allocations are counted.
+  EXPECT_EQ(3, guard.num_allocations());
 }
 
 TEST_P(LimitMallocTest, BasicTest) {
