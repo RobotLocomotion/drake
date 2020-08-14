@@ -55,6 +55,9 @@ class LimitMalloc final {
   /// Undoes this object's malloc limits.
   ~LimitMalloc();
 
+  /// Returns the number of allocations observed so far.
+  int num_allocations() const;
+
   // We write this out by hand, to avoid depending on Drake *at all*.
   /// @name Does not allow copy, move, or assignment
   //@{
