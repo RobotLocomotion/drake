@@ -18,6 +18,7 @@ drake_cc_package_library(
     deps = [
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":robot_plan_interpolator",
     ],
 )
@@ -43,6 +44,16 @@ drake_cc_library(
         "//multibody/plant",
         "//solvers:mathematical_program",
         "//solvers:osqp_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_integrator",
+    srcs = ["differential_inverse_kinematics_integrator.cc"],
+    hdrs = ["differential_inverse_kinematics_integrator.h"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -81,6 +92,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":differential_inverse_kinematics",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_integrator_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_integrator",
         "//common/test_utilities:eigen_matrix_compare",
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
