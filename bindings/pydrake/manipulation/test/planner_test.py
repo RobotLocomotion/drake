@@ -78,3 +78,22 @@ class TestPlanner(unittest.TestCase):
         mut.DoDifferentialInverseKinematics(plant, context,
                                             Isometry3.Identity(), frame,
                                             parameters)
+
+    def test_diff_ik_integrator(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant(0.0)
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        context = plant.CreateDefaultContext()
+        frame = plant.GetFrameByName("Link2")
+        time_step = 0.1
+        parameters = mut.DifferentialInverseKinematicsParameters(2, 2)
+
+        integrator = mut.DifferentialInverseKinematicsIntegrator(
+            robot=plant,
+            frame_E=frame,
+            time_step=time_step,
+            parameters=parameters,
+            robot_context=context)
