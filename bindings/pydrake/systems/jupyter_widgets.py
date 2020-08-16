@@ -51,9 +51,15 @@ class PoseSliders(LeafSystem):
                       Value namedtuples.  See those tuples for default values.
         """
         LeafSystem.__init__(self)
-        self.DeclareAbstractOutputPort(
+        port = self.DeclareAbstractOutputPort(
             "pose", lambda: AbstractValue.Make(RigidTransform()),
             self.DoCalcOutput)
+
+        # The widgets themselves have undeclared state.  For now, we accept it,
+        # and simply disable caching on the output port.
+        # TODO(russt): consider implementing the more elaborate methods seen
+        # in, e.g., LcmMessageSubscriber.
+        port.disable_caching_by_default()
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
