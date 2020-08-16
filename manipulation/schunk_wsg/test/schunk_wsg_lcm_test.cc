@@ -50,20 +50,28 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
 }
 
 GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandSenderTest) {
-  SchunkWsgCommandSender dut;
+  const double default_force_limit = 37.0;
+  SchunkWsgCommandSender dut(default_force_limit);
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
 
   const double position = 0.0015;
   dut.get_position_input_port().FixValue(context.get(), position);
-  const double force_limit = 25.0;
-  dut.get_force_limit_input_port().FixValue(context.get(), force_limit);
 
   const lcmt_schunk_wsg_command& command =
       dut.get_output_port(0).Eval<lcmt_schunk_wsg_command>(*context);
 
   EXPECT_EQ(command.target_position_mm, 1.5);
-  EXPECT_EQ(command.force, 25.0);
+  EXPECT_EQ(command.force, default_force_limit);
+
+  const double force_limit = 25.0;
+  dut.get_force_limit_input_port().FixValue(context.get(), force_limit);
+
+  const lcmt_schunk_wsg_command& command_w_force =
+      dut.get_output_port(0).Eval<lcmt_schunk_wsg_command>(*context);
+
+  EXPECT_EQ(command_w_force.target_position_mm, 1.5);
+  EXPECT_EQ(command_w_force.force, force_limit);
 }
 
 GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
