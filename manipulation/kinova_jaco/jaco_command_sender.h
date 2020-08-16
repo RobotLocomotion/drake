@@ -41,12 +41,6 @@ class JacoCommandSender : public systems::LeafSystem<double> {
   JacoCommandSender(int num_joints = kJacoDefaultArmNumJoints,
                     int num_fingers = kJacoDefaultArmNumFingers);
 
-  /// @name Named accessors for this System's input and output ports.
-  //@{
-  const systems::InputPort<double>& get_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
-  //@}
-
  private:
   void CalcOutput(const systems::Context<double>&, lcmt_jaco_command*) const;
 

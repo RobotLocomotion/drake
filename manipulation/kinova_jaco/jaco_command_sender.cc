@@ -13,13 +13,6 @@ JacoCommandSender::JacoCommandSender(int num_joints, int num_fingers)
       "lcmt_jaco_command", &JacoCommandSender::CalcOutput);
 }
 
-const systems::InputPort<double>& JacoCommandSender::get_input_port() const {
-  return LeafSystem<double>::get_input_port(0);
-}
-const systems::OutputPort<double>& JacoCommandSender::get_output_port() const {
-  return LeafSystem<double>::get_output_port(0);
-}
-
 void JacoCommandSender::CalcOutput(
     const systems::Context<double>& context, lcmt_jaco_command* output) const {
   const auto& state = get_input_port().Eval(context);

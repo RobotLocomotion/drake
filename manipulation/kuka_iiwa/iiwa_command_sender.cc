@@ -21,9 +21,6 @@ const InPort& IiwaCommandSender::get_position_input_port() const {
 const InPort& IiwaCommandSender::get_torque_input_port() const {
   return LeafSystem<double>::get_input_port(1);
 }
-const systems::OutputPort<double>& IiwaCommandSender::get_output_port() const {
-  return LeafSystem<double>::get_output_port(0);
-}
 
 void IiwaCommandSender::CalcOutput(
     const systems::Context<double>& context, lcmt_iiwa_command* output) const {

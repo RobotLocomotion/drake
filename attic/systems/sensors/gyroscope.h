@@ -87,18 +87,6 @@ class Gyroscope : public systems::LeafSystem<double> {
   /// @see get_tree()
   const RigidBodyFrame<double>& get_frame() const { return frame_; }
 
-  /// Returns the input port that should contain the generalized (i.e., linear
-  /// and rotational) position and velocity state of the RigidBodyTree DOFs.
-  const InputPort<double>& get_input_port() const {
-    return System<double>::get_input_port(input_port_index_);
-  }
-
-  /// Returns a the state output port, which contains the sensor's
-  /// sensed values.
-  const OutputPort<double>& get_output_port() const {
-    return System<double>::get_output_port(output_port_index_);
-  }
-
  private:
   // Computes the angular velocity as sensed by this sensor.
   void CalcAngularVelocity(const Context<double>& context,

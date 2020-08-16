@@ -223,20 +223,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
     return *lcm_;
   }
 
-  /**
-   * Returns the sole input port.
-   */
-  const InputPort<double>& get_input_port() const {
-    DRAKE_THROW_UNLESS(this->num_input_ports() == 1);
-    return LeafSystem<double>::get_input_port(0);
-  }
-
-  // Don't use the indexed overload; use the no-arg overload.
-  void get_input_port(int index) = delete;
-
-  // This system has no output ports.
-  void get_output_port(int) = delete;
-
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 

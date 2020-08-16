@@ -24,16 +24,6 @@ class RenderPoseToGeometryPose final : public LeafSystem<T> {
 
   ~RenderPoseToGeometryPose() override;
 
-  /// Returns the rendering::PoseVector input port.
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /// Returns the geometry::FramePoseVector output port.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
-
  private:
   // Allow different specializations to access each other's private data.
   template <typename> friend class RenderPoseToGeometryPose;

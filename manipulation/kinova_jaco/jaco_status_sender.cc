@@ -32,9 +32,6 @@ const InPort& JacoStatusSender::get_torque_external_input_port() const {
 const InPort& JacoStatusSender::get_current_input_port() const {
   return LeafSystem<double>::get_input_port(3);
 }
-const systems::OutputPort<double>& JacoStatusSender::get_output_port() const {
-  return LeafSystem<double>::get_output_port(0);
-}
 
 void JacoStatusSender::CalcOutput(
     const systems::Context<double>& context, lcmt_jaco_status* output) const {

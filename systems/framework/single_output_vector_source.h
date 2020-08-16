@@ -33,14 +33,6 @@ class SingleOutputVectorSource : public LeafSystem<T> {
 
   ~SingleOutputVectorSource() override = default;
 
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
-
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
-
  protected:
   /// Creates a source with the given sole output port configuration.
   ///

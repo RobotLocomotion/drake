@@ -98,14 +98,6 @@ class DiscreteDerivative final : public LeafSystem<T> {
     set_input_history(&context->get_mutable_state(), u, u);
   }
 
-  const systems::InputPort<T>& get_input_port() const {
-    return System<T>::get_input_port(0);
-  }
-
-  const systems::OutputPort<T>& get_output_port() const {
-    return System<T>::get_output_port(0);
-  }
-
   double time_step() const { return time_step_; }
 
   /// Returns the `suppress_initial_transient` passed to the constructor.
@@ -163,14 +155,6 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
 
   /// Returns the `suppress_initial_transient` passed to the constructor.
   bool suppress_initial_transient() const;
-
-  const systems::InputPort<T>& get_input_port() const {
-    return System<T>::get_input_port(0);
-  }
-
-  const systems::OutputPort<T>& get_output_port() const {
-    return System<T>::get_output_port(0);
-  }
 
   /// Convenience method that sets the entire position history for the
   /// discrete-time derivative to a constant vector value (resulting in

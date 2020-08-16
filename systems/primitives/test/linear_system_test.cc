@@ -59,7 +59,7 @@ GTEST_TEST(LinearSystemTestWithEmptyPort, EmptyPort) {
   // when the empty vector port is unconnected.
   auto context = dut.CreateDefaultContext();
   auto derivatives = dut.AllocateTimeDerivatives();
-  dut.get_input_port().FixValue(context.get(), 0.);
+  dut.get_input_port(0).FixValue(context.get(), 0.);
   DRAKE_EXPECT_NO_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()));
 }
 

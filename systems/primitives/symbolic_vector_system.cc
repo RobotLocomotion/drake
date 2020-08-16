@@ -198,7 +198,7 @@ void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
   // the Context (and not from input ports whose *unnecessary* evaluation can
   // lead to spurious algebraic loops).
   if (input_vars_.size() > 0 && needs_inputs) {
-    const auto& input = get_input_port().Eval(context);
+    const auto& input = this->get_input_port().Eval(context);
     for (int i = 0; i < input_vars_.size(); i++) {
       env[input_vars_[i]] = input[i];
     }

@@ -51,24 +51,6 @@ class PassThrough final : public LeafSystem<T> {
   // TODO(eric.cousineau): Possibly share single port interface with
   // ZeroOrderHold (#6490).
 
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    DRAKE_ASSERT(input_port_ != nullptr);
-    return *input_port_;
-  }
-
-  // Don't use the indexed get_input_port when calling this system directly.
-  void get_input_port(int) = delete;
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    DRAKE_ASSERT(output_port_ != nullptr);
-    return *output_port_;
-  }
-
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
-
  private:
   // Allow different specializations to access each other's private data.
   template <typename U> friend class PassThrough;

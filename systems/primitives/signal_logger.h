@@ -108,10 +108,6 @@ class SignalLogger final : public LeafSystem<T> {
   /// Clears the logged data.
   void reset() { log_.reset(); }
 
-  /// Returns the only input port. The port's name is "data" so you can also
-  /// access this with GetInputPort("data").
-  const InputPort<T>& get_input_port() const;
-
  private:
   template <typename> friend class SignalLogger;
 
