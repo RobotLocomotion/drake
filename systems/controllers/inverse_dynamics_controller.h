@@ -26,6 +26,16 @@ namespace controllers {
  * `q` and `v` stand for the generalized position and velocity, and `vd` is
  * the generalized acceleration. `*` indicates reference values.
  *
+ * @system
+ * name: InverseDynamicsController
+ * input_ports:
+ * - estimated_state
+ * - desired_state
+ * - desired_acceleration*
+ * output_ports:
+ * - force
+ * @endsystem
+ *
  * This controller always has a BasicVector input port for estimated robot state
  * `(q, v)`, a BasicVector input port for reference robot state `(q*, v*)` and
  * a BasicVector output port for computed torque `torque`. A constructor flag
@@ -36,7 +46,7 @@ namespace controllers {
  * Note that this class assumes the robot is fully actuated, its position
  * and velocity have the same dimension, and it does not have a floating base.
  * If violated, the program will abort. This controller was not designed for
- * closed loop systems: the controller accounts for neither constraint forces
+ * closed-loop systems: the controller accounts for neither constraint forces
  * nor actuator forces applied at loop constraints. Use on such systems is not
  * recommended.
  *
