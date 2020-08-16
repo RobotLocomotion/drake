@@ -15,6 +15,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_context.h"
+#include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/system_output.h"
 
 using std::string;
@@ -511,6 +512,12 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("Allocate", &OutputPort<T>::Allocate, doc.OutputPort.Allocate.doc)
         .def("get_system", &OutputPort<T>::get_system, py_rvp::reference,
             doc.OutputPort.get_system.doc);
+
+    DefineTemplateClassWithDefault<LeafOutputPort<T>, OutputPort<T>>(
+        m, "LeafOutputPort", GetPyParam<T>(), doc.LeafOutputPort.doc)
+        .def("disable_caching_by_default",
+            &LeafOutputPort<T>::disable_caching_by_default,
+            doc.LeafOutputPort.disable_caching_by_default.doc);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
