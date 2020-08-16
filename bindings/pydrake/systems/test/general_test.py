@@ -118,6 +118,7 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(y.Allocate(), Value[BasicVector])
         self.assertIs(y.get_system(), system)
         y.disable_caching_by_default()
+        self.assertEqual(y, system.get_output_port())
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
 

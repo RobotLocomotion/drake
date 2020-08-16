@@ -143,15 +143,7 @@ PYBIND11_MODULE(rendering, m) {
           // Keep alive, reference: `self` keeps `plant` alive.
           py::keep_alive<1, 2>(),
           doc.MultibodyPositionToGeometryPose.ctor
-              .doc_2args_plant_input_multibody_state)
-      .def("get_input_port",
-          &MultibodyPositionToGeometryPose<T>::get_input_port,
-          py_rvp::reference_internal,
-          doc.MultibodyPositionToGeometryPose.get_input_port.doc)
-      .def("get_output_port",
-          &MultibodyPositionToGeometryPose<T>::get_output_port,
-          py_rvp::reference_internal,
-          doc.MultibodyPositionToGeometryPose.get_output_port.doc);
+              .doc_2args_plant_input_multibody_state);
 
   // TODO(eric.cousineau): Add more systems as needed.
 }
