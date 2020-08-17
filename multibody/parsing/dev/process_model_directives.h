@@ -7,14 +7,16 @@
 #include <string>
 #include <vector>
 
+#include "drake/multibody/parsing/dev/model_directives.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "common/schema/model_directives.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace multibody {
+namespace parsing {
+namespace dev {
 
 schema::ModelDirectives LoadModelDirectives(const std::string& filename);
 
@@ -127,5 +129,7 @@ ScopedName ParseScopedName(const std::string& full_name);
 
 }  // namespace internal
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace dev
+}  // namespace parsing
+}  // namespace multibody
+}  // namespace drake

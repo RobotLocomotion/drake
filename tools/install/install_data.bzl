@@ -6,7 +6,8 @@ def install_data(
         name = "models",
         prod_models_prefix = "prod_",
         test_models_prefix = "test_",
-        extra_prod_models = []):
+        extra_prod_models = [],
+        extra_tags = []):
     """Install data
 
     This macro creates 3 filegroups:
@@ -44,8 +45,9 @@ def install_data(
         "vtm",
         "vtp",
         "xml",
+        "yaml",
     ]
-    exclude_patterns = ["**/test/*", "**/test*"]
+    exclude_patterns = ["**/test/*", "**/test/models/*", "**/test*"]
     prod_models_include = ["**/*.{}".format(x) for x in models_extensions]
     test_models_include = [
         p + m
@@ -81,6 +83,6 @@ def install_data(
         name = "install_data",
         data = [prod_models_target],
         data_dest = "share/drake/" + native.package_name(),
-        tags = ["install"],
+        tags = ["install"] + extra_tags,
         visibility = ["//visibility:public"],
     )

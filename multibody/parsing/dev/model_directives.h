@@ -11,13 +11,15 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
+#include "drake/common/schema/dev/transform.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "common/schema/transform.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace multibody {
+namespace parsing {
+namespace dev {
 namespace schema {
 
 struct AddWeld {
@@ -128,7 +130,7 @@ struct AddFrame {
   std::string name;
   // Pose of frame to be added, `F`, w.r.t. parent frame `P` (as defined by
   // `X_PF.base_frame`).
-  Transform X_PF;
+  drake::schema::Transform X_PF;
 };
 
 struct AddDirectives {
@@ -225,15 +227,17 @@ struct ModelDirectives {
 inline void AddPackageToModelDirectives(const std::string& package_name,
                                         const std::string& package_path,
                                         ModelDirectives* directives) {
-  common::schema::AddPackagePath add_package_path;
+  AddPackagePath add_package_path;
   add_package_path.name = package_name;
   add_package_path.path = package_path;
-  common::schema::ModelDirective directive;
+  ModelDirective directive;
   directive.add_package_path = add_package_path;
   directives->directives.insert(
       directives->directives.begin(), directive);
 }
 
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace dev
+}  // namespace parsing
+}  // namespace multibody
+}  // namespace drake
