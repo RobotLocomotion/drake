@@ -1,5 +1,5 @@
 // Minimal test to make sure stuff doesn't explode.
-#include "common/schema/model_directives.h"
+#include "drake/multibody/parsing/dev/model_directives.h"
 
 #include <gtest/gtest.h>
 
@@ -7,8 +7,10 @@
 
 using drake::yaml::YamlReadArchive;
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace multibody {
+namespace parsing {
+namespace dev {
 namespace schema {
 namespace {
 
@@ -50,5 +52,7 @@ directives:
 
 }  // namespace
 }  // namespace schema
-}  // namespace common
-}  // namespace anzu
+}  // namespace dev
+}  // namespace parsing
+}  // namespace multibody
+}  // namespace drake
