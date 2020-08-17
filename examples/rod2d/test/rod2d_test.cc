@@ -20,7 +20,6 @@ using drake::systems::SystemOutput;
 using drake::systems::AbstractValues;
 using drake::systems::Simulator;
 using drake::systems::Context;
-using drake::systems::rendering::PoseVector;
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -1132,7 +1131,6 @@ GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
 
   // Set port indices.
   const int state_port = 0;
-  const int pose_port = 1;
 
   // Verify that state outputs are identical.
   const double eq_tol = 10 * std::numeric_limits<double>::epsilon();
@@ -1146,16 +1144,6 @@ GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
   x_pdae[2] = M_PI_2;
   context_pdae->get_mutable_continuous_state().SetFromVector(x_pdae);
   pdae.CalcOutput(*context_pdae, output_pdae.get());
-
-  // Rotation by theta is converted to rotation around +y by theta + π/2.
-  const PoseVector<double>* const pose = dynamic_cast<
-      PoseVector<double>*>(output_pdae->GetMutableVectorData(pose_port));
-  const Eigen::Quaterniond quat = pose->get_rotation();
-  EXPECT_NEAR(quat.y(), 1, eq_tol);
-
-  // -- Translation along +y is converted to translation along +z.
-  const auto translation = pose->get_translation();
-  EXPECT_NEAR(translation.z(), pdae.get_rod_half_length(), eq_tol);
 }
 
 }  // namespace rod2d
