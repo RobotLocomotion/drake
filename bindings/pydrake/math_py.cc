@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -133,6 +134,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Eigen::Matrix<T, 3, 4>& matrix) {
               return Class(matrix);
             }));
+    cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);
@@ -207,6 +209,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("ToAngleAxis", &Class::ToAngleAxis, cls_doc.ToAngleAxis.doc)
         .def(py::pickle([](const Class& self) { return self.matrix(); },
             [](const Matrix3<T>& matrix) { return Class(matrix); }));
+    cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, cls_doc.cast.doc);

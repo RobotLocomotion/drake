@@ -164,6 +164,13 @@ class TestMath(unittest.TestCase):
             X.multiply(other=RigidTransform()), RigidTransform)
         self.assertIsInstance(X @ RigidTransform(), RigidTransform)
         self.assertIsInstance(X @ [0, 0, 0], np.ndarray)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((X @ v).shape, (3,))
+        self.assertEqual((X @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((X @ vs).shape, (3, 2))
+        print(help(RigidTransform.multiply))
         # - Test vector multiplication.
         R_AB = RotationMatrix([
             [0., 1, 0],
@@ -273,6 +280,12 @@ class TestMath(unittest.TestCase):
         vlist_B = np.array([v_B, v_B]).T
         vlist_A = np.array([v_A, v_A]).T
         numpy_compare.assert_float_equal(R_AB.multiply(v_B=vlist_B), vlist_A)
+        # - Test shaping (#13885).
+        v = np.array([0., 0., 0.])
+        vs = np.array([[1., 2., 3.], [4., 5., 6.]]).T
+        self.assertEqual((R_AB @ v).shape, (3,))
+        self.assertEqual((R_AB @ v.reshape((3, 1))).shape, (3, 1))
+        self.assertEqual((R_AB @ vs).shape, (3, 2))
         # Matrix checks
         numpy_compare.assert_equal(R.IsValid(), True)
         R = RotationMatrix()
