@@ -131,8 +131,7 @@ EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*" \
                          "@INPUT_ROOT@/*/test/*" \
-                         "@INPUT_ROOT@/*/MG/*" \
-                         "@INPUT_ROOT@/drake/attic/*"
+                         "@INPUT_ROOT@/*/MG/*"
 EXCLUDE_SYMBOLS        = "*::internal" \
                          "pybind11"
 # Don't document our (obvious) Eigen overloads like "isinf", etc.

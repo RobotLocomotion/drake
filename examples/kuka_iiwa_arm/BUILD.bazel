@@ -180,8 +180,6 @@ drake_cc_googletest(
     deps = [
         ":iiwa_common",
         ":kuka_torque_controller",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody:rigid_body_tree_construction",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
     ],

@@ -151,34 +151,6 @@ Result CheckAndMakeResult(
   return Result::make_success(resource_path, abspath);
 }
 
-// Opportunistically searches inside the attic for multibody resource paths.
-// This function is not unit tested -- only acceptance-tested by the fact that
-// none of the tests in the attic fail.
-std::optional<string> MaybeFindResourceInAttic(const string& resource_path) {
-  const string prefix("drake/");
-  DRAKE_DEMAND(StartsWith(resource_path, prefix));
-  const string substr = resource_path.substr(prefix.size());
-  for (const auto& directory : {
-           "multibody/collision/test",
-           "multibody/parsers/test/package_map_test",
-           "multibody/parsers/test/parsers_frames_test",
-           "multibody/parsers/test/urdf_parser_test",
-           "multibody/rigid_body_plant/test",
-           "multibody/shapes/test",
-           "multibody/test",
-           "systems/controllers/qp_inverse_dynamics/test"
-       }) {
-    if (StartsWith(substr, directory)) {
-      const auto rlocation_or_error =
-          FindRunfile(prefix + string("attic/") + substr);
-      if (rlocation_or_error.error.empty()) {
-        return rlocation_or_error.abspath;
-      }
-    }
-  }
-  return std::nullopt;
-}
-
 // If the DRAKE_RESOURCE_ROOT environment variable is usable as a resource
 // root, returns its value, else returns nullopt.
 std::optional<string> MaybeGetEnvironmentResourceRoot() {
@@ -275,13 +247,6 @@ Result FindResource(const string& resource_path) {
     if (rlocation_or_error.error.empty()) {
       return Result::make_success(
           resource_path, rlocation_or_error.abspath);
-    }
-    // As a compatibility shim, for resource paths that have been moved into the
-    // attic, we opportunistically try a fallback search path for them.  This
-    // heuristic is only helpful for source trees -- any install data files from
-    // the attic should be installed without the "attic/" portion of their path.
-    if (auto attic_abspath = MaybeFindResourceInAttic(resource_path)) {
-      return Result::make_success(resource_path, *attic_abspath);
     }
     return Result::make_error(resource_path, rlocation_or_error.error);
   }

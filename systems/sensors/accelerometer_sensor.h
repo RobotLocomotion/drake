@@ -1,7 +1,5 @@
 #pragma once
-// TODO(Posa): Rename header to accelerometer.h once attic/ code is removed.
-// Currently requires this alternate name to avoid confliciting with
-// attic/systems/sensors/accelerometer.h
+// TODO(Posa): Rename header to accelerometer.h to match the class name.
 #include <memory>
 #include <vector>
 
