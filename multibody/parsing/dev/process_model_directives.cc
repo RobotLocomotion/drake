@@ -1,24 +1,24 @@
-#include "common/process_model_directives.h"
+#include "drake/multibody/parsing/dev/process_model_directives.h"
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 
+#include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/schema/dev/transform.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/multibody/parsing/parser.h"
-#include "common/filesystem.h"
-#include "common/find_resource.h"
-#include "common/starts_with.h"
-#include "common/yaml_load.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace multibody {
+namespace parsing {
 
 using std::make_unique;
 using Eigen::Isometry3d;
 
-namespace fs = anzu::filesystem;
+namespace fs = drake::filesystem;
 using drake::FindResourceOrThrow;
 using drake::math::RigidTransformd;
 using drake::multibody::FixedOffsetFrame;
@@ -28,8 +28,6 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::PackageMap;
 using drake::multibody::Parser;
 using drake::yaml::YamlReadArchive;
-
-using schema::ModelDirectives;
 
 namespace {
 
@@ -42,7 +40,7 @@ std::unique_ptr<T> ConstructIfNullAndReassign(T** ptr, Args&&... args) {
     out = std::make_unique<T>(std::forward<Args>(args)...);
     *ptr = out.get();
   }
-  return std::move(out);
+  return out;
 }
 
 }  // namespace
@@ -319,15 +317,23 @@ void ProcessModelDirectives(
 
 ModelDirectives LoadModelDirectives(const std::string& filename) {
   drake::log()->debug("LoadModelDirectives: {}", filename);
-  auto directives = common::YamlLoadWithDefaults<ModelDirectives>(filename);
+
+  // TODO(ggould-tri) This should use the YamlLoadWithDefaults mechanism
+  // instead once that is ported to drake.
+  ModelDirectives directives;
+  YAML::Node root = YAML::LoadFile(filename);
+  drake::yaml::YamlReadArchive::Options options;
+  options.allow_cpp_with_no_yaml = true;
+  drake::yaml::YamlReadArchive(root, options).Accept(&directives);
+
   DRAKE_DEMAND(directives.IsValid());
   return directives;
 }
 
 void FlattenModelDirectives(
-    const schema::ModelDirectives& directives,
+    const ModelDirectives& directives,
     const PackageMap& package_map,
-    schema::ModelDirectives* out) {
+    ModelDirectives* out) {
   // NOTE: Does not handle scoping!
   for (auto& directive : directives.directives) {
     if (directive.add_directives) {
@@ -356,9 +362,9 @@ ModelInfo MakeModelInfo(const std::string& model_name,
 
 // TODO(eric.cousineau): Do we *really* need this function? This seems like
 // it'd be better handled as an MBP subgraph.
-schema::ModelDirectives MakeModelsAttachedToFrameDirectives(
+ModelDirectives MakeModelsAttachedToFrameDirectives(
     const std::vector<ModelInfo>& models_to_add) {
-  schema::ModelDirectives directives;
+  ModelDirectives directives;
 
   // One for add frame, one for add model, one for add weld.
   directives.directives.resize(models_to_add.size() * 3);
@@ -370,25 +376,26 @@ schema::ModelDirectives MakeModelsAttachedToFrameDirectives(
 
     // Add frame first.
     if (!model_to_add.X_PC.IsExactlyIdentity()) {
-      schema::AddFrame frame_dir;
+      AddFrame frame_dir;
       attachment_frame_name = model_to_add.model_name + "_attachment_frame";
       frame_dir.name = attachment_frame_name;
       frame_dir.X_PF.base_frame = model_to_add.parent_frame_name;
       frame_dir.X_PF.translation =
           drake::Vector<double, 3>(model_to_add.X_PC.translation());
-      frame_dir.X_PF.rotation = schema::Rotation{model_to_add.X_PC.rotation()};
+      frame_dir.X_PF.rotation =
+          drake::schema::Rotation{model_to_add.X_PC.rotation()};
 
       directives.directives.at(index++).add_frame = frame_dir;
     }
 
     // Add model
-    schema::AddModel model_dir;
+    AddModel model_dir;
     model_dir.file = model_to_add.model_path;
     model_dir.name = model_to_add.model_name;
 
     directives.directives.at(index++).add_model = model_dir;
 
-    common::schema::AddWeld weld_dir;
+    AddWeld weld_dir;
     weld_dir.parent = attachment_frame_name;
     weld_dir.child =
         model_to_add.model_name + "::" + model_to_add.child_frame_name;
@@ -399,5 +406,6 @@ schema::ModelDirectives MakeModelsAttachedToFrameDirectives(
   return directives;
 }
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace parsing
+}  // namespace multibody
+}  // namespace drake

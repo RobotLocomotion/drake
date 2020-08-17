@@ -13,10 +13,11 @@
         </geometry>
         <material>
           <!--
-          Test usage of diffuse map from a non-neighboring Anzu resource.
+              Test usage of diffuse map from a separate resource that requires
+              package:// URI resolution.
           -->
           <drake:diffuse_map>
-            package://anzu/common/test/models_data/circle.png
+            package://process_model_directives_test/circle.png
           </drake:diffuse_map>
         </material>
       </visual>

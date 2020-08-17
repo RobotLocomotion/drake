@@ -1,22 +1,20 @@
 #pragma once
 
-/// Processes stuff from `common/schema/model_directives.h`. See
-// `common/schema/README.md` for more info.
-
 #include <optional>
 #include <string>
 #include <vector>
 
+#include "drake/multibody/parsing/dev/model_directives.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "common/schema/model_directives.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace multibody {
+namespace parsing {
 
-schema::ModelDirectives LoadModelDirectives(const std::string& filename);
+ModelDirectives LoadModelDirectives(const std::string& filename);
 
 /// ModelDirectives refer to their resources by URIs like
 /// `package://somepackage/somepath/somefile.sdf`, where somepackage refers to
@@ -57,13 +55,13 @@ ModelInfo MakeModelInfo(
  * `child_frame_name` to `parent_frame_name` directly. The `model_instance`
  * field is ignored for this purposes.
  */
-schema::ModelDirectives MakeModelsAttachedToFrameDirectives(
+ModelDirectives MakeModelsAttachedToFrameDirectives(
     const std::vector<ModelInfo>& models_to_add);
 
 // Flatten model directives.
-void FlattenModelDirectives(const schema::ModelDirectives& directives,
+void FlattenModelDirectives(const ModelDirectives& directives,
                             const drake::multibody::PackageMap& package_map,
-                            schema::ModelDirectives* out);
+                            ModelDirectives* out);
 
 /// Provides a magical way to inject error (randomization) for synthesis.
 /// Maps from (parent_frame, child_frame) -> X_PCe, where Ce is the perturbed
@@ -79,7 +77,7 @@ using ModelWeldErrorFunction =
 /// Note: The passed-in parser will be mutated to add the jaco_description
 /// package to its package map (since model directives and their contents are
 /// allowed to refer to the package directly for workaround reasons).
-void ProcessModelDirectives(const schema::ModelDirectives& directives,
+void ProcessModelDirectives(const ModelDirectives& directives,
                             drake::multibody::MultibodyPlant<double>* plant,
                             std::vector<ModelInfo>* added_models = nullptr,
                             drake::multibody::Parser* parser = nullptr,
@@ -127,5 +125,6 @@ ScopedName ParseScopedName(const std::string& full_name);
 
 }  // namespace internal
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace parsing
+}  // namespace multibody
+}  // namespace drake

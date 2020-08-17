@@ -1,16 +1,17 @@
-#include "common/process_model_directives.h"
+#include "drake/multibody/parsing/dev/process_model_directives.h"
 
 #include <memory>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/filesystem.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "common/filesystem.h"
-#include "common/find_resource.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace multibody {
+namespace parsing {
 namespace {
 
 using std::optional;
@@ -20,24 +21,24 @@ using drake::multibody::Frame;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::systems::DiagramBuilder;
-using schema::ModelDirectives;
 
-// Because this test is meant to test ProcessModelDirectives without using
-// anzu features, but because the test data is in anzu (for now), provide
-// a bespoke way to get a multibody::Parser that knows about anzu.
-// TODO(ggould) Remove this method when the test data moves to drake.
+const char* const kTestDir =
+    "drake/multibody/parsing/dev/test/process_model_directives_test";
+
+// Our unit test's package is not normally loaded; construct a parser that
+// has it and can resolve package://process_model_directives_test urls.
 std::unique_ptr<Parser> make_parser(MultibodyPlant<double>* plant) {
   auto parser = std::make_unique<Parser>(plant);
-  const anzu::filesystem::path abspath_xml =
-      FindAnzuResourceOrThrow("package.xml");
-  parser->package_map().Add("anzu", abspath_xml.parent_path().string());
-  return std::move(parser);
+  const drake::filesystem::path abspath_xml = FindResourceOrThrow(
+      std::string(kTestDir) + "/package.xml");
+  parser->package_map().AddPackageXml(abspath_xml.string());
+  return parser;
 }
 
 // Simple smoke test of the most basic model directives.
 GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   ModelDirectives station_directives = LoadModelDirectives(
-      FindAnzuResourceOrThrow("common/test/models/add_scoped_sub.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
   const MultibodyPlant<double> empty_plant(0.0);
 
   MultibodyPlant<double> plant(0.0);
@@ -61,7 +62,7 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
 // testing its interaction with SceneGraph.
 GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   ModelDirectives directives = LoadModelDirectives(
-      "common/test/models/add_scoped_top.yaml");
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_top.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
@@ -103,7 +104,7 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
 GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
   const RigidTransformd error_transform({0.1, 0., 0.1}, {2, 3, 4});
   ModelDirectives directives = LoadModelDirectives(
-      FindAnzuResourceOrThrow("common/test/models/add_scoped_sub.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/add_scoped_sub.yaml"));
 
   // This error function should add model error to exactly one weld, the
   // attachment of the `first_instance` sdf model to the `smoke_test_origin`
@@ -122,8 +123,7 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
   };
 
   ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get(),
-                         error);
+                         nullptr, make_parser(&plant).get(), error);
   plant.Finalize();
 
   // This should have created an error frame for the relevant weld.
@@ -153,5 +153,6 @@ GTEST_TEST(ProcessModelDirectivesTest, SmokeTestInjectWeldError) {
 }
 
 }  // namespace
-}  // namespace common
-}  // namespace anzu
+}  // namespace parsing
+}  // namespace multibody
+}  // namespace drake
