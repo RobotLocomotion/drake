@@ -205,6 +205,7 @@ drake_pybind_library(
         ":cpp_template_pybind",
         ":default_scalars_pybind",
         ":eigen_geometry_pybind",
+        ":eigen_pybind",
         ":type_pack",
         ":value_pybind",
     ],

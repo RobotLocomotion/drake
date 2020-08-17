@@ -37,5 +37,16 @@ py::object ToArray(const T* ptr, int size, py::tuple shape) {
       .attr("reshape")(shape);
 }
 
+/// Wraps a function (or method) to reshape the output to be the same as a
+/// given input. For simplicity, the function `func` must be an instance method
+/// from pybind11, and the input should the first (and only) argument to
+/// trigger reshaping.
+/// See #13885 for rationale.
+py::object WrapToMatchInputShape(py::handle func) {
+  py::handle wrap =
+      py::module::import("pydrake.common").attr("_wrap_to_match_input_shape");
+  return wrap(func);
+}
+
 }  // namespace pydrake
 }  // namespace drake

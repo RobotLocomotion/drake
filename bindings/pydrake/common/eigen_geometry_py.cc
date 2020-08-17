@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -185,6 +186,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def(py::pickle([](const Class& self) { return self.matrix(); },
             [](const Matrix4<T>& matrix) { return Class(matrix); }));
+    cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
@@ -308,6 +310,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [py_class_obj](py::object wxyz) -> Class {
               return py_class_obj(wxyz).cast<Class>();
             }));
+    cls.attr("multiply") = WrapToMatchInputShape(cls.attr("multiply"));
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
@@ -403,6 +406,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
               DRAKE_THROW_UNLESS(t.size() == 2);
               return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>());
             }));
+    // N.B. This class does not support multiplication with vectors, so we do
+    // not use `WrapToMatchInputShape` here.
     cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     DefCast<T>(&cls, kCastDoc);
