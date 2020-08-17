@@ -36,6 +36,7 @@ namespace symbolic {
  * - std::map<Derived, double> operator*(const Derived& A, const Derived&B)
  * - std::map<Derived, double> Derived::Differentiate(const Variable& var)
  * const;
+ * - std::map<Derived, double> Derived::Integrate(const Variable& var) const;
  * - bool Derived::operator<(const Derived& other) const;
  * - std::pair<double, Derived> EvaluatePartial(const Environment& e) const;
  *

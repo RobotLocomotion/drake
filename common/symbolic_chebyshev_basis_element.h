@@ -79,8 +79,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    * example, ∫ T₂(x)T₃(y)dx = 1/6*T₃(x)T₃(y) − 1/2 * T₁(x)T₃(y), then the
    * result is the map containing {T₃(x)T₃(y), 1/6} and {T₁(x)T₃(y), -1/2}.
    */
-  std::map<ChebyshevBasisElement, double> Integration(
-      const Variable& var) const;
+  std::map<ChebyshevBasisElement, double> Integrate(const Variable& var) const;
 
   /** Partially evaluates using a given environment @p env. The evaluation
    * result is of type pair<double, ChebyshevBasisElement>. The first component
