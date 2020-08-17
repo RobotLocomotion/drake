@@ -209,4 +209,11 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
-  Current newest_commit e5900251255f2be0d12dbdf1ed90aaae3290f377 (inclusive).
+  Current newest_commit 0de592fdd53d55132b45a7a7c86b979a99f561e4 (inclusive).
+
+* framework: Relocate diagram_builder method bodies to cc file (`#13866`_)  # * framework: Relocate method bodies to cc file Also remove the now-unnecessary internal impl forwarding. Also remove a TODO that's already done. Co-authored-by: Jamie Snape <jamie.snape@kitware.com> Co-authored-by: Michael Sherman <sherm@tri.global> Co-authored-by: Rick Cory <rick.cory@tri.global> Co-authored-by: Russ Tedrake <russt@mit.edu> Co-authored-by: Sam Creasey <sam.creasey@tri.global>
+* Provides support for using ipywidgets with the systems framework, and… (`#13849`_)  # * Provides support for using ipywidgets with the systems framework, and PoseSliders as the first useful widget system.
+* add depth16u and grey8u to image writer (`#13871`_)
+* Fix seg fault caused by DrakeLcm construction within ConnectDrakeVisualizer (`#13868`_)
+* bind `LeafOutputPort::disable_caching_by_default` (`#13881`_)  # and use it in the jupyter widget system.
+* Name ports and add @system documentation for InverseDynamicsController (`#13879`_)
