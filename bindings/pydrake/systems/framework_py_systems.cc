@@ -274,15 +274,27 @@ struct Impl {
         DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
             m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls  // BR
-        .def("get_input_port", &System<T>::get_input_port,
+        .def("get_input_port",
+            overload_cast_explicit<const InputPort<T>&, int>(
+                &System<T>::get_input_port),
             py_rvp::reference_internal, py::arg("port_index"),
-            doc.System.get_input_port.doc)
+            doc.System.get_input_port.doc_1args)
+        .def("get_input_port",
+            overload_cast_explicit<const InputPort<T>&>(
+                &System<T>::get_input_port),
+            py_rvp::reference_internal, doc.System.get_input_port.doc_0args)
         .def("GetInputPort", &System<T>::GetInputPort,
             py_rvp::reference_internal, py::arg("port_name"),
             doc.System.GetInputPort.doc)
-        .def("get_output_port", &System<T>::get_output_port,
+        .def("get_output_port",
+            overload_cast_explicit<const OutputPort<T>&, int>(
+                &System<T>::get_output_port),
             py_rvp::reference_internal, py::arg("port_index"),
-            doc.System.get_output_port.doc)
+            doc.System.get_output_port.doc_1args)
+        .def("get_output_port",
+            overload_cast_explicit<const OutputPort<T>&>(
+                &System<T>::get_output_port),
+            py_rvp::reference_internal, doc.System.get_output_port.doc_0args)
         .def("GetOutputPort", &System<T>::GetOutputPort,
             py_rvp::reference_internal, py::arg("port_name"),
             doc.System.GetOutputPort.doc)

@@ -86,12 +86,6 @@ PYBIND11_MODULE(primitives, m) {
         // Wrap a few methods from the TimeVaryingAffineSystem parent class.
         // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
         // wrapped.
-        .def("get_input_port", &TimeVaryingAffineSystem<T>::get_input_port,
-            py_rvp::reference_internal,
-            doc.TimeVaryingAffineSystem.get_input_port.doc)
-        .def("get_output_port", &TimeVaryingAffineSystem<T>::get_output_port,
-            py_rvp::reference_internal,
-            doc.TimeVaryingAffineSystem.get_output_port.doc)
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc)
         .def("configure_default_state",
@@ -100,15 +94,7 @@ PYBIND11_MODULE(primitives, m) {
         .def("configure_random_state",
             &TimeVaryingAffineSystem<T>::configure_random_state,
             py::arg("covariance"),
-            doc.TimeVaryingAffineSystem.configure_random_state.doc)
-        // Need to specifically redeclare the System to have both overloads
-        // available.
-        .def("get_input_port", &System<T>::get_input_port,
-            py_rvp::reference_internal, py::arg("port_index"),
-            pydrake_doc.drake.systems.System.get_input_port.doc)
-        .def("get_output_port", &System<T>::get_output_port,
-            py_rvp::reference_internal, py::arg("port_index"),
-            pydrake_doc.drake.systems.System.get_output_port.doc);
+            doc.TimeVaryingAffineSystem.configure_random_state.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
