@@ -25,10 +25,11 @@ PYBIND11_MODULE(schunk_wsg, m) {
     constexpr auto& cls_doc = doc.SchunkWsgPositionController;
     py::class_<Class, Diagram<double>>(
         m, "SchunkWsgPositionController", cls_doc.doc)
-        .def(py::init<double, double, double, double, double>(),
+        .def(py::init<double, double, double, double, double, double>(),
             py::arg("time_step") = 0.05, py::arg("kp_command") = 200.,
             py::arg("kd_command") = 5., py::arg("kp_constraint") = 2000.,
-            py::arg("kd_constraint") = 5., cls_doc.ctor.doc)
+            py::arg("kd_constraint") = 5.,
+            py::arg("default_force_limit") = 40.0, cls_doc.ctor.doc)
         .def("get_desired_position_input_port",
             &Class::get_desired_position_input_port, py_rvp::reference_internal,
             cls_doc.get_desired_position_input_port.doc)
@@ -63,7 +64,8 @@ PYBIND11_MODULE(schunk_wsg, m) {
     constexpr auto& cls_doc = doc.SchunkWsgCommandSender;
     py::class_<Class, LeafSystem<double>>(
         m, "SchunkWsgCommandSender", cls_doc.doc)
-        .def(py::init(), cls_doc.ctor.doc)
+        .def(py::init<double>(), py::arg("default_force_limit") = 40.0,
+            cls_doc.ctor.doc)
         .def("get_position_input_port", &Class::get_position_input_port,
             py_rvp::reference_internal, cls_doc.get_position_input_port.doc)
         .def("get_force_limit_input_port", &Class::get_force_limit_input_port,

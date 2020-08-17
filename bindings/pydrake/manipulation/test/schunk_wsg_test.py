@@ -11,9 +11,12 @@ from pydrake.systems.primitives import MatrixGain
 
 class TestSchunkWsg(unittest.TestCase):
     def test_schunk_wsg_controller(self):
-        controller = mut.SchunkWsgPositionController(
-            time_step=0.01, kp_command=100., kd_command=1.,
-            kp_constraint=1000., kd_constraint=1.)
+        controller = mut.SchunkWsgPositionController(time_step=0.01,
+                                                     kp_command=100.,
+                                                     kd_command=1.,
+                                                     kp_constraint=1000.,
+                                                     kd_constraint=1.,
+                                                     default_force_limit=37.0)
 
         self.assertIsInstance(
             controller.get_desired_position_input_port(), InputPort)
@@ -34,7 +37,7 @@ class TestSchunkWsg(unittest.TestCase):
         self.assertIsInstance(
             command_rec.get_force_limit_output_port(), OutputPort)
 
-        command_send = mut.SchunkWsgCommandSender()
+        command_send = mut.SchunkWsgCommandSender(default_force_limit=37.0)
         self.assertIsInstance(
             command_send.get_position_input_port(), InputPort)
         self.assertIsInstance(

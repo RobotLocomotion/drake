@@ -27,7 +27,7 @@ namespace manipulation_station {
 /// - iiwa_position
 /// - iiwa_feedforward_torque
 /// - wsg_position
-/// - wsg_force_limit
+/// - wsg_force_limit (optional)
 /// output_ports:
 /// - iiwa_position_commanded
 /// - iiwa_position_measured

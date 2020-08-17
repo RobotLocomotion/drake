@@ -40,6 +40,21 @@ GTEST_TEST(SchunkWsgPdControllerTest, BasicTest) {
             &controller.GetOutputPort("grip_force"));
 }
 
+GTEST_TEST(SchunkWsgPdControllerTest, DefaultForceLimitTest) {
+    SchunkWsgPdController controller;
+    auto context = controller.CreateDefaultContext();
+
+    controller.get_desired_state_input_port().FixValue(context.get(),
+                                                       Eigen::Vector2d(0.1, 0));
+    controller.get_state_input_port().FixValue(
+        context.get(), Eigen::Vector4d(-0.05, 0.05, 0, 0));
+    // Do NOT connect the force limit input port.
+
+    // Make sure that both output ports still evaluate without error.
+    controller.get_generalized_force_output_port().Eval(*context);
+    controller.get_grip_force_output_port().Eval(*context);
+}
+
 void FixInputsAndHistory(const SchunkWsgPositionController& controller,
                          double desired_position, double force_limit,
                          systems::Context<double>* controller_context) {
