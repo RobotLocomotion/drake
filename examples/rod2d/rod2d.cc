@@ -47,8 +47,7 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
 
   this->DeclareInputPort(systems::kVectorValued, 3);
   state_output_port_ = &this->DeclareVectorOutputPort(
-      systems::BasicVector<T>(6), &Rod2D::CopyStateOut);
-  pose_output_port_ = &this->DeclareVectorOutputPort(&Rod2D::CopyPoseOut);
+      "state_output", systems::BasicVector<T>(6), &Rod2D::CopyStateOut);
 }
 
 // Computes the external forces on the rod.
@@ -484,16 +483,6 @@ void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
                                ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state().CopyToVector();
   state_port_value->SetFromVector(state);
-}
-
-template <typename T>
-void Rod2D<T>::CopyPoseOut(
-    const systems::Context<T>& context,
-    systems::rendering::PoseVector<T>* pose_port_value) const {
-  const VectorX<T> state = (system_type_ == SystemType::kDiscretized)
-                               ? context.get_discrete_state(0).CopyToVector()
-                               : context.get_continuous_state().CopyToVector();
-  ConvertStateToPose(state, pose_port_value);
 }
 
 /// Integrates the Rod 2D example forward in time using a
@@ -1063,20 +1052,6 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
       // TODO(edrumwri): Determine and set the point of contact.
     }
   }
-}
-
-// Converts a state vector to a rendering PoseVector.
-template <class T>
-void Rod2D<T>::ConvertStateToPose(const VectorX<T>& state,
-                                  systems::rendering::PoseVector<T>* pose) {
-  // Converts the configuration of the rod to a pose, accounting for both
-  // the change to a y+ up coordinate system and the fact that Drake's cylinder
-  // up-direction defaults to +z.
-  const T theta = state[2] + M_PI_2;
-  pose->set_translation(Eigen::Translation<T, 3>(state[0], 0, state[1]));
-  const Vector3<T> y_axis{0, 1, 0};
-  const Eigen::AngleAxis<T> rotation(theta, y_axis);
-  pose->set_rotation(Eigen::Quaternion<T>(rotation));
 }
 
 template class Rod2D<double>;

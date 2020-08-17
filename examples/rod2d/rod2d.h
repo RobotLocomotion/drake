@@ -9,7 +9,6 @@
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/rendering/pose_vector.h"
 
 namespace drake {
 namespace examples {
@@ -139,9 +138,7 @@ States: planar position (state indices 0 and 1) and orientation (state
         m/s, and rad/s, respectively. Orientation is measured counter-
         clockwise with respect to the x-axis.
 
-Outputs: Output Port 0 corresponds to the state vector; Output Port 1
-         corresponds to a PoseVector giving the 3D pose of the rod in the world
-         frame.
+Outputs: Output Port 0 corresponds to the state vector.
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
                    Impact". SIAM Rev., 42(1), 3-39, 2000.
@@ -398,9 +395,9 @@ class Rod2D : public systems::LeafSystem<T> {
   /// for a given state (using @p context).
   int DetermineNumWitnessFunctions(const systems::Context<T>& context) const;
 
-  /// Returns the 3D pose of this rod.
-  const systems::OutputPort<T>& pose_output() const {
-    return *pose_output_port_;
+  /// Returns the state of this rod.
+  const systems::OutputPort<T>& state_output() const {
+    return *state_output_port_;
   }
 
   /// Utility method for determining the World frame location of one of three
@@ -498,8 +495,6 @@ class Rod2D : public systems::LeafSystem<T> {
   int get_k(const systems::Context<T>& context) const;
   void CopyStateOut(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const;
-  void CopyPoseOut(const systems::Context<T>& context,
-                   systems::rendering::PoseVector<T>* output) const;
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
                              systems::ContinuousState<T>* derivatives)
                                const override;
@@ -510,8 +505,6 @@ class Rod2D : public systems::LeafSystem<T> {
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
-  static void ConvertStateToPose(const VectorX<T>& state,
-                                 systems::rendering::PoseVector<T>* pose);
   Vector3<T> ComputeExternalForces(const systems::Context<T>& context) const;
   Matrix3<T> GetInverseInertiaMatrix() const;
   void CalcTwoContactNoSlidingForces(const systems::Context<T>& context,
@@ -573,7 +566,6 @@ class Rod2D : public systems::LeafSystem<T> {
   double kCharacteristicDeformation{1e-3};
 
   // Output ports.
-  const systems::OutputPort<T>* pose_output_port_{nullptr};
   const systems::OutputPort<T>* state_output_port_{nullptr};
 };
 
