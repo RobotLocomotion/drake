@@ -1,8 +1,12 @@
 #pragma once
 
+#include <array>
 #include <limits>
+#include <utility>
 
+#include "drake/geometry/render/gl_renderer/gl_common.h"
 #include "drake/geometry/render/gl_renderer/opengl_includes.h"
+#include "drake/geometry/render/gl_renderer/shader_program_data.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/math/rigid_transform.h"
 
@@ -83,20 +87,28 @@ struct OpenGlGeometry {
  When rendering, the visual geometry will be scaled around G's origin and
  subsequently posed relative to W.  */
 struct OpenGlInstance {
-  /* Constructs an instance from a geometry definition, a pose, and a scale
-   factor.
-   @pre `g_in.is_defined()` reports `true`.  */
+  /* Constructs an instance from a geometry definition, a pose, a scale factor
+   and the instance's shader data for depth and label shaders.
+   @pre `g_in.is_defined()` reports `true`.
+   @pre The shader program data has valid shader ids.  */
   OpenGlInstance(const OpenGlGeometry& g_in,
                  const math::RigidTransformd& pose_in,
-                 const Vector3<double>& scale_in, const RenderLabel& label_in)
-      : geometry(g_in), X_WG(pose_in), scale(scale_in), label(label_in) {
+                 const Vector3<double>& scale_in, ShaderProgramData depth_data,
+                 ShaderProgramData label_data)
+      : geometry(g_in), X_WG(pose_in), scale(scale_in) {
+    DRAKE_DEMAND(depth_data.shader_id().is_valid());
+    DRAKE_DEMAND(label_data.shader_id().is_valid());
+    shader_data[RenderType::kDepth] = std::move(depth_data);
+    shader_data[RenderType::kLabel] = std::move(label_data);
     DRAKE_DEMAND(geometry.is_defined());
   }
 
+  // TODO(SeanCurtis-TRI) Chanage these quantities to be float-valued so they
+  //  can go directly into the shader without casting.
   OpenGlGeometry geometry;
   math::RigidTransformd X_WG;
   Vector3<double> scale;
-  RenderLabel label;
+  std::array<ShaderProgramData, RenderType::kTypeCount> shader_data;
 };
 
 }  // namespace internal

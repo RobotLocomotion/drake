@@ -61,7 +61,7 @@ using systems::sensors::InvalidDepth;
 // Default camera properties.
 const int kWidth = 640;
 const int kHeight = 480;
-const double kZNear = 0.5;
+const double kZNear = 0.1;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
 const bool kShowWindow = false;
@@ -130,9 +130,9 @@ class RenderEngineGlTest : public ::testing::Test {
       : depth_(kWidth, kHeight),
         label_(kWidth, kHeight),
         // Looking straight down from 3m above the ground.
-        X_WR_(Translation3d(0, 0, kDefaultDistance) *
-              Eigen::AngleAxisd(M_PI, Vector3d::UnitY()) *
-              Eigen::AngleAxisd(-M_PI_2, Vector3d::UnitZ())),
+        X_WR_(RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitY()) *
+                              AngleAxisd(-M_PI_2, Vector3d::UnitZ())},
+              {0, 0, kDefaultDistance}),
         geometry_id_(GeometryId::get_new_id()) {}
 
  protected:

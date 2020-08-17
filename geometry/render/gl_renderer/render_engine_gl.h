@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -11,6 +12,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
 #include "drake/geometry/render/gl_renderer/buffer_dim.h"
+#include "drake/geometry/render/gl_renderer/gl_common.h"
 #include "drake/geometry/render/gl_renderer/opengl_context.h"
 #include "drake/geometry/render/gl_renderer/opengl_geometry.h"
 #include "drake/geometry/render/gl_renderer/shader_program.h"
@@ -86,10 +88,6 @@ class RenderEngineGl final : public RenderEngine {
  private:
   friend class RenderEngineGlTester;
 
-  // Image types available. Used to index into the image-type-dependent
-  // data structures.
-  // TODO(SeanCurtis-TRI): Implement color image type: kColor.
-  enum ImageType { kLabel = 0, kDepth, kTypeCount };
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -109,10 +107,10 @@ class RenderEngineGl final : public RenderEngine {
   // Copy constructor used for cloning.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
-  // Renders the object at a specific pose in the camera frame using the given
-  // shader program.
+  // Renders all geometries which use the given shader program for the given
+  // render type.
   void RenderAt(const internal::ShaderProgram& shader_program,
-                const Eigen::Matrix4f& X_CM, ImageType image_type) const;
+                internal::RenderType render_type) const;
 
   // Performs the common setup for all shape types.
   void ImplementGeometry(const internal::OpenGlGeometry& geometry,
@@ -128,40 +126,30 @@ class RenderEngineGl final : public RenderEngine {
   internal::OpenGlGeometry GetBox();
   internal::OpenGlGeometry GetMesh(const std::string& filename);
 
-  // Activates the shader for the given image type; this should be called at
-  // the *top* of each Render*Image() method.
-  const internal::ShaderProgram& ActivateShader(ImageType image_type) const;
-
-  // Given the image type, returns the texture configuration for that image
-  // type. These are the key arguments for glTexImage2D based on the type of
-  // image. It includes:
+  // Given the render type, returns the texture configuration for that render
+  // type. These are the key arguments for glTexImage2D based on the render
+  // type. They include:
   //   - The internal format (the number of color components)
   //   - format (the format of pixel data)
   //   - pixel type (the data type of each pixel)
   // For more details on these quantities, see
   // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml.
   static std::tuple<GLint, GLenum, GLenum> get_texture_format(
-      ImageType image_type);
+      internal::RenderType render_type);
 
   // Creates a *new* render target for the given camera. This creates OpenGL
   // objects (render buffer, frame_buffer, and texture). It should only be
   // called if there is not already a cached render target for the camera's
   // reported image size (w, h) in render_targets_.
   static internal::RenderTarget CreateRenderTarget(
-      const CameraProperties& camera, ImageType image_type);
+      const CameraProperties& camera, internal::RenderType render_type);
 
-  // Configures the projection matrix -- computes the matrix and sets the value
-  // in the shader program's "projection_matrix" uniform. This value changes
-  // on a *per-camera* basis.
-  void SetGlProjectionMatrix(const internal::ShaderProgram& shader_program,
-                             const CameraProperties& camera, double clip_near,
-                             double clip_far) const;
-
-  // Configures the "modelview" matrix and sets the value in the shader
-  // program's "model_view_matrix" uniform. For a single camera, this changes on
-  // a *per-geometry* basis.
-  void SetGlModelViewMatrix(const internal::ShaderProgram& shader_program,
-                            const Eigen::Matrix4f& X_CM) const;
+  // Computes the projection matrix based on the given camera. This is the
+  // matrix that projects a point from the camera frame C to the 2D image device
+  // frame D.
+  Eigen::Matrix4f ComputeGlProjectionMatrix(const CameraProperties& camera,
+                                            double clip_near,
+                                            double clip_far) const;
 
   // Obtains the label image rendered from a specific object pose. This is
   // slower than it has to be because it does per-pixel processing on the CPU.
@@ -169,12 +157,11 @@ class RenderEngineGl final : public RenderEngine {
   void GetLabelImage(drake::systems::sensors::ImageLabel16I* label_image_out,
                      const internal::RenderTarget& target) const;
 
-  // Configures the OpenGL properties dependent on the camera properties. This
-  // updates the cache of RenderTargets (creating one for the camera if one
-  // does not already exist). As such, it is _not_ threadsafe.
-  internal::RenderTarget SetCameraProperties(
-      const CameraProperties& camera, const internal::ShaderProgram& program,
-      double near_clip, double far_clip, ImageType image_type) const;
+  // Acquires the render target for the given camera. "Acquiring" the render
+  // target guarantees that the target will be ready for receiving OpenGL
+  // draw commands.
+  internal::RenderTarget GetRenderTarget(
+      const CameraProperties& camera, internal::RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
   static internal::OpenGlGeometry CreateGlGeometry(
@@ -192,20 +179,47 @@ class RenderEngineGl final : public RenderEngine {
   void SetWindowVisibility(const CameraProperties& camera, bool show_window,
                            const internal::RenderTarget& target) const;
 
-  // The cached value transformation between camera and world frame.
+  // Adds a shader program to the set of candidate shaders for the given render
+  // type.
+  internal::ShaderId AddShader(std::unique_ptr<internal::ShaderProgram> program,
+                               internal::RenderType render_type);
+
+  // Given the render type and a set of perception properties, finds the
+  // "most preferred" shader that supports the given properties. In this case,
+  // we exploit the behind-the-scenes knowledge that Identifiers are
+  // monotonically increasing. So, the shader that is added last implicitly is
+  // more preferred than the earlier shader.
+  internal::ShaderProgramData GetShaderProgram(
+      const PerceptionProperties& properties,
+      internal::RenderType render_type) const;
+
+  // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 
   // All clones of this context share the same underlying OpenGlContext. They
-  // share geometry and frame buffer objects. The following structs are either
-  // shared, or copy safe w.r.t. the shared context.
+  // also share the C++ abstractions of objects that *live* in the context:
+  //
+  //   OpenGlGeometry - the geometry buffers (copy safe)
+  //   RenderTarget - frame buffer objects (copy safe)
+  //   ShaderProgram - the compiled shader programs (copy safe)
+  //
+  // So, all of these quantities are simple copy-safe POD (e.g., OpenGlGeometry)
+  // or are stashed in a shared pointer.
   std::shared_ptr<internal::OpenGlContext> opengl_context_;
 
-  // All of the objects below here *require* the OpenGL context. These members
-  // essentially store the OpenGl "objects" (i.e., integers) that live in
-  // graphics memory.
+  // A "shader family" is all of the shaders used to produce a particular image
+  // type. Each unique shader is associated with the geometries to which it
+  // applies.
+  using ShaderFamily = std::map<internal::ShaderId, std::vector<GeometryId>>;
 
-  // Shader programs for each image type.
-  std::array<internal::ShaderProgram, kTypeCount> shader_programs_;
+  // Three shader families -- one for each output type.
+  std::array<ShaderFamily, internal::RenderType::kTypeCount> shader_families_;
+
+  // The collection of all shader programs (grouped by render type).
+  std::array<std::unordered_map<internal::ShaderId,
+                                copyable_unique_ptr<internal::ShaderProgram>>,
+             internal::RenderType::kTypeCount>
+      shader_programs_;
 
   // One OpenGlGeometry per primitive type. They represent a canonical, "unit"
   // version of the primitive type. Each instance scales and poses the
@@ -225,19 +239,20 @@ class RenderEngineGl final : public RenderEngine {
   std::unordered_map<std::string, internal::OpenGlGeometry> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
-  // for each unique render image size (BufferDim) and output image type. They
-  // are mutable so that they can be updated in what would otherwise be a const
-  // action of updating the OpenGL state for the camera.
+  // for each unique image size (BufferDim) and output image type. The
+  // collection is mutable so that it can be updated in what would otherwise
+  // be a const action of updating the OpenGL state for the camera.
   //
   // We need unique RenderTargets for unique output image types because the
   // type of the texture we render to differs according to output image type.
   // Thus a RenderTarget for depth cannot be used for labels (or color).
   //
   // Note: copies of this render engine share the same frame buffer objects.
-  // This is *not* threadsafe!
+  // If RenderEngineGl is included in a SceneGraph and its context is cloned
+  // multiple times, mutating this cache is *not* thread safe.
   mutable std::array<
       std::unordered_map<internal::BufferDim, internal::RenderTarget>,
-      kTypeCount>
+      internal::RenderType::kTypeCount>
       frame_buffers_;
 
   // Mapping from GeometryId to the visual data associated with that geometry.
