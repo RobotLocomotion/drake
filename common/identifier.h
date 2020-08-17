@@ -213,8 +213,7 @@ class Identifier {
  @relates Identifier
  */
 template <typename Tag>
-inline std::ostream& operator<<(std::ostream& out,
-                                const Identifier<Tag>& id) {
+std::ostream& operator<<(std::ostream& out, const Identifier<Tag>& id) {
   out << id.get_value();
   return out;
 }
@@ -222,7 +221,7 @@ inline std::ostream& operator<<(std::ostream& out,
 /** Enables use of identifiers with to_string. It requires ADL to work. So,
  it should be invoked as: `to_string(id);` and should be preceded by
  `using std::to_string`.*/
-template <typename Tag> inline
+template <typename Tag>
 std::string to_string(const drake::Identifier<Tag>& id) {
   return std::to_string(id.get_value());
 }

@@ -514,7 +514,7 @@ class SpatialInertia {
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.
 /// Especially useful for debugging.
 /// @relates SpatialInertia
-template <typename T> inline
+template <typename T>
 std::ostream& operator<<(std::ostream& o,
                          const SpatialInertia<T>& M) {
   return o << std::endl

@@ -1034,7 +1034,7 @@ class RotationalInertia {
 /// Insertion operator to write %RotationalInertia's into a `std::ostream`.
 /// Especially useful for debugging.
 /// @relates RotationalInertia
-template <typename T> inline
+template <typename T>
 std::ostream& operator<<(std::ostream& o,
                          const RotationalInertia<T>& I) {
   int width = 0;

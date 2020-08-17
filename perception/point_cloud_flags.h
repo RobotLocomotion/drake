@@ -51,12 +51,12 @@ class DescriptorType final {
       : size_(size),
         name_(name) {}
 
-  inline int size() const { return size_; }
-  inline std::string name() const { return name_; }
-  inline bool operator==(const DescriptorType& other) const {
+  int size() const { return size_; }
+  std::string name() const { return name_; }
+  bool operator==(const DescriptorType& other) const {
     return size_ == other.size_ && name() == other.name();
   }
-  inline bool operator!=(const DescriptorType& other) const {
+  bool operator!=(const DescriptorType& other) const {
     return !(*this == other);
   }
 
