@@ -34,7 +34,7 @@ struct Rotation {
     Identity() = default;
 
     template <typename Archive>
-    void Serialize(Archive* a) {}
+    void Serialize(Archive*) {}
   };
 
   /// A roll-pitch-yaw rotation, using the angle conventions of Drake's
@@ -72,7 +72,7 @@ struct Rotation {
     Uniform() = default;
 
     template <typename Archive>
-    void Serialize(Archive* a) {}
+    void Serialize(Archive*) {}
   };
 
   /// Returns true iff this is fully deterministic.

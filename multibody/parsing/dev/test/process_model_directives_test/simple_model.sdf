@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="scoped_model">
+    <link name="base">
+      <inertial>
+        <mass>1</mass>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.2 0.2 2.2</size>
+          </box>
+        </geometry>
+        <material>
+          <!--
+              Test usage of diffuse map from a separate resource that requires
+              package:// URI resolution.
+          -->
+          <drake:diffuse_map>
+            package://process_model_directives_test/circle.png
+          </drake:diffuse_map>
+        </material>
+      </visual>
+    </link>
+    <frame name="frame">
+      <pose relative_to="base">1 2 3  0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
