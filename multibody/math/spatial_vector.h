@@ -288,7 +288,7 @@ class SpatialVector {
 /// Stream insertion operator to write SpatialVector objects into a
 /// `std::ostream`. Especially useful for debugging.
 /// @relates SpatialVector.
-template <template <typename> class SpatialQuantity, typename T> inline
+template <template <typename> class SpatialQuantity, typename T>
 std::ostream& operator<<(std::ostream& o,
                          const SpatialVector<SpatialQuantity, T>& V) {
   o << "[" << V[0];

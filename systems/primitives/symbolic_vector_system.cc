@@ -33,8 +33,8 @@ Expression FirstOrderTaylorExpand(const Expression& f, const Substitution& a) {
 }
 
 // Checks if @p v is in @p variables.
-inline bool Includes(const Ref<const VectorX<Variable>>& variables,
-                     const Variable& v) {
+bool Includes(const Ref<const VectorX<Variable>>& variables,
+              const Variable& v) {
   for (int i = 0; i < variables.size(); ++i) {
     if (variables[i].equal_to(v)) {
       return true;

@@ -380,7 +380,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
  in a copyable_unique_ptr object. This is equivalent to `os << p.get();`.
  @relates copyable_unique_ptr */
 template <class charT, class traits, class T>
-inline std::basic_ostream<charT, traits>& operator<<(
+std::basic_ostream<charT, traits>& operator<<(
     std::basic_ostream<charT, traits>& os,
     const copyable_unique_ptr<T>& cu_ptr) {
   os << cu_ptr.get();
