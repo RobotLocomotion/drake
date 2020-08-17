@@ -2925,6 +2925,17 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
 }
 
 template <typename T>
+const SpatialAcceleration<T>&
+MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
+    const Context<T>& context,
+    const Body<T>& body_B) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(this == &body_B.GetParentPlant());;
+  const AccelerationKinematicsCache<T>& ac = EvalForwardDynamics(context);
+  return ac.get_A_WB(body_B.node_index());
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();

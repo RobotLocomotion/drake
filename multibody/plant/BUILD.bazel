@@ -491,6 +491,7 @@ drake_cc_googletest(
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+        "//math:gradient",
         "//multibody/test_utilities:add_fixed_objects_to_plant",
     ],
 )
