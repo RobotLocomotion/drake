@@ -209,10 +209,15 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13839: https://github.com/RobotLocomotion/drake/pull/13839
 .. _#13845: https://github.com/RobotLocomotion/drake/pull/13845
 .. _#13848: https://github.com/RobotLocomotion/drake/pull/13848
+.. _#13849: https://github.com/RobotLocomotion/drake/pull/13849
 .. _#13850: https://github.com/RobotLocomotion/drake/pull/13850
 .. _#13851: https://github.com/RobotLocomotion/drake/pull/13851
 .. _#13856: https://github.com/RobotLocomotion/drake/pull/13856
 .. _#13857: https://github.com/RobotLocomotion/drake/pull/13857
+.. _#13868: https://github.com/RobotLocomotion/drake/pull/13868
+.. _#13871: https://github.com/RobotLocomotion/drake/pull/13871
+.. _#13879: https://github.com/RobotLocomotion/drake/pull/13879
+.. _#13881: https://github.com/RobotLocomotion/drake/pull/13881
 
 ..
   Current oldest_commit e6aec974fbca64751e0d35a3eafc739d059e9275 (inclusive).
