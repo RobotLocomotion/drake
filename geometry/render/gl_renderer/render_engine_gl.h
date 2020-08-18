@@ -176,11 +176,9 @@ class RenderEngineGl final : public RenderEngine {
       const CameraProperties& camera, const internal::ShaderProgram& program,
       double near_clip, double far_clip, ImageType image_type) const;
 
-  // Creates an OpenGlGeometry from the mesh defined by the given vertices and
-  // triangle indices.
+  // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
   static internal::OpenGlGeometry CreateGlGeometry(
-      const internal::VertexBuffer& vertices,
-      const internal::IndexBuffer& indices);
+      const internal::MeshData& mesh_data);
 
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
