@@ -9,6 +9,22 @@
 
 namespace drake {
 namespace yaml {
+
+YamlReadArchive::YamlReadArchive(const YAML::Node& root)
+    : YamlReadArchive(root, Options{}) {}
+
+YamlReadArchive::YamlReadArchive(const YAML::Node& root, const Options& options)
+    : owned_root_(root),
+      root_(&owned_root_),
+      mapish_item_key_(nullptr),
+      mapish_item_value_(nullptr),
+      options_(options),
+      parent_(nullptr) {
+  // Reprocess the owned_root for merge keys only after all member fields are
+  // initialized; otherwise, the method might access invalid member data.
+  RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
+}
+
 namespace {
 
 // The source and destination are both of type Map.  Copy the key-value pairs

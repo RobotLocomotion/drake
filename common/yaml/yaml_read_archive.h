@@ -94,26 +94,12 @@ class YamlReadArchive final {
 
   /// Creates an archive that reads from @p root.  See the %YamlReadArchive
   /// class overview for details.
-  ///
-  /// When the `options` are not provided by the caller, this currently sets
-  /// `allow_yaml_with_no_cpp = true` for backwards compatibility reasons.
-  /// This default will change in a future Drake release to be `false`,
-  /// instead.  Callers that wish to avoid disruption should set the options
-  /// explicitly.
-  explicit YamlReadArchive(const YAML::Node& root, const Options& options = {
-                             .allow_yaml_with_no_cpp = true,
-                             .allow_cpp_with_no_yaml = false,
-                             .retain_map_defaults = false})
-      : owned_root_(root),
-        root_(&owned_root_),
-        mapish_item_key_(nullptr),
-        mapish_item_value_(nullptr),
-        options_(options),
-        parent_(nullptr) {
-    // Reprocess the owned_root for merge keys only after all member fields are
-    // initialized; otherwise, the method might access invalid member data.
-    RewriteMergeKeys(const_cast<YAML::Node*>(&owned_root_));
-  }
+  explicit YamlReadArchive(const YAML::Node& root);
+
+  /// Creates an archive that reads from @p root, with @p options that allow
+  /// for less restrictive parsing.  See the %YamlReadArchive class overview
+  /// for details.
+  YamlReadArchive(const YAML::Node& root, const Options& options);
 
   /// Sets the contents `serializable` based on the YAML file associated with
   /// this archive.  See the %YamlReadArchive class overview for details.
