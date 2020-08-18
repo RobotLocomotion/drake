@@ -35,24 +35,6 @@ class VectorSystem : public LeafSystem<T> {
 
   ~VectorSystem() override = default;
 
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    DRAKE_DEMAND(this->num_input_ports() == 1);
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  // Don't use the indexed get_input_port when calling this system directly.
-  void get_input_port(int) = delete;
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    DRAKE_DEMAND(this->num_output_ports() == 1);
-    return LeafSystem<T>::get_output_port(0);
-  }
-
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
-
  protected:
   /// Creates a system with one input port and one output port of the given
   /// sizes, when the sizes are non-zero.  Either size can be zero, in which
