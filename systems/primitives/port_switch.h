@@ -79,10 +79,6 @@ class PortSwitch final : public LeafSystem<T> {
     return this->get_input_port(0);
   }
 
-  const OutputPort<T>& get_output_port() const {
-    return System<T>::get_output_port(0);
-  }
-
   /** Declares a new input port to the switch with port name `name`.  The
   type of this port is already defined by the type of the output port. This
   must be called before any Context is allocated. */

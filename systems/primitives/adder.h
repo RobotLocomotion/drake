@@ -36,11 +36,6 @@ class Adder final : public LeafSystem<T> {
   template <typename U>
   explicit Adder(const Adder<U>&);
 
-  /// Returns the output port on which the sum is presented.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
-
  private:
   // Sums the input ports into a value suitable for the output port. If the
   // input ports are not the appropriate count or size, std::runtime_error will
