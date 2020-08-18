@@ -435,6 +435,32 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
+    def test_render_engine_opsray(self):
+        params = mut.render.RenderEngineOsprayParams()
+        self.assertEqual(params.mode, mut.render.OsprayMode.kPathTracer)
+        self.assertIs(params.default_diffuse, None)
+        self.assertIs(params.background_color, None)
+        self.assertEqual(params.samples_per_pixel, 1)
+        self.assertEqual(params.use_shadows, True)
+
+        params = mut.render.RenderEngineOsprayParams(
+            mode=mut.render.OsprayMode.kRayTracer,
+            default_diffuse=[0.1, 0.2, 0.3, 0.4],
+            background_color=[1., 1., 1.],
+            samples_per_pixel=2,
+            use_shadows=False,
+        )
+        self.assertEqual(params.mode, mut.render.OsprayMode.kRayTracer)
+        np.testing.assert_array_equal(
+            params.default_diffuse, [0.1, 0.2, 0.3, 0.4])
+        np.testing.assert_array_equal(params.background_color, [1., 1., 1])
+        self.assertEqual(params.samples_per_pixel, 2)
+        self.assertEqual(params.use_shadows, False)
+
+        # Acceptance-test construction of renderer.
+        renderer = mut.render.MakeRenderEngineOspray(params=params)
+        self.assertIsInstance(renderer, mut.render.RenderEngine)
+
     def test_render_depth_camera_properties(self):
         obj = mut.render.DepthCameraProperties(width=320, height=240,
                                                fov_y=pi/6,
