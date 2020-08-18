@@ -64,7 +64,6 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   const systems::InputPort<double>& get_torque_commanded_input_port() const;
   const systems::InputPort<double>& get_torque_measured_input_port() const;
   const systems::InputPort<double>& get_torque_external_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
   //@}
 
  private:

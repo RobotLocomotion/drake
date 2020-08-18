@@ -43,7 +43,6 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
   //@{
   const systems::InputPort<double>& get_position_input_port() const;
   const systems::InputPort<double>& get_torque_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
   //@}
 
  private:

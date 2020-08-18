@@ -34,9 +34,6 @@ JacoStatusReceiver::JacoStatusReceiver(int num_joints, int num_fingers)
       &lcmt_jaco_status::finger_current>);
 }
 
-const systems::InputPort<double>& JacoStatusReceiver::get_input_port() const {
-  return LeafSystem<double>::get_input_port(0);
-}
 using OutPort = systems::OutputPort<double>;
 const OutPort& JacoStatusReceiver::get_state_output_port() const {
   return LeafSystem<double>::get_output_port(0);

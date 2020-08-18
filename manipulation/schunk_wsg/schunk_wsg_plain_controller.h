@@ -148,8 +148,6 @@ class SchunkWsgPlainController
     return systems::Diagram<double>::get_output_port(0);
   }
 
-  const systems::OutputPort<double>& get_output_port(int) const = delete;
-
  private:
   int desired_grip_state_input_port_{-1};
   int feed_forward_force_input_port_{-1};
