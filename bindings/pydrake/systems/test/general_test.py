@@ -17,6 +17,7 @@ from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     GetIntegrationSchemes,
+    InitializeParams,
     IntegratorBase, IntegratorBase_,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
@@ -371,6 +372,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is
                             simulator.get_mutable_context())
             check_output(simulator.get_context())
+            simulator.Initialize()
             simulator.AdvanceTo(1)
             simulator.ResetStatistics()
             simulator.AdvanceTo(2)
@@ -391,6 +393,13 @@ class TestGeneral(unittest.TestCase):
             check_output(context)
             simulator.AdvanceTo(1)
             simulator.AdvancePendingEvents()
+
+            # Reuse simulator over the same time interval, without
+            # initialization events.
+            context.SetTime(0.)
+            simulator.Initialize(InitializeParams(
+                suppress_initialization_events=True))
+            simulator.AdvanceTo(1)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
