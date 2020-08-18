@@ -8,12 +8,13 @@ This is gui code; to test changes, please manually run
 
 import numpy as np
 from collections import namedtuple
+from functools import partial
 
-from ipywidgets import FloatSlider, Layout
+from ipywidgets import FloatSlider, Layout, Widget
 
 from pydrake.common.jupyter import process_ipywidget_events
 from pydrake.common.value import AbstractValue
-from pydrake.systems.framework import LeafSystem, BasicVector
+from pydrake.systems.framework import BasicVector, LeafSystem
 from pydrake.math import RigidTransform, RollPitchYaw
 
 
@@ -166,3 +167,59 @@ class PoseSliders(LeafSystem):
         output.set_value(RigidTransform(
             RollPitchYaw(self._roll.value, self._pitch.value, self._yaw.value),
             [self._x.value, self._y.value, self._z.value]))
+
+
+class WidgetSystem(LeafSystem):
+    """
+    A system that outputs the ``value``s (converted to ``float``) from
+    ipywidgets.
+
+    System YAML
+      name: WidgetSystem
+      output_ports:
+      - widget_group_0
+      - ...
+      - widget_group_{N-1}
+    """
+
+    def __init__(self, *args, update_period_sec=0.1):
+        """
+        Constructs the system and displays the widgets.
+
+        Args:
+            update_period_sec: Specifies how often the kernel is queried for
+                widget ui events.
+
+        An output port is created for each element in *args.  Each element of
+        args must itself be an iterable collection (list, tuple, set, ...) of
+        ipywidget elements, whose values will be concatenated into a single
+        vector output.
+        """
+        LeafSystem.__init__(self)
+
+        self._widgets = args
+        for i, widget_iterable in enumerate(self._widgets):
+            for w in widget_iterable:
+                assert isinstance(w, Widget), (
+                    "args must be collections of widgets")
+                display(w)
+            port = self.DeclareVectorOutputPort(
+                f"widget_group_{i}",
+                BasicVector(len(widget_iterable)),
+                partial(self.DoCalcOutput, port_index=i))
+            port.disable_caching_by_default()
+
+        self.DeclarePeriodicPublish(update_period_sec, 0.0)
+
+    def DoPublish(self, context, event):
+        """
+        Allows the ipython kernel to process the event queue.
+        """
+        process_ipywidget_events()
+
+    def DoCalcOutput(self, context, output, port_index):
+        """
+        Constructs the output values from the widget elements.
+        """
+        for i, w in enumerate(self._widgets[port_index]):
+            output.SetAtIndex(i, float(w.value))
