@@ -8,13 +8,12 @@ namespace render {
 
 using Eigen::Vector3d;
 using internal::BufferDim;
-using internal::IndexBuffer;
+using internal::MeshData;
 using internal::OpenGlContext;
 using internal::OpenGlGeometry;
 using internal::OpenGlInstance;
 using internal::RenderTarget;
 using internal::ShaderProgram;
-using internal::VertexBuffer;
 using math::RigidTransformd;
 using std::make_shared;
 using std::string;
@@ -226,10 +225,10 @@ void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
 void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
                                        void* user_data) {
   const int resolution = 50;
-  auto [vertices, indices] =
+  MeshData mesh_data =
       internal::MakeCapsule(resolution, capsule.radius(), capsule.length());
 
-  OpenGlGeometry geometry = CreateGlGeometry(vertices, indices);
+  OpenGlGeometry geometry = CreateGlGeometry(mesh_data);
   capsules_.push_back(geometry);
 
   ImplementGeometry(geometry, user_data, Vector3d::Ones());
@@ -328,10 +327,10 @@ OpenGlGeometry RenderEngineGl::GetSphere() {
     const int kLatitudeBands = 50;
     const int kLongitudeBands = 50;
 
-    auto [vertices, indices] =
+    MeshData mesh_data =
         internal::MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
 
-    sphere_ = CreateGlGeometry(vertices, indices);
+    sphere_ = CreateGlGeometry(mesh_data);
   }
 
   sphere_.throw_if_undefined("Built-in sphere has some invalid objects");
@@ -345,8 +344,8 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
 
     // For long skinny cylinders, it would be better to offer some subdivisions
     // along the length. For now, we'll simply save the triangles.
-    auto [vertices, indices] = internal::MakeUnitCylinder(kLongitudeBands, 1);
-    cylinder_ = CreateGlGeometry(vertices, indices);
+    MeshData mesh_data = internal::MakeUnitCylinder(kLongitudeBands, 1);
+    cylinder_ = CreateGlGeometry(mesh_data);
   }
 
   cylinder_.throw_if_undefined("Built-in cylinder has some invalid objects");
@@ -360,8 +359,8 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
     // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
     //  lighting), this will render better with tighter resolution. Consider
     //  making this configurable.
-    auto [vertices, indices] = internal::MakeSquarePatch(kMeasure, 1);
-    half_space_ = CreateGlGeometry(vertices, indices);
+    MeshData mesh_data = internal::MakeSquarePatch(kMeasure, 1);
+    half_space_ = CreateGlGeometry(mesh_data);
   }
 
   half_space_.throw_if_undefined(
@@ -372,8 +371,8 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
 
 OpenGlGeometry RenderEngineGl::GetBox() {
   if (!box_.is_defined()) {
-    auto [vertices, indices] = internal::MakeUnitBox();
-    box_ = CreateGlGeometry(vertices, indices);
+    MeshData mesh_data = internal::MakeUnitBox();
+    box_ = CreateGlGeometry(mesh_data);
   }
 
   box_.throw_if_undefined("Built-in box has some invalid objects");
@@ -384,8 +383,8 @@ OpenGlGeometry RenderEngineGl::GetBox() {
 OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
   OpenGlGeometry mesh;
   if (meshes_.count(filename) == 0) {
-    auto [vertices, indices] = internal::LoadMeshFromObj(filename);
-    mesh = CreateGlGeometry(vertices, indices);
+    MeshData mesh_data = internal::LoadMeshFromObj(filename);
+    mesh = CreateGlGeometry(mesh_data);
     meshes_.insert({filename, mesh});
   } else {
     mesh = meshes_[filename];
@@ -559,11 +558,13 @@ RenderTarget RenderEngineGl::SetCameraProperties(const CameraProperties& camera,
   return target;
 }
 
-OpenGlGeometry RenderEngineGl::CreateGlGeometry(const VertexBuffer& vertices,
-                                                const IndexBuffer& indices) {
+OpenGlGeometry RenderEngineGl::CreateGlGeometry(const MeshData& mesh_data) {
   OpenGlGeometry geometry;
   // Create the vertex array object (VAO).
   glCreateVertexArrays(1, &geometry.vertex_array);
+
+  const auto& vertices = mesh_data.positions;
+  const auto& indices = mesh_data.indices;
 
   // Create the vertex buffer object (VBO).
   glCreateBuffers(1, &geometry.vertex_buffer);
