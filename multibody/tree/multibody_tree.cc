@@ -1331,7 +1331,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // TODO(mitiguy) Allow with_respect_to be JacobianWrtVariable::kQDot.
   DRAKE_THROW_UNLESS(with_respect_to == JacobianWrtVariable::kV);
 
-  // Reserve room to store all the bodies spatial acceleration bias in world W.
+  // Reserve room to store all the bodies' spatial acceleration bias in world W.
   // TODO(Mitiguy) Inefficient use of heap. Per issue #13560, implement caching.
   std::vector<SpatialAcceleration<T>> AsBias_WB_all(num_bodies());
   CalcAllBodyBiasSpatialAccelerationsInWorld(context, with_respect_to,
@@ -1346,8 +1346,8 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcBiasSpatialAcceleration(
   // Frame_A is regarded as fixed/welded to a body herein named body_A.
   // Extract body_A's spatial acceleration bias in W from AsBias_WB_all.
   const Body<T>& body_A = frame_A.body();
-  const SpatialAcceleration<T> AsBias_WBodyA_W = frame_A.is_world_frame() ?
-      SpatialAcceleration<T>::Zero() : AsBias_WB_all[body_A.node_index()];
+  const SpatialAcceleration<T> AsBias_WBodyA_W =
+      AsBias_WB_all[body_A.node_index()];
 
   // Calculate Bp's spatial acceleration bias in body_A, expressed in frame_E.
   return CalcSpatialAccelerationHelper(context, frame_B, p_BoBp_B, body_A,

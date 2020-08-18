@@ -2521,7 +2521,7 @@ class MultibodyTree {
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // For a frame Fp that is fixed/welded to a frame_F, this method helps form
+  // For a frame Fp that is fixed/welded to a frame_F, this method computes
   // A_AFp_E, Fp's spatial acceleration in a body_A, expressed in a frame_E.
   // @param[in] context Contains the state of the multibody system.
   // @param[in] frame_F Frame Fp is fixed/welded to frame_F and frame_F is
@@ -2534,7 +2534,7 @@ class MultibodyTree {
   //   expressed in W (body_B is the body to which frame_F is fixed/welded).
   // @param[in] A_WA_W The spatial acceleration of body_A in world frame W,
   //   expressed in W.
-  // @return A_AFp_E Fp's spatial acceleration in body_A, expressed in frame_E.
+  // @returns A_AFp_E Fp's spatial acceleration in body_A, expressed in frame_E.
   // @note To use this method for a bias spatial acceleration in world frame W,
   // expressed in W with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), instead pass
   // A𝑠Bias_WB_W (body_B's bias spatial acceleration in W expressed in W) and
@@ -2550,10 +2550,10 @@ class MultibodyTree {
       const SpatialAcceleration<T>& A_WB_W,
       const SpatialAcceleration<T>& A_WA_W) const;
 
-  // For a frame Bp that is fixed to both a frame_B and a body_A, this method
+  // For a frame Bp fixed/welded to both a frame_B and a body_A, this method
   // shifts spatial acceleration in the world frame W from body_A to frame_Bp.
   // @param[in] frame_B A frame that is fixed/welded to body_A.
-  //            frame_Bp is regarded as fixed/welded to frame_B.
+  //            frame_Bp is fixed to frame_B, shifted by p_BoBp_B.
   // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to the
   //            origin of frame_Bp, expressed in frame_B.
   // @param[in] A_WA_W body_A's spatial acceleration in W, expressed in W.
