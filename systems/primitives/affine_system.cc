@@ -55,20 +55,6 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
 }
 
 template <typename T>
-const InputPort<T>& TimeVaryingAffineSystem<T>::get_input_port()
-    const {
-  DRAKE_DEMAND(num_inputs_ > 0);
-  return System<T>::get_input_port(0);
-}
-
-template <typename T>
-const OutputPort<T>& TimeVaryingAffineSystem<T>::get_output_port()
-    const {
-  DRAKE_DEMAND(num_outputs_ > 0);
-  return System<T>::get_output_port(0);
-}
-
-template <typename T>
 void TimeVaryingAffineSystem<T>::configure_default_state(
     const Eigen::Ref<const VectorX<T>>& x0) {
   DRAKE_DEMAND(x0.rows() == num_states_);
@@ -106,7 +92,7 @@ void TimeVaryingAffineSystem<T>::CalcOutputY(
   }
 
   if (num_inputs_ > 0) {
-    const auto& u = get_input_port().Eval(context);
+    const auto& u = this->get_input_port().Eval(context);
     const MatrixX<T> Dt = D(t);
     DRAKE_DEMAND(Dt.rows() == num_outputs_ && Dt.cols() == num_inputs_);
     y += Dt * u;
@@ -133,7 +119,7 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
   xdot += At * x;
 
   if (num_inputs_ > 0) {
-    const auto& u = get_input_port().Eval(context);
+    const auto& u = this->get_input_port(0).Eval(context);
 
     const MatrixX<T> Bt = B(t);
     DRAKE_THROW_UNLESS(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
@@ -164,7 +150,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
   xn += At * x;
 
   if (num_inputs_ > 0) {
-    const auto& u = get_input_port().Eval(context);
+    const auto& u = this->get_input_port().Eval(context);
 
     const MatrixX<T> Bt = B(t);
     DRAKE_DEMAND(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
@@ -331,7 +317,7 @@ void AffineSystem<T>::DoCalcTimeDerivatives(
   VectorX<T> xdot = A_ * x + f0_;
 
   if (this->num_inputs() > 0) {
-    const auto& u = this->get_input_port().Eval(context);
+    const auto& u = this->get_input_port(0).Eval(context);
 
     xdot += B_ * u;
   }

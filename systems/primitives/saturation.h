@@ -62,12 +62,6 @@ class Saturation final : public LeafSystem<T> {
   /// @p u_min and @p u_max.
   Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 
-  // Don't use the indexed get_input_port when calling this system directly.
-  void get_input_port(int) = delete;
-
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
-
   /// Returns the input port.
   const InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(input_port_index_);
@@ -83,11 +77,6 @@ class Saturation final : public LeafSystem<T> {
   const InputPort<T>& get_max_value_port() const {
     DRAKE_THROW_UNLESS(min_max_ports_enabled_);
     return System<T>::get_input_port(max_value_port_index_);
-  }
-
-  /// Returns the output port.
-  const OutputPort<T>& get_output_port() const {
-    return System<T>::get_output_port(output_port_index_);
   }
 
   /// Returns the size.

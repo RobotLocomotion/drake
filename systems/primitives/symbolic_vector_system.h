@@ -131,18 +131,6 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 
   ~SymbolicVectorSystem() override = default;
 
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    DRAKE_DEMAND(this->num_input_ports() == 1);
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    DRAKE_DEMAND(this->num_output_ports() == 1);
-    return LeafSystem<T>::get_output_port(0);
-  }
-
   /// @name Accessor methods.
   /// @{
   const std::optional<symbolic::Variable>& time_var() const {

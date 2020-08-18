@@ -83,18 +83,6 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   const std::string& get_channel_name() const;
 
-  /// Returns the sole output port.
-  const OutputPort<double>& get_output_port() const {
-    DRAKE_THROW_UNLESS(this->num_output_ports() == 1);
-    return LeafSystem<double>::get_output_port(0);
-  }
-
-  // Don't use the indexed overload; use the no-arg overload.
-  void get_output_port(int index) = delete;
-
-  // This system has no input ports.
-  void get_input_port(int) = delete;
-
   /**
    * Blocks the caller until its internal message count exceeds
    * `old_message_count` with an optional timeout.

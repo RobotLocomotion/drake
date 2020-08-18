@@ -113,11 +113,6 @@ const InputPort<T>& SpringMassSystem<T>::get_force_port() const {
 }
 
 template <typename T>
-const OutputPort<T>& SpringMassSystem<T>::get_output_port() const {
-  return System<T>::get_output_port(0);
-}
-
-template <typename T>
 T SpringMassSystem<T>::EvalSpringForce(const Context<T>& context) const {
   const double k = spring_constant_N_per_m_;
   const T& x = get_position(context);

@@ -71,16 +71,6 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
   ~ZeroOrderHold() final = default;
 
-  /// Returns the sole input port.
-  const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
-  }
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
-  }
-
   /// Reports the period of this hold (in seconds).
   double period() const { return period_sec_; }
 

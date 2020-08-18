@@ -48,7 +48,7 @@ void PassThrough<T>::DoCalcVectorOutput(
       const Context<T>& context,
       BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
-  const auto& input = get_input_port().Eval(context);
+  const auto& input = this->get_input_port().Eval(context);
   DRAKE_ASSERT(input.size() == output->size());
   output->get_mutable_value() = input;
 }
