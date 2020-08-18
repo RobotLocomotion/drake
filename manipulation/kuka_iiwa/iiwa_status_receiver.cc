@@ -39,9 +39,6 @@ IiwaStatusReceiver::IiwaStatusReceiver(int num_joints)
         &lcmt_iiwa_status::joint_torque_external>);
 }
 
-const systems::InputPort<double>& IiwaStatusReceiver::get_input_port() const {
-  return LeafSystem<double>::get_input_port(0);
-}
 using OutPort = systems::OutputPort<double>;
 const OutPort& IiwaStatusReceiver::get_position_commanded_output_port() const {
   return LeafSystem<double>::get_output_port(0);

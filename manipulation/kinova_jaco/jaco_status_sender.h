@@ -53,7 +53,6 @@ class JacoStatusSender : public systems::LeafSystem<double> {
   const systems::InputPort<double>& get_torque_input_port() const;
   const systems::InputPort<double>& get_torque_external_input_port() const;
   const systems::InputPort<double>& get_current_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
   //@}
 
  private:

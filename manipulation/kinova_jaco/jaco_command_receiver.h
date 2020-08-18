@@ -50,12 +50,6 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
       systems::Context<double>* context,
       const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
-  /// @name Named accessors for this System's input and output ports.
-  //@{
-  const systems::InputPort<double>& get_input_port() const;
-  const systems::OutputPort<double>& get_output_port() const;
-  //@}
-
  private:
   Eigen::VectorXd input_state(const systems::Context<double>&) const;
   void CalcInput(const systems::Context<double>&, lcmt_jaco_command*) const;
