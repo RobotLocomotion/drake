@@ -111,8 +111,11 @@ class JointSliders(VectorSystem):
     def set_position(self, q):
         """
         Set all robot positions (corresponding to joint positions and
-        potentially positions not associated with any joint) to the
-        values in q.
+        potentially positions not associated with any joint) to the values in
+        q.  Note that most models have a floating-base mobilizer by default
+        (unless the MultibodyPlant explicitly welds the base to the world), and
+        so have 7 positions corresponding to the quaternion representation of
+        that floating-base position, but not to any joint.
 
         Args:
             q: a vector whose length is robot.num_positions().
@@ -123,13 +126,16 @@ class JointSliders(VectorSystem):
 
     def set_joint_position(self, q):
         """
-        Set the slider positions to the values in q.
+        Set the slider positions to the values in q.  A list of positions which
+        must be the same length as the number of positions ASSOCIATED WITH
+        JOINTS in the MultibodyPlant.  This does not include, e.g.,
+        floating-base coordinates, which will be assigned a default value.
 
         Args:
             q: a vector whose length is the same as the number of joint
             positions (also the number of sliders) for the robot.
         """
-        assert(len(q) == len(self._default_position))
+        assert(len(q) == len(self._slider))
         for i in range(len(self._slider)):
             self._slider[i].set(q[i])
 
