@@ -494,6 +494,19 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   return pair;
 }
 
+GTEST_TEST(MultibodyPlantUrdfParserTest, MasslessBody) {
+  // Test that massless bodies can be parsed.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<robot name='has_massless_link'>
+  <link name='massless_link'/>
+</robot>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("massless_link"));
+  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {
   // Test successful parsing
   auto [plant, scene_graph] = ParseTestString(R"(
