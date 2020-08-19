@@ -26,10 +26,9 @@ Saturation<T>::Saturation(int input_size)
       this->DeclareInputPort(kVectorValued, input_size_).get_index();
   min_value_port_index_ =
       this->DeclareInputPort(kVectorValued, input_size_).get_index();
-  output_port_index_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(input_size_),
-                                    &Saturation::CalcSaturatedOutput)
-          .get_index();
+  this->DeclareVectorOutputPort(BasicVector<T>(input_size_),
+                                &Saturation::CalcSaturatedOutput)
+      .get_index();
 }
 
 template <typename T>
@@ -49,10 +48,9 @@ Saturation<T>::Saturation(const VectorX<T>& min_value,
 
   input_port_index_ =
       this->DeclareInputPort(kVectorValued, input_size_).get_index();
-  output_port_index_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(input_size_),
-                                    &Saturation::CalcSaturatedOutput)
-          .get_index();
+  this->DeclareVectorOutputPort(BasicVector<T>(input_size_),
+                                &Saturation::CalcSaturatedOutput)
+      .get_index();
 }
 
 template <typename T>

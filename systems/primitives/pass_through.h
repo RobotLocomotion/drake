@@ -57,18 +57,6 @@ class PassThrough final : public LeafSystem<T> {
     return *input_port_;
   }
 
-  // Don't use the indexed get_input_port when calling this system directly.
-  void get_input_port(int) = delete;
-
-  /// Returns the sole output port.
-  const OutputPort<T>& get_output_port() const {
-    DRAKE_ASSERT(output_port_ != nullptr);
-    return *output_port_;
-  }
-
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
-
  private:
   // Allow different specializations to access each other's private data.
   template <typename U> friend class PassThrough;
@@ -91,10 +79,9 @@ class PassThrough final : public LeafSystem<T> {
 
   const std::unique_ptr<const AbstractValue> abstract_model_value_;
 
-  // We store our port pointers so that DoCalcVectorOutput's access to the
+  // We store our port pointer so that DoCalcVectorOutput's access to the
   // input_port_->Eval is inlined (without any port-count bounds checking).
   const InputPort<T>* input_port_{};
-  const OutputPort<T>* output_port_{};
 };
 
 }  // namespace systems

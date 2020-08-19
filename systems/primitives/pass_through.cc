@@ -17,8 +17,8 @@ PassThrough<T>::PassThrough(
     DRAKE_DEMAND(vector_size != -1);
     BasicVector<T> model_value(vector_size);
     input_port_ = &this->DeclareVectorInputPort(model_value);
-    output_port_ = &this->DeclareVectorOutputPort(
-        model_value, &PassThrough::DoCalcVectorOutput);
+    this->DeclareVectorOutputPort(model_value,
+                                  &PassThrough::DoCalcVectorOutput);
   } else {
     DRAKE_DEMAND(vector_size == -1);
     // TODO(eric.cousineau): Remove value parameter from the constructor once
@@ -30,7 +30,7 @@ PassThrough<T>::PassThrough(
       return abstract_model_value_->Clone();
     };
     namespace sp = std::placeholders;
-    output_port_ = &this->DeclareAbstractOutputPort(
+    this->DeclareAbstractOutputPort(
         abstract_value_allocator,
         std::bind(&PassThrough::DoCalcAbstractOutput, this, sp::_1, sp::_2));
   }
@@ -48,7 +48,7 @@ void PassThrough<T>::DoCalcVectorOutput(
       const Context<T>& context,
       BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
-  const auto& input = get_input_port().Eval(context);
+  const auto& input = this->get_input_port().Eval(context);
   DRAKE_ASSERT(input.size() == output->size());
   output->get_mutable_value() = input;
 }

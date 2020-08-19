@@ -62,12 +62,6 @@ class Saturation final : public LeafSystem<T> {
   /// @p u_min and @p u_max.
   Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 
-  // Don't use the indexed get_input_port when calling this system directly.
-  void get_input_port(int) = delete;
-
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
-
   /// Returns the input port.
   const InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(input_port_index_);
@@ -85,11 +79,6 @@ class Saturation final : public LeafSystem<T> {
     return System<T>::get_input_port(max_value_port_index_);
   }
 
-  /// Returns the output port.
-  const OutputPort<T>& get_output_port() const {
-    return System<T>::get_output_port(output_port_index_);
-  }
-
   /// Returns the size.
   int get_size() const { return input_size_; }
   // TODO(naveenoid) : Add a witness function for capturing events when
@@ -102,7 +91,6 @@ class Saturation final : public LeafSystem<T> {
   int input_port_index_{};
   int min_value_port_index_{};
   int max_value_port_index_{};
-  int output_port_index_{};
   const bool min_max_ports_enabled_{false};
   const int input_size_{};
   const VectorX<T> max_value_;
