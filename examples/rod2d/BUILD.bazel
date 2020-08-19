@@ -29,7 +29,9 @@ drake_cc_binary(
         ":rod2d_geometry",
         "//common:essential",
         "//geometry:geometry_visualization",
-        "//systems/analysis",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:simulator",
         "//systems/framework",
         "@gflags",
     ],
@@ -81,7 +83,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//multibody/constraint",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 
