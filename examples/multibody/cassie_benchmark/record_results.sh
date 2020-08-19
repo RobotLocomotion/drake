@@ -25,7 +25,7 @@ ${TEST_SRCDIR}/drake/tools/workspace/cc/identify_compiler \
  > ${TEST_UNDECLARED_OUTPUTS_DIR}/compiler.txt
 
 ${TEST_SRCDIR}/drake/examples/multibody/cassie_benchmark/cassie_bench \
-    --benchmark_report_aggregates_only=true \
+    --benchmark_display_aggregates_only=true \
     --benchmark_repetitions=9 \
     --benchmark_out_format=json \
     --benchmark_out=${TEST_UNDECLARED_OUTPUTS_DIR}/results.json \
