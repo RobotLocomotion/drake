@@ -1,0 +1,32 @@
+# The trio of `add_scoped_*.yaml` files are a test yaml structure that uses
+# each feature of the model directives system.  This file has only simple
+# directives with no inclusion and is also used as a smoke test of the basic
+# directives.
+
+directives:
+- add_model:
+    # This name will be prefixed by `model_namespace`.
+    name: simple_model
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_frame:
+    # This will implicitly resolve to the `simple_model` instance.
+    name: sub_added_frame
+    X_PF:
+      base_frame: simple_model::frame
+      translation: [10, 20, 30]
+
+- add_frame:
+    # This will explicitly resolve to the `simple_model` instance.
+    name: simple_model::sub_added_frame_explicit
+    X_PF:
+      base_frame: simple_model::frame
+      translation: [10, 20, 30]
+
+- add_model:
+    name: extra_model
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_weld:
+    parent: simple_model::frame
+    child: extra_model::base

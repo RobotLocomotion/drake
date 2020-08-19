@@ -1,0 +1,70 @@
+# The trio of `add_scoped_*.yaml` files are a test yaml structure that uses
+# each feature of the model directives system.  This file is the top-level of
+# a three-file inclusion hierarchy of model directives.
+
+directives:
+
+# N.B. The namespacing features are only available for RBT.
+
+# No namespace.
+# N.B. If this were added after the namespaced instances, `simple_model_origin`
+# would cause a failure because it appears in multiple model instances.
+- add_frame:
+    name: simple_model_origin
+    X_PF:
+      base_frame: world
+- add_directives:
+    file: package://process_model_directives_test/add_scoped_sub.yaml
+- add_frame:
+    name: simple_model::top_added_frame
+    X_PF:
+      base_frame: simple_model::sub_added_frame
+      translation: [5, 10, 15]
+
+# Left.
+- add_model_instance:
+    # `model_namespace` requires a corresponding model instance so that frames
+    # can be added to it.
+    name: left
+- add_frame:
+    name: left::simple_model_origin
+    X_PF:
+      base_frame: world
+      translation: [0, 1, 0]
+- add_directives:
+    file: package://process_model_directives_test/add_scoped_sub.yaml
+    model_namespace: left
+- add_frame:
+    name: left::simple_model::top_added_frame
+    X_PF:
+      base_frame: left::simple_model::sub_added_frame
+      translation: [5, 10, 15]
+
+# Right.
+- add_model_instance:
+    name: right
+- add_frame:
+    name: right::simple_model_origin
+    X_PF:
+      base_frame: world
+      translation: [0, -1, 0]
+- add_directives:
+    file: package://process_model_directives_test/add_scoped_sub.yaml
+    model_namespace: right
+- add_frame:
+    name: right::simple_model::top_added_frame
+    X_PF:
+      base_frame: right::simple_model::sub_added_frame
+      translation: [5, 10, 15]
+
+# Mid (nested).
+- add_model_instance:
+    name: mid
+- add_directives:
+    file: package://process_model_directives_test/add_scoped_mid.yaml
+    model_namespace: mid
+- add_frame:
+    name: mid::nested::simple_model::top_added_frame
+    X_PF:
+      base_frame: mid::nested::simple_model::sub_added_frame
+      translation: [5, 10, 15]
