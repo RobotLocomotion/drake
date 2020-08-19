@@ -25,6 +25,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -270,6 +271,31 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   drake::log()->debug("inner: {}", inner);
   AddModelsFromSdfFile(filename, package_map, pair.plant.get());
   return pair;
+}
+
+GTEST_TEST(SdfParser, MasslessBody) {
+  // Test that massless bodies can be parsed.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='has_massless_link'>
+  <link name='massless_link'>
+    <inertial>
+      <mass>0</mass>
+      <inertia>
+        <ixx>0</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0</iyy>
+        <iyz>0</iyz>
+        <izz>0</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("massless_link"));
+  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
 
 GTEST_TEST(SdfParser, FloatingBodyPose) {
