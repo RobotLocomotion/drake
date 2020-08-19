@@ -77,11 +77,9 @@ drake_cc_library(
         "vector_base.h",
     ],
     deps = [
-        "//common:autodiff",
         "//common:default_scalars",
         "//common:dummy_value",
         "//common:essential",
-        "//common:symbolic",
     ],
 )
 

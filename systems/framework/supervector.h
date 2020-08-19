@@ -21,7 +21,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Supervector : public VectorBase<T> {
+class Supervector final : public VectorBase<T> {
  public:
   // Supervector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector)

@@ -23,11 +23,14 @@ class SubvectorTest : public ::testing::Test {
 };
 
 TEST_F(SubvectorTest, NullptrVector) {
-  EXPECT_THROW(Subvector<double> subvec(nullptr), std::logic_error);
+  EXPECT_THROW(Subvector<double> subvec(nullptr, 0, 0), std::logic_error);
 }
 
-TEST_F(SubvectorTest, EmptySubvector) {
+TEST_F(SubvectorTest, EmptySubvectorDeprecated) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   Subvector<double> subvec(vector_.get());
+#pragma GCC diagnostic pop
   EXPECT_EQ(0, subvec.size());
   EXPECT_THROW(subvec.GetAtIndex(0), std::runtime_error);
 }
