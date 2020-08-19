@@ -21,8 +21,8 @@ case $(uname) in
 esac
 ) > ${TEST_UNDECLARED_OUTPUTS_DIR}/os.txt
 
-# TODO(rpoyner-tri) find a robust way of recording compiler settings.
-# See discussion in PR #13782 for cautions.
+${TEST_SRCDIR}/drake/tools/workspace/cc/identify_compiler \
+ > ${TEST_UNDECLARED_OUTPUTS_DIR}/compiler.txt
 
 ${TEST_SRCDIR}/drake/examples/multibody/cassie_benchmark/cassie_bench \
     --benchmark_report_aggregates_only=true \
