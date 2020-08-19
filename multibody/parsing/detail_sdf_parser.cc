@@ -22,6 +22,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -110,6 +111,12 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
   const RotationalInertia<double> I_BBcm_Bi =
       ExtractRotationalInertiaAboutBcmExpressedInBi(Inertial_BBcm_Bi);
+
+  // If this is a massless body, return a zero SpatialInertia.
+  if (mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+      I_BBcm_Bi.get_products().isZero()) {
+    return SpatialInertia<double>(mass, {0., 0., 0.}, {0., 0., 0});
+  }
 
   // Pose of the "<inertial>" frame Bi in the body frame B.
   // TODO(amcastro-tri): Verify we don't get funny results when X_BBi is not
