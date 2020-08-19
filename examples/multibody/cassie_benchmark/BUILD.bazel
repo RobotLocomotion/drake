@@ -28,7 +28,10 @@ sh_test(
     name = "record_results",
     size = "small",
     srcs = ["record_results.sh"],
-    data = [":cassie_bench"],
+    data = [
+        ":cassie_bench",
+        "//tools/workspace/cc:identify_compiler",
+    ],
     tags = ["no_valgrind_tools"],
 )
 
