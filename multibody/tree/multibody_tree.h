@@ -534,6 +534,10 @@ class MultibodyTree {
     return static_cast<int>(frames_.size());
   }
 
+  int num_owned_frames() const {
+    return static_cast<int>(owned_frames_.size());
+  }
+
   /// Returns the number of bodies in the %MultibodyTree including the *world*
   /// body. Therefore the minimum number of bodies in a MultibodyTree is one.
   int num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
@@ -637,6 +641,11 @@ class MultibodyTree {
     return *owned_bodies_[body_index];
   }
 
+  Body<T>& get_mutable_body(BodyIndex body_index) {
+    DRAKE_THROW_UNLESS(body_index < num_bodies());
+    return *owned_bodies_[body_index];
+  }
+
   /// See MultibodyPlant method.
   const Joint<T>& get_joint(JointIndex joint_index) const {
     DRAKE_THROW_UNLESS(joint_index < num_joints());
@@ -660,6 +669,11 @@ class MultibodyTree {
   const Frame<T>& get_frame(FrameIndex frame_index) const {
     DRAKE_THROW_UNLESS(frame_index < num_frames());
     return *frames_[frame_index];
+  }
+
+  Frame<T>& get_mutable_frame(FrameIndex frame_index) {
+    DRAKE_THROW_UNLESS(frame_index < num_owned_frames());
+    return *owned_frames_[frame_index];
   }
 
   /// See MultibodyPlant method.
@@ -692,6 +706,12 @@ class MultibodyTree {
 
   const ForceElement<T>& get_force_element(
       ForceElementIndex force_element_index) const {
+    DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
+    return *owned_force_elements_[force_element_index];
+  }
+
+  ForceElement<T>& get_mutable_force_element(
+      ForceElementIndex force_element_index) {
     DRAKE_THROW_UNLESS(force_element_index < num_force_elements());
     return *owned_force_elements_[force_element_index];
   }

@@ -11,8 +11,8 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/parameter_conversion.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
-#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 
@@ -137,10 +137,10 @@ class RigidBody : public Body<T> {
   /// @throw std::logic_error if `this` RigidBody is not owned by a
   /// MultibodyPlant
   T get_mass(const systems::Context<T>& context) const final {
-    const SpatialInertia<T>& M_Bo_B =
-        this->GetParentTreeSystem().GetRigidBodyParameters(context,
-                                                           this->index());
-    return M_Bo_B.get_mass();
+    const systems::BasicVector<T>& spatial_inertia_parameter =
+        this->template GetNumericParameter<systems::BasicVector>(
+            context, spatial_inertia_parameter_index_);
+    return internal::parameter_conversion::GetMass(spatial_inertia_parameter);
   }
 
   /// Gets the center of mass stored in @p context
@@ -148,10 +148,11 @@ class RigidBody : public Body<T> {
   /// MultibodyPlant
   const Vector3<T> CalcCenterOfMassInBodyFrame(
       const systems::Context<T>& context) const final {
-    const SpatialInertia<T>& M_Bo_B =
-        this->GetParentTreeSystem().GetRigidBodyParameters(context,
-                                                           this->index());
-    return M_Bo_B.get_com();
+    const systems::BasicVector<T>& spatial_inertia_parameter =
+        this->template GetNumericParameter<systems::BasicVector>(
+            context, spatial_inertia_parameter_index_);
+    return internal::parameter_conversion::GetCenterOfMass(
+        spatial_inertia_parameter);
   }
 
   /// Gets the spatial inertia stored in @p context
@@ -159,18 +160,50 @@ class RigidBody : public Body<T> {
   /// MultibodyPlant
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const override {
-    return this->GetParentTreeSystem().GetRigidBodyParameters(context,
-                                                              this->index());
+    const systems::BasicVector<T>& spatial_inertia_parameter =
+        this->template GetNumericParameter<systems::BasicVector>(
+            context, spatial_inertia_parameter_index_);
+    return internal::parameter_conversion::ToSpatialInertia(
+        spatial_inertia_parameter);
+  }
+
+  /// Sets the mass stored in @p context to @p mass
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  void SetMass(systems::Context<T>* context, const T& mass) const {
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        this->template GetMutableNumericParameter<systems::BasicVector>(
+            context, spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_mass, mass);
+  }
+
+  /// Sets the center of mass stored in @p context to @p center_of_mass
+  /// @throw std::logic_error if `this` RigidBody is not owned by a
+  /// MultibodyPlant
+  void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
+                       const Vector3<T>& com) const {
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        this->template GetMutableNumericParameter<systems::BasicVector>(
+            context, spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_com_x, com(0));
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_com_y, com(1));
+    spatial_inertia_parameter.SetAtIndex(
+        internal::parameter_conversion::SpatialInertiaIndex::k_com_z, com(2));
   }
 
   /// Sets the spatial inertia stored in @p context to @p M_Bo_B
   /// @throw std::logic_error if `this` RigidBody is not owned by a
   /// MultibodyPlant
-  void SetSpatialInertiaInBodyFrame(
-      systems::Context<T>* context,
-      const SpatialInertia<T>& M_Bo_B) const override {
-    return this->GetParentTreeSystem().SetRigidBodyParameters(
-        context, this->index(), M_Bo_B);
+  void SetSpatialInertiaInBodyFrame(systems::Context<T>* context,
+                                    const SpatialInertia<T>& M_Bo_B) const {
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        this->template GetMutableNumericParameter<systems::BasicVector>(
+            context, spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetFrom(
+        internal::parameter_conversion::ToBasicVector(M_Bo_B));
   }
 
   /// @name Methods to access position kinematics quantities.
@@ -299,6 +332,19 @@ class RigidBody : public Body<T> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  // RigidBody declares a single parameter for its SpatialInertia.
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent classes' parameters
+    Body<T>::DoDeclareParameters(tree_system);
+
+    spatial_inertia_parameter_index_ =
+        systems::NumericParameterIndex(this->DeclareNumericParameter(
+            tree_system, internal::parameter_conversion::ToBasicVector<T>(
+                             default_spatial_inertia_.template cast<T>())));
+  }
+
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
@@ -311,6 +357,10 @@ class RigidBody : public Body<T> {
 
   // Spatial inertia about the body frame origin Bo, expressed in B.
   SpatialInertia<double> default_spatial_inertia_;
+
+  // System parameter index for `this` bodies SpatialInertia stored in a
+  // context.
+  systems::NumericParameterIndex spatial_inertia_parameter_index_;
 };
 
 }  // namespace multibody

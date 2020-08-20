@@ -468,6 +468,7 @@ class RotationalInertia {
   /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
   template <typename Scalar>
   RotationalInertia<Scalar> cast() const {
+    // Skip validity check since this inertia is already valid.
     return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>(), true);
   }
 
