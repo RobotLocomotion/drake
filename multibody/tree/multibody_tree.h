@@ -2521,23 +2521,55 @@ class MultibodyTree {
   // mobilizer, even after Finalize().
   void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
 
-  // Shift bias spatial acceleration from the origin Ao of body A to a
-  // point Bp of (fixed to) a frame B, where frame B is fixed/welded to body A.
-  // @param[in] context The state of the multibody system.
-  // @param[in] frame_B The frame on which point Bp is fixed/welded.
-  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to a point
-  // Bp (regarded as fixed to B), expressed in frame_B.
-  // @param[in] body_A The body on which frame_B is fixed/welded.
-  // @param[in] A𝑠Bias_WA_W Point Ao's spatial acceleration bias in frame W
-  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
-  // @returns  A𝑠Bias_WBp_W Point Bp's spatial acceleration bias in frame W
-  // with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), expressed in the world frame W.
-  SpatialAcceleration<T> ShiftSpatialAccelerationBiasInWorld(
+  // For a frame Fp that is fixed/welded to a frame_F, this method computes
+  // A_AFp_E, Fp's spatial acceleration in a body_A, expressed in a frame_E.
+  // @param[in] context Contains the state of the multibody system.
+  // @param[in] frame_F Frame Fp is fixed/welded to frame_F and frame_F is
+  //  fixed/welded to a body_B.
+  // @param[in] p_FoFp_F Position vector from Fo (frame_F's origin) to the
+  //   the origin of frame_Fp, expressed in frame_F.
+  // @param[in] body_A The rigid body whose body-frame measures A_AFp_E.
+  // @param[in] frame_E The frame in which A_AFp_E is expressed on output.
+  // @param[in] A_WB_W The spatial acceleration of body_B in world frame W,
+  //   expressed in W (body_B is the body to which frame_F is fixed/welded).
+  // @param[in] A_WA_W The spatial acceleration of body_A in world frame W,
+  //   expressed in W.
+  // @returns A_AFp_E Fp's spatial acceleration in body_A, expressed in frame_E.
+  // @note To use this method for a bias spatial acceleration in world frame W,
+  // expressed in W with respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v), instead pass
+  // A𝑠Bias_WB_W (body_B's bias spatial acceleration in W expressed in W) and
+  // A𝑠Bias_WA_W (body_A's bias spatial acceleration in W expressed in W),
+  // in which case the method returns A𝑠Bias_AFp_E (Fp's bias spatial
+  // acceleration in body_A, expressed in frame_E, with respect to speeds 𝑠.
+  SpatialAcceleration<T> CalcSpatialAccelerationHelper(
       const systems::Context<T>& context,
+      const Frame<T>& frame_F,
+      const Eigen::Ref<const Vector3<T>>& p_FoFp_F,
       const Body<T>& body_A,
+      const Frame<T>& frame_E,
+      const SpatialAcceleration<T>& A_WB_W,
+      const SpatialAcceleration<T>& A_WA_W) const;
+
+  // For a frame Bp fixed/welded to both a frame_B and a body_A, this method
+  // shifts spatial acceleration in the world frame W from body_A to frame_Bp.
+  // @param[in] frame_B A frame that is fixed/welded to body_A.
+  //            frame_Bp is fixed to frame_B, shifted by p_BoBp_B.
+  // @param[in] p_BoBp_B Position vector from Bo (frame_B's origin) to the
+  //            origin of frame_Bp, expressed in frame_B.
+  // @param[in] A_WA_W body_A's spatial acceleration in W, expressed in W.
+  // @param[in] pc Contains the position kinematics for this multibody system.
+  // @param[in] pc Contains the velocity kinematics for this multibody system.
+  // @returns A_WBp_W Frame Bp's spatial acceleration in W, expressed in W.
+  // @note To use this method for a bias spatial acceleration, instead pass
+  // A𝑠Bias_WAo_W (body_A's bias spatial acceleration in W expressed in W with
+  // respect to speeds 𝑠 (𝑠 = q̇ or 𝑠 = v)). It then returns A𝑠Bias_WBp_W (point
+  // Bp's bias spatial acceleration in W, expressed in W with respect to 𝑠).
+  SpatialAcceleration<T> ShiftSpatialAccelerationInWorld(
       const Frame<T>& frame_B,
       const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
-      const SpatialAcceleration<T>& AsBias_WA_W) const;
+      const SpatialAcceleration<T>& A_WA_W,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc) const;
 
   // For all bodies, calculate bias spatial acceleration in the world frame W.
   // @param[in] context The state of the multibody system.

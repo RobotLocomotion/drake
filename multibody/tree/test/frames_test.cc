@@ -132,6 +132,30 @@ class FrameTests : public ::testing::Test {
   math::RigidTransformd X_QG_;
 };
 
+TEST_F(FrameTests, IsWorldFrameMethod) {
+  EXPECT_FALSE(frameB_->is_world_frame());
+  EXPECT_FALSE(frameP_->is_world_frame());
+  EXPECT_FALSE(frameQ_->is_world_frame());
+  EXPECT_FALSE(frameR_->is_world_frame());
+  EXPECT_FALSE(frameS_->is_world_frame());
+  EXPECT_FALSE(frameSChild_->is_world_frame());
+  const Frame<double>& frame_W = tree().world_frame();
+  EXPECT_TRUE(frame_W.is_world_frame());
+}
+
+TEST_F(FrameTests, IsBodyFrameMethod) {
+  EXPECT_TRUE(frameB_->is_body_frame());
+  EXPECT_FALSE(frameP_->is_body_frame());
+  EXPECT_FALSE(frameQ_->is_body_frame());
+  EXPECT_FALSE(frameR_->is_body_frame());
+  EXPECT_FALSE(frameS_->is_body_frame());
+  EXPECT_FALSE(frameSChild_->is_body_frame());
+  const Frame<double>& frame_W = tree().world_frame();
+  EXPECT_TRUE(frame_W.is_body_frame());
+  const Frame<double>& bodyB_frame = bodyB_->body_frame();
+  EXPECT_TRUE(bodyB_frame.is_body_frame());
+}
+
 // Verifies the BodyFrame methods to compute poses in different frames.
 TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // Verify this method computes the pose X_BF of this frame F in the body
