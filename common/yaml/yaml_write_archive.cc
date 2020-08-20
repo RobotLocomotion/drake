@@ -105,9 +105,13 @@ std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
   if (root_.IsNull()) {
     result = root_name + ":\n";
   } else {
-    YAML::Node document;
-    document[root_name] = root_;
-    result = YamlDumpWithSortedMaps(document) + "\n";
+    if (root_name.empty()) {
+      result = YamlDumpWithSortedMaps(root_) + "\n";
+    } else {
+      YAML::Node document;
+      document[root_name] = root_;
+      result = YamlDumpWithSortedMaps(document) + "\n";
+    }
   }
   return result;
 }
