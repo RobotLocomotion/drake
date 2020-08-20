@@ -223,6 +223,33 @@ void MultibodyTree<T>::FinalizeInternals() {
 }
 
 template <typename T>
+void MultibodyTree<T>::DeclareMultibodyElementParameters() {
+  DRAKE_DEMAND(this->tree_system_ != nullptr);
+
+  for (const auto& body : owned_bodies_) {
+    body->DeclareParameters(this->tree_system_);
+  }
+  for (const auto& frame : owned_frames_) {
+    frame->DeclareParameters(this->tree_system_);
+  }
+  for (const auto& mobilizer : owned_mobilizers_) {
+    mobilizer->DeclareParameters(this->tree_system_);
+  }
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->DeclareParameters(this->tree_system_);
+  }
+  for (const auto& actuator : owned_actuators_) {
+    actuator->DeclareParameters(this->tree_system_);
+  }
+  for (const auto& body_node : body_nodes_) {
+    body_node->DeclareParameters(this->tree_system_);
+  }
+  for (const auto& model_instance : model_instances_) {
+    model_instance->DeclareParameters(this->tree_system_);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::Finalize() {
   DRAKE_MBT_THROW_IF_FINALIZED();
   // Create Joint objects's implementation. Joints are implemented using a

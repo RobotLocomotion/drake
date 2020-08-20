@@ -91,28 +91,6 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
 }
 
 template <typename T>
-void MultibodyTreeSystem<T>::DeclareParameters() {
-  // In order to ensure that declaration order of parameter indices is
-  // preserved between transmogrified copies of this system, all parameters
-  // should be declared at `Finalize` time within DeclareParameters.
-
-  // Declare rigid body parameters for each body (other than world body)
-  this->body_index_to_parameter_index_.resize(internal_tree().num_bodies());
-
-  for (BodyIndex body_index(1); body_index < internal_tree().num_bodies();
-       ++body_index) {
-    const RigidBody<T>& body =
-        dynamic_cast<const RigidBody<T>&>(internal_tree().get_body(body_index));
-    // Register a set of default parameters for this RigidBody and store the
-    // the parameter index.
-    const int body_param_index =
-        this->DeclareNumericParameter(internal::RigidBodyParams<T>(
-            body.default_spatial_inertia().template cast<T>()));
-    this->body_index_to_parameter_index_[body_index] = body_param_index;
-  }
-}
-
-template <typename T>
 void MultibodyTreeSystem<T>::Finalize() {
   if (already_finalized_) {
     throw std::logic_error(
@@ -121,6 +99,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   if (!tree_->topology_is_valid()) {
     tree_->Finalize();
   }
+
+  tree_->DeclareMultibodyElementParameters();
 
   // Declare state.
   if (is_discrete_) {
@@ -131,9 +111,6 @@ void MultibodyTreeSystem<T>::Finalize() {
                                  tree_->num_velocities(),
                                  0 /* num_z */);
   }
-
-  // Declare all parameters.
-  this->DeclareParameters();
 
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
   // control over cache dependencies on parameters. For example,
