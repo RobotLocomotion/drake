@@ -13,7 +13,6 @@
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
-#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -24,7 +23,12 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-template<typename T> class MultibodyTree;
+template <typename T>
+class MultibodyTree;
+
+#ifndef DRAKE_DOXYGEN_CXX
+class MultibodyTreeSystemAttorney;
+#endif
 
 /* This is a bare Drake System providing just enough functionality to allow
 standalone exercise of a MultibodyTree. A Drake System must implement
@@ -359,6 +363,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   template <typename U>
   friend class MultibodyTreeSystem;
 
+  #ifndef DRAKE_DOXYGEN_CXX
+  friend class MultibodyTreeSystemAttorney;
+  #endif  // DRAKE_DOXYGEN_CXX
+
   // This struct stores in one single place all indexes related to
   // MultibodyTreeSystem specific cache entries.
   struct CacheIndexes {
@@ -384,8 +392,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                       std::unique_ptr<MultibodyTree<T>> tree,
                       bool is_discrete);
 
-  void DeclareParameters();
-
   // Use continuous state variables by default.
   bool is_discrete_{false};
 
@@ -396,10 +402,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
-
-  // Maps a body's index to the index fo the NumericalParameter storing
-  // inertial properties for the body. Used by GetBodyParameters().
-  std::vector<int> body_index_to_parameter_index_;
 };
 
 /* Access internal tree outside of MultibodyTreeSystem. */
@@ -407,6 +409,55 @@ template <typename T>
 const MultibodyTree<T>& GetInternalTree(const MultibodyTreeSystem<T>& system) {
   return system.internal_tree();
 }
+
+}  // namespace internal
+}  // namespace multibody
+}  // namespace drake
+
+namespace drake {
+namespace multibody {
+// Forward delcaration of MultibodyElement for attorney-client.
+template <template <typename> class ElementType, typename T,
+          typename ElementIndexType>
+class MultibodyElement;
+
+namespace internal {
+
+#ifndef DRAKE_DOXYGEN_CXX
+// Attorney to give access to MultibodyElement to a selection of protected
+// methods for declaring/accessing/mutating MultibodyTreeSystem parameters,
+class MultibodyTreeSystemAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystemAttorney);
+  MultibodyTreeSystemAttorney() = delete;
+
+ private:
+  template <template <typename> class ElementType, typename T,
+            typename ElementIndexType>
+  friend class drake::multibody::MultibodyElement;
+
+  template <typename T>
+  static int DeclareNumericParameter(
+      MultibodyTreeSystem<T>* tree_system,
+      const systems::BasicVector<T>& model_vector) {
+    return tree_system->DeclareNumericParameter(model_vector);
+  }
+
+  template <typename T, template <typename> class U = systems::BasicVector>
+  static const U<T>& GetNumericParameter(
+      const MultibodyTreeSystem<T>& tree_system,
+      const systems::Context<T>& context, int index) {
+    return tree_system.template GetNumericParameter<U>(context, index);
+  }
+
+  template <typename T, template <typename> class U = systems::BasicVector>
+  static U<T>& GetMutableNumericParameter(
+      const MultibodyTreeSystem<T>& tree_system, systems::Context<T>* context,
+      int index) {
+    return tree_system.template GetMutableNumericParameter<U>(context, index);
+  }
+};
+#endif  // DRAKE_DOXYGEN_CXX
 
 }  // namespace internal
 }  // namespace multibody

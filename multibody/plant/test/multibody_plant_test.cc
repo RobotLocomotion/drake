@@ -3276,6 +3276,8 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   Matrix2<AutoDiffXd> mass_matrix;
   plant_autodiff->CalcMassMatrix(*context_autodiff, &mass_matrix);
 
+  const auto& mass_matrix_grad = math::autoDiffToGradientMatrix(mass_matrix);
+
   // Verify numerical derivative matches analytic solution.
   // In the starting configuration q = (0, 0)
   //
@@ -3299,54 +3301,40 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   //  [ I₁ + I₂ + m₂l₁² + 2m₂l₁lc₂c₂   I₂ + m₂l₁lc₂c₂ ]
   //  [      I₂ + m₂l₁lc₂c₂                 I₂        ]
   Matrix2<double> analytic_mass_matrix;
-  analytic_mass_matrix << I1 + I2 + m2 * l1 * l1 + 2 * m2 * l1 * lc2,
-      I2 + m2 * l1 * lc2, I2 + m2 * l1 * lc2, I2;
+  analytic_mass_matrix << I1 + I2 + m2*l1*l1 + 2*m2*l1*lc2, I2 + m2*l1*lc2,
+                                            I2 + m2*l1*lc2,             I2;
   EXPECT_TRUE(CompareMatrices(mass_matrix, analytic_mass_matrix, kTolerance,
                               MatrixCompareType::relative));
 
   // Analytic ∂M/∂m₁:
   // [ (1/3)l₁²      0 ]
   // [     0         0 ]
-  Matrix2<double> analytic_mass_matrix_partial_m1;
-  analytic_mass_matrix_partial_m1 << (1.0 / 3.0) * l1 * l1, 0.0, 0.0, 0.0;
-  Matrix2<AutoDiffXd> mass_matrix_partial_m1;
-  mass_matrix_partial_m1 << mass_matrix(0, 0).derivatives()[0],
-      mass_matrix(0, 1).derivatives()[0], mass_matrix(1, 0).derivatives()[0],
-      mass_matrix(1, 1).derivatives()[0];
-  EXPECT_TRUE(CompareMatrices(mass_matrix_partial_m1,
+  Vector4<double> analytic_mass_matrix_partial_m1;
+  analytic_mass_matrix_partial_m1 << (1.0/3.0)*l1*l1, 0.0,
+                                                 0.0, 0.0;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(0),
                               analytic_mass_matrix_partial_m1, kTolerance,
                               MatrixCompareType::relative));
 
   // Analytic ∂M/∂m₂
   // [ (1/3)l₂² + l₁² + 2l₁lc₂c₂     (1/3)l₂² + l₁lc₂c₂ ]
   // [    (1/3)l₂² + l₁lc₂c₂               (1/3)l₂²     ]
-  Matrix2<double> analytic_mass_matrix_partial_m2;
-  analytic_mass_matrix_partial_m2
-      << (1.0 / 3.0) * l2 * l2 + l1 * l1 + 2 * l1 * lc2,
-      (1.0 / 3.0) * l2 * l2 + l1 * lc2, (1.0 / 3.0) * l2 * l2 + l1 * lc2,
-      (1.0 / 3.0) * l2 * l2;
-
-  Matrix2<AutoDiffXd> mass_matrix_partial_m2;
-  mass_matrix_partial_m2 << mass_matrix(0, 0).derivatives()[1],
-      mass_matrix(0, 1).derivatives()[1], mass_matrix(1, 0).derivatives()[1],
-      mass_matrix(1, 1).derivatives()[1];
-  EXPECT_TRUE(CompareMatrices(mass_matrix_partial_m2,
+  Vector4<double> analytic_mass_matrix_partial_m2;
+  analytic_mass_matrix_partial_m2 <<
+      (1.0/3.0)*l2*l2 + l1*l1 + 2*l1*lc2, (1.0/3.0)*l2*l2 + l1*lc2,
+                (1.0/3.0)*l2*l2 + l1*lc2,          (1.0/3.0)*l2*l2;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(1),
                               analytic_mass_matrix_partial_m2, kTolerance,
                               MatrixCompareType::relative));
 
   // Analytic ∂M/∂l₂
   // [   (2/3)m₂l₂ + m₂l₁       (2/3)m₂l₂ + (1/2)m₂l₁ ]
   // [ (2/3)m₂l₂ + (1/2)m₂l₁          (2/3)m₂l₂       ]
-  Matrix2<double> analytic_mass_matrix_partial_l2;
-  analytic_mass_matrix_partial_l2 << (2.0 / 3.0) * m2 * l2 + m2 * l1,
-      (2.0 / 3.0) * m2 * l2 + 0.5 * m2 * l1,
-      (2.0 / 3.0) * m2 * l2 + 0.5 * m2 * l1, (2.0 / 3.0) * m2 * l2;
-
-  Matrix2<AutoDiffXd> mass_matrix_partial_l2;
-  mass_matrix_partial_l2 << mass_matrix(0, 0).derivatives()[2],
-      mass_matrix(0, 1).derivatives()[2], mass_matrix(1, 0).derivatives()[2],
-      mass_matrix(1, 1).derivatives()[2];
-  EXPECT_TRUE(CompareMatrices(mass_matrix_partial_l2,
+  Vector4<double> analytic_mass_matrix_partial_l2;
+  analytic_mass_matrix_partial_l2 <<
+          (2.0/3.0)*m2*l2 + m2*l1, (2.0/3.0)*m2*l2 + 0.5*m2*l1,
+      (2.0/3.0)*m2*l2 + 0.5*m2*l1,             (2.0/3.0)*m2*l2;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(2),
                               analytic_mass_matrix_partial_l2, kTolerance,
                               MatrixCompareType::relative));
 }
