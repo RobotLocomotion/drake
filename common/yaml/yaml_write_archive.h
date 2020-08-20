@@ -93,9 +93,17 @@ class YamlWriteArchive final {
   }
 
   /// Returns the YAML string for whatever Serializable was most recently
-  /// passed into Accept.  The returned document will be a single Map node
-  /// named using `root_name` with the Serializable's visited fields as
-  /// key-value entries within it.
+  /// passed into Accept.
+  ///
+  /// If the `root_name` is empty, the returned document will be the
+  /// Serializable's visited fields (which itself is already a Map node)
+  /// directly. If the visited field is null, then an empty map `{}` will be
+  /// emitted.
+  ///
+  /// If the `root_name` is not empty, the returned document will be a
+  /// single Map node named using `root_name` with the Serializable's
+  /// visited fields as key-value entries within it. The visited filed could be
+  /// null.
   std::string EmitString(const std::string& root_name = "root") const;
 
   /// (Advanced.)  Remove from this archive any map entries that are identical

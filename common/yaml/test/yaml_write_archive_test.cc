@@ -18,10 +18,16 @@ namespace {
 class YamlWriteArchiveTest : public ::testing::Test {
  public:
   template <typename Serializable>
-  static std::string Save(const Serializable& data) {
+  static std::string Save(const Serializable& data,
+                          const std::string& key_name) {
     YamlWriteArchive archive;
     archive.Accept(data);
-    return archive.EmitString("doc");
+    return archive.EmitString(key_name);
+  }
+
+  template <typename Serializable>
+  static std::string Save(const Serializable& data) {
+    return Save(data, "doc");
   }
 
   static std::string WrapDoc(const std::string& value) {
@@ -258,6 +264,47 @@ TEST_F(YamlWriteArchiveTest, BlankInner) {
   inner_struct: {}
 )""";
   EXPECT_EQ(saved, expected);
+}
+
+// Test the Emitter function given different key names and a provided
+// serializable content.
+TEST_F(YamlWriteArchiveTest, EmitterWithProvidedSerializable) {
+  const auto test = [](const std::string& key_name,
+                       const std::string& expected) {
+    const DoubleStruct x{1.0};
+    EXPECT_EQ(Save(x, key_name), expected);
+  };
+
+  // Test default key name.
+  const std::string expected_default_key_name = R"""(root:
+  value: 1.0
+)""";
+  test("root", expected_default_key_name);
+
+  // Test empty key name.
+  const std::string expected_empty_key_name = R"""(value: 1.0
+)""";
+  test("", expected_empty_key_name);
+}
+
+// Test the Emitter function given different key names. The serializable
+// content is empty.
+TEST_F(YamlWriteArchiveTest, EmitterNoProvidedSerializable) {
+  const auto test = [](const std::string& key_name,
+                       const std::string& expected) {
+    YamlWriteArchive archive;
+    EXPECT_EQ(archive.EmitString(key_name), expected);
+  };
+
+  // Test non-empty key name will return a node with empty value.
+  const std::string expected_default_key_name = R"""(root:
+)""";
+  test("root", expected_default_key_name);
+
+  // Test empty key name will yield an empty map.
+  const std::string expected_empty_key_name = R"""({}
+)""";
+  test("", expected_empty_key_name);
 }
 
 }  // namespace
