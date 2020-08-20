@@ -16,10 +16,36 @@ performance can be measured, code tweaked, and performance measured
 again. Improvements observed on this benchmark on a particular machine
 do not guarantee improvements on other robots or other machines.
 
-## Full experiments
+## Supported experiments
 
-The following command will perform a benchmark experiment and
-collect context information.
+On the default supported platform, the following command will build code
+and save result data to a user supplied directory, under relatively
+controlled conditions.
+
+    $ examples/multibody/cassie_benchmark/conduct_experiment [DIRECTORY]
+
+It is still up to the user to make sure the machine is appropriate (not
+a virtual machine, for example), and relatively unloaded. Close as many
+running programs as is practical.
+
+## Comparing experiment data
+
+Since experiment results are highly machine dependent, any stored
+performance data is limited in usefulness for comparisons. The current
+best practice recommendation is to only compare results taken from the
+same machine and software environment, and to carefully track which
+version(s) of drake software were measured.
+
+## Storing experiment data
+
+Given the limitations of benchmark data, storing data is only useful as
+very general guidance to expected performance. Example data and
+discussion of methods are being tracked in Github issue #13902.
+
+## Experiment details
+
+The following command will perform a benchmark experiment (with
+environment controls) and collect context information.
 
     $ bazel run //examples/multibody/cassie_benchmark:record_results
 
@@ -39,7 +65,6 @@ Note that the results output is an ongoing effort to record the
 conditions at the time the experiment was run, but it is not currently
 complete. Still missing:
 
- * compiler version and build flags
  * git hash or similar source code version marker
  * platform information for unsupported platforms
 
@@ -53,6 +78,3 @@ benchmark program directly:
 Documentation for command line arguments is here:
 https://github.com/google/benchmark#command-line
 
-TODO(rpoyner-tri): automation and instructions for collecting and
-storing baseline data, and for comparing experiment results to a
-baseline.
