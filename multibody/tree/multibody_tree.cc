@@ -1247,6 +1247,56 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 }
 
 template <typename T>
+Vector3<T> MultibodyTree<T>::CalcTranslationalMomentum(
+    const systems::Context<T>& context) const {
+  // Assemble a list of ModelInstanceIndex.
+  std::vector<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.push_back(model_instance_index);
+
+  return CalcModelInstanceTranslationalMomentum(context, model_instances);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcModelInstanceTranslationalMomentum(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances) const {
+  // Assemble a list of BodyIndex.
+  std::vector<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.push_back(body_index);
+  }
+
+  return CalcBodiesTranslationalMomentum(context, body_indexes);
+}
+
+template <typename T>
+Vector3<T> MultibodyTree<T>::CalcBodiesTranslationalMomentum(
+    const systems::Context<T>& context,
+    const std::vector<BodyIndex>& body_indexes) const {
+  // Accumulate system translational momentum (mass * velocity).
+  Vector3<T> sum_mv = Vector3<T>::Zero();
+
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;
+
+    const Body<T>& body = get_body(body_index);
+    const T& body_mass = body.get_mass(context);
+    const Vector3<T>& v_WBcm_W =
+        body.EvalSpatialVelocityInWorld(context).translational();
+
+    // sum_mass_times_velocity = ∑ mᵢ * v_WBicm_W.
+    sum_mv += body_mass * v_WBcm_W;
+  }
+
+  return sum_mv;
+}
+
+template <typename T>
 const RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
