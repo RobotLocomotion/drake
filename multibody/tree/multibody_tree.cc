@@ -1263,6 +1263,91 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 }
 
 template <typename T>
+SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
+    const systems::Context<T>& context,
+    const Vector3<T>& p_WoP_W) const {
+  // Assemble a list of ModelInstanceIndex.
+  // Skip model_instance_index(0) which always contains the "world" body -- the
+  // spatial momentum of the world body measured in the world is always zero.
+  std::vector<ModelInstanceIndex> model_instances;
+  for (ModelInstanceIndex model_instance_index(1);
+       model_instance_index < num_model_instances(); ++model_instance_index)
+    model_instances.push_back(model_instance_index);
+
+  return CalcSpatialMomentumInWorldAboutPoint(context, model_instances,
+      p_WoP_W);
+}
+
+template <typename T>
+SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
+    const systems::Context<T>& context,
+    const std::vector<ModelInstanceIndex>& model_instances,
+    const Vector3<T>& p_WoP_W) const {
+  // Assemble a list of BodyIndex.
+  std::vector<BodyIndex> body_indexes;
+  for (auto model_instance : model_instances) {
+    // If invalid model_instance, throw an exception with a helpful message.
+    if (model_instance >= instance_name_to_index_.size()) {
+      throw std::logic_error(
+          "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
+          " contains an invalid model_instance.");
+    }
+
+    const std::vector<BodyIndex> body_index_in_instance =
+        GetBodyIndices(model_instance);
+    for (BodyIndex body_index : body_index_in_instance)
+      body_indexes.push_back(body_index);
+  }
+
+  // Form spatial momentum about Wo (origin of world frame W), expressed in W.
+  SpatialMomentum<T> L_WS_W =
+      CalcBodiesSpatialMomentumInWorldAboutWo(context, body_indexes);
+
+  // Shift the spatial momentum from Wo to point P.
+  return L_WS_W.ShiftInPlace(p_WoP_W);
+}
+
+template <typename T>
+SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
+    const systems::Context<T>& context,
+    const std::vector<BodyIndex>& body_indexes) const {
+
+  // For efficiency, evaluate all bodies' spatial inertia, velocities, and pose.
+  const std::vector<SpatialInertia<T>>& M_Bi_W =
+      EvalSpatialInertiaInWorldCache(context);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // Accumulate each body's spatial momentum in the world frame W to this system
+  // S's spatial momentum in W about Wo (the origin of W), expressed in W.
+  SpatialMomentum<T> L_WS_W = SpatialMomentum<T>::Zero();
+
+  // Add contributions from each body Bi.
+  for (BodyIndex body_index : body_indexes) {
+    if (body_index == 0) continue;  // No contribution from the world body.
+
+    // If invalid body_index, throw an exception with a helpful message.
+    if (body_index >= num_bodies()) {
+      throw std::logic_error(
+          "CalcSpatialMomentumInWorldAboutPoint(): This MultibodyPlant method"
+          " contains an invalid body_index.");
+    }
+    // Form the current body's spatial momentum in W about Bo, expressed in W.
+    const BodyNodeIndex body_node_index = get_body(body_index).node_index();
+    const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];
+    const SpatialVelocity<T>& V_WBo_W = vc.get_V_WB(body_node_index);
+    SpatialMomentum<T> L_WBo_W = M_BBo_W * V_WBo_W;
+
+    // Shift L_WBo_W from about Bo to about Wo and accumulate the sum.
+    const RigidTransform<T>& X_WB = pc.get_X_WB(body_node_index);
+    const Vector3<T>& p_WoBo_W = X_WB.translation();
+    L_WS_W += L_WBo_W.ShiftInPlace(-p_WoBo_W);
+  }
+
+  return L_WS_W;
+}
+
+template <typename T>
 const RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
