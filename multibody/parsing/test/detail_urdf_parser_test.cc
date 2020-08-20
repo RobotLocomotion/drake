@@ -2,7 +2,9 @@
 
 #include <fstream>
 #include <limits>
+#include <stdexcept>
 
+#include <eigen3/Eigen/src/Core/Matrix.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -494,17 +496,107 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   return pair;
 }
 
+GTEST_TEST(MultibodyPlantUrdfParserTest, DefaultInertial) {
+  // Test that parsing a link with a default inertial tag yields the expected
+  // result (mass = 0, ixx = ixy = ixz = iyy = iyz = izz = 0).
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<robot name='default_inertial'>
+  <link name='default_inertial'/>
+</robot>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("default_inertial"));
+  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, DefaultInertia) {
+  // Test that parsing a link a default inertia tag yields the
+  // expected result (mass as specified, ixx = ixy = ixz = iyy = iyz = izz = 0).
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<robot name='default_inertia'>
+  <link name='default_inertia'>
+    <inertial>
+      <mass value="2"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+</robot>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("default_inertia"));
+  EXPECT_EQ(body->get_default_mass(), 2.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, DefaultMass) {
+  // Test that parsing a link with a default mass tag yields the expected result
+  // (mass 0, inertia as specified). Note that, because the default mass is 0,
+  // we specify zero inertia here - otherwise the parsing would fail (See
+  // ZeroMassNonZeroInertia below).
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<robot name='default_mass'>
+  <link name='default_mass'>
+    <inertial>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+</robot>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("default_mass"));
+  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
 GTEST_TEST(MultibodyPlantUrdfParserTest, MasslessBody) {
   // Test that massless bodies can be parsed.
   PlantAndSceneGraph pair = ParseTestString(R"""(
 <robot name='has_massless_link'>
-  <link name='massless_link'/>
+  <link name='massless_link'>
+    <inertial>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
 </robot>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
     &pair.plant->GetBodyByName("massless_link"));
   EXPECT_EQ(body->get_default_mass(), 0.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, PointMass) {
+  // Test that point masses don't get sent through the massless body branch.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<robot name='point_mass'>
+  <link name='point_mass'>
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+</robot>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("point_mass"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, ZeroMassNonZeroInertia) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  EXPECT_THROW(ParseTestString(R"""(
+<robot name='bad'>
+  <link name='bad'>
+    <inertial>
+      <mass value="0"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+  </link>
+</robot>)"""), std::runtime_error);
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {

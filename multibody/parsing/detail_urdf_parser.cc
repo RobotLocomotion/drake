@@ -76,6 +76,11 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
 
   const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
 
+  // If this is a massless body, return a zero SpatialInertia.
+  if (body_mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+      I_BBcm_Bi.get_products().isZero()) {
+    return SpatialInertia<double>(body_mass, {0., 0., 0.}, {0., 0., 0});
+  }
   // B and Bi are not necessarily aligned.
   const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
 
