@@ -30,7 +30,6 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
-#include "drake/multibody/tree/rigid_body_params.h"
 #include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -150,6 +149,8 @@ enum class ContactModel {
 ///   Select and parameterize contact models.
 /// - @ref mbp_state_accessors_and_mutators "State access and modification":
 ///   Obtain and manipulate position and velocity state variables.
+/// - @ref mbp_parameters "Parameters"
+///   Working with system parameters for various multibody elements.
 /// - @ref mbp_working_with_free_bodies "Free bodies":
 ///   Work conveniently with free (floating) bodies.
 /// - @ref mbp_kinematic_and_dynamic_computations "Kinematics and dynamics":
@@ -413,7 +414,7 @@ enum class ContactModel {
 ///   @code
 ///      MultibodyPlant<double> plant;
 ///      // ... Code to add bodies, finalize plant, and to obtain a context
-///      const RigidBody<T>& body =
+///      const RigidBody<double>& body =
 ///          plant.GetRigidBodyByName("BodyName");
 ///      const SpatialInertia<double>& M_BBo_B =
 ///          body.CalcSpatialInertiaInBodyFrame(context);

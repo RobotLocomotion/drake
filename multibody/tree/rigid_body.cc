@@ -10,20 +10,23 @@ namespace multibody {
 template <typename T>
 RigidBody<T>::RigidBody(const SpatialInertia<double>& M)
     : Body<T>("", default_model_instance(), M.get_mass()),
-      default_spatial_inertia_(M) {}
+      default_spatial_inertia_(M),
+      spatial_inertia_parameter_index_(-1) {}
 
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
                         const SpatialInertia<double>& M)
     : Body<T>(body_name, default_model_instance(), M.get_mass()),
-      default_spatial_inertia_(M) {}
+      default_spatial_inertia_(M),
+      spatial_inertia_parameter_index_(-1) {}
 
 template <typename T>
 RigidBody<T>::RigidBody(const std::string& body_name,
                         ModelInstanceIndex model_instance,
                         const SpatialInertia<double>& M)
     : Body<T>(body_name, model_instance, M.get_mass()),
-      default_spatial_inertia_(M) {}
+      default_spatial_inertia_(M),
+      spatial_inertia_parameter_index_(-1) {}
 
 }  // namespace multibody
 }  // namespace drake

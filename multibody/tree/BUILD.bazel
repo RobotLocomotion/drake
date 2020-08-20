@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":multibody_tree_core",
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
+        ":parameter_conversion",
         ":rotational_inertia",
         ":spatial_inertia",
         ":unit_inertia",
@@ -112,7 +113,6 @@ drake_cc_library(
         "revolute_mobilizer.cc",
         "revolute_spring.cc",
         "rigid_body.cc",
-        "rigid_body_params.cc",
         "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
         "universal_joint.cc",
@@ -151,7 +151,6 @@ drake_cc_library(
         "revolute_mobilizer.h",
         "revolute_spring.h",
         "rigid_body.h",
-        "rigid_body_params.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
         "universal_joint.h",
@@ -166,6 +165,7 @@ drake_cc_library(
         ":multibody_element",
         ":multibody_tree_caches",
         ":multibody_tree_indexes",
+        ":parameter_conversion",
         ":spatial_inertia",
         "//common:autodiff",
         "//common:nice_type_name",
@@ -228,6 +228,16 @@ drake_cc_library(
         "//common:symbolic",
         "//math:vector3_util",
         "//multibody/math:spatial_algebra",
+    ],
+)
+
+drake_cc_library(
+    name = "parameter_conversion",
+    srcs = ["parameter_conversion.cc"],
+    hdrs = ["parameter_conversion.h"],
+    deps = [
+        ":spatial_inertia",
+        "//systems/framework:vector",
     ],
 )
 

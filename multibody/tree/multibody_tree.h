@@ -1109,6 +1109,12 @@ class MultibodyTree {
   // automatically when CreateDefaultContext() is called.
   void Finalize();
 
+  /// This method is called by MultibodyTreeSystem during
+  /// MultibodyTreeSystem::Finalize(). It tells each MultibodyElement owned by
+  /// `this` tree to declare their system paramtere on the MultibodyTreeSystem
+  /// that owns this tree.
+  void DeclareMultibodyElementParameters();
+
   /// (Advanced) Allocates a new context for this %MultibodyTree uniquely
   /// identifying the state of the multibody system.
   ///
@@ -2900,7 +2906,7 @@ class MultibodyTree {
 
   MultibodyTreeTopology topology_;
 
-  const MultibodyTreeSystem<T>* tree_system_{};
+  MultibodyTreeSystem<T>* tree_system_{};
 };
 
 }  // namespace internal
