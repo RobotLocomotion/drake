@@ -91,24 +91,29 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
 }
 
 template <typename T>
-void MultibodyTreeSystem<T>::DeclareParameters() {
-  // In order to ensure that declaration order of parameter indices is
-  // preserved between transmogrified copies of this system, all parameters
-  // should be declared at `Finalize` time within DeclareParameters.
-
-  // Declare rigid body parameters for each body (other than world body)
-  this->body_index_to_parameter_index_.resize(internal_tree().num_bodies());
-
-  for (BodyIndex body_index(1); body_index < internal_tree().num_bodies();
+void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
+  // Joints.
+  for (JointIndex joint_index(0); joint_index < tree_->num_joints();
+       ++joint_index) {
+    mutable_tree().get_mutable_joint(joint_index).DeclareParameters(this);
+  }
+  // Bodies.
+  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
        ++body_index) {
-    const RigidBody<T>& body =
-        dynamic_cast<const RigidBody<T>&>(internal_tree().get_body(body_index));
-    // Register a set of default parameters for this RigidBody and store the
-    // the parameter index.
-    const int body_param_index =
-        this->DeclareNumericParameter(internal::RigidBodyParams<T>(
-            body.default_spatial_inertia().template cast<T>()));
-    this->body_index_to_parameter_index_[body_index] = body_param_index;
+    mutable_tree().get_mutable_body(body_index).DeclareParameters(this);
+  }
+  // Frames.
+  for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
+       ++frame_index) {
+    mutable_tree().get_mutable_frame(frame_index).DeclareParameters(this);
+  }
+  // Force Elements.
+  for (ForceElementIndex force_element_index(0);
+       force_element_index < tree_->num_force_elements();
+       ++force_element_index) {
+    mutable_tree()
+        .get_mutable_force_element(force_element_index)
+        .DeclareParameters(this);
   }
 }
 
@@ -122,6 +127,8 @@ void MultibodyTreeSystem<T>::Finalize() {
     tree_->Finalize();
   }
 
+  DeclareMultibodyElementParameters();
+
   // Declare state.
   if (is_discrete_) {
     this->DeclareDiscreteState(tree_->num_states());
@@ -131,9 +138,6 @@ void MultibodyTreeSystem<T>::Finalize() {
                                  tree_->num_velocities(),
                                  0 /* num_z */);
   }
-
-  // Declare all parameters.
-  this->DeclareParameters();
 
   // TODO(joemasterjohn): Create more granular parameter tickets for finer
   // control over cache dependencies on parameters. For example,
@@ -153,7 +157,7 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<PositionKinematicsCache<T>>();
         tree->CalcPositionKinematicsCache(context, &position_cache);
       },
-      {this->configuration_ticket(),  this->all_parameters_ticket()});
+      {this->configuration_ticket()});
   cache_indexes_.position_kinematics =
       position_kinematics_cache_entry.cache_index();
 
@@ -253,7 +257,7 @@ void MultibodyTreeSystem<T>::Finalize() {
             cache_value->get_mutable_value<ArticulatedBodyInertiaCache<T>>();
         tree->CalcArticulatedBodyInertiaCache(context, &abi_cache);
       },
-      {this->configuration_ticket(), this->all_parameters_ticket()});
+      {this->configuration_ticket()});
   cache_indexes_.abi_cache_index = abi_cache_entry.cache_index();
 
   auto& Ab_WB_cache_entry = this->DeclareCacheEntry(
@@ -424,3 +428,6 @@ void MultibodyTreeSystem<T>::CalcForwardDynamicsContinuous(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::internal::MultibodyTreeSystemElementAttorney)

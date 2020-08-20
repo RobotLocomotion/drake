@@ -3129,13 +3129,21 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
   auto context = plant.CreateDefaultContext();
 
   // Verify default parameters exist and are correct.
+  const double sphere_mass_in_context = sphere.get_mass(*context);
+  const Vector3<double> sphere_com_in_context =
+      sphere.CalcCenterOfMassInBodyFrame(*context);
   const SpatialInertia<double> sphere_inertia_in_context =
       sphere.CalcSpatialInertiaInBodyFrame(*context);
 
+  const double cube_mass_in_context = cube.get_mass(*context);
+  const Vector3<double> cube_com_in_context =
+      cube.CalcCenterOfMassInBodyFrame(*context);
   const SpatialInertia<double> cube_inertia_in_context =
       cube.CalcSpatialInertiaInBodyFrame(*context);
 
+  EXPECT_EQ(sphere_mass_in_context, sphere_mass);
   EXPECT_EQ(sphere_inertia_in_context.get_mass(), sphere_mass);
+  EXPECT_TRUE(CompareMatrices(sphere_com_in_context, sphere_com));
   EXPECT_TRUE(CompareMatrices(sphere_inertia_in_context.get_com(), sphere_com));
   EXPECT_TRUE(CompareMatrices(
       sphere_inertia_in_context.get_unit_inertia().get_moments(),
@@ -3144,7 +3152,9 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
       sphere_inertia_in_context.get_unit_inertia().get_products(),
       sphere_unit_inertia.get_products()));
 
+  EXPECT_EQ(cube_mass_in_context, cube_mass);
   EXPECT_EQ(cube_inertia_in_context.get_mass(), cube_mass);
+  EXPECT_TRUE(CompareMatrices(cube_com_in_context, cube_com));
   EXPECT_TRUE(CompareMatrices(cube_inertia_in_context.get_com(), cube_com));
   EXPECT_TRUE(
       CompareMatrices(cube_inertia_in_context.get_unit_inertia().get_moments(),
@@ -3176,14 +3186,23 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
   sphere.SetSpatialInertiaInBodyFrame(context.get(), new_sphere_params);
   cube.SetSpatialInertiaInBodyFrame(context.get(), new_cube_params);
 
-  // Verify parameters propogate.
+  // Verify parameters propagate.
+  const double new_sphere_mass_in_context = sphere.get_mass(*context);
+  const Vector3<double> new_sphere_com_in_context =
+      sphere.CalcCenterOfMassInBodyFrame(*context);
   const SpatialInertia<double> new_sphere_inertia_in_context =
       sphere.CalcSpatialInertiaInBodyFrame(*context);
 
+  const double new_cube_mass_in_context = cube.get_mass(*context);
+  const Vector3<double> new_cube_com_in_context =
+      cube.CalcCenterOfMassInBodyFrame(*context);
   const SpatialInertia<double> new_cube_inertia_in_context =
       cube.CalcSpatialInertiaInBodyFrame(*context);
 
+  EXPECT_EQ(new_sphere_mass_in_context, new_sphere_mass);
   EXPECT_EQ(new_sphere_inertia_in_context.get_mass(), new_sphere_mass);
+  EXPECT_TRUE(
+      CompareMatrices(new_sphere_com_in_context, new_sphere_com));
   EXPECT_TRUE(
       CompareMatrices(new_sphere_inertia_in_context.get_com(), new_sphere_com));
   EXPECT_TRUE(CompareMatrices(
@@ -3193,7 +3212,10 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
       new_sphere_inertia_in_context.get_unit_inertia().get_products(),
       new_sphere_unit_inertia.get_products()));
 
+  EXPECT_EQ(new_cube_mass_in_context, new_cube_mass);
   EXPECT_EQ(new_cube_inertia_in_context.get_mass(), new_cube_mass);
+  EXPECT_TRUE(
+      CompareMatrices(new_cube_com_in_context, new_cube_com));
   EXPECT_TRUE(
       CompareMatrices(new_cube_inertia_in_context.get_com(), new_cube_com));
   EXPECT_TRUE(CompareMatrices(
@@ -3207,7 +3229,7 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
 GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
-  // Create an Acrobot plant with autodiff parameters for length and mass
+  // Create an Acrobot plant with autodiff parameters for length and mass.
   const double m1 = 2.0;
   const double m2 = 4.0;
   const double l1 = 1.0;
@@ -3233,7 +3255,7 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   shoulder_joint.set_angle(context.get(), 0.0);
   elbow_joint.set_angle(context.get(), 0.0);
 
-  // Transmogrify the plant
+  // Scalar convert the plant to AutoDiffXd.
   unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
       systems::System<double>::ToAutoDiffXd(*plant);
   unique_ptr<Context<AutoDiffXd>> context_autodiff =
@@ -3272,12 +3294,14 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   plant_autodiff->GetRigidBodyByName(params.link2_name())
       .SetSpatialInertiaInBodyFrame(context_autodiff.get(), M2_L2o);
 
-  // Take the derivative of the mass matrix wrt length.
+  // Take the derivative of the mass matrix w.r.t. length.
   Matrix2<AutoDiffXd> mass_matrix;
   plant_autodiff->CalcMassMatrix(*context_autodiff, &mass_matrix);
 
+  const auto& mass_matrix_grad = math::autoDiffToGradientMatrix(mass_matrix);
+
   // Verify numerical derivative matches analytic solution.
-  // In the starting configuration q = (0, 0)
+  // In the starting configuration q = (0, 0).
   //
   //   c1 = cos(q[0]) = 1
   //   s1 = sin(q[0]) = 0
@@ -3289,9 +3313,9 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   //    I₁ = 4m₁Ic₁ = (1/3)m₁l₁²
   //    I₂ = 4m₂Ic₂ = (1/3)m₂l₂²
   //
-  // Moment of inertia at the shoulder joint origin
+  // Moment of inertia at the shoulder joint origin.
   const double I1 = 4 * Ic1;
-  // Moment of inertia at the elbow joint origin
+  // Moment of inertia at the elbow joint origin.
   const double I2 = 4 * Ic2;
 
   // Analytic Mass Matrix, M:
@@ -3299,54 +3323,40 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   //  [ I₁ + I₂ + m₂l₁² + 2m₂l₁lc₂c₂   I₂ + m₂l₁lc₂c₂ ]
   //  [      I₂ + m₂l₁lc₂c₂                 I₂        ]
   Matrix2<double> analytic_mass_matrix;
-  analytic_mass_matrix << I1 + I2 + m2 * l1 * l1 + 2 * m2 * l1 * lc2,
-      I2 + m2 * l1 * lc2, I2 + m2 * l1 * lc2, I2;
+  analytic_mass_matrix << I1 + I2 + m2*l1*l1 + 2*m2*l1*lc2, I2 + m2*l1*lc2,
+                                            I2 + m2*l1*lc2,             I2;
   EXPECT_TRUE(CompareMatrices(mass_matrix, analytic_mass_matrix, kTolerance,
                               MatrixCompareType::relative));
 
   // Analytic ∂M/∂m₁:
   // [ (1/3)l₁²      0 ]
   // [     0         0 ]
-  Matrix2<double> analytic_mass_matrix_partial_m1;
-  analytic_mass_matrix_partial_m1 << (1.0 / 3.0) * l1 * l1, 0.0, 0.0, 0.0;
-  Matrix2<AutoDiffXd> mass_matrix_partial_m1;
-  mass_matrix_partial_m1 << mass_matrix(0, 0).derivatives()[0],
-      mass_matrix(0, 1).derivatives()[0], mass_matrix(1, 0).derivatives()[0],
-      mass_matrix(1, 1).derivatives()[0];
-  EXPECT_TRUE(CompareMatrices(mass_matrix_partial_m1,
+  Vector4<double> analytic_mass_matrix_partial_m1;
+  analytic_mass_matrix_partial_m1 << (1.0/3.0)*l1*l1, 0.0,
+                                                 0.0, 0.0;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(0),
                               analytic_mass_matrix_partial_m1, kTolerance,
                               MatrixCompareType::relative));
 
-  // Analytic ∂M/∂m₂
+  // Analytic ∂M/∂m₂:
   // [ (1/3)l₂² + l₁² + 2l₁lc₂c₂     (1/3)l₂² + l₁lc₂c₂ ]
   // [    (1/3)l₂² + l₁lc₂c₂               (1/3)l₂²     ]
-  Matrix2<double> analytic_mass_matrix_partial_m2;
-  analytic_mass_matrix_partial_m2
-      << (1.0 / 3.0) * l2 * l2 + l1 * l1 + 2 * l1 * lc2,
-      (1.0 / 3.0) * l2 * l2 + l1 * lc2, (1.0 / 3.0) * l2 * l2 + l1 * lc2,
-      (1.0 / 3.0) * l2 * l2;
-
-  Matrix2<AutoDiffXd> mass_matrix_partial_m2;
-  mass_matrix_partial_m2 << mass_matrix(0, 0).derivatives()[1],
-      mass_matrix(0, 1).derivatives()[1], mass_matrix(1, 0).derivatives()[1],
-      mass_matrix(1, 1).derivatives()[1];
-  EXPECT_TRUE(CompareMatrices(mass_matrix_partial_m2,
+  Vector4<double> analytic_mass_matrix_partial_m2;
+  analytic_mass_matrix_partial_m2 <<
+      (1.0/3.0)*l2*l2 + l1*l1 + 2*l1*lc2, (1.0/3.0)*l2*l2 + l1*lc2,
+                (1.0/3.0)*l2*l2 + l1*lc2,          (1.0/3.0)*l2*l2;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(1),
                               analytic_mass_matrix_partial_m2, kTolerance,
                               MatrixCompareType::relative));
 
-  // Analytic ∂M/∂l₂
+  // Analytic ∂M/∂l₂:
   // [   (2/3)m₂l₂ + m₂l₁       (2/3)m₂l₂ + (1/2)m₂l₁ ]
   // [ (2/3)m₂l₂ + (1/2)m₂l₁          (2/3)m₂l₂       ]
-  Matrix2<double> analytic_mass_matrix_partial_l2;
-  analytic_mass_matrix_partial_l2 << (2.0 / 3.0) * m2 * l2 + m2 * l1,
-      (2.0 / 3.0) * m2 * l2 + 0.5 * m2 * l1,
-      (2.0 / 3.0) * m2 * l2 + 0.5 * m2 * l1, (2.0 / 3.0) * m2 * l2;
-
-  Matrix2<AutoDiffXd> mass_matrix_partial_l2;
-  mass_matrix_partial_l2 << mass_matrix(0, 0).derivatives()[2],
-      mass_matrix(0, 1).derivatives()[2], mass_matrix(1, 0).derivatives()[2],
-      mass_matrix(1, 1).derivatives()[2];
-  EXPECT_TRUE(CompareMatrices(mass_matrix_partial_l2,
+  Vector4<double> analytic_mass_matrix_partial_l2;
+  analytic_mass_matrix_partial_l2 <<
+          (2.0/3.0)*m2*l2 + m2*l1, (2.0/3.0)*m2*l2 + 0.5*m2*l1,
+      (2.0/3.0)*m2*l2 + 0.5*m2*l1,             (2.0/3.0)*m2*l2;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(2),
                               analytic_mass_matrix_partial_l2, kTolerance,
                               MatrixCompareType::relative));
 }

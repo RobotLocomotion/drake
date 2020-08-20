@@ -270,8 +270,8 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   double get_default_mass() const { return default_mass_; }
 
   /// (Advanced) Returns the mass of this body stored in `context`.
-  virtual T get_mass(
-      const systems::Context<T> &context)const = 0;
+  virtual const T& get_mass(
+      const systems::Context<T> &context) const = 0;
 
   /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   /// of this body measured from this body's frame origin `Bo` and expressed in
@@ -289,12 +289,6 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const = 0;
-
-  /// (Advanced) Sets the SpatialInertia `M_BBo_B` of `this` body about its
-  /// frame origin `Bo` (not necessarily its center of mass) and expressed in
-  /// its body frame `B`.
-  virtual void SetSpatialInertiaInBodyFrame(
-      systems::Context<T>* context, const SpatialInertia<T>& M_Bo_B) const = 0;
 
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.
