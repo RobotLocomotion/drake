@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 
 namespace drake {
@@ -13,8 +14,10 @@ namespace systems {
 template <typename T>
 ContinuousState<T>::ContinuousState(std::unique_ptr<VectorBase<T>> state) {
   state_ = std::move(state);
-  generalized_position_.reset(new Subvector<T>(state_.get()));
-  generalized_velocity_.reset(new Subvector<T>(state_.get()));
+  generalized_position_.reset(
+      new Subvector<T>(state_.get(), 0, 0));
+  generalized_velocity_.reset(
+      new Subvector<T>(state_.get(), 0, 0));
   misc_continuous_state_.reset(
       new Subvector<T>(state_.get(), 0, state_->size()));
   DRAKE_ASSERT_VOID(DemandInvariants());

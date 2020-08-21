@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -18,7 +19,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Subvector : public VectorBase<T> {
+class Subvector final : public VectorBase<T> {
  public:
   // Subvector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subvector)
@@ -42,17 +43,20 @@ class Subvector : public VectorBase<T> {
   /// Constructs an empty subvector.
   /// @param vector The vector to slice.  Must not be nullptr. Must remain
   ///               valid for the lifetime of this object.
-  explicit Subvector(VectorBase<T>* vector) : Subvector(vector, 0, 0) {}
+  DRAKE_DEPRECATED("2020-12-01",
+      "The slice specification now must always be provided, even if zero.")
+  explicit Subvector(VectorBase<T>* vector)
+      : Subvector(vector, 0, 0) {}
 
-  int size() const override { return num_elements_; }
+  int size() const final { return num_elements_; }
 
  protected:
-  const T& DoGetAtIndex(int index) const override {
+  const T& DoGetAtIndex(int index) const final {
     DRAKE_THROW_UNLESS(index < size());
     return (*vector_)[first_element_ + index];
   }
 
-  T& DoGetAtIndex(int index) override {
+  T& DoGetAtIndex(int index) final {
     DRAKE_THROW_UNLESS(index < size());
     return (*vector_)[first_element_ + index];
   }
