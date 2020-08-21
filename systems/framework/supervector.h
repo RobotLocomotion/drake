@@ -21,7 +21,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Supervector : public VectorBase<T> {
+class Supervector final : public VectorBase<T> {
  public:
   // Supervector objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Supervector)
@@ -37,17 +37,17 @@ class Supervector : public VectorBase<T> {
     }
   }
 
-  int size() const override {
+  int size() const final {
     return lookup_table_.empty() ? 0 : lookup_table_.back();
   }
 
  protected:
-  const T& DoGetAtIndex(int index) const override {
+  const T& DoGetAtIndex(int index) const final {
     const auto target = GetSubvectorAndOffset(index);
     return (*target.first)[target.second];
   }
 
-  T& DoGetAtIndex(int index) override {
+  T& DoGetAtIndex(int index) final {
     const auto target = GetSubvectorAndOffset(index);
     return (*target.first)[target.second];
   }
