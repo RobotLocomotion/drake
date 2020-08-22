@@ -159,7 +159,11 @@ PYBIND11_MODULE(planner, m) {
         .def("SetPositions", &Class::SetPositions, py::arg("context"),
             py::arg("positions"), cls_doc.SetPositions.doc)
         .def("ForwardKinematics", &Class::ForwardKinematics, py::arg("context"),
-            cls_doc.ForwardKinematics.doc);
+            cls_doc.ForwardKinematics.doc)
+        .def("get_parameters", &Class::get_parameters,
+            py_rvp::reference_internal, cls_doc.get_parameters.doc)
+        .def("get_mutable_parameters", &Class::get_mutable_parameters,
+            py_rvp::reference_internal, cls_doc.get_mutable_parameters.doc);
   }
 }
 
