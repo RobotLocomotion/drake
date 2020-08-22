@@ -1288,27 +1288,27 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
 
-  /// This method calculates and returns the translational (linear) momentum of
-  /// `this` MultibodyTree measured and expressed in the world frame W.
+  /// This method returns the spatial momentum of  `this` MultibodyTree in the
+  /// world frame W, about the world origin Wo, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
-  Vector3<T> CalcTranslationalMomentum(
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context) const;
 
-  /// This method calculates and returns the translational (linear) momentum of
-  /// a list of model instances measured and expressed in the world frame W.
+  /// This method returns the spatial momentum of a list of model instances in
+  /// the world frame W, about the world origin Wo, expressed in frame W.
   /// @param[in] context Contains the state of the model.
   /// @param[in] model_instances Array of selected model instances.
-  Vector3<T> CalcModelInstanceTranslationalMomentum(
+  SpatialMomentum<T> CalcModelInstanceSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context,
       const std::vector<ModelInstanceIndex>& model_instances) const;
 
-  /// This method calculates and returns the translational (linear) momentum of
-  /// a list of bodies measured and expressed in the world frame W.
+  /// This method returns the spatial momentum of a list of bodies in the
+  /// world frame W, about the world origin Wo, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
   /// @param[in] body_indexes Array of selected bodies.  This method does not
   ///  distinguish between welded bodies, joint-connected bodies,
   ///  floating bodies, the world_body(), or repeated bodies.
-  Vector3<T> CalcBodiesTranslationalMomentum(
+  SpatialMomentum<T> CalcBodiesSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
 

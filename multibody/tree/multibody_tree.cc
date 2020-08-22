@@ -1247,7 +1247,7 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 }
 
 template <typename T>
-Vector3<T> MultibodyTree<T>::CalcTranslationalMomentum(
+SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context) const {
   // Assemble a list of ModelInstanceIndex.
   std::vector<ModelInstanceIndex> model_instances;
@@ -1255,11 +1255,13 @@ Vector3<T> MultibodyTree<T>::CalcTranslationalMomentum(
        model_instance_index < num_model_instances(); ++model_instance_index)
     model_instances.push_back(model_instance_index);
 
-  return CalcModelInstanceTranslationalMomentum(context, model_instances);
+  return CalcModelInstanceSpatialMomentumInWorldAboutWo(context,
+      model_instances);
 }
 
 template <typename T>
-Vector3<T> MultibodyTree<T>::CalcModelInstanceTranslationalMomentum(
+SpatialMomentum<T>
+MultibodyTree<T>::CalcModelInstanceSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context,
     const std::vector<ModelInstanceIndex>& model_instances) const {
   // Assemble a list of BodyIndex.
@@ -1271,11 +1273,11 @@ Vector3<T> MultibodyTree<T>::CalcModelInstanceTranslationalMomentum(
       body_indexes.push_back(body_index);
   }
 
-  return CalcBodiesTranslationalMomentum(context, body_indexes);
+  return CalcBodiesSpatialMomentumInWorldAboutWo(context, body_indexes);
 }
 
 template <typename T>
-Vector3<T> MultibodyTree<T>::CalcBodiesTranslationalMomentum(
+SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context,
     const std::vector<BodyIndex>& body_indexes) const {
   // Accumulate system translational momentum (mass * velocity).
@@ -1293,7 +1295,7 @@ Vector3<T> MultibodyTree<T>::CalcBodiesTranslationalMomentum(
     sum_mv += body_mass * v_WBcm_W;
   }
 
-  return sum_mv;
+  return SpatialMomentum<T>(Vector3<T>::Zero(), sum_mv);
 }
 
 template <typename T>

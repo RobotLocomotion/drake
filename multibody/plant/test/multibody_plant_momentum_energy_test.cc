@@ -13,13 +13,14 @@ namespace drake {
 namespace multibody {
 namespace {
 
-GTEST_TEST(EmptyMultibodyPlantMomentumTest, GetTranslationalMomentum) {
+GTEST_TEST(EmptyMultibodyPlantMomentumTest, GetSpatialMomentum) {
   MultibodyPlant<double> plant(0.0);
   plant.Finalize();
   std::unique_ptr<systems::Context<double>> context =
       plant.CreateDefaultContext();
-  const Vector3<double> mv = plant.CalcTranslationalMomentum(*context);
-  EXPECT_EQ(mv, Vector3<double>::Zero());
+  const SpatialMomentum<double> momentum =
+      plant.CalcSpatialMomentumInWorldAboutWo(*context);
+  EXPECT_EQ(momentum.get_coeffs(), Vector6<double>::Zero());
 }
 
 // Fixture for a two degree-of-freedom pendulum having two links A and B.
@@ -88,7 +89,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RevoluteJoint<double>* joint2_{nullptr};
 };
 
-TEST_F(TwoDOFPlanarPendulumTest, CalcTranslationalMomentum) {
+TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumInWorldAboutWo) {
   // Since the maximum speed in this test is ≈ ω * (2 * link_length) ≈ 24,
   // and mass_link_ = 5, we test that the errors in translational momentum
   // calculations are less than 24 * 5 = 120, ≈ 7 bits (2^7 = 128).
@@ -100,20 +101,20 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcTranslationalMomentum) {
   joint1_->set_angular_rate(context_.get(), state[2]);
   joint2_->set_angular_rate(context_.get(), state[3]);
 
-  // Calculate this plant's translational momentum in world W, expressed in W.
-  const Vector3<double> sum_mv =
-      plant_->CalcTranslationalMomentum(*context_);
+  // Calculate this plant's spatial momentum in world W about Wo expressed in W.
+  const SpatialMomentum<double> momentum =
+      plant_->CalcSpatialMomentumInWorldAboutWo(*context_);
 
   // By-hand analysis gives: v_WAcm_W = 0.5 L wAz Wy
   //                  and    v_WBcm_W = (1.0 L wAz + 0.5 L wBz) Wy,
   // so the plant's translational momentum is mass_link_ 2 L wAz Wy.
   const double v1 = 0.5 * link_length_ * wAz_;
   const double v2 = link_length_ * wAz_ + 0.5 * link_length_ *(wAz_ + wBz_);
-  const double m1_v1 = mass_link_ * v1;
-  const double m2_v2 = mass_link_ * v2;
-  const Vector3<double> sum_mv_expected =
-      (m1_v1 + m2_v2) * Vector3<double>::UnitY();
-  EXPECT_TRUE(CompareMatrices(sum_mv, sum_mv_expected, kTolerance));
+  const double mv1 = mass_link_ * v1;
+  const double mv2 = mass_link_ * v2;
+  const Vector3<double> mv_expected = (mv1 + mv2) * Vector3<double>::UnitY();
+  EXPECT_TRUE(CompareMatrices(momentum.translational(),
+      mv_expected, kTolerance));
 }
 
 }  // namespace

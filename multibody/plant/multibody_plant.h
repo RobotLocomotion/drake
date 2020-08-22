@@ -2326,12 +2326,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcCenterOfMassPosition(context, model_instances);
   }
 
-  /// This method calculates and returns the translational (linear) momentum of
-  /// `this` MultibodyPlant measured and expressed in the world frame W.
+  /// This method returns the spatial momentum of `this` MultibodyPlant in the
+  /// world frame W, about the world origin Wo, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
-  Vector3<T> CalcTranslationalMomentum(
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutWo(
       const systems::Context<T>& context) const {
-      return internal_tree().CalcTranslationalMomentum(context);
+      return internal_tree().CalcSpatialMomentumInWorldAboutWo(context);
   }
 
   /// Given the state of this model in `context` and a known vector
