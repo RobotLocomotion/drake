@@ -51,7 +51,7 @@ PYBIND11_MODULE(acrobot, m) {
       .def_static("get_mutable_state",
           py::overload_cast<Context<T>*>(&AcrobotPlant<T>::get_mutable_state),
           py::arg("context"),
-          // Keey alive, ownership: `return` keeps `context` alive
+          // Keep alive, ownership: `return` keeps `context` alive
           py::keep_alive<0, 1>(), doc.AcrobotPlant.get_mutable_state.doc)
       .def("get_parameters", &AcrobotPlant<T>::get_parameters,
           py_rvp::reference_internal, py::arg("context"),
