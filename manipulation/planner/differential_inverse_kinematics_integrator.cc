@@ -63,6 +63,16 @@ DifferentialInverseKinematicsIntegrator::ForwardKinematics(
          frame_E_.CalcPoseInBodyFrame(robot_context);
 }
 
+const DifferentialInverseKinematicsParameters&
+DifferentialInverseKinematicsIntegrator::get_parameters() const {
+  return parameters_;
+}
+
+DifferentialInverseKinematicsParameters&
+DifferentialInverseKinematicsIntegrator::get_mutable_parameters() {
+  return parameters_;
+}
+
 void DifferentialInverseKinematicsIntegrator::UpdateRobotContext(
     const Context<double>& context,
     Context<double>* robot_context) const {

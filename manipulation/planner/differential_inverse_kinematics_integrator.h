@@ -68,6 +68,14 @@ class DifferentialInverseKinematicsIntegrator
   math::RigidTransformd ForwardKinematics(
       const systems::Context<double>& context) const;
 
+  /** Returns a const reference to the differential IK parameters owned by this
+  system. */
+  const DifferentialInverseKinematicsParameters& get_parameters() const;
+
+  /** Returns a mutable reference to the  differential IK parameters owned by
+  this system. */
+  DifferentialInverseKinematicsParameters& get_mutable_parameters();
+
  private:
   // Updates the position in the cached Context for the robot to match the
   // internal state of the integrator.

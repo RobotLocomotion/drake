@@ -97,3 +97,6 @@ class TestPlanner(unittest.TestCase):
             time_step=time_step,
             parameters=parameters,
             robot_context=context)
+
+        integrator.get_mutable_parameters().set_timestep(0.2)
+        self.assertEqual(integrator.get_parameters().get_timestep(), 0.2)

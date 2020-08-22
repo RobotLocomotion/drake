@@ -69,6 +69,23 @@ GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, BasicTest) {
                               discrete_state->get_vector(0).get_value()));
 }
 
+GTEST_TEST(DifferentialInverseKinematicsIntegatorTest, ParametersTest) {
+  auto robot = MakeIiwa();
+  auto robot_context = robot->CreateDefaultContext();
+  const multibody::Frame<double>& frame_E =
+      robot->GetFrameByName("iiwa_link_7");
+
+  DifferentialInverseKinematicsParameters params(robot->num_positions(),
+                                                 robot->num_velocities());
+  const double time_step = 0.1;
+  DifferentialInverseKinematicsIntegrator diff_ik(
+      *robot, frame_E, time_step, params);
+
+  EXPECT_EQ(diff_ik.get_parameters().get_timestep(), time_step);
+  diff_ik.get_mutable_parameters().set_timestep(0.2);
+  EXPECT_EQ(diff_ik.get_parameters().get_timestep(), 0.2);
+}
+
 }  // namespace
 }  // namespace planner
 }  // namespace manipulation
