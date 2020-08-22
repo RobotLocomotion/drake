@@ -2119,7 +2119,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceCache(
   // computational gain when performing ABA with the same context (storing the
   // same q and v) but different applied `forces`.
   const std::vector<SpatialForce<T>>& Zb_Bo_W_cache =
-      EvalArticulatedBodyVelocityBiasCache(context);
+      EvalArticulatedBodyForceBiasCache(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; --depth) {

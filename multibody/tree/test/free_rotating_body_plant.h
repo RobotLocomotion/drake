@@ -73,20 +73,6 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
     return internal::GetInternalTree(*this);
   }
 
-  void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
-
-  void DoMapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      systems::VectorBase<T>* generalized_velocity) const override;
-
-  void DoMapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      systems::VectorBase<T>* qdot) const override;
-
   // Helper method to build the MultibodyTree model for this plant.
   void BuildMultibodyTreeModel();
 

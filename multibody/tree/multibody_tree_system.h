@@ -7,7 +7,10 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/tree/acceleration_kinematics_cache.h"
+#include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
@@ -21,15 +24,21 @@ namespace internal {
 
 template<typename T> class MultibodyTree;
 
-/** This is a bare Drake System providing just enough functionality to allow
-standalone exercise of a MultibodyTree. MultibodyTree requires a few System
-services to allocate and access the resources it needs in a Context.
+/* This is a bare Drake System providing just enough functionality to allow
+standalone exercise of a MultibodyTree. A Drake System must implement
+several virtual methods, and MultibodyTree requires System services
+to allocate and access the resources it needs in a Context. All
+resources that MultibodyTree needs are hosted here so that
+MultibodyTree elements can get access to them. Derived classes (likely
+MultibodyPlant) may have their own context resources but those will not be
+accessible from MultibodyTree.
 
 %MultibodyTreeSystem serves as the base class for the MultibodyPlant System,
 which provides much more functionality, including full integration with the
-Drake System Framework. %MultibodyTreeSystem alone is useful for unit testing
-of MultibodyTree, and on those rare occasions where nothing but tree
-functionality is needed.
+Drake System Framework via input and output ports, contact modeling, and a
+discrete solver for forward dynamics. %MultibodyTreeSystem alone is useful for
+unit testing of MultibodyTree, and on those rare occasions where nothing but
+tree functionality is needed.
 
 To use %MultibodyTreeSystem alone, first create and populate a MultibodyTree,
 then transfer ownership of it in the constructor for %MultibodyTreeSystem, which
@@ -47,16 +56,16 @@ to the MultibodyTree once it is owned by %MultibodyTreeSystem. For example,
   auto context = system->CreateDefaultContext();
 @endcode
 
-Derived classes may use an alternate protected interface that provides for
-incremental construction of the MultibodyTree owned by a MultibodyTreeSystem.
-See documentation for the protected methods below, and look at MultibodyPlant
-for an example. */
+Derived classes (likely MultibodyPlant) may use an alternate protected interface
+that provides for incremental construction of the MultibodyTree owned by a
+MultibodyTreeSystem. See documentation for the protected methods below, and look
+at MultibodyPlant for an example. */
 template <typename T>
 class MultibodyTreeSystem : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystem)
 
-  /** Takes ownership of the given `tree`, finalizes it if it hasn't already
+  /* Takes ownership of the given `tree`, finalizes it if it hasn't already
   been finalized, and then allocates the resources it needs. You cannot modify
   the tree after that. The `tree` cannot be null.
 
@@ -68,7 +77,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   explicit MultibodyTreeSystem(std::unique_ptr<MultibodyTree<T>> tree,
                                bool is_discrete = false);
 
-  /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
+  /* Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
   explicit MultibodyTreeSystem(const MultibodyTreeSystem<U>& other);
 
@@ -76,24 +85,34 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   bool is_discrete() const { return is_discrete_; }
 
-  /** Returns a reference to the up to date PositionKinematicsCache in the
+  /* Returns a reference to the up to date PositionKinematicsCache in the
   given Context, recalculating it first if necessary. */
   const PositionKinematicsCache<T>& EvalPositionKinematics(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.position_kinematics)
+    return position_kinematics_cache_entry()
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
-  /** Returns a reference to the up to date VelocityKinematicsCache in the
+  /* Returns a reference to the up to date VelocityKinematicsCache in the
   given Context, recalculating it first if necessary. Also if necessary, the
   PositionKinematicsCache will be recalculated as well. */
   const VelocityKinematicsCache<T>& EvalVelocityKinematics(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.velocity_kinematics)
+    return velocity_kinematics_cache_entry()
         .template Eval<VelocityKinematicsCache<T>>(context);
   }
 
-  /** Returns a reference to the up to date ArticulatedBodyInertiaCache stored
+  /* Returns a reference to the up to date AccelerationKinematicsCache in the
+  given Context, recalculating it first via forward dynamics if necessary. Also
+  if necessary, other cache entries such as PositionKinematicsCache and
+  VelocityKinematicsCache will be recalculated as well. */
+  const internal::AccelerationKinematicsCache<T>& EvalForwardDynamics(
+      const systems::Context<T>& context) const {
+    return acceleration_kinematics_cache_entry()
+        .template Eval<AccelerationKinematicsCache<T>>(context);
+  }
+
+  /* Returns a reference to the up to date ArticulatedBodyInertiaCache stored
   in the given context, recalculating it first if necessary.
   See @ref internal_forward_dynamics
   "Articulated Body Algorithm Forward Dynamics" for further details. */
@@ -103,7 +122,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<ArticulatedBodyInertiaCache<T>>(context);
   }
 
-  /** Returns a reference to the up to date cache of per-body spatial inertias
+  /* Returns a reference to the up to date cache of per-body spatial inertias
   in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalSpatialInertiaInWorldCache(
       const systems::Context<T>& context) const {
@@ -111,7 +130,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
-  /** Returns a reference to the up to date cache of per-body bias terms in
+  /* Returns a reference to the up to date cache of per-body bias terms in
   the given Context, recalculating it first if necessary.
   For a body B, this is the bias term `Fb_Bo_W(q, v)` in the equation
   `F_Bo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
@@ -123,7 +142,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /** Returns a reference to the up to date cache of per-body spatial
+  /* Returns a reference to the up to date cache of per-body spatial
   acceleration bias terms in the given Context, recalculating it first if
   necessary. For a body B, this is the spatial acceleration bias term
   `Ab_WB(q, v)`, function of both q and v, as it appears in the acceleration
@@ -139,19 +158,28 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialAcceleration<T>>>(context);
   }
 
-  /** For a body B, this evaluates the articulated body force bias
-  `Zb_Bo_W(q, v) = Pplus_PB_W(q) * Ab_WB(q, v)`. This computation is
+  /* For a body B, this evaluates the velocity-dependent articulated body force
+  bias `Zb_Bo_W(q, v) = Pplus_PB_W(q) * Ab_WB(q, v)`. This computation is
   particularly expensive when performing O(n) forward dynamics with different
   applied forces but with the same multibody state x = [q, v] and therefore it
   is worth caching. */
   const std::vector<SpatialForce<T>>&
-  EvalArticulatedBodyVelocityBiasCache(
+  EvalArticulatedBodyForceBiasCache(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.articulated_body_velocity_bias)
+    return this->get_cache_entry(cache_indexes_.articulated_body_force_bias)
         .template Eval<std::vector<SpatialForce<T>>>(context);
   }
 
-  /** For a body B connected to its parent P, returns a reference to the up to
+  /* When using the articulated body algorithm, this cache entry holds the
+  per-body and per-dof propagated forces. These include the effects of both
+  the velocity-dependent bias forces and applied forces. */
+  const ArticulatedBodyForceCache<T>&
+  EvalArticulatedBodyForceCache(const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.articulated_body_forces)
+        .template Eval<ArticulatedBodyForceCache<T>>(context);
+  }
+
+  /* For a body B connected to its parent P, returns a reference to the up to
   date cached value for H_PB_W, where H_PB_W is the `6 x nm` body-node hinge
   matrix that relates `V_PB_W` (body B's spatial velocity in its parent body P,
   expressed in world W) to this node's `nm` generalized velocities
@@ -169,19 +197,34 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<Vector6<T>>>(context);
   }
 
+  /* Returns the cache entry that holds position kinematics results. */
+  const systems::CacheEntry& position_kinematics_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.position_kinematics);
+  }
+
+  /* Returns the cache entry that holds velocity kinematics results. */
+  const systems::CacheEntry& velocity_kinematics_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.velocity_kinematics);
+  }
+
+  /* Returns the cache entry that holds acceleration kinematics results. */
+  const systems::CacheEntry& acceleration_kinematics_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.acceleration_kinematics);
+  }
+
  protected:
-  /** @name        Alternate API for derived classes
+  /* @name        Alternate API for derived classes
   Derived classes may use these methods to create a MultibodyTreeSystem
   that owns an empty MultibodyTree, then incrementally build it, and finalize
   it when done. See MultibodyPlant for a working example. */
   //@{
 
-  /** Default constructor allocates a MultibodyTree, with the intent that it
+  /* Default constructor allocates a MultibodyTree, with the intent that it
   will be filled in later, using mutable_tree() for access. You must call
   Finalize() when done before performing any computations. */
   explicit MultibodyTreeSystem(bool is_discrete = false);
 
-  /**  Constructor that specifies scalar-type conversion support.
+  /*  Constructor that specifies scalar-type conversion support.
   If `tree` is given, we'll finalize it. Otherwise, we'll allocate an
   empty one and leave it not finalized.
   @param[in] converter Scalar-type conversion support helper.
@@ -197,19 +240,39 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   friend const MultibodyTree<U>& GetInternalTree(
       const MultibodyTreeSystem<U>&);
 
-  /** Returns a const reference to the MultibodyTree owned by this class. */
+  /* Returns a const reference to the MultibodyTree owned by this class. */
   const MultibodyTree<T>& internal_tree() const {
     DRAKE_ASSERT(tree_ != nullptr);
     return *tree_;
   }
 
-  /** Returns a mutable reference to the MultibodyTree owned by this class. */
+  /* Returns a mutable reference to the MultibodyTree owned by this class. */
   MultibodyTree<T>& mutable_tree() const;
 
-  /** Finalize the tree if that hasn't already been done, complete System
+  /* Finalize the tree if that hasn't already been done, complete System
   construction, and declare any needed Context resources for the tree. You must
   call this before performing any computation. */
   void Finalize();
+
+  /* Derived class (likely MultibodyPlant) must implement this if it has
+  forces to apply other than those applied internally by elements of the
+  MultibodyTree. `forces` has already been initialized and may contain
+  force contributions already; be sure to add rather than overwrite. This
+  method will only be called in continuous mode. */
+  virtual void AddInForcesContinuous(const systems::Context<T>& context,
+                                     MultibodyForces<T>* forces) const {
+    unused(context, forces);
+  }
+
+  /* Derived class (likely MultibodyPlant) must implement this to support
+  forward dynamics when in discrete mode. */
+  virtual void DoCalcForwardDynamicsDiscrete(
+      const systems::Context<T>& context,
+      AccelerationKinematicsCache<T>* ac) const {
+    unused(context, ac);
+    throw std::logic_error(
+        "DoCalcForwardDynamicsDiscrete(): invoked but not implemented.");
+  }
   //@}
 
   // TODO(sherm1) Shouldn't require overriding the default method; need
@@ -218,6 +281,21 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                        systems::State<T>* state) const override;
 
  private:
+  // This is only meaningful in continuous mode.
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const final;
+
+  void DoMapQDotToVelocity(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qdot,
+      systems::VectorBase<T>* generalized_velocity) const final;
+
+  void DoMapVelocityToQDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+      systems::VectorBase<T>* qdot) const final;
+
   T DoCalcPotentialEnergy(const systems::Context<T>& context) const final {
     return internal_tree().CalcPotentialEnergy(context);
   }
@@ -235,6 +313,45 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return internal_tree().CalcNonConservativePower(context);
   }
 
+  // Performs an O(n) tip-to-base recursion to compute forces Z_B and
+  // Zplus_B, among other quantities needed by ABA.
+  // N.B. Please refer to @ref internal_forward_dynamics for further details on
+  // the algorithm and implementation.
+  void CalcArticulatedBodyForceCache(
+      const systems::Context<T>& context,
+      ArticulatedBodyForceCache<T>* aba_force_cache) const;
+
+  // This is the method used to evaluate the AccelerationKinematicsCache when
+  // it is out of date. The actual computation performed depends on whether
+  // we are in continuous or discrete mode.
+  void CalcForwardDynamics(const systems::Context<T>& context,
+                           AccelerationKinematicsCache<T>* ac) const {
+    if (is_discrete())
+      CalcForwardDynamicsDiscrete(context, ac);
+    else
+      CalcForwardDynamicsContinuous(context, ac);
+  }
+
+  // When in continuous mode, this method is used to compute forward dynamics.
+  // It collects forces from both MultibodyTree internal elements and
+  // continuous-mode forces applied by the derived class (likely
+  // MultibodyPlant). Then it uses the O(n) Articulated Body Algorithm (ABA)
+  // to compute accelerations. Please refer to @ref internal_forward_dynamics
+  // for further details on the algorithm and implementation.
+  void CalcForwardDynamicsContinuous(
+      const systems::Context<T>& context,
+      internal::AccelerationKinematicsCache<T>* ac) const;
+
+  // Discrete mode forward dynamics must be implemented by a derived class
+  // (likely MultibodyPlant).
+  void CalcForwardDynamicsDiscrete(
+      const systems::Context<T>& context,
+      AccelerationKinematicsCache<T>* ac) const {
+    DRAKE_DEMAND(ac != nullptr);
+    DRAKE_DEMAND(is_discrete());
+    DoCalcForwardDynamicsDiscrete(context, ac);
+  }
+
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U>
@@ -244,8 +361,10 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // MultibodyTreeSystem specific cache entries.
   struct CacheIndexes {
     systems::CacheIndex abi_cache_index;
+    systems::CacheIndex acceleration_kinematics;
     systems::CacheIndex across_node_jacobians;
-    systems::CacheIndex articulated_body_velocity_bias;
+    systems::CacheIndex articulated_body_forces;
+    systems::CacheIndex articulated_body_force_bias;
     systems::CacheIndex dynamic_bias;
     systems::CacheIndex position_kinematics;
     systems::CacheIndex spatial_inertia_in_world;
@@ -275,7 +394,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   bool already_finalized_{false};
 };
 
-/// Access internal tree outside of MultibodyTreeSystem.
+/* Access internal tree outside of MultibodyTreeSystem. */
 template <typename T>
 const MultibodyTree<T>& GetInternalTree(const MultibodyTreeSystem<T>& system) {
   return system.internal_tree();

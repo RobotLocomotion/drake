@@ -1598,6 +1598,27 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
   }
 }
 
+template <typename T>
+void MultibodyPlant<T>::AddInForcesFromInputPorts(
+    const drake::systems::Context<T>& context,
+    MultibodyForces<T>* forces) const {
+  AddAppliedExternalGeneralizedForces(context, forces);
+  AddAppliedExternalSpatialForces(context, forces);
+  AddJointActuationForces(context, forces);
+}
+
+template<typename T>
+void MultibodyPlant<T>::AddAppliedExternalGeneralizedForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  // If there are applied generalized forces, add them in.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context)) {
+    forces->mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
+  }
+}
+
 template<typename T>
 void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
@@ -1726,31 +1747,6 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 }
 
 template<typename T>
-void MultibodyPlant<T>::DoCalcTimeDerivatives(
-    const systems::Context<T>& context,
-    systems::ContinuousState<T>* derivatives) const {
-  // No derivatives to compute if state is discrete.
-  if (is_discrete()) return;
-  // No derivatives to compute if state is empty. (Will segfault otherwise.)
-  // TODO(amcastro-tri): When nv = 0 we should not declare state or cache
-  // entries at all and the system framework will never call this.
-  if (this->num_multibody_states() == 0) return;
-
-  const auto x =
-      dynamic_cast<const systems::BasicVector<T>&>(
-          context.get_continuous_state_vector()).get_value();
-  const auto v = x.bottomRows(this->num_velocities());
-
-  const VectorX<T>& vdot = EvalForwardDynamics(context).get_vdot();
-
-  VectorX<T> xdot(this->num_multibody_states());
-  VectorX<T> qdot(this->num_positions());
-  MapVelocityToQDot(context, v, &qdot);
-  xdot << qdot, vdot;
-  derivatives->SetFromVector(xdot);
-}
-
-template<typename T>
 TamsiSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
@@ -1851,37 +1847,6 @@ void MultibodyPlant<T>::CalcHydroelasticWithFallback(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcAppliedForces(
-    const drake::systems::Context<T>& context,
-    MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(forces != nullptr);
-  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
-
-  const internal::PositionKinematicsCache<T>& pc =
-      EvalPositionKinematics(context);
-  const internal::VelocityKinematicsCache<T>& vc =
-      EvalVelocityKinematics(context);
-
-  // Compute forces applied through force elements.
-  internal_tree().CalcForceElementsContribution(context, pc, vc, forces);
-
-  // Externally applied forces.
-  AddJointActuationForces(context, forces);
-  AddAppliedExternalSpatialForces(context, forces);
-
-  // Only discrete models support joint limits.
-  if (is_discrete()) AddJointLimitsPenaltyForces(context, forces);
-
-  // If there are applied generalized forces, add them.
-  const InputPort<T>& applied_generalized_force_input =
-      this->get_input_port(applied_generalized_force_input_port_);
-  if (applied_generalized_force_input.HasValue(context)) {
-    forces->mutable_generalized_forces() +=
-        applied_generalized_force_input.Eval(context);
-  }
-}
-
-template <typename T>
 std::vector<internal::DiscreteContactPair<T>>
 MultibodyPlant<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context) const {
@@ -1975,7 +1940,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
   // Forces at the previous time step.
   MultibodyForces<T> forces0(internal_tree());
 
-  CalcAppliedForces(context0, &forces0);
+  CalcNonContactForces(context0, true /* discrete */, &forces0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
@@ -2082,45 +2047,6 @@ void MultibodyPlant<T>::CalcTamsiResults(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcArticulatedBodyForceCache(
-    const systems::Context<T>& context,
-    ArticulatedBodyForceCache<T>* aba_force_cache) const {
-  DRAKE_DEMAND(aba_force_cache != nullptr);
-
-  // Applied forces including force elements (function of state x) and external
-  // inputs u.
-  MultibodyForces<T> forces(*this);
-  CalcAppliedForces(context, &forces);
-
-  // Add the contribution of contact forces.
-  std::vector<SpatialForce<T>>& Fapp_BBo_W_array = forces.mutable_body_forces();
-  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
-      EvalSpatialContactForcesContinuous(context);
-  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
-    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
-
-  // Perform the tip-to-base pass to compute the force bias terms needed by ABA.
-  internal_tree().CalcArticulatedBodyForceCache(context, forces,
-                                                    aba_force_cache);
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcForwardDynamics(
-    const systems::Context<T>& context,
-    AccelerationKinematicsCache<T>* ac) const {
-  DRAKE_DEMAND(ac != nullptr);
-
-  // Evaluate the ABA cache, function of state x and inputs u.
-  const ArticulatedBodyForceCache<T>& aba_force_cache =
-      EvalArticulatedBodyForceCache(context);
-
-  // Perform the last base-to-tip pass to compute accelerations using the O(n)
-  // ABA.
-  internal_tree().CalcArticulatedBodyAccelerations(context,
-                                                   aba_force_cache, ac);
-}
-
-template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
     const Context<T>& context, VectorX<T>* tau_contact) const {
   DRAKE_DEMAND(tau_contact);
@@ -2208,7 +2134,41 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcForwardDynamicsDiscrete(
+void MultibodyPlant<T>::CalcNonContactForces(
+    const drake::systems::Context<T>& context,
+    bool discrete,
+    MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
+
+  // Compute forces applied through force elements. Note that this resets
+  // forces to empty so must come first.
+  CalcForceElementsContribution(context, forces);
+
+  AddInForcesFromInputPorts(context, forces);
+
+  // Only discrete models support joint limits.
+  if (discrete) AddJointLimitsPenaltyForces(context, forces);
+}
+
+template <typename T>
+void MultibodyPlant<T>::AddInForcesContinuous(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  // Forces from MultibodyTree elements are handled in MultibodyTreeSystem;
+  // we need only handle MultibodyPlant-specific forces here.
+  AddInForcesFromInputPorts(context, forces);
+
+  // Add the contribution of contact forces.
+  std::vector<SpatialForce<T>>& Fapp_BBo_W_array =
+      forces->mutable_body_forces();
+  const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
+      EvalSpatialContactForcesContinuous(context);
+  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
+    Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
+}
+
+template <typename T>
+void MultibodyPlant<T>::DoCalcForwardDynamicsDiscrete(
     const drake::systems::Context<T>& context0,
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
@@ -2246,7 +2206,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // For a discrete model this evaluates vdot = (v_next - v0)/time_step() and
   // includes contact forces.
-  const VectorX<T>& vdot = EvalForwardDynamics(context0).get_vdot();
+  const VectorX<T>& vdot = this->EvalForwardDynamics(context0).get_vdot();
 
   // TODO(amcastro-tri): Consider replacing this by:
   //   const VectorX<T>& v_next = solver_results.v_next;
@@ -2260,40 +2220,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
-}
-
-template<typename T>
-void MultibodyPlant<T>::DoMapQDotToVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& qdot,
-    systems::VectorBase<T>* generalized_velocity) const {
-  const int nq = num_positions();
-  const int nv = num_velocities();
-
-  DRAKE_ASSERT(qdot.size() == nq);
-  DRAKE_DEMAND(generalized_velocity != nullptr);
-  DRAKE_DEMAND(generalized_velocity->size() == nv);
-
-  VectorX<T> v(nv);
-  internal_tree().MapQDotToVelocity(context, qdot, &v);
-  generalized_velocity->SetFromVector(v);
-}
-
-template<typename T>
-void MultibodyPlant<T>::DoMapVelocityToQDot(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-    systems::VectorBase<T>* positions_derivative) const {
-  const int nq = num_positions();
-  const int nv = num_velocities();
-
-  DRAKE_ASSERT(generalized_velocity.size() == nv);
-  DRAKE_DEMAND(positions_derivative != nullptr);
-  DRAKE_DEMAND(positions_derivative->size() == nq);
-
-  VectorX<T> qdot(nq);
-  MapVelocityToQDot(context, generalized_velocity, &qdot);
-  positions_derivative->SetFromVector(qdot);
 }
 
 template<typename T>
@@ -2378,9 +2304,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
               {this->all_sources_ticket()})
           .get_index();
 
-  const auto& aba_accelerations_cache_entry =
-      this->get_cache_entry(cache_indexes_.aba_accelerations);
-
   // Declare one output port for the entire generalized acceleration vector
   // vdot (length is nv).
   generalized_acceleration_output_port_ =
@@ -2391,7 +2314,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 result->SetFromVector(
                     this->EvalForwardDynamics(context).get_vdot());
               },
-              {aba_accelerations_cache_entry.ticket()})
+              {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
   // Declare per model instance state and acceleration output ports.
@@ -2432,7 +2355,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                   result->SetFromVector(
                       this->GetVelocitiesFromArray(model_instance_index, vdot));
                 },
-                {aba_accelerations_cache_entry.ticket()})
+                {this->acceleration_kinematics_cache_entry().ticket()})
             .get_index();
   }
 
@@ -2488,7 +2411,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
       this->DeclareAbstractOutputPort(
               "reaction_forces", std::vector<SpatialForce<T>>(num_joints()),
               &MultibodyPlant<T>::CalcReactionForces,
-              {this->cache_entry_ticket(cache_indexes_.aba_accelerations)})
+              {this->acceleration_kinematics_cache_entry().ticket()})
           .get_index();
 
   // Contact results output port.
@@ -2680,44 +2603,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {dependency_ticket});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
-
-  // Articulated Body Algorithm (ABA) force bias cache.
-  auto& aba_force_cache_entry = this->DeclareCacheEntry(
-      std::string("ABA force bias cache."),
-      ArticulatedBodyForceCache<T>(internal_tree().get_topology()),
-      &MultibodyPlant<T>::CalcArticulatedBodyForceCache,
-      // ABA computes quantities such as Zplus which are needed for the
-      // computation of acceleration and thus depend on both state and inputs.
-      // All sources include: time, accuracy, state, input ports, and
-      // parameters.
-      {this->all_sources_ticket()});
-  cache_indexes_.aba_force_cache =
-      aba_force_cache_entry.cache_index();
-
-  // Last pass of the ABA for forward dynamics.
-  auto& aba_accelerations_cache_entry = this->DeclareCacheEntry(
-      std::string("Accelerations."),
-      [this]() {
-        return AbstractValue::Make(
-            AccelerationKinematicsCache<T>(internal_tree().get_topology()));
-      },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& ac =
-            cache_value->get_mutable_value<AccelerationKinematicsCache<T>>();
-        if (this->is_discrete()) {
-          this->CalcForwardDynamicsDiscrete(context, &ac);
-        } else {
-          this->CalcForwardDynamics(context, &ac);
-        }
-      },
-      // Accelerations depend on both state and inputs.
-      // All sources include: time, accuracy, state, input ports, and
-      // parameters.
-      {this->all_sources_ticket()});
-  cache_indexes_.aba_accelerations =
-      aba_accelerations_cache_entry.cache_index();
 
   // Cache spatial continuous contact forces.
   auto& spatial_contact_forces_continuous_cache_entry = this->DeclareCacheEntry(
@@ -2917,7 +2802,7 @@ void MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput(
     std::vector<SpatialAcceleration<T>>* A_WB_all) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   A_WB_all->resize(num_bodies());
-  const AccelerationKinematicsCache<T>& ac = EvalForwardDynamics(context);
+  const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   for (BodyIndex body_index(0); body_index < this->num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     A_WB_all->at(body_index) = ac.get_A_WB(body.node_index());
@@ -2930,8 +2815,8 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
     const Context<T>& context,
     const Body<T>& body_B) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  DRAKE_DEMAND(this == &body_B.GetParentPlant());;
-  const AccelerationKinematicsCache<T>& ac = EvalForwardDynamics(context);
+  DRAKE_DEMAND(this == &body_B.GetParentPlant());
+  const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   return ac.get_A_WB(body_B.node_index());
 }
 
@@ -2967,13 +2852,18 @@ void MultibodyPlant<T>::CalcReactionForces(
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
   DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
 
-  const VectorX<T>& vdot = EvalForwardDynamics(context).get_vdot();
+  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
 
+  // TODO(sherm1) EvalForwardDynamics() should record the forces it used
+  //              so that we don't have to attempt to reconstruct them
+  //              here (and this is broken, see #13888).
   MultibodyForces<T> applied_forces(*this);
-  CalcAppliedForces(context, &applied_forces);
+  CalcNonContactForces(context, is_discrete(), &applied_forces);
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
 
+  // TODO(sherm1) This doesn't include hydroelastic contact forces
+  //              in continuous mode (#13888).
   CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
 
   // Compute reaction forces at each mobilizer.

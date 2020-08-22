@@ -3682,8 +3682,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
-    systems::CacheIndex aba_accelerations;
-    systems::CacheIndex aba_force_cache;
     systems::CacheIndex contact_info_and_body_spatial_forces;
     systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
@@ -3847,54 +3845,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> AssembleActuationInput(
       const systems::Context<T>& context) const;
 
-  // Computes all externally applied forces including:
+  // Computes all non-contact applied forces including:
   //  - Force elements.
   //  - Joint actuation.
   //  - Externally applied spatial forces.
   //  - Joint limits.
-  void CalcAppliedForces(const drake::systems::Context<T>& context,
-                         MultibodyForces<T>* forces) const;
+  // May be different between continuous and discrete modes.
+  void CalcNonContactForces(const drake::systems::Context<T>& context,
+                            bool discrete,
+                            MultibodyForces<T>* forces) const;
 
-  // Given the state x and inputs u in `context`, this method uses the `O(n)`
-  // Articulated Body Algorithm (ABA) to compute accelerations.
-  // N.B. Please refer to @ref internal_forward_dynamics for further details on
-  // the algorithm and implementation.
-  void CalcForwardDynamics(const systems::Context<T>& context,
-                           internal::AccelerationKinematicsCache<T>* ac) const;
+  // Collects up forces from input ports (actuator, generalized, and spatial
+  // forces) and contact forces (from compliant contact models). Does not
+  // include ForceElement forces which are accounted for elsewhere.
+  void AddInForcesContinuous(const systems::Context<T>& context,
+                             MultibodyForces<T>* forces) const override;
 
   // Discrete system version of CalcForwardDynamics(). This method does not use
   // O(n) forward dynamics but the discrete TAMSI solver, for further details
   // please refer to @ref castro_etal_2019 "[Castro et al., 2019]"
-  void CalcForwardDynamicsDiscrete(
+  void DoCalcForwardDynamicsDiscrete(
       const drake::systems::Context<T>& context,
-      internal::AccelerationKinematicsCache<T>* ac) const;
-
-  // Eval version of the method CalcForwardDynamics().
-  const internal::AccelerationKinematicsCache<T>& EvalForwardDynamics(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.aba_accelerations)
-        .template Eval<internal::AccelerationKinematicsCache<T>>(context);
-  }
-
-  // Performs an O(n) tip-to-base recursion to compute bias forces Z_B and
-  // Zplus_B, among other quantities needed by ABA.
-  // N.B. Please refer to @ref internal_forward_dynamics for further details on
-  // the algorithm and implementation.
-  void CalcArticulatedBodyForceCache(
-      const systems::Context<T>& context,
-      internal::ArticulatedBodyForceCache<T>* aba_force_cache) const;
-
-  // Eval version of the method CalcArticulatedBodyForceCache().
-  const internal::ArticulatedBodyForceCache<T>&
-  EvalArticulatedBodyForceCache(const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.aba_force_cache)
-        .template Eval<internal::ArticulatedBodyForceCache<T>>(context);
-  }
-
-  // Implements the system dynamics according to this class's documentation.
-  void DoCalcTimeDerivatives(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const override;
+      internal::AccelerationKinematicsCache<T>* ac) const override;
 
   // If the plant is modeled as a discrete system with periodic updates (see
   // is_discrete()), this method computes the periodic updates of the state
@@ -4025,17 +3997,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcReactionForces(const systems::Context<T>& context,
                           std::vector<SpatialForce<T>>* F_CJc_Jc) const;
 
-  void DoMapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      systems::VectorBase<T>* generalized_velocity) const override;
+  // Collect joint actuator forces and externally provided spatial and
+  // generalized forces.
+  void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
+                                 MultibodyForces<T>* forces) const;
 
-  void DoMapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      systems::VectorBase<T>* qdot) const override;
+  // Add contribution of generalized forces passed in through our
+  // applied_generalized_force input port.
+  void AddAppliedExternalGeneralizedForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
+  // Add contribution of body spatial forces passed in through our
+  // applied_spatial_force input port.
   void AddAppliedExternalSpatialForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
+  // Add contribution of external actuation forces passed in through our
+  // actuation input ports (there is a separate port for each model instance).
+  void AddJointActuationForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Helper method to register geometry for a given body, either visual or
@@ -4182,12 +4161,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         .template Eval<
             internal::HydroelasticContactInfoAndBodySpatialForces<T>>(context);
   }
-
-  // Helper method to add the contribution of external actuation forces to the
-  // set of multibody `forces`. External actuation is applied through the
-  // plant's input ports.
-  void AddJointActuationForces(
-      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Helper method to apply penalty forces that enforce joint limits.
   // At each joint with joint limits this penalty method applies a force law of
