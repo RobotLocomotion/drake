@@ -36,6 +36,15 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.IiwaCollisionModel.kBoxCollision.doc)
       .export_values();
 
+  py::enum_<SchunkCollisionModel>(
+      m, "SchunkCollisionModel", doc.SchunkCollisionModel.doc)
+      .value(
+          "kBox", SchunkCollisionModel::kBox, doc.SchunkCollisionModel.kBox.doc)
+      .value("kBoxPlusFingertipSpheres",
+          SchunkCollisionModel::kBoxPlusFingertipSpheres,
+          doc.SchunkCollisionModel.kBoxPlusFingertipSpheres.doc)
+      .export_values();
+
   py::class_<ManipulationStation<T>, Diagram<T>>(
       m, "ManipulationStation", doc.ManipulationStation.doc)
       .def(py::init<double>(), py::arg("time_step") = 0.002,
@@ -43,14 +52,17 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetupManipulationClassStation",
           &ManipulationStation<T>::SetupManipulationClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
+          py::arg("schunk_model") = SchunkCollisionModel::kBox,
           doc.ManipulationStation.SetupManipulationClassStation.doc)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("X_WCameraBody") = std::nullopt,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
+          py::arg("schunk_model") = SchunkCollisionModel::kBox,
           doc.ManipulationStation.SetupClutterClearingStation.doc)
       .def("SetupPlanarIiwaStation",
           &ManipulationStation<T>::SetupPlanarIiwaStation,
+          py::arg("schunk_model") = SchunkCollisionModel::kBox,
           doc.ManipulationStation.SetupPlanarIiwaStation.doc)
       .def("AddManipulandFromFile",
           &ManipulationStation<T>::AddManipulandFromFile, py::arg("model_file"),
