@@ -9,6 +9,7 @@ exports_files(
         "franka_description/**",
         "jaco_description/**",
         "skydio_2/**",
+        "wsg_50_description/**",
         "ycb/meshes/**",
     ], allow_empty = False),
     visibility = ["//visibility:public"],
