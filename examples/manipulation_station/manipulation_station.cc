@@ -191,7 +191,7 @@ void ManipulationStation<T>::AddManipulandFromFile(
 template <typename T>
 void ManipulationStation<T>::SetupClutterClearingStation(
     const std::optional<const math::RigidTransform<double>>& X_WCameraBody,
-    IiwaCollisionModel collision_model) {
+    IiwaCollisionModel collision_model, SchunkModel schunk_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kClutterClearing;
 
@@ -237,12 +237,13 @@ void ManipulationStation<T>::SetupClutterClearingStation(
   }
 
   AddDefaultIiwa(collision_model);
-  AddDefaultWsg();
+  AddDefaultWsg(schunk_model);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetupManipulationClassStation(
-    IiwaCollisionModel collision_model) {
+  IiwaCollisionModel collision_model,
+  SchunkModel schunk_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kManipulationClass;
 
@@ -282,7 +283,7 @@ void ManipulationStation<T>::SetupManipulationClassStation(
 
   // Add the default iiwa/wsg models.
   AddDefaultIiwa(collision_model);
-  AddDefaultWsg();
+  AddDefaultWsg(schunk_model);
 
   // Add default cameras.
   {
@@ -344,7 +345,7 @@ void ManipulationStation<T>::SetupPlanarIiwaStation() {
   }
 
   // Add the default wsg model.
-  AddDefaultWsg();
+  AddDefaultWsg(SchunkModel::kBoxSchunk);
 }
 
 template <typename T>
@@ -927,9 +928,28 @@ void ManipulationStation<T>::AddDefaultIiwa(
 
 // Add default wsg.
 template <typename T>
-void ManipulationStation<T>::AddDefaultWsg() {
-  const std::string sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+void ManipulationStation<T>::AddDefaultWsg(
+    const SchunkModel schunk_model) {
+  std::string sdf_path;
+  switch (schunk_model) {
+    case SchunkModel::kBoxSchunk:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50.sdf");
+      break;
+    case SchunkModel::kRealSchunkNoTip:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50_no_tip.sdf");
+      break;
+    case SchunkModel::kRealSchunkWithTip:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/wsg_50_description/sdf"
+          "/schunk_wsg_50_with_tip.sdf");
+      break;
+    default:
+      throw std::domain_error("Unrecognized schunk model.");
+  }
   const multibody::Frame<T>& link7 =
       plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
   const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
