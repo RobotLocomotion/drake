@@ -412,8 +412,7 @@ GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
   if (!::drake::kDrakeAssertIsArmed) {
-    // EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
-    ParseZeroMassNonZeroInertia();
+    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
   }
 }
 
