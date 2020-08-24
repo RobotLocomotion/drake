@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <memory>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 #include <sdf/sdf.hh>
@@ -25,6 +26,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -270,6 +272,158 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   drake::log()->debug("inner: {}", inner);
   AddModelsFromSdfFile(filename, package_map, pair.plant.get());
   return pair;
+}
+
+GTEST_TEST(SdfParser, EntireInertialTagOmitted) {
+  // Test that parsing a link with no inertial tag yields the expected result
+  // (mass = 1, ixx = iyy = izz = 1, ixy = ixz = iyz = 0).
+  // TODO(avalenzu): Re-visit this if the SDF spec changes to allow for more
+  // parsimonious specification of massless links. See #13903 for more details.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='entire_inertial_tag_omitted'>
+  <link name='entire_inertial_tag_omitted'/>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("entire_inertial_tag_omitted"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(SdfParser, InertiaTagOmitted) {
+  // Test that parsing a link with no inertia tag yields the expected result
+  // (mass as specified, ixx = iyy = izz = 1, ixy = ixz = iyz = 0).
+  // TODO(avalenzu): Re-visit this if the SDF spec changes to allow for more
+  // parsimonious specification of massless links. See #13903 for more details.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='inertia_tag_omitted'>
+  <link name='inertia_tag_omitted'>
+    <inertial>
+      <mass>2</mass>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("inertia_tag_omitted"));
+  EXPECT_EQ(body->get_default_mass(), 2.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+GTEST_TEST(SdfParser, MassTagOmitted) {
+  // Test that parsing a link with no mass tag yields the expected result
+  // (mass = 1, inertia as specified).
+  // TODO(avalenzu): Re-visit this if the SDF spec changes to allow for more
+  // parsimonious specification of massless links. See #13903 for more details.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='mass_tag_omitted'>
+  <link name='mass_tag_omitted'>
+    <inertial>
+      <inertia>
+        <ixx>1</ixx>
+        <ixy>0.1</ixy>
+        <ixz>0.1</ixz>
+        <iyy>1</iyy>
+        <iyz>0.1</iyz>
+        <izz>1</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("mass_tag_omitted"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isOnes());
+  EXPECT_EQ(body->default_rotational_inertia().get_products(),
+            Vector3d::Constant(0.1));
+}
+
+GTEST_TEST(SdfParser, MasslessBody) {
+  // Test that massless bodies can be parsed.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='has_massless_link'>
+  <link name='massless_link'>
+    <inertial>
+      <mass>0</mass>
+      <inertia>
+        <ixx>0</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0</iyy>
+        <iyz>0</iyz>
+        <izz>0</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("massless_link"));
+  EXPECT_EQ(body->get_default_mass(), 0.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());}
+
+GTEST_TEST(SdfParser, PointMass) {
+  // Test that point masses don't get sent through the massless body branch.
+  PlantAndSceneGraph pair = ParseTestString(R"""(
+<model name='point_mass'>
+  <link name='point_mass'>
+    <inertial>
+      <mass>1</mass>
+      <inertia>
+        <ixx>0</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0</iyy>
+        <iyz>0</iyz>
+        <izz>0</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
+    &pair.plant->GetBodyByName("point_mass"));
+  EXPECT_EQ(body->get_default_mass(), 1.);
+  EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
+  EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
+}
+
+namespace {
+  void ParseZeroMassNonZeroInertia() {
+    ParseTestString(R"""(
+<model name='bad'>
+  <link name='bad'>
+    <inertial>
+      <mass>0</mass>
+      <inertia>
+        <ixx>1</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>1</iyy>
+        <iyz>0</iyz>
+        <izz>1</izz>
+      </inertia>
+    </inertial>
+  </link>
+</model>)""");
+  }
+}  // namespace
+
+GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  if (!::drake::kDrakeAssertIsArmed) {
+    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
+  }
+}
+
+GTEST_TEST(SdfParserDeathTest, ZeroMassNonZeroInertia) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (::drake::kDrakeAssertIsArmed) {
+    EXPECT_DEATH(ParseZeroMassNonZeroInertia(),
+                 ".*condition 'mass > 0' failed");
+  }
 }
 
 GTEST_TEST(SdfParser, FloatingBodyPose) {
