@@ -496,54 +496,53 @@ PlantAndSceneGraph ParseTestString(const std::string& inner) {
   return pair;
 }
 
-GTEST_TEST(MultibodyPlantUrdfParserTest, DefaultInertial) {
-  // Test that parsing a link with a default inertial tag yields the expected
-  // result (mass = 0, ixx = ixy = ixz = iyy = iyz = izz = 0).
+GTEST_TEST(MultibodyPlantUrdfParserTest, EntireInertialTagOmitted) {
+  // Test that parsing a link with no inertial tag yields the expected result
+  // (mass = 0, ixx = ixy = ixz = iyy = iyz = izz = 0).
   PlantAndSceneGraph pair = ParseTestString(R"""(
-<robot name='default_inertial'>
-  <link name='default_inertial'/>
+<robot name='entire_inertial_tag_omitted'>
+  <link name='entire_inertial_tag_omitted'/>
 </robot>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
-    &pair.plant->GetBodyByName("default_inertial"));
+    &pair.plant->GetBodyByName("entire_inertial_tag_omitted"));
   EXPECT_EQ(body->get_default_mass(), 0.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
 
-GTEST_TEST(MultibodyPlantUrdfParserTest, DefaultInertia) {
-  // Test that parsing a link a default inertia tag yields the
-  // expected result (mass as specified, ixx = ixy = ixz = iyy = iyz = izz = 0).
+GTEST_TEST(MultibodyPlantUrdfParserTest, InertiaTagOmitted) {
+  // Test that parsing a link with no inertia tag yields the expected result
+  // (mass as specified, ixx = ixy = ixz = iyy = iyz = izz = 0).
   PlantAndSceneGraph pair = ParseTestString(R"""(
-<robot name='default_inertia'>
-  <link name='default_inertia'>
+<robot name='inertia_tag_omitted'>
+  <link name='inertia_tag_omitted'>
     <inertial>
       <mass value="2"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
 </robot>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
-    &pair.plant->GetBodyByName("default_inertia"));
+    &pair.plant->GetBodyByName("inertia_tag_omitted"));
   EXPECT_EQ(body->get_default_mass(), 2.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
 
-GTEST_TEST(MultibodyPlantUrdfParserTest, DefaultMass) {
-  // Test that parsing a link with a default mass tag yields the expected result
+GTEST_TEST(MultibodyPlantUrdfParserTest, MassTagOmitted) {
+  // Test that parsing a link with no mass tag yields the expected result
   // (mass 0, inertia as specified). Note that, because the default mass is 0,
   // we specify zero inertia here - otherwise the parsing would fail (See
   // ZeroMassNonZeroInertia below).
   PlantAndSceneGraph pair = ParseTestString(R"""(
-<robot name='default_mass'>
-  <link name='default_mass'>
+<robot name='mass_tag_omitted'>
+  <link name='mass_tag_omitted'>
     <inertial>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
   </link>
 </robot>)""");
   const RigidBody<double>* body = dynamic_cast<const RigidBody<double>*>(
-    &pair.plant->GetBodyByName("default_mass"));
+    &pair.plant->GetBodyByName("mass_tag_omitted"));
   EXPECT_EQ(body->get_default_mass(), 0.);
   EXPECT_TRUE(body->default_rotational_inertia().get_moments().isZero());
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
