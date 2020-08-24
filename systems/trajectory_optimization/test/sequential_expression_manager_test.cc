@@ -11,6 +11,8 @@ namespace systems {
 namespace trajectory_optimization {
 namespace internal {
 
+using std::string;
+using std::vector;
 using symbolic::Expression;
 using symbolic::Substitution;
 using symbolic::Variable;
@@ -130,6 +132,30 @@ TEST_F(SequentialExpressionManagerTests, GetSequentialExpressionsByNameTest) {
     EXPECT_EQ(dut_.GetSequentialExpressionsByName("x", j), expected_expression);
   }
 }
+
+TEST_F(SequentialExpressionManagerTests, GetSequentialExpressionNamesTest) {
+  MatrixX<Variable> x_sequential =
+      MakeVariableMatrix(num_variables_, num_samples_);
+  VectorX<Variable> x_placeholder = dut_.RegisterSequentialExpressions(
+      Eigen::Map<MatrixX<Variable>>(x_sequential.data(), num_variables_,
+                                    num_samples_)
+          .cast<Expression>(),
+      "x");
+
+  const vector<string> seq_variable_names = dut_.GetSequentialExpressionNames();
+  EXPECT_EQ(seq_variable_names.size(), num_variables_ * num_samples_);
+
+  auto check_name = [](const vector<string> vec, const string& name) {
+    return find(vec.begin(), vec.end(), name) != vec.end();
+  };
+
+  for (int i = 0; i < num_variables_; ++i) {
+    for (int j = 0; j < num_samples_; ++j) {
+      EXPECT_TRUE(check_name(seq_variable_names, fmt::format("x_{}_{}", i, j)));
+    }
+  }
+}
+
 }  // namespace internal
 }  // namespace trajectory_optimization
 }  // namespace systems
