@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -89,6 +90,10 @@ class SequentialExpressionManager {
    **/
   VectorX<symbolic::Expression> GetSequentialExpressionsByName(
       const std::string& name, int index) const;
+
+  /** Returns all the sequential expression names in this manager.
+   */
+  std::vector<std::string> GetSequentialExpressionNames() const;
 
   /**
    * Returns the number of samples for the sequential expressions managed by
