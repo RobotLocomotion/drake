@@ -4,7 +4,7 @@
 #include <limits>
 #include <stdexcept>
 
-#include <eigen3/Eigen/src/Core/Matrix.h>
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
