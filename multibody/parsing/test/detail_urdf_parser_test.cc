@@ -588,7 +588,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PointMass) {
 GTEST_TEST(MultibodyPlantUrdfParserTest, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
-  EXPECT_THROW(ParseTestString(R"""(
+  std::string bad_model = R"""(
 <robot name='bad'>
   <link name='bad'>
     <inertial>
@@ -596,7 +596,12 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, ZeroMassNonZeroInertia) {
       <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
     </inertial>
   </link>
-</robot>)"""), std::runtime_error);
+</robot>)""";
+  if (::drake::kDrakeAssertIsArmed) {
+    EXPECT_DEATH(ParseTestString(bad_model), ".*condition 'mass > 0' failed");
+  } else {
+    EXPECT_THROW(ParseTestString(bad_model), std::runtime_error);
+  }
 }
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, BushingParsing) {

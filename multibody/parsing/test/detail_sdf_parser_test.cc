@@ -390,7 +390,8 @@ GTEST_TEST(SdfParser, PointMass) {
 GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
-  EXPECT_THROW(ParseTestString(R"""(
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  std::string bad_model = R"""(
 <model name='bad'>
   <link name='bad'>
     <inertial>
@@ -405,7 +406,12 @@ GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
       </inertia>
     </inertial>
   </link>
-</model>)"""), std::runtime_error);
+</model>)""";
+  if (::drake::kDrakeAssertIsArmed) {
+    EXPECT_DEATH(ParseTestString(bad_model), ".*condition 'mass > 0' failed");
+  } else {
+    EXPECT_THROW(ParseTestString(bad_model), std::runtime_error);
+  }
 }
 
 GTEST_TEST(SdfParser, FloatingBodyPose) {
