@@ -387,11 +387,9 @@ GTEST_TEST(SdfParser, PointMass) {
   EXPECT_TRUE(body->default_rotational_inertia().get_products().isZero());
 }
 
-GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
-  // Test that attempting to parse links with zero mass and non-zero inertia
-  // fails.
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  std::string bad_model = R"""(
+namespace {
+  void ParseZeroMassNonZeroInertia() {
+    ParseTestString(R"""(
 <model name='bad'>
   <link name='bad'>
     <inertial>
@@ -406,11 +404,25 @@ GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
       </inertia>
     </inertial>
   </link>
-</model>)""";
+</model>)""");
+  }
+}  // namespace
+
+GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  if (!::drake::kDrakeAssertIsArmed) {
+    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
+  }
+}
+
+GTEST_TEST(SdfParser, ZeroMassNonZeroInertiaDrakeAssertIsArmed) {
+  // Test that attempting to parse links with zero mass and non-zero inertia
+  // fails.
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   if (::drake::kDrakeAssertIsArmed) {
-    EXPECT_DEATH(ParseTestString(bad_model), ".*condition 'mass > 0' failed");
-  } else {
-    EXPECT_THROW(ParseTestString(bad_model), std::runtime_error);
+    EXPECT_DEATH(ParseZeroMassNonZeroInertia(),
+                 ".*condition 'mass > 0' failed");
   }
 }
 
