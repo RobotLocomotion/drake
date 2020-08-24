@@ -598,7 +598,7 @@ namespace {
   }
 }  // namespace
 
-GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
+GTEST_TEST(MultibodyPlantUrdfParserTest, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
   if (!::drake::kDrakeAssertIsArmed) {
@@ -606,7 +606,7 @@ GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
   }
 }
 
-GTEST_TEST(SdfParser, ZeroMassNonZeroInertiaDrakeAssertIsArmed) {
+GTEST_TEST(MultibodyPlantUrdfParserDeathTest, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";

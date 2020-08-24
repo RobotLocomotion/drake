@@ -412,11 +412,12 @@ GTEST_TEST(SdfParser, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
   if (!::drake::kDrakeAssertIsArmed) {
-    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
+    // EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
+    ParseZeroMassNonZeroInertia();
   }
 }
 
-GTEST_TEST(SdfParser, ZeroMassNonZeroInertiaDrakeAssertIsArmed) {
+GTEST_TEST(SdfParserDeathTest, ZeroMassNonZeroInertia) {
   // Test that attempting to parse links with zero mass and non-zero inertia
   // fails.
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
