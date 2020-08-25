@@ -55,6 +55,8 @@ controlled. These include:
 * load average -- close as many other programs as practical
 * cpu throttling -- varies with platform
   * Linux: https://github.com/google/benchmark#disabling-cpu-frequency-scaling
+* cpu affinity -- varies with platform
+  * Linux: use the `taskset` command
 
 Bazel buries the results deep in its output tree. To copy them
 somewhere more convenient, use this command outside of Bazel:
