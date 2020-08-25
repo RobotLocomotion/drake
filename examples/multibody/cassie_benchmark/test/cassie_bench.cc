@@ -101,7 +101,7 @@ BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(175));
+    LimitMalloc guard(LimitReleaseOnly(174));
     InvalidateState();
     plant_->CalcMassMatrix(*context_, &M);
   }
@@ -166,7 +166,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
       x_autodiff);
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(62476));
+    LimitMalloc guard(LimitReleaseOnly(62430));
     InvalidateState();
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
   }
