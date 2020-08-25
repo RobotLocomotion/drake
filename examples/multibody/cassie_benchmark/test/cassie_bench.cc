@@ -101,7 +101,7 @@ BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(175));
+    LimitMalloc guard(LimitReleaseOnly(174));
     InvalidateState();
     plant_->CalcMassMatrix(*context_, &M);
   }
