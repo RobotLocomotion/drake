@@ -96,20 +96,57 @@ class CassieDoubleFixture : public benchmark::Fixture {
   VectorXd x_{};
 };
 
+// Track and report simple streaming statistics on allocations. Variance
+// tracking is adapted from:
+// https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm
+class AllocationTracker {
+ public:
+  explicit AllocationTracker(benchmark::State* state) : state_(state) {}
+
+  ~AllocationTracker() {
+    state_->counters["Allocs.min"] = min_;
+    state_->counters["Allocs.max"] = max_;
+    state_->counters["Allocs.mean"] = mean_;
+    state_->counters["Allocs.stddev"] =
+        updates_ < 2 ? std::numeric_limits<double>::quiet_NaN()
+                     : std::sqrt(m2_ / (updates_ - 1));
+  }
+
+  void Update(int allocs) {
+    min_ = std::min(min_, allocs);
+    max_ = std::max(max_, allocs);
+    ++updates_;
+    double delta = allocs - mean_;
+    mean_ += delta / updates_;
+    m2_ += delta * (allocs - mean_);
+  }
+
+ private:
+  benchmark::State* state_{};
+  int min_{std::numeric_limits<int>::max()};
+  int max_{std::numeric_limits<int>::min()};
+  int updates_{};
+  double mean_{};
+  double m2_{};
+};
+
 // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
 BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
+  AllocationTracker tracker(&state);
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
     // @see LimitMalloc note above.
     LimitMalloc guard(LimitReleaseOnly(175));
     InvalidateState();
     plant_->CalcMassMatrix(*context_, &M);
+    tracker.Update(guard.num_allocations());
   }
 }
 
 BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
+  AllocationTracker tracker(&state);
   VectorXd desired_vdot = VectorXd::Zero(nv_);
   multibody::MultibodyForces<double> external_forces(*plant_);
   for (auto _ : state) {
@@ -117,12 +154,14 @@ BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
     LimitMalloc guard(LimitReleaseOnly(3));
     InvalidateState();
     plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
+    tracker.Update(guard.num_allocations());
   }
 }
 
 BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
+  AllocationTracker tracker(&state);
   auto derivatives = plant_->AllocateTimeDerivatives();
   auto& port_value =
       plant_->get_actuation_input_port().FixValue(context_.get(), u_);
@@ -132,6 +171,7 @@ BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_->CalcTimeDerivatives(*context_, derivatives.get());
+    tracker.Update(guard.num_allocations());
   }
 }
 
@@ -160,21 +200,34 @@ class CassieAutodiffFixture : public CassieDoubleFixture {
 BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
+  AllocationTracker tracker(&state);
   MatrixX<AutoDiffXd> M_autodiff(nv_, nv_);
   auto x_autodiff = math::initializeAutoDiff(x_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
-  for (auto _ : state) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(62476));
+
+  auto compute = [&]() {
     InvalidateState();
     plant_autodiff_->CalcMassMatrix(*context_autodiff_, &M_autodiff);
+  };
+
+  // The first iteration allocates more memory than subsequent runs.
+  compute();
+
+  for (auto _ : state) {
+    // @see LimitMalloc note above.
+    LimitMalloc guard(LimitReleaseOnly(61405));
+
+    compute();
+
+    tracker.Update(guard.num_allocations());
   }
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
+  AllocationTracker tracker(&state);
   VectorXd desired_vdot = VectorXd::Zero(nv_);
   multibody::MultibodyForces<AutoDiffXd> external_forces_autodiff(
       *plant_autodiff_);
@@ -183,19 +236,31 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
       math::initializeAutoDiff(desired_vdot, nq_ + 2 * nv_, nq_ + nv_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
-  for (auto _ : state) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(70301));
+
+  auto compute = [&]() {
     InvalidateState();
     plant_autodiff_->CalcInverseDynamics(*context_autodiff_,
                                          vdot_autodiff,
                                          external_forces_autodiff);
+  };
+
+  // The first iteration allocates more memory than subsequent runs.
+  compute();
+
+  for (auto _ : state) {
+    // @see LimitMalloc note above.
+    LimitMalloc guard(LimitReleaseOnly(68798));
+
+    compute();
+
+    tracker.Update(guard.num_allocations());
   }
 }
 
 BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
     // NOLINTNEXTLINE(runtime/references) cpplint disapproves of gbench choices.
     (benchmark::State& state) {
+  AllocationTracker tracker(&state);
   auto derivatives_autodiff = plant_autodiff_->AllocateTimeDerivatives();
   auto u_autodiff = math::initializeAutoDiff(u_, nq_ + nv_ + nu_, nq_ + nv_);
   auto& port_value = plant_autodiff_->get_actuation_input_port().FixValue(
@@ -203,14 +268,24 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
   auto x_autodiff = math::initializeAutoDiff(x_, nq_ + nv_ + nu_);
   plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
       x_autodiff);
-  for (auto _ : state) {
-    // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(105675));
 
+  auto compute = [&]() {
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_autodiff_->CalcTimeDerivatives(*context_autodiff_,
                                          derivatives_autodiff.get());
+  };
+
+  // The first iteration allocates more memory than subsequent runs.
+  compute();
+
+  for (auto _ : state) {
+    // @see LimitMalloc note above.
+    LimitMalloc guard(LimitReleaseOnly(102904));
+
+    compute();
+
+    tracker.Update(guard.num_allocations());
   }
 }
 
