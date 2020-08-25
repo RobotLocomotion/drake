@@ -76,7 +76,7 @@ stabilizable linearization around a hovering fixed point in 3D without them).
 which applies only a force (no moment) in the Propeller coordinates.
 
 @tparam_default_scalar
-@ingroup multibody
+@ingroup multibody_systems
 */
 template <typename T>
 class Propeller final : public systems::LeafSystem<T> {
