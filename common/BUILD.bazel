@@ -202,6 +202,8 @@ drake_cc_library(
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
         "symbolic_formula_visitor.h",
+        "symbolic_generic_polynomial.cc",
+        "symbolic_generic_polynomial.h",
         "symbolic_ldlt.cc",
         "symbolic_ldlt.h",
         "symbolic_monomial.cc",
