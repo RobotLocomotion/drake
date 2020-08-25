@@ -60,6 +60,7 @@ using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using math::RotationMatrixd;
 using std::unique_ptr;
 
 // TODO(SeanCurtis-TRI): Robustly confirm that epsilon of 1e-14 is correct for
@@ -758,51 +759,132 @@ GTEST_TEST(MeshIntersectionTest, IsFaceNormalAlongPressureGradient) {
   }
 }
 
-// TODO(DamrongGuoy): Test SampleVolumeFieldOnSurface with more general
-//  X_MN.  Right now X_MN is a simple translation without rotation.
+// Given a triangle in a surface mesh, reports the tet in the volume mesh that
+// completely contains the triangle. Throws if a test cannot be identified.
+template <typename T>
+VolumeElementIndex GetTetForTriangle(const SurfaceMesh<T>& surface_S,
+                                     SurfaceFaceIndex f,
+                                     const VolumeMesh<T>& volume_V,
+                                     const RigidTransform<T>& X_VS) {
+  const std::vector<SurfaceVertex<T>>& vertices_S = surface_S.vertices();
+
+  // Each triangle lies completely within one tet in the volume mesh. The
+  // gradient value reported should be that of that tet. So, we'll grab
+  // the centroid of each triangle, find the tet it lies in, and confirm
+  // that the pressure gradient on that triangle matches the tet.
+  const SurfaceFace& face = surface_S.element(f);
+  const Vector3<T> p_SC =
+      (vertices_S[face.vertex(0)].r_MV() + vertices_S[face.vertex(1)].r_MV() +
+       vertices_S[face.vertex(2)].r_MV()) /
+      3;
+  const Vector3<T> p_VC = X_VS * p_SC;
+  for (VolumeElementIndex e(0); e < volume_V.num_elements(); ++e) {
+    auto bary_e = volume_V.CalcBarycentric(p_VC, e);
+    if ((bary_e.array() >= 0).all() && (bary_e.array() <= 1).all()) {
+      return e;
+    }
+  }
+  throw std::logic_error(fmt::format(
+      "Surface triangle was unable to place triangle {} in any tetrahedron",
+      f));
+}
 
 GTEST_TEST(MeshIntersectionTest, SampleVolumeFieldOnSurface) {
   auto volume_M = TrivialVolumeMesh<double>();
+  const BoundingVolumeHierarchy<VolumeMesh<double>> bvh_M(*volume_M);
   auto volume_field_M = TrivialVolumeMeshField<double>(volume_M.get());
   auto rigid_N = TrivialSurfaceMesh<double>();
-  const auto X_MN = RigidTransformd(Vector3d(0, 0, 0.5));
+  const BoundingVolumeHierarchy<SurfaceMesh<double>> bvh_N(*rigid_N);
+  // Transform the surface (single triangle) so that it intersects with *both*
+  // tets in the volume mesh. The surface lies on the y = 0.75 plane.
+  // Each tet gets intersected into a isosceles right triangle with a leg
+  // length of 0.25m.
+  // Construct the 90-degree rotation around the x-axis perfectly so there's
+  // no rounding error in our calculations.
+  const auto R_MN = RotationMatrixd::MakeFromOrthonormalColumns(
+      {1, 0, 0}, {0, 0, 1}, {0, -1, 0});
+  const RigidTransformd X_MN(R_MN, Vector3d(-0.1, 0.75, -0.25));
+  std::vector<Vector3<double>> grad_eM_M;
 
-  unique_ptr<SurfaceMesh<double>> surface;
+  unique_ptr<SurfaceMesh<double>> surface_M;
   unique_ptr<SurfaceMeshFieldLinear<double, double>> e_field;
   SurfaceVolumeIntersector<double>().SampleVolumeFieldOnSurface(
-      *volume_field_M, *rigid_N, X_MN, &surface, &e_field);
+      *volume_field_M, bvh_M, *rigid_N, bvh_N, X_MN, &surface_M, &e_field,
+      &grad_eM_M);
 
   const double kEps = std::numeric_limits<double>::epsilon();
-  EXPECT_EQ(3, surface->num_faces());
-  // TODO(DamrongGuoy): More comprehensive checks.
-  const double area = surface->area(SurfaceFaceIndex(0));
-  // The geometries M and N intersect in a right triangle ABC with edge
-  // lengths 0.5, 0.5, 0.5√2 with area 1/8. Then, ABC is subdivided into three
-  // smaller triangles of equal area, so each of the triangle in the contact
-  // surface has area (1/8)/3.
-  const double expect_area = 1. / 24.;
-  EXPECT_NEAR(expect_area, area, kEps);
+  EXPECT_EQ(6, surface_M->num_faces());
+
+  // The geometries M and N intersect such that both tets get sliced into
+  // identical right, isosceles triangles (with a leg length of 0.25m). The
+  // total area is 2 * 0.25**2 / 2 = 0.25**2.
+  const double expect_area = 0.25 * 0.25;
+  EXPECT_NEAR(expect_area, surface_M->total_area(), kEps);
 
   // Here we exploit the simplicity of TrivialVolumeMeshField<>() to check
   // the field value. The test of field evaluation with more complex field
-  // values are in the unit test of VolumeMeshFieldLinear<>. Furthermore,
-  // testing that the right vertex is assigned the right field value is done
-  // in testing ComputeContactSurfaceFromSoftVolumeRigidSurface().
-  const SurfaceFaceIndex face0(0);
-  const SurfaceMesh<double>::Barycentric centroid(1. / 3., 1. / 3., 1. / 3.);
-  const double e = e_field->Evaluate(face0, centroid);
-  const double expect_e = 5e6;
-  EXPECT_NEAR(expect_e, e, kEps);
+  // values are in the unit test of VolumeMeshFieldLinear<>. We know that
+  // mesh vertices on the z = 0 plane must have zero pressure and two vertices
+  // at z = +/-0.25m have pressure values of 0.25 * 1e7 and 0.25 * 1e10,
+  // respectively. However, for an epsilon deviation, the pressure can
+  // vary as much as kEps * max_pressure. So, we'll define a custom threshold
+  // for *this* test. Note: we're skipping the vertices located at the
+  // triangle centroids.
+  const double kEpsPressure = kEps * 1e10;
+  const std::vector<SurfaceVertex<double>>& vertices = surface_M->vertices();
+  bool domain_checked[] = {false, false, false};
+  for (SurfaceVertexIndex v(0); v < surface_M->num_vertices(); ++v) {
+    const double p_MV_z = vertices[v].r_MV()[2];
+    if (std::abs(p_MV_z) < kEps) {
+      ASSERT_NEAR(e_field->EvaluateAtVertex(v), 0.0, kEpsPressure);
+      domain_checked[0] = true;
+    } else if (std::abs(p_MV_z - 0.25) < kEps) {
+      ASSERT_NEAR(e_field->EvaluateAtVertex(v), 0.25 * 1e7, kEpsPressure);
+      domain_checked[1] = true;
+    } else if (std::abs(p_MV_z + 0.25) < kEps) {
+      ASSERT_NEAR(e_field->EvaluateAtVertex(v), 0.25 * 1e10, kEpsPressure);
+      domain_checked[2] = true;
+    }
+  }
+  // Confirm the e_field tests didn't pass by omission.
+  ASSERT_TRUE(domain_checked[0])
+      << "Assumptions have been broken! In testing e_field, no vertex was on "
+         "the z = 0 plane.";
+  ASSERT_TRUE(domain_checked[1])
+      << "Assumptions have been broken! In testing e_field, no vertex was "
+         "located at z = 0.25";
+  ASSERT_TRUE(domain_checked[2])
+      << "Assumptions have been broken! In testing e_field, no vertex was "
+         "located at z = -0.25";
 
-  // Test the face normals of resulting mesh. Because the 'trivial' surface mesh
-  // is a single triangle, all triangles in the resulting mesh should have the
-  // same normal.
-  using FIndex = SurfaceMesh<double>::ElementIndex;
+  // Test the face normals of resulting mesh. Because the 'trivial' surface
+  // mesh is a single triangle, all triangles in the resulting mesh should
+  // have the same normal.
+  using FIndex = SurfaceFaceIndex;
   ASSERT_TRUE(
       CompareMatrices(rigid_N->face_normal(FIndex{0}), Vector3d::UnitZ()));
-  for (FIndex f(0); f < surface->num_faces(); ++f) {
-    EXPECT_TRUE(CompareMatrices(surface->face_normal(f), Vector3d::UnitZ()));
+  for (FIndex f(0); f < surface_M->num_faces(); ++f) {
+    EXPECT_TRUE(CompareMatrices(surface_M->face_normal(f),
+                                X_MN.rotation() * Vector3d::UnitZ()));
   }
+
+  // Only the soft volume mesh provides gradients.
+  const std::vector<SurfaceFace>& faces = surface_M->faces();
+  ASSERT_EQ(faces.size(), grad_eM_M.size());
+  for (FIndex f(0); f < surface_M->num_elements(); ++f) {
+    const VolumeElementIndex t =
+        GetTetForTriangle(*surface_M, f, *volume_M, {});
+    ASSERT_TRUE(
+        CompareMatrices(grad_eM_M[f], volume_field_M->EvaluateGradient(t)));
+  }
+  // By design, we wanted to have *different* pressure gradients present
+  // in the mesh (hence the reason for intersecting both tetrahedra). Let's
+  // confirm that is the case. We assume the first and last triangles in
+  // the surface are from *different* tetrahedra. The pressure increases
+  // as we move away from the z = 0 plane. So, they'll have different signs
+  // and compare as different with a *massive* tolerance (here equal to the
+  // maximum pressure value).
+  EXPECT_FALSE(CompareMatrices(grad_eM_M.front(), grad_eM_M.back(), 1e10));
 }
 
 // Generates a volume mesh of an octahedron comprising of eight tetrahedral
@@ -947,6 +1029,8 @@ void TestComputeContactSurfaceSoftRigid() {
       id_A, *field_S, X_WS, id_B, *surface_R, X_WR);
   EXPECT_EQ(contact_SR->id_M(), id_A);
   EXPECT_EQ(contact_SR->id_N(), id_B);
+  EXPECT_TRUE(contact_SR->HasGradE_M());
+  EXPECT_FALSE(contact_SR->HasGradE_N());
 
   // Now reverse the ids. It should *still* be the case that the reported id_A
   // is less than id_B, but we should further satisfy various invariants
@@ -955,6 +1039,8 @@ void TestComputeContactSurfaceSoftRigid() {
       id_B, *field_S, X_WS, id_A, *surface_R, X_WR);
   EXPECT_EQ(contact_RS->id_M(), id_A);
   EXPECT_EQ(contact_RS->id_N(), id_B);
+  EXPECT_FALSE(contact_RS->HasGradE_M());
+  EXPECT_TRUE(contact_RS->HasGradE_N());
 
   // Mesh invariants:
   //   Meshes are the same "size" (topologically).
@@ -976,6 +1062,17 @@ void TestComputeContactSurfaceSoftRigid() {
   const SurfaceFaceIndex f_index(0);
   EXPECT_EQ(contact_SR->EvaluateE_MN(f_index, centroid),
             contact_RS->EvaluateE_MN(f_index, centroid));
+
+  // The gradients for the pressure field of the soft mesh are expresssed in the
+  // world frame. To determine the world transformation has taken place, we'll
+  // find which tetrahedron produced the first triangle in the contact surface.
+  // We'll confirm that its gradient has been transformed to the world frame.
+  const SurfaceFaceIndex f0(0);
+  const VolumeElementIndex t =
+      GetTetForTriangle<T>(contact_SR->mesh_W(), f0, *mesh_S, X_WS.inverse());
+  EXPECT_TRUE(CompareMatrices(contact_SR->EvaluateGradE_M_W(f0),
+                              X_WS.rotation() * field_S->EvaluateGradient(t),
+                              std::numeric_limits<double>::epsilon()));
 }
 
 GTEST_TEST(MeshIntersectionTest, ComputeContactSurfaceSoftRigidDouble) {

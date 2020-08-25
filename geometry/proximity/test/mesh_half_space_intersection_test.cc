@@ -755,6 +755,8 @@ REGISTER_TYPED_TEST_SUITE_P(MeshHalfspaceIntersectionTest, NoIntersection,
 //    - Compute pressure field on mesh.
 //    - Return contact surface with mesh and pressure; field must have pointer
 //      to the mesh.
+//    - Report the gradients of soft half space's pressure field across all
+//      triangles.
 //
 // It is impossible to test correct BVH use (it's all fully contained within
 // the implementation). So, we'll focus on intersecting and non-intersecting
@@ -790,21 +792,23 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
     EXPECT_EQ(contact_surface, nullptr);
   }
 
-  {
-    // Case: intersecting.
+  // Define an intersecting configuration.
+  // The half space is defined in Frame H. The box is defined in Frame B.
+  // Have the half space's boundary plane lie _near_ the box's origin and its
+  // normal not quite aligned with Bz -- the goal is to get a contact surface
+  // that has the same general _topology_ as the
+  // (MeshHalfSpaceIntersectionTest, BoxMesh) test (see above), but not
+  // actually have the half space perfectly aligned with the mesh.
+  // We pick a rotation roughly 5 degrees away from Bz and a small offset
+  // from the origin.
+  const RigidTransform<double> X_BH{
+      AngleAxis<double>{M_PI * 0.027, Vector3d{1, 1, 0}.normalized()},
+      Vector3<double>{0.1, -0.05, 0.075}};
+  const RigidTransform<double> X_WH = X_WF * X_FB * X_BH;
 
-    // The half space is defined in Frame H. The box is defined in Frame B.
-    // Have the half space's boundary plane lie _near_ the box's origin and its
-    // normal not quite aligned with Bz -- the goal is to get a contact surface
-    // that has the same general _topology_ as the
-    // (MeshHalfSpaceIntersectionTest, BoxMesh) test (see above), but not
-    // actually have the half space perfectly aligned with the mesh.
-    // We pick a rotation roughly 5 degrees away from Bz and a small offset
-    // from the origin.
-    const RigidTransform<double> X_BH{
-        AngleAxis<double>{M_PI * 0.027, Vector3d{1, 1, 0}.normalized()},
-        Vector3<double>{0.1, -0.05, 0.075}};
-    const RigidTransform<double> X_WH = X_WF * X_FB * X_BH;
+  {
+    // Case: intersecting configuration (ignoring the gradients of the
+    // constituent pressure fields).
     const std::unique_ptr<ContactSurface<double>> contact_surface =
         ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
             hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF);
@@ -832,8 +836,49 @@ GTEST_TEST(ComputeContactSurfaceFromSoftHalfSpaceRigidMeshTest, DoubleValued) {
       EXPECT_NEAR(pressure, expected_pressure, 1e-15);
     }
   }
-}
 
+  {
+    // Case:  A repeat of the previous test, this time, we simply test for the
+    // existence (and correctness) of the pressure field gradient associated
+    // with the half space; it should be the negative scaled half space normal.
+    // We'll repeat the test twice, swapping ids to make sure the pressure field
+    // moves from M to N.
+    const Vector3d grad_eH_W_expected =
+        -pressure_scale * X_WH.rotation().col(2);
+    {
+      const std::unique_ptr<ContactSurface<double>> contact_surface =
+          ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+              hs_id, X_WH, pressure_scale, mesh_id, mesh_F, bvh_F, X_WF);
+      ASSERT_NE(contact_surface, nullptr);
+      ASSERT_LT(mesh_id, hs_id);
+      EXPECT_FALSE(contact_surface->HasGradE_M());
+      EXPECT_TRUE(contact_surface->HasGradE_N());
+
+      EXPECT_GT(contact_surface->mesh_W().num_faces(), 0);
+      for (SurfaceFaceIndex f(0); f < contact_surface->mesh_W().num_faces();
+           ++f) {
+        ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_N_W(f),
+                                    grad_eH_W_expected));
+      }
+    }
+
+    {
+      const std::unique_ptr<ContactSurface<double>> contact_surface =
+          ComputeContactSurfaceFromSoftHalfSpaceRigidMesh(
+              mesh_id, X_WH, pressure_scale, hs_id, mesh_F, bvh_F, X_WF);
+      ASSERT_NE(contact_surface, nullptr);
+      EXPECT_TRUE(contact_surface->HasGradE_M());
+      EXPECT_FALSE(contact_surface->HasGradE_N());
+
+      EXPECT_GT(contact_surface->mesh_W().num_faces(), 0);
+      for (SurfaceFaceIndex f(0); f < contact_surface->mesh_W().num_faces();
+           ++f) {
+        ASSERT_TRUE(CompareMatrices(contact_surface->EvaluateGradE_M_W(f),
+                                    grad_eH_W_expected));
+      }
+    }
+  }
+}
 
 // Confirm that the rigid-soft intersection correctly culls backface geometry.
 GTEST_TEST(CompupteContactSurfaceFromSoftHalfSpaceRigidMeshTest, BackfaceCull) {
