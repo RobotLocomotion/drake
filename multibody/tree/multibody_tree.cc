@@ -1280,22 +1280,34 @@ template <typename T>
 SpatialMomentum<T> MultibodyTree<T>::CalcBodiesSpatialMomentumInWorldAboutWo(
     const systems::Context<T>& context,
     const std::vector<BodyIndex>& body_indexes) const {
-  // Accumulate system translational momentum (mass * velocity).
-  Vector3<T> sum_mv = Vector3<T>::Zero();
 
+  // For efficiency, evaluate all bodies' spatial inertia, velocities, and pose.
+  const std::vector<SpatialInertia<T>>& M_Bi_W =
+      EvalSpatialInertiaInWorldCache(context);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+
+  // Accumulate each body's spatial momentum in the world frame W to this system
+  // S's spatial momentum in W about Wo (the origin of W), expressed in W.
+  SpatialMomentum<T> L_WS_W(Vector6<T>::Zero());
+
+  // Add contributions from each body Bi.
   for (BodyIndex body_index : body_indexes) {
-    if (body_index == 0) continue;
+    if (body_index == 0) continue;  // No contribution from the world body.
 
-    const Body<T>& body = get_body(body_index);
-    const T& body_mass = body.get_mass(context);
-    const Vector3<T>& v_WBcm_W =
-        body.EvalSpatialVelocityInWorld(context).translational();
+    // Form the current body's spatial momentum in W about Bo, expressed in W.
+    const BodyNodeIndex body_node_index = get_body(body_index).node_index();
+    const SpatialInertia<T>& M_BBo_W = M_Bi_W[body_node_index];
+    const SpatialVelocity<T>& V_WBo_W = vc.get_V_WB(body_node_index);
+    SpatialMomentum<T> L_WBo_W = M_BBo_W * V_WBo_W;
 
-    // sum_mass_times_velocity = ∑ mᵢ * v_WBicm_W.
-    sum_mv += body_mass * v_WBcm_W;
+    // Shift L_WBo_W from about Bo to about Wo and accumulate the sum.
+    const RigidTransform<T>& X_WB = pc.get_X_WB(body_node_index);
+    const Vector3<T>& p_WoBo_W = X_WB.translation();
+    L_WS_W += L_WBo_W.ShiftInPlace(-p_WoBo_W);
   }
 
-  return SpatialMomentum<T>(Vector3<T>::Zero(), sum_mv);
+  return L_WS_W;
 }
 
 template <typename T>

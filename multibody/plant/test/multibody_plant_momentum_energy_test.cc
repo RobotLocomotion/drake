@@ -40,11 +40,11 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   // Setup the MBP.
   void SetUp() override {
     // Set a spatial inertia for each link.
-    const double link_width = 0.1 * link_length_;
-    const UnitInertia<double> G_Bcm =
-        UnitInertia<double>::SolidBox(link_length_, link_width, link_width);
+    const RotationalInertia<double> I_BBcm(0, Izz_, Izz_);
     const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-    const SpatialInertia<double> M_Bcm(mass_link_, p_BoBcm_B, G_Bcm);
+    const SpatialInertia<double> M_Bcm =
+        SpatialInertia<double>::MakeFromCentralInertia(mass_link_, p_BoBcm_B,
+                                                       I_BBcm);
 
     // Create an empty MultibodyPlant and then add the two links.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
@@ -78,6 +78,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
  protected:
   const double mass_link_ = 5.0;    // kg
   const double link_length_ = 4.0;  // meters
+  const double Izz_ = mass_link_ * link_length_ * link_length_ / 12.0;
   const double wAz_ = 3.0;          // rad/sec
   const double wBz_ = 2.0;          // rad/sec
 
@@ -115,6 +116,14 @@ TEST_F(TwoDOFPlanarPendulumTest, CalcSpatialMomentumInWorldAboutWo) {
   const Vector3<double> mv_expected = (mv1 + mv2) * Vector3<double>::UnitY();
   EXPECT_TRUE(CompareMatrices(momentum.translational(),
       mv_expected, kTolerance));
+
+  // MotionGenesis result: Izz*wBz + 2*Izz*wAz + 0.75*m*L^2*wBz + 2.5*m*L^2*wAz
+  const double mLL = mass_link_ * link_length_ * link_length_;
+  const Vector3<double> angular_momentum_expected =
+      (Izz_ * wBz_ + 2 * Izz_ * wAz_ + 0.75 * mLL * wBz_ + 2.5 * mLL * wAz_) *
+      Vector3<double>::UnitZ();
+  EXPECT_TRUE(CompareMatrices(momentum.rotational(),
+                              angular_momentum_expected, kTolerance));
 }
 
 }  // namespace
