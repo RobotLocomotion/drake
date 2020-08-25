@@ -1266,10 +1266,10 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   /// @param[in] M_B_W Spatial inertia for the body B associated with this node.
   /// About B's origin Bo and expressed in the world frame W.
   /// @param[in] pc Position kinematics cache.
-  /// @param[in] R_B_W_all Vector storing the composite body inertia for all
+  /// @param[in] Mc_B_W_all Vector storing the composite body inertia for all
   /// bodies in the multibody system. It must contain already up-to-date
   /// composite body inertias for all the children of `this` node.
-  /// @param[out] R_B_W The composite body inertia for `this` node. It must be
+  /// @param[out] Mc_B_W The composite body inertia for `this` node. It must be
   /// non-nullptr.
   /// @pre CalcCompositeBodyInertia_TipToBase() must have already been called
   /// for the children nodes (and, by recursive precondition, all outboard nodes
@@ -1277,15 +1277,15 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
   void CalcCompositeBodyInertia_TipToBase(
       const SpatialInertia<T>& M_B_W,
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& R_B_W_all,
-      SpatialInertia<T>* R_B_W) const {
+      const std::vector<SpatialInertia<T>>& Mc_B_W_all,
+      SpatialInertia<T>* Mc_B_W) const {
     DRAKE_THROW_UNLESS(topology_.body != world_index());
-    DRAKE_THROW_UNLESS(R_B_W != nullptr);
+    DRAKE_THROW_UNLESS(Mc_B_W != nullptr);
 
     // Composite body inertia R_B_W for this node B, about its frame's origin
     // Bo, and expressed in the world frame W. Here we adopt the notation used
     // in Jain's book.
-    *R_B_W = M_B_W;
+    *Mc_B_W = M_B_W;
     // Add composite body inertia contributions from all children.
     for (const BodyNode<T>* child : children_) {
       // Shift vector p_CoBo_W.
@@ -1294,10 +1294,10 @@ class BodyNode : public MultibodyElement<BodyNode, T, BodyNodeIndex> {
 
       // Composite body inertia for outboard child body C, about Co, expressed
       // in W.
-      const SpatialInertia<T>& R_CCo_W = R_B_W_all[child->index()];
+      const SpatialInertia<T>& Mc_CCo_W = Mc_B_W_all[child->index()];
 
       // Shift to Bo and add it to the composite body inertia of B.
-      *R_B_W += R_CCo_W.Shift(p_CoBo_W);
+      *Mc_B_W += Mc_CCo_W.Shift(p_CoBo_W);
     }
   }
 
