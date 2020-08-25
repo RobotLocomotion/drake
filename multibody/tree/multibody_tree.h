@@ -1288,19 +1288,24 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const std::vector<BodyIndex>& body_indexes) const;
 
-  /// This method returns the spatial momentum of  `this` MultibodyTree in the
-  /// world frame W, about the world origin Wo, expressed in the world frame W.
+  /// This method returns the spatial momentum of `this` MultibodyTree in the
+  /// world frame W, about a designated point P, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
-  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutWo(
-      const systems::Context<T>& context) const;
+  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
+  ///            arbitrary point P, expressed in the world frame W.
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
+      const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const;
 
   /// This method returns the spatial momentum of a list of model instances in
-  /// the world frame W, about the world origin Wo, expressed in frame W.
+  /// the world frame W, about a designated point P, expressed in frame W.
   /// @param[in] context Contains the state of the model.
   /// @param[in] model_instances Array of selected model instances.
-  SpatialMomentum<T> CalcModelInstanceSpatialMomentumInWorldAboutWo(
+  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
+  ///            arbitrary point P, expressed in the world frame W.
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
       const systems::Context<T>& context,
-      const std::vector<ModelInstanceIndex>& model_instances) const;
+      const std::vector<ModelInstanceIndex>& model_instances,
+      const Vector3<T>& p_WoP_W) const;
 
   /// This method returns the spatial momentum of a list of bodies in the
   /// world frame W, about the world origin Wo, expressed in the world frame W.

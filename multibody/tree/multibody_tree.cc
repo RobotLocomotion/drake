@@ -1247,23 +1247,24 @@ Vector3<T> MultibodyTree<T>::CalcCenterOfMassPosition(
 }
 
 template <typename T>
-SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutWo(
-    const systems::Context<T>& context) const {
+SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
+    const systems::Context<T>& context,
+    const Vector3<T>& p_WoP_W) const {
   // Assemble a list of ModelInstanceIndex.
   std::vector<ModelInstanceIndex> model_instances;
   for (ModelInstanceIndex model_instance_index(1);
        model_instance_index < num_model_instances(); ++model_instance_index)
     model_instances.push_back(model_instance_index);
 
-  return CalcModelInstanceSpatialMomentumInWorldAboutWo(context,
-      model_instances);
+  return CalcSpatialMomentumInWorldAboutPoint(context, model_instances,
+      p_WoP_W);
 }
 
 template <typename T>
-SpatialMomentum<T>
-MultibodyTree<T>::CalcModelInstanceSpatialMomentumInWorldAboutWo(
+SpatialMomentum<T> MultibodyTree<T>::CalcSpatialMomentumInWorldAboutPoint(
     const systems::Context<T>& context,
-    const std::vector<ModelInstanceIndex>& model_instances) const {
+    const std::vector<ModelInstanceIndex>& model_instances,
+    const Vector3<T>& p_WoP_W) const {
   // Assemble a list of BodyIndex.
   std::vector<BodyIndex> body_indexes;
   for (auto model_instance : model_instances) {
@@ -1273,7 +1274,12 @@ MultibodyTree<T>::CalcModelInstanceSpatialMomentumInWorldAboutWo(
       body_indexes.push_back(body_index);
   }
 
-  return CalcBodiesSpatialMomentumInWorldAboutWo(context, body_indexes);
+  // Form spatial momentum about Wo (origin of world frame W), expressed in W.
+  SpatialMomentum<T> L_WS_W =
+      CalcBodiesSpatialMomentumInWorldAboutWo(context, body_indexes);
+
+  // Shift the spatial momentum from Wo to point P.
+  return L_WS_W.ShiftInPlace(p_WoP_W);
 }
 
 template <typename T>

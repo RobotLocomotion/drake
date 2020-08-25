@@ -2327,11 +2327,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// This method returns the spatial momentum of `this` MultibodyPlant in the
-  /// world frame W, about the world origin Wo, expressed in the world frame W.
+  /// world frame W, about a designated point P, expressed in the world frame W.
   /// @param[in] context Contains the state of the model.
-  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutWo(
-      const systems::Context<T>& context) const {
-      return internal_tree().CalcSpatialMomentumInWorldAboutWo(context);
+  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
+  ///            arbitrary point P, expressed in the world frame W.
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
+      const systems::Context<T>& context, const Vector3<T>& p_WoP_W) const {
+    return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
+                                                                p_WoP_W);
+  }
+
+  /// This method returns the spatial momentum of a list of model instances in
+  /// the world frame W, about a designated point P, expressed in frame W.
+  /// @param[in] context Contains the state of the model.
+  /// @param[in] model_instances Array of selected model instances.
+  /// @param[in] p_WoP_W Position from Wo (origin of the world frame W) to an
+  ///            arbitrary point P, expressed in the world frame W.
+  SpatialMomentum<T> CalcSpatialMomentumInWorldAboutPoint(
+      const systems::Context<T>& context,
+      const std::vector<ModelInstanceIndex>& model_instances,
+      const Vector3<T>& p_WoP_W) const {
+    return internal_tree().CalcSpatialMomentumInWorldAboutPoint(context,
+        model_instances, p_WoP_W);
   }
 
   /// Given the state of this model in `context` and a known vector
