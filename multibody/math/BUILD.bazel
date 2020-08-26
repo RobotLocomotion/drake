@@ -101,6 +101,7 @@ drake_cc_googletest(
         ":spatial_algebra",
         "//common:autodiff",
         "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -121,6 +121,37 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return *this;
   }
 
+  /// Performs a rigid in-place shift of each column of 6 x n matrix
+  /// `F_Bp_E_all` as if each column were a %SpatialForce. The spatial forces
+  /// are assumed to be applied at point P of a body B, and we shift them to
+  /// point Q of that body by modifying the moment appropriately (translational
+  /// forces are unchanged). Hence on output the matrix should be renamed
+  /// F_Bq_E_all (conceptually). The first three elements of each column must
+  /// store the torque (rotational) component while the last three elements
+  /// store the force (translational) component. All quantities are expressed
+  /// in the same common frame E.
+  ///
+  /// @param[in,out] F_Bp_E_all
+  ///   A 6 x n matrix of spatial forces at point Bp on input, shifted to point
+  ///   Bq on output.
+  /// @param[in] p_BpBq_E
+  ///   The vector from point Bp to point Bq.
+  ///
+  /// @pre Columns are spatial forces with torque first, then force.
+  /// @see ShiftInPlace(const Vector3<T>&) for details.
+  static void ShiftInPlace(EigenPtr<Matrix6X<T>> F_Bp_E_all,
+                           const Vector3<T>& p_BpBq_E) {
+    const int ncol = F_Bp_E_all->cols();
+    for (int j = 0; j < ncol; ++j) {
+      // These are Eigen intermediate types; better not to look!
+      auto F_Bp_E = F_Bp_E_all->col(j);
+      auto torque = F_Bp_E.template head<3>();
+      const auto force = F_Bp_E.template tail<3>();
+      torque -= p_BpBq_E.cross(force);
+    }
+    // F_Bp_E_all should now be called F_Bq_E_all.
+  }
+
   /// Shift of a %SpatialForce from one application point to another.
   /// This is an alternate signature for shifting a spatial force's
   /// application point that does not change the original object. See
@@ -142,25 +173,37 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     return SpatialForce<T>(*this).ShiftInPlace(p_BpBq_E);
   }
 
-  /// Performs a rigid shift of each column of `F_P_E` as if they contained the
-  /// 6 components of a spatial force. It is assumed the first three elements of
-  /// each column store the rotational component while the last three elements
-  /// store the translational component.
-  /// Given the position of Q in P, each spatial force `F_P_E` about P is
-  /// rigidly shifted to point Q, see Shift(). All quantities are expressed in a
-  /// same common frame E.
-  /// F_Q_E must be non-null and point to a matrix of 6 rows and as many columns
-  /// as input F_P_E, otherwise an assertion failure is triggered.
-  /// @note Aliasing is allowed. That is, F_Q_E can point to the same memory
-  /// referenced by F_P_E, resulting in an in-place operation.
-  static void Shift(const Eigen::Ref<const Matrix6X<T>>& F_P_E,
-                    const Vector3<T>& p_PQ_E, EigenPtr<Matrix6X<T>> F_Q_E) {
-    DRAKE_DEMAND(F_Q_E != nullptr);
-    DRAKE_DEMAND(F_Q_E->cols() == F_P_E.cols());
-    F_Q_E->template topRows<3>() =
-        F_P_E.template topRows<3>() +
-        F_P_E.template bottomRows<3>().colwise().cross(p_PQ_E);
-    F_Q_E->template bottomRows<3>() = F_P_E.template bottomRows<3>();
+  /// Performs a rigid shift of each column of 6 x n matrix `F_Bp_E_all` into
+  /// `F_Bq_E_all` as if each column were a %SpatialForce. The spatial forces
+  /// are assumed to be applied at point P of a body B, and we shift them to
+  /// point Q of that body by modifying the moment appropriately (translational
+  /// forces are unchanged). The first three elements of each column must store
+  /// the torque (rotational) component while the last three elements store the
+  /// force (translational) component. All quantities are expressed in the same
+  /// common frame E.
+  ///
+  /// @param[in] F_Bp_E_all
+  ///   A 6 x n matrix of spatial forces at point Bp on input, shifted to point
+  ///   Bq on output.
+  /// @param[in] p_BpBq_E
+  ///   The vector from point Bp to point Bq.
+  /// @param[out] F_Bq_E_all
+  ///   A 6 x n matrix of spatial forces shifted from Bp to Bq.
+  ///
+  /// @pre Columns are spatial forces with torque first, then force.
+  /// @pre F_Bq_E_all must be non-null and point to a 6 x n matrix (same size
+  ///   as the input matrix).
+  /// @note Although this method will function if the input and output are
+  ///   the same matrix, it is faster to use ShiftInPlace() in that case since
+  ///   the translational components don't need to be copied.
+  /// @see ShiftInPlace(const Vector3<T>&) for details.
+  static void Shift(const Eigen::Ref<const Matrix6X<T>>& F_Bp_E_all,
+                    const Vector3<T>& p_BpBq_E,
+                    EigenPtr<Matrix6X<T>> F_Bq_E_all) {
+    DRAKE_DEMAND(F_Bq_E_all != nullptr);
+    DRAKE_DEMAND(F_Bq_E_all->cols() == F_Bp_E_all.cols());
+    *F_Bq_E_all = F_Bp_E_all;
+    ShiftInPlace(F_Bq_E_all, p_BpBq_E);
   }
 
   /// Given `this` spatial force `F_Bp_E` applied at point P of body B and
