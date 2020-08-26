@@ -13,6 +13,12 @@ namespace drake {
 namespace test {
 namespace {
 
+#ifdef __APPLE__
+constexpr bool kHasLimitMallocHooks = false;
+#else
+constexpr bool kHasLimitMallocHooks = true;
+#endif
+
 // Calls malloc (and then immediately frees).
 void CallMalloc() {
   void* dummy = malloc(16);
@@ -62,7 +68,7 @@ TEST_P(LimitMallocTest, UnlimitedTest) {
   Allocate();  // Malloc is OK.
   Allocate();  // Malloc is OK.
   // Allocations are counted.
-  EXPECT_EQ(3, guard.num_allocations());
+  EXPECT_EQ(guard.num_allocations(), kHasLimitMallocHooks ? 3 : 0);
 }
 
 TEST_P(LimitMallocTest, BasicTest) {
