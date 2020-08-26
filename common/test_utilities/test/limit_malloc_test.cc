@@ -13,12 +13,6 @@ namespace drake {
 namespace test {
 namespace {
 
-#ifdef __APPLE__
-constexpr bool kHasLimitMallocHooks = false;
-#else
-constexpr bool kHasLimitMallocHooks = true;
-#endif
-
 // Calls malloc (and then immediately frees).
 void CallMalloc() {
   void* dummy = malloc(16);
@@ -64,11 +58,10 @@ using LimitMallocDeathTest = LimitMallocTest;
 
 TEST_P(LimitMallocTest, UnlimitedTest) {
   LimitMalloc guard(LimitMallocParams{ /* no limits specified */ });
+  EXPECT_EQ(guard.num_allocations(), 0);
   Allocate();  // Malloc is OK.
   Allocate();  // Malloc is OK.
   Allocate();  // Malloc is OK.
-  // Allocations are counted.
-  EXPECT_EQ(guard.num_allocations(), kHasLimitMallocHooks ? 3 : 0);
 }
 
 TEST_P(LimitMallocTest, BasicTest) {
@@ -109,6 +102,11 @@ TEST_P(LimitMallocDeathTest, LimitTest) {
       LimitMalloc guard({.max_num_allocations = 1});
       Allocate();
       std::cerr << "Once was okay\n";
+      // This is a convenient place to test that the getter returns a correct
+      // count.  We must check within a unit test that is known to be disabled
+      // via the BUILD file for platforms without a working implementation.
+      EXPECT_EQ(guard.num_allocations(), 1);
+      // A second allocation will fail.
       Allocate();
     }, expected_message);
 }
