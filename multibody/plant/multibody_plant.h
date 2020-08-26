@@ -25,6 +25,7 @@
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/plant/tamsi_solver_results.h"
+#include "drake/multibody/solvers/contact_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -1485,6 +1486,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The default contact model is ContactModel::kPointContactOnly.
   /// @throws std::exception iff called post-finalize.
   void set_contact_model(ContactModel model);
+
+  template <class SolverType>
+  SolverType& set_contact_solver(std::unique_ptr<SolverType> solver) {    
+    DRAKE_DEMAND(solver != nullptr);
+    // Only one solver is meant to be valid at a time.
+    DRAKE_DEMAND((contact_solver_ != nullptr) ^ (tamsi_solver_  != nullptr));
+    if constexpr (std::is_same<SolverType, TamsiSolver<T>>{}) {
+      contact_solver_.reset();
+      TamsiSolver<T>* solver_ptr = solver.get();
+      tamsi_solver_ = std::move(solver);
+      return *solver_ptr;
+    } else {
+      static_assert(
+          std::is_base_of<solvers::ContactSolver<T>, SolverType>::value,
+          "SolverType must be a sub-class of ContactSolver.");
+      tamsi_solver_.reset();          
+      SolverType* solver_ptr = solver.get();
+      contact_solver_ = std::move(solver);      
+      return *solver_ptr;
+    }
+  }
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
   // deprecate/remove this method alltogether or at least promote to proper
@@ -4488,6 +4510,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<TamsiSolver<T>> tamsi_solver_;
+
+  std::unique_ptr<solvers::ContactSolver<T>> contact_solver_;
 
   hydroelastics::internal::HydroelasticEngine<T> hydroelastics_engine_;
 

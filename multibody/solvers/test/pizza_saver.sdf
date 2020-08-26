@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="Pizza Saver">
+<!-- Top view of the pizza saver:
+
+  ^ y               C
+  |                 ◯
+  |                /\
+   ———> x         /  \
+               b /    \ a
+                /      \
+               /        \
+              ◯——————————◯
+              A     c    B
+
+It is modeled as an equilateral triangle with a contact point at each of the
+legs. The total mass of the pizza saver is m and its rotational inertia about
+the triangle's barycenter is I.
+If h is the height of the triangle from any of its sides, the distance from
+any point to the triangle's center is R = 2h/3. The height h relates to the
+length a of a side by h = 3/2/sqrt(3) a. 
+
+Point contact parameters:
+========================
+
+For a penetration in steady state of d = 1.0e-6, m = 1.0 and gravity =10.0,
+given we have three legs we compute the contact point stiffness as:
+
+k = m*g/d/3 = 3.333e6.
+
+For damping we use the equation for a critically damped spring-mass system of
+mass m/3 and stiffness k:
+
+c = 2*sqrt(m/3*k) = 2108.18510677892
+
+-->
+    <link name="body">
+      <inertial>
+        <pose>0 0 0.0 0 0 0</pose>
+        <mass>1</mass>
+        <!--If we model the pizza saver as three point masses m/3 at each
+            contact point, the moment of inertia is I = 3 * (m/3 R²).
+            With R = 1.0 and m = 1.0 we have Izz = 1.0.
+            Since we are interested on motions in the plane, we'll approximate
+            Ixx = Iyy = Izz. -->
+        <inertia>
+          <ixx>1.0</ixx>
+          <iyy>1.0</iyy>
+          <izz>1.0</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <visual name="top_leg_visual">
+        <pose>0.0 1.0 0.1 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
+      </visual>
+      <collision name="top_leg_collision">
+        <pose>0.0 1.0 0.1 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>        
+        <drake:proximity_properties>
+          <drake:point_contact_stiffness>
+          3.333333333333e6</drake:point_contact_stiffness>
+          <drake:hunt_crossley_dissipation>2108.18510677892
+          </drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+
+      <visual name="bottom_left_leg_visual">
+        <!-- yaw = -120 degrees. -->
+        <pose>-0.866025403784439 -0.5 0.1 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
+      </visual>
+      <collision name="bottom_left_leg_collision">
+        <pose>-0.866025403784439 -0.5 0.1 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:point_contact_stiffness>
+          3.333333333333e6</drake:point_contact_stiffness>
+          <drake:hunt_crossley_dissipation>2108.18510677892
+          </drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+
+      <visual name="bottom_right_leg_visual">
+        <!-- yaw = +120 degrees. -->
+        <pose>0.866025403784439 -0.5 0.1 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+      <collision name="bottom_right_leg_collision">
+        <pose>0.866025403784439 -0.5 0.1 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:point_contact_stiffness>
+          3.333333333333e6</drake:point_contact_stiffness>
+          <drake:hunt_crossley_dissipation>2108.18510677892
+          </drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:mu_static>0.5</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>  
+
+    </link>
+  </model>
+</sdf>      

@@ -1,0 +1,157 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# The purpose of default_visibility to be private is to be able to develop this
+# code on master, but without yet exposing it to users until we're sure it is
+# API-stable. Furthermore, the code in this directory is meant for advanced
+# developers working on contact solvers.
+drake_cc_package_library(
+    name = "solvers",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":linear_operator",
+        ":sparse_linear_operator",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver_driver",
+    srcs = ["test/contact_solver_driver.cc"],
+    hdrs = ["test/contact_solver_driver.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    testonly = 1,
+    deps = [
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//geometry:geometry_visualization",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis:simulator",
+        "//systems/lcm",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver",
+    srcs = [],
+    hdrs = ["contact_solver.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        ":point_contact_data",
+        ":system_dynamics_data",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver_utils",
+    srcs = [],
+    hdrs = ["contact_solver_utils.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "pgs_solver",
+    srcs = ["test/pgs_solver.cc"],
+    hdrs = ["test/pgs_solver.h"],
+    visibility = ["//visibility:private"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        ":contact_solver",
+        ":contact_solver_utils",
+        ":point_contact_data",
+        ":system_dynamics_data",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_operator",
+    srcs = ["linear_operator.cc"],
+    hdrs = ["linear_operator.h"],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "sparse_linear_operator",
+    srcs = ["sparse_linear_operator.cc"],
+    hdrs = ["sparse_linear_operator.h"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "system_dynamics_data",
+    srcs = ["system_dynamics_data.cc"],
+    hdrs = ["system_dynamics_data.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "point_contact_data",
+    srcs = [],
+    hdrs = ["point_contact_data.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_solver_test",
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    data = [
+        "test/pizza_saver.sdf"],
+    deps = [
+        ":contact_solver",
+        ":contact_solver_driver",
+        ":pgs_solver",
+        "//multibody/plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",        
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_operator_test",
+    deps = [
+        ":linear_operator",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sparse_linear_operator_test",
+    deps = [
+        ":sparse_linear_operator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+add_lint_tests()

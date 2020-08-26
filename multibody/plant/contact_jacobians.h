@@ -36,6 +36,8 @@ struct ContactJacobians {
   /// `Cx` and `Cy` directions.
   MatrixX<T> Jt;
 
+  MatrixX<T> Jc;
+
   /// List of contact frames orientation R_WC in the world frame W for each
   /// contact pair.
   std::vector<drake::math::RotationMatrix<T>> R_WC_list;
