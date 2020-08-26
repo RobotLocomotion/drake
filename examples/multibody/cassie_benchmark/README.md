@@ -24,6 +24,9 @@ controlled conditions.
 
     $ examples/multibody/cassie_benchmark/conduct_experiment [DIRECTORY]
 
+The conduct_experiment script will attempt to reduce result variance by
+controlling cpu throttling and by setting a cpu affinity mask.
+
 It is still up to the user to make sure the machine is appropriate (not
 a virtual machine, for example), and relatively unloaded. Close as many
 running programs as is practical.
@@ -45,7 +48,9 @@ discussion of methods are being tracked in Github issue #13902.
 ## Experiment details
 
 The following command will perform a benchmark experiment (with
-environment controls) and collect context information.
+environment controls) and collect context information. It is not
+confined to a specific platform, like :conduct_experiment, and it
+controls fewer environment conditions.
 
     $ bazel run //examples/multibody/cassie_benchmark:record_results
 
@@ -55,6 +60,16 @@ controlled. These include:
 * load average -- close as many other programs as practical
 * cpu throttling -- varies with platform
   * Linux: https://github.com/google/benchmark#disabling-cpu-frequency-scaling
+
+The :record_results target does try to mitigate costs of rescheduling to
+a different processor (Linux only), by setting a processor
+affinity. However, it does not do full-featured processor isolation, so
+it is still important to limit the number of running programs. As of
+this writing, the benchmark is assigned to processor #0; it may be worth
+monitoring the system to ensure that processor will be fully available
+to the experiment.
+
+## Results data files
 
 Bazel buries the results deep in its output tree. To copy them
 somewhere more convenient, use this command outside of Bazel:
