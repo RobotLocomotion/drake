@@ -562,11 +562,11 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
+void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     const systems::Context<T>& context,
-    std::vector<SpatialInertia<T>>* M_B_W_cache) const {
-  DRAKE_THROW_UNLESS(M_B_W_cache != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(M_B_W_cache->size()) == num_bodies());
+    std::vector<SpatialInertia<T>>* M_B_W_all) const {
+  DRAKE_THROW_UNLESS(M_B_W_all != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(M_B_W_all->size()) == num_bodies());
 
   const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
 
@@ -582,15 +582,42 @@ void MultibodyTree<T>::CalcSpatialInertiaInWorldCache(
     // This call has zero cost for rigid bodies.
     const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
     // Re-express body B's spatial inertia in the world frame W.
-    SpatialInertia<T>& M_B_W = (*M_B_W_cache)[body.node_index()];
+    SpatialInertia<T>& M_B_W = (*M_B_W_all)[body.node_index()];
     M_B_W = M_B.ReExpress(R_WB);
   }
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcSpatialAccelerationBiasCache(
+void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
     const systems::Context<T>& context,
-    std::vector<SpatialAcceleration<T>>* Ab_WB_cache)
+    std::vector<SpatialInertia<T>>* Mc_B_W_all) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const std::vector<SpatialInertia<T>>& M_B_W_all =
+      EvalSpatialInertiaInWorldCache(context);
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (int depth = tree_height() - 1; depth > 0; --depth) {
+    for (BodyNodeIndex composite_node_index : body_node_levels_[depth]) {
+      // Node corresponding to the composite body C.
+      const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
+
+      // This node's spatial inertia.
+      const SpatialInertia<T>& M_C_W = M_B_W_all[composite_node_index];
+
+      // Compute the spatial inertia Mc_C_W of the composite body C
+      // corresponding to the node with index composite_node_index. Computed
+      // about C's origin Co and expressed in the world frame W.
+      SpatialInertia<T>& Mc_C_W = (*Mc_B_W_all)[composite_node_index];
+      composite_node.CalcCompositeBodyInertia_TipToBase(M_C_W, pc, *Mc_B_W_all,
+                                                        &Mc_C_W);
+    }
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcSpatialAccelerationBias(
+    const systems::Context<T>& context,
+    std::vector<SpatialAcceleration<T>>* Ab_WB_all)
     const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
@@ -599,21 +626,21 @@ void MultibodyTree<T>::CalcSpatialAccelerationBiasCache(
   // For the world body we opted for leaving Ab_WB initialized to NaN so that
   // an accidental usage (most likely indicating unnecessary math) in code would
   // immediately trigger a trail of NaNs that we can track to the source.
-  (*Ab_WB_cache)[world_index()].SetNaN();
+  (*Ab_WB_all)[world_index()].SetNaN();
   for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
     const BodyNode<T>& node = *body_nodes_[body_node_index];
-    SpatialAcceleration<T>& Ab_WB = (*Ab_WB_cache)[body_node_index];
+    SpatialAcceleration<T>& Ab_WB = (*Ab_WB_all)[body_node_index];
     node.CalcSpatialAccelerationBias(context, pc, vc, &Ab_WB);
   }
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
+void MultibodyTree<T>::CalcArticulatedBodyForceBias(
   const systems::Context<T>& context,
-    std::vector<SpatialForce<T>>* Zb_Bo_W_cache) const {
-  DRAKE_THROW_UNLESS(Zb_Bo_W_cache != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(Zb_Bo_W_cache->size()) == num_bodies());
+    std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
+  DRAKE_THROW_UNLESS(Zb_Bo_W_all != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(Zb_Bo_W_all->size()) == num_bodies());
   const ArticulatedBodyInertiaCache<T>& abic =
       EvalArticulatedBodyInertiaCache(context);
   const std::vector<SpatialAcceleration<T>>& Ab_WB_cache =
@@ -623,23 +650,23 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBiasCache(
   // For the world body we opted for leaving Zb_Bo_W initialized to NaN so that
   // an accidental usage (most likely indicating unnecessary math) in code would
   // immediately trigger a trail of NaNs that we can track to the source.
-  (*Zb_Bo_W_cache)[world_index()].SetNaN();
+  (*Zb_Bo_W_all)[world_index()].SetNaN();
   for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
     const ArticulatedBodyInertia<T>& Pplus_PB_W =
         abic.get_Pplus_PB_W(body_node_index);
     const SpatialAcceleration<T>& Ab_WB = Ab_WB_cache[body_node_index];
-    SpatialForce<T>& Zb_Bo_W = (*Zb_Bo_W_cache)[body_node_index];
+    SpatialForce<T>& Zb_Bo_W = (*Zb_Bo_W_all)[body_node_index];
     Zb_Bo_W = Pplus_PB_W * Ab_WB;
   }
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcDynamicBiasCache(
+void MultibodyTree<T>::CalcDynamicBiasForces(
     const systems::Context<T>& context,
-    std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const {
-  DRAKE_THROW_UNLESS(Fb_Bo_W_cache != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(Fb_Bo_W_cache->size()) == num_bodies());
+    std::vector<SpatialForce<T>>* Fb_Bo_W_all) const {
+  DRAKE_THROW_UNLESS(Fb_Bo_W_all != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(Fb_Bo_W_all->size()) == num_bodies());
 
   const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
       EvalSpatialInertiaInWorldCache(context);
@@ -663,7 +690,7 @@ void MultibodyTree<T>::CalcDynamicBiasCache(
     // W.
     const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
     const Vector3<T>& w_WB = V_WB.rotational();
-    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[body.node_index()];
+    SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_all)[body.node_index()];
     Fb_Bo_W = mass * SpatialForce<T>(
                         w_WB.cross(G_B_W * w_WB), /* rotational */
                         w_WB.cross(w_WB.cross(p_BoBcm_W)) /* translational */);
@@ -968,7 +995,7 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
   //   is the across-mobilizer Jacobian such that we can write
   //   V_PB_W = H_PB_W * v_B, with v_B the generalized velocities of body B's
   //   mobilizer.
-  // - In code we use the monogram notation R_C_W to denote the spatial inertia
+  // - In code we use the monogram notation Mc_C_W to denote the spatial inertia
   //   of composite body C, about it's frame origin Co, and expressed in the
   //   world frame W.
   //
@@ -976,13 +1003,12 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
   //               algorithms. Springer Science & Business Media, pp. 123-130.
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const std::vector<SpatialInertia<T>>& Mc_B_W_cache =
+      EvalCompositeBodyInertiaInWorldCache(context);
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
-  const std::vector<SpatialInertia<T>>& spatial_inertia_in_world_cache =
-      EvalSpatialInertiaInWorldCache(context);
 
   // Temporary storage.
-  std::vector<SpatialInertia<T>> R_B_W_all(num_bodies());
   Matrix6xUpTo6<T> Fm_CCo_W;
 
   // The algorithm below does not recurse zero entries and therefore these must
@@ -995,16 +1021,8 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
 
-      // This node's spatial inertia.
-      const SpatialInertia<T>& M_C_W =
-          spatial_inertia_in_world_cache[composite_node_index];
-
-      // Compute the spatial inertia R_C_W of the composite body C corresponding
-      // to the node with index composite_node_index. Computed about C's origin
-      // Co and expressed in the world frame W.
-      SpatialInertia<T>& R_C_W = R_B_W_all[composite_node_index];
-      composite_node.CalcCompositeBodyInertia_TipToBase(M_C_W, pc, R_B_W_all,
-                                                        &R_C_W);
+      // This node's composite body inertia.
+      const SpatialInertia<T>& Mc_C_W = Mc_B_W_cache[composite_node_index];
 
       // Across-mobilizer hinge matrix, from C's parent Cp to C.
       Eigen::Map<const MatrixUpTo6<T>> H_CpC_W =
@@ -1030,10 +1048,10 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
       // If we consider the closed system composed of the composite body held by
       // its mobilizer, the Newton-Euler equations state:
-      //   Fm_CCo_W = R_C_W * A_WC + Fb_C_W
+      //   Fm_CCo_W = Mc_C_W * A_WC + Fb_C_W
       // where Fm_CCo_W is the spatial force at this node's mobilizer.
       // Since the system is at rest, we have Fb_C_W = 0 and thus:
-      Fm_CCo_W = R_C_W * A_WC;
+      Fm_CCo_W = Mc_C_W * A_WC;
 
       const int composite_start = composite_node.velocity_start();
       const int composite_nv = composite_node.get_num_mobilizer_velocities();

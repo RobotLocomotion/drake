@@ -1477,35 +1477,51 @@ class MultibodyTree {
       const PositionKinematicsCache<T>& pc,
       VelocityKinematicsCache<T>* vc) const;
 
-  /// Computes the spatial inertia M_Bo_W(q) for each body B in the model about
+  /// Computes the spatial inertia M_B_W(q) for each body B in the model about
   /// its frame origin Bo and expressed in the world frame W.
   /// @param[in] context
   ///   The context storing the state of the model.
-  /// @param[out] M_B_W_cache
-  ///   For each body in the model, entry Body::node_index() in M_B_W_cache
+  /// @param[out] M_B_W_all
+  ///   For each body in the model, entry Body::node_index() in M_B_W_all
   ///   contains the updated spatial inertia `M_B_W(q)` for that body. On input
   ///   it must be a valid pointer to a vector of size num_bodies().
-  /// @throws std::exception if M_B_W_cache is nullptr or if its size is not
+  /// @throws std::exception if M_B_W_all is nullptr or if its size is not
   /// num_bodies().
-  void CalcSpatialInertiaInWorldCache(
+  void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* M_B_W_cache) const;
+      std::vector<SpatialInertia<T>>* M_B_W_all) const;
 
-  /// Computes the bias term `Fb_Bo_W(q, v)` for each body in the model.
+  /// Computes the composite body inertia Mc_B_W(q) for each body B in the
+  /// model about its frame origin Bo and expressed in the world frame W.
+  /// The composite body inertia is the effective mass properties B would have
+  /// if every joint outboard of B was welded in its current configuration.
+  /// @param[in] context
+  ///   The context storing the state of the model.
+  /// @param[out] Mc_B_W_all
+  ///   For each body in the model, entry Body::node_index() in M_B_W_all
+  ///   contains the updated composite body inertia `Mc_B_W(q)` for that body.
+  ///   On input it must be a valid pointer to a vector of size num_bodies().
+  /// @throws std::exception if Mc_B_W_all is nullptr or if its size is not
+  /// num_bodies().
+  void CalcCompositeBodyInertiasInWorld(
+      const systems::Context<T>& context,
+      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+
+  /// Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
   /// For a body B, this is the bias term `Fb_Bo_W` in the equation
   /// `F_BBo_W = M_Bo_W * A_WB + Fb_Bo_W`, where `M_Bo_W` is the spatial inertia
   /// about B's origin Bo, `A_WB` is the spatial acceleration of B in W and
   /// `F_BBo_W` is the spatial force applied on B about Bo, expressed in W.
   /// @param[in] context
   ///   The context storing the state of the model.
-  /// @param[out] Fb_Bo_W_cache
-  ///   For each body in the model, entry Body::node_index() in Fb_Bo_W_cache
+  /// @param[out] Fb_Bo_W_all
+  ///   For each body in the model, entry Body::node_index() in Fb_Bo_W_all
   ///   contains the updated bias term `Fb_Bo_W(q, v)` for that body. On input
   ///   it must be a valid pointer to a vector of size num_bodies().
   /// @throws std::exception if Fb_Bo_W_cache is nullptr or if its size is not
   /// num_bodies().
-  void CalcDynamicBiasCache(const systems::Context<T>& context,
-                            std::vector<SpatialForce<T>>* Fb_Bo_W_cache) const;
+  void CalcDynamicBiasForces(const systems::Context<T>& context,
+                             std::vector<SpatialForce<T>>* Fb_Bo_W_all) const;
 
   /// Computes all the kinematic quantities that depend on the generalized
   /// accelerations that is, the generalized velocities' time derivatives, and
@@ -2030,19 +2046,19 @@ class MultibodyTree {
   /// Φᵀ(p_PB) * A_WP` the rigidly shifted spatial acceleration of the inboard
   /// body P and `H_PB_W` and `vdot_B` its mobilizer's hinge matrix and
   /// mobilities, respectively. See @ref abi_computing_accelerations for further
-  /// details. On output `Ab_WB_cache[body_node_index]`
+  /// details. On output `Ab_WB_all[body_node_index]`
   /// contains `Ab_WB` for the body with node index `body_node_index`.
-  void CalcSpatialAccelerationBiasCache(
+  void CalcSpatialAccelerationBias(
       const systems::Context<T>& context,
-      std::vector<SpatialAcceleration<T>>* Ab_WB_cache)
+      std::vector<SpatialAcceleration<T>>* Ab_WB_all)
       const;
 
   /// Computes the articulated body force bias `Zb_Bo_W = Pplus_PB_W * Ab_WB`
-  /// for each articulated body B. On output `Zb_Bo_W_cache[body_node_index]`
+  /// for each articulated body B. On output `Zb_Bo_W_all[body_node_index]`
   /// contains `Zb_Bo_W` for the body B with node index `body_node_index`.
-  void CalcArticulatedBodyForceBiasCache(
+  void CalcArticulatedBodyForceBias(
       const systems::Context<T>& context,
-      std::vector<SpatialForce<T>>* Zb_Bo_W_cache) const;
+      std::vector<SpatialForce<T>>* Zb_Bo_W_all) const;
 
   /// @}
 
@@ -2619,6 +2635,12 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalSpatialInertiaInWorldCache(context);
+  }
+
+  const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalCompositeBodyInertiaInWorldCache(context);
   }
 
   // Evaluates the cache entry stored in context with the bias term

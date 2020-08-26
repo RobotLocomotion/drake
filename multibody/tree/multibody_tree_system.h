@@ -130,6 +130,14 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
+  /* Returns a reference to the up to date cache of composite-body inertias
+  in the given Context, recalculating it first if necessary. */
+  const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.composite_body_inertia_in_world)
+        .template Eval<std::vector<SpatialInertia<T>>>(context);
+  }
+
   /* Returns a reference to the up to date cache of per-body bias terms in
   the given Context, recalculating it first if necessary.
   For a body B, this is the bias term `Fb_Bo_W(q, v)` in the equation
@@ -313,6 +321,71 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return internal_tree().CalcNonConservativePower(context);
   }
 
+  // Configuration-dependent cached computations.
+
+  void CalcPositionKinematicsCache(
+      const systems::Context<T>& context,
+      PositionKinematicsCache<T>* position_cache) const {
+    internal_tree().CalcPositionKinematicsCache(context, position_cache);
+  }
+
+  void CalcSpatialInertiasInWorld(
+      const systems::Context<T>& context,
+      std::vector<SpatialInertia<T>>* spatial_inertias) const {
+    internal_tree().CalcSpatialInertiasInWorld(context, spatial_inertias);
+  }
+
+  void CalcCompositeBodyInertiasInWorld(
+      const systems::Context<T>& context,
+      std::vector<SpatialInertia<T>>* composite_body_inertias) const {
+    internal_tree().CalcCompositeBodyInertiasInWorld(context,
+                                                     composite_body_inertias);
+  }
+
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
+      const systems::Context<T>& context,
+      std::vector<Vector6<T>>* H_PB_W_all) const {
+    internal_tree().CalcAcrossNodeJacobianWrtVExpressedInWorld(
+        context, EvalPositionKinematics(context), H_PB_W_all);
+  }
+
+  void CalcArticulatedBodyInertiaCache(
+      const systems::Context<T>& context,
+      ArticulatedBodyInertiaCache<T>* abi_cache) const {
+    internal_tree().CalcArticulatedBodyInertiaCache(context, abi_cache);
+  }
+
+  // Velocity-dependent cached computations. (These also depend on
+  // configuration.)
+
+  void CalcVelocityKinematicsCache(
+      const systems::Context<T>& context,
+      VelocityKinematicsCache<T>* velocity_cache) const {
+    internal_tree().CalcVelocityKinematicsCache(context,
+        EvalPositionKinematics(context), velocity_cache);
+  }
+
+  void CalcDynamicBiasForces(
+      const systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* dynamic_bias_forces) const {
+    internal_tree().CalcDynamicBiasForces(context, dynamic_bias_forces);
+  }
+
+  void CalcSpatialAccelerationBias(
+      const systems::Context<T>& context,
+      std::vector<SpatialAcceleration<T>>* Ab_WB_all) const {
+    internal_tree().CalcSpatialAccelerationBias(context, Ab_WB_all);
+  }
+
+  void CalcArticulatedBodyForceBias(
+      const systems::Context<T>& context,
+      std::vector<SpatialForce<T>>* Zb_Bo_W_all) const {
+    internal_tree().CalcArticulatedBodyForceBias(context, Zb_Bo_W_all);
+  }
+
+  // Force-dependent cached computations. (These also depend on configuration
+  // and velocity.)
+
   // Performs an O(n) tip-to-base recursion to compute forces Z_B and
   // Zplus_B, among other quantities needed by ABA.
   // N.B. Please refer to @ref internal_forward_dynamics for further details on
@@ -368,6 +441,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex dynamic_bias;
     systems::CacheIndex position_kinematics;
     systems::CacheIndex spatial_inertia_in_world;
+    systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
   };
