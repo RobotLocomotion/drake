@@ -163,6 +163,16 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
     F_Q_E->template bottomRows<3>() = F_P_E.template bottomRows<3>();
   }
 
+  static void Shift(const Matrix6xUpTo6<T>& F_P_E, const Vector3<T>& p_PQ_E,
+                    EigenPtr<Matrix6xUpTo6<T>> F_Q_E) {
+    DRAKE_DEMAND(F_Q_E != nullptr);
+    DRAKE_DEMAND(F_Q_E->cols() == F_P_E.cols());
+    F_Q_E->template topRows<3>() =
+        F_P_E.template topRows<3>() +
+        F_P_E.template bottomRows<3>().colwise().cross(p_PQ_E);
+    F_Q_E->template bottomRows<3>() = F_P_E.template bottomRows<3>();
+  }
+
   /// Given `this` spatial force `F_Bp_E` applied at point P of body B and
   /// expressed in a frame E, this method computes the 6-dimensional dot
   /// product with the spatial velocity `V_IBp_E` of body B at point P,
