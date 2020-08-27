@@ -33,7 +33,7 @@ struct DistributionStruct {
 
 const char* all_variants = R"""(
 vec: [ !Deterministic { value: 5.0 },
-       !Gaussian { mean: 2.0, std: 4.0 },
+       !Gaussian { mean: 2.0, stddev: 4.0 },
        !Uniform { min: 1.0, max: 5.0 },
        !UniformDiscrete { values: [1, 1.5, 2] },
        3.2 ]
@@ -41,12 +41,12 @@ vec: [ !Deterministic { value: 5.0 },
 
 const char* floats = "vec: [5.0, 6.1, 7.2]";
 
-void CheckGaussianSymbolic(const Expression& e, double mean, double std) {
+void CheckGaussianSymbolic(const Expression& e, double mean, double stddev) {
   const Variables vars{e.GetVariables()};
   ASSERT_EQ(vars.size(), 1);
   const Variable& v{*(vars.begin())};
   EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_GAUSSIAN);
-  EXPECT_PRED2(ExprEqual, e, mean + std * v);
+  EXPECT_PRED2(ExprEqual, e, mean + stddev * v);
 }
 
 void CheckUniformSymbolic(const Expression& e, double min, double max) {
@@ -82,9 +82,9 @@ GTEST_TEST(StochasticTest, ScalarTest) {
 
   const Gaussian& g = std::get<Gaussian>(variants.vec[1]);
   EXPECT_EQ(g.mean, 2.);
-  EXPECT_EQ(g.std, 4.);
+  EXPECT_EQ(g.stddev, 4.);
   EXPECT_EQ(g.Mean(), 2.);
-  CheckGaussianSymbolic(g.ToSymbolic(), g.mean, g.std);
+  CheckGaussianSymbolic(g.ToSymbolic(), g.mean, g.stddev);
   EXPECT_FALSE(IsDeterministic(variants.vec[1]));
   EXPECT_THROW(GetDeterministicValue(variants.vec[1]),
                std::logic_error);
@@ -140,7 +140,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   VectorX<Expression> symbolic_vec = ToSymbolic(variants.vec);
   ASSERT_EQ(symbolic_vec.size(), 5);
   EXPECT_PRED2(ExprEqual, symbolic_vec(0), 5.0);
-  CheckGaussianSymbolic(symbolic_vec(1), g.mean, g.std);
+  CheckGaussianSymbolic(symbolic_vec(1), g.mean, g.stddev);
   CheckUniformSymbolic(symbolic_vec(2), u.min, u.max);
   CheckUniformDiscreteSymbolic(symbolic_vec(3), ub.values);
   EXPECT_PRED2(ExprEqual, symbolic_vec(4), 3.2);
@@ -178,11 +178,11 @@ struct DistributionVectorStruct {
 const char* vector_variants = R"""(
 vector: [1., 2., 3.]
 deterministic: !DeterministicVector { value: [3., 4., 5.] }
-gaussian1: !GaussianVector { mean: [1.1, 1.2, 1.3], std: [0.1, 0.2, 0.3] }
-gaussian2: !GaussianVector { mean: [2.1, 2.2, 2.3, 2.4], std: [1.0] }
+gaussian1: !GaussianVector { mean: [1.1, 1.2, 1.3], stddev: [0.1, 0.2, 0.3] }
+gaussian2: !GaussianVector { mean: [2.1, 2.2, 2.3, 2.4], stddev: [1.0] }
 uniform: !UniformVector { min: [10, 20], max: [11, 22] }
 deterministic_scalar: !Deterministic { value: 19.5 }
-gaussian_scalar: !Gaussian { mean: 5, std: 1 }
+gaussian_scalar: !Gaussian { mean: 5, stddev: 1 }
 uniform_scalar: !Uniform { min: 1, max: 2 }
 )""";
 

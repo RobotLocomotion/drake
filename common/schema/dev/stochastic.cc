@@ -46,13 +46,13 @@ Expression Deterministic::ToSymbolic() const {
 
 Gaussian::Gaussian() {}
 
-Gaussian::Gaussian(double mean_in, double std_in)
-    : mean(mean_in), std(std_in) {}
+Gaussian::Gaussian(double mean_in, double stddev_in)
+    : mean(mean_in), stddev(stddev_in) {}
 
 Gaussian::~Gaussian() {}
 
 double Gaussian::Sample(drake::RandomGenerator* generator) const {
-  std::normal_distribution<double> distribution(mean, std);
+  std::normal_distribution<double> distribution(mean, stddev);
   return distribution(*generator);
 }
 
@@ -61,7 +61,7 @@ double Gaussian::Mean() const {
 }
 
 Expression Gaussian::ToSymbolic() const {
-  std::normal_distribution<Expression> distribution(mean, std);
+  std::normal_distribution<Expression> distribution(mean, stddev);
   return distribution();
 }
 
@@ -225,9 +225,9 @@ GaussianVector<Size>::GaussianVector() {}
 template <int Size>
 GaussianVector<Size>::GaussianVector(
     const drake::Vector<double, Size>& mean_in,
-    const drake::VectorX<double>& std_in)
+    const drake::VectorX<double>& stddev_in)
     : mean(mean_in),
-      std(std_in) {}
+      stddev(stddev_in) {}
 
 template <int Size>
 GaussianVector<Size>::~GaussianVector() {}
@@ -235,15 +235,15 @@ GaussianVector<Size>::~GaussianVector() {}
 template <int Size>
 Eigen::VectorXd GaussianVector<Size>::Sample(
     drake::RandomGenerator* generator) const {
-  if (!(std.size() == mean.size() || std.size() == 1)) {
+  if (!(stddev.size() == mean.size() || stddev.size() == 1)) {
     throw std::logic_error(fmt::format(
         "Cannot Sample() a GaussianVector distribution with "
-        "size {} mean but size {} dev", mean.size(), std.size()));
+        "size {} mean but size {} dev", mean.size(), stddev.size()));
   }
   Eigen::VectorXd result(mean.size());
   for (int i = 0; i < mean.size(); ++i) {
-    const double std_i = (std.size() == 1) ? std(0) : std(i);
-    result(i) = Gaussian(mean(i), std_i).Sample(generator);
+    const double stddev_i = (stddev.size() == 1) ? stddev(0) : stddev(i);
+    result(i) = Gaussian(mean(i), stddev_i).Sample(generator);
   }
   return result;
 }
@@ -255,15 +255,15 @@ Eigen::VectorXd GaussianVector<Size>::Mean() const {
 
 template <int Size>
 drake::VectorX<Expression> GaussianVector<Size>::ToSymbolic() const {
-  if (!(std.size() == mean.size() || std.size() == 1)) {
+  if (!(stddev.size() == mean.size() || stddev.size() == 1)) {
     throw std::logic_error(fmt::format(
         "Cannot ToSymbolic() a GaussianVector distribution with "
-        "size {} mean but size {} dev", mean.size(), std.size()));
+        "size {} mean but size {} dev", mean.size(), stddev.size()));
   }
   drake::VectorX<Expression> result(mean.size());
   for (int i = 0; i < mean.size(); ++i) {
-    const double std_i = (std.size() == 1) ? std(0) : std(i);
-    result(i) = Gaussian(mean(i), std_i).ToSymbolic();
+    const double stddev_i = (stddev.size() == 1) ? stddev(0) : stddev(i);
+    result(i) = Gaussian(mean(i), stddev_i).ToSymbolic();
   }
   return result;
 }
@@ -329,7 +329,7 @@ bool IsDeterministic(const DistributionVariant& var) {
       return true;
     },
     [](const Gaussian& arg) -> bool {
-      return arg.std == 0.0;
+      return arg.stddev == 0.0;
     },
     [](const Uniform& arg) -> bool {
       return arg.min == arg.max;
@@ -376,7 +376,7 @@ unique_ptr<DistributionVector> ToDistributionVector(
     [](const Gaussian& arg) -> unique_ptr<DistributionVector> {
       return std::make_unique<GaussianVector<Size>>(
           Eigen::VectorXd::Constant(1, arg.mean),
-          Eigen::VectorXd::Constant(1, arg.std));
+          Eigen::VectorXd::Constant(1, arg.stddev));
     },
     [](const Uniform& arg) -> unique_ptr<DistributionVector> {
       return std::make_unique<UniformVector<Size>>(
@@ -400,7 +400,7 @@ bool IsDeterministic(const DistributionVectorVariant<Size>& vec) {
       return true;
     },
     [](const GaussianVector<Size>& arg) -> bool {
-      return arg.std.isZero(0.0);
+      return arg.stddev.isZero(0.0);
     },
     [](const UniformVector<Size>& arg) -> bool {
       return arg.min == arg.max;
@@ -409,7 +409,7 @@ bool IsDeterministic(const DistributionVectorVariant<Size>& vec) {
       return true;
     },
     [](const Gaussian& arg) -> bool {
-      return arg.std == 0.0;
+      return arg.stddev == 0.0;
     },
     [](const Uniform& arg) -> bool {
       return arg.min == arg.max;
