@@ -195,9 +195,14 @@ rotations, translations, and transforms using stochastic schemas.
 
 @} */
 
+// N.B. As is standard for classes implementing Serialize(), below we always
+// declare all of our members fields as public since they are effectively so
+// anyway, and we omit the trailing underscore from the field names.
+
 /// Base class for a single distribution, to be used with YAML archives.
-/// (See struct DistributionVector for vector-valued distributions.)
-struct Distribution {
+/// (See class DistributionVector for vector-valued distributions.)
+class Distribution {
+ public:
   virtual ~Distribution();
 
   virtual double Sample(drake::RandomGenerator* generator) const = 0;
@@ -210,7 +215,8 @@ struct Distribution {
 };
 
 /// A single deterministic `value`.
-struct Deterministic final : public Distribution {
+class Deterministic final : public Distribution {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Deterministic)
 
   Deterministic();
@@ -231,7 +237,8 @@ struct Deterministic final : public Distribution {
 };
 
 /// A gaussian distribution with `mean` and `stddev`.
-struct Gaussian final : public Distribution {
+class Gaussian final : public Distribution {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Gaussian)
 
   Gaussian();
@@ -253,7 +260,8 @@ struct Gaussian final : public Distribution {
 };
 
 /// A uniform distribution with `min` inclusive and `max` exclusive.
-struct Uniform final : public Distribution {
+class Uniform final : public Distribution {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Uniform)
 
   Uniform();
@@ -275,7 +283,8 @@ struct Uniform final : public Distribution {
 };
 
 /// Chooses from among discrete `values` with equal probability.
-struct UniformDiscrete final : public Distribution {
+class UniformDiscrete final : public Distribution {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformDiscrete)
 
   UniformDiscrete();
@@ -336,8 +345,9 @@ double GetDeterministicValue(const DistributionVariant& var);
 // ---------------------------------------------------------------------------
 
 /// Base class for a vector of distributions, to be used with YAML archives.
-/// (See struct Distribution for single distributions.)
-struct DistributionVector {
+/// (See class Distribution for single distributions.)
+class DistributionVector {
+ public:
   virtual ~DistributionVector();
 
   virtual Eigen::VectorXd Sample(drake::RandomGenerator* generator) const = 0;
@@ -352,7 +362,8 @@ struct DistributionVector {
 /// A single deterministic vector `value`.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
-struct DeterministicVector final : public DistributionVector {
+class DeterministicVector final : public DistributionVector {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DeterministicVector)
 
   DeterministicVector();
@@ -374,7 +385,8 @@ struct DeterministicVector final : public DistributionVector {
 /// A gaussian distribution with vector `mean` and vector or scalar `stddev`.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
-struct GaussianVector final : public DistributionVector {
+class GaussianVector final : public DistributionVector {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GaussianVector)
 
   GaussianVector();
@@ -400,7 +412,8 @@ struct GaussianVector final : public DistributionVector {
 /// exclusive.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
-struct UniformVector final : public DistributionVector {
+class UniformVector final : public DistributionVector {
+ public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(UniformVector)
 
   UniformVector();
