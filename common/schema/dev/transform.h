@@ -11,8 +11,141 @@
 namespace drake {
 namespace schema {
 
+/** @defgroup schema_transform Configuring transforms
+@ingroup stochastic_systems
+@{
+
+This page describes how to use classes such as schema::Rotation and
+schema::Transform to denote stochastic quantities, as bridge between loading a
+scenario specification and populating the corresponding math::RigidTransform
+quantities.
+
+The broader concepts are discussed at @ref schema_stochastic. Here, we cover
+details related to rotations and transforms in particular.
+
+We'll explain uses of schema::Rotation and schema::Transform using their
+matching YAML syntax as parsed by yaml::YamlReadArchive.
+
+<h1>Rotations</h1>
+
+This shows the syntax for a schema::Rotation.
+
+When no details are given, the default rotation is the identity matrix:
+```
+rotation: {}
+```
+
+For clarity, you may also specify `Identity` variant tag explicitly.
+This version and the above version have exactly the same effect:
+
+```
+rotation: !Identity {}
+```
+
+To specify roll, pitch, yaw angles using math::RollPitchYaw conventions, use
+`Rpy` as the variant tag:
+
+```
+rotation: !Rpy
+  deg: [10.0, 20.0, 30.0]
+```
+
+To specify a rotation angle and axis in the sense of Eigen::AngleAxis, use
+`AngleAxis` as the variant tag:
+
+```
+rotation: !AngleAxis
+  angle_deg: 10.0
+  axis: [0.0, 1.0, 0.0]
+```
+
+You may also use YAML's flow style to fit everything onto a single line.
+These one-line spelling are the same as the above.
+
+```
+rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
+```
+
+```
+rotation: !AngleAxis { angle_deg: 10.0, axis: [0.0, 1.0, 0.0] }
+```
+
+<h2>Stochastic Rotations</h2>
+
+To specify a stochastic rotation sampled from a uniform distribution over
+SO(3):
+
+```
+rotation: !Uniform {}
+```
+
+The other available representations also accept stochastic distributions for
+their values:
+
+```
+rotation: !Rpy
+  deg: !UniformVector
+    min: [ 0.0, 10.0, 20.0]
+    max: [30.0, 40.0, 50.0]
+```
+
+Or:
+
+```
+rotation: !AngleAxis
+  angle_deg: !Uniform
+    min: 8.0
+    max: 10.0
+  axis: !UniformVector
+    min: [0.0, 0.9, 0.0]
+    max: [0.1, 1.0, 0.0]
+```
+
+For an explanation of `!Uniform`, `!UniformVector`, and other available options
+(%Gaussian, etc.) for scalar and vector quantities, see @ref schema_stochastic.
+
+<h1>Transforms</h1>
+
+This shows the syntax for a schema::Transform.  A transform is merely a
+translation and rotation, optionally with a some given string as a base_frame.
+
+```
+transform:
+  translation: [1.0, 2.0, 3.0]
+  rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
+```
+
+Or:
+
+```
+transform:
+  base_frame: foo
+  translation: [0.0, 0.0, 1.0]
+  rotation: !Identity {}
+```
+
+<h2>Stochastic Transforms</h2>
+
+Either or both of the rotational or translation component can be stochastic:
+
+```
+transform:
+  translation: !UniformVector
+    min: [-1.0, -1.0, -1.0]
+    max: [ 1.0,  1.0,  1.0]
+  rotation: !Uniform {}
+```
+
+For an explanation of `!Uniform`, `!UniformVector`, and other available options
+(%Gaussian, etc.) for scalar and vector quantities, see @ref schema_stochastic.
+
+@} */
+
 /// A specification for a 3d rotation and translation, optionally with respect
 /// to a base frame.
+///
+/// For an overview of configuring stochastic transforms, see
+/// @ref schema_transform and @ref schema_stochastic.
 struct Transform {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Transform)
 
