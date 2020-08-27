@@ -70,6 +70,21 @@ class GenericPolynomial {
     return basis_element_to_coefficient_map_;
   }
 
+  /** Returns the highest degree of this polynomial in an indeterminate @p v. */
+  int Degree(const Variable& v) const;
+
+  /** Returns the total degree of this polynomial. */
+  int TotalDegree() const;
+
+  /**
+   * Differentiates this polynomial with respect to the variable @p x. Note that
+   * a variable @p x can be either a decision variable or an indeterminate.
+   */
+  GenericPolynomial<BasisElement> Differentiate(const Variable& x) const;
+
+  /** Returns true if this polynomial and @p p are structurally equal. */
+  bool EqualTo(const GenericPolynomial<BasisElement>& p) const;
+
  private:
   // Throws std::runtime_error if there is a variable appeared in both of
   // decision_variables() and indeterminates().
