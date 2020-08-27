@@ -54,6 +54,7 @@ class JointImplementationBuilder {
     joint->OwnImplementation(std::move(implementation));
     return mobilizers;
   }
+
  private:
   typedef typename Joint<T>::BluePrint JointBluePrint;
   typedef typename Joint<T>::JointImplementation JointImplementation;
@@ -1008,9 +1009,6 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
   const std::vector<Vector6<T>>& H_PB_W_cache =
       EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
-  // Temporary storage.
-  Matrix6xUpTo6<T> Fm_CCo_W;
-
   // The algorithm below does not recurse zero entries and therefore these must
   // be set a priori.
   M->setZero();
@@ -1020,11 +1018,14 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
     for (BodyNodeIndex composite_node_index : body_node_levels_[depth]) {
       // Node corresponding to the composite body C.
       const BodyNode<T>& composite_node = *body_nodes_[composite_node_index];
+      const int cnv = composite_node.get_num_mobilizer_velocities();
 
-      // This node's composite body inertia.
+      if (cnv == 0) continue;  // Weld has no generalized coordinates, so skip.
+
+      // This node's 6x6 composite body inertia.
       const SpatialInertia<T>& Mc_C_W = Mc_B_W_cache[composite_node_index];
 
-      // Across-mobilizer hinge matrix, from C's parent Cp to C.
+      // Across-mobilizer 6 x cnv hinge matrix, from C's parent Cp to C.
       Eigen::Map<const MatrixUpTo6<T>> H_CpC_W =
           composite_node.GetJacobianFromArray(H_PB_W_cache);
 
@@ -1044,20 +1045,19 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       // A_WCp is zero.  Since the system is at rest, Ac_WC and Ab_CpC_W are
       // zero.
       // Therefore, for vm_dot = Iₘ, we have that A_WC = H_CpC_W.
-      const auto& A_WC = H_CpC_W;
+      const auto& A_WC = H_CpC_W;  // 6 x cnv
 
       // If we consider the closed system composed of the composite body held by
       // its mobilizer, the Newton-Euler equations state:
       //   Fm_CCo_W = Mc_C_W * A_WC + Fb_C_W
       // where Fm_CCo_W is the spatial force at this node's mobilizer.
       // Since the system is at rest, we have Fb_C_W = 0 and thus:
-      Fm_CCo_W = Mc_C_W * A_WC;
+      const Matrix6xUpTo6<T> Fm_CCo_W = Mc_C_W * A_WC;  // 6 x cnv.
 
       const int composite_start = composite_node.velocity_start();
-      const int composite_nv = composite_node.get_num_mobilizer_velocities();
 
       // Diagonal block corresponding to current node (composite_node_index).
-      M->block(composite_start, composite_start, composite_nv, composite_nv) =
+      M->block(composite_start, composite_start, cnv, cnv) =
           H_CpC_W.transpose() * Fm_CCo_W;
 
       // We recurse the tree inwards from C all the way to the root. We define
@@ -1068,35 +1068,33 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const BodyNode<T>* child_node =
           &composite_node;  // Child starts at frame C.
       const BodyNode<T>* body_node = child_node->parent_body_node();
-      Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;
+      Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;  // 6 x cnv
       while (body_node) {
-        const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
-        // In place rigid shift of the spatial force in each column of Fm_CBo_W,
-        // from Bc to Bo.
-        // Before this computation, Fm_CBo_W actually stores Fm_CBc_W from the
-        // previous recursion.
-        // At the end of this computation, Fm_CBo_W stores the spatial force on
-        // composite body C, shifted to Bo, and expressed in the world W.
-        // That is, we are doing Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
-        SpatialForce<T>::Shift(Fm_CBo_W, p_BcBo_W, &Fm_CBo_W);
+        const int bnv = body_node->get_num_mobilizer_velocities();
 
-        // Across mobilizer Jacobian between body_node B and its parent P.
-        Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
-            body_node->GetJacobianFromArray(H_PB_W_cache);
+        if (bnv > 0) {
+          const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
+          // In place rigid shift of the spatial force in each column of
+          // Fm_CBo_W, from Bc to Bo. Before this computation, Fm_CBo_W actually
+          // stores Fm_CBc_W from the previous recursion. At the end of this
+          // computation, Fm_CBo_W stores the spatial force on composite body C,
+          // shifted to Bo, and expressed in the world W. That is, we are doing
+          // Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
+          SpatialForce<T>::ShiftInPlace(&Fm_CBo_W, p_BcBo_W);
 
-        // Compute the corresponding block.
-        const int body_start = body_node->velocity_start();
-        const int body_nv = body_node->get_num_mobilizer_velocities();
-        M->block(body_start, composite_start, body_nv, composite_nv) =
-            H_PB_W.transpose() * Fm_CBo_W;
+          // Across mobilizer 6 x bnv Jacobian between body_node B and
+          // its parent P.
+          const Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+              body_node->GetJacobianFromArray(H_PB_W_cache);
 
-        // And copy to its symmetric block.
-        // Eigen incorrectly detects aliasing during transposition. We fix this
-        // by creating a temporaty copy with .eval() below.
-        M->block(composite_start, body_start, composite_nv, body_nv) =
-            M->block(body_start, composite_start, body_nv, composite_nv)
-                .transpose()
-                .eval();
+          // Compute the corresponding bnv x cnv block.
+          const MatrixUpTo6<T> HtFm = H_PB_W.transpose() * Fm_CBo_W;
+          const int body_start = body_node->velocity_start();
+          M->block(body_start, composite_start, bnv, cnv) = HtFm;
+
+          // And copy to its symmetric block.
+          M->block(composite_start, body_start, cnv, bnv) = HtFm.transpose();
+        }
 
         child_node = body_node;                      // Update child node Bc.
         body_node = child_node->parent_body_node();  // Update node B.
@@ -1437,7 +1435,7 @@ SpatialAcceleration<T> MultibodyTree<T>::CalcSpatialAccelerationHelper(
   const Frame<T>& frame_A = body_A.body_frame();
   if (frame_A.is_world_frame()) {
     A_AFp_W = A_WFp_W;
-  } else  {
+  } else {
     // Point Ap is the point of (fixed to) body_A that is coincident with
     // point Fp. Calculate the position vector from Ao (body_A's origin) to Ap.
     const RigidTransform<T> X_AF = frame_F.CalcPose(context, frame_A);
@@ -1717,7 +1715,6 @@ void MultibodyTree<T>::CalcJacobianTranslationalVelocityHelper(
 
   // TODO(Mitiguy): When performance becomes an issue, optimize this method by
   // only using the kinematics path from A to B.
-
 
   // Calculate each point Bi's translational velocity Jacobian in world W.
   // The result is Js_v_WBi_W, but we store into Js_v_ABi_W for performance.
