@@ -145,7 +145,7 @@ Whether fixed or dynamic size, you might specify stochastic variables:
 thing:
   value: !GaussianVector
     mean: [2.1, 2.2, 2.3]
-    std: [1.0]            # Same stddev each.
+    stddev: [1.0]            # Same stddev each.
 ```
 
 Or:
@@ -154,7 +154,7 @@ Or:
 thing:
   value: !GaussianVector
     mean: [2.1, 2.2, 2.3]
-    std: [1.0, 0.5, 0.2]  # Different stddev each.
+    stddev: [1.0, 0.5, 0.2]  # Different stddev each.
 ```
 
 Or:
@@ -230,12 +230,12 @@ struct Deterministic final : public Distribution {
   double value{};
 };
 
-/// A gaussian distribution with `mean` and `std`.
+/// A gaussian distribution with `mean` and `stddev`.
 struct Gaussian final : public Distribution {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Gaussian)
 
   Gaussian();
-  Gaussian(double mean, double std);
+  Gaussian(double mean, double stddev);
   ~Gaussian() final;
 
   double Sample(drake::RandomGenerator*) const final;
@@ -245,11 +245,11 @@ struct Gaussian final : public Distribution {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(mean));
-    a->Visit(DRAKE_NVP(std));
+    a->Visit(DRAKE_NVP(stddev));
   }
 
   double mean{};
-  double std{};
+  double stddev{};
 };
 
 /// A uniform distribution with `min` inclusive and `max` exclusive.
@@ -371,7 +371,7 @@ struct DeterministicVector final : public DistributionVector {
   drake::Vector<double, Size> value;
 };
 
-/// A gaussian distribution with vector `mean` and vector or scalar `std`.
+/// A gaussian distribution with vector `mean` and vector or scalar `stddev`.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
 struct GaussianVector final : public DistributionVector {
@@ -379,7 +379,7 @@ struct GaussianVector final : public DistributionVector {
 
   GaussianVector();
   GaussianVector(const drake::Vector<double, Size>& mean,
-                 const drake::VectorX<double>& std);
+                 const drake::VectorX<double>& stddev);
   ~GaussianVector() final;
 
   Eigen::VectorXd Sample(drake::RandomGenerator*) const final;
@@ -389,11 +389,11 @@ struct GaussianVector final : public DistributionVector {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(mean));
-    a->Visit(DRAKE_NVP(std));
+    a->Visit(DRAKE_NVP(stddev));
   }
 
   drake::Vector<double, Size> mean;
-  drake::VectorX<double> std;
+  drake::VectorX<double> stddev;
 };
 
 /// A uniform distribution with vector `min` inclusive and vector `max`
