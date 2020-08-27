@@ -42,8 +42,8 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
        27., 28., 29.;
   // clang-format on
 
-  // Run the test using all three constructors.
-  for (int i = 0; i < 3; ++i) {
+  // Run the test using both constructors.
+  for (int i = 0; i < 2; ++i) {
     auto plant = std::make_unique<systems::LinearSystem<double>>(A, B, C, D);
     auto plant_context = plant->CreateDefaultContext();
     std::unique_ptr<systems::estimators::LuenbergerObserver<double>> observer{
@@ -58,18 +58,6 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
         observer =
             std::make_unique<systems::estimators::LuenbergerObserver<double>>(
                 std::move(plant), *plant_context, L);
-        break;
-      case 2:  // deprecated constructor (passes both system and context
-               // for ownership).
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        // NOTE: make_unique actually swallows the deprecation warnings anyhow,
-        // so the pragma is not actually needed.  But I'm leaving it here for
-        // easy removal once the deprecation period expires.
-        observer =
-            std::make_unique<systems::estimators::LuenbergerObserver<double>>(
-                std::move(plant), std::move(plant_context), L);
-#pragma GCC diagnostic pop
         break;
     }
 
@@ -116,7 +104,7 @@ GTEST_TEST(LuenbergerObserverTest, DerivedTypes) {
   const Eigen::Matrix2d L = Eigen::Matrix2d::Identity();
   auto observer =
       std::make_unique<systems::estimators::LuenbergerObserver<double>>(
-          std::move(plant), std::move(plant_context), L);
+          std::move(plant), *plant_context, L);
   auto context = observer->CreateDefaultContext();
 
   // The first input is the output of the plant (here the pendulum state).

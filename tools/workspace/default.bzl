@@ -53,7 +53,6 @@ load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/numpy:repository.bzl", "numpy_repository")
-load("@drake//tools/workspace/octomap:repository.bzl", "octomap_repository")
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
@@ -200,8 +199,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         nlopt_repository(name = "nlopt")
     if "numpy" not in excludes:
         numpy_repository(name = "numpy")
-    if "octomap" not in excludes:
-        octomap_repository(name = "octomap", mirrors = mirrors)
     if "openblas" not in excludes:
         openblas_repository(name = "openblas")
     if "opengl" not in excludes:

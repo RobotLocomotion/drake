@@ -19,7 +19,6 @@ import numpy as np
 import pydrake
 from pydrake.common import kDrakeAssertIsArmed
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
@@ -855,10 +854,6 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(1)
         result = mp.Solve(prog)
-        with catch_drake_warnings(expected_count=1):
-            infeasible = mp.GetInfeasibleConstraints(prog=prog, result=result,
-                                                     tol=1e-4)
-            self.assertEqual(len(infeasible), 0)
 
         infeasible = result.GetInfeasibleConstraints(prog)
         self.assertEqual(len(infeasible), 0)

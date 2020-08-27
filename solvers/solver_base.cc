@@ -21,14 +21,6 @@ SolverBase::SolverBase(
       default_enabled_(std::move(enabled)),
       default_satisfied_(std::move(satisfied)) {}
 
-SolverBase::SolverBase(
-      std::function<SolverId()> id,
-      std::function<bool()> available,
-      std::function<bool(const MathematicalProgram&)> satisfied)
-    : SolverBase(
-          std::move(id), std::move(available),
-          []() { return true; }, std::move(satisfied)) {}
-
 SolverBase::~SolverBase() = default;
 
 MathematicalProgramResult SolverBase::Solve(

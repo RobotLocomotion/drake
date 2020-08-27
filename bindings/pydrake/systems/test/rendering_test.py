@@ -13,7 +13,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import SceneGraph
 from pydrake.math import RigidTransform
@@ -44,17 +43,12 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(isinstance(value.Clone(), PoseVector))
         self.assertEqual(value.size(), PoseVector.kSize)
         # - Accessors.
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(isinstance(value.get_isometry(), Isometry3))
         self.assertTrue(isinstance(value.get_transform(), RigidTransform))
         self.assertTrue(isinstance(
             value.get_rotation(), Quaternion))
         self.assertTrue(isinstance(
             value.get_translation(), np.ndarray))
         # - Value.
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(np.allclose(
-                value.get_isometry().matrix(), np.eye(4, 4)))
         self.assertTrue(np.allclose(
             value.get_transform().GetAsMatrix4(), np.eye(4, 4)))
         # - Mutators.
@@ -63,9 +57,6 @@ class TestRendering(unittest.TestCase):
         X_expected = RigidTransform(quaternion=q, p=p)
         value.set_translation(p)
         value.set_rotation(q)
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(np.allclose(
-                value.get_isometry().matrix(), X_expected.GetAsMatrix4()))
         self.assertTrue(np.allclose(
             value.get_transform().GetAsMatrix4(), X_expected.GetAsMatrix4()))
         # - Ensure ordering is ((px, py, pz), (qw, qx, qy, qz))
@@ -74,9 +65,6 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(np.allclose(vector_actual, vector_expected))
         # - Fully-parameterized constructor.
         value1 = PoseVector(rotation=q, translation=p)
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(np.allclose(
-                value1.get_isometry().matrix(), X_expected.GetAsMatrix4()))
         self.assertTrue(np.allclose(
             value1.get_transform().GetAsMatrix4(), X_expected.GetAsMatrix4()))
         # Test mutation via RigidTransform
@@ -125,18 +113,12 @@ class TestRendering(unittest.TestCase):
         bundle = PoseBundle(num_poses)
         # - Accessors.
         self.assertEqual(bundle.get_num_poses(), num_poses)
-        with catch_drake_warnings(expected_count=1):
-            self.assertTrue(isinstance(bundle.get_pose(0), Isometry3))
         self.assertTrue(isinstance(bundle.get_transform(0), RigidTransform))
         self.assertTrue(isinstance(bundle.get_velocity(0), FrameVelocity))
         # - Mutators.
         kIndex = 5
         p = [0, 1, 2]
         q = Quaternion(wxyz=normalized([0.1, 0.3, 0.7, 0.9]))
-        with catch_drake_warnings(expected_count=2):
-            bundle.set_pose(kIndex, Isometry3(q, p))
-            self.assertTrue((bundle.get_pose(kIndex).matrix()
-                             == Isometry3(q, p).matrix()).all())
         pose = RigidTransform(quaternion=q, p=p)
         bundle.set_transform(kIndex, pose)
         self.assertTrue((bundle.get_transform(kIndex).GetAsMatrix34()
