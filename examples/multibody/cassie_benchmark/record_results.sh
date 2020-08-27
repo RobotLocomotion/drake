@@ -11,7 +11,6 @@ uname -a > ${TEST_UNDECLARED_OUTPUTS_DIR}/kernel.txt || true
 # if any.
 AFFINITY_COMMAND=""
 
-(
 case $(uname) in
     Linux)
         lsb_release -idrc
@@ -25,8 +24,7 @@ case $(uname) in
     *)
         echo unknown
         ;;
-esac
-) > ${TEST_UNDECLARED_OUTPUTS_DIR}/os.txt
+esac > ${TEST_UNDECLARED_OUTPUTS_DIR}/os.txt
 
 ${TEST_SRCDIR}/drake/tools/workspace/cc/identify_compiler \
  > ${TEST_UNDECLARED_OUTPUTS_DIR}/compiler.txt
