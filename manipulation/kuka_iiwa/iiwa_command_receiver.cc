@@ -25,21 +25,13 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
   position_measured_input_ = &DeclareInputPort(
       "position_measured", systems::kVectorValued, num_joints);
 
-  // This (deprecated) parameter stores a value to use for the initial position
-  // iff the position_measured input is not connected.  The cache entry
-  // provides either the input (iff connected) or else the parameter value.
-  // TODO(jwnimmer-tri) On 2020-09-01 when we remove the set_initial_position
-  // method, we should remove this parameter and cache entry and just use the
-  // input port directly (and use zero when the port is not connected).
-  initial_state_param_ = NumericParameterIndex{
-      DeclareNumericParameter(BasicVector<double>(VectorXd::Zero(num_joints)))};
-  position_measured_or_param_ = &DeclareCacheEntry(
-      "position_measured_or_param", BasicVector<double>(num_joints),
-      &IiwaCommandReceiver::CalcPositionMeasuredOrParam,
-      {position_measured_input_->ticket(),
-       numeric_parameter_ticket(initial_state_param_)});
+  // This cache entry provides either the input (iff connected) or else zero.
+  position_measured_or_zero_ = &DeclareCacheEntry(
+      "position_measured_or_zero", BasicVector<double>(num_joints),
+      &IiwaCommandReceiver::CalcPositionMeasuredOrZero,
+      {position_measured_input_->ticket()});
 
-  // When a simulation begins, we will latch position_measured_or_param into a
+  // When a simulation begins, we will latch position_measured_or_zero into a
   // state variable, so that we will hold that pose until the first message is
   // received.  Prior to that event, we continue to use the unlatched value.
   latched_position_measured_is_set_ = DeclareDiscreteState(VectorXd::Zero(1));
@@ -49,7 +41,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
       {message_input_->ticket(),
        discrete_state_ticket(latched_position_measured_is_set_),
        discrete_state_ticket(latched_position_measured_),
-       position_measured_or_param_->ticket()});
+       position_measured_or_zero_->ticket()});
 
   commanded_position_output_ = &DeclareVectorOutputPort(
       "position", BasicVector<double>(num_joints),
@@ -62,18 +54,13 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
       {defaulted_command_->ticket()});
 }
 
-void IiwaCommandReceiver::set_initial_position(
-    Context<double>* context, const Eigen::Ref<const VectorXd>& q) const {
-  context->get_mutable_numeric_parameter(initial_state_param_).SetFromVector(q);
-}
-
-void IiwaCommandReceiver::CalcPositionMeasuredOrParam(
+void IiwaCommandReceiver::CalcPositionMeasuredOrZero(
     const systems::Context<double>& context,
     systems::BasicVector<double>* result) const {
   if (position_measured_input_->HasValue(context)) {
     result->SetFromVector(position_measured_input_->Eval(context));
   } else {
-    result->SetFrom(context.get_numeric_parameter(initial_state_param_));
+    result->SetZero();
   }
 }
 
@@ -84,7 +71,7 @@ void IiwaCommandReceiver::LatchInitialPosition(
   const auto& value_index = latched_position_measured_;
   result->get_mutable_vector(bool_index).get_mutable_value()[0] = 1.0;
   result->get_mutable_vector(value_index).SetFrom(
-      position_measured_or_param_->Eval<BasicVector<double>>(context));
+      position_measured_or_zero_->Eval<BasicVector<double>>(context));
 }
 
 void IiwaCommandReceiver::LatchInitialPosition(
@@ -133,7 +120,7 @@ void IiwaCommandReceiver::CalcDefaultedCommand(
     const BasicVector<double>& default_position =
         latch_is_set[0]
          ? context.get_discrete_state(latched_position_measured_)
-         : position_measured_or_param_->Eval<BasicVector<double>>(context);
+         : position_measured_or_zero_->Eval<BasicVector<double>>(context);
     const VectorXd vec = default_position.CopyToVector();
     result->num_joints = vec.size();
     result->joint_position = {vec.data(), vec.data() + vec.size()};

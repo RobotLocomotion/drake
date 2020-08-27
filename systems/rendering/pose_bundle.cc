@@ -27,16 +27,6 @@ int PoseBundle<T>::get_num_poses() const {
 }
 
 template <typename T>
-const Isometry3<T> PoseBundle<T>::get_pose(int index) const {
-  return get_transform(index).GetAsIsometry3();
-}
-
-template <typename T>
-void PoseBundle<T>::set_pose(int index, const Isometry3<T>& pose) {
-  set_transform(index, RigidTransform<T>(pose));
-}
-
-template <typename T>
 const RigidTransform<T>& PoseBundle<T>::get_transform(int index) const {
   DRAKE_DEMAND(index >= 0 && index < get_num_poses());
   return poses_[index];

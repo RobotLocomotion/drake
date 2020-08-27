@@ -6,7 +6,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
@@ -50,12 +49,6 @@ class SolverBase : public SolverInterface {
       std::function<SolverId()> id,
       std::function<bool()> available,
       std::function<bool()> enabled,
-      std::function<bool(const MathematicalProgram&)> satisfied);
-
-  DRAKE_DEPRECATED("2020-09-01", "The 'enabled' argument will become required.")
-  SolverBase(
-      std::function<SolverId()> id,
-      std::function<bool()> available,
       std::function<bool(const MathematicalProgram&)> satisfied);
 
   /// Hook for subclasses to implement Solve.  Prior to the SolverBase's call

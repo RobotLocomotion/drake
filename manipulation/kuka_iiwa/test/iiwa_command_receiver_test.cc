@@ -128,41 +128,6 @@ TEST_F(IiwaCommandReceiverTest, AcceptanceTestWithLatching) {
   EXPECT_TRUE(CompareMatrices(torque(), t3));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(IiwaCommandReceiverTest, DeprecatedAcceptanceTest) {
-  // Check that the commanded pose starts out at zero
-  const VectorXd zero = VectorXd::Zero(N);
-  EXPECT_TRUE(CompareMatrices(position(), zero));
-  EXPECT_TRUE(CompareMatrices(torque(), zero));
-
-  // Check that we can set a different initial position.
-  const VectorXd q0 = VectorXd::LinSpaced(N, 0.1, 0.2);
-  dut_.set_initial_position(&context_, q0);
-  EXPECT_TRUE(CompareMatrices(position(), q0));
-  EXPECT_TRUE(CompareMatrices(torque(), zero));
-
-  // Check that a real command trumps the initial position.
-  // First, try with empty torques.
-  const VectorXd q1 = VectorXd::LinSpaced(N, 0.3, 0.4);
-  lcmt_iiwa_command command{};
-  command.utime = 0;
-  command.num_joints = N;
-  command.joint_position = {q1.data(), q1.data() + q1.size()};
-  SetInput(command);
-  EXPECT_TRUE(CompareMatrices(position(), q1));
-  EXPECT_TRUE(CompareMatrices(torque(), zero));
-
-  // Now provide torques.
-  const VectorXd t1 = VectorXd::LinSpaced(N, 0.5, 0.6);
-  command.num_torques = N;
-  command.joint_torque = {t1.data(), t1.data() + t1.size()};
-  SetInput(command);
-  EXPECT_TRUE(CompareMatrices(position(), q1));
-  EXPECT_TRUE(CompareMatrices(torque(), t1));
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace kuka_iiwa
 }  // namespace manipulation

@@ -92,20 +92,6 @@ LuenbergerObserver<T>::LuenbergerObserver(
     : LuenbergerObserver(nullptr, std::move(observed_system),
                          observed_system_context, observer_gain) {}
 
-// Note: observed_system_context is not moved -- it only needs to live long
-// enough to be copied into the Context in the delegated constructor.
-template <typename T>
-LuenbergerObserver<T>::LuenbergerObserver(
-    std::unique_ptr<System<T>> observed_system,
-    std::unique_ptr<Context<T>> observed_system_context,
-    const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
-    : LuenbergerObserver(nullptr, std::move(observed_system),
-                         *observed_system_context, observer_gain) {
-  static const logging::Warn log_once(
-      "Called a deprecated constructor for LuenbergerObserver.  Use a "
-      "constructor which passes the context by reference.");
-}
-
 template <typename T>
 void LuenbergerObserver<T>::CalcEstimatedState(const Context<T>& context,
                                                BasicVector<T>* output) const {

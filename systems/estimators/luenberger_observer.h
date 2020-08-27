@@ -7,7 +7,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -61,13 +60,6 @@ class LuenbergerObserver final: public LeafSystem<T> {
   /// Constructs the observer, taking ownership of `observed_system`.
   LuenbergerObserver(std::unique_ptr<System<T>> observed_system,
                      const Context<T>& observed_system_context,
-                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
-
-  DRAKE_DEPRECATED(
-      "2020-09-01",
-      "Use a constructor which passes the context by reference.")
-  LuenbergerObserver(std::unique_ptr<System<T>> observed_system,
-                     std::unique_ptr<Context<T>> observed_system_context,
                      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
   // TODO(russt): Support scalar conversion.

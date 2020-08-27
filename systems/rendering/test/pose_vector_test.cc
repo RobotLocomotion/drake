@@ -27,11 +27,6 @@ namespace {
 // Tests that the default PoseVector is initialized to identity.
 GTEST_TEST(PoseVector, InitiallyIdentity) {
   const PoseVector<double> vec;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(CompareMatrices(RigidTransformd{}.matrix(),
-                              vec.get_isometry().matrix()));
-#pragma GCC diagnostic pop
   EXPECT_TRUE(CompareMatrices(RigidTransformd().GetAsMatrix4(),
                               vec.get_transform().GetAsMatrix4()));
   // Check that the underlying storage has the values we'd expect.

@@ -8,7 +8,6 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -1321,14 +1320,6 @@ top-level documentation for :py:mod:`pydrake.math`.
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetInfeasibleConstraints",
-      WrapDeprecated(doc.GetInfeasibleConstraints.doc_deprecated,
-          &solvers::GetInfeasibleConstraints),
-      py::arg("prog"), py::arg("result"), py::arg("tol") = std::nullopt,
-      doc.GetInfeasibleConstraints.doc_deprecated);
-#pragma GCC diagnostic pop
 
   ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)

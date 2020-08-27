@@ -697,14 +697,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_collision_geometries.doc)
         .def("CollectRegisteredGeometries", &Class::CollectRegisteredGeometries,
             py::arg("bodies"), cls_doc.CollectRegisteredGeometries.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("default_coulomb_friction", &Class::default_coulomb_friction,
-        py::arg("geometry_id"), py_rvp::reference_internal,
-        cls_doc.default_coulomb_friction.doc_deprecated);
-#pragma GCC diagnostic pop
-    DeprecateAttribute(cls, "default_coulomb_friction",
-        cls_doc.default_coulomb_friction.doc_deprecated);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",
@@ -1082,8 +1074,6 @@ PYBIND11_MODULE(plant, m) {
           doc.PropellerInfo.thrust_ratio.doc)
       .def_readwrite("moment_ratio", &PropellerInfo::moment_ratio,
           doc.PropellerInfo.moment_ratio.doc);
-
-  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

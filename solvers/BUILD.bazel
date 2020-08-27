@@ -1547,17 +1547,6 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(jwnimmer-tri) Remove this test on 2020-09-01 when the deprecated
-# SolverBase constructor is also removed.
-drake_cc_googletest(
-    name = "solver_base_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":mathematical_program",
-        ":solver_base",
-    ],
-)
-
 drake_cc_googletest(
     name = "solver_id_test",
     deps = [
