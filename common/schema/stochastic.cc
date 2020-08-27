@@ -1,4 +1,4 @@
-#include "drake/common/schema/dev/stochastic.h"
+#include "drake/common/schema/stochastic.h"
 
 #include <stdexcept>
 #include <utility>

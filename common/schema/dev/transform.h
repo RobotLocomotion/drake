@@ -5,7 +5,7 @@
 
 #include "drake/common/name_value.h"
 #include "drake/common/schema/dev/rotation.h"
-#include "drake/common/schema/dev/stochastic.h"
+#include "drake/common/schema/stochastic.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {

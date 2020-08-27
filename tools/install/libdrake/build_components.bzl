@@ -32,6 +32,7 @@ LIBDRAKE_COMPONENTS = [
     "//attic/util",
     "//common",
     "//common/proto",
+    "//common/schema",
     "//common/trajectories",
     "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged
