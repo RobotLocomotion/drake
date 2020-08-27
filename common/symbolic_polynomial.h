@@ -63,6 +63,11 @@ struct CompareMonomial {
 /// are not provided. The problem is that Variable class has no intrinsic
 /// information if a variable is a decision variable or an indeterminate while
 /// we need this information to perform arithmetic operations over Polynomials.
+// TODO(hongkai.dai) when symbolic::GenericPolynomial is ready, we will
+// deprecate symbolic::Polynomial class, and create an alias using
+// symbolic::Polynomial=symbolic::GenericPolynomial<MonomialBasisElement>;
+// We will copy the unit tests in symbolic_polynomial_test.cc to
+// symbolic_generic_polynomial_test.cc
 class Polynomial {
  public:
   using MapType = std::map<Monomial, Expression, internal::CompareMonomial>;
