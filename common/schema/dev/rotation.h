@@ -16,6 +16,9 @@ namespace schema {
 /// It does not provide mathematical operators to compose or mutate rotations.
 /// Instead, users should call either GetDeterministicValue() or ToSymbolic()
 /// to obtain a RotationMatrix value that can be operated on.
+///
+/// For an overview of configuring stochastic transforms, see
+/// @ref schema_transform and @ref schema_stochastic.
 struct Rotation {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
 

@@ -15,22 +15,185 @@
 namespace drake {
 namespace schema {
 
-// TODO(ggould-tri) The documentation on DistributionVector{,Variant} isn't
-// really adequate to Drake standards. It's misleadingly minimal and doesn't
-// capture the subtlety of the semantics, in particular with respect to the
-// homogeneity of the vector -- it is really a distribution over vectors more
-// than a vector of distributions, since you can't have a DistributionVector
-// that is [Gaussian, Gaussian, Uniform] or similarly non-homogeneous. This
-// will become acute as people try to create stochastic free body states where
-// the translational and rotational coordinates require different approaches:
-// The type names will become the classic "maze of twisty little passages, all
-// alike" in the style of BasicVector/VectorBase unless there is a worked
-// example in hand for them to copy from that will avoid ever touching those
-// pitfalls.
-//
-// When transform.h comes over from Anzu, then its documentation will become
-// the most acute place where this information is missing. This class really
-// needs a more doxygen-oriented explanation that includes examples.
+/** @defgroup schema_stochastic Configuring distributions
+@ingroup stochastic_systems
+@{
+
+This page describes how to use classes such as schema::Distribution to denote
+stochastic quantities, as bridge between loading a scenario specification and
+populating the corresponding symbolic::Expression quantities into a
+systems::System.
+
+<h1>Stochastic variables</h1>
+
+We'll explain uses of schema::Distribution and related using the matching YAML
+syntax as parsed by yaml::YamlReadArchive.
+
+Given this C++ data structure:
+
+```
+struct MyStuff {
+  schema::DistributionVariant value;
+};
+
+MyStuff stuff;
+```
+
+You might load a YAML file such as this:
+
+```
+stuff:
+  value: 1.0
+```
+
+The `stuff.value` is set to a constant (not stochastic) value 1.0.
+
+Alternatively, you might load a YAML file such as this:
+
+```
+stuff:
+  value: !Gaussian
+    mean: 1.0
+    std: 0.5
+```
+
+Now, `stuff.value` is set to gaussian variable with the given mean and standard
+deviation.
+
+The exclamation point syntax is a YAML type tag, which we use to specify the
+type choice within an `std::variant`.  The schema::DistributionVariant is a
+typedef for a specific `std::variant`.
+
+There are a few other choices for the type.
+
+Here, you might specify a real-valued uniform range:
+
+```
+stuff:
+  value: !Uniform
+    min: 1.0
+    max: 5.0
+```
+
+Or, you might choose from a set of equally-likely options:
+
+```
+stuff:
+  value: !UniformDiscrete
+    values: [1.0, 1.5, 2.0]
+```
+
+You may also use YAML's flow style to fit everything onto a single line.
+These one-line spelling are the same as the above.
+
+```
+stuff:
+  value: !Gaussian { mean: 1.0, std: 0.5 }
+```
+
+```
+stuff:
+  value: !Uniform { min: 1.0, max: 5.0 }
+```
+
+```
+stuff:
+  value: !UniformDiscrete { values: [1.0, 1.5, 2.0] }
+```
+
+<h1>Vectors of stochastic variables</h1>
+
+For convenience, we also provide the option to specify a vector of independent
+stochastic variables with the same type.
+
+We'll explain uses of schema::DistributionVector and related using the matching
+YAML syntax as parsed by yaml::YamlReadArchive.
+
+Given this C++ data structure:
+
+```
+struct MyThing {
+  schema::DistributionVectorVariantX value;
+};
+
+MyThing thing;
+```
+
+You might load a YAML file such as this:
+
+```
+thing:
+  value: [1.0, 2.0, 3.0]
+```
+
+The `thing.value` is set to a constant (not stochastic) vector with three
+elements.
+
+You might also choose to constrain the vector to be a fixed size:
+
+```
+struct MyThing3 {
+  schema::DistributionVectorVariant3 value;
+};
+
+MyThing3 thing3;
+```
+
+Whether fixed or dynamic size, you might specify stochastic variables:
+
+```
+thing:
+  value: !GaussianVector
+    mean: [2.1, 2.2, 2.3]
+    std: [1.0]            # Same stddev each.
+```
+
+Or:
+
+```
+thing:
+  value: !GaussianVector
+    mean: [2.1, 2.2, 2.3]
+    std: [1.0, 0.5, 0.2]  # Different stddev each.
+```
+
+Or:
+
+```
+thing:
+  value: !UniformVector
+    min: [10.0, 20.0]
+    max: [11.0, 22.0]
+```
+
+@note You cannot mix, e.g., %Gaussian and %Uniform within the same vector; all
+elements must be a homogeneous type.
+
+All distributions still support constants for some elements and stochastic for
+others by specifying a zero-sized range for the constant elements:
+
+```
+thing:
+  value: !UniformVector   # The first element is a constant 2.0, not stochastic.
+    min: [2.0, -1.0]
+    max: [2.0,  1.0]
+```
+
+Or:
+
+```
+thing:
+  value: !GaussianVector  # The first element is a constant 2.0, not stochastic.
+    mean: [2.0, 3.0]
+    std: [0.0, 1.0]
+```
+
+<h1>See also </h1>
+
+See @ref schema_transform for one practical application, of specifying
+rotations, translations, and transforms using stochastic schemas.
+
+@} */
 
 /// Base class for a single distribution, to be used with YAML archives.
 /// (See struct DistributionVector for vector-valued distributions.)
