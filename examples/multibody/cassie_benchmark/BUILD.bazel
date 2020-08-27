@@ -27,6 +27,12 @@ drake_cc_test(
 
 sh_test(
     name = "record_results",
+    # Debug-configured test runs are nice for coverage, but not very useful
+    # otherwise. Don't waste too much time on them.
+    args = select({
+        "//tools/cc_toolchain:debug": ["--benchmark_repetitions=1"],
+        "//conditions:default": [],
+    }),
     size = "small",
     srcs = ["record_results.sh"],
     data = [
