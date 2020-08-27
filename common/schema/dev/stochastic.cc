@@ -443,9 +443,9 @@ Eigen::VectorXd GetDeterministicValue(
   template Clazz<5>; \
   template Clazz<6>;
 
-DRAKE_INSTANTIATE_ALL_SIZES(struct DeterministicVector)
-DRAKE_INSTANTIATE_ALL_SIZES(struct GaussianVector)
-DRAKE_INSTANTIATE_ALL_SIZES(struct UniformVector)
+DRAKE_INSTANTIATE_ALL_SIZES(class DeterministicVector)
+DRAKE_INSTANTIATE_ALL_SIZES(class GaussianVector)
+DRAKE_INSTANTIATE_ALL_SIZES(class UniformVector)
 
 #undef DRAKE_INSTANTIATE_ALL_SIZES
 
