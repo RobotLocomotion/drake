@@ -10,6 +10,7 @@ import numpy as np
 from collections import namedtuple
 from functools import partial
 
+from IPython.display import display
 from ipywidgets import FloatSlider, Layout, Widget
 
 from pydrake.common.jupyter import process_ipywidget_events
