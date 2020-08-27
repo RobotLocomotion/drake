@@ -48,7 +48,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
-        "//common/schema/dev:transform",
+        "//common/schema:transform",
         "//math:geometric_transform",
     ],
 )

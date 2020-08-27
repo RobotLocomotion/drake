@@ -7,7 +7,7 @@
 
 #include "drake/common/filesystem.h"
 #include "drake/common/find_resource.h"
-#include "drake/common/schema/dev/transform.h"
+#include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/multibody/parsing/parser.h"
 
