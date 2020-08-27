@@ -22,7 +22,7 @@ On the default supported platform, the following command will build code
 and save result data to a user supplied directory, under relatively
 controlled conditions.
 
-    $ examples/multibody/cassie_benchmark/conduct_experiment [DIRECTORY]
+    $ examples/multibody/cassie_benchmark/conduct_experiment [DIRECTORY] [-- [ARGS...]]
 
 The conduct_experiment script will attempt to reduce result variance by
 controlling cpu throttling and by setting a cpu affinity mask.
@@ -30,6 +30,10 @@ controlling cpu throttling and by setting a cpu affinity mask.
 It is still up to the user to make sure the machine is appropriate (not
 a virtual machine, for example), and relatively unloaded. Close as many
 running programs as is practical.
+
+Optionally, it is possible to pass command line arguments through to the
+cassie_bench executable. See 'Configuring details of benchmark runs'
+below.
 
 ## Comparing experiment data
 
@@ -52,7 +56,7 @@ environment controls) and collect context information. It is not
 confined to a specific platform, like :conduct_experiment, and it
 controls fewer environment conditions.
 
-    $ bazel run //examples/multibody/cassie_benchmark:record_results
+    $ bazel run //examples/multibody/cassie_benchmark:record_results [-- [ARGS...]]
 
 For best results, some conditions will need to be manually
 controlled. These include:
@@ -68,6 +72,10 @@ it is still important to limit the number of running programs. As of
 this writing, the benchmark is assigned to processor #0; it may be worth
 monitoring the system to ensure that processor will be fully available
 to the experiment.
+
+Optionally, it is possible to pass command line arguments through to the
+cassie_bench executable. See 'Configuring details of benchmark runs'
+below.
 
 ## Results data files
 
@@ -85,10 +93,21 @@ complete. Still missing:
 
 ## Configuring details of benchmark runs
 
-To run individual benchmarks, alter output, etc., run the
-benchmark program directly:
+In addition to the above forms, it is possible run the benchmark program
+directly:
 
-    $ bazel run //examples/multibody/cassie_benchmark:cassie_bench -- [ARGS]
+    $ bazel run //examples/multibody/cassie_benchmark:cassie_bench [-- [ARGS...]]
+
+or
+
+    $ bazel-bin/examples/multibody/cassie_benchmark/cassie_bench [ARGS...]
+
+if the :cassie_bench target is built. The direct forms may be useful for
+combining debugging or profiling tools.
+
+All of these forms take the same set of command line arguments, which
+can select which cases are run, control iterations and repetitions,
+alter output formatting, etc.
 
 Documentation for command line arguments is here:
 https://github.com/google/benchmark#command-line
