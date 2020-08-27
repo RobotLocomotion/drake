@@ -15,23 +15,9 @@ drake_cc_library(
     srcs = ["rotation.cc"],
     hdrs = ["rotation.h"],
     deps = [
-        ":stochastic",
         "//common:name_value",
+        "//common/schema:stochastic",
         "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "stochastic",
-    srcs = ["stochastic.cc"],
-    hdrs = ["stochastic.h"],
-    visibility = ["//examples/acrobot/dev:__pkg__"],
-    deps = [
-        "//common:essential",
-        "//common:name_value",
-        "//common:random",
-        "//common:symbolic",
-        "//common:unused",
     ],
 )
 
@@ -42,8 +28,8 @@ drake_cc_library(
     visibility = ["//multibody/parsing/dev:__pkg__"],
     deps = [
         ":rotation",
-        ":stochastic",
         "//common:name_value",
+        "//common/schema:stochastic",
         "//math:geometric_transform",
     ],
 )
@@ -57,16 +43,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/yaml:yaml_read_archive",
         "//common/yaml:yaml_write_archive",
-    ],
-)
-
-drake_cc_googletest(
-    name = "stochastic_test",
-    deps = [
-        ":stochastic",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:symbolic_test_util",
-        "//common/yaml:yaml_read_archive",
     ],
 )
 

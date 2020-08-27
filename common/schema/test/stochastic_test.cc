@@ -1,6 +1,7 @@
-#include "drake/common/schema/dev/stochastic.h"
+#include "drake/common/schema/stochastic.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include <gtest/gtest.h>
 
@@ -83,6 +84,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   const Gaussian& g = std::get<Gaussian>(variants.vec[1]);
   EXPECT_EQ(g.mean, 2.);
   EXPECT_EQ(g.stddev, 4.);
+  EXPECT_TRUE(std::isfinite(d.Sample(&generator)));
   EXPECT_EQ(g.Mean(), 2.);
   CheckGaussianSymbolic(g.ToSymbolic(), g.mean, g.stddev);
   EXPECT_FALSE(IsDeterministic(variants.vec[1]));
@@ -116,6 +118,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
                std::logic_error);
 
   EXPECT_EQ(std::get<double>(variants.vec[4]), 3.2);
+  EXPECT_EQ(Sample(variants.vec[4], &generator), 3.2);
   EXPECT_EQ(Mean(variants.vec[4]), 3.2);
   EXPECT_TRUE(IsDeterministic(variants.vec[4]));
   EXPECT_EQ(GetDeterministicValue(variants.vec[4]), 3.2);
@@ -123,6 +126,7 @@ GTEST_TEST(StochasticTest, ScalarTest) {
   Eigen::VectorXd vec = Sample(variants.vec, &generator);
   ASSERT_EQ(vec.size(), 5);
   EXPECT_EQ(vec(0), 5.0);
+  EXPECT_TRUE(std::isfinite(vec(1)));
   EXPECT_LE(u.min, vec(2));
   EXPECT_GE(u.max, vec(2));
   EXPECT_NE(std::find(ub.values.begin(), ub.values.end(), vec(3)),
