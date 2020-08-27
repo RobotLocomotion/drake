@@ -20,14 +20,14 @@ class YamlWriteArchiveDefaultsTest : public ::testing::Test {
  public:
   template <typename DataSerializable, typename DefaultsSerializable>
   static std::string SaveDataWithoutDefaults(
-        const DataSerializable& data,
-        const DefaultsSerializable& defaults) {
+      const DataSerializable& data, const DefaultsSerializable& defaults,
+      const std::string& key_name = "doc") {
     YamlWriteArchive defaults_archive;
     defaults_archive.Accept(defaults);
     YamlWriteArchive archive;
     archive.Accept(data);
     archive.EraseMatchingMaps(defaults_archive);
-    return archive.EmitString("doc");
+    return archive.EmitString(key_name);
   }
 };
 
@@ -59,6 +59,30 @@ TEST_F(YamlWriteArchiveDefaultsTest, BasicExample2) {
   EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
   inner_struct:
     inner_value: 3.0
+)""");
+}
+
+// Shows the typical use -- emit the content with or without providing a
+// root_name.
+TEST_F(YamlWriteArchiveDefaultsTest, BasicExample3) {
+  OuterStruct defaults;
+  defaults.outer_value = 1.0;
+
+  OuterStruct data;
+  data.outer_value = 3.0;
+  data.inner_struct.inner_value = defaults.inner_struct.inner_value;
+
+  // Emit using the default "doc" root name.
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults), R"""(doc:
+  outer_value: 3.0
+)""");
+
+  // Emit using an empty root name.
+  EXPECT_EQ(SaveDataWithoutDefaults(data, defaults, ""), R"""(outer_value: 3.0
+)""");
+
+  // Emit with an empty root name without defaults.
+  EXPECT_EQ(SaveDataWithoutDefaults(defaults, defaults, ""), R"""({}
 )""");
 }
 
