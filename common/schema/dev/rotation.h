@@ -3,7 +3,7 @@
 #include <variant>
 
 #include "drake/common/name_value.h"
-#include "drake/common/schema/dev/stochastic.h"
+#include "drake/common/schema/stochastic.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 

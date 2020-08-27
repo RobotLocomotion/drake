@@ -84,7 +84,7 @@ stuff:
 ```
 
 You may also use YAML's flow style to fit everything onto a single line.
-These one-line spelling are the same as the above.
+These one-line spellings are the equivalent to those above.
 
 ```
 stuff:
@@ -345,7 +345,7 @@ double GetDeterministicValue(const DistributionVariant& var);
 // ---------------------------------------------------------------------------
 
 /// Base class for a vector of distributions, to be used with YAML archives.
-/// (See class Distribution for single distributions.)
+/// (See class Distribution for scalar-valued distributions.)
 class DistributionVector {
  public:
   virtual ~DistributionVector();
@@ -475,7 +475,7 @@ template <int Size>
 std::unique_ptr<DistributionVector> ToDistributionVector(
     const DistributionVectorVariant<Size>& vec);
 
-/// Returns true iff this is set to a deterministic value.
+/// Returns true iff all of `vec`'s elements are set to a deterministic value.
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
 bool IsDeterministic(const DistributionVectorVariant<Size>& vec);
