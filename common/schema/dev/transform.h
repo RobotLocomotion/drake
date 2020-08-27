@@ -5,7 +5,7 @@
 
 #include "drake/common/name_value.h"
 #include "drake/common/schema/dev/rotation.h"
-#include "drake/common/schema/dev/stochastic.h"
+#include "drake/common/schema/stochastic.h"
 #include "drake/math/rigid_transform.h"
 
 namespace drake {
@@ -60,7 +60,7 @@ rotation: !AngleAxis
 ```
 
 You may also use YAML's flow style to fit everything onto a single line.
-These one-line spelling are the same as the above.
+These one-line spellings are the equivalent to those above.
 
 ```
 rotation: !Rpy { deg: [10.0, 20.0, 30.0] }

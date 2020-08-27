@@ -5,7 +5,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "drake/common/name_value.h"
-#include "drake/common/schema/dev/stochastic.h"
+#include "drake/common/schema/stochastic.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/common/yaml/yaml_write_archive.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
