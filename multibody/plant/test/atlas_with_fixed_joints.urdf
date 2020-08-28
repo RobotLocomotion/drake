@@ -4,7 +4,8 @@
      introduced in PR #13933. Several revolute joints connecting heavy bodies
      have been replaced with fixed joints (commented with "REPLACED" below).
      See multibody_plant_mass_matrix_test.cc. That test fails
-     violently using this file with the #13933 bug in place. -->
+     violently using this file with the #13933 bug in place, but works
+     fine after the fix in #13953. -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="atlas">
   <link name="l_clav">
     <inertial>

@@ -122,7 +122,8 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
 
 
 // Verify that optimizations over fixed (weld) joints don't cause trouble.
-// This is to prevent a repeat of the bug introduced in PR #13933.
+// This is to prevent a repeat of the bug introduced in PR #13933 (fixed in
+// #13953).
 TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
   LoadModel("drake/multibody/plant/test/atlas_with_fixed_joints.urdf");
 
@@ -143,7 +144,7 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
 }
 
 // Here is a realistic example that fails with the #13933 bug due to
-// welded-on gripper.
+// welded-on gripper, but works with the fix in #13953.
 TEST_F(MultibodyPlantMassMatrixTests, IiwaWithWeldedGripper) {
   LoadIiwaWithGripper();
 
