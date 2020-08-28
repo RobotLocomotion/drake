@@ -2041,7 +2041,7 @@ void MultibodyPlant<T>::CalcTamsiResults(
     contact_solver_->SetSystemDynamicsData(&dynamics_data);
     contact_solver_->SetPointContactData(&contact_data);
 
-    contact_solver_->SolveWithGuess(time_step(), v0);
+    contact_solver_->SolveWithGuess(v0);
 
     // Update the results.
     results->v_next.resize(num_velocities());

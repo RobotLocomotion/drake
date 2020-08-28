@@ -47,8 +47,7 @@ class ParticleSolver final : public ContactSolver<T> {
   int num_contacts() const final { return contact_data_->num_contacts(); };
   int num_velocities() const final { return dynamics_data_->num_velocities(); }
 
-  ContactSolverResult SolveWithGuess(double dt,
-                                     const VectorX<T>& v_guess) final {
+  ContactSolverResult SolveWithGuess(const VectorX<T>& v_guess) final {
     // N.B. These checks can only be performed at this scope, when the data
     // referenced to by the solver is still alive.
     // Verify the problem data has the expected sizes.
