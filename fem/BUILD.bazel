@@ -1,0 +1,40 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# The purpose of default_visibility to be private is to be able to develop this
+# code on master, but without yet exposing it to users until we're sure it is
+# API-stable. Furthermore, the code in this directory is meant for advanced
+# developers working on FEM solvers.
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "hyperelastic_constitutive_model",
+    hdrs = [
+        "hyperelastic_constitutive_model.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hyperelastic_constitutive_model_test",
+    deps = [
+        ":hyperelastic_constitutive_model",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()
