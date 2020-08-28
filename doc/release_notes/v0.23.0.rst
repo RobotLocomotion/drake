@@ -1,5 +1,3 @@
-.. This document is the template used by tools/dev/relnotes.
-
 *************
 Drake v0.23.0
 *************
@@ -27,21 +25,17 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
-* TBD Name ports and add @system documentation for InverseDynamicsController (`#13879`_)
-* TBD Provide System::get_input_port() and get_output_port() (`#13883`_)  # Just a spoonful of sugar...
-* TBD simulator: Optionally suppress initialization events (`#13872`_)  # Closes #13858. * Add defaulted parameter struct arg to Initialize(). This yields legible call sites and leaves room for adding further parameters. * Adjust existing test to cover a no-init simulator reuse. * Add python bindings, and extend existing tests.
-* TBD framework: remove redundant get_input_port() and get_output_port() (`#13896`_)  # PR #13883 provides these methods by default in the System base class.
-* TBD systems/rendering: remove redundant get_input_port() and get_output_port() (`#13897`_)  # PR #13883 provides these methods by default in the System base class.
-* TBD primitives: remove redundant get_input_port() and get_output_port() (`#13898`_)  # PR #13883 provides these methods by default in the System base class.
-* TBD Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
 
 New features
 
-* TBD
+* Provide System::get_input_port() and get_output_port() sugar (`#13883`_, `#13894`_, `#13896`_, `#13897`_, `#13898`_)
+* Optionally suppress simulator initialization events (`#13872`_)
+* Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
 
 Fixes
 
-* Mark subvector and supervector final (`#13907`_)
+* Add port names to InverseDynamicsController (`#13879`_)
+* Mark Subvector and Supervector final (`#13907`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
