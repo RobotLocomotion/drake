@@ -2028,8 +2028,14 @@ void MultibodyPlant<T>::CalcTamsiResults(
     };
     MassMatrixInverseOperator Minv_op("Minv", &M0);
 
-    VectorX<T> tau = -minus_tau;
-    solvers::SystemDynamicsData<T> dynamics_data(&Minv_op, &v0, &tau);
+    // Perform the "predictor" step, in the absence of contact forces.
+    // TODO(amcastro-tri): here the predictor step could be implicit in tau so
+    // that for instance we'd be able do deal with force elements implicitly.
+    VectorX<T> v_star(nv);
+    Minv_op.Multiply(minus_tau, &v_star);  // v_star = -M⁻¹⋅tau
+    v_star = v0 - time_step() * v_star;    // v_star = v₀ + dt⋅M⁻¹⋅τ
+
+    solvers::SystemDynamicsData<T> dynamics_data(&Minv_op, &v_star);
     solvers::PointContactData<T> contact_data(&phi0, &Jc_op, &stiffness,
                                               &damping, &mu);
     contact_solver_->SetSystemDynamicsData(&dynamics_data);

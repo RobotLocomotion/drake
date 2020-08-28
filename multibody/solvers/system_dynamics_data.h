@@ -19,29 +19,24 @@ class SystemDynamicsData {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemDynamicsData)
 
   SystemDynamicsData(const LinearOperator<T>* Minv,
-                     const VectorX<T>* v0,
-                     const VectorX<T>* tau)
-      : Minv_(Minv), v0_(v0), tau_(tau) {
+                     const VectorX<T>* v_star)
+      : Minv_(Minv), v_star_(v_star) {
     DRAKE_DEMAND(Minv != nullptr);
-    DRAKE_DEMAND(v0 != nullptr);
-    DRAKE_DEMAND(tau != nullptr);
+    DRAKE_DEMAND(v_star != nullptr);
     DRAKE_DEMAND(Minv->rows() == Minv->cols());
     nv_ = Minv->rows();
-    DRAKE_DEMAND(v0->size() == num_velocities());
-    DRAKE_DEMAND(tau->size() == num_velocities());
+    DRAKE_DEMAND(v_star->size() == num_velocities());
   }
 
   int num_velocities() const { return nv_; }
 
   const LinearOperator<T>& get_Minv() const { return *Minv_; };
-  const VectorX<T>& get_v0() const { return *v0_; };
-  const VectorX<T>& get_tau() const { return *tau_; }
+  const VectorX<T>& get_v_star() const { return *v_star_; };
 
  private:
   int nv_;
   const LinearOperator<T>* Minv_{nullptr};
-  const VectorX<T>* v0_{nullptr};
-  const VectorX<T>* tau_{nullptr};
+  const VectorX<T>* v_star_{nullptr};
 };
 
 }  // namespace solvers

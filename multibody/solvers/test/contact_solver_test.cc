@@ -71,11 +71,8 @@ class ParticleSolver final : public ContactSolver<T> {
         CompareMatrices(W, W_expected, kEpsilon, MatrixCompareType::absolute));
 
     // Generalized velocities when contact forces are zero.
-    VectorX<T> v_star(nv);
-    get_Minv().Multiply(get_tau(), &v_star);  // v_star = M⁻¹⋅tau
-    v_star = get_v0() + dt * v_star;  // v_star = v₀ + dt⋅M⁻¹⋅τ
     VectorX<T> vc_star(3 * nc);
-    get_Jc().Multiply(v_star, &vc_star);  // vc_star = Jc⋅v_star
+    get_Jc().Multiply(get_v_star(), &vc_star);  // vc_star = Jc⋅v_star
     const T vn_star = vc_star(2);         // Normal velocity.
     const T Wnn = W(2, 2);                // Normal equation.
 
@@ -106,7 +103,7 @@ class ParticleSolver final : public ContactSolver<T> {
 
     get_Jc().MultiplyByTranspose(gamma_, &tau_c_);
     get_Minv().Multiply(tau_c_, &v_);  // v_ = M⁻¹⋅τc
-    v_ += get_v0();                    // v_ = v₀ + M⁻¹⋅τc
+    v_ += get_v_star();                // v_ = v* + M⁻¹⋅τc
     vc_ = Vector3<T>(vt(0), vt(1), vn);
 
     return ContactSolverResult::kSuccess;  // It always succeeds.
@@ -129,9 +126,7 @@ class ParticleSolver final : public ContactSolver<T> {
   const LinearOperator<T>& get_Minv() const {
     return dynamics_data_->get_Minv();
   }
-  const VectorX<T>& get_v0() const { return dynamics_data_->get_v0(); }
-  const VectorX<T>& get_tau() const { return dynamics_data_->get_tau(); }
-  const VectorX<T>& get_phi0() const { return contact_data_->get_phi0(); }
+  const VectorX<T>& get_v_star() const { return dynamics_data_->get_v_star(); }
   const VectorX<T>& get_mu() const { return contact_data_->get_mu(); }
 
   // Problem data.

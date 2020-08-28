@@ -26,6 +26,55 @@ enum class ContactSolverResult {
   kFailure = 1,
 };
 
+/// This class defines a general interface for all of our contact solvers. By
+/// having a commong interace, client code such as MultibodyPlant only needs to
+/// learn how to talk to ContactSolver, allowing to swap contact solvers that
+/// share this commong interface without having to re-wire internals.
+/// 
+/// Generally, we are interested on solving a set of momentum equations subject
+/// to contact constraints of the form: <pre>
+///   F(q, v) = Jcᵀ⋅γ
+///   s.t. Contact constraints.
+/// </pre>
+/// Where with "Contact constraints" we mean:
+/// 1. Contact forces follow Coulomb's law of friction, i.e. γ is in the
+///    friction cone at each discrete contact.
+/// 2. The friction component of γ, which we refer to as β, satisfies the
+///    principle of maximum dissipation for sliding contacts.
+/// 3. The normal component of γ, which we refer to as π, is always positive,
+///    i.e. always a repulsive force (adhesive or “sticky" needs special
+///    consideration).
+///
+/// This interface leaves open how exactly this constraints are imposed so that
+/// specific solvers have the freedom to choose other model approximations. For
+/// instance, we allow solvers to accommodate for the convex relaxation of
+/// friction [Anitescu, 2006], to use regularization of constraints [Lacoursiere
+/// et al. 2011] or a some combination of the above [Todorov, 2014].
+///
+/// As an example of application, consider the rigid multibody dynamics
+/// equations discretized using an explicit approach for all non-contact forces.
+/// In this case F(q, v) takes the form: <pre>
+///   F(q, v) = M⋅(v−v₀) − dt⋅τ₀
+/// </pre>
+///
+/// A general approach for solving the contact problem will include a predictor
+/// step to compute velocities v* satisfying the predictor equations 
+/// F(q(v*), v*) = 0. That is, v* corresponds to the velocities the system would
+/// evolve with in the absenceof contact forces.
+///
+/// References:
+/// - [Anitescu, 2006] Anitescu, M., 2006. Optimization-based simulation of
+/// nonsmooth rigid multibody dynamics. Mathematical Programming, 105(1),
+/// pp.113-143. 
+/// - [Lacoursiere et al. 2011] Lacoursiere, C. and Linde, M., 2011. Spook: a
+/// variational time-stepping scheme for rigid multibody systems subject to dry
+/// frictional contacts. UMINF report, 11.
+/// - [Todorov, 2014] Todorov, E., 2014, May. Convex and analytically-invertible
+/// dynamics with contacts and constraints: Theory and implementation in MuJoCo.
+/// In 2014 IEEE International Conference on Robotics and Automation (ICRA) (pp.
+/// 6054-6061). IEEE.
+///
+/// @tparam_nonsymbolic_scalar
 template <typename T>
 class ContactSolver {
  public:

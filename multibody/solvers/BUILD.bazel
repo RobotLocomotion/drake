@@ -114,6 +114,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "contact_solver_test",
     data = ["test/particle.sdf"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
     deps = [
         ":contact_solver",
         ":contact_solver_driver",
