@@ -1070,18 +1070,18 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       const BodyNode<T>* body_node = child_node->parent_body_node();
       Matrix6xUpTo6<T> Fm_CBo_W = Fm_CCo_W;  // 6 x cnv
       while (body_node) {
+        const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
+        // In place rigid shift of the spatial force in each column of
+        // Fm_CBo_W, from Bc to Bo. Before this computation, Fm_CBo_W actually
+        // stores Fm_CBc_W from the previous recursion. At the end of this
+        // computation, Fm_CBo_W stores the spatial force on composite body C,
+        // shifted to Bo, and expressed in the world W. That is, we are doing
+        // Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
+        SpatialForce<T>::ShiftInPlace(&Fm_CBo_W, p_BcBo_W);
+
+        // The shift alone is sufficient for a weld joint.
         const int bnv = body_node->get_num_mobilizer_velocities();
-
         if (bnv > 0) {
-          const Vector3<T>& p_BcBo_W = -pc.get_p_PoBo_W(child_node->index());
-          // In place rigid shift of the spatial force in each column of
-          // Fm_CBo_W, from Bc to Bo. Before this computation, Fm_CBo_W actually
-          // stores Fm_CBc_W from the previous recursion. At the end of this
-          // computation, Fm_CBo_W stores the spatial force on composite body C,
-          // shifted to Bo, and expressed in the world W. That is, we are doing
-          // Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
-          SpatialForce<T>::ShiftInPlace(&Fm_CBo_W, p_BcBo_W);
-
           // Across mobilizer 6 x bnv Jacobian between body_node B and
           // its parent P.
           const Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
