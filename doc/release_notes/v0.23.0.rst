@@ -12,7 +12,8 @@ Announcements
 Breaking changes since v0.22.0
 ------------------------------
 
-* TBD
+* The drake::examples::rod2d::Rod2D::pose_output() port has been removed, as
+  the system no longer connects to the systems::rendering API (`#13890`_).
 
 Changes since v0.22.0
 ---------------------
@@ -42,11 +43,10 @@ Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for solvers go here>
-* TBD Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)  # Inspired by #13841.
 
 New features
 
-* TBD
+* TBD Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
 
 Fixes
 
@@ -59,11 +59,11 @@ Multibody Dynamics
 * TBD Implement Frame::CalcSpatialAccelerationInWorld() (`#13773`_)  # Implement Frame::CalcSpatialAccelerationInWorld()
 * TBD Consolidate code to be used for both bias and regular (unbias) spatial accelerations (`#13838`_)
 * TBD Move acceleration cache from plant to tree system (`#13873`_)
-* TBD multibody: Support parsing massless bodies (`#13908`_)  # * Support parsing massless bodies from SDF and URDF
-* TBD Fix a mac build error introduced in #13908 (`#13927`_)
-* TBD [geometry] Geometry support for discrete hydroelastic contact (`#13864`_)  # 1. Introduce new (optional) data for ContactSurface. The gradients of the constituent fields sampled once per *triangle*. 2. Extend API to allow for addition of new data in results. - HydroelasticCallback - Soft-rigid mesh intersection - rigid half space-soft mesh intersection - soft half space-rigid mesh intersection 3. Incidentally cleaned up some unit test issues in related code.
-[multibody,systems] * TBD Add doxygen group for multibody systems (`#13929`_)  # I noticed that the Propeller system was sitting in a very odd place in the doxygen hierarchy.  This cleans that up. Also resolves a stale reference to simple_car.h
+* TBD multibody: Support parsing massless bodies (`#13908`_, `#13927`_)  # * Support parsing massless bodies from SDF and URDF
+* TBD Geometry support for discrete hydroelastic contact (`#13864`_)  # 1. Introduce new (optional) data for ContactSurface. The gradients of the constituent fields sampled once per *triangle*. 2. Extend API to allow for addition of new data in results. - HydroelasticCallback - Soft-rigid mesh intersection - rigid half space-soft mesh intersection - soft half space-rigid mesh intersection 3. Incidentally cleaned up some unit test issues in related code.
 * TBD Implements a LinearOperator class to be used by contact solvers (`#13911`_)
+* TBD Reduce heap allocation in CalcMassMatrix() (`#13928`_)  # * Cache composite body inertias to eliminate temp allocation in CalcMassMatrix(). Modernize cache allocation code.
+* TBD Eliminate remaining heap use from CalcMassMatrix() (`#13933`_, `#13953`_)  # * Eliminate the rest of the heap allocations in CalcMassMatrix. Add and use SpatialForce::ShiftInPlace() method.
 
 New features
 
@@ -77,44 +77,29 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
-[examples,manipulation] * TBD Make force limit input port for Schunk WSG optional (`#13878`_)
-* TBD examples: remove redundant get_input_port() and get_output_port() (`#13894`_)  # PR #13883 provides these methods by default in the System base class.
-* TBD [examples] Connect rod 2d to SceneGraph for visualization (`#13890`_)  # Note: this breaks the API. The old Rod2D::pose_output() no longer exists (as the system no longer connects to the systems::rendering API). Supplant the old visualization mechanism with the standard used in examples. examples/rod2d is no longer dependent on attic code.
-[examples,tools] * TBD cassie_bench: Record compiler name and version (`#13909`_)  # Closes #13905.
-* TBD cassie_bench: Force static linking (`#13913`_)  # Closes #13910. This makes the benchmark program more structurally similar to most Drake executables.
-* TBD cassie bench: Fix blunder in benchmark configuration (`#13914`_)  # Prior options were stripping raw data out of the json file, which is worth keeping for statistical comparisons.
-[examples,multibody] * TBD examples: Stop depending on region of attraction, etc (`#13912`_)  # If the only thing we need from analysis is the simulator, then depend on only that much (not the whole package).
-* TBD cassie_bench: More support for experiments (`#13917`_)  # Relevant to #13902. Add a script to run controlled experiments, and refuse to run on unsupported configurations. Update documentation to describe the new capability.
-[examples,multibody] * TBD Reduce heap allocation in CalcMassMatrix() (`#13928`_)  # * Cache composite body inertias to eliminate temp allocation in CalcMassMatrix(). Modernize cache allocation code.
-* TBD cassie bench: Add processor affinity control for Linux (`#13936`_)  # Relevant to #13902. On linux only, invoke the benchmark under the `taskset` command. Add a bit of documentation.
-[examples,multibody] * TBD Eliminate remaining heap use from CalcMassMatrix() (`#13933`_)  # * Eliminate the rest of the heap allocations in CalcMassMatrix. Add and use SpatialForce::ShiftInPlace() method.
-* TBD cassie_bench: Fix defect affecting affinity (`#13946`_)  # Relevant to #13902. Prior patches to enable CPU affinity were effectively no-op, since the relevant assignment was done within a subshell (parentheses). However, the only thing in the subshell was a case block, so the redirection grouping happens for free anyway.
-[examples,multibody] * TBD Fix fixed-joint CalcMassMatrix() bug introduced in PR #13933 (`#13953`_)
-* TBD
+
+* In rod2d, use modern SceneGraph conventions for visualization (`#13890`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-[common,multibody,perception,systems] * TBD Remove spurious uses of the inline keyword (`#13887`_)
+* TBD Make force limit input port for Schunk WSG optional (`#13878`_)
 * TBD Add MonomialBasisElement (`#13867`_)
 * TBD differential_inverse_kinematics: Fix docstring formatting (`#13892`_)
 * TBD Adds DifferentialInverseKinematicsIntegrator (`#13877`_)  # Cleaner version of the python LeafSystem DifferentialIK from the manipulation_station folder, now in c++. Resolves #11581 Will send a follow-up PR to convert the manipulation station to this version.
 * TBD yaml: Change allow_yaml_with_no_cpp's default to false (`#13900`_)  # It's now an error for yaml data to remain unparsed, unless the user opts in to allowing it. This is a breaking change for any users relying on the implicit default. Users can specify the Options directly to bridge the transition.
 * TBD manipulation: remove redundant get_input_port() and get_output_port() (`#13895`_)  # PR #13883 provides these methods by default in the System base class.
-[common,multibody] * TBD Model Directives mechanism for scene assembly (`#13899`_)  # * Toward #13282 * A domain-specific language for assembling MultibodyPlant scenes from multiple SDF files. * Helpful for assembling large scenes without huge unwieldy sdf/xacro files. * A temporary accomodation until sdformat adds similar functionality. This code is copied and adapted from TRI's Project Anzu. Co-authored-by: Eric Cousineau <eric.cousineau@tri.global> Co-authored-by: Siyuan Feng <siyuan.feng@tri.global> Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global> Co-authored-by: Calder Phillips-Grafflin <calder.phillips-grafflin@tri.global>
 * TBD DiffIKIntegrator: fix typo in port name (`#13919`_)  # Should match doc and method names
 * TBD Adds `DifferentialInverseKinematicsIntegrator::get_parameters()` (`#13920`_)
 * TBD add a function to compute polynomial basis up to a given order (`#13870`_)
-[common,examples] * TBD cassie_bench: Improve allocation tracking (`#13930`_)  # * expose allocation count from LimitMalloc * track allocations with some simple stats * separate first run to expose steady state allocation * lower some Limitmalloc ceilings from observations
 * TBD Fix limit_malloc_test on macOS (`#13932`_)  # On macOS, the device under test is inoperative, so it can't track allocation counts.
 * TBD Fix limit_malloc_test on valgrind (`#13935`_)
 * TBD schema: Add Doxygen for stochastic, rotation, translation (`#13937`_)
 * TBD Allow yaml write to dump the node without a keyname (`#13915`_)
 * TBD schema: Rename gaussian std to stddev (`#13948`_)  # This merges up a recent patch from Anzu.
 * TBD schema: Use 'class' not 'struct' for more complex types (`#13947`_)
-[common,examples,tools] * TBD schema: Move stochastic out of dev (`#13943`_)
-* TBD
+* TBD schema: Move stochastic out of dev (`#13943`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
@@ -122,9 +107,7 @@ pydrake bindings
 .. <relnotes for bindings go here>
 * TBD Add jupyter widget version of JointSliders (`#13884`_)
 * TBD Add `WidgetSystem` to jupyter_widgets.py (`#13882`_)  # This should help us avoid a massive proliferation of bespoke UI systems (e.g. like SchunkWsgSystem).
-* TBD geometry: Bind RenderEngineOspray factory (`#13893`_)
 * TBD Revert "Add jupyter widget version of JointSliders" (`#13901`_)  # This reverts commit 706fedc18f7c440815bb7e60d1b235614a56e3e9.
-* TBD pydrake math: Ensure that .multiply preserves input shape (`#13886`_)
 * TBD Adds missing import for jupyter widgets (`#13941`_)  # * Adds missing import for jupyter (was somehow not needed in most cases, but mac nbconvert seemed to miss it.  go figure)
 
 New features
@@ -133,18 +116,16 @@ New features
 
 Fixes
 
-* TBD
+* TBD pydrake math: Ensure that .multiply preserves input shape (`#13886`_)
 
 Newly bound
 
-* TBD
+* TBD geometry: Bind RenderEngineOspray factory (`#13893`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-* TBD Release notes v0.22.0 (`#13825`_)
-* TBD Add a build rule and a final newline for identify_compiler (`#13906`_)  # .
 * TBD
 
 Newly-deprecated APIs
