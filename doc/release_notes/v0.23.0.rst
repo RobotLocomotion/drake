@@ -44,7 +44,7 @@ Mathematical Program
 
 New features
 
-* TBD Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
+* Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
 
 Fixes
 
@@ -103,22 +103,19 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
-* TBD Add jupyter widget version of JointSliders (`#13884`_)
-* TBD Add `WidgetSystem` to jupyter_widgets.py (`#13882`_)  # This should help us avoid a massive proliferation of bespoke UI systems (e.g. like SchunkWsgSystem).
-* TBD Revert "Add jupyter widget version of JointSliders" (`#13901`_)  # This reverts commit 706fedc18f7c440815bb7e60d1b235614a56e3e9.
-* TBD Adds missing import for jupyter widgets (`#13941`_)  # * Adds missing import for jupyter (was somehow not needed in most cases, but mac nbconvert seemed to miss it.  go figure)
 
 New features
 
-* TBD
+* Add pydrake.systems.jupyter_widgets.WidgetSystem (`#13882`_)
 
 Fixes
 
-* TBD pydrake math: Ensure that .multiply preserves input shape (`#13886`_)
+* Ensure that multiply (matmul) preserves input shape (`#13886`_)
+* Add missing import for jupyter widgets (`#13941`_)
 
 Newly bound
 
-* TBD geometry: Bind RenderEngineOspray factory (`#13893`_)
+* pydrake.geometry.render.MakeRenderEngineOspray (`#13893`_)
 
 Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
