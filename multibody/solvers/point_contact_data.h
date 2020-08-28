@@ -3,7 +3,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/solvers/linear_operator.h"
 
@@ -11,11 +10,39 @@ namespace drake {
 namespace multibody {
 namespace solvers {
 
+/// This class specifies the dynamics of the physical system as needed by
+/// ContactSolver. Refer to ContactSolver's class documentation for details.
 template <typename T>
 class PointContactData {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointContactData)
 
+  /// Specifies the set of possible discrete contacts characterized by:
+  ///  1. Signed distance phi0, negative when objects interpenetrate.
+  ///  2. Contact Jacobian s.t. contact velocity is given by vc = Jc⋅v. Refer to
+  ///     MergeNormalAndTangent() for the storage format of vc.
+  ///  3. Coefficient of Coulomb friction.
+  ///  3. Compliance. Refer to each solver's specific documentation for details.
+  ///     Usually `stiffness` refers to linear spring stiffness with units of 
+  ///     N/m for each contact and `dissipation` refers to Hunt & Crossley 
+  ///     dissipation with units of s/m.
+  ///
+  /// The number of velocities is denoted with nv and the number of discrete
+  /// contacts is denoted with nc.
+  ///
+  /// @param phi0 Signed distances before contact, of size nc.
+  /// @param Jc Contact Jacobian of size 3nc x nv.
+  /// @param stiffness Linear spring constants, of size nc.
+  /// @param dissipation Dissipation constants, of size nc.
+  /// @param mu Coefficients of Coulomb friction, of size nc.
+  ///
+  /// @throws if any of the data pointers are nullptr or if they do not point to
+  /// data with the documented sizes.
+  ///
+  /// @pre Jc must implement DoMultiplyByTranspose().
+  ///
+  /// This class will keep a reference to the input data and therefore it is
+  /// required that it outlives this object.
   PointContactData(const VectorX<T>* phi0, const LinearOperator<T>* Jc,
                    const VectorX<T>* stiffness, const VectorX<T>* dissipation,
                    const VectorX<T>* mu)
@@ -36,13 +63,15 @@ class PointContactData {
     nc_ = phi0->size();
   }
 
+  /// Returns the number of contacts nc in accordance to the data provided at
+  /// construction.
   int num_contacts() const { return nc_; }
 
   /// @anchor point_contact_data_accessors
   /// @name   Data getters
-  /// These method provide access to the underlying contact data. We purposedely
-  /// use the naming convention `get_foo()` so that calling code can still use
-  /// `foo` as a variable name.
+  /// These methods provide access to the underlying contact data. We
+  /// purposedely use the naming convention `get_foo()` so that calling code can
+  /// still use `foo` as a variable name.
   /// @{
   const VectorX<T>& get_phi0() const { return *phi0_; };
   const LinearOperator<T>& get_Jc() const { return *Jc_; }

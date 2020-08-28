@@ -27,7 +27,7 @@ enum class ContactSolverResult {
 };
 
 /// This class defines a general interface for all of our contact solvers. By
-/// having a commong interace, client code such as MultibodyPlant only needs to
+/// having a common interace, client code such as MultibodyPlant only needs to
 /// learn how to talk to %ContactSolver, allowing to swap contact solvers that
 /// share this commong interface without having to re-wire the client's
 /// internals.
@@ -43,7 +43,7 @@ enum class ContactSolverResult {
 /// 2. The friction component of γ, which we refer to as β, satisfies the
 ///    principle of maximum dissipation for sliding contacts.
 /// 3. The normal component of γ, which we refer to as π, is always positive,
-///    i.e. always a repulsive force (adhesive or “sticky" needs special
+///    i.e. always a repulsive force (adhesive or “sticky" contact needs special
 ///    consideration).
 ///
 /// This interface leaves open how exactly this constraints are imposed so that
@@ -57,11 +57,10 @@ enum class ContactSolverResult {
 /// v*)` = 0. That is, v* corresponds to the velocities the system would evolve
 /// with in the absence of contact forces, see for instance [Duriez, 2013] for a
 /// case in which `F(q(v*), v*)` = 0 is highly non-linear. Notice we wrote
-/// `q(v*)` since q at the next time step is approximated using an a time
-/// stepping scheme. For instance, for implicit Euler we'd write q(v*) = q₀ +
-/// dt⋅v* The next step velocity is then approximated as 
-/// `v = v* + Δv` where Δv computed in a corrector step satisfying the equation:
-/// <pre> 
+/// `q(v*)` since q at the next time step is approximated using an a discrete
+/// time stepping scheme. For instance, for implicit Euler we'd write q(v*) = q₀
+/// + dt⋅v* The next step velocity is then approximated as `v = v* + Δv` where
+/// Δv computed in a corrector step satisfying the equation:<pre>
 ///   A⋅Δv = Jcᵀ⋅γ
 /// </pre> 
 /// where A = ∇F(v*) is the Jacobian of F with respect to generalized velocities
@@ -73,7 +72,7 @@ enum class ContactSolverResult {
 ///   F(q, v) = M⋅(v−v₀) − dt⋅τ₀
 /// </pre>
 /// where τ₀ includes external forces as well as Coriolis and centrifugal terms.
-/// In thisc case A = ∇F = M, v* = v₀ + dt⋅M⁻¹⋅τ₀.
+/// In this case A = ∇F = M, v* = v₀ + dt⋅M⁻¹⋅τ₀.
 ///
 /// Therefore, %ContactSolver needs the following information to properly define
 /// the contact problem:
@@ -247,3 +246,6 @@ class ContactSolver {
 }  // namespace solvers
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::solvers::ContactSolver)

@@ -60,7 +60,7 @@ class ParticleSolver final : public ContactSolver<T> {
     // Verify the expected Delassus operator is computed by
     // ContactSolver::FormDelassusOperatorMatrix().
     Eigen::SparseMatrix<T> Ws(3 * nc, 3 * nc);
-    ContactSolver<T>::FormDelassusOperatorMatrix(get_Jc(), get_Minv(), get_Jc(),
+    ContactSolver<T>::FormDelassusOperatorMatrix(get_Jc(), get_Ainv(), get_Jc(),
                                                  &Ws);
     // Only one out of nine coefficients is non-zero.
     EXPECT_EQ(Ws.nonZeros(), 3);
@@ -101,7 +101,7 @@ class ParticleSolver final : public ContactSolver<T> {
     gamma_ = Vector3<T>(beta(0), beta(1), pi);
 
     get_Jc().MultiplyByTranspose(gamma_, &tau_c_);
-    get_Minv().Multiply(tau_c_, &v_);  // v_ = M⁻¹⋅τc
+    get_Ainv().Multiply(tau_c_, &v_);  // v_ = M⁻¹⋅τc
     v_ += get_v_star();                // v_ = v* + M⁻¹⋅τc
     vc_ = Vector3<T>(vt(0), vt(1), vn);
 
@@ -122,8 +122,8 @@ class ParticleSolver final : public ContactSolver<T> {
  private:
   // Quick accessors to problem data.
   const LinearOperator<T>& get_Jc() const { return contact_data_->get_Jc(); }
-  const LinearOperator<T>& get_Minv() const {
-    return dynamics_data_->get_Minv();
+  const LinearOperator<T>& get_Ainv() const {
+    return dynamics_data_->get_Ainv();
   }
   const VectorX<T>& get_v_star() const { return dynamics_data_->get_v_star(); }
   const VectorX<T>& get_mu() const { return contact_data_->get_mu(); }
