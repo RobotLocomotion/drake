@@ -31,6 +31,8 @@ struct DiscreteContactPair {
    from geometry B into geometry A, measured and expressed in the world frame.
    It _approximates_ the normal to the plane on which the contact patch lies. */
   Vector3<T> nhat_BA_W;
+  /* ContactSolver consumes distance function phi < 0 when in contact. */
+  T phi0{0.0};
   /* The (undamped) normal contact force at the current configuration before
    a discrete update is made. With "undamped" we mean this force only contains
    the compliant component of the model, without the Hunt & Crossley term. */

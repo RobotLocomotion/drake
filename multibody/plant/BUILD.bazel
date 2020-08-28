@@ -51,6 +51,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:extract_double",
+        "//multibody/solvers:contact_solver_utils",
     ],
 )
 
@@ -80,6 +81,8 @@ drake_cc_library(
         "//math:geometric_transform",
         "//math:orthonormal_basis",
         "//multibody/hydroelastics:hydroelastic_engine",
+        "//multibody/solvers:contact_solver",
+        "//multibody/solvers:sparse_linear_operator",
         "//multibody/topology:multibody_graph",
         "//multibody/tree",
         "//systems/framework:diagram_builder",

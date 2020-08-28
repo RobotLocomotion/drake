@@ -10,7 +10,7 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
-    default_visibility = ["//visibility:private"],
+    default_visibility = ["//visibility:public"],
 )
 
 # The purpose of default_visibility to be private is to be able to develop this
@@ -27,6 +27,47 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "contact_solver_driver",
+    srcs = ["test/contact_solver_driver.cc"],
+    hdrs = ["test/contact_solver_driver.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    testonly = 1,
+    deps = [
+        "//multibody/plant",
+        "//multibody/parsing",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//geometry:geometry_visualization",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/analysis:simulator",
+        "//systems/lcm",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver",
+    srcs = [],
+    hdrs = ["contact_solver.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        ":point_contact_data",
+        ":system_dynamics_data",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_solver_utils",
+    srcs = [],
+    hdrs = ["contact_solver_utils.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "linear_operator",
     srcs = ["linear_operator.cc"],
     hdrs = ["linear_operator.h"],
@@ -37,6 +78,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "point_contact_data",
+    srcs = ["point_contact_data.cc"],
+    hdrs = ["point_contact_data.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+    ],
+)
+
+
+drake_cc_library(
     name = "sparse_linear_operator",
     srcs = ["sparse_linear_operator.cc"],
     hdrs = ["sparse_linear_operator.h"],
@@ -44,6 +97,27 @@ drake_cc_library(
         ":linear_operator",
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "system_dynamics_data",
+    srcs = ["system_dynamics_data.cc"],
+    hdrs = ["system_dynamics_data.h"],
+    copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
+    deps = [
+        ":linear_operator",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_solver_test",
+    data = ["test/particle.sdf"],
+    deps = [
+        ":contact_solver",
+        ":contact_solver_driver",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
