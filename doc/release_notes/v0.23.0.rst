@@ -54,22 +54,16 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
-* TBD Implement Frame::CalcSpatialAccelerationInWorld() (`#13773`_)  # Implement Frame::CalcSpatialAccelerationInWorld()
-* TBD Consolidate code to be used for both bias and regular (unbias) spatial accelerations (`#13838`_)
-* TBD Move acceleration cache from plant to tree system (`#13873`_)
-* TBD multibody: Support parsing massless bodies (`#13908`_, `#13927`_)  # * Support parsing massless bodies from SDF and URDF
-* TBD Geometry support for discrete hydroelastic contact (`#13864`_)  # 1. Introduce new (optional) data for ContactSurface. The gradients of the constituent fields sampled once per *triangle*. 2. Extend API to allow for addition of new data in results. - HydroelasticCallback - Soft-rigid mesh intersection - rigid half space-soft mesh intersection - soft half space-rigid mesh intersection 3. Incidentally cleaned up some unit test issues in related code.
-* TBD Implements a LinearOperator class to be used by contact solvers (`#13911`_)
-* TBD Reduce heap allocation in CalcMassMatrix() (`#13928`_)  # * Cache composite body inertias to eliminate temp allocation in CalcMassMatrix(). Modernize cache allocation code.
-* TBD Eliminate remaining heap use from CalcMassMatrix() (`#13933`_, `#13953`_)  # * Eliminate the rest of the heap allocations in CalcMassMatrix. Add and use SpatialForce::ShiftInPlace() method.
 
 New features
 
-* TBD
+* Add API to compute SpatialAccelerationInWorld (`#13773`_)
+* Support parsing massless bodies (`#13908`_, `#13927`_)
+* New hydroelastic contact model in progress (`#13864`_)
 
 Fixes
 
-* TBD
+* Eliminate heap use from CalcMassMatrix() (`#13873`_, `#13928`_, `#13933`_, `#13953`_)
 
 Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
