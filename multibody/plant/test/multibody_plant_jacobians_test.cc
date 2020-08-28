@@ -330,10 +330,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Finalize the plant and create a context to store this plant's state.
     plant_->Finalize();
     context_ = plant_->CreateDefaultContext();
-
-    // Scalar-convert the model and create a default context for it.
-    plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
-    context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
 
  protected:
@@ -352,10 +348,6 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
   const RigidBody<double>* bodyB_{nullptr};
   const RevoluteJoint<double>* joint1_{nullptr};
   const RevoluteJoint<double>* joint2_{nullptr};
-
-  // AutoDiffXd this system to automate derivative calculations.
-  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
-  std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
 };
 
 TEST_F(TwoDOFPlanarPendulumTest, CalcBiasAccelerations) {
