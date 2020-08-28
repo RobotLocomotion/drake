@@ -458,8 +458,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multibody_plant_mass_matrix_test",
     data = [
+        "test/atlas_with_fixed_joints.urdf",
         "//examples/atlas:models",
         "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":plant",
