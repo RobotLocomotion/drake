@@ -12,6 +12,11 @@ Announcements
 Breaking changes since v0.22.0
 ------------------------------
 
+* The drake::systems::Subvector and drake::systems::Supervector are now marked
+  final (`#13907`_)
+* For drake::yaml::YamlReadArchive, it's now an error for yaml data to remain
+  unparsed, unless the user opts in to allowing it. Users who want a different
+  behavior should change the Options at construction-time. (`#13900`_)
 * The drake::examples::rod2d::Rod2D::pose_output() port has been removed, as
   the system no longer connects to the systems::rendering API (`#13890`_).
 
@@ -28,7 +33,6 @@ Dynamical Systems
 * TBD framework: remove redundant get_input_port() and get_output_port() (`#13896`_)  # PR #13883 provides these methods by default in the System base class.
 * TBD systems/rendering: remove redundant get_input_port() and get_output_port() (`#13897`_)  # PR #13883 provides these methods by default in the System base class.
 * TBD primitives: remove redundant get_input_port() and get_output_port() (`#13898`_)  # PR #13883 provides these methods by default in the System base class.
-* TBD framework: Mark subvector and supervector final (`#13907`_)  # This will make the h/cc split clearer in the future, as well as allow us to improve the implementations and inheritance tree of the VectorBase family. This is a breaking change, in the unlikely event that anyone was inheriting from these classes. Also deprecate a worthless constructor of Subvector.
 * TBD Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
 
 New features
@@ -37,7 +41,7 @@ New features
 
 Fixes
 
-* TBD
+* Mark subvector and supervector final (`#13907`_)
 
 Mathematical Program
 ~~~~~~~~~~~~~~~~~~~~
@@ -88,7 +92,7 @@ Miscellaneous features and fixes
 * TBD Add MonomialBasisElement (`#13867`_)
 * TBD differential_inverse_kinematics: Fix docstring formatting (`#13892`_)
 * TBD Adds DifferentialInverseKinematicsIntegrator (`#13877`_)  # Cleaner version of the python LeafSystem DifferentialIK from the manipulation_station folder, now in c++. Resolves #11581 Will send a follow-up PR to convert the manipulation station to this version.
-* TBD yaml: Change allow_yaml_with_no_cpp's default to false (`#13900`_)  # It's now an error for yaml data to remain unparsed, unless the user opts in to allowing it. This is a breaking change for any users relying on the implicit default. Users can specify the Options directly to bridge the transition.
+* TBD yaml: Change allow_yaml_with_no_cpp's default to false (`#13900`_)
 * TBD manipulation: remove redundant get_input_port() and get_output_port() (`#13895`_)  # PR #13883 provides these methods by default in the System base class.
 * TBD DiffIKIntegrator: fix typo in port name (`#13919`_)  # Should match doc and method names
 * TBD Adds `DifferentialInverseKinematicsIntegrator::get_parameters()` (`#13920`_)
@@ -131,7 +135,7 @@ Build system and dependencies
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* drake::systems::Subvector 1-argument constructor (`#13907`_)
 
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
