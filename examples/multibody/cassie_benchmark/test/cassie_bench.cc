@@ -25,11 +25,11 @@ namespace {
 // without a good reason, maintainers should revisit their changes to see why
 // heap usage has increased.
 // TODO(rpoyner-tri): replace LimitMalloc usage with a benchmark statistics
-// implementation that counts malloc use, but doesn't try to enforce caps.
+//   implementation that counts malloc use, but doesn't try to enforce caps.
 
-// According to research from @sherm1, the caching system has some debug-only
-// asserts that allocate memory. Hence this function only enforces release-only
-// ceilings for allocations until that is addressed.
+// TODO(sherm1) Remove this if AutoDiffXd heap usage can be made the same
+//   in Release and Debug builds (higher in Debug currently).
+// Use this to suppress heap limiting in Debug builds.
 drake::test::LimitMallocParams LimitReleaseOnly(int max_num_allocations) {
   if (kDrakeAssertIsArmed) { return {}; }
   return { .max_num_allocations = max_num_allocations };
@@ -136,7 +136,7 @@ BENCHMARK_F(CassieDoubleFixture, DoubleMassMatrix)(benchmark::State& state) {
   MatrixXd M(nv_, nv_);
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(0));
+    LimitMalloc guard({.max_num_allocations = 0});
     InvalidateState();
     plant_->CalcMassMatrix(*context_, &M);
     tracker.Update(guard.num_allocations());
@@ -151,7 +151,7 @@ BENCHMARK_F(CassieDoubleFixture, DoubleInverseDynamics)
   multibody::MultibodyForces<double> external_forces(*plant_);
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(3));
+    LimitMalloc guard({.max_num_allocations = 3});
     InvalidateState();
     plant_->CalcInverseDynamics(*context_, desired_vdot, external_forces);
     tracker.Update(guard.num_allocations());
@@ -167,7 +167,7 @@ BENCHMARK_F(CassieDoubleFixture, DoubleForwardDynamics)
       plant_->get_actuation_input_port().FixValue(context_.get(), u_);
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(22));
+    LimitMalloc guard({.max_num_allocations = 22});
     InvalidateState();
     port_value.GetMutableData();  // Invalidates caching of inputs.
     plant_->CalcTimeDerivatives(*context_, derivatives.get());
