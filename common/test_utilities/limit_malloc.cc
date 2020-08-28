@@ -155,7 +155,8 @@ void Monitor::ObserveAllocation() {
 
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();
-  std::cerr << "abort due to malloc while LimitMalloc is in effect";
+  std::cerr << "abort due to malloc #" << observed << " while LimitMalloc("
+            << args_.max_num_allocations << ") in effect";
   std::cerr << std::endl;
   // TODO(jwnimmer-tri) It would be nice to print a backtrace here.
   std::abort();
