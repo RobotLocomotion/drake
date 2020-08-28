@@ -181,6 +181,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     plant_autodiff_ = systems::System<double>::ToAutoDiffXd(*plant_);
     context_autodiff_ = plant_autodiff_->CreateDefaultContext();
   }
+
  protected:
   // Since the maximum absolute value of acceleration in this test is
   // approximately ω² * (2 * link_length) ≈ 72 , we test that the errors in
