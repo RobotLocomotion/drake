@@ -11,7 +11,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
-#include "drake/common/schema/dev/transform.h"
+#include "drake/common/schema/transform.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"

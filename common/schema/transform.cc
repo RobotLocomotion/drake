@@ -1,4 +1,4 @@
-#include "drake/common/schema/dev/transform.h"
+#include "drake/common/schema/transform.h"
 
 #include <stdexcept>
 
