@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/framework/context.h"
 
@@ -30,6 +31,30 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
     const std::string model_path = FindResourceOrThrow(file_path);
     Parser parser(&plant_);
     parser.AddModelFromFile(model_path);
+    plant_.Finalize();
+  }
+
+  void LoadIiwaWithGripper() {
+    const char kArmSdfPath[] =
+        "drake/manipulation/models/iiwa_description/sdf/"
+            "iiwa14_no_collision.sdf";
+
+    const char kWsg50SdfPath[] =
+        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
+
+    Parser parser(&plant_);
+    const ModelInstanceIndex arm_model =
+        parser.AddModelFromFile(FindResourceOrThrow(kArmSdfPath));
+
+    // Add the gripper.
+    const ModelInstanceIndex gripper_model =
+        parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
+
+    const auto& base_body = plant_.GetBodyByName("iiwa_link_0", arm_model);
+    const auto& end_effector = plant_.GetBodyByName("iiwa_link_7", arm_model);
+    const auto& gripper_body = plant_.GetBodyByName("body", gripper_model);
+    plant_.WeldFrames(plant_.world_frame(), base_body.body_frame());
+    plant_.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
     plant_.Finalize();
   }
 
@@ -90,6 +115,57 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
           dynamic_cast<const RevoluteJoint<double>&>(joint);
       // Arbitrary non-zero angle.
       revolute_joint.set_angle(context.get(), 0.5 * joint_index);
+    }
+  }
+  VerifyMassMatrixComputation(*context);
+}
+
+
+// Verify that optimizations over fixed (weld) joints don't cause trouble.
+// This is to prevent a repeat of the bug introduced in PR #13933 (fixed in
+// #13953).
+TEST_F(MultibodyPlantMassMatrixTests, AtlasRobotWithFixedJoints) {
+  // TODO(sherm1) Replace this large copied file with the original Atlas urdf
+  //              plus a patch or in-memory edit (issue #13954).
+  LoadModel("drake/multibody/plant/test/atlas_with_fixed_joints.urdf");
+
+  // Create a context and store an arbitrary configuration.
+  std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
+  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
+       ++joint_index) {
+    const Joint<double>& joint = plant_.get_joint(joint_index);
+    // This model only has weld and revolute joints. Weld joints have zero DOFs.
+    if (joint.num_velocities() != 0) {
+      const RevoluteJoint<double>& revolute_joint =
+          dynamic_cast<const RevoluteJoint<double>&>(joint);
+      // Arbitrary non-zero angle.
+      revolute_joint.set_angle(context.get(), 0.5 * joint_index);
+    }
+  }
+  VerifyMassMatrixComputation(*context);
+}
+
+// Here is a realistic example that fails with the #13933 bug due to
+// welded-on gripper, but works with the fix in #13953.
+TEST_F(MultibodyPlantMassMatrixTests, IiwaWithWeldedGripper) {
+  LoadIiwaWithGripper();
+
+  // Create a context and store an arbitrary configuration.
+  std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
+  for (JointIndex joint_index(0); joint_index < plant_.num_joints();
+       ++joint_index) {
+    const Joint<double>& joint = plant_.get_joint(joint_index);
+    // This model only has weld, prismatic, and revolute joints.
+    if (joint.type_name() == "revolute") {
+      const RevoluteJoint<double>& revolute_joint =
+          dynamic_cast<const RevoluteJoint<double>&>(joint);
+      // Arbitrary non-zero angle.
+      revolute_joint.set_angle(context.get(), 0.5 * joint_index);
+    } else if (joint.type_name() == "prismatic") {
+       const PrismaticJoint<double>& prismatic_joint =
+          dynamic_cast<const PrismaticJoint<double>&>(joint);
+      // Arbitrary non-zero joint translation.
+      prismatic_joint.set_translation(context.get(), 0.5 * joint_index);
     }
   }
   VerifyMassMatrixComputation(*context);
