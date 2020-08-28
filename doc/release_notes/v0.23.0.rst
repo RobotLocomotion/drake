@@ -28,7 +28,7 @@ Dynamical Systems
 
 New features
 
-* Provide System::get_input_port() and get_output_port() sugar (`#13883`_, `#13894`_, `#13896`_, `#13897`_, `#13898`_)
+* Provide System::get_input_port() and get_output_port() sugar (`#13883`_, `#13894`_, `#13895`_, `#13896`_, `#13897`_, `#13898`_)
 * Optionally suppress simulator initialization events (`#13872`_)
 * Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
 
@@ -45,6 +45,8 @@ Mathematical Program
 New features
 
 * Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
+* Add MonomialBasisElement (`#13867`_)
+* Add a function to compute polynomial basis up to a given order (`#13870`_)
 
 Fixes
 
@@ -76,22 +78,12 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-* TBD Make force limit input port for Schunk WSG optional (`#13878`_)
-* TBD Add MonomialBasisElement (`#13867`_)
-* TBD differential_inverse_kinematics: Fix docstring formatting (`#13892`_)
-* TBD Adds DifferentialInverseKinematicsIntegrator (`#13877`_)  # Cleaner version of the python LeafSystem DifferentialIK from the manipulation_station folder, now in c++. Resolves #11581 Will send a follow-up PR to convert the manipulation station to this version.
-* TBD yaml: Change allow_yaml_with_no_cpp's default to false (`#13900`_)
-* TBD manipulation: remove redundant get_input_port() and get_output_port() (`#13895`_)  # PR #13883 provides these methods by default in the System base class.
-* TBD DiffIKIntegrator: fix typo in port name (`#13919`_)  # Should match doc and method names
-* TBD Adds `DifferentialInverseKinematicsIntegrator::get_parameters()` (`#13920`_)
-* TBD add a function to compute polynomial basis up to a given order (`#13870`_)
-* TBD Fix limit_malloc_test on macOS (`#13932`_)  # On macOS, the device under test is inoperative, so it can't track allocation counts.
-* TBD Fix limit_malloc_test on valgrind (`#13935`_)
-* TBD schema: Add Doxygen for stochastic, rotation, translation (`#13937`_)
-* TBD Allow yaml write to dump the node without a keyname (`#13915`_)
-* TBD schema: Rename gaussian std to stddev (`#13948`_)  # This merges up a recent patch from Anzu.
-* TBD schema: Use 'class' not 'struct' for more complex types (`#13947`_)
-* TBD schema: Move stochastic out of dev (`#13943`_)
+
+* manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_)
+* manipulation: Make Schunk WSG limit input port optional (`#13878`_)
+* schema: Add stochastic types (`#13943`_)
+* yaml: Allow omitting the root name while writing (`#13915`_)
+* yaml: It's an error by default for yaml data to remain unparsed (`#13900`_)
 
 pydrake bindings
 ~~~~~~~~~~~~~~~~
