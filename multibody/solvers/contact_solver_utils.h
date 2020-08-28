@@ -35,6 +35,22 @@ void ExtractTangent(const Eigen::MatrixBase<xc_t>& xc,
   }
 }
 
+/// Helper to merge two vectors xn and xt storing the normal and tangential
+/// components respectively into a single contact vector xc.
+///
+/// For a problem with nc contact points xc is the concatenation of nc
+/// vectors xcᵢ ∈ ℝ³ thus having size 3nc, `xc = (xc₁, xc₂,...,xcₙ)`. The first
+/// two entries in xcᵢ are expected to correspond to the tangential component
+/// xtᵢ ∈ ℝ² and the last and third entry is expected to correspond to the
+/// normal component xnᵢ ∈ ℝ. That is, xcᵢ = (xtᵢ, xnᵢ).
+/// xn is the concatenation xn = (xn₁, xn₂,...,xnₙ) of the scalar normal
+/// components xnᵢ of xcᵢ, thus xn has size nc. 
+/// xt is the concatenation xt = (xt₁, xt₂,...,xtₙ) of the nc tangential
+/// components xtᵢ ∈ ℝ², thus xt has size 2nc.
+///
+/// @pre xc is not nullptr.
+/// @pre xn has size nc, xt has size 2nc and xc has size 3nc.
+/// @pre xn_t, xt_t and xc_t are Eigen vector types.
 template <typename xn_t, typename xt_t, typename xc_t>
 void MergeNormalAndTangent(const Eigen::MatrixBase<xn_t>& xn,
                            const Eigen::MatrixBase<xt_t>& xt,

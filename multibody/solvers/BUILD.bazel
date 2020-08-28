@@ -48,10 +48,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "contact_solver",
-    srcs = [],
+    srcs = ["contact_solver.cc"],
     hdrs = ["contact_solver.h"],
     copts = ["-Wno-error=unused-parameter", "-Wno-error=unused-variable"],
     deps = [
+        ":contact_solver_utils",
         ":point_contact_data",
         ":system_dynamics_data",
         "//common:default_scalars",

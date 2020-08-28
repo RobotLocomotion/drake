@@ -27,53 +27,91 @@ enum class ContactSolverResult {
 };
 
 /// This class defines a general interface for all of our contact solvers. By
-/// having a commong interace, client code such as MultibodyPlant only needs to
+/// having a common interace, client code such as MultibodyPlant only needs to
 /// learn how to talk to %ContactSolver, allowing to swap contact solvers that
 /// share this commong interface without having to re-wire the client's
 /// internals.
-/// 
+///
 /// Generally, we are interested on solving a set of momentum equations subject
 /// to contact constraints of the form: <pre>
 ///   F(q, v) = Jcᵀ⋅γ
 ///   s.t. Contact constraints.
 /// </pre>
-/// Where with "Contact constraints" we mean:
-/// 1. Contact forces follow Coulomb's law of friction, i.e. γ is in the
-///    friction cone at each discrete contact.
+/// where γ concatenates the all nc contact impulses γᵢ ∈ ℝ³ into a vector of
+/// size 3nc. Impulses have units of N⋅s. With "Contact constraints" we mean:
+/// 1. Contact forces follow Coulomb's law of friction, i.e. γᵢ is inside the
+///    friction cone.
 /// 2. The friction component of γ, which we refer to as β, satisfies the
 ///    principle of maximum dissipation for sliding contacts.
 /// 3. The normal component of γ, which we refer to as π, is always positive,
-///    i.e. always a repulsive force (adhesive or “sticky" needs special
+///    i.e. always a repulsive force (adhesive or “sticky" contact needs special
 ///    consideration).
 ///
 /// This interface leaves open how exactly this constraints are imposed so that
 /// specific solvers have the freedom to choose other model approximations. For
 /// instance, we allow solvers to accommodate for the convex relaxation of
-/// friction [Anitescu, 2006], to use regularization of constraints [Lacoursiere
-/// et al. 2011] or a some combination of the above [Todorov, 2014].
+/// friction [Anitescu, 2006], regularization of constraints [Lacoursiere
+/// et al. 2011] or compliant contact [Castro et al., 2019]. While the
+/// general formulation of frictional contact is a Non-linear Complementarity
+/// Problem (NCP), %ContactSolver's interface makes no assumption on the
+/// underlying solver therefore also allowing for optimization based methods,
+/// [Todorov, 2014; [Kaufman et al., 2008].
 ///
 /// A general approach for solving the contact problem will include a predictor
 /// step to compute velocities v* satisfying the predictor equations `F(q(v*),
 /// v*)` = 0. That is, v* corresponds to the velocities the system would evolve
 /// with in the absence of contact forces, see for instance [Duriez, 2013] for a
 /// case in which `F(q(v*), v*)` = 0 is highly non-linear. Notice we wrote
-/// `q(v*)` since q at the next time step is approximated using an a time
-/// stepping scheme. For instance, for implicit Euler we'd write q(v*) = q₀ +
-/// dt⋅v* The next step velocity is then approximated as 
-/// `v = v* + Δv` where Δv computed in a corrector step satisfying the equation:
-/// <pre> 
+/// `q(v*)` since q at the next time step is approximated using an a discrete
+/// time stepping scheme. For instance, for implicit Euler we'd write
+/// `q(v*) = q₀+ dt⋅v*`. The next step velocity is then approximated as
+/// `v = v* + Δv` where Δv is computed in a corrector step satisfying the
+/// equation: <pre>
+///   F(v* + Δv) = Jcᵀ⋅γ
+/// </pre>
+/// We can linearize this equation at v*, leading to: <pre>
+///   F(v*) + A⋅Δv = Jcᵀ⋅γ
+/// </pre>
+/// where we defined A = ∇F(v*) as the Jacobian of F with respect to generalized
+/// velocities v, evaluated at v*.
+/// Since v* satisfies the predictor's equation F(v*) = 0, the equation for the
+/// impulses simplifies to: <pre>
 ///   A⋅Δv = Jcᵀ⋅γ
-/// </pre> 
-/// where A = ∇F(v*) is the Jacobian of F with respect to generalized velocities
-/// v, evaluated at v*.
+/// </pre>
 ///
 /// As an example of application, consider the rigid multibody dynamics
-/// equations discretized using an explicit approach for all non-contact forces.
-/// In this case F(q, v) takes the form: <pre>
+/// equations discretized using an explicit approach for all non-contact forces,
+/// as for instance in [Castro et al., 2019]. In this case F(q, v) takes the
+/// form: <pre>
 ///   F(q, v) = M⋅(v−v₀) − dt⋅τ₀
 /// </pre>
 /// where τ₀ includes external forces as well as Coriolis and centrifugal terms.
-/// In thisc case A = ∇F = M, v* = v₀ + dt⋅M⁻¹⋅τ₀.
+/// In this case A = ∇F = M, v* = v₀ + dt⋅M⁻¹⋅τ₀.
+///
+/// As a second example, consider the simulation of soft bodies with frictional
+/// contact for which, without diving into the details, the momentum equations
+/// can be briefly summarized as:
+/// <pre>
+///   F(q, v) = M⋅(v−v₀) + Fᵢₙₜ(q, v)
+/// </pre>
+/// where with `Fᵢₙₜ(q, v)` we denote the term containing the contribution due
+/// to internal stresses in the deformable object. Using a predictor as in
+/// [Duriez, 2013], `F(v*) = 0`, leads to the system's dynamics matrix
+/// `A(v*) = M + dt⋅C + dt²⋅K`, where `M` is the mass matrix, `C = ∂F/∂v` is the
+/// damping matrix and `K = ∂F/∂q` is the stiffness matrix. For the modeling of
+/// large deformations `Fᵢₙₜ(q, v)` is a non-linear function of both q and v and
+/// therefore v* requires the solution of the non-linear system of equations
+/// `Fᵢₙₜ(q(v*), v*) = 0` usually with a Newton method. As a side effect of this
+/// solution the operator form of `A⁻¹` at v* will be available, typically as a
+/// factorization of the sparse matrix `A`.
+///
+/// It should be noted that while in the previous two examples we used the
+/// backward Euler method to obtain a discrte approximation in time for
+/// `F(q, v)`, %ContactSolver does not make this or any other assumption on the
+/// time stepping scheme chosen to obtain `F(v)`. In the previous examples any
+/// other methods such as Crank–Nicolson, Newmark (very common in elasticity) or
+/// Linear Multistep could be used to achieve higher order approximations or
+/// desired stability properties.
 ///
 /// Therefore, %ContactSolver needs the following information to properly define
 /// the contact problem:
@@ -85,13 +123,26 @@ enum class ContactSolverResult {
 /// PointContactData with SetPointContactData().
 ///
 /// Once the problem is set, SolveWithGuess() is used to invoke the solver.
-/// Methods such as GetImpulses() and GetVelocities() are used then to retrieve
+/// Methods such as GetImpulses() and GetVelocities() are then used to retrieve
 /// the solution γ and v, respectively.
 ///
-/// References:
+// TODO(amcastro-tri): add sections specific to bilateral and unilateral
+// constraints.
+///
+/// <h3> References: </h3>
 /// - [Anitescu, 2006] Anitescu, M., 2006. Optimization-based simulation of
 /// nonsmooth rigid multibody dynamics. Mathematical Programming, 105(1),
-/// pp.113-143. 
+/// pp.113-143.
+/// - [Castro et al., 2019] Castro, A.M., Qu, A., Kuppuswamy, N., Alspach, A.
+/// and Sherman, M., 2020. A Transition-Aware Method for the Simulation of
+/// Compliant Contact with Regularized Friction. IEEE Robotics and Automation
+/// Letters, 5(2), pp.1859-1866.
+/// - [Duriez, 2013] Duriez, C., 2013. Real-time haptic simulation of medical
+/// procedures involving deformations and device-tissue interactions (Doctoral
+/// dissertation).
+/// - [Kaufman et al., 2008] Kaufman, D.M., Sueda, S., James, D.L. and Pai,
+/// D.K., 2008. Staggered projections for frictional contact in multibody
+/// systems. In ACM SIGGRAPH Asia 2008 papers (pp. 1-11).
 /// - [Lacoursiere et al. 2011] Lacoursiere, C. and Linde, M., 2011. Spook: a
 /// variational time-stepping scheme for rigid multibody systems subject to dry
 /// frictional contacts. UMINF report, 11.
@@ -99,9 +150,6 @@ enum class ContactSolverResult {
 /// dynamics with contacts and constraints: Theory and implementation in MuJoCo.
 /// In 2014 IEEE International Conference on Robotics and Automation (ICRA) (pp.
 /// 6054-6061). IEEE.
-/// - [Duriez, 2013] Duriez, C., 2013. Real-time haptic simulation of medical
-/// procedures involving deformations and device-tissue interactions (Doctoral
-/// dissertation).
 ///
 /// @tparam_nonsymbolic_scalar
 template <typename T>
@@ -247,3 +295,6 @@ class ContactSolver {
 }  // namespace solvers
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::solvers::ContactSolver)
