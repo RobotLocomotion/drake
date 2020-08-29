@@ -849,11 +849,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// This method adds a Joint of type `JointType` between two bodies.
   /// The two bodies connected by this Joint object are referred to as the
-  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
-  /// sometimes used synonymously to describe the relationship between inboard
-  /// and outboard bodies in multibody models, this usage is wholly unrelated
-  /// and implies nothing about the inboard-outboard relationship between the
-  /// bodies.
+  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_
+  /// sometimes describe the relationship between inboard and outboard bodies
+  /// in multibody models, our usage is wholly unrelated and implies nothing
+  /// about the inboard-outboard relationship between the bodies.
+  /// @image html multibody/plant/images/BodyParentChildJointFM.png width=50%
+  ///
   /// As explained in the Joint class's documentation, in Drake we define a
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
   /// attached to the child body B with pose `X_BM`. This method helps creating
