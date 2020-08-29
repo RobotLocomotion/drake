@@ -1,0 +1,38 @@
+#- * - python - * -
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "stiffness_matrix",
+    srcs = [
+        "stiffness_matrix.cc",
+    ],
+    hdrs = [
+        "stiffness_matrix.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "stiffness_matrix_test",
+    deps = [
+        ":stiffness_matrix",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()
