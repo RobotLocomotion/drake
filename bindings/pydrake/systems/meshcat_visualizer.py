@@ -6,6 +6,7 @@ package, Meshcat:
 import argparse
 import math
 import os
+import uuid
 import warnings
 import webbrowser
 
@@ -214,6 +215,7 @@ class MeshcatVisualizer(LeafSystem):
                  frames_opacity=1.,
                  axis_length=0.15,
                  axis_radius=0.006,
+                 delete_prefix_on_load=True,
                  **kwargs):
         """
         Args:
@@ -242,6 +244,12 @@ class MeshcatVisualizer(LeafSystem):
                     {"1": {"A", "B"}}.
             frames_opacity, axis_length and axis_radius are the opacity, length
                 and radius of the coordinate axes to be drawn.
+            delete_prefix_on_load: Specifies whether we should deleting the
+                visualizer path associated with prefix on our load
+                initilization event.  True ensures a clean slate for every
+                simulation.  False allows for the possibility of caching object
+                meshes on the zmqserver/clients, to avoid repeatedly
+                downloading meshes over the websockets link.
 
         Additional kwargs will be passed to the MeshcatVisualizer constructor.
         Note:
@@ -253,6 +261,7 @@ class MeshcatVisualizer(LeafSystem):
         self.set_name('meshcat_visualizer')
         self.DeclarePeriodicPublish(draw_period, 0.0)
         self.draw_period = draw_period
+        self._delete_prefix_on_load = delete_prefix_on_load
 
         # Recording.
         self._is_recording = False
@@ -367,7 +376,8 @@ class MeshcatVisualizer(LeafSystem):
             The ``scene_graph`` used to construct this object must be part of a
             fully constructed diagram (e.g. via ``DiagramBuilder.Build()``).
         """
-        self.vis[self.prefix].delete()
+        if self._delete_prefix_on_load:
+            self.vis[self.prefix].delete()
 
         # Intercept load message via memq LCM.
         memq_lcm = DrakeLcm("memq://")
@@ -395,9 +405,24 @@ class MeshcatVisualizer(LeafSystem):
                 meshcat_geom, material, element_local_tf = _convert_mesh(geom)
                 if meshcat_geom is not None:
                     cur_vis = (
-                        self.vis[self.prefix][source_name][str(link.robot_num)]
+                        self.vis[self.prefix][str(link.robot_num)]
                         [frame_name][str(j)])
-                    cur_vis.set_object(meshcat_geom, material)
+                    # Make the uuid's deterministic for mesh geometry, to
+                    # support caching at the zmqserver.
+                    if isinstance(meshcat_geom, meshcat.geometry.MeshGeometry):
+                        meshcat_geom.uuid = str(uuid.uuid5(
+                            uuid.NAMESPACE_X500, meshcat_geom.contents))
+                        material.uuid = str(uuid.uuid5(
+                            uuid.NAMESPACE_X500, meshcat_geom.contents
+                            + "material"))
+                        mesh = meshcat.geometry.Mesh(meshcat_geom, material)
+                        mesh.uuid = str(uuid.uuid5(
+                            uuid.NAMESPACE_X500, meshcat_geom.contents
+                            + "mesh"))
+                        cur_vis.set_object(mesh)
+                    else:
+                        cur_vis.set_object(meshcat_geom, material)
+
                     cur_vis.set_transform(element_local_tf)
 
                 # Draw the frames in self.frames_to_draw.
@@ -408,8 +433,8 @@ class MeshcatVisualizer(LeafSystem):
                     link_name = frame_name
                 if (robot_name in self.frames_to_draw.keys()
                         and link_name in self.frames_to_draw[robot_name]):
-                    prefix = (self.prefix + '/' + source_name + '/'
-                              + str(link.robot_num) + '/' + frame_name)
+                    prefix = (self.prefix + '/' + str(link.robot_num) + '/'
+                              + frame_name)
                     AddTriad(
                         self.vis,
                         name="frame",
@@ -435,7 +460,7 @@ class MeshcatVisualizer(LeafSystem):
             # TODO(russt): Use a more textual naming convention here?
             pose_matrix = pose_bundle.get_transform(frame_i)
             cur_vis = (
-                self.vis[self.prefix][source_name][str(model_id)][frame_name])
+                self.vis[self.prefix][str(model_id)][frame_name])
             cur_vis.set_transform(pose_matrix.GetAsMatrix4())
             if self._is_recording:
                 with self._animation.at_frame(
