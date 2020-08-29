@@ -413,18 +413,23 @@ class MultibodyTree {
   const JointType<T>& AddJoint(
       std::unique_ptr<JointType<T>> joint);
 
-  /// This method helps to create a Joint of type `JointType` between two
-  /// bodies.
-  /// The two bodies connected by this Joint object are referred to as the
-  /// _parent_ and _child_ bodies. Although the terms _parent_ and _child_ are
-  /// sometimes used synonymously to describe the relationship between inboard
-  /// and outboard bodies in multibody models, this usage is wholly unrelated
-  /// and implies nothing about the inboard-outboard relationship between the
-  /// bodies.
+  /// This method adds a Joint of type `JointType` between two bodies.
+  /// The two bodies connected by this Joint object are referred to as _parent_
+  /// and _child_ bodies.  Our use of the terms _parent_ and _child_ do 𝐧𝐨𝐭
+  /// describe the inboard/outboard relationship between bodies.  Instead, the
+  /// parent/child ordering defines the sign conventions for the generalized
+  /// coordinates and the coordinate ordering for multi-DOF joints.  Our usage
+  /// of the parent/child relationship is more general and is also meaningful
+  /// for multibody systems with loops, such as four-bar linkages. When possible
+  /// the _parent_ body is made inboard and the _child_ outboard in the tree.
+  ///
   /// As explained in the Joint class's documentation, in Drake we define a
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
   /// attached to the child body B with pose `X_BM`. This method helps create
   /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
+  /// Note: Pose X_PF contains the position from point Po (body P's origin)
+  /// to point Fo (frame F's origin).  Generally, point Po differs from Pcm
+  /// (body P's center of mass).  Similarly for Bo and Bcm (B's center of mass).
   /// Refer to the Joint class's documentation for more details.
   ///
   /// The arguments to this method `args` are forwarded to `JointType`'s
