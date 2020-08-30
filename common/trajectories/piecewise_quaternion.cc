@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -144,6 +145,39 @@ Vector3<T> PiecewiseQuaternionSlerp<T>::angular_velocity(double t) const {
 template <typename T>
 Vector3<T> PiecewiseQuaternionSlerp<T>::angular_acceleration(double) const {
   return Vector3<T>::Zero();
+}
+
+template <typename T>
+bool PiecewiseQuaternionSlerp<T>::do_has_derivative() const {
+  return true;
+}
+
+template <typename T>
+MatrixX<T> PiecewiseQuaternionSlerp<T>::DoEvalDerivative(
+  const T& t, int derivative_order) const {
+  if (derivative_order == 0) {
+    return value(t);
+  } else if (derivative_order == 1) {
+    return angular_velocity(t);
+  }
+  // All higher derivatives are zero.
+  return Vector3<T>::Zero();
+}
+
+template <typename T>
+std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::DoMakeDerivative(
+      int derivative_order) const {
+  if (derivative_order == 0) {
+    return this->Clone();
+  } else if (derivative_order == 1) {
+    std::vector<MatrixX<T>> m(angular_velocities_.begin(),
+                              angular_velocities_.end());
+    m.push_back(Vector3<T>::Zero());
+    return PiecewisePolynomial<T>::ZeroOrderHold(
+      this->get_segment_times(), m).Clone();
+  }
+  // All higher derivatives are zero.
+  return std::make_unique<PiecewisePolynomial<T>>(Vector3<T>::Zero());
 }
 
 template class PiecewiseQuaternionSlerp<double>;
