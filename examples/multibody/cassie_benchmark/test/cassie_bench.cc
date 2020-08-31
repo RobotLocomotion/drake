@@ -216,7 +216,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffMassMatrix)
 
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(54465));
+    LimitMalloc guard(LimitReleaseOnly(35043));
 
     compute();
 
@@ -249,7 +249,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffInverseDynamics)
 
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(68798));
+    LimitMalloc guard(LimitReleaseOnly(41644));
 
     compute();
 
@@ -281,7 +281,7 @@ BENCHMARK_F(CassieAutodiffFixture, AutodiffForwardDynamics)
 
   for (auto _ : state) {
     // @see LimitMalloc note above.
-    LimitMalloc guard(LimitReleaseOnly(102904));
+    LimitMalloc guard(LimitReleaseOnly(61376));
 
     compute();
 
