@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/posed_half_space.h"
 #include "drake/geometry/proximity/surface_mesh.h"
 #include "drake/geometry/query_results/contact_surface.h"

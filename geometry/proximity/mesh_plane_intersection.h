@@ -6,7 +6,7 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 #include "drake/geometry/proximity/plane.h"
 #include "drake/geometry/proximity/volume_mesh_field.h"
 #include "drake/geometry/query_results/contact_surface.h"

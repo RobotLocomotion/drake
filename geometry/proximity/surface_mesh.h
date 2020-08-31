@@ -374,10 +374,9 @@ class SurfaceMesh {
   // Optimization: save n, and the inverse of matrix |uᵢ.dot(uⱼ)| for later.
   //
 
-  // TODO(DamrongGuoy): Consider sharing this code with
-  //  bounding_volume_hierarchy.h. Currently we have a problem that
-  //  SurfaceMesh and its vertices are templated on T, but Aabb in
-  //  bounding_volume_hierarchy.h is for double only.
+  // TODO(DamrongGuoy): Consider using an oriented bounding box in obb.h.
+  //  Currently we have a problem that SurfaceMesh and its vertices are
+  //  templated on T, but Obb is for double only.
   /**
    Calculates the axis-aligned bounding box of this surface mesh M.
    @returns the center and the size vector of the box expressed in M's frame.

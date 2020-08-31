@@ -1,4 +1,4 @@
-#include "drake/geometry/proximity/bounding_volume_hierarchy.h"
+#include "drake/geometry/proximity/bvh.h"
 
 #include "drake/common/eigen_types.h"
 
