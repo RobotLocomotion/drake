@@ -18,7 +18,7 @@ class ConstantValueSource final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstantValueSource)
 
-  /// @param value The constant value to emit which is copied by this system.
+  /// @param value The constant value to emit, which is copied by this system.
   explicit ConstantValueSource(const AbstractValue& value);
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
