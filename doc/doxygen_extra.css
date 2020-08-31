@@ -1,7 +1,13 @@
 /* s3://drake-web/fonts/stylesheet.css */
 @import url('https://dmn3132s4wr9m.cloudfront.net/fonts/stylesheet.css');
 
+/* user agent html.css */
+
 tt, code, kbd, samp {
+  font-family: 'DejaVu Sans Mono', monospace;
+}
+
+pre, xmp, plaintext, listing {
   font-family: 'DejaVu Sans Mono', monospace;
 }
 
