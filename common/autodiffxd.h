@@ -88,12 +88,11 @@ class AutoDiffScalar<VectorXd>
       : m_value(other.value()), m_derivatives(other.derivatives()) {
   }
 
-  friend std::ostream& operator<<(std::ostream& s, const AutoDiffScalar& a) {
-    return s << a.value();
-  }
-
   AutoDiffScalar(const AutoDiffScalar& other)
       : m_value(other.value()), m_derivatives(other.derivatives()) {}
+
+  AutoDiffScalar(AutoDiffScalar&&) = default;
+  AutoDiffScalar& operator=(AutoDiffScalar&&) = default;
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator=(const AutoDiffScalar<OtherDerType>& other) {
@@ -112,6 +111,10 @@ class AutoDiffScalar<VectorXd>
     m_value = other;
     if (m_derivatives.size() > 0) m_derivatives.setZero();
     return *this;
+  }
+
+  friend std::ostream& operator<<(std::ostream& s, const AutoDiffScalar& a) {
+    return s << a.value();
   }
 
   inline const Scalar& value() const { return m_value; }
@@ -171,146 +174,176 @@ class AutoDiffScalar<VectorXd>
     return m_value != b.value();
   }
 
-  inline const AutoDiffScalar<DerType> operator+(const Scalar& other) const {
-    return AutoDiffScalar<DerType>(m_value + other, m_derivatives);
-  }
-
-  friend inline const AutoDiffScalar<DerType> operator+(
-      const Scalar& a, const AutoDiffScalar& b) {
-    return AutoDiffScalar<DerType>(a + b.value(), b.derivatives());
-  }
-
   inline AutoDiffScalar& operator+=(const Scalar& other) {
     value() += other;
     return *this;
   }
+  friend inline AutoDiffScalar<DerType> operator+(AutoDiffScalar<DerType> a,
+                                                  const Scalar& other) {
+    a += other;
+    return a;
+  }
 
-  template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator+(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    return MakeAutoDiffScalar(
-        m_value + other.value(),
-        has_both_der
-            ? VectorXd(m_derivatives + other.derivatives())
-            : has_this_der ? m_derivatives : VectorXd(other.derivatives()));
+  friend inline const AutoDiffScalar<DerType> operator+(const Scalar& a,
+                                                        AutoDiffScalar b) {
+    b += a;
+    return b;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator+=(const AutoDiffScalar<OtherDerType>& other) {
-    (*this) = (*this) + other;
-    return *this;
-  }
-
-  inline const AutoDiffScalar<DerType> operator-(const Scalar& b) const {
-    return AutoDiffScalar<DerType>(m_value - b, m_derivatives);
-  }
-
-  friend inline const AutoDiffScalar<DerType> operator-(
-      const Scalar& a, const AutoDiffScalar& b) {
-    return AutoDiffScalar<DerType>(a - b.value(), -b.derivatives());
-  }
-
-  inline AutoDiffScalar& operator-=(const Scalar& other) {
-    value() -= other;
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    m_value += other.value();
+    if (has_both_der) {
+      m_derivatives += other.derivatives();
+    } else if (has_this_der) {
+      // noop
+    } else {
+      m_derivatives = other.derivatives();
+    }
     return *this;
   }
 
   template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator-(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    return MakeAutoDiffScalar(
-        m_value - other.value(),
-        has_both_der
-            ? VectorXd(m_derivatives - other.derivatives())
-            : has_this_der ? m_derivatives : VectorXd(-other.derivatives()));
+  friend inline const AutoDiffScalar<DerType> operator+(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& other) {
+    a += other;
+    return a;
+  }
+
+  inline AutoDiffScalar& operator-=(const Scalar& other) {
+    m_value -= other;
+    return *this;
+  }
+
+  friend inline AutoDiffScalar<DerType> operator-(AutoDiffScalar<DerType> a,
+                                                  const Scalar& other) {
+    a -= other;
+    return a;
+  }
+
+  friend inline const AutoDiffScalar<DerType> operator-(const Scalar& a,
+                                                        AutoDiffScalar b) {
+    b.value() = a - b.value();
+    b.derivatives() *= -1;
+    return b;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator-=(const AutoDiffScalar<OtherDerType>& other) {
-    *this = *this - other;
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    m_value -= other.value();
+    if (has_both_der) {
+      m_derivatives -= other.derivatives();
+    } else if (has_this_der) {
+      // noop
+    } else {
+      m_derivatives = -other.derivatives();
+    }
     return *this;
   }
 
-  inline const AutoDiffScalar<DerType> operator-() const {
-    return AutoDiffScalar<DerType>(-m_value, -m_derivatives);
-  }
-
-  inline const AutoDiffScalar<DerType> operator*(const Scalar& other) const {
-    return MakeAutoDiffScalar(m_value * other, m_derivatives * other);
-  }
-
-  friend inline const AutoDiffScalar<DerType> operator*(
-      const Scalar& other, const AutoDiffScalar& a) {
-    return MakeAutoDiffScalar(a.value() * other, a.derivatives() * other);
-  }
-
-  inline const AutoDiffScalar<DerType> operator/(const Scalar& other) const {
-    return MakeAutoDiffScalar(m_value / other,
-                              (m_derivatives * (Scalar(1) / other)));
-  }
-
-  friend inline const AutoDiffScalar<DerType> operator/(
-      const Scalar& other, const AutoDiffScalar& a) {
-    return MakeAutoDiffScalar(
-        other / a.value(),
-        a.derivatives() * (Scalar(-other) / (a.value() * a.value())));
-  }
-
   template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator/(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const auto& this_der = m_derivatives;
-    const auto& other_der = other.derivatives();
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    const double scale = 1. / (other.value() * other.value());
-    return MakeAutoDiffScalar(
-        m_value / other.value(),
-        has_both_der ?
-            VectorXd(this_der * other.value() - other_der * m_value) * scale :
-        has_this_der ?
-            VectorXd(this_der * other.value()) * scale :
-        // has_other_der || has_neither
-            VectorXd(other_der * -m_value) * scale);
+  friend inline const AutoDiffScalar<DerType> operator-(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& other) {
+    a -= other;
+    return a;
   }
 
-  template <typename OtherDerType>
-  inline const AutoDiffScalar<DerType> operator*(
-      const AutoDiffScalar<OtherDerType>& other) const {
-    const bool has_this_der = m_derivatives.size() > 0;
-    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
-    return MakeAutoDiffScalar(
-        m_value * other.value(),
-        has_both_der ? VectorXd(m_derivatives * other.value() +
-                                other.derivatives() * m_value)
-                     : has_this_der ? VectorXd(m_derivatives * other.value())
-                                    : VectorXd(other.derivatives() * m_value));
+  friend inline const AutoDiffScalar<DerType> operator-(
+      AutoDiffScalar<DerType> a) {
+    a.value() *= -1;
+    a.derivatives() *= -1;
+    return a;
   }
 
   inline AutoDiffScalar& operator*=(const Scalar& other) {
-    *this = *this * other;
+    m_value *= other;
+    m_derivatives *= other;
     return *this;
+  }
+
+  friend inline const AutoDiffScalar<DerType> operator*(
+      AutoDiffScalar<DerType> a, const Scalar& other) {
+    a *= other;
+    return a;
+  }
+
+  friend inline const AutoDiffScalar<DerType> operator*(const Scalar& other,
+                                                        AutoDiffScalar a) {
+    a *= other;
+    return a;
   }
 
   template <typename OtherDerType>
   inline AutoDiffScalar& operator*=(const AutoDiffScalar<OtherDerType>& other) {
-    *this = *this * other;
-    return *this;
-  }
-
-  inline AutoDiffScalar& operator/=(const Scalar& other) {
-    *this = *this / other;
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    if (has_both_der) {
+      m_derivatives *= other.value();
+      m_derivatives += other.derivatives() * m_value;
+    } else if (has_this_der) {
+      m_derivatives *= other.value();
+    } else {
+      m_derivatives = other.derivatives() * m_value;
+    }
+    m_value *= other.value();
     return *this;
   }
 
   template <typename OtherDerType>
-  inline AutoDiffScalar& operator/=(const AutoDiffScalar<OtherDerType>& other) {
-    *this = *this / other;
+  friend inline const AutoDiffScalar<DerType> operator*(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& other) {
+    a *= other;
+    return a;
+  }
+
+  inline AutoDiffScalar& operator/=(const Scalar& other) {
+    m_value /= other;
+    m_derivatives *= (Scalar(1) / other);
     return *this;
+  }
+
+  friend inline const AutoDiffScalar<DerType> operator/(AutoDiffScalar a,
+                                                        const Scalar& other) {
+    a /= other;
+    return a;
+  }
+
+  friend inline const AutoDiffScalar<DerType> operator/(const Scalar& other,
+                                                        AutoDiffScalar a) {
+    a.derivatives() *= (Scalar(-other) / (a.value() * a.value()));
+    a.value() = other / a.value();
+    return a;
+  }
+
+  template <typename OtherDerType>
+  inline AutoDiffScalar& operator/=(const AutoDiffScalar<OtherDerType>& other) {
+    auto& this_der = m_derivatives;
+    const auto& other_der = other.derivatives();
+    const bool has_this_der = m_derivatives.size() > 0;
+    const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const double scale = 1. / (other.value() * other.value());
+    if (has_both_der) {
+      this_der *= other.value();
+      this_der -= other_der * m_value;
+      this_der *= scale;
+    } else if (has_this_der) {
+      this_der *= other.value() * scale;
+    } else {
+      this_der = other_der * -m_value * scale;
+    }
+    m_value /= other.value();
+    return *this;
+  }
+
+  template <typename OtherDerType>
+  friend inline const AutoDiffScalar<DerType> operator/(
+      AutoDiffScalar<DerType> a, const AutoDiffScalar<OtherDerType>& other) {
+    a /= other;
+    return a;
   }
 
  protected:
@@ -431,9 +464,8 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
 inline const AutoDiffScalar<VectorXd> min(const AutoDiffScalar<VectorXd>& a,
                                           const AutoDiffScalar<VectorXd>& b) {
   // If both a and b have derivatives, then their derivative sizes must match.
-  DRAKE_ASSERT(
-      a.derivatives().size() == 0 || b.derivatives().size() == 0 ||
-      a.derivatives().size() == b.derivatives().size());
+  DRAKE_ASSERT(a.derivatives().size() == 0 || b.derivatives().size() == 0 ||
+               a.derivatives().size() == b.derivatives().size());
   // The smaller of a or b wins; ties go to a iff it has any derivatives.
   return ((a < b) || ((a == b) && (a.derivatives().size() != 0))) ? a : b;
 }
@@ -442,9 +474,8 @@ inline const AutoDiffScalar<VectorXd> min(const AutoDiffScalar<VectorXd>& a,
 inline const AutoDiffScalar<VectorXd> max(const AutoDiffScalar<VectorXd>& a,
                                           const AutoDiffScalar<VectorXd>& b) {
   // If both a and b have derivatives, then their derivative sizes must match.
-  DRAKE_ASSERT(
-      a.derivatives().size() == 0 || b.derivatives().size() == 0 ||
-      a.derivatives().size() == b.derivatives().size());
+  DRAKE_ASSERT(a.derivatives().size() == 0 || b.derivatives().size() == 0 ||
+               a.derivatives().size() == b.derivatives().size());
   // The larger of a or b wins; ties go to a iff it has any derivatives.
   return ((a > b) || ((a == b) && (a.derivatives().size() != 0))) ? a : b;
 }
