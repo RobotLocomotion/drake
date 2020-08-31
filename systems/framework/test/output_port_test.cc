@@ -73,7 +73,22 @@ class MyOutputPort : public OutputPort<double> {
   internal::OutputPortPrerequisite DoGetPrerequisite() const override {
     ADD_FAILURE() << "We won't call this.";
     return {};
-  };
+  }
+
+  void ThrowIfInvalidPortValueType(
+      const Context<double>& context,
+      const AbstractValue& proposed_value) const final {
+    // Note: this is a very expensive way to check -- fine for this test
+    // case (which has no alternative) but don't copy into real code!
+    auto good_value = Allocate();
+    if (proposed_value.type_info() != good_value->type_info()) {
+      throw std::logic_error(fmt::format(
+          "OutputPort::Calc(): expected output type {} "
+          "but got {} for {}.",
+          good_value->GetNiceTypeName(), proposed_value.GetNiceTypeName(),
+          PortBase::GetFullDescription()));
+    }
+  }
 };
 
 class MyStringAllocatorPort : public MyOutputPort {
