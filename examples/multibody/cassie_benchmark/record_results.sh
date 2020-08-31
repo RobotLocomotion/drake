@@ -35,6 +35,7 @@ ${TEST_SRCDIR}/drake/examples/multibody/cassie_benchmark/cassie_bench \
     --benchmark_repetitions=9 \
     --benchmark_out_format=json \
     --benchmark_out=${TEST_UNDECLARED_OUTPUTS_DIR}/results.json \
+    "$@" \
     >& ${TEST_UNDECLARED_OUTPUTS_DIR}/summary.txt
 
 echo Full results are in:
