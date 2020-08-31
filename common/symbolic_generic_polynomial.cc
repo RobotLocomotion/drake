@@ -9,6 +9,7 @@
 #include "drake/common/symbolic_expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_DETAIL_HEADER
 
+using std::accumulate;
 using std::map;
 using std::ostringstream;
 using std::pair;
@@ -159,6 +160,76 @@ GenericPolynomial<BasisElement> GenericPolynomial<BasisElement>::Differentiate(
     // polynomial.
     return GenericPolynomial<BasisElement>();
   }
+}
+
+template <typename BasisElement>
+double GenericPolynomial<BasisElement>::Evaluate(const Environment& env) const {
+  return accumulate(
+      basis_element_to_coefficient_map_.begin(),
+      basis_element_to_coefficient_map_.end(), 0.0,
+      [&env](const double v, const pair<BasisElement, Expression>& item) {
+        const BasisElement& basis_element{item.first};
+        const Expression& coeff{item.second};
+        return v + basis_element.Evaluate(env) * coeff.Evaluate(env);
+      });
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>
+GenericPolynomial<BasisElement>::EvaluatePartial(const Environment& env) const {
+  MapType new_map;  // Will use this to construct the return value.
+  for (const auto& [basis_element, coeff] : basis_element_to_coefficient_map_) {
+    const Expression coeff_partial_evaluated{coeff.EvaluatePartial(env)};
+    const pair<double, BasisElement> partial_eval_result{
+        basis_element.EvaluatePartial(env)};
+    const Expression new_coeff{coeff_partial_evaluated *
+                               partial_eval_result.first};
+    const BasisElement& new_basis_element{partial_eval_result.second};
+
+    auto it = new_map.find(new_basis_element);
+    if (it == new_map.end()) {
+      new_map.emplace_hint(it, new_basis_element, new_coeff);
+    } else {
+      it->second += new_coeff;
+    }
+  }
+  return GenericPolynomial<BasisElement>(new_map);
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement> GenericPolynomial<BasisElement>::AddProduct(
+    const Expression& coeff, const BasisElement& m) {
+  DoAddProduct(coeff, m, &basis_element_to_coefficient_map_);
+  indeterminates_ += m.GetVariables();
+  decision_variables_ += coeff.GetVariables();
+  DRAKE_ASSERT_VOID(CheckInvariant());
+  return *this;
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>
+GenericPolynomial<BasisElement>::RemoveTermsWithSmallCoefficients(
+    double coefficient_tol) const {
+  DRAKE_DEMAND(coefficient_tol > 0);
+  MapType cleaned_polynomial{};
+  for (const auto& [basis_element, coeff] : basis_element_to_coefficient_map_) {
+    if (is_constant(coeff) &&
+        std::abs(get_constant_value(coeff)) <= coefficient_tol) {
+      // The coefficients are small.
+      continue;
+    } else {
+      cleaned_polynomial.emplace_hint(cleaned_polynomial.end(), basis_element,
+                                      coeff);
+    }
+  }
+  return GenericPolynomial<BasisElement>(cleaned_polynomial);
+}
+
+template <typename BasisElement>
+GenericPolynomial<BasisElement>
+GenericPolynomial<BasisElement>::EvaluatePartial(const Variable& var,
+                                                 const double c) const {
+  return EvaluatePartial({{{var, c}}});
 }
 
 namespace {
