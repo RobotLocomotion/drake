@@ -20,14 +20,14 @@ namespace schema {
 @{
 
 This page describes how to use classes such as schema::Distribution to denote
-stochastic quantities, as bridge between loading a scenario specification and
+stochastic quantities, as a bridge between loading a scenario specification and
 populating the corresponding symbolic::Expression quantities into a
 systems::System.
 
-<h1>Stochastic variables</h1>
+# Stochastic variables
 
-We'll explain uses of schema::Distribution and related using the matching YAML
-syntax as parsed by yaml::YamlReadArchive.
+We'll explain uses of schema::Distribution and related types using the matching
+YAML syntax as parsed by yaml::YamlReadArchive.
 
 Given this C++ data structure:
 
@@ -101,13 +101,13 @@ stuff:
   value: !UniformDiscrete { values: [1.0, 1.5, 2.0] }
 ```
 
-<h1>Vectors of stochastic variables</h1>
+# Vectors of stochastic variables
 
 For convenience, we also provide the option to specify a vector of independent
 stochastic variables with the same type.
 
-We'll explain uses of schema::DistributionVector and related using the matching
-YAML syntax as parsed by yaml::YamlReadArchive.
+We'll explain uses of schema::DistributionVector and related types using the
+matching YAML syntax as parsed by yaml::YamlReadArchive.
 
 Given this C++ data structure:
 
@@ -188,7 +188,7 @@ thing:
     std: [0.0, 1.0]
 ```
 
-<h1>See also </h1>
+# See also
 
 See @ref schema_transform for one practical application, of specifying
 rotations, translations, and transforms using stochastic schemas.
@@ -383,6 +383,15 @@ class DeterministicVector final : public DistributionVector {
 };
 
 /// A gaussian distribution with vector `mean` and vector or scalar `stddev`.
+///
+/// When `mean` and `stddev` both have the same number of elements, that
+/// denotes an elementwise pairing of the 0th mean with 0th stddev, 1st mean
+/// with 1st stddev, etc.
+///
+/// Alternatively, `stddev` can be a vector with a single element, no matter
+/// the size of `mean`; that denotes the same `stddev` value applied to every
+/// element of `mean`.
+///
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>
 class GaussianVector final : public DistributionVector {
@@ -447,7 +456,9 @@ struct InvalidVariantSelection {
 /// Variant over all kinds of vector distributions.
 ///
 /// If the Size parameter allows for 1-element vectors (i.e, is either 1 or
-/// Eigen::Dynamic), then this variant also offers the single distributions.
+/// Eigen::Dynamic), then this variant also offers the single distribution
+/// types (Deterministic, Gaussian, Uniform).  If the Size parameter is 2 or
+/// greater, the single distribution types are not allowed.
 ///
 /// @tparam Size rows at compile time (max 6) or else Eigen::Dynamic.
 template <int Size>

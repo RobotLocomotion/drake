@@ -1,4 +1,4 @@
-#include "drake/common/schema/dev/rotation.h"
+#include "drake/common/schema/rotation.h"
 
 #include "drake/common/drake_throw.h"
 #include "drake/math/random_rotation.h"

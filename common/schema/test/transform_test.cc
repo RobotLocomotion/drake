@@ -1,4 +1,4 @@
-#include "drake/common/schema/dev/transform.h"
+#include "drake/common/schema/transform.h"
 
 #include <gtest/gtest.h>
 
@@ -17,6 +17,7 @@ namespace {
 // once Drake's YamlReadArchive constructor default changes to be strict.
 constexpr YamlReadArchive::Options kStrict;
 
+// TODO(jwnimmer-tri) Change use R""" per Drake GSG, throughout this file.
 const char* deterministic = R"R(
 base_frame: foo
 translation: [1., 2., 3.]
@@ -97,6 +98,8 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
   drake::math::RigidTransformd sampled_transform = transform.Sample(&generator);
 
   // The sampled transforms must lie within the randomization domain.
+  // TODO(jwnimmer-tri) The correctness checks below traceable to rotation.cc's
+  // implementation would be better placed in rotation_test.cc.
   const auto& translation_domain =
       std::get<schema::UniformVector<3>>(transform.translation);
   for (int i = 0; i < 3; i++) {
@@ -117,7 +120,7 @@ GTEST_TEST(StochasticSampleTest, TransformTest) {
   EXPECT_LT(rpy[2], rotation_domain.max[2]);
   EXPECT_GT(rpy[2], rotation_domain.min[2]);
 
-  // A second sample will (virtually certainly) differ from the first sample.
+  // A second sample will (almost certainly) differ from the first sample.
   const drake::math::RigidTransformd sampled_transform_2 =
       transform.Sample(&generator);
   EXPECT_FALSE(sampled_transform.IsExactlyEqualTo(sampled_transform_2));
