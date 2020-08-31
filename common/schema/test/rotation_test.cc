@@ -1,4 +1,4 @@
-#include "drake/common/schema/dev/rotation.h"
+#include "drake/common/schema/rotation.h"
 
 #include <gtest/gtest.h>
 

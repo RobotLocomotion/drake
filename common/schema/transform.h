@@ -4,7 +4,7 @@
 #include <string>
 
 #include "drake/common/name_value.h"
-#include "drake/common/schema/dev/rotation.h"
+#include "drake/common/schema/rotation.h"
 #include "drake/common/schema/stochastic.h"
 #include "drake/math/rigid_transform.h"
 
@@ -16,8 +16,8 @@ namespace schema {
 @{
 
 This page describes how to use classes such as schema::Rotation and
-schema::Transform to denote stochastic quantities, as bridge between loading a
-scenario specification and populating the corresponding math::RigidTransform
+schema::Transform to denote stochastic quantities, as a bridge between loading
+a scenario specification and populating the corresponding math::RigidTransform
 quantities.
 
 The broader concepts are discussed at @ref schema_stochastic. Here, we cover
@@ -26,7 +26,7 @@ details related to rotations and transforms in particular.
 We'll explain uses of schema::Rotation and schema::Transform using their
 matching YAML syntax as parsed by yaml::YamlReadArchive.
 
-<h1>Rotations</h1>
+# Rotations
 
 This shows the syntax for a schema::Rotation.
 
@@ -70,7 +70,7 @@ rotation: !Rpy { deg: [10.0, 20.0, 30.0] }
 rotation: !AngleAxis { angle_deg: 10.0, axis: [0.0, 1.0, 0.0] }
 ```
 
-<h2>Stochastic Rotations</h2>
+## Stochastic Rotations
 
 To specify a stochastic rotation sampled from a uniform distribution over
 SO(3):
@@ -104,7 +104,7 @@ rotation: !AngleAxis
 For an explanation of `!Uniform`, `!UniformVector`, and other available options
 (%Gaussian, etc.) for scalar and vector quantities, see @ref schema_stochastic.
 
-<h1>Transforms</h1>
+# Transforms
 
 This shows the syntax for a schema::Transform.  A transform is merely a
 translation and rotation, optionally with a some given string as a base_frame.
@@ -124,7 +124,7 @@ transform:
   rotation: !Identity {}
 ```
 
-<h2>Stochastic Transforms</h2>
+## Stochastic Transforms
 
 Either or both of the rotational or translation component can be stochastic:
 
