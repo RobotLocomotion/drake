@@ -54,7 +54,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const std::vector<Matrix3<T>>& rot_matrices);
+      const std::vector<Matrix3<T>>& rotation_matrices);
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
@@ -63,7 +63,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   PiecewiseQuaternionSlerp(
       const std::vector<double>& breaks,
-      const std::vector<AngleAxis<T>>& ang_axes);
+      const std::vector<AngleAxis<T>>& angle_axes);
 
   ~PiecewiseQuaternionSlerp() override = default;
 

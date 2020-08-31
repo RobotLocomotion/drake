@@ -2,10 +2,11 @@ import numpy as np
 import unittest
 
 from pydrake.common import ToleranceType
+from pydrake.common.eigen_geometry import AngleAxis, Quaternion
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.polynomial import Polynomial
 from pydrake.trajectories import (
-    PiecewisePolynomial,
+    PiecewisePolynomial, PiecewiseQuaternionSlerp
 )
 
 
@@ -59,6 +60,9 @@ class TestTrajectories(unittest.TestCase):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
         np.testing.assert_equal(np.array([[2.], [3.]]), pp.value(.5))
+
+        deriv = pp.MakeDerivative(derivative_order=1)
+        np.testing.assert_equal(np.array([[2.], [2.]]), deriv.value(.5))
 
     def test_hermite(self):
         t = [0., 1., 2.]
@@ -138,3 +142,31 @@ class TestTrajectories(unittest.TestCase):
         pp = PiecewisePolynomial([1, 2, 3])
         v = pp.vector_values([0, 4])
         self.assertEqual(v.shape, (3, 2))
+
+    def test_quaternion_slerp(self):
+        # Test empty constructor.
+        pq = PiecewiseQuaternionSlerp()
+        self.assertEqual(pq.rows(), 4)
+        self.assertEqual(pq.cols(), 1)
+        self.assertEqual(pq.get_number_of_segments(), 0)
+
+        t = [0., 1., 2.]
+        # Make identity rotations.
+        q = Quaternion()
+        m = np.identity(3)
+        a = AngleAxis()
+
+        # Test quaternion constructor.
+        pq = PiecewiseQuaternionSlerp(breaks=t, quaternions=[q, q, q])
+        self.assertEqual(pq.get_number_of_segments(), 2)
+        np.testing.assert_equal(pq.value(0.5), np.eye(3))
+
+        # Test matrix constructor.
+        pq = PiecewiseQuaternionSlerp(breaks=t, rotation_matrices=[m, m, m])
+        self.assertEqual(pq.get_number_of_segments(), 2)
+        np.testing.assert_equal(pq.value(0.5), np.eye(3))
+
+        # Test axis angle constructor.
+        pq = PiecewiseQuaternionSlerp(breaks=t, angle_axes=[a, a, a])
+        self.assertEqual(pq.get_number_of_segments(), 2)
+        np.testing.assert_equal(pq.value(0.5), np.eye(3))

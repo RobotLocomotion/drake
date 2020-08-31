@@ -534,6 +534,7 @@ drake_py_unittest(
     name = "trajectories_test",
     deps = [
         ":trajectories_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
