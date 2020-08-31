@@ -16,6 +16,22 @@ namespace drake {
 namespace common {
 namespace {
 
+// Catch uninitialized data problems with construction. Either the compiler or
+// valgrind may fail this test if AutoDiff data members are uninitialized.
+GTEST_TEST(AutodiffOverloadsTest, Construction) {
+  // Default construction followed by assignment.
+  AutoDiffXd q, r;
+  EXPECT_EQ(q.value(), 0);
+  EXPECT_EQ(q.derivatives().size(), 0);
+
+  // Changes made for #13988 allowed the compiler to detect uninitialized data
+  // at this step. Various example programs use techniques similar to this;
+  // this test should help to preserve fluency and safety for AutoDiff users.
+  q = r;
+  EXPECT_EQ(q.value(), 0);
+  EXPECT_EQ(q.derivatives().size(), 0);
+}
+
 // Test nominal behavior of `AutoDiff`, checking implicit and explicit casting.
 GTEST_TEST(AutodiffOverloadsTest, Casting) {
   VectorXd dx(3);
