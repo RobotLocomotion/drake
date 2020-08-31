@@ -22,14 +22,12 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which schunk model is used for the ManipulationStation.
-/// - kBoxSchunk loads a simplified Schunk model made of boxes.
-/// - kRealSchunkNoTip loads a realistic Schunk model, but the fingers have
-///   a box collision geometry. This model is for those who want the same
-///   collision behavior with the box Schunk, but would like a better visual.
-/// - kRealSchunkWithTip loads a realistic Schunk model with collision
+/// - kBox loads a model with a box collision geometry. This model is for those
+///   who want simplified collision behavior.
+/// - kBoxPlusFingertipSpheres loads a Schunk model with collision
 ///   spheres that models the indentations at tip of the fingers, in addition
 ///   to the box collision geometry on the fingers.
-enum class SchunkModel { kBoxSchunk, kRealSchunkNoTip, kRealSchunkWithTip };
+enum class SchunkCollisionModel { kBox, kBoxPlusFingertipSpheres };
 
 /// Determines which manipulation station is simulated.
 enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
@@ -159,7 +157,7 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetupClutterClearingStation(
       const std::optional<const math::RigidTransformd>& X_WCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision,
-      SchunkModel schunk_model = SchunkModel::kBoxSchunk);
+      SchunkCollisionModel schunk_model = SchunkCollisionModel::kBox);
 
   /// Adds a default iiwa, wsg, cupboard, and 80/20 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
@@ -171,7 +169,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param schunk_model Determines which sdf is loaded for the Schunk.
   void SetupManipulationClassStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision,
-      SchunkModel schunk_model = SchunkModel::kBoxSchunk);
+      SchunkCollisionModel schunk_model = SchunkCollisionModel::kBox);
 
   /// Adds a version of the iiwa with joints that would result in
   /// out-of-plane rotations welded in a fixed orientation, reducing the
@@ -474,7 +472,7 @@ class ManipulationStation : public systems::Diagram<T> {
   void MakeIiwaControllerModel();
 
   void AddDefaultIiwa(const IiwaCollisionModel collision_model);
-  void AddDefaultWsg(const SchunkModel schunk_model);
+  void AddDefaultWsg(const SchunkCollisionModel schunk_model);
 
   // These are only valid until Finalize() is called.
   std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;

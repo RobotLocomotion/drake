@@ -9,7 +9,7 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList, SchunkModel)
+    CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
@@ -201,10 +201,9 @@ def main():
         help="The manipulation station setup to simulate. ",
         choices=['manipulation_class', 'clutter_clearing', 'planar'])
     parser.add_argument(
-        '--schunk_model', type=str, default='real_schunk_no_tip',
-        help="The Schunk model to use for simulation. ",
-        choices=['box_schunk', 'real_schunk_no_tip', 'real_schunk_with_tip'])
-
+        '--schunk_collision_model', type=str, default='box',
+        help="The Schunk collision model to use for simulation. ",
+        choices=['box', 'box_plus_fingertip_spheres'])
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
 
@@ -216,12 +215,10 @@ def main():
     else:
         station = builder.AddSystem(ManipulationStation())
 
-        if args.schunk_model == "box_schunk":
-            schunk_model = SchunkModel.kBoxSchunk
-        elif args.schunk_model == "real_schunk_no_tip":
-            schunk_model = SchunkModel.kRealSchunkNoTip
-        elif args.schunk_model == "real_schunk_with_tip":
-            schunk_model = SchunkModel.kRealSchunkWithTip
+        if args.schunk_collision_model == "box":
+            schunk_model = SchunkCollisionModel.kBox
+        elif args.schunk_collision_model == "box_plus_fingertip_spheres":
+            schunk_model = SchunkCollisionModel.kBoxPlusFingertipSpheres
 
         # Initializes the chosen station type.
         if args.setup == 'manipulation_class':

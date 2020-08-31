@@ -36,13 +36,13 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.IiwaCollisionModel.kBoxCollision.doc)
       .export_values();
 
-  py::enum_<SchunkModel>(m, "SchunkModel", doc.SchunkModel.doc)
+  py::enum_<SchunkCollisionModel>(
+      m, "SchunkCollisionModel", doc.SchunkCollisionModel.doc)
       .value(
-          "kBoxSchunk", SchunkModel::kBoxSchunk, doc.SchunkModel.kBoxSchunk.doc)
-      .value("kRealSchunkNoTip", SchunkModel::kRealSchunkNoTip,
-          doc.SchunkModel.kRealSchunkNoTip.doc)
-      .value("kRealSchunkWithTip", SchunkModel::kRealSchunkWithTip,
-          doc.SchunkModel.kRealSchunkWithTip.doc)
+          "kBox", SchunkCollisionModel::kBox, doc.SchunkCollisionModel.kBox.doc)
+      .value("kBoxPlusFingertipSpheres",
+          SchunkCollisionModel::kBoxPlusFingertipSpheres,
+          doc.SchunkCollisionModel.kBoxPlusFingertipSpheres.doc)
       .export_values();
 
   py::class_<ManipulationStation<T>, Diagram<T>>(
@@ -52,13 +52,13 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetupManipulationClassStation",
           &ManipulationStation<T>::SetupManipulationClassStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          py::arg("schunk_model") = SchunkModel::kBoxSchunk,
+          py::arg("schunk_model") = SchunkCollisionModel::kBox,
           doc.ManipulationStation.SetupManipulationClassStation.doc)
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("X_WCameraBody") = std::nullopt,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          py::arg("schunk_model") = SchunkModel::kBoxSchunk,
+          py::arg("schunk_model") = SchunkCollisionModel::kBox,
           doc.ManipulationStation.SetupClutterClearingStation.doc)
       .def("SetupPlanarIiwaStation",
           &ManipulationStation<T>::SetupPlanarIiwaStation,

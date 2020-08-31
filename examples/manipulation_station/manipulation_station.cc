@@ -191,7 +191,7 @@ void ManipulationStation<T>::AddManipulandFromFile(
 template <typename T>
 void ManipulationStation<T>::SetupClutterClearingStation(
     const std::optional<const math::RigidTransform<double>>& X_WCameraBody,
-    IiwaCollisionModel collision_model, SchunkModel schunk_model) {
+    IiwaCollisionModel collision_model, SchunkCollisionModel schunk_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kClutterClearing;
 
@@ -243,7 +243,7 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 template <typename T>
 void ManipulationStation<T>::SetupManipulationClassStation(
   IiwaCollisionModel collision_model,
-  SchunkModel schunk_model) {
+  SchunkCollisionModel schunk_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kManipulationClass;
 
@@ -345,7 +345,7 @@ void ManipulationStation<T>::SetupPlanarIiwaStation() {
   }
 
   // Add the default wsg model.
-  AddDefaultWsg(SchunkModel::kRealSchunkNoTip);
+  AddDefaultWsg(SchunkCollisionModel::kBox);
 }
 
 template <typename T>
@@ -929,20 +929,15 @@ void ManipulationStation<T>::AddDefaultIiwa(
 // Add default wsg.
 template <typename T>
 void ManipulationStation<T>::AddDefaultWsg(
-    const SchunkModel schunk_model) {
+    const SchunkCollisionModel schunk_model) {
   std::string sdf_path;
   switch (schunk_model) {
-    case SchunkModel::kBoxSchunk:
-      sdf_path = FindResourceOrThrow(
-          "drake/manipulation/models/wsg_50_description/sdf"
-          "/schunk_wsg_50.sdf");
-      break;
-    case SchunkModel::kRealSchunkNoTip:
+    case SchunkCollisionModel::kBox:
       sdf_path = FindResourceOrThrow(
           "drake/manipulation/models/wsg_50_description/sdf"
           "/schunk_wsg_50_no_tip.sdf");
       break;
-    case SchunkModel::kRealSchunkWithTip:
+    case SchunkCollisionModel::kBoxPlusFingertipSpheres:
       sdf_path = FindResourceOrThrow(
           "drake/manipulation/models/wsg_50_description/sdf"
           "/schunk_wsg_50_with_tip.sdf");
