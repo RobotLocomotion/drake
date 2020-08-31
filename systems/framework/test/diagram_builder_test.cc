@@ -89,8 +89,8 @@ GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
           "Reported algebraic loop detected in DiagramBuilder:\n"
           "  InputPort.0. .u0. of {adder} is direct-feedthrough to\n"
           "  OutputPort.0. .sum. of {adder} is connected to\n"
-          "  InputPort.0. .u0. of {pass} is direct-feedthrough to\n"
-          "  OutputPort.0. .y0. of {pass} is connected to\n"
+          "  InputPort.0. .u. of {pass} is direct-feedthrough to\n"
+          "  OutputPort.0. .y. of {pass} is connected to\n"
           "  InputPort.0. .u0. of {adder}\n"
           ".*conservatively reported.*",
           fmt::arg("adder", "System ::adder .Adder<double>."),
@@ -239,8 +239,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
       std::logic_error,
       "DiagramBuilder::Connect: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
-      "output port y0 of System vector_system to "
-      "input port u0 of System abstract_system");
+      "output port y of System vector_system to "
+      "input port u of System abstract_system");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Connect(
           abstract_system->get_output_port(),
@@ -248,8 +248,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
       std::logic_error,
       "DiagramBuilder::Connect: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
-      "output port y0 of System abstract_system to "
-      "input port u0 of System vector_system");
+      "output port y of System abstract_system to "
+      "input port u of System vector_system");
 }
 
 GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
@@ -265,8 +265,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
       std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched vector sizes while connecting "
-      "output port y0 of System size1_system \\(size 1\\) to "
-      "input port u0 of System size2_system \\(size 2\\)");
+      "output port y of System size1_system \\(size 1\\) to "
+      "input port u of System size2_system \\(size 2\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Connect(
           size2_system->get_output_port(),
@@ -274,8 +274,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
       std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched vector sizes while connecting "
-      "output port y0 of System size2_system \\(size 2\\) to "
-      "input port u0 of System size1_system \\(size 1\\)");
+      "output port y of System size2_system \\(size 2\\) to "
+      "input port u of System size1_system \\(size 1\\)");
 }
 
 GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
@@ -291,8 +291,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched value types while connecting "
-      "output port y0 of System int_system \\(type int\\) to "
-      "input port u0 of System char_system \\(type char\\)");
+      "output port y of System int_system \\(type int\\) to "
+      "input port u of System char_system \\(type char\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Connect(
           char_system->get_output_port(),
@@ -300,8 +300,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
       std::logic_error,
       "DiagramBuilder::Connect: "
       "Mismatched value types while connecting "
-      "output port y0 of System char_system \\(type char\\) to "
-      "input port u0 of System int_system \\(type int\\)");
+      "output port y of System char_system \\(type char\\) to "
+      "input port u of System int_system \\(type int\\)");
 }
 
 // Test that port connections can be polymorphic, especially for types that are
