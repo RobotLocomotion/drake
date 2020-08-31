@@ -133,6 +133,13 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   // Computes the interpolation time within each segment. Result is in [0, 1].
   double ComputeInterpTime(int segment_index, double time) const;
 
+  bool do_has_derivative() const override;
+
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
+
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override;
+
   std::vector<Quaternion<T>> quaternions_;
   std::vector<Vector3<T>> angular_velocities_;
 };
