@@ -32,18 +32,59 @@ enum class ContactSolverResult {
 /// share this commong interface without having to re-wire the client's
 /// internals.
 ///
+/// <h3> Mechanical systems and state </h3>
+///
+/// In what follows, we describe the state of the system by the vector of
+/// generalized positions q, or configuration, and the vector of generalized
+/// velocities v. q is a vector of size `nq` and v a vector of size `nv`. Even
+/// though in general `nq != nv`, the kinematic mapping `q̇ = N(q)⋅v` relates
+/// the generalized velocities to time derivatives of the generalized positions.
+/// 
+/// For instance, the dynamics of rigid multibody systems can be stated as:
+/// <pre>
+///   M(q)⋅v̇ + C(q,v) = τₑₓₜ(q, v)
+///   q̇ = N(q)⋅v
+/// </pre>
+/// where M(q) is the mass matrix, `C(q,v)` contains the Coriolis and
+/// centrifugal contributions and `τₑₓₜ(q, v)` are external contributions,
+/// including actuation for robotic applications.
+/// Here we will focus on discretizing these equations at the velocity level in
+/// which the unknowns of the system are the generalized velocities.
+/// For instance, if we use a semi-implicit Euler approximation with a time step
+/// dt, given the previous step velocity `v₀`, we approximate the accelerations
+/// as `v̇ = (v − v₀)/dt`, the generalized positions derivatives as `q̇ =
+/// N(q₀)⋅v` and the next step positions as `q = q₀ + dt⋅q̇`. Therefore the
+/// discrete momentum equations will read: <pre>
+///   M(q)⋅(v−v₀) + dt⋅C(q₀,v) = dt⋅τₑₓₜ(q₀, v)
+/// </pre>
+///
+/// Using this framework in terms of generalized positions and velocities we can
+/// describe any mechanical system. For instance, for FEM models, the
+/// configuration q will corresponds to the Lagrangian coordinates of material
+/// points in a solid and in this case q̇ = v, i.e. `N(q)` is the identity
+/// mapping.
+///
+/// <h3> Contact constraints </h3>
+///
 /// Generally, we are interested on solving a set of momentum equations subject
 /// to contact constraints of the form: <pre>
-///   F(q, v) = Jcᵀ⋅γ
+///   F(v) = Jcᵀ⋅γ
 ///   s.t. Contact constraints.
 /// </pre>
 /// where γ concatenates the all nc contact impulses γᵢ ∈ ℝ³ into a vector of
-/// size 3nc. Impulses have units of N⋅s. With "Contact constraints" we mean:
+/// size 3nc and `Jc`, of size `3nc x nv`, is the "contact Jacobian" defined
+/// such that contact velocities vc are given by vc = Jc⋅v.
+/// `F(v)` describes the balance of momentum already discretized at the
+/// velocity level. As an example, consider the dynamics of rigid bodies 
+/// discretized using the semi-implicit Euler scheme presented earlier. In this
+/// case we have `F(v) = M(q)⋅(v−v₀) - dt⋅C(q₀,v) - dt⋅τₑₓₜ(q₀, v)`.
+/// 
+/// With "Contact constraints" we mean:
 /// 1. Contact forces follow Coulomb's law of friction, i.e. γᵢ is inside the
 ///    friction cone.
 /// 2. The friction component of γ, which we refer to as β, satisfies the
 ///    principle of maximum dissipation for sliding contacts.
-/// 3. The normal component of γ, which we refer to as π, is always positive,
+/// 3. The normal component of γ, which we refer to as π, is non-negative
 ///    i.e. always a repulsive force (adhesive or “sticky" contact needs special
 ///    consideration).
 ///
@@ -57,17 +98,19 @@ enum class ContactSolverResult {
 /// underlying solver therefore also allowing for optimization based methods,
 /// [Todorov, 2014; [Kaufman et al., 2008].
 ///
+/// <h3> Solving the discrete contact problem </h3>
+///
 /// A general approach for solving the contact problem will include a predictor
-/// step to compute velocities v* satisfying the predictor equations `F(q(v*),
-/// v*)` = 0. That is, v* corresponds to the velocities the system would evolve
-/// with in the absence of contact forces, see for instance [Duriez, 2013] for a
-/// case in which `F(q(v*), v*)` = 0 is highly non-linear. Notice we wrote
-/// `q(v*)` since q at the next time step is approximated using an a discrete
-/// time stepping scheme. For instance, for implicit Euler we'd write
-/// `q(v*) = q₀+ dt⋅v*`. The next step velocity is then approximated as
-/// `v = v* + Δv` where Δv is computed in a corrector step satisfying the
-/// equation: <pre>
-///   F(v* + Δv) = Jcᵀ⋅γ
+/// step to compute velocities v* satisfying the predictor equations
+/// `F(v*) = 0`. That is, v* corresponds to the velocities the system would
+/// evolve with in the absence of contact forces, see for instance [Duriez,
+/// 2013] for a case in which `F(v*)` = 0 is highly non-linear. Recall that
+/// `F(v)` describes the "discrete" balance of momentum at the velocity level.
+/// We already approximated the configuration `q(v*)`. For instance, for
+/// implicit Euler we'd write `q(v*) = q₀+ dt⋅v*`.
+/// The next step velocity is then approximated as `v = v* + Δv` where Δv is
+/// computed in a corrector step satisfying the equation: <pre>
+///   F(q(v* + Δv), v* + Δv) = F(v* + Δv) = Jcᵀ⋅γ
 /// </pre>
 /// We can linearize this equation at v*, leading to: <pre>
 ///   F(v*) + A⋅Δv = Jcᵀ⋅γ
@@ -83,7 +126,7 @@ enum class ContactSolverResult {
 /// equations discretized using an explicit approach for all non-contact forces,
 /// as for instance in [Castro et al., 2019]. In this case F(q, v) takes the
 /// form: <pre>
-///   F(q, v) = M⋅(v−v₀) − dt⋅τ₀
+///   F(v) = M(q₀)⋅(v−v₀) − dt⋅τ₀
 /// </pre>
 /// where τ₀ includes external forces as well as Coriolis and centrifugal terms.
 /// In this case A = ∇F = M, v* = v₀ + dt⋅M⁻¹⋅τ₀.
@@ -92,18 +135,18 @@ enum class ContactSolverResult {
 /// contact for which, without diving into the details, the momentum equations
 /// can be briefly summarized as:
 /// <pre>
-///   F(q, v) = M⋅(v−v₀) + Fᵢₙₜ(q, v)
+///   F(v) = M⋅(v−v₀) + dt⋅Fᵢₙₜ(q, v)
 /// </pre>
 /// where with `Fᵢₙₜ(q, v)` we denote the term containing the contribution due
 /// to internal stresses in the deformable object. Using a predictor as in
 /// [Duriez, 2013], `F(v*) = 0`, leads to the system's dynamics matrix
-/// `A(v*) = M + dt⋅C + dt²⋅K`, where `M` is the mass matrix, `C = ∂F/∂v` is the
-/// damping matrix and `K = ∂F/∂q` is the stiffness matrix. For the modeling of
-/// large deformations `Fᵢₙₜ(q, v)` is a non-linear function of both q and v and
-/// therefore v* requires the solution of the non-linear system of equations
-/// `Fᵢₙₜ(q(v*), v*) = 0` usually with a Newton method. As a side effect of this
-/// solution the operator form of `A⁻¹` at v* will be available, typically as a
-/// factorization of the sparse matrix `A`.
+/// `A(v*) = M + dt⋅D + dt²⋅K`, where `M` is the mass matrix, `D = ∂Fᵢₙₜ/∂v` is
+/// the damping matrix and `K = ∂Fᵢₙₜ/∂q` is the stiffness matrix. For the
+/// modeling of large deformations `Fᵢₙₜ(q, v)` is a non-linear function of both
+/// q and v and therefore v* requires the solution of the non-linear system of
+/// equations `Fᵢₙₜ(q(v*), v*) = 0` usually with a Newton method. As a side
+/// effect of this solution the operator form of `A⁻¹` at v* will be available,
+/// typically as a factorization of the sparse matrix `A`.
 ///
 /// It should be noted that while in the previous two examples we used the
 /// backward Euler method to obtain a discrte approximation in time for
