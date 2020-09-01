@@ -415,13 +415,13 @@ class MultibodyTree {
 
   /// This method adds a Joint of type `JointType` between two bodies.
   /// The two bodies connected by this Joint object are referred to as _parent_
-  /// and _child_ bodies.  Our use of the terms _parent_ and _child_ do 𝐧𝐨𝐭
-  /// describe the inboard/outboard relationship between bodies.  Instead, the
-  /// parent/child ordering defines the sign conventions for the generalized
-  /// coordinates and the coordinate ordering for multi-DOF joints.  Our usage
-  /// of the parent/child relationship is more general and is also meaningful
-  /// for multibody systems with loops, such as four-bar linkages. When possible
-  /// the _parent_ body is made inboard and the _child_ outboard in the tree.
+  /// and _child_ bodies. The parent/child ordering defines the sign conventions
+  /// for the generalized coordinates and the coordinate ordering for multi-DOF
+  /// joints.  Our use of the terms _parent_ and _child_ does 𝐧𝐨𝐭 describe the
+  /// inboard/outboard relationship between bodies as our usage of inboard/
+  /// outboard is more general and is also meaningful for multibody systems
+  /// with loops, such as four-bar linkages.  However, when possible the
+  /// _parent_ body is made inboard and the _child_ outboard in the tree.
   ///
   /// As explained in the Joint class's documentation, in Drake we define a
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
