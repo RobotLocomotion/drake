@@ -12,16 +12,16 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-// Tests that all the SDF files can be parsed into a plant.
-GTEST_TEST(Wsg50DescriptionSDFTest, TestBoxSchunkSDF) {
+// Tests that all the Sdf files can be parsed into a plant.
+GTEST_TEST(Wsg50DescriptionSdfTest, TestBoxSchunkSdf) {
   const std::string prefix("drake/manipulation/models/wsg_50_description/sdf/");
-  const std::vector<std::string> file_names {
+  const std::vector<std::string> file_names{
     "schunk_wsg_50.sdf",
     "schunk_wsg_50_ball_contact.sdf",
     "schunk_wsg_50_no_tip.sdf",
     "schunk_wsg_50_with_tip.sdf"};
 
-  for (unsigned int i = 0; i < file_names.size(); i++) {
+  for (size_t i = 0; i < file_names.size(); i++) {
     const std::string kPath(FindResourceOrThrow(prefix + file_names[i]));
 
     multibody::MultibodyPlant<double> plant(0.0);
@@ -42,7 +42,7 @@ GTEST_TEST(Wsg50DescriptionSDFTest, TestBoxSchunkSDF) {
     EXPECT_EQ(plant.num_velocities(), 8);
 
     ASSERT_EQ(plant.num_bodies(), 4);
-    const std::vector<std::string> expected_body_names {
+    const std::vector<std::string> expected_body_names{
       "" /* Ignore the world body name */,
         "body",
         "left_finger",

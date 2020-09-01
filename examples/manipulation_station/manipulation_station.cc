@@ -915,8 +915,6 @@ void ManipulationStation<T>::AddDefaultIiwa(
           "drake/manipulation/models/iiwa_description/iiwa7/"
           "iiwa7_with_box_collision.sdf");
       break;
-    default:
-      throw std::domain_error("Unrecognized collision_model.");
   }
   const auto X_WI = RigidTransform<double>::Identity();
   auto iiwa_instance = internal::AddAndWeldModelFrom(
@@ -942,8 +940,6 @@ void ManipulationStation<T>::AddDefaultWsg(
           "drake/manipulation/models/wsg_50_description/sdf"
           "/schunk_wsg_50_with_tip.sdf");
       break;
-    default:
-      throw std::domain_error("Unrecognized schunk model.");
   }
   const multibody::Frame<T>& link7 =
       plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
