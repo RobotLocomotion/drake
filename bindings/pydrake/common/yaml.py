@@ -34,9 +34,11 @@ def yaml_load_data(data, *, private=False):
     accounting for variant-like type tags.  The known variant yaml tags
     are reported as an extra "_tag" field in the returned dictionary.
 
+    (Alternatively, `data` may be a file-like stream instead of a str.)
+
     By default, removes any root-level keys that begin with an underscore, so
     that yaml anchors and templates are invisibly easy to use.  Callers that
-    with to receive the private data may pass `private=True`.
+    wish to receive the private data may pass `private=True`.
     """
     result = yaml.load(data, Loader=_SchemaLoader)
     if not private:
@@ -54,7 +56,7 @@ def yaml_load_file(filename, *, private=False):
     accounting for variant-like type tags.
 
     See yaml_load_data for full details; this function differs only by reading
-    the yaml data from memory instead of a file.
+    the yaml data from a file instead of memory.
     """
     with open(filename, "r") as data:
         return yaml_load_data(data, private=private)
@@ -73,6 +75,13 @@ def yaml_load(*, data=None, filename=None, private=False):
         return yaml_load_data(data, private=private)
     else:
         return yaml_load_file(filename, private=private)
+
+
+# This is a magic tribool value described at
+#   https://github.com/yaml/pyyaml/pull/256
+# and must be set this way for post- and pre- pyyaml#256 yaml dumpers to give
+# the same output.
+_FLOW_STYLE = None
 
 
 class _SchemaDumper(yaml.dumper.SafeDumper):
@@ -100,6 +109,8 @@ def yaml_dump(data, *, filename=None):
     """
     if filename is not None:
         with open(filename, "w") as f:
-            yaml.dump(data, f, Dumper=_SchemaDumper)
+            yaml.dump(data, f, Dumper=_SchemaDumper,
+                      default_flow_style=_FLOW_STYLE)
     else:
-        return yaml.dump(data, Dumper=_SchemaDumper)
+        return yaml.dump(data, Dumper=_SchemaDumper,
+                         default_flow_style=_FLOW_STYLE)
