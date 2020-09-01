@@ -14,6 +14,12 @@ drake_py_binary(
     add_test_rule = 1,
     data = [
         "_static/css/custom.css",
+        "_static/drake-logo.svg",
+        "_static/drake-logo-white.svg",
+        "_static/github.svg",
+        "_static/github-white.svg",
+        "_static/search.svg",
+        "_templates/layout.html",
         "conf.py",
     ],
     imports = ["."],
