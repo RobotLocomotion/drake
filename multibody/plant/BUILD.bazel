@@ -349,6 +349,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "multibody_plant_parameters_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "multibody_plant_introspection_test",
     data = [
         "//examples/atlas:models",
