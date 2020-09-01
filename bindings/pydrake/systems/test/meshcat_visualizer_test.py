@@ -65,10 +65,12 @@ class TestMeshcat(unittest.TestCase):
 
         # Note: pass window=None argument to confirm kwargs are passed
         # through to meshcat.Visualizer.
-        visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=ZMQ_URL,
-                                                         open_browser=False,
-                                                         window=None))
+        visualizer = builder.AddSystem(MeshcatVisualizer(
+            scene_graph,
+            zmq_url=ZMQ_URL,
+            open_browser=False,
+            window=None,
+            delete_prefix_on_load=True))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
 
@@ -101,6 +103,7 @@ class TestMeshcat(unittest.TestCase):
         visualizer.publish_recording(play=True, repetitions=1)
         visualizer.reset_recording()
         self.assertEqual(len(visualizer._animation.clips), 0)
+        visualizer.delete_prefix()
 
     def test_kuka(self):
         """Kuka IIWA with mesh geometry."""
