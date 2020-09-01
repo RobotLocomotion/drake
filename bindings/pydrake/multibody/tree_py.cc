@@ -165,7 +165,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("name", &Class::name, cls_doc.name.doc)
         .def("body", &Class::body, py_rvp::reference_internal, cls_doc.body.doc)
         .def("GetFixedPoseInBodyFrame", &Frame<T>::GetFixedPoseInBodyFrame,
-            cls_doc.GetFixedPoseInBodyFrame.doc);
+            cls_doc.GetFixedPoseInBodyFrame.doc)
+        .def("CalcPoseInBodyFrame", &Frame<T>::CalcPoseInBodyFrame,
+            py::arg("context"), cls_doc.CalcPoseInBodyFrame.doc);
   }
 
   {
@@ -195,7 +197,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
               name, P, RigidTransform<double>(X_PF), model_instance);
         }),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = std::nullopt, doc_iso3_deprecation);
+            py::arg("model_instance") = std::nullopt, doc_iso3_deprecation)
+        .def("SetPoseInBodyFrame", &Class::SetPoseInBodyFrame,
+            py::arg("context"), py::arg("X_PF"),
+            cls_doc.SetPoseInBodyFrame.doc);
   }
 
   // Bodies.
