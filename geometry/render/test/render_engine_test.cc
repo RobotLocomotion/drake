@@ -35,6 +35,7 @@ class RenderEngineTester {
 
 namespace {
 
+using Eigen::Vector3d;
 using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using std::set;
@@ -58,16 +59,15 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   PerceptionProperties skip_properties = engine.rejecting_properties();
   PerceptionProperties add_properties = engine.accepting_properties();
   Sphere sphere(1.0);
-  const RigidTransformd X_WG = RigidTransformd::Identity();
 
   // A collection of poses to provide to calls to UpdatePoses(). Configured
   // to all identity transforms because the values generally don't matter. In
   // the single case where it does matter, a value is explicitly set (see
   // below).
   unordered_map<GeometryId, RigidTransformd> X_WG_all{
-      {GeometryId::get_new_id(), X_WG},
-      {GeometryId::get_new_id(), X_WG},
-      {GeometryId::get_new_id(), X_WG}};
+      {GeometryId::get_new_id(), RigidTransformd{Vector3d{1, 2, 3}}},
+      {GeometryId::get_new_id(), RigidTransformd{Vector3d{2, 3, 4}}},
+      {GeometryId::get_new_id(), RigidTransformd{Vector3d{3, 4, 5}}}};
 
   // These test cases are accumulative; re-ordering them will require
   // refactoring.
@@ -87,7 +87,7 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   for (const auto label : {RenderLabel::kEmpty, RenderLabel::kUnspecified}) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.RegisterVisual(GeometryId::get_new_id(), sphere,
-                              make_properties(label), X_WG,
+                              make_properties(label), {},
                               false),
         std::logic_error,
         "Cannot register a geometry with the 'unspecified' or 'empty' render "
@@ -99,36 +99,47 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   const GeometryId id1 = GeometryId::get_new_id();
   const bool is_dynamic = true;
   const bool dynamic_accepted =
-      engine.RegisterVisual(id1, sphere, skip_properties, X_WG, is_dynamic);
+      engine.RegisterVisual(id1, sphere, skip_properties, {}, is_dynamic);
   EXPECT_FALSE(dynamic_accepted);
   const bool anchored_accepted =
-      engine.RegisterVisual(id1, sphere, skip_properties, X_WG, !is_dynamic);
+      engine.RegisterVisual(id1, sphere, skip_properties, {}, !is_dynamic);
   EXPECT_FALSE(anchored_accepted);
   // Confirm nothing is updated - because nothing is registered.
   engine.UpdatePoses(X_WG_all);
   EXPECT_EQ(engine.updated_ids().size(), 0);
 
-  // Case: the shape is configured for registration, but does *not* require
-  // updating.
-  bool accepted = engine.RegisterVisual(X_WG_all.begin()->first, sphere,
-                                         add_properties, X_WG, !is_dynamic);
-  EXPECT_TRUE(accepted);
-  engine.UpdatePoses(X_WG_all);
-  EXPECT_EQ(engine.updated_ids().size(), 0);
+  {
+    // Case: the shape is configured for registration, but does *not* require
+    // updating.
+    const auto& [id, X_WG] = *(X_WG_all.begin());
+    bool accepted = engine.RegisterVisual(id, sphere,
+                                          add_properties, X_WG, !is_dynamic);
+    EXPECT_TRUE(accepted);
+    EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
+                                X_WG.GetAsMatrix34()));
+    engine.UpdatePoses(X_WG_all);
+    EXPECT_EQ(engine.updated_ids().size(), 0);
+    EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
+                                X_WG.GetAsMatrix34()));
+  }
 
-  // Case: the shape is configured for registration *and* requires updating.
-  // Configure the pose for the id so it is *not* the identity.
-  const GeometryId id2 = (++X_WG_all.begin())->first;
-  const Vector3<double> p_WG(1, 2, 3);
-  X_WG_all[id2].set_translation(p_WG);
-  accepted =
-      engine.RegisterVisual(id2, sphere, add_properties, X_WG, is_dynamic);
-  EXPECT_TRUE(accepted);
-  engine.UpdatePoses(X_WG_all);
-  EXPECT_EQ(engine.updated_ids().size(), 1);
-  ASSERT_EQ(engine.updated_ids().count(id2), 1);
-  EXPECT_TRUE(CompareMatrices(
-      engine.updated_ids().at(id2).translation(), p_WG));
+  {
+    // Case: the shape is configured for registration *and* requires updating.
+    // Configure the pose for the id so it is *not* the identity.
+    const auto& [id, X_WG] = *(++(X_WG_all.begin()));
+    bool accepted =
+        engine.RegisterVisual(id, sphere, add_properties, X_WG, is_dynamic);
+    EXPECT_TRUE(accepted);
+    const Vector3d p_WG(1.5, 2.5, 3.5);
+    X_WG_all[id].set_translation(p_WG);
+    engine.UpdatePoses(X_WG_all);
+    EXPECT_EQ(engine.updated_ids().size(), 1);
+    ASSERT_EQ(engine.updated_ids().count(id), 1);
+    EXPECT_TRUE(
+        CompareMatrices(engine.updated_ids().at(id).translation(), p_WG));
+    EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
+                                X_WG_all[id].GetAsMatrix34()));
+  }
 }
 
 // Tests the removal of geometry from the renderer -- confirms that the

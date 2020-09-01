@@ -301,57 +301,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return engine;
   }
 
-  void AddDynamicGeometry(const Shape& shape, GeometryId id,
-                          const ProximityProperties& props) {
-    ReifyData data{nullptr, id, props};
-    shape.Reify(this, &data);
-    EncodedData encoding(id, true /* is dynamic */);
-    encoding.write_to(data.fcl_object.get());
-
-    MeshIdentifier mesh_identifier;
-    shape.Reify(&mesh_identifier);
-    if (!mesh_identifier.is_mesh()) {
-      dynamic_tree_.registerObject(data.fcl_object.get());
-      dynamic_objects_[id] = std::move(data.fcl_object);
-    } else {
-      dynamic_mesh_tree_.registerObject(data.fcl_object.get());
-      dynamic_mesh_objects_[id] = std::move(data.fcl_object);
-    }
-
-    collision_filter_.AddGeometry(encoding.encoding());
+  void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
+                          GeometryId id, const ProximityProperties& props) {
+    AddGeometry(shape, X_WG, id, props, true, &dynamic_tree_,
+                &dynamic_mesh_tree_, &dynamic_objects_, &dynamic_mesh_objects_);
   }
 
   void AddAnchoredGeometry(const Shape& shape, const RigidTransformd& X_WG,
                            GeometryId id, const ProximityProperties& props) {
-    ReifyData data{nullptr, id, props};
-    shape.Reify(this, &data);
-    MeshIdentifier mesh_identifier;
-    shape.Reify(&mesh_identifier);
-
-    if (!mesh_identifier.is_mesh()) {
-      data.fcl_object->setTransform(X_WG.GetAsIsometry3());
-    } else {
-      // For a Mesh geometry G, its fcl object is its bounding Box B that has
-      // its pose X_GB expressed in G's frame.
-      RigidTransformd& X_GB = X_MeshBs_.at(id);
-      RigidTransformd X_WB = X_WG * X_GB;
-      data.fcl_object->setTransform(X_WB.GetAsIsometry3());
-    }
-    data.fcl_object->computeAABB();
-    EncodedData encoding(id, false /* is dynamic */);
-    encoding.write_to(data.fcl_object.get());
-
-    if (!mesh_identifier.is_mesh()) {
-      anchored_tree_.registerObject(data.fcl_object.get());
-      anchored_tree_.update();
-      anchored_objects_[id] = std::move(data.fcl_object);
-    } else {
-      anchored_mesh_tree_.registerObject(data.fcl_object.get());
-      anchored_mesh_tree_.update();
-      anchored_mesh_objects_[id] = std::move(data.fcl_object);
-    }
-
-    collision_filter_.AddGeometry(encoding.encoding());
+    AddGeometry(shape, X_WG, id, props, false, &anchored_tree_,
+                &anchored_mesh_tree_, &anchored_objects_,
+                &anchored_mesh_objects_);
   }
 
   void UpdateRepresentationForNewProperties(
@@ -1080,6 +1040,44 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   template <typename>
   friend class ProximityEngine;
 
+  void AddGeometry(
+      const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
+      const ProximityProperties& props, bool is_dynamic,
+      fcl::DynamicAABBTreeCollisionManager<double>* tree,
+      fcl::DynamicAABBTreeCollisionManager<double>* mesh_tree,
+      unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects,
+      unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* mesh_objects) {
+    ReifyData data{nullptr, id, props};
+    shape.Reify(this, &data);
+    MeshIdentifier mesh_identifier;
+    shape.Reify(&mesh_identifier);
+
+    if (!mesh_identifier.is_mesh()) {
+      data.fcl_object->setTransform(X_WG.GetAsIsometry3());
+    } else {
+      // For a Mesh geometry G, its fcl object is its bounding Box B that has
+      // its pose X_GB expressed in G's frame.
+      RigidTransformd& X_GB = X_MeshBs_.at(id);
+      RigidTransformd X_WB = X_WG * X_GB;
+      data.fcl_object->setTransform(X_WB.GetAsIsometry3());
+    }
+    data.fcl_object->computeAABB();
+    EncodedData encoding(id, is_dynamic);
+    encoding.write_to(data.fcl_object.get());
+
+    if (!mesh_identifier.is_mesh()) {
+      tree->registerObject(data.fcl_object.get());
+      tree->update();
+      (*objects)[id] = std::move(data.fcl_object);
+    } else {
+      mesh_tree->registerObject(data.fcl_object.get());
+      mesh_tree->update();
+      (*mesh_objects)[id] = std::move(data.fcl_object);
+    }
+
+    collision_filter_.AddGeometry(encoding.encoding());
+  }
+
   // Removes the geometry with the given id from the given tree.
   void RemoveGeometry(
       GeometryId id, fcl::DynamicAABBTreeCollisionManager<double>* tree,
@@ -1209,9 +1207,11 @@ ProximityEngine<T>& ProximityEngine<T>::operator=(
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape, GeometryId id,
+void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape,
+                                            const RigidTransformd& X_WG,
+                                            GeometryId id,
                                             const ProximityProperties& props) {
-  impl_->AddDynamicGeometry(shape, id, props);
+  impl_->AddDynamicGeometry(shape, X_WG, id, props);
 }
 
 template <typename T>

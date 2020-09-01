@@ -90,11 +90,12 @@ class ProximityEngine {
 
   /* Adds the given `shape` to the engine's _dynamic_ geometry.
    @param shape   The shape to add.
+   @param X_WG    The pose of the shape in the world frame.
    @param id      The id of the geometry in SceneGraph to which this shape
                   belongs.
    @param props   The proximity properties for the shape.  */
-  void AddDynamicGeometry(const Shape& shape, GeometryId id,
-                          const ProximityProperties& props = {});
+  void AddDynamicGeometry(const Shape& shape, const math::RigidTransformd& X_WG,
+                          GeometryId id, const ProximityProperties& props = {});
 
   /* Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.

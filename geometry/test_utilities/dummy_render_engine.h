@@ -149,6 +149,12 @@ class DummyRenderEngine : public render::RenderEngine {
     return updated_ids_;
   }
 
+  /* Returns the most recent pose of the geometry with the given `id` in the
+   world frame.  */
+  const math::RigidTransformd& world_pose(GeometryId id) const {
+    return X_WGs_.at(id);
+  }
+
   const math::RigidTransformd& last_updated_X_WC() const { return X_WC_; }
 
   // Promote these to be public to facilitate testing.
@@ -163,7 +169,8 @@ class DummyRenderEngine : public render::RenderEngine {
    successfully registered shape over the lifespan of `this` instance.)  */
   bool DoRegisterVisual(GeometryId id, const Shape&,
                         const PerceptionProperties& properties,
-                        const math::RigidTransformd&) override {
+                        const math::RigidTransformd& X_WG) override {
+    X_WGs_[id] = X_WG;
     GetRenderLabelOrThrow(properties);
     if (force_accept_ || properties.HasGroup(include_group_name_)) {
       registered_geometries_.insert(id);
@@ -178,6 +185,7 @@ class DummyRenderEngine : public render::RenderEngine {
   void DoUpdateVisualPose(GeometryId id,
                           const math::RigidTransformd& X_WG) override {
     updated_ids_[id] = X_WG;
+    X_WGs_[id] = X_WG;
   }
 
   /* Removes the given geometry id (if it is registered).  */
@@ -196,6 +204,11 @@ class DummyRenderEngine : public render::RenderEngine {
 
   std::unordered_set<GeometryId> registered_geometries_;
 
+  // The current poses of the geometries in the world frame.
+  std::map<GeometryId, math::RigidTransformd> X_WGs_;
+  // TODO(SeanCurtis-TRI) Shuffle this around so that the updated ids no longer
+  //  redundantly stores the updated poses; those should be accessible via
+  //  X_WGs_.
   // Track each id that gets updated and what it has been updated to.
   std::map<GeometryId, math::RigidTransformd> updated_ids_;
 
