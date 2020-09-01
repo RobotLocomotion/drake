@@ -75,6 +75,13 @@ def yaml_load(*, data=None, filename=None, private=False):
         return yaml_load_file(filename, private=private)
 
 
+# This is a magic tribool value described at
+#   https://github.com/yaml/pyyaml/pull/256
+# and must be set this way for post- and pre- pyyaml#256 yaml dumpers to give
+# the same output.
+_FLOW_STYLE = None
+
+
 class _SchemaDumper(yaml.dumper.SafeDumper):
     """Customizes SafeDumper for the purposes of this module."""
 
@@ -100,6 +107,8 @@ def yaml_dump(data, *, filename=None):
     """
     if filename is not None:
         with open(filename, "w") as f:
-            yaml.dump(data, f, Dumper=_SchemaDumper)
+            yaml.dump(data, f, Dumper=_SchemaDumper,
+                      default_flow_style=_FLOW_STYLE)
     else:
-        return yaml.dump(data, Dumper=_SchemaDumper)
+        return yaml.dump(data, Dumper=_SchemaDumper,
+                         default_flow_style=_FLOW_STYLE)
