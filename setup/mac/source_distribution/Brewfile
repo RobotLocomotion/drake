@@ -1,12 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-tap 'homebrew/cask-fonts' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
 tap 'robotlocomotion/director'
-
-cask 'font-dejavu' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
 
 brew 'bazel'
 brew 'robotlocomotion/director/clang-format@9'
-brew 'doxygen'
-brew 'robotlocomotion/director/sphinx-doc@1.8'

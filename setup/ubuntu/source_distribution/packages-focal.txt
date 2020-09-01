@@ -5,11 +5,8 @@ coinor-libcoinutils-dev
 coinor-libipopt-dev
 default-jdk
 file
-fonts-dejavu-core
-fonts-dejavu-extra
 gfortran
 git
-graphviz
 libblas-dev
 libbz2-dev
 libclang-9-dev
@@ -32,14 +29,9 @@ libtiff-dev
 libtinyxml-dev
 libtool
 libx11-dev
-locales
 openssh-client
 patch
 patchelf
 pkg-config
 python3-all-dev
-python3-docutils
-python3-sphinx
-python3-sphinx-rtd-theme
-unzip
 zlib1g-dev
