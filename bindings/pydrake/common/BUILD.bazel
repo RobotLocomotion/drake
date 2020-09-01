@@ -322,6 +322,14 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "yaml_py",
+    srcs = ["yaml.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":_init_py",
     ":eigen_geometry_py",
@@ -338,6 +346,7 @@ PY_LIBRARIES = [
     ":jupyter_py",
     ":module_py",
     ":pybind11_version_py",
+    ":yaml_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -586,6 +595,13 @@ drake_py_unittest(
     name = "wrap_pybind_test",
     deps = [
         ":wrap_test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "yaml_test",
+    deps = [
+        ":yaml_py",
     ],
 )
 

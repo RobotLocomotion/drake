@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 import unittest
 
-from anzu.common.schema import (
+from pydrake.common.yaml import (
     yaml_dump,
     yaml_load,
     yaml_load_data,
@@ -203,7 +203,3 @@ class TestYaml(unittest.TestCase):
             }
         }
         self.assertDictEqual(yaml_load_data(data, private=True), expected)
-
-
-if __name__ == "__main__":
-    unittest.main()
