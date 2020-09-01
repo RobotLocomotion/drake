@@ -1451,6 +1451,16 @@ class TestPlant(unittest.TestCase):
             frame.GetFixedPoseInBodyFrame().GetAsMatrix4(),
             np.eye(4))
 
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+
+        X_PF = RigidTransform_[T](p=[1., 2., 3.])
+        frame.SetPoseInBodyFrame(context=context, X_PF=X_PF)
+
+        numpy_compare.assert_float_equal(
+            frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
+            numpy_compare.to_float(X_PF.GetAsMatrix34()))
+
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]
