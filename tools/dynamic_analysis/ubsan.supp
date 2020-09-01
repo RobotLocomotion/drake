@@ -1,8 +1,3 @@
-# overflow in bullet's gethash function, issue filed:
-# https://github.com/bulletphysics/bullet3/issues/1228
-signed-integer-overflow:BulletCollision/BroadphaseCollision/btOverlappingPairCache.h
-shift-base:BulletCollision/BroadphaseCollision/btOverlappingPairCache.h
-
 # undefined behaviour in bits/stl_tree.h
 # https://bugs.chromium.org/p/chromium/issues/detail?id=532101
 # http://llvm.org/viewvc/llvm-project/llvm/trunk/utils/sanitizers/ubsan_blacklist.txt?view=markup&pathrev=291918
