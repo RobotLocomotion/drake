@@ -65,8 +65,8 @@ class PortBase {
   @param data_type
     Whether the port described is vector- or abstract-valued.
   @param size
-    If the port described is vector-valued, the number of elements, or kAutoSize
-    if determined by connections. Ignored for abstract-valued ports.
+    If the port described is vector-valued, the number of elements. Ignored for
+    abstract-valued ports.
   */
   PortBase(
       const char* kind_string, internal::SystemMessageInterface* owning_system,

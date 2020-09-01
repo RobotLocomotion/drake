@@ -51,8 +51,6 @@ void DefineFrameworkPySemantics(py::module m) {
   using namespace drake::systems;
   constexpr auto& doc = pydrake_doc.drake.systems;
 
-  m.attr("kAutoSize") = kAutoSize;
-
   py::class_<UseDefaultName> use_default_name_cls(
       m, "UseDefaultName", doc.UseDefaultName.doc);
   m.attr("kUseDefaultName") = kUseDefaultName;

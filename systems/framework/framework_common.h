@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/identifier.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/value.h"
@@ -74,9 +75,10 @@ typedef enum {
   kAbstractValued = 1,
 } PortDataType;
 
-// TODO(sherm1) Implement this.
 /** Port type indicating a vector value whose size is not prespecified but
 rather depends on what it is connected to (not yet implemented). */
+DRAKE_DEPRECATED("2020-12-01",
+    "AutoSize was never implemented; the putative support is being removed.")
 constexpr int kAutoSize = -1;
 
 /** (Advanced.)  Tag type that indicates a system or port should use a default
