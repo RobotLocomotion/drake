@@ -2428,6 +2428,10 @@ template <typename T>
 void MultibodyPlant<T>::DeclareCacheEntries() {
   DRAKE_DEMAND(this->is_finalized());
 
+  // TODO(joemasterjohn): Create more granular parameter tickets for finer
+  // control over cache dependencies on parameters. For example,
+  // all_rigid_body_parameters, etc.
+
   // TODO(SeanCurtis-TRI): When SG caches the results of these queries itself,
   //  (https://github.com/RobotLocomotion/drake/issues/12767), remove these
   //  cache entries.
@@ -2492,7 +2496,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // We explicitly declare the configuration dependence even though the
       // Eval() above implicitly evaluates configuration dependent cache
       // entries.
-      {this->configuration_ticket()});
+      {this->configuration_ticket(), this->all_parameters_ticket()});
   cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
@@ -2532,7 +2536,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // on time and (even continuous) inputs. However it does emulate the
       // discrete update of these values as if zero-order held, which is what we
       // want.
-      {this->xd_ticket()});
+      {this->xd_ticket(), this->all_parameters_ticket()});
   cache_indexes_.tamsi_solver_results =
       tamsi_solver_cache_entry.cache_index();
 
@@ -2562,7 +2566,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             },
             // Compliant contact forces due to hydroelastics with Hunt &
             // Crosseley are function of the kinematic variables q & v only.
-            {this->kinematics_ticket()});
+            {this->kinematics_ticket(), this->all_parameters_ticket()});
     cache_indexes_.contact_info_and_body_spatial_forces =
         contact_info_and_body_spatial_forces_cache_entry.cache_index();
   }
@@ -2584,6 +2588,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
             cache_indexes_.contact_info_and_body_spatial_forces));
       }
     }
+    tickets.insert(this->all_parameters_ticket());
 
     return tickets;
   }();
@@ -2609,7 +2614,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       "Spatial contact forces (continuous).",
       std::vector<SpatialForce<T>>(num_bodies()),
       &MultibodyPlant::CalcSpatialContactForcesContinuous,
-      {this->kinematics_ticket()});
+      {this->kinematics_ticket(), this->all_parameters_ticket()});
   cache_indexes_.spatial_contact_forces_continuous =
       spatial_contact_forces_continuous_cache_entry.cache_index();
 
@@ -2620,7 +2625,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
           VectorX<T>(num_velocities()),
           &MultibodyPlant::CalcGeneralizedContactForcesContinuous,
           {this->cache_entry_ticket(
-              cache_indexes_.spatial_contact_forces_continuous)});
+               cache_indexes_.spatial_contact_forces_continuous),
+           this->all_parameters_ticket()});
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
 }

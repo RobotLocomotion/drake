@@ -148,6 +148,8 @@ enum class ContactModel {
 ///   Select and parameterize contact models.
 /// - @ref mbp_state_accessors_and_mutators "State access and modification":
 ///   Obtain and manipulate position and velocity state variables.
+/// - @ref mbp_parameters "Parameters"
+///   Working with system parameters for various multibody elements.
 /// - @ref mbp_working_with_free_bodies "Free bodies":
 ///   Work conveniently with free (floating) bodies.
 /// - @ref mbp_kinematic_and_dynamic_computations "Kinematics and dynamics":
@@ -367,7 +369,7 @@ enum class ContactModel {
  obtained from geometry::SceneGraph will provide the default registered
  values for a given parameter. These are the values that will
  initially appear in a systems::Context created by CreateDefaultContext().
- Subsequently, true system paramters can be accessed and changed through a
+ Subsequently, true system parameters can be accessed and changed through a
  systems::Context once available. For both of the above cases, proximity
  properties are accessed through geometry::SceneGraphInspector APIs.
 
@@ -399,6 +401,57 @@ enum class ContactModel {
                                             "coulomb_friction");
  @endcode
 */
+/// @anchor mbp_parameters
+///               ### Working with %MultibodyElement parameters
+/// Several %MultibodyElements expose parameters, allowing the user flexible
+/// modification of some aspects of the plant's model, post systems::Context
+/// creation. For details, refer to the docmentation for the MultibodyElement
+/// whose parameters you are trying to modify/access (e.g. RigidBody,
+/// FixedOffsetFrame, etc.)
+///
+/// As an example, here is how to access and modify rigid body mass parameters:
+/// @code
+///   MultibodyPlant<double> plant;
+///   // ... Code to add bodies, finalize plant, and to obtain a context.
+///   const RigidBody<double>& body =
+///       plant.GetRigidBodyByName("BodyName");
+///   const SpatialInertia<double> M_BBo_B =
+///       body.GetSpatialInertiaInBodyFrame(context);
+///   // .. logic to determine a new SpatialInertia parameter for body.
+///   const SpatialInertia<double>& M_BBo_B_new = ....
+///
+///   // Modify the body parameter for spatial inertia.
+///   body.SetSpatialInertiaInBodyFrame(&context, M_BBo_B_new);
+/// @endcode
+///
+/// Another example, working with automatic differentiation in order to take
+/// derivatives with respect to one of the bodies' masses:
+/// @code
+///   MultibodyPlant<double> plant;
+///   // ... Code to add bodies, finalize plant, and to obtain a
+///   // context and a body's spatial inertia M_BBo_B.
+///
+///   // Scalar convert the plant.
+///   unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
+///       systems::System<double>::ToAutoDiffXd(plant);
+///   unique_ptr<Context<AutoDiffXd>> context_autodiff =
+///       plant_autodiff->CreateDefaultContext();
+///   context_autodiff->SetTimeStateAndParametersFrom(context);
+///
+///   const RigidBody<AutoDiffXd>& body =
+///       plant_autodiff->GetRigidBodyByName("BodyName");
+///
+///   // Modify the body parameter for mass.
+///   const AutoDiffXd mass_autodiff(mass, Vector1d(1));
+///   body.SetMass(context_autodiff.get(), mass_autodiff);
+///
+///   // M_autodiff(i, j).derivatives()(0), contains the derivatives of
+///   // M(i, j) with respect to the body's mass.
+///   MatrixX<AutoDiffXd> M_autodiff(plant_autodiff->num_velocities(),
+///       plant_autodiff->num_velocities());
+///   plant_autodiff->CalcMassMatrix(*context_autodiff, &M_autodiff);
+/// @endcode
+///
 /// @anchor mbp_adding_elements
 ///                    ### Adding modeling elements
 ///

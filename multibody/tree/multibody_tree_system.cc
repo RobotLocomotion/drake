@@ -91,6 +91,33 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
 }
 
 template <typename T>
+void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
+  // Joints.
+  for (JointIndex joint_index(0); joint_index < tree_->num_joints();
+       ++joint_index) {
+    mutable_tree().get_mutable_joint(joint_index).DeclareParameters(this);
+  }
+  // Bodies.
+  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
+       ++body_index) {
+    mutable_tree().get_mutable_body(body_index).DeclareParameters(this);
+  }
+  // Frames.
+  for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
+       ++frame_index) {
+    mutable_tree().get_mutable_frame(frame_index).DeclareParameters(this);
+  }
+  // Force Elements.
+  for (ForceElementIndex force_element_index(0);
+       force_element_index < tree_->num_force_elements();
+       ++force_element_index) {
+    mutable_tree()
+        .get_mutable_force_element(force_element_index)
+        .DeclareParameters(this);
+  }
+}
+
+template <typename T>
 void MultibodyTreeSystem<T>::Finalize() {
   if (already_finalized_) {
     throw std::logic_error(
@@ -99,6 +126,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   if (!tree_->topology_is_valid()) {
     tree_->Finalize();
   }
+
+  DeclareMultibodyElementParameters();
 
   // Declare state.
   if (is_discrete_) {
@@ -109,6 +138,10 @@ void MultibodyTreeSystem<T>::Finalize() {
                                  tree_->num_velocities(),
                                  0 /* num_z */);
   }
+
+  // TODO(joemasterjohn): Create more granular parameter tickets for finer
+  // control over cache dependencies on parameters. For example,
+  // all_rigid_body_parameters, etc.
 
   // Allocate position cache.
   cache_indexes_.position_kinematics = this->DeclareCacheEntry(
@@ -137,6 +170,7 @@ void MultibodyTreeSystem<T>::Finalize() {
       VelocityKinematicsCache<T>(internal_tree().get_topology()),
       &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
       {this->kinematics_ticket()}).cache_index();
+
 
   // Allocate cache entry to store Fb_Bo_W(q, v) for each body.
   cache_indexes_.dynamic_bias = this->DeclareCacheEntry(
@@ -306,3 +340,6 @@ void MultibodyTreeSystem<T>::CalcForwardDynamicsContinuous(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::internal::MultibodyTreeSystemElementAttorney)

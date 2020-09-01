@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -22,7 +23,11 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-template<typename T> class MultibodyTree;
+template <typename T>
+class MultibodyTree;
+
+template <typename T>
+class MultibodyTreeSystemElementAttorney;
 
 /* This is a bare Drake System providing just enough functionality to allow
 standalone exercise of a MultibodyTree. A Drake System must implement
@@ -425,10 +430,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     DoCalcForwardDynamicsDiscrete(context, ac);
   }
 
+  // This method is called during Finalize(). It tells each MultibodyElement
+  // owned by `this` system to declare their system paramters on `this`.
+  void DeclareMultibodyElementParameters();
+
   // Allow different specializations to access each other's private data for
   // scalar conversion.
   template <typename U>
   friend class MultibodyTreeSystem;
+
+  friend class MultibodyTreeSystemElementAttorney<T>;
 
   // This struct stores in one single place all indexes related to
   // MultibodyTreeSystem specific cache entries.
@@ -478,5 +489,41 @@ const MultibodyTree<T>& GetInternalTree(const MultibodyTreeSystem<T>& system) {
 }  // namespace multibody
 }  // namespace drake
 
+namespace drake {
+namespace multibody {
+// Forward delcaration of MultibodyElement for attorney-client.
+template <template <typename> class ElementType, typename T,
+          typename ElementIndexType>
+class MultibodyElement;
+
+namespace internal {
+
+// Attorney to give access to MultibodyElement to a selection of protected
+// methods for declaring/accessing/mutating MultibodyTreeSystem parameters,
+template <typename T>
+class MultibodyTreeSystemElementAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeSystemElementAttorney);
+  MultibodyTreeSystemElementAttorney() = delete;
+
+ private:
+  template <template <typename> class ElementType, typename U,
+            typename ElementIndexType>
+  friend class drake::multibody::MultibodyElement;
+
+  static systems::NumericParameterIndex DeclareNumericParameter(
+      MultibodyTreeSystem<T>* tree_system,
+      const systems::BasicVector<T>& model_vector) {
+    return systems::NumericParameterIndex{
+        tree_system->DeclareNumericParameter(model_vector)};
+  }
+};
+}  // namespace internal
+}  // namespace multibody
+}  // namespace drake
+
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::internal::MultibodyTreeSystemElementAttorney)

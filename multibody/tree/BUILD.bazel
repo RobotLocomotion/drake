@@ -141,6 +141,7 @@ drake_cc_library(
         "multibody_tree.h",
         "multibody_tree-inl.h",
         "multibody_tree_system.h",
+        "parameter_conversion.h",
         "planar_joint.h",
         "planar_mobilizer.h",
         "prismatic_joint.h",
