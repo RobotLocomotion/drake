@@ -10,26 +10,6 @@
 # edits, then `git status` will show this file as modified; in that case, you
 # should commit the changes made by the refresh script.
 LIBDRAKE_COMPONENTS = [
-    "//attic/manipulation/planner",
-    "//attic/multibody",
-    "//attic/multibody/collision",
-    "//attic/multibody/joints",
-    "//attic/multibody/parsers",
-    "//attic/multibody/rigid_body_plant:compliant_contact_model",  # unpackaged
-    "//attic/multibody/rigid_body_plant:compliant_material",  # unpackaged
-    "//attic/multibody/rigid_body_plant:contact_results",  # unpackaged
-    "//attic/multibody/rigid_body_plant:contact_results_to_lcm",  # unpackaged
-    "//attic/multibody/rigid_body_plant:create_load_robot_message",  # unpackaged  # noqa
-    "//attic/multibody/rigid_body_plant:drake_visualizer",  # unpackaged
-    "//attic/multibody/rigid_body_plant:frame_visualizer",  # unpackaged
-    "//attic/multibody/rigid_body_plant:rigid_body_plant",  # unpackaged
-    "//attic/multibody/rigid_body_plant:rigid_body_plant_bridge",  # unpackaged
-    "//attic/multibody/shapes",
-    "//attic/systems/controllers",
-    "//attic/systems/rendering",
-    "//attic/systems/sensors",
-    "//attic/systems/trajectory_optimization",
-    "//attic/util",
     "//common",
     "//common/proto",
     "//common/schema",
@@ -102,7 +82,6 @@ LIBDRAKE_COMPONENTS = [
     "//systems/rendering",
     "//systems/sensors",
     "//systems/trajectory_optimization",
-    # //attic:attic_warning (indirectly)
     # //common:filesystem (indirectly)
     # //third_party/com_github_finetjul_bender:vtkCapsuleSource (indirectly)
     # //third_party/com_github_jbeder_yaml_cpp:emitfromevents (indirectly)

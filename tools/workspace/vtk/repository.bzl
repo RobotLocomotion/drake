@@ -418,9 +418,6 @@ licenses([
         repository_ctx.os.name,
         "vtkFiltersSources",
         hdrs = [
-            # TODO(SeanCurtis-TRI): Remove vtkCubeSource when
-            #  attic/.../RgbdRenderer goes away.
-            "vtkCubeSource.h",
             "vtkCylinderSource.h",
             "vtkFiltersSourcesModule.h",
             "vtkPlaneSource.h",

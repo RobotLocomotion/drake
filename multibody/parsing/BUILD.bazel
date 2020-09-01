@@ -70,9 +70,6 @@ drake_cc_library(
         "detail_path_utils.h",
         "detail_tinyxml.h",
     ],
-    visibility = [
-        "//attic/multibody/parsers:__pkg__",
-    ],
     deps = [
         ":package_map",
         "//common:essential",
