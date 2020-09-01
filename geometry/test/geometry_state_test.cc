@@ -970,7 +970,6 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
   SetUpSingleSourceTree(Assign::kProximity);
-
   EXPECT_EQ(single_tree_total_geometry_count(),
             geometry_state_.get_num_geometries());
   EXPECT_EQ(single_tree_total_geometry_count(),
@@ -1122,6 +1121,37 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   const auto& geometry = gs_tester_.get_geometries().at(g_id);
   EXPECT_TRUE(geometry.is_child_of_frame(f_id));
   EXPECT_FALSE(geometry.parent_id());
+}
+
+// Confirms that when adding a geometry G, X_WG is up-to-date with the best
+// possible data.
+TEST_F(GeometryStateTest, AddGeometryUpdatesX_WG) {
+  // Configure the basic tree and set all frame poses to the default poses.
+  const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
+  FramePoseVector<double> poses;
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PFs_[f]);
+  }
+  gs_tester_.SetFramePoses(s_id, poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // Registering a geometry to a frame F should report X_WG = X_WF * X_FG.
+
+  vector<pair<FrameId, RigidTransformd>> parent_frames = {
+      {InternalFrame::world_frame_id(), RigidTransformd{}},
+      {frames_[0], X_WFs_[0]},
+      {frames_[1], X_WFs_[1]},
+      {frames_[2], X_WFs_[2]}};
+  for (const auto& [f_id, X_WF] : parent_frames) {
+    auto instance = make_unique<GeometryInstance>(
+        instance_pose_, make_unique<Sphere>(1.0), "instance");
+    const GeometryId g_id =
+        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+    const RigidTransformd X_WG_expected = X_WF * instance_->pose();
+    EXPECT_TRUE(
+        CompareMatrices(geometry_state_.get_pose_in_world(g_id).GetAsMatrix34(),
+                        X_WG_expected.GetAsMatrix34()));
+  }
 }
 
 // Confirms that registering two geometries with the same id causes failure.
