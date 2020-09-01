@@ -56,3 +56,5 @@ html_show_copyright = False
 
 html_show_sphinx = False
 autodoc_member_order = 'bycustomfunction'
+
+templates_path = ['_templates']
