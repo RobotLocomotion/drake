@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/trajectory.h"
 
 namespace drake {
@@ -22,8 +23,14 @@ PYBIND11_MODULE(trajectories, m) {
   using T = double;
 
   py::class_<Trajectory<T>>(m, "Trajectory", doc.Trajectory.doc)
+      .def("value", &Trajectory<T>::value, py::arg("t"),
+          doc.Trajectory.value.doc)
+      .def("vector_values", &Trajectory<T>::vector_values,
+          doc.Trajectory.vector_values.doc)
       .def("EvalDerivative", &Trajectory<T>::EvalDerivative, py::arg("t"),
           py::arg("derivative_order") = 1, doc.Trajectory.EvalDerivative.doc)
+      .def("MakeDerivative", &Trajectory<T>::MakeDerivative,
+          py::arg("derivative_order") = 1, doc.Trajectory.MakeDerivative.doc)
       .def("rows", &Trajectory<T>::rows, doc.Trajectory.rows.doc)
       .def("cols", &Trajectory<T>::cols, doc.Trajectory.cols.doc);
 
@@ -53,9 +60,7 @@ PYBIND11_MODULE(trajectories, m) {
       .def("get_segment_index", &PiecewiseTrajectory<T>::get_segment_index,
           py::arg("t"), doc.PiecewiseTrajectory.get_segment_index.doc)
       .def("get_segment_times", &PiecewiseTrajectory<T>::get_segment_times,
-          doc.PiecewiseTrajectory.get_segment_times.doc)
-      .def("vector_values", &PiecewiseTrajectory<T>::vector_values,
-          doc.Trajectory.vector_values.doc);
+          doc.PiecewiseTrajectory.get_segment_times.doc);
 
   py::class_<PiecewisePolynomial<T>, PiecewiseTrajectory<T>>(
       m, "PiecewisePolynomial", doc.PiecewisePolynomial.doc)
@@ -115,8 +120,6 @@ PYBIND11_MODULE(trajectories, m) {
               &PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial),
           py::arg("times"), py::arg("samples"),
           doc.PiecewisePolynomial.LagrangeInterpolatingPolynomial.doc)
-      .def("value", &PiecewisePolynomial<T>::value, py::arg("t"),
-          doc.PiecewisePolynomial.value.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,
           py::arg("derivative_order") = 1,
           doc.PiecewisePolynomial.derivative.doc)
@@ -160,6 +163,22 @@ PYBIND11_MODULE(trajectories, m) {
           py::arg("replacement"), py::arg("segment_index"),
           py::arg("row_start") = 0, py::arg("col_start") = 0,
           doc.PiecewisePolynomial.setPolynomialMatrixBlock.doc);
+
+  py::class_<PiecewiseQuaternionSlerp<T>, PiecewiseTrajectory<T>>(
+      m, "PiecewiseQuaternionSlerp", doc.PiecewiseQuaternionSlerp.doc)
+      .def(py::init<>(), doc.PiecewiseQuaternionSlerp.ctor.doc_0args)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<Quaternion<T>>&>(),
+          py::arg("breaks"), py::arg("quaternions"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_quaternions)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<Matrix3<T>>&>(),
+          py::arg("breaks"), py::arg("rotation_matrices"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_rotation_matrices)
+      .def(py::init<const std::vector<double>&,
+               const std::vector<AngleAxis<T>>&>(),
+          py::arg("breaks"), py::arg("angle_axes"),
+          doc.PiecewiseQuaternionSlerp.ctor.doc_2args_breaks_angle_axes);
 }
 
 }  // namespace pydrake
