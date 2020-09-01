@@ -4,6 +4,24 @@ package(default_visibility = ["//visibility:private"])
 
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+
+_GITHUB_LOGOS = forward_files(
+    srcs = [
+        "//third_party/com_github_logos:github.svg",
+        "//third_party/com_github_logos:github-white.svg",
+    ],
+    dest_prefix = "_static/",
+    strip_prefix = "//third_party/com_github_logos:",
+    visibility = ["//visibility:private"],
+) + forward_files(
+    srcs = [
+        "//third_party/com_github_logos:README.md",
+    ],
+    dest_prefix = "_static/github-",
+    strip_prefix = "//third_party/com_github_logos:",
+    visibility = ["//visibility:private"],
+)
 
 drake_py_binary(
     name = "gen_sphinx",
@@ -12,8 +30,12 @@ drake_py_binary(
         "pydrake_sphinx_extension.py",
     ],
     add_test_rule = 1,
-    data = [
+    data = _GITHUB_LOGOS + [
         "_static/css/custom.css",
+        "_static/drake-logo.svg",
+        "_static/drake-logo-white.svg",
+        "_static/search.svg",
+        "_templates/layout.html",
         "conf.py",
     ],
     imports = ["."],

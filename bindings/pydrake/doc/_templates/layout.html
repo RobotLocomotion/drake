@@ -1,0 +1,74 @@
+{% extends '!layout.html' %}
+
+{% block extrahead %}
+<header class="header--main black-back">
+   <div class="wrap grid__2-col">
+      <a href="https://drake.mit.edu" class="header__logo">
+      <img src="_static/drake-logo-white.svg" class="header__logo__img">
+      </a>
+      <div class="menu__toggle js-menu-toggle">
+         <div class="menu__toggle__icon"><span></span></div>
+      </div>
+      <nav class="header__menu">
+         <div class="menu__wrap">
+            <ul class="menu__list">
+               <li class="menu__list__item menu__list__item__link button--text">
+                  <!-- TODO(jwnimmer-tri) Change to quickstart.html once that page exists. -->
+                  <a href="https://drake.mit.edu/installation.html" class="menu__list__item__link button--text">Quickstart</a>
+               </li>
+               <li class="menu__list__item menu__list__item__link button--text">
+                  <a href="https://drake.mit.edu/gallery.html" class="menu__list__item__link button--text">Gallery</a>
+               </li>
+               <li class="menu__list__item menu__list__item__link button--text">
+                  API Documentation
+                  <div class="menu_sub">
+                     <a href="https://drake.mit.edu/doxygen_cxx/index.html" class="menu__list__item__link button--text">C++</a>
+                     <a href="https://drake.mit.edu/pydrake/index.html" class="menu__list__item__link button--text">Python</a>
+                  </div>
+               </li>
+               <li class="menu__list__item menu__list__item__link button--text">
+                  Resources
+                  <div class="menu_sub">
+                     <a href="https://drake.mit.edu/getting_help.html" class="menu__list__item__link button--text">Getting Help</a>
+                     <a href="https://github.com/RobotLocomotion/drake/tree/master/tutorials" class="menu__list__item__link button--text">Tutorials</a>
+                     <a href="https://drake.mit.edu/developers.html" class="menu__list__item__link button--text">For Developers</a>
+                     <a href="https://drake.mit.edu/credits.html" class="menu__list__item__link button--text">Credits</a>
+                  </div>
+               </li>
+               <li class="menu__list__item menu__list__item__link button--text github--link">
+                  <a href="https://github.com/RobotLocomotion/drake" class="menu__list__item__link button--text">GitHub <img src="_static/github-white.svg"></a>
+               </li>
+            </ul>
+         </div>
+      </nav>
+   </div>
+</header>
+{% endblock %}
+
+{% block footer %}
+<footer class="footer">
+   <div class="wrap grid">
+      <a href="/" class="footer__logo">
+      <img src="_static/drake-logo.svg" class="footer__logo__img">
+      </a>
+      <div class="menu__wrap">
+         <ul class="menu__list">
+            <li class="menu__list__item menu__list__item__link button--text">
+               <a href="https://drake.mit.edu/doxygen_cxx/index.html" class="menu__list__item__link button--text">C++</a>
+            </li>
+            <li class="menu__list__item menu__list__item__link button--text">
+               <a href="https://drake.mit.edu/pydrake/index.html" class="menu__list__item__link button--text">Python</a>
+            </li>
+            <li class="menu__list__item menu__list__item__link button--text github--link">
+               <a href="https://github.com/RobotLocomotion/drake" class="menu__list__item__link button--text">
+               GitHub <img src="_static/github.svg">
+               </a>
+            </li>
+         </ul>
+      </div>
+   </div>
+   <div class="footer__copyright wrap">
+      <span class="footnote">© 2020 The Drake Development Team</span>
+   </div>
+</footer>
+{% endblock %}
