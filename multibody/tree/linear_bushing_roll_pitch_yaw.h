@@ -372,33 +372,115 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
     return this->get_parent_tree().get_frame(frameC_index_);
   }
 
-  /// Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad).
-  /// Refer to @ref Basic_bushing_torque_stiffness_and_damping
+  /// Returns the default torque stiffness constants `[k₀ k₁ k₂]` (units of
+  /// N*m/rad). Refer to @ref Basic_bushing_torque_stiffness_and_damping
   ///   "How to choose torque stiffness and damping constants" for more details.
   const Vector3<double>& torque_stiffness_constants() const {
     return torque_stiffness_constants_;
   }
 
-  /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of N*m*s/rad).
-  /// Refer to @ref Basic_bushing_torque_stiffness_and_damping
+  /// Returns the default torque damping constants `[d₀ d₁ d₂]` (units of
+  /// N*m*s/rad). Refer to @ref Basic_bushing_torque_stiffness_and_damping
   ///   "How to choose torque stiffness and damping constants" for more details.
   const Vector3<double>& torque_damping_constants() const {
     return torque_damping_constants_;
   }
 
-  /// Returns the force stiffness constants `[kx ky kz]` (units of N/m).
+  /// Returns the default force stiffness constants `[kx ky kz]` (units of N/m).
   /// Refer to @ref Basic_bushing_force_stiffness_and_damping
   ///   "How to choose force stiffness and damping constants" for more details.
   const Vector3<double>& force_stiffness_constants() const {
     return force_stiffness_constants_;
   }
 
-  /// Returns the force damping constants `[dx dy dz]` (units of N*s/m).
+  /// Returns the default force damping constants `[dx dy dz]` (units of N*s/m).
   /// Refer to @ref Basic_bushing_force_stiffness_and_damping
   ///   "How to choose force stiffness and damping constants" for more details.
   const Vector3<double>& force_damping_constants() const {
     return force_damping_constants_;
   }
+
+  /// @anchor bushing_parameters
+  /// The following set of methods allow for access and modification of
+  /// torque/force stiffness/damping parameters stored in a systems::Context.
+  /// Refer to @ref Basic_bushing_force_stiffness_and_damping
+  ///   "How to choose force stiffness and damping constants" for more details.
+  /// @{
+
+  /// Returns the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad)
+  /// stored in `context`.
+  Vector3<T> GetTorqueStiffnessConstants(
+      const systems::Context<T>& context) const {
+    const systems::BasicVector<T>& torque_stiffness =
+        context.get_numeric_parameter(torque_stiffness_parameter_index_);
+    return torque_stiffness.get_value();
+  }
+
+  /// Returns the torque damping constants `[d₀ d₁ d₂]` (units of
+  /// N*m*s/rad) stored in `context`.
+  Vector3<T> GetTorqueDampingConstants(
+      const systems::Context<T>& context) const {
+    const systems::BasicVector<T>& torque_damping =
+        context.get_numeric_parameter(torque_damping_parameter_index_);
+    return torque_damping.get_value();
+  }
+
+  /// Returns the force stiffness constants `[kx ky kz]` (units of N/m) stored
+  /// in `context`.
+  Vector3<T> GetForceStiffnessConstants(
+      const systems::Context<T>& context) const {
+    const systems::BasicVector<T>& force_stiffness =
+        context.get_numeric_parameter(force_stiffness_parameter_index_);
+    return force_stiffness.get_value();
+  }
+
+  /// Returns the force damping constants `[dx dy dz]` (units of N*s/m) stored
+  /// in `context`.
+  Vector3<T> GetForceDampingConstants(
+      const systems::Context<T>& context) const {
+    const systems::BasicVector<T>& force_damping =
+        context.get_numeric_parameter(force_damping_parameter_index_);
+    return force_damping.get_value();
+  }
+
+  /// Sets the torque stiffness constants `[k₀ k₁ k₂]` (units of N*m/rad)
+  /// in `context`.
+  void SetTorqueStiffnessConstants(systems::Context<T>* context,
+                                   const Vector3<T>& torque_stiffness) const {
+    systems::BasicVector<T>& torque_stiffness_parameter =
+        context->get_mutable_numeric_parameter(
+            torque_stiffness_parameter_index_);
+    torque_stiffness_parameter.SetFromVector(torque_stiffness);
+  }
+
+  /// Sets the torque damping constants `[d₀ d₁ d₂]` (units of
+  /// N*m*s/rad) in `context`.
+  void SetTorqueDampingConstants(systems::Context<T>* context,
+                                 const Vector3<T>& torque_damping) const {
+    systems::BasicVector<T>& torque_damping_parameter =
+        context->get_mutable_numeric_parameter(torque_damping_parameter_index_);
+    torque_damping_parameter.SetFromVector(torque_damping);
+  }
+
+  /// Sets the force stiffness constants `[kx ky kz]` (units of N/m)
+  /// in `context`.
+  void SetForceStiffnessConstants(systems::Context<T>* context,
+                                  const Vector3<T>& force_stiffness) const {
+    systems::BasicVector<T>& force_stiffness_parameter =
+        context->get_mutable_numeric_parameter(
+            force_stiffness_parameter_index_);
+    force_stiffness_parameter.SetFromVector(force_stiffness);
+  }
+
+  /// Sets the force damping constants `[dx dy dz]` (units of N*s/m)
+  /// in `context`.
+  void SetForceDampingConstants(systems::Context<T>* context,
+                                const Vector3<T>& force_damping) const {
+    systems::BasicVector<T>& force_damping_parameter =
+        context->get_mutable_numeric_parameter(force_damping_parameter_index_);
+    force_damping_parameter.SetFromVector(force_damping);
+  }
+  /// @}
 
   /// Calculate F_A_A, the bushing's spatial force on frame A expressed in A.
   /// F_A_A contains two vectors: the moment of all bushing forces on A about Ao
@@ -415,6 +497,30 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   /// @see CalcBushingSpatialForceOnFrameA().
   SpatialForce<T> CalcBushingSpatialForceOnFrameC(
       const systems::Context<T>& context) const;
+
+ protected:
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent classes' parameters
+    ForceElement<T>::DoDeclareParameters(tree_system);
+
+    torque_stiffness_parameter_index_ = this->DeclareNumericParameter(
+        tree_system, systems::BasicVector<T>(
+                         torque_stiffness_constants_.template cast<T>()));
+
+    torque_damping_parameter_index_ = this->DeclareNumericParameter(
+        tree_system,
+        systems::BasicVector<T>(torque_damping_constants_.template cast<T>()));
+
+    force_stiffness_parameter_index_ = this->DeclareNumericParameter(
+        tree_system,
+        systems::BasicVector<T>(force_stiffness_constants_.template cast<T>()));
+
+    force_damping_parameter_index_ = this->DeclareNumericParameter(
+        tree_system,
+        systems::BasicVector<T>(force_damping_constants_.template cast<T>()));
+  }
 
  private:
   // Friend class for accessing protected/private internals of this class.
@@ -567,7 +673,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> TorqueStiffnessConstantsTimesAngles(
       const systems::Context<T>& context) const {
     const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
-    return torque_stiffness_constants().cwiseProduct(rpy.vector());
+    return GetTorqueStiffnessConstants(context).cwiseProduct(rpy.vector());
   }
 
   // Calculate τᴅ = [d₀q̇₀, d₁q̇₁, d₂q̇₂], element-wise multiplication of the
@@ -577,7 +683,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
       const systems::Context<T>& context) const {
     const math::RollPitchYaw<T> rpy = CalcBushingRollPitchYawAngles(context);
     const Vector3<T> rpyDt = CalcBushingRollPitchYawAngleRates(context, rpy);
-    return torque_damping_constants().cwiseProduct(rpyDt);
+    return GetTorqueDampingConstants(context).cwiseProduct(rpyDt);
   }
 
   // Calculate the 3x1 array (not a vector) containing τ = τᴋ + τᴅ = [τ₀ τ₁ τ₂].
@@ -605,7 +711,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> ForceStiffnessConstantsTimesDisplacement(
       const systems::Context<T>& context) const {
     const Vector3<T> xyz = Calcp_AoCo_B(context);  // [x y z]ʙ
-    return force_stiffness_constants().cwiseProduct(xyz);
+    return GetForceStiffnessConstants(context).cwiseProduct(xyz);
   }
 
   // Calculate `𝐟ᴅ = [dx ẋ, dy ẏ, dz ż]ʙ`, element-wise multiplication of the
@@ -614,7 +720,7 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   Vector3<T> ForceDampingConstantsTimesDisplacementRate(
       const systems::Context<T>& context) const {
     const Vector3<T> xyzDt = CalcBushing_xyzDt(context);
-    return force_damping_constants().cwiseProduct(xyzDt);
+    return GetForceDampingConstants(context).cwiseProduct(xyzDt);
   }
 
   // Calculate `𝐟 = 𝐟ᴋ + 𝐟ᴅ = f_C_B  = [fx fy fz]ʙ`, the resultant bushing
@@ -643,6 +749,11 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   const Vector3<double> torque_damping_constants_;
   const Vector3<double> force_stiffness_constants_;
   const Vector3<double> force_damping_constants_;
+
+  systems::NumericParameterIndex torque_stiffness_parameter_index_;
+  systems::NumericParameterIndex torque_damping_parameter_index_;
+  systems::NumericParameterIndex force_stiffness_parameter_index_;
+  systems::NumericParameterIndex force_damping_parameter_index_;
 };
 
 

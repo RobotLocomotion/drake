@@ -465,6 +465,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/plant",
         "//systems/framework",
     ],
 )
