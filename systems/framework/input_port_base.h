@@ -66,8 +66,8 @@ class InputPortBase : public PortBase {
   @param data_type
     Whether the port described is vector- or abstract-valued.
   @param size
-    If the port described is vector-valued, the number of elements, or kAutoSize
-    if determined by connections. Ignored for abstract-valued ports.
+    If the port described is vector-valued, the number of elements. Ignored for
+    abstract-valued ports.
   @param random_type
     Input ports may optionally be labeled as random, if the port is intended to
     model a random-source "noise" or "disturbance" input. */

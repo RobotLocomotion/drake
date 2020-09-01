@@ -15,8 +15,6 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
                     proposed.GetNiceTypeName(), GetFullDescription()));
   }
 
-  if (this->size() == kAutoSize) return;  // Any size is acceptable.
-
   const int proposed_size = proposed_vec->get_value().size();
   if (proposed_size != this->size()) {
     throw std::logic_error(
