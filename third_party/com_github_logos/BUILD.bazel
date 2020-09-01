@@ -1,0 +1,11 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+exports_files([
+    "README.md",
+    "github-white.svg",
+    "github.svg",
+])
+
+add_lint_tests()
