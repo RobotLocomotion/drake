@@ -5,10 +5,12 @@ Drake v0.23.0
 Announcements
 -------------
 
-* TBD
+* All code for RigidBodyPlant and the drake "attic" has been removed (`#13889`_).
 
 Breaking changes since v0.22.0
 ------------------------------
+
+These are breaking changes that did not undergo a deprecation period:
 
 * The drake::systems::Subvector and drake::systems::Supervector are now marked
   final (`#13907`_)
@@ -31,6 +33,7 @@ New features
 * Provide System::get_input_port() and get_output_port() sugar (`#13883`_, `#13894`_, `#13895`_, `#13896`_, `#13897`_, `#13898`_)
 * Optionally suppress simulator initialization events (`#13872`_)
 * Add SequentialExpressionManager::GetSequentialExpressionNames (`#13925`_)
+* Implement derivatives for PiecewiseQuaternion (`#13972`_)
 
 Fixes
 
@@ -45,6 +48,7 @@ Mathematical Program
 New features
 
 * Change IPOPT eval_g to use double version of constraint evaluation (`#13891`_)
+* Add generic polynomial (`#13940`_)
 * Add MonomialBasisElement (`#13867`_)
 * Add a function to compute polynomial basis up to a given order (`#13870`_)
 
@@ -71,26 +75,16 @@ Tutorials and examples
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for examples,tutorials go here>
-[examples,multibody] * TBD Fix fixed-joint CalcMassMatrix() bug introduced in PR #13933 (`#13953`_)
-* TBD cassie_bench: Pass optional arguments to benchmark program (`#13963`_)  # Relevant to: #13902 This patch allows passing additional cassie_bench arguments when using the :record_results target, or the conduct experiment script. In addition, it exploits the new capability to waste less build time running the :record_results test in debug mode.
-[examples,manipulation,tools] * TBD Better schunk models in manipulation station (`#13922`_)
-
+* In manipulation station, offer better Schunk WSG models (`#13922`_)
 * In rod2d, use modern SceneGraph conventions for visualization (`#13890`_)
 
 Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
-* TBD trajectories:  implement derivatives for PiecewiseQuaternion (`#13972`_)
-[common,examples,systems] * TBD Revise Debug-mode cache value validation to avoid heap allocation (`#13951`_)
-[common,multibody] * TBD schema: Move rotation and transform out of dev (`#13949`_)
-* TBD Generic polynomial (`#13940`_)  # Add simple constructors for GenericPolynomial, and Differentiate function. The follow-on PRs will add more functionality to GenericPolynomial class. Eventually we will replace Polynomial class with GenericPolynomial<MonomialBasisElement> class.
-[common,tools] * TBD workspace: Upgrade fmt to latest release 7.0.3 (`#13968`_)
-[manipulation,multibody,solvers,systems,tools] * TBD Remove deprecated code (2020-09) (`#13939`_)
-
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_)
 * manipulation: Make Schunk WSG limit input port optional (`#13878`_)
-* schema: Add stochastic types (`#13943`_)
+* schema: Add stochastic, rotation, and transform types (`#13943`_, `#13949`_)
 * yaml: Allow omitting the root name while writing (`#13915`_)
 * yaml: It's an error by default for yaml data to remain unparsed (`#13900`_)
 
@@ -116,12 +110,10 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
-* TBD Explicitly set font-family for all monospaced HTML elements (`#13952`_)
-* TBD workspace: Upgrade ros_xacro to latest release 1.13.8 (`#13967`_)
-* TBD workspace: Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
-* TBD workspace: Upgrade ghc_filesystem to latest release 1.3.4 (`#13966`_)
-* TBD Remove everything in the attic (`#13889`_)
-* TBD
+* Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
+* Upgrade fmt to latest release 7.0.3 (`#13968`_)
+* Upgrade ghc_filesystem to latest release 1.3.4 (`#13966`_)
+* Upgrade ros_xacro to latest release 1.13.8 (`#13967`_)
 
 Newly-deprecated APIs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -131,7 +123,7 @@ Newly-deprecated APIs
 Removal of deprecated items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* TBD
+* TBD Remove deprecated code (2020-09) (`#13939`_)
 
 Notes
 -----
