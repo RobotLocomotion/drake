@@ -3262,22 +3262,30 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
       plant_autodiff->CreateDefaultContext();
   context_autodiff->SetTimeStateAndParametersFrom(*context);
 
-  // Set up our parameters as the independent variables.
-  // Differentiable parameters for the acrobot using only inertial parameters.
-  const AutoDiffXd m1_ad(m1, Vector3d(1, 0, 0));
-  const AutoDiffXd m2_ad(m2, Vector3d(0, 1, 0));
-  const AutoDiffXd l2_ad(l2, Vector3d(0, 0, 1));
+  // Set up our parameters as independent variables.
+  // We will use mass and length of the two links of the acrobot as our
+  // variables to differentiate with respect to. We must update multibody
+  // components that depend on these parameters so that their derivatives will
+  // propagate. For this example the multibody elements that require parameter
+  // updates are the bodies' mass and inertia, and the joints' offset frames.
+  const AutoDiffXd m1_ad(m1, Vector4<double>(1, 0, 0, 0));
+  const AutoDiffXd m2_ad(m2, Vector4<double>(0, 1, 0, 0));
+  const AutoDiffXd l1_ad(l1, Vector4<double>(0, 0, 1, 0));
+  const AutoDiffXd l2_ad(l2, Vector4<double>(0, 0, 0, 1));
+  const AutoDiffXd lc1_ad = 0.5 * l1_ad;
   const AutoDiffXd lc2_ad = 0.5 * l2_ad;
+  const AutoDiffXd Gc1_ad = (1.0 / 12.0) * l1_ad * l1_ad;
   const AutoDiffXd Gc2_ad = (1.0 / 12.0) * l2_ad * l2_ad;
 
+  // Differentiable parameters for the acrobot's mass/inertia parameters.
   // Frame L1's origin is located at the shoulder outboard frame.
-  const Vector3<AutoDiffXd> p_L1L1cm = -lc1 * Vector3d::UnitZ();
+  const Vector3<AutoDiffXd> p_L1L1cm = -lc1_ad * Vector3d::UnitZ();
   // Frame L2's origin is located at the elbow outboard frame.
   const Vector3<AutoDiffXd> p_L2L2cm = -lc2_ad * Vector3d::UnitZ();
 
   // Define each link's spatial inertia about their respective COM.
   UnitInertia<AutoDiffXd> Gc1_Bcm =
-      UnitInertia<AutoDiffXd>::StraightLine(Gc1, Vector3d::UnitZ());
+      UnitInertia<AutoDiffXd>::StraightLine(Gc1_ad, Vector3d::UnitZ());
   SpatialInertia<AutoDiffXd> M1_L1o =
       SpatialInertia<AutoDiffXd>::MakeFromCentralInertia(m1_ad, p_L1L1cm,
                                                          Gc1_Bcm * m1_ad);
@@ -3288,11 +3296,27 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
       SpatialInertia<AutoDiffXd>::MakeFromCentralInertia(m2_ad, p_L2L2cm,
                                                          Gc2_Bcm * m2_ad);
 
+  // Update each body's inertial parameters.
   plant_autodiff->GetRigidBodyByName(params.link1_name())
       .SetSpatialInertiaInBodyFrame(context_autodiff.get(), M1_L1o);
 
   plant_autodiff->GetRigidBodyByName(params.link2_name())
       .SetSpatialInertiaInBodyFrame(context_autodiff.get(), M2_L2o);
+
+  // The parent frame of the elbow joint is an offset frame that depends on the
+  // length of link1. Therefore, we must update this offset frame's parameter
+  // with the autodiff variable containing the proper partial derivatives for
+  // them to propagate through dynamics computations.
+  const RevoluteJoint<AutoDiffXd>& elbow_joint_ad =
+      plant_autodiff->GetJointByName<RevoluteJoint>(params.elbow_joint_name());
+  const FixedOffsetFrame<AutoDiffXd>& elbow_joint_parent_frame =
+      dynamic_cast<const FixedOffsetFrame<AutoDiffXd>&>(
+          elbow_joint_ad.frame_on_parent());
+
+  const RigidTransform<AutoDiffXd> X_link1_Ei(-l1_ad * Vector3d::UnitZ());
+
+  elbow_joint_parent_frame.SetPoseInBodyFrame(context_autodiff.get(),
+                                              X_link1_Ei);
 
   // Take the derivative of the mass matrix w.r.t. length.
   Matrix2<AutoDiffXd> mass_matrix;
@@ -3349,6 +3373,17 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
                               analytic_mass_matrix_partial_m2, kTolerance,
                               MatrixCompareType::relative));
 
+  // Analytic ∂M/∂l₁:
+  //  [ (2/3)m₁l₁ + 2m₂l₁ + 2m₂lc₂c₂   m₂lc₂c₂ ]
+  //  [        m₂lc₂c₂                    0    ]
+  Vector4<double> analytic_mass_matrix_partial_l1;
+  analytic_mass_matrix_partial_l1 <<
+     (2.0/3.0)*m1*l1 + 2*m2*l1 + 2*m2*lc2, m2*lc2,
+                                   m2*lc2,      0;
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(2),
+                              analytic_mass_matrix_partial_l1, kTolerance,
+                              MatrixCompareType::relative));
+
   // Analytic ∂M/∂l₂:
   // [   (2/3)m₂l₂ + m₂l₁       (2/3)m₂l₂ + (1/2)m₂l₁ ]
   // [ (2/3)m₂l₂ + (1/2)m₂l₁          (2/3)m₂l₂       ]
@@ -3356,9 +3391,58 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
   analytic_mass_matrix_partial_l2 <<
           (2.0/3.0)*m2*l2 + m2*l1, (2.0/3.0)*m2*l2 + 0.5*m2*l1,
       (2.0/3.0)*m2*l2 + 0.5*m2*l1,             (2.0/3.0)*m2*l2;
-  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(2),
+  EXPECT_TRUE(CompareMatrices(mass_matrix_grad.col(3),
                               analytic_mass_matrix_partial_l2, kTolerance,
                               MatrixCompareType::relative));
+}
+
+GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameParameters) {
+  MultibodyPlant<double> plant(0.0);
+
+  const Vector3d p_WF(0, 0, 0);
+  const RotationMatrixd R_WF{};
+  const RigidTransformd X_WF(R_WF, p_WF);
+
+  const Body<double>& body = plant.AddRigidBody("B", SpatialInertia<double>{});;
+
+  const Joint<double>& weld_joint =
+      plant.AddJoint<WeldJoint>("weld_WB", plant.world_body(), X_WF, body, {},
+                                RigidTransformd::Identity());
+
+  const FixedOffsetFrame<double>& frame_F =
+      dynamic_cast<const FixedOffsetFrame<double>&>(
+          weld_joint.frame_on_parent());
+
+  plant.Finalize();
+
+  // Create a default context.
+  auto context = plant.CreateDefaultContext();
+
+  // Verify default parameters are set for the frame and that they've propagated
+  // to the welded body's pose.
+  const RigidTransformd& X_WF_context = frame_F.CalcPoseInBodyFrame(*context);
+  const math::RigidTransformd& X_WF_body =
+      plant.EvalBodyPoseInWorld(*context, body);
+
+  EXPECT_TRUE(
+      CompareMatrices(X_WF.GetAsMatrix34(), X_WF_context.GetAsMatrix34()));
+  EXPECT_TRUE(CompareMatrices(X_WF.GetAsMatrix34(), X_WF_body.GetAsMatrix34()));
+
+  // Set new parameters and verify they propagate.
+  const Vector3d p_WF_new(1, 1, 1);
+  const RotationMatrixd R_WF_new = RotationMatrixd::MakeXRotation(3);
+  const RigidTransformd X_WF_new(R_WF_new, p_WF_new);
+
+  frame_F.SetPoseInBodyFrame(context.get(), X_WF_new);
+
+  const RigidTransformd& X_WF_context_new =
+      frame_F.CalcPoseInBodyFrame(*context);
+  const math::RigidTransformd& X_WF_body_new =
+      plant.EvalBodyPoseInWorld(*context, body);
+  EXPECT_TRUE(CompareMatrices(X_WF_new.GetAsMatrix34(),
+                              X_WF_context_new.GetAsMatrix34()));
+  EXPECT_TRUE(
+      CompareMatrices(X_WF_new.GetAsMatrix34(), X_WF_body_new.GetAsMatrix34()));
 }
 
 }  // namespace
