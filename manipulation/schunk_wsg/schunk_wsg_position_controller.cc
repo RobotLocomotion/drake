@@ -119,13 +119,6 @@ SchunkWsgPositionController::SchunkWsgPositionController(
   builder.BuildInto(this);
 }
 
-void SchunkWsgPositionController::set_initial_position(
-    drake::systems::State<double>* state, double desired_position) const {
-  state_interpolator_->set_initial_position(
-      &this->GetMutableSubsystemState(*state_interpolator_, state),
-      Vector1d(desired_position));
-}
-
 }  // namespace schunk_wsg
 }  // namespace manipulation
 }  // namespace drake
