@@ -23,6 +23,7 @@
 #include "drake/math/matrix_util.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -332,6 +333,25 @@ void DoScalarIndependentDefinitions(py::module m) {
           doc.BarycentricMesh.Eval.doc_2args)
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
           doc.BarycentricMesh.MeshValuesFrom.doc);
+
+  // Random Rotations
+  m  // BR
+      .def("UniformlyRandomQuaternion",
+          overload_cast_explicit<Eigen::Quaternion<T>, RandomGenerator*>(
+              &UniformlyRandomQuaternion),
+          py::arg("generator"), doc.UniformlyRandomQuaternion.doc)
+      .def("UniformlyRandomAngleAxis",
+          overload_cast_explicit<Eigen::AngleAxis<T>, RandomGenerator*>(
+              &UniformlyRandomAngleAxis),
+          py::arg("generator"), doc.UniformlyRandomAngleAxis.doc)
+      .def("UniformlyRandomRotationMatrix",
+          overload_cast_explicit<RotationMatrix<T>, RandomGenerator*>(
+              &UniformlyRandomRotationMatrix),
+          py::arg("generator"), doc.UniformlyRandomRotationMatrix.doc)
+      .def("UniformlyRandomRPY",
+          overload_cast_explicit<Vector3<T>, RandomGenerator*>(
+              &UniformlyRandomRPY),
+          py::arg("generator"), doc.UniformlyRandomRPY.doc);
 
   // Matrix Util.
   m  // BR
