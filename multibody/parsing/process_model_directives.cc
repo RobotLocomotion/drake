@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/dev/process_model_directives.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 
 #include <memory>
 #include <optional>
@@ -10,6 +10,7 @@
 #include "drake/common/schema/transform.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/scoped_names.h"
 
 namespace drake {
 namespace multibody {
@@ -45,41 +46,7 @@ std::unique_ptr<T> ConstructIfNullAndReassign(T** ptr, Args&&... args) {
 
 }  // namespace
 
-namespace internal {
-
-ScopedName ParseScopedName(const std::string& full_name) {
-  const std::string delim = "::";
-  size_t pos = full_name.rfind(delim);
-  ScopedName result;
-  if (pos == std::string::npos) {
-    result.name = full_name;
-  } else {
-    result.instance_name = full_name.substr(0, pos);
-    // "Global scope" (e.g. "::my_frame") not supported.
-    DRAKE_DEMAND(!result.instance_name.empty());
-    result.name = full_name.substr(pos + delim.size());
-  }
-  return result;
-}
-
-std::string PrefixName(const std::string& namespace_, const std::string& name) {
-  if (namespace_.empty())
-    return name;
-  else if (name.empty())
-    return namespace_;
-  else
-    return namespace_ + "::" + name;
-}
-
-std::string GetInstanceScopeName(
-    const MultibodyPlant<double>& plant,
-    ModelInstanceIndex instance) {
-  if (instance != plant.world_body().model_instance()) {
-    return plant.GetModelInstanceName(instance);
-  } else {
-    return "";
-  }
-}
+namespace {
 
 // Add a new weld joint to @p plant from @p parent_frame as indicated by @p
 // weld (as resolved relative to @p model_namespace) and update the @p info
@@ -92,12 +59,18 @@ void AddWeldWithOptionalError(
     const Frame<double>& child_frame,
     ModelWeldErrorFunction error_func,
     MultibodyPlant<double>* plant,
-    std::vector<ModelInfo>* added_models) {
-  // TODO(eric.cousineau): This hack really shouldn't belong in model
+    std::vector<ModelInstanceInfo>* added_models) {
+  // TODO(#14084): This hack really shouldn't belong in model
   // directives. Instead, it should live externally as a transformation on
   // ModelDirectives (either flattened or recursive).
+  std::string parent_full_name =
+      PrefixName(GetInstanceScopeName(*plant, parent_frame.model_instance()),
+                 parent_frame.name());
+  std::string child_full_name =
+      PrefixName(GetInstanceScopeName(*plant, child_frame.model_instance()),
+                 child_frame.name());
   std::optional<RigidTransformd> X_PCe =
-      error_func ? error_func(parent_frame, child_frame) : std::nullopt;
+      error_func ? error_func(parent_full_name, child_full_name) : std::nullopt;
   if (X_PCe.has_value()) {
     // N.B. Since this will belong in the child_frame's model instance, we
     // shouldn't worry about name collisions.
@@ -114,12 +87,12 @@ void AddWeldWithOptionalError(
     plant->WeldFrames(parent_frame, child_frame);
   }
   if (added_models) {
-    // Record weld info into crappy ModelInfo struct.
+    // Record weld info into crappy ModelInstanceInfo struct.
     bool found = false;
     for (auto& info : *added_models) {
       if (info.model_instance == child_frame.model_instance()) {
         found = true;
-        // See warning in ModelInfo about these members.
+        // See warning in ModelInstanceInfo about these members.
         info.parent_frame_name = parent_frame.name();
         info.child_frame_name = child_frame.name();
       }
@@ -130,7 +103,7 @@ void AddWeldWithOptionalError(
 
 void ProcessModelDirectivesImpl(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
-    std::vector<ModelInfo>* added_models, Parser* parser,
+    std::vector<ModelInstanceInfo>* added_models, Parser* parser,
     const std::string& model_namespace,
     ModelWeldErrorFunction error_func) {
   drake::log()->debug("ProcessModelDirectives(MultibodyPlant)");
@@ -147,19 +120,9 @@ void ProcessModelDirectivesImpl(
     return GetScopedFrameByName(*plant, PrefixName(model_namespace, name));
   };
 
-  // Add `package://jaco_description` URIs even though that package lacks a
-  // `package.xml` file.
-  // TODO(ggould) ...which is bad and wrong.
-  if (!parser->package_map().Contains("jaco_description")) {
-    const fs::path path_inside_jaco = drake::FindResourceOrThrow(
-        "drake/manipulation/models/jaco_description/LICENSE.TXT");
-    parser->package_map().Add("jaco_description",
-                              path_inside_jaco.parent_path().string());
-  }
-
   for (auto& directive : directives.directives) {
     if (directive.add_model) {
-      ModelInfo info;
+      ModelInstanceInfo info;
       auto& model = *directive.add_model;
       const std::string name = PrefixName(model_namespace, model.name);
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
@@ -181,6 +144,11 @@ void ProcessModelDirectivesImpl(
     } else if (directive.add_frame) {
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
+      if (!frame.X_PF.base_frame) {
+        // This would be caught elsewhere, but it is clearer to throw here.
+        throw std::logic_error(
+            "add_frame directive with empty base frame is ambiguous");
+      }
       // Only override instance if scope is explicitly specified.
       std::optional<ModelInstanceIndex> instance;
       ScopedName parsed = ParseScopedName(frame.name);
@@ -241,7 +209,7 @@ void ProcessModelDirectivesImpl(
   }
 }
 
-}  // namespace internal
+}  // namespace
 
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
@@ -276,42 +244,15 @@ std::string ResolveModelDirectiveUri(const std::string& uri,
   return package_map.GetPath(package_name) + "/" + path_in_package;
 }
 
-const drake::multibody::Frame<double>*
-GetScopedFrameByNameMaybe(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const std::string& full_name) {
-  if (full_name == "world")
-    return &plant.world_frame();
-  auto result = internal::ParseScopedName(full_name);
-  if (!result.instance_name.empty()) {
-    auto instance = plant.GetModelInstanceByName(result.instance_name);
-    if (plant.HasFrameNamed(result.name, instance)) {
-      return &plant.GetFrameByName(result.name, instance);
-    }
-  } else if (plant.HasFrameNamed(result.name)) {
-    return &plant.GetFrameByName(result.name);
-  }
-  return nullptr;
-}
-
-const std::string GetScopedFrameName(
-    const drake::multibody::MultibodyPlant<double>& plant,
-    const drake::multibody::Frame<double>& frame) {
-  if (&frame == &plant.world_frame())
-    return "world";
-  return internal::PrefixName(internal::GetInstanceScopeName(
-      plant, frame.model_instance()), frame.name());
-}
-
 void ProcessModelDirectives(
     const ModelDirectives& directives, MultibodyPlant<double>* plant,
-    std::vector<ModelInfo>* added_models, Parser* parser,
+    std::vector<ModelInstanceInfo>* added_models, Parser* parser,
     ModelWeldErrorFunction error_func) {
   auto tmp_parser = ConstructIfNullAndReassign<Parser>(&parser, plant);
   auto tmp_added_model =
-      ConstructIfNullAndReassign<std::vector<ModelInfo>>(&added_models);
+      ConstructIfNullAndReassign<std::vector<ModelInstanceInfo>>(&added_models);
   const std::string model_namespace = "";
-  internal::ProcessModelDirectivesImpl(
+  ProcessModelDirectivesImpl(
       directives, plant, added_models, parser, model_namespace, error_func);
 }
 
@@ -344,66 +285,6 @@ void FlattenModelDirectives(
       out->directives.push_back(directive);
     }
   }
-}
-
-ModelInfo MakeModelInfo(const std::string& model_name,
-                        const std::string& model_path,
-                        const std::string& parent_frame_name,
-                        const std::string& child_frame_name,
-                        const drake::math::RigidTransformd& X_PC) {
-  ModelInfo info;
-  info.model_name = model_name;
-  info.model_path = model_path;
-  info.parent_frame_name = parent_frame_name;
-  info.child_frame_name = child_frame_name;
-  info.X_PC = X_PC;
-  return info;
-}
-
-// TODO(eric.cousineau): Do we *really* need this function? This seems like
-// it'd be better handled as an MBP subgraph.
-ModelDirectives MakeModelsAttachedToFrameDirectives(
-    const std::vector<ModelInfo>& models_to_add) {
-  ModelDirectives directives;
-
-  // One for add frame, one for add model, one for add weld.
-  directives.directives.resize(models_to_add.size() * 3);
-
-  int index = 0;
-  for (size_t i = 0; i < models_to_add.size(); i++) {
-    const ModelInfo& model_to_add = models_to_add.at(i);
-    std::string attachment_frame_name = model_to_add.parent_frame_name;
-
-    // Add frame first.
-    if (!model_to_add.X_PC.IsExactlyIdentity()) {
-      AddFrame frame_dir;
-      attachment_frame_name = model_to_add.model_name + "_attachment_frame";
-      frame_dir.name = attachment_frame_name;
-      frame_dir.X_PF.base_frame = model_to_add.parent_frame_name;
-      frame_dir.X_PF.translation =
-          drake::Vector<double, 3>(model_to_add.X_PC.translation());
-      frame_dir.X_PF.rotation =
-          drake::schema::Rotation{model_to_add.X_PC.rotation()};
-
-      directives.directives.at(index++).add_frame = frame_dir;
-    }
-
-    // Add model
-    AddModel model_dir;
-    model_dir.file = model_to_add.model_path;
-    model_dir.name = model_to_add.model_name;
-
-    directives.directives.at(index++).add_model = model_dir;
-
-    AddWeld weld_dir;
-    weld_dir.parent = attachment_frame_name;
-    weld_dir.child =
-        model_to_add.model_name + "::" + model_to_add.child_frame_name;
-    directives.directives.at(index++).add_weld = weld_dir;
-  }
-  directives.directives.resize(index);
-
-  return directives;
 }
 
 }  // namespace parsing
