@@ -151,10 +151,11 @@ drake_cc_library(
 drake_cc_googletest(
     name = "limit_malloc_test",
     args = [
-        # By default, we will skip the death tests because they only pass on
-        # non-Apple, non-Sanitizer, non-Memcheck builds.  We will explicitly
-        # run them (below) for the configurations that succeed.
-        "--gtest_filter=-*DeathTest*",
+        # By default, we will skip the death tests and minimum limit tests
+        # because they only pass on non-Apple, non-Sanitizer, non-Memcheck
+        # builds.  We will explicitly run them (below) for the configurations
+        # that succeed.
+        "--gtest_filter=-*DeathTest*:*MinLimit*",
     ],
     deps = [
         ":limit_malloc",
@@ -172,8 +173,8 @@ sh_test(
             "--gtest_filter=-*",
         ],
         "//conditions:default": [
-            # Run only the death tests, not the plain tests.
-            "--gtest_filter=*DeathTest*",
+            # Run only the death tests and min limit tests, not the plain tests.
+            "--gtest_filter=*DeathTest*:*MinLimit*",
         ],
     }),
     data = [

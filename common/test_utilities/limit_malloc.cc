@@ -45,6 +45,7 @@ class Monitor {
   }
 
   int num_allocations() const { return observed_num_allocations_.load(); }
+  const LimitMallocParams& params() const { return args_; }
 
  private:
   void ObserveAllocation();
@@ -155,8 +156,9 @@ void Monitor::ObserveAllocation() {
 
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();
-  std::cerr << "abort due to malloc #" << observed << " while LimitMalloc("
-            << args_.max_num_allocations << ") in effect";
+  std::cerr << "abort due to malloc #" << observed
+            << " while max_num_allocations = "
+            << args_.max_num_allocations << " in effect";
   std::cerr << std::endl;
   // TODO(jwnimmer-tri) It would be nice to print a backtrace here.
   std::abort();
@@ -181,11 +183,28 @@ int LimitMalloc::num_allocations() const {
   return ActiveMonitor::load()->num_allocations();
 }
 
+const LimitMallocParams& LimitMalloc::params() const {
+  return ActiveMonitor::load()->params();
+}
+
 LimitMalloc::~LimitMalloc() {
+  const int observed = num_allocations();
+  const auto args = params();
+
   // De-activate our Monitor.
   auto prior = ActiveMonitor::reset();
+
   if (!(prior && prior->has_owner(this))) {
     std::cerr << "LimitMalloc dtor invariant failure\n";
+  }
+
+  if ((args.min_num_allocations >= 0) &&
+      (observed < args.min_num_allocations)) {
+    std::cerr << "abort due to scope end with "
+              << observed << " mallocs while min_num_allocations = "
+              << args.min_num_allocations << " in effect";
+    std::cerr << std::endl;
+    std::abort();
   }
 }
 
