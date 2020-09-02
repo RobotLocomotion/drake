@@ -145,7 +145,15 @@ dpkg_install_from_wget() {
   rm "${tmpdeb}"
 }
 
-# Depends: g++, unzip, zlib1g-dev
+# Install bazel package dependencies (these may duplicate dependencies of
+# drake).
+apt-get install --no-install-recommends $(cat <<EOF
+g++
+unzip
+zlib1g-dev
+EOF
+)
+
 dpkg_install_from_wget \
   bazel 3.4.1 \
   https://releases.bazel.build/3.4.1/release/bazel_3.4.1-linux-x86_64.deb \
