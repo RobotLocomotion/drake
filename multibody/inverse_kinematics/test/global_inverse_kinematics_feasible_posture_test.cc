@@ -1,4 +1,4 @@
-#include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
+#include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/solve.h"
 
@@ -14,30 +14,32 @@ TEST_F(KukaTest, FeasiblePostureTest) {
   const int kNumSamplePerJoint = 3;
   Eigen::Matrix<double, 7, kNumSamplePerJoint> q_grid;
   for (int i = 0; i < 7; ++i) {
-    q_grid(i, 0) = rigid_body_tree_->joint_limit_min(i) * 0.95
-        + rigid_body_tree_->joint_limit_max(i) * 0.05;
-    q_grid(i, 1) = rigid_body_tree_->joint_limit_min(i) * 0.5
-        + rigid_body_tree_->joint_limit_max(i) * 0.5;
-    q_grid(i, 2) = rigid_body_tree_->joint_limit_min(i) * 0.05
-        + rigid_body_tree_->joint_limit_max(i) * 0.95;
+    q_grid(i, 0) = plant_->GetPositionLowerLimits()(i) * 0.95 +
+                   plant_->GetPositionUpperLimits()(i) * 0.05;
+    q_grid(i, 1) = plant_->GetPositionLowerLimits()(i) * 0.5 +
+                   plant_->GetPositionUpperLimits()(i) * 0.5;
+    q_grid(i, 2) = plant_->GetPositionLowerLimits()(i) * 0.05 +
+                   plant_->GetPositionUpperLimits()(i) * 0.95;
   }
-  KinematicsCache<double> cache = rigid_body_tree_->CreateKinematicsCache();
+  auto context = plant_->CreateDefaultContext();
 
   std::vector<solvers::Binding<solvers::BoundingBoxConstraint>>
       body_position_constraint;
   std::vector<solvers::Binding<solvers::BoundingBoxConstraint>>
       body_orientation_constraint;
-  for (int body = 1; body < rigid_body_tree_->get_num_bodies(); ++body) {
+  for (int body = 1; body < plant_->num_bodies(); ++body) {
     // body = 0 is the WORLD link, we should not constrain the pose of the
     // WORLD.
-    body_position_constraint.push_back(global_ik_.AddBoundingBoxConstraint(
-        0, 0, global_ik_.body_position(body)));
+    body_position_constraint.push_back(
+        global_ik_.get_mutable_prog()->AddBoundingBoxConstraint(
+            0, 0, global_ik_.body_position(body)));
     const auto& body_rotmat = global_ik_.body_rotation_matrix(body);
     Eigen::Matrix<symbolic::Variable, 9, 1> body_rotmat_flat;
     body_rotmat_flat << body_rotmat.col(0), body_rotmat.col(1),
         body_rotmat.col(2);
     body_orientation_constraint.push_back(
-        global_ik_.AddBoundingBoxConstraint(0, 0, body_rotmat_flat));
+        global_ik_.get_mutable_prog()->AddBoundingBoxConstraint(
+            0, 0, body_rotmat_flat));
   }
 
   // Now generate the feasible posture q
@@ -69,32 +71,30 @@ TEST_F(KukaTest, FeasiblePostureTest) {
 
     // Now compute the forward kinematics for posture q, and then fix the body
     // position and orientation of the global IK to the body pose of q.
-    cache.initialize(q);
-    rigid_body_tree_->doKinematics(cache);
-    for (int body = 1; body < rigid_body_tree_->get_num_bodies(); ++body) {
-      const Eigen::Isometry3d body_pose =
-          rigid_body_tree_->CalcBodyPoseInWorldFrame(
-              cache, rigid_body_tree_->get_body(body));
-      const Eigen::Vector3d
-          pos_lb = body_pose.translation();
-      const Eigen::Vector3d
-          pos_ub = body_pose.translation();
+    plant_->SetPositions(context.get(), q);
+    for (int body = 1; body < plant_->num_bodies(); ++body) {
+      const math::RigidTransformd body_pose = plant_->CalcRelativeTransform(
+          *context, plant_->world_frame(),
+          plant_->get_body(BodyIndex{body}).body_frame());
+      const Eigen::Vector3d pos_lb = body_pose.translation();
+      const Eigen::Vector3d pos_ub = body_pose.translation();
       body_position_constraint[body - 1].evaluator()->UpdateLowerBound(pos_lb);
       body_position_constraint[body - 1].evaluator()->UpdateUpperBound(pos_ub);
       Eigen::Matrix<double, 9, 1> rotmat_lb_flat;
       Eigen::Matrix<double, 9, 1> rotmat_ub_flat;
-      rotmat_lb_flat << body_pose.linear().col(0), body_pose.linear().col(1),
-          body_pose.linear().col(2);
-      rotmat_ub_flat << body_pose.linear().col(0), body_pose.linear().col(1),
-          body_pose.linear().col(2);
+      rotmat_lb_flat << body_pose.rotation().matrix().col(0),
+          body_pose.rotation().matrix().col(1),
+          body_pose.rotation().matrix().col(2);
+      rotmat_ub_flat << body_pose.rotation().matrix().col(0),
+          body_pose.rotation().matrix().col(1),
+          body_pose.rotation().matrix().col(2);
       body_orientation_constraint[body - 1].evaluator()->UpdateLowerBound(
           rotmat_lb_flat);
       body_orientation_constraint[body - 1].evaluator()->UpdateUpperBound(
           rotmat_ub_flat);
     }
     solvers::GurobiSolver gurobi_solver;
-    const solvers::MathematicalProgramResult result =
-        gurobi_solver.Solve(global_ik_, {}, {});
+    const auto result = gurobi_solver.Solve(global_ik_.prog());
     EXPECT_TRUE(result.is_success());
   }
 }

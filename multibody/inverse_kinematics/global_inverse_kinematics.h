@@ -1,9 +1,9 @@
+
 #pragma once
 
 #include <vector>
 
-#include "drake/attic_warning.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
@@ -18,12 +18,10 @@ namespace multibody {
  * If the global inverse kinematics returns a solution, the posture should
  * approximately satisfy the kinematics constraints, with some error.
  * The approach is described in Global Inverse Kinematics via Mixed-integer
- * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR,
- * 2017.
+ * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake,
+ * International Journal of Robotics Research, 2019.
  */
-class GlobalInverseKinematics : public solvers::MathematicalProgram {
-// TODO(hongkai.dai): create a function globalIK, with interface similar to
-// inverseKin(), that accepts RigidBodyConstraint objects and cost function.
+class GlobalInverseKinematics {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
 
@@ -52,23 +50,28 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * each body inside the robot kinematics tree, adds the constraint on each
    * body pose, so that the adjacent bodies are connected correctly by the joint
    * in between the bodies.
-   * @param robot The robot on which the inverse kinematics problem is solved.
+   * @param plant The robot on which the inverse kinematics problem is solved.
+   * plant must be alive for as long as this object is around.
    * @param options The options to relax SO(3) constraint as mixed-integer
    * convex constraints. Refer to MixedIntegerRotationConstraintGenerator for
    * more details on the parameters in options.
    */
-  explicit GlobalInverseKinematics(const RigidBodyTreed& robot,
+  explicit GlobalInverseKinematics(const MultibodyPlant<double>& plant,
                                    const Options& options = Options());
 
-  ~GlobalInverseKinematics() override {}
+  ~GlobalInverseKinematics() {}
+
+  const solvers::MathematicalProgram& prog() const { return prog_; }
+
+  solvers::MathematicalProgram* get_mutable_prog() { return &prog_; }
 
   /** Getter for the decision variables on the rotation matrix `R_WB` for a body
    * with the specified index. This is the orientation of body i's frame
    * measured and expressed in the world frame.
    * @param body_index  The index of the queried body. Notice that body 0 is
    * the world, and thus not a decision variable.
-   * @throws std::runtime_error if the index is smaller than 1, or no smaller
-   * than the total number of bodies in the robot.
+   * @throws std::runtime_error if the index is smaller than 1, or greater
+   * than or equal to the total number of bodies in the robot.
    */
   const solvers::MatrixDecisionVariable<3, 3>& body_rotation_matrix(
       int body_index) const;
@@ -103,30 +106,23 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   /**
    * Adds the constraint that the position of a point `Q` on a body `B`
    * (whose index is `body_idx`), is within a box in a specified frame `F`.
-   * The constraint is that the point position, computed as
-   * <pre>
-   *   p_WQ = p_WBo + R_WB * p_BQ
-   * </pre>
-   * where
-   *   - p_WQ is the position of the body point Q measured and expressed in the
-   *     world frame `W`.
-   *   - p_WBo is the position of the body origin Bo measured and expressed in
-   *     the world frame `W`.
-   *   - R_WB is the rotation matrix of the body measured and expressed in the
-   *     world frame `W`.
-   *   - p_BQ is the position of the body point Q measured and expressed in the
-   *     body frame `B`.
-   * p_WQ should lie within a bounding box in the frame `F`. Namely
-   * <pre>
-   *   box_lb_F <= p_FQ <= box_ub_F
-   * </pre>
-   * where p_FQ is the position of the point Q measured and expressed in the
-   * `F`.
-   * The inequality is imposed elementwisely.
+   * The constraint is that the point `Q`'s position should lie within a
+   * bounding box in the frame `F`. Namely
    *
-   * Notice that since the rotation matrix `R_WB` does not lie exactly on the
+   *    box_lb_F <= p_FQ <= box_ub_F
+   *
+   * where p_FQ is the position of the point Q measured and expressed in the
+   * `F`, computed as
+   *
+   *    p_FQ = X_FW * (p_WBo + R_WB * p_BQ)
+   *
+   * hence this is a linear constraint on the decision variables p_WBo and R_WB.
+   * The inequality is imposed elementwise.
+   *
+   * @note since the rotation matrix `R_WB` does not lie exactly on the
    * SO(3), due to the McCormick envelope relaxation, this constraint is subject
    * to the accumulated error from the root of the kinematics tree.
+   *
    * @param body_idx The index of the body on which the position of a point is
    * constrained.
    * @param p_BQ The position of the point Q measured and expressed in the
@@ -137,9 +133,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * frame is represented by an isometry transform X_WF, the transform from
    * the constraint frame F to the world frame W. Namely if the position of
    * the point `Q` in the world frame is `p_WQ`, then the constraint is
-   * <pre>
-   *    box_lb_F <= R_FW * (p_WQ-p_WFo) <= box_ub_F
-   * </pre>
+   *
+   *     box_lb_F <= R_FW * (p_WQ-p_WFo) <= box_ub_F
    * where
    *   - R_FW is the rotation matrix of frame `W` expressed and measured in
    *     frame `F`. `R_FW = X_WF.linear().transpose()`.
@@ -155,20 +150,18 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       const Eigen::Isometry3d& X_WF = Eigen::Isometry3d::Identity());
 
   /**
-   * Add a constraint that the angle between the body orientation and the
+   * Adds a constraint that the angle between the body orientation and the
    * desired orientation should not be larger than `angle_tol`. If we denote the
-   * angle between two rotation matrices `R1` and `R2` as `θ`, namely θ is the
+   * angle between two rotation matrices `R1` and `R2` as `θ`, i.e. θ is the
    * angle of the angle-axis representation of the rotation matrix `R1ᵀ * R2`,
    * we then know
-   * <pre>
-   *    trace(R1ᵀ * R2) = 2 * cos(θ) + 1
-   * </pre>
+   *
+   *     trace(R1ᵀ * R2) = 2 * cos(θ) + 1
    * as in
    * http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
    * To constraint `θ < angle_tol`, we can impose the following constraint
-   * <pre>
-   *    2 * cos(angle_tol) + 1 <= trace(R1ᵀ * R2) <= 3
-   * </pre>
+   *
+   *     2 * cos(angle_tol) + 1 <= trace(R1ᵀ * R2) <= 3
    *
    * @param body_idx The index of the body whose orientation will be
    * constrained.
@@ -184,8 +177,9 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
 
   /** Penalizes the deviation to the desired posture.
    * For each body (except the world) in the kinematic tree, we add the cost
-   *  `∑ᵢ body_position_cost(i) * body_position_error(i) +
-   *  body_orientation_cost(i) * body_orientation_error(i)`
+   *
+   *     ∑ᵢ body_position_cost(i) * body_position_error(i) +
+   *     body_orientation_cost(i) * body_orientation_error(i)
    * where `body_position_error(i)` is computed as the Euclidean distance error
    * |p_WBo(i) - p_WBo_desired(i)|
    * where
@@ -205,14 +199,14 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * @param body_position_cost  The cost for each body's position error. Unit is
    * [1/m] (one over meters).
    * @pre
-   * 1. body_position_cost.rows() == robot->get_num_bodies(), where `robot`
+   * 1. body_position_cost.rows() == plant.num_bodies(), where `plant`
    *    is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throws std::runtime_error if the precondition is not satisfied.
    * @param body_orientation_cost The cost for each body's orientation error.
    * @pre
-   * 1. body_orientation_cost.rows() == robot->get_num_bodies() , where
-   *    `robot` is the input argument in the constructor of the class.
+   * 1. body_orientation_cost.rows() == plant.num_bodies() , where
+   *    `plant` is the input argument in the constructor of the class.
    * 2. body_position_cost(i) is non-negative.
    * @throws std::runtime_error if the precondition is not satisfied.
    */
@@ -227,19 +221,17 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * Pᵢ = ConvexHull(v_i1, v_i2, ... v_in). Mathematically we want to impose the
    * constraint that the p_WQ, i.e., the position of point `Q` in world frame
    * `W`, satisfies
-   * <pre>
-   *   p_WQ ∈ Pᵢ for one i.
-   * </pre>
+   *
+   *     p_WQ ∈ Pᵢ for one i.
    * To impose this constraint, we consider to introduce binary variable zᵢ, and
    * continuous variables w_i1, w_i2, ..., w_in for each vertex of Pᵢ, with the
    * following constraints
-   * <pre>
-   *   p_WQ = sum_i (w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in)
-   *   w_ij >= 0, ∀i,j
-   *   w_i1 + w_i2 + ... + w_in = zᵢ
-   *   sum_i zᵢ = 1
-   *   zᵢ ∈ {0, 1}
-   * </pre>
+   *
+   *     p_WQ = sum_i (w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in)
+   *     w_ij >= 0, ∀i,j
+   *     w_i1 + w_i2 + ... + w_in = zᵢ
+   *     sum_i zᵢ = 1
+   *     zᵢ ∈ {0, 1}
    * Notice that if zᵢ = 0, then w_i1 * v_i1 + w_i2 * v_i2 + ... + w_in * v_in
    * is just 0.
    * This function can be used for collision avoidance, where each region Pᵢ is
@@ -278,13 +270,13 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * sphere is in at least one of the polytopes (could be in the intersection of
    * multiple polytopes.)
    * If the i'th polytope is described as
-   * <pre>
-   *   Aᵢ * x ≤ bᵢ
-   * </pre>
+   *
+   *     Aᵢ * x ≤ bᵢ
    * where Aᵢ ∈ ℝⁿ ˣ ³, bᵢ ∈ ℝⁿ.
    * Then a sphere with center position p_WQ and radius r is within the i'th
    * polytope, if
-   * Aᵢ * p_WQ ≤ bᵢ - aᵢr
+   *
+   *     Aᵢ * p_WQ ≤ bᵢ - aᵢr
    * where aᵢ(j) = Aᵢ.row(j).norm()
    * To constrain that the sphere is in one of the n polytopes, we introduce the
    * binary variable z ∈{0, 1}ⁿ, together with continuous variables yᵢ ∈ ℝ³, i
@@ -342,13 +334,15 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
       Eigen::Ref<Eigen::VectorXd> q,
       std::vector<Eigen::Matrix3d>* reconstruct_R_WB) const;
 
-  const RigidBodyTree<double>* robot_;
+  solvers::MathematicalProgram prog_;
+
+  const MultibodyPlant<double>& plant_;
 
   // joint_lower_bounds_ and joint_upper_bounds_ are column vectors of size
-  // robot_->get_num_positions() x 1.
+  // plant->get_num_positions() x 1.
   // joint_lower_bounds_(i) is the lower bound of the i'th joint.
   // joint_upper_bounds_(i) is the upper bound of the i'th joint.
-  // These joint bounds include those specified in the robot (like in the URDF
+  // These joint bounds include those specified in the plant (like in the URDF
   // file), and the bounds imposed by the user, through AddJointLimitConstraint.
   Eigen::VectorXd joint_lower_bounds_;
   Eigen::VectorXd joint_upper_bounds_;

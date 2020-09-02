@@ -3,19 +3,19 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/global_inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/global_inverse_kinematics.h"
 
 namespace drake {
 namespace multibody {
-std::unique_ptr<RigidBodyTree<double>> ConstructKuka();
+std::unique_ptr<MultibodyPlant<double>> ConstructKuka();
 
-std::unique_ptr<RigidBodyTree<double>> ConstructSingleBody();
+std::unique_ptr<MultibodyPlant<double>> ConstructSingleBody();
 
 class KukaTest : public ::testing::Test {
  public:
   KukaTest();
 
-  ~KukaTest() override {};
+  ~KukaTest() override{};
 
   /**
    * Given the solution computed from global IK, reconstruct the posture, then
@@ -43,10 +43,10 @@ class KukaTest : public ::testing::Test {
                                    double angle_tol,
                                    const Eigen::Matrix<double, 7, 1>& q_guess,
                                    const Eigen::Matrix<double, 7, 1>& q_nom,
-                                   int info_expected) const;
+                                   bool ik_success_expected) const;
 
  protected:
-  std::unique_ptr<RigidBodyTree<double>> rigid_body_tree_;
+  std::unique_ptr<MultibodyPlant<double>> plant_;
   GlobalInverseKinematics global_ik_;
   int ee_idx_;  // end effector's body index.
 };
