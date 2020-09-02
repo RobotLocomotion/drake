@@ -74,8 +74,8 @@ enum class ContactSolverResult {
 ///
 /// Generally, we are interested on solving a set of momentum equations subject
 /// to contact constraints of the form: <pre>
-///   F(v) = Jcᵀ⋅γ
-///   s.t. Contact constraints.
+///   F(v) = Jcᵀ⋅γ                                                          (1)
+///   s.t. Contact constraints.                                             (2)
 /// </pre>
 /// where γ concatenates the all nc contact impulses γᵢ ∈ ℝ³ into a vector of
 /// size 3nc and `Jc`, of size `3nc x nv`, is the "contact Jacobian" defined
@@ -84,15 +84,17 @@ enum class ContactSolverResult {
 /// velocity level. As an example, consider the dynamics of rigid bodies
 /// discretized using the semi-implicit Euler scheme presented earlier. In this
 /// case we have `F(v) = M(q₀)⋅(v−v₀) - dt⋅C(q₀,v) - dt⋅τₑₓₜ(q₀, v)`.
-///
 /// With "Contact constraints" we mean:
-/// 1. Contact forces follow Coulomb's law of friction, i.e. γᵢ is inside the
+/// - Contact forces follow Coulomb's law of friction, i.e. γᵢ is inside the
 ///    friction cone.
-/// 2. The friction component of γ, which we refer to as β, satisfies the
+/// - The friction component of γ, which we refer to as β, satisfies the
 ///    principle of maximum dissipation for sliding contacts.
-/// 3. The normal component of γ, which we refer to as π, is non-negative
+/// - The normal component of γ, which we refer to as π, is non-negative
 ///    i.e. always a repulsive force (adhesive or “sticky" contact needs special
 ///    consideration).
+/// The unknowns in this formulation are next step velocities v and contact
+/// impulses γ. These are solved from the discrete momentum equations (1) and
+/// the contact constraints (2).
 ///
 /// This interface leaves open how exactly these constraints are imposed so that
 /// specific solvers have the freedom to choose other model approximations. For
@@ -115,18 +117,28 @@ enum class ContactSolverResult {
 /// We already approximated the configuration `q(v*)`. For instance, for
 /// implicit Euler we'd write `q(v*) = q₀+ dt⋅v*`.
 /// The next step velocity is then approximated as `v = v* + Δv` where Δv is
-/// computed in a corrector step satisfying the equation: <pre>
+/// computed in a corrector step satisfying the equations: <pre>
 ///   F(v* + Δv) = F(v* + Δv) = Jcᵀ⋅γ
+///   s.t. Contact constraints
 /// </pre>
-/// We can linearize this equation at v*, leading to: <pre>
-///   F(v*) + A⋅Δv = Jcᵀ⋅γ
+/// We can linearize the discrete momentum equation `F(v)` at v*, leading to:
+/// <pre>
+///   F(v*) + A⋅Δv + O(‖Δv‖²) = Jcᵀ⋅γ
 /// </pre>
-/// where we defined A = ∇F(v*) as the Jacobian of F with respect to generalized
-/// velocities v, evaluated at v*.
-/// Since v* satisfies the predictor's equation F(v*) = 0, the equation for the
+/// where we defined A = ∂F/∂v(v*) as the Jacobian of F with respect to
+/// generalized velocities v, evaluated at v*. From now on we will neglect the
+/// term O(‖Δv‖²) leading to a first order approximation for the impulses. Since
+/// v* satisfies the predictor's equation F(v*) = 0, the equation for the
 /// impulses simplifies to: <pre>
 ///   A⋅Δv = Jcᵀ⋅γ
+///   s.t. Contact constraints
 /// </pre>
+/// Note that even when this approximation is O(dt) for the impulses, the
+/// predictor step to compute v* from `F(v*) = 0` can use a higher order time
+/// discretization scheme. A low order scheme on the constraints has a very
+/// desired stabilization side effect, since higher order schemes might lead to
+/// instabilities. However, we can still use a high order scheme on the
+/// continuous terms of the dynamics represented in `F(v)`.
 ///
 /// As an example of application, consider the rigid multibody dynamics
 /// equations discretized using an explicit approach for all non-contact forces,
@@ -162,8 +174,12 @@ enum class ContactSolverResult {
 /// Linear Multistep could be used to achieve higher order approximations or
 /// desired stability properties.
 ///
-/// Therefore, %ContactSolver needs the following information to properly define
-/// the contact problem:
+// TODO(amcastro-tri): add sections specific to bilateral and unilateral
+// constraints.
+///
+/// <h3> Problem data </h3>
+/// %ContactSolver needs the following information to properly define the
+/// contact problem:
 /// - The inverse operator of A and the predicted velocity v*. This essentially
 /// defines the "dynamics" of the system. This is specified as a
 /// SystemDynamicsData with SetSystemDynamicsData().
@@ -174,9 +190,6 @@ enum class ContactSolverResult {
 /// Once the problem is set, SolveWithGuess() is used to invoke the solver.
 /// Methods such as GetImpulses() and GetVelocities() are then used to retrieve
 /// the solution γ and v, respectively.
-///
-// TODO(amcastro-tri): add sections specific to bilateral and unilateral
-// constraints.
 ///
 /// <h3> References: </h3>
 /// - [Anitescu, 2006] Anitescu, M., 2006. Optimization-based simulation of
