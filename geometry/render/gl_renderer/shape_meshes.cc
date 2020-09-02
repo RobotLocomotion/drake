@@ -12,6 +12,7 @@
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace geometry {
@@ -547,6 +548,102 @@ std::pair<VertexBuffer, IndexBuffer> MakeUnitBox() {
              1, 0, 4,
              1, 4, 5;
   /* clang-format on */
+  return make_pair(vertices, indices);
+}
+
+pair<VertexBuffer, IndexBuffer> MakeCapsule(int samples, double radius,
+                                            double length) {
+  /* Based on samples, we'll create a unit sphere, guaranteeing that there are
+   vertices on the equator. We'll use the unit sphere to create the capsule
+   by duplicating the equator vertices, translating the northern hemisphere
+   upwards, the southern downwards, and inserting a band of triangles to connect
+   the two.  */
+
+  // TODO(SeanCurtis-TRI) Would this look better using MakeRevoluteShape?
+
+  /* To get roughly "square" quads on the sphere, we need as many vertices
+   around a longitudinal line as we do around the equator (samples). That many
+   vertices will form samples / 2 latitudinal bands. We require an even number
+   of bands to guarantee vertices at the equator).  */
+  const int half_samples = samples / 2;
+  const int lat_bands = half_samples + (half_samples % 2);
+  const auto sphere_data = MakeLongLatUnitSphere(samples, lat_bands);
+  const VertexBuffer& sphere_verts = sphere_data.first;
+  const IndexBuffer& sphere_tris = sphere_data.second;
+
+  /* There should be `2H + samples` vertices in the sphere, where H is the
+   number of vertices in a hemisphere *excluding* the vertices on the equator.
+
+   The resulting capsule will have `2H + 2 * samples` vertices and normals and
+   `T + 2 * samples` triangles, where T is the number of triangles in the
+   sphere.  */
+  const int H = (sphere_verts.rows() - samples) / 2;
+  DRAKE_DEMAND(2 * H + samples == sphere_verts.rows());
+
+  const int vert_count = 2 * (H + samples);
+  VertexBuffer vertices{vert_count, 3};
+  const int tri_count = sphere_tris.rows() + (2 * samples);
+  IndexBuffer indices{tri_count, 3};
+
+  /* Process vertices. Vertices get scaled around a "local" sphere center by
+   radius and offset half the length. */
+  int sphere_v = -1;
+  int capsule_v = -1;
+  // Northern hemisphere plus the equator.
+  const Vector3<GLfloat> offset(0, 0, length / 2);
+  for (int i = 0; i < H + samples; ++i) {
+    const Vector3<GLfloat> p_SV = sphere_verts.block<1, 3>(++sphere_v, 0);
+    vertices.block<1, 3>(++capsule_v, 0) = p_SV * radius + offset;
+  }
+  // Southern hemisphere plus the equator. This copies the equator.
+  sphere_v -= samples;
+  for (int i = 0; i < H + samples; ++i) {
+    const Vector3<GLfloat> p_SV = sphere_verts.block<1, 3>(++sphere_v, 0);
+    vertices.block<1, 3>(++capsule_v, 0) = p_SV * radius - offset;
+  }
+
+  /* Process the faces. The first half can be taken verbatim. Then we inject
+   the barrel vertices (connecting the two equators), the southern hemisphere
+   needs all indices offset by `samples`.  */
+
+  const int hemisphere_tri_count = sphere_tris.rows() / 2;
+  indices.block(0, 0, hemisphere_tri_count, 3) =
+      sphere_tris.block(0, 0, hemisphere_tri_count, 3);
+  /* We add all the triangles for the barrel spanning the two equators. Given
+   a moving pair of indices lying on the southern equator (p, v) we walk around
+   the equator building triangle pairs as shown:
+
+       │ c    │ b
+   ────•──────•────                      <-- northern equator
+       │ ╲    │
+       │   ╲  │
+       │ p   ╲│ v
+   ────•──────•────                      <-- southern equator
+       │      │
+
+   The vertices are labeled by their *global* _indices_ v, p, b, and c.
+   v: the jth vertex for the southern equator.
+   p: the topologically previous vertex to v on the equator (subject to periodic
+      conditions).
+   b = v - samples
+   c = p - samples  */
+  int capsule_t = hemisphere_tri_count;
+  int v = H + samples;      // the "first" vertex of the southern equator.
+  int p = v + samples - 1;  // the "last" vertex on the southern equator.
+  for (int i = 0; i < samples; ++i, ++v, capsule_t += 2) {
+    indices.block<1, 3>(capsule_t, 0) << p, v, p - samples;
+    indices.block<1, 3>(capsule_t + 1, 0) << v, v - samples, p - samples;
+    p = v;
+  }
+  /* Now the southern hemisphere gets its indices offset to account for the
+   injection of `samples` new vertices.  */
+  const Vector3<GLuint> i_offset(samples, samples, samples);
+  for (int sphere_t = hemisphere_tri_count; sphere_t < sphere_tris.rows();
+       ++sphere_t, ++capsule_t) {
+    auto tri = sphere_tris.block<1, 3>(sphere_t, 0);
+    indices.block<1, 3>(capsule_t, 0) = tri + i_offset.transpose();
+  }
+
   return make_pair(vertices, indices);
 }
 

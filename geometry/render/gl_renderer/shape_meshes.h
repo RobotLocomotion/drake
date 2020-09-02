@@ -78,7 +78,7 @@ std::pair<VertexBuffer, IndexBuffer> MakeLongLatUnitSphere(
 
  @param num_strips  The number of strips the barrel's curvature is divided into.
  @param num_bands   The number of equal-width bands spanning the height of the
-                    clinder.
+                    cylinder.
  @pre `num_strips` >= 3 (otherwise the cylinder will have no volume).
  @pre `num_bands` >= 1.  */
 std::pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips = 50,
@@ -87,7 +87,7 @@ std::pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips = 50,
 /* Creates an OpenGL-compaptible mesh reprepsenting a square patch. The patch
  has edge length `measure` units long. The square patch is defined lying on the
  z = 0 plane in its canonical frame C, centered on the origin Co. The faces are
- wound such that the right-handed face normal points in the dirction of the
+ wound such that the right-handed face normal points in the direction of the
  positive z-axis of Frame C.
 
  The domain of the patch is divided into square sub regions based on the given
@@ -98,7 +98,7 @@ std::pair<VertexBuffer, IndexBuffer> MakeUnitCylinder(int num_strips = 50,
 std::pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure = 200,
                                                      int resolution = 1);
 
-/* Creates an OpenGL_compatible mesh representation of the unit box - all edges
+/* Creates an OpenGL-compatible mesh representation of the unit box - all edges
  are length 1. The box is centered on the origin of its canonical frame C with
  its edges aligned to the frame's basis. Each face of the box is divided into a
  single pair of triangles.
@@ -107,7 +107,29 @@ std::pair<VertexBuffer, IndexBuffer> MakeSquarePatch(GLfloat measure = 200,
     properties yield undesirable artifacts for large boxes.  --> */
 std::pair<VertexBuffer, IndexBuffer> MakeUnitBox();
 
-// TODO(SeanCurtis): capsule, ellipsoid.
+/* Creates an OpenGL-compatible mesh representation of a capsule with the given
+ `radius` and `length`. The capsule is centered on the origin of its canonical
+ frame C with its length aligned with C's z axis: Cz. The capsule is,
+ conceptually, a cylinder capped with two hemispheres. The `length` is the
+ measure of the cylinder's length. So, the *total* length of the capsule would
+ be `length + 2 * radius`.
+
+ The capsule is tessellated according to `samples`. The circular cross section
+ of the cylindrical region of the capsule will have `samples` number of
+ vertices. The two hemispherical caps will be tesselated such that triangles
+ near the spherical equators have good aspect ratios. There is only a single
+ band of quadrilaterals (split into pairs of triangles) in the cylindrical
+ region.
+
+ @param samples   The number of vertices to place around the barrel of the
+                  capsule.
+ @param radius    The radius of the hemispherical end-caps and cylindrical
+                  barrel.
+ @param length    The length of the cylindrical barrel.
+ @pre `samples` >= 3 (otherwise the capsule will have no volume).
+ @pre radius > 0 and length > 0.  */
+std::pair<VertexBuffer, IndexBuffer> MakeCapsule(int samples, double radius,
+                                                 double length);
 
 }  // namespace internal
 }  // namespace render
