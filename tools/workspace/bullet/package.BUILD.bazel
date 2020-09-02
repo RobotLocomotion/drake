@@ -1,10 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-
 licenses(["notice"])  # Zlib AND (BSD-3-Clause OR LGPL-2.1+ OR Zlib)
 
 # Gimpact, which is used by BulletCollision offers a choice of three licenses,
@@ -33,9 +28,12 @@ cc_library(
     defines = ["BT_USE_DOUBLE_PRECISION"],
     includes = ["src"],
     linkstatic = 1,
+    deprecation = "DRAKE DEPRECATED: The @bullet external is being removed from Drake on or after 2020-12-01.  Downstream projects should add it to their own WORKSPACE if needed.",  # noqa
 )
 
-install(
-    name = "install",
-    docs = ["LICENSE.txt"],
+# N.B. Not intended for public use!  This is only intended for the regression
+# test in @drake//tools/workspace/bullet, and will be removed on 2020-12-01.
+cc_library(
+    name = "bullet_for_stub_test",
+    deps = [":bullet"],
 )

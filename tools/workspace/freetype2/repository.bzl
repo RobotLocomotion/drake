@@ -17,5 +17,6 @@ def freetype2_repository(
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        build_epilog = "print('DRAKE DEPRECATED: The @freetype2 external is being removed from Drake on or after 2020-12-01.  Downstream projects should add it to their own WORKSPACE if needed.')",  # noqa
         **kwargs
     )
