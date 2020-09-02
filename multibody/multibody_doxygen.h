@@ -323,6 +323,8 @@ Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a 
 Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force) ††
 Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
 Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Bo †
+Spatial momentum     |  L   |@f$^AL^{S/P}@f$           |`L_ASP`     |System S's spatial momentum about point P in frame A
+Spatial momentum     |  L   |@f$^AL^{S/Scm}@f$         |`L_AScm`    |System S's spatial momentum about point Scm in frame A
 Jacobian wrt q †††   | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
 Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
 Jacobian wrt v       | Jv   |@f$J_{v}^{{}^Bv^Q}@f$     |`Jv_v_BQ`   |Q's translational velocity Jacobian in B wrt v
