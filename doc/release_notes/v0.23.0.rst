@@ -27,6 +27,8 @@ Dynamical Systems
 ~~~~~~~~~~~~~~~~~
 
 .. <relnotes for systems go here>
+* TBD framework: Deprecate kAutoSize (`#13981`_)  # In pydrake, remove it immediately.  (As of Python 3.6, there is no official support for deprecating attributes; it's new as of 3.7.) This is a breaking change.
+* TBD Allow PassThroughSystem to emit default values (`#13976`_)  # I originally wrote this as a brand new system for optional values, but realized I was almost completely duplicating the PassThroughSystem.  I *think* this is the best place for it.
 
 New features
 
@@ -60,6 +62,8 @@ Multibody Dynamics
 ~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for geometry,multibody go here>
+* TBD parameterizes rigid bodies in MBP (`#13860`_)
+* TBD Add SpatialMomentum to documentation for multibody_quantities_html (`#13959`_)  # * Respond to Sherm's comments.
 
 New features
 
@@ -82,6 +86,8 @@ Miscellaneous features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for common,math,lcm,lcmtypes,manipulation,perception go here>
+[manipulation,multibody,solvers,systems,tools] * TBD Remove deprecated code (2020-09) (`#13939`_)
+* TBD trajectories: add bindings for PiecewiseQuaternionSlerp (`#13974`_)
 * manipulation: Add DifferentialInverseKinematicsIntegrator (`#13877`_, `#13919`_, `#13920`_)
 * manipulation: Make Schunk WSG limit input port optional (`#13878`_)
 * schema: Add stochastic, rotation, and transform types (`#13943`_, `#13949`_)
@@ -92,6 +98,8 @@ pydrake bindings
 ~~~~~~~~~~~~~~~~
 
 .. <relnotes for bindings go here>
+* TBD pydrake: Copy yaml utilities from Anzu (`#13982`_)  # Co-authored-by: Eric Cousineau <eric.cousineau@tri.global> Co-authored-by: Grant Gould <ggould@tri.global> Co-authored-by: Sam Creasey <sam.creasey@tri.global>
+* TBD pydrake: Adapt yaml utilities to Drake and add to BUILD (`#13982`_)
 
 New features
 
@@ -110,6 +118,9 @@ Build system and dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. <relnotes for attic,cmake,doc,setup,third_party,tools go here>
+* TBD workspace: Upgrade fcl to latest commit (`#13965`_)
+* TBD MeshcatVisualizer: Tweaks to support caching mesh geometry on the zmq server (`#13971`_)  # Adds an argument to the constructor to avoid deleting the entire tree on every run. Sets uuids deterministically based on the mesh file so that they can be recognized as identical on the server. See https://github.com/rdeits/meshcat-python/pull/75 This makes a *dramatic* improvement in the workflow of using meshcat on colab (at least as we use it in drake), because we don't have to repeatedly download large meshfiles from repeated simulations.
+[doc,tools] * TBD tools: Improve relnotes tooling (`#13955`_)  # Automatically bootstrap from our project template. Automatically read and update commit ranges in the document. Automatically place new commits into sections. Automatically update PR hyperlinks.
 * Upgrade bazel_skylib to latest release 1.0.3 (`#13969`_)
 * Upgrade fmt to latest release 7.0.3 (`#13968`_)
 * Upgrade ghc_filesystem to latest release 1.3.4 (`#13966`_)
@@ -141,6 +152,7 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 
 .. <begin issue links>
 .. _#13773: https://github.com/RobotLocomotion/drake/pull/13773
+.. _#13860: https://github.com/RobotLocomotion/drake/pull/13860
 .. _#13864: https://github.com/RobotLocomotion/drake/pull/13864
 .. _#13867: https://github.com/RobotLocomotion/drake/pull/13867
 .. _#13870: https://github.com/RobotLocomotion/drake/pull/13870
@@ -166,18 +178,21 @@ Philip E. Gill and Elizabeth Wong for their kind support.
 .. _#13940: https://github.com/RobotLocomotion/drake/pull/13940
 .. _#13941: https://github.com/RobotLocomotion/drake/pull/13941
 .. _#13943: https://github.com/RobotLocomotion/drake/pull/13943
-.. _#13949: https://github.com/RobotLocomotion/drake/pull/13949
-.. _#13951: https://github.com/RobotLocomotion/drake/pull/13951
-.. _#13952: https://github.com/RobotLocomotion/drake/pull/13952
-.. _#13953: https://github.com/RobotLocomotion/drake/pull/13953
-.. _#13963: https://github.com/RobotLocomotion/drake/pull/13963
+.. _#13955: https://github.com/RobotLocomotion/drake/pull/13955
+.. _#13959: https://github.com/RobotLocomotion/drake/pull/13959
+.. _#13965: https://github.com/RobotLocomotion/drake/pull/13965
 .. _#13966: https://github.com/RobotLocomotion/drake/pull/13966
 .. _#13967: https://github.com/RobotLocomotion/drake/pull/13967
 .. _#13968: https://github.com/RobotLocomotion/drake/pull/13968
 .. _#13969: https://github.com/RobotLocomotion/drake/pull/13969
+.. _#13971: https://github.com/RobotLocomotion/drake/pull/13971
 .. _#13972: https://github.com/RobotLocomotion/drake/pull/13972
+.. _#13974: https://github.com/RobotLocomotion/drake/pull/13974
+.. _#13976: https://github.com/RobotLocomotion/drake/pull/13976
+.. _#13981: https://github.com/RobotLocomotion/drake/pull/13981
+.. _#13982: https://github.com/RobotLocomotion/drake/pull/13982
 .. <end issue links>
 
 ..
   Current oldest_commit 0de592fdd53d55132b45a7a7c86b979a99f561e4 (exclusive).
-  Current newest_commit eff4185cd5600b017bfe50edcc0ff81864ca700b (inclusive).
+  Current newest_commit 3fa01607422543965b4e368796e894a5c29687b7 (inclusive).
