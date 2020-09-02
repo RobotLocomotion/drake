@@ -427,9 +427,6 @@ class MultibodyTree {
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
   /// attached to the child body B with pose `X_BM`. This method helps create
   /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
-  /// Note: Pose X_PF contains the position from point Po (body P's origin)
-  /// to point Fo (frame F's origin).  Generally, point Po differs from Pcm
-  /// (body P's center of mass).  Similarly for Bo and Bcm (B's center of mass).
   /// Refer to the Joint class's documentation for more details.
   ///
   /// The arguments to this method `args` are forwarded to `JointType`'s

@@ -849,19 +849,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The two bodies connected by this Joint object are referred to as _parent_
   /// and _child_ bodies. The parent/child ordering defines the sign conventions
   /// for the generalized coordinates and the coordinate ordering for multi-DOF
-  /// joints.  Our use of the terms _parent_ and _child_ does 𝐧𝐨𝐭 describe the
-  /// inboard/outboard relationship between bodies as our usage of inboard/
-  /// outboard is more general and is also meaningful for multibody systems
-  /// with loops, such as four-bar linkages.
-  /// @image html multibody/plant/images/BodyParentChildJointFM.png width=50%
+  /// joints.
+  /// @image html multibody/plant/images/BodyParentChildJointCM.png width=50%
+  /// Note: The previous figure also shows Pcm which is body P's center of mass
+  /// and point Bcm which is body B's center of mass.
   ///
   /// As explained in the Joint class's documentation, in Drake we define a
   /// frame F attached to the parent body P with pose `X_PF` and a frame M
   /// attached to the child body B with pose `X_BM`. This method helps creating
   /// a joint between two bodies with fixed poses `X_PF` and `X_BM`.
-  /// Note: Pose X_PF contains the position from point Po (body P's origin)
-  /// to point Fo (frame F's origin).  Generally, point Po differs from Pcm
-  /// (body P's center of mass).  Similarly for Bo and Bcm (B's center of mass).
   /// Refer to the Joint class's documentation for more details.
   ///
   /// @param name
