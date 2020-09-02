@@ -1,10 +1,8 @@
-#include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
+#include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
-using Eigen::Vector3d;
 using Eigen::Isometry3d;
-
-using drake::solvers::SolutionResult;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace multibody {
@@ -25,10 +23,11 @@ TEST_F(KukaTest, ReachableTest) {
 
   solvers::GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
-    global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
+    global_ik_.get_mutable_prog()->SetSolverOption(solvers::GurobiSolver::id(),
+                                                   "OutputFlag", 1);
 
     solvers::MathematicalProgramResult result =
-        gurobi_solver.Solve(global_ik_, {}, {});
+        gurobi_solver.Solve(global_ik_.prog());
 
     EXPECT_TRUE(result.is_success());
 
@@ -40,8 +39,8 @@ TEST_F(KukaTest, ReachableTest) {
     // IK should be able to find a solution.
     Eigen::Matrix<double, 7, 1> q_global_ik =
         global_ik_.ReconstructGeneralizedPositionSolution(result);
-    CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
-                     ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
+    CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W, ee_desired_orient, angle_tol,
+                     q_global_ik, q_global_ik, 1);
 
     // Now update the constraint, the problem should still be feasible.
     // TODO(hongkai.dai): do a warm start on the binary variables
@@ -53,7 +52,7 @@ TEST_F(KukaTest, ReachableTest) {
     // The orientation constraint is 2 * cos(angle_tol) + 1 <= trace(Rᵀ * R_des)
     ee_orient_cnstr.evaluator()->UpdateLowerBound(
         Vector1d(2 * cos(angle_tol) + 1));
-    result = gurobi_solver.Solve(global_ik_, {}, {});
+    result = gurobi_solver.Solve(global_ik_.prog());
     EXPECT_TRUE(result.is_success());
     const auto& ee_pos_sol =
         result.GetSolution(global_ik_.body_position(ee_idx_));
@@ -66,23 +65,25 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_LE(ee_orient_err.angle(), angle_tol + 1E-4);
 
     q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
-    CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W,
-                     ee_desired_orient, angle_tol, q_global_ik, q_global_ik, 1);
+    CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W, ee_desired_orient, angle_tol,
+                     q_global_ik, q_global_ik, 1);
 
     // Now tighten the joint limits, the problem should be feasible.
     global_ik_.AddJointLimitConstraint(3, 0.5, 0.5);
     global_ik_.AddJointLimitConstraint(4, -0.5, -0.4);
-    result = gurobi_solver.Solve(global_ik_, {}, {});
+    result = gurobi_solver.Solve(global_ik_.prog());
     EXPECT_TRUE(result.is_success());
     q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
     // The reconstructed posture should be within the user specified bound.
-    EXPECT_NEAR(q_global_ik(0), 0.5, 1e-3);
-    EXPECT_GE(q_global_ik(1), -0.5);
-    EXPECT_LE(q_global_ik(1), -0.4);
+    // body 3's position index is 1
+    EXPECT_NEAR(q_global_ik(1), 0.5, 1e-3);
+    // body 4's position index is 2
+    EXPECT_GE(q_global_ik(2), -0.5);
+    EXPECT_LE(q_global_ik(2), -0.4);
 
     // Now further tighten the joint limits, the problem should be infeasible
     global_ik_.AddJointLimitConstraint(5, 0.5, 0.55);
-    result = gurobi_solver.Solve(global_ik_, {}, {});
+    result = gurobi_solver.Solve(global_ik_.prog());
     EXPECT_TRUE(result.get_solution_result() ==
                     solvers::SolutionResult::kInfeasibleConstraints ||
                 result.get_solution_result() ==

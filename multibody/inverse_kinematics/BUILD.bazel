@@ -187,7 +187,6 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/global_inverse_kinematics_test_util.cc"],
     hdrs = ["test/global_inverse_kinematics_test_util.h"],
-    copts = ["-Wno-deprecated-declarations"],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
@@ -223,7 +222,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
     timeout = "moderate",
-    copts = ["-Wno-deprecated-declarations"],
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -258,7 +256,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
     timeout = "moderate",
-    copts = ["-Wno-deprecated-declarations"],
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
