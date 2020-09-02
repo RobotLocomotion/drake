@@ -13,12 +13,11 @@ namespace drake {
 namespace schema {
 namespace {
 
-// TODO(jwnimmer-tri) Change use R""" per Drake GSG, throughout this file.
-const char* deterministic = R"R(
+const char* deterministic = R"""(
 base_frame: foo
 translation: [1., 2., 3.]
 rotation: !Rpy { deg: [10, 20, 30] }
-)R";
+)""";
 
 GTEST_TEST(DeterministicTest, TransformTest) {
   Transform transform;
@@ -38,10 +37,10 @@ GTEST_TEST(DeterministicTest, TransformTest) {
       expected.GetAsMatrix34()));
 }
 
-const char* deprecated_rpy = R"R(
+const char* deprecated_rpy = R"""(
 translation: [1., 2., 3.]
 rotation_rpy_deg: [10., 20., 30.]
-)R";
+)""";
 
 GTEST_TEST(DeprecatedDeterministicTest, TransformTest) {
   Transform transform;
@@ -59,11 +58,11 @@ GTEST_TEST(DeprecatedDeterministicTest, TransformTest) {
       expected.GetAsMatrix34()));
 }
 
-const char* random = R"R(
+const char* random = R"""(
 base_frame: bar
 translation: !UniformVector { min: [1., 2., 3.], max: [4., 5., 6.] }
 rotation: !Uniform {}
-)R";
+)""";
 
 GTEST_TEST(StochasticTest, TransformTest) {
   Transform transform;
@@ -78,14 +77,14 @@ GTEST_TEST(StochasticTest, TransformTest) {
       Eigen::Vector3d(2.5, 3.5, 4.5)));
 }
 
-const char* random_bounded = R"R(
+const char* random_bounded = R"""(
 base_frame: baz
 translation: !UniformVector { min: [1., 2., 3.], max: [4., 5., 6.] }
 rotation: !Rpy
   deg: !UniformVector
     min: [380, -0.25, -1.]
     max: [400,  0.25,  1.]
-)R";
+)""";
 
 GTEST_TEST(StochasticSampleTest, TransformTest) {
   Transform transform;
