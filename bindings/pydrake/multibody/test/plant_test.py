@@ -568,6 +568,12 @@ class TestPlant(unittest.TestCase):
             (JacobianWrtVariable.kV, nv),
         ]
         for wrt, nw in wrt_list:
+            Js_v_ACcm_E = plant.CalcJacobianCenterOfMassTranslationalVelocity(
+                context=context, with_respect_to=wrt, frame_A=base_frame,
+                frame_E=world_frame)
+            self.assert_sane(Js_v_ACcm_E)
+            self.assertEqual(Js_v_ACcm_E.shape, (3, nw))
+
             Js_V_ABp_E = plant.CalcJacobianSpatialVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
                 p_BP=np.zeros(3), frame_A=world_frame,
@@ -591,6 +597,12 @@ class TestPlant(unittest.TestCase):
                 frame_E=world_frame)
             self.assert_sane(Js_v_AB_E)
             self.assertEqual(Js_v_AB_E.shape, (9, nw))
+
+        abias_ACcm_E = plant.CalcBiasCenterOfMassTranslationalAcceleration(
+            context=context, with_respect_to=JacobianWrtVariable.kV,
+            frame_A=world_frame, frame_E=world_frame)
+        self.assert_sane(abias_ACcm_E, nonzero=False)
+        self.assertEqual(abias_ACcm_E.shape, (3,))
 
         AsBias_ABp_E = plant.CalcBiasSpatialAcceleration(
             context=context, with_respect_to=JacobianWrtVariable.kV,
