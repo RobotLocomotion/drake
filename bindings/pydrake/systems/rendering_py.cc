@@ -2,7 +2,6 @@
 #include "pybind11/pybind11.h"
 #include <Eigen/Dense>
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -36,15 +35,7 @@ PYBIND11_MODULE(rendering, m) {
       .def(py::init<const Eigen::Quaternion<T>&,
                const Eigen::Translation<T, 3>&>(),
           py::arg("rotation"), py::arg("translation"),
-          doc.PoseVector.ctor.doc_2args);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  pose_vector.def("get_isometry",
-      WrapDeprecated(doc.PoseVector.get_isometry.doc_deprecated,
-          &PoseVector<T>::get_isometry),
-      doc.PoseVector.get_isometry.doc_deprecated);
-#pragma GCC diagnostic pop
-  pose_vector
+          doc.PoseVector.ctor.doc_2args)
       .def("get_transform", &PoseVector<T>::get_transform,
           doc.PoseVector.get_transform.doc)
       .def("set_transform", &PoseVector<T>::set_transform,
@@ -77,20 +68,7 @@ PYBIND11_MODULE(rendering, m) {
   pose_bundle
       .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc)
       .def("get_num_poses", &PoseBundle<T>::get_num_poses,
-          doc.PoseBundle.get_num_poses.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  pose_bundle
-      .def("get_pose",
-          WrapDeprecated(
-              doc.PoseBundle.get_pose.doc_deprecated, &PoseBundle<T>::get_pose),
-          doc.PoseBundle.get_pose.doc_deprecated)
-      .def("set_pose",
-          WrapDeprecated(
-              doc.PoseBundle.set_pose.doc_deprecated, &PoseBundle<T>::set_pose),
-          doc.PoseBundle.set_pose.doc_deprecated);
-#pragma GCC diagnostic pop
-  pose_bundle
+          doc.PoseBundle.get_num_poses.doc)
       .def("get_transform", &PoseBundle<T>::get_transform,
           doc.PoseBundle.get_transform.doc)
       .def("set_transform", &PoseBundle<T>::set_transform,

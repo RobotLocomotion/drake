@@ -194,6 +194,44 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestIsApprox) {
   EXPECT_TRUE(traj0.is_approx(traj2, 1e-5));
 }
 
+GTEST_TEST(TestPiecewiseQuaternionSlerp, TestDerivatives) {
+  std::vector<double> time = {0, 1.6, 2.32};
+  std::vector<double> ang = {1, 2.4 - 2 * M_PI, 5.3};
+  Vector3<double> axis = Vector3<double>(1, 2, 3).normalized();
+  std::vector<Quaternion<double>> quat(ang.size());
+  for (size_t i = 0; i < ang.size(); ++i) {
+    quat[i] = Quaternion<double>(AngleAxis<double>(ang[i], axis));
+  }
+
+  PiecewiseQuaternionSlerp<double> rot_spline(time, quat);
+
+  const auto zeroth_derivative = rot_spline.MakeDerivative(0);
+  const auto first_derivative = rot_spline.MakeDerivative(1);
+  const auto second_derivative = rot_spline.MakeDerivative(2);
+
+  for (double t = -1.0; t < 4.0; t += 0.234) {
+    // Test zeroth derivative.
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.value(t), zeroth_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.value(t), rot_spline.EvalDerivative(t, 0), 1e-14));
+
+    // Test first derivative.
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_velocity(t), first_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_velocity(t), rot_spline.EvalDerivative(t, 1),
+      1e-14));
+
+    // Test second derivative.
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_acceleration(t), second_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(
+      rot_spline.angular_acceleration(t), rot_spline.EvalDerivative(t, 2),
+      1e-14));
+  }
+}
+
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake

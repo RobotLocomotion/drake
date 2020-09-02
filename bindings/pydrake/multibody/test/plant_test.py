@@ -59,8 +59,6 @@ from pydrake.multibody.plant import (
     PointPairContactInfo_,
     PropellerInfo,
     Propeller_,
-    VectorExternallyAppliedSpatialForced,
-    VectorExternallyAppliedSpatialForced_,
 )
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
@@ -71,7 +69,6 @@ from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
     Box,
@@ -728,35 +725,6 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetVelocityUpperLimits().shape, (nv,))
         self.assertEqual(plant.GetAccelerationLowerLimits().shape, (nv,))
         self.assertEqual(plant.GetAccelerationUpperLimits().shape, (nv,))
-
-    @numpy_compare.check_all_types
-    def test_deprecated_vector_externally_applied_spatial_forced(self, T):
-        # Deprecated custom template instantiation.
-        with catch_drake_warnings(expected_count=1) as w:
-            cls = VectorExternallyAppliedSpatialForced_[T]
-        self.assertIn(
-            "Value[List[ExternallyAppliedSpatialForce]]",
-            str(w[0].message))
-        message_expected = str(w[0].message)
-
-        if T == float:
-            # Check alias.
-            self.assertIs(cls, VectorExternallyAppliedSpatialForced)
-
-        # Deprecated Value[] instantiation which aliases to correct
-        # instantiation.
-        with catch_drake_warnings(expected_count=1) as w:
-            value_cls = Value[cls]
-        self.assertEqual(str(w[0].message), message_expected)
-        self.assertIs(
-            value_cls, Value[List[ExternallyAppliedSpatialForce_[T]]])
-
-        # Deprecated constructor which simply creates a list (not a derived
-        # class).
-        with catch_drake_warnings(expected_count=1) as w:
-            x = cls()
-        self.assertEqual(type(x), list)
-        self.assertEqual(str(w[0].message), message_expected)
 
     @numpy_compare.check_all_types
     def test_port_access(self, T):

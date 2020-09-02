@@ -4,6 +4,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -84,6 +85,16 @@ class MultibodyElement {
     return *plant;
   }
 
+  /// Declares MultibodyTreeSystem Parameters at MultibodyTreeSystem::Finalize()
+  /// time. NVI to the virtual method DoDeclareParameters().
+  /// @param[in] tree_system A mutable copy of the parent MultibodyTreeSystem.
+  /// @pre 'tree_system' must be the same as the the parent tree system (what's
+  /// returned from GetParentTreeSystem()).
+  void DeclareParameters(internal::MultibodyTreeSystem<T>* tree_system) {
+    DRAKE_DEMAND(tree_system == &GetParentTreeSystem());
+    DoDeclareParameters(tree_system);
+  }
+
  protected:
   /// Default constructor made protected so that sub-classes can still declare
   /// their default constructors if they need to.
@@ -100,6 +111,13 @@ class MultibodyElement {
     return *parent_tree_;
   }
 
+  /// Returns a constant reference to the parent MultibodyTreeSystem that
+  /// owns the parent MultibodyTree that owns this element.
+  const internal::MultibodyTreeSystem<T>& GetParentTreeSystem() const {
+    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    return get_parent_tree().tree_system();
+  }
+
   /// Gives MultibodyElement-derived objects the opportunity to retrieve their
   /// topology after MultibodyTree::Finalize() is invoked.
   /// NVI to pure virtual method DoSetTopology().
@@ -110,6 +128,22 @@ class MultibodyElement {
   /// Implementation of the NVI SetTopology(). For advanced use only for
   /// developers implementing new MultibodyTree components.
   virtual void DoSetTopology(const internal::MultibodyTreeTopology& tree) = 0;
+
+  /// Implementation of the NVI DeclareParameters(). MultibodyElement-derived
+  /// objects must override to declare their specific parameters. If an object
+  /// is not a direct descendent of MultibodyElement, it must invoke its parent
+  /// classes' DoDeclareParameters() before declaring its own parameters.
+  virtual void DoDeclareParameters(internal::MultibodyTreeSystem<T>*) {}
+
+  /// To be used by MultibodyElement-derived objects when declaring parameters
+  /// in their implementation of DoDeclareParameters(). For an example, see
+  /// RigidBody::DoDeclareParameters().
+  systems::NumericParameterIndex DeclareNumericParameter(
+      internal::MultibodyTreeSystem<T>* tree_system,
+      const systems::BasicVector<T>& model_vector) {
+    return internal::MultibodyTreeSystemElementAttorney<T>
+        ::DeclareNumericParameter(tree_system, model_vector);
+  }
 
  private:
   // MultibodyTree<T> is a natural friend of MultibodyElement objects and

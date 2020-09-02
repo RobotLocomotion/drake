@@ -61,6 +61,7 @@ clean () {
 say Validate input.
 [[ "$#" -ge 1 ]] || die "missing argument: destination directory"
 DESTINATION="$1"
+shift
 
 say Validate environment.
 is_default_ubuntu || die "experiments only supported on default platform"
@@ -88,7 +89,7 @@ set_cpu_governor performance
 set_no_turbo 1
 
 say Run the experiment.
-bazel run "$TARGET"
+bazel run "$TARGET" -- "$@"
 
 say Save data.
 "$HERE"/copy_results_to "$DESTINATION"

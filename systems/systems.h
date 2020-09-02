@@ -35,7 +35,6 @@
 ///   @defgroup stochastic_systems Stochastic Systems
 ///   @defgroup visualization Visualization
 ///   @defgroup example_systems Examples
-///   @defgroup rigid_body_systems (Attic) Rigid-Body Systems
 /// @}
 
 /// @addtogroup primitive_systems

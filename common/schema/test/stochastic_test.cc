@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/yaml/yaml_read_archive.h"
 
@@ -346,6 +347,27 @@ GTEST_TEST(StochasticTest, ZeroSizeRandomRanges) {
   EXPECT_TRUE(CompareMatrices(
       GetDeterministicValue(uniform_scalar),
       Eigen::VectorXd::Constant(1, 1.5)));
+}
+
+struct FixedSize2 {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  DistributionVectorVariant<2> value;
+};
+
+GTEST_TEST(StochasticTest, IncorrectVectorTest) {
+  const char* const input = R"""(
+value: !Deterministic { value: 2.0 }
+)""";
+  FixedSize2 parsed;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      YamlReadArchive(YAML::Load(input), kStrict).Accept(&parsed),
+      std::exception,
+      ".*unsupported type tag !Deterministic while selecting a variant<> entry"
+      " for std::variant<.*> value.*");
 }
 
 }  // namespace

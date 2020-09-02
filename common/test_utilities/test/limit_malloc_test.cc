@@ -74,7 +74,7 @@ TEST_P(LimitMallocTest, BasicTest) {
 }
 
 constexpr const char* const kDeathMessage =
-    "abort due to malloc while LimitMalloc is in effect";
+    "abort due to malloc #[0-9]+ while LimitMalloc\\([0-9]+\\) in effect";
 
 TEST_P(LimitMallocDeathTest, BasicTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";

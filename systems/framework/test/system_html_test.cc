@@ -60,14 +60,14 @@ GTEST_TEST(SystemHtmlTest, NestedDiagram) {
 { key: "subdiagram", name: "subdiagram", group: "diagram", isGroup: true, expanded: false, },
 { key: "subdiagram_inputs", name: "Input Ports", group: "subdiagram", isGroup: true, },
 { key: "subdiagram_u0", name: "adder_u1", group: "subdiagram_inputs", category: "input_port", },
-{ key: "subdiagram_u1", name: "pass_u0", group: "subdiagram_inputs", category: "input_port", },
+{ key: "subdiagram_u1", name: "pass_u", group: "subdiagram_inputs", category: "input_port", },
 { key: "subdiagram_outputs", name: "Output Ports", group: "subdiagram", isGroup: true, },
 { key: "subdiagram_y0", name: "adder_sum", group: "subdiagram_outputs", category: "output_port", },
 { key: "adder", group: "subdiagram", input_ports: [ { name: "u0", id: "u0" }, { name: "u1", id: "u1" }, ],
 output_ports: [ { name: "sum", id: "y0" }, ],
 },
-{ key: "pass", group: "subdiagram", input_ports: [ { name: "u0", id: "u0" }, ],
-output_ports: [ { name: "y0", id: "y0" }, ],
+{ key: "pass", group: "subdiagram", input_ports: [ { name: "u", id: "u0" }, ],
+output_ports: [ { name: "y", id: "y0" }, ],
 },)"));
 
   // Tests LinkWriter.

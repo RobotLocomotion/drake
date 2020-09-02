@@ -6,7 +6,7 @@ import numpy as np
 
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface,
-    CreateClutterClearingYcbObjectList)
+    CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
@@ -272,6 +272,11 @@ def main():
         '--setup', type=str, default='manipulation_class',
         help="The manipulation station setup to simulate. ",
         choices=['manipulation_class', 'clutter_clearing'])
+    parser.add_argument(
+        '--schunk_collision_model', type=str, default='box',
+        help="The Schunk collision model to use for simulation. ",
+        choices=['box', 'box_plus_fingertip_spheres'])
+
     MeshcatVisualizer.add_argparse_argument(parser)
     args = parser.parse_args()
 
@@ -291,15 +296,23 @@ def main():
     else:
         station = builder.AddSystem(ManipulationStation())
 
+        if args.schunk_collision_model == "box":
+            schunk_model = SchunkCollisionModel.kBox
+        elif args.schunk_collision_model == "box_plus_fingertip_spheres":
+            schunk_model = SchunkCollisionModel.kBoxPlusFingertipSpheres
+
         # Initializes the chosen station type.
         if args.setup == 'manipulation_class':
-            station.SetupManipulationClassStation()
+            station.SetupManipulationClassStation(
+                schunk_model=schunk_model)
             station.AddManipulandFromFile(
                 ("drake/examples/manipulation_station/models/"
                  "061_foam_brick.sdf"),
                 RigidTransform(RotationMatrix.Identity(), [0.6, 0, 0]))
         elif args.setup == 'clutter_clearing':
-            station.SetupClutterClearingStation()
+            station.SetupClutterClearingStation(
+                schunk_model=schunk_model)
+
             ycb_objects = CreateClutterClearingYcbObjectList()
             for model_file, X_WObject in ycb_objects:
                 station.AddManipulandFromFile(model_file, X_WObject)

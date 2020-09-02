@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
@@ -53,16 +52,6 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaCommandReceiver(int num_joints = kIiwaArmNumJoints);
 
-  /// Sets the initial commanded position of the controlled iiwa prior to any
-  /// command messages being received.  If this function is not called, the
-  /// starting position will be the zero configuration.  The initial commanded
-  /// torque is always zero and cannot be set.
-  DRAKE_DEPRECATED("2020-09-01",
-      "To provide position commands prior to receiving the first message, "
-      "connect the position_measured instead of setting this parameter")
-  void set_initial_position(systems::Context<double>* context,
-                            const Eigen::Ref<const Eigen::VectorXd>& q) const;
-
   /// (Advanced.) Copies the current "position_measured" input (or zero if not
   /// connected) into Context state, and changes the behavior of the "position"
   /// output to produce the latched state if no message has been received yet.
@@ -88,17 +77,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   }
   //@}
 
-  DRAKE_DEPRECATED("2020-09-01", "Use get_message_input_port() instead.")
-  const systems::InputPort<double>& get_input_port() const {
-    return get_message_input_port();
-  }
-
  private:
   void DoCalcNextUpdateTime(
       const systems::Context<double>&,
       systems::CompositeEventCollection<double>*, double*) const override;
 
-  void CalcPositionMeasuredOrParam(
+  void CalcPositionMeasuredOrZero(
       const systems::Context<double>&, systems::BasicVector<double>*) const;
   void LatchInitialPosition(
       const systems::Context<double>&,
@@ -113,15 +97,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   const int num_joints_;
   const systems::InputPort<double>* message_input_{};
   const systems::InputPort<double>* position_measured_input_{};
-  const systems::CacheEntry* position_measured_or_param_{};
+  const systems::CacheEntry* position_measured_or_zero_{};
   systems::DiscreteStateIndex latched_position_measured_is_set_;
   systems::DiscreteStateIndex latched_position_measured_;
   const systems::CacheEntry* defaulted_command_{};
   const systems::OutputPort<double>* commanded_position_output_{};
   const systems::OutputPort<double>* commanded_torque_output_{};
-
-  // Deprecated.
-  systems::NumericParameterIndex initial_state_param_;
 };
 
 }  // namespace kuka_iiwa

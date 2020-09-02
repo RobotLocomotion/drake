@@ -31,10 +31,6 @@ class PoseVector : public BasicVector<T> {
              const Eigen::Translation<T, 3>& translation);
 
   /// Returns the transform X_WA.
-  DRAKE_DEPRECATED("2020-09-01", "Please use get_transform()")
-  Isometry3<T> get_isometry() const;
-
-  /// Returns the transform X_WA.
   math::RigidTransform<T> get_transform() const;
   /// Assigns the transform X_WA.
   void set_transform(const math::RigidTransform<T>& transform);
