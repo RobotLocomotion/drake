@@ -17,6 +17,17 @@
 #define DRAKE_NO_SANITIZE
 #endif
 
+// Declare this function here so its definition can follow the
+// platform-specific enabling of observations.
+static void EvaluateMinNumAllocations(int observed, int min_num_allocations);
+
+// LimitMalloc does not work properly with leak sanitizer builds. Check this
+// predicate and disarm to avoid erroneous results.
+static bool IsLeakSanitizerBuild() {
+  static const bool is_lsan{!!std::getenv("LSAN_OPTIONS")};
+  return is_lsan;
+}
+
 namespace drake {
 namespace test {
 namespace {
@@ -45,6 +56,7 @@ class Monitor {
   }
 
   int num_allocations() const { return observed_num_allocations_.load(); }
+  const LimitMallocParams& params() const { return args_; }
 
  private:
   void ObserveAllocation();
@@ -140,6 +152,8 @@ class ActiveMonitor {
 };
 
 void Monitor::ObserveAllocation() {
+  if (IsLeakSanitizerBuild()) { return; }
+
   bool failure = false;
 
   // Check the allocation-call limit.
@@ -155,8 +169,9 @@ void Monitor::ObserveAllocation() {
 
   // Report an error (but re-enable malloc before doing so!).
   ActiveMonitor::reset();
-  std::cerr << "abort due to malloc #" << observed << " while LimitMalloc("
-            << args_.max_num_allocations << ") in effect";
+  std::cerr << "abort due to malloc #" << observed
+            << " while max_num_allocations = "
+            << args_.max_num_allocations << " in effect";
   std::cerr << std::endl;
   // TODO(jwnimmer-tri) It would be nice to print a backtrace here.
   std::abort();
@@ -167,6 +182,10 @@ void Monitor::ObserveAllocation() {
 LimitMalloc::LimitMalloc() : LimitMalloc({ .max_num_allocations = 0 }) {}
 
 LimitMalloc::LimitMalloc(LimitMallocParams args) {
+  // Make sure the leak-sanitizer check is warm before trying it within a
+  // malloc call stack.
+  IsLeakSanitizerBuild();
+
   // Prepare a monitor with our requested limits.
   auto monitor = std::make_shared<Monitor>(this, std::move(args));
 
@@ -181,12 +200,23 @@ int LimitMalloc::num_allocations() const {
   return ActiveMonitor::load()->num_allocations();
 }
 
+const LimitMallocParams& LimitMalloc::params() const {
+  return ActiveMonitor::load()->params();
+}
+
 LimitMalloc::~LimitMalloc() {
+  // Copy out the monitor's data before we delete it.
+  const int observed = num_allocations();
+  const LimitMallocParams args = params();
+
   // De-activate our Monitor.
   auto prior = ActiveMonitor::reset();
+
   if (!(prior && prior->has_owner(this))) {
     std::cerr << "LimitMalloc dtor invariant failure\n";
   }
+
+  ::EvaluateMinNumAllocations(observed, args.min_num_allocations);
 }
 
 }  // namespace test
@@ -215,6 +245,21 @@ void* realloc(void* ptr, size_t size) {
   drake::test::ActiveMonitor::realloc(ptr, size, is_noop);
   return result;
 }
+
+static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {
+  if (IsLeakSanitizerBuild()) { return; }
+
+  if ((min_num_allocations >= 0) && (observed < min_num_allocations)) {
+    std::cerr << "abort due to scope end with "
+              << observed << " mallocs while min_num_allocations = "
+              << min_num_allocations << " in effect";
+    std::cerr << std::endl;
+    std::abort();
+  }
+}
+#else
+// Evaluating the minimum is a no-op when no counts are observed.
+static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {}
 #endif
 
 #undef DRAKE_NO_SANITIZE

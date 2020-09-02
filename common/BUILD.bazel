@@ -628,6 +628,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "autodiffxd_heap_test",
+    deps = [
+        ":autodiff",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
     name = "autodiff_overloads_test",
     deps = [
         ":autodiff",
