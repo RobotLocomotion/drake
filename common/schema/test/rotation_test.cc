@@ -15,10 +15,6 @@ using drake::math::RollPitchYawd;
 using drake::yaml::YamlReadArchive;
 using drake::yaml::YamlWriteArchive;
 
-// TODO(jeremy.nimmer) We can remove this argument from the call sites below
-// once Drake's YamlReadArchive constructor default changes to be strict.
-constexpr YamlReadArchive::Options kStrict;
-
 GTEST_TEST(RotationTest, ConstructorDefault) {
   Rotation rotation;
   EXPECT_TRUE(std::holds_alternative<Rotation::Identity>(rotation.value));
@@ -49,7 +45,7 @@ GTEST_TEST(RotationTest, Rpy) {
   value: !Rpy { deg: [10., 20., 30.] }
   )R";
   Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data), kStrict).Accept(&rotation);
+  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
   ASSERT_TRUE(rotation.IsDeterministic());
   const RollPitchYawd rpy(rotation.GetDeterministicValue());
   const Vector3d actual = rpy.vector() * 180 / M_PI;
@@ -62,7 +58,7 @@ GTEST_TEST(RotationTest, AngleAxis) {
   value: !AngleAxis { angle_deg: 10.0, axis: [0, 1, 0] }
   )R";
   Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data), kStrict).Accept(&rotation);
+  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
   ASSERT_TRUE(rotation.IsDeterministic());
   const Eigen::AngleAxis<double> actual =
       rotation.GetDeterministicValue().ToAngleAxis();
@@ -76,7 +72,7 @@ GTEST_TEST(RotationTest, Uniform) {
   value: !Uniform {}
   )R";
   Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data), kStrict).Accept(&rotation);
+  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
   EXPECT_FALSE(rotation.IsDeterministic());
   EXPECT_NO_THROW(rotation.ToSymbolic());
 }
@@ -86,7 +82,7 @@ GTEST_TEST(RotationTest, RpyUniform) {
   value: !Rpy { deg: !UniformVector { min: [0, 10, 20], max: [30, 40, 50] } }
   )R";
   Rotation rotation;
-  YamlReadArchive(YAML::Load(yaml_data), kStrict).Accept(&rotation);
+  YamlReadArchive(YAML::Load(yaml_data)).Accept(&rotation);
   EXPECT_FALSE(rotation.IsDeterministic());
   // We trust stochastic_test.cc to check that stochastic.h parsed the ranges
   // correctly, and so do not verify them further here.

@@ -13,10 +13,6 @@ namespace drake {
 namespace schema {
 namespace {
 
-// TODO(jeremy.nimmer) We can remove this argument from the call sites below
-// once Drake's YamlReadArchive constructor default changes to be strict.
-constexpr YamlReadArchive::Options kStrict;
-
 // TODO(jwnimmer-tri) Change use R""" per Drake GSG, throughout this file.
 const char* deterministic = R"R(
 base_frame: foo
@@ -26,7 +22,7 @@ rotation: !Rpy { deg: [10, 20, 30] }
 
 GTEST_TEST(DeterministicTest, TransformTest) {
   Transform transform;
-  YamlReadArchive(YAML::Load(deterministic), kStrict).Accept(&transform);
+  YamlReadArchive(YAML::Load(deterministic)).Accept(&transform);
 
   EXPECT_EQ(*transform.base_frame, "foo");
 
@@ -49,7 +45,7 @@ rotation_rpy_deg: [10., 20., 30.]
 
 GTEST_TEST(DeprecatedDeterministicTest, TransformTest) {
   Transform transform;
-  YamlReadArchive(YAML::Load(deprecated_rpy), kStrict).Accept(&transform);
+  YamlReadArchive(YAML::Load(deprecated_rpy)).Accept(&transform);
 
   drake::math::RigidTransformd expected(
       drake::math::RollPitchYawd(
@@ -71,7 +67,7 @@ rotation: !Uniform {}
 
 GTEST_TEST(StochasticTest, TransformTest) {
   Transform transform;
-  YamlReadArchive(YAML::Load(random), kStrict).Accept(&transform);
+  YamlReadArchive(YAML::Load(random)).Accept(&transform);
 
   EXPECT_EQ(*transform.base_frame, "bar");
   EXPECT_FALSE(IsDeterministic(transform.translation));
@@ -93,7 +89,7 @@ rotation: !Rpy
 
 GTEST_TEST(StochasticSampleTest, TransformTest) {
   Transform transform;
-  YamlReadArchive(YAML::Load(random_bounded), kStrict).Accept(&transform);
+  YamlReadArchive(YAML::Load(random_bounded)).Accept(&transform);
   drake::RandomGenerator generator(0);
   drake::math::RigidTransformd sampled_transform = transform.Sample(&generator);
 
