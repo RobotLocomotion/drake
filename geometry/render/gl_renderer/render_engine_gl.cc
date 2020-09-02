@@ -223,6 +223,25 @@ void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
                     Vector3d(box.width(), box.depth(), box.height()));
 }
 
+void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
+                                       void* user_data) {
+  const int resolution = 50;
+  auto [vertices, indices] =
+      internal::MakeCapsule(resolution, capsule.radius(), capsule.length());
+
+  OpenGlGeometry geometry = CreateGlGeometry(vertices, indices);
+  capsules_.push_back(geometry);
+
+  ImplementGeometry(geometry, user_data, Vector3d::Ones());
+}
+
+void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
+                                       void* user_data) {
+  OpenGlGeometry geometry = GetSphere();
+  ImplementGeometry(geometry, user_data,
+                    Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
+}
+
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   OpenGlGeometry geometry = GetMesh(mesh.filename());
   ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale());
