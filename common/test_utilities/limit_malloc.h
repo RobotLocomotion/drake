@@ -9,6 +9,10 @@ struct LimitMallocParams {
   /// When less than zero, there is no limit on the number of calls.
   int max_num_allocations{-1};
 
+  /// Minimum calls to malloc, calloc, or realloc (totaled as one).
+  /// When less than zero, there is no limit on the number of calls.
+  int min_num_allocations{-1};
+
   /// Whether a realloc() that leaves its `ptr` unchanged should be ignored.
   bool ignore_realloc_noops{false};
 };
@@ -17,6 +21,7 @@ struct LimitMallocParams {
 /// etc.) should be disallowed or curtailed.
 ///
 /// @note This class is currently a no-op on macOS.
+/// @note This class is currently a no-op in leak sanitizer runs.
 ///
 /// Example:
 /// @code
@@ -57,6 +62,9 @@ class LimitMalloc final {
 
   /// Returns the number of allocations observed so far.
   int num_allocations() const;
+
+  /// Returns the parameters structure used to construct this object.
+  const LimitMallocParams& params() const;
 
   // We write this out by hand, to avoid depending on Drake *at all*.
   /// @name Does not allow copy, move, or assignment
