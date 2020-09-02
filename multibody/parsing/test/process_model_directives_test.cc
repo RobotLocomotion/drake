@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/dev/process_model_directives.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 
 #include <memory>
 
@@ -23,7 +23,7 @@ using drake::multibody::Parser;
 using drake::systems::DiagramBuilder;
 
 const char* const kTestDir =
-    "drake/multibody/parsing/dev/test/process_model_directives_test";
+    "drake/multibody/parsing/test/process_model_directives_test";
 
 // Our unit test's package is not normally loaded; construct a parser that
 // has it and can resolve package://process_model_directives_test urls.
