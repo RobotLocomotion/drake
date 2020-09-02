@@ -133,6 +133,20 @@ class MonomialBasisElement : public PolynomialBasisElement {
     hash_append(hasher, item.var_to_degree_map());
   }
 
+  /**
+   * Converts this monomial to Chebyshev polynomial basis. For example,
+   *
+   *  - For x², it returns 0.5T₂(x) + 0.5T₀(x).
+   *  - For x²y³, it returns 1/8T₂(x)T₃(y) + 3/8T₂(x)T₁(y) + 1/8T₀(x)T₃(y) +
+   *    3/8T₀(x)T₁(y).
+   *
+   * We return the map from each ChebyshevBasisElement to its coefficient.
+   * For example, when this = x², it returns {[T₂(x)⇒0.5], [T₀(x)⇒0.5]}.
+   * When this = x²y³, it returns {[T₂(x)T₃(y)⇒1/8], [T₂(x)T₁(y)⇒3/8],
+   * [T₀(x)T₃(y)⇒1/8], [T₀(x)T₁(y)⇒3/8]}.
+   */
+  std::map<ChebyshevBasisElement, double> ToChebyshevBasis() const;
+
  private:
   double DoEvaluate(double variable_val, int degree) const override;
   Expression DoToExpression() const override;
