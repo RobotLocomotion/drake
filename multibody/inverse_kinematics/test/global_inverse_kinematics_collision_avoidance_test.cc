@@ -1,11 +1,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/dev/test/global_inverse_kinematics_test_util.h"
+#include "drake/multibody/inverse_kinematics/test/global_inverse_kinematics_test_util.h"
 #include "drake/solvers/gurobi_solver.h"
 
-using Eigen::Vector3d;
 using Eigen::Isometry3d;
-
-using drake::solvers::SolutionResult;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace multibody {
@@ -75,7 +73,7 @@ GTEST_TEST(GlobalInverseKinematicsTest, BodySphereInOneOfPolytopesTest) {
       global_ik.BodySphereInOneOfPolytopes(link_idx, p_BQ, radius, polytopes);
 
   solvers::GurobiSolver solver;
-  const auto result = solver.Solve(global_ik, {}, {});
+  const auto result = solver.Solve(global_ik.prog(), {}, {});
   EXPECT_TRUE(result.is_success());
 
   const auto p_WB_sol = result.GetSolution(global_ik.body_position(link_idx));
@@ -164,24 +162,25 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
 
   // First run the global IK without collision avoidance.
   solvers::GurobiSolver gurobi_solver;
-  global_ik_.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 1);
+  global_ik_.get_mutable_prog()->SetSolverOption(solvers::GurobiSolver::id(),
+                                                 "OutputFlag", 1);
   solvers::MathematicalProgramResult result =
-      gurobi_solver.Solve(global_ik_, {}, {});
+      gurobi_solver.Solve(global_ik_.prog(), {}, {});
   EXPECT_TRUE(result.is_success());
   const auto& q_without_collision_avoidance =
       global_ik_.ReconstructGeneralizedPositionSolution(result);
-  auto cache = rigid_body_tree_->CreateKinematicsCache();
-  cache.initialize(q_without_collision_avoidance);
-  rigid_body_tree_->doKinematics(cache);
+  auto context = plant_->CreateDefaultContext();
+  plant_->SetPositions(context.get(), q_without_collision_avoidance);
   const auto ee_pose_ik_without_collision_avoidance =
-      rigid_body_tree_->CalcBodyPoseInWorldFrame(
-          cache, rigid_body_tree_->get_body(ee_idx_));
+      plant_->CalcRelativeTransform(
+          *context, plant_->world_frame(),
+          plant_->get_body(BodyIndex{ee_idx_}).body_frame());
   EXPECT_LE(
       (ee_pose_ik_without_collision_avoidance.translation() - ee_pos).norm(),
       0.11);
 
-  int link6_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_6");
-  int link5_idx = rigid_body_tree_->FindBodyIndex("iiwa_link_5");
+  int link6_idx = plant_->GetBodyByName("iiwa_link_6").index();
+  int link5_idx = plant_->GetBodyByName("iiwa_link_5").index();
   std::vector<Eigen::Vector3d> link5_pts;
   std::vector<Eigen::Vector3d> link6_pts;
   // Currently only make sure the origin of the body is collision free. We can
@@ -202,26 +201,28 @@ TEST_F(KukaTest, CollisionAvoidanceTest) {
         link6_idx, link6_pts[i], region_vertices);
   }
 
-  result = gurobi_solver.Solve(global_ik_, {}, {});
+  result = gurobi_solver.Solve(global_ik_.prog(), {}, {});
   EXPECT_TRUE(result.is_success());
   const auto& q_with_collision_avoidance =
       global_ik_.ReconstructGeneralizedPositionSolution(result);
-  cache.initialize(q_with_collision_avoidance);
-  rigid_body_tree_->doKinematics(cache);
+  plant_->SetPositions(context.get(), q_with_collision_avoidance);
   const auto ee_pose_ik_with_collision_avoidance =
-      rigid_body_tree_->CalcBodyPoseInWorldFrame(
-          cache, rigid_body_tree_->get_body(ee_idx_));
+      plant_->CalcRelativeTransform(
+          *context, plant_->world_frame(),
+          plant_->get_body(BodyIndex{ee_idx_}).body_frame());
   // TODO(eric.cousineau): Revisit loose tolerance (PR #6162).
   EXPECT_LE((ee_pose_ik_with_collision_avoidance.translation() - ee_pos).norm(),
             0.1);
 
   // Now check to make sure the points are collision free.
   const auto& link5_pose_ik_with_collision_avoidance =
-      rigid_body_tree_->CalcBodyPoseInWorldFrame(
-          cache, rigid_body_tree_->get_body(link5_idx));
+      plant_->CalcRelativeTransform(
+          *context, plant_->world_frame(),
+          plant_->get_body(BodyIndex{link5_idx}).body_frame());
   const auto& link6_pose_ik_with_collision_avoidance =
-      rigid_body_tree_->CalcBodyPoseInWorldFrame(
-          cache, rigid_body_tree_->get_body(link6_idx));
+      plant_->CalcRelativeTransform(
+          *context, plant_->world_frame(),
+          plant_->get_body(BodyIndex{link6_idx}).body_frame());
   for (int i = 0; i < static_cast<int>(link5_pts.size()); ++i) {
     CheckPtCollisionFree(
         link5_pose_ik_with_collision_avoidance.linear() * link5_pts[i] +
