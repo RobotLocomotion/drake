@@ -236,7 +236,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
-        system = PassThrough(model_value.size())
+        system = PassThrough(vector_size=model_value.size())
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()
@@ -246,9 +246,16 @@ class TestGeneral(unittest.TestCase):
         output_value = output.get_vector_data(0)
         compare_value(self, output_value, model_value)
 
+    def test_default_vector_pass_through(self):
+        model_value = [1., 2, 3]
+        system = PassThrough(value=model_value)
+        context = system.CreateDefaultContext()
+        np.testing.assert_array_equal(
+            model_value, system.get_output_port().Eval(context))
+
     def test_abstract_pass_through(self):
         model_value = AbstractValue.Make("Hello world")
-        system = PassThrough(model_value)
+        system = PassThrough(abstract_model_value=model_value)
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
         output = system.AllocateOutput()

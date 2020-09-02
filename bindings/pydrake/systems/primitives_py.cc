@@ -212,8 +212,11 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
-        .def(py::init<int>(), doc.PassThrough.ctor.doc_1args_vector_size)
-        .def(py::init<const AbstractValue&>(),
+        .def(py::init<int>(), py::arg("vector_size"),
+            doc.PassThrough.ctor.doc_1args_vector_size)
+        .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("value"),
+            doc.PassThrough.ctor.doc_1args_value)
+        .def(py::init<const AbstractValue&>(), py::arg("abstract_model_value"),
             doc.PassThrough.ctor.doc_1args_abstract_model_value);
 
     DefineTemplateClassWithDefault<Saturation<T>, LeafSystem<T>>(
